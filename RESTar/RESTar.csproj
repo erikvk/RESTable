@@ -103,7 +103,6 @@
   <Import Project="$(StarcounterBin)\Starcounter.MsBuild.targets" />
   <PropertyGroup>
     <PostBuildEvent>IF $(ConfigurationName)==Debug EXIT;
-IF $(ConfigurationName)==Release_sa EXIT;
 cd "$(ProjectDir)"
 
 @echo off
