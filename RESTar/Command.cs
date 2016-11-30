@@ -15,6 +15,7 @@ namespace RESTar
         public int Limit = -1;
         public OrderBy OrderBy;
         public readonly string Json;
+        public string[] Select;
 
         internal Command(string query, string json)
         {
@@ -22,24 +23,17 @@ namespace RESTar
                 throw new RESTarInternalException("Query not loaded");
             Query = query;
             Json = json?.RemoveTabsAndBreaks();
-        }
 
-        internal Command Parse()
-        {
             var args = Query.Split('/');
             var argLength = args.Length;
 
             if (argLength == 1)
-                return this;
+                return;
 
             if (args[1] == "")
-            {
                 Resource = typeof(Resource);
-                return this;
-            }
-
-            Resource = args[1].FindResource();
-            if (argLength == 2) return this;
+            else Resource = args[1].FindResource();
+            if (argLength == 2) return;
 
             Conditions = Condition.Parse(args[2]);
             if (Conditions != null &&
@@ -49,23 +43,24 @@ namespace RESTar
                 if (nameCondition != null)
                     nameCondition.Value = nameCondition.Value.ToString().FindResource().FullName;
             }
-            if (argLength == 3) return this;
+            if (argLength == 3) return;
 
             MetaConditions = Condition.ParseMeta(args[3]);
-            if (MetaConditions == null) return this;
+            if (MetaConditions == null) return;
 
             if (MetaConditions.ContainsKey("limit"))
                 Limit = decimal.ToInt32((decimal) MetaConditions["limit"]);
             if (MetaConditions.ContainsKey("unsafe"))
                 Unsafe = (bool) MetaConditions["unsafe"];
+            if (MetaConditions.ContainsKey("select"))
+                Select = ((string) MetaConditions["select"]).Split(',').Select(s => s.ToLower()).ToArray();
             var orderKey = MetaConditions.Keys.FirstOrDefault(key => key.Contains("order"));
-            if (orderKey == null) return this;
+            if (orderKey == null) return;
             OrderBy = new OrderBy
             {
                 Descending = orderKey.Contains("desc"),
                 Key = MetaConditions[orderKey].ToString()
             };
-            return this;
         }
 
         internal List<object> GetExtension(bool? unsafeOverride = null)
@@ -73,8 +68,8 @@ namespace RESTar
             if (unsafeOverride != null)
                 Unsafe = unsafeOverride.Value;
             if (Unsafe)
-                return Common.GetFromDb(Resource, Conditions.ToWhereClause(), Limit, OrderBy).ToList();
-            var items = Common.GetFromDb(Resource, Conditions.ToWhereClause(), 2, OrderBy).ToList();
+                return Common.GetFromDb(Resource, Select, Conditions.ToWhereClause(), Limit, OrderBy).ToList();
+            var items = Common.GetFromDb(Resource, Select, Conditions.ToWhereClause(), 2, OrderBy).ToList();
             if (items.Count > 1) throw new AmbiguousMatchException(Resource);
             return items;
         }
@@ -143,7 +138,8 @@ namespace RESTar
             ["limit"] = typeof(decimal),
             ["order_desc"] = typeof(string),
             ["order_asc"] = typeof(string),
-            ["unsafe"] = typeof(bool)
+            ["unsafe"] = typeof(bool),
+            ["select"] = typeof(string)
         };
 
         private static readonly char[] OpMatchChars = {'<', '>', '=', '!'};

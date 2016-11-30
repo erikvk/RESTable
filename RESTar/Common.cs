@@ -5,25 +5,29 @@ using System.Reflection;
 using System.Text.RegularExpressions;
 using Jil;
 using Starcounter;
+using Starcounter.Query.Execution;
 
 namespace RESTar
 {
     internal static class Common
     {
-        internal static Type FindResource(this string typeName)
+        internal static Type FindResource(this string searchString)
         {
-            typeName = typeName.ToLower();
+            searchString = searchString.ToLower();
             Type type;
-            Config.DbDomainDict.TryGetValue(typeName, out type);
+            RESTarConfig.DbDomainDict.TryGetValue(searchString, out type);
             if (type != null)
                 return type;
-            var keys = Config.DbDomainDict
+            var keys = RESTarConfig.DbDomainDict
                 .Keys
-                .Where(key => key.EndsWith(typeName))
+                .Where(key => key.EndsWith(searchString))
                 .ToList();
+            if (keys.Count < 1)
+                throw new UnknownResourceException(searchString);
             if (keys.Count > 1)
-                throw new UnknownResourceException(typeName, keys.Select(k => Config.DbDomainDict[k].FullName).ToList());
-            return Config.DbDomainDict[keys.First()];
+                throw new AmbiguousResourceException(searchString,
+                    keys.Select(k => RESTarConfig.DbDomainDict[k].FullName).ToList());
+            return RESTarConfig.DbDomainDict[keys.First()];
         }
 
         internal static IEnumerable<Type> GetSubclasses(this Type baseType)
@@ -49,13 +53,35 @@ namespace RESTar
             return input != null ? Regex.Replace(input, @"\t|\n|\r", "") : null;
         }
 
-        internal static IEnumerable<object> GetFromDb(Type resource, WhereClause whereClause, int limit = -1,
-            OrderBy orderBy = null)
+        internal static IEnumerable<object> GetFromDb(Type resource, string[] select, WhereClause whereClause,
+            int limit = -1, OrderBy orderBy = null)
         {
             var sql = $"SELECT t FROM {resource.FullName} t {whereClause?.stringPart} {orderBy?.SQL}";
-            if (limit < 1) return Db.SQL(sql, whereClause?.valuesPart);
-            if (limit == 1) return new[] {Db.SQL(sql, whereClause?.valuesPart).First};
-            return Db.SQL(sql, whereClause?.valuesPart).Take(limit);
+            IEnumerable<object> entities;
+            if (limit < 1)
+                entities = Db.SQL(sql, whereClause?.valuesPart);
+            else if (limit == 1)
+                entities = new[] {Db.SQL(sql, whereClause?.valuesPart).First};
+            else entities = Db.SQL(sql, whereClause?.valuesPart).Take(limit);
+
+            if (select == null)
+                return entities;
+
+            return entities.Select(o =>
+            {
+                var props = new List<PropertyInfo>();
+                foreach (var s in select)
+                {
+                    var matches = o.GetType().GetProperties().Where(p => s == p.Name.ToLower()).ToList();
+                    if (matches.Count == 1)
+                        props.Add(matches.First());
+                    else if (matches.Count > 1)
+                        throw new AmbiguousColumnException(resource, s, matches.Select(m => m.Name).ToList());
+                    else if (matches.Count < 1)
+                        throw new UnknownColumnException(resource, s);
+                }
+                return props.ToDictionary(p => p.Name, p => p.GetValue(o));
+            });
         }
 
         internal static string Serialize(this object o)
@@ -98,7 +124,7 @@ namespace RESTar
 
         internal static IEnumerable<RESTarMethods> BlockedMethods(this Type resource)
         {
-            return Config.Methods.Except(resource.AvailableMethods() ?? new RESTarMethods[0]);
+            return RESTarConfig.Methods.Except(resource.AvailableMethods() ?? new RESTarMethods[0]);
         }
 
         public static void ParallelForEach<T>(this IEnumerable<T> source, Action<T> action)

@@ -8,7 +8,7 @@ using static RESTar.Evaluators;
 
 namespace RESTar
 {
-    public static class Config
+    public static class RESTarConfig
     {
         internal static IList<Type> DbDomainList;
         internal static IDictionary<string, Type> DbDomainDict;
@@ -26,15 +26,18 @@ namespace RESTar
         /// Initiates the RESTar interface
         /// </summary>
         /// <param name="httpPort">The port that RESTar should listen on</param>
-        /// <param name="uri">The URI that RESTar should listen on. E.g. '/rest'</param>
+        /// <param name="baseUri">The URI that RESTar should listen on. E.g. '/rest'</param>
         /// <param name="prettyPrint">Should JSON output be pretty print formatted</param>
         public static void Init
         (
             ushort httpPort,
-            string uri = "/rest",
+            string baseUri = "/rest",
             bool prettyPrint = false
         )
         {
+            if (baseUri.First() != '/')
+                baseUri = $"/{baseUri}";
+
             foreach (var resource in DB.All<Resource>())
                 Db.Transact(() => resource.Delete());
 
@@ -86,22 +89,22 @@ namespace RESTar
                 });
             }
 
-            Settings.Init(uri, prettyPrint, httpPort);
-            uri += "{?}";
+            Settings.Init(baseUri, prettyPrint, httpPort);
+            baseUri += "{?}";
 
-            Handle.GET(httpPort, uri, (Request request, string query) =>
+            Handle.GET(httpPort, baseUri, (Request request, string query) =>
                     Evaluate(request, query, GET, RESTarMethods.GET));
 
-            Handle.POST(httpPort, uri, (Request request, string query) =>
+            Handle.POST(httpPort, baseUri, (Request request, string query) =>
                     Evaluate(request, query, POST, RESTarMethods.POST));
 
-            Handle.PUT(httpPort, uri, (Request request, string query) =>
+            Handle.PUT(httpPort, baseUri, (Request request, string query) =>
                     Evaluate(request, query, PUT, RESTarMethods.PUT));
 
-            Handle.PATCH(httpPort, uri, (Request request, string query) =>
+            Handle.PATCH(httpPort, baseUri, (Request request, string query) =>
                     Evaluate(request, query, PATCH, RESTarMethods.PATCH));
 
-            Handle.DELETE(httpPort, uri, (Request request, string query) =>
+            Handle.DELETE(httpPort, baseUri, (Request request, string query) =>
                     Evaluate(request, query, DELETE, RESTarMethods.DELETE));
         }
 
@@ -111,7 +114,6 @@ namespace RESTar
             try
             {
                 var command = new Command(query, request.Body);
-                command.Parse();
                 if (command.Resource.BlockedMethods().Contains(method))
                     return BlockedMethod(method, command.Resource);
                 return Evaluator(command);
@@ -124,9 +126,24 @@ namespace RESTar
             {
                 return SyntaxError(e);
             }
+
+            catch (UnknownColumnException e)
+            {
+                return UnknownColumn(e);
+            }
+
+            catch (AmbiguousColumnException e)
+            {
+                return AmbiguousColumn(e);
+            }
+
             catch (UnknownResourceException e)
             {
-                return NoResource(e);
+                return UnknownResource(e);
+            }
+            catch (AmbiguousResourceException e)
+            {
+                return AmbiguousResource(e);
             }
             catch (AmbiguousMatchException e)
             {

@@ -13,3 +13,17 @@ C:\Users\erik\DRTB\RESTar\obj\x64\Debug\RESTar.pdb
 C:\Users\erik\DRTB\RESTar\obj\x64\Debug\RESTar.csprojResolveAssemblyReference.cache
 C:\Users\erik\DRTB\RESTar\bin\Debug\RESTar.XML
 C:\Users\erik\DRTB\RESTar\bin\Debug\RESTar_help.xml
+C:\Users\erik\RESTar\RESTar\bin\Debug\weaver.ignore
+C:\Users\erik\RESTar\RESTar\bin\Debug\RESTar.XML
+C:\Users\erik\RESTar\RESTar\bin\Debug\RESTar.dll
+C:\Users\erik\RESTar\RESTar\bin\Debug\RESTar.pdb
+C:\Users\erik\RESTar\RESTar\bin\Debug\Jil.dll
+C:\Users\erik\RESTar\RESTar\bin\Debug\Newtonsoft.Json.dll
+C:\Users\erik\RESTar\RESTar\bin\Debug\Sigil.dll
+C:\Users\erik\RESTar\RESTar\bin\Debug\Jil.pdb
+C:\Users\erik\RESTar\RESTar\bin\Debug\Jil.xml
+C:\Users\erik\RESTar\RESTar\bin\Debug\Newtonsoft.Json.xml
+C:\Users\erik\RESTar\RESTar\bin\Debug\Sigil.xml
+C:\Users\erik\RESTar\RESTar\obj\x64\Debug\RESTar.csprojResolveAssemblyReference.cache
+C:\Users\erik\RESTar\RESTar\obj\x64\Debug\RESTar.dll
+C:\Users\erik\RESTar\RESTar\obj\x64\Debug\RESTar.pdb

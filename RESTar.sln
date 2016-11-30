@@ -5,6 +5,8 @@ VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RESTar", "RESTar\RESTar.csproj", "{3CA9602F-FC6F-4DFE-8749-C6DBDD9A4809}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RESTarExample", "RESTarExample\RESTarExample.csproj", "{3CA79076-25F8-4273-BE99-D144E0606A35}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -15,6 +17,10 @@ Global
 		{3CA9602F-FC6F-4DFE-8749-C6DBDD9A4809}.Debug|x64.Build.0 = Debug|x64
 		{3CA9602F-FC6F-4DFE-8749-C6DBDD9A4809}.Release|x64.ActiveCfg = Release|x64
 		{3CA9602F-FC6F-4DFE-8749-C6DBDD9A4809}.Release|x64.Build.0 = Release|x64
+		{3CA79076-25F8-4273-BE99-D144E0606A35}.Debug|x64.ActiveCfg = Debug|x64
+		{3CA79076-25F8-4273-BE99-D144E0606A35}.Debug|x64.Build.0 = Debug|x64
+		{3CA79076-25F8-4273-BE99-D144E0606A35}.Release|x64.ActiveCfg = Release|x64
+		{3CA79076-25F8-4273-BE99-D144E0606A35}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

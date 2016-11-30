@@ -14,11 +14,53 @@ namespace RESTar
     public class UnknownResourceException : Exception
     {
         public readonly string SearchString;
+
+        public UnknownResourceException(string searchString)
+            : base($"RESTar could not locate any resource by '{searchString}'. To enumerate available " +
+                   $"resources, GET: {Settings._ResourcesPath} . ")
+        {
+            SearchString = searchString;
+        }
+    }
+
+    public class UnknownColumnException : Exception
+    {
+        public readonly string SearchString;
+        public readonly Type Resource;
+
+        public UnknownColumnException(Type resource, string searchString)
+            : base($"RESTar could not locate any column in resource {resource.FullName} by '{searchString}'. " +
+                   $"To enumerate columns in this resource, GET: {Settings._ResourcesPath}/{resource.FullName} . ")
+        {
+            SearchString = searchString;
+            Resource = resource;
+        }
+    }
+
+    public class AmbiguousColumnException : Exception
+    {
+        public readonly string SearchString;
+        public readonly ICollection<string> Candidates;
+        public readonly Type Resource;
+
+        public AmbiguousColumnException(Type resource, string searchString, ICollection<string> candidates)
+            : base($"RESTar could not uniquely locate a column in resource {resource.FullName} by '{searchString}'. " +
+                   $"Candidates were: {string.Join(", ", candidates)}. ")
+        {
+            SearchString = searchString;
+            Candidates = candidates;
+            Resource = resource;
+        }
+    }
+
+    public class AmbiguousResourceException : Exception
+    {
+        public readonly string SearchString;
         public readonly ICollection<string> Candidates;
 
-        public UnknownResourceException(string searchString, ICollection<string> candidates)
+        public AmbiguousResourceException(string searchString, ICollection<string> candidates)
             : base($"RESTar could not uniquely locate a resource by '{searchString}'. " +
-                   $"Candidates were: {string.Join(", ", candidates)}")
+                   $"Candidates were: {string.Join(", ", candidates)}. ")
         {
             SearchString = searchString;
             Candidates = candidates;
@@ -38,7 +80,7 @@ namespace RESTar
     public class RESTarInternalException : Exception
     {
         public RESTarInternalException(string message)
-            : base("An internal RESTar error has been encountered:" + message)
+            : base($"An internal RESTar error has been encountered: {message} . ")
         {
         }
     }

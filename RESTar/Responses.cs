@@ -9,12 +9,30 @@ namespace RESTar
     {
         #region Not found
 
-        internal static Response NoResource(UnknownResourceException e) => new Response
+        internal static Response AmbiguousResource(AmbiguousResourceException e) => new Response
         {
             StatusCode = (ushort) HttpStatusCode.NotFound,
-            StatusDescription = $"Could not locate a unique resource by '{e.SearchString}'. Candidates were: " +
-                                $"{string.Join(", ", e.Candidates.Select(s => $"'{s}'"))}. Try qualifying the " +
-                                $"resource locator further, e.g. from '{e.SearchString}' to '{e.Candidates.First()}'."
+            StatusDescription = e.Message + "Try qualifying the resource locator further, e.g. from " +
+                                $"'{e.SearchString}' to '{e.Candidates.First()}'."
+        };
+
+        internal static Response UnknownResource(UnknownResourceException e) => new Response
+        {
+            StatusCode = (ushort) HttpStatusCode.NotFound,
+            StatusDescription = e.Message
+        };
+
+        internal static Response AmbiguousColumn(AmbiguousColumnException e) => new Response
+        {
+            StatusCode = (ushort) HttpStatusCode.NotFound,
+            StatusDescription = e.Message + "Try qualifying the column name further, e.g. from " +
+                                $"'{e.SearchString}' to '{e.Candidates.First()}'."
+        };
+
+        internal static Response UnknownColumn(UnknownColumnException e) => new Response
+        {
+            StatusCode = (ushort) HttpStatusCode.NotFound,
+            StatusDescription = e.Message
         };
 
         #endregion
@@ -70,10 +88,11 @@ namespace RESTar
         internal static Response AmbiguousMatch(Type resource) => new Response
         {
             StatusCode = (ushort) HttpStatusCode.Conflict,
-            StatusDescription = $"Expected a uniquely matched entity in resource '{resource.FullName}' for this command, " +
-                                "but matched multiple entities satisfying the given conditions. To enable manipulation of " +
-                                "multiple matched entities (for commands that support this), add 'unsafe=true' to the " +
-                                $"command's meta-conditions. GET: {Settings._Uri}/help/topic=unsafe for more info."
+            StatusDescription =
+                $"Expected a uniquely matched entity in resource '{resource.FullName}' for this command, " +
+                "but matched multiple entities satisfying the given conditions. To enable manipulation of " +
+                "multiple matched entities (for commands that support this), add 'unsafe=true' to the " +
+                $"command's meta-conditions. GET: {Settings._Uri}/help/topic=unsafe for more info."
         };
 
         internal static Response AmbiguousPutMatch() => new Response
@@ -95,19 +114,19 @@ namespace RESTar
         internal static Response InsertedEntities(int count, Type resource) => new Response
         {
             StatusCode = (ushort) HttpStatusCode.Created,
-            StatusDescription = $"Inserted {count} entities into the resource '{resource.FullName}'"
+            StatusDescription = $"{count} entities inserted into resource '{resource.FullName}'"
         };
 
         internal static Response UpdatedEntities(int count, Type resource) => new Response
         {
             StatusCode = (ushort) HttpStatusCode.OK,
-            StatusDescription = $"Updated {count} entities in resource '{resource.FullName}'"
+            StatusDescription = $"{count} entities updated in resource '{resource.FullName}'"
         };
 
         internal static Response DeleteEntities(int count, Type resource) => new Response
         {
             StatusCode = (ushort) HttpStatusCode.OK,
-            StatusDescription = $"Deleted {count} entities from resource '{resource.FullName}'"
+            StatusDescription = $"{count} entities deleted from resource '{resource.FullName}'"
         };
 
         #endregion

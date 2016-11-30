@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.Serialization;
 using Starcounter;
 
 namespace RESTar
@@ -12,13 +13,13 @@ namespace RESTar
         public IEnumerable<RESTarMethods> AvailableMethods => Type.AvailableMethods();
         public IEnumerable<RESTarMethods> BlockedMethods => Type.BlockedMethods();
 
-        [RESTarIgnore]
+        [IgnoreDataMember]
         public string AvailableMethodsString => Type.AvailableMethods().ToMethodsString();
 
-        [RESTarIgnore]
+        [IgnoreDataMember]
         public string BlockedMethodsString => Type.BlockedMethods().ToMethodsString();
 
-        [RESTarIgnore]
+        [IgnoreDataMember]
         public Type Type
         {
             get { return Name.FindResource(); }

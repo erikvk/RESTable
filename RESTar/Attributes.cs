@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.Serialization;
 using Jil;
 using RESTar;
 
@@ -12,7 +13,7 @@ namespace RESTar
     [AttributeUsage(AttributeTargets.Class, Inherited = false)]
     public sealed class RESTarAttribute : Attribute
     {
-        public RESTarMethods[] AvailableMethods { get; private set; }
+        internal RESTarMethods[] AvailableMethods { get; private set; }
 
         public RESTarAttribute(RESTarPresets preset)
         {
@@ -39,54 +40,14 @@ namespace RESTar
                     AvailableMethods = new[] {RESTarMethods.GET, RESTarMethods.PATCH};
                     break;
                 case RESTarPresets.ReadAndWrite:
-                    AvailableMethods = Config.Methods;
+                    AvailableMethods = RESTarConfig.Methods;
                     break;
             }
         }
 
-        public RESTarAttribute(params RESTarMethods[] customMethodSet)
+        public RESTarAttribute(RESTarMethods method, params RESTarMethods[] addMethods)
         {
-            AvailableMethods = customMethodSet.Distinct().ToArray();
-        }
-    }
-
-    /// <summary>
-    /// A member decorated with this attribute will be ignored during Jil serialization,
-    /// and thus left out while serializing the object into a JSON string.
-    /// </summary>
-    [AttributeUsage(AttributeTargets.Property | AttributeTargets.Method | AttributeTargets.Field)]
-    public class RESTarIgnoreAttribute : JilDirectiveAttribute
-    {
-        public RESTarIgnoreAttribute()
-        {
-            Ignore = true;
-        }
-    }
-
-    /// <summary>
-    /// A member decorated with the rename attribute will be serialized to (and deserialized
-    /// from) a member with the given name in the JSON tree during Jil serialization. This is 
-    /// useful for serializing and deserializing JSON trees containing reserved keywords or 
-    /// otherwise unsuitable strings names as member names (keys).
-    /// </summary>
-    public class rename : JilDirectiveAttribute
-    {
-        public rename(string name)
-        {
-            Name = name;
-        }
-    }
-
-    /// <summary>
-    /// Members of enum types can be decorated with the cast attribute to indicate how the 
-    /// serializer should treat them during serialization. By default Jil will serialize these 
-    /// members to string, this can be overriden to any number type using this attribute.
-    /// </summary>
-    public class cast : JilDirectiveAttribute
-    {
-        public cast(Type type)
-        {
-            TreatEnumerationAs = type;
+            AvailableMethods = new[] {method}.Union(addMethods.Distinct()).ToArray();
         }
     }
 }
