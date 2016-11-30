@@ -1,0 +1,166 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>RESTar</name>
+    </assembly>
+    <members>
+        <member name="T:RESTar.RESTarAttribute">
+            <summary>
+            Registers a new RESTar resource and provides permissions.
+            </summary>
+        </member>
+        <member name="T:RESTar.RESTarIgnoreAttribute">
+            <summary>
+            A member decorated with this attribute will be ignored during Jil serialization,
+            and thus left out while serializing the object into a JSON string.
+            </summary>
+        </member>
+        <member name="T:RESTar.rename">
+            <summary>
+            A member decorated with the rename attribute will be serialized to (and deserialized
+            from) a member with the given name in the JSON tree during Jil serialization. This is 
+            useful for serializing and deserializing JSON trees containing reserved keywords or 
+            otherwise unsuitable strings names as member names (keys).
+            </summary>
+        </member>
+        <member name="T:RESTar.cast">
+            <summary>
+            Members of enum types can be decorated with the cast attribute to indicate how the 
+            serializer should treat them during serialization. By default Jil will serialize these 
+            members to string, this can be overriden to any number type using this attribute.
+            </summary>
+        </member>
+        <member name="M:RESTar.Config.Init(System.UInt16,System.String,System.Boolean)">
+            <summary>
+            Initiates the RESTar interface
+            </summary>
+            <param name="httpPort">The port that RESTar should listen on</param>
+            <param name="uri">The URI that RESTar should listen on. E.g. '/rest'</param>
+            <param name="prettyPrint">Should JSON output be pretty print formatted</param>
+        </member>
+        <member name="T:RESTar.DB">
+            <summary>
+            This class provides static methods for database queries in the DRTB system.
+            </summary>
+        </member>
+        <member name="M:RESTar.DB.First``1">
+            <summary>
+            Fetches an object from the database.
+            Equivalent to SQL: SELECT TOP(1) * FROM T
+            </summary>
+            <typeparam name="T">The database entity to fetch</typeparam>
+            <returns>The first database entity from the specified type</returns>
+        </member>
+        <member name="M:RESTar.DB.All``1">
+            <summary>
+            Fetches a list of objects from the database.
+            Equivalent to SQL: SELECT * FROM T
+            </summary>
+            <typeparam name="T">The database entity to fetch</typeparam>
+            <returns>A list of all database entities from the specified type</returns>
+        </member>
+        <member name="M:RESTar.DB.All``1(System.String,System.Object)">
+            <summary>
+            Fetches a list of objects from the database.
+            Equivalent to SQL: SELECT * FROM T WHERE key = value
+            </summary>
+            <typeparam name="T">The database entity to fetch</typeparam>
+            <param name="whereKey">The key used in the WHERE clause, if null, then no WHERE clause is added</param>
+            <param name="whereValue">The value used in the WHERE clause, if key is null then no WHERE clause is added</param>
+            <returns>A list of database entities from the specified type that matches the value on the specified key</returns>
+        </member>
+        <member name="M:RESTar.DB.Exists``1">
+            <summary>
+            Returns true if and only if there are objects of the given
+            type currently stored in the database.
+            </summary>
+            <typeparam name="T"></typeparam>
+            <returns></returns>
+        </member>
+        <member name="M:RESTar.DB.Exists``1(System.String,System.Object)">
+            <summary>
+            Returns true if and only if there is an object in the database
+            that satisfies the given where condition.
+            </summary>
+            <typeparam name="T"></typeparam>
+            <param name="whereKey"></param>
+            <param name="whereValue"></param>
+            <returns></returns>
+        </member>
+        <member name="M:RESTar.DB.Exists``1(System.String,System.Object,System.String,System.Object)">
+            <summary>
+            Returns true if and only if there is an object in the database
+            that satisfies the given where conditions.
+            </summary>
+            <typeparam name="T"></typeparam>
+            <param name="whKey1"></param>
+            <param name="whValue1"></param>
+            <param name="whKey2"></param>
+            <param name="whValue2"></param>
+            <returns></returns>
+        </member>
+        <member name="M:RESTar.DB.Get``1(System.String,System.Object)">
+            <summary>
+            Fetches an object from the database.
+            Equivalent to SQL: SELECT TOP(1) * FROM T WHERE key = value
+            </summary>
+            <typeparam name="T">The database entity to fetch</typeparam>
+            <param name="whereKey">The key used in the WHERE clause</param>
+            <param name="whereValue">The value used in the WHERE clause</param>
+            <returns>The first database entity from the specified type that matches the value on the specified key</returns>
+        </member>
+        <member name="M:RESTar.DB.Get``1(System.String,System.Object,System.String,System.Object)">
+            <summary>
+            Fetches an object from the database.
+            Equivalent to SQL: SELECT TOP(1) * FROM T WHERE [all key-value-pairs specified in values]
+            </summary>
+            <typeparam name="T">The database entity to fetch</typeparam>
+            <returns>The first database entity from the specified type that matches the given key-value-pairs</returns>
+        </member>
+        <member name="M:RESTar.DB.Get``1(System.Collections.Generic.Dictionary{System.String,System.Object})">
+            <summary>
+            Fetches an object from the database.
+            Equivalent to SQL: SELECT TOP(1) * FROM T WHERE [all key-value-pairs specified in values]
+            </summary>
+            <typeparam name="T">The database entity to fetch</typeparam>
+            <param name="whereKeyValuePairs">The key-value-pairs to use in the WHERE statement</param>
+            <returns>The first database entity from the specified type that matches the given key-value-pairs</returns>
+        </member>
+        <member name="M:RESTar.DB.Domain``2(System.String)">
+            <summary>
+            Gets an IEnumerable of all the distinct values currently present in
+            a table column.
+            </summary>
+            <typeparam name="TTable">The table to scan</typeparam>
+            <typeparam name="TValue">The data type for values in the column to scan</typeparam>
+            <param name="key">The column to scan for distinct values</param>
+            <returns>An IEnumerable for the TValue type</returns>
+        </member>
+        <member name="M:RESTar.DB.CreateIndex``1(System.String[])">
+            <summary>
+            Tries to create an index in the database.
+            </summary>
+            <param name="columns">The names of the columns included in the index</param>
+        </member>
+        <member name="F:RESTar.RESTarPresets.ReadOnly">
+            <summary>
+            Makes GET available for this resource
+            </summary>
+        </member>
+        <member name="F:RESTar.RESTarPresets.WriteOnly">
+            <summary>
+            Makes POST and DELETE available for this resource
+            </summary>
+        </member>
+        <member name="F:RESTar.RESTarPresets.ReadAndUpdate">
+            <summary>
+            Makes GET and PATCH available for this resource
+            </summary>
+        </member>
+        <member name="F:RESTar.RESTarPresets.ReadAndWrite">
+            <summary>
+            Makes all methods available for this resource
+            </summary>
+        </member>
+    </members>
+</doc>
