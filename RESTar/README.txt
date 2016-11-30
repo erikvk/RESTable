@@ -7,6 +7,7 @@
 # SECTIONS:
     1. Commands
     2. Resources
+    
     3. Methods
     4. Safe and unsafe commands
     5. Examples
