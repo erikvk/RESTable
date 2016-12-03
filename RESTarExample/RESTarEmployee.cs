@@ -59,7 +59,8 @@ namespace RESTarExample
         /// attribute. This way we still have control over what the resulting JSON will 
         /// look like.
         /// </summary>
-        [DataMember(Name = "Boss")] public ulong bossObjectNo;
+        [DataMember(Name = "Boss")]
+        public ulong bossObjectNo;
 
         // This means that an entity of this resource will be serialized as (for example):
         // {

@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RESTar", "RESTar\RESTar.csp
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RESTarExample", "RESTarExample\RESTarExample.csproj", "{3CA79076-25F8-4273-BE99-D144E0606A35}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HelpManager", "HelpManager\HelpManager.csproj", "{EEA917B1-796A-4676-B089-FECFDA6E3D49}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -21,6 +23,10 @@ Global
 		{3CA79076-25F8-4273-BE99-D144E0606A35}.Debug|x64.Build.0 = Debug|x64
 		{3CA79076-25F8-4273-BE99-D144E0606A35}.Release|x64.ActiveCfg = Release|x64
 		{3CA79076-25F8-4273-BE99-D144E0606A35}.Release|x64.Build.0 = Release|x64
+		{EEA917B1-796A-4676-B089-FECFDA6E3D49}.Debug|x64.ActiveCfg = Debug|x64
+		{EEA917B1-796A-4676-B089-FECFDA6E3D49}.Debug|x64.Build.0 = Debug|x64
+		{EEA917B1-796A-4676-B089-FECFDA6E3D49}.Release|x64.ActiveCfg = Release|x64
+		{EEA917B1-796A-4676-B089-FECFDA6E3D49}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

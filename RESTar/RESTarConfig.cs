@@ -5,6 +5,7 @@ using Jil;
 using Starcounter;
 using static RESTar.Responses;
 using static RESTar.Evaluators;
+using ClosedXML;
 
 namespace RESTar
 {

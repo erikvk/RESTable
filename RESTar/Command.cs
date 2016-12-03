@@ -28,7 +28,10 @@ namespace RESTar
             var argLength = args.Length;
 
             if (argLength == 1)
+            {
+                Resource = typeof(Resource);
                 return;
+            }
 
             if (args[1] == "")
                 Resource = typeof(Resource);

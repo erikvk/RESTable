@@ -7,18 +7,33 @@
 # SECTIONS:
     1. Commands
     2. Resources
-    
+
     3. Methods
     4. Safe and unsafe commands
     5. Examples
 
 - - -
 
-1. Commands
+1. Requests
 
-Commands are syntactic units used as input to RESTar in order to invoke methods and interact with resources. Commands have the following syntactic structure:
+RESTar take HTTP requests as input, but extends the URI syntax to express more detailed interactions with its resources. Requests to RESTar have the following components:
 
-    http://[ip_address][:port]/[base_uri][/resource_locator][/conditions][/meta-conditions]
+    Method: [GET|POST|PUT|PATCH|DELETE]
+
+    URI: http://[ip_address][:port]/[base_uri][/resource_locator][/conditions][/meta-conditions]
+
+    Headers: [ExternalSource: URI], [Output: URI]
+
+    Data: [JSON object|JSON object array]
+
+Some URI instances:
+
+http://10.0.1.12:8200/my_uri/device
+http://10.0.1.12:8200/my_uri/user/id=200/select=name,id
+http://10.0.1.1/my_uri/device//limit=1
+http://10.0.1.1/my_uri///order_desc=nrofrows
+
+For more examples, see 'Examples' section.
 
 1.1. ip_address 
 
@@ -48,7 +63,7 @@ Conditions used to filter, order and limit the output of a command or otherwise 
 
 2. Resources
 
-Resources are the most basic of the objects that RESTar operates on. All tables (Starcounter database class definitions) decorated the RESTar attribute are declared as resources that RESTar can work with. Resources are manipulated using methods. RESTar also declares some internal resources, for example 'settings' and 'help'.
+Resources are the most general of the objects that RESTar operates on. All tables (Starcounter database class definitions) decorated the RESTar attribute are declared as resources that RESTar can work with. But anything could be declared a resource  Resources are manipulated using methods. RESTar also declares some internal resources, for example 'settings' and 'help'.
 
 Resources contain entities. The 'help' resource contains multiple 'help' entities (for example this article). All database objects belonging to a Starcounter database class declared as a RESTar resource (using the RESTar attribute) are resource entities.
 
