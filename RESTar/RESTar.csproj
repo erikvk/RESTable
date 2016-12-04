@@ -83,7 +83,7 @@
   <ItemGroup>
     <Compile Include="Attributes.cs" />
     <Compile Include="Command.cs" />
-    <Compile Include="Common.cs" />
+    <Compile Include="ExtensionMethods.cs" />
     <Compile Include="RESTarConfig.cs" />
     <Compile Include="DB.cs" />
     <Compile Include="Evaluators.cs" />

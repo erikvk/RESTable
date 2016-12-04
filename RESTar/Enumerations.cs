@@ -38,4 +38,10 @@ namespace RESTar
         PUT,
         DELETE
     }
+
+    internal enum RESTarMimeType : byte
+    {
+        Json,
+        Excel
+    }
 }

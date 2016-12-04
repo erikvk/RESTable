@@ -1,7 +1,13 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using Starcounter;
+using System.Data;
+using System.IO;
+using System.Reflection;
+using ClosedXML.Excel;
+using Newtonsoft.Json;
 
 namespace RESTar
 {
@@ -63,6 +69,12 @@ namespace RESTar
             StatusCode = (ushort) HttpStatusCode.Forbidden,
             StatusDescription = $"{method} is blocked for resource '{resource.FullName}'. Available " +
                                 $"methods: {resource.AvailableMethods().ToMethodsString()}"
+        };
+
+        internal static Response ExternalSourceError(ExternalSourceException e) => new Response
+        {
+            StatusCode = (ushort) HttpStatusCode.BadRequest,
+            StatusDescription = e.Message
         };
 
         #endregion
@@ -128,6 +140,62 @@ namespace RESTar
             StatusCode = (ushort) HttpStatusCode.OK,
             StatusDescription = $"{count} entities deleted from resource '{resource.FullName}'"
         };
+
+        internal static Response GetEntities(Command command, IEnumerable<dynamic> json)
+        {
+            var response = new Response();
+            string jsonString;
+            if (command.Select != null)
+            {
+                var list = new List<dynamic>();
+                foreach (var o in json)
+                {
+                    var dict = new Dictionary<string, dynamic>();
+                    var props = new List<PropertyInfo>();
+                    foreach (var s in command.Select)
+                    {
+                        var matches = new List<PropertyInfo>();
+                        foreach (var property in o.GetType().GetProperties())
+                            if (s == property.Name.ToLower())
+                                matches.Add(property);
+                        if (matches.Count == 1)
+                            props.Add(matches.First());
+                        else if (matches.Count > 1)
+                            throw new AmbiguousColumnException(command.Resource, s, matches.Select(m => m.Name).ToList());
+                        else if (matches.Count < 1)
+                            throw new UnknownColumnException(command.Resource, s);
+                    }
+                    foreach (var p in props)
+                        dict[p.Name] = p.GetValue(o);
+                    list.Add(dict);
+                }
+                jsonString = list.SerializeDyn();
+            }
+            else jsonString = json.Serialize(RESTarConfig.IEnumType[command.Resource]);
+            
+            if (command.OutputMimeType == RESTarMimeType.Excel)
+            {
+                var str = $@"{{""table"": {jsonString}}}";
+                var dt = JsonConvert.DeserializeObject<DataSet>(str);
+                var workbook = new XLWorkbook();
+                workbook.AddWorksheet(dt);
+                var fileName = $"{command.Resource.FullName}_export_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
+                var path = $"{Application.Current.WorkingDirectory}/excel_exports";
+                Directory.CreateDirectory(path);
+                using (var memstream = new MemoryStream())
+                {
+                    workbook.SaveAs(memstream);
+                    var bytes = memstream.ToArray();
+                    using (var stream = File.Create($"{path}/{fileName}"))
+                        stream.Write(bytes, 0, bytes.Length);
+                    response.BodyBytes = bytes;
+                }
+                response.ContentType = "application/vnd.ms-excel";
+                response.Headers["Content-Disposition"] = $"attachment; filename={fileName}";
+            }
+
+            return response;
+        }
 
         #endregion
     }

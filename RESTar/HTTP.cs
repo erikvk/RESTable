@@ -7,11 +7,9 @@ using Starcounter;
 
 namespace RESTar
 {
-    public static class HTTP
+    internal static class HTTP
     {
-        #region Http GET
-
-        public static Response GET(string url)
+        internal static Response GET(string url)
         {
             try
             {
@@ -22,12 +20,8 @@ namespace RESTar
                 return null;
             }
         }
-        
-        #endregion
 
-        #region Http POST
-
-        public static Response POST(string url, string bodyString)
+        internal static Response POST(string url, string bodyString)
         {
             try
             {
@@ -39,16 +33,12 @@ namespace RESTar
             }
         }
 
-        #endregion
-
-        #region HTTP helper methods
-
-        public static string UrlDecode(string query)
+        internal static string UrlDecode(string query)
         {
             return HttpUtility.UrlDecode(query);
         }
 
-        public static string GetPrivateIp()
+        internal static string GetPrivateIp()
         {
             return NetworkInterface.GetAllNetworkInterfaces()
                 .SelectMany(adapter => adapter.GetIPProperties().UnicastAddresses)
@@ -56,14 +46,12 @@ namespace RESTar
                 .Select(adr => adr.Address.ToString()).FirstOrDefault();
         }
 
-        public static string GetPublicIp()
+        internal static string GetPublicIp()
         {
             return GET("http://checkip.dyndns.org").Body
                 .Split(':')[1]
                 .Substring(1)
                 .Split('<')[0];
         }
-
-        #endregion
     }
 }

@@ -10,14 +10,8 @@ namespace RESTar
     public abstract class Resource
     {
         public string Name;
-        public IEnumerable<RESTarMethods> AvailableMethods => Type.AvailableMethods();
-        public IEnumerable<RESTarMethods> BlockedMethods => Type.BlockedMethods();
-
-        [IgnoreDataMember]
-        public string AvailableMethodsString => Type.AvailableMethods().ToMethodsString();
-
-        [IgnoreDataMember]
-        public string BlockedMethodsString => Type.BlockedMethods().ToMethodsString();
+        public string AvailableMethods => Type.AvailableMethods().ToMethodsString();
+        public string BlockedMethods => Type.BlockedMethods().ToMethodsString();
 
         [IgnoreDataMember]
         public Type Type

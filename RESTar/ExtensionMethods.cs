@@ -9,7 +9,7 @@ using Starcounter.Query.Execution;
 
 namespace RESTar
 {
-    internal static class Common
+    internal static class ExtensionMethods
     {
         internal static Type FindResource(this string searchString)
         {
@@ -38,7 +38,7 @@ namespace RESTar
                 select type;
         }
 
-        internal static TAttribute GetAttribute<TAttribute>(this Type type) where TAttribute : Attribute
+        internal static TAttribute GetAttribute<TAttribute>(this MemberInfo type) where TAttribute : Attribute
         {
             return type?.GetCustomAttributes<TAttribute>().FirstOrDefault();
         }
@@ -53,42 +53,36 @@ namespace RESTar
             return input != null ? Regex.Replace(input, @"\t|\n|\r", "") : null;
         }
 
-        internal static IEnumerable<object> GetFromDb(Type resource, string[] select, WhereClause whereClause,
-            int limit = -1, OrderBy orderBy = null)
-        {
-            var sql = $"SELECT t FROM {resource.FullName} t {whereClause?.stringPart} {orderBy?.SQL}";
-            IEnumerable<object> entities;
-            if (limit < 1)
-                entities = Db.SQL(sql, whereClause?.valuesPart);
-            else if (limit == 1)
-                entities = new[] {Db.SQL(sql, whereClause?.valuesPart).First};
-            else entities = Db.SQL(sql, whereClause?.valuesPart).Take(limit);
-
-            if (select == null)
-                return entities;
-
-            return entities.Select(o =>
-            {
-                var props = new List<PropertyInfo>();
-                foreach (var s in select)
-                {
-                    var matches = o.GetType().GetProperties().Where(p => s == p.Name.ToLower()).ToList();
-                    if (matches.Count == 1)
-                        props.Add(matches.First());
-                    else if (matches.Count > 1)
-                        throw new AmbiguousColumnException(resource, s, matches.Select(m => m.Name).ToList());
-                    else if (matches.Count < 1)
-                        throw new UnknownColumnException(resource, s);
-                }
-                return props.ToDictionary(p => p.Name, p => p.GetValue(o));
-            });
-        }
-
-        internal static string Serialize(this object o)
+        internal static string SerializeDyn(this object obj)
         {
             if (Settings.Instance.PrettyPrint)
-                return JSON.SerializeDynamic(o, Options.ISO8601PrettyPrintExcludeNullsIncludeInherited);
-            return JSON.SerializeDynamic(o, Options.ISO8601ExcludeNullsIncludeInherited);
+                return JSON.SerializeDynamic(obj, Options.ISO8601PrettyPrintExcludeNullsIncludeInherited);
+            return JSON.SerializeDynamic(obj, Options.ISO8601ExcludeNullsIncludeInherited);
+        }
+
+        internal static string Serialize(this object obj, Type resource)
+        {
+            var method = typeof(JSON).GetMethods().First(n => n.Name == "Serialize" && n.GetParameters().Length == 2);
+            var generic = method.MakeGenericMethod(resource);
+            if (Settings.Instance.PrettyPrint)
+                return (string) generic.Invoke
+                (
+                    null,
+                    new[]
+                    {
+                        obj,
+                        Options.ISO8601PrettyPrintExcludeNullsIncludeInherited
+                    }
+                );
+            return (string) generic.Invoke
+            (
+                null,
+                new[]
+                {
+                    obj,
+                    Options.ISO8601ExcludeNullsIncludeInherited
+                }
+            );
         }
 
         internal static string[] Keys(this IEnumerable<Condition> conditions)

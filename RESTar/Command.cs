@@ -1,7 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
+using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Web;
+using ClosedXML.Excel;
+using Starcounter;
 
 namespace RESTar
 {
@@ -10,19 +15,32 @@ namespace RESTar
         public Type Resource;
         public IList<Condition> Conditions;
         public IDictionary<string, object> MetaConditions;
+        public Request Request;
         public readonly string Query;
         public bool Unsafe;
         public int Limit = -1;
         public OrderBy OrderBy;
-        public readonly string Json;
         public string[] Select;
+        public string ExternalInput;
+        public string ExternalOutput;
+        public string Json;
+        public RESTarMimeType InputMimeType;
+        public RESTarMimeType OutputMimeType;
 
-        internal Command(string query, string json)
+        internal Command(Request request, string query)
         {
             if (query == null)
                 throw new RESTarInternalException("Query not loaded");
             Query = query;
-            Json = json?.RemoveTabsAndBreaks();
+            Request = request;
+
+            ExternalInput = request.Headers["ExternalInput"];
+            InputMimeType = request.ContentType == "application/vnd.ms-excel"
+                ? RESTarMimeType.Excel
+                : RESTarMimeType.Json;
+            OutputMimeType = request.PreferredMimeTypeString.ToLower().Contains("excel")
+                ? RESTarMimeType.Excel
+                : RESTarMimeType.Json;
 
             var args = Query.Split('/');
             var argLength = args.Length;
@@ -66,15 +84,102 @@ namespace RESTar
             };
         }
 
-        internal List<object> GetExtension(bool? unsafeOverride = null)
+        internal void ResolveSource()
+        {
+            if (ExternalInput != null)
+            {
+                var response = HTTP.GET(ExternalInput);
+                if (!response.IsSuccessStatusCode)
+                    throw new ExternalSourceException(ExternalInput,
+                        $"{response.StatusCode}: " +
+                        $"{response.StatusDescription}"
+                    );
+                Json = response.Body.RemoveTabsAndBreaks();
+                if (Json == null)
+                    throw new ExternalSourceException(ExternalInput, "Response was empty");
+                return;
+            }
+
+            if (InputMimeType == RESTarMimeType.Excel)
+            {
+                var fileName = $"{Resource.FullName}_export_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
+                var path = $"{Application.Current.WorkingDirectory}/excel_imports";
+                Directory.CreateDirectory(path);
+
+                using (var stream = File.Create($"{path}/{fileName}"))
+                {
+                    stream.Write(Request.BodyBytes, 0, Request.BodyBytes.Length);
+                    stream.Position = 0;
+                    var excel = new XLWorkbook(stream);
+                }
+            }
+            else if (InputMimeType == RESTarMimeType.Json)
+                Json = Request.Body;
+        }
+
+        internal IEnumerable<dynamic> GetExtension(bool? unsafeOverride = null)
         {
             if (unsafeOverride != null)
                 Unsafe = unsafeOverride.Value;
             if (Unsafe)
-                return Common.GetFromDb(Resource, Select, Conditions.ToWhereClause(), Limit, OrderBy).ToList();
-            var items = Common.GetFromDb(Resource, Select, Conditions.ToWhereClause(), 2, OrderBy).ToList();
-            if (items.Count > 1) throw new AmbiguousMatchException(Resource);
+                return GetFromDbGeneric(Resource, Select, Conditions.ToWhereClause(), Limit, OrderBy);
+            dynamic items = GetFromDbGeneric(Resource, Select, Conditions.ToWhereClause(), 2, OrderBy);
+            if (Enumerable.Count(items) > 1) throw new AmbiguousMatchException(Resource);
             return items;
+        }
+
+        private static IEnumerable<object> GetFromDb(Type resource, string[] select, WhereClause whereClause,
+            int limit = -1, OrderBy orderBy = null)
+        {
+            var sql = $"SELECT t FROM {resource.FullName} t {whereClause?.stringPart} {orderBy?.SQL}";
+            IEnumerable<object> entities;
+            if (limit < 1)
+                entities = Db.SQL(sql, whereClause?.valuesPart);
+            else if (limit == 1)
+                entities = new[] {Db.SQL(sql, whereClause?.valuesPart).First};
+            else entities = Db.SQL(sql, whereClause?.valuesPart).Take(limit);
+
+            if (select == null)
+                return entities;
+
+            return entities.Select(o =>
+            {
+                var props = new List<PropertyInfo>();
+                foreach (var s in select)
+                {
+                    var matches = o.GetType().GetProperties().Where(p => s == p.Name.ToLower()).ToList();
+                    if (matches.Count == 1)
+                        props.Add(matches.First());
+                    else if (matches.Count > 1)
+                        throw new AmbiguousColumnException(resource, s, matches.Select(m => m.Name).ToList());
+                    else if (matches.Count < 1)
+                        throw new UnknownColumnException(resource, s);
+                }
+                return props.ToDictionary(p => p.Name, p => p.GetValue(o));
+            });
+        }
+
+        private static IEnumerable<dynamic> GetFromDbGeneric(Type resource, string[] select, WhereClause whereClause,
+            int limit = -1, OrderBy orderBy = null)
+        {
+            var sql = $"SELECT t FROM {resource.FullName} t {whereClause?.stringPart} {orderBy?.SQL}";
+            dynamic entities;
+
+            var method = typeof(Db).GetMethods().First(m => m.Name == "SQL" && m.IsGenericMethod);
+            var generic = method.MakeGenericMethod(resource);
+
+            if (limit < 1)
+                entities = generic.Invoke(null, new object[] {sql, whereClause?.valuesPart});
+            else if (limit == 1)
+                entities = new[]
+                {
+                    ((dynamic) generic.Invoke(null, new object[] {sql, whereClause?.valuesPart})).First
+                };
+            else
+                entities = Enumerable.Take(
+                    (dynamic) generic.Invoke(null, new object[] {sql, whereClause?.valuesPart}), limit);
+
+            return entities;
         }
     }
 

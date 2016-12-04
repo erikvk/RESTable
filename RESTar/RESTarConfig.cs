@@ -13,6 +13,7 @@ namespace RESTar
     {
         internal static IList<Type> DbDomainList;
         internal static IDictionary<string, Type> DbDomainDict;
+        internal static IDictionary<Type, Type> IEnumType;
 
         internal static RESTarMethods[] Methods =
         {
@@ -61,6 +62,11 @@ namespace RESTar
             DbDomainDict = DbDomainList.ToDictionary(
                 type => type.FullName.ToLower(),
                 type => type
+            );
+
+            IEnumType = DbDomainList.ToDictionary(
+                type => type,
+                type => typeof(IEnumerable<>).MakeGenericType(type)
             );
 
             foreach (var type in DbDomainList)
@@ -114,7 +120,8 @@ namespace RESTar
         {
             try
             {
-                var command = new Command(query, request.Body);
+                var command = new Command(request, query);
+                command.ResolveSource();
                 if (command.Resource.BlockedMethods().Contains(method))
                     return BlockedMethod(method, command.Resource);
                 return Evaluator(command);
@@ -127,17 +134,18 @@ namespace RESTar
             {
                 return SyntaxError(e);
             }
-
             catch (UnknownColumnException e)
             {
                 return UnknownColumn(e);
             }
-
             catch (AmbiguousColumnException e)
             {
                 return AmbiguousColumn(e);
             }
-
+            catch (ExternalSourceException e)
+            {
+                return ExternalSourceError(e);
+            }
             catch (UnknownResourceException e)
             {
                 return UnknownResource(e);
@@ -164,6 +172,11 @@ namespace RESTar
             }
             catch (Exception e)
             {
+                if (e.InnerException is SqlException)
+                    return SemanticsError((SqlException) e.InnerException);
+                if (e.InnerException is DeserializationException)
+                    return DeserializationError(e.Message);
+
                 return UnknownError(e);
             }
         }
