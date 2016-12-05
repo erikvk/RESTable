@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Data;
 using System.Linq;
 using System.Net;
 using Jil;
@@ -14,7 +13,8 @@ namespace RESTar
         internal static Response DELETE(Command command)
         {
             var entities = command.GetExtension();
-            entities.ParallelForEach(entity => Db.Transact(entity.Delete));
+            foreach (var entity in entities)
+                Db.Transact(entity.Delete);
             return DeleteEntities(entities.Count(), command.Resource);
         }
 
@@ -29,10 +29,11 @@ namespace RESTar
         internal static Response PATCH(Command command)
         {
             var entities = command.GetExtension();
-            entities.ParallelForEach(entity => Db.Transact(() =>
-            {
-                JsonConvert.PopulateObject(command.Json, entity);
-            }));
+            foreach (var entity in entities)
+                Db.Transact(() =>
+                {
+                    JsonConvert.PopulateObject(command.Json, entity);
+                });
             return UpdatedEntities(entities.Count(), command.Resource);
         }
 

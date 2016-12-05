@@ -14,7 +14,7 @@ namespace RESTar
 
         public bool PrettyPrint;
         public string Uri { get; private set; }
-        public ushort HttpPort;
+        public ushort HttpPort { get; private set; }
         public string ResourcesPath => $"http://[IP address]:{HttpPort}{Uri}";
         public string HelpResourcePath => ResourcesPath + "/RESTar.help";
         

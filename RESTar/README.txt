@@ -22,7 +22,7 @@ RESTar take HTTP requests as input, but extends the URI syntax to express more d
 
     URI: http://[ip_address][:port]/[base_uri][/resource_locator][/conditions][/meta-conditions]
 
-    Headers: [ExternalSource: URI], [Output: URI]
+    Headers: [ExternalSource: URI],
 
     Data: [JSON object|JSON object array]
 

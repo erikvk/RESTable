@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace RESTar
 {
@@ -24,6 +23,19 @@ namespace RESTar
         }
     }
 
+    public class InvalidInputCountException : Exception
+    {
+        public Type Resource;
+        public RESTarMethods Method;
+
+        public InvalidInputCountException(Type resource, RESTarMethods method)
+            : base($"Invalid input count for method {method:G}. Expected object/row, but found array/multiple rows. " +
+                   $"Only POST accepts multiple objects/rows as input.")
+        {
+            Resource = resource;
+            Method = method;
+        }
+    }
 
     public class UnknownResourceException : Exception
     {
@@ -34,6 +46,24 @@ namespace RESTar
                    $"resources, GET: {Settings._ResourcesPath} . ")
         {
             SearchString = searchString;
+        }
+    }
+
+    public class ExcelInputException : Exception
+    {
+        public ExcelInputException()
+            : base("There was a format error in the excel input. Check that the file is being transmitted " +
+                   "properly. In curl, make sure the flag '--data-binary' is used and not '--data' or '-d'")
+        { }
+    }
+
+    public class ExcelFormatException : Exception
+    {
+        public ExcelFormatException()
+            : base($"RESTar was unable to write a query response to an Excel table due to a format error. " +
+                   $"This is likely due to the serializer trying to push an array of heterogeneous objects " +
+                   $"to a single table, or some object including inner objects.")
+        {
         }
     }
 
@@ -58,7 +88,7 @@ namespace RESTar
         public readonly Type Resource;
 
         public AmbiguousColumnException(Type resource, string searchString, ICollection<string> candidates)
-            : base($"RESTar could not uniquely locate a column in resource {resource.FullName} by '{searchString}'. " +
+            : base($"RESTar could not uniquely identify a column in resource {resource.FullName} by '{searchString}'. " +
                    $"Candidates were: {string.Join(", ", candidates)}. ")
         {
             SearchString = searchString;
@@ -73,7 +103,7 @@ namespace RESTar
         public readonly ICollection<string> Candidates;
 
         public AmbiguousResourceException(string searchString, ICollection<string> candidates)
-            : base($"RESTar could not uniquely locate a resource by '{searchString}'. " +
+            : base($"RESTar could not uniquely identify a resource by '{searchString}'. " +
                    $"Candidates were: {string.Join(", ", candidates)}. ")
         {
             SearchString = searchString;

@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace RESTar
+﻿namespace RESTar
 {
     public enum RESTarPresets : byte
     {
@@ -31,7 +25,6 @@ namespace RESTar
 
     public enum RESTarMethods : byte
     {
-        nil = 0,
         GET,
         POST,
         PATCH,

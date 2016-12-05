@@ -1,11 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Data;
 using System.IO;
 using System.Linq;
-using System.Reflection;
-using System.Web;
+using System.Text.RegularExpressions;
 using ClosedXML.Excel;
+using Excel;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using Starcounter;
 
 namespace RESTar
@@ -21,26 +22,33 @@ namespace RESTar
         public int Limit = -1;
         public OrderBy OrderBy;
         public string[] Select;
-        public string ExternalInput;
-        public string ExternalOutput;
+        public string ExternalSource;
         public string Json;
+        public bool Dynamic;
         public RESTarMimeType InputMimeType;
         public RESTarMimeType OutputMimeType;
+        public RESTarMethods Method;
 
-        internal Command(Request request, string query)
+        internal Command(Request request, string query, RESTarMethods method)
         {
             if (query == null)
                 throw new RESTarInternalException("Query not loaded");
+            if (query.CharCount('/') > 3)
+                throw new SyntaxException("Invalid argument separator count. A RESTar URI can contain at most 3 " +
+                                          $"forward slashes after the base uri. URI scheme: {Settings._ResourcesPath}" +
+                                          "/[resource]/[conditions]/[meta-conditions]");
             Query = query;
             Request = request;
+            Method = method;
+            ExternalSource = request.Headers["ExternalSource"];
+            InputMimeType = request.ContentType?.ToLower().Contains("excel") == true
+                ? RESTarMimeType.Excel
+                : RESTarMimeType.Json;
+            OutputMimeType = request.PreferredMimeTypeString?.ToLower().Contains("excel") == true
+                ? RESTarMimeType.Excel
+                : RESTarMimeType.Json;
 
-            ExternalInput = request.Headers["ExternalInput"];
-            InputMimeType = request.ContentType == "application/vnd.ms-excel"
-                ? RESTarMimeType.Excel
-                : RESTarMimeType.Json;
-            OutputMimeType = request.PreferredMimeTypeString.ToLower().Contains("excel")
-                ? RESTarMimeType.Excel
-                : RESTarMimeType.Json;
+            #region Parse arguments
 
             var args = Query.Split('/');
             var argLength = args.Length;
@@ -56,7 +64,7 @@ namespace RESTar
             else Resource = args[1].FindResource();
             if (argLength == 2) return;
 
-            Conditions = Condition.Parse(args[2]);
+            Conditions = Condition.ParseConditions(Resource, args[2]);
             if (Conditions != null &&
                 (Resource == typeof(Resource) || Resource.IsSubclassOf(typeof(Resource))))
             {
@@ -66,7 +74,7 @@ namespace RESTar
             }
             if (argLength == 3) return;
 
-            MetaConditions = Condition.ParseMeta(args[3]);
+            MetaConditions = Condition.ParseMetaConditions(args[3]);
             if (MetaConditions == null) return;
 
             if (MetaConditions.ContainsKey("limit"))
@@ -75,6 +83,9 @@ namespace RESTar
                 Unsafe = (bool) MetaConditions["unsafe"];
             if (MetaConditions.ContainsKey("select"))
                 Select = ((string) MetaConditions["select"]).Split(',').Select(s => s.ToLower()).ToArray();
+            if (MetaConditions.ContainsKey("dynamic"))
+                Dynamic = (bool) MetaConditions["dynamic"];
+
             var orderKey = MetaConditions.Keys.FirstOrDefault(key => key.Contains("order"));
             if (orderKey == null) return;
             OrderBy = new OrderBy
@@ -82,39 +93,67 @@ namespace RESTar
                 Descending = orderKey.Contains("desc"),
                 Key = MetaConditions[orderKey].ToString()
             };
+
+            #endregion
         }
 
-        internal void ResolveSource()
+        internal void ResolveDataSource()
         {
-            if (ExternalInput != null)
+            if (ExternalSource != null)
             {
-                var response = HTTP.GET(ExternalInput);
+                var response = HTTP.GET(ExternalSource);
                 if (!response.IsSuccessStatusCode)
-                    throw new ExternalSourceException(ExternalInput,
+                    throw new ExternalSourceException(ExternalSource,
                         $"{response.StatusCode}: " +
                         $"{response.StatusDescription}"
                     );
                 Json = response.Body.RemoveTabsAndBreaks();
+                if (Json.First() == '[' && Method != RESTarMethods.POST)
+                    throw new InvalidInputCountException(Resource, Method);
                 if (Json == null)
-                    throw new ExternalSourceException(ExternalInput, "Response was empty");
+                    throw new ExternalSourceException(ExternalSource, "Response was empty");
                 return;
             }
 
-            if (InputMimeType == RESTarMimeType.Excel)
+            if (Request.BodyBytes == null &&
+                (Method == RESTarMethods.PATCH ||
+                 Method == RESTarMethods.POST ||
+                 Method == RESTarMethods.PUT))
             {
-                var fileName = $"{Resource.FullName}_export_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
-                var path = $"{Application.Current.WorkingDirectory}/excel_imports";
-                Directory.CreateDirectory(path);
-
-                using (var stream = File.Create($"{path}/{fileName}"))
-                {
-                    stream.Write(Request.BodyBytes, 0, Request.BodyBytes.Length);
-                    stream.Position = 0;
-                    var excel = new XLWorkbook(stream);
-                }
+                throw new SyntaxException("Missing data source for method " + Method);
             }
-            else if (InputMimeType == RESTarMimeType.Json)
-                Json = Request.Body;
+
+            if (Request.BodyBytes == null)
+                return;
+
+            switch (InputMimeType)
+            {
+                case RESTarMimeType.Json:
+                    Json = Request.Body;
+                    break;
+                case RESTarMimeType.Excel:
+                    using (var stream = new MemoryStream(Request.BodyBytes))
+                    {
+                        var regex = new Regex(@"(:[\d]+).0([\D])");
+                        var excelReader = ExcelReaderFactory.CreateOpenXmlReader(stream);
+                        excelReader.IsFirstRowAsColumnNames = true;
+                        var result = excelReader.AsDataSet();
+                        if (result == null)
+                            throw new ExcelInputException();
+                        if (Method == RESTarMethods.POST)
+                        {
+                            Json = JsonConvert.SerializeObject(result.Tables[0]);
+                            Json = regex.Replace(Json, "$1$2");
+                        }
+                        else
+                        {
+                            if (result.Tables[0].Rows.Count > 1)
+                                throw new InvalidInputCountException(Resource, Method);
+                            Json = JsonConvert.SerializeObject(JArray.FromObject(result.Tables[0]).First());
+                        }
+                    }
+                    break;
+            }
         }
 
         internal IEnumerable<dynamic> GetExtension(bool? unsafeOverride = null)
@@ -122,187 +161,10 @@ namespace RESTar
             if (unsafeOverride != null)
                 Unsafe = unsafeOverride.Value;
             if (Unsafe)
-                return GetFromDbGeneric(Resource, Select, Conditions.ToWhereClause(), Limit, OrderBy);
-            dynamic items = GetFromDbGeneric(Resource, Select, Conditions.ToWhereClause(), 2, OrderBy);
+                return DB.GetStatic(Resource, Conditions.ToWhereClause(), Limit, OrderBy);
+            dynamic items = DB.GetStatic(Resource, Conditions.ToWhereClause(), 2, OrderBy);
             if (Enumerable.Count(items) > 1) throw new AmbiguousMatchException(Resource);
             return items;
-        }
-
-        private static IEnumerable<object> GetFromDb(Type resource, string[] select, WhereClause whereClause,
-            int limit = -1, OrderBy orderBy = null)
-        {
-            var sql = $"SELECT t FROM {resource.FullName} t {whereClause?.stringPart} {orderBy?.SQL}";
-            IEnumerable<object> entities;
-            if (limit < 1)
-                entities = Db.SQL(sql, whereClause?.valuesPart);
-            else if (limit == 1)
-                entities = new[] {Db.SQL(sql, whereClause?.valuesPart).First};
-            else entities = Db.SQL(sql, whereClause?.valuesPart).Take(limit);
-
-            if (select == null)
-                return entities;
-
-            return entities.Select(o =>
-            {
-                var props = new List<PropertyInfo>();
-                foreach (var s in select)
-                {
-                    var matches = o.GetType().GetProperties().Where(p => s == p.Name.ToLower()).ToList();
-                    if (matches.Count == 1)
-                        props.Add(matches.First());
-                    else if (matches.Count > 1)
-                        throw new AmbiguousColumnException(resource, s, matches.Select(m => m.Name).ToList());
-                    else if (matches.Count < 1)
-                        throw new UnknownColumnException(resource, s);
-                }
-                return props.ToDictionary(p => p.Name, p => p.GetValue(o));
-            });
-        }
-
-        private static IEnumerable<dynamic> GetFromDbGeneric(Type resource, string[] select, WhereClause whereClause,
-            int limit = -1, OrderBy orderBy = null)
-        {
-            var sql = $"SELECT t FROM {resource.FullName} t {whereClause?.stringPart} {orderBy?.SQL}";
-            dynamic entities;
-
-            var method = typeof(Db).GetMethods().First(m => m.Name == "SQL" && m.IsGenericMethod);
-            var generic = method.MakeGenericMethod(resource);
-
-            if (limit < 1)
-                entities = generic.Invoke(null, new object[] {sql, whereClause?.valuesPart});
-            else if (limit == 1)
-                entities = new[]
-                {
-                    ((dynamic) generic.Invoke(null, new object[] {sql, whereClause?.valuesPart})).First
-                };
-            else
-                entities = Enumerable.Take(
-                    (dynamic) generic.Invoke(null, new object[] {sql, whereClause?.valuesPart}), limit);
-
-            return entities;
-        }
-    }
-
-    internal class Condition
-    {
-        public string Key;
-        public Operator Operator;
-        public object Value;
-
-        public static IList<Condition> Parse(string conditionString)
-        {
-            if (conditionString?.Equals("") != false)
-                return null;
-
-            return conditionString.Split('&').Select(s =>
-            {
-                if (s == "")
-                    throw new SyntaxException("Invalid condition syntax");
-                var matched = new string(s.Where(c => OpMatchChars.Contains(c)).ToArray());
-                var op = Operators.FirstOrDefault(o => o.Common == matched);
-                if (op == null)
-                    throw new SyntaxException("Invalid or missing operator for condition. The presence of one " +
-                                              "(and only one) operator is required per condition. Accepted operators: " +
-                                              string.Join(", ", Operators.Select(o => o.Common)));
-                var pair = s.Split(new[] {op.Common}, StringSplitOptions.None);
-                return new Condition
-                {
-                    Key = pair[0].ToLower(),
-                    Operator = op,
-                    Value = GetValue(pair[1])
-                };
-            }).ToList();
-        }
-
-        public static IDictionary<string, object> ParseMeta(string conditionString)
-        {
-            if (conditionString?.Equals("") != false)
-                return null;
-
-            return conditionString.Split('&').Select(s =>
-            {
-                if (s == "")
-                    throw new SyntaxException("Invalid meta-condition syntax");
-                var op = Operators.FirstOrDefault(o => s.Contains(o.Common));
-                if (op?.Common != "=")
-                    throw new SyntaxException("Invalid operator for meta-condition. Only '=' is accepted");
-                var pair = s.Split(new[] {op.Common}, StringSplitOptions.None);
-                Type typeCheck;
-                var success = MetaConditions.TryGetValue(pair[0].ToLower(), out typeCheck);
-                if (!success)
-                    throw new SyntaxException($"Invalid meta-condition '{pair[0]}'. Available meta-conditions: " +
-                                              $"{string.Join(", ", MetaConditions.Keys)}. For more info, see " +
-                                              $"{Settings.Instance.HelpResourcePath}/topic=Meta-conditions");
-                var value = GetValue(pair[1]);
-                if (value.GetType() != typeCheck)
-                    throw new SyntaxException($"Invalid data type assigned to meta-condition '{pair[0]}'. Expected " +
-                                              $"{(typeCheck == typeof(decimal) ? "number" : typeCheck.FullName)}");
-                return new KeyValuePair<string, object>(pair[0].ToLower(), value);
-            }).ToDictionary(pair => pair.Key, pair => pair.Value);
-        }
-
-        private static readonly IDictionary<string, Type> MetaConditions = new Dictionary<string, Type>
-        {
-            ["limit"] = typeof(decimal),
-            ["order_desc"] = typeof(string),
-            ["order_asc"] = typeof(string),
-            ["unsafe"] = typeof(bool),
-            ["select"] = typeof(string)
-        };
-
-        private static readonly char[] OpMatchChars = {'<', '>', '=', '!'};
-
-        private static readonly IEnumerable<Operator> Operators = new List<Operator>
-        {
-            new Operator("=", "="),
-            new Operator("!=", "<>"),
-            new Operator("<", "<"),
-            new Operator(">", ">"),
-            new Operator(">=", ">="),
-            new Operator("<=", "<=")
-        };
-
-        private static object GetValue(string valueString)
-        {
-            valueString = HttpUtility.UrlDecode(valueString);
-            if (valueString == null)
-                return null;
-            if (valueString.First() == '\"')
-                return valueString.Replace("\"", "");
-            object obj;
-            decimal dec;
-            bool boo;
-            DateTime dat;
-            if (bool.TryParse(valueString, out boo))
-                obj = boo;
-            else if (decimal.TryParse(valueString, out dec))
-                obj = dec;
-            else if (DateTime.TryParse(valueString, out dat))
-                obj = dat;
-            else obj = valueString;
-            return obj;
-        }
-
-        public override string ToString()
-        {
-            return Key + Operator + Value;
-        }
-    }
-
-    internal class Operator
-    {
-        public readonly string Common;
-        public readonly string SQL;
-
-        public Operator(string common, string sql)
-        {
-            Common = common;
-            SQL = sql;
-        }
-
-        public override string ToString()
-        {
-            return Common;
         }
     }
 }

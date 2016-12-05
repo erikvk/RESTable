@@ -2,10 +2,10 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.Serialization;
 using System.Text.RegularExpressions;
 using Jil;
 using Starcounter;
-using Starcounter.Query.Execution;
 
 namespace RESTar
 {
@@ -28,6 +28,24 @@ namespace RESTar
                 throw new AmbiguousResourceException(searchString,
                     keys.Select(k => RESTarConfig.DbDomainDict[k].FullName).ToList());
             return RESTarConfig.DbDomainDict[keys.First()];
+        }
+
+        internal static PropertyInfo FindColumn(this string searchString, Type resource)
+        {
+            var matches = resource
+                .GetProperties()
+                .Where(p => p.GetAttribute<IgnoreDataMemberAttribute>() == null)
+                .Where(p =>
+                {
+                    var name = p.GetAttribute<DataMemberAttribute>()?.Name?.ToLower()
+                               ?? p.Name.ToLower();
+                    return searchString == name;
+                });
+            if (matches.Count() == 1)
+                return matches.First();
+            if (matches.Count() > 1)
+                throw new AmbiguousColumnException(resource, searchString, matches.Select(m => m.Name).ToList());
+            throw new UnknownColumnException(resource, searchString);
         }
 
         internal static IEnumerable<Type> GetSubclasses(this Type baseType)
@@ -94,10 +112,25 @@ namespace RESTar
         {
             if (conditions == null)
                 return null;
+
+            var stringPart = new List<string>();
+            var valuesPart = new List<object>();
+
+            foreach (var c in conditions)
+            {
+                if (c.Value == null)
+                    stringPart.Add($"t.{c.Key} {(c.Operator.Common == "!=" ? " IS NOT NULL " : " IS NULL ")}");
+                else
+                {
+                    stringPart.Add($"t.{c.Key} {c.Operator.SQL}?");
+                    valuesPart.Add(c.Value);
+                }
+            }
+
             return new WhereClause
             {
-                stringPart = $"WHERE {string.Join(" AND ", conditions.Select(c => $"t.{c.Key} {c.Operator.SQL}?"))}",
-                valuesPart = conditions.Values()
+                stringPart = $"WHERE {string.Join(" AND ", stringPart)}",
+                valuesPart = valuesPart.ToArray()
             };
         }
 
@@ -119,12 +152,6 @@ namespace RESTar
         internal static IEnumerable<RESTarMethods> BlockedMethods(this Type resource)
         {
             return RESTarConfig.Methods.Except(resource.AvailableMethods() ?? new RESTarMethods[0]);
-        }
-
-        public static void ParallelForEach<T>(this IEnumerable<T> source, Action<T> action)
-        {
-            foreach (var e in source)
-                Scheduling.ScheduleTask(() => action(e));
         }
 
         internal static string ToMethodsString(this IEnumerable<RESTarMethods> ie) => string.Join(", ", ie);

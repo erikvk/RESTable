@@ -1,9 +1,6 @@
 ﻿using System;
-using Mopedo;
 using Mopedo.Internal;
 using Mopedo.Config;
-using Starcounter;
-using RESTar;
 
 namespace HelpManager
 {

@@ -5,7 +5,8 @@ using Jil;
 using Starcounter;
 using static RESTar.Responses;
 using static RESTar.Evaluators;
-using ClosedXML;
+using Newtonsoft.Json;
+using RESTar.TestDb;
 
 namespace RESTar
 {
@@ -33,7 +34,7 @@ namespace RESTar
         public static void Init
         (
             ushort httpPort,
-            string baseUri = "/rest",
+            string baseUri = "/restar",
             bool prettyPrint = false
         )
         {
@@ -45,8 +46,8 @@ namespace RESTar
 
             var stopDelete = new Action(() =>
             {
-                throw new InvalidOperationException("RESTar resources cannot be deleted " +
-                                                    "using Starcounter SQL");
+                throw new InvalidOperationException("RESTar resources cannot be deleted during " +
+                                                    "runtime");
             });
 
             Hook<Table>.BeforeDelete += (s, resource) => stopDelete();
@@ -77,7 +78,7 @@ namespace RESTar
                 {
                     try
                     {
-                        JSON.Deserialize("{}", type, Options.ISO8601ExcludeNullsIncludeInherited);
+                        JSON.Deserialize("{}", type, Options.ISO8601IncludeInherited);
                     }
                     catch
                     {
@@ -88,7 +89,7 @@ namespace RESTar
                 {
                     try
                     {
-                        JSON.Deserialize("{}", type, Options.ISO8601PrettyPrintExcludeNullsIncludeInherited);
+                        JSON.Deserialize("{}", type, Options.ISO8601PrettyPrintIncludeInherited);
                     }
                     catch
                     {
@@ -97,6 +98,8 @@ namespace RESTar
             }
 
             Settings.Init(baseUri, prettyPrint, httpPort);
+            TestDatabase.Init();
+
             baseUri += "{?}";
 
             Handle.GET(httpPort, baseUri, (Request request, string query) =>
@@ -120,8 +123,8 @@ namespace RESTar
         {
             try
             {
-                var command = new Command(request, query);
-                command.ResolveSource();
+                var command = new Command(request, query, method);
+                command.ResolveDataSource();
                 if (command.Resource.BlockedMethods().Contains(method))
                     return BlockedMethod(method, command.Resource);
                 return Evaluator(command);
@@ -154,19 +157,35 @@ namespace RESTar
             {
                 return AmbiguousResource(e);
             }
+            catch (InvalidInputCountException e)
+            {
+                return InvalidInputCount(e);
+            }
             catch (AmbiguousMatchException e)
             {
                 return AmbiguousMatch(e.Resource);
+            }
+            catch (ExcelInputException e)
+            {
+                return ExcelFormatError(e);
+            }
+            catch (ExcelFormatException e)
+            {
+                return ExcelFormatError(e);
             }
             catch (RESTarInternalException e)
             {
                 return RESTarInternalError(e);
             }
+            catch (JsonReaderException)
+            {
+                return DeserializationError(request.Body);
+            }
             catch (DeserializationException)
             {
                 return DeserializationError(request.Body);
             }
-            catch (Newtonsoft.Json.JsonSerializationException)
+            catch (JsonSerializationException)
             {
                 return DeserializationError(request.Body);
             }

@@ -6,6 +6,7 @@ using Starcounter;
 using System.Data;
 using System.IO;
 using System.Reflection;
+using System.Runtime.Serialization;
 using ClosedXML.Excel;
 using Newtonsoft.Json;
 
@@ -61,7 +62,7 @@ namespace RESTar
         internal static Response DeserializationError(string json) => new Response
         {
             StatusCode = (ushort) HttpStatusCode.BadRequest,
-            StatusDescription = $"Error while deserializing JSON. Check JSON syntax. JSON: {json}"
+            StatusDescription = $"Error while deserializing JSON. Check JSON syntax:\n{json}"
         };
 
         internal static Response BlockedMethod(RESTarMethods method, Type resource) => new Response
@@ -72,6 +73,18 @@ namespace RESTar
         };
 
         internal static Response ExternalSourceError(ExternalSourceException e) => new Response
+        {
+            StatusCode = (ushort) HttpStatusCode.BadRequest,
+            StatusDescription = e.Message
+        };
+
+        internal static Response InvalidInputCount(InvalidInputCountException e) => new Response
+        {
+            StatusCode = (ushort) HttpStatusCode.BadRequest,
+            StatusDescription = e.Message
+        };
+
+        internal static Response ExcelFormatError(Exception e) => new Response
         {
             StatusCode = (ushort) HttpStatusCode.BadRequest,
             StatusDescription = e.Message
@@ -141,46 +154,69 @@ namespace RESTar
             StatusDescription = $"{count} entities deleted from resource '{resource.FullName}'"
         };
 
-        internal static Response GetEntities(Command command, IEnumerable<dynamic> json)
+        internal static Response GetEntities(Command command, IEnumerable<dynamic> content)
         {
             var response = new Response();
             string jsonString;
             if (command.Select != null)
             {
                 var list = new List<dynamic>();
-                foreach (var o in json)
+                foreach (var obj in content)
                 {
                     var dict = new Dictionary<string, dynamic>();
                     var props = new List<PropertyInfo>();
                     foreach (var s in command.Select)
                     {
-                        var matches = new List<PropertyInfo>();
-                        foreach (var property in o.GetType().GetProperties())
-                            if (s == property.Name.ToLower())
-                                matches.Add(property);
-                        if (matches.Count == 1)
-                            props.Add(matches.First());
-                        else if (matches.Count > 1)
-                            throw new AmbiguousColumnException(command.Resource, s, matches.Select(m => m.Name).ToList());
-                        else if (matches.Count < 1)
-                            throw new UnknownColumnException(command.Resource, s);
+                        Type resource = obj.GetType();
+                        props.Add(s.FindColumn(resource));
+                        
+//                        foreach (var property in obj.GetType().GetProperties())
+//                        {
+//                            if (ExtensionMethods.GetAttribute<IgnoreDataMemberAttribute>(property) == null)
+//                            {
+//                                var name = ExtensionMethods.GetAttribute<DataMemberAttribute>(property)?.Name?.ToLower()
+//                                           ?? property.Name.ToLower();
+//                                if (s == name)
+//                                    matches.Add(property);
+//                            }
+//                        }
+//                        if (matches.Count() == 1)
+//                            props.Add(matches.First());
+//                        else if (matches.Count() > 1)
+//                            throw new AmbiguousColumnException(command.Resource, s, matches.Select(m => m.Name).ToList());
+//                        else throw new UnknownColumnException(command.Resource, s);
                     }
                     foreach (var p in props)
-                        dict[p.Name] = p.GetValue(o);
+                        dict[p.GetAttribute<DataMemberAttribute>()?.Name ?? p.Name] = p.GetValue(obj);
                     list.Add(dict);
                 }
                 jsonString = list.SerializeDyn();
             }
-            else jsonString = json.Serialize(RESTarConfig.IEnumType[command.Resource]);
-            
+            else if (command.Dynamic)
+                jsonString = content.SerializeDyn();
+            else jsonString = content.Serialize(RESTarConfig.IEnumType[command.Resource]);
+
             if (command.OutputMimeType == RESTarMimeType.Excel)
             {
                 var str = $@"{{""table"": {jsonString}}}";
-                var dt = JsonConvert.DeserializeObject<DataSet>(str);
+                DataSet data;
+                try
+                {
+                    data = JsonConvert.DeserializeObject<DataSet>(str, new JsonSerializerSettings
+                    {
+                        NullValueHandling = NullValueHandling.Include,
+                        DateFormatHandling = DateFormatHandling.IsoDateFormat
+                    });
+                }
+                catch (Exception)
+                {
+                    throw new ExcelFormatException();
+                }
+
                 var workbook = new XLWorkbook();
-                workbook.AddWorksheet(dt);
+                workbook.AddWorksheet(data);
                 var fileName = $"{command.Resource.FullName}_export_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
-                var path = $"{Application.Current.WorkingDirectory}/excel_exports";
+                var path = $"{Application.Current.WorkingDirectory}/RESTar_excel_exports";
                 Directory.CreateDirectory(path);
                 using (var memstream = new MemoryStream())
                 {
@@ -192,6 +228,11 @@ namespace RESTar
                 }
                 response.ContentType = "application/vnd.ms-excel";
                 response.Headers["Content-Disposition"] = $"attachment; filename={fileName}";
+            }
+            else
+            {
+                response.ContentType = "application/json";
+                response.Body = jsonString;
             }
 
             return response;
