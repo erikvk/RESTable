@@ -8,8 +8,11 @@ namespace RESTar
 {
     [Database]
     [RESTar(RESTarPresets.ReadOnly)]
-    public class Table : Resource
+    public class ScTable : IResource
     {
+        public string Name;
+        public string AvailableMethods => Type.AvailableMethods().ToMethodsString();
+        public string BlockedMethods => Type.BlockedMethods().ToMethodsString();
         public int NrOfColumns => Schema.Count;
         public long NrOfRows => DB.RowCount(Name);
 
@@ -31,7 +34,14 @@ namespace RESTar
             }
         }
 
-        public Table(Type type)
+        [IgnoreDataMember]
+        public Type Type
+        {
+            get { return Name.FindResource(); }
+            set { Name = value.FullName; }
+        }
+
+        public ScTable(Type type)
         {
             Type = type;
         }

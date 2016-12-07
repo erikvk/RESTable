@@ -55,18 +55,18 @@ namespace RESTar
 
             if (argLength == 1)
             {
-                Resource = typeof(Resource);
+                Resource = typeof(ScTable);
                 return;
             }
 
             if (args[1] == "")
-                Resource = typeof(Resource);
+                Resource = typeof(ScTable);
             else Resource = args[1].FindResource();
             if (argLength == 2) return;
 
             Conditions = Condition.ParseConditions(Resource, args[2]);
             if (Conditions != null &&
-                (Resource == typeof(Resource) || Resource.IsSubclassOf(typeof(Resource))))
+                (Resource == typeof(ScTable) || Resource.IsSubclassOf(typeof(ScTable))))
             {
                 var nameCondition = Conditions.FirstOrDefault(c => c.Key == "name");
                 if (nameCondition != null)

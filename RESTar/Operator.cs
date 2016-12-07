@@ -1,11 +1,11 @@
 ﻿namespace RESTar
 {
-    internal class Operator
+    public class Operator
     {
         public readonly string Common;
         public readonly string SQL;
 
-        public Operator(string common, string sql)
+        internal Operator(string common, string sql)
         {
             Common = common;
             SQL = sql;

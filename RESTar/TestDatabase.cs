@@ -1,14 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using RESTar.TestDb;
 using Starcounter;
 
-namespace RESTar.TestDb
+namespace RESTar
 {
-    [RESTar(RESTarPresets.ReadAndUpdate)]
-    public class TestDatabase : Resource
+    [Database, RESTar(RESTarPresets.ReadAndUpdate)]
+    public class TestDatabase
     {
         public bool Active
         {
@@ -26,7 +22,7 @@ namespace RESTar.TestDb
             Db.Transact(() =>
             {
                 foreach (var obj in DB.All<TestDatabase>())
-                    obj.Delete();
+                    obj?.Delete();
                 new TestDatabase();
             });
         }

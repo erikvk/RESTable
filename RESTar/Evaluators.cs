@@ -22,6 +22,9 @@ namespace RESTar
         {
             if (!command.Unsafe && command.Limit == -1)
                 command.Limit = 1000;
+
+            if (command.Resource == typeof(Help))
+                return Help.Get((string) command.Conditions?.FirstOrDefault(c => c.Key == "topic")?.Value);
             var entities = command.GetExtension(true);
             return !entities.Any() ? NoContent() : GetEntities(command, entities);
         }
@@ -30,10 +33,7 @@ namespace RESTar
         {
             var entities = command.GetExtension();
             foreach (var entity in entities)
-                Db.Transact(() =>
-                {
-                    JsonConvert.PopulateObject(command.Json, entity);
-                });
+                Db.Transact(() => { JsonConvert.PopulateObject(command.Json, entity); });
             return UpdatedEntities(entities.Count(), command.Resource);
         }
 

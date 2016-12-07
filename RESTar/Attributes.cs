@@ -46,4 +46,8 @@ namespace RESTar
             AvailableMethods = new[] {method}.Union(addMethods.Distinct()).ToArray();
         }
     }
+
+    public sealed class VirtualAttribute : Attribute
+    {
+    }
 }

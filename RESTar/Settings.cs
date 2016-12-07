@@ -4,7 +4,7 @@ namespace RESTar
 {
     [Database]
     [RESTar(RESTarPresets.ReadAndUpdate)]
-    public class Settings : Resource
+    public class Settings
     {
         internal static bool _PrettyPrint => Instance.PrettyPrint;
         internal static string _Uri => Instance.Uri;

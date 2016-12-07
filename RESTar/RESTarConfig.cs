@@ -41,18 +41,8 @@ namespace RESTar
             if (baseUri.First() != '/')
                 baseUri = $"/{baseUri}";
 
-            foreach (var resource in DB.All<Resource>())
+            foreach (var resource in DB.All<ScTable>())
                 Db.Transact(() => resource.Delete());
-
-            var stopDelete = new Action(() =>
-            {
-                throw new InvalidOperationException("RESTar resources cannot be deleted during " +
-                                                    "runtime");
-            });
-
-            Hook<Table>.BeforeDelete += (s, resource) => stopDelete();
-            Hook<Settings>.BeforeDelete += (s, resource) => stopDelete();
-            Hook<Help>.BeforeDelete += (s, resource) => stopDelete();
 
             DbDomainList = typeof(object)
                 .GetSubclasses()
@@ -72,7 +62,7 @@ namespace RESTar
 
             foreach (var type in DbDomainList)
             {
-                Scheduling.ScheduleTask(() => Db.Transact(() => new Table(type)));
+                Scheduling.ScheduleTask(() => Db.Transact(() => new ScTable(type)));
 
                 Scheduling.ScheduleTask(() =>
                 {
@@ -99,6 +89,7 @@ namespace RESTar
 
             Settings.Init(baseUri, prettyPrint, httpPort);
             TestDatabase.Init();
+            Log.Init();
 
             baseUri += "{?}";
 
@@ -121,6 +112,7 @@ namespace RESTar
         private static Response Evaluate(Request request, string query, Func<Command, Response> Evaluator,
             RESTarMethods method)
         {
+            Log.Info("==> RESTar command");
             try
             {
                 var command = new Command(request, query, method);

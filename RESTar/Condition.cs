@@ -2,18 +2,17 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Web;
-using Sc.Server.Weaver.Schema;
-using DatabaseAttribute = Starcounter.DatabaseAttribute;
+using Starcounter;
 
 namespace RESTar
 {
-    internal class Condition
+    public class Condition
     {
         public string Key;
         public Operator Operator;
         public object Value;
 
-        public static IList<Condition> ParseConditions(Type resource, string conditionString)
+        internal static IList<Condition> ParseConditions(Type resource, string conditionString)
         {
             if (string.IsNullOrEmpty(conditionString))
                 return null;
@@ -40,7 +39,7 @@ namespace RESTar
             }).ToList();
         }
 
-        public static IDictionary<string, object> ParseMetaConditions(string metConditionString)
+        internal static IDictionary<string, object> ParseMetaConditions(string metConditionString)
         {
             if (metConditionString?.Equals("") != false)
                 return null;

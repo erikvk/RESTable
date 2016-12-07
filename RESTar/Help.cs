@@ -1,27 +1,21 @@
 ﻿using System.Collections.Generic;
+using Jil;
+using RESTar;
 using Starcounter;
 
 namespace RESTar
 {
     [Database]
     [RESTar(RESTarPresets.ReadOnly)]
-    public class Help : Resource
+    public class Help
     {
         public string Topic;
         public string Body;
-        public string TagsString;
+        public string SeeAlso;
 
-        public IEnumerable<string> Tags
+        public static string Get(string topic)
         {
-            get { return TagsString.Split(','); }
-            set { TagsString = string.Join(",", value); }
-        }
-
-        public Help(string topic, string body, params string[] tags)
-        {
-            Topic = topic;
-            Body = body;
-            Tags = tags;
+            return HTTP.GET($"http://restarhelp.mopedo-drtb.com:8011/getarticle/{topic}").Body;
         }
     }
 }

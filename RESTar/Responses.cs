@@ -8,6 +8,7 @@ using System.IO;
 using System.Reflection;
 using System.Runtime.Serialization;
 using ClosedXML.Excel;
+using Excel;
 using Newtonsoft.Json;
 
 namespace RESTar
@@ -169,22 +170,6 @@ namespace RESTar
                     {
                         Type resource = obj.GetType();
                         props.Add(s.FindColumn(resource));
-                        
-//                        foreach (var property in obj.GetType().GetProperties())
-//                        {
-//                            if (ExtensionMethods.GetAttribute<IgnoreDataMemberAttribute>(property) == null)
-//                            {
-//                                var name = ExtensionMethods.GetAttribute<DataMemberAttribute>(property)?.Name?.ToLower()
-//                                           ?? property.Name.ToLower();
-//                                if (s == name)
-//                                    matches.Add(property);
-//                            }
-//                        }
-//                        if (matches.Count() == 1)
-//                            props.Add(matches.First());
-//                        else if (matches.Count() > 1)
-//                            throw new AmbiguousColumnException(command.Resource, s, matches.Select(m => m.Name).ToList());
-//                        else throw new UnknownColumnException(command.Resource, s);
                     }
                     foreach (var p in props)
                         dict[p.GetAttribute<DataMemberAttribute>()?.Name ?? p.Name] = p.GetValue(obj);
@@ -212,19 +197,13 @@ namespace RESTar
                 {
                     throw new ExcelFormatException();
                 }
-
                 var workbook = new XLWorkbook();
                 workbook.AddWorksheet(data);
                 var fileName = $"{command.Resource.FullName}_export_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
-                var path = $"{Application.Current.WorkingDirectory}/RESTar_excel_exports";
-                Directory.CreateDirectory(path);
                 using (var memstream = new MemoryStream())
                 {
                     workbook.SaveAs(memstream);
-                    var bytes = memstream.ToArray();
-                    using (var stream = File.Create($"{path}/{fileName}"))
-                        stream.Write(bytes, 0, bytes.Length);
-                    response.BodyBytes = bytes;
+                    response.BodyBytes = memstream.ToArray();
                 }
                 response.ContentType = "application/vnd.ms-excel";
                 response.Headers["Content-Disposition"] = $"attachment; filename={fileName}";
