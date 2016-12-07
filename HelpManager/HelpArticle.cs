@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-using RESTar;
-using Starcounter;
+﻿using Starcounter;
 
 namespace HelpManager
 {

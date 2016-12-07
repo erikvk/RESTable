@@ -179,7 +179,7 @@ namespace RESTar
             }
             else if (command.Dynamic)
                 jsonString = content.SerializeDyn();
-            else jsonString = content.Serialize(RESTarConfig.IEnumType[command.Resource]);
+            else jsonString = content.Serialize(RESTarConfig.IEnumTypes[command.Resource]);
 
             if (command.OutputMimeType == RESTarMimeType.Excel)
             {

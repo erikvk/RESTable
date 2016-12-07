@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Reflection;
 
 namespace RESTar
 {
@@ -54,7 +55,8 @@ namespace RESTar
         public ExcelInputException()
             : base("There was a format error in the excel input. Check that the file is being transmitted " +
                    "properly. In curl, make sure the flag '--data-binary' is used and not '--data' or '-d'")
-        { }
+        {
+        }
     }
 
     public class ExcelFormatException : Exception
@@ -88,8 +90,9 @@ namespace RESTar
         public readonly Type Resource;
 
         public AmbiguousColumnException(Type resource, string searchString, ICollection<string> candidates)
-            : base($"RESTar could not uniquely identify a column in resource {resource.FullName} by '{searchString}'. " +
-                   $"Candidates were: {string.Join(", ", candidates)}. ")
+            : base(
+                $"RESTar could not uniquely identify a column in resource {resource.FullName} by '{searchString}'. " +
+                $"Candidates were: {string.Join(", ", candidates)}. ")
         {
             SearchString = searchString;
             Candidates = candidates;
@@ -125,6 +128,33 @@ namespace RESTar
     {
         public RESTarInternalException(string message)
             : base($"An internal RESTar error has been encountered: {message} . ")
+        {
+        }
+    }
+
+    public class VirtualResourceMissingMethodException : Exception
+    {
+        public VirtualResourceMissingMethodException(Type resource, string missingMethodDef)
+            : base($"The resource type definition for {resource.FullName} is not decorated with the Starcounter " +
+                   $"database attribute, and is therefore considered a virtual resource definition. Virtual resources " +
+                   $"must contain static method definitions supporting the enabled RESTar methods for the resource " +
+                   $"(see help/topic=\"virtual resources\" for more info). {missingMethodDef}")
+        {
+        }
+    }
+
+    public class VirtualResourceSignatureException : Exception
+    {
+        public VirtualResourceSignatureException(string message)
+            : base(message)
+        {
+        }
+    }
+
+    public class VirtualResourceMemberException : Exception
+    {
+        public VirtualResourceMemberException(string message)
+            : base(message)
         {
         }
     }

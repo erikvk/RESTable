@@ -13,7 +13,21 @@ namespace RESTar
 {
     internal class Command
     {
-        public Type Resource;
+        private Type _resource;
+
+        public Type Resource
+        {
+            get { return _resource; }
+            private set
+            {
+                _resource = value;
+                ResourceType = _resource.HasAttribute<DatabaseAttribute>()
+                    ? ResourceType.ScTable
+                    : ResourceType.Virtual;
+            }
+        }
+
+        public ResourceType ResourceType;
         public IList<Condition> Conditions;
         public IDictionary<string, object> MetaConditions;
         public Request Request;
@@ -160,11 +174,23 @@ namespace RESTar
         {
             if (unsafeOverride != null)
                 Unsafe = unsafeOverride.Value;
-            if (Unsafe)
-                return DB.GetStatic(Resource, Conditions.ToWhereClause(), Limit, OrderBy);
-            dynamic items = DB.GetStatic(Resource, Conditions.ToWhereClause(), 2, OrderBy);
-            if (Enumerable.Count(items) > 1) throw new AmbiguousMatchException(Resource);
-            return items;
+            switch (ResourceType)
+            {
+                case ResourceType.ScTable:
+                    if (Unsafe)
+                        return DB.GetStatic(Resource, Conditions.ToWhereClause(), Limit, OrderBy);
+                    dynamic items = DB.GetStatic(Resource, Conditions.ToWhereClause(), 2, OrderBy);
+                    if (Enumerable.Count(items) > 1) throw new AmbiguousMatchException(Resource);
+                    return items;
+                case ResourceType.Virtual:
+                    if (Unsafe)
+                        return (IEnumerable<dynamic>) Resource.GetMethod("Get").Invoke(null, new object[] {Conditions});
+                    dynamic _items = Resource.GetMethod("Get").Invoke(null, new object[] { Conditions });
+                    if (Enumerable.Count(_items) > 1) throw new AmbiguousMatchException(Resource);
+                    return _items;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
         }
     }
 }

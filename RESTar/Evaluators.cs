@@ -22,9 +22,6 @@ namespace RESTar
         {
             if (!command.Unsafe && command.Limit == -1)
                 command.Limit = 1000;
-
-            if (command.Resource == typeof(Help))
-                return Help.Get((string) command.Conditions?.FirstOrDefault(c => c.Key == "topic")?.Value);
             var entities = command.GetExtension(true);
             return !entities.Any() ? NoContent() : GetEntities(command, entities);
         }
@@ -40,7 +37,7 @@ namespace RESTar
         internal static Response POST(Command command)
         {
             var jsonTarget = command.Json.First() == '['
-                ? RESTarConfig.IEnumType[command.Resource]
+                ? RESTarConfig.IEnumTypes[command.Resource]
                 : command.Resource;
             var results = Db.Transact(() => JSON.Deserialize(command.Json, jsonTarget));
             if (results is IEnumerable<object>)

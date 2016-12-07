@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using Jil;
 using Starcounter;
 using static RESTar.Responses;
@@ -12,9 +13,9 @@ namespace RESTar
 {
     public static class RESTarConfig
     {
-        internal static IList<Type> DbDomainList;
-        internal static IDictionary<string, Type> DbDomainDict;
-        internal static IDictionary<Type, Type> IEnumType;
+        internal static IList<Type> ResourcesList;
+        internal static IDictionary<string, Type> ResourcesDict;
+        internal static IDictionary<Type, Type> IEnumTypes;
 
         internal static RESTarMethods[] Methods =
         {
@@ -44,23 +45,27 @@ namespace RESTar
             foreach (var resource in DB.All<ScTable>())
                 Db.Transact(() => resource.Delete());
 
-            DbDomainList = typeof(object)
+            ResourcesList = typeof(object)
                 .GetSubclasses()
-                .Where(t => t.HasAttribute<DatabaseAttribute>())
                 .Where(t => t.HasAttribute<RESTarAttribute>())
                 .ToList();
 
-            DbDomainDict = DbDomainList.ToDictionary(
+            var ScTableResources = ResourcesList.Where(t => t.HasAttribute<DatabaseAttribute>()).ToList();
+            var VirtualResources = ResourcesList.Except(ScTableResources);
+
+            CheckVirtualResources(VirtualResources);
+
+            ResourcesDict = ResourcesList.ToDictionary(
                 type => type.FullName.ToLower(),
                 type => type
             );
 
-            IEnumType = DbDomainList.ToDictionary(
+            IEnumTypes = ResourcesList.ToDictionary(
                 type => type,
                 type => typeof(IEnumerable<>).MakeGenericType(type)
             );
 
-            foreach (var type in DbDomainList)
+            foreach (var type in ScTableResources)
             {
                 Scheduling.ScheduleTask(() => Db.Transact(() => new ScTable(type)));
 
@@ -189,6 +194,86 @@ namespace RESTar
                     return DeserializationError(e.Message);
 
                 return UnknownError(e);
+            }
+        }
+
+        private static void CheckVirtualResources(IEnumerable<Type> virtualResources)
+        {
+            var VirtualResourceMethodTemplates = new Func<Type, Dictionary<string, string>>
+            (type => new Dictionary<string, string>
+            {
+                ["Get"] = $"public static IEnumerable<{type.FullName}> Get(IEnumerable<Condition> conditions) {{ }}",
+                ["Insert"] = $"public static void Insert(IEnumerable<{type.FullName}> entities) {{ }}",
+                ["Delete"] = $"public static void Delete(IEnumerable<{type.FullName}> entities) {{ }}"
+            });
+
+            var VirtualResourceMethodParameters = new Func<Type, Dictionary<string, Type>>
+            (type => new Dictionary<string, Type>
+            {
+                ["Get"] = typeof(IEnumerable<Condition>),
+                ["Insert"] = typeof(IEnumerable<>).MakeGenericType(type),
+                ["Delete"] = typeof(IEnumerable<>).MakeGenericType(type)
+            });
+
+            var VirtualResourceMethodReturnTypes = new Func<Type, Dictionary<string, Type>>
+            (type => new Dictionary<string, Type>
+            {
+                ["Get"] = typeof(IEnumerable<>).MakeGenericType(type),
+                ["Insert"] = typeof(void),
+                ["Delete"] = typeof(void)
+            });
+
+            Func<IEnumerable<RESTarMethods>, IEnumerable<string>> necessarytMethodDefs =
+                restMethods => restMethods.SelectMany(method =>
+                {
+                    switch (method)
+                    {
+                        case RESTarMethods.GET:
+                            return new[] {"Get"};
+                        case RESTarMethods.POST:
+                            return new[] {"Insert"};
+                        case RESTarMethods.PUT:
+                            return new[] {"Get", "Insert"};
+                        case RESTarMethods.PATCH:
+                            return new[] {"Get"};
+                        case RESTarMethods.DELETE:
+                            return new[] {"Get", "Delete"};
+                    }
+                    return null;
+                }).Distinct();
+
+            foreach (var type in virtualResources)
+            {
+                foreach (var requiredMethod in necessarytMethodDefs(type.AvailableMethods()))
+                {
+                    var method = type.GetMethod(requiredMethod, BindingFlags.Public | BindingFlags.Static);
+                    if (method == null)
+                    {
+                        throw new VirtualResourceMissingMethodException
+                        (
+                            type,
+                            $"Missing definition for '{requiredMethod}' according to template: " +
+                            $"{VirtualResourceMethodTemplates(type)[requiredMethod]}"
+                        );
+                    }
+                    if (method.ReturnType != VirtualResourceMethodReturnTypes(type)[requiredMethod])
+                    {
+                        throw new VirtualResourceSignatureException(
+                            $"Wrong return type for method '{requiredMethod}'. Expected " +
+                            $"" + VirtualResourceMethodReturnTypes(type)[requiredMethod]);
+                    }
+                    if (method.GetParameters().FirstOrDefault()?.ParameterType !=
+                        VirtualResourceMethodParameters(type)[requiredMethod])
+                    {
+                        throw new VirtualResourceSignatureException(
+                            $"Wrong parameter type for method '{requiredMethod}'. Expected " +
+                            $"" + VirtualResourceMethodParameters(type)[requiredMethod]);
+                    }
+                }
+
+                if (type.GetFields().Any())
+                    throw new VirtualResourceMemberException("A virtual resource cannot include fields, " +
+                                                             "only properties.");
             }
         }
     }

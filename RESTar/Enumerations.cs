@@ -37,4 +37,10 @@
         Json,
         Excel
     }
+
+    internal enum ResourceType : byte
+    {
+        ScTable,
+        Virtual
+    }
 }

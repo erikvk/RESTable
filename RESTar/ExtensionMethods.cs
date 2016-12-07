@@ -15,10 +15,10 @@ namespace RESTar
         {
             searchString = searchString.ToLower();
             Type type;
-            RESTarConfig.DbDomainDict.TryGetValue(searchString, out type);
+            RESTarConfig.ResourcesDict.TryGetValue(searchString, out type);
             if (type != null)
                 return type;
-            var keys = RESTarConfig.DbDomainDict
+            var keys = RESTarConfig.ResourcesDict
                 .Keys
                 .Where(key => key.EndsWith(searchString))
                 .ToList();
@@ -26,8 +26,8 @@ namespace RESTar
                 throw new UnknownResourceException(searchString);
             if (keys.Count > 1)
                 throw new AmbiguousResourceException(searchString,
-                    keys.Select(k => RESTarConfig.DbDomainDict[k].FullName).ToList());
-            return RESTarConfig.DbDomainDict[keys.First()];
+                    keys.Select(k => RESTarConfig.ResourcesDict[k].FullName).ToList());
+            return RESTarConfig.ResourcesDict[keys.First()];
         }
 
         internal static PropertyInfo FindColumn(this string searchString, Type resource)
@@ -41,6 +41,7 @@ namespace RESTar
                                ?? p.Name.ToLower();
                     return searchString == name;
                 });
+
             if (matches.Count() == 1)
                 return matches.First();
             if (matches.Count() > 1)
@@ -132,6 +133,36 @@ namespace RESTar
                 stringPart = $"WHERE {string.Join(" AND ", stringPart)}",
                 valuesPart = valuesPart.ToArray()
             };
+        }
+
+        public static object ValueForEquals(this IEnumerable<Condition> conditions, string key)
+        {
+            return conditions?.FirstOrDefault(c => c.Operator.Common == "=" && c.Key == key.ToLower())?.Value;
+        }
+
+        public static object ValueForNotEquals(this IEnumerable<Condition> conditions, string key)
+        {
+            return conditions?.FirstOrDefault(c => c.Operator.Common == "!=" && c.Key == key.ToLower())?.Value;
+        }
+
+        public static object ValueForGreaterThan(this IEnumerable<Condition> conditions, string key)
+        {
+            return conditions?.FirstOrDefault(c => c.Operator.Common == ">" && c.Key == key.ToLower())?.Value;
+        }
+
+        public static object ValueForLessThan(this IEnumerable<Condition> conditions, string key)
+        {
+            return conditions?.FirstOrDefault(c => c.Operator.Common == "<" && c.Key == key.ToLower())?.Value;
+        }
+
+        public static object ValueForGreaterThanOrEquals(this IEnumerable<Condition> conditions, string key)
+        {
+            return conditions?.FirstOrDefault(c => c.Operator.Common == ">=" && c.Key == key.ToLower())?.Value;
+        }
+
+        public static object ValueForLessThanOrEquals(this IEnumerable<Condition> conditions, string key)
+        {
+            return conditions?.FirstOrDefault(c => c.Operator.Common == "<=" && c.Key == key.ToLower())?.Value;
         }
 
         internal static object[] Values(this IEnumerable<Condition> conditions)

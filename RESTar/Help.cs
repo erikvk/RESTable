@@ -5,17 +5,17 @@ using Starcounter;
 
 namespace RESTar
 {
-    [Database]
-    [RESTar(RESTarPresets.ReadOnly)]
+    [RESTar(RESTarMethods.GET)]
     public class Help
     {
-        public string Topic;
-        public string Body;
-        public string SeeAlso;
+        public string Topic { get; set; }
+        public string Body { get; set; }
+        public string SeeAlso { get; set; }
 
-        public static string Get(string topic)
+        public static IEnumerable<Help> Get(IEnumerable<Condition> conditions)
         {
-            return HTTP.GET($"http://restarhelp.mopedo-drtb.com:8011/getarticle/{topic}").Body;
+            var topic = conditions.ValueForEquals("topic");
+            return JSON.Deserialize<Help[]>(HTTP.GET($"http://restarhelp.mopedo-drtb.com:8011/getarticle/{topic}").Body);
         }
     }
 }
