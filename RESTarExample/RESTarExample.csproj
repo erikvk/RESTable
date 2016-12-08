@@ -68,7 +68,13 @@
   <ItemGroup>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="TestClasses.cs" />
+    <Compile Include="ExampleClasses.cs" />
+    <Compile Include="TestDatabase.cs" />
+    <Compile Include="TestDb\Company.cs" />
+    <Compile Include="TestDb\Employee.cs" />
+    <Compile Include="TestDb\EmployeeDetails.cs" />
+    <Compile Include="TestDb\Generator.cs" />
+    <Compile Include="TestDb\TestBase.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\RESTar\RESTar.csproj">

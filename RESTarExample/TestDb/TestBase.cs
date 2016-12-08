@@ -1,11 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using RESTar;
 using Starcounter;
 
-namespace RESTar.TestDb
+namespace RESTarExample.TestDb
 {
     [Database, RESTar(RESTarPresets.ReadAndWrite)]
     public abstract class TestBase

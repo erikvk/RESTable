@@ -1,7 +1,7 @@
 ﻿using System;
 using Starcounter;
 
-namespace RESTar.TestDb
+namespace RESTarExample.TestDb
 {
     [Database]
     public class EmployeeDetails : TestBase

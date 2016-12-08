@@ -5,7 +5,6 @@ using System.Reflection;
 using System.Runtime.Serialization;
 using System.Text.RegularExpressions;
 using Jil;
-using Starcounter;
 
 namespace RESTar
 {

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Reflection;
 
 namespace RESTar
 {
@@ -154,6 +153,14 @@ namespace RESTar
     public class VirtualResourceMemberException : Exception
     {
         public VirtualResourceMemberException(string message)
+            : base(message)
+        {
+        }
+    }
+
+    public class InvalidResourceDefinitionException : Exception
+    {
+        public InvalidResourceDefinitionException(string message)
             : base(message)
         {
         }

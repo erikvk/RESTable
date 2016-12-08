@@ -6,14 +6,10 @@ using Starcounter;
 
 namespace RESTar
 {
-    [Database]
-    [RESTar(RESTarPresets.ReadOnly)]
-    public class ScTable : IResource
+    [Database, RESTar(RESTarPresets.ReadOnly)]
+    public class StarcounterResource : Resource
     {
-        public string Name;
-        public string AvailableMethods => Type.AvailableMethods().ToMethodsString();
-        public string BlockedMethods => Type.BlockedMethods().ToMethodsString();
-        public int NrOfColumns => Schema.Count;
+        public override int NrOfColumns => Schema.Count;
         public long NrOfRows => DB.RowCount(Name);
 
         public IDictionary<string, string> Schema
@@ -33,15 +29,7 @@ namespace RESTar
                 return dict;
             }
         }
-
-        [IgnoreDataMember]
-        public Type Type
-        {
-            get { return Name.FindResource(); }
-            set { Name = value.FullName; }
-        }
-
-        public ScTable(Type type)
+        public StarcounterResource(Type type)
         {
             Type = type;
         }

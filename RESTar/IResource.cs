@@ -1,12 +1,24 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Runtime.Serialization;
+using Starcounter;
 
 namespace RESTar
 {
-    public interface IResource
+    [Database]
+    [RESTar(RESTarPresets.ReadOnly)]
+    public abstract class Resource
     {
+        public string Name;
+        public string AvailableMethods => Type.AvailableMethods()?.ToMethodsString();
+        public string BlockedMethods => Type.BlockedMethods()?.ToMethodsString();
+
+        public abstract int NrOfColumns { get; }
+
+        [IgnoreDataMember]
+        public Type Type
+        {
+            get { return Name.FindResource(); }
+            set { Name = value.FullName; }
+        }
     }
 }

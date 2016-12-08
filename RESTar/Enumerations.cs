@@ -20,7 +20,13 @@
         /// <summary>
         /// Makes all methods available for this resource
         /// </summary>
-        ReadAndWrite
+        ReadAndWrite,
+
+        /// <summary>
+        /// Makes GET available on public port and the rest of the
+        /// methods available on only the private port.
+        /// </summary>
+        ReadAndPrivateWrite
     }
 
     public enum RESTarMethods : byte
@@ -29,7 +35,12 @@
         POST,
         PATCH,
         PUT,
-        DELETE
+        DELETE,
+        Private_GET,
+        Private_POST,
+        Private_PATCH,
+        Private_PUT,
+        Private_DELETE
     }
 
     internal enum RESTarMimeType : byte
@@ -40,7 +51,7 @@
 
     internal enum ResourceType : byte
     {
-        ScTable,
+        Starcounter,
         Virtual
     }
 }

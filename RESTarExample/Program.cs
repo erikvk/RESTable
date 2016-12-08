@@ -4,9 +4,10 @@ namespace RESTarExample
 {
     public class Program
     {
-        static void Main()
+        public static void Main()
         {
-            RESTarConfig.Init(httpPort: 8200, baseUri: "restar");
+            RESTarConfig.Init();
+            TestDatabase.Init();
         }
     }
 }

@@ -1,8 +1,9 @@
 ﻿using System.Collections.Generic;
 using System.Runtime.Serialization;
+using RESTar;
 using Starcounter;
 
-namespace RESTar.TestDb
+namespace RESTarExample.TestDb
 {
     [Database, RESTar(RESTarPresets.ReadAndWrite)]
     public class Company : TestBase

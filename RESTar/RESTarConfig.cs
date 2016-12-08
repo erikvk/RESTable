@@ -5,9 +5,8 @@ using System.Reflection;
 using Jil;
 using Starcounter;
 using static RESTar.Responses;
-using static RESTar.Evaluators;
+using static RESTar.RESTarMethods;
 using Newtonsoft.Json;
-using RESTar.TestDb;
 
 namespace RESTar
 {
@@ -16,25 +15,20 @@ namespace RESTar
         internal static IList<Type> ResourcesList;
         internal static IDictionary<string, Type> ResourcesDict;
         internal static IDictionary<Type, Type> IEnumTypes;
-
-        internal static RESTarMethods[] Methods =
-        {
-            RESTarMethods.GET,
-            RESTarMethods.POST,
-            RESTarMethods.PATCH,
-            RESTarMethods.PUT,
-            RESTarMethods.DELETE
-        };
+        internal static readonly RESTarMethods[] Methods = {GET, POST, PATCH, PUT, DELETE};
 
         /// <summary>
         /// Initiates the RESTar interface
         /// </summary>
-        /// <param name="httpPort">The port that RESTar should listen on</param>
+        /// <param name="publicPort">The main port that RESTar should listen on</param>
+        /// <param name="privatePort">A private port that RESTar should accept private methods from</param>
         /// <param name="baseUri">The URI that RESTar should listen on. E.g. '/rest'</param>
-        /// <param name="prettyPrint">Should JSON output be pretty print formatted</param>
+        /// <param name="prettyPrint">Should JSON output be pretty print formatted as default?
+        ///  (can be changed in settings during runtime)</param>
         public static void Init
         (
-            ushort httpPort,
+            ushort publicPort = 8282,
+            ushort privatePort = 8283,
             string baseUri = "/restar",
             bool prettyPrint = false
         )
@@ -42,7 +36,7 @@ namespace RESTar
             if (baseUri.First() != '/')
                 baseUri = $"/{baseUri}";
 
-            foreach (var resource in DB.All<ScTable>())
+            foreach (var resource in DB.All<Resource>())
                 Db.Transact(() => resource.Delete());
 
             ResourcesList = typeof(object)
@@ -50,10 +44,15 @@ namespace RESTar
                 .Where(t => t.HasAttribute<RESTarAttribute>())
                 .ToList();
 
-            var ScTableResources = ResourcesList.Where(t => t.HasAttribute<DatabaseAttribute>()).ToList();
-            var VirtualResources = ResourcesList.Except(ScTableResources);
-
-            CheckVirtualResources(VirtualResources);
+            var illegalResource = ResourcesList.FirstOrDefault(type => !type.HasAttribute<DatabaseAttribute>() &&
+                                                                       !type.HasAttribute<VirtualResourceAttribute>());
+            if (illegalResource != null)
+                throw new InvalidResourceDefinitionException(
+                    $"Invalid resource definition '{illegalResource.FullName}'. " +
+                    $"A RESTar resource must either be declared a Starcounter " +
+                    $"database type (using the Database attribute) or a Virtual " +
+                    $"resource (using the VirtualResource attribute). For more info " +
+                    $"see help article with topic 'virtual resources'");
 
             ResourcesDict = ResourcesList.ToDictionary(
                 type => type.FullName.ToLower(),
@@ -65,53 +64,57 @@ namespace RESTar
                 type => typeof(IEnumerable<>).MakeGenericType(type)
             );
 
-            foreach (var type in ScTableResources)
-            {
-                Scheduling.ScheduleTask(() => Db.Transact(() => new ScTable(type)));
+            var StarcounterResources = ResourcesList.Where(t => t.HasAttribute<DatabaseAttribute>()).ToList();
+            var VirtualResources = ResourcesList.Except(StarcounterResources).ToList();
 
+            CheckVirtualResources(VirtualResources);
+
+            foreach (var resource in VirtualResources)
+                Scheduling.ScheduleTask(() => Db.Transact(() => new VirtualResource(resource)));
+
+            foreach (var resource in StarcounterResources)
+                Scheduling.ScheduleTask(() => Db.Transact(() => new StarcounterResource(resource)));
+
+            foreach (var resource in ResourcesList)
+            {
                 Scheduling.ScheduleTask(() =>
                 {
                     try
                     {
-                        JSON.Deserialize("{}", type, Options.ISO8601IncludeInherited);
+                        JSON.Deserialize("{}", resource, Options.ISO8601IncludeInherited);
                     }
                     catch
                     {
                     }
                 });
-
                 Scheduling.ScheduleTask(() =>
                 {
                     try
                     {
-                        JSON.Deserialize("{}", type, Options.ISO8601PrettyPrintIncludeInherited);
+                        JSON.Deserialize("{}", resource, Options.ISO8601PrettyPrintIncludeInherited);
                     }
                     catch
                     {
                     }
                 });
             }
-
-            Settings.Init(baseUri, prettyPrint, httpPort);
-            TestDatabase.Init();
+            
+            Settings.Init(baseUri, prettyPrint, publicPort);
             Log.Init();
 
             baseUri += "{?}";
 
-            Handle.GET(httpPort, baseUri, (Request request, string query) =>
-                    Evaluate(request, query, GET, RESTarMethods.GET));
+            Handle.GET(publicPort, baseUri, (Request r, string q) => Evaluate(r, q, Eval.GET, GET));
+            Handle.POST(publicPort, baseUri, (Request r, string q) => Evaluate(r, q, Eval.POST, POST));
+            Handle.PUT(publicPort, baseUri, (Request r, string q) => Evaluate(r, q, Eval.PUT, PUT));
+            Handle.PATCH(publicPort, baseUri, (Request r, string q) => Evaluate(r, q, Eval.PATCH, PATCH));
+            Handle.DELETE(publicPort, baseUri, (Request r, string q) => Evaluate(r, q, Eval.DELETE, DELETE));
 
-            Handle.POST(httpPort, baseUri, (Request request, string query) =>
-                    Evaluate(request, query, POST, RESTarMethods.POST));
-
-            Handle.PUT(httpPort, baseUri, (Request request, string query) =>
-                    Evaluate(request, query, PUT, RESTarMethods.PUT));
-
-            Handle.PATCH(httpPort, baseUri, (Request request, string query) =>
-                    Evaluate(request, query, PATCH, RESTarMethods.PATCH));
-
-            Handle.DELETE(httpPort, baseUri, (Request request, string query) =>
-                    Evaluate(request, query, DELETE, RESTarMethods.DELETE));
+            Handle.GET(privatePort, baseUri, (Request r, string q) => Evaluate(r, q, Eval.GET, Private_GET));
+            Handle.POST(privatePort, baseUri, (Request r, string q) => Evaluate(r, q, Eval.POST, Private_POST));
+            Handle.PUT(privatePort, baseUri, (Request r, string q) => Evaluate(r, q, Eval.PUT, Private_PUT));
+            Handle.PATCH(privatePort, baseUri, (Request r, string q) => Evaluate(r, q, Eval.PATCH, Private_PATCH));
+            Handle.DELETE(privatePort, baseUri, (Request r, string q) => Evaluate(r, q, Eval.DELETE, Private_DELETE));
         }
 
         private static Response Evaluate(Request request, string query, Func<Command, Response> Evaluator,
@@ -192,7 +195,6 @@ namespace RESTar
                     return SemanticsError((SqlException) e.InnerException);
                 if (e.InnerException is DeserializationException)
                     return DeserializationError(e.Message);
-
                 return UnknownError(e);
             }
         }
@@ -228,15 +230,25 @@ namespace RESTar
                 {
                     switch (method)
                     {
-                        case RESTarMethods.GET:
+                        case GET:
                             return new[] {"Get"};
-                        case RESTarMethods.POST:
+                        case POST:
                             return new[] {"Insert"};
-                        case RESTarMethods.PUT:
+                        case PUT:
                             return new[] {"Get", "Insert"};
-                        case RESTarMethods.PATCH:
+                        case PATCH:
                             return new[] {"Get"};
-                        case RESTarMethods.DELETE:
+                        case DELETE:
+                            return new[] {"Get", "Delete"};
+                        case Private_GET:
+                            return new[] {"Get"};
+                        case Private_POST:
+                            return new[] {"Insert"};
+                        case Private_PUT:
+                            return new[] {"Get", "Insert"};
+                        case Private_PATCH:
+                            return new[] {"Get"};
+                        case Private_DELETE:
                             return new[] {"Get", "Delete"};
                     }
                     return null;
@@ -253,21 +265,21 @@ namespace RESTar
                         (
                             type,
                             $"Missing definition for '{requiredMethod}' according to template: " +
-                            $"{VirtualResourceMethodTemplates(type)[requiredMethod]}"
+                            VirtualResourceMethodTemplates(type)[requiredMethod]
                         );
                     }
                     if (method.ReturnType != VirtualResourceMethodReturnTypes(type)[requiredMethod])
                     {
                         throw new VirtualResourceSignatureException(
                             $"Wrong return type for method '{requiredMethod}'. Expected " +
-                            $"" + VirtualResourceMethodReturnTypes(type)[requiredMethod]);
+                            VirtualResourceMethodReturnTypes(type)[requiredMethod]);
                     }
                     if (method.GetParameters().FirstOrDefault()?.ParameterType !=
                         VirtualResourceMethodParameters(type)[requiredMethod])
                     {
                         throw new VirtualResourceSignatureException(
                             $"Wrong parameter type for method '{requiredMethod}'. Expected " +
-                            $"" + VirtualResourceMethodParameters(type)[requiredMethod]);
+                            VirtualResourceMethodParameters(type)[requiredMethod]);
                     }
                 }
 

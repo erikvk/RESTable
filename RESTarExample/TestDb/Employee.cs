@@ -1,10 +1,11 @@
 ﻿using System.Collections.Generic;
 using System.Runtime.Serialization;
+using RESTar;
 using Starcounter;
 
-namespace RESTar.TestDb
+namespace RESTarExample.TestDb
 {
-    [Database, RESTar(RESTarPresets.ReadAndWrite)]
+    [Database, RESTar(RESTarPresets.ReadAndPrivateWrite)]
     public class Employee : TestBase
     {
         public string Name;

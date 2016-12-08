@@ -8,7 +8,6 @@ using System.IO;
 using System.Reflection;
 using System.Runtime.Serialization;
 using ClosedXML.Excel;
-using Excel;
 using Newtonsoft.Json;
 
 namespace RESTar
@@ -70,7 +69,7 @@ namespace RESTar
         {
             StatusCode = (ushort) HttpStatusCode.Forbidden,
             StatusDescription = $"{method} is blocked for resource '{resource.FullName}'. Available " +
-                                $"methods: {resource.AvailableMethods().ToMethodsString()}"
+                                $"methods: {resource.AvailableMethods()?.ToMethodsString()}"
         };
 
         internal static Response ExternalSourceError(ExternalSourceException e) => new Response
@@ -118,7 +117,7 @@ namespace RESTar
                 $"Expected a uniquely matched entity in resource '{resource.FullName}' for this command, " +
                 "but matched multiple entities satisfying the given conditions. To enable manipulation of " +
                 "multiple matched entities (for commands that support this), add 'unsafe=true' to the " +
-                $"command's meta-conditions. GET: {Settings._Uri}/help/topic=unsafe for more info."
+                $"command's meta-conditions. See help article with topic 'unsafe' for more info."
         };
 
         internal static Response AmbiguousPutMatch() => new Response

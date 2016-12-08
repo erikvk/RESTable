@@ -22,7 +22,7 @@ namespace RESTar
             {
                 _resource = value;
                 ResourceType = _resource.HasAttribute<DatabaseAttribute>()
-                    ? ResourceType.ScTable
+                    ? ResourceType.Starcounter
                     : ResourceType.Virtual;
             }
         }
@@ -69,18 +69,18 @@ namespace RESTar
 
             if (argLength == 1)
             {
-                Resource = typeof(ScTable);
+                Resource = typeof(StarcounterResource);
                 return;
             }
 
             if (args[1] == "")
-                Resource = typeof(ScTable);
+                Resource = typeof(StarcounterResource);
             else Resource = args[1].FindResource();
             if (argLength == 2) return;
 
             Conditions = Condition.ParseConditions(Resource, args[2]);
             if (Conditions != null &&
-                (Resource == typeof(ScTable) || Resource.IsSubclassOf(typeof(ScTable))))
+                (Resource == typeof(StarcounterResource) || Resource.IsSubclassOf(typeof(StarcounterResource))))
             {
                 var nameCondition = Conditions.FirstOrDefault(c => c.Key == "name");
                 if (nameCondition != null)
@@ -176,7 +176,7 @@ namespace RESTar
                 Unsafe = unsafeOverride.Value;
             switch (ResourceType)
             {
-                case ResourceType.ScTable:
+                case ResourceType.Starcounter:
                     if (Unsafe)
                         return DB.GetStatic(Resource, Conditions.ToWhereClause(), Limit, OrderBy);
                     dynamic items = DB.GetStatic(Resource, Conditions.ToWhereClause(), 2, OrderBy);

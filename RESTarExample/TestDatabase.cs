@@ -1,7 +1,8 @@
-﻿using RESTar.TestDb;
+﻿using RESTar;
+using RESTarExample.TestDb;
 using Starcounter;
 
-namespace RESTar
+namespace RESTarExample
 {
     [Database, RESTar(RESTarPresets.ReadAndUpdate)]
     public class TestDatabase

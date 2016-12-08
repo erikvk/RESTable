@@ -1,56 +1,34 @@
 ﻿
-# RESTar (alpha) - an audacious REST Api for Starcounter
-# This readme will be included as a resource in RESTar in a future version
+# RESTar (alpha) - a REST Api for Starcounter
 # RESTar is a work in progress, contact Erik at erik.von.krusenstierna@mopedo.com with questions, comments or issues
 # See the example project for more concrete implementation details and guidelines
+# More information is included in the help resource inside RESTar
 
 # SECTIONS:
-    1. Commands
-    2. Resources
-
-    3. Methods
-    4. Safe and unsafe commands
-    5. Examples
+    1. Setup
+    2 
+    Examples
 
 - - -
 
-1. Requests
+1. Setup
 
-RESTar take HTTP requests as input, but extends the URI syntax to express more detailed interactions with its resources. Requests to RESTar have the following components:
+To get started using RESTar, make an assembly reference to the RESTar.dll file from your Visual Studio project, and add a 
+using directive for the RESTar namespace to your Starcounter application. Then make a call to RESTar.RESTarConfig.Init() 
+in your Starcounter application (for example in the constructor or Main method). When your application starts, RESTar will 
+make its settings and resources available for you as Starcounter database entities. You can reach them by querying (using 
+e.g. Starcounter Administrator): 'SELECT * FROM RESTar.Settings' or 'SELECT * FROM RESTar.Resources' respectively. By now 
+RESTar will be fully up and running and you can reach the resources and send requests over its REST Api. The next step is 
+to ensure that your resources are serializable in a way that works well with RESTar. See the RESTarExample project for a 
+discussion on what this entails.  
+ 
+When your RESTar instance is upp and running, make sure to check out the available help articles at GET /help
 
-    Method: [GET|POST|PUT|PATCH|DELETE]
 
-    URI: http://[ip_address][:port]/[base_uri][/resource_locator][/conditions][/meta-conditions]
 
-    Headers: [ExternalSource: URI],
 
-    Data: [JSON object|JSON object array]
 
-Some URI instances:
 
-http://10.0.1.12:8200/my_uri/device
-http://10.0.1.12:8200/my_uri/user/id=200/select=name,id
-http://10.0.1.1/my_uri/device//limit=1
-http://10.0.1.1/my_uri///order_desc=nrofrows
-
-For more examples, see 'Examples' section.
-
-1.1. ip_address 
-
-The IP address used to reach your Starcounter application.
-
-1.2. port
-
-The configurable port that RESTar handlers are registered to listen on. This is passed as an argument to RESTar.Config.Init() on start-up (see help/topic=config)
-    
-1.3. base_uri
-
-The configurable base uri that RESTar handlers are registered to listen on. This is also passed as an argument to RESTar.Config.Init().
-    
-1.4. resource_locator
-
-A case-insensitive string used for matching against available resources by name. Example: If no other resource has the name "Settings" The resource 'RESTar.Settings' can be located with resource locator 'settings'. If multiple resources are matched, a 409 response will be returned asking you to further qualify the resource locator.
-    
 1.5. conditions
 
 Key-value pairs used for matching entities within a resource. For info about which methods utilize matching, see /help/topic=methods. Example: To get entities in a resource R with age of 35, GET: uri/R/age=35. For more examples, see help/topic=examples

@@ -8,7 +8,7 @@ using static RESTar.Responses;
 
 namespace RESTar
 {
-    internal static class Evaluators
+    internal static class Eval
     {
         internal static Response DELETE(Command command)
         {

@@ -8,7 +8,7 @@ namespace RESTar
     /// <summary>
     /// This class provides static methods for database queries in the DRTB system.
     /// </summary>
-    internal static class DB
+    public static class DB
     {
         internal static IEnumerable<dynamic> GetStatic(Type resource, WhereClause whereClause,
             int limit = -1, OrderBy orderBy = null)

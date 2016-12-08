@@ -27,16 +27,37 @@ namespace RESTar
             switch (preset)
             {
                 case RESTarPresets.ReadOnly:
-                    AvailableMethods = new[] {RESTarMethods.GET};
+                    AvailableMethods = new[]
+                    {
+                        RESTarMethods.GET
+                    };
                     break;
                 case RESTarPresets.WriteOnly:
-                    AvailableMethods = new[] {RESTarMethods.POST, RESTarMethods.DELETE};
+                    AvailableMethods = new[]
+                    {
+                        RESTarMethods.POST,
+                        RESTarMethods.DELETE
+                    };
                     break;
                 case RESTarPresets.ReadAndUpdate:
-                    AvailableMethods = new[] {RESTarMethods.GET, RESTarMethods.PATCH};
+                    AvailableMethods = new[]
+                    {
+                        RESTarMethods.GET,
+                        RESTarMethods.PATCH
+                    };
                     break;
                 case RESTarPresets.ReadAndWrite:
                     AvailableMethods = RESTarConfig.Methods;
+                    break;
+                case RESTarPresets.ReadAndPrivateWrite:
+                    AvailableMethods = new[]
+                    {
+                        RESTarMethods.GET,
+                        RESTarMethods.Private_POST,
+                        RESTarMethods.Private_PUT,
+                        RESTarMethods.Private_PATCH,
+                        RESTarMethods.Private_DELETE
+                    };
                     break;
             }
         }
@@ -47,7 +68,7 @@ namespace RESTar
         }
     }
 
-    public sealed class VirtualAttribute : Attribute
+    public class VirtualResourceAttribute : Attribute
     {
     }
 }
