@@ -31,6 +31,7 @@ namespace RESTarExample.TestDb
         [DataMember(Name = "Company")]
         public ulong? CompanyObjectNo;
 
+        [IgnoreDataMember]
         public IEnumerable<Employee> Subordinates
         {
             get { return Db.SQL<Employee>($"SELECT t FROM {GetType().FullName} t WHERE t.Boss =?", this); }

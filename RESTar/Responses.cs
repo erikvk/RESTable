@@ -5,8 +5,6 @@ using System.Net;
 using Starcounter;
 using System.Data;
 using System.IO;
-using System.Reflection;
-using System.Runtime.Serialization;
 using ClosedXML.Excel;
 using Newtonsoft.Json;
 
@@ -154,31 +152,81 @@ namespace RESTar
             StatusDescription = $"{count} entities deleted from resource '{resource.FullName}'"
         };
 
-        internal static Response GetEntities(Command command, IEnumerable<dynamic> content)
+        internal static Response GetEntities(Command command, IEnumerable<dynamic> entities)
         {
             var response = new Response();
             string jsonString;
-            if (command.Select != null)
+
+            #region Only Select
+
+            if (command.Select != null && command.Rename == null)
             {
-                var list = new List<dynamic>();
-                foreach (var obj in content)
+                var columns = command.Resource.GetColumns();
+                var newEntitiesList = new List<dynamic>();
+                foreach (var entity in entities)
                 {
-                    var dict = new Dictionary<string, dynamic>();
-                    var props = new List<PropertyInfo>();
+                    var newEntity = new Dictionary<string, dynamic>();
                     foreach (var s in command.Select)
                     {
-                        Type resource = obj.GetType();
-                        props.Add(s.FindColumn(resource));
+                        var column = columns.FindColumn(command.Resource, s);
+                        newEntity[column.GetColumnName()] = column.GetValue(entity);
                     }
-                    foreach (var p in props)
-                        dict[p.GetAttribute<DataMemberAttribute>()?.Name ?? p.Name] = p.GetValue(obj);
-                    list.Add(dict);
+                    newEntitiesList.Add(newEntity);
                 }
-                jsonString = list.SerializeDyn();
+                jsonString = newEntitiesList.SerializeDyn();
             }
+
+            #endregion
+
+            #region Only Rename
+
+            else if (command.Select == null && command.Rename != null)
+            {
+                var columns = command.Resource.GetColumns();
+                var newEntitiesList = new List<dynamic>();
+                foreach (var entity in entities)
+                {
+                    var newEntity = new Dictionary<string, dynamic>();
+                    foreach (var column in columns)
+                    {
+                        var name = column.GetColumnName();
+                        string newKey;
+                        command.Rename.TryGetValue(name.ToLower(), out newKey);
+                        newEntity[newKey ?? name] = column.GetValue(entity);
+                    }
+                    newEntitiesList.Add(newEntity);
+                }
+                jsonString = newEntitiesList.SerializeDyn();
+            }
+
+            #endregion
+
+            #region Both Select and Rename
+
+            else if (command.Select != null && command.Rename != null)
+            {
+                var columns = command.Resource.GetColumns();
+                var newEntitiesList = new List<dynamic>();
+                foreach (var entity in entities)
+                {
+                    var newEntity = new Dictionary<string, dynamic>();
+                    foreach (var s in command.Select)
+                    {
+                        var column = columns.FindColumn(command.Resource, s);
+                        string newKey;
+                        command.Rename.TryGetValue(s, out newKey);
+                        newEntity[newKey ?? column.GetColumnName()] = column.GetValue(entity);
+                    }
+                    newEntitiesList.Add(newEntity);
+                }
+                jsonString = newEntitiesList.SerializeDyn();
+            }
+
+            #endregion
+
             else if (command.Dynamic)
-                jsonString = content.SerializeDyn();
-            else jsonString = content.Serialize(RESTarConfig.IEnumTypes[command.Resource]);
+                jsonString = entities.SerializeDyn();
+            else jsonString = entities.Serialize(RESTarConfig.IEnumTypes[command.Resource]);
 
             if (command.OutputMimeType == RESTarMimeType.Excel)
             {

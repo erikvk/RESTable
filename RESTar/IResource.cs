@@ -10,8 +10,7 @@ namespace RESTar
     {
         public string Name;
         public string AvailableMethods => Type.AvailableMethods()?.ToMethodsString();
-        public string BlockedMethods => Type.BlockedMethods()?.ToMethodsString();
-
+        
         public abstract int NrOfColumns { get; }
 
         [IgnoreDataMember]

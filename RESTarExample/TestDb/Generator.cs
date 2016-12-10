@@ -743,10 +743,10 @@ namespace RESTarExample.TestDb
             {
                 var _ceo = new Employee
                 {
-                    Name = givenNames[rand.Next(0, 11)] + " " + surnames[rand.Next(0, 11)],
+                    Name = $"{givenNames[rand.Next(0, givenNames.Count)]} {surnames[rand.Next(0, surnames.Count)]}",
                     Details = new EmployeeDetails
                     {
-                        DateOfEmployment = DateTime.Now.AddDays(-rand.Next(15, 3000)),
+                        DateOfEmployment = DateTime.Now.Date.AddDays(-rand.Next(15, 3000)),
                         Salary = rand.Next(90000, 110000)
                     },
                     Company = c1
@@ -755,30 +755,30 @@ namespace RESTarExample.TestDb
                 return _ceo;
             });
 
-            foreach (var i in Enumerable.Range(0, 2000))
+            foreach (var i in Enumerable.Range(0, 4000))
             {
                 Db.Transact(() =>
                 {
                     var b = new Employee
                     {
-                        Name = givenNames[rand.Next(0, 11)] + " " + surnames[rand.Next(0, 11)],
+                        Name = $"{givenNames[rand.Next(0, givenNames.Count)]} {surnames[rand.Next(0, surnames.Count)]}",
                         Details = new EmployeeDetails
                         {
-                            DateOfEmployment = DateTime.Now.AddDays(-rand.Next(15, 3000)),
+                            DateOfEmployment = DateTime.Now.Date.AddDays(-rand.Next(15, 3000)),
                             Salary = rand.Next(60000, 70000)
                         },
                         Boss = ceo,
                         Company = c1
                     };
 
-                    foreach (var k in Enumerable.Range(0, rand.Next(6, 24)))
+                    foreach (var k in Enumerable.Range(0, rand.Next(20, 40)))
                     {
                         new Employee
                         {
-                            Name = givenNames[rand.Next(0, 11)] + " " + surnames[rand.Next(0, 11)],
+                            Name = $"{givenNames[rand.Next(0, givenNames.Count)]} {surnames[rand.Next(0, surnames.Count)]}",
                             Details = new EmployeeDetails
                             {
-                                DateOfEmployment = DateTime.Now.AddDays(-rand.Next(15, 3000)),
+                                DateOfEmployment = DateTime.Now.Date.AddDays(-rand.Next(15, 3000)),
                                 Salary = rand.Next(40000, 50000)
                             },
                             Company = c1,

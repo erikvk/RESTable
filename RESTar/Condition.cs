@@ -73,6 +73,7 @@ namespace RESTar
             ["order_asc"] = typeof(string),
             ["unsafe"] = typeof(bool),
             ["select"] = typeof(string),
+            ["rename"] = typeof(string),
             ["dynamic"] = typeof(bool)
         };
 
@@ -90,8 +91,9 @@ namespace RESTar
 
         private static string GetKey(Type resource, string keyString)
         {
+            var columns = resource.GetColumns();
             if (!keyString.Contains('.'))
-                return keyString.FindColumn(resource).Name;
+                return columns.FindColumn(resource, keyString).Name;
 
             keyString = keyString.ToLower();
             var parts = keyString.Split('.');
@@ -120,7 +122,9 @@ namespace RESTar
                                               "to database types (resources) can be used in queries.");
                 types.Add(type);
             }
-            var lastColumn = parts.Last().FindColumn(types.Last());
+            var lastType = types.Last();
+            var lastColumns = lastType.GetColumns();
+            var lastColumn = lastColumns.FindColumn(lastType, parts.Last());
             parts[parts.Length - 1] = lastColumn.Name;
             return string.Join(".", parts);
         }

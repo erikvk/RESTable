@@ -29,7 +29,7 @@
         ReadAndPrivateWrite
     }
 
-    public enum RESTarMethods : byte
+    public enum RESTarMethods
     {
         GET,
         POST,

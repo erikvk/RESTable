@@ -36,6 +36,7 @@ namespace RESTar
         public int Limit = -1;
         public OrderBy OrderBy;
         public string[] Select;
+        public IDictionary<string, string> Rename;
         public string ExternalSource;
         public string Json;
         public bool Dynamic;
@@ -69,20 +70,20 @@ namespace RESTar
 
             if (argLength == 1)
             {
-                Resource = typeof(StarcounterResource);
+                Resource = typeof(Resource);
                 return;
             }
 
             if (args[1] == "")
-                Resource = typeof(StarcounterResource);
+                Resource = typeof(Resource);
             else Resource = args[1].FindResource();
             if (argLength == 2) return;
 
             Conditions = Condition.ParseConditions(Resource, args[2]);
             if (Conditions != null &&
-                (Resource == typeof(StarcounterResource) || Resource.IsSubclassOf(typeof(StarcounterResource))))
+                (Resource == typeof(Resource) || Resource.IsSubclassOf(typeof(Resource))))
             {
-                var nameCondition = Conditions.FirstOrDefault(c => c.Key == "name");
+                var nameCondition = Conditions.FirstOrDefault(c => c.Key.ToLower() == "name");
                 if (nameCondition != null)
                     nameCondition.Value = nameCondition.Value.ToString().FindResource().FullName;
             }
@@ -99,6 +100,11 @@ namespace RESTar
                 Select = ((string) MetaConditions["select"]).Split(',').Select(s => s.ToLower()).ToArray();
             if (MetaConditions.ContainsKey("dynamic"))
                 Dynamic = (bool) MetaConditions["dynamic"];
+            if (MetaConditions.ContainsKey("rename"))
+                Rename = ((string) MetaConditions["rename"]).Split(',').ToDictionary(
+                    pair => pair.Split(new[] {"->"}, StringSplitOptions.None)[0].ToLower(),
+                    pair => pair.Split(new[] {"->"}, StringSplitOptions.None)[1]
+                );
 
             var orderKey = MetaConditions.Keys.FirstOrDefault(key => key.Contains("order"));
             if (orderKey == null) return;
@@ -185,7 +191,7 @@ namespace RESTar
                 case ResourceType.Virtual:
                     if (Unsafe)
                         return (IEnumerable<dynamic>) Resource.GetMethod("Get").Invoke(null, new object[] {Conditions});
-                    dynamic _items = Resource.GetMethod("Get").Invoke(null, new object[] { Conditions });
+                    dynamic _items = Resource.GetMethod("Get").Invoke(null, new object[] {Conditions});
                     if (Enumerable.Count(_items) > 1) throw new AmbiguousMatchException(Resource);
                     return _items;
                 default:

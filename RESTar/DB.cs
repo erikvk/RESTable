@@ -22,8 +22,8 @@ namespace RESTar
             if (limit < 1)
                 entities = generic.Invoke(null, new object[] {sql, whereClause?.valuesPart});
             else
-                entities = Enumerable.Take((dynamic) generic.Invoke(null, new object[] {sql, whereClause?.valuesPart}),
-                    limit);
+                entities = Enumerable.ToList(Enumerable.Take((dynamic) generic.Invoke(null, new object[] {sql, whereClause?.valuesPart}),
+                    limit));
 
             return entities;
         }

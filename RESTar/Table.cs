@@ -7,7 +7,7 @@ using Starcounter;
 namespace RESTar
 {
     [Database, RESTar(RESTarPresets.ReadOnly)]
-    public class StarcounterResource : Resource
+    public class Table : Resource
     {
         public override int NrOfColumns => Schema.Count;
         public long NrOfRows => DB.RowCount(Name);
@@ -29,7 +29,7 @@ namespace RESTar
                 return dict;
             }
         }
-        public StarcounterResource(Type type)
+        public Table(Type type)
         {
             Type = type;
         }

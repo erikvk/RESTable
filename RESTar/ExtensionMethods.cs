@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Resources;
 using System.Runtime.Serialization;
 using System.Text.RegularExpressions;
 using Jil;
@@ -29,23 +31,25 @@ namespace RESTar
             return RESTarConfig.ResourcesDict[keys.First()];
         }
 
-        internal static PropertyInfo FindColumn(this string searchString, Type resource)
+        internal static PropertyInfo FindColumn(this IEnumerable<PropertyInfo> columns, Type resource, string str)
         {
-            var matches = resource
-                .GetProperties()
-                .Where(p => p.GetAttribute<IgnoreDataMemberAttribute>() == null)
-                .Where(p =>
-                {
-                    var name = p.GetAttribute<DataMemberAttribute>()?.Name?.ToLower()
-                               ?? p.Name.ToLower();
-                    return searchString == name;
-                });
-
+            var matches = columns.Where(p => str == (p.GetAttribute<DataMemberAttribute>()?.Name?.ToLower()
+                                                     ?? p.Name.ToLower()));
             if (matches.Count() == 1)
                 return matches.First();
             if (matches.Count() > 1)
-                throw new AmbiguousColumnException(resource, searchString, matches.Select(m => m.Name).ToList());
-            throw new UnknownColumnException(resource, searchString);
+                throw new AmbiguousColumnException(resource, str, matches.Select(m => m.Name).ToList());
+            throw new UnknownColumnException(resource, str);
+        }
+
+        internal static string GetColumnName(this PropertyInfo column)
+        {
+            return column.GetAttribute<DataMemberAttribute>()?.Name ?? column.Name;
+        }
+
+        internal static PropertyInfo[] GetColumns(this Type resource)
+        {
+            return resource.GetProperties().Where(p => !p.HasAttribute<IgnoreDataMemberAttribute>()).ToArray();
         }
 
         internal static IEnumerable<Type> GetSubclasses(this Type baseType)
@@ -80,27 +84,34 @@ namespace RESTar
 
         internal static string Serialize(this object obj, Type resource)
         {
-            var method = typeof(JSON).GetMethods().First(n => n.Name == "Serialize" && n.GetParameters().Length == 2);
+            var method = typeof(JSON).GetMethods().First(n => n.Name == "Serialize" && n.ReturnType == typeof(void));
             var generic = method.MakeGenericMethod(resource);
+            var writer = new StringWriter();
             if (Settings.Instance.PrettyPrint)
-                return (string) generic.Invoke
+            {
+                generic.Invoke
                 (
                     null,
                     new[]
                     {
                         obj,
+                        writer,
                         Options.ISO8601PrettyPrintExcludeNullsIncludeInherited
                     }
                 );
-            return (string) generic.Invoke
+                return writer.ToString();
+            }
+            generic.Invoke
             (
                 null,
                 new[]
                 {
                     obj,
+                    writer,
                     Options.ISO8601ExcludeNullsIncludeInherited
                 }
             );
+            return writer.ToString();
         }
 
         internal static string[] Keys(this IEnumerable<Condition> conditions)
@@ -174,14 +185,9 @@ namespace RESTar
             return conditions.Select(c => c.Operator).ToArray();
         }
 
-        internal static IEnumerable<RESTarMethods> AvailableMethods(this Type resource)
+        internal static ICollection<RESTarMethods> AvailableMethods(this Type resource)
         {
             return resource.GetAttribute<RESTarAttribute>()?.AvailableMethods;
-        }
-
-        internal static IEnumerable<RESTarMethods> BlockedMethods(this Type resource)
-        {
-            return RESTarConfig.Methods.Except(resource.AvailableMethods() ?? new RESTarMethods[0]);
         }
 
         internal static string ToMethodsString(this IEnumerable<RESTarMethods> ie) => string.Join(", ", ie);

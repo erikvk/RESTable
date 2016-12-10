@@ -73,7 +73,7 @@ namespace RESTar
                 Scheduling.ScheduleTask(() => Db.Transact(() => new VirtualResource(resource)));
 
             foreach (var resource in StarcounterResources)
-                Scheduling.ScheduleTask(() => Db.Transact(() => new StarcounterResource(resource)));
+                Scheduling.ScheduleTask(() => Db.Transact(() => new Table(resource)));
 
             foreach (var resource in ResourcesList)
             {
@@ -98,7 +98,7 @@ namespace RESTar
                     }
                 });
             }
-            
+
             Settings.Init(baseUri, prettyPrint, publicPort);
             Log.Init();
 
@@ -109,6 +109,8 @@ namespace RESTar
             Handle.PUT(publicPort, baseUri, (Request r, string q) => Evaluate(r, q, Eval.PUT, PUT));
             Handle.PATCH(publicPort, baseUri, (Request r, string q) => Evaluate(r, q, Eval.PATCH, PATCH));
             Handle.DELETE(publicPort, baseUri, (Request r, string q) => Evaluate(r, q, Eval.DELETE, DELETE));
+
+            if (privatePort == 0) return;
 
             Handle.GET(privatePort, baseUri, (Request r, string q) => Evaluate(r, q, Eval.GET, Private_GET));
             Handle.POST(privatePort, baseUri, (Request r, string q) => Evaluate(r, q, Eval.POST, Private_POST));
@@ -124,9 +126,13 @@ namespace RESTar
             try
             {
                 var command = new Command(request, query, method);
+                var availableMethods = command.Resource.AvailableMethods();
+                if (!availableMethods.Contains(method) &&
+                    !availableMethods.Contains(method - 5))
+                {
+                    return BlockedMethod(PublicVersion(method), command.Resource);
+                }
                 command.ResolveDataSource();
-                if (command.Resource.BlockedMethods().Contains(method))
-                    return BlockedMethod(method, command.Resource);
                 return Evaluator(command);
             }
             catch (SqlException e)
@@ -287,6 +293,13 @@ namespace RESTar
                     throw new VirtualResourceMemberException("A virtual resource cannot include fields, " +
                                                              "only properties.");
             }
+        }
+
+        private static RESTarMethods PublicVersion(RESTarMethods method)
+        {
+            if (method >= Private_GET)
+                return method - 5;
+            return method;
         }
     }
 }
