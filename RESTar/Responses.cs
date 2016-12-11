@@ -5,6 +5,7 @@ using System.Net;
 using Starcounter;
 using System.Data;
 using System.IO;
+using System.Reflection;
 using ClosedXML.Excel;
 using Newtonsoft.Json;
 
@@ -168,8 +169,17 @@ namespace RESTar
                     var newEntity = new Dictionary<string, dynamic>();
                     foreach (var s in command.Select)
                     {
-                        var column = columns.FindColumn(command.Resource, s);
-                        newEntity[column.GetColumnName()] = column.GetValue(entity);
+                        if (s.Contains('.'))
+                        {
+                            dynamic value;
+                            string key = ExtensionMethods.FindLastKeyValue(command.Resource, s, entity, out value);
+                            newEntity[key] = value;
+                        }
+                        else
+                        {
+                            var column = columns.FindColumn(command.Resource, s);
+                            newEntity[column.GetColumnName()] = column.GetValue(entity);
+                        }
                     }
                     newEntitiesList.Add(newEntity);
                 }
@@ -212,10 +222,21 @@ namespace RESTar
                     var newEntity = new Dictionary<string, dynamic>();
                     foreach (var s in command.Select)
                     {
-                        var column = columns.FindColumn(command.Resource, s);
-                        string newKey;
-                        command.Rename.TryGetValue(s, out newKey);
-                        newEntity[newKey ?? column.GetColumnName()] = column.GetValue(entity);
+                        if (s.Contains('.'))
+                        {
+                            dynamic value;
+                            string key = ExtensionMethods.FindLastKeyValue(command.Resource, s, entity, out value);
+                            string newKey;
+                            command.Rename.TryGetValue(key.ToLower(), out newKey);
+                            newEntity[newKey ?? key] = value;
+                        }
+                        else
+                        {
+                            var column = columns.FindColumn(command.Resource, s);
+                            string newKey;
+                            command.Rename.TryGetValue(s, out newKey);
+                            newEntity[newKey ?? column.GetColumnName()] = column.GetValue(entity);
+                        }
                     }
                     newEntitiesList.Add(newEntity);
                 }

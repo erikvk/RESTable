@@ -7,6 +7,7 @@ using System.Resources;
 using System.Runtime.Serialization;
 using System.Text.RegularExpressions;
 using Jil;
+using Starcounter;
 
 namespace RESTar
 {
@@ -29,6 +30,49 @@ namespace RESTar
                 throw new AmbiguousResourceException(searchString,
                     keys.Select(k => RESTarConfig.ResourcesDict[k].FullName).ToList());
             return RESTarConfig.ResourcesDict[keys.First()];
+        }
+
+        internal static string FindLastKeyValue(Type resource, string keyString, dynamic root, out dynamic value)
+        {
+            value = null;
+            keyString = keyString.ToLower();
+            var parts = keyString.Split('.');
+            if (parts.Length == 1)
+                throw new SyntaxException($"Invalid condition '{keyString}'");
+            var types = new List<Type>();
+            var names = new List<string>();
+            var first = true;
+            foreach (var str in parts.Take(parts.Length - 1))
+            {
+                var containingType = types.LastOrDefault() ?? resource;
+                var column = containingType
+                    .GetProperties()
+                    .FirstOrDefault(prop => str == prop.Name.ToLower());
+                if (column == null)
+                    throw new UnknownColumnException(resource, keyString);
+                var type = column.PropertyType;
+                if (type.GetAttribute<RESTarAttribute>()?.AvailableMethods.Contains(RESTarMethods.GET) != true)
+                    throw new SyntaxException($"RESTar does not have read access to resource '{type.FullName}' " +
+                                              $"referenced in '{keyString}'.");
+                if (!type.HasAttribute<DatabaseAttribute>())
+                    throw new SyntaxException($"A part '{str}' of condition key '{keyString}' referenced type " +
+                                              $"'{type.FullName}', which is of a non-database type. Only references " +
+                                              "to database types (resources) can be used in queries.");
+                if (first)
+                    value = column.GetValue(root);
+                else if (value != null)
+                    value = column.GetValue(value);
+                types.Add(type);
+                names.Add(column.Name);
+                first = false;
+            }
+            var lastType = types.Last();
+            var lastColumns = lastType.GetColumns();
+            var lastColumn = lastColumns.FindColumn(lastType, parts.Last());
+            if (value != null)
+                value = lastColumn.GetValue(value);
+            names.Add(lastColumn.Name);
+            return string.Join(".", names);
         }
 
         internal static PropertyInfo FindColumn(this IEnumerable<PropertyInfo> columns, Type resource, string str)
@@ -78,8 +122,8 @@ namespace RESTar
         internal static string SerializeDyn(this object obj)
         {
             if (Settings.Instance.PrettyPrint)
-                return JSON.SerializeDynamic(obj, Options.ISO8601PrettyPrintExcludeNullsIncludeInherited);
-            return JSON.SerializeDynamic(obj, Options.ISO8601ExcludeNullsIncludeInherited);
+                return JSON.SerializeDynamic(obj, Options.ISO8601PrettyPrintIncludeInherited);
+            return JSON.SerializeDynamic(obj, Options.ISO8601IncludeInherited);
         }
 
         internal static string Serialize(this object obj, Type resource)
@@ -96,7 +140,7 @@ namespace RESTar
                     {
                         obj,
                         writer,
-                        Options.ISO8601PrettyPrintExcludeNullsIncludeInherited
+                        Options.ISO8601PrettyPrintIncludeInherited
                     }
                 );
                 return writer.ToString();
@@ -108,7 +152,7 @@ namespace RESTar
                 {
                     obj,
                     writer,
-                    Options.ISO8601ExcludeNullsIncludeInherited
+                    Options.ISO8601IncludeInherited
                 }
             );
             return writer.ToString();
