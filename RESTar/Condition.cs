@@ -6,7 +6,7 @@ using Starcounter;
 
 namespace RESTar
 {
-    public class Condition
+    public sealed class Condition
     {
         public string Key;
         public Operator Operator;

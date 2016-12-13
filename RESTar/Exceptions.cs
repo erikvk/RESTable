@@ -89,9 +89,8 @@ namespace RESTar
         public readonly Type Resource;
 
         public AmbiguousColumnException(Type resource, string searchString, ICollection<string> candidates)
-            : base(
-                $"RESTar could not uniquely identify a column in resource {resource.FullName} by '{searchString}'. " +
-                $"Candidates were: {string.Join(", ", candidates)}. ")
+            : base($"RESTar could not uniquely identify a column in resource {resource.FullName} by " +
+                   $"'{searchString}'. Candidates were: {string.Join(", ", candidates)}. ")
         {
             SearchString = searchString;
             Candidates = candidates;
@@ -137,7 +136,7 @@ namespace RESTar
             : base($"The resource type definition for {resource.FullName} is not decorated with the Starcounter " +
                    $"database attribute, and is therefore considered a virtual resource definition. Virtual resources " +
                    $"must contain static method definitions supporting the enabled RESTar methods for the resource " +
-                   $"(see help/topic=\"virtual resources\" for more info). {missingMethodDef}")
+                   $"(see help article on virtual resources for more info). {missingMethodDef}")
         {
         }
     }

@@ -127,11 +127,8 @@ namespace RESTar
             {
                 var command = new Command(request, query, method);
                 var availableMethods = command.Resource.AvailableMethods();
-                if (!availableMethods.Contains(method) &&
-                    !availableMethods.Contains(method - 5))
-                {
+                if (!availableMethods.Contains(method) && !availableMethods.Contains(method - 5))
                     return BlockedMethod(PublicVersion(method), command.Resource);
-                }
                 command.ResolveDataSource();
                 return Evaluator(command);
             }
@@ -194,6 +191,10 @@ namespace RESTar
             catch (JsonSerializationException)
             {
                 return DeserializationError(request.Body);
+            }
+            catch (DbException e)
+            {
+                return DatabaseError(e);
             }
             catch (Exception e)
             {

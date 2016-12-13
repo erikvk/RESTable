@@ -54,8 +54,8 @@ namespace RESTar
         internal static Response SemanticsError(SqlException e) => new Response
         {
             StatusCode = (ushort) HttpStatusCode.BadRequest,
-            StatusDescription = $"{e.Message}To enumerate available sub-resources (e.g. columns in a table) " +
-                                $"for a RESTar resource R: GET {Settings._ResourcesPath}/RESTar.resource/name=R"
+            StatusDescription = $"{e.Message}To enumerate columns in a resource R: GET " +
+                                $"{Settings._ResourcesPath}/RESTar.resource/name=R"
         };
 
         internal static Response DeserializationError(string json) => new Response
@@ -63,6 +63,24 @@ namespace RESTar
             StatusCode = (ushort) HttpStatusCode.BadRequest,
             StatusDescription = $"Error while deserializing JSON. Check JSON syntax:\n{json}"
         };
+
+        internal static Response DatabaseError(Exception e)
+        {
+            if (e.Message.Contains("SCERR4034"))
+                return new Response
+                {
+                    StatusCode = (ushort) HttpStatusCode.Forbidden,
+                    StatusDescription = "The operation was aborted by a commit hook. " +
+                                        (e.InnerException?.Message ?? e.Message)
+                };
+
+            return new Response
+            {
+                StatusCode = (ushort) HttpStatusCode.InternalServerError,
+                StatusDescription = "The Starcounter database encountered an error: " +
+                                    (e.InnerException?.Message ?? e.Message)
+            };
+        }
 
         internal static Response BlockedMethod(RESTarMethods method, Type resource) => new Response
         {

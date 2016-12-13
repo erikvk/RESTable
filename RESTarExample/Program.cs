@@ -1,4 +1,6 @@
-﻿using RESTar;
+﻿using System;
+using RESTar;
+using Starcounter;
 
 namespace RESTarExample
 {
@@ -6,7 +8,7 @@ namespace RESTarExample
     {
         public static void Main()
         {
-            RESTarConfig.Init();
+            RESTarConfig.Init(prettyPrint: true);
             TestDatabase.Init();
         }
     }

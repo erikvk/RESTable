@@ -14,7 +14,7 @@ namespace RESTar
         {
             var entities = command.GetExtension();
             foreach (var entity in entities)
-                Db.Transact(entity.Delete);
+                Db.Transact(() => { Db.Delete(entity); });
             return DeleteEntities(entities.Count(), command.Resource);
         }
 

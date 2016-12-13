@@ -191,32 +191,44 @@ namespace RESTar
 
         public static object ValueForEquals(this IEnumerable<Condition> conditions, string key)
         {
-            return conditions?.FirstOrDefault(c => c.Operator.Common == "=" && c.Key == key.ToLower())?.Value;
+            return conditions?.FirstOrDefault(
+                c => c.Operator.Common == "=" &&
+                     string.Equals(c.Key, key, StringComparison.CurrentCultureIgnoreCase))?.Value;
         }
 
         public static object ValueForNotEquals(this IEnumerable<Condition> conditions, string key)
         {
-            return conditions?.FirstOrDefault(c => c.Operator.Common == "!=" && c.Key == key.ToLower())?.Value;
+            return conditions?.FirstOrDefault(
+                c => c.Operator.Common == "!=" &&
+                     string.Equals(c.Key, key, StringComparison.CurrentCultureIgnoreCase))?.Value;
         }
 
         public static object ValueForGreaterThan(this IEnumerable<Condition> conditions, string key)
         {
-            return conditions?.FirstOrDefault(c => c.Operator.Common == ">" && c.Key == key.ToLower())?.Value;
+            return conditions?.FirstOrDefault(
+                c => c.Operator.Common == ">" &&
+                     string.Equals(c.Key, key, StringComparison.CurrentCultureIgnoreCase))?.Value;
         }
 
         public static object ValueForLessThan(this IEnumerable<Condition> conditions, string key)
         {
-            return conditions?.FirstOrDefault(c => c.Operator.Common == "<" && c.Key == key.ToLower())?.Value;
+            return conditions?.FirstOrDefault(
+                c => c.Operator.Common == "<" &&
+                     string.Equals(c.Key, key, StringComparison.CurrentCultureIgnoreCase))?.Value;
         }
 
         public static object ValueForGreaterThanOrEquals(this IEnumerable<Condition> conditions, string key)
         {
-            return conditions?.FirstOrDefault(c => c.Operator.Common == ">=" && c.Key == key.ToLower())?.Value;
+            return conditions?.FirstOrDefault(
+                c => c.Operator.Common == ">=" &&
+                     string.Equals(c.Key, key, StringComparison.CurrentCultureIgnoreCase))?.Value;
         }
 
         public static object ValueForLessThanOrEquals(this IEnumerable<Condition> conditions, string key)
         {
-            return conditions?.FirstOrDefault(c => c.Operator.Common == "<=" && c.Key == key.ToLower())?.Value;
+            return conditions?.FirstOrDefault(
+                c => c.Operator.Common == "<=" &&
+                     string.Equals(c.Key, key, StringComparison.CurrentCultureIgnoreCase))?.Value;
         }
 
         internal static object[] Values(this IEnumerable<Condition> conditions)
