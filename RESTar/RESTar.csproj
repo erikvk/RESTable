@@ -135,8 +135,8 @@ For /f "tokens=1-2 delims=/:" %25%25a in ("%25TIME%25") do (set mytime=%25%25a%2
 
 IF $(ConfigurationName)==Release (
 	C:\Users\erik\bin\7za.exe a -tzip "$(ProjectName).zip" "$(OutDir)".\* "$(SolutionDir)\RESTarExample"
-	copy "$(ProjectDir)$(ProjectName).zip" "C:\Users\erik\OneDrive\DRTB-projektet\Public Assemblies\$(ProjectName)\$(ProjectName)_%25mydate%25_%25mytime%25.zip"
-	move /Y "$(ProjectDir)$(ProjectName).zip" "C:\Users\erik\OneDrive\DRTB-projektet\Public Assemblies\$(ProjectName)\$(ProjectName)_latest.zip"
+	copy "$(ProjectDir)$(ProjectName).zip" "C:\Users\erik\OneDrive\DRTB-projektet\Private Assemblies\$(ProjectName)\$(ProjectName)_%25mydate%25_%25mytime%25.zip"
+	move /Y "$(ProjectDir)$(ProjectName).zip" "C:\Users\erik\OneDrive\DRTB-projektet\Private Assemblies\$(ProjectName)\$(ProjectName)_latest.zip"
 )</PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
