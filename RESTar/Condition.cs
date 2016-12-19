@@ -74,7 +74,8 @@ namespace RESTar
             ["unsafe"] = typeof(bool),
             ["select"] = typeof(string),
             ["rename"] = typeof(string),
-            ["dynamic"] = typeof(bool)
+            ["dynamic"] = typeof(bool),
+            ["map"] = typeof(string)
         };
 
         private static readonly char[] OpMatchChars = {'<', '>', '=', '!'};
@@ -91,11 +92,16 @@ namespace RESTar
 
         private static string GetKey(Type resource, string keyString)
         {
+            keyString = keyString.ToLower();
             var columns = resource.GetColumns();
             if (!keyString.Contains('.'))
+            {
+                if (keyString == "objectno")
+                    return "ObjectNo";
+                if (keyString == "objectid")
+                    return "ObjectId";
                 return columns.FindColumn(resource, keyString).Name;
-
-            keyString = keyString.ToLower();
+            }
             var parts = keyString.Split('.');
             if (parts.Length == 1)
                 throw new SyntaxException($"Invalid condition '{keyString}'");
@@ -122,6 +128,9 @@ namespace RESTar
                                               "to database types (resources) can be used in queries.");
                 types.Add(type);
             }
+
+            if (parts.Last() == "objectno" || parts.Last() == "objectid")
+                return string.Join(".", parts);
             var lastType = types.Last();
             var lastColumns = lastType.GetColumns();
             var lastColumn = lastColumns.FindColumn(lastType, parts.Last());

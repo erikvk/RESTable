@@ -11,7 +11,7 @@ using Starcounter;
 
 namespace RESTar
 {
-    internal static class ExtensionMethods
+    public static class ExtensionMethods
     {
         internal static Type FindResource(this string searchString)
         {
@@ -32,13 +32,17 @@ namespace RESTar
             return RESTarConfig.ResourcesDict[keys.First()];
         }
 
-        internal static string FindLastKeyValue(Type resource, string keyString, dynamic root, out dynamic value)
+        internal static string GetValueFromKeyString(Type resource, string keyString, dynamic root, out dynamic value)
         {
             value = null;
             keyString = keyString.ToLower();
             var parts = keyString.Split('.');
             if (parts.Length == 1)
-                throw new SyntaxException($"Invalid condition '{keyString}'");
+            {
+                var column = resource.GetColumns().FindColumn(resource, keyString);
+                value = column.GetValue(root);
+                return column.Name;
+            }
             var types = new List<Type>();
             var names = new List<string>();
             var first = true;
@@ -66,12 +70,27 @@ namespace RESTar
                 names.Add(column.Name);
                 first = false;
             }
-            var lastType = types.Last();
-            var lastColumns = lastType.GetColumns();
-            var lastColumn = lastColumns.FindColumn(lastType, parts.Last());
-            if (value != null)
-                value = lastColumn.GetValue(value);
-            names.Add(lastColumn.Name);
+            if (parts.Last() == "objectno")
+            {
+                if (value != null)
+                    value = DbHelper.GetObjectNo(value);
+                names.Add("ObjectNo");
+            }
+            else if (parts.Last() == "objectid")
+            {
+                if (value != null)
+                    value = DbHelper.GetObjectID(value);
+                names.Add("ObjectID");
+            }
+            else
+            {
+                var lastType = types.Last();
+                var lastColumns = lastType.GetColumns();
+                var lastColumn = lastColumns.FindColumn(lastType, parts.Last());
+                if (value != null)
+                    value = lastColumn.GetValue(value);
+                names.Add(lastColumn.Name);
+            }
             return string.Join(".", names);
         }
 
@@ -126,10 +145,12 @@ namespace RESTar
             return JSON.SerializeDynamic(obj, Options.ISO8601IncludeInherited);
         }
 
+        private static readonly MethodInfo SerializeMethod =
+            typeof(JSON).GetMethods().First(n => n.Name == "Serialize" && n.ReturnType == typeof(void));
+
         internal static string Serialize(this object obj, Type resource)
         {
-            var method = typeof(JSON).GetMethods().First(n => n.Name == "Serialize" && n.ReturnType == typeof(void));
-            var generic = method.MakeGenericMethod(resource);
+            var generic = SerializeMethod.MakeGenericMethod(resource);
             var writer = new StringWriter();
             if (Settings.Instance.PrettyPrint)
             {
@@ -229,6 +250,11 @@ namespace RESTar
             return conditions?.FirstOrDefault(
                 c => c.Operator.Common == "<=" &&
                      string.Equals(c.Key, key, StringComparison.CurrentCultureIgnoreCase))?.Value;
+        }
+
+        public static T GetReference<T>(this ulong? objectNo) where T : class
+        {
+            return DbHelper.FromID(objectNo.GetValueOrDefault()) as T;
         }
 
         internal static object[] Values(this IEnumerable<Condition> conditions)

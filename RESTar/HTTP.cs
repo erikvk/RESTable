@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
@@ -14,6 +15,20 @@ namespace RESTar
             try
             {
                 return Http.GET(url);
+            }
+            catch (Exception e)
+            {
+                return null;
+            }
+        }
+
+        internal static Response INNER(string method, string url, string body)
+        {
+            try
+            {
+                if (!url.Contains("http"))
+                    url = "http://" + url;
+                return Http.CustomRESTRequest(method, url, body, new Dictionary<string, string>());
             }
             catch (Exception e)
             {

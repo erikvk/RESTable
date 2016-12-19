@@ -82,6 +82,18 @@ namespace RESTar
         }
     }
 
+    public class CustomEntityUnknownColumnException : Exception
+    {
+        public readonly string SearchString;
+
+        public CustomEntityUnknownColumnException(string searchString, string jsonRepresentation)
+            : base($"RESTar could not locate any column by '{searchString}' when working with the selected entity:" +
+                   $"\n{jsonRepresentation}. ")
+        {
+            SearchString = searchString;
+        }
+    }
+
     public class AmbiguousColumnException : Exception
     {
         public readonly string SearchString;

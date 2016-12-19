@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Reflection;
+using System.Web;
 using Jil;
 using Starcounter;
 using static RESTar.Responses;
@@ -10,6 +12,17 @@ using Newtonsoft.Json;
 
 namespace RESTar
 {
+    public class Handler : IHttpHandler
+    {
+        public void ProcessRequest(HttpContext context)
+        {
+            var c = "";
+            throw new NotImplementedException();
+        }
+
+        public bool IsReusable { get; }
+    }
+
     public static class RESTarConfig
     {
         internal static IList<Type> ResourcesList;
@@ -126,11 +139,12 @@ namespace RESTar
             try
             {
                 var command = new Command(request, query, method);
-                var availableMethods = command.Resource.AvailableMethods();
-                if (!availableMethods.Contains(method) && !availableMethods.Contains(method - 5))
-                    return BlockedMethod(PublicVersion(method), command.Resource);
+                var blockedMethod = MethodCheck(command);
+                if (blockedMethod != null)
+                    return BlockedMethod(blockedMethod.Value, command.Resource);
                 command.ResolveDataSource();
-                return Evaluator(command);
+                command.SendResponse(Evaluator(command));
+                return HandlerStatus.Handled;
             }
             catch (SqlException e)
             {
@@ -141,6 +155,10 @@ namespace RESTar
                 return SyntaxError(e);
             }
             catch (UnknownColumnException e)
+            {
+                return UnknownColumn(e);
+            }
+            catch (CustomEntityUnknownColumnException e)
             {
                 return UnknownColumn(e);
             }
@@ -296,11 +314,27 @@ namespace RESTar
             }
         }
 
-        private static RESTarMethods PublicVersion(RESTarMethods method)
+        private static RESTarMethods? MethodCheck(Command command)
         {
-            if (method >= Private_GET)
-                return method - 5;
-            return method;
+            var availableMethods = command.Resource.AvailableMethods();
+            var method = command.Method;
+            var publicParallel = PublicParallel(command.Method);
+            if (!availableMethods.Contains(method) &&
+                (publicParallel == null || !availableMethods.Contains(publicParallel.Value)))
+                return method;
+            return null;
+        }
+
+        internal static RESTarMethods? PublicParallel(RESTarMethods method)
+        {
+            var methodString = method.ToString();
+            if (methodString.Contains("Private"))
+            {
+                RESTarMethods outMethod;
+                Enum.TryParse(methodString.Split('_')[1], out outMethod);
+                return outMethod;
+            }
+            return null;
         }
     }
 }

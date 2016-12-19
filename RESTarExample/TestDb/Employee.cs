@@ -9,27 +9,36 @@ namespace RESTarExample.TestDb
     public class Employee : TestBase
     {
         public string Name;
-        public EmployeeDetails Details;
+
+        [ObjectRef, DataMember(Name = "Details")]
+        public ulong? DetailsObjectNo;
+
+        [ObjectRef, DataMember(Name = "Boss")]
+        public ulong? BossObjectNo;
+
+        [ObjectRef, DataMember(Name = "Company")]
+        public ulong? CompanyObjectNo;
+   
+        [IgnoreDataMember]
+        public EmployeeDetails Details
+        {
+            get { return DetailsObjectNo.GetReference<EmployeeDetails>(); }
+            set { DetailsObjectNo = value.GetObjectNo(); }
+        }
 
         [IgnoreDataMember]
         public Employee Boss
         {
-            get { return DbHelper.FromID(BossObjectNo.GetValueOrDefault()) as Employee; }
+            get { return BossObjectNo.GetReference<Employee>(); }
             set { BossObjectNo = value.GetObjectNo(); }
         }
-
-        [DataMember(Name = "Boss")]
-        public ulong? BossObjectNo;
 
         [IgnoreDataMember]
         public Company Company
         {
-            get { return DbHelper.FromID(CompanyObjectNo.GetValueOrDefault()) as Company; }
+            get { return CompanyObjectNo.GetReference<Company>(); }
             set { CompanyObjectNo = value.GetObjectNo(); }
         }
-
-        [DataMember(Name = "Company")]
-        public ulong? CompanyObjectNo;
 
         [IgnoreDataMember]
         public IEnumerable<Employee> Subordinates

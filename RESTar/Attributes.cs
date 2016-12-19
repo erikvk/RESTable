@@ -71,4 +71,8 @@ namespace RESTar
     public class VirtualResourceAttribute : Attribute
     {
     }
+
+    public class ObjectRefAttribute : Attribute
+    {
+    }
 }

@@ -35,7 +35,7 @@ namespace RESTar
                                 $"'{e.SearchString}' to '{e.Candidates.First()}'."
         };
 
-        internal static Response UnknownColumn(UnknownColumnException e) => new Response
+        internal static Response UnknownColumn(Exception e) => new Response
         {
             StatusCode = (ushort) HttpStatusCode.NotFound,
             StatusDescription = e.Message
@@ -173,100 +173,16 @@ namespace RESTar
 
         internal static Response GetEntities(Command command, IEnumerable<dynamic> entities)
         {
-            var response = new Response();
             string jsonString;
+            var response = new Response();
 
-            #region Only Select
-
-            if (command.Select != null && command.Rename == null)
-            {
-                var columns = command.Resource.GetColumns();
-                var newEntitiesList = new List<dynamic>();
-                foreach (var entity in entities)
-                {
-                    var newEntity = new Dictionary<string, dynamic>();
-                    foreach (var s in command.Select)
-                    {
-                        if (s.Contains('.'))
-                        {
-                            dynamic value;
-                            string key = ExtensionMethods.FindLastKeyValue(command.Resource, s, entity, out value);
-                            newEntity[key] = value;
-                        }
-                        else
-                        {
-                            var column = columns.FindColumn(command.Resource, s);
-                            newEntity[column.GetColumnName()] = column.GetValue(entity);
-                        }
-                    }
-                    newEntitiesList.Add(newEntity);
-                }
-                jsonString = newEntitiesList.SerializeDyn();
-            }
-
-            #endregion
-
-            #region Only Rename
-
-            else if (command.Select == null && command.Rename != null)
-            {
-                var columns = command.Resource.GetColumns();
-                var newEntitiesList = new List<dynamic>();
-                foreach (var entity in entities)
-                {
-                    var newEntity = new Dictionary<string, dynamic>();
-                    foreach (var column in columns)
-                    {
-                        var name = column.GetColumnName();
-                        string newKey;
-                        command.Rename.TryGetValue(name.ToLower(), out newKey);
-                        newEntity[newKey ?? name] = column.GetValue(entity);
-                    }
-                    newEntitiesList.Add(newEntity);
-                }
-                jsonString = newEntitiesList.SerializeDyn();
-            }
-
-            #endregion
-
-            #region Both Select and Rename
-
-            else if (command.Select != null && command.Rename != null)
-            {
-                var columns = command.Resource.GetColumns();
-                var newEntitiesList = new List<dynamic>();
-                foreach (var entity in entities)
-                {
-                    var newEntity = new Dictionary<string, dynamic>();
-                    foreach (var s in command.Select)
-                    {
-                        if (s.Contains('.'))
-                        {
-                            dynamic value;
-                            string key = ExtensionMethods.FindLastKeyValue(command.Resource, s, entity, out value);
-                            string newKey;
-                            command.Rename.TryGetValue(key.ToLower(), out newKey);
-                            newEntity[newKey ?? key] = value;
-                        }
-                        else
-                        {
-                            var column = columns.FindColumn(command.Resource, s);
-                            string newKey;
-                            command.Rename.TryGetValue(s, out newKey);
-                            newEntity[newKey ?? column.GetColumnName()] = column.GetValue(entity);
-                        }
-                    }
-                    newEntitiesList.Add(newEntity);
-                }
-                jsonString = newEntitiesList.SerializeDyn();
-            }
-
-            #endregion
-
-            else if (command.Dynamic)
+            if (command.Dynamic || command.Select != null || command.Rename != null)
                 jsonString = entities.SerializeDyn();
+            else if (command.Map != null)
+                jsonString = entities.Serialize(typeof(IEnumerable<>)
+                    .MakeGenericType(typeof(Dictionary<,>)
+                        .MakeGenericType(typeof(string), command.Resource)));
             else jsonString = entities.Serialize(RESTarConfig.IEnumTypes[command.Resource]);
-
             if (command.OutputMimeType == RESTarMimeType.Excel)
             {
                 var str = $@"{{""table"": {jsonString}}}";

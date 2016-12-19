@@ -68,5 +68,34 @@ namespace RESTar
                 Body = obj.Serialize(command.Resource)
             };
         }
+
+        internal static Response MIGRATE(Command command)
+        {
+            if (command.Destination == null)
+                throw new SyntaxException("Missing destination header in MIGRATE request");
+            var method_uri = command.Destination.Split(new[] {' '}, 2);
+            if (method_uri.Length == 1 || method_uri[0].ToUpper() != "IMPORT")
+                throw new SyntaxException("MIGRATE destination must be of form 'IMPORT [URI]'");
+
+            var entities = command.GetExtension(true);
+            if (!entities.Any())
+                return NoContent();
+            var outDict = entities.ToDictionary(
+                e => DbHelper.GetObjectNo(e),
+                e => e
+            );
+
+            string jsonString;
+            if (command.Select == null && command.Rename == null)
+                jsonString = outDict.Serialize(typeof(IDictionary<,>).MakeGenericType(typeof(ulong),
+                    RESTarConfig.IEnumTypes[command.Resource]));
+            else jsonString = outDict.Serialize(typeof(IDictionary<ulong, dynamic>));
+            return HTTP.INNER("IMPORT", method_uri[1], jsonString);
+        }
+
+        internal static Response IMPORT(Command command)
+        {
+            return null;
+        }
     }
 }
