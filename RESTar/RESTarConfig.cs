@@ -39,7 +39,7 @@ namespace RESTar
                 baseUri = $"/{baseUri}";
 
             foreach (var resource in DB.All<Resource>())
-                Db.Transact(() => resource.Delete());
+                Db.Transact(() => { resource.Delete(); });
 
             ResourcesList = typeof(object)
                 .GetSubclasses()
@@ -85,7 +85,7 @@ namespace RESTar
                     {
                         JSON.Deserialize("{}", resource, Options.ISO8601IncludeInherited);
                     }
-                    catch
+                    catch(Exception)
                     {
                     }
                 });
@@ -95,7 +95,7 @@ namespace RESTar
                     {
                         JSON.Deserialize("{}", resource, Options.ISO8601PrettyPrintIncludeInherited);
                     }
-                    catch
+                    catch(Exception)
                     {
                     }
                 });

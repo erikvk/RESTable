@@ -11,7 +11,7 @@ namespace RESTarExample.TestDb
         public static Response DeleteTestDatabase()
         {
             foreach (var o in DB.All<TestBase>())
-                Db.Transact(() => o.Delete());
+                Db.Transact(() => { o.Delete(); });
 
             return new Response
             {

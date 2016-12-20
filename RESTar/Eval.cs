@@ -60,7 +60,7 @@ namespace RESTar
                 };
             }
             obj = entities.First();
-            Db.Transact(() => JsonConvert.PopulateObject(request.Json, obj));
+            Db.Transact(() => { JsonConvert.PopulateObject(request.Json, obj); });
             request.MetaResource.Updater(new[] {obj});
             return new Response
             {
