@@ -10,74 +10,74 @@ namespace RESTar
 {
     internal static class Eval
     {
-        internal static Response DELETE(Command command)
+        internal static Response DELETE(Request request)
         {
-            var entities = command.GetExtension();
+            var entities = request.GetExtension();
+            var count = entities.Count();
+            request.MetaResource.Deleter(entities);
+            return DeleteEntities(count, request.Resource);
+        }
+
+        internal static Response GET(Request request)
+        {
+            if (!request.Unsafe && request.Limit == -1)
+                request.Limit = 1000;
+            var entities = request.GetExtension(true);
+            return !entities.Any() ? NoContent() : GetEntities(request, entities);
+        }
+
+        internal static Response PATCH(Request request)
+        {
+            var entities = request.GetExtension();
             foreach (var entity in entities)
-                Db.Transact(() => { Db.Delete(entity); });
-            return DeleteEntities(entities.Count(), command.Resource);
+                Db.Transact(() => { JsonConvert.PopulateObject(request.Json, entity); });
+            request.MetaResource.Updater(entities);
+            return UpdatedEntities(entities.Count(), request.Resource);
         }
 
-        internal static Response GET(Command command)
+        internal static Response POST(Request request)
         {
-            if (!command.Unsafe && command.Limit == -1)
-                command.Limit = 1000;
-            var entities = command.GetExtension(true);
-            return !entities.Any() ? NoContent() : GetEntities(command, entities);
+            var json = request.Json.First() == '[' ? request.Json : $"[{request.Json}]";
+            var results = Db.Transact(() => (IEnumerable<dynamic>)
+                JSON.Deserialize(json, RESTarConfig.IEnumTypes[request.Resource]));
+            var count = results.Count();
+            request.MetaResource.Inserter(results);
+            return InsertedEntities(count, request.Resource);
         }
 
-        internal static Response PATCH(Command command)
+        internal static Response PUT(Request request)
         {
-            var entities = command.GetExtension();
-            foreach (var entity in entities)
-                Db.Transact(() => { JsonConvert.PopulateObject(command.Json, entity); });
-            return UpdatedEntities(entities.Count(), command.Resource);
-        }
-
-        internal static Response POST(Command command)
-        {
-            var jsonTarget = command.Json.First() == '['
-                ? RESTarConfig.IEnumTypes[command.Resource]
-                : command.Resource;
-            var results = Db.Transact(() => JSON.Deserialize(command.Json, jsonTarget));
-            if (results is IEnumerable<object>)
-                return InsertedEntities(((IEnumerable<object>) results).Count(), command.Resource);
-            if (results != null)
-                return InsertedEntities(1, command.Resource);
-            return InsertedEntities(0, command.Resource);
-        }
-
-        internal static Response PUT(Command command)
-        {
-            var entities = command.GetExtension(false);
+            var entities = request.GetExtension(false);
             object obj;
             if (!entities.Any())
             {
-                obj = Db.Transact(() => JSON.Deserialize(command.Json, command.Resource));
+                obj = Db.Transact(() => JSON.Deserialize(request.Json, request.Resource));
+                request.MetaResource.Inserter(new[] {obj});
                 return new Response
                 {
                     StatusCode = (ushort) HttpStatusCode.Created,
-                    Body = obj.Serialize(command.Resource)
+                    Body = obj.Serialize(request.Resource)
                 };
             }
             obj = entities.First();
-            Db.Transact(() => JsonConvert.PopulateObject(command.Json, obj));
+            Db.Transact(() => JsonConvert.PopulateObject(request.Json, obj));
+            request.MetaResource.Updater(new[] {obj});
             return new Response
             {
                 StatusCode = (ushort) HttpStatusCode.OK,
-                Body = obj.Serialize(command.Resource)
+                Body = obj.Serialize(request.Resource)
             };
         }
 
-        internal static Response MIGRATE(Command command)
+        internal static Response MIGRATE(Request request)
         {
-            if (command.Destination == null)
+            if (request.Destination == null)
                 throw new SyntaxException("Missing destination header in MIGRATE request");
-            var method_uri = command.Destination.Split(new[] {' '}, 2);
+            var method_uri = request.Destination.Split(new[] {' '}, 2);
             if (method_uri.Length == 1 || method_uri[0].ToUpper() != "IMPORT")
                 throw new SyntaxException("MIGRATE destination must be of form 'IMPORT [URI]'");
 
-            var entities = command.GetExtension(true);
+            var entities = request.GetExtension(true);
             if (!entities.Any())
                 return NoContent();
             var outDict = entities.ToDictionary(
@@ -86,14 +86,14 @@ namespace RESTar
             );
 
             string jsonString;
-            if (command.Select == null && command.Rename == null)
+            if (request.Select == null && request.Rename == null)
                 jsonString = outDict.Serialize(typeof(IDictionary<,>).MakeGenericType(typeof(ulong),
-                    RESTarConfig.IEnumTypes[command.Resource]));
+                    RESTarConfig.IEnumTypes[request.Resource]));
             else jsonString = outDict.Serialize(typeof(IDictionary<ulong, dynamic>));
             return HTTP.INNER("IMPORT", method_uri[1], jsonString);
         }
 
-        internal static Response IMPORT(Command command)
+        internal static Response IMPORT(Request request)
         {
             return null;
         }

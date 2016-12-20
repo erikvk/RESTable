@@ -153,6 +153,10 @@ namespace RESTar
         }
     }
 
+    public class NoContentException : Exception
+    {
+    }
+
     public class VirtualResourceSignatureException : Exception
     {
         public VirtualResourceSignatureException(string message)

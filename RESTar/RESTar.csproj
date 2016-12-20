@@ -90,10 +90,12 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Attributes.cs" />
-    <Compile Include="Command.cs" />
+    <Compile Include="Request.cs" />
     <Compile Include="Condition.cs" />
     <Compile Include="ExtensionMethods.cs" />
     <Compile Include="Help.cs" />
+    <Compile Include="Import.cs" />
+    <Compile Include="IRequest.cs" />
     <Compile Include="IResource.cs" />
     <Compile Include="Log.cs" />
     <Compile Include="Operator.cs" />

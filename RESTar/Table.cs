@@ -12,6 +12,26 @@ namespace RESTar
         public override int NrOfColumns => Schema.Count;
         public long NrOfRows => DB.RowCount(Name);
 
+        public override IEnumerable<dynamic> Getter(IRequest request)
+        {
+            return DB.GetStatic(request);
+        }
+
+        public override void Inserter(IEnumerable<dynamic> entities)
+        {
+        }
+
+        public override void Updater(IEnumerable<dynamic> entities)
+        {
+        }
+
+        public override void Deleter(IEnumerable<dynamic> entities)
+        {
+            foreach (var entity in entities)
+                Db.Transact(() => { Db.Delete(entity); });
+        }
+
+
         public IDictionary<string, string> Schema
         {
             get
@@ -29,6 +49,7 @@ namespace RESTar
                 return dict;
             }
         }
+
         public Table(Type type)
         {
             Type = type;

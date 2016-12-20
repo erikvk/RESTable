@@ -12,17 +12,6 @@ using Newtonsoft.Json;
 
 namespace RESTar
 {
-    public class Handler : IHttpHandler
-    {
-        public void ProcessRequest(HttpContext context)
-        {
-            var c = "";
-            throw new NotImplementedException();
-        }
-
-        public bool IsReusable { get; }
-    }
-
     public static class RESTarConfig
     {
         internal static IList<Type> ResourcesList;
@@ -117,33 +106,34 @@ namespace RESTar
 
             baseUri += "{?}";
 
-            Handle.GET(publicPort, baseUri, (Request r, string q) => Evaluate(r, q, Eval.GET, GET));
-            Handle.POST(publicPort, baseUri, (Request r, string q) => Evaluate(r, q, Eval.POST, POST));
-            Handle.PUT(publicPort, baseUri, (Request r, string q) => Evaluate(r, q, Eval.PUT, PUT));
-            Handle.PATCH(publicPort, baseUri, (Request r, string q) => Evaluate(r, q, Eval.PATCH, PATCH));
-            Handle.DELETE(publicPort, baseUri, (Request r, string q) => Evaluate(r, q, Eval.DELETE, DELETE));
+            Handle.GET(publicPort, baseUri, (Starcounter.Request r, string q) => Evaluate(r, q, Eval.GET, GET));
+            Handle.POST(publicPort, baseUri, (Starcounter.Request r, string q) => Evaluate(r, q, Eval.POST, POST));
+            Handle.PUT(publicPort, baseUri, (Starcounter.Request r, string q) => Evaluate(r, q, Eval.PUT, PUT));
+            Handle.PATCH(publicPort, baseUri, (Starcounter.Request r, string q) => Evaluate(r, q, Eval.PATCH, PATCH));
+            Handle.DELETE(publicPort, baseUri, (Starcounter.Request r, string q) => Evaluate(r, q, Eval.DELETE, DELETE));
 
             if (privatePort == 0) return;
 
-            Handle.GET(privatePort, baseUri, (Request r, string q) => Evaluate(r, q, Eval.GET, Private_GET));
-            Handle.POST(privatePort, baseUri, (Request r, string q) => Evaluate(r, q, Eval.POST, Private_POST));
-            Handle.PUT(privatePort, baseUri, (Request r, string q) => Evaluate(r, q, Eval.PUT, Private_PUT));
-            Handle.PATCH(privatePort, baseUri, (Request r, string q) => Evaluate(r, q, Eval.PATCH, Private_PATCH));
-            Handle.DELETE(privatePort, baseUri, (Request r, string q) => Evaluate(r, q, Eval.DELETE, Private_DELETE));
+            Handle.GET(privatePort, baseUri, (Starcounter.Request r, string q) => Evaluate(r, q, Eval.GET, Private_GET));
+            Handle.POST(privatePort, baseUri, (Starcounter.Request r, string q) => Evaluate(r, q, Eval.POST, Private_POST));
+            Handle.PUT(privatePort, baseUri, (Starcounter.Request r, string q) => Evaluate(r, q, Eval.PUT, Private_PUT));
+            Handle.PATCH(privatePort, baseUri, (Starcounter.Request r, string q) => Evaluate(r, q, Eval.PATCH, Private_PATCH));
+            Handle.DELETE(privatePort, baseUri, (Starcounter.Request r, string q) => Evaluate(r, q, Eval.DELETE, Private_DELETE));
         }
 
-        private static Response Evaluate(Request request, string query, Func<Command, Response> Evaluator,
+        private static Response Evaluate(Starcounter.Request request, string query, Func<Request, Response> Evaluator,
             RESTarMethods method)
         {
             Log.Info("==> RESTar command");
             try
             {
-                var command = new Command(request, query, method);
+                var command = new Request(request, query, method);
                 var blockedMethod = MethodCheck(command);
                 if (blockedMethod != null)
                     return BlockedMethod(blockedMethod.Value, command.Resource);
                 command.ResolveDataSource();
-                command.SendResponse(Evaluator(command));
+                var response = Evaluator(command);
+                command.SendResponse(response);
                 return HandlerStatus.Handled;
             }
             catch (SqlException e)
@@ -198,6 +188,10 @@ namespace RESTar
             {
                 return RESTarInternalError(e);
             }
+            catch (NoContentException)
+            {
+                return NoContent();
+            }
             catch (JsonReaderException)
             {
                 return DeserializationError(request.Body);
@@ -229,16 +223,18 @@ namespace RESTar
             var VirtualResourceMethodTemplates = new Func<Type, Dictionary<string, string>>
             (type => new Dictionary<string, string>
             {
-                ["Get"] = $"public static IEnumerable<{type.FullName}> Get(IEnumerable<Condition> conditions) {{ }}",
+                ["Get"] = $"public static IEnumerable<{type.FullName}> Get(IRequest request) {{ }}",
                 ["Insert"] = $"public static void Insert(IEnumerable<{type.FullName}> entities) {{ }}",
+                ["Update"] = $"public static void Update(IEnumerable<{type.FullName}> entities) {{ }}",
                 ["Delete"] = $"public static void Delete(IEnumerable<{type.FullName}> entities) {{ }}"
             });
 
             var VirtualResourceMethodParameters = new Func<Type, Dictionary<string, Type>>
             (type => new Dictionary<string, Type>
             {
-                ["Get"] = typeof(IEnumerable<Condition>),
+                ["Get"] = typeof(IRequest),
                 ["Insert"] = typeof(IEnumerable<>).MakeGenericType(type),
+                ["Update"] = typeof(IEnumerable<>).MakeGenericType(type),
                 ["Delete"] = typeof(IEnumerable<>).MakeGenericType(type)
             });
 
@@ -247,6 +243,7 @@ namespace RESTar
             {
                 ["Get"] = typeof(IEnumerable<>).MakeGenericType(type),
                 ["Insert"] = typeof(void),
+                ["Update"] = typeof(void),
                 ["Delete"] = typeof(void)
             });
 
@@ -260,9 +257,9 @@ namespace RESTar
                         case POST:
                             return new[] {"Insert"};
                         case PUT:
-                            return new[] {"Get", "Insert"};
+                            return new[] {"Get", "Insert", "Update"};
                         case PATCH:
-                            return new[] {"Get"};
+                            return new[] {"Get", "Update"};
                         case DELETE:
                             return new[] {"Get", "Delete"};
                         case Private_GET:
@@ -270,9 +267,9 @@ namespace RESTar
                         case Private_POST:
                             return new[] {"Insert"};
                         case Private_PUT:
-                            return new[] {"Get", "Insert"};
+                            return new[] {"Get", "Insert", "Update"};
                         case Private_PATCH:
-                            return new[] {"Get"};
+                            return new[] {"Get", "Update"};
                         case Private_DELETE:
                             return new[] {"Get", "Delete"};
                     }
@@ -314,11 +311,11 @@ namespace RESTar
             }
         }
 
-        private static RESTarMethods? MethodCheck(Command command)
+        private static RESTarMethods? MethodCheck(IRequest request)
         {
-            var availableMethods = command.Resource.AvailableMethods();
-            var method = command.Method;
-            var publicParallel = PublicParallel(command.Method);
+            var availableMethods = request.Resource.AvailableMethods();
+            var method = request.Method;
+            var publicParallel = PublicParallel(request.Method);
             if (!availableMethods.Contains(method) &&
                 (publicParallel == null || !availableMethods.Contains(publicParallel.Value)))
                 return method;

@@ -48,10 +48,4 @@
         Json,
         Excel
     }
-
-    internal enum ResourceType : byte
-    {
-        Starcounter,
-        Virtual
-    }
 }

@@ -10,11 +10,12 @@ namespace RESTar
         public string Body { get; set; }
         public string SeeAlso { get; set; }
 
-        public static IEnumerable<Help> Get(IEnumerable<Condition> conditions)
+        public static IEnumerable<Help> Get(IRequest request)
         {
-            var topic = conditions.ValueForEquals("topic");
-            return JSON.Deserialize<Help[]>(HTTP.GET("http://restarhelp.mopedo-drtb.com:8282/restar/helparticle/" +
-                                                     (topic != null ? $"topic={topic}" : "")).Body);
+            var topic = request.Conditions.ValueForEquals("topic");
+            var response = HTTP.GET("http://restarhelp.mopedo-drtb.com:8282/restar/helparticle/" +
+                                    (topic != null ? $"topic={topic}" : ""));
+            return response.Body != null ? JSON.Deserialize<Help[]>(response.Body) : null;
         }
     }
 }

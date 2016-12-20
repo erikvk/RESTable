@@ -171,19 +171,19 @@ namespace RESTar
             StatusDescription = $"{count} entities deleted from resource '{resource.FullName}'"
         };
 
-        internal static Response GetEntities(Command command, IEnumerable<dynamic> entities)
+        internal static Response GetEntities(Request request, IEnumerable<dynamic> entities)
         {
             string jsonString;
             var response = new Response();
 
-            if (command.Dynamic || command.Select != null || command.Rename != null)
+            if (request.Dynamic || request.Select != null || request.Rename != null)
                 jsonString = entities.SerializeDyn();
-            else if (command.Map != null)
+            else if (request.Map != null)
                 jsonString = entities.Serialize(typeof(IEnumerable<>)
                     .MakeGenericType(typeof(Dictionary<,>)
-                        .MakeGenericType(typeof(string), command.Resource)));
-            else jsonString = entities.Serialize(RESTarConfig.IEnumTypes[command.Resource]);
-            if (command.OutputMimeType == RESTarMimeType.Excel)
+                        .MakeGenericType(typeof(string), request.Resource)));
+            else jsonString = entities.Serialize(RESTarConfig.IEnumTypes[request.Resource]);
+            if (request.OutputMimeType == RESTarMimeType.Excel)
             {
                 var str = $@"{{""table"": {jsonString}}}";
                 DataSet data;
@@ -201,7 +201,7 @@ namespace RESTar
                 }
                 var workbook = new XLWorkbook();
                 workbook.AddWorksheet(data);
-                var fileName = $"{command.Resource.FullName}_export_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
+                var fileName = $"{request.Resource.FullName}_export_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
                 using (var memstream = new MemoryStream())
                 {
                     workbook.SaveAs(memstream);

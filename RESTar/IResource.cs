@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Runtime.Serialization;
 using Starcounter;
 
@@ -12,6 +13,11 @@ namespace RESTar
         public string AvailableMethods => Type.AvailableMethods()?.ToMethodsString();
         
         public abstract int NrOfColumns { get; }
+
+        public abstract IEnumerable<dynamic> Getter(IRequest request);
+        public abstract void Inserter(IEnumerable<dynamic> entities);
+        public abstract void Updater(IEnumerable<dynamic> entities);
+        public abstract void Deleter(IEnumerable<dynamic> entities);
 
         [IgnoreDataMember]
         public Type Type

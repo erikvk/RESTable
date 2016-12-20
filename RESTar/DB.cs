@@ -10,20 +10,22 @@ namespace RESTar
     /// </summary>
     public static class DB
     {
-        internal static IEnumerable<dynamic> GetStatic(Type resource, WhereClause whereClause,
-            int limit = -1, OrderBy orderBy = null)
+        internal static IEnumerable<dynamic> GetStatic(IRequest request)
         {
-            var sql = $"SELECT t FROM {resource.FullName} t {whereClause?.stringPart} {orderBy?.SQL}";
+            var whereClause = request.Conditions?.ToWhereClause();
+            var sql = $"SELECT t FROM {request.Resource.FullName} t {whereClause?.stringPart} {request.OrderBy?.SQL}";
             dynamic entities;
 
             var method = typeof(Db).GetMethods().First(m => m.Name == "SQL" && m.IsGenericMethod);
-            var generic = method.MakeGenericMethod(resource);
+            var generic = method.MakeGenericMethod(request.Resource);
 
-            if (limit < 1)
+            if (request.Limit < 1)
                 entities = generic.Invoke(null, new object[] {sql, whereClause?.valuesPart});
             else
-                entities = Enumerable.ToList(Enumerable.Take((dynamic) generic.Invoke(null, new object[] {sql, whereClause?.valuesPart}),
-                    limit));
+                entities =
+                    Enumerable.ToList(
+                        Enumerable.Take((dynamic) generic.Invoke(null, new object[] {sql, whereClause?.valuesPart}),
+                            request.Limit));
 
             return entities;
         }
