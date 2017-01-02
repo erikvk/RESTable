@@ -1,6 +1,4 @@
-﻿using Jil;
-
-namespace RESTar
+﻿namespace RESTar
 {
     public class Operator
     {

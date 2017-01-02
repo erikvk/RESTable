@@ -43,6 +43,14 @@
         Private_DELETE
     }
 
+    public enum RESTarOperations
+    {
+        Select,
+        Insert,
+        Update,
+        Delete
+    }
+
     internal enum RESTarMimeType : byte
     {
         Json,

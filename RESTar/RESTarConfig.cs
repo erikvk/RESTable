@@ -1,42 +1,47 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
 using System.Reflection;
-using System.Web;
 using Jil;
 using Starcounter;
 using static RESTar.Responses;
 using static RESTar.RESTarMethods;
+using static RESTar.RESTarOperations;
+using ScRequest = Starcounter.Request;
 using Newtonsoft.Json;
 
 namespace RESTar
 {
     public static class RESTarConfig
     {
-        internal static IList<Type> ResourcesList;
+        internal static List<Type> ResourcesList;
         internal static IDictionary<string, Type> ResourcesDict;
         internal static IDictionary<Type, Type> IEnumTypes;
+        internal static Dictionary<Type, Dictionary<RESTarOperations, dynamic>> VrOperations;
+
         internal static readonly RESTarMethods[] Methods = {GET, POST, PATCH, PUT, DELETE};
+        internal static readonly RESTarOperations[] Operations = {Select, Insert, Update, Delete};
+
+        // internal static Dictionary<Type, Dictionary<RESTarMethods, Func<IRequest, Response>>> CustomEvaluators;
 
         /// <summary>
         /// Initiates the RESTar interface
         /// </summary>
         /// <param name="publicPort">The main port that RESTar should listen on</param>
         /// <param name="privatePort">A private port that RESTar should accept private methods from</param>
-        /// <param name="baseUri">The URI that RESTar should listen on. E.g. '/rest'</param>
+        /// <param name="uri">The URI that RESTar should listen on. E.g. '/rest'</param>
         /// <param name="prettyPrint">Should JSON output be pretty print formatted as default?
         ///  (can be changed in settings during runtime)</param>
         public static void Init
         (
             ushort publicPort = 8282,
             ushort privatePort = 8283,
-            string baseUri = "/restar",
+            string uri = "/restar",
             bool prettyPrint = false
         )
         {
-            if (baseUri.First() != '/')
-                baseUri = $"/{baseUri}";
+            if (uri.First() != '/')
+                uri = $"/{uri}";
 
             foreach (var resource in DB.All<Resource>())
                 Db.Transact(() => { resource.Delete(); });
@@ -68,8 +73,8 @@ namespace RESTar
 
             var StarcounterResources = ResourcesList.Where(t => t.HasAttribute<DatabaseAttribute>()).ToList();
             var VirtualResources = ResourcesList.Except(StarcounterResources).ToList();
-
             CheckVirtualResources(VirtualResources);
+            //CheckCustomEvaluators();
 
             foreach (var resource in VirtualResources)
                 Scheduling.ScheduleTask(() => Db.Transact(() => new VirtualResource(resource)));
@@ -85,7 +90,7 @@ namespace RESTar
                     {
                         JSON.Deserialize("{}", resource, Options.ISO8601IncludeInherited);
                     }
-                    catch(Exception)
+                    catch (Exception)
                     {
                     }
                 });
@@ -95,45 +100,41 @@ namespace RESTar
                     {
                         JSON.Deserialize("{}", resource, Options.ISO8601PrettyPrintIncludeInherited);
                     }
-                    catch(Exception)
+                    catch (Exception)
                     {
                     }
                 });
             }
 
-            Settings.Init(baseUri, prettyPrint, publicPort);
+            Settings.Init(uri, prettyPrint, publicPort);
             Log.Init();
-
-            baseUri += "{?}";
-
-            Handle.GET(publicPort, baseUri, (Starcounter.Request r, string q) => Evaluate(r, q, Eval.GET, GET));
-            Handle.POST(publicPort, baseUri, (Starcounter.Request r, string q) => Evaluate(r, q, Eval.POST, POST));
-            Handle.PUT(publicPort, baseUri, (Starcounter.Request r, string q) => Evaluate(r, q, Eval.PUT, PUT));
-            Handle.PATCH(publicPort, baseUri, (Starcounter.Request r, string q) => Evaluate(r, q, Eval.PATCH, PATCH));
-            Handle.DELETE(publicPort, baseUri, (Starcounter.Request r, string q) => Evaluate(r, q, Eval.DELETE, DELETE));
-
+            uri += "{?}";
+            Handle.GET(publicPort, uri, (ScRequest r, string q) => Evaluate(r, q, Evaluators.GET, GET));
+            Handle.POST(publicPort, uri, (ScRequest r, string q) => Evaluate(r, q, Evaluators.POST, POST));
+            Handle.PUT(publicPort, uri, (ScRequest r, string q) => Evaluate(r, q, Evaluators.PUT, PUT));
+            Handle.PATCH(publicPort, uri, (ScRequest r, string q) => Evaluate(r, q, Evaluators.PATCH, PATCH));
+            Handle.DELETE(publicPort, uri, (ScRequest r, string q) => Evaluate(r, q, Evaluators.DELETE, DELETE));
             if (privatePort == 0) return;
-
-            Handle.GET(privatePort, baseUri, (Starcounter.Request r, string q) => Evaluate(r, q, Eval.GET, Private_GET));
-            Handle.POST(privatePort, baseUri, (Starcounter.Request r, string q) => Evaluate(r, q, Eval.POST, Private_POST));
-            Handle.PUT(privatePort, baseUri, (Starcounter.Request r, string q) => Evaluate(r, q, Eval.PUT, Private_PUT));
-            Handle.PATCH(privatePort, baseUri, (Starcounter.Request r, string q) => Evaluate(r, q, Eval.PATCH, Private_PATCH));
-            Handle.DELETE(privatePort, baseUri, (Starcounter.Request r, string q) => Evaluate(r, q, Eval.DELETE, Private_DELETE));
+            Handle.GET(privatePort, uri, (ScRequest r, string q) => Evaluate(r, q, Evaluators.GET, Private_GET));
+            Handle.POST(privatePort, uri, (ScRequest r, string q) => Evaluate(r, q, Evaluators.POST, Private_POST));
+            Handle.PUT(privatePort, uri, (ScRequest r, string q) => Evaluate(r, q, Evaluators.PUT, Private_PUT));
+            Handle.PATCH(privatePort, uri, (ScRequest r, string q) => Evaluate(r, q, Evaluators.PATCH, Private_PATCH));
+            Handle.DELETE(privatePort, uri, (ScRequest r, string q) => Evaluate(r, q, Evaluators.DELETE, Private_DELETE));
         }
 
-        private static Response Evaluate(Starcounter.Request request, string query, Func<Request, Response> Evaluator,
+        private static Response Evaluate(ScRequest scRequest, string query, Func<Request, Response> Evaluator,
             RESTarMethods method)
         {
             Log.Info("==> RESTar command");
             try
             {
-                var command = new Request(request, query, method);
-                var blockedMethod = MethodCheck(command);
+                var request = new Request(scRequest, query, method);
+                var blockedMethod = MethodCheck(request);
                 if (blockedMethod != null)
-                    return BlockedMethod(blockedMethod.Value, command.Resource);
-                command.ResolveDataSource();
-                var response = Evaluator(command);
-                command.SendResponse(response);
+                    return BlockedMethod(blockedMethod.Value, request.Resource);
+                request.ResolveDataSource();
+                var response = Evaluator(request);
+                request.SendResponse(response);
                 return HandlerStatus.Handled;
             }
             catch (SqlException e)
@@ -194,15 +195,15 @@ namespace RESTar
             }
             catch (JsonReaderException)
             {
-                return DeserializationError(request.Body);
+                return DeserializationError(scRequest.Body);
             }
             catch (DeserializationException)
             {
-                return DeserializationError(request.Body);
+                return DeserializationError(scRequest.Body);
             }
             catch (JsonSerializationException)
             {
-                return DeserializationError(request.Body);
+                return DeserializationError(scRequest.Body);
             }
             catch (DbException e)
             {
@@ -218,60 +219,63 @@ namespace RESTar
             }
         }
 
-        private static void CheckVirtualResources(IEnumerable<Type> virtualResources)
+        private static void CheckVirtualResources(ICollection<Type> virtualResources)
         {
-            var VirtualResourceMethodTemplates = new Func<Type, Dictionary<string, string>>
-            (type => new Dictionary<string, string>
+            VrOperations = virtualResources.ToDictionary(type => type,
+                type => Operations.ToDictionary(o => o, o => default(dynamic)));
+
+            var VirtualResourceMethodTemplates = new Func<Type, Dictionary<RESTarOperations, string>>
+            (type => new Dictionary<RESTarOperations, string>
             {
-                ["Get"] = $"public static IEnumerable<{type.FullName}> Get(IRequest request) {{ }}",
-                ["Insert"] = $"public static void Insert(IEnumerable<{type.FullName}> entities) {{ }}",
-                ["Update"] = $"public static void Update(IEnumerable<{type.FullName}> entities) {{ }}",
-                ["Delete"] = $"public static void Delete(IEnumerable<{type.FullName}> entities) {{ }}"
+                [Select] = $"public static IEnumerable<{type.FullName}> Select(IRequest request) {{ }}",
+                [Insert] = $"public static void Insert(IEnumerable<{type.FullName}> entities) {{ }}",
+                [Update] = $"public static void Update(IEnumerable<{type.FullName}> entities) {{ }}",
+                [Delete] = $"public static void Delete(IEnumerable<{type.FullName}> entities) {{ }}"
             });
 
-            var VirtualResourceMethodParameters = new Func<Type, Dictionary<string, Type>>
-            (type => new Dictionary<string, Type>
+            var VirtualResourceMethodParameters = new Func<Type, Dictionary<RESTarOperations, Type>>
+            (type => new Dictionary<RESTarOperations, Type>
             {
-                ["Get"] = typeof(IRequest),
-                ["Insert"] = typeof(IEnumerable<>).MakeGenericType(type),
-                ["Update"] = typeof(IEnumerable<>).MakeGenericType(type),
-                ["Delete"] = typeof(IEnumerable<>).MakeGenericType(type)
+                [Select] = typeof(IRequest),
+                [Insert] = typeof(IEnumerable<>).MakeGenericType(type),
+                [Update] = typeof(IEnumerable<>).MakeGenericType(type),
+                [Delete] = typeof(IEnumerable<>).MakeGenericType(type)
             });
 
-            var VirtualResourceMethodReturnTypes = new Func<Type, Dictionary<string, Type>>
-            (type => new Dictionary<string, Type>
+            var VirtualResourceMethodReturnTypes = new Func<Type, Dictionary<RESTarOperations, Type>>
+            (type => new Dictionary<RESTarOperations, Type>
             {
-                ["Get"] = typeof(IEnumerable<>).MakeGenericType(type),
-                ["Insert"] = typeof(void),
-                ["Update"] = typeof(void),
-                ["Delete"] = typeof(void)
+                [Select] = typeof(IEnumerable<>).MakeGenericType(type),
+                [Insert] = typeof(void),
+                [Update] = typeof(void),
+                [Delete] = typeof(void)
             });
 
-            Func<IEnumerable<RESTarMethods>, IEnumerable<string>> necessarytMethodDefs =
+            Func<IEnumerable<RESTarMethods>, IEnumerable<RESTarOperations>> necessarytMethodDefs =
                 restMethods => restMethods.SelectMany(method =>
                 {
                     switch (method)
                     {
                         case GET:
-                            return new[] {"Get"};
+                            return new[] {Select};
                         case POST:
-                            return new[] {"Insert"};
+                            return new[] {Insert};
                         case PUT:
-                            return new[] {"Get", "Insert", "Update"};
+                            return new[] {Select, Insert, Update};
                         case PATCH:
-                            return new[] {"Get", "Update"};
+                            return new[] {Select, Update};
                         case DELETE:
-                            return new[] {"Get", "Delete"};
+                            return new[] {Select, Delete};
                         case Private_GET:
-                            return new[] {"Get"};
+                            return new[] {Select};
                         case Private_POST:
-                            return new[] {"Insert"};
+                            return new[] {Insert};
                         case Private_PUT:
-                            return new[] {"Get", "Insert", "Update"};
+                            return new[] {Select, Insert, Update};
                         case Private_PATCH:
-                            return new[] {"Get", "Update"};
+                            return new[] {Select, Update};
                         case Private_DELETE:
-                            return new[] {"Get", "Delete"};
+                            return new[] {Select, Delete};
                     }
                     return null;
                 }).Distinct();
@@ -280,7 +284,7 @@ namespace RESTar
             {
                 foreach (var requiredMethod in necessarytMethodDefs(type.AvailableMethods()))
                 {
-                    var method = type.GetMethod(requiredMethod, BindingFlags.Public | BindingFlags.Static);
+                    var method = type.GetMethod(requiredMethod.ToString(), BindingFlags.Public | BindingFlags.Static);
                     if (method == null)
                     {
                         throw new VirtualResourceMissingMethodException
@@ -303,6 +307,12 @@ namespace RESTar
                             $"Wrong parameter type for method '{requiredMethod}'. Expected " +
                             VirtualResourceMethodParameters(type)[requiredMethod]);
                     }
+
+                    VrOperations[type][requiredMethod] = requiredMethod == Select
+                        ? method.CreateDelegate(typeof(Func<,>).MakeGenericType(typeof(IRequest),
+                            typeof(IEnumerable<>).MakeGenericType(type)))
+                        : method.CreateDelegate(typeof(Action<>).MakeGenericType(typeof(IEnumerable<>)
+                            .MakeGenericType(type)));
                 }
 
                 if (type.GetFields().Any())
@@ -310,6 +320,26 @@ namespace RESTar
                                                              "only properties.");
             }
         }
+
+//        private static void CheckCustomEvaluators()
+//        {
+//            CustomEvaluators = ResourcesList.ToDictionary(
+//                resource => resource,
+//                resource => Methods.ToDictionary(
+//                    method => method,
+//                    method =>
+//                    {
+//                        var methodDef = resource.GetMethod(method.ToString(), BindingFlags.Public | BindingFlags.Static);
+//                        if (methodDef == null)
+//                            return null;
+//                        if (methodDef.ReturnType != typeof(Response) || methodDef.GetParameters().Length != 1 ||
+//                            methodDef.GetParameters().First().ParameterType != typeof(IRequest))
+//                            throw new CustomEvaluatorSignatureException(methodDef, resource);
+//                        return (Func<IRequest, Response>) methodDef.CreateDelegate(typeof(Func<IRequest, Response>));
+//                    }
+//                )
+//            );
+//        }
 
         private static RESTarMethods? MethodCheck(IRequest request)
         {

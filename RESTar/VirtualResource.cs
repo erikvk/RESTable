@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Reflection;
 using Starcounter;
+using static RESTar.RESTarOperations;
+using static RESTar.RESTarConfig;
 
 namespace RESTar
 {
@@ -10,17 +12,17 @@ namespace RESTar
     {
         public override int NrOfColumns => Type.GetProperties().Length;
 
-        public override IEnumerable<dynamic> Getter(IRequest request) => (IEnumerable<dynamic>)
-            Type.GetMethod("Get", BindingFlags.Static | BindingFlags.Public).Invoke(null, new object[] {request});
+        public override IEnumerable<dynamic> Selector(IRequest request)
+            => VrOperations[Type][Select].Invoke((dynamic) request);
 
-        public override void Inserter(IEnumerable<dynamic> entities) =>
-            Type.GetMethod("Insert", BindingFlags.Static | BindingFlags.Public)?.Invoke(null, new object[] {entities});
+        public override void Inserter(IEnumerable<dynamic> entities)
+            => VrOperations[Type][Insert].Invoke((dynamic) entities);
 
-        public override void Updater(IEnumerable<dynamic> entities) =>
-            Type.GetMethod("Update", BindingFlags.Static | BindingFlags.Public)?.Invoke(null, new object[] { entities });
+        public override void Updater(IEnumerable<dynamic> entities)
+            => VrOperations[Type][Update].Invoke((dynamic) entities);
 
-        public override void Deleter(IEnumerable<dynamic> entities) =>
-            Type.GetMethod("Delete", BindingFlags.Static | BindingFlags.Public)?.Invoke(null, new object[] {entities});
+        public override void Deleter(IEnumerable<dynamic> entities)
+            => VrOperations[Type][Delete].Invoke((dynamic) entities);
 
         public VirtualResource(Type type)
         {

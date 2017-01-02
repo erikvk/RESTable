@@ -12,9 +12,9 @@ namespace RESTar
         public override int NrOfColumns => Schema.Count;
         public long NrOfRows => DB.RowCount(Name);
 
-        public override IEnumerable<dynamic> Getter(IRequest request)
+        public override IEnumerable<dynamic> Selector(IRequest request)
         {
-            return DB.GetStatic(request);
+            return DB.Select(request);
         }
 
         public override void Inserter(IEnumerable<dynamic> entities)

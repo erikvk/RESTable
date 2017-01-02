@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Reflection;
 
 namespace RESTar
 {
@@ -161,6 +162,16 @@ namespace RESTar
     {
         public VirtualResourceSignatureException(string message)
             : base(message)
+        {
+        }
+    }
+
+    public class CustomEvaluatorSignatureException : Exception
+    {
+        public CustomEvaluatorSignatureException(MethodInfo method, Type resource)
+            : base($"Error in signature of custom evaluator '{method.Name}' in resource '{resource.FullName}'. " +
+                   $"Signature must be of form 'public static Starcounter.Response [GET|POST|PATCH|PUT|DELETE]" +
+                   $"(IRequest request)'")
         {
         }
     }

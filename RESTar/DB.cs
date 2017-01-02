@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using Starcounter;
 
@@ -10,7 +9,7 @@ namespace RESTar
     /// </summary>
     public static class DB
     {
-        internal static IEnumerable<dynamic> GetStatic(IRequest request)
+        internal static IEnumerable<dynamic> Select(IRequest request)
         {
             var whereClause = request.Conditions?.ToWhereClause();
             var sql = $"SELECT t FROM {request.Resource.FullName} t {whereClause?.stringPart} {request.OrderBy?.SQL}";
@@ -29,23 +28,6 @@ namespace RESTar
 
             return entities;
         }
-
-        #region Dynamic get
-
-        //        private static IEnumerable<object> GetFromDb(Type resource, WhereClause whereClause,
-        //            int limit = -1, OrderBy orderBy = null)
-        //        {
-        //            var sql = $"SELECT t FROM {resource.FullName} t {whereClause?.stringPart} {orderBy?.SQL}";
-        //            IEnumerable<object> entities;
-        //            if (limit < 1)
-        //                entities = Db.SQL(sql, whereClause?.valuesPart);
-        //            else if (limit == 1)
-        //                entities = new[] {Db.SQL(sql, whereClause?.valuesPart).First};
-        //            else entities = Db.SQL(sql, whereClause?.valuesPart).Take(limit);
-        //            return entities;
-        //        }
-
-        #endregion
 
         #region Get methods
 

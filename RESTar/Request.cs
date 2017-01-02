@@ -1,16 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Data;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using ClosedXML.Excel;
-using DocumentFormat.OpenXml.Presentation;
 using Excel;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Starcounter;
+using ScRequest = Starcounter.Request;
 
 namespace RESTar
 {
@@ -32,7 +31,7 @@ namespace RESTar
         public Resource MetaResource;
         public IList<Condition> Conditions { get; }
         public IDictionary<string, object> MetaConditions { get; }
-        public readonly Starcounter.Request ScRequest;
+        public readonly ScRequest ScRequest;
         public readonly string Query;
         public bool Unsafe;
         public int Limit { get; set; } = -1;
@@ -48,7 +47,7 @@ namespace RESTar
         public readonly RESTarMimeType OutputMimeType;
         public RESTarMethods Method { get; }
 
-        internal Request(Starcounter.Request scRequest, string query, RESTarMethods method)
+        internal Request(ScRequest scRequest, string query, RESTarMethods method)
         {
             if (query == null)
                 throw new RESTarInternalException("Query not loaded");
@@ -130,7 +129,7 @@ namespace RESTar
                 var method_uri = Source.Split(new[] {' '}, 2);
                 if (method_uri.Length == 1 || method_uri[0].ToUpper() != "GET")
                     throw new SyntaxException("Source must be of form 'GET [URI]'");
-                var response = HTTP.INNER(method_uri[0], method_uri[1], null);
+                var response = HTTP.Request(method_uri[0], method_uri[1], null);
                 if (!response.IsSuccessStatusCode)
                     throw new ExternalSourceException(Source,
                         $"{response.StatusCode}: " +
@@ -189,7 +188,7 @@ namespace RESTar
         {
             if (unsafeOverride != null)
                 Unsafe = unsafeOverride.Value;
-            var entities = MetaResource.Getter(this);
+            var entities = MetaResource.Selector(this);
             if (entities == null)
                 throw new NoContentException();
             if (!Unsafe && entities.Count() > 1)
@@ -375,7 +374,7 @@ namespace RESTar
                 var method_uri = Destination.Split(new[] {' '}, 2);
                 if (method_uri.Length == 1)
                     throw new SyntaxException("Destination must be of form '[METHOD] [URI]'");
-                ScRequest.SendResponse(HTTP.INNER(method_uri[0].ToUpper(), method_uri[1], response.Body), null);
+                ScRequest.SendResponse(HTTP.Request(method_uri[0].ToUpper(), method_uri[1], response.Body), null);
             }
             ScRequest.SendResponse(response, null);
         }

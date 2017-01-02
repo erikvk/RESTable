@@ -90,6 +90,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Attributes.cs" />
+    <Compile Include="HTTPS.cs" />
     <Compile Include="Request.cs" />
     <Compile Include="Condition.cs" />
     <Compile Include="ExtensionMethods.cs" />
@@ -101,7 +102,7 @@
     <Compile Include="Operator.cs" />
     <Compile Include="RESTarConfig.cs" />
     <Compile Include="DB.cs" />
-    <Compile Include="Eval.cs" />
+    <Compile Include="Evaluators.cs" />
     <Compile Include="Enumerations.cs" />
     <Compile Include="Exceptions.cs" />
     <Compile Include="HTTP.cs" />

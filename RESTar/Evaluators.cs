@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using Jil;
@@ -8,7 +9,7 @@ using static RESTar.Responses;
 
 namespace RESTar
 {
-    internal static class Eval
+    internal static class Evaluators
     {
         internal static Response DELETE(Request request)
         {
@@ -90,7 +91,7 @@ namespace RESTar
                 jsonString = outDict.Serialize(typeof(IDictionary<,>).MakeGenericType(typeof(ulong),
                     RESTarConfig.IEnumTypes[request.Resource]));
             else jsonString = outDict.Serialize(typeof(IDictionary<ulong, dynamic>));
-            return HTTP.INNER("IMPORT", method_uri[1], jsonString);
+            return HTTP.Request("IMPORT", method_uri[1], jsonString);
         }
 
         internal static Response IMPORT(Request request)
