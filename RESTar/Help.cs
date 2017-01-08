@@ -15,7 +15,7 @@ namespace RESTar
             var topic = request.Conditions.ValueForEquals("topic");
             var response = HTTP.Request("GET", "http://restarhelp.mopedo-drtb.com:8282/restar/helparticle/" +
                                     (topic != null ? $"topic={topic}" : ""));
-            return response.Body != null ? JSON.Deserialize<Help[]>(response.Body) : null;
+            return response.Body != null ? JSON.Deserialize<Help[]>(response.Body, Options.ISO8601IncludeInherited) : null;
         }
     }
 }

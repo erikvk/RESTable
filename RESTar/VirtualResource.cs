@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Reflection;
 using Starcounter;
 using static RESTar.RESTarOperations;
 using static RESTar.RESTarConfig;
@@ -15,14 +14,14 @@ namespace RESTar
         public override IEnumerable<dynamic> Selector(IRequest request)
             => VrOperations[Type][Select].Invoke((dynamic) request);
 
-        public override void Inserter(IEnumerable<dynamic> entities)
-            => VrOperations[Type][Insert].Invoke((dynamic) entities);
+        public override void Inserter(IEnumerable<dynamic> entities, IRequest request)
+            => VrOperations[Type][Insert].Invoke((dynamic) entities, request);
 
-        public override void Updater(IEnumerable<dynamic> entities)
-            => VrOperations[Type][Update].Invoke((dynamic) entities);
+        public override void Updater(IEnumerable<dynamic> entities, IRequest request)
+            => VrOperations[Type][Update].Invoke((dynamic) entities, request);
 
-        public override void Deleter(IEnumerable<dynamic> entities)
-            => VrOperations[Type][Delete].Invoke((dynamic) entities);
+        public override void Deleter(IEnumerable<dynamic> entities, IRequest request)
+            => VrOperations[Type][Delete].Invoke((dynamic) entities, request);
 
         public VirtualResource(Type type)
         {

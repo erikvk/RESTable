@@ -12,5 +12,6 @@ namespace RESTar
         Type Resource { get; }
         OrderBy OrderBy { get; }
         int Limit { get; }
+        bool Unsafe { get; }
     }
 }

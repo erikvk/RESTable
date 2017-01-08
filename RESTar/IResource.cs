@@ -15,9 +15,9 @@ namespace RESTar
         public abstract int NrOfColumns { get; }
 
         public abstract IEnumerable<dynamic> Selector(IRequest request);
-        public abstract void Inserter(IEnumerable<dynamic> entities);
-        public abstract void Updater(IEnumerable<dynamic> entities);
-        public abstract void Deleter(IEnumerable<dynamic> entities);
+        public abstract void Inserter(IEnumerable<dynamic> entities, IRequest request);
+        public abstract void Updater(IEnumerable<dynamic> entities, IRequest request);
+        public abstract void Deleter(IEnumerable<dynamic> entities, IRequest request);
 
         [IgnoreDataMember]
         public Type Type

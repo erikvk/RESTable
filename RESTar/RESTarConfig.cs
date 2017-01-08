@@ -18,11 +18,11 @@ namespace RESTar
         internal static IDictionary<string, Type> ResourcesDict;
         internal static IDictionary<Type, Type> IEnumTypes;
         internal static Dictionary<Type, Dictionary<RESTarOperations, dynamic>> VrOperations;
+        internal static Dictionary<RESTarMetaConditions, Type> MetaConditions;
 
         internal static readonly RESTarMethods[] Methods = {GET, POST, PATCH, PUT, DELETE};
         internal static readonly RESTarOperations[] Operations = {Select, Insert, Update, Delete};
 
-        // internal static Dictionary<Type, Dictionary<RESTarMethods, Func<IRequest, Response>>> CustomEvaluators;
 
         /// <summary>
         /// Initiates the RESTar interface
@@ -71,10 +71,15 @@ namespace RESTar
                 type => typeof(IEnumerable<>).MakeGenericType(type)
             );
 
+            MetaConditions = Enum.GetNames(typeof(RESTarMetaConditions)).ToDictionary(
+                name => (RESTarMetaConditions) Enum.Parse(typeof(RESTarMetaConditions), name),
+                name => typeof(RESTarMetaConditions).GetField(name).GetAttribute<TypeAttribute>().Type
+            );
+
             var StarcounterResources = ResourcesList.Where(t => t.HasAttribute<DatabaseAttribute>()).ToList();
             var VirtualResources = ResourcesList.Except(StarcounterResources).ToList();
             CheckVirtualResources(VirtualResources);
-            //CheckCustomEvaluators();
+            global::Dynamit.DynamitConfig.Init();
 
             foreach (var resource in VirtualResources)
                 Scheduling.ScheduleTask(() => Db.Transact(() => new VirtualResource(resource)));
@@ -228,18 +233,18 @@ namespace RESTar
             (type => new Dictionary<RESTarOperations, string>
             {
                 [Select] = $"public static IEnumerable<{type.FullName}> Select(IRequest request) {{ }}",
-                [Insert] = $"public static void Insert(IEnumerable<{type.FullName}> entities) {{ }}",
-                [Update] = $"public static void Update(IEnumerable<{type.FullName}> entities) {{ }}",
-                [Delete] = $"public static void Delete(IEnumerable<{type.FullName}> entities) {{ }}"
+                [Insert] = $"public static void Insert(IEnumerable<{type.FullName}> entities, IRequest request) {{ }}",
+                [Update] = $"public static void Update(IEnumerable<{type.FullName}> entities, IRequest request) {{ }}",
+                [Delete] = $"public static void Delete(IEnumerable<{type.FullName}> entities, IRequest request) {{ }}"
             });
 
-            var VirtualResourceMethodParameters = new Func<Type, Dictionary<RESTarOperations, Type>>
-            (type => new Dictionary<RESTarOperations, Type>
+            var VirtualResourceMethodParameters = new Func<Type, Dictionary<RESTarOperations, Type[]>>
+            (type => new Dictionary<RESTarOperations, Type[]>
             {
-                [Select] = typeof(IRequest),
-                [Insert] = typeof(IEnumerable<>).MakeGenericType(type),
-                [Update] = typeof(IEnumerable<>).MakeGenericType(type),
-                [Delete] = typeof(IEnumerable<>).MakeGenericType(type)
+                [Select] = new[] {typeof(IRequest)},
+                [Insert] = new[] {typeof(IEnumerable<>).MakeGenericType(type), typeof(IRequest)},
+                [Update] = new[] {typeof(IEnumerable<>).MakeGenericType(type), typeof(IRequest)},
+                [Delete] = new[] {typeof(IEnumerable<>).MakeGenericType(type), typeof(IRequest)}
             });
 
             var VirtualResourceMethodReturnTypes = new Func<Type, Dictionary<RESTarOperations, Type>>
@@ -294,52 +299,36 @@ namespace RESTar
                             VirtualResourceMethodTemplates(type)[requiredMethod]
                         );
                     }
+
                     if (method.ReturnType != VirtualResourceMethodReturnTypes(type)[requiredMethod])
                     {
                         throw new VirtualResourceSignatureException(
                             $"Wrong return type for method '{requiredMethod}'. Expected " +
                             VirtualResourceMethodReturnTypes(type)[requiredMethod]);
                     }
-                    if (method.GetParameters().FirstOrDefault()?.ParameterType !=
-                        VirtualResourceMethodParameters(type)[requiredMethod])
+
+                    if (!method.GetParameters().Select(i => i.ParameterType).SequenceEqual(
+                        VirtualResourceMethodParameters(type)[requiredMethod]))
                     {
                         throw new VirtualResourceSignatureException(
-                            $"Wrong parameter type for method '{requiredMethod}'. Expected " +
-                            VirtualResourceMethodParameters(type)[requiredMethod]);
+                            $"Wrong parameter type(s) for method '{requiredMethod}'. Expected " +
+                            string.Join(", ", VirtualResourceMethodParameters(type)[requiredMethod]
+                                .Select(i => i.ToString())));
                     }
 
                     VrOperations[type][requiredMethod] = requiredMethod == Select
                         ? method.CreateDelegate(typeof(Func<,>).MakeGenericType(typeof(IRequest),
                             typeof(IEnumerable<>).MakeGenericType(type)))
-                        : method.CreateDelegate(typeof(Action<>).MakeGenericType(typeof(IEnumerable<>)
-                            .MakeGenericType(type)));
+                        : method.CreateDelegate(typeof(Action<,>).MakeGenericType(typeof(IEnumerable<>)
+                            .MakeGenericType(type), typeof(IRequest)));
                 }
 
-                if (type.GetFields().Any())
-                    throw new VirtualResourceMemberException("A virtual resource cannot include fields, " +
-                                                             "only properties.");
+                if (type.GetFields(BindingFlags.Public | BindingFlags.Instance).Any())
+                    throw new VirtualResourceMemberException(
+                        "A virtual resource cannot include public instance fields, " +
+                        "only properties.");
             }
         }
-
-//        private static void CheckCustomEvaluators()
-//        {
-//            CustomEvaluators = ResourcesList.ToDictionary(
-//                resource => resource,
-//                resource => Methods.ToDictionary(
-//                    method => method,
-//                    method =>
-//                    {
-//                        var methodDef = resource.GetMethod(method.ToString(), BindingFlags.Public | BindingFlags.Static);
-//                        if (methodDef == null)
-//                            return null;
-//                        if (methodDef.ReturnType != typeof(Response) || methodDef.GetParameters().Length != 1 ||
-//                            methodDef.GetParameters().First().ParameterType != typeof(IRequest))
-//                            throw new CustomEvaluatorSignatureException(methodDef, resource);
-//                        return (Func<IRequest, Response>) methodDef.CreateDelegate(typeof(Func<IRequest, Response>));
-//                    }
-//                )
-//            );
-//        }
 
         private static RESTarMethods? MethodCheck(IRequest request)
         {

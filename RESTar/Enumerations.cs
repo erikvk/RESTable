@@ -1,4 +1,7 @@
-﻿namespace RESTar
+﻿using System;
+using System.ComponentModel.Design.Serialization;
+
+namespace RESTar
 {
     public enum RESTarPresets : byte
     {
@@ -49,6 +52,28 @@
         Insert,
         Update,
         Delete
+    }
+
+    internal class TypeAttribute : Attribute
+    {
+        internal Type Type;
+
+        internal TypeAttribute(Type type)
+        {
+            Type = type;
+        }
+    }
+
+    public enum RESTarMetaConditions
+    {
+        [Type(typeof(decimal))] Limit,
+        [Type(typeof(string))] Order_desc,
+        [Type(typeof(string))] Order_asc,
+        [Type(typeof(bool))] Unsafe,
+        [Type(typeof(string))] Select,
+        [Type(typeof(string))] Rename,
+        [Type(typeof(bool))] Dynamic,
+        [Type(typeof(decimal))] Map
     }
 
     internal enum RESTarMimeType : byte

@@ -17,20 +17,19 @@ namespace RESTar
             return DB.Select(request);
         }
 
-        public override void Inserter(IEnumerable<dynamic> entities)
+        public override void Inserter(IEnumerable<dynamic> entities, IRequest request)
         {
         }
 
-        public override void Updater(IEnumerable<dynamic> entities)
+        public override void Updater(IEnumerable<dynamic> entities, IRequest request)
         {
         }
 
-        public override void Deleter(IEnumerable<dynamic> entities)
+        public override void Deleter(IEnumerable<dynamic> entities, IRequest request)
         {
             foreach (var entity in entities)
                 Db.Transact(() => { Db.Delete(entity); });
         }
-
 
         public IDictionary<string, string> Schema
         {

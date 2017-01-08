@@ -122,6 +122,12 @@ namespace RESTar
                 select type;
         }
 
+        internal static string Capitalize(this string str)
+        {
+            var lower = str.ToLower();
+            return lower.Substring(0, 1).ToUpper() + lower.Substring(1);
+        }
+
         internal static TAttribute GetAttribute<TAttribute>(this MemberInfo type) where TAttribute : Attribute
         {
             return type?.GetCustomAttributes<TAttribute>().FirstOrDefault();

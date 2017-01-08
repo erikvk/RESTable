@@ -6,6 +6,7 @@ using Starcounter;
 using System.Data;
 using System.IO;
 using ClosedXML.Excel;
+using Dynamit;
 using Newtonsoft.Json;
 
 namespace RESTar
@@ -175,7 +176,8 @@ namespace RESTar
             string jsonString;
             var response = new Response();
 
-            if (request.Dynamic || request.Select != null || request.Rename != null)
+            if (request.Dynamic || request.Select != null || request.Rename != null ||
+                request.Resource.IsSubclassOf(typeof(ScDictionary)))
                 jsonString = entities.SerializeDyn();
             else if (request.Map != null)
                 jsonString = entities.Serialize(typeof(IEnumerable<>)

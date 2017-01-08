@@ -28,23 +28,23 @@ namespace RESTar
         }
 
         public string ResourceArgument { get; }
-        public Resource MetaResource;
+        internal Resource MetaResource;
         public IList<Condition> Conditions { get; }
         public IDictionary<string, object> MetaConditions { get; }
-        public readonly ScRequest ScRequest;
-        public readonly string Query;
-        public bool Unsafe;
+        internal readonly ScRequest ScRequest;
+        internal readonly string Query;
+        public bool Unsafe { get; private set; }
         public int Limit { get; set; } = -1;
         public OrderBy OrderBy { get; }
-        public readonly string[] Select;
-        public readonly IDictionary<string, string> Rename;
-        public readonly string Source;
-        public readonly string Destination;
-        public string Json;
-        public readonly bool Dynamic;
-        public readonly string Map;
-        public readonly RESTarMimeType InputMimeType;
-        public readonly RESTarMimeType OutputMimeType;
+        internal readonly string[] Select;
+        internal readonly IDictionary<string, string> Rename;
+        internal readonly string Source;
+        internal readonly string Destination;
+        internal string Json;
+        internal readonly bool Dynamic;
+        internal readonly string Map;
+        internal readonly RESTarMimeType InputMimeType;
+        internal readonly RESTarMimeType OutputMimeType;
         public RESTarMethods Method { get; }
 
         internal Request(ScRequest scRequest, string query, RESTarMethods method)

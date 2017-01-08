@@ -1,4 +1,5 @@
 ﻿using System;
+using Dynamit;
 using RESTar;
 using Starcounter;
 

@@ -15,7 +15,7 @@ namespace RESTar
         {
             var entities = request.GetExtension();
             var count = entities.Count();
-            request.MetaResource.Deleter(entities);
+            request.MetaResource.Deleter(entities, request);
             return DeleteEntities(count, request.Resource);
         }
 
@@ -32,7 +32,7 @@ namespace RESTar
             var entities = request.GetExtension();
             foreach (var entity in entities)
                 Db.Transact(() => { JsonConvert.PopulateObject(request.Json, entity); });
-            request.MetaResource.Updater(entities);
+            request.MetaResource.Updater(entities, request);
             return UpdatedEntities(entities.Count(), request.Resource);
         }
 
@@ -40,9 +40,9 @@ namespace RESTar
         {
             var json = request.Json.First() == '[' ? request.Json : $"[{request.Json}]";
             var results = Db.Transact(() => (IEnumerable<dynamic>)
-                JSON.Deserialize(json, RESTarConfig.IEnumTypes[request.Resource]));
+                JSON.Deserialize(json, RESTarConfig.IEnumTypes[request.Resource], Options.ISO8601IncludeInherited));
             var count = results.Count();
-            request.MetaResource.Inserter(results);
+            request.MetaResource.Inserter(results, request);
             return InsertedEntities(count, request.Resource);
         }
 
@@ -52,8 +52,8 @@ namespace RESTar
             object obj;
             if (!entities.Any())
             {
-                obj = Db.Transact(() => JSON.Deserialize(request.Json, request.Resource));
-                request.MetaResource.Inserter(new[] {obj});
+                obj = Db.Transact(() => JSON.Deserialize(request.Json, request.Resource, Options.ISO8601IncludeInherited));
+                request.MetaResource.Inserter(new[] {obj}, request);
                 return new Response
                 {
                     StatusCode = (ushort) HttpStatusCode.Created,
@@ -62,7 +62,7 @@ namespace RESTar
             }
             obj = entities.First();
             Db.Transact(() => { JsonConvert.PopulateObject(request.Json, obj); });
-            request.MetaResource.Updater(new[] {obj});
+            request.MetaResource.Updater(new[] {obj}, request);
             return new Response
             {
                 StatusCode = (ushort) HttpStatusCode.OK,
