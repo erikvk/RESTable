@@ -12,13 +12,27 @@ namespace RESTar
 {
     public static class ExtensionMethods
     {
+        private static readonly MethodInfo ListGenerator = typeof(ExtensionMethods).GetMethod("GenerateList",
+            BindingFlags.NonPublic | BindingFlags.Static);
+
+        internal static List<T> GenerateList<T>(this T thing) where T : class
+        {
+            return new List<T> {thing};
+        }
+
+        internal static dynamic MakeList(this object thing, Type resource)
+        {
+            return ListGenerator.MakeGenericMethod(resource).Invoke(null, new[] {thing});
+        }
+
         internal static Type FindResource(this string searchString)
         {
             searchString = searchString.ToLower();
-            Type type;
-            RESTarConfig.ResourcesDict.TryGetValue(searchString, out type);
-            if (type != null)
-                return type;
+            var resource = ResourceMapping.FindByAlias(searchString);
+            if (resource == null)
+                RESTarConfig.ResourcesDict.TryGetValue(searchString, out resource);
+            if (resource != null)
+                return resource;
             var keys = RESTarConfig.ResourcesDict
                 .Keys
                 .Where(key => key.EndsWith(searchString))
@@ -189,6 +203,29 @@ namespace RESTar
             return conditions.Select(c => c.Key).ToArray();
         }
 
+        internal static WhereClause ToDDictWhereClause(this Condition condition)
+        {
+            if (condition == null)
+                return null;
+
+            string stringPart;
+            object[] valuePart = null;
+
+            if (condition.Value == null)
+                stringPart = "WHERE t.Key =? AND t.Value " +
+                             $"{(condition.Operator.Common == "!=" ? "IS NOT NULL" : "IS NULL")}";
+            else
+            {
+                stringPart = $"t.Key ?= AND t.Value {condition.Operator.SQL}?";
+                valuePart = new[] {condition.Key, condition.Value};
+            }
+            return new WhereClause
+            {
+                stringPart = stringPart,
+                valuesPart = valuePart
+            };
+        }
+
         internal static WhereClause ToWhereClause(this IList<Condition> conditions)
         {
             if (conditions == null)
@@ -262,6 +299,11 @@ namespace RESTar
             return DbHelper.FromID(objectNo.GetValueOrDefault()) as T;
         }
 
+        public static T GetReference<T>(this ulong objectNo) where T : class
+        {
+            return DbHelper.FromID(objectNo) as T;
+        }
+
         internal static object[] Values(this IEnumerable<Condition> conditions)
         {
             return conditions.Select(c => c.Value).ToArray();
@@ -274,6 +316,8 @@ namespace RESTar
 
         internal static ICollection<RESTarMethods> AvailableMethods(this Type resource)
         {
+            if (resource.HasAttribute<DDictAttribute>())
+                return RESTarConfig.Methods;
             return resource.GetAttribute<RESTarAttribute>()?.AvailableMethods;
         }
 

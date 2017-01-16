@@ -6,15 +6,15 @@ namespace RESTar
 {
     public class SyntaxException : Exception
     {
-        public SyntaxException(string message) : base("Syntax error while parsing command: " + message)
+        public SyntaxException(string message) : base("Syntax error while parsing request: " + message)
         {
         }
     }
 
     public class ExternalSourceException : Exception
     {
-        public readonly string Uri;
         public readonly string _Message;
+        public readonly string Uri;
 
         public ExternalSourceException(string uri, string message)
             : base($"RESTar could not get entities from external source at '{uri}'. {message}")
@@ -26,8 +26,8 @@ namespace RESTar
 
     public class InvalidInputCountException : Exception
     {
-        public Type Resource;
         public RESTarMethods Method;
+        public Type Resource;
 
         public InvalidInputCountException(Type resource, RESTarMethods method)
             : base($"Invalid input count for method {method:G}. Expected object/row, but found array/multiple rows. " +
@@ -47,6 +47,24 @@ namespace RESTar
                    $"resources, GET: {Settings._ResourcesPath} . ")
         {
             SearchString = searchString;
+        }
+    }
+
+    public class UnknownResourceForMappingException : Exception
+    {
+        public UnknownResourceForMappingException(string searchString, Type match)
+            : base("Resource mappings must be provided with fully qualified resource names. No match " +
+                   $"for '{searchString}'. {(match != null ? $"Did you mean '{match.FullName}'? " : "")}")
+        {
+        }
+    }
+
+    public class ResourceMappingException : Exception
+    {
+        public ResourceMappingException(string alias)
+            : base($"RESTar could not map alias '{alias}' to resource. Alias is already mapped to a " +
+                   "resource.")
+        {
         }
     }
 
@@ -71,8 +89,8 @@ namespace RESTar
 
     public class UnknownColumnException : Exception
     {
-        public readonly string SearchString;
         public readonly Type Resource;
+        public readonly string SearchString;
 
         public UnknownColumnException(Type resource, string searchString)
             : base($"RESTar could not locate any column in resource {resource.FullName} by '{searchString}'. " +
@@ -97,9 +115,9 @@ namespace RESTar
 
     public class AmbiguousColumnException : Exception
     {
-        public readonly string SearchString;
         public readonly ICollection<string> Candidates;
         public readonly Type Resource;
+        public readonly string SearchString;
 
         public AmbiguousColumnException(Type resource, string searchString, ICollection<string> candidates)
             : base($"RESTar could not uniquely identify a column in resource {resource.FullName} by " +
@@ -113,8 +131,8 @@ namespace RESTar
 
     public class AmbiguousResourceException : Exception
     {
-        public readonly string SearchString;
         public readonly ICollection<string> Candidates;
+        public readonly string SearchString;
 
         public AmbiguousResourceException(string searchString, ICollection<string> candidates)
             : base($"RESTar could not uniquely identify a resource by '{searchString}'. " +
@@ -143,13 +161,12 @@ namespace RESTar
         }
     }
 
-    public class VirtualResourceMissingMethodException : Exception
+    public class VirtualResourceMissingInterfaceImplementation : Exception
     {
-        public VirtualResourceMissingMethodException(Type resource, string missingMethodDef)
-            : base($"The resource type definition for {resource.FullName} is not decorated with the Starcounter " +
-                   $"database attribute, and is therefore considered a virtual resource definition. Virtual resources " +
-                   $"must contain static method definitions supporting the enabled RESTar methods for the resource " +
-                   $"(see help article on virtual resources for more info). {missingMethodDef}")
+        public VirtualResourceMissingInterfaceImplementation(Type resource, Type _interface)
+            : base($"The resource type definition for {resource.FullName} does not implement the interfaces " +
+                   "necessary for it to work as a RESTar resource: Assigned methods require an implementation " +
+                   $"of {_interface.FullName} (see the help article on virtual resources for more info)")
         {
         }
     }
@@ -188,6 +205,43 @@ namespace RESTar
     {
         public InvalidResourceDefinitionException(string message)
             : base(message)
+        {
+        }
+    }
+
+
+    public class AbortedSelectorException : Exception
+    {
+        public AbortedSelectorException(string message) : base(message)
+        {
+        }
+    }
+
+    public class AbortedInserterException : Exception
+    {
+        public AbortedInserterException(string message) : base(message)
+        {
+        }
+    }
+
+    public class AbortedUpdaterException : Exception
+    {
+        public AbortedUpdaterException(string message) : base(message)
+        {
+        }
+    }
+
+    public class AbortedDeleterException : Exception
+    {
+        public AbortedDeleterException(string message) : base(message)
+        {
+        }
+    }
+
+    public class NoAvalailableDynamicTableException : Exception
+    {
+        public NoAvalailableDynamicTableException() : base("RESTar have no more unallocated dynamic tables. " +
+                                                           "Remove an existing table and try again.")
         {
         }
     }

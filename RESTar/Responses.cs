@@ -22,7 +22,7 @@ namespace RESTar
                                 $"'{e.SearchString}' to '{e.Candidates.First()}'."
         };
 
-        internal static Response UnknownResource(UnknownResourceException e) => new Response
+        internal static Response NotFound(Exception e) => new Response
         {
             StatusCode = (ushort) HttpStatusCode.NotFound,
             StatusDescription = e.Message
@@ -35,23 +35,17 @@ namespace RESTar
                                 $"'{e.SearchString}' to '{e.Candidates.First()}'."
         };
 
-        internal static Response UnknownColumn(Exception e) => new Response
-        {
-            StatusCode = (ushort) HttpStatusCode.NotFound,
-            StatusDescription = e.Message
-        };
-
         #endregion
 
         #region Bad request
 
-        internal static Response SyntaxError(SyntaxException e) => new Response
+        internal static Response BadRequest(Exception e) => new Response
         {
             StatusCode = (ushort) HttpStatusCode.BadRequest,
             StatusDescription = e.Message
         };
 
-        internal static Response SemanticsError(SqlException e) => new Response
+        internal static Response SemanticsError(Exception e) => new Response
         {
             StatusCode = (ushort) HttpStatusCode.BadRequest,
             StatusDescription = $"{e.Message}To enumerate columns in a resource R: GET " +
@@ -89,24 +83,6 @@ namespace RESTar
                                 $"methods: {resource.AvailableMethods()?.ToMethodsString()}"
         };
 
-        internal static Response ExternalSourceError(ExternalSourceException e) => new Response
-        {
-            StatusCode = (ushort) HttpStatusCode.BadRequest,
-            StatusDescription = e.Message
-        };
-
-        internal static Response InvalidInputCount(InvalidInputCountException e) => new Response
-        {
-            StatusCode = (ushort) HttpStatusCode.BadRequest,
-            StatusDescription = e.Message
-        };
-
-        internal static Response ExcelFormatError(Exception e) => new Response
-        {
-            StatusCode = (ushort) HttpStatusCode.BadRequest,
-            StatusDescription = e.Message
-        };
-
         #endregion
 
         #region Internal
@@ -131,16 +107,16 @@ namespace RESTar
         {
             StatusCode = (ushort) HttpStatusCode.Conflict,
             StatusDescription =
-                $"Expected a uniquely matched entity in resource '{resource.FullName}' for this command, " +
+                $"Expected a uniquely matched entity in resource '{resource.FullName}' for this request, " +
                 "but matched multiple entities satisfying the given conditions. To enable manipulation of " +
-                "multiple matched entities (for commands that support this), add 'unsafe=true' to the " +
-                $"command's meta-conditions. See help article with topic 'unsafe' for more info."
+                "multiple matched entities (for methods that support this), add 'unsafe=true' to the " +
+                $"request's meta-conditions. See help article with topic 'unsafe' for more info."
         };
 
         internal static Response AmbiguousPutMatch() => new Response
         {
             StatusCode = (ushort) HttpStatusCode.Conflict,
-            StatusDescription = "Found multiple entities matching the given conditions in a PUT command."
+            StatusDescription = "Found multiple entities matching the given conditions in a PUT request."
         };
 
         #endregion
@@ -177,7 +153,7 @@ namespace RESTar
             var response = new Response();
 
             if (request.Dynamic || request.Select != null || request.Rename != null ||
-                request.Resource.IsSubclassOf(typeof(ScDictionary)))
+                request.Resource.IsSubclassOf(typeof(DDictionary)))
                 jsonString = entities.SerializeDyn();
             else if (request.Map != null)
                 jsonString = entities.Serialize(typeof(IEnumerable<>)

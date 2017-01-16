@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Web;
 using Starcounter;
-using static RESTar.RESTarMetaConditions;
 
 namespace RESTar
 {
@@ -11,7 +10,7 @@ namespace RESTar
     {
         public string Key;
         public Operator Operator;
-        public object Value;
+        public dynamic Value;
 
         internal static IList<Condition> ParseConditions(Type resource, string conditionString)
         {
@@ -31,13 +30,27 @@ namespace RESTar
                                               string.Join(", ", Operators.Select(o => o.Common)));
                 }
                 var pair = s.Split(new[] {op.Common}, StringSplitOptions.None);
-                Type type;
-                var key = GetKey(resource, pair[0], out type);
+                var dynamit = resource.HasAttribute<DDictAttribute>();
+
+                string key;
+                dynamic value;
+                if (dynamit)
+                {
+                    key = pair[0];
+                    value = GetValue(pair[1]);
+                }
+                else
+                {
+                    Type type;
+                    key = GetKey(resource, pair[0], out type);
+                    value = GetValue(pair[1], key, type);
+                }
+
                 return new Condition
                 {
                     Key = key,
                     Operator = op,
-                    Value = GetValue(pair[1], key, type)
+                    Value = value
                 };
             }).ToList();
         }
@@ -73,7 +86,7 @@ namespace RESTar
 
         private static readonly char[] OpMatchChars = {'<', '>', '=', '!'};
 
-        private static readonly IEnumerable<Operator> Operators = new List<Operator>
+        internal static readonly IEnumerable<Operator> Operators = new List<Operator>
         {
             new Operator("=", "="),
             new Operator("!=", "<>"),
@@ -135,7 +148,7 @@ namespace RESTar
             return string.Join(".", parts);
         }
 
-        private static object GetValue(string valueString, string key = null, Type expectedType = null)
+        private static dynamic GetValue(string valueString, string key = null, Type expectedType = null)
         {
             valueString = HttpUtility.UrlDecode(valueString);
             if (valueString == null)
@@ -144,12 +157,15 @@ namespace RESTar
                 return null;
             if (valueString.First() == '\"')
                 return valueString.Replace("\"", "");
-            object obj;
+            dynamic obj;
+            int _int;
             decimal dec;
             bool boo;
             DateTime dat;
             if (bool.TryParse(valueString, out boo))
                 obj = boo;
+            else if (int.TryParse(valueString, out _int))
+                obj = _int;
             else if (decimal.TryParse(valueString, out dec))
             {
                 var rounded = decimal.Round(dec, 6);

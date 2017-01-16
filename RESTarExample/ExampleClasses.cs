@@ -155,7 +155,7 @@ namespace RESTarExample
     // the serialization in mind when registering database class definitions as RESTar resources.
     // Failing to mark possibly problematic internal object references with IgnoreDataMember 
     // can generate serious issues when serializing entities. Imagine if we include a list of 
-    // other objects, which in turn include more objects etc. A simple GET command could then 
-    // return thousands of JSON objects. There is no built-in protection against such commands 
+    // other objects, which in turn include more objects etc. A simple GET request could then 
+    // return thousands of JSON objects. There is no built-in protection against such requests 
     // (sometimes that is what you want to do), so a well designed data model is essential.
 }

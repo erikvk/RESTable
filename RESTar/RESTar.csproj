@@ -46,7 +46,8 @@
       <HintPath>..\packages\DocumentFormat.OpenXml.2.5\lib\DocumentFormat.OpenXml.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Dynamit">
+    <Reference Include="Dynamit, Version=1.0.0.0, Culture=neutral, processorArchitecture=AMD64">
+      <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\Dynamit\Dynamit\bin\Release\Dynamit.dll</HintPath>
     </Reference>
     <Reference Include="Excel, Version=2.1.2.3, Culture=neutral, PublicKeyToken=93517dbe6a4012fa, processorArchitecture=MSIL">
@@ -93,17 +94,23 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Attributes.cs" />
+    <Compile Include="DynamicTable.cs" />
+    <Compile Include="Dynamit\DynamitControl.cs" />
+    <Compile Include="Dynamit\DynamitOperations.cs" />
     <Compile Include="Dynamit\DynamitTables.cs" />
     <Compile Include="HTTPS.cs" />
+    <Compile Include="OperationInterfaces.cs" />
+    <Compile Include="PredicateMaker.cs" />
     <Compile Include="Request.cs" />
     <Compile Include="Condition.cs" />
     <Compile Include="ExtensionMethods.cs" />
     <Compile Include="Help.cs" />
     <Compile Include="Import.cs" />
     <Compile Include="IRequest.cs" />
-    <Compile Include="IResource.cs" />
+    <Compile Include="Resource.cs" />
     <Compile Include="Log.cs" />
     <Compile Include="Operator.cs" />
+    <Compile Include="ResourceMapping.cs" />
     <Compile Include="RESTarConfig.cs" />
     <Compile Include="DB.cs" />
     <Compile Include="Evaluators.cs" />
@@ -115,6 +122,7 @@
     <Compile Include="Table.cs" />
     <Compile Include="Responses.cs" />
     <Compile Include="Settings.cs" />
+    <Compile Include="TestResource.cs" />
     <Compile Include="VirtualResource.cs" />
     <Compile Include="WhereClause.cs" />
   </ItemGroup>

@@ -2,8 +2,7 @@
 
 namespace RESTar
 {
-    [Database]
-    [RESTar(RESTarPresets.ReadAndUpdate)]
+    [Database, RESTar(RESTarPresets.ReadAndUpdate)]
     public class Settings
     {
         internal static bool _PrettyPrint => Instance.PrettyPrint;

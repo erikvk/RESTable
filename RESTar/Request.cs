@@ -1,15 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Dynamic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using ClosedXML.Excel;
+using Dynamit;
 using Excel;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Starcounter;
 using ScRequest = Starcounter.Request;
+using static RESTar.RESTarMethods;
 
 namespace RESTar
 {
@@ -23,12 +26,21 @@ namespace RESTar
             private set
             {
                 _resource = value;
-                MetaResource = DB.Get<Resource>("Name", value.FullName);
+                Selector = RESTarConfig.ResourceOperations[value][RESTarOperations.Select];
+                Inserter = RESTarConfig.ResourceOperations[value][RESTarOperations.Insert];
+                Updater = RESTarConfig.ResourceOperations[value][RESTarOperations.Update];
+                Deleter = RESTarConfig.ResourceOperations[value][RESTarOperations.Delete];
+                if (value.IsSubclassOf(typeof(DDictionary)))
+                    DynamicMemberResource = true;
             }
         }
 
         public string ResourceArgument { get; }
-        internal Resource MetaResource;
+        internal bool DynamicMemberResource;
+        internal dynamic Selector;
+        internal dynamic Inserter;
+        internal dynamic Updater;
+        internal dynamic Deleter;
         public IList<Condition> Conditions { get; }
         public IDictionary<string, object> MetaConditions { get; }
         internal readonly ScRequest ScRequest;
@@ -46,8 +58,9 @@ namespace RESTar
         internal readonly RESTarMimeType InputMimeType;
         internal readonly RESTarMimeType OutputMimeType;
         public RESTarMethods Method { get; }
+        public Func<Request, Response> Evaluator;
 
-        internal Request(ScRequest scRequest, string query, RESTarMethods method)
+        internal Request(ScRequest scRequest, string query, RESTarMethods method, Func<Request, Response> evaluator)
         {
             if (query == null)
                 throw new RESTarInternalException("Query not loaded");
@@ -55,6 +68,7 @@ namespace RESTar
                 throw new SyntaxException("Invalid argument separator count. A RESTar URI can contain at most 3 " +
                                           $"forward slashes after the base uri. URI scheme: {Settings._ResourcesPath}" +
                                           "/[resource]/[conditions]/[meta-conditions]");
+            Evaluator = evaluator;
             Query = query;
             ScRequest = scRequest;
             Method = method;
@@ -87,9 +101,9 @@ namespace RESTar
             if (Conditions != null &&
                 (Resource == typeof(Resource) || Resource.IsSubclassOf(typeof(Resource))))
             {
-                var nameCondition = Conditions.FirstOrDefault(c => c.Key.ToLower() == "name");
-                if (nameCondition != null)
-                    nameCondition.Value = nameCondition.Value.ToString().FindResource().FullName;
+                var locatorCondition = Conditions.FirstOrDefault(c => c.Key.ToLower() == "locator");
+                if (locatorCondition != null)
+                    locatorCondition.Value = locatorCondition.Value.ToString().FindResource().FullName;
             }
             if (argLength == 3) return;
 
@@ -136,20 +150,15 @@ namespace RESTar
                         $"{response.StatusDescription}"
                     );
                 Json = response.Body.RemoveTabsAndBreaks();
-                if (Json.First() == '[' && Method != RESTarMethods.POST)
+                if (Json.First() == '[' && Method != POST)
                     throw new InvalidInputCountException(Resource, Method);
                 if (Json == null)
                     throw new ExternalSourceException(Source, "Response was empty");
                 return;
             }
 
-            if (ScRequest.BodyBytes == null &&
-                (Method == RESTarMethods.PATCH ||
-                 Method == RESTarMethods.POST ||
-                 Method == RESTarMethods.PUT))
-            {
+            if (ScRequest.BodyBytes == null && (Method == PATCH || Method == POST || Method == PUT))
                 throw new SyntaxException("Missing data source for method " + Method);
-            }
 
             if (ScRequest.BodyBytes == null)
                 return;
@@ -168,7 +177,7 @@ namespace RESTar
                         var result = excelReader.AsDataSet();
                         if (result == null)
                             throw new ExcelInputException();
-                        if (Method == RESTarMethods.POST)
+                        if (Method == POST)
                         {
                             Json = JsonConvert.SerializeObject(result.Tables[0]);
                             Json = regex.Replace(Json, "$1$2");
@@ -184,11 +193,14 @@ namespace RESTar
             }
         }
 
+        private static readonly MethodInfo Mapper = typeof(Request).GetMethod("MapEntities",
+            BindingFlags.NonPublic | BindingFlags.Static);
+
         internal IEnumerable<dynamic> GetExtension(bool? unsafeOverride = null)
         {
             if (unsafeOverride != null)
                 Unsafe = unsafeOverride.Value;
-            var entities = MetaResource.Selector(this);
+            IEnumerable<dynamic> entities = Selector(this);
             if (entities == null)
                 throw new NoContentException();
             if (!Unsafe && entities.Count() > 1)
@@ -197,9 +209,7 @@ namespace RESTar
             {
                 if (Map == null)
                     return entities;
-                var method =
-                    typeof(Request).GetMethod("MapEntities", BindingFlags.NonPublic | BindingFlags.Static)
-                        .MakeGenericMethod(Resource);
+                var method = Mapper.MakeGenericMethod(Resource);
                 return (IEnumerable<dynamic>) method.Invoke(null, new object[] {this, entities});
             }
             var customEntities = SelectRename(this, entities);

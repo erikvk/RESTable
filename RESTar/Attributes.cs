@@ -68,11 +68,17 @@ namespace RESTar
         }
     }
 
-    public class VirtualResourceAttribute : Attribute
+    public class ObjectRefAttribute : Attribute
     {
     }
 
-    public class ObjectRefAttribute : Attribute
+    public class DDictAttribute : Attribute
     {
+        public int Nr;
+
+        public DDictAttribute(int nr)
+        {
+            Nr = nr;
+        }
     }
 }

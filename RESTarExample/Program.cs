@@ -1,7 +1,4 @@
-﻿using System;
-using Dynamit;
-using RESTar;
-using Starcounter;
+﻿using RESTar;
 
 namespace RESTarExample
 {

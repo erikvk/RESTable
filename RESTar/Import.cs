@@ -1,10 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Runtime.Serialization;
-using Starcounter;
-using System;
-using System.Linq;
-
-namespace RESTar
+﻿namespace RESTar
 {
 //    [VirtualResource, RESTar(RESTarMethods.GET, RESTarMethods.PATCH, RESTarMethods.POST)]
 //    public class Import

@@ -7,25 +7,30 @@ using Starcounter;
 namespace RESTar
 {
     [Database, RESTar(RESTarPresets.ReadOnly)]
-    public class Table : Resource
+    public class Table : 
+        Resource, 
+        ISelector<object>,
+        IInserter<object>, 
+        IUpdater<object>, 
+        IDeleter<object>
     {
-        public override int NrOfColumns => Schema.Count;
-        public long NrOfRows => DB.RowCount(Name);
+        public int NrOfColumns => Schema.Count;
+        public long NrOfRows => DB.RowCount(Locator);
 
-        public override IEnumerable<dynamic> Selector(IRequest request)
+        public IEnumerable<dynamic> Select(IRequest request)
         {
             return DB.Select(request);
         }
 
-        public override void Inserter(IEnumerable<dynamic> entities, IRequest request)
+        public void Insert(IEnumerable<dynamic> entities, IRequest request)
         {
         }
 
-        public override void Updater(IEnumerable<dynamic> entities, IRequest request)
+        public void Update(IEnumerable<dynamic> entities, IRequest request)
         {
         }
 
-        public override void Deleter(IEnumerable<dynamic> entities, IRequest request)
+        public void Delete(IEnumerable<dynamic> entities, IRequest request)
         {
             foreach (var entity in entities)
                 Db.Transact(() => { Db.Delete(entity); });

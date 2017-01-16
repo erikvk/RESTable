@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using Starcounter;
 
 namespace RESTar
@@ -9,22 +10,23 @@ namespace RESTar
     /// </summary>
     public static class DB
     {
+        private static readonly MethodInfo SQL = typeof(Db).GetMethods()
+            .First(m => m.Name == "SQL" && m.IsGenericMethod);
+
         internal static IEnumerable<dynamic> Select(IRequest request)
         {
             var whereClause = request.Conditions?.ToWhereClause();
             var sql = $"SELECT t FROM {request.Resource.FullName} t {whereClause?.stringPart} {request.OrderBy?.SQL}";
             dynamic entities;
-
-            var method = typeof(Db).GetMethods().First(m => m.Name == "SQL" && m.IsGenericMethod);
-            var generic = method.MakeGenericMethod(request.Resource);
-
+            var generic = SQL.MakeGenericMethod(request.Resource);
             if (request.Limit < 1)
                 entities = generic.Invoke(null, new object[] {sql, whereClause?.valuesPart});
             else
-                entities =
-                    Enumerable.ToList(
-                        Enumerable.Take((dynamic) generic.Invoke(null, new object[] {sql, whereClause?.valuesPart}),
-                            request.Limit));
+                entities = Enumerable.ToList(Enumerable.Take
+                (
+                    (dynamic) generic.Invoke(null, new object[] {sql, whereClause?.valuesPart}),
+                    request.Limit
+                ));
 
             return entities;
         }

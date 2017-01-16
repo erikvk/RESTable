@@ -4,11 +4,13 @@ using System.Linq;
 using System.Reflection;
 using Jil;
 using Starcounter;
+using Dynamit;
 using static RESTar.Responses;
 using static RESTar.RESTarMethods;
 using static RESTar.RESTarOperations;
 using ScRequest = Starcounter.Request;
 using Newtonsoft.Json;
+using RESTar.Dynamit;
 
 namespace RESTar
 {
@@ -17,12 +19,11 @@ namespace RESTar
         internal static List<Type> ResourcesList;
         internal static IDictionary<string, Type> ResourcesDict;
         internal static IDictionary<Type, Type> IEnumTypes;
-        internal static Dictionary<Type, Dictionary<RESTarOperations, dynamic>> VrOperations;
+        internal static Dictionary<Type, Dictionary<RESTarOperations, dynamic>> ResourceOperations;
         internal static Dictionary<RESTarMetaConditions, Type> MetaConditions;
 
         internal static readonly RESTarMethods[] Methods = {GET, POST, PATCH, PUT, DELETE};
         internal static readonly RESTarOperations[] Operations = {Select, Insert, Update, Delete};
-
 
         /// <summary>
         /// Initiates the RESTar interface
@@ -43,23 +44,17 @@ namespace RESTar
             if (uri.First() != '/')
                 uri = $"/{uri}";
 
-            foreach (var resource in DB.All<Resource>())
+            foreach (var resource in DB.All<VirtualResource>())
+                Db.Transact(() => { resource.Delete(); });
+
+            foreach (var resource in DB.All<Table>())
                 Db.Transact(() => { resource.Delete(); });
 
             ResourcesList = typeof(object)
                 .GetSubclasses()
                 .Where(t => t.HasAttribute<RESTarAttribute>())
+                .Union(DynamitControl.DynamitTypes)
                 .ToList();
-
-            var illegalResource = ResourcesList.FirstOrDefault(type => !type.HasAttribute<DatabaseAttribute>() &&
-                                                                       !type.HasAttribute<VirtualResourceAttribute>());
-            if (illegalResource != null)
-                throw new InvalidResourceDefinitionException(
-                    $"Invalid resource definition '{illegalResource.FullName}'. " +
-                    $"A RESTar resource must either be declared a Starcounter " +
-                    $"database type (using the Database attribute) or a Virtual " +
-                    $"resource (using the VirtualResource attribute). For more info " +
-                    $"see help article with topic 'virtual resources'");
 
             ResourcesDict = ResourcesList.ToDictionary(
                 type => type.FullName.ToLower(),
@@ -76,16 +71,23 @@ namespace RESTar
                 name => typeof(RESTarMetaConditions).GetField(name).GetAttribute<TypeAttribute>().Type
             );
 
-            var StarcounterResources = ResourcesList.Where(t => t.HasAttribute<DatabaseAttribute>()).ToList();
-            var VirtualResources = ResourcesList.Except(StarcounterResources).ToList();
-            CheckVirtualResources(VirtualResources);
-            global::Dynamit.DynamitConfig.Init();
+            ResourceOperations = ResourcesList.ToDictionary(type => type,
+                type => Operations.ToDictionary(o => o, o => default(dynamic)));
 
+            DynamitConfig.Init();
+            var StarcounterResources = ResourcesList
+                .Where(t => t.HasAttribute<DatabaseAttribute>() &&
+                            !t.HasAttribute<DDictAttribute>())
+                .ToList();
+            foreach (var resource in StarcounterResources)
+                Db.Transact(() => new Table(resource));
+            CheckOperations(StarcounterResources);
+            var VirtualResources = ResourcesList
+                .Where(t => !t.HasAttribute<DatabaseAttribute>())
+                .ToList();
+            CheckVirtualResources(VirtualResources);
             foreach (var resource in VirtualResources)
                 Scheduling.ScheduleTask(() => Db.Transact(() => new VirtualResource(resource)));
-
-            foreach (var resource in StarcounterResources)
-                Scheduling.ScheduleTask(() => Db.Transact(() => new Table(resource)));
 
             foreach (var resource in ResourcesList)
             {
@@ -127,20 +129,32 @@ namespace RESTar
             Handle.DELETE(privatePort, uri, (ScRequest r, string q) => Evaluate(r, q, Evaluators.DELETE, Private_DELETE));
         }
 
-        private static Response Evaluate(ScRequest scRequest, string query, Func<Request, Response> Evaluator,
+        private static Response Evaluate(ScRequest scRequest, string query, Func<Request, Response> evaluator,
             RESTarMethods method)
         {
             Log.Info("==> RESTar command");
             try
             {
-                var request = new Request(scRequest, query, method);
+                var request = new Request(scRequest, query, method, evaluator);
                 var blockedMethod = MethodCheck(request);
                 if (blockedMethod != null)
                     return BlockedMethod(blockedMethod.Value, request.Resource);
                 request.ResolveDataSource();
-                var response = Evaluator(request);
+                var response = request.Evaluator(request);
                 request.SendResponse(response);
                 return HandlerStatus.Handled;
+            }
+            catch (DeserializationException e)
+            {
+                if (e.InnerException != null)
+                    return BadRequest(e.InnerException);
+                return DeserializationError(scRequest.Body);
+            }
+            catch (JsonSerializationException e)
+            {
+                if (e.InnerException != null)
+                    return BadRequest(e.InnerException);
+                return DeserializationError(scRequest.Body);
             }
             catch (SqlException e)
             {
@@ -148,15 +162,15 @@ namespace RESTar
             }
             catch (SyntaxException e)
             {
-                return SyntaxError(e);
+                return BadRequest(e);
             }
             catch (UnknownColumnException e)
             {
-                return UnknownColumn(e);
+                return NotFound(e);
             }
             catch (CustomEntityUnknownColumnException e)
             {
-                return UnknownColumn(e);
+                return NotFound(e);
             }
             catch (AmbiguousColumnException e)
             {
@@ -164,11 +178,15 @@ namespace RESTar
             }
             catch (ExternalSourceException e)
             {
-                return ExternalSourceError(e);
+                return BadRequest(e);
             }
             catch (UnknownResourceException e)
             {
-                return UnknownResource(e);
+                return NotFound(e);
+            }
+            catch (UnknownResourceForMappingException e)
+            {
+                return NotFound(e);
             }
             catch (AmbiguousResourceException e)
             {
@@ -176,7 +194,7 @@ namespace RESTar
             }
             catch (InvalidInputCountException e)
             {
-                return InvalidInputCount(e);
+                return BadRequest(e);
             }
             catch (AmbiguousMatchException e)
             {
@@ -184,11 +202,11 @@ namespace RESTar
             }
             catch (ExcelInputException e)
             {
-                return ExcelFormatError(e);
+                return BadRequest(e);
             }
             catch (ExcelFormatException e)
             {
-                return ExcelFormatError(e);
+                return BadRequest(e);
             }
             catch (RESTarInternalException e)
             {
@@ -202,60 +220,113 @@ namespace RESTar
             {
                 return DeserializationError(scRequest.Body);
             }
-            catch (DeserializationException)
-            {
-                return DeserializationError(scRequest.Body);
-            }
-            catch (JsonSerializationException)
-            {
-                return DeserializationError(scRequest.Body);
-            }
             catch (DbException e)
             {
                 return DatabaseError(e);
             }
+            catch (AbortedSelectorException e)
+            {
+                return BadRequest(e);
+            }
+            catch (AbortedInserterException e)
+            {
+                return BadRequest(e);
+            }
+            catch (AbortedUpdaterException e)
+            {
+                return BadRequest(e);
+            }
+            catch (AbortedDeleterException e)
+            {
+                return BadRequest(e);
+            }
             catch (Exception e)
             {
                 if (e.InnerException is SqlException)
-                    return SemanticsError((SqlException) e.InnerException);
+                    return SemanticsError(e.InnerException);
                 if (e.InnerException is DeserializationException)
                     return DeserializationError(e.Message);
                 return UnknownError(e);
             }
         }
 
+        private static void CheckOperations(ICollection<Type> starcounterResources)
+        {
+            foreach (var operation in Operations)
+            {
+                var method = typeof(Table).GetMethod(operation.ToString(),
+                    BindingFlags.Public | BindingFlags.Instance);
+                ResourceOperations[typeof(Table)][operation] = operation == Select
+                    ? method.CreateDelegate(typeof(Func<,>).MakeGenericType(typeof(IRequest),
+                        typeof(IEnumerable<object>)), null)
+                    : method.CreateDelegate(typeof(Action<,>).MakeGenericType(typeof(IEnumerable<object>),
+                        typeof(IRequest)), null);
+            }
+
+            foreach (var resource in starcounterResources.Except(new[] {typeof(Table)}))
+            {
+                var metaResource = DB.Get<Table>("Locator", resource.FullName);
+                foreach (var operation in Operations)
+                {
+                    var overrideMethod = resource.GetMethod(operation.ToString(),
+                        BindingFlags.Public | BindingFlags.Instance);
+                    var baseMethod = metaResource.GetType()
+                        .GetMethod(operation.ToString(), BindingFlags.Public | BindingFlags.Instance);
+                    if (LocalizedInterface(operation, resource).IsAssignableFrom(resource))
+                        ResourceOperations[resource][operation] = operation == Select
+                            ? overrideMethod.CreateDelegate(typeof(Func<,>).MakeGenericType(typeof(IRequest),
+                                typeof(IEnumerable<>).MakeGenericType(resource)), null)
+                            : overrideMethod.CreateDelegate(typeof(Action<,>).MakeGenericType(typeof(IEnumerable<>)
+                                .MakeGenericType(resource), typeof(IRequest)), null);
+                    else if (LocalizedInterface(operation, typeof(object)).IsAssignableFrom(resource))
+                        ResourceOperations[resource][operation] = operation == Select
+                            ? overrideMethod.CreateDelegate(typeof(Func<,>).MakeGenericType(typeof(IRequest),
+                                typeof(IEnumerable<object>)), null)
+                            : overrideMethod.CreateDelegate(
+                                typeof(Action<,>).MakeGenericType(typeof(IEnumerable<object>),
+                                    typeof(IRequest)), null);
+                    else
+                        ResourceOperations[resource][operation] = operation == Select
+                            ? baseMethod.CreateDelegate(typeof(Func<,>).MakeGenericType(typeof(IRequest),
+                                typeof(IEnumerable<object>)), null)
+                            : baseMethod.CreateDelegate(typeof(Action<,>).MakeGenericType(typeof(IEnumerable<object>),
+                                typeof(IRequest)), null);
+                }
+            }
+
+            foreach (var resource in DynamitControl.DynamitTypes)
+            {
+                foreach (var operation in Operations)
+                {
+                    var method = typeof(DynamitOperations).GetMethod(operation.ToString(),
+                        BindingFlags.Public | BindingFlags.Instance);
+                    ResourceOperations[resource][operation] = operation == Select
+                        ? method.CreateDelegate(typeof(Func<,>)
+                            .MakeGenericType(typeof(IRequest), typeof(IEnumerable<DDictionary>)), null)
+                        : method.CreateDelegate(typeof(Action<,>)
+                            .MakeGenericType(typeof(IEnumerable<DDictionary>), typeof(IRequest)), null);
+                }
+            }
+        }
+
+        private static Type LocalizedInterface(RESTarOperations operation, Type type)
+        {
+            switch (operation)
+            {
+                case Select:
+                    return typeof(ISelector<>).MakeGenericType(type);
+                case Insert:
+                    return typeof(IInserter<>).MakeGenericType(type);
+                case Update:
+                    return typeof(IUpdater<>).MakeGenericType(type);
+                case Delete:
+                    return typeof(IDeleter<>).MakeGenericType(type);
+            }
+            return null;
+        }
+
         private static void CheckVirtualResources(ICollection<Type> virtualResources)
         {
-            VrOperations = virtualResources.ToDictionary(type => type,
-                type => Operations.ToDictionary(o => o, o => default(dynamic)));
-
-            var VirtualResourceMethodTemplates = new Func<Type, Dictionary<RESTarOperations, string>>
-            (type => new Dictionary<RESTarOperations, string>
-            {
-                [Select] = $"public static IEnumerable<{type.FullName}> Select(IRequest request) {{ }}",
-                [Insert] = $"public static void Insert(IEnumerable<{type.FullName}> entities, IRequest request) {{ }}",
-                [Update] = $"public static void Update(IEnumerable<{type.FullName}> entities, IRequest request) {{ }}",
-                [Delete] = $"public static void Delete(IEnumerable<{type.FullName}> entities, IRequest request) {{ }}"
-            });
-
-            var VirtualResourceMethodParameters = new Func<Type, Dictionary<RESTarOperations, Type[]>>
-            (type => new Dictionary<RESTarOperations, Type[]>
-            {
-                [Select] = new[] {typeof(IRequest)},
-                [Insert] = new[] {typeof(IEnumerable<>).MakeGenericType(type), typeof(IRequest)},
-                [Update] = new[] {typeof(IEnumerable<>).MakeGenericType(type), typeof(IRequest)},
-                [Delete] = new[] {typeof(IEnumerable<>).MakeGenericType(type), typeof(IRequest)}
-            });
-
-            var VirtualResourceMethodReturnTypes = new Func<Type, Dictionary<RESTarOperations, Type>>
-            (type => new Dictionary<RESTarOperations, Type>
-            {
-                [Select] = typeof(IEnumerable<>).MakeGenericType(type),
-                [Insert] = typeof(void),
-                [Update] = typeof(void),
-                [Delete] = typeof(void)
-            });
-
             Func<IEnumerable<RESTarMethods>, IEnumerable<RESTarOperations>> necessarytMethodDefs =
                 restMethods => restMethods.SelectMany(method =>
                 {
@@ -289,44 +360,26 @@ namespace RESTar
             {
                 foreach (var requiredMethod in necessarytMethodDefs(type.AvailableMethods()))
                 {
-                    var method = type.GetMethod(requiredMethod.ToString(), BindingFlags.Public | BindingFlags.Static);
-                    if (method == null)
-                    {
-                        throw new VirtualResourceMissingMethodException
-                        (
-                            type,
-                            $"Missing definition for '{requiredMethod}' according to template: " +
-                            VirtualResourceMethodTemplates(type)[requiredMethod]
-                        );
-                    }
-
-                    if (method.ReturnType != VirtualResourceMethodReturnTypes(type)[requiredMethod])
-                    {
-                        throw new VirtualResourceSignatureException(
-                            $"Wrong return type for method '{requiredMethod}'. Expected " +
-                            VirtualResourceMethodReturnTypes(type)[requiredMethod]);
-                    }
-
-                    if (!method.GetParameters().Select(i => i.ParameterType).SequenceEqual(
-                        VirtualResourceMethodParameters(type)[requiredMethod]))
-                    {
-                        throw new VirtualResourceSignatureException(
-                            $"Wrong parameter type(s) for method '{requiredMethod}'. Expected " +
-                            string.Join(", ", VirtualResourceMethodParameters(type)[requiredMethod]
-                                .Select(i => i.ToString())));
-                    }
-
-                    VrOperations[type][requiredMethod] = requiredMethod == Select
-                        ? method.CreateDelegate(typeof(Func<,>).MakeGenericType(typeof(IRequest),
-                            typeof(IEnumerable<>).MakeGenericType(type)))
-                        : method.CreateDelegate(typeof(Action<,>).MakeGenericType(typeof(IEnumerable<>)
-                            .MakeGenericType(type), typeof(IRequest)));
+                    var method = type.GetMethod(requiredMethod.ToString(), BindingFlags.Public | BindingFlags.Instance);
+                    if (LocalizedInterface(requiredMethod, type).IsAssignableFrom(type))
+                        ResourceOperations[type][requiredMethod] = requiredMethod == Select
+                            ? method.CreateDelegate(typeof(Func<,>).MakeGenericType(typeof(IRequest),
+                                typeof(IEnumerable<>).MakeGenericType(type)), null)
+                            : method.CreateDelegate(typeof(Action<,>).MakeGenericType(typeof(IEnumerable<>)
+                                .MakeGenericType(type), typeof(IRequest)), null);
+                    else if (LocalizedInterface(requiredMethod, typeof(object)).IsAssignableFrom(type))
+                        ResourceOperations[type][requiredMethod] = requiredMethod == Select
+                            ? method.CreateDelegate(typeof(Func<,>).MakeGenericType(typeof(IRequest),
+                                typeof(IEnumerable<object>)), null)
+                            : method.CreateDelegate(typeof(Action<,>).MakeGenericType(typeof(IEnumerable<object>),
+                                typeof(IRequest)), null);
+                    else throw new VirtualResourceMissingInterfaceImplementation(type, typeof(ISelector<>));
                 }
-
                 if (type.GetFields(BindingFlags.Public | BindingFlags.Instance).Any())
                     throw new VirtualResourceMemberException(
                         "A virtual resource cannot include public instance fields, " +
-                        "only properties.");
+                        "only properties."
+                    );
             }
         }
 

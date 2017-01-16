@@ -1,1285 +1,1027 @@
-﻿using System;
-using Dynamit;
-using Starcounter;
+﻿using Dynamit;
 
 namespace RESTar.Dynamit
 {
-    [Database, RESTar(RESTarPresets.ReadAndWrite)]
-    public class Dynamit1 : ScDictionary
+    [DDict(1), DDictionary(typeof(Dynamit1KeyValuePair))]
+    public class Dynamit01 : DDictionary
     {
-        public Dynamit1() : base(typeof(Dynamit1KeyValuePair))
-        {
-        }
-
-        protected override ScKeyValuePair NewKeyPair(ScDictionary dict, string key, object value = null)
+        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
         {
             return new Dynamit1KeyValuePair(dict, key, value);
         }
     }
 
-    public class Dynamit1KeyValuePair : ScKeyValuePair
+    public class Dynamit1KeyValuePair : DKeyValuePair
     {
-        public Dynamit1KeyValuePair(ScDictionary dict, string key, object value = null) : base(dict, key, value)
+        public Dynamit1KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
         {
         }
     }
 
-    [Database, RESTar(RESTarPresets.ReadAndWrite)]
-    public class Dynamit2 : ScDictionary
+    [DDict(2), DDictionary(typeof(Dynamit2KeyValuePair))]
+    public class Dynamit02 : DDictionary
     {
-        public Dynamit2() : base(typeof(Dynamit2KeyValuePair))
-        {
-        }
-
-        protected override ScKeyValuePair NewKeyPair(ScDictionary dict, string key, object value = null)
+        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
         {
             return new Dynamit2KeyValuePair(dict, key, value);
         }
     }
 
-    public class Dynamit2KeyValuePair : ScKeyValuePair
+    public class Dynamit2KeyValuePair : DKeyValuePair
     {
-        public Dynamit2KeyValuePair(ScDictionary dict, string key, object value = null) : base(dict, key, value)
+        public Dynamit2KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
         {
         }
     }
 
-    [Database, RESTar(RESTarPresets.ReadAndWrite)]
-    public class Dynamit3 : ScDictionary
+    [DDict(3), DDictionary(typeof(Dynamit3KeyValuePair))]
+    public class Dynamit03 : DDictionary
     {
-        public Dynamit3() : base(typeof(Dynamit3KeyValuePair))
-        {
-        }
-
-        protected override ScKeyValuePair NewKeyPair(ScDictionary dict, string key, object value = null)
+        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
         {
             return new Dynamit3KeyValuePair(dict, key, value);
         }
     }
 
-    public class Dynamit3KeyValuePair : ScKeyValuePair
+    public class Dynamit3KeyValuePair : DKeyValuePair
     {
-        public Dynamit3KeyValuePair(ScDictionary dict, string key, object value = null) : base(dict, key, value)
+        public Dynamit3KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
         {
         }
     }
 
-    [Database, RESTar(RESTarPresets.ReadAndWrite)]
-    public class Dynamit4 : ScDictionary
+    [DDict(4), DDictionary(typeof(Dynamit4KeyValuePair))]
+    public class Dynamit04 : DDictionary
     {
-        public Dynamit4() : base(typeof(Dynamit4KeyValuePair))
-        {
-        }
-
-        protected override ScKeyValuePair NewKeyPair(ScDictionary dict, string key, object value = null)
+        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
         {
             return new Dynamit4KeyValuePair(dict, key, value);
         }
     }
 
-    public class Dynamit4KeyValuePair : ScKeyValuePair
+    public class Dynamit4KeyValuePair : DKeyValuePair
     {
-        public Dynamit4KeyValuePair(ScDictionary dict, string key, object value = null) : base(dict, key, value)
+        public Dynamit4KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
         {
         }
     }
 
-    [Database, RESTar(RESTarPresets.ReadAndWrite)]
-    public class Dynamit5 : ScDictionary
+    [DDict(5), DDictionary(typeof(Dynamit5KeyValuePair))]
+    public class Dynamit05 : DDictionary
     {
-        public Dynamit5() : base(typeof(Dynamit5KeyValuePair))
-        {
-        }
-
-        protected override ScKeyValuePair NewKeyPair(ScDictionary dict, string key, object value = null)
+        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
         {
             return new Dynamit5KeyValuePair(dict, key, value);
         }
     }
 
-    public class Dynamit5KeyValuePair : ScKeyValuePair
+    public class Dynamit5KeyValuePair : DKeyValuePair
     {
-        public Dynamit5KeyValuePair(ScDictionary dict, string key, object value = null) : base(dict, key, value)
+        public Dynamit5KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
         {
         }
     }
 
-    [Database, RESTar(RESTarPresets.ReadAndWrite)]
-    public class Dynamit6 : ScDictionary
+    [DDict(6), DDictionary(typeof(Dynamit6KeyValuePair))]
+    public class Dynamit06 : DDictionary
     {
-        public Dynamit6() : base(typeof(Dynamit6KeyValuePair))
-        {
-        }
-
-        protected override ScKeyValuePair NewKeyPair(ScDictionary dict, string key, object value = null)
+        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
         {
             return new Dynamit6KeyValuePair(dict, key, value);
         }
     }
 
-    public class Dynamit6KeyValuePair : ScKeyValuePair
+    public class Dynamit6KeyValuePair : DKeyValuePair
     {
-        public Dynamit6KeyValuePair(ScDictionary dict, string key, object value = null) : base(dict, key, value)
+        public Dynamit6KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
         {
         }
     }
 
-    [Database, RESTar(RESTarPresets.ReadAndWrite)]
-    public class Dynamit7 : ScDictionary
+    [DDict(7), DDictionary(typeof(Dynamit7KeyValuePair))]
+    public class Dynamit07 : DDictionary
     {
-        public Dynamit7() : base(typeof(Dynamit7KeyValuePair))
-        {
-        }
-
-        protected override ScKeyValuePair NewKeyPair(ScDictionary dict, string key, object value = null)
+        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
         {
             return new Dynamit7KeyValuePair(dict, key, value);
         }
     }
 
-    public class Dynamit7KeyValuePair : ScKeyValuePair
+    public class Dynamit7KeyValuePair : DKeyValuePair
     {
-        public Dynamit7KeyValuePair(ScDictionary dict, string key, object value = null) : base(dict, key, value)
+        public Dynamit7KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
         {
         }
     }
 
-    [Database, RESTar(RESTarPresets.ReadAndWrite)]
-    public class Dynamit8 : ScDictionary
+    [DDict(8), DDictionary(typeof(Dynamit8KeyValuePair))]
+    public class Dynamit08 : DDictionary
     {
-        public Dynamit8() : base(typeof(Dynamit8KeyValuePair))
-        {
-        }
-
-        protected override ScKeyValuePair NewKeyPair(ScDictionary dict, string key, object value = null)
+        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
         {
             return new Dynamit8KeyValuePair(dict, key, value);
         }
     }
 
-    public class Dynamit8KeyValuePair : ScKeyValuePair
+    public class Dynamit8KeyValuePair : DKeyValuePair
     {
-        public Dynamit8KeyValuePair(ScDictionary dict, string key, object value = null) : base(dict, key, value)
+        public Dynamit8KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
         {
         }
     }
 
-    [Database, RESTar(RESTarPresets.ReadAndWrite)]
-    public class Dynamit9 : ScDictionary
+    [DDict(9), DDictionary(typeof(Dynamit9KeyValuePair))]
+    public class Dynamit09 : DDictionary
     {
-        public Dynamit9() : base(typeof(Dynamit9KeyValuePair))
-        {
-        }
-
-        protected override ScKeyValuePair NewKeyPair(ScDictionary dict, string key, object value = null)
+        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
         {
             return new Dynamit9KeyValuePair(dict, key, value);
         }
     }
 
-    public class Dynamit9KeyValuePair : ScKeyValuePair
+    public class Dynamit9KeyValuePair : DKeyValuePair
     {
-        public Dynamit9KeyValuePair(ScDictionary dict, string key, object value = null) : base(dict, key, value)
+        public Dynamit9KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
         {
         }
     }
 
-    [Database, RESTar(RESTarPresets.ReadAndWrite)]
-    public class Dynamit10 : ScDictionary
+    [DDict(10), DDictionary(typeof(Dynamit10KeyValuePair))]
+    public class Dynamit10 : DDictionary
     {
-        public Dynamit10() : base(typeof(Dynamit10KeyValuePair))
-        {
-        }
-
-        protected override ScKeyValuePair NewKeyPair(ScDictionary dict, string key, object value = null)
+        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
         {
             return new Dynamit10KeyValuePair(dict, key, value);
         }
     }
 
-    public class Dynamit10KeyValuePair : ScKeyValuePair
+    public class Dynamit10KeyValuePair : DKeyValuePair
     {
-        public Dynamit10KeyValuePair(ScDictionary dict, string key, object value = null) : base(dict, key, value)
+        public Dynamit10KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
         {
         }
     }
 
-    [Database, RESTar(RESTarPresets.ReadAndWrite)]
-    public class Dynamit11 : ScDictionary
+    [DDict(11), DDictionary(typeof(Dynamit11KeyValuePair))]
+    public class Dynamit11 : DDictionary
     {
-        public Dynamit11() : base(typeof(Dynamit11KeyValuePair))
-        {
-        }
-
-        protected override ScKeyValuePair NewKeyPair(ScDictionary dict, string key, object value = null)
+        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
         {
             return new Dynamit11KeyValuePair(dict, key, value);
         }
     }
 
-    public class Dynamit11KeyValuePair : ScKeyValuePair
+    public class Dynamit11KeyValuePair : DKeyValuePair
     {
-        public Dynamit11KeyValuePair(ScDictionary dict, string key, object value = null) : base(dict, key, value)
+        public Dynamit11KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
         {
         }
     }
 
-    [Database, RESTar(RESTarPresets.ReadAndWrite)]
-    public class Dynamit12 : ScDictionary
+    [DDict(12), DDictionary(typeof(Dynamit12KeyValuePair))]
+    public class Dynamit12 : DDictionary
     {
-        public Dynamit12() : base(typeof(Dynamit12KeyValuePair))
-        {
-        }
-
-        protected override ScKeyValuePair NewKeyPair(ScDictionary dict, string key, object value = null)
+        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
         {
             return new Dynamit12KeyValuePair(dict, key, value);
         }
     }
 
-    public class Dynamit12KeyValuePair : ScKeyValuePair
+    public class Dynamit12KeyValuePair : DKeyValuePair
     {
-        public Dynamit12KeyValuePair(ScDictionary dict, string key, object value = null) : base(dict, key, value)
+        public Dynamit12KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
         {
         }
     }
 
-    [Database, RESTar(RESTarPresets.ReadAndWrite)]
-    public class Dynamit13 : ScDictionary
+    [DDict(13), DDictionary(typeof(Dynamit13KeyValuePair))]
+    public class Dynamit13 : DDictionary
     {
-        public Dynamit13() : base(typeof(Dynamit13KeyValuePair))
-        {
-        }
-
-        protected override ScKeyValuePair NewKeyPair(ScDictionary dict, string key, object value = null)
+        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
         {
             return new Dynamit13KeyValuePair(dict, key, value);
         }
     }
 
-    public class Dynamit13KeyValuePair : ScKeyValuePair
+    public class Dynamit13KeyValuePair : DKeyValuePair
     {
-        public Dynamit13KeyValuePair(ScDictionary dict, string key, object value = null) : base(dict, key, value)
+        public Dynamit13KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
         {
         }
     }
 
-    [Database, RESTar(RESTarPresets.ReadAndWrite)]
-    public class Dynamit14 : ScDictionary
+    [DDict(14), DDictionary(typeof(Dynamit14KeyValuePair))]
+    public class Dynamit14 : DDictionary
     {
-        public Dynamit14() : base(typeof(Dynamit14KeyValuePair))
-        {
-        }
-
-        protected override ScKeyValuePair NewKeyPair(ScDictionary dict, string key, object value = null)
+        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
         {
             return new Dynamit14KeyValuePair(dict, key, value);
         }
     }
 
-    public class Dynamit14KeyValuePair : ScKeyValuePair
+    public class Dynamit14KeyValuePair : DKeyValuePair
     {
-        public Dynamit14KeyValuePair(ScDictionary dict, string key, object value = null) : base(dict, key, value)
+        public Dynamit14KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
         {
         }
     }
 
-    [Database, RESTar(RESTarPresets.ReadAndWrite)]
-    public class Dynamit15 : ScDictionary
+    [DDict(15), DDictionary(typeof(Dynamit15KeyValuePair))]
+    public class Dynamit15 : DDictionary
     {
-        public Dynamit15() : base(typeof(Dynamit15KeyValuePair))
-        {
-        }
-
-        protected override ScKeyValuePair NewKeyPair(ScDictionary dict, string key, object value = null)
+        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
         {
             return new Dynamit15KeyValuePair(dict, key, value);
         }
     }
 
-    public class Dynamit15KeyValuePair : ScKeyValuePair
+    public class Dynamit15KeyValuePair : DKeyValuePair
     {
-        public Dynamit15KeyValuePair(ScDictionary dict, string key, object value = null) : base(dict, key, value)
+        public Dynamit15KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
         {
         }
     }
 
-    [Database, RESTar(RESTarPresets.ReadAndWrite)]
-    public class Dynamit16 : ScDictionary
+    [DDict(16), DDictionary(typeof(Dynamit16KeyValuePair))]
+    public class Dynamit16 : DDictionary
     {
-        public Dynamit16() : base(typeof(Dynamit16KeyValuePair))
-        {
-        }
-
-        protected override ScKeyValuePair NewKeyPair(ScDictionary dict, string key, object value = null)
+        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
         {
             return new Dynamit16KeyValuePair(dict, key, value);
         }
     }
 
-    public class Dynamit16KeyValuePair : ScKeyValuePair
+    public class Dynamit16KeyValuePair : DKeyValuePair
     {
-        public Dynamit16KeyValuePair(ScDictionary dict, string key, object value = null) : base(dict, key, value)
+        public Dynamit16KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
         {
         }
     }
 
-    [Database, RESTar(RESTarPresets.ReadAndWrite)]
-    public class Dynamit17 : ScDictionary
+    [DDict(17), DDictionary(typeof(Dynamit17KeyValuePair))]
+    public class Dynamit17 : DDictionary
     {
-        public Dynamit17() : base(typeof(Dynamit17KeyValuePair))
-        {
-        }
-
-        protected override ScKeyValuePair NewKeyPair(ScDictionary dict, string key, object value = null)
+        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
         {
             return new Dynamit17KeyValuePair(dict, key, value);
         }
     }
 
-    public class Dynamit17KeyValuePair : ScKeyValuePair
+    public class Dynamit17KeyValuePair : DKeyValuePair
     {
-        public Dynamit17KeyValuePair(ScDictionary dict, string key, object value = null) : base(dict, key, value)
+        public Dynamit17KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
         {
         }
     }
 
-    [Database, RESTar(RESTarPresets.ReadAndWrite)]
-    public class Dynamit18 : ScDictionary
+    [DDict(18), DDictionary(typeof(Dynamit18KeyValuePair))]
+    public class Dynamit18 : DDictionary
     {
-        public Dynamit18() : base(typeof(Dynamit18KeyValuePair))
-        {
-        }
-
-        protected override ScKeyValuePair NewKeyPair(ScDictionary dict, string key, object value = null)
+        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
         {
             return new Dynamit18KeyValuePair(dict, key, value);
         }
     }
 
-    public class Dynamit18KeyValuePair : ScKeyValuePair
+    public class Dynamit18KeyValuePair : DKeyValuePair
     {
-        public Dynamit18KeyValuePair(ScDictionary dict, string key, object value = null) : base(dict, key, value)
+        public Dynamit18KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
         {
         }
     }
 
-    [Database, RESTar(RESTarPresets.ReadAndWrite)]
-    public class Dynamit19 : ScDictionary
+    [DDict(19), DDictionary(typeof(Dynamit19KeyValuePair))]
+    public class Dynamit19 : DDictionary
     {
-        public Dynamit19() : base(typeof(Dynamit19KeyValuePair))
-        {
-        }
-
-        protected override ScKeyValuePair NewKeyPair(ScDictionary dict, string key, object value = null)
+        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
         {
             return new Dynamit19KeyValuePair(dict, key, value);
         }
     }
 
-    public class Dynamit19KeyValuePair : ScKeyValuePair
+    public class Dynamit19KeyValuePair : DKeyValuePair
     {
-        public Dynamit19KeyValuePair(ScDictionary dict, string key, object value = null) : base(dict, key, value)
+        public Dynamit19KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
         {
         }
     }
 
-    [Database, RESTar(RESTarPresets.ReadAndWrite)]
-    public class Dynamit20 : ScDictionary
+    [DDict(20), DDictionary(typeof(Dynamit20KeyValuePair))]
+    public class Dynamit20 : DDictionary
     {
-        public Dynamit20() : base(typeof(Dynamit20KeyValuePair))
-        {
-        }
-
-        protected override ScKeyValuePair NewKeyPair(ScDictionary dict, string key, object value = null)
+        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
         {
             return new Dynamit20KeyValuePair(dict, key, value);
         }
     }
 
-    public class Dynamit20KeyValuePair : ScKeyValuePair
+    public class Dynamit20KeyValuePair : DKeyValuePair
     {
-        public Dynamit20KeyValuePair(ScDictionary dict, string key, object value = null) : base(dict, key, value)
+        public Dynamit20KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
         {
         }
     }
 
-    [Database, RESTar(RESTarPresets.ReadAndWrite)]
-    public class Dynamit21 : ScDictionary
+    [DDict(21), DDictionary(typeof(Dynamit21KeyValuePair))]
+    public class Dynamit21 : DDictionary
     {
-        public Dynamit21() : base(typeof(Dynamit21KeyValuePair))
-        {
-        }
-
-        protected override ScKeyValuePair NewKeyPair(ScDictionary dict, string key, object value = null)
+        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
         {
             return new Dynamit21KeyValuePair(dict, key, value);
         }
     }
 
-    public class Dynamit21KeyValuePair : ScKeyValuePair
+    public class Dynamit21KeyValuePair : DKeyValuePair
     {
-        public Dynamit21KeyValuePair(ScDictionary dict, string key, object value = null) : base(dict, key, value)
+        public Dynamit21KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
         {
         }
     }
 
-    [Database, RESTar(RESTarPresets.ReadAndWrite)]
-    public class Dynamit22 : ScDictionary
+    [DDict(22), DDictionary(typeof(Dynamit22KeyValuePair))]
+    public class Dynamit22 : DDictionary
     {
-        public Dynamit22() : base(typeof(Dynamit22KeyValuePair))
-        {
-        }
-
-        protected override ScKeyValuePair NewKeyPair(ScDictionary dict, string key, object value = null)
+        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
         {
             return new Dynamit22KeyValuePair(dict, key, value);
         }
     }
 
-    public class Dynamit22KeyValuePair : ScKeyValuePair
+    public class Dynamit22KeyValuePair : DKeyValuePair
     {
-        public Dynamit22KeyValuePair(ScDictionary dict, string key, object value = null) : base(dict, key, value)
+        public Dynamit22KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
         {
         }
     }
 
-    [Database, RESTar(RESTarPresets.ReadAndWrite)]
-    public class Dynamit23 : ScDictionary
+    [DDict(23), DDictionary(typeof(Dynamit23KeyValuePair))]
+    public class Dynamit23 : DDictionary
     {
-        public Dynamit23() : base(typeof(Dynamit23KeyValuePair))
-        {
-        }
-
-        protected override ScKeyValuePair NewKeyPair(ScDictionary dict, string key, object value = null)
+        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
         {
             return new Dynamit23KeyValuePair(dict, key, value);
         }
     }
 
-    public class Dynamit23KeyValuePair : ScKeyValuePair
+    public class Dynamit23KeyValuePair : DKeyValuePair
     {
-        public Dynamit23KeyValuePair(ScDictionary dict, string key, object value = null) : base(dict, key, value)
+        public Dynamit23KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
         {
         }
     }
 
-    [Database, RESTar(RESTarPresets.ReadAndWrite)]
-    public class Dynamit24 : ScDictionary
+    [DDict(24), DDictionary(typeof(Dynamit24KeyValuePair))]
+    public class Dynamit24 : DDictionary
     {
-        public Dynamit24() : base(typeof(Dynamit24KeyValuePair))
-        {
-        }
-
-        protected override ScKeyValuePair NewKeyPair(ScDictionary dict, string key, object value = null)
+        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
         {
             return new Dynamit24KeyValuePair(dict, key, value);
         }
     }
 
-    public class Dynamit24KeyValuePair : ScKeyValuePair
+    public class Dynamit24KeyValuePair : DKeyValuePair
     {
-        public Dynamit24KeyValuePair(ScDictionary dict, string key, object value = null) : base(dict, key, value)
+        public Dynamit24KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
         {
         }
     }
 
-    [Database, RESTar(RESTarPresets.ReadAndWrite)]
-    public class Dynamit25 : ScDictionary
+    [DDict(25), DDictionary(typeof(Dynamit25KeyValuePair))]
+    public class Dynamit25 : DDictionary
     {
-        public Dynamit25() : base(typeof(Dynamit25KeyValuePair))
-        {
-        }
-
-        protected override ScKeyValuePair NewKeyPair(ScDictionary dict, string key, object value = null)
+        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
         {
             return new Dynamit25KeyValuePair(dict, key, value);
         }
     }
 
-    public class Dynamit25KeyValuePair : ScKeyValuePair
+    public class Dynamit25KeyValuePair : DKeyValuePair
     {
-        public Dynamit25KeyValuePair(ScDictionary dict, string key, object value = null) : base(dict, key, value)
+        public Dynamit25KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
         {
         }
     }
 
-    [Database, RESTar(RESTarPresets.ReadAndWrite)]
-    public class Dynamit26 : ScDictionary
+    [DDict(26), DDictionary(typeof(Dynamit26KeyValuePair))]
+    public class Dynamit26 : DDictionary
     {
-        public Dynamit26() : base(typeof(Dynamit26KeyValuePair))
-        {
-        }
-
-        protected override ScKeyValuePair NewKeyPair(ScDictionary dict, string key, object value = null)
+        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
         {
             return new Dynamit26KeyValuePair(dict, key, value);
         }
     }
 
-    public class Dynamit26KeyValuePair : ScKeyValuePair
+    public class Dynamit26KeyValuePair : DKeyValuePair
     {
-        public Dynamit26KeyValuePair(ScDictionary dict, string key, object value = null) : base(dict, key, value)
+        public Dynamit26KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
         {
         }
     }
 
-    [Database, RESTar(RESTarPresets.ReadAndWrite)]
-    public class Dynamit27 : ScDictionary
+    [DDict(27), DDictionary(typeof(Dynamit27KeyValuePair))]
+    public class Dynamit27 : DDictionary
     {
-        public Dynamit27() : base(typeof(Dynamit27KeyValuePair))
-        {
-        }
-
-        protected override ScKeyValuePair NewKeyPair(ScDictionary dict, string key, object value = null)
+        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
         {
             return new Dynamit27KeyValuePair(dict, key, value);
         }
     }
 
-    public class Dynamit27KeyValuePair : ScKeyValuePair
+    public class Dynamit27KeyValuePair : DKeyValuePair
     {
-        public Dynamit27KeyValuePair(ScDictionary dict, string key, object value = null) : base(dict, key, value)
+        public Dynamit27KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
         {
         }
     }
 
-    [Database, RESTar(RESTarPresets.ReadAndWrite)]
-    public class Dynamit28 : ScDictionary
+    [DDict(28), DDictionary(typeof(Dynamit28KeyValuePair))]
+    public class Dynamit28 : DDictionary
     {
-        public Dynamit28() : base(typeof(Dynamit28KeyValuePair))
-        {
-        }
-
-        protected override ScKeyValuePair NewKeyPair(ScDictionary dict, string key, object value = null)
+        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
         {
             return new Dynamit28KeyValuePair(dict, key, value);
         }
     }
 
-    public class Dynamit28KeyValuePair : ScKeyValuePair
+    public class Dynamit28KeyValuePair : DKeyValuePair
     {
-        public Dynamit28KeyValuePair(ScDictionary dict, string key, object value = null) : base(dict, key, value)
+        public Dynamit28KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
         {
         }
     }
 
-    [Database, RESTar(RESTarPresets.ReadAndWrite)]
-    public class Dynamit29 : ScDictionary
+    [DDict(29), DDictionary(typeof(Dynamit29KeyValuePair))]
+    public class Dynamit29 : DDictionary
     {
-        public Dynamit29() : base(typeof(Dynamit29KeyValuePair))
-        {
-        }
-
-        protected override ScKeyValuePair NewKeyPair(ScDictionary dict, string key, object value = null)
+        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
         {
             return new Dynamit29KeyValuePair(dict, key, value);
         }
     }
 
-    public class Dynamit29KeyValuePair : ScKeyValuePair
+    public class Dynamit29KeyValuePair : DKeyValuePair
     {
-        public Dynamit29KeyValuePair(ScDictionary dict, string key, object value = null) : base(dict, key, value)
+        public Dynamit29KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
         {
         }
     }
 
-    [Database, RESTar(RESTarPresets.ReadAndWrite)]
-    public class Dynamit30 : ScDictionary
+    [DDict(30), DDictionary(typeof(Dynamit30KeyValuePair))]
+    public class Dynamit30 : DDictionary
     {
-        public Dynamit30() : base(typeof(Dynamit30KeyValuePair))
-        {
-        }
-
-        protected override ScKeyValuePair NewKeyPair(ScDictionary dict, string key, object value = null)
+        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
         {
             return new Dynamit30KeyValuePair(dict, key, value);
         }
     }
 
-    public class Dynamit30KeyValuePair : ScKeyValuePair
+    public class Dynamit30KeyValuePair : DKeyValuePair
     {
-        public Dynamit30KeyValuePair(ScDictionary dict, string key, object value = null) : base(dict, key, value)
+        public Dynamit30KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
         {
         }
     }
 
-    [Database, RESTar(RESTarPresets.ReadAndWrite)]
-    public class Dynamit31 : ScDictionary
+    [DDict(31), DDictionary(typeof(Dynamit31KeyValuePair))]
+    public class Dynamit31 : DDictionary
     {
-        public Dynamit31() : base(typeof(Dynamit31KeyValuePair))
-        {
-        }
-
-        protected override ScKeyValuePair NewKeyPair(ScDictionary dict, string key, object value = null)
+        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
         {
             return new Dynamit31KeyValuePair(dict, key, value);
         }
     }
 
-    public class Dynamit31KeyValuePair : ScKeyValuePair
+    public class Dynamit31KeyValuePair : DKeyValuePair
     {
-        public Dynamit31KeyValuePair(ScDictionary dict, string key, object value = null) : base(dict, key, value)
+        public Dynamit31KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
         {
         }
     }
 
-    [Database, RESTar(RESTarPresets.ReadAndWrite)]
-    public class Dynamit32 : ScDictionary
+    [DDict(32), DDictionary(typeof(Dynamit32KeyValuePair))]
+    public class Dynamit32 : DDictionary
     {
-        public Dynamit32() : base(typeof(Dynamit32KeyValuePair))
-        {
-        }
-
-        protected override ScKeyValuePair NewKeyPair(ScDictionary dict, string key, object value = null)
+        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
         {
             return new Dynamit32KeyValuePair(dict, key, value);
         }
     }
 
-    public class Dynamit32KeyValuePair : ScKeyValuePair
+    public class Dynamit32KeyValuePair : DKeyValuePair
     {
-        public Dynamit32KeyValuePair(ScDictionary dict, string key, object value = null) : base(dict, key, value)
+        public Dynamit32KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
         {
         }
     }
 
-    [Database, RESTar(RESTarPresets.ReadAndWrite)]
-    public class Dynamit33 : ScDictionary
+    [DDict(33), DDictionary(typeof(Dynamit33KeyValuePair))]
+    public class Dynamit33 : DDictionary
     {
-        public Dynamit33() : base(typeof(Dynamit33KeyValuePair))
-        {
-        }
-
-        protected override ScKeyValuePair NewKeyPair(ScDictionary dict, string key, object value = null)
+        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
         {
             return new Dynamit33KeyValuePair(dict, key, value);
         }
     }
 
-    public class Dynamit33KeyValuePair : ScKeyValuePair
+    public class Dynamit33KeyValuePair : DKeyValuePair
     {
-        public Dynamit33KeyValuePair(ScDictionary dict, string key, object value = null) : base(dict, key, value)
+        public Dynamit33KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
         {
         }
     }
 
-    [Database, RESTar(RESTarPresets.ReadAndWrite)]
-    public class Dynamit34 : ScDictionary
+    [DDict(34), DDictionary(typeof(Dynamit34KeyValuePair))]
+    public class Dynamit34 : DDictionary
     {
-        public Dynamit34() : base(typeof(Dynamit34KeyValuePair))
-        {
-        }
-
-        protected override ScKeyValuePair NewKeyPair(ScDictionary dict, string key, object value = null)
+        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
         {
             return new Dynamit34KeyValuePair(dict, key, value);
         }
     }
 
-    public class Dynamit34KeyValuePair : ScKeyValuePair
+    public class Dynamit34KeyValuePair : DKeyValuePair
     {
-        public Dynamit34KeyValuePair(ScDictionary dict, string key, object value = null) : base(dict, key, value)
+        public Dynamit34KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
         {
         }
     }
 
-    [Database, RESTar(RESTarPresets.ReadAndWrite)]
-    public class Dynamit35 : ScDictionary
+    [DDict(35), DDictionary(typeof(Dynamit35KeyValuePair))]
+    public class Dynamit35 : DDictionary
     {
-        public Dynamit35() : base(typeof(Dynamit35KeyValuePair))
-        {
-        }
-
-        protected override ScKeyValuePair NewKeyPair(ScDictionary dict, string key, object value = null)
+        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
         {
             return new Dynamit35KeyValuePair(dict, key, value);
         }
     }
 
-    public class Dynamit35KeyValuePair : ScKeyValuePair
+    public class Dynamit35KeyValuePair : DKeyValuePair
     {
-        public Dynamit35KeyValuePair(ScDictionary dict, string key, object value = null) : base(dict, key, value)
+        public Dynamit35KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
         {
         }
     }
 
-    [Database, RESTar(RESTarPresets.ReadAndWrite)]
-    public class Dynamit36 : ScDictionary
+    [DDict(36), DDictionary(typeof(Dynamit36KeyValuePair))]
+    public class Dynamit36 : DDictionary
     {
-        public Dynamit36() : base(typeof(Dynamit36KeyValuePair))
-        {
-        }
-
-        protected override ScKeyValuePair NewKeyPair(ScDictionary dict, string key, object value = null)
+        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
         {
             return new Dynamit36KeyValuePair(dict, key, value);
         }
     }
 
-    public class Dynamit36KeyValuePair : ScKeyValuePair
+    public class Dynamit36KeyValuePair : DKeyValuePair
     {
-        public Dynamit36KeyValuePair(ScDictionary dict, string key, object value = null) : base(dict, key, value)
+        public Dynamit36KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
         {
         }
     }
 
-    [Database, RESTar(RESTarPresets.ReadAndWrite)]
-    public class Dynamit37 : ScDictionary
+    [DDict(37), DDictionary(typeof(Dynamit37KeyValuePair))]
+    public class Dynamit37 : DDictionary
     {
-        public Dynamit37() : base(typeof(Dynamit37KeyValuePair))
-        {
-        }
-
-        protected override ScKeyValuePair NewKeyPair(ScDictionary dict, string key, object value = null)
+        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
         {
             return new Dynamit37KeyValuePair(dict, key, value);
         }
     }
 
-    public class Dynamit37KeyValuePair : ScKeyValuePair
+    public class Dynamit37KeyValuePair : DKeyValuePair
     {
-        public Dynamit37KeyValuePair(ScDictionary dict, string key, object value = null) : base(dict, key, value)
+        public Dynamit37KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
         {
         }
     }
 
-    [Database, RESTar(RESTarPresets.ReadAndWrite)]
-    public class Dynamit38 : ScDictionary
+    [DDict(38), DDictionary(typeof(Dynamit38KeyValuePair))]
+    public class Dynamit38 : DDictionary
     {
-        public Dynamit38() : base(typeof(Dynamit38KeyValuePair))
-        {
-        }
-
-        protected override ScKeyValuePair NewKeyPair(ScDictionary dict, string key, object value = null)
+        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
         {
             return new Dynamit38KeyValuePair(dict, key, value);
         }
     }
 
-    public class Dynamit38KeyValuePair : ScKeyValuePair
+    public class Dynamit38KeyValuePair : DKeyValuePair
     {
-        public Dynamit38KeyValuePair(ScDictionary dict, string key, object value = null) : base(dict, key, value)
+        public Dynamit38KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
         {
         }
     }
 
-    [Database, RESTar(RESTarPresets.ReadAndWrite)]
-    public class Dynamit39 : ScDictionary
+    [DDict(39), DDictionary(typeof(Dynamit39KeyValuePair))]
+    public class Dynamit39 : DDictionary
     {
-        public Dynamit39() : base(typeof(Dynamit39KeyValuePair))
-        {
-        }
-
-        protected override ScKeyValuePair NewKeyPair(ScDictionary dict, string key, object value = null)
+        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
         {
             return new Dynamit39KeyValuePair(dict, key, value);
         }
     }
 
-    public class Dynamit39KeyValuePair : ScKeyValuePair
+    public class Dynamit39KeyValuePair : DKeyValuePair
     {
-        public Dynamit39KeyValuePair(ScDictionary dict, string key, object value = null) : base(dict, key, value)
+        public Dynamit39KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
         {
         }
     }
 
-    [Database, RESTar(RESTarPresets.ReadAndWrite)]
-    public class Dynamit40 : ScDictionary
+    [DDict(40), DDictionary(typeof(Dynamit40KeyValuePair))]
+    public class Dynamit40 : DDictionary
     {
-        public Dynamit40() : base(typeof(Dynamit40KeyValuePair))
-        {
-        }
-
-        protected override ScKeyValuePair NewKeyPair(ScDictionary dict, string key, object value = null)
+        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
         {
             return new Dynamit40KeyValuePair(dict, key, value);
         }
     }
 
-    public class Dynamit40KeyValuePair : ScKeyValuePair
+    public class Dynamit40KeyValuePair : DKeyValuePair
     {
-        public Dynamit40KeyValuePair(ScDictionary dict, string key, object value = null) : base(dict, key, value)
+        public Dynamit40KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
         {
         }
     }
 
-    [Database, RESTar(RESTarPresets.ReadAndWrite)]
-    public class Dynamit41 : ScDictionary
+    [DDict(41), DDictionary(typeof(Dynamit41KeyValuePair))]
+    public class Dynamit41 : DDictionary
     {
-        public Dynamit41() : base(typeof(Dynamit41KeyValuePair))
-        {
-        }
-
-        protected override ScKeyValuePair NewKeyPair(ScDictionary dict, string key, object value = null)
+        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
         {
             return new Dynamit41KeyValuePair(dict, key, value);
         }
     }
 
-    public class Dynamit41KeyValuePair : ScKeyValuePair
+    public class Dynamit41KeyValuePair : DKeyValuePair
     {
-        public Dynamit41KeyValuePair(ScDictionary dict, string key, object value = null) : base(dict, key, value)
+        public Dynamit41KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
         {
         }
     }
 
-    [Database, RESTar(RESTarPresets.ReadAndWrite)]
-    public class Dynamit42 : ScDictionary
+    [DDict(42), DDictionary(typeof(Dynamit42KeyValuePair))]
+    public class Dynamit42 : DDictionary
     {
-        public Dynamit42() : base(typeof(Dynamit42KeyValuePair))
-        {
-        }
-
-        protected override ScKeyValuePair NewKeyPair(ScDictionary dict, string key, object value = null)
+        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
         {
             return new Dynamit42KeyValuePair(dict, key, value);
         }
     }
 
-    public class Dynamit42KeyValuePair : ScKeyValuePair
+    public class Dynamit42KeyValuePair : DKeyValuePair
     {
-        public Dynamit42KeyValuePair(ScDictionary dict, string key, object value = null) : base(dict, key, value)
+        public Dynamit42KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
         {
         }
     }
 
-    [Database, RESTar(RESTarPresets.ReadAndWrite)]
-    public class Dynamit43 : ScDictionary
+    [DDict(43), DDictionary(typeof(Dynamit43KeyValuePair))]
+    public class Dynamit43 : DDictionary
     {
-        public Dynamit43() : base(typeof(Dynamit43KeyValuePair))
-        {
-        }
-
-        protected override ScKeyValuePair NewKeyPair(ScDictionary dict, string key, object value = null)
+        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
         {
             return new Dynamit43KeyValuePair(dict, key, value);
         }
     }
 
-    public class Dynamit43KeyValuePair : ScKeyValuePair
+    public class Dynamit43KeyValuePair : DKeyValuePair
     {
-        public Dynamit43KeyValuePair(ScDictionary dict, string key, object value = null) : base(dict, key, value)
+        public Dynamit43KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
         {
         }
     }
 
-    [Database, RESTar(RESTarPresets.ReadAndWrite)]
-    public class Dynamit44 : ScDictionary
+    [DDict(44), DDictionary(typeof(Dynamit44KeyValuePair))]
+    public class Dynamit44 : DDictionary
     {
-        public Dynamit44() : base(typeof(Dynamit44KeyValuePair))
-        {
-        }
-
-        protected override ScKeyValuePair NewKeyPair(ScDictionary dict, string key, object value = null)
+        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
         {
             return new Dynamit44KeyValuePair(dict, key, value);
         }
     }
 
-    public class Dynamit44KeyValuePair : ScKeyValuePair
+    public class Dynamit44KeyValuePair : DKeyValuePair
     {
-        public Dynamit44KeyValuePair(ScDictionary dict, string key, object value = null) : base(dict, key, value)
+        public Dynamit44KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
         {
         }
     }
 
-    [Database, RESTar(RESTarPresets.ReadAndWrite)]
-    public class Dynamit45 : ScDictionary
+    [DDict(45), DDictionary(typeof(Dynamit45KeyValuePair))]
+    public class Dynamit45 : DDictionary
     {
-        public Dynamit45() : base(typeof(Dynamit45KeyValuePair))
-        {
-        }
-
-        protected override ScKeyValuePair NewKeyPair(ScDictionary dict, string key, object value = null)
+        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
         {
             return new Dynamit45KeyValuePair(dict, key, value);
         }
     }
 
-    public class Dynamit45KeyValuePair : ScKeyValuePair
+    public class Dynamit45KeyValuePair : DKeyValuePair
     {
-        public Dynamit45KeyValuePair(ScDictionary dict, string key, object value = null) : base(dict, key, value)
+        public Dynamit45KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
         {
         }
     }
 
-    [Database, RESTar(RESTarPresets.ReadAndWrite)]
-    public class Dynamit46 : ScDictionary
+    [DDict(46), DDictionary(typeof(Dynamit46KeyValuePair))]
+    public class Dynamit46 : DDictionary
     {
-        public Dynamit46() : base(typeof(Dynamit46KeyValuePair))
-        {
-        }
-
-        protected override ScKeyValuePair NewKeyPair(ScDictionary dict, string key, object value = null)
+        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
         {
             return new Dynamit46KeyValuePair(dict, key, value);
         }
     }
 
-    public class Dynamit46KeyValuePair : ScKeyValuePair
+    public class Dynamit46KeyValuePair : DKeyValuePair
     {
-        public Dynamit46KeyValuePair(ScDictionary dict, string key, object value = null) : base(dict, key, value)
+        public Dynamit46KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
         {
         }
     }
 
-    [Database, RESTar(RESTarPresets.ReadAndWrite)]
-    public class Dynamit47 : ScDictionary
+    [DDict(47), DDictionary(typeof(Dynamit47KeyValuePair))]
+    public class Dynamit47 : DDictionary
     {
-        public Dynamit47() : base(typeof(Dynamit47KeyValuePair))
-        {
-        }
-
-        protected override ScKeyValuePair NewKeyPair(ScDictionary dict, string key, object value = null)
+        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
         {
             return new Dynamit47KeyValuePair(dict, key, value);
         }
     }
 
-    public class Dynamit47KeyValuePair : ScKeyValuePair
+    public class Dynamit47KeyValuePair : DKeyValuePair
     {
-        public Dynamit47KeyValuePair(ScDictionary dict, string key, object value = null) : base(dict, key, value)
+        public Dynamit47KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
         {
         }
     }
 
-    [Database, RESTar(RESTarPresets.ReadAndWrite)]
-    public class Dynamit48 : ScDictionary
+    [DDict(48), DDictionary(typeof(Dynamit48KeyValuePair))]
+    public class Dynamit48 : DDictionary
     {
-        public Dynamit48() : base(typeof(Dynamit48KeyValuePair))
-        {
-        }
-
-        protected override ScKeyValuePair NewKeyPair(ScDictionary dict, string key, object value = null)
+        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
         {
             return new Dynamit48KeyValuePair(dict, key, value);
         }
     }
 
-    public class Dynamit48KeyValuePair : ScKeyValuePair
+    public class Dynamit48KeyValuePair : DKeyValuePair
     {
-        public Dynamit48KeyValuePair(ScDictionary dict, string key, object value = null) : base(dict, key, value)
+        public Dynamit48KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
         {
         }
     }
 
-    [Database, RESTar(RESTarPresets.ReadAndWrite)]
-    public class Dynamit49 : ScDictionary
+    [DDict(49), DDictionary(typeof(Dynamit49KeyValuePair))]
+    public class Dynamit49 : DDictionary
     {
-        public Dynamit49() : base(typeof(Dynamit49KeyValuePair))
-        {
-        }
-
-        protected override ScKeyValuePair NewKeyPair(ScDictionary dict, string key, object value = null)
+        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
         {
             return new Dynamit49KeyValuePair(dict, key, value);
         }
     }
 
-    public class Dynamit49KeyValuePair : ScKeyValuePair
+    public class Dynamit49KeyValuePair : DKeyValuePair
     {
-        public Dynamit49KeyValuePair(ScDictionary dict, string key, object value = null) : base(dict, key, value)
+        public Dynamit49KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
         {
         }
     }
 
-    [Database, RESTar(RESTarPresets.ReadAndWrite)]
-    public class Dynamit50 : ScDictionary
+    [DDict(50), DDictionary(typeof(Dynamit50KeyValuePair))]
+    public class Dynamit50 : DDictionary
     {
-        public Dynamit50() : base(typeof(Dynamit50KeyValuePair))
-        {
-        }
-
-        protected override ScKeyValuePair NewKeyPair(ScDictionary dict, string key, object value = null)
+        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
         {
             return new Dynamit50KeyValuePair(dict, key, value);
         }
     }
 
-    public class Dynamit50KeyValuePair : ScKeyValuePair
+    public class Dynamit50KeyValuePair : DKeyValuePair
     {
-        public Dynamit50KeyValuePair(ScDictionary dict, string key, object value = null) : base(dict, key, value)
+        public Dynamit50KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
         {
         }
     }
 
-    [Database, RESTar(RESTarPresets.ReadAndWrite)]
-    public class Dynamit51 : ScDictionary
+    [DDict(51), DDictionary(typeof(Dynamit51KeyValuePair))]
+    public class Dynamit51 : DDictionary
     {
-        public Dynamit51() : base(typeof(Dynamit51KeyValuePair))
-        {
-        }
-
-        protected override ScKeyValuePair NewKeyPair(ScDictionary dict, string key, object value = null)
+        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
         {
             return new Dynamit51KeyValuePair(dict, key, value);
         }
     }
 
-    public class Dynamit51KeyValuePair : ScKeyValuePair
+    public class Dynamit51KeyValuePair : DKeyValuePair
     {
-        public Dynamit51KeyValuePair(ScDictionary dict, string key, object value = null) : base(dict, key, value)
+        public Dynamit51KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
         {
         }
     }
 
-    [Database, RESTar(RESTarPresets.ReadAndWrite)]
-    public class Dynamit52 : ScDictionary
+    [DDict(52), DDictionary(typeof(Dynamit52KeyValuePair))]
+    public class Dynamit52 : DDictionary
     {
-        public Dynamit52() : base(typeof(Dynamit52KeyValuePair))
-        {
-        }
-
-        protected override ScKeyValuePair NewKeyPair(ScDictionary dict, string key, object value = null)
+        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
         {
             return new Dynamit52KeyValuePair(dict, key, value);
         }
     }
 
-    public class Dynamit52KeyValuePair : ScKeyValuePair
+    public class Dynamit52KeyValuePair : DKeyValuePair
     {
-        public Dynamit52KeyValuePair(ScDictionary dict, string key, object value = null) : base(dict, key, value)
+        public Dynamit52KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
         {
         }
     }
 
-    [Database, RESTar(RESTarPresets.ReadAndWrite)]
-    public class Dynamit53 : ScDictionary
+    [DDict(53), DDictionary(typeof(Dynamit53KeyValuePair))]
+    public class Dynamit53 : DDictionary
     {
-        public Dynamit53() : base(typeof(Dynamit53KeyValuePair))
-        {
-        }
-
-        protected override ScKeyValuePair NewKeyPair(ScDictionary dict, string key, object value = null)
+        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
         {
             return new Dynamit53KeyValuePair(dict, key, value);
         }
     }
 
-    public class Dynamit53KeyValuePair : ScKeyValuePair
+    public class Dynamit53KeyValuePair : DKeyValuePair
     {
-        public Dynamit53KeyValuePair(ScDictionary dict, string key, object value = null) : base(dict, key, value)
+        public Dynamit53KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
         {
         }
     }
 
-    [Database, RESTar(RESTarPresets.ReadAndWrite)]
-    public class Dynamit54 : ScDictionary
+    [DDict(54), DDictionary(typeof(Dynamit54KeyValuePair))]
+    public class Dynamit54 : DDictionary
     {
-        public Dynamit54() : base(typeof(Dynamit54KeyValuePair))
-        {
-        }
-
-        protected override ScKeyValuePair NewKeyPair(ScDictionary dict, string key, object value = null)
+        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
         {
             return new Dynamit54KeyValuePair(dict, key, value);
         }
     }
 
-    public class Dynamit54KeyValuePair : ScKeyValuePair
+    public class Dynamit54KeyValuePair : DKeyValuePair
     {
-        public Dynamit54KeyValuePair(ScDictionary dict, string key, object value = null) : base(dict, key, value)
+        public Dynamit54KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
         {
         }
     }
 
-    [Database, RESTar(RESTarPresets.ReadAndWrite)]
-    public class Dynamit55 : ScDictionary
+    [DDict(55), DDictionary(typeof(Dynamit55KeyValuePair))]
+    public class Dynamit55 : DDictionary
     {
-        public Dynamit55() : base(typeof(Dynamit55KeyValuePair))
-        {
-        }
-
-        protected override ScKeyValuePair NewKeyPair(ScDictionary dict, string key, object value = null)
+        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
         {
             return new Dynamit55KeyValuePair(dict, key, value);
         }
     }
 
-    public class Dynamit55KeyValuePair : ScKeyValuePair
+    public class Dynamit55KeyValuePair : DKeyValuePair
     {
-        public Dynamit55KeyValuePair(ScDictionary dict, string key, object value = null) : base(dict, key, value)
+        public Dynamit55KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
         {
         }
     }
 
-    [Database, RESTar(RESTarPresets.ReadAndWrite)]
-    public class Dynamit56 : ScDictionary
+    [DDict(56), DDictionary(typeof(Dynamit56KeyValuePair))]
+    public class Dynamit56 : DDictionary
     {
-        public Dynamit56() : base(typeof(Dynamit56KeyValuePair))
-        {
-        }
-
-        protected override ScKeyValuePair NewKeyPair(ScDictionary dict, string key, object value = null)
+        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
         {
             return new Dynamit56KeyValuePair(dict, key, value);
         }
     }
 
-    public class Dynamit56KeyValuePair : ScKeyValuePair
+    public class Dynamit56KeyValuePair : DKeyValuePair
     {
-        public Dynamit56KeyValuePair(ScDictionary dict, string key, object value = null) : base(dict, key, value)
+        public Dynamit56KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
         {
         }
     }
 
-    [Database, RESTar(RESTarPresets.ReadAndWrite)]
-    public class Dynamit57 : ScDictionary
+    [DDict(57), DDictionary(typeof(Dynamit57KeyValuePair))]
+    public class Dynamit57 : DDictionary
     {
-        public Dynamit57() : base(typeof(Dynamit57KeyValuePair))
-        {
-        }
-
-        protected override ScKeyValuePair NewKeyPair(ScDictionary dict, string key, object value = null)
+        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
         {
             return new Dynamit57KeyValuePair(dict, key, value);
         }
     }
 
-    public class Dynamit57KeyValuePair : ScKeyValuePair
+    public class Dynamit57KeyValuePair : DKeyValuePair
     {
-        public Dynamit57KeyValuePair(ScDictionary dict, string key, object value = null) : base(dict, key, value)
+        public Dynamit57KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
         {
         }
     }
 
-    [Database, RESTar(RESTarPresets.ReadAndWrite)]
-    public class Dynamit58 : ScDictionary
+    [DDict(58), DDictionary(typeof(Dynamit58KeyValuePair))]
+    public class Dynamit58 : DDictionary
     {
-        public Dynamit58() : base(typeof(Dynamit58KeyValuePair))
-        {
-        }
-
-        protected override ScKeyValuePair NewKeyPair(ScDictionary dict, string key, object value = null)
+        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
         {
             return new Dynamit58KeyValuePair(dict, key, value);
         }
     }
 
-    public class Dynamit58KeyValuePair : ScKeyValuePair
+    public class Dynamit58KeyValuePair : DKeyValuePair
     {
-        public Dynamit58KeyValuePair(ScDictionary dict, string key, object value = null) : base(dict, key, value)
+        public Dynamit58KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
         {
         }
     }
 
-    [Database, RESTar(RESTarPresets.ReadAndWrite)]
-    public class Dynamit59 : ScDictionary
+    [DDict(59), DDictionary(typeof(Dynamit59KeyValuePair))]
+    public class Dynamit59 : DDictionary
     {
-        public Dynamit59() : base(typeof(Dynamit59KeyValuePair))
-        {
-        }
-
-        protected override ScKeyValuePair NewKeyPair(ScDictionary dict, string key, object value = null)
+        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
         {
             return new Dynamit59KeyValuePair(dict, key, value);
         }
     }
 
-    public class Dynamit59KeyValuePair : ScKeyValuePair
+    public class Dynamit59KeyValuePair : DKeyValuePair
     {
-        public Dynamit59KeyValuePair(ScDictionary dict, string key, object value = null) : base(dict, key, value)
+        public Dynamit59KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
         {
         }
     }
 
-    [Database, RESTar(RESTarPresets.ReadAndWrite)]
-    public class Dynamit60 : ScDictionary
+    [DDict(60), DDictionary(typeof(Dynamit60KeyValuePair))]
+    public class Dynamit60 : DDictionary
     {
-        public Dynamit60() : base(typeof(Dynamit60KeyValuePair))
-        {
-        }
-
-        protected override ScKeyValuePair NewKeyPair(ScDictionary dict, string key, object value = null)
+        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
         {
             return new Dynamit60KeyValuePair(dict, key, value);
         }
     }
 
-    public class Dynamit60KeyValuePair : ScKeyValuePair
+    public class Dynamit60KeyValuePair : DKeyValuePair
     {
-        public Dynamit60KeyValuePair(ScDictionary dict, string key, object value = null) : base(dict, key, value)
+        public Dynamit60KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
         {
         }
     }
 
-    [Database, RESTar(RESTarPresets.ReadAndWrite)]
-    public class Dynamit61 : ScDictionary
+    [DDict(61), DDictionary(typeof(Dynamit61KeyValuePair))]
+    public class Dynamit61 : DDictionary
     {
-        public Dynamit61() : base(typeof(Dynamit61KeyValuePair))
-        {
-        }
-
-        protected override ScKeyValuePair NewKeyPair(ScDictionary dict, string key, object value = null)
+        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
         {
             return new Dynamit61KeyValuePair(dict, key, value);
         }
     }
 
-    public class Dynamit61KeyValuePair : ScKeyValuePair
+    public class Dynamit61KeyValuePair : DKeyValuePair
     {
-        public Dynamit61KeyValuePair(ScDictionary dict, string key, object value = null) : base(dict, key, value)
+        public Dynamit61KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
         {
         }
     }
 
-    [Database, RESTar(RESTarPresets.ReadAndWrite)]
-    public class Dynamit62 : ScDictionary
+    [DDict(62), DDictionary(typeof(Dynamit62KeyValuePair))]
+    public class Dynamit62 : DDictionary
     {
-        public Dynamit62() : base(typeof(Dynamit62KeyValuePair))
-        {
-        }
-
-        protected override ScKeyValuePair NewKeyPair(ScDictionary dict, string key, object value = null)
+        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
         {
             return new Dynamit62KeyValuePair(dict, key, value);
         }
     }
 
-    public class Dynamit62KeyValuePair : ScKeyValuePair
+    public class Dynamit62KeyValuePair : DKeyValuePair
     {
-        public Dynamit62KeyValuePair(ScDictionary dict, string key, object value = null) : base(dict, key, value)
+        public Dynamit62KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
         {
         }
     }
 
-    [Database, RESTar(RESTarPresets.ReadAndWrite)]
-    public class Dynamit63 : ScDictionary
+    [DDict(63), DDictionary(typeof(Dynamit63KeyValuePair))]
+    public class Dynamit63 : DDictionary
     {
-        public Dynamit63() : base(typeof(Dynamit63KeyValuePair))
-        {
-        }
-
-        protected override ScKeyValuePair NewKeyPair(ScDictionary dict, string key, object value = null)
+        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
         {
             return new Dynamit63KeyValuePair(dict, key, value);
         }
     }
 
-    public class Dynamit63KeyValuePair : ScKeyValuePair
+    public class Dynamit63KeyValuePair : DKeyValuePair
     {
-        public Dynamit63KeyValuePair(ScDictionary dict, string key, object value = null) : base(dict, key, value)
+        public Dynamit63KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
         {
         }
     }
 
-    [Database, RESTar(RESTarPresets.ReadAndWrite)]
-    public class Dynamit64 : ScDictionary
+    [DDict(64), DDictionary(typeof(Dynamit64KeyValuePair))]
+    public class Dynamit64 : DDictionary
     {
-        public Dynamit64() : base(typeof(Dynamit64KeyValuePair))
-        {
-        }
-
-        protected override ScKeyValuePair NewKeyPair(ScDictionary dict, string key, object value = null)
+        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
         {
             return new Dynamit64KeyValuePair(dict, key, value);
         }
     }
 
-    public class Dynamit64KeyValuePair : ScKeyValuePair
+    public class Dynamit64KeyValuePair : DKeyValuePair
     {
-        public Dynamit64KeyValuePair(ScDictionary dict, string key, object value = null) : base(dict, key, value)
+        public Dynamit64KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
         {
         }
     }
