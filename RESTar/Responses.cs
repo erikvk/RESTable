@@ -87,10 +87,10 @@ namespace RESTar
 
         #region Internal
 
-        internal static Response UnknownError(Exception e) => new Response
+        internal static Response InternalError(Exception e) => new Response
         {
             StatusCode = (ushort) HttpStatusCode.InternalServerError,
-            StatusDescription = $"Unknown error: {e.Message}"
+            StatusDescription = $"Internal error: {e.Message}. {e.InnerException?.Message}. {e.InnerException?.InnerException?.Message}"
         };
 
         internal static Response RESTarInternalError(Exception e) => new Response

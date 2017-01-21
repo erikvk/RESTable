@@ -19,18 +19,12 @@ namespace RESTar.Dynamit
             }
             if (request.Conditions == null)
             {
-                if (request.Limit < 1)
-                    return all;
+                if (request.Limit < 1) return all;
                 return all.Take(request.Limit);
             }
-
-//            var localpred = new Predicate<DDictionary>(dict => (dynamic) dict.FirstOrDefault(pair => pair.Key.ToLower() == "bananas").Value == c.Value);
-//            var othmatch = all.Where(dict => localpred(dict));
-
             var predicate = request.Conditions?.DDictPredicate();
             var matches = all.Where(dict => predicate(dict));
-            if (request.Limit < 1)
-                return matches;
+            if (request.Limit < 1) return matches;
             return matches.Take(request.Limit);
         }
 

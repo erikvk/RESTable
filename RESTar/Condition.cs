@@ -75,13 +75,21 @@ namespace RESTar
                     throw new SyntaxException($"Invalid meta-condition '{pair[0]}'. Available meta-conditions: " +
                                               $"{string.Join(", ", RESTarConfig.MetaConditions.Keys)}. For more info, see " +
                                               $"{Settings.Instance.HelpResourcePath}/topic=Meta-conditions");
-                var typeCheck = RESTarConfig.MetaConditions[metaCondition];
+                var expectedType = RESTarConfig.MetaConditions[metaCondition];
                 var value = GetValue(pair[1]);
-                if (value.GetType() != typeCheck)
-                    throw new SyntaxException($"Invalid data type assigned to meta-condition '{pair[0]}'. Expected " +
-                                              $"{(typeCheck == typeof(decimal) ? "number" : typeCheck.FullName)}.");
+                if (expectedType != value.GetType())
+                    throw new SyntaxException($"Invalid data type assigned to meta-condition '{pair[0]}'. " +
+                                              $"Expected {GetTypeString(expectedType)}.");
                 return new KeyValuePair<string, object>(pair[0].ToLower(), value);
             }).ToDictionary(pair => pair.Key, pair => pair.Value);
+        }
+
+        private static string GetTypeString(Type type)
+        {
+            if (type == typeof(string)) return "string";
+            if (type == typeof(int)) return "integer";
+            if (type == typeof(bool)) return "boolean";
+            return null;
         }
 
         private static readonly char[] OpMatchChars = {'<', '>', '=', '!'};

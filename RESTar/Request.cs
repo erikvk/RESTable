@@ -103,7 +103,7 @@ namespace RESTar
             {
                 var locatorCondition = Conditions.FirstOrDefault(c => c.Key.ToLower() == "locator");
                 if (locatorCondition != null)
-                    locatorCondition.Value = locatorCondition.Value.ToString().FindResource().FullName;
+                    locatorCondition.Value = ((string) locatorCondition.Value.ToString()).FindResource().FullName;
             }
             if (argLength == 3) return;
 

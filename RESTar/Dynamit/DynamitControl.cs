@@ -17,14 +17,14 @@ namespace RESTar.Dynamit
 
         internal static int MaxTables = DynamitTypes.Count;
 
-        internal static Type AllocateNewTable(string alias)
+        internal static Type AllocateNewTable(string name)
         {
             var newTable = DynamitTypes.FirstOrDefault(ResourceMapping.NotExists);
             if (newTable == null)
                 throw new NoAvalailableDynamicTableException();
             new ResourceMapping
             {
-                Alias = alias,
+                Alias = name,
                 Resource = newTable.FullName
             };
             return newTable;

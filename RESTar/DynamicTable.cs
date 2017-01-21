@@ -15,7 +15,19 @@ namespace RESTar
         IInserter<DynamicTable>,
         IDeleter<DynamicTable>
     {
-        public string Name { get; set; }
+        private string _name;
+
+        public string Name
+        {
+            get { return _name; }
+            set
+            {
+                var mapping = DB.Get<ResourceMapping>("Alias", _name);
+                if (mapping != null)
+                    mapping.Alias = value;
+                _name = value;
+            }
+        }
 
         public string TableId;
         public string KvpTableId => Table?.GetAttribute<DDictionaryAttribute>().KeyValuePairTable.FullName;
@@ -36,16 +48,18 @@ namespace RESTar
             var dynamicTables = entities.ToList();
             foreach (var entity in dynamicTables)
             {
-                var alias = entity.Name;
-                if (alias == null)
-                    throw new AbortedInserterException("Dynamic table alias cannot be null");
-                if (ResourceMapping.FindByAlias(alias) != null)
+                var name = entity.Name ?? $"DynamicTable_{entity.GetObjectID()}";
+                if (ResourceMapping.FindByAlias(name) != null)
                 {
                     foreach (var _entity in dynamicTables)
                         Db.Transact(() => _entity.Delete());
-                    throw new AbortedInserterException($"Alias '{alias}' is used to refer to another resource");
+                    throw new AbortedInserterException($"Alias '{name}' is used to refer to another resource");
                 }
-                Db.Transact(() => { entity.Table = DynamitControl.AllocateNewTable(alias); });
+                Db.Transact(() =>
+                {
+                    entity.Table = DynamitControl.AllocateNewTable(name);
+                    entity.Name = name;
+                });
             }
         }
 

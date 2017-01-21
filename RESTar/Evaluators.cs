@@ -58,7 +58,7 @@ namespace RESTar
                 return new Response
                 {
                     StatusCode = (ushort) HttpStatusCode.Created,
-                    Body = obj.Serialize(request.Resource)
+                    Body = obj.SerializeDyn()
                 };
             }
             obj = entities.First();
@@ -67,7 +67,7 @@ namespace RESTar
             return new Response
             {
                 StatusCode = (ushort) HttpStatusCode.OK,
-                Body = obj.Serialize(request.Resource)
+                Body = obj.SerializeDyn()
             };
         }
 

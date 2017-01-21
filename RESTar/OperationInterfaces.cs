@@ -2,7 +2,7 @@
 
 namespace RESTar
 {
-    public interface IOperationsProvider<T> :
+    internal interface IOperationsProvider<T> :
         ISelector<T>,
         IInserter<T>,
         IUpdater<T>,

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 
 namespace RESTar
@@ -163,10 +164,10 @@ namespace RESTar
 
     public class VirtualResourceMissingInterfaceImplementation : Exception
     {
-        public VirtualResourceMissingInterfaceImplementation(Type resource, Type _interface)
-            : base($"The resource type definition for {resource.FullName} does not implement the interfaces " +
-                   "necessary for it to work as a RESTar resource: Assigned methods require an implementation " +
-                   $"of {_interface.FullName} (see the help article on virtual resources for more info)")
+        public VirtualResourceMissingInterfaceImplementation(Type resource, string _interface)
+            : base($"The virtual resource {resource.FullName} does not implement the interfaces necessary " +
+                   $"for it to work as a RESTar resource. Assigned methods require an implementation of " +
+                   $"{_interface} (see the help article on virtual resources for more info)")
         {
         }
     }

@@ -28,7 +28,7 @@
     <DocumentationFile>bin\Debug\RESTar.XML</DocumentationFile>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x64' ">
-    <DebugType>pdbonly</DebugType>
+    <DebugType>full</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
@@ -36,6 +36,8 @@
     <WarningLevel>4</WarningLevel>
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
     <PlatformTarget>x64</PlatformTarget>
+    <DocumentationFile>bin\Release\RESTar.XML</DocumentationFile>
+    <DebugSymbols>true</DebugSymbols>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="ClosedXML, Version=0.80.0.0, Culture=neutral, PublicKeyToken=fd1eb21b62ae805b, processorArchitecture=MSIL">
@@ -122,7 +124,6 @@
     <Compile Include="Table.cs" />
     <Compile Include="Responses.cs" />
     <Compile Include="Settings.cs" />
-    <Compile Include="TestResource.cs" />
     <Compile Include="VirtualResource.cs" />
     <Compile Include="WhereClause.cs" />
   </ItemGroup>
@@ -145,7 +146,7 @@
 cd "$(ProjectDir)"
 
 @echo off
-For /f "tokens=2-4 delims=/ " %25%25a in ('date /t') do (set mydate=%25%25c-%25%25a-%25%25b)
+For /f "tokens=1-2 delims=/ " %25%25a in ('date /t') do (set mydate=%25%25a)
 For /f "tokens=1-2 delims=/:" %25%25a in ("%25TIME%25") do (set mytime=%25%25a%25%25b)
 
 IF $(ConfigurationName)==Release (

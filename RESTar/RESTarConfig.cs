@@ -37,8 +37,8 @@ namespace RESTar
         (
             ushort publicPort = 8282,
             ushort privatePort = 8283,
-            string uri = "/restar",
-            bool prettyPrint = false
+            string uri = "/rest",
+            bool prettyPrint = true
         )
         {
             if (uri.First() != '/')
@@ -76,8 +76,7 @@ namespace RESTar
 
             DynamitConfig.Init();
             var StarcounterResources = ResourcesList
-                .Where(t => t.HasAttribute<DatabaseAttribute>() &&
-                            !t.HasAttribute<DDictAttribute>())
+                .Where(t => t.HasAttribute<DatabaseAttribute>() && !t.HasAttribute<DDictAttribute>())
                 .ToList();
             foreach (var resource in StarcounterResources)
                 Db.Transact(() => new Table(resource));
@@ -132,7 +131,7 @@ namespace RESTar
         private static Response Evaluate(ScRequest scRequest, string query, Func<Request, Response> evaluator,
             RESTarMethods method)
         {
-            Log.Info("==> RESTar command");
+            Log.Info("==> RESTar request");
             try
             {
                 var request = new Request(scRequest, query, method, evaluator);
@@ -242,11 +241,7 @@ namespace RESTar
             }
             catch (Exception e)
             {
-                if (e.InnerException is SqlException)
-                    return SemanticsError(e.InnerException);
-                if (e.InnerException is DeserializationException)
-                    return DeserializationError(e.Message);
-                return UnknownError(e);
+                return InternalError(e);
             }
         }
 
@@ -327,7 +322,7 @@ namespace RESTar
 
         private static void CheckVirtualResources(ICollection<Type> virtualResources)
         {
-            Func<IEnumerable<RESTarMethods>, IEnumerable<RESTarOperations>> necessarytMethodDefs =
+            Func<IEnumerable<RESTarMethods>, IEnumerable<RESTarOperations>> necessaryMethodDefs =
                 restMethods => restMethods.SelectMany(method =>
                 {
                     switch (method)
@@ -358,7 +353,7 @@ namespace RESTar
 
             foreach (var type in virtualResources)
             {
-                foreach (var requiredMethod in necessarytMethodDefs(type.AvailableMethods()))
+                foreach (var requiredMethod in necessaryMethodDefs(type.AvailableMethods()))
                 {
                     var method = type.GetMethod(requiredMethod.ToString(), BindingFlags.Public | BindingFlags.Instance);
                     if (LocalizedInterface(requiredMethod, type).IsAssignableFrom(type))
@@ -373,12 +368,34 @@ namespace RESTar
                                 typeof(IEnumerable<object>)), null)
                             : method.CreateDelegate(typeof(Action<,>).MakeGenericType(typeof(IEnumerable<object>),
                                 typeof(IRequest)), null);
-                    else throw new VirtualResourceMissingInterfaceImplementation(type, typeof(ISelector<>));
+                    else
+                    {
+                        string missingInterface;
+                        switch (requiredMethod)
+                        {
+                            case Select:
+                                missingInterface = $"ISelector<{type.FullName}> or ISelector<object>";
+                                break;
+                            case Insert:
+                                missingInterface = $"IInserter<{type.FullName}> or Inserter<object>";
+                                break;
+                            case Update:
+                                missingInterface = $"IUpdater<{type.FullName}> or IUpdater<object>";
+                                break;
+                            case Delete:
+                                missingInterface = $"IDeleter<{type.FullName}> or IDeleter<object>";
+                                break;
+                            default:
+                                throw new ArgumentOutOfRangeException();
+                        }
+                        throw new VirtualResourceMissingInterfaceImplementation(type, missingInterface);
+                    }
                 }
-                if (type.GetFields(BindingFlags.Public | BindingFlags.Instance).Any())
+                var fields = type.GetFields(BindingFlags.Public | BindingFlags.Instance);
+                if (fields.Any())
                     throw new VirtualResourceMemberException(
-                        "A virtual resource cannot include public instance fields, " +
-                        "only properties."
+                        $"A virtual resource cannot include public instance fields, " +
+                        $"only properties. Fields: {string.Join(", ", fields.Select(f => $"'{f.Name}'"))} in resource '{type.FullName}'"
                     );
             }
         }

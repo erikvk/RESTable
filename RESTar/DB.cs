@@ -13,7 +13,7 @@ namespace RESTar
         private static readonly MethodInfo SQL = typeof(Db).GetMethods()
             .First(m => m.Name == "SQL" && m.IsGenericMethod);
 
-        internal static IEnumerable<dynamic> Select(IRequest request)
+        public static IEnumerable<dynamic> Select(IRequest request)
         {
             var whereClause = request.Conditions?.ToWhereClause();
             var sql = $"SELECT t FROM {request.Resource.FullName} t {whereClause?.stringPart} {request.OrderBy?.SQL}";
@@ -27,8 +27,16 @@ namespace RESTar
                     (dynamic) generic.Invoke(null, new object[] {sql, whereClause?.valuesPart}),
                     request.Limit
                 ));
-
             return entities;
+        }
+
+        public static IEnumerable<T> StaticSelect<T>(IList<Condition> conditions, int limit, OrderBy orderBy)
+        {
+            var whereClause = conditions?.ToWhereClause();
+            var sql = $"SELECT t FROM {typeof(T).FullName} t {whereClause?.stringPart} {orderBy?.SQL}";
+            if (limit < 1)
+                return Db.SQL<T>(sql, whereClause?.valuesPart);
+            return Db.SQL<T>(sql, whereClause?.valuesPart).Take(limit).ToList();
         }
 
         #region Get methods

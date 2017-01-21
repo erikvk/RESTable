@@ -35,7 +35,7 @@ namespace RESTar
                 return resource;
             var keys = RESTarConfig.ResourcesDict
                 .Keys
-                .Where(key => key.EndsWith(searchString))
+                .Where(key => key.EndsWith($".{searchString}"))
                 .ToList();
             if (keys.Count < 1)
                 throw new UnknownResourceException(searchString);

@@ -55,7 +55,7 @@ namespace RESTar
 
     internal class TypeAttribute : Attribute
     {
-        internal Type Type;
+        internal readonly Type Type;
 
         internal TypeAttribute(Type type)
         {
@@ -65,14 +65,14 @@ namespace RESTar
 
     public enum RESTarMetaConditions
     {
-        [Type(typeof(decimal))] Limit,
+        [Type(typeof(int))] Limit,
         [Type(typeof(string))] Order_desc,
         [Type(typeof(string))] Order_asc,
         [Type(typeof(bool))] Unsafe,
         [Type(typeof(string))] Select,
         [Type(typeof(string))] Rename,
         [Type(typeof(bool))] Dynamic,
-        [Type(typeof(decimal))] Map
+        [Type(typeof(string))] Map
     }
 
     internal enum RESTarMimeType : byte

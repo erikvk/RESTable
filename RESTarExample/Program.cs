@@ -6,7 +6,7 @@ namespace RESTarExample
     {
         public static void Main()
         {
-            RESTarConfig.Init(prettyPrint: true);
+            RESTarConfig.Init();
             TestDatabase.Init();
         }
     }
