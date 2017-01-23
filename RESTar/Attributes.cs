@@ -72,11 +72,11 @@ namespace RESTar
     {
     }
 
-    public class DDictAttribute : Attribute
+    public class DynamicTableAttribute : Attribute
     {
         public int Nr;
 
-        public DDictAttribute(int nr)
+        public DynamicTableAttribute(int nr)
         {
             Nr = nr;
         }

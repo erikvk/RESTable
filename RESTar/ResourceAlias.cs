@@ -5,12 +5,7 @@ using System.Collections.Generic;
 namespace RESTar
 {
     [Database, RESTar(RESTarPresets.ReadAndWrite)]
-    public class ResourceAlias : ResourceMapping
-    {
-    }
-
-    [Database]
-    public class ResourceMapping
+    public class ResourceAlias
     {
         public string Alias;
         private string _resource;
@@ -43,10 +38,10 @@ namespace RESTar
 
         public static Type FindByAlias(string alias)
         {
-            return DB.Get<ResourceMapping>("Alias", alias)?.GetResource();
+            return DB.Get<ResourceAlias>("Alias", alias)?.GetResource();
         }
 
-        public static bool Exists(Type resource) => DB.Exists<ResourceMapping>("Resource", resource.FullName);
+        public static bool Exists(Type resource) => DB.Exists<ResourceAlias>("Resource", resource.FullName);
 
         public static bool NotExists(Type resource) => !Exists(resource);
     }

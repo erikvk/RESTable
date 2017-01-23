@@ -18,7 +18,7 @@ namespace RESTar
         internal static Response AmbiguousResource(AmbiguousResourceException e) => new Response
         {
             StatusCode = (ushort) HttpStatusCode.NotFound,
-            StatusDescription = e.Message + "Try qualifying the resource locator further, e.g. from " +
+            StatusDescription = e.Message + "Try qualifying the resource name further, e.g. from " +
                                 $"'{e.SearchString}' to '{e.Candidates.First()}'."
         };
 

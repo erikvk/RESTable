@@ -1,12 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using Dynamit;
 using Starcounter;
 
-namespace RESTar.Dynamit
+namespace RESTar
 {
-    internal class DynamitOperations : IOperationsProvider<DDictionary>
+    internal class DDictionaryOperations : IOperationsProvider<DDictionary>
     {
         public IEnumerable<DDictionary> Select(IRequest request)
         {
@@ -14,8 +13,8 @@ namespace RESTar.Dynamit
             if (request.OrderBy != null)
             {
                 if (request.OrderBy.Ascending)
-                    all = all.OrderBy(dict => dict[request.OrderBy.Key].ToString());
-                else all = all.OrderByDescending(dict => dict[request.OrderBy.Key].ToString());
+                    all = all.OrderBy(dict => dict.SafeGet(request.OrderBy.Key)?.ToString() ?? "");
+                else all = all.OrderByDescending(dict => dict.SafeGet(request.OrderBy.Key)?.ToString() ?? "");
             }
             if (request.Conditions == null)
             {

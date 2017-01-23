@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.Serialization;
 using System.Text.RegularExpressions;
+using Dynamit;
 using Jil;
 using Starcounter;
 
@@ -28,7 +29,7 @@ namespace RESTar
         internal static Type FindResource(this string searchString)
         {
             searchString = searchString.ToLower();
-            var resource = ResourceMapping.FindByAlias(searchString);
+            var resource = ResourceAlias.FindByAlias(searchString);
             if (resource == null)
                 RESTarConfig.ResourcesDict.TryGetValue(searchString, out resource);
             if (resource != null)
@@ -304,11 +305,6 @@ namespace RESTar
             return DbHelper.FromID(objectNo) as T;
         }
 
-        internal static object[] Values(this IEnumerable<Condition> conditions)
-        {
-            return conditions.Select(c => c.Value).ToArray();
-        }
-
         internal static Operator[] Operators(this IEnumerable<Condition> conditions)
         {
             return conditions.Select(c => c.Operator).ToArray();
@@ -316,7 +312,7 @@ namespace RESTar
 
         internal static ICollection<RESTarMethods> AvailableMethods(this Type resource)
         {
-            if (resource.HasAttribute<DDictAttribute>())
+            if (resource.HasAttribute<DynamicTableAttribute>())
                 return RESTarConfig.Methods;
             return resource.GetAttribute<RESTarAttribute>()?.AvailableMethods;
         }

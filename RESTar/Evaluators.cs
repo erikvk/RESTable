@@ -30,7 +30,11 @@ namespace RESTar
         {
             var entities = request.GetExtension();
             foreach (var entity in entities)
-                Db.Transact(() => { JsonConvert.PopulateObject(request.Json, entity); });
+                Db.Transact(() => { JsonConvert.PopulateObject(request.Json, entity, new JsonSerializerSettings
+                {
+                    DateParseHandling = DateParseHandling.DateTime,
+                   
+                }); });
             request.Updater((dynamic) entities, request);
             return UpdatedEntities(entities.Count(), request.Resource);
         }

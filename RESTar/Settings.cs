@@ -37,8 +37,6 @@ namespace RESTar
             });
         }
 
-        public static Settings Instance => _Instance ?? (_Instance = DB.First<Settings>());
-
-        private static Settings _Instance;
+        public static Settings Instance => DB.First<Settings>();
     }
 }

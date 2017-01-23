@@ -1,30 +1,29 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using Dynamit;
 using Starcounter;
 
-namespace RESTar.Dynamit
+namespace RESTar
 {
     internal static class DynamitControl
     {
         internal static readonly IList<Type> DynamitTypes = typeof(DDictionary)
             .GetConcreteSubclasses()
-            .Where(c => c.Namespace == "RESTar.Dynamit")
+            .Where(c => c.HasAttribute<DynamicTableAttribute>())
             .OrderBy(i => i.FullName)
             .ToList();
 
         internal static int MaxTables = DynamitTypes.Count;
 
-        internal static Type AllocateNewTable(string name)
+        internal static Type AllocateNewTable(string alias)
         {
-            var newTable = DynamitTypes.FirstOrDefault(ResourceMapping.NotExists);
+            var newTable = DynamitTypes.FirstOrDefault(ResourceAlias.NotExists);
             if (newTable == null)
                 throw new NoAvalailableDynamicTableException();
-            new ResourceMapping
+            new ResourceAlias
             {
-                Alias = name,
+                Alias = alias,
                 Resource = newTable.FullName
             };
             return newTable;

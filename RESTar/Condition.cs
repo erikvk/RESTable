@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Web;
+using Dynamit;
 using Starcounter;
 
 namespace RESTar
@@ -22,15 +23,20 @@ namespace RESTar
                 if (s == "")
                     throw new SyntaxException("Invalid condition syntax");
                 var matched = new string(s.Where(c => OpMatchChars.Contains(c)).ToArray());
-                var op = Operators.FirstOrDefault(o => o.Common == matched);
-                if (op == null)
+
+                Operator op;
+                try
+                {
+                    op = Operators.First(o => o.Common == matched);
+                }
+                catch
                 {
                     throw new SyntaxException("Invalid or missing operator for condition. The presence of one " +
                                               "(and only one) operator is required per condition. Accepted operators: " +
                                               string.Join(", ", Operators.Select(o => o.Common)));
                 }
                 var pair = s.Split(new[] {op.Common}, StringSplitOptions.None);
-                var dynamit = resource.HasAttribute<DDictAttribute>();
+                var dynamit = resource.HasAttribute<DDictionaryAttribute>();
 
                 string key;
                 dynamic value;
@@ -43,7 +49,7 @@ namespace RESTar
                 {
                     Type type;
                     key = GetKey(resource, pair[0], out type);
-                    value = GetValue(pair[1], key, type);
+                    value = GetValue(pair[1], key);
                 }
 
                 return new Condition
@@ -156,7 +162,7 @@ namespace RESTar
             return string.Join(".", parts);
         }
 
-        private static dynamic GetValue(string valueString, string key = null, Type expectedType = null)
+        private static dynamic GetValue(string valueString, string key = null)
         {
             valueString = HttpUtility.UrlDecode(valueString);
             if (valueString == null)
@@ -182,11 +188,6 @@ namespace RESTar
             else if (DateTime.TryParse(valueString, out dat))
                 obj = dat;
             else obj = valueString;
-
-            if (expectedType != null)
-                if (obj.GetType() != expectedType)
-                    throw new SyntaxException($"Invalid type for condition '{key}'. Expected " +
-                                              $"{expectedType}, found {obj.GetType()}");
             return obj;
         }
 

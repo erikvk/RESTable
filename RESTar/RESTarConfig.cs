@@ -10,7 +10,6 @@ using static RESTar.RESTarMethods;
 using static RESTar.RESTarOperations;
 using ScRequest = Starcounter.Request;
 using Newtonsoft.Json;
-using RESTar.Dynamit;
 
 namespace RESTar
 {
@@ -43,51 +42,31 @@ namespace RESTar
         {
             if (uri.First() != '/')
                 uri = $"/{uri}";
-
-            foreach (var resource in DB.All<VirtualResource>())
-                Db.Transact(() => { resource.Delete(); });
-
-            foreach (var resource in DB.All<Table>())
-                Db.Transact(() => { resource.Delete(); });
-
             ResourcesList = typeof(object)
                 .GetSubclasses()
                 .Where(t => t.HasAttribute<RESTarAttribute>())
                 .Union(DynamitControl.DynamitTypes)
                 .ToList();
-
             ResourcesDict = ResourcesList.ToDictionary(
                 type => type.FullName.ToLower(),
                 type => type
             );
-
             IEnumTypes = ResourcesList.ToDictionary(
                 type => type,
                 type => typeof(IEnumerable<>).MakeGenericType(type)
             );
-
             MetaConditions = Enum.GetNames(typeof(RESTarMetaConditions)).ToDictionary(
                 name => (RESTarMetaConditions) Enum.Parse(typeof(RESTarMetaConditions), name),
                 name => typeof(RESTarMetaConditions).GetField(name).GetAttribute<TypeAttribute>().Type
             );
-
             ResourceOperations = ResourcesList.ToDictionary(type => type,
                 type => Operations.ToDictionary(o => o, o => default(dynamic)));
-
             DynamitConfig.Init();
-            var StarcounterResources = ResourcesList
-                .Where(t => t.HasAttribute<DatabaseAttribute>() && !t.HasAttribute<DDictAttribute>())
-                .ToList();
-            foreach (var resource in StarcounterResources)
-                Db.Transact(() => new Table(resource));
-            CheckOperations(StarcounterResources);
-            var VirtualResources = ResourcesList
-                .Where(t => !t.HasAttribute<DatabaseAttribute>())
-                .ToList();
-            CheckVirtualResources(VirtualResources);
-            foreach (var resource in VirtualResources)
-                Scheduling.ScheduleTask(() => Db.Transact(() => new VirtualResource(resource)));
-
+            foreach (var resource in DB.All<Resource>().Where(r => !r.Editable))
+                Db.Transact(() => { resource.Delete(); });
+            foreach (var resource in ResourcesList.Where(t => !t.HasAttribute<DynamicTableAttribute>()))
+                Db.Transact(() => { new Resource {Type = resource}; });
+            CheckOperations(ResourcesList);
             foreach (var resource in ResourcesList)
             {
                 Scheduling.ScheduleTask(() =>
@@ -245,61 +224,55 @@ namespace RESTar
             }
         }
 
-        private static void CheckOperations(ICollection<Type> starcounterResources)
+        private static void CheckOperations(IEnumerable<Type> resources)
         {
-            foreach (var operation in Operations)
+            foreach (var resource in resources)
             {
-                var method = typeof(Table).GetMethod(operation.ToString(),
-                    BindingFlags.Public | BindingFlags.Instance);
-                ResourceOperations[typeof(Table)][operation] = operation == Select
-                    ? method.CreateDelegate(typeof(Func<,>).MakeGenericType(typeof(IRequest),
-                        typeof(IEnumerable<object>)), null)
-                    : method.CreateDelegate(typeof(Action<,>).MakeGenericType(typeof(IEnumerable<object>),
-                        typeof(IRequest)), null);
-            }
-
-            foreach (var resource in starcounterResources.Except(new[] {typeof(Table)}))
-            {
-                var metaResource = DB.Get<Table>("Locator", resource.FullName);
-                foreach (var operation in Operations)
+                if (resource.IsSubclassOf(typeof(DDictionary)))
                 {
-                    var overrideMethod = resource.GetMethod(operation.ToString(),
-                        BindingFlags.Public | BindingFlags.Instance);
-                    var baseMethod = metaResource.GetType()
-                        .GetMethod(operation.ToString(), BindingFlags.Public | BindingFlags.Instance);
-                    if (LocalizedInterface(operation, resource).IsAssignableFrom(resource))
+                    foreach (var operation in Operations)
+                    {
+                        var method = typeof(DDictionaryOperations).GetMethod(operation.ToString(),
+                            BindingFlags.Public | BindingFlags.Instance);
                         ResourceOperations[resource][operation] = operation == Select
-                            ? overrideMethod.CreateDelegate(typeof(Func<,>).MakeGenericType(typeof(IRequest),
-                                typeof(IEnumerable<>).MakeGenericType(resource)), null)
-                            : overrideMethod.CreateDelegate(typeof(Action<,>).MakeGenericType(typeof(IEnumerable<>)
-                                .MakeGenericType(resource), typeof(IRequest)), null);
-                    else if (LocalizedInterface(operation, typeof(object)).IsAssignableFrom(resource))
-                        ResourceOperations[resource][operation] = operation == Select
-                            ? overrideMethod.CreateDelegate(typeof(Func<,>).MakeGenericType(typeof(IRequest),
-                                typeof(IEnumerable<object>)), null)
-                            : overrideMethod.CreateDelegate(
-                                typeof(Action<,>).MakeGenericType(typeof(IEnumerable<object>),
-                                    typeof(IRequest)), null);
-                    else
-                        ResourceOperations[resource][operation] = operation == Select
-                            ? baseMethod.CreateDelegate(typeof(Func<,>).MakeGenericType(typeof(IRequest),
-                                typeof(IEnumerable<object>)), null)
-                            : baseMethod.CreateDelegate(typeof(Action<,>).MakeGenericType(typeof(IEnumerable<object>),
-                                typeof(IRequest)), null);
+                            ? method.CreateDelegate(typeof(Func<,>)
+                                .MakeGenericType(typeof(IRequest), typeof(IEnumerable<DDictionary>)), null)
+                            : method.CreateDelegate(typeof(Action<,>)
+                                .MakeGenericType(typeof(IEnumerable<DDictionary>), typeof(IRequest)), null);
+                    }
                 }
-            }
-
-            foreach (var resource in DynamitControl.DynamitTypes)
-            {
-                foreach (var operation in Operations)
+                else if (!resource.HasAttribute<DatabaseAttribute>())
+                    CheckVirtualResource(resource);
+                else
                 {
-                    var method = typeof(DynamitOperations).GetMethod(operation.ToString(),
-                        BindingFlags.Public | BindingFlags.Instance);
-                    ResourceOperations[resource][operation] = operation == Select
-                        ? method.CreateDelegate(typeof(Func<,>)
-                            .MakeGenericType(typeof(IRequest), typeof(IEnumerable<DDictionary>)), null)
-                        : method.CreateDelegate(typeof(Action<,>)
-                            .MakeGenericType(typeof(IEnumerable<DDictionary>), typeof(IRequest)), null);
+                    var operationsProvider = typeof(StarcounterOperations);
+                    foreach (var operation in Operations)
+                    {
+                        var overrideMethod = resource.GetMethod(operation.ToString(),
+                            BindingFlags.Public | BindingFlags.Instance);
+                        var baseMethod = operationsProvider.GetMethod(operation.ToString(),
+                            BindingFlags.Public | BindingFlags.Instance);
+                        if (LocalizedInterface(operation, resource).IsAssignableFrom(resource))
+                            ResourceOperations[resource][operation] = operation == Select
+                                ? overrideMethod.CreateDelegate(typeof(Func<,>).MakeGenericType(typeof(IRequest),
+                                    typeof(IEnumerable<>).MakeGenericType(resource)), null)
+                                : overrideMethod.CreateDelegate(typeof(Action<,>).MakeGenericType(typeof(IEnumerable<>)
+                                    .MakeGenericType(resource), typeof(IRequest)), null);
+                        else if (LocalizedInterface(operation, typeof(object)).IsAssignableFrom(resource))
+                            ResourceOperations[resource][operation] = operation == Select
+                                ? overrideMethod.CreateDelegate(typeof(Func<,>).MakeGenericType(typeof(IRequest),
+                                    typeof(IEnumerable<object>)), null)
+                                : overrideMethod.CreateDelegate(
+                                    typeof(Action<,>).MakeGenericType(typeof(IEnumerable<object>),
+                                        typeof(IRequest)), null);
+                        else
+                            ResourceOperations[resource][operation] = operation == Select
+                                ? baseMethod.CreateDelegate(typeof(Func<,>).MakeGenericType(typeof(IRequest),
+                                    typeof(IEnumerable<object>)), null)
+                                : baseMethod.CreateDelegate(
+                                    typeof(Action<,>).MakeGenericType(typeof(IEnumerable<object>),
+                                        typeof(IRequest)), null);
+                    }
                 }
             }
         }
@@ -320,84 +293,83 @@ namespace RESTar
             return null;
         }
 
-        private static void CheckVirtualResources(ICollection<Type> virtualResources)
+        private static IEnumerable<RESTarOperations> NecessaryOpDefs(IEnumerable<RESTarMethods> restMethods)
         {
-            Func<IEnumerable<RESTarMethods>, IEnumerable<RESTarOperations>> necessaryMethodDefs =
-                restMethods => restMethods.SelectMany(method =>
-                {
-                    switch (method)
-                    {
-                        case GET:
-                            return new[] {Select};
-                        case POST:
-                            return new[] {Insert};
-                        case PUT:
-                            return new[] {Select, Insert, Update};
-                        case PATCH:
-                            return new[] {Select, Update};
-                        case DELETE:
-                            return new[] {Select, Delete};
-                        case Private_GET:
-                            return new[] {Select};
-                        case Private_POST:
-                            return new[] {Insert};
-                        case Private_PUT:
-                            return new[] {Select, Insert, Update};
-                        case Private_PATCH:
-                            return new[] {Select, Update};
-                        case Private_DELETE:
-                            return new[] {Select, Delete};
-                    }
-                    return null;
-                }).Distinct();
-
-            foreach (var type in virtualResources)
+            return restMethods.SelectMany(method =>
             {
-                foreach (var requiredMethod in necessaryMethodDefs(type.AvailableMethods()))
+                switch (method)
                 {
-                    var method = type.GetMethod(requiredMethod.ToString(), BindingFlags.Public | BindingFlags.Instance);
-                    if (LocalizedInterface(requiredMethod, type).IsAssignableFrom(type))
-                        ResourceOperations[type][requiredMethod] = requiredMethod == Select
-                            ? method.CreateDelegate(typeof(Func<,>).MakeGenericType(typeof(IRequest),
-                                typeof(IEnumerable<>).MakeGenericType(type)), null)
-                            : method.CreateDelegate(typeof(Action<,>).MakeGenericType(typeof(IEnumerable<>)
-                                .MakeGenericType(type), typeof(IRequest)), null);
-                    else if (LocalizedInterface(requiredMethod, typeof(object)).IsAssignableFrom(type))
-                        ResourceOperations[type][requiredMethod] = requiredMethod == Select
-                            ? method.CreateDelegate(typeof(Func<,>).MakeGenericType(typeof(IRequest),
-                                typeof(IEnumerable<object>)), null)
-                            : method.CreateDelegate(typeof(Action<,>).MakeGenericType(typeof(IEnumerable<object>),
-                                typeof(IRequest)), null);
-                    else
-                    {
-                        string missingInterface;
-                        switch (requiredMethod)
-                        {
-                            case Select:
-                                missingInterface = $"ISelector<{type.FullName}> or ISelector<object>";
-                                break;
-                            case Insert:
-                                missingInterface = $"IInserter<{type.FullName}> or Inserter<object>";
-                                break;
-                            case Update:
-                                missingInterface = $"IUpdater<{type.FullName}> or IUpdater<object>";
-                                break;
-                            case Delete:
-                                missingInterface = $"IDeleter<{type.FullName}> or IDeleter<object>";
-                                break;
-                            default:
-                                throw new ArgumentOutOfRangeException();
-                        }
-                        throw new VirtualResourceMissingInterfaceImplementation(type, missingInterface);
-                    }
+                    case GET:
+                        return new[] {Select};
+                    case POST:
+                        return new[] {Insert};
+                    case PUT:
+                        return new[] {Select, Insert, Update};
+                    case PATCH:
+                        return new[] {Select, Update};
+                    case DELETE:
+                        return new[] {Select, Delete};
+                    case Private_GET:
+                        return new[] {Select};
+                    case Private_POST:
+                        return new[] {Insert};
+                    case Private_PUT:
+                        return new[] {Select, Insert, Update};
+                    case Private_PATCH:
+                        return new[] {Select, Update};
+                    case Private_DELETE:
+                        return new[] {Select, Delete};
                 }
-                var fields = type.GetFields(BindingFlags.Public | BindingFlags.Instance);
-                if (fields.Any())
-                    throw new VirtualResourceMemberException(
-                        $"A virtual resource cannot include public instance fields, " +
-                        $"only properties. Fields: {string.Join(", ", fields.Select(f => $"'{f.Name}'"))} in resource '{type.FullName}'"
-                    );
+                return null;
+            }).Distinct();
+        }
+
+        private static void CheckVirtualResource(Type resource)
+        {
+            foreach (var requiredMethod in NecessaryOpDefs(resource.AvailableMethods()))
+            {
+                var method = resource.GetMethod(requiredMethod.ToString(), BindingFlags.Public | BindingFlags.Instance);
+                if (LocalizedInterface(requiredMethod, resource).IsAssignableFrom(resource))
+                    ResourceOperations[resource][requiredMethod] = requiredMethod == Select
+                        ? method.CreateDelegate(typeof(Func<,>).MakeGenericType(typeof(IRequest),
+                            typeof(IEnumerable<>).MakeGenericType(resource)), null)
+                        : method.CreateDelegate(typeof(Action<,>).MakeGenericType(typeof(IEnumerable<>)
+                            .MakeGenericType(resource), typeof(IRequest)), null);
+                else if (LocalizedInterface(requiredMethod, typeof(object)).IsAssignableFrom(resource))
+                    ResourceOperations[resource][requiredMethod] = requiredMethod == Select
+                        ? method.CreateDelegate(typeof(Func<,>).MakeGenericType(typeof(IRequest),
+                            typeof(IEnumerable<object>)), null)
+                        : method.CreateDelegate(typeof(Action<,>).MakeGenericType(typeof(IEnumerable<object>),
+                            typeof(IRequest)), null);
+                else
+                {
+                    string missingInterface;
+                    switch (requiredMethod)
+                    {
+                        case Select:
+                            missingInterface = $"ISelector<{resource.FullName}> or ISelector<object>";
+                            break;
+                        case Insert:
+                            missingInterface = $"IInserter<{resource.FullName}> or Inserter<object>";
+                            break;
+                        case Update:
+                            missingInterface = $"IUpdater<{resource.FullName}> or IUpdater<object>";
+                            break;
+                        case Delete:
+                            missingInterface = $"IDeleter<{resource.FullName}> or IDeleter<object>";
+                            break;
+                        default:
+                            throw new ArgumentOutOfRangeException();
+                    }
+                    throw new VirtualResourceMissingInterfaceImplementation(resource, missingInterface);
+                }
             }
+            var fields = resource.GetFields(BindingFlags.Public | BindingFlags.Instance);
+            if (fields.Any())
+                throw new VirtualResourceMemberException(
+                    $"A virtual resource cannot include public instance fields, " +
+                    $"only properties. Fields: {string.Join(", ", fields.Select(f => $"'{f.Name}'"))} in resource '{resource.FullName}'"
+                );
         }
 
         private static RESTarMethods? MethodCheck(IRequest request)

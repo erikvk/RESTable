@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Dynamic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -101,9 +100,9 @@ namespace RESTar
             if (Conditions != null &&
                 (Resource == typeof(Resource) || Resource.IsSubclassOf(typeof(Resource))))
             {
-                var locatorCondition = Conditions.FirstOrDefault(c => c.Key.ToLower() == "locator");
-                if (locatorCondition != null)
-                    locatorCondition.Value = ((string) locatorCondition.Value.ToString()).FindResource().FullName;
+                var nameCond = Conditions.FirstOrDefault(c => c.Key.ToLower() == "name");
+                if (nameCond != null)
+                    nameCond.Value = ((string) nameCond.Value.ToString()).FindResource().FullName;
             }
             if (argLength == 3) return;
 
@@ -134,6 +133,11 @@ namespace RESTar
             };
 
             #endregion
+        }
+
+        public Condition GetCondition(string key)
+        {
+            return Conditions?.FirstOrDefault(c => c.Key.Equals(key, StringComparison.CurrentCultureIgnoreCase));
         }
 
         internal void ResolveDataSource()
