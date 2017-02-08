@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Web;
+using System.Net;
 using Dynamit;
 using Starcounter;
 
@@ -17,7 +17,7 @@ namespace RESTar
         {
             if (string.IsNullOrEmpty(conditionString))
                 return null;
-
+            conditionString = WebUtility.UrlDecode(conditionString);
             return conditionString.Split('&').Select(s =>
             {
                 if (s == "")
@@ -61,12 +61,12 @@ namespace RESTar
             }).ToList();
         }
 
-        internal static IDictionary<string, object> ParseMetaConditions(string metConditionString)
+        internal static IDictionary<string, object> ParseMetaConditions(string metaConditionString)
         {
-            if (metConditionString?.Equals("") != false)
+            if (metaConditionString?.Equals("") != false)
                 return null;
-
-            return metConditionString.Split('&').Select(s =>
+            metaConditionString = WebUtility.UrlDecode(metaConditionString);
+            return metaConditionString.Split('&').Select(s =>
             {
                 if (s == "")
                     throw new SyntaxException("Invalid meta-condition syntax");
@@ -164,7 +164,6 @@ namespace RESTar
 
         private static dynamic GetValue(string valueString, string key = null)
         {
-            valueString = HttpUtility.UrlDecode(valueString);
             if (valueString == null)
                 return null;
             if (valueString == "null")

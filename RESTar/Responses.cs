@@ -1,13 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Net;
-using Starcounter;
 using System.Data;
 using System.IO;
+using System.Linq;
+using System.Net;
 using ClosedXML.Excel;
 using Dynamit;
 using Newtonsoft.Json;
+using Starcounter;
 
 namespace RESTar
 {
@@ -38,6 +38,12 @@ namespace RESTar
         #endregion
 
         #region Bad request
+
+        internal static Response AbortedOperation(Exception e, RESTarMethods method, Type resource) => new Response
+        {
+            StatusCode = (ushort) HttpStatusCode.BadRequest,
+            StatusDescription = $"Aborted {method} on resource '{resource.FullName}' due to an error: {e.Message}"
+        };
 
         internal static Response BadRequest(Exception e) => new Response
         {
@@ -90,7 +96,9 @@ namespace RESTar
         internal static Response InternalError(Exception e) => new Response
         {
             StatusCode = (ushort) HttpStatusCode.InternalServerError,
-            StatusDescription = $"Internal error: {e.Message}. {e.InnerException?.Message}. {e.InnerException?.InnerException?.Message}"
+            StatusDescription = $"Internal error: {e.Message} " +
+                                $"{e.InnerException?.Message} " +
+                                $"{e.InnerException?.InnerException?.Message}"
         };
 
         internal static Response RESTarInternalError(Exception e) => new Response
@@ -129,17 +137,37 @@ namespace RESTar
             StatusDescription = "No results found matching query"
         };
 
-        internal static Response InsertedEntities(int count, Type resource) => new Response
+        internal static Response InsertedEntities(Request request, int count, Type resource)
         {
-            StatusCode = (ushort) HttpStatusCode.Created,
-            StatusDescription = $"{count} entities inserted into resource '{resource.FullName}'"
-        };
+            if (request.Imgput != null)
+                return new Response
+                {
+                    StatusCode = (ushort) HttpStatusCode.Created,
+                    Body = "R0lGODlhAQABAIAAAP///wAAACwAAAAAAQABAAACAkQBADs=",
+                    ContentType = "image/gif"
+                };
+            return new Response
+            {
+                StatusCode = (ushort) HttpStatusCode.Created,
+                StatusDescription = $"{count} entities inserted into resource '{resource.FullName}'"
+            };
+        }
 
-        internal static Response UpdatedEntities(int count, Type resource) => new Response
+        internal static Response UpdatedEntities(Request request, int count, Type resource)
         {
-            StatusCode = (ushort) HttpStatusCode.OK,
-            StatusDescription = $"{count} entities updated in resource '{resource.FullName}'"
-        };
+            if (request.Imgput != null)
+                return new Response
+                {
+                    StatusCode = (ushort) HttpStatusCode.OK,
+                    Body = "R0lGODlhAQABAIAAAP///wAAACwAAAAAAQABAAACAkQBADs=",
+                    ContentType = "image/gif"
+                };
+            return new Response
+            {
+                StatusCode = (ushort) HttpStatusCode.OK,
+                StatusDescription = $"{count} entities updated in resource '{resource.FullName}'"
+            };
+        }
 
         internal static Response DeleteEntities(int count, Type resource) => new Response
         {
@@ -152,9 +180,17 @@ namespace RESTar
             string jsonString;
             var response = new Response();
 
-            if (request.Dynamic || request.Select != null || request.Rename != null ||
-                request.Resource.IsSubclassOf(typeof(DDictionary)))
+            if
+            (
+                request.Dynamic ||
+                request.Select != null ||
+                request.Rename != null ||
+                request.Resource.IsSubclassOf(typeof(DDictionary)) ||
+                request.Resource.GetAttribute<RESTarAttribute>().Dynamic
+            )
+            {
                 jsonString = entities.SerializeDyn();
+            }
             else if (request.Map != null)
                 jsonString = entities.Serialize(typeof(IEnumerable<>)
                     .MakeGenericType(typeof(Dictionary<,>)
@@ -166,11 +202,7 @@ namespace RESTar
                 DataSet data;
                 try
                 {
-                    data = JsonConvert.DeserializeObject<DataSet>(str, new JsonSerializerSettings
-                    {
-                        NullValueHandling = NullValueHandling.Include,
-                        DateFormatHandling = DateFormatHandling.IsoDateFormat
-                    });
+                    data = JsonConvert.DeserializeObject<DataSet>(str, Serializer.JsonNetSettings);
                 }
                 catch (Exception)
                 {
@@ -192,7 +224,6 @@ namespace RESTar
                 response.ContentType = "application/json";
                 response.Body = jsonString;
             }
-
             return response;
         }
 

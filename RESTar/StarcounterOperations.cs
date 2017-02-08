@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using Starcounter;
 
 namespace RESTar
@@ -10,18 +11,31 @@ namespace RESTar
             return DB.Select(request);
         }
 
-        public void Insert(IEnumerable<dynamic> entities, IRequest request)
+        public int Insert(IEnumerable<dynamic> entities, IRequest request)
         {
+            return entities.Count();
         }
 
-        public void Update(IEnumerable<dynamic> entities, IRequest request)
+        public int Update(IEnumerable<dynamic> entities, IRequest request)
         {
+            return entities.Count();
         }
 
-        public void Delete(IEnumerable<dynamic> entities, IRequest request)
+        public int Delete(IEnumerable<dynamic> entities, IRequest request)
         {
+            var count = 0;
             foreach (var entity in entities)
-                Db.Transact(() => { Db.Delete(entity); });
+            {
+                Db.Transact(() =>
+                {
+                    if (entity != null)
+                    {
+                        Db.Delete(entity);
+                        count += 1;
+                    }
+                });
+            }
+            return count;
         }
     }
 }

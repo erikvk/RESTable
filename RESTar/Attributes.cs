@@ -10,6 +10,7 @@ namespace RESTar
     public sealed class RESTarAttribute : Attribute
     {
         internal RESTarMethods[] AvailableMethods { get; private set; }
+        public bool Dynamic { get; set; }
 
         public RESTarAttribute(RESTarPresets preset)
         {

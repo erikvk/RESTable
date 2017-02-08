@@ -1,12 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Serialization;
 using System.Text.RegularExpressions;
-using Dynamit;
-using Jil;
 using Starcounter;
 
 namespace RESTar
@@ -158,47 +155,6 @@ namespace RESTar
             return input != null ? Regex.Replace(input, @"\t|\n|\r", "") : null;
         }
 
-        internal static string SerializeDyn(this object obj)
-        {
-            if (Settings.Instance.PrettyPrint)
-                return JSON.SerializeDynamic(obj, Options.ISO8601PrettyPrintIncludeInherited);
-            return JSON.SerializeDynamic(obj, Options.ISO8601IncludeInherited);
-        }
-
-        private static readonly MethodInfo SerializeMethod =
-            typeof(JSON).GetMethods().First(n => n.Name == "Serialize" && n.ReturnType == typeof(void));
-
-        internal static string Serialize(this object obj, Type resource)
-        {
-            var generic = SerializeMethod.MakeGenericMethod(resource);
-            var writer = new StringWriter();
-            if (Settings.Instance.PrettyPrint)
-            {
-                generic.Invoke
-                (
-                    null,
-                    new[]
-                    {
-                        obj,
-                        writer,
-                        Options.ISO8601PrettyPrintIncludeInherited
-                    }
-                );
-                return writer.ToString();
-            }
-            generic.Invoke
-            (
-                null,
-                new[]
-                {
-                    obj,
-                    writer,
-                    Options.ISO8601IncludeInherited
-                }
-            );
-            return writer.ToString();
-        }
-
         internal static string[] Keys(this IEnumerable<Condition> conditions)
         {
             return conditions.Select(c => c.Key).ToArray();
@@ -315,6 +271,11 @@ namespace RESTar
             if (resource.HasAttribute<DynamicTableAttribute>())
                 return RESTarConfig.Methods;
             return resource.GetAttribute<RESTarAttribute>()?.AvailableMethods;
+        }
+
+        public static IDictionary<string, dynamic> ToConditionsDict(this IEnumerable<Condition> conditions)
+        {
+            return conditions.ToDictionary(c => c.Key, c => c.Value);
         }
 
         internal static string ToMethodsString(this IEnumerable<RESTarMethods> ie) => string.Join(", ", ie);

@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using System.Runtime.Serialization;
-using Dynamit;
 using Starcounter;
 
 namespace RESTar
@@ -11,7 +9,6 @@ namespace RESTar
     [Database, RESTar(RESTarPresets.ReadAndWrite)]
     public class Resource :
         IInserter<Resource>,
-        IUpdater<Resource>,
         IDeleter<Resource>
     {
         public string Name { get; private set; }
@@ -60,8 +57,9 @@ namespace RESTar
             set { Name = value.FullName; }
         }
 
-        public void Insert(IEnumerable<Resource> resources, IRequest request)
+        public int Insert(IEnumerable<Resource> resources, IRequest request)
         {
+            var count = 0;
             var dynamicTables = resources.ToList();
             try
             {
@@ -75,6 +73,7 @@ namespace RESTar
                         entity.Type = DynamitControl.AllocateNewTable(alias);
                         entity.Editable = true;
                     });
+                    count += 1;
                 }
             }
             catch (Exception e)
@@ -83,14 +82,12 @@ namespace RESTar
                     Db.Transact(() => resource.Delete());
                 throw new AbortedInserterException($"Invalid resource: {e.Message}");
             }
+            return count;
         }
 
-        public void Update(IEnumerable<Resource> entities, IRequest request)
+        public int Delete(IEnumerable<Resource> entities, IRequest request)
         {
-        }
-
-        public void Delete(IEnumerable<Resource> entities, IRequest request)
-        {
+            var count = 0;
             foreach (var entity in entities.Where(e => e.Editable))
             {
                 Db.Transact(() =>
@@ -100,7 +97,9 @@ namespace RESTar
                         mapping.Delete();
                     entity.Delete();
                 });
+                count += 1;
             }
+            return count;
         }
     }
 }

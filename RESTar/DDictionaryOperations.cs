@@ -27,18 +27,28 @@ namespace RESTar
             return matches.Take(request.Limit);
         }
 
-        public void Insert(IEnumerable<DDictionary> entities, IRequest request)
+        public int Insert(IEnumerable<DDictionary> entities, IRequest request)
         {
+            return entities.Count();
         }
 
-        public void Update(IEnumerable<DDictionary> entities, IRequest request)
+        public int Update(IEnumerable<DDictionary> entities, IRequest request)
         {
+            return entities.Count();
         }
 
-        public void Delete(IEnumerable<DDictionary> entities, IRequest request)
+        public int Delete(IEnumerable<DDictionary> entities, IRequest request)
         {
+            var count = 0;
             foreach (var entity in entities)
-                Db.Transact(() => entity.Delete());
+            {
+                if (entity != null)
+                {
+                    Db.Transact(() => { entity.Delete(); });
+                    count += 1;
+                }
+            }
+            return count;
         }
     }
 }

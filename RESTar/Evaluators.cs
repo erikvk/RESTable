@@ -1,10 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
 using System.Linq;
-using System.Net;
-using Jil;
-using Newtonsoft.Json;
 using Starcounter;
-using static RESTar.Responses;
 
 namespace RESTar
 {
@@ -13,9 +9,15 @@ namespace RESTar
         internal static Response DELETE(Request request)
         {
             var entities = request.GetExtension();
-            var count = entities.Count();
-            request.Deleter((dynamic) entities, request);
-            return DeleteEntities(count, request.Resource);
+            try
+            {
+                int count = request.Deleter((dynamic) entities, request);
+                return Responses.DeleteEntities(count, request.Resource);
+            }
+            catch (Exception e)
+            {
+                throw new AbortedDeleterException(e.Message);
+            }
         }
 
         internal static Response GET(Request request)
@@ -23,85 +25,98 @@ namespace RESTar
             if (!request.Unsafe && request.Limit == -1)
                 request.Limit = 1000;
             var entities = request.GetExtension(true);
-            return !entities.Any() ? NoContent() : GetEntities(request, entities);
+            return !entities.Any() ? Responses.NoContent() : Responses.GetEntities(request, entities);
         }
 
         internal static Response PATCH(Request request)
         {
             var entities = request.GetExtension();
-            foreach (var entity in entities)
-                Db.Transact(() => { JsonConvert.PopulateObject(request.Json, entity, new JsonSerializerSettings
-                {
-                    DateParseHandling = DateParseHandling.DateTime,
-                   
-                }); });
-            request.Updater((dynamic) entities, request);
-            return UpdatedEntities(entities.Count(), request.Resource);
+            try
+            {
+                foreach (var entity in entities)
+                    Db.Transact(() => { Serializer.PopulateObject(request.Json, entity); });
+                int count = request.Updater((dynamic) entities, request);
+                return Responses.UpdatedEntities(request, count, request.Resource);
+            }
+            catch (Exception e)
+            {
+                throw new AbortedUpdaterException(e.Message);
+            }
         }
 
         internal static Response POST(Request request)
         {
-            var json = request.Json.First() == '[' ? request.Json : $"[{request.Json}]";
-            dynamic results = Db.Transact(() =>
-                JSON.Deserialize(json, RESTarConfig.IEnumTypes[request.Resource], Options.ISO8601IncludeInherited));
-            var count = Enumerable.Count(results);
-            request.Inserter(results, request);
-            return InsertedEntities(count, request.Resource);
+            try
+            {
+                var json = request.Json.First() == '[' ? request.Json : $"[{request.Json}]";
+                dynamic results = Db.Transact(() => json.Deserialize(RESTarConfig.IEnumTypes[request.Resource]));
+                int count = request.Inserter(results, request);
+                return Responses.InsertedEntities(request, count, request.Resource);
+            }
+            catch (Exception e)
+            {
+                throw new AbortedInserterException(e.Message);
+            }
         }
 
         internal static Response PUT(Request request)
         {
             var entities = request.GetExtension(false);
             object obj;
+            int count;
             if (!entities.Any())
             {
-                obj = Db.Transact(() => JSON.Deserialize(
-                    request.Json, request.Resource, Options.ISO8601IncludeInherited)
-                );
-                request.Inserter(obj.MakeList(request.Resource), request);
-                return new Response
+                try
                 {
-                    StatusCode = (ushort) HttpStatusCode.Created,
-                    Body = obj.SerializeDyn()
-                };
+                    obj = Db.Transact(() => request.Json.Deserialize(request.Resource));
+                    count = request.Inserter(obj.MakeList(request.Resource), request);
+                    return Responses.InsertedEntities(request, count, request.Resource);
+                }
+                catch (Exception e)
+                {
+                    throw new AbortedInserterException(e.Message);
+                }
             }
-            obj = entities.First();
-            Db.Transact(() => { JsonConvert.PopulateObject(request.Json, obj); });
-            request.Updater(obj.MakeList(request.Resource), request);
-            return new Response
+            try
             {
-                StatusCode = (ushort) HttpStatusCode.OK,
-                Body = obj.SerializeDyn()
-            };
+                obj = entities.First();
+                Db.Transact(() => { Serializer.PopulateObject(request.Json, obj); });
+                count = request.Updater(obj.MakeList(request.Resource), request);
+                return Responses.UpdatedEntities(request, count, request.Resource);
+            }
+            catch (Exception e)
+            {
+                throw new AbortedUpdaterException(e.Message);
+            }
         }
 
-        internal static Response MIGRATE(Request request)
-        {
-            if (request.Destination == null)
-                throw new SyntaxException("Missing destination header in MIGRATE request");
-            var method_uri = request.Destination.Split(new[] {' '}, 2);
-            if (method_uri.Length == 1 || method_uri[0].ToUpper() != "IMPORT")
-                throw new SyntaxException("MIGRATE destination must be of form 'IMPORT [URI]'");
+//        internal static Response MIGRATE(Request request)
+//        {
+//            if (request.Destination == null)
+//                throw new SyntaxException("Missing destination header in MIGRATE request");
+//            var method_uri = request.Destination.Split(new[] {' '}, 2);
+//            if (method_uri.Length == 1 || method_uri[0].ToUpper() != "IMPORT")
+//                throw new SyntaxException("MIGRATE destination must be of form 'IMPORT [URI]'");
+//
+//            var entities = request.GetExtension(true);
+//            if (!entities.Any())
+//                return NoContent();
+//            var outDict = entities.ToDictionary(
+//                e => DbHelper.GetObjectNo(e),
+//                e => e
+//            );
+//
+//            string jsonString;
+//            if (request.Select == null && request.Rename == null)
+//                jsonString = outDict.Serialize(typeof(IDictionary<,>).MakeGenericType(typeof(ulong),
+//                    RESTarConfig.IEnumTypes[request.Resource]));
+//            else jsonString = outDict.Serialize(typeof(IDictionary<ulong, dynamic>));
+//            return HTTP.Request("IMPORT", method_uri[1], jsonString);
+//        }
 
-            var entities = request.GetExtension(true);
-            if (!entities.Any())
-                return NoContent();
-            var outDict = entities.ToDictionary(
-                e => DbHelper.GetObjectNo(e),
-                e => e
-            );
-
-            string jsonString;
-            if (request.Select == null && request.Rename == null)
-                jsonString = outDict.Serialize(typeof(IDictionary<,>).MakeGenericType(typeof(ulong),
-                    RESTarConfig.IEnumTypes[request.Resource]));
-            else jsonString = outDict.Serialize(typeof(IDictionary<ulong, dynamic>));
-            return HTTP.Request("IMPORT", method_uri[1], jsonString);
-        }
-
-        internal static Response IMPORT(Request request)
-        {
-            return null;
-        }
+        //        internal static Response IMPORT(Request request)
+        //        {
+        //            return null;
+        //        }
     }
 }

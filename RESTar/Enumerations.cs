@@ -72,7 +72,8 @@ namespace RESTar
         [Type(typeof(string))] Select,
         [Type(typeof(string))] Rename,
         [Type(typeof(bool))] Dynamic,
-        [Type(typeof(string))] Map
+        [Type(typeof(string))] Map,
+        [Type(typeof(string))] Imgput
     }
 
     internal enum RESTarMimeType : byte

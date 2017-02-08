@@ -2,14 +2,11 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using Jil;
-using Starcounter;
 using Dynamit;
-using static RESTar.Responses;
-using static RESTar.RESTarMethods;
-using static RESTar.RESTarOperations;
-using ScRequest = Starcounter.Request;
+using Jil;
 using Newtonsoft.Json;
+using Starcounter;
+using ScRequest = Starcounter.Request;
 
 namespace RESTar
 {
@@ -21,8 +18,8 @@ namespace RESTar
         internal static Dictionary<Type, Dictionary<RESTarOperations, dynamic>> ResourceOperations;
         internal static Dictionary<RESTarMetaConditions, Type> MetaConditions;
 
-        internal static readonly RESTarMethods[] Methods = {GET, POST, PATCH, PUT, DELETE};
-        internal static readonly RESTarOperations[] Operations = {Select, Insert, Update, Delete};
+        internal static readonly RESTarMethods[] Methods = {RESTarMethods.GET, RESTarMethods.POST, RESTarMethods.PATCH, RESTarMethods.PUT, RESTarMethods.DELETE};
+        internal static readonly RESTarOperations[] Operations = {RESTarOperations.Select, RESTarOperations.Insert, RESTarOperations.Update, RESTarOperations.Delete};
 
         /// <summary>
         /// Initiates the RESTar interface
@@ -67,56 +64,35 @@ namespace RESTar
             foreach (var resource in ResourcesList.Where(t => !t.HasAttribute<DynamicTableAttribute>()))
                 Db.Transact(() => { new Resource {Type = resource}; });
             CheckOperations(ResourcesList);
-            foreach (var resource in ResourcesList)
-            {
-                Scheduling.ScheduleTask(() =>
-                {
-                    try
-                    {
-                        JSON.Deserialize("{}", resource, Options.ISO8601IncludeInherited);
-                    }
-                    catch (Exception)
-                    {
-                    }
-                });
-                Scheduling.ScheduleTask(() =>
-                {
-                    try
-                    {
-                        JSON.Deserialize("{}", resource, Options.ISO8601PrettyPrintIncludeInherited);
-                    }
-                    catch (Exception)
-                    {
-                    }
-                });
-            }
 
             Settings.Init(uri, prettyPrint, publicPort);
             Log.Init();
             uri += "{?}";
-            Handle.GET(publicPort, uri, (ScRequest r, string q) => Evaluate(r, q, Evaluators.GET, GET));
-            Handle.POST(publicPort, uri, (ScRequest r, string q) => Evaluate(r, q, Evaluators.POST, POST));
-            Handle.PUT(publicPort, uri, (ScRequest r, string q) => Evaluate(r, q, Evaluators.PUT, PUT));
-            Handle.PATCH(publicPort, uri, (ScRequest r, string q) => Evaluate(r, q, Evaluators.PATCH, PATCH));
-            Handle.DELETE(publicPort, uri, (ScRequest r, string q) => Evaluate(r, q, Evaluators.DELETE, DELETE));
+            Handle.GET(publicPort, uri, (ScRequest r, string q) => Evaluate(r, q, Evaluators.GET, RESTarMethods.GET));
+            Handle.POST(publicPort, uri, (ScRequest r, string q) => Evaluate(r, q, Evaluators.POST, RESTarMethods.POST));
+            Handle.PUT(publicPort, uri, (ScRequest r, string q) => Evaluate(r, q, Evaluators.PUT, RESTarMethods.PUT));
+            Handle.PATCH(publicPort, uri, (ScRequest r, string q) => Evaluate(r, q, Evaluators.PATCH, RESTarMethods.PATCH));
+            Handle.DELETE(publicPort, uri, (ScRequest r, string q) => Evaluate(r, q, Evaluators.DELETE, RESTarMethods.DELETE));
             if (privatePort == 0) return;
-            Handle.GET(privatePort, uri, (ScRequest r, string q) => Evaluate(r, q, Evaluators.GET, Private_GET));
-            Handle.POST(privatePort, uri, (ScRequest r, string q) => Evaluate(r, q, Evaluators.POST, Private_POST));
-            Handle.PUT(privatePort, uri, (ScRequest r, string q) => Evaluate(r, q, Evaluators.PUT, Private_PUT));
-            Handle.PATCH(privatePort, uri, (ScRequest r, string q) => Evaluate(r, q, Evaluators.PATCH, Private_PATCH));
-            Handle.DELETE(privatePort, uri, (ScRequest r, string q) => Evaluate(r, q, Evaluators.DELETE, Private_DELETE));
+            Handle.GET(privatePort, uri, (ScRequest r, string q) => Evaluate(r, q, Evaluators.GET, RESTarMethods.Private_GET));
+            Handle.POST(privatePort, uri, (ScRequest r, string q) => Evaluate(r, q, Evaluators.POST, RESTarMethods.Private_POST));
+            Handle.PUT(privatePort, uri, (ScRequest r, string q) => Evaluate(r, q, Evaluators.PUT, RESTarMethods.Private_PUT));
+            Handle.PATCH(privatePort, uri, (ScRequest r, string q) => Evaluate(r, q, Evaluators.PATCH, RESTarMethods.Private_PATCH));
+            Handle.DELETE(privatePort, uri, (ScRequest r, string q) => Evaluate(r, q, Evaluators.DELETE, RESTarMethods.Private_DELETE));
         }
 
         private static Response Evaluate(ScRequest scRequest, string query, Func<Request, Response> evaluator,
             RESTarMethods method)
         {
             Log.Info("==> RESTar request");
+            Request request = null;
             try
             {
-                var request = new Request(scRequest, query, method, evaluator);
+                request = new Request(scRequest, query, method, evaluator);
+                request.ResolveMethod();
                 var blockedMethod = MethodCheck(request);
                 if (blockedMethod != null)
-                    return BlockedMethod(blockedMethod.Value, request.Resource);
+                    return Responses.BlockedMethod(blockedMethod.Value, request.Resource);
                 request.ResolveDataSource();
                 var response = request.Evaluator(request);
                 request.SendResponse(response);
@@ -125,102 +101,102 @@ namespace RESTar
             catch (DeserializationException e)
             {
                 if (e.InnerException != null)
-                    return BadRequest(e.InnerException);
-                return DeserializationError(scRequest.Body);
+                    return Responses.BadRequest(e.InnerException);
+                return Responses.DeserializationError(scRequest.Body);
             }
             catch (JsonSerializationException e)
             {
                 if (e.InnerException != null)
-                    return BadRequest(e.InnerException);
-                return DeserializationError(scRequest.Body);
+                    return Responses.BadRequest(e.InnerException);
+                return Responses.DeserializationError(scRequest.Body);
             }
             catch (SqlException e)
             {
-                return SemanticsError(e);
+                return Responses.SemanticsError(e);
             }
             catch (SyntaxException e)
             {
-                return BadRequest(e);
+                return Responses.BadRequest(e);
             }
             catch (UnknownColumnException e)
             {
-                return NotFound(e);
+                return Responses.NotFound(e);
             }
             catch (CustomEntityUnknownColumnException e)
             {
-                return NotFound(e);
+                return Responses.NotFound(e);
             }
             catch (AmbiguousColumnException e)
             {
-                return AmbiguousColumn(e);
+                return Responses.AmbiguousColumn(e);
             }
             catch (ExternalSourceException e)
             {
-                return BadRequest(e);
+                return Responses.BadRequest(e);
             }
             catch (UnknownResourceException e)
             {
-                return NotFound(e);
+                return Responses.NotFound(e);
             }
             catch (UnknownResourceForMappingException e)
             {
-                return NotFound(e);
+                return Responses.NotFound(e);
             }
             catch (AmbiguousResourceException e)
             {
-                return AmbiguousResource(e);
+                return Responses.AmbiguousResource(e);
             }
             catch (InvalidInputCountException e)
             {
-                return BadRequest(e);
+                return Responses.BadRequest(e);
             }
             catch (AmbiguousMatchException e)
             {
-                return AmbiguousMatch(e.Resource);
+                return Responses.AmbiguousMatch(e.Resource);
             }
             catch (ExcelInputException e)
             {
-                return BadRequest(e);
+                return Responses.BadRequest(e);
             }
             catch (ExcelFormatException e)
             {
-                return BadRequest(e);
+                return Responses.BadRequest(e);
             }
             catch (RESTarInternalException e)
             {
-                return RESTarInternalError(e);
+                return Responses.RESTarInternalError(e);
             }
             catch (NoContentException)
             {
-                return NoContent();
+                return Responses.NoContent();
             }
             catch (JsonReaderException)
             {
-                return DeserializationError(scRequest.Body);
+                return Responses.DeserializationError(scRequest.Body);
             }
             catch (DbException e)
             {
-                return DatabaseError(e);
+                return Responses.DatabaseError(e);
             }
             catch (AbortedSelectorException e)
             {
-                return BadRequest(e);
+                return Responses.AbortedOperation(e, method, request?.Resource);
             }
             catch (AbortedInserterException e)
             {
-                return BadRequest(e);
+                return Responses.AbortedOperation(e, method, request?.Resource);
             }
             catch (AbortedUpdaterException e)
             {
-                return BadRequest(e);
+                return Responses.AbortedOperation(e, method, request?.Resource);
             }
             catch (AbortedDeleterException e)
             {
-                return BadRequest(e);
+                return Responses.AbortedOperation(e, method, request?.Resource);
             }
             catch (Exception e)
             {
-                return InternalError(e);
+                return Responses.InternalError(e);
             }
         }
 
@@ -234,11 +210,11 @@ namespace RESTar
                     {
                         var method = typeof(DDictionaryOperations).GetMethod(operation.ToString(),
                             BindingFlags.Public | BindingFlags.Instance);
-                        ResourceOperations[resource][operation] = operation == Select
+                        ResourceOperations[resource][operation] = operation == RESTarOperations.Select
                             ? method.CreateDelegate(typeof(Func<,>)
                                 .MakeGenericType(typeof(IRequest), typeof(IEnumerable<DDictionary>)), null)
-                            : method.CreateDelegate(typeof(Action<,>)
-                                .MakeGenericType(typeof(IEnumerable<DDictionary>), typeof(IRequest)), null);
+                            : method.CreateDelegate(typeof(Func<,,>)
+                                .MakeGenericType(typeof(IEnumerable<DDictionary>), typeof(IRequest), typeof(int)), null);
                     }
                 }
                 else if (!resource.HasAttribute<DatabaseAttribute>())
@@ -253,25 +229,25 @@ namespace RESTar
                         var baseMethod = operationsProvider.GetMethod(operation.ToString(),
                             BindingFlags.Public | BindingFlags.Instance);
                         if (LocalizedInterface(operation, resource).IsAssignableFrom(resource))
-                            ResourceOperations[resource][operation] = operation == Select
+                            ResourceOperations[resource][operation] = operation == RESTarOperations.Select
                                 ? overrideMethod.CreateDelegate(typeof(Func<,>).MakeGenericType(typeof(IRequest),
                                     typeof(IEnumerable<>).MakeGenericType(resource)), null)
-                                : overrideMethod.CreateDelegate(typeof(Action<,>).MakeGenericType(typeof(IEnumerable<>)
-                                    .MakeGenericType(resource), typeof(IRequest)), null);
+                                : overrideMethod.CreateDelegate(typeof(Func<,,>).MakeGenericType(typeof(IEnumerable<>)
+                                    .MakeGenericType(resource), typeof(IRequest), typeof(int)), null);
                         else if (LocalizedInterface(operation, typeof(object)).IsAssignableFrom(resource))
-                            ResourceOperations[resource][operation] = operation == Select
+                            ResourceOperations[resource][operation] = operation == RESTarOperations.Select
                                 ? overrideMethod.CreateDelegate(typeof(Func<,>).MakeGenericType(typeof(IRequest),
                                     typeof(IEnumerable<object>)), null)
                                 : overrideMethod.CreateDelegate(
-                                    typeof(Action<,>).MakeGenericType(typeof(IEnumerable<object>),
-                                        typeof(IRequest)), null);
+                                    typeof(Func<,,>).MakeGenericType(typeof(IEnumerable<object>),
+                                        typeof(IRequest), typeof(int)), null);
                         else
-                            ResourceOperations[resource][operation] = operation == Select
+                            ResourceOperations[resource][operation] = operation == RESTarOperations.Select
                                 ? baseMethod.CreateDelegate(typeof(Func<,>).MakeGenericType(typeof(IRequest),
                                     typeof(IEnumerable<object>)), null)
                                 : baseMethod.CreateDelegate(
-                                    typeof(Action<,>).MakeGenericType(typeof(IEnumerable<object>),
-                                        typeof(IRequest)), null);
+                                    typeof(Func<,,>).MakeGenericType(typeof(IEnumerable<object>),
+                                        typeof(IRequest), typeof(int)), null);
                     }
                 }
             }
@@ -281,13 +257,13 @@ namespace RESTar
         {
             switch (operation)
             {
-                case Select:
+                case RESTarOperations.Select:
                     return typeof(ISelector<>).MakeGenericType(type);
-                case Insert:
+                case RESTarOperations.Insert:
                     return typeof(IInserter<>).MakeGenericType(type);
-                case Update:
+                case RESTarOperations.Update:
                     return typeof(IUpdater<>).MakeGenericType(type);
-                case Delete:
+                case RESTarOperations.Delete:
                     return typeof(IDeleter<>).MakeGenericType(type);
             }
             return null;
@@ -299,26 +275,26 @@ namespace RESTar
             {
                 switch (method)
                 {
-                    case GET:
-                        return new[] {Select};
-                    case POST:
-                        return new[] {Insert};
-                    case PUT:
-                        return new[] {Select, Insert, Update};
-                    case PATCH:
-                        return new[] {Select, Update};
-                    case DELETE:
-                        return new[] {Select, Delete};
-                    case Private_GET:
-                        return new[] {Select};
-                    case Private_POST:
-                        return new[] {Insert};
-                    case Private_PUT:
-                        return new[] {Select, Insert, Update};
-                    case Private_PATCH:
-                        return new[] {Select, Update};
-                    case Private_DELETE:
-                        return new[] {Select, Delete};
+                    case RESTarMethods.GET:
+                        return new[] {RESTarOperations.Select};
+                    case RESTarMethods.POST:
+                        return new[] {RESTarOperations.Insert};
+                    case RESTarMethods.PUT:
+                        return new[] {RESTarOperations.Select, RESTarOperations.Insert, RESTarOperations.Update};
+                    case RESTarMethods.PATCH:
+                        return new[] {RESTarOperations.Select, RESTarOperations.Update};
+                    case RESTarMethods.DELETE:
+                        return new[] {RESTarOperations.Select, RESTarOperations.Delete};
+                    case RESTarMethods.Private_GET:
+                        return new[] {RESTarOperations.Select};
+                    case RESTarMethods.Private_POST:
+                        return new[] {RESTarOperations.Insert};
+                    case RESTarMethods.Private_PUT:
+                        return new[] {RESTarOperations.Select, RESTarOperations.Insert, RESTarOperations.Update};
+                    case RESTarMethods.Private_PATCH:
+                        return new[] {RESTarOperations.Select, RESTarOperations.Update};
+                    case RESTarMethods.Private_DELETE:
+                        return new[] {RESTarOperations.Select, RESTarOperations.Delete};
                 }
                 return null;
             }).Distinct();
@@ -330,32 +306,32 @@ namespace RESTar
             {
                 var method = resource.GetMethod(requiredMethod.ToString(), BindingFlags.Public | BindingFlags.Instance);
                 if (LocalizedInterface(requiredMethod, resource).IsAssignableFrom(resource))
-                    ResourceOperations[resource][requiredMethod] = requiredMethod == Select
+                    ResourceOperations[resource][requiredMethod] = requiredMethod == RESTarOperations.Select
                         ? method.CreateDelegate(typeof(Func<,>).MakeGenericType(typeof(IRequest),
                             typeof(IEnumerable<>).MakeGenericType(resource)), null)
-                        : method.CreateDelegate(typeof(Action<,>).MakeGenericType(typeof(IEnumerable<>)
-                            .MakeGenericType(resource), typeof(IRequest)), null);
+                        : method.CreateDelegate(typeof(Func<,,>).MakeGenericType(typeof(IEnumerable<>)
+                            .MakeGenericType(resource), typeof(IRequest), typeof(int)), null);
                 else if (LocalizedInterface(requiredMethod, typeof(object)).IsAssignableFrom(resource))
-                    ResourceOperations[resource][requiredMethod] = requiredMethod == Select
+                    ResourceOperations[resource][requiredMethod] = requiredMethod == RESTarOperations.Select
                         ? method.CreateDelegate(typeof(Func<,>).MakeGenericType(typeof(IRequest),
                             typeof(IEnumerable<object>)), null)
-                        : method.CreateDelegate(typeof(Action<,>).MakeGenericType(typeof(IEnumerable<object>),
-                            typeof(IRequest)), null);
+                        : method.CreateDelegate(typeof(Func<,,>).MakeGenericType(typeof(IEnumerable<object>),
+                            typeof(IRequest), typeof(int), null));
                 else
                 {
                     string missingInterface;
                     switch (requiredMethod)
                     {
-                        case Select:
+                        case RESTarOperations.Select:
                             missingInterface = $"ISelector<{resource.FullName}> or ISelector<object>";
                             break;
-                        case Insert:
+                        case RESTarOperations.Insert:
                             missingInterface = $"IInserter<{resource.FullName}> or Inserter<object>";
                             break;
-                        case Update:
+                        case RESTarOperations.Update:
                             missingInterface = $"IUpdater<{resource.FullName}> or IUpdater<object>";
                             break;
-                        case Delete:
+                        case RESTarOperations.Delete:
                             missingInterface = $"IDeleter<{resource.FullName}> or IDeleter<object>";
                             break;
                         default:

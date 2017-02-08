@@ -2,7 +2,7 @@
 
 namespace RESTar
 {
-    [DynamicTable(2), DDictionary(typeof(DynamicResource1KeyValuePair))]
+    [DynamicTable(1), DDictionary(typeof(DynamicResource1KeyValuePair))]
     public class DynamicResource01 : DDictionary
     {
         protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)

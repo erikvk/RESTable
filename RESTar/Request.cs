@@ -7,11 +7,9 @@ using System.Text.RegularExpressions;
 using ClosedXML.Excel;
 using Dynamit;
 using Excel;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Starcounter;
 using ScRequest = Starcounter.Request;
-using static RESTar.RESTarMethods;
 
 namespace RESTar
 {
@@ -40,7 +38,7 @@ namespace RESTar
         internal dynamic Inserter;
         internal dynamic Updater;
         internal dynamic Deleter;
-        public IList<Condition> Conditions { get; }
+        public IList<Condition> Conditions { get; private set; }
         public IDictionary<string, object> MetaConditions { get; }
         internal readonly ScRequest ScRequest;
         internal readonly string Query;
@@ -56,7 +54,8 @@ namespace RESTar
         internal readonly string Map;
         internal readonly RESTarMimeType InputMimeType;
         internal readonly RESTarMimeType OutputMimeType;
-        public RESTarMethods Method { get; }
+        internal string Imgput;
+        public RESTarMethods Method { get; set; }
         public Func<Request, Response> Evaluator;
 
         internal Request(ScRequest scRequest, string query, RESTarMethods method, Func<Request, Response> evaluator)
@@ -110,7 +109,7 @@ namespace RESTar
             if (MetaConditions == null) return;
 
             if (MetaConditions.ContainsKey("limit"))
-                Limit = decimal.ToInt32((decimal) MetaConditions["limit"]);
+                Limit = decimal.ToInt32((int) MetaConditions["limit"]);
             if (MetaConditions.ContainsKey("unsafe"))
                 Unsafe = (bool) MetaConditions["unsafe"];
             if (MetaConditions.ContainsKey("select"))
@@ -140,6 +139,17 @@ namespace RESTar
             return Conditions?.FirstOrDefault(c => c.Key.Equals(key, StringComparison.CurrentCultureIgnoreCase));
         }
 
+        internal void ResolveMethod()
+        {
+            string imgput;
+            if (Method == RESTarMethods.GET && MetaConditions?.ContainsKey("imgput") == true)
+            {
+                Method = RESTarMethods.PUT;
+                Imgput = (string) MetaConditions["imgput"];
+                Evaluator = Evaluators.PUT;
+            }
+        }
+
         internal void ResolveDataSource()
         {
             if (Source != null)
@@ -154,23 +164,46 @@ namespace RESTar
                         $"{response.StatusDescription}"
                     );
                 Json = response.Body.RemoveTabsAndBreaks();
-                if (Json.First() == '[' && Method != POST)
+                if (Json.First() == '[' && Method != RESTarMethods.POST)
                     throw new InvalidInputCountException(Resource, Method);
                 if (Json == null)
                     throw new ExternalSourceException(Source, "Response was empty");
                 return;
             }
 
-            if (ScRequest.BodyBytes == null && (Method == PATCH || Method == POST || Method == PUT))
+            if (Imgput != null)
+            {
+                if (Conditions == null || !Conditions.Any())
+                    throw new SyntaxException("Missing data source for method " + Method);
+                try
+                {
+                    var dict = Conditions.ToDictionary(c => c.Key, c => c.Value);
+                    var keys = Imgput.Split(',');
+                    Conditions = keys.Select(key => new Condition
+                    {
+                        Key = key,
+                        Operator = new Operator("=", "="),
+                        Value = dict[key]
+                    }).ToList();
+                    Json = dict.SerializeDyn();
+                    return;
+                }
+                catch (KeyNotFoundException kfe)
+                {
+                    throw new Exception("Invalid imgput request. One of the match keys was not found among parameters.");
+                }
+            }
+
+            if (ScRequest.Body == null && (Method == RESTarMethods.PATCH || Method == RESTarMethods.POST || Method == RESTarMethods.PUT))
                 throw new SyntaxException("Missing data source for method " + Method);
 
-            if (ScRequest.BodyBytes == null)
+            if (ScRequest.Body == null)
                 return;
 
             switch (InputMimeType)
             {
                 case RESTarMimeType.Json:
-                    Json = ScRequest.Body;
+                    Json = Json ?? ScRequest.Body;
                     break;
                 case RESTarMimeType.Excel:
                     using (var stream = new MemoryStream(ScRequest.BodyBytes))
@@ -181,16 +214,16 @@ namespace RESTar
                         var result = excelReader.AsDataSet();
                         if (result == null)
                             throw new ExcelInputException();
-                        if (Method == POST)
+                        if (Method == RESTarMethods.POST)
                         {
-                            Json = JsonConvert.SerializeObject(result.Tables[0]);
+                            Json = Serializer.JsonNetSerialize(result.Tables[0]);
                             Json = regex.Replace(Json, "$1$2");
                         }
                         else
                         {
                             if (result.Tables[0].Rows.Count > 1)
                                 throw new InvalidInputCountException(Resource, Method);
-                            Json = JsonConvert.SerializeObject(JArray.FromObject(result.Tables[0]).First());
+                            Json = Serializer.JsonNetSerialize(JArray.FromObject(result.Tables[0]).First());
                         }
                     }
                     break;
@@ -204,7 +237,15 @@ namespace RESTar
         {
             if (unsafeOverride != null)
                 Unsafe = unsafeOverride.Value;
-            IEnumerable<dynamic> entities = Selector(this);
+            IEnumerable<dynamic> entities;
+            try
+            {
+                entities = Selector(this);
+            }
+            catch (Exception e)
+            {
+                throw new AbortedSelectorException(e.Message);
+            }
             if (entities == null)
                 throw new NoContentException();
             if (!Unsafe && entities.Count() > 1)

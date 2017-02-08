@@ -17,16 +17,16 @@ namespace RESTar
 
     public interface IInserter<in T>
     {
-        void Insert(IEnumerable<T> entities, IRequest request);
+        int Insert(IEnumerable<T> entities, IRequest request);
     }
 
     public interface IUpdater<in T>
     {
-        void Update(IEnumerable<T> entities, IRequest request);
+        int Update(IEnumerable<T> entities, IRequest request);
     }
 
     public interface IDeleter<in T>
     {
-        void Delete(IEnumerable<T> entities, IRequest request);
+        int Delete(IEnumerable<T> entities, IRequest request);
     }
 }

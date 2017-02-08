@@ -15,17 +15,91 @@ namespace RESTar
             var innerPredicates = conditions.Select(c =>
             {
                 if (c.Operator.Common == "=")
-                    return (dict => dict.FirstOrDefault(pair => KeysEqual(pair.Key, c.Key)).Value.Equals(c.Value));
+                {
+                    return (dict =>
+                    {
+                        dynamic val1 = dict.FirstOrDefault(pair => KeysEqual(pair.Key, c.Key)).Value;
+                        dynamic val2 = c.Value;
+                        try
+                        {
+                            return val1 == val2;
+                        }
+                        catch
+                        {
+                            return false;
+                        }
+                    });
+                }
                 if (c.Operator.Common == "!=")
-                    return (dict => !dict.FirstOrDefault(pair => KeysEqual(pair.Key, c.Key)).Value.Equals(c.Value));
+                    return (dict =>
+                    {
+                        dynamic val1 = dict.FirstOrDefault(pair => KeysEqual(pair.Key, c.Key)).Value;
+                        dynamic val2 = c.Value;
+                        try
+                        {
+                            return !val1 == val2;
+                        }
+                        catch
+                        {
+                            return false;
+                        }
+                    });
                 if (c.Operator.Common == "<")
-                    return (dict => (dynamic) dict.FirstOrDefault(pair => KeysEqual(pair.Key, c.Key)).Value < c.Value);
+                    return (dict =>
+                    {
+                        dynamic val1 = dict.FirstOrDefault(pair => KeysEqual(pair.Key, c.Key)).Value;
+                        dynamic val2 = c.Value;
+                        try
+                        {
+                            return val1 < val2;
+                        }
+                        catch
+                        {
+                            return false;
+                        }
+                    });
                 if (c.Operator.Common == ">")
-                    return (dict => (dynamic) dict.FirstOrDefault(pair => KeysEqual(pair.Key, c.Key)).Value > c.Value);
+                    return (dict =>
+                    {
+                        dynamic val1 = dict.FirstOrDefault(pair => KeysEqual(pair.Key, c.Key)).Value;
+                        dynamic val2 = c.Value;
+                        try
+                        {
+                            return val1 > val2;
+                        }
+                        catch
+                        {
+                            return false;
+                        }
+                    });
                 if (c.Operator.Common == ">=")
-                    return (dict => (dynamic) dict.FirstOrDefault(pair => KeysEqual(pair.Key, c.Key)).Value >= c.Value);
+                    return (dict =>
+                    {
+                        dynamic val1 = dict.FirstOrDefault(pair => KeysEqual(pair.Key, c.Key)).Value;
+                        dynamic val2 = c.Value;
+                        try
+                        {
+                            return val1 >= val2;
+                        }
+                        catch
+                        {
+                            return false;
+                        }
+                    });
                 if (c.Operator.Common == "<=")
-                    return (dict => (dynamic) dict.FirstOrDefault(pair => KeysEqual(pair.Key, c.Key)).Value <= c.Value);
+                    return (dict =>
+                    {
+                        dynamic val1 = dict.FirstOrDefault(pair => KeysEqual(pair.Key, c.Key)).Value;
+                        dynamic val2 = c.Value;
+                        try
+                        {
+                            return val1 <= val2;
+                        }
+                        catch
+                        {
+                            return false;
+                        }
+                    });
                 return default(Predicate<DDictionary>);
             }).ToList();
             return dictionary => innerPredicates.All(p => p != null && p(dictionary));
