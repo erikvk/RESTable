@@ -122,6 +122,8 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Schema.cs" />
     <Compile Include="Serializer.cs" />
+    <Compile Include="Sorting\NumericComparer.cs" />
+    <Compile Include="Sorting\StringLogicalComparer.cs" />
     <Compile Include="StarcounterOperations.cs" />
     <Compile Include="Responses.cs" />
     <Compile Include="Settings.cs" />

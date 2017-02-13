@@ -37,7 +37,7 @@ namespace RESTar
                         dynamic val2 = c.Value;
                         try
                         {
-                            return !val1 == val2;
+                            return val1 != val2;
                         }
                         catch
                         {

@@ -14,6 +14,21 @@ namespace RESTar
         public string Name { get; private set; }
         public string AvailableMethods => Type.AvailableMethods()?.ToMethodsString();
 
+        public long? NrOfEntities
+        {
+            get
+            {
+                try
+                {
+                    return DB.RowCount(Name);
+                }
+                catch
+                {
+                    return null;
+                }
+            }
+        }
+
         public string Alias
         {
             get { return DB.Get<ResourceAlias>("Resource", Name)?.Alias; }
@@ -65,7 +80,9 @@ namespace RESTar
             {
                 foreach (var entity in dynamicTables)
                 {
-                    var alias = string.IsNullOrEmpty(entity.AliasIn) ? entity.Name : entity.AliasIn;
+                    if (string.IsNullOrEmpty(entity.AliasIn))
+                        throw new Exception("No alias for new resource");
+                    var alias = entity.AliasIn;
                     if (DB.Exists<ResourceAlias>("Alias", alias))
                         throw new Exception($"Invalid alias: '{alias}' is used to refer to another resource");
                     Db.Transact(() =>

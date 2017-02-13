@@ -6,7 +6,6 @@ using System.Linq;
 using System.Net;
 using ClosedXML.Excel;
 using Dynamit;
-using Newtonsoft.Json;
 using Starcounter;
 
 namespace RESTar
@@ -177,37 +176,34 @@ namespace RESTar
 
         internal static Response GetEntities(Request request, IEnumerable<dynamic> entities)
         {
-            string jsonString;
-            var response = new Response();
-
-            if
-            (
-                request.Dynamic ||
-                request.Select != null ||
-                request.Rename != null ||
-                request.Resource.IsSubclassOf(typeof(DDictionary)) ||
-                request.Resource.GetAttribute<RESTarAttribute>().Dynamic
-            )
+            Response response;
+            if (request.OutputMimeType != RESTarMimeType.Excel)
             {
-                jsonString = entities.SerializeDyn();
+                string jsonString;
+                response = new Response();
+                if
+                (
+                    request.Dynamic ||
+                    request.Select != null ||
+                    request.Rename != null ||
+                    request.Resource.IsSubclassOf(typeof(DDictionary)) ||
+                    request.Resource.GetAttribute<RESTarAttribute>().Dynamic
+                )
+                {
+                    jsonString = entities.SerializeDyn();
+                }
+                else if (request.Map != null)
+                    jsonString = entities.Serialize(typeof(IEnumerable<>)
+                        .MakeGenericType(typeof(Dictionary<,>)
+                            .MakeGenericType(typeof(string), request.Resource)));
+                else jsonString = entities.Serialize(RESTarConfig.IEnumTypes[request.Resource]);
+                response.ContentType = "application/json";
+                response.Body = jsonString;
             }
-            else if (request.Map != null)
-                jsonString = entities.Serialize(typeof(IEnumerable<>)
-                    .MakeGenericType(typeof(Dictionary<,>)
-                        .MakeGenericType(typeof(string), request.Resource)));
-            else jsonString = entities.Serialize(RESTarConfig.IEnumTypes[request.Resource]);
-            if (request.OutputMimeType == RESTarMimeType.Excel)
+            else
             {
-                var str = $@"{{""table"": {jsonString}}}";
-                DataSet data;
-                try
-                {
-                    data = JsonConvert.DeserializeObject<DataSet>(str, Serializer.JsonNetSettings);
-                }
-                catch (Exception)
-                {
-                    throw new ExcelFormatException();
-                }
+                response = new Response();
+                var data = ToDataSet(entities);
                 var workbook = new XLWorkbook();
                 workbook.AddWorksheet(data);
                 var fileName = $"{request.Resource.FullName}_export_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
@@ -219,12 +215,73 @@ namespace RESTar
                 response.ContentType = "application/vnd.ms-excel";
                 response.Headers["Content-Disposition"] = $"attachment; filename={fileName}";
             }
+            return response;
+        }
+
+        public static DataSet ToDataSet(this IEnumerable<dynamic> list)
+        {
+            var ds = new DataSet();
+            var t = new DataTable();
+            ds.Tables.Add(t);
+
+            var first = list.First();
+            if (first is IDictionary<string, dynamic>)
+            {
+                foreach (var item in list)
+                {
+                    var row = t.NewRow();
+                    foreach (var pair in item)
+                    {
+                        try
+                        {
+                            row[pair.Key] = pair.Value ?? DBNull.Value;
+                        }
+                        catch
+                        {
+                            try
+                            {
+                                row[pair.Key] = DbHelper.GetObjectNo(pair.Value) ?? DBNull.Value;
+                            }
+                            catch
+                            {
+                                row[pair.Key] = pair.Value?.ToString() ?? DBNull.Value;
+                            }
+                        }
+                    }
+                    t.Rows.Add(row);
+                }
+            }
             else
             {
-                response.ContentType = "application/json";
-                response.Body = jsonString;
+                Type elementType = first.GetType();
+                foreach (var propInfo in elementType.GetColumns())
+                {
+                    var ColType = propInfo.PropertyType.IsClass && propInfo.PropertyType != typeof(string)
+                        ? typeof(string)
+                        : Nullable.GetUnderlyingType(propInfo.PropertyType) ?? propInfo.PropertyType;
+                    t.Columns.Add(propInfo.Name, ColType);
+                }
+                foreach (var item in list)
+                {
+                    var row = t.NewRow();
+                    foreach (var propInfo in elementType.GetColumns())
+                    {
+                        var value = propInfo.GetValue(item, null);
+                        try
+                        {
+                            row[propInfo.Name] = propInfo.HasAttribute<ExcelFlattenToString>()
+                                ? value.ToString()
+                                : "$(ObjectID: " + DbHelper.GetObjectID(value) + ")";
+                        }
+                        catch
+                        {
+                            row[propInfo.Name] = value ?? DBNull.Value;
+                        }
+                    }
+                    t.Rows.Add(row);
+                }
             }
-            return response;
+            return ds;
         }
 
         #endregion

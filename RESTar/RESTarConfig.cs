@@ -34,7 +34,8 @@ namespace RESTar
             ushort publicPort = 8282,
             ushort privatePort = 8283,
             string uri = "/rest",
-            bool prettyPrint = true
+            bool prettyPrint = true,
+            bool camelCase = false
         )
         {
             if (uri.First() != '/')
@@ -65,7 +66,7 @@ namespace RESTar
                 Db.Transact(() => { new Resource {Type = resource}; });
             CheckOperations(ResourcesList);
 
-            Settings.Init(uri, prettyPrint, publicPort);
+            Settings.Init(uri, prettyPrint, camelCase, publicPort);
             Log.Init();
             uri += "{?}";
             Handle.GET(publicPort, uri, (ScRequest r, string q) => Evaluate(r, q, Evaluators.GET, RESTarMethods.GET));

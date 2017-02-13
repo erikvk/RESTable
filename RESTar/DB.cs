@@ -41,9 +41,9 @@ namespace RESTar
 
         #region Get methods
 
-        public static long RowCount(string tableName)
+        public static long? RowCount(string tableName)
         {
-            return (long) Db.SQL($"SELECT COUNT(t) FROM {tableName} t").First;
+            return Db.SQL($"SELECT COUNT(t) FROM {tableName} t").First as long?;
         }
 
         public static T First<T>() where T : class

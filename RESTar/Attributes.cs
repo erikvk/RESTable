@@ -73,6 +73,10 @@ namespace RESTar
     {
     }
 
+    public class ExcelFlattenToString : Attribute
+    {
+    }
+
     public class DynamicTableAttribute : Attribute
     {
         public int Nr;

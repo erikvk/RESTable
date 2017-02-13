@@ -59,7 +59,8 @@ namespace RESTar
                         ? new CamelCasePropertyNamesContractResolver()
                         : new DefaultContractResolver(),
                     NullValueHandling = NullValueHandling.Include,
-                    FloatParseHandling = FloatParseHandling.Decimal 
+                    FloatParseHandling = FloatParseHandling.Decimal,
+
                 };
             }
         }
@@ -73,6 +74,7 @@ namespace RESTar
         (
             string uri,
             bool prettyPrint,
+            bool camelCase,
             ushort httpPort
         )
         {
@@ -84,6 +86,7 @@ namespace RESTar
                 {
                     Uri = uri,
                     PrettyPrint = prettyPrint,
+                    CamelCase = camelCase,
                     HttpPort = httpPort
                 };
             });
