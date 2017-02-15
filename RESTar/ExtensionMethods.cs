@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Serialization;
@@ -279,5 +280,33 @@ namespace RESTar
         }
 
         internal static string ToMethodsString(this IEnumerable<RESTarMethods> ie) => string.Join(", ", ie);
+
+        public static byte[] ReadBytes(this Stream stream, int count)
+        {
+            var bytes = new byte[count];
+            int read;
+            if ((read = stream.Read(bytes, 0, count)) == count)
+                return bytes;
+            throw new ArgumentOutOfRangeException($"Count was {count}, read was {read}");
+        }
+
+        public static byte[] ReadRest(this Stream stream)
+        {
+            return stream.ReadBytes((int) (stream.Length - stream.Position));
+        }
+
+        public static dynamic SafeGetNoCase(this IDictionary<string, dynamic> dict, string key)
+        {
+            return dict.FirstOrDefault(
+                pair => string.Equals(pair.Key, key, StringComparison.CurrentCultureIgnoreCase)
+            ).Value;
+        }
+
+        public static dynamic GetNoCase(this IDictionary<string, dynamic> dict, string key)
+        {
+            return dict.First(
+                pair => string.Equals(pair.Key, key, StringComparison.CurrentCultureIgnoreCase)
+            ).Value;
+        }
     }
 }

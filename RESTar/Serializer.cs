@@ -34,6 +34,11 @@ namespace RESTar
             return JSON.SerializeDynamic(obj, SerializerOptions);
         }
 
+        internal static dynamic DeserializeDyn(this string json)
+        {
+            return JSON.DeserializeDynamic(json, SerializerOptions);
+        }
+
         internal static dynamic Deserialize(this string json, Type resource)
         {
             return JSON.Deserialize(json, resource, SerializerOptions);
@@ -61,7 +66,8 @@ namespace RESTar
 
         internal static void InitSerializers()
         {
-            foreach (var resource in RESTarConfig.ResourcesList.Where(r => !r.IsSubclassOf(typeof(DDictionary))))
+            foreach (var resource in RESTarConfig.ResourcesList.Where(r => !r.IsAbstract &&
+                                                                           !r.IsSubclassOf(typeof(DDictionary))))
             {
                 Scheduling.ScheduleTask(() =>
                 {

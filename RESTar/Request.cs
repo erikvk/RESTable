@@ -50,8 +50,10 @@ namespace RESTar
         internal readonly string Source;
         internal readonly string Destination;
         internal string Json;
+        internal byte[] BinaryBody;
         internal readonly bool Dynamic;
         internal readonly string Map;
+        internal readonly string SafePost;
         internal readonly RESTarMimeType InputMimeType;
         internal readonly RESTarMimeType OutputMimeType;
         internal string Imgput;
@@ -72,10 +74,18 @@ namespace RESTar
             Method = method;
             Source = scRequest.Headers["Source"];
             Destination = scRequest.Headers["Destination"];
-            InputMimeType = scRequest.ContentType?.ToLower().Contains("excel") == true
+
+            var ContentType = scRequest.ContentType?.ToLower();
+            InputMimeType = ContentType?.Contains("excel") == true ||
+                            ContentType?.Equals("application/vnd.openxmlformats-" +
+                                                "officedocument.spreadsheetml.sheet") == true
                 ? RESTarMimeType.Excel
                 : RESTarMimeType.Json;
-            OutputMimeType = scRequest.PreferredMimeTypeString?.ToLower().Contains("excel") == true
+
+            var Accept = scRequest.PreferredMimeTypeString?.ToLower();
+            OutputMimeType = Accept?.Contains("excel") == true ||
+                             Accept?.ToLower().Equals("application/vnd.openxmlformats-" +
+                                                      "officedocument.spreadsheetml.sheet") == true
                 ? RESTarMimeType.Excel
                 : RESTarMimeType.Json;
 
@@ -123,6 +133,8 @@ namespace RESTar
                 );
             if (MetaConditions.ContainsKey("map"))
                 Map = (string) MetaConditions["map"];
+            if (MetaConditions.ContainsKey("safepost"))
+                SafePost = (string) MetaConditions["safepost"];
             var orderKey = MetaConditions.Keys.FirstOrDefault(key => key.Contains("order"));
             if (orderKey == null) return;
             OrderBy = new OrderBy
@@ -156,18 +168,44 @@ namespace RESTar
                 var method_uri = Source.Split(new[] {' '}, 2);
                 if (method_uri.Length == 1 || method_uri[0].ToUpper() != "GET")
                     throw new SyntaxException("Source must be of form 'GET [URI]'");
-                var response = HTTP.Request(method_uri[0], method_uri[1], null);
-                if (!response.IsSuccessStatusCode)
+                var response = HTTP.Request
+                (
+                    method: method_uri[0],
+                    uri: method_uri[1],
+                    bodyString: null,
+                    contentType: null,
+                    accept: InputMimeType == RESTarMimeType.Excel
+                        ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                        : "application/json"
+                );
+                if (response?.IsSuccessStatusCode != true)
                     throw new ExternalSourceException(Source,
-                        $"{response.StatusCode}: " +
-                        $"{response.StatusDescription}"
+                        $"{response?.StatusCode}: " +
+                        $"{response?.StatusDescription}"
                     );
-                Json = response.Body.RemoveTabsAndBreaks();
-                if (Json.First() == '[' && Method != RESTarMethods.POST)
-                    throw new InvalidInputCountException(Resource, Method);
-                if (Json == null)
-                    throw new ExternalSourceException(Source, "Response was empty");
-                return;
+                if (InputMimeType == RESTarMimeType.Excel)
+                {
+                    BinaryBody = response.BodyBytes;
+                    if (BinaryBody?.Any() != true)
+                        throw new ExternalSourceException(Source, "Response was empty");
+                }
+                else
+                {
+                    Json = response.Body.RemoveTabsAndBreaks();
+                    if (Json.First() == '[' && Method != RESTarMethods.POST)
+                        throw new InvalidInputCountException(Resource, Method);
+                    if (Json == null)
+                        throw new ExternalSourceException(Source, "Response was empty");
+                    return;
+                }
+            }
+            else
+            {
+                if (ScRequest.Body == null &&
+                    (Method == RESTarMethods.PATCH || Method == RESTarMethods.POST || Method == RESTarMethods.PUT))
+                    throw new SyntaxException("Missing data source for method " + Method);
+                if (ScRequest.Body == null)
+                    return;
             }
 
             if (Imgput != null)
@@ -193,20 +231,13 @@ namespace RESTar
                 }
             }
 
-            if (ScRequest.Body == null &&
-                (Method == RESTarMethods.PATCH || Method == RESTarMethods.POST || Method == RESTarMethods.PUT))
-                throw new SyntaxException("Missing data source for method " + Method);
-
-            if (ScRequest.Body == null)
-                return;
-
             switch (InputMimeType)
             {
                 case RESTarMimeType.Json:
-                    Json = Json ?? ScRequest.Body;
+                    Json = Json?.Trim() ?? ScRequest.Body.Trim();
                     break;
                 case RESTarMimeType.Excel:
-                    using (var stream = new MemoryStream(ScRequest.BodyBytes))
+                    using (var stream = new MemoryStream(BinaryBody ?? ScRequest.BodyBytes))
                     {
                         var regex = new Regex(@"(:[\d]+).0([\D])");
                         var excelReader = ExcelReaderFactory.CreateOpenXmlReader(stream);
@@ -513,16 +544,24 @@ namespace RESTar
             throw new ArgumentOutOfRangeException();
         }
 
-        internal void SendResponse(Response response)
+        internal Response GetResponse(Response response)
         {
             if (Destination != null)
             {
                 var method_uri = Destination.Split(new[] {' '}, 2);
                 if (method_uri.Length == 1)
                     throw new SyntaxException("Destination must be of form '[METHOD] [URI]'");
-                ScRequest.SendResponse(HTTP.Request(method_uri[0].ToUpper(), method_uri[1], response.Body), null);
+                return HTTP.Request
+                (
+                    method: method_uri[0].ToUpper(),
+                    uri: method_uri[1],
+                    bodyString: response.Body,
+                    contentType: InputMimeType == RESTarMimeType.Excel
+                        ? "application/vnd-ms.excel"
+                        : "application/json"
+                );
             }
-            ScRequest.SendResponse(response, null);
+            return response;
         }
     }
 }

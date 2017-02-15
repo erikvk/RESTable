@@ -18,8 +18,17 @@ namespace RESTar
         internal static Dictionary<Type, Dictionary<RESTarOperations, dynamic>> ResourceOperations;
         internal static Dictionary<RESTarMetaConditions, Type> MetaConditions;
 
-        internal static readonly RESTarMethods[] Methods = {RESTarMethods.GET, RESTarMethods.POST, RESTarMethods.PATCH, RESTarMethods.PUT, RESTarMethods.DELETE};
-        internal static readonly RESTarOperations[] Operations = {RESTarOperations.Select, RESTarOperations.Insert, RESTarOperations.Update, RESTarOperations.Delete};
+        internal static readonly RESTarMethods[] Methods =
+        {
+            RESTarMethods.GET, RESTarMethods.POST, RESTarMethods.PATCH,
+            RESTarMethods.PUT, RESTarMethods.DELETE
+        };
+
+        internal static readonly RESTarOperations[] Operations =
+        {
+            RESTarOperations.Select, RESTarOperations.Insert,
+            RESTarOperations.Update, RESTarOperations.Delete
+        };
 
         /// <summary>
         /// Initiates the RESTar interface
@@ -72,14 +81,21 @@ namespace RESTar
             Handle.GET(publicPort, uri, (ScRequest r, string q) => Evaluate(r, q, Evaluators.GET, RESTarMethods.GET));
             Handle.POST(publicPort, uri, (ScRequest r, string q) => Evaluate(r, q, Evaluators.POST, RESTarMethods.POST));
             Handle.PUT(publicPort, uri, (ScRequest r, string q) => Evaluate(r, q, Evaluators.PUT, RESTarMethods.PUT));
-            Handle.PATCH(publicPort, uri, (ScRequest r, string q) => Evaluate(r, q, Evaluators.PATCH, RESTarMethods.PATCH));
-            Handle.DELETE(publicPort, uri, (ScRequest r, string q) => Evaluate(r, q, Evaluators.DELETE, RESTarMethods.DELETE));
+            Handle.PATCH(publicPort, uri,
+                (ScRequest r, string q) => Evaluate(r, q, Evaluators.PATCH, RESTarMethods.PATCH));
+            Handle.DELETE(publicPort, uri,
+                (ScRequest r, string q) => Evaluate(r, q, Evaluators.DELETE, RESTarMethods.DELETE));
             if (privatePort == 0) return;
-            Handle.GET(privatePort, uri, (ScRequest r, string q) => Evaluate(r, q, Evaluators.GET, RESTarMethods.Private_GET));
-            Handle.POST(privatePort, uri, (ScRequest r, string q) => Evaluate(r, q, Evaluators.POST, RESTarMethods.Private_POST));
-            Handle.PUT(privatePort, uri, (ScRequest r, string q) => Evaluate(r, q, Evaluators.PUT, RESTarMethods.Private_PUT));
-            Handle.PATCH(privatePort, uri, (ScRequest r, string q) => Evaluate(r, q, Evaluators.PATCH, RESTarMethods.Private_PATCH));
-            Handle.DELETE(privatePort, uri, (ScRequest r, string q) => Evaluate(r, q, Evaluators.DELETE, RESTarMethods.Private_DELETE));
+            Handle.GET(privatePort, uri,
+                (ScRequest r, string q) => Evaluate(r, q, Evaluators.GET, RESTarMethods.Private_GET));
+            Handle.POST(privatePort, uri,
+                (ScRequest r, string q) => Evaluate(r, q, Evaluators.POST, RESTarMethods.Private_POST));
+            Handle.PUT(privatePort, uri,
+                (ScRequest r, string q) => Evaluate(r, q, Evaluators.PUT, RESTarMethods.Private_PUT));
+            Handle.PATCH(privatePort, uri,
+                (ScRequest r, string q) => Evaluate(r, q, Evaluators.PATCH, RESTarMethods.Private_PATCH));
+            Handle.DELETE(privatePort, uri,
+                (ScRequest r, string q) => Evaluate(r, q, Evaluators.DELETE, RESTarMethods.Private_DELETE));
         }
 
         private static Response Evaluate(ScRequest scRequest, string query, Func<Request, Response> evaluator,
@@ -96,8 +112,7 @@ namespace RESTar
                     return Responses.BlockedMethod(blockedMethod.Value, request.Resource);
                 request.ResolveDataSource();
                 var response = request.Evaluator(request);
-                request.SendResponse(response);
-                return HandlerStatus.Handled;
+                return request.GetResponse(response);
             }
             catch (DeserializationException e)
             {

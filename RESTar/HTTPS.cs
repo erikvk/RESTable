@@ -35,13 +35,17 @@ namespace RESTar
                     return Request(method, respLoc, bodyString, contentType, accept, headers, log, then);
                 var responseStream = response.GetResponseStream();
                 if (responseStream == null) throw new NullReferenceException("ResponseStream was null");
-                string responseBody;
-                using (var stream = new StreamReader(responseStream))
-                    responseBody = stream.ReadToEnd();
+                byte[] responseBody;
+                using (var stream = new MemoryStream())
+                {
+                    responseStream.CopyTo(stream);
+                    responseBody = stream.ToArray();
+                }
                 if (log != null) Log.Info(log);
                 var _response = new Response
                 {
-                    Body = responseBody,
+                    BodyBytes = responseBody,
+                    Body = Encoding.UTF8.GetString(responseBody),
                     ContentType = response.ContentType,
                     ContentLength = (int) response.ContentLength
                 };

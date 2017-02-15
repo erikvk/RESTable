@@ -73,7 +73,8 @@ namespace RESTar
         [Type(typeof(string))] Rename,
         [Type(typeof(bool))] Dynamic,
         [Type(typeof(string))] Map,
-        [Type(typeof(string))] Imgput
+        [Type(typeof(string))] Imgput,
+        [Type(typeof(string))] Safepost
     }
 
     internal enum RESTarMimeType : byte
