@@ -10,11 +10,11 @@ namespace RESTar
     {
         internal static Response DELETE(Request request)
         {
-            var entities = request.GetExtension();
+            var entities = request.GetExtension(true);
             try
             {
-                int count = request.Deleter((dynamic) entities, request);
-                return Responses.DeleteEntities(count, request.Resource);
+                int count = request.Resource.Delete((dynamic) entities, request);
+                return Responses.DeleteEntities(count, request.Resource.TargetType);
             }
             catch (Exception e)
             {
@@ -37,8 +37,8 @@ namespace RESTar
             {
                 foreach (var entity in entities)
                     Db.Transact(() => { Serializer.PopulateObject(request.Json, entity); });
-                int count = request.Updater((dynamic) entities, request);
-                return Responses.UpdatedEntities(request, count, request.Resource);
+                int count = request.Resource.Update((dynamic) entities, request);
+                return Responses.UpdatedEntities(request, count, request.Resource.TargetType);
             }
             catch (Exception e)
             {
@@ -54,8 +54,8 @@ namespace RESTar
                 if (request.SafePost != null)
                     return SafePOST(request, json);
                 dynamic results = Db.Transact(() => json.Deserialize(RESTarConfig.IEnumTypes[request.Resource]));
-                int count = request.Inserter(results, request);
-                return Responses.InsertedEntities(request, count, request.Resource);
+                int count = request.Resource.Insert(results, request);
+                return Responses.InsertedEntities(request, count, request.Resource.TargetType);
             }
             catch (Exception e)
             {
@@ -72,9 +72,9 @@ namespace RESTar
             {
                 try
                 {
-                    obj = Db.Transact(() => request.Json.Deserialize(request.Resource));
-                    count = request.Inserter(obj.MakeList(request.Resource), request);
-                    return Responses.InsertedEntities(request, count, request.Resource);
+                    obj = Db.Transact(() => request.Json.Deserialize(request.Resource.TargetType));
+                    count = request.Resource.Insert(obj.MakeList(request.Resource.TargetType), request);
+                    return Responses.InsertedEntities(request, count, request.Resource.TargetType);
                 }
                 catch (Exception e)
                 {
@@ -85,8 +85,8 @@ namespace RESTar
             {
                 obj = entities.First();
                 Db.Transact(() => { Serializer.PopulateObject(request.Json, obj); });
-                count = request.Updater(obj.MakeList(request.Resource), request);
-                return Responses.UpdatedEntities(request, count, request.Resource);
+                count = request.Resource.Update(obj.MakeList(request.Resource.TargetType), request);
+                return Responses.UpdatedEntities(request, count, request.Resource.TargetType);
             }
             catch (Exception e)
             {
@@ -109,7 +109,7 @@ namespace RESTar
                     response = Self.PUT
                     (
                         port: _HttpPort,
-                        uri: $"{_Uri}/{request.Resource.FullName}/" +
+                        uri: $"{_Uri}/{request.Resource.Name}/" +
                              $"{string.Join("&", keys.Select(k => $"{k}={((IDictionary<string, dynamic>) entity).GetNoCase(k)}"))}",
                         body: entityJson
                     );
@@ -131,7 +131,7 @@ namespace RESTar
             {
                 StatusCode = 200,
                 StatusDescription = $"Inserted {insertedCount} and updated {updatedCount} entities " +
-                                    $"in resource {request.Resource.FullName}"
+                                    $"in resource {request.Resource.Name}"
             };
         }
 

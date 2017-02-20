@@ -16,22 +16,14 @@ namespace RESTar
 
         internal static int MaxTables = DynamitTypes.Count;
 
-        internal static Type AllocateNewTable(string alias)
-        {
-            var newTable = DynamitTypes.FirstOrDefault(ResourceAlias.NotExists);
-            if (newTable == null)
-                throw new NoAvalailableDynamicTableException();
-            new ResourceAlias
-            {
-                Alias = alias,
-                Resource = newTable.FullName
-            };
-            return newTable;
-        }
-
-        internal static Type GetByTableId(string tableId)
+        internal static Type GetByTableName(string tableId)
         {
             return DynamitTypes.FirstOrDefault(t => t.FullName == tableId);
+        }
+
+        internal static Type GetByTableNameLower(string tableId)
+        {
+            return DynamitTypes.FirstOrDefault(t => t.FullName.ToLower() == tableId);
         }
 
         internal static void ClearTable(string tableId)

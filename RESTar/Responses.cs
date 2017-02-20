@@ -38,11 +38,16 @@ namespace RESTar
 
         #region Bad request
 
-        internal static Response AbortedOperation(Exception e, RESTarMethods method, Type resource) => new Response
+        internal static Response AbortedOperation(Exception e, RESTarMethods method, Type resource)
         {
-            StatusCode = (ushort) HttpStatusCode.BadRequest,
-            StatusDescription = $"Aborted {method} on resource '{resource.FullName}' due to an error: {e.Message}"
-        };
+            var alias = ResourceAlias.ByResource(resource);
+            return new Response
+            {
+                StatusCode = (ushort) HttpStatusCode.BadRequest,
+                StatusDescription = $"Aborted {method} on resource '{resource.FullName}'" +
+                                    $"{(alias != null ? $" ('{alias}')" : "")} due to an error: {e.Message}"
+            };
+        }
 
         internal static Response BadRequest(Exception e) => new Response
         {
@@ -72,7 +77,6 @@ namespace RESTar
                     StatusDescription = "The operation was aborted by a commit hook. " +
                                         (e.InnerException?.Message ?? e.Message)
                 };
-
             return new Response
             {
                 StatusCode = (ushort) HttpStatusCode.InternalServerError,
@@ -81,12 +85,17 @@ namespace RESTar
             };
         }
 
-        internal static Response BlockedMethod(RESTarMethods method, Type resource) => new Response
+        internal static Response BlockedMethod(Request request, RESTarMethods method, Type resource)
         {
-            StatusCode = (ushort) HttpStatusCode.Forbidden,
-            StatusDescription = $"{method} is blocked for resource '{resource.FullName}'. Available " +
-                                $"methods: {resource.AvailableMethods()?.ToMethodsString()}"
-        };
+            var alias = ResourceAlias.ByResource(resource);
+            return new Response
+            {
+                StatusCode = (ushort) HttpStatusCode.Forbidden,
+                StatusDescription = $"{method} is blocked for resource '{resource.FullName}'" +
+                                    $"{(alias != null ? $" ('{alias}')" : "")}. Available methods: " +
+                                    $"{request.Resource.AvailableMethodsString}"
+            };
+        }
 
         #endregion
 
@@ -145,10 +154,12 @@ namespace RESTar
                     Body = "R0lGODlhAQABAIAAAP///wAAACwAAAAAAQABAAACAkQBADs=",
                     ContentType = "image/gif"
                 };
+            var alias = ResourceAlias.ByResource(resource);
             return new Response
             {
                 StatusCode = (ushort) HttpStatusCode.Created,
-                StatusDescription = $"{count} entities inserted into resource '{resource.FullName}'"
+                StatusDescription = $"{count} entities inserted into resource '{resource.FullName}'" +
+                                    $"{(alias != null ? $" ('{alias}')" : "")}"
             };
         }
 
@@ -161,18 +172,25 @@ namespace RESTar
                     Body = "R0lGODlhAQABAIAAAP///wAAACwAAAAAAQABAAACAkQBADs=",
                     ContentType = "image/gif"
                 };
+            var alias = ResourceAlias.ByResource(resource);
             return new Response
             {
                 StatusCode = (ushort) HttpStatusCode.OK,
-                StatusDescription = $"{count} entities updated in resource '{resource.FullName}'"
+                StatusDescription = $"{count} entities updated in resource '{resource.FullName}'" +
+                                    $"{(alias != null ? $" ('{alias}')" : "")}"
             };
         }
 
-        internal static Response DeleteEntities(int count, Type resource) => new Response
+        internal static Response DeleteEntities(int count, Type resource)
         {
-            StatusCode = (ushort) HttpStatusCode.OK,
-            StatusDescription = $"{count} entities deleted from resource '{resource.FullName}'"
-        };
+            var alias = ResourceAlias.ByResource(resource);
+            return new Response
+            {
+                StatusCode = (ushort) HttpStatusCode.OK,
+                StatusDescription = $"{count} entities deleted from resource '{resource.FullName}'" +
+                                    $"{(alias != null ? $" ('{alias}')" : "")}"
+            };
+        }
 
         internal static Response GetEntities(Request request, IEnumerable<dynamic> entities)
         {
@@ -186,8 +204,8 @@ namespace RESTar
                     request.Dynamic ||
                     request.Select != null ||
                     request.Rename != null ||
-                    request.Resource.IsSubclassOf(typeof(DDictionary)) ||
-                    request.Resource.GetAttribute<RESTarAttribute>().Dynamic
+                    request.Resource.TargetType.IsSubclassOf(typeof(DDictionary)) ||
+                    request.Resource.TargetType.GetAttribute<RESTarAttribute>()?.Dynamic == true
                 )
                 {
                     jsonString = entities.SerializeDyn();
@@ -195,7 +213,7 @@ namespace RESTar
                 else if (request.Map != null)
                     jsonString = entities.Serialize(typeof(IEnumerable<>)
                         .MakeGenericType(typeof(Dictionary<,>)
-                            .MakeGenericType(typeof(string), request.Resource)));
+                            .MakeGenericType(typeof(string), request.Resource.TargetType)));
                 else jsonString = entities.Serialize(RESTarConfig.IEnumTypes[request.Resource]);
                 response.ContentType = "application/json";
                 response.Body = jsonString;
@@ -206,7 +224,7 @@ namespace RESTar
                 var data = ToDataSet(entities);
                 var workbook = new XLWorkbook();
                 workbook.AddWorksheet(data);
-                var fileName = $"{request.Resource.FullName}_export_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
+                var fileName = $"{request.Resource.Name}_export_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
                 using (var memstream = new MemoryStream())
                 {
                     workbook.SaveAs(memstream);

@@ -2,74 +2,33 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Serialization;
+using RESTar.Internal;
 using Starcounter;
 
 namespace RESTar
 {
-    [Database, RESTar(RESTarPresets.ReadAndWrite)]
-    public class Resource :
-        IInserter<Resource>,
-        IDeleter<Resource>
+    [RESTar(RESTarPresets.ReadAndWrite)]
+    public class Resource : IOperationsProvider<Resource>
     {
-        public string Name { get; private set; }
-        public string AvailableMethods => Type.AvailableMethods()?.ToMethodsString();
-
-        public long? NrOfEntities
-        {
-            get
-            {
-                try
-                {
-                    return DB.RowCount(Name);
-                }
-                catch
-                {
-                    return null;
-                }
-            }
-        }
-
-        public string Alias
-        {
-            get { return DB.Get<ResourceAlias>("Resource", Name)?.Alias; }
-            set
-            {
-                if (Name == null)
-                {
-                    AliasIn = value;
-                    return;
-                }
-                var existingMapping = DB.Get<ResourceAlias>("Resource", Name);
-                if (value == null)
-                {
-                    Db.Transact(() => { existingMapping?.Delete(); });
-                    return;
-                }
-                var usedAliasMapping = DB.Get<ResourceAlias>("Alias", value);
-                if (usedAliasMapping != null)
-                {
-                    if (usedAliasMapping.Resource == Name)
-                        return;
-                    throw new Exception($"Invalid alias: '{value}' is used to refer to another resource");
-                }
-
-                Db.Transact(() =>
-                {
-                    existingMapping = existingMapping ?? new ResourceAlias {Resource = Name};
-                    existingMapping.Alias = value;
-                });
-            }
-        }
-
+        public string Name { get; set; }
         public bool Editable { get; private set; }
-
-        [Transient, IgnoreDataMember] public string AliasIn;
+        public ICollection<RESTarMethods> AvailableMethods { get; set; }
+        public string Alias { get; set; }
 
         [IgnoreDataMember]
-        public Type Type
+        public Type TargetType { get; set; }
+
+        public IEnumerable<Resource> Select(IRequest request)
         {
-            get { return RESTarConfig.ResourcesDict[Name.ToLower()]; }
-            set { Name = value.FullName; }
+            var all = RESTarConfig.Resources;
+            var matches = request.EvaluateEntitites(all);
+            return matches.Select(m => new Resource
+            {
+                Name = m.Name,
+                Alias = m.Alias,
+                AvailableMethods = m.AvailableMethods,
+                Editable = m.Editable
+            }).ToList();
         }
 
         public int Insert(IEnumerable<Resource> resources, IRequest request)
@@ -80,24 +39,30 @@ namespace RESTar
             {
                 foreach (var entity in dynamicTables)
                 {
-                    if (string.IsNullOrEmpty(entity.AliasIn))
-                        throw new Exception("No alias for new resource");
-                    var alias = entity.AliasIn;
-                    if (DB.Exists<ResourceAlias>("Alias", alias))
-                        throw new Exception($"Invalid alias: '{alias}' is used to refer to another resource");
-                    Db.Transact(() =>
-                    {
-                        entity.Type = DynamitControl.AllocateNewTable(alias);
-                        entity.Editable = true;
-                    });
+                    if (string.IsNullOrEmpty(entity.Alias))
+                        throw new Exception("No Alias for new resource");
+                    if (DB.Exists<ResourceAlias>("Alias", entity.Alias))
+                        throw new Exception($"Invalid Alias: '{entity.Alias}' is used to refer to another resource");
+                    entity.AvailableMethods = RESTarConfig.Methods;
+                    DynamicResource.Make(entity);
                     count += 1;
                 }
             }
             catch (Exception e)
             {
-                foreach (var resource in dynamicTables)
-                    Db.Transact(() => resource.Delete());
                 throw new AbortedInserterException($"Invalid resource: {e.Message}");
+            }
+            return count;
+        }
+
+        public int Update(IEnumerable<Resource> entities, IRequest request)
+        {
+            var count = 0;
+            foreach (var resource in entities)
+            {
+                DynamicResource.Delete(resource);
+                DynamicResource.Make(resource);
+                count += 1;
             }
             return count;
         }
@@ -105,15 +70,9 @@ namespace RESTar
         public int Delete(IEnumerable<Resource> entities, IRequest request)
         {
             var count = 0;
-            foreach (var entity in entities.Where(e => e.Editable))
+            foreach (var resource in entities)
             {
-                Db.Transact(() =>
-                {
-                    DynamitControl.ClearTable(entity.Name);
-                    foreach (var mapping in DB.All<ResourceAlias>("Resource", entity.Name))
-                        mapping.Delete();
-                    entity.Delete();
-                });
+                DynamicResource.Delete(resource);
                 count += 1;
             }
             return count;

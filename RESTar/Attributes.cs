@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace RESTar
@@ -14,58 +15,17 @@ namespace RESTar
 
         public RESTarAttribute(RESTarPresets preset)
         {
-            SetAvailableMethodsFromPreset(preset);
+            AvailableMethods = preset.ToMethods();
         }
 
         public RESTarAttribute(RESTarPresets preset, params RESTarMethods[] additionalMethods)
         {
-            SetAvailableMethodsFromPreset(preset);
-            AvailableMethods = AvailableMethods.Union(additionalMethods).ToArray();
-        }
-
-        public void SetAvailableMethodsFromPreset(RESTarPresets preset)
-        {
-            switch (preset)
-            {
-                case RESTarPresets.ReadOnly:
-                    AvailableMethods = new[]
-                    {
-                        RESTarMethods.GET
-                    };
-                    break;
-                case RESTarPresets.WriteOnly:
-                    AvailableMethods = new[]
-                    {
-                        RESTarMethods.POST,
-                        RESTarMethods.DELETE
-                    };
-                    break;
-                case RESTarPresets.ReadAndUpdate:
-                    AvailableMethods = new[]
-                    {
-                        RESTarMethods.GET,
-                        RESTarMethods.PATCH
-                    };
-                    break;
-                case RESTarPresets.ReadAndWrite:
-                    AvailableMethods = RESTarConfig.Methods;
-                    break;
-                case RESTarPresets.ReadAndPrivateWrite:
-                    AvailableMethods = new[]
-                    {
-                        RESTarMethods.GET,
-                        RESTarMethods.Private_POST,
-                        RESTarMethods.Private_PUT,
-                        RESTarMethods.Private_PATCH,
-                        RESTarMethods.Private_DELETE
-                    };
-                    break;
-            }
+            AvailableMethods = preset.ToMethods().Union(additionalMethods).ToArray();
         }
 
         public RESTarAttribute(RESTarMethods method, params RESTarMethods[] addMethods)
         {
-            AvailableMethods = new[] {method}.Union(addMethods.Distinct()).ToArray();
+            AvailableMethods = new[] {method}.Union(addMethods).ToArray();
         }
     }
 

@@ -8,36 +8,29 @@ using ClosedXML.Excel;
 using Dynamit;
 using Excel;
 using Newtonsoft.Json.Linq;
+using RESTar.Internal;
 using Starcounter;
+using IResource = RESTar.Internal.IResource;
 using ScRequest = Starcounter.Request;
 
 namespace RESTar
 {
     internal class Request : IRequest
     {
-        private Type _resource;
+        private IResource _resource;
 
-        public Type Resource
+        public IResource Resource
         {
             get { return _resource; }
             private set
             {
                 _resource = value;
-                Selector = RESTarConfig.ResourceOperations[value][RESTarOperations.Select];
-                Inserter = RESTarConfig.ResourceOperations[value][RESTarOperations.Insert];
-                Updater = RESTarConfig.ResourceOperations[value][RESTarOperations.Update];
-                Deleter = RESTarConfig.ResourceOperations[value][RESTarOperations.Delete];
-                if (value.IsSubclassOf(typeof(DDictionary)))
+                if (value.TargetType.IsSubclassOf(typeof(DDictionary)))
                     DynamicMemberResource = true;
-            }
+             }
         }
 
-        public string ResourceArgument { get; }
         internal bool DynamicMemberResource;
-        internal dynamic Selector;
-        internal dynamic Inserter;
-        internal dynamic Updater;
-        internal dynamic Deleter;
         public IList<Condition> Conditions { get; private set; }
         public IDictionary<string, object> MetaConditions { get; }
         internal readonly ScRequest ScRequest;
@@ -74,7 +67,7 @@ namespace RESTar
             Method = method;
             Source = scRequest.Headers["Source"];
             Destination = scRequest.Headers["Destination"];
-
+  
             var ContentType = scRequest.ContentType?.ToLower();
             InputMimeType = ContentType?.Contains("excel") == true ||
                             ContentType?.Equals("application/vnd.openxmlformats-" +
@@ -96,22 +89,22 @@ namespace RESTar
 
             if (argLength == 1)
             {
-                Resource = typeof(Resource);
+                Resource = RESTarConfig.TypeResources[typeof(Resource)];
                 return;
             }
 
             if (args[1] == "")
-                Resource = typeof(Resource);
+                Resource = RESTarConfig.TypeResources[typeof(Resource)];
             else Resource = args[1].FindResource();
             if (argLength == 2) return;
 
             Conditions = Condition.ParseConditions(Resource, args[2]);
             if (Conditions != null &&
-                (Resource == typeof(Resource) || Resource.IsSubclassOf(typeof(Resource))))
+                (Resource.TargetType == typeof(Resource) || Resource.TargetType.IsSubclassOf(typeof(Resource))))
             {
                 var nameCond = Conditions.FirstOrDefault(c => c.Key.ToLower() == "name");
                 if (nameCond != null)
-                    nameCond.Value = ((string) nameCond.Value.ToString()).FindResource().FullName;
+                    nameCond.Value = ((string) nameCond.Value.ToString()).FindResource().Name;
             }
             if (argLength == 3) return;
 
@@ -163,6 +156,35 @@ namespace RESTar
 
         internal void ResolveDataSource()
         {
+            if (Imgput != null)
+            {
+                if (Conditions == null || !Conditions.Any())
+                    throw new SyntaxException("Missing data source for method " + Method);
+                try
+                {
+                    var dict = Conditions.ToConditionsDict();
+                    var keys = Imgput.Split(',');
+                    Conditions = keys.Select(key =>
+                    {
+                        var match = dict.FirstOrDefault(pair =>
+                            string.Equals(pair.Key, key, StringComparison.CurrentCultureIgnoreCase));
+                        return new Condition
+                        {
+                            Key = match.Key,
+                            Operator = new Operator("=", "="),
+                            Value = match.Value
+                        };
+                    }).ToList();
+                    Json = dict.SerializeDyn();
+                    return;
+                }
+                catch (KeyNotFoundException)
+                {
+                    throw new Exception("Invalid imgput request. One of the property " +
+                                        "locators was not found among conditions.");
+                }
+            }
+
             if (Source != null)
             {
                 var method_uri = Source.Split(new[] {' '}, 2);
@@ -208,29 +230,6 @@ namespace RESTar
                     return;
             }
 
-            if (Imgput != null)
-            {
-                if (Conditions == null || !Conditions.Any())
-                    throw new SyntaxException("Missing data source for method " + Method);
-                try
-                {
-                    var dict = Conditions.ToDictionary(c => c.Key, c => c.Value);
-                    var keys = Imgput.Split(',');
-                    Conditions = keys.Select(key => new Condition
-                    {
-                        Key = key,
-                        Operator = new Operator("=", "="),
-                        Value = dict[key]
-                    }).ToList();
-                    Json = dict.SerializeDyn();
-                    return;
-                }
-                catch (KeyNotFoundException)
-                {
-                    throw new Exception("Invalid imgput request. One of the match keys was not found among parameters.");
-                }
-            }
-
             switch (InputMimeType)
             {
                 case RESTarMimeType.Json:
@@ -271,7 +270,7 @@ namespace RESTar
             IEnumerable<dynamic> entities;
             try
             {
-                entities = Selector(this);
+                entities = Resource.Select(this);
             }
             catch (Exception e)
             {
@@ -286,7 +285,7 @@ namespace RESTar
                 if (Map == null) return entities;
                 if (entities is IEnumerable<DDictionary>)
                     return MapCustomEntities(this, (IEnumerable<DDictionary>) entities);
-                var method = Mapper.MakeGenericMethod(Resource);
+                var method = Mapper.MakeGenericMethod(Resource.TargetType);
                 return (IEnumerable<dynamic>) method.Invoke(null, new object[] {this, entities});
             }
             var customEntities = entities is IEnumerable<DDictionary>
@@ -336,7 +335,7 @@ namespace RESTar
             return entities.Select(entity =>
             {
                 object value;
-                ExtensionMethods.GetValueFromKeyString(request.Resource, request.Map, entity, out value);
+                ExtensionMethods.GetValueFromKeyString(request.Resource.TargetType, request.Map, entity, out value);
                 return new Dictionary<string, T>
                 {
                     [value?.ToString() ?? "null"] = entity
@@ -440,7 +439,7 @@ namespace RESTar
 
             if (request.Select != null && request.Rename == null)
             {
-                var columns = request.Resource.GetColumns();
+                var columns = request.Resource.TargetType.GetColumns();
                 var newEntitiesList = new List<Dictionary<string, dynamic>>();
                 foreach (var entity in entities)
                 {
@@ -454,12 +453,12 @@ namespace RESTar
                         else if (s.Contains('.'))
                         {
                             dynamic value;
-                            string key = ExtensionMethods.GetValueFromKeyString(request.Resource, s, entity, out value);
+                            string key = ExtensionMethods.GetValueFromKeyString(request.Resource.TargetType, s, entity, out value);
                             newEntity[key] = value;
                         }
                         else
                         {
-                            var column = columns.FindColumn(request.Resource, s);
+                            var column = columns.FindColumn(request.Resource.TargetType, s);
                             newEntity[column.GetColumnName()] = column.GetValue(entity);
                         }
                     }
@@ -474,7 +473,7 @@ namespace RESTar
 
             if (request.Select == null && request.Rename != null)
             {
-                var columns = request.Resource.GetColumns();
+                var columns = request.Resource.TargetType.GetColumns();
                 var newEntitiesList = new List<Dictionary<string, dynamic>>();
                 foreach (var entity in entities)
                 {
@@ -497,7 +496,7 @@ namespace RESTar
 
             if (request.Select != null && request.Rename != null)
             {
-                var columns = request.Resource.GetColumns();
+                var columns = request.Resource.TargetType.GetColumns();
                 var newEntitiesList = new List<Dictionary<string, dynamic>>();
                 foreach (var entity in entities)
                 {
@@ -521,14 +520,14 @@ namespace RESTar
                         else if (s.Contains('.'))
                         {
                             dynamic value;
-                            string key = ExtensionMethods.GetValueFromKeyString(request.Resource, s, entity, out value);
+                            string key = ExtensionMethods.GetValueFromKeyString(request.Resource.TargetType, s, entity, out value);
                             string newKey;
                             request.Rename.TryGetValue(key.ToLower(), out newKey);
                             newEntity[newKey ?? key] = value;
                         }
                         else
                         {
-                            var column = columns.FindColumn(request.Resource, s);
+                            var column = columns.FindColumn(request.Resource.TargetType, s);
                             string newKey;
                             request.Rename.TryGetValue(s, out newKey);
                             newEntity[newKey ?? column.GetColumnName()] = column.GetValue(entity);

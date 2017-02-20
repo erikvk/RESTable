@@ -6,11 +6,53 @@ using System.Reflection;
 using System.Runtime.Serialization;
 using System.Text.RegularExpressions;
 using Starcounter;
+using IResource = RESTar.Internal.IResource;
 
 namespace RESTar
 {
     public static class ExtensionMethods
     {
+        internal static Selector<T> GetSelector<T>(this Type type)
+        {
+            if (!typeof(ISelector<T>).IsAssignableFrom(type)) return null;
+            return new Selector<T>((Func<IRequest, IEnumerable<T>>)
+                type.GetMethod("Select", BindingFlags.Instance | BindingFlags.Public)
+                    .CreateDelegate(typeof(Func<IRequest, IEnumerable<T>>), null)
+            );
+        }
+
+        internal static Inserter<T> GetInserter<T>(this Type type)
+        {
+            if (!typeof(IInserter<T>).IsAssignableFrom(type)) return null;
+            return new Inserter<T>((Func<IEnumerable<T>, IRequest, int>)
+                type.GetMethod("Insert", BindingFlags.Instance | BindingFlags.Public)
+                    .CreateDelegate(typeof(Func<IEnumerable<T>, IRequest, int>), null)
+            );
+        }
+
+        internal static Updater<T> GetUpdater<T>(this Type type)
+        {
+            if (!typeof(IUpdater<T>).IsAssignableFrom(type)) return null;
+            return new Updater<T>((Func<IEnumerable<T>, IRequest, int>)
+                type.GetMethod("Update", BindingFlags.Instance | BindingFlags.Public)
+                    .CreateDelegate(typeof(Func<IEnumerable<T>, IRequest, int>), null)
+            );
+        }
+
+        internal static Deleter<T> GetDeleter<T>(this Type type)
+        {
+            if (!typeof(IDeleter<T>).IsAssignableFrom(type)) return null;
+            return new Deleter<T>((Func<IEnumerable<T>, IRequest, int>)
+                type.GetMethod("Delete", BindingFlags.Instance | BindingFlags.Public)
+                    .CreateDelegate(typeof(Func<IEnumerable<T>, IRequest, int>), null)
+            );
+        }
+
+        internal static IList<Type> GetConcreteSubclasses(this Type baseType)
+        {
+            return baseType.GetSubclasses().Where(type => !type.IsAbstract).ToList();
+        }
+
         private static readonly MethodInfo ListGenerator = typeof(ExtensionMethods).GetMethod("GenerateList",
             BindingFlags.NonPublic | BindingFlags.Static);
 
@@ -24,15 +66,15 @@ namespace RESTar
             return ListGenerator.MakeGenericMethod(resource).Invoke(null, new[] {thing});
         }
 
-        internal static Type FindResource(this string searchString)
+        internal static IResource FindResource(this string searchString)
         {
             searchString = searchString.ToLower();
-            var resource = ResourceAlias.FindByAlias(searchString);
+            var resource = ResourceAlias.ByAlias(searchString);
             if (resource == null)
-                RESTarConfig.ResourcesDict.TryGetValue(searchString, out resource);
+                RESTarConfig.NameResources.TryGetValue(searchString, out resource);
             if (resource != null)
                 return resource;
-            var keys = RESTarConfig.ResourcesDict
+            var keys = RESTarConfig.NameResources
                 .Keys
                 .Where(key => key.EndsWith($".{searchString}"))
                 .ToList();
@@ -40,8 +82,8 @@ namespace RESTar
                 throw new UnknownResourceException(searchString);
             if (keys.Count > 1)
                 throw new AmbiguousResourceException(searchString,
-                    keys.Select(k => RESTarConfig.ResourcesDict[k].FullName).ToList());
-            return RESTarConfig.ResourcesDict[keys.First()];
+                    keys.Select(k => RESTarConfig.NameResources[k].Name).ToList());
+            return RESTarConfig.NameResources[keys.First()];
         }
 
         internal static string GetValueFromKeyString(Type resource, string keyString, dynamic root, out dynamic value)
@@ -67,13 +109,13 @@ namespace RESTar
                 if (column == null)
                     throw new UnknownColumnException(resource, keyString);
                 var type = column.PropertyType;
-                if (type.GetAttribute<RESTarAttribute>()?.AvailableMethods.Contains(RESTarMethods.GET) != true)
-                    throw new SyntaxException($"RESTar does not have read access to resource '{type.FullName}' " +
-                                              $"referenced in '{keyString}'.");
-                if (!type.HasAttribute<DatabaseAttribute>())
-                    throw new SyntaxException($"A part '{str}' of condition key '{keyString}' referenced type " +
-                                              $"'{type.FullName}', which is of a non-database type. Only references " +
-                                              "to database types (resources) can be used in queries.");
+//                if (type.GetAttribute<RESTarAttribute>()?.AvailableMethods.Contains(RESTarMethods.GET) != true)
+//                    throw new SyntaxException($"RESTar does not have read access to resource '{type.FullName}' " +
+//                                              $"referenced in '{keyString}'.");
+//                if (!type.HasAttribute<DatabaseAttribute>())
+//                    throw new SyntaxException($"A part '{str}' of condition key '{keyString}' referenced type " +
+//                                              $"'{type.FullName}', which is of a non-database type. Only references " +
+//                                              "to database types (resources) can be used in queries.");
                 if (first)
                     value = column.GetValue(root);
                 else if (value != null)
@@ -267,17 +309,13 @@ namespace RESTar
             return conditions.Select(c => c.Operator).ToArray();
         }
 
-        internal static ICollection<RESTarMethods> AvailableMethods(this Type resource)
-        {
-            if (resource.HasAttribute<DynamicTableAttribute>())
-                return RESTarConfig.Methods;
-            return resource.GetAttribute<RESTarAttribute>()?.AvailableMethods;
-        }
-
         public static IDictionary<string, dynamic> ToConditionsDict(this IEnumerable<Condition> conditions)
         {
             return conditions.ToDictionary(c => c.Key, c => c.Value);
         }
+
+        internal static ICollection<RESTarMethods> ToMethodsList(this string methodsString)
+            => methodsString?.Split(',').Select(s => (RESTarMethods) Enum.Parse(typeof(RESTarMethods), s)).ToList();
 
         internal static string ToMethodsString(this IEnumerable<RESTarMethods> ie) => string.Join(", ", ie);
 
@@ -307,6 +345,42 @@ namespace RESTar
             return dict.First(
                 pair => string.Equals(pair.Key, key, StringComparison.CurrentCultureIgnoreCase)
             ).Value;
+        }
+
+        internal static RESTarMethods[] ToMethods(this RESTarPresets preset)
+        {
+            switch (preset)
+            {
+                case RESTarPresets.ReadOnly:
+                    return new[]
+                    {
+                        RESTarMethods.GET
+                    };
+                case RESTarPresets.WriteOnly:
+                    return new[]
+                    {
+                        RESTarMethods.POST,
+                        RESTarMethods.DELETE
+                    };
+                case RESTarPresets.ReadAndUpdate:
+                    return new[]
+                    {
+                        RESTarMethods.GET,
+                        RESTarMethods.PATCH
+                    };
+                case RESTarPresets.ReadAndWrite:
+                    return RESTarConfig.Methods;
+                case RESTarPresets.ReadAndPrivateWrite:
+                    return new[]
+                    {
+                        RESTarMethods.GET,
+                        RESTarMethods.Private_POST,
+                        RESTarMethods.Private_PUT,
+                        RESTarMethods.Private_PATCH,
+                        RESTarMethods.Private_DELETE
+                    };
+            }
+            throw new ArgumentOutOfRangeException(nameof(preset));
         }
     }
 }

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Net;
 using Dynamit;
 using Starcounter;
+using IResource = RESTar.Internal.IResource;
 
 namespace RESTar
 {
@@ -13,7 +14,7 @@ namespace RESTar
         public Operator Operator;
         public dynamic Value;
 
-        internal static IList<Condition> ParseConditions(Type resource, string conditionString)
+        internal static IList<Condition> ParseConditions(IResource resource, string conditionString)
         {
             if (string.IsNullOrEmpty(conditionString))
                 return null;
@@ -36,7 +37,7 @@ namespace RESTar
                                               string.Join(", ", Operators.Select(o => o.Common)));
                 }
                 var pair = s.Split(new[] {op.Common}, StringSplitOptions.None);
-                var dynamit = resource.HasAttribute<DDictionaryAttribute>();
+                var dynamit = resource.TargetType.HasAttribute<DDictionaryAttribute>();
 
                 string key;
                 dynamic value;
@@ -110,18 +111,18 @@ namespace RESTar
             new Operator("<=", "<=")
         };
 
-        private static string GetKey(Type resource, string keyString, out Type keyType)
+        private static string GetKey(IResource resource, string keyString, out Type keyType)
         {
             keyType = default(Type);
             keyString = keyString.ToLower();
-            var columns = resource.GetColumns();
+            var columns = resource.TargetType.GetColumns();
             if (!keyString.Contains('.'))
             {
                 if (keyString == "objectno")
                     return "ObjectNo";
                 if (keyString == "objectid")
                     return "ObjectId";
-                var column = columns.FindColumn(resource, keyString);
+                var column = columns.FindColumn(resource.TargetType, keyString);
                 keyType = column.PropertyType;
                 return column.Name;
             }
@@ -131,7 +132,7 @@ namespace RESTar
             var types = new List<Type>();
             foreach (var str in parts.Take(parts.Length - 1))
             {
-                var containingType = types.LastOrDefault() ?? resource;
+                var containingType = types.LastOrDefault() ?? resource.TargetType;
                 var type = containingType
                     .GetProperties()
                     .Where(prop => str == prop.Name.ToLower())
@@ -139,16 +140,16 @@ namespace RESTar
                     .FirstOrDefault();
 
                 if (type == null)
-                    throw new UnknownColumnException(resource, keyString);
+                    throw new UnknownColumnException(resource.TargetType, keyString);
 
-                if (type.GetAttribute<RESTarAttribute>()?.AvailableMethods.Contains(RESTarMethods.GET) != true)
-                    throw new SyntaxException($"RESTar does not have read access to resource '{type.FullName}' " +
-                                              $"referenced in '{keyString}'.");
-
-                if (!type.HasAttribute<DatabaseAttribute>())
-                    throw new SyntaxException($"Part '{str}' in condition key '{keyString}' referenced a column of " +
-                                              $"type '{type.FullName}', which is of a non-resource type. Non-resource " +
-                                              "columns can only appear last in condition keys containing dot notation.");
+//                if (type.GetAttribute<RESTarAttribute>()?.AvailableMethods.Contains(RESTarMethods.GET) != true)
+//                    throw new SyntaxException($"RESTar does not have read access to resource '{type.FullName}' " +
+//                                              $"referenced in '{keyString}'.");
+//
+//                if (!type.HasAttribute<DatabaseAttribute>())
+//                    throw new SyntaxException($"Part '{str}' in condition key '{keyString}' referenced a column of " +
+//                                              $"type '{type.FullName}', which is of a non-resource type. Non-resource " +
+//                                              "columns can only appear last in condition keys containing dot notation.");
                 types.Add(type);
             }
 

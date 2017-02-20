@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Reflection;
+using RESTar.Internal;
 
 namespace RESTar
 {
@@ -27,9 +28,9 @@ namespace RESTar
     public class InvalidInputCountException : Exception
     {
         public RESTarMethods Method;
-        public Type Resource;
+        public IResource Resource;
 
-        public InvalidInputCountException(Type resource, RESTarMethods method)
+        public InvalidInputCountException(IResource resource, RESTarMethods method)
             : base($"Invalid input count for method {method:G}. Expected object/row, but found array/multiple rows. " +
                    $"Only POST accepts multiple objects/rows as input.")
         {
@@ -93,8 +94,8 @@ namespace RESTar
         public readonly string SearchString;
 
         public UnknownColumnException(Type resource, string searchString)
-            : base($"RESTar could not locate any column in resource {resource.FullName} by '{searchString}'. " +
-                   $"To enumerate columns in this resource, GET: {Settings._ResourcesPath}/{resource.FullName} . ")
+            : base($"RESTar could not locate any column in resource {resource.Name} by '{searchString}'. " +
+                   $"To enumerate columns in this resource, GET: {Settings._ResourcesPath}/{resource.Name} . ")
         {
             SearchString = searchString;
             Resource = resource;
@@ -120,7 +121,7 @@ namespace RESTar
         public readonly string SearchString;
 
         public AmbiguousColumnException(Type resource, string searchString, ICollection<string> candidates)
-            : base($"RESTar could not uniquely identify a column in resource {resource.FullName} by " +
+            : base($"RESTar could not uniquely identify a column in resource {resource.Name} by " +
                    $"'{searchString}'. Candidates were: {string.Join(", ", candidates)}. ")
         {
             SearchString = searchString;
@@ -145,9 +146,9 @@ namespace RESTar
 
     public class AmbiguousMatchException : Exception
     {
-        public Type Resource;
+        public IResource Resource;
 
-        public AmbiguousMatchException(Type resource)
+        public AmbiguousMatchException(IResource resource)
         {
             Resource = resource;
         }

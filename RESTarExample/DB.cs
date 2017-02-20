@@ -1,51 +1,19 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using RESTar;
 using Starcounter;
 
-namespace RESTar
+namespace RESTarExample
 {
-    public static class DbTools
-    {
-        private static readonly MethodInfo SQL = typeof(Db).GetMethods()
-            .First(m => m.Name == "SQL" && m.IsGenericMethod);
-
-        public static IEnumerable<dynamic> Select(IRequest request)
-        {
-            var whereClause = request.Conditions?.ToWhereClause();
-            var sql = $"SELECT t FROM {request.Resource.Name} t {whereClause?.stringPart} {request.OrderBy?.SQL}";
-            dynamic entities;
-            var generic = SQL.MakeGenericMethod(request.Resource.TargetType);
-            if (request.Limit < 1)
-                entities = generic.Invoke(null, new object[] {sql, whereClause?.valuesPart});
-            else
-                entities = Enumerable.ToList(Enumerable.Take
-                (
-                    (dynamic) generic.Invoke(null, new object[] {sql, whereClause?.valuesPart}),
-                    request.Limit
-                ));
-            return entities;
-        }
-
-        public static IEnumerable<T> StaticSelect<T>(IRequest request)
-            => StaticSelect<T>(request.Conditions, request.Limit, request.OrderBy);
-
-        public static IEnumerable<T> StaticSelect<T>(IList<Condition> conditions, int limit, OrderBy orderBy)
-        {
-            var whereClause = conditions?.ToWhereClause();
-            var sql = $"SELECT t FROM {typeof(T).FullName} t {whereClause?.stringPart} {orderBy?.SQL}";
-            if (limit < 1)
-                return Db.SQL<T>(sql, whereClause?.valuesPart);
-            return Db.SQL<T>(sql, whereClause?.valuesPart).Take(limit).ToList();
-        }
-    }
-
-
     /// <summary>
     /// This class provides static methods for database queries in the DRTB system.
     /// </summary>
     internal static class DB
     {
+        private static readonly MethodInfo SQL = typeof(Db).GetMethods()
+            .First(m => m.Name == "SQL" && m.IsGenericMethod);
+
         #region Get methods
 
         public static long? RowCount(string tableName)

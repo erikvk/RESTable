@@ -96,10 +96,13 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Attributes.cs" />
+    <Compile Include="Internal\DynamicResource.cs" />
     <Compile Include="DynamitControl.cs" />
     <Compile Include="DDictionaryOperations.cs" />
     <Compile Include="DynamicTables.cs" />
     <Compile Include="HTTPS.cs" />
+    <Compile Include="Internal\IResource.cs" />
+    <Compile Include="Internal\ResourceHelper.cs" />
     <Compile Include="OperationInterfaces.cs" />
     <Compile Include="PredicateMaker.cs" />
     <Compile Include="Request.cs" />
@@ -108,9 +111,10 @@
     <Compile Include="Help.cs" />
     <Compile Include="Import.cs" />
     <Compile Include="IRequest.cs" />
-    <Compile Include="Resource.cs" />
+    <Compile Include="Internal\Resource.cs" />
     <Compile Include="Log.cs" />
     <Compile Include="Operator.cs" />
+    <Compile Include="Resource.cs" />
     <Compile Include="ResourceAlias.cs" />
     <Compile Include="RESTarConfig.cs" />
     <Compile Include="DB.cs" />
@@ -128,6 +132,7 @@
     <Compile Include="Settings.cs" />
     <Compile Include="StringLogicalComparer.cs" />
     <Compile Include="Temp.cs" />
+    <Compile Include="TestClass.cs" />
     <Compile Include="WhereClause.cs" />
   </ItemGroup>
   <ItemGroup>

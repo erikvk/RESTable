@@ -17,9 +17,9 @@ namespace RESTar
                 throw new AbortedSelectorException("Invalid request: No valid 'resource' argument. " +
                                                    "Example: /schema/resource=my_resource_name");
             var _resource = validCondition.FindResource();
-            if (_resource.IsSubclassOf(typeof(DDictionary)))
+            if (_resource.TargetType.IsSubclassOf(typeof(DDictionary)))
                 return null;
-            var properties = _resource.GetProperties(BindingFlags.Instance | BindingFlags.Public);
+            var properties = _resource.TargetType.GetProperties(BindingFlags.Instance | BindingFlags.Public);
             var schema = new Schema();
             foreach (var property in properties)
             {

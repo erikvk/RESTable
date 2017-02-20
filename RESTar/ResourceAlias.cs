@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Starcounter;
+using IResource = RESTar.Internal.IResource;
 
 namespace RESTar
 {
@@ -17,14 +18,19 @@ namespace RESTar
             {
                 try
                 {
-                    var r = RESTarConfig.ResourcesDict[value.ToLower()];
-                    _resource = r.FullName;
+                    if (value.StartsWith("RESTar.DynamicResource"))
+                    {
+                        _resource = DynamitControl.GetByTableNameLower(value.ToLower()).FullName;
+                        return;
+                    }
+                    var r = RESTarConfig.NameResources[value.ToLower()];
+                    _resource = r.Name;
                 }
                 catch (KeyNotFoundException)
                 {
                     this.Delete();
                     var match = value.FindResource();
-                    throw new UnknownResourceForMappingException(value, match);
+                    throw new UnknownResourceForMappingException(value, match.TargetType);
                 }
                 catch
                 {
@@ -34,11 +40,16 @@ namespace RESTar
             }
         }
 
-        public Type GetResource() => RESTarConfig.ResourcesDict[Resource.ToLower()];
+        public IResource GetResource() => RESTarConfig.NameResources[Resource.ToLower()];
 
-        public static Type FindByAlias(string alias)
+        public static IResource ByAlias(string alias)
         {
             return DB.Get<ResourceAlias>("Alias", alias)?.GetResource();
+        }
+
+        public static string ByResource(Type resource)
+        {
+            return DB.Get<ResourceAlias>("Resource", resource.FullName)?.Alias;
         }
 
         public static bool Exists(Type resource) => DB.Exists<ResourceAlias>("Resource", resource.FullName);

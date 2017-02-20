@@ -64,16 +64,32 @@ namespace RESTar
             return writer.ToString();
         }
 
-        internal static void InitSerializers()
+        internal static void InitSerializer(Type resource)
         {
-            foreach (var resource in RESTarConfig.ResourcesList.Where(r => !r.IsAbstract &&
-                                                                           !r.IsSubclassOf(typeof(DDictionary))))
+            if (resource.IsAbstract || resource.IsSubclassOf(typeof(DDictionary))) return;
+            Scheduling.ScheduleTask(() =>
+            {
+                try
+                {
+                    JSON.Deserialize("{}", resource, SerializerOptions);
+                }
+                catch (Exception)
+                {
+                }
+            });
+        }
+
+        private static void InitSerializers()
+        {
+            foreach (var resource in RESTarConfig.Resources.Where(
+                r => !r.TargetType.IsAbstract && !r.TargetType.IsSubclassOf(typeof(DDictionary)))
+            )
             {
                 Scheduling.ScheduleTask(() =>
                 {
                     try
                     {
-                        JSON.Deserialize("{}", resource, SerializerOptions);
+                        JSON.Deserialize("{}", resource.TargetType, SerializerOptions);
                     }
                     catch (Exception)
                     {

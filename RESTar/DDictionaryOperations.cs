@@ -5,11 +5,24 @@ using Starcounter;
 
 namespace RESTar
 {
-    internal class DDictionaryOperations : IOperationsProvider<DDictionary>
+    internal static class DDictionaryOperations
     {
+        public static OperationsProvider<DDictionary> Provider() => new OperationsProvider<DDictionary>
+        {
+            Selector = Selector(),
+            Inserter = Inserter(),
+            Updater = Updater(),
+            Deleter = Deleter()
+        };
+
+        public static Selector<DDictionary> Selector() => new Selector<DDictionary>(Select);
+        public static Inserter<DDictionary> Inserter() => new Inserter<DDictionary>(Insert);
+        public static Updater<DDictionary> Updater() => new Updater<DDictionary>(Update);
+        public static Deleter<DDictionary> Deleter() => new Deleter<DDictionary>(Delete);
+
         private static IEnumerable<DDictionary> SelectSlow(IRequest request)
         {
-            IEnumerable<DDictionary> all = Db.SQL<DDictionary>($"SELECT t FROM {request.Resource.FullName} t");
+            IEnumerable<DDictionary> all = Db.SQL<DDictionary>($"SELECT t FROM {request.Resource.TargetType.FullName} t");
             if (request.OrderBy != null)
             {
                 if (request.OrderBy.Ascending)
@@ -32,11 +45,11 @@ namespace RESTar
             return matches.Take(request.Limit);
         }
 
-        public IEnumerable<DDictionary> Select(IRequest request)
+        private static IEnumerable<DDictionary> Select(IRequest request)
         {
             if (request.Conditions == null || request.OrderBy != null)
                 return SelectSlow(request);
-            var kvpTable = request.Resource.GetAttribute<DDictionaryAttribute>().KeyValuePairTable;
+            var kvpTable = request.Resource.TargetType.GetAttribute<DDictionaryAttribute>().KeyValuePairTable.FullName;
             var equalityConds = request.Conditions.Where(c => c.Operator.Common == "=").ToList();
             var comparisonConds = request.Conditions?.Except(equalityConds);
             IEnumerable<DDictionary> matches = new HashSet<DDictionary>();
@@ -70,7 +83,7 @@ namespace RESTar
             }
             else
             {
-                matches = Db.SQL<DDictionary>($"SELECT t FROM {request.Resource.FullName} t");
+                matches = Db.SQL<DDictionary>($"SELECT t FROM {request.Resource.Name} t");
             }
 
             if (comparisonConds.Any())
@@ -82,17 +95,17 @@ namespace RESTar
             return matches?.Take(request.Limit);
         }
 
-        public int Insert(IEnumerable<DDictionary> entities, IRequest request)
+        private static int Insert(IEnumerable<DDictionary> entities, IRequest request)
         {
             return entities.Count();
         }
 
-        public int Update(IEnumerable<DDictionary> entities, IRequest request)
+        private static int Update(IEnumerable<DDictionary> entities, IRequest request)
         {
             return entities.Count();
         }
 
-        public int Delete(IEnumerable<DDictionary> entities, IRequest request)
+        private static int Delete(IEnumerable<DDictionary> entities, IRequest request)
         {
             var count = 0;
             foreach (var entity in entities)

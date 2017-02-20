@@ -4,24 +4,21 @@ using Starcounter;
 
 namespace RESTar
 {
-    public class StarcounterOperations : IOperationsProvider<object>
+    public static class StarcounterOperations
     {
-        public IEnumerable<dynamic> Select(IRequest request)
+        public static OperationsProvider<T> Provider<T>() => new OperationsProvider<T>
         {
-            return DB.Select(request);
-        }
+            Selector = Selector<T>(),
+            Inserter = Inserter<T>(),
+            Updater = Updater<T>(),
+            Deleter = Deleter<T>()
+        };
 
-        public int Insert(IEnumerable<dynamic> entities, IRequest request)
-        {
-            return entities.Count();
-        }
+        public static Selector<T> Selector<T>() => new Selector<T>(DbTools.StaticSelect<T>);
+        public static Inserter<T> Inserter<T>() => new Inserter<T>((entities, request) => entities.Count());
+        public static Updater<T> Updater<T>() => new Updater<T>((entities, request) => entities.Count());
 
-        public int Update(IEnumerable<dynamic> entities, IRequest request)
-        {
-            return entities.Count();
-        }
-
-        public int Delete(IEnumerable<dynamic> entities, IRequest request)
+        public static Deleter<T> Deleter<T>() => new Deleter<T>((entities, request) =>
         {
             var count = 0;
             foreach (var entity in entities)
@@ -30,12 +27,12 @@ namespace RESTar
                 {
                     if (entity != null)
                     {
-                        Db.Delete(entity);
+                        entity.Delete();
                         count += 1;
                     }
                 });
             }
             return count;
-        }
+        });
     }
 }
