@@ -94,6 +94,39 @@ namespace RESTar.Internal
             RESTarConfig.AddResource(this);
         }
 
+        private static void MakeDynamic
+        (
+            Type targetType,
+            ICollection<RESTarMethods> availableMethods,
+            bool editable = false
+        )
+        {
+            var operationsProvider = new OperationsProvider<DDictionary>
+            {
+                Selector = targetType.GetSelector<DDictionary>(),
+                Inserter = targetType.GetInserter<DDictionary>(),
+                Updater = targetType.GetUpdater<DDictionary>(),
+                Deleter = targetType.GetDeleter<DDictionary>()
+            };
+
+            if (operationsProvider.Selector == null)
+                operationsProvider.Selector = DDictionaryOperations.Selector();
+            if (operationsProvider.Inserter == null)
+                operationsProvider.Inserter = DDictionaryOperations.Inserter();
+            if (operationsProvider.Updater == null)
+                operationsProvider.Updater = DDictionaryOperations.Updater();
+            if (operationsProvider.Deleter == null)
+                operationsProvider.Deleter = DDictionaryOperations.Deleter();
+
+            new Resource<DDictionary>
+            (
+                targetType: targetType,
+                availableMethods: availableMethods,
+                editable: editable,
+                operations: operationsProvider
+            );
+        }
+
         internal static void Make<T>
         (
             ICollection<RESTarMethods> availableMethods,
@@ -102,6 +135,12 @@ namespace RESTar.Internal
         ) where T : class
         {
             var type = typeof(T);
+
+            if (type.HasAttribute<DDictionaryAttribute>())
+            {
+                MakeDynamic(type, availableMethods, editable);
+                return;
+            }
 
             var operationsProvider = new OperationsProvider<T>
             {
@@ -132,7 +171,6 @@ namespace RESTar.Internal
                     );
             }
 
-
             new Resource<T>
             (
                 targetType: type,
@@ -140,28 +178,6 @@ namespace RESTar.Internal
                 editable: editable,
                 operations: operationsProvider
             );
-        }
-
-        public static void Register<T>(OperationsProvider<T> operationsProvider, RESTarPresets preset,
-            params RESTarMethods[] additionalMethods) where T : class
-        {
-            var methods = preset.ToMethods().Union(additionalMethods).ToArray();
-            Register(operationsProvider, methods.First(), methods.Skip(1).ToArray());
-        }
-
-        public static void Register<T>
-        (
-            OperationsProvider<T> operationsProvider,
-            RESTarMethods method,
-            params RESTarMethods[] addMethods) where T : class
-        {
-            if (typeof(T).HasAttribute<RESTarAttribute>())
-                throw new InvalidOperationException("Cannot manually register resources that have a RESTar " +
-                                                    "attribute. Resources decorated with a RESTar attribute " +
-                                                    "are registered automatically");
-            var type = typeof(T);
-            var availableMethods = new[] {method}.Union(addMethods).ToList();
-            Resource<T>.Make(availableMethods, operationsProvider);
         }
 
         private static ICollection<RESTarMethods> GetAvailableMethods(Type resource)

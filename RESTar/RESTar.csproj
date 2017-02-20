@@ -102,7 +102,7 @@
     <Compile Include="DynamicTables.cs" />
     <Compile Include="HTTPS.cs" />
     <Compile Include="Internal\IResource.cs" />
-    <Compile Include="Internal\ResourceHelper.cs" />
+    <Compile Include="ResourceHelper.cs" />
     <Compile Include="OperationInterfaces.cs" />
     <Compile Include="PredicateMaker.cs" />
     <Compile Include="Request.cs" />

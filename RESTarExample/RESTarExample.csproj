@@ -47,6 +47,10 @@
     <StartupObject>RESTarExample.Program</StartupObject>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Dynamit, Version=1.0.0.0, Culture=neutral, processorArchitecture=AMD64">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\Dynamit\Dynamit\bin\Release\Dynamit.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core">
       <RequiredTargetFramework>4.0</RequiredTargetFramework>
