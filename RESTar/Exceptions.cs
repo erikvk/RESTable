@@ -94,8 +94,9 @@ namespace RESTar
         public readonly string SearchString;
 
         public UnknownColumnException(Type resource, string searchString)
-            : base($"RESTar could not locate any column in resource {resource.Name} by '{searchString}'. " +
-                   $"To enumerate columns in this resource, GET: {Settings._ResourcesPath}/{resource.Name} . ")
+            : base($"RESTar could not locate any column in resource {resource.Name} by '{searchString}'. Are " +
+                   "you trying to reference a member of a dynamic resource? To enumerate columns in this " +
+                   $"resource, GET: {Settings._ResourcesPath}/{resource.Name} . ")
         {
             SearchString = searchString;
             Resource = resource;

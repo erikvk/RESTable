@@ -49,8 +49,8 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="Dynamit, Version=1.0.0.0, Culture=neutral, processorArchitecture=AMD64">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\Dynamit\Dynamit\bin\Release\Dynamit.dll</HintPath>
+      <HintPath>..\packages\Dynamit.0.1.0\lib\Dynamit\Dynamit.dll</HintPath>
+      <Private>True</Private>
     </Reference>
     <Reference Include="Excel, Version=2.1.2.3, Culture=neutral, PublicKeyToken=93517dbe6a4012fa, processorArchitecture=MSIL">
       <HintPath>..\packages\ExcelDataReader.2.1.2.3\lib\net45\Excel.dll</HintPath>
@@ -84,9 +84,6 @@
       <Private>False</Private>
     </Reference>
     <Reference Include="Starcounter.Logging, Version=2.0.0.0, Culture=neutral, PublicKeyToken=d2df1e81d0ca3abf">
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="Starcounter.XSON, Version=2.0.0.0, Culture=neutral, PublicKeyToken=d2df1e81d0ca3abf">
       <Private>False</Private>
     </Reference>
     <Reference Include="System.Data" />

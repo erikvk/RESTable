@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using RESTar;
 using Starcounter;
 
 namespace RESTarExample
@@ -25,6 +24,7 @@ namespace RESTarExample
         {
             return Db.SQL<T>($"SELECT t FROM {typeof(T).FullName} t").First;
         }
+
 
         public static ICollection<T> All<T>() where T : class
         {

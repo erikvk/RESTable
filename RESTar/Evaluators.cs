@@ -2,48 +2,19 @@
 using System.Collections.Generic;
 using System.Linq;
 using Starcounter;
+using static RESTar.Responses;
 using static RESTar.Settings;
 
 namespace RESTar
 {
     internal static class Evaluators
     {
-        internal static Response DELETE(Request request)
-        {
-            var entities = request.GetExtension(true);
-            try
-            {
-                int count = request.Resource.Delete((dynamic) entities, request);
-                return Responses.DeleteEntities(count, request.Resource.TargetType);
-            }
-            catch (Exception e)
-            {
-                throw new AbortedDeleterException(e.Message);
-            }
-        }
-
         internal static Response GET(Request request)
         {
             if (!request.Unsafe && request.Limit == -1)
                 request.Limit = 1000;
             var entities = request.GetExtension(true);
-            return !entities.Any() ? Responses.NoContent() : Responses.GetEntities(request, entities);
-        }
-
-        internal static Response PATCH(Request request)
-        {
-            var entities = request.GetExtension();
-            try
-            {
-                foreach (var entity in entities)
-                    Db.Transact(() => { Serializer.PopulateObject(request.Json, entity); });
-                int count = request.Resource.Update((dynamic) entities, request);
-                return Responses.UpdatedEntities(request, count, request.Resource.TargetType);
-            }
-            catch (Exception e)
-            {
-                throw new AbortedUpdaterException(e.Message);
-            }
+            return !entities.Any() ? NoContent() : GetEntities(request, entities);
         }
 
         internal static Response POST(Request request)
@@ -55,42 +26,11 @@ namespace RESTar
                     return SafePOST(request, json);
                 dynamic results = Db.Transact(() => json.Deserialize(RESTarConfig.IEnumTypes[request.Resource]));
                 int count = request.Resource.Insert(results, request);
-                return Responses.InsertedEntities(request, count, request.Resource.TargetType);
+                return InsertedEntities(request, count, request.Resource.TargetType);
             }
             catch (Exception e)
             {
                 throw new AbortedInserterException(e.Message);
-            }
-        }
-
-        internal static Response PUT(Request request)
-        {
-            var entities = request.GetExtension(false);
-            object obj;
-            int count;
-            if (!entities.Any())
-            {
-                try
-                {
-                    obj = Db.Transact(() => request.Json.Deserialize(request.Resource.TargetType));
-                    count = request.Resource.Insert(obj.MakeList(request.Resource.TargetType), request);
-                    return Responses.InsertedEntities(request, count, request.Resource.TargetType);
-                }
-                catch (Exception e)
-                {
-                    throw new AbortedInserterException(e.Message);
-                }
-            }
-            try
-            {
-                obj = entities.First();
-                Db.Transact(() => { Serializer.PopulateObject(request.Json, obj); });
-                count = request.Resource.Update(obj.MakeList(request.Resource.TargetType), request);
-                return Responses.UpdatedEntities(request, count, request.Resource.TargetType);
-            }
-            catch (Exception e)
-            {
-                throw new AbortedUpdaterException(e.Message);
             }
         }
 
@@ -133,6 +73,67 @@ namespace RESTar
                 StatusDescription = $"Inserted {insertedCount} and updated {updatedCount} entities " +
                                     $"in resource {request.Resource.Name}"
             };
+        }
+
+        internal static Response PATCH(Request request)
+        {
+            var entities = request.GetExtension();
+            try
+            {
+                foreach (var entity in entities)
+                    Db.Transact(() => { Serializer.PopulateObject(request.Json, entity); });
+                int count = request.Resource.Update((dynamic) entities, request);
+                return UpdatedEntities(request, count, request.Resource.TargetType);
+            }
+            catch (Exception e)
+            {
+                throw new AbortedUpdaterException(e.Message);
+            }
+        }
+
+        internal static Response PUT(Request request)
+        {
+            var entities = request.GetExtension(false);
+            object obj;
+            int count;
+            if (!entities.Any())
+            {
+                try
+                {
+                    obj = Db.Transact(() => request.Json.Deserialize(request.Resource.TargetType));
+                    count = request.Resource.Insert(obj.MakeList(request.Resource.TargetType), request);
+                    return InsertedEntities(request, count, request.Resource.TargetType);
+                }
+                catch (Exception e)
+                {
+                    throw new AbortedInserterException(e.Message);
+                }
+            }
+            try
+            {
+                obj = entities.First();
+                Db.Transact(() => { Serializer.PopulateObject(request.Json, obj); });
+                count = request.Resource.Update(obj.MakeList(request.Resource.TargetType), request);
+                return UpdatedEntities(request, count, request.Resource.TargetType);
+            }
+            catch (Exception e)
+            {
+                throw new AbortedUpdaterException(e.Message);
+            }
+        }
+
+        internal static Response DELETE(Request request)
+        {
+            var entities = request.GetExtension(true);
+            try
+            {
+                int count = request.Resource.Delete((dynamic) entities, request);
+                return DeleteEntities(count, request.Resource.TargetType);
+            }
+            catch (Exception e)
+            {
+                throw new AbortedDeleterException(e.Message);
+            }
         }
 
         //        internal static Response MIGRATE(Request request)

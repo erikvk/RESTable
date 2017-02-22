@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using Dynamit;
-using Starcounter;
 using IResource = RESTar.Internal.IResource;
 
 namespace RESTar
@@ -138,21 +137,10 @@ namespace RESTar
                     .Where(prop => str == prop.Name.ToLower())
                     .Select(prop => prop.PropertyType)
                     .FirstOrDefault();
-
                 if (type == null)
                     throw new UnknownColumnException(resource.TargetType, keyString);
-
-//                if (type.GetAttribute<RESTarAttribute>()?.AvailableMethods.Contains(RESTarMethods.GET) != true)
-//                    throw new SyntaxException($"RESTar does not have read access to resource '{type.FullName}' " +
-//                                              $"referenced in '{keyString}'.");
-//
-//                if (!type.HasAttribute<DatabaseAttribute>())
-//                    throw new SyntaxException($"Part '{str}' in condition key '{keyString}' referenced a column of " +
-//                                              $"type '{type.FullName}', which is of a non-resource type. Non-resource " +
-//                                              "columns can only appear last in condition keys containing dot notation.");
                 types.Add(type);
             }
-
             if (parts.Last() == "objectno" || parts.Last() == "objectid")
                 return string.Join(".", parts);
             var lastType = types.Last();

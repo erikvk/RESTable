@@ -8,7 +8,6 @@ using ClosedXML.Excel;
 using Dynamit;
 using Excel;
 using Newtonsoft.Json.Linq;
-using RESTar.Internal;
 using Starcounter;
 using IResource = RESTar.Internal.IResource;
 using ScRequest = Starcounter.Request;

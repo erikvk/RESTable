@@ -1,6 +1,5 @@
 ﻿using Dynamit;
 using RESTar;
-using RESTar.Internal;
 using static RESTar.RESTarMethods;
 
 
@@ -12,7 +11,6 @@ namespace RESTarExample
         {
             RESTarConfig.Init();
             TestDatabase.Init();
-
             ResourceHelper.Register<MyDict>(GET, POST);
         }
         

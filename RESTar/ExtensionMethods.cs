@@ -103,19 +103,10 @@ namespace RESTar
             foreach (var str in parts.Take(parts.Length - 1))
             {
                 var containingType = types.LastOrDefault() ?? resource;
-                var column = containingType
-                    .GetProperties()
-                    .FirstOrDefault(prop => str == prop.Name.ToLower());
+                var column = containingType.GetProperties().FirstOrDefault(prop => str == prop.Name.ToLower());
                 if (column == null)
                     throw new UnknownColumnException(resource, keyString);
                 var type = column.PropertyType;
-//                if (type.GetAttribute<RESTarAttribute>()?.AvailableMethods.Contains(RESTarMethods.GET) != true)
-//                    throw new SyntaxException($"RESTar does not have read access to resource '{type.FullName}' " +
-//                                              $"referenced in '{keyString}'.");
-//                if (!type.HasAttribute<DatabaseAttribute>())
-//                    throw new SyntaxException($"A part '{str}' of condition key '{keyString}' referenced type " +
-//                                              $"'{type.FullName}', which is of a non-database type. Only references " +
-//                                              "to database types (resources) can be used in queries.");
                 if (first)
                     value = column.GetValue(root);
                 else if (value != null)
