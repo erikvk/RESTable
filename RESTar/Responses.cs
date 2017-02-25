@@ -142,7 +142,7 @@ namespace RESTar
         internal static Response NoContent() => new Response
         {
             StatusCode = (ushort) HttpStatusCode.NoContent,
-            StatusDescription = "No results found matching query"
+            StatusDescription = "No results found for query"
         };
 
         internal static Response InsertedEntities(Request request, int count, Type resource)

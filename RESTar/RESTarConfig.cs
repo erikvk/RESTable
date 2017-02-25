@@ -204,123 +204,6 @@ namespace RESTar
             }
         }
 
-//        private static void CheckOperations(IEnumerable<Type> resources)
-//        {
-//            foreach (var resource in resources)
-//            {
-//                if (resource.IsSubclassOf(typeof(DDictionary)))
-//                {
-//                    foreach (var operation in Operations)
-//                    {
-//                        var method = typeof(DDictionaryOperations).GetMethod(operation.ToString(),
-//                            BindingFlags.Public | BindingFlags.Instance);
-//                        ResourceOperations[resource][operation] = operation == RESTarOperations.Select
-//                            ? method.CreateDelegate(typeof(Func<,>)
-//                                .MakeGenericType(typeof(IRequest), typeof(IEnumerable<DDictionary>)), null)
-//                            : method.CreateDelegate(typeof(Func<,,>)
-//                                .MakeGenericType(typeof(IEnumerable<DDictionary>), typeof(IRequest), typeof(int)), null);
-//                    }
-//                }
-//                else if (!resource.HasAttribute<DatabaseAttribute>())
-//                    CheckVirtualResource(resource);
-//                else
-//                {
-//                    var operationsProvider = typeof(StarcounterOperations);
-//                    foreach (var operation in Operations)
-//                    {
-//                        var overrideMethod = resource.GetMethod(operation.ToString(),
-//                            BindingFlags.Public | BindingFlags.Instance);
-//                        var baseMethod = operationsProvider.GetMethod(operation.ToString(),
-//                            BindingFlags.Public | BindingFlags.Instance);
-//                        if (LocalizedInterface(operation, resource).IsAssignableFrom(resource))
-//                            ResourceOperations[resource][operation] = operation == RESTarOperations.Select
-//                                ? overrideMethod.CreateDelegate(typeof(Func<,>).MakeGenericType(typeof(IRequest),
-//                                    typeof(IEnumerable<>).MakeGenericType(resource)), null)
-//                                : overrideMethod.CreateDelegate(typeof(Func<,,>).MakeGenericType(typeof(IEnumerable<>)
-//                                    .MakeGenericType(resource), typeof(IRequest), typeof(int)), null);
-//                        else if (LocalizedInterface(operation, typeof(object)).IsAssignableFrom(resource))
-//                            ResourceOperations[resource][operation] = operation == RESTarOperations.Select
-//                                ? overrideMethod.CreateDelegate(typeof(Func<,>).MakeGenericType(typeof(IRequest),
-//                                    typeof(IEnumerable<object>)), null)
-//                                : overrideMethod.CreateDelegate(
-//                                    typeof(Func<,,>).MakeGenericType(typeof(IEnumerable<object>),
-//                                        typeof(IRequest), typeof(int)), null);
-//                        else
-//                            ResourceOperations[resource][operation] = operation == RESTarOperations.Select
-//                                ? baseMethod.CreateDelegate(typeof(Func<,>).MakeGenericType(typeof(IRequest),
-//                                    typeof(IEnumerable<object>)), null)
-//                                : baseMethod.CreateDelegate(
-//                                    typeof(Func<,,>).MakeGenericType(typeof(IEnumerable<object>),
-//                                        typeof(IRequest), typeof(int)), null);
-//                    }
-//                }
-//            }
-//        }
-
-        private static Type LocalizedInterface(RESTarOperations operation, Type type)
-        {
-            switch (operation)
-            {
-                case Select:
-                    return typeof(ISelector<>).MakeGenericType(type);
-                case Insert:
-                    return typeof(IInserter<>).MakeGenericType(type);
-                case Update:
-                    return typeof(IUpdater<>).MakeGenericType(type);
-                case Delete:
-                    return typeof(IDeleter<>).MakeGenericType(type);
-            }
-            return null;
-        }
-
-//        private static void CheckVirtualResource(Type resource)
-//        {
-//            foreach (var requiredMethod in NecessaryOpDefs(resource.GetAttribute<RESTarAttribute>()?.AvailableMethods))
-//            {
-//                var method = resource.GetMethod(requiredMethod.ToString(), BindingFlags.Public | BindingFlags.Instance);
-//                if (LocalizedInterface(requiredMethod, resource).IsAssignableFrom(resource))
-//                    ResourceOperations[resource][requiredMethod] = requiredMethod == Select
-//                        ? method.CreateDelegate(typeof(Func<,>).MakeGenericType(typeof(IRequest),
-//                            typeof(IEnumerable<>).MakeGenericType(resource)), null)
-//                        : method.CreateDelegate(typeof(Func<,,>).MakeGenericType(typeof(IEnumerable<>)
-//                            .MakeGenericType(resource), typeof(IRequest), typeof(int)), null);
-//                else if (LocalizedInterface(requiredMethod, typeof(object)).IsAssignableFrom(resource))
-//                    ResourceOperations[resource][requiredMethod] = requiredMethod == Select
-//                        ? method.CreateDelegate(typeof(Func<,>).MakeGenericType(typeof(IRequest),
-//                            typeof(IEnumerable<object>)), null)
-//                        : method.CreateDelegate(typeof(Func<,,>).MakeGenericType(typeof(IEnumerable<object>),
-//                            typeof(IRequest), typeof(int), null));
-//                else
-//                {
-//                    string missingInterface;
-//                    switch (requiredMethod)
-//                    {
-//                        case Select:
-//                            missingInterface = $"ISelector<{resource.FullName}> or ISelector<object>";
-//                            break;
-//                        case Insert:
-//                            missingInterface = $"IInserter<{resource.FullName}> or Inserter<object>";
-//                            break;
-//                        case Update:
-//                            missingInterface = $"IUpdater<{resource.FullName}> or IUpdater<object>";
-//                            break;
-//                        case Delete:
-//                            missingInterface = $"IDeleter<{resource.FullName}> or IDeleter<object>";
-//                            break;
-//                        default:
-//                            throw new ArgumentOutOfRangeException();
-//                    }
-//                    throw new VirtualResourceMissingInterfaceImplementation(resource, missingInterface);
-//                }
-//            }
-//            var fields = resource.GetFields(BindingFlags.Public | BindingFlags.Instance);
-//            if (fields.Any())
-//                throw new VirtualResourceMemberException(
-//                    $"A virtual resource cannot include public instance fields, " +
-//                    $"only properties. Fields: {string.Join(", ", fields.Select(f => $"'{f.Name}'"))} in resource '{resource.FullName}'"
-//                );
-//        }
-
         private static RESTarMethods? MethodCheck(IRequest request)
         {
             var availableMethods = request.Resource.AvailableMethodsString.ToMethodsList();
@@ -332,7 +215,7 @@ namespace RESTar
             return null;
         }
 
-        internal static RESTarMethods? PublicParallel(RESTarMethods method)
+        private static RESTarMethods? PublicParallel(RESTarMethods method)
         {
             var methodString = method.ToString();
             if (methodString.Contains("Private"))

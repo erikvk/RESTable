@@ -39,7 +39,7 @@ namespace RESTar
                 if (request.Limit < 1) return all;
                 return all.Take(request.Limit);
             }
-            var predicate = request.Conditions?.DDictPredicate();
+            var predicate = request.Conditions?.ToDDictionaryPredicate();
             var matches = all.Where(dict => predicate(dict));
             if (request.Limit < 1) return matches;
             return matches.Take(request.Limit);
@@ -51,7 +51,7 @@ namespace RESTar
                 return SelectSlow(request);
             var kvpTable = request.Resource.TargetType.GetAttribute<DDictionaryAttribute>().KeyValuePairTable.FullName;
             var equalityConds = request.Conditions.Where(c => c.Operator.Common == "=").ToList();
-            var comparisonConds = request.Conditions?.Except(equalityConds);
+            var comparisonConds = request.Conditions?.Except(equalityConds).ToList();
             IEnumerable<DDictionary> matches = new HashSet<DDictionary>();
             if (equalityConds.Any())
             {
@@ -88,8 +88,7 @@ namespace RESTar
 
             if (comparisonConds.Any())
             {
-                var predicate = comparisonConds.DDictPredicate();
-                matches = matches?.Where(predicate.Invoke);
+                matches = matches?.Where(comparisonConds.ToDDictionaryPredicate().Invoke);
             }
             if (request.Limit < 1) return matches;
             return matches?.Take(request.Limit);

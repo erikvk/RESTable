@@ -10,7 +10,7 @@ namespace RESTar
         private static bool KeysEqual(string k1, string k2) =>
             string.Equals(k1, k2, StringComparison.CurrentCultureIgnoreCase);
 
-        internal static Predicate<DDictionary> DDictPredicate(this IEnumerable<Condition> conditions)
+        internal static Predicate<DDictionary> ToDDictionaryPredicate(this IEnumerable<Condition> conditions)
         {
             var innerPredicates = conditions.Select(c =>
             {
@@ -158,6 +158,12 @@ namespace RESTar
         internal static Predicate<T> ToPredicate<T>(this IEnumerable<Condition> conditions)
         {
             var type = typeof(T);
+            if (type == typeof(DDictionary) || type.IsSubclassOf(typeof(DDictionary)))
+            {
+                throw new ArgumentException("ToPredicate() cannot be called on DDictionary types. Use " +
+                                            "ToDDictionaryPredicate() instead");
+            }
+
             var innerPredicates = conditions.Select(c =>
             {
                 switch (c.Operator.Common)
