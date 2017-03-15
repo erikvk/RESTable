@@ -1,8 +1,8 @@
 ﻿namespace RESTar
 {
-    internal class WhereClause
+    public class WhereClause
     {
-        public string stringPart;
-        public object[] valuesPart;
+        public string stringPart = "";
+        public object[] valuesPart = {};
     }
 }

@@ -23,7 +23,7 @@ namespace RESTar.Internal
                 var existingMapping = DB.Get<ResourceAlias>("Resource", Name);
                 if (value == null)
                 {
-                    Db.Transact(() => { existingMapping?.Delete(); });
+                    Db.TransactAsync(() => existingMapping?.Delete());
                     return;
                 }
                 var usedAliasMapping = DB.Get<ResourceAlias>("Alias", value);
@@ -34,7 +34,7 @@ namespace RESTar.Internal
                     throw new Exception($"Invalid alias: '{value}' is used to refer to another resource");
                 }
 
-                Db.Transact(() =>
+                Db.TransactAsync(() =>
                 {
                     existingMapping = existingMapping ?? new ResourceAlias {Resource = Name};
                     existingMapping.Alias = value;

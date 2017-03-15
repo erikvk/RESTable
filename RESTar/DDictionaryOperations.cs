@@ -111,7 +111,7 @@ namespace RESTar
             {
                 if (entity != null)
                 {
-                    Db.Transact(() => { entity.Delete(); });
+                    Db.TransactAsync(() => entity.Delete());
                     count += 1;
                 }
             }

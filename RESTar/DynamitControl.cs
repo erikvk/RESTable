@@ -30,7 +30,7 @@ namespace RESTar
         {
             var dicts = Db.SQL<DDictionary>($"SELECT t FROM {tableId} t");
             foreach (var dict in dicts)
-                Db.Transact(() => { dict.Delete(); });
+                Db.TransactAsync(() => dict.Delete());
         }
     }
 }

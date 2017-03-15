@@ -32,7 +32,8 @@ namespace RESTar.Internal
 
         public static DynamicResource Make(Resource resource)
         {
-            var dynamicResource = Db.Transact(() =>
+            DynamicResource dynamicResource = null;
+            Db.TransactAsync(() =>
             {
                 var newTable = DynamitControl.DynamitTypes.FirstOrDefault(ResourceAlias.NotExists);
                 if (newTable == null)
@@ -42,7 +43,7 @@ namespace RESTar.Internal
                     Alias = resource.Alias,
                     Resource = newTable.FullName
                 };
-                return new DynamicResource(newTable, resource.AvailableMethods);
+                dynamicResource = new DynamicResource(newTable, resource.AvailableMethods);
             });
             RESTarConfig.AddResource(dynamicResource);
             return dynamicResource;
@@ -55,8 +56,8 @@ namespace RESTar.Internal
             DynamitControl.ClearTable(iresource.Name);
             RESTarConfig.RemoveResource(iresource);
             var alias = DB.Get<ResourceAlias>("Resource", iresource.TargetType.FullName);
-            Db.Transact(() => { alias?.Delete(); });
-            Db.Transact(() => (iresource as DynamicResource)?.Delete());
+            Db.TransactAsync(() => alias?.Delete());
+            Db.TransactAsync(() => (iresource as DynamicResource)?.Delete());
         }
 
         public IEnumerable<object> Select(IRequest request) => Selector().Select(request);

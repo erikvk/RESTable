@@ -217,10 +217,12 @@ namespace RESTar
             };
         }
 
-        internal static WhereClause ToWhereClause(this IList<Condition> conditions)
+        public static WhereClause ToWhereClause(this ICollection<Condition> conditions)
         {
             if (conditions == null)
                 return null;
+            if (!conditions.Any())
+                return new WhereClause();
 
             var stringPart = new List<string>();
             var valuesPart = new List<object>();
@@ -228,10 +230,10 @@ namespace RESTar
             foreach (var c in conditions)
             {
                 if (c.Value == null)
-                    stringPart.Add($"t.{c.Key} {(c.Operator.Common == "!=" ? " IS NOT NULL " : " IS NULL ")}");
+                    stringPart.Add($"t.{c.Key.Fnuttify()} {(c.Operator.Common == "!=" ? " IS NOT NULL " : " IS NULL ")}");
                 else
                 {
-                    stringPart.Add($"t.{c.Key} {c.Operator.SQL}?");
+                    stringPart.Add($"t.{c.Key.Fnuttify()} {c.Operator.SQL}?");
                     valuesPart.Add(c.Value);
                 }
             }

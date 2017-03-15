@@ -2,8 +2,8 @@
 {
     public class Operator
     {
-        public readonly string Common;
-        public readonly string SQL;
+        public string Common;
+        public string SQL;
 
         internal Operator(string common, string sql)
         {

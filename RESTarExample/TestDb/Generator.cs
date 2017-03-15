@@ -10,7 +10,7 @@ namespace RESTarExample.TestDb
         public static Response DeleteTestDatabase()
         {
             foreach (var o in DB.All<TestBase>())
-                Db.Transact(() => { o.Delete(); });
+                Db.TransactAsync(() => { o.Delete(); });
 
             return new Response
             {
@@ -736,9 +736,11 @@ namespace RESTarExample.TestDb
 
             #endregion
 
-            var c1 = Db.Transact(() => new Company {Name = "BS Industries"});
+            Company c1 = null;
+            Db.TransactAsync(() => c1 = new Company {Name = "BS Industries"});
             var rand = new Random();
-            var ceo = Db.Transact(() =>
+            Employee ceo = null;
+            Db.TransactAsync(() =>
             {
                 var _ceo = new Employee
                 {
@@ -751,12 +753,12 @@ namespace RESTarExample.TestDb
                     Company = c1
                 };
                 c1.CEO = _ceo;
-                return _ceo;
+                ceo = _ceo;
             });
 
             foreach (var i in Enumerable.Range(0, 4000))
             {
-                Db.Transact(() =>
+                Db.TransactAsync(() =>
                 {
                     var b = new Employee
                     {
@@ -774,7 +776,8 @@ namespace RESTarExample.TestDb
                     {
                         new Employee
                         {
-                            Name = $"{givenNames[rand.Next(0, givenNames.Count)]} {surnames[rand.Next(0, surnames.Count)]}",
+                            Name =
+                                $"{givenNames[rand.Next(0, givenNames.Count)]} {surnames[rand.Next(0, surnames.Count)]}",
                             Details = new EmployeeDetails
                             {
                                 DateOfEmployment = DateTime.Now.Date.AddDays(-rand.Next(15, 3000)),

@@ -79,7 +79,7 @@ namespace RESTar
             });
         }
 
-        private static void InitSerializers()
+        internal static void InitSerializers()
         {
             foreach (var resource in RESTarConfig.Resources.Where(
                 r => !r.TargetType.IsAbstract && !r.TargetType.IsSubclassOf(typeof(DDictionary)))

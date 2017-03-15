@@ -69,7 +69,6 @@ namespace RESTar
             );
 
             DynamitConfig.Init();
-
             Settings.Init(uri, prettyPrint, camelCase, publicPort);
             Log.Init();
             uri += "{?}";

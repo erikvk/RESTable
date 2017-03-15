@@ -78,7 +78,7 @@ namespace RESTar
             ushort httpPort
         )
         {
-            Db.Transact(() =>
+            Db.TransactAsync(() =>
             {
                 foreach (var obj in DB.All<Settings>())
                     obj.Delete();

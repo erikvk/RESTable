@@ -193,7 +193,7 @@ namespace RESTar
                             }
                             catch
                             {
-                                return false;
+                                return true;
                             }
                         };
                     case "<":

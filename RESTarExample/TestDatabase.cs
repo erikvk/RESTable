@@ -1,4 +1,6 @@
-﻿using RESTar;
+﻿using System;
+using System.Collections.Generic;
+using RESTar;
 using RESTarExample.TestDb;
 using Starcounter;
 
@@ -20,7 +22,7 @@ namespace RESTarExample
 
         internal static void Init()
         {
-            Db.Transact(() =>
+            Db.TransactAsync(() =>
             {
                 foreach (var obj in DB.All<TestDatabase>())
                     obj?.Delete();

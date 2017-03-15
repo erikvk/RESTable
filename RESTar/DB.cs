@@ -13,7 +13,7 @@ namespace RESTar
         public static IEnumerable<dynamic> Select(IRequest request)
         {
             var whereClause = request.Conditions?.ToWhereClause();
-            var sql = $"SELECT t FROM {request.Resource.Name} t {whereClause?.stringPart} {request.OrderBy?.SQL}";
+            var sql = $"SELECT t FROM {request.Resource.TargetType.FullName} t {whereClause?.stringPart} {request.OrderBy?.SQL}";
             dynamic entities;
             var generic = SQL.MakeGenericMethod(request.Resource.TargetType);
             if (request.Limit < 1)
@@ -67,7 +67,7 @@ namespace RESTar
         {
             if (string.IsNullOrEmpty(whereKey)) return null;
             return Db.SQL<T>($"SELECT t FROM {typeof(T).FullName} t " +
-                             $"WHERE {whereKey} =? ", whereValue).ToList();
+                             $"WHERE t.{whereKey.Fnuttify()} =? ", whereValue).ToList();
         }
 
         public static bool Exists<T>() where T : class
@@ -75,38 +75,39 @@ namespace RESTar
             return Db.SQL<T>($"SELECT t FROM {typeof(T).FullName} t").First != null;
         }
 
+        internal static string Fnuttify(this string sqlKey) => $"\"{sqlKey.Replace(".", "\".\"")}\"";
+
         public static bool Exists<T>(string whereKey, object whereValue) where T : class
         {
             if (string.IsNullOrEmpty(whereKey)) return false;
             return Db.SQL<T>($"SELECT t FROM {typeof(T).FullName} t " +
-                             $"WHERE {whereKey} =? ", whereValue).First != null;
+                             $"WHERE t.{whereKey.Fnuttify()} =? ", whereValue).First != null;
         }
 
         public static bool Exists<T>(string whKey1, object whValue1, string whKey2, object whValue2) where T : class
         {
             if (string.IsNullOrEmpty(whKey1) || string.IsNullOrEmpty(whKey2)) return false;
             return Db.SQL<T>($"SELECT t FROM {typeof(T).FullName} t " +
-                             $"WHERE t.{whKey1} =? AND t.{whKey2} =? ", whValue1, whValue2).First != null;
+                             $"WHERE t.{whKey1.Fnuttify()} =? AND t.{whKey2.Fnuttify()} =? ", whValue1, whValue2).First != null;
         }
 
         public static T Get<T>(string whereKey, object whereValue) where T : class
         {
             if (string.IsNullOrEmpty(whereKey)) return null;
-            return Db.SQL<T>($"SELECT t FROM {typeof(T).FullName} t " +
-                             $"WHERE t.{whereKey} =? ", whereValue).First;
+            return Db.SQL<T>($"SELECT t FROM {typeof(T).FullName} t WHERE t.{whereKey.Fnuttify()} =? ", whereValue).First;
         }
 
         public static T Get<T>(string whKey1, object whValue1, string whKey2, object whValue2) where T : class
         {
             if (string.IsNullOrEmpty(whKey1) || string.IsNullOrEmpty(whKey2)) return null;
             return Db.SQL<T>($"SELECT t FROM {typeof(T).FullName} t " +
-                             $"WHERE t.{whKey1} =? AND t.{whKey2} =? ", whValue1, whValue2).First;
+                             $"WHERE t.{whKey1.Fnuttify()} =? AND t.{whKey2.Fnuttify()} =? ", whValue1, whValue2).First;
         }
 
         public static T Get<T>(Dictionary<string, object> whereKeyValuePairs) where T : class
         {
             if (whereKeyValuePairs == null || !whereKeyValuePairs.Any()) return null;
-            var whereKeys = string.Join(" AND ", whereKeyValuePairs.Select(pair => $"t.{pair.Key} =?"));
+            var whereKeys = string.Join(" AND ", whereKeyValuePairs.Select(pair => $"t.{pair.Key.Fnuttify()} =?"));
             var whereValues = whereKeyValuePairs.Values.ToArray();
             return Db.SQL<T>($"SELECT t FROM {typeof(T).FullName} t WHERE {whereKeys}", whereValues).First();
         }

@@ -24,7 +24,8 @@ namespace RESTar
                 var json = request.Json.First() == '[' ? request.Json : $"[{request.Json}]";
                 if (request.SafePost != null)
                     return SafePOST(request, json);
-                dynamic results = Db.Transact(() => json.Deserialize(RESTarConfig.IEnumTypes[request.Resource]));
+                dynamic results = null;
+                Db.TransactAsync(() => results = json.Deserialize(RESTarConfig.IEnumTypes[request.Resource]));
                 int count = request.Resource.Insert(results, request);
                 return InsertedEntities(request, count, request.Resource.TargetType);
             }
@@ -81,7 +82,7 @@ namespace RESTar
             try
             {
                 foreach (var entity in entities)
-                    Db.Transact(() => { Serializer.PopulateObject(request.Json, entity); });
+                    Db.TransactAsync(() => Serializer.PopulateObject(request.Json, entity));
                 int count = request.Resource.Update((dynamic) entities, request);
                 return UpdatedEntities(request, count, request.Resource.TargetType);
             }
@@ -94,13 +95,13 @@ namespace RESTar
         internal static Response PUT(Request request)
         {
             var entities = request.GetExtension(false);
-            object obj;
+            object obj = null;
             int count;
             if (!entities.Any())
             {
                 try
                 {
-                    obj = Db.Transact(() => request.Json.Deserialize(request.Resource.TargetType));
+                    Db.TransactAsync(() => obj = request.Json.Deserialize(request.Resource.TargetType));
                     count = request.Resource.Insert(obj.MakeList(request.Resource.TargetType), request);
                     return InsertedEntities(request, count, request.Resource.TargetType);
                 }
@@ -112,7 +113,7 @@ namespace RESTar
             try
             {
                 obj = entities.First();
-                Db.Transact(() => { Serializer.PopulateObject(request.Json, obj); });
+                Db.TransactAsync(() => Serializer.PopulateObject(request.Json, obj));
                 count = request.Resource.Update(obj.MakeList(request.Resource.TargetType), request);
                 return UpdatedEntities(request, count, request.Resource.TargetType);
             }
