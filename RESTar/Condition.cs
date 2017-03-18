@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Net;
 using Dynamit;
@@ -17,7 +18,6 @@ namespace RESTar
         {
             if (string.IsNullOrEmpty(conditionString))
                 return null;
-            conditionString = WebUtility.UrlDecode(conditionString);
             return conditionString.Split('&').Select(s =>
             {
                 if (s == "")
@@ -42,8 +42,9 @@ namespace RESTar
                 dynamic value;
                 if (dynamit)
                 {
-                    key = pair[0];
-                    value = GetValue(pair[1]);
+                    key = WebUtility.UrlDecode(pair[0]);
+                    var valueString = WebUtility.UrlDecode(pair[1]);
+                    value = GetValue(valueString);
                 }
                 else
                 {
@@ -173,7 +174,9 @@ namespace RESTar
                 var rounded = decimal.Round(dec, 6);
                 obj = rounded;
             }
-            else if (DateTime.TryParse(valueString, out dat))
+            else if (DateTime.TryParseExact(valueString, "yyyy-MM-dd", null, DateTimeStyles.None, out dat) ||
+                     DateTime.TryParseExact(valueString, "yyyy-MM-ddThh:mm:ss", null, DateTimeStyles.None, out dat) ||
+                     DateTime.TryParseExact(valueString, "O", null, DateTimeStyles.None, out dat))
                 obj = dat;
             else obj = valueString;
             return obj;

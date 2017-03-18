@@ -9,7 +9,7 @@ using Starcounter;
 
 namespace RESTar
 {
-    public static class Serializer
+    internal static class Serializer
     {
         private static Options _serializerOptions;
 

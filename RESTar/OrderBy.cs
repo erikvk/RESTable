@@ -6,6 +6,6 @@
         public bool Ascending => !Descending;
         public string Key;
 
-        public string SQL => $"ORDER BY t.{Key} {(Descending ? "DESC" : "ASC")}";
+        public string SQL => $"ORDER BY t.{Key.Fnuttify()} {(Descending ? "DESC" : "ASC")}";
     }
 }

@@ -112,11 +112,6 @@ namespace RESTar
             return Db.SQL<T>($"SELECT t FROM {typeof(T).FullName} t WHERE {whereKeys}", whereValues).First();
         }
 
-        public static IEnumerable<TValue> Domain<TTable, TValue>(string key) where TTable : class
-        {
-            return Db.SQL<TValue>($"SELECT t.{key} from {typeof(TTable).FullName} t").Distinct();
-        }
-
         #endregion
     }
 }
