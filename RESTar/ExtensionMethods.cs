@@ -36,7 +36,7 @@ namespace RESTar
                                     $"beginning with '{Settings._Uri}/<resource locator>'");
             return new URI
             {
-                port = port == 0 ? Settings._HttpPort : port,
+                port = port == 0 ? Settings._PublicPort : port,
                 path = input
             };
         }

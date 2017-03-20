@@ -51,7 +51,8 @@ namespace RESTar
             ushort privatePort = 8283,
             string uri = "/rest",
             bool prettyPrint = true,
-            bool camelCase = false
+            bool camelCase = false,
+            bool localTimes = true
         )
         {
             if (uri.Trim().First() != '/')
@@ -68,8 +69,8 @@ namespace RESTar
                 name => typeof(RESTarMetaConditions).GetField(name).GetAttribute<TypeAttribute>().Type
             );
 
-            DynamitConfig.Init();
-            Settings.Init(uri, prettyPrint, camelCase, publicPort);
+            DynamitConfig.Init(true, true);
+            Settings.Init(uri, publicPort, privatePort, prettyPrint, camelCase,  localTimes);
             Log.Init();
             uri += "{?}";
             Handle.GET(publicPort, uri, (ScRequest r, string q) => Evaluate(r, q, Evaluators.GET, GET));

@@ -71,7 +71,7 @@ namespace RESTar
                     var keyString = WebUtility.UrlDecode(pair[0]);
                     key = keyString;
                     var valueString = WebUtility.UrlDecode(pair[1]);
-                    value = GetValue(valueString);
+                    value = GetValue(valueString, dynamit: true);
                 }
                 else
                 {
@@ -171,14 +171,14 @@ namespace RESTar
             return string.Join(".", parts);
         }
 
-        private static dynamic GetValue(string valueString, string key = null)
+        private static dynamic GetValue(string valueString, string key = null, bool dynamit = false)
         {
             if (valueString == null)
                 return null;
             if (valueString == "null")
                 return null;
             if (valueString.First() == '\"')
-                return valueString.Replace("\"", "");
+                return dynamit ? valueString : valueString.Replace("\"", "");
             dynamic obj;
             int _int;
             decimal dec;
@@ -193,9 +193,10 @@ namespace RESTar
                 var rounded = decimal.Round(dec, 6);
                 obj = rounded;
             }
-            else if (DateTime.TryParseExact(valueString, "yyyy-MM-dd", null, DateTimeStyles.None, out dat) ||
-                     DateTime.TryParseExact(valueString, "yyyy-MM-ddThh:mm:ss", null, DateTimeStyles.None, out dat) ||
-                     DateTime.TryParseExact(valueString, "O", null, DateTimeStyles.None, out dat))
+            else if (DateTime.TryParseExact(valueString, "yyyy-MM-dd", null, DateTimeStyles.AssumeLocal, out dat) ||
+                     DateTime.TryParseExact(valueString, "yyyy-MM-ddThh:mm:ss", null, DateTimeStyles.AssumeLocal,
+                         out dat) ||
+                     DateTime.TryParseExact(valueString, "O", null, DateTimeStyles.AssumeLocal, out dat))
                 obj = dat;
             else obj = valueString;
             return obj;
