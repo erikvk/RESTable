@@ -8,13 +8,37 @@ using IResource = RESTar.Internal.IResource;
 
 namespace RESTar
 {
+    public sealed class Conditions : List<Condition>
+    {
+        public Condition this[string key]
+        {
+            get
+            {
+                return this.FirstOrDefault(c => string.Equals(c.Key, key, StringComparison.CurrentCultureIgnoreCase));
+            }
+        }
+
+        public object this[string key, Operators op]
+        {
+            get
+            {
+                return this.FirstOrDefault(c =>
+                    c.Operator.OpCode == op &&
+                    string.Equals(c.Key, key, StringComparison.CurrentCultureIgnoreCase))?.Value;
+            }
+        }
+
+        public IDictionary<string, dynamic> EqualsDict =>
+            this.Where(c => c.Operator == Operators.EQUALS).ToDictionary(c => c.Key, c => c.Value);
+    }
+
     public sealed class Condition
     {
         public string Key;
         public Operator Operator;
         public dynamic Value;
 
-        internal static IList<Condition> ParseConditions(IResource resource, string conditionString)
+        internal static Conditions ParseConditions(IResource resource, string conditionString)
         {
             if (string.IsNullOrEmpty(conditionString))
                 return null;
@@ -27,13 +51,15 @@ namespace RESTar
                 Operator op;
                 try
                 {
-                    op = Operators.First(o => o.Common == matched);
+                    op = Operator.Parse(matched);
                 }
                 catch
                 {
-                    throw new SyntaxException("Invalid or missing operator for condition. The presence of one " +
-                                              "(and only one) operator is required per condition. Accepted operators: " +
-                                              string.Join(", ", Operators.Select(o => o.Common)));
+                    throw new SyntaxException(
+                        $"Invalid or missing operator(s) for condition '{s}'. The presence of one (and only one) " +
+                        $"operator is required per condition. Make sure to URI encode all equals (\'=\' to \'%3D\') " +
+                        $"and exclamation marks (\'!\' to \'%21\') in request URI value literals, to avoid capture. " +
+                        $"Accepted operators: " + string.Join(", ", Operator.AvailableOperators));
                 }
                 var pair = s.Split(new[] {op.Common}, StringSplitOptions.None);
                 var dynamit = resource.TargetType.HasAttribute<DDictionaryAttribute>();
@@ -42,15 +68,18 @@ namespace RESTar
                 dynamic value;
                 if (dynamit)
                 {
-                    key = WebUtility.UrlDecode(pair[0]);
+                    var keyString = WebUtility.UrlDecode(pair[0]);
+                    key = keyString;
                     var valueString = WebUtility.UrlDecode(pair[1]);
                     value = GetValue(valueString);
                 }
                 else
                 {
                     Type type;
-                    key = GetKey(resource, pair[0], out type);
-                    value = GetValue(pair[1], key);
+                    var keyString = WebUtility.UrlDecode(pair[0]);
+                    key = GetKey(resource, keyString, out type);
+                    var valueString = WebUtility.UrlDecode(pair[1]);
+                    value = GetValue(valueString, key);
                 }
 
                 return new Condition
@@ -59,7 +88,7 @@ namespace RESTar
                     Operator = op,
                     Value = value
                 };
-            }).ToList();
+            }).ToConditions();
         }
 
         internal static IDictionary<string, object> ParseMetaConditions(string metaConditionString)
@@ -71,10 +100,10 @@ namespace RESTar
             {
                 if (s == "")
                     throw new SyntaxException("Invalid meta-condition syntax");
-                var op = Operators.FirstOrDefault(o => s.Contains(o.Common));
-                if (op?.Common != "=")
-                    throw new SyntaxException("Invalid operator for meta-condition. Only '=' is accepted");
-                var pair = s.Split(new[] {op.Common}, StringSplitOptions.None);
+                var containsOneAndOnlyOneEquals = s.Count(c => c == '=') == 1;
+                if (!containsOneAndOnlyOneEquals)
+                    throw new SyntaxException("Invalid operator for meta-condition. One and only one '=' is allowed");
+                var pair = s.Split('=');
 
                 RESTarMetaConditions metaCondition;
                 var success = Enum.TryParse(pair[0].Capitalize(), out metaCondition);
@@ -100,16 +129,6 @@ namespace RESTar
         }
 
         private static readonly char[] OpMatchChars = {'<', '>', '=', '!'};
-
-        internal static readonly IEnumerable<Operator> Operators = new List<Operator>
-        {
-            new Operator("=", "="),
-            new Operator("!=", "<>"),
-            new Operator("<", "<"),
-            new Operator(">", ">"),
-            new Operator(">=", ">="),
-            new Operator("<=", "<=")
-        };
 
         private static string GetKey(IResource resource, string keyString, out Type keyType)
         {

@@ -44,6 +44,11 @@ namespace RESTar
             return JSON.Deserialize(json, resource, SerializerOptions);
         }
 
+        internal static dynamic Deserialize<T>(this string json)
+        {
+            return JSON.Deserialize<T>(json, SerializerOptions);
+        }
+
         private static readonly MethodInfo SerializeMethod =
             typeof(JSON).GetMethods().First(n => n.Name == "Serialize" && n.ReturnType == typeof(void));
 

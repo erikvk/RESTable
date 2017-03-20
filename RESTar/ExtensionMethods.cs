@@ -12,6 +12,35 @@ namespace RESTar
 {
     public static class ExtensionMethods
     {
+        internal class URI
+        {
+            internal ushort port;
+            internal string path;
+            public override string ToString() => $"<self>:{port}{path}";
+        }
+
+        internal static URI ParseSelfUri(this string input)
+        {
+            ushort port = 0;
+            var first = input.First();
+            if (char.IsDigit(first))
+            {
+                var port_rest = input.Split(new[] {'/'}, 2);
+                if (!ushort.TryParse(port_rest[0], out port))
+                    throw new Exception("Invalid port format, should be <port nr>/<rest of uri>");
+                input = $"/{port_rest[1]}";
+                first = input.First();
+            }
+            if (first != '/')
+                throw new Exception($"Invalid source string '{input}'. Must be a REST request URI " +
+                                    $"beginning with '{Settings._Uri}/<resource locator>'");
+            return new URI
+            {
+                port = port == 0 ? Settings._HttpPort : port,
+                path = input
+            };
+        }
+
         internal static Selector<T> GetSelector<T>(this Type type)
         {
             if (!typeof(ISelector<T>).IsAssignableFrom(type)) return null;
@@ -189,11 +218,6 @@ namespace RESTar
             return input != null ? Regex.Replace(input, @"\t|\n|\r", "") : null;
         }
 
-        internal static string[] Keys(this IEnumerable<Condition> conditions)
-        {
-            return conditions.Select(c => c.Key).ToArray();
-        }
-
         internal static WhereClause ToDDictWhereClause(this Condition condition)
         {
             if (condition == null)
@@ -204,7 +228,7 @@ namespace RESTar
 
             if (condition.Value == null)
                 stringPart = "WHERE t.Key =? AND t.Value " +
-                             $"{(condition.Operator.Common == "!=" ? "IS NOT NULL" : "IS NULL")}";
+                             $"{(condition.Operator == Operators.NOT_EQUALS ? "IS NOT NULL" : "IS NULL")}";
             else
             {
                 stringPart = $"t.Key ?= AND t.Value {condition.Operator.SQL}?";
@@ -230,7 +254,8 @@ namespace RESTar
             foreach (var c in conditions)
             {
                 if (c.Value == null)
-                    stringPart.Add($"t.{c.Key.Fnuttify()} {(c.Operator.Common == "!=" ? " IS NOT NULL " : " IS NULL ")}");
+                    stringPart.Add(
+                        $"t.{c.Key.Fnuttify()} {(c.Operator == Operators.NOT_EQUALS ? " IS NOT NULL " : " IS NULL ")}");
                 else
                 {
                     stringPart.Add($"t.{c.Key.Fnuttify()} {c.Operator.SQL}?");
@@ -245,48 +270,6 @@ namespace RESTar
             };
         }
 
-        public static object ValueForEquals(this IEnumerable<Condition> conditions, string key)
-        {
-            return conditions?.FirstOrDefault(
-                c => c.Operator.Common == "=" &&
-                     string.Equals(c.Key, key, StringComparison.CurrentCultureIgnoreCase))?.Value;
-        }
-
-        public static object ValueForNotEquals(this IEnumerable<Condition> conditions, string key)
-        {
-            return conditions?.FirstOrDefault(
-                c => c.Operator.Common == "!=" &&
-                     string.Equals(c.Key, key, StringComparison.CurrentCultureIgnoreCase))?.Value;
-        }
-
-        public static object ValueForGreaterThan(this IEnumerable<Condition> conditions, string key)
-        {
-            return conditions?.FirstOrDefault(
-                c => c.Operator.Common == ">" &&
-                     string.Equals(c.Key, key, StringComparison.CurrentCultureIgnoreCase))?.Value;
-        }
-
-        public static object ValueForLessThan(this IEnumerable<Condition> conditions, string key)
-        {
-            return conditions?.FirstOrDefault(
-                c => c.Operator.Common == "<" &&
-                     string.Equals(c.Key, key, StringComparison.CurrentCultureIgnoreCase))?.Value;
-        }
-
-        public static object ValueForGreaterThanOrEquals(this IEnumerable<Condition> conditions, string key)
-        {
-            return conditions?.FirstOrDefault(
-                c => c.Operator.Common == ">=" &&
-                     string.Equals(c.Key, key, StringComparison.CurrentCultureIgnoreCase))?.Value;
-        }
-
-        public static object ValueForLessThanOrEquals(this IEnumerable<Condition> conditions, string key)
-        {
-            return conditions?.FirstOrDefault(
-                c => c.Operator.Common == "<=" &&
-                     string.Equals(c.Key, key, StringComparison.CurrentCultureIgnoreCase))?.Value;
-        }
-
         public static T GetReference<T>(this ulong? objectNo) where T : class
         {
             return DbHelper.FromID(objectNo.GetValueOrDefault()) as T;
@@ -295,16 +278,6 @@ namespace RESTar
         public static T GetReference<T>(this ulong objectNo) where T : class
         {
             return DbHelper.FromID(objectNo) as T;
-        }
-
-        internal static Operator[] Operators(this IEnumerable<Condition> conditions)
-        {
-            return conditions.Select(c => c.Operator).ToArray();
-        }
-
-        public static IDictionary<string, dynamic> ToConditionsDict(this IEnumerable<Condition> conditions)
-        {
-            return conditions.ToDictionary(c => c.Key, c => c.Value);
         }
 
         internal static ICollection<RESTarMethods> ToMethodsList(this string methodsString)
@@ -374,6 +347,18 @@ namespace RESTar
                     };
             }
             throw new ArgumentOutOfRangeException(nameof(preset));
+        }
+
+        internal static int Count(this IResource resource, IRequest request)
+        {
+            return resource.Select(request).Count();
+        }
+
+        internal static Conditions ToConditions(this IEnumerable<Condition> conditions)
+        {
+            var _conditions = new Conditions();
+            _conditions.AddRange(conditions);
+            return _conditions;
         }
     }
 }

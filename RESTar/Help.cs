@@ -14,7 +14,7 @@ namespace RESTar
 
         public IEnumerable<Help> Select(IRequest request)
         {
-            var topic = request.Conditions.ValueForEquals("topic")?.ToString();
+            var topic = request.Conditions?["topic", Operators.EQUALS]?.ToString();
             var response = HTTP.Request("GET", "http://restarhelp.mopedo-drtb.com:8282/restar/helparticle/" +
                                                (topic != null ? $"topic={HttpUtility.UrlEncode(topic)}" : ""));
             return response.Body != null

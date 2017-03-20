@@ -59,8 +59,7 @@ namespace RESTar
                         ? new CamelCasePropertyNamesContractResolver()
                         : new DefaultContractResolver(),
                     NullValueHandling = NullValueHandling.Include,
-                    FloatParseHandling = FloatParseHandling.Decimal,
-
+                    FloatParseHandling = FloatParseHandling.Decimal
                 };
             }
         }

@@ -31,7 +31,7 @@ namespace RESTar
         }
 
         internal bool DynamicMemberResource;
-        public IList<Condition> Conditions { get; private set; }
+        public Conditions Conditions { get; private set; }
         public IDictionary<string, object> MetaConditions { get; }
         internal readonly ScRequest ScRequest;
         internal readonly string Query;
@@ -42,7 +42,7 @@ namespace RESTar
         internal readonly IDictionary<string, string> Rename;
         internal readonly string Source;
         internal readonly string Destination;
-        internal string Json;
+        public string Json { get; private set; }
         internal byte[] BinaryBody;
         internal readonly bool Dynamic;
         internal readonly string Map;
@@ -162,7 +162,7 @@ namespace RESTar
                     throw new SyntaxException("Missing data source for method " + Method);
                 try
                 {
-                    var dict = Conditions.ToConditionsDict();
+                    var dict = Conditions.EqualsDict;
                     var keys = Imgput.Split(',');
                     Conditions = keys.Select(key =>
                     {
@@ -171,10 +171,10 @@ namespace RESTar
                         return new Condition
                         {
                             Key = match.Key,
-                            Operator = new Operator("=", "="),
+                            Operator = new Operator(Operators.EQUALS),
                             Value = match.Value
                         };
-                    }).ToList();
+                    }).ToConditions();
                     Json = dict.SerializeDyn();
                     return;
                 }

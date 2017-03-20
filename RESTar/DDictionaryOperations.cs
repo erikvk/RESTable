@@ -50,7 +50,7 @@ namespace RESTar
             if (request.Conditions == null || request.OrderBy != null)
                 return SelectSlow(request);
             var kvpTable = request.Resource.TargetType.GetAttribute<DDictionaryAttribute>().KeyValuePairTable.FullName;
-            var equalityConds = request.Conditions.Where(c => c.Operator.Common == "=").ToList();
+            var equalityConds = request.Conditions.Where(c => c.Operator == Operators.EQUALS).ToList();
             var comparisonConds = request.Conditions?.Except(equalityConds).ToList();
             IEnumerable<DDictionary> matches = new HashSet<DDictionary>();
             if (equalityConds.Any())

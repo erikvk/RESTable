@@ -14,9 +14,9 @@ namespace RESTar
         {
             var innerPredicates = conditions.Select(c =>
             {
-                switch (c.Operator.Common)
+                switch (c.Operator.OpCode)
                 {
-                    case "=":
+                    case Operators.EQUALS:
                         return (dict =>
                         {
                             dynamic val1 = dict.FirstOrDefault(pair => KeysEqual(pair.Key, c.Key)).Value;
@@ -30,7 +30,7 @@ namespace RESTar
                                 return false;
                             }
                         });
-                    case "!=":
+                    case Operators.NOT_EQUALS:
                         return (dict =>
                         {
                             dynamic val1 = dict.FirstOrDefault(pair => KeysEqual(pair.Key, c.Key)).Value;
@@ -44,7 +44,7 @@ namespace RESTar
                                 return false;
                             }
                         });
-                    case "<":
+                    case Operators.LESS_THAN:
                         return (dict =>
                         {
                             dynamic val1 = dict.FirstOrDefault(pair => KeysEqual(pair.Key, c.Key)).Value;
@@ -58,7 +58,7 @@ namespace RESTar
                                 return false;
                             }
                         });
-                    case ">":
+                    case Operators.GREATER_THAN:
                         return (dict =>
                         {
                             dynamic val1 = dict.FirstOrDefault(pair => KeysEqual(pair.Key, c.Key)).Value;
@@ -72,7 +72,7 @@ namespace RESTar
                                 return false;
                             }
                         });
-                    case ">=":
+                    case Operators.GREATER_THAN_OR_EQUALS:
                         return (dict =>
                         {
                             dynamic val1 = dict.FirstOrDefault(pair => KeysEqual(pair.Key, c.Key)).Value;
@@ -86,7 +86,7 @@ namespace RESTar
                                 return false;
                             }
                         });
-                    case "<=":
+                    case Operators.LESS_THAN_OR_EQUALS:
                         return (dict =>
                         {
                             dynamic val1 = dict.FirstOrDefault(pair => KeysEqual(pair.Key, c.Key)).Value;
@@ -166,9 +166,9 @@ namespace RESTar
 
             var innerPredicates = conditions.Select(c =>
             {
-                switch (c.Operator.Common)
+                switch (c.Operator.OpCode)
                 {
-                    case "=":
+                    case Operators.EQUALS:
                         return item =>
                         {
                             try
@@ -182,7 +182,7 @@ namespace RESTar
                                 return false;
                             }
                         };
-                    case "!=":
+                    case Operators.NOT_EQUALS:
                         return item =>
                         {
                             try
@@ -196,7 +196,7 @@ namespace RESTar
                                 return true;
                             }
                         };
-                    case "<":
+                    case Operators.LESS_THAN:
                         return item =>
                         {
                             try
@@ -211,7 +211,7 @@ namespace RESTar
                             }
                         };
 
-                    case ">":
+                    case Operators.GREATER_THAN:
                         return item =>
                         {
                             try
@@ -226,7 +226,7 @@ namespace RESTar
                             }
                         };
 
-                    case ">=":
+                    case Operators.GREATER_THAN_OR_EQUALS:
                         return item =>
                         {
                             try
@@ -241,7 +241,7 @@ namespace RESTar
                             }
                         };
 
-                    case "<=":
+                    case Operators.LESS_THAN_OR_EQUALS:
                         return item =>
                         {
                             try

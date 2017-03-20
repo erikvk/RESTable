@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using Starcounter;
-using static RESTar.DDictionaryOperations;
 
 namespace RESTar.Internal
 {
@@ -60,15 +59,17 @@ namespace RESTar.Internal
             Db.TransactAsync(() => (iresource as DynamicResource)?.Delete());
         }
 
-        public IEnumerable<object> Select(IRequest request) => Selector().Select(request);
+        public IEnumerable<object> Select(IRequest request) =>
+            DDictionaryOperations.Selector().Select(request);
 
         public int Insert(IEnumerable<object> entities, IRequest request) =>
-            Inserter().Insert((dynamic) entities, request);
+            DDictionaryOperations.Inserter().Insert((dynamic) entities, request);
 
         public int Update(IEnumerable<object> entities, IRequest request) =>
-            Updater().Update((dynamic) entities, request);
+            DDictionaryOperations.Updater().Update((dynamic) entities, request);
 
         public int Delete(IEnumerable<object> entities, IRequest request) =>
-            Deleter().Delete((dynamic) entities, request);
+            DDictionaryOperations.Deleter().Delete((dynamic) entities, request);
+
     }
 }

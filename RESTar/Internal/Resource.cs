@@ -57,7 +57,7 @@ namespace RESTar.Internal
             }
         }
 
-        internal OperationsProvider<T1> Operations { get; set; }
+        internal OperationsProvider<T1> Operations { get; }
 
         public IEnumerable<dynamic> Select(IRequest request) => Operations.Selector.Select(request);
 

@@ -1,29 +1,102 @@
-﻿namespace RESTar
+﻿using System;
+
+namespace RESTar
 {
-    public class Operator
+    public enum Operators
     {
-        public string Common;
-        public string SQL;
+        nil,
+        EQUALS,
+        NOT_EQUALS,
+        LESS_THAN,
+        GREATER_THAN,
+        LESS_THAN_OR_EQUALS,
+        GREATER_THAN_OR_EQUALS
+    }
 
-        internal Operator(string common, string sql)
+    public struct Operator
+    {
+        public Operators OpCode;
+
+        internal string Common
         {
-            Common = common;
-            SQL = sql;
+            get
+            {
+                switch (OpCode)
+                {
+                    case Operators.EQUALS:
+                        return "=";
+                    case Operators.NOT_EQUALS:
+                        return "!=";
+                    case Operators.LESS_THAN:
+                        return "<";
+                    case Operators.GREATER_THAN:
+                        return ">";
+                    case Operators.LESS_THAN_OR_EQUALS:
+                        return "<=";
+                    case Operators.GREATER_THAN_OR_EQUALS:
+                        return ">=";
+                    default:
+                        throw new ArgumentOutOfRangeException();
+                }
+            }
         }
 
-        public override string ToString()
+        internal string SQL => OpCode == Operators.NOT_EQUALS ? "<>" : Common;
+
+        internal Operator(Operators op)
         {
-            return Common;
+            OpCode = op;
         }
+
+        internal static Operator Parse(string common)
+        {
+            switch (common)
+            {
+                case "=":
+                    return new Operator(Operators.EQUALS);
+                case "!=":
+                    return new Operator(Operators.NOT_EQUALS);
+                case "<":
+                    return new Operator(Operators.LESS_THAN);
+                case ">":
+                    return new Operator(Operators.GREATER_THAN);
+                case "<=":
+                    return new Operator(Operators.LESS_THAN_OR_EQUALS);
+                case ">=":
+                    return new Operator(Operators.GREATER_THAN_OR_EQUALS);
+                default:
+                    throw new ArgumentException(nameof(common));
+            }
+        }
+
+        internal static bool TryParse(string common, out Operator op)
+        {
+            try
+            {
+                op = Parse(common);
+                return true;
+            }
+            catch
+            {
+                op = default(Operator);
+                return false;
+            }
+        }
+
+        internal static readonly string[] AvailableOperators = {"=", "!=", "<", ">", "<=", ">="};
+
+        public override string ToString() => Common;
 
         public override bool Equals(object obj)
         {
             if (obj is Operator)
-                return Common == ((Operator) obj).Common;
+                return (Operator) obj == OpCode;
             return false;
         }
 
-        public static bool operator ==(Operator o1, Operator o2) => o1?.Common != null && o2?.Common != null && o1.Common == o2.Common;
+        public static bool operator ==(Operator o1, Operator o2) => o1.OpCode == o2.OpCode;
+        public static bool operator ==(Operator o1, Operators o2) => o1.OpCode == o2;
         public static bool operator !=(Operator o1, Operator o2) => !(o1 == o2);
+        public static bool operator !=(Operator o1, Operators o2) => !(o1 == o2);
     }
 }
