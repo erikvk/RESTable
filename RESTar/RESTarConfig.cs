@@ -70,7 +70,7 @@ namespace RESTar
             );
 
             DynamitConfig.Init(true, true);
-            Settings.Init(uri, publicPort, privatePort, prettyPrint, camelCase,  localTimes);
+            Settings.Init(uri, publicPort, privatePort, prettyPrint, camelCase, localTimes);
             Log.Init();
             uri += "{?}";
             Handle.GET(publicPort, uri, (ScRequest r, string q) => Evaluate(r, q, Evaluators.GET, GET));
@@ -89,7 +89,6 @@ namespace RESTar
         private static Response Evaluate(ScRequest scRequest, string query, Func<Request, Response> evaluator,
             RESTarMethods method)
         {
-            Log.Info("==> RESTar request");
             Request request = null;
             try
             {

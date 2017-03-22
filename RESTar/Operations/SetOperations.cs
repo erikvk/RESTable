@@ -1,8 +1,13 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Net;
+using System.Text;
+using System.Text.RegularExpressions;
 using DocumentFormat.OpenXml.Bibliography;
+using DocumentFormat.OpenXml.Wordprocessing;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Starcounter;
@@ -41,9 +46,11 @@ namespace RESTar
                     {
                         var uri = str.ParseSelfUri();
                         var response = Self.GET(uri.port, uri.path);
-                        if (response?.IsSuccessStatusCode != true || string.IsNullOrEmpty(response.Body))
+                        if (response?.IsSuccessStatusCode != true)
                             throw new Exception($"Could not get source data from '{uri}'");
-                        json = response.Body;
+                        if (response.StatusCode == 204 || string.IsNullOrEmpty(response.Body))
+                            json = "[]";
+                        else json = response.Body;
                     }
                     else
                         throw new Exception($"Invalid string '{str}'. Must be a REST request URI " +
@@ -78,6 +85,10 @@ namespace RESTar
                             if (arr.Count < 2)
                                 throw new Exception("Union takes at least two sets as operands");
                             return Union(arr.Select(treeRecursor).ToArray());
+                        case "map":
+                            if (arr.Count != 2)
+                                throw new Exception("Map takes two and only two arguments");
+                            return Map(treeRecursor(arr[0]), (string) arr[1]);
                         default:
                             throw new ArgumentOutOfRangeException($"Unknown operation '{prop.Name}'. " +
                                                                   "Avaliable operations: distinct, except, " +
@@ -151,6 +162,42 @@ namespace RESTar
             foreach (var item in toRemove)
                 array1.Remove(item);
             return array1;
+        }
+
+        private static readonly Regex macroRegex = new Regex(@"\$\([^\$\(\)]+\)");
+
+        private static JArray Map(JArray set, string mapper)
+        {
+            if (set == null) throw new ArgumentException(nameof(set));
+            if (string.IsNullOrEmpty(mapper)) throw new ArgumentException(nameof(mapper));
+            set = Distinct(set);
+            var mapped = new JArray();
+            var matches = macroRegex.Matches(mapper);
+            foreach (var item in set)
+            {
+                var localMapper = new StringBuilder(mapper);
+                var obj = item as JObject;
+                if (obj == null)
+                    throw new Exception("JSON syntax error in map set. Set must be of objects");
+                foreach (var match in matches)
+                {
+                    var matchstring = match.ToString();
+                    var key = matchstring.Substring(2, matchstring.Length - 3);
+                    localMapper.Replace(matchstring, WebUtility.UrlEncode(obj[key].ToString()));
+                }
+                var uri = localMapper.ToString().ParseSelfUri();
+                var response = Self.GET(uri.port, uri.path);
+                if (response?.IsSuccessStatusCode != true)
+                    throw new Exception($"Could not get source data from '{uri}'");
+                JArray toAdd;
+                if (response.StatusCode == 204 || string.IsNullOrEmpty(response.Body))
+                    toAdd = new JArray {new JObject()};
+                else toAdd = JArray.Parse(response.Body);
+                foreach (var i in toAdd)
+                    if (!mapped.Any(_i => JToken.DeepEquals(i, _i)))
+                        mapped.Add(i);
+            }
+            return mapped;
         }
     }
 }

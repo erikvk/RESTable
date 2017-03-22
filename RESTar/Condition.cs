@@ -18,7 +18,7 @@ namespace RESTar
             }
         }
 
-        public object this[string key, Operators op]
+        public dynamic this[string key, Operators op]
         {
             get
             {

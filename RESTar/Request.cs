@@ -545,22 +545,19 @@ namespace RESTar
 
         internal Response GetResponse(Response response)
         {
-            if (Destination != null)
-            {
-                var method_uri = Destination.Split(new[] {' '}, 2);
-                if (method_uri.Length == 1)
-                    throw new SyntaxException("Destination must be of form '[METHOD] [URI]'");
-                return HTTP.Request
-                (
-                    method: method_uri[0].ToUpper(),
-                    uri: method_uri[1],
-                    bodyString: response.Body,
-                    contentType: InputMimeType == RESTarMimeType.Excel
-                        ? "application/vnd-ms.excel"
-                        : "application/json"
-                );
-            }
-            return response;
+            if (Destination == null) return response;
+            var method_uri = Destination.Split(new[] {' '}, 2);
+            if (method_uri.Length == 1)
+                throw new SyntaxException("Destination must be of form '[METHOD] [URI]'");
+            return HTTP.Request
+            (
+                method: method_uri[0].ToUpper(),
+                uri: method_uri[1],
+                bodyString: response.Body,
+                contentType: InputMimeType == RESTarMimeType.Excel
+                    ? "application/vnd-ms.excel"
+                    : "application/json"
+            );
         }
     }
 }

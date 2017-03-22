@@ -26,8 +26,10 @@ namespace RESTar
                 throw new Exception("Invalid source URI");
             var uri = uriToken.Value.Value<string>().ParseSelfUri();
             var response = Self.GET(uri.port, uri.path);
-            if (response?.IsSuccessStatusCode != true || string.IsNullOrEmpty(response.Body))
+            if (response?.IsSuccessStatusCode != true)
                 throw new Exception($"Could not get source data from '{uri}'");
+            if (response.StatusCode == 204 || string.IsNullOrEmpty(response.Body))
+                return new[] {new Counter {["Count"] = 0}};
             IEnumerable<object> items = response.Body.DeserializeDyn();
             var count = items.Count();
             return new[] {new Counter {["Count"] = count}};

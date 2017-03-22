@@ -170,13 +170,12 @@ namespace RESTar
 
         internal static PropertyInfo FindColumn(this IEnumerable<PropertyInfo> columns, Type resource, string str)
         {
-            var matches = columns.Where(p => str == (p.GetAttribute<DataMemberAttribute>()?.Name?.ToLower()
-                                                     ?? p.Name.ToLower()));
-            if (matches.Count() == 1)
-                return matches.First();
-            if (matches.Count() > 1)
-                throw new AmbiguousColumnException(resource, str, matches.Select(m => m.Name).ToList());
-            throw new UnknownColumnException(resource, str);
+            var matches = columns.Where(p => str.ToLower() == (p.GetAttribute<DataMemberAttribute>()?.Name?.ToLower()
+                                                               ?? p.Name.ToLower())).ToList();
+            var count = matches.Count;
+            if (count < 1) throw new UnknownColumnException(resource, str);
+            if (count > 1) throw new AmbiguousColumnException(resource, str, matches.Select(m => m.Name).ToList());
+            return matches.First();
         }
 
         internal static string GetColumnName(this PropertyInfo column)
@@ -232,7 +231,7 @@ namespace RESTar
             else
             {
                 stringPart = $"t.Key ?= AND t.Value {condition.Operator.SQL}?";
-                valuePart = new[] {condition.Key, condition.Value};
+                valuePart = new object[] {condition.Key, condition.Value};
             }
             return new WhereClause
             {
