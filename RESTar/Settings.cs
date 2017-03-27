@@ -11,8 +11,7 @@ namespace RESTar
         internal static bool _PrettyPrint => Instance.PrettyPrint;
         internal static bool _CamelCase => Instance.CamelCase;
         internal static string _Uri => Instance.Uri;
-        internal static ushort _PublicPort => Instance.PublicPort;
-        internal static ushort _PrivatePort => Instance.PrivatePort;
+        internal static ushort _Port => Instance.Port;
         internal static string _ResourcesPath => Instance.ResourcesPath;
         internal static string _HelpResourcePath => Instance.HelpResourcePath;
         internal static bool _LocalTimes => Instance.LocalTimes;
@@ -91,16 +90,14 @@ namespace RESTar
         }
 
         public string Uri { get; private set; }
-        public ushort PublicPort { get; private set; }
-        public ushort PrivatePort { get; private set; }
-        public string ResourcesPath => $"http://[IP address]:{PublicPort}{Uri}";
+        public ushort Port { get; private set; }
+        public string ResourcesPath => $"http://[IP address]:{Port}{Uri}";
         public string HelpResourcePath => ResourcesPath + "/RESTar.help";
 
         internal static void Init
         (
             string uri,
-            ushort publicPort,
-            ushort privatePort,
+            ushort port,
             bool prettyPrint,
             bool camelCase,
             bool localTimes
@@ -140,8 +137,7 @@ namespace RESTar
                 new Settings
                 {
                     Uri = uri,
-                    PublicPort = publicPort,
-                    PrivatePort = privatePort,
+                    Port = port,
                     _prettyPrint = prettyPrint,
                     _camelCase = camelCase,
                     _localTimes = localTimes

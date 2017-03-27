@@ -109,9 +109,9 @@ namespace RESTar
                 var success = Enum.TryParse(pair[0].Capitalize(), out metaCondition);
                 if (!success)
                     throw new SyntaxException($"Invalid meta-condition '{pair[0]}'. Available meta-conditions: " +
-                                              $"{string.Join(", ", RESTarConfig.MetaConditions.Keys)}. For more info, see " +
+                                              $"{string.Join(", ", Enum.GetNames(typeof(RESTarMetaConditions)))}. For more info, see " +
                                               $"{Settings.Instance.HelpResourcePath}/topic=Meta-conditions");
-                var expectedType = RESTarConfig.MetaConditions[metaCondition];
+                var expectedType = metaCondition.ExpectedType();
                 var value = GetValue(pair[1]);
                 if (expectedType != value.GetType())
                     throw new SyntaxException($"Invalid data type assigned to meta-condition '{pair[0]}'. " +

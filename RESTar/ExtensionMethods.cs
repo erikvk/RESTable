@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Serialization;
+using System.Text;
 using System.Text.RegularExpressions;
 using Starcounter;
 using IResource = RESTar.Internal.IResource;
@@ -36,7 +37,7 @@ namespace RESTar
                                     $"beginning with '{Settings._Uri}/<resource locator>'");
             return new URI
             {
-                port = port == 0 ? Settings._PublicPort : port,
+                port = port == 0 ? Settings._Port : port,
                 path = input
             };
         }
@@ -93,6 +94,36 @@ namespace RESTar
         internal static dynamic MakeList(this object thing, Type resource)
         {
             return ListGenerator.MakeGenericMethod(resource).Invoke(null, new[] {thing});
+        }
+
+        internal static ICollection<IResource> FindResources(this string searchString)
+        {
+            searchString = searchString.ToLower();
+            var asterisks = searchString.Count(i => i == '*');
+            if (asterisks > 1)
+                throw new Exception("Invalid resource string syntax");
+            if (asterisks == 1)
+            {
+                if (searchString.Last() != '*')
+                    throw new Exception("Invalid resource string syntax");
+                var commonPart = searchString.Split('*')[0];
+                var matches = RESTarConfig.NameResources
+                    .Where(pair => pair.Key.StartsWith(commonPart))
+                    .Select(pair => pair.Value)
+                    .Union(DB.All<ResourceAlias>()
+                        .Where(alias => alias.Alias.StartsWith(commonPart))
+                        .Select(alias => alias.GetResource()))
+                    .ToList();
+                if (matches.Any())
+                    return matches;
+                throw new UnknownResourceException(searchString);
+            }
+            var resource = ResourceAlias.ByAlias(searchString);
+            if (resource == null)
+                RESTarConfig.NameResources.TryGetValue(searchString, out resource);
+            if (resource != null)
+                return new[] {resource};
+            throw new UnknownResourceException(searchString);
         }
 
         internal static IResource FindResource(this string searchString)
@@ -280,7 +311,12 @@ namespace RESTar
         }
 
         internal static ICollection<RESTarMethods> ToMethodsList(this string methodsString)
-            => methodsString?.Split(',').Select(s => (RESTarMethods) Enum.Parse(typeof(RESTarMethods), s)).ToList();
+        {
+            if (methodsString == null) return null;
+            if (methodsString.Trim() == "*")
+                return RESTarConfig.Methods;
+            return methodsString.Split(',').Select(s => (RESTarMethods) Enum.Parse(typeof(RESTarMethods), s)).ToList();
+        }
 
         internal static string ToMethodsString(this IEnumerable<RESTarMethods> ie) => string.Join(", ", ie);
 
@@ -335,17 +371,19 @@ namespace RESTar
                     };
                 case RESTarPresets.ReadAndWrite:
                     return RESTarConfig.Methods;
-                case RESTarPresets.ReadAndPrivateWrite:
-                    return new[]
-                    {
-                        RESTarMethods.GET,
-                        RESTarMethods.Private_POST,
-                        RESTarMethods.Private_PUT,
-                        RESTarMethods.Private_PATCH,
-                        RESTarMethods.Private_DELETE
-                    };
             }
             throw new ArgumentOutOfRangeException(nameof(preset));
+        }
+
+        public static void ForEach<T>(this IEnumerable<T> source, Action<T> action)
+        {
+            foreach (var e in source) action(e);
+        }
+
+        public static void ForEach<T>(this IEnumerable<T> source, Action<T, int> action)
+        {
+            var i = 0;
+            foreach (var e in source) action(e, i++);
         }
 
         internal static int Count(this IResource resource, IRequest request)
@@ -358,6 +396,56 @@ namespace RESTar
             var _conditions = new Conditions();
             _conditions.AddRange(conditions);
             return _conditions;
+        }
+
+        internal static AccessRights ToAccessRights(this IEnumerable<AccessRight> accessRights)
+        {
+            var _accessRights = new AccessRights();
+            foreach (var right in accessRights)
+            {
+                foreach (var resource in right.Resources)
+                {
+                    _accessRights[resource] = _accessRights.ContainsKey(resource)
+                        ? _accessRights[resource].Union(right.AllowedMethods).ToList()
+                        : right.AllowedMethods;
+                }
+            }
+            return _accessRights;
+        }
+
+        internal static string MD5(this string input)
+        {
+            using (var hasher = System.Security.Cryptography.MD5.Create())
+                return Convert.ToBase64String(hasher.ComputeHash(Encoding.UTF8.GetBytes(input)));
+        }
+
+        internal static Type ExpectedType(this RESTarMetaConditions condition)
+        {
+            switch (condition)
+            {
+                case RESTarMetaConditions.Limit:
+                    return typeof(int);
+                case RESTarMetaConditions.Order_desc:
+                    return typeof(string);
+                case RESTarMetaConditions.Order_asc:
+                    return typeof(string);
+                case RESTarMetaConditions.Unsafe:
+                    return typeof(bool);
+                case RESTarMetaConditions.Select:
+                    return typeof(string);
+                case RESTarMetaConditions.Rename:
+                    return typeof(string);
+                case RESTarMetaConditions.Dynamic:
+                    return typeof(bool);
+                case RESTarMetaConditions.Map:
+                    return typeof(string);
+                case RESTarMetaConditions.Imgput:
+                    return typeof(string);
+                case RESTarMetaConditions.Safepost:
+                    return typeof(string);
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(condition), condition, null);
+            }
         }
     }
 }

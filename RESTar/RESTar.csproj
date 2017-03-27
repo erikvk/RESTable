@@ -92,7 +92,9 @@
     <Reference Include="System.XML" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AccessRights.cs" />
     <Compile Include="Attributes.cs" />
+    <Compile Include="Handlers.cs" />
     <Compile Include="Operations\Counter.cs" />
     <Compile Include="Internal\DynamicResource.cs" />
     <Compile Include="DynamitControl.cs" />

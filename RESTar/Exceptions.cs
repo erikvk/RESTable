@@ -5,6 +5,10 @@ using RESTar.Internal;
 
 namespace RESTar
 {
+    public class ForbiddenException : Exception
+    {
+    }
+
     public class SyntaxException : Exception
     {
         public SyntaxException(string message) : base("Syntax error while parsing request: " + message)

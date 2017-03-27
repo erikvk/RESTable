@@ -1,13 +1,10 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
-using DocumentFormat.OpenXml.Bibliography;
-using DocumentFormat.OpenXml.Wordprocessing;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Starcounter;
@@ -175,6 +172,7 @@ namespace RESTar
             var matches = macroRegex.Matches(mapper);
             foreach (var item in set)
             {
+                var skip = false;
                 var localMapper = new StringBuilder(mapper);
                 var obj = item as JObject;
                 if (obj == null)
@@ -183,19 +181,25 @@ namespace RESTar
                 {
                     var matchstring = match.ToString();
                     var key = matchstring.Substring(2, matchstring.Length - 3);
-                    localMapper.Replace(matchstring, WebUtility.UrlEncode(obj[key].ToString()));
+                    var asDict = (IDictionary<string, JToken>) obj;
+                    if (asDict.ContainsKey(key))
+                        localMapper.Replace(matchstring, WebUtility.UrlEncode(obj[key]?.ToString() ?? "null"));
+                    else skip = true;
                 }
-                var uri = localMapper.ToString().ParseSelfUri();
-                var response = Self.GET(uri.port, uri.path);
-                if (response?.IsSuccessStatusCode != true)
-                    throw new Exception($"Could not get source data from '{uri}'");
-                JArray toAdd;
-                if (response.StatusCode == 204 || string.IsNullOrEmpty(response.Body))
-                    toAdd = new JArray {new JObject()};
-                else toAdd = JArray.Parse(response.Body);
-                foreach (var i in toAdd)
-                    if (!mapped.Any(_i => JToken.DeepEquals(i, _i)))
-                        mapped.Add(i);
+                if (!skip)
+                {
+                    var uri = localMapper.ToString().ParseSelfUri();
+                    var response = Self.GET(uri.port, uri.path);
+                    if (response?.IsSuccessStatusCode != true)
+                        throw new Exception($"Could not get source data from '{uri}'");
+                    JArray toAdd;
+                    if (response.StatusCode == 204 || string.IsNullOrEmpty(response.Body))
+                        toAdd = new JArray {new JObject()};
+                    else toAdd = JArray.Parse(response.Body);
+                    foreach (var i in toAdd)
+                        if (!mapped.Any(_i => JToken.DeepEquals(i, _i)))
+                            mapped.Add(i);
+                }
             }
             return mapped;
         }

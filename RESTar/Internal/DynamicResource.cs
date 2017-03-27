@@ -71,5 +71,9 @@ namespace RESTar.Internal
         public int Delete(IEnumerable<object> entities, IRequest request) =>
             DDictionaryOperations.Deleter().Delete((dynamic) entities, request);
 
+        public bool Equals(IResource x, IResource y) => x.Name == y.Name;
+        public int GetHashCode(IResource obj) => obj.Name.GetHashCode();
+        public int CompareTo(IResource other) => string.Compare(Name, other.Name, StringComparison.Ordinal);
+        public override int GetHashCode() => Name.GetHashCode();
     }
 }

@@ -1,15 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Xml;
 using Dynamit;
-using Jil;
+using Microsoft.CSharp.RuntimeBinder;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using RESTar.Internal;
-using Starcounter;
 using static RESTar.RESTarMethods;
-using static RESTar.RESTarOperations;
 using IResource = RESTar.Internal.IResource;
-using ScRequest = Starcounter.Request;
 
 namespace RESTar
 {
@@ -19,9 +19,11 @@ namespace RESTar
         internal static readonly IDictionary<string, IResource> NameResources = new Dictionary<string, IResource>();
         internal static readonly IDictionary<Type, IResource> TypeResources = new Dictionary<Type, IResource>();
         internal static readonly IDictionary<IResource, Type> IEnumTypes = new Dictionary<IResource, Type>();
-        internal static Dictionary<RESTarMetaConditions, Type> MetaConditions;
+        internal static readonly IDictionary<string, AccessRights> ApiKeys = new Dictionary<string, AccessRights>();
+        internal static readonly List<Uri> AllowedOrigins = new List<Uri>();
         internal static readonly RESTarMethods[] Methods = {GET, POST, PATCH, PUT, DELETE};
-        internal static readonly RESTarOperations[] Operations = {Select, Insert, Update, Delete};
+        internal static bool RequireApiKey { get; private set; }
+        internal static bool AllowAllOrigins { get; private set; }
 
         internal static void AddResource(IResource toAdd)
         {
@@ -40,16 +42,20 @@ namespace RESTar
         /// <summary>
         /// Initiates the RESTar interface
         /// </summary>
-        /// <param name="publicPort">The main port that RESTar should listen on</param>
-        /// <param name="privatePort">A private port that RESTar should accept private methods from</param>
+        /// <param name="port">The port that RESTar should listen on</param>
         /// <param name="uri">The URI that RESTar should listen on. E.g. '/rest'</param>
         /// <param name="prettyPrint">Should JSON output be pretty print formatted as default?
         ///  (can be changed in settings during runtime)</param>
+        /// <param name="camelCase">Should resources be parsed and serialized using camelCase as 
+        /// opposed to default PascalCase?</param>
+        /// <param name="localTimes">Should datetimes be handled as local times or as UTC?</param>
         public static void Init
         (
-            ushort publicPort = 8282,
-            ushort privatePort = 8283,
+            ushort port = 8282,
             string uri = "/rest",
+            bool requireApiKey = false,
+            bool allowAllOrigins = true,
+            string configFilePath = null,
             bool prettyPrint = true,
             bool camelCase = false,
             bool localTimes = true
@@ -64,166 +70,99 @@ namespace RESTar
             foreach (var dynamicResource in DB.All<DynamicResource>())
                 AddResource(dynamicResource);
 
-            MetaConditions = Enum.GetNames(typeof(RESTarMetaConditions)).ToDictionary(
-                name => (RESTarMetaConditions) Enum.Parse(typeof(RESTarMetaConditions), name),
-                name => typeof(RESTarMetaConditions).GetField(name).GetAttribute<TypeAttribute>().Type
-            );
-
+            RequireApiKey = requireApiKey;
+            AllowAllOrigins = allowAllOrigins;
+            SetupConfig(configFilePath);
             DynamitConfig.Init(true, true);
-            Settings.Init(uri, publicPort, privatePort, prettyPrint, camelCase, localTimes);
+            Settings.Init(uri, port, prettyPrint, camelCase, localTimes);
             Log.Init();
-            uri += "{?}";
-            Handle.GET(publicPort, uri, (ScRequest r, string q) => Evaluate(r, q, Evaluators.GET, GET));
-            Handle.POST(publicPort, uri, (ScRequest r, string q) => Evaluate(r, q, Evaluators.POST, POST));
-            Handle.PUT(publicPort, uri, (ScRequest r, string q) => Evaluate(r, q, Evaluators.PUT, PUT));
-            Handle.PATCH(publicPort, uri, (ScRequest r, string q) => Evaluate(r, q, Evaluators.PATCH, PATCH));
-            Handle.DELETE(publicPort, uri, (ScRequest r, string q) => Evaluate(r, q, Evaluators.DELETE, DELETE));
-            if (privatePort == 0) return;
-            Handle.GET(privatePort, uri, (ScRequest r, string q) => Evaluate(r, q, Evaluators.GET, Private_GET));
-            Handle.POST(privatePort, uri, (ScRequest r, string q) => Evaluate(r, q, Evaluators.POST, Private_POST));
-            Handle.PUT(privatePort, uri, (ScRequest r, string q) => Evaluate(r, q, Evaluators.PUT, Private_PUT));
-            Handle.PATCH(privatePort, uri, (ScRequest r, string q) => Evaluate(r, q, Evaluators.PATCH, Private_PATCH));
-            Handle.DELETE(privatePort, uri, (ScRequest r, string q) => Evaluate(r, q, Evaluators.DELETE, Private_DELETE));
+            Handlers.Register(uri);
         }
 
-        private static Response Evaluate(ScRequest scRequest, string query, Func<Request, Response> evaluator,
-            RESTarMethods method)
+        private static void SetupConfig(string filePath)
         {
-            Request request = null;
+            if (!RequireApiKey && AllowAllOrigins) return;
+            if (filePath == null)
+                throw new Exception("RESTar init error: No config file path to get API keys and/or allowed origins from");
             try
             {
-                request = new Request(scRequest, query, method, evaluator);
-                request.ResolveMethod();
-                var blockedMethod = MethodCheck(request);
-                if (blockedMethod != null)
-                    return Responses.BlockedMethod(request, blockedMethod.Value, request.Resource.TargetType);
-                request.ResolveDataSource();
-                var response = request.Evaluator(request);
-                return request.GetResponse(response);
+                dynamic config;
+                using (var appConfig = File.OpenText(filePath))
+                {
+                    var document = new XmlDocument();
+                    document.Load(appConfig);
+                    var jsonstring = JsonConvert.SerializeXmlNode(document);
+                    config = JObject.Parse(jsonstring)["config"] as JObject;
+                }
+                if (config == null)
+                    throw new Exception();
+                if (!AllowAllOrigins)
+                    SetupOrigins(config.AllowedOrigin);
+                if (RequireApiKey)
+                    SetupApiKeys(config.ApiKey);
             }
-            catch (DeserializationException e)
+            catch (Exception jse)
             {
-                if (e.InnerException != null)
-                    return Responses.BadRequest(e.InnerException);
-                return Responses.DeserializationError(scRequest.Body);
-            }
-            catch (JsonSerializationException e)
-            {
-                if (e.InnerException != null)
-                    return Responses.BadRequest(e.InnerException);
-                return Responses.DeserializationError(scRequest.Body);
-            }
-            catch (SqlException e)
-            {
-                return Responses.SemanticsError(e);
-            }
-            catch (SyntaxException e)
-            {
-                return Responses.BadRequest(e);
-            }
-            catch (UnknownColumnException e)
-            {
-                return Responses.NotFound(e);
-            }
-            catch (CustomEntityUnknownColumnException e)
-            {
-                return Responses.NotFound(e);
-            }
-            catch (AmbiguousColumnException e)
-            {
-                return Responses.AmbiguousColumn(e);
-            }
-            catch (ExternalSourceException e)
-            {
-                return Responses.BadRequest(e);
-            }
-            catch (UnknownResourceException e)
-            {
-                return Responses.NotFound(e);
-            }
-            catch (UnknownResourceForMappingException e)
-            {
-                return Responses.NotFound(e);
-            }
-            catch (AmbiguousResourceException e)
-            {
-                return Responses.AmbiguousResource(e);
-            }
-            catch (InvalidInputCountException e)
-            {
-                return Responses.BadRequest(e);
-            }
-            catch (AmbiguousMatchException e)
-            {
-                return Responses.AmbiguousMatch(e.Resource.TargetType);
-            }
-            catch (ExcelInputException e)
-            {
-                return Responses.BadRequest(e);
-            }
-            catch (ExcelFormatException e)
-            {
-                return Responses.BadRequest(e);
-            }
-            catch (RESTarInternalException e)
-            {
-                return Responses.RESTarInternalError(e);
-            }
-            catch (NoContentException)
-            {
-                return Responses.NoContent();
-            }
-            catch (JsonReaderException)
-            {
-                return Responses.DeserializationError(scRequest.Body);
-            }
-            catch (DbException e)
-            {
-                return Responses.DatabaseError(e);
-            }
-            catch (AbortedSelectorException e)
-            {
-                return Responses.AbortedOperation(e, method, request?.Resource.TargetType);
-            }
-            catch (AbortedInserterException e)
-            {
-                return Responses.AbortedOperation(e, method, request?.Resource.TargetType);
-            }
-            catch (AbortedUpdaterException e)
-            {
-                return Responses.AbortedOperation(e, method, request?.Resource.TargetType);
-            }
-            catch (AbortedDeleterException e)
-            {
-                return Responses.AbortedOperation(e, method, request?.Resource.TargetType);
-            }
-            catch (Exception e)
-            {
-                return Responses.InternalError(e);
+                throw new Exception($"RESTar init error: Invalid config file syntax: {jse.Message}");
             }
         }
 
-        private static RESTarMethods? MethodCheck(IRequest request)
+        private static void SetupOrigins(JToken allowedOrigin)
         {
-            var availableMethods = request.Resource.AvailableMethodsString.ToMethodsList();
-            var method = request.Method;
-            var publicParallel = PublicParallel(request.Method);
-            if (!availableMethods.Contains(method) &&
-                (publicParallel == null || !availableMethods.Contains(publicParallel.Value)))
-                return method;
-            return null;
+            switch (allowedOrigin.Type)
+            {
+                case JTokenType.String:
+                    AllowedOrigins.Add(new Uri(allowedOrigin.Value<string>()));
+                    break;
+                case JTokenType.Array:
+                    AllowedOrigins.AddRange(allowedOrigin.Select(i => new Uri(i.Value<string>())));
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
         }
 
-        private static RESTarMethods? PublicParallel(RESTarMethods method)
+        private static void SetupApiKeys(JToken apiKey)
         {
-            var methodString = method.ToString();
-            if (methodString.Contains("Private"))
+            switch (apiKey.Type)
             {
-                RESTarMethods outMethod;
-                Enum.TryParse(methodString.Split('_')[1], out outMethod);
-                return outMethod;
+                case JTokenType.Object:
+                    List<AccessRight> access;
+                    var key = apiKey["Key"].Value<string>().MD5();
+                    var accessToken = apiKey["AllowAccess"];
+                    switch (accessToken.Type)
+                    {
+                        case JTokenType.Object:
+                            access = new List<AccessRight>
+                            {
+                                new AccessRight
+                                {
+                                    Resources = accessToken["Resource"].Value<string>().FindResources(),
+                                    AllowedMethods = accessToken["Methods"].Value<string>().ToUpper().ToMethodsList()
+                                }
+                            };
+                            break;
+                        case JTokenType.Array:
+                            access = accessToken.Select(item => new AccessRight
+                            {
+                                Resources = item["Resource"].Value<string>().FindResources(),
+                                AllowedMethods = item["Methods"].Value<string>().ToUpper().ToMethodsList()
+                            }).ToList();
+                            break;
+                        default:
+                            throw new ArgumentOutOfRangeException();
+                    }
+                    ApiKeys[key] = access.ToAccessRights();
+                    break;
+
+                case JTokenType.Array:
+                    var array = (JArray) apiKey;
+                    foreach (var jToken in array)
+                        SetupApiKeys((JObject) jToken);
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
             }
-            return null;
         }
     }
 }

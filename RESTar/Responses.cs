@@ -85,18 +85,6 @@ namespace RESTar
             };
         }
 
-        internal static Response BlockedMethod(Request request, RESTarMethods method, Type resource)
-        {
-            var alias = ResourceAlias.ByResource(resource);
-            return new Response
-            {
-                StatusCode = (ushort) HttpStatusCode.Forbidden,
-                StatusDescription = $"{method} is blocked for resource '{resource.FullName}'" +
-                                    $"{(alias != null ? $" ('{alias}')" : "")}. Available methods: " +
-                                    $"{request.Resource.AvailableMethodsString}"
-            };
-        }
-
         #endregion
 
         #region Internal
@@ -303,5 +291,38 @@ namespace RESTar
         }
 
         #endregion
+
+        internal static Response Forbidden() => new Response
+        {
+            StatusCode = (ushort) HttpStatusCode.Forbidden,
+            StatusDescription = "Forbidden"
+        };
+
+        internal static Response AllowOrigin(string allowedOrigin, IEnumerable<RESTarMethods> allowedMethods) =>
+            new Response
+            {
+                StatusCode = (ushort) HttpStatusCode.OK,
+                StatusDescription = "OK",
+                Headers =
+                {
+                    ["Access-Control-Allow-Origin"] = RESTarConfig.AllowAllOrigins ? "*" : allowedOrigin,
+                    ["Access-Control-Allow-Methods"] = string.Join(", ", ToExternalMethodsList(allowedMethods)),
+                    ["Access-Control-Max-Age"] = "120",
+                    ["Access-Control-Allow-Credentials"] = "true",
+                    ["Access-Control-Allow-Headers"] = "origin, content-type, accept, authorization, " +
+                                                       "source, destination"
+                }
+            };
+
+        private static IEnumerable<RESTarMethods> ToExternalMethodsList(IEnumerable<RESTarMethods> methods)
+        {
+            return methods.Select(i =>
+            {
+                var str = i.ToString();
+                if (str.Contains("ADMIN"))
+                    return (RESTarMethods) Enum.Parse(typeof(RESTarMethods), str.Split('_')[1]);
+                return i;
+            }).Distinct();
+        }
     }
 }

@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using RESTar.Internal;
+﻿using RESTar.Internal;
 
 namespace RESTar
 {

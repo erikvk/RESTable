@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace RESTar.Internal
 {
-    public interface IResource : IOperationsProvider<object>
+    public interface IResource : IOperationsProvider<object>, IEqualityComparer<IResource>, IComparable<IResource>
     {
         string Name { get; }
         bool Editable { get; }

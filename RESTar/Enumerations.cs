@@ -23,12 +23,6 @@ namespace RESTar
         /// Makes all methods available for this resource
         /// </summary>
         ReadAndWrite,
-
-        /// <summary>
-        /// Makes GET available on public port and the rest of the
-        /// methods available on only the private port.
-        /// </summary>
-        ReadAndPrivateWrite
     }
 
     public enum RESTarMethods
@@ -37,12 +31,7 @@ namespace RESTar
         POST,
         PATCH,
         PUT,
-        DELETE,
-        Private_GET,
-        Private_POST,
-        Private_PATCH,
-        Private_PUT,
-        Private_DELETE
+        DELETE
     }
 
     public enum RESTarOperations
@@ -65,16 +54,16 @@ namespace RESTar
 
     public enum RESTarMetaConditions
     {
-        [Type(typeof(int))] Limit,
-        [Type(typeof(string))] Order_desc,
-        [Type(typeof(string))] Order_asc,
-        [Type(typeof(bool))] Unsafe,
-        [Type(typeof(string))] Select,
-        [Type(typeof(string))] Rename,
-        [Type(typeof(bool))] Dynamic,
-        [Type(typeof(string))] Map,
-        [Type(typeof(string))] Imgput,
-        [Type(typeof(string))] Safepost
+        Limit,
+        Order_desc,
+        Order_asc,
+        Unsafe,
+        Select,
+        Rename,
+        Dynamic,
+        Map,
+        Imgput,
+        Safepost
     }
 
     internal enum RESTarMimeType : byte

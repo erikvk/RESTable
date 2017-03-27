@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -27,7 +26,7 @@ namespace RESTar
                 _resource = value;
                 if (value.TargetType.IsSubclassOf(typeof(DDictionary)))
                     DynamicMemberResource = true;
-             }
+            }
         }
 
         internal bool DynamicMemberResource;
@@ -50,7 +49,7 @@ namespace RESTar
         internal readonly RESTarMimeType InputMimeType;
         internal readonly RESTarMimeType OutputMimeType;
         internal string Imgput;
-        public RESTarMethods Method { get; set; }
+        public RESTarMethods Method { get; private set; }
         public Func<Request, Response> Evaluator;
 
         internal Request(ScRequest scRequest, string query, RESTarMethods method, Func<Request, Response> evaluator)
@@ -67,7 +66,7 @@ namespace RESTar
             Method = method;
             Source = scRequest.Headers["Source"];
             Destination = scRequest.Headers["Destination"];
-  
+
             var ContentType = scRequest.ContentType?.ToLower();
             InputMimeType = ContentType?.Contains("excel") == true ||
                             ContentType?.Equals("application/vnd.openxmlformats-" +
@@ -152,7 +151,7 @@ namespace RESTar
                 Imgput = (string) MetaConditions["imgput"];
                 Evaluator = Evaluators.PUT;
             }
-         }
+        }
 
         internal void ResolveDataSource()
         {
@@ -259,6 +258,8 @@ namespace RESTar
                     break;
             }
         }
+
+        internal Response Evaluate() => Evaluator?.Invoke(this);
 
         private static readonly MethodInfo Mapper = typeof(Request).GetMethod("MapEntities",
             BindingFlags.NonPublic | BindingFlags.Static);
@@ -453,7 +454,8 @@ namespace RESTar
                         else if (s.Contains('.'))
                         {
                             dynamic value;
-                            string key = ExtensionMethods.GetValueFromKeyString(request.Resource.TargetType, s, entity, out value);
+                            string key = ExtensionMethods.GetValueFromKeyString(request.Resource.TargetType, s, entity,
+                                out value);
                             newEntity[key] = value;
                         }
                         else
@@ -520,7 +522,8 @@ namespace RESTar
                         else if (s.Contains('.'))
                         {
                             dynamic value;
-                            string key = ExtensionMethods.GetValueFromKeyString(request.Resource.TargetType, s, entity, out value);
+                            string key = ExtensionMethods.GetValueFromKeyString(request.Resource.TargetType, s, entity,
+                                out value);
                             string newKey;
                             request.Rename.TryGetValue(key.ToLower(), out newKey);
                             newEntity[newKey ?? key] = value;

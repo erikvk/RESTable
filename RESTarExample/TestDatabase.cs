@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using RESTar;
+﻿using RESTar;
 using RESTarExample.TestDb;
 using Starcounter;
 

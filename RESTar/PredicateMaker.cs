@@ -2,13 +2,14 @@
 using System.Collections.Generic;
 using System.Linq;
 using Dynamit;
+using static System.StringComparison;
 
 namespace RESTar
 {
     internal static class PredicateMaker
     {
         private static bool KeysEqual(string k1, string k2) =>
-            string.Equals(k1, k2, StringComparison.CurrentCultureIgnoreCase);
+            string.Equals(k1, k2, CurrentCultureIgnoreCase);
 
         internal static Predicate<DDictionary> ToDDictionaryPredicate(this IEnumerable<Condition> conditions)
         {
@@ -51,6 +52,8 @@ namespace RESTar
                             dynamic val2 = c.Value;
                             try
                             {
+                                if (val1 is string && val2 is string)
+                                    return string.Compare((string) val1, (string) val2, Ordinal) < 0;
                                 return val1 < val2;
                             }
                             catch
@@ -65,6 +68,8 @@ namespace RESTar
                             dynamic val2 = c.Value;
                             try
                             {
+                                if (val1 is string && val2 is string)
+                                    return string.Compare((string) val1, (string) val2, Ordinal) > 0;
                                 return val1 > val2;
                             }
                             catch
@@ -79,6 +84,8 @@ namespace RESTar
                             dynamic val2 = c.Value;
                             try
                             {
+                                if (val1 is string && val2 is string)
+                                    return string.Compare((string) val1, (string) val2, Ordinal) >= 0;
                                 return val1 >= val2;
                             }
                             catch
@@ -93,6 +100,8 @@ namespace RESTar
                             dynamic val2 = c.Value;
                             try
                             {
+                                if (val1 is string && val2 is string)
+                                    return string.Compare((string) val1, (string) val2, Ordinal) <= 0;
                                 return val1 <= val2;
                             }
                             catch
@@ -174,7 +183,7 @@ namespace RESTar
                             try
                             {
                                 dynamic value;
-                                var val1 = ExtensionMethods.GetValueFromKeyString(type, c.Key, item, out value);
+                                ExtensionMethods.GetValueFromKeyString(type, c.Key, item, out value);
                                 return value == c.Value;
                             }
                             catch
@@ -188,7 +197,7 @@ namespace RESTar
                             try
                             {
                                 dynamic value;
-                                var val1 = ExtensionMethods.GetValueFromKeyString(type, c.Key, item, out value);
+                                ExtensionMethods.GetValueFromKeyString(type, c.Key, item, out value);
                                 return value != c.Value;
                             }
                             catch
@@ -202,7 +211,9 @@ namespace RESTar
                             try
                             {
                                 dynamic value;
-                                var val1 = ExtensionMethods.GetValueFromKeyString(type, c.Key, item, out value);
+                                ExtensionMethods.GetValueFromKeyString(type, c.Key, item, out value);
+                                if (value is string && c.Value is string)
+                                    return string.Compare((string) value, (string) c.Value, Ordinal) < 0;
                                 return value < c.Value;
                             }
                             catch
@@ -210,14 +221,15 @@ namespace RESTar
                                 return false;
                             }
                         };
-
                     case Operators.GREATER_THAN:
                         return item =>
                         {
                             try
                             {
                                 dynamic value;
-                                var val1 = ExtensionMethods.GetValueFromKeyString(type, c.Key, item, out value);
+                                ExtensionMethods.GetValueFromKeyString(type, c.Key, item, out value);
+                                if (value is string && c.Value is string)
+                                    return string.Compare((string) value, (string) c.Value, Ordinal) > 0;
                                 return value > c.Value;
                             }
                             catch
@@ -225,14 +237,15 @@ namespace RESTar
                                 return false;
                             }
                         };
-
                     case Operators.GREATER_THAN_OR_EQUALS:
                         return item =>
                         {
                             try
                             {
                                 dynamic value;
-                                var val1 = ExtensionMethods.GetValueFromKeyString(type, c.Key, item, out value);
+                                ExtensionMethods.GetValueFromKeyString(type, c.Key, item, out value);
+                                if (value is string && c.Value is string)
+                                    return string.Compare((string) value, (string) c.Value, Ordinal) >= 0;
                                 return value >= c.Value;
                             }
                             catch
@@ -240,14 +253,15 @@ namespace RESTar
                                 return false;
                             }
                         };
-
                     case Operators.LESS_THAN_OR_EQUALS:
                         return item =>
                         {
                             try
                             {
                                 dynamic value;
-                                var val1 = ExtensionMethods.GetValueFromKeyString(type, c.Key, item, out value);
+                                ExtensionMethods.GetValueFromKeyString(type, c.Key, item, out value);
+                                if (value is string && c.Value is string)
+                                    return string.Compare((string) value, (string) c.Value, Ordinal) <= 0;
                                 return value <= c.Value;
                             }
                             catch

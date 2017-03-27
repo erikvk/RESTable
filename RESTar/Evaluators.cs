@@ -49,7 +49,7 @@ namespace RESTar
                 {
                     response = Self.PUT
                     (
-                        port: _PublicPort,
+                        port: _Port,
                         uri: $"{_Uri}/{request.Resource.Name}/" +
                              $"{string.Join("&", keys.Select(k => $"{k}={((IDictionary<string, dynamic>) entity).GetNoCase(k)}"))}",
                         body: entityJson

@@ -204,19 +204,14 @@ namespace RESTar.Internal
                         return new[] {RESTarOperations.Select, RESTarOperations.Update};
                     case RESTarMethods.DELETE:
                         return new[] {RESTarOperations.Select, RESTarOperations.Delete};
-                    case RESTarMethods.Private_GET:
-                        return new[] {RESTarOperations.Select};
-                    case RESTarMethods.Private_POST:
-                        return new[] {RESTarOperations.Insert};
-                    case RESTarMethods.Private_PUT:
-                        return new[] {RESTarOperations.Select, RESTarOperations.Insert, RESTarOperations.Update};
-                    case RESTarMethods.Private_PATCH:
-                        return new[] {RESTarOperations.Select, RESTarOperations.Update};
-                    case RESTarMethods.Private_DELETE:
-                        return new[] {RESTarOperations.Select, RESTarOperations.Delete};
                 }
                 return null;
             }).Distinct().ToList();
         }
+
+        public bool Equals(IResource x, IResource y) => x.Name == y.Name;
+        public int GetHashCode(IResource obj) => obj.Name.GetHashCode();
+        public int CompareTo(IResource other) => string.Compare(Name, other.Name, StringComparison.Ordinal);
+        public override int GetHashCode() => Name.GetHashCode();
     }
 }
