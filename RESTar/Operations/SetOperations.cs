@@ -41,18 +41,17 @@ namespace RESTar
                         json = str;
                     else if (char.IsDigit(first) || first == '/')
                     {
-                        var uri = str.ParseSelfUri();
-                        var response = Self.GET(uri.port, uri.path);
+                        var uri = str;
+                        var response = Self.GET(Settings._Port, Settings._Uri + uri);
                         if (response?.IsSuccessStatusCode != true)
-                            throw new Exception($"Could not get source data from '{uri}'");
+                            throw new Exception($"Could not get source data from '<self>:{Settings._Port}{Settings._Uri}{uri}'");
                         if (response.StatusCode == 204 || string.IsNullOrEmpty(response.Body))
                             json = "[]";
                         else json = response.Body;
                     }
                     else
-                        throw new Exception($"Invalid string '{str}'. Must be a REST request URI " +
-                                            $"beginning with '{Settings._Uri}/<resource locator>' or " +
-                                            $"a JSON array.");
+                        throw new Exception($"Invalid string '{str}'. Must be a relative REST request URI " +
+                                            $"beginning wmuith '/<resource locator>' or a JSON array.");
                     return JsonConvert.DeserializeObject<JArray>(json, Serializer.JsonNetSettings);
                 }
 
@@ -188,10 +187,10 @@ namespace RESTar
                 }
                 if (!skip)
                 {
-                    var uri = localMapper.ToString().ParseSelfUri();
-                    var response = Self.GET(uri.port, uri.path);
+                    var uri = localMapper.ToString();
+                    var response = Self.GET(Settings._Port, Settings._Uri + uri);
                     if (response?.IsSuccessStatusCode != true)
-                        throw new Exception($"Could not get source data from '{uri}'");
+                        throw new Exception($"Could not get source data from '<self>:{Settings._Port}{Settings._Uri}{uri}'");
                     JArray toAdd;
                     if (response.StatusCode == 204 || string.IsNullOrEmpty(response.Body))
                         toAdd = new JArray {new JObject()};

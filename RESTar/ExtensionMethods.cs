@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Runtime.Serialization;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Web;
 using Starcounter;
 using IResource = RESTar.Internal.IResource;
 
@@ -13,34 +14,8 @@ namespace RESTar
 {
     public static class ExtensionMethods
     {
-        internal class URI
-        {
-            internal ushort port;
-            internal string path;
-            public override string ToString() => $"<self>:{port}{path}";
-        }
-
-        internal static URI ParseSelfUri(this string input)
-        {
-            ushort port = 0;
-            var first = input.First();
-            if (char.IsDigit(first))
-            {
-                var port_rest = input.Split(new[] {'/'}, 2);
-                if (!ushort.TryParse(port_rest[0], out port))
-                    throw new Exception("Invalid port format, should be <port nr>/<rest of uri>");
-                input = $"/{port_rest[1]}";
-                first = input.First();
-            }
-            if (first != '/')
-                throw new Exception($"Invalid source string '{input}'. Must be a REST request URI " +
-                                    $"beginning with '{Settings._Uri}/<resource locator>'");
-            return new URI
-            {
-                port = port == 0 ? Settings._Port : port,
-                path = input
-            };
-        }
+        internal static string UrlDecode(this string str) => HttpUtility.UrlDecode(str);
+        internal static string UrlEncode(this string str) => HttpUtility.UrlEncode(str);
 
         internal static Selector<T> GetSelector<T>(this Type type)
         {
@@ -438,8 +413,6 @@ namespace RESTar
                 case RESTarMetaConditions.Dynamic:
                     return typeof(bool);
                 case RESTarMetaConditions.Map:
-                    return typeof(string);
-                case RESTarMetaConditions.Imgput:
                     return typeof(string);
                 case RESTarMetaConditions.Safepost:
                     return typeof(string);

@@ -62,7 +62,6 @@ namespace RESTar
         Rename,
         Dynamic,
         Map,
-        Imgput,
         Safepost
     }
 

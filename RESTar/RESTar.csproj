@@ -95,12 +95,13 @@
     <Compile Include="AccessRights.cs" />
     <Compile Include="Attributes.cs" />
     <Compile Include="Handlers.cs" />
+    <Compile Include="HttpRequest.cs" />
+    <Compile Include="MimeTypes.cs" />
     <Compile Include="Operations\Counter.cs" />
     <Compile Include="Internal\DynamicResource.cs" />
     <Compile Include="DynamitControl.cs" />
     <Compile Include="DDictionaryOperations.cs" />
     <Compile Include="DynamicTables.cs" />
-    <Compile Include="HTTPS.cs" />
     <Compile Include="Internal\IResource.cs" />
     <Compile Include="ResourceHelper.cs" />
     <Compile Include="OperationInterfaces.cs" />

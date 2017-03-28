@@ -16,13 +16,13 @@ namespace RESTar
         }
     }
 
-    public class ExternalSourceException : Exception
+    public class SourceException : Exception
     {
         public readonly string _Message;
         public readonly string Uri;
 
-        public ExternalSourceException(string uri, string message)
-            : base($"RESTar could not get entities from external source at '{uri}'. {message}")
+        public SourceException(string uri, string message)
+            : base($"RESTar could not get entities from source at '{uri}'. {message}")
         {
             Uri = uri;
             _Message = message;

@@ -32,13 +32,97 @@ namespace RESTar
             this.Where(c => c.Operator == Operators.EQUALS).ToDictionary(c => c.Key, c => c.Value);
     }
 
+    public sealed class MetaConditions
+    {
+        internal int Limit { get; private set; } = -1;
+        internal OrderBy OrderBy { get; private set; }
+        internal bool Unsafe { get; private set; }
+        internal string[] Select { get; private set; }
+        internal IDictionary<string, string> Rename { get; private set; }
+        internal bool Dynamic { get; private set; }
+        internal string Map { get; private set; }
+        internal string SafePost { get; private set; }
+
+        internal static MetaConditions Parse(string metaConditionString)
+        {
+            if (metaConditionString?.Equals("") != false)
+                return null;
+            metaConditionString = WebUtility.UrlDecode(metaConditionString);
+            var mc = new MetaConditions();
+            foreach (var s in metaConditionString.Split('&'))
+            {
+                if (s == "")
+                    throw new SyntaxException("Invalid meta-condition syntax");
+                var containsOneAndOnlyOneEquals = s.Count(c => c == '=') == 1;
+                if (!containsOneAndOnlyOneEquals)
+                    throw new SyntaxException("Invalid operator for meta-condition. One and only one '=' is allowed");
+                var pair = s.Split('=');
+
+                RESTarMetaConditions metaCondition;
+                if (!Enum.TryParse(pair[0], true, out metaCondition))
+                    throw new SyntaxException($"Invalid meta-condition '{pair[0]}'. Available meta-conditions: " +
+                                              $"{string.Join(", ", Enum.GetNames(typeof(RESTarMetaConditions)))}. For more info, see " +
+                                              $"{Settings.Instance.HelpResourcePath}/topic=Meta-conditions");
+                var expectedType = metaCondition.ExpectedType();
+                var value = Condition.GetValue(pair[1]);
+                if (expectedType != value.GetType())
+                    throw new SyntaxException($"Invalid data type assigned to meta-condition '{pair[0]}'. " +
+                                              $"Expected {Condition.GetTypeString(expectedType)}.");
+                switch (metaCondition)
+                {
+                    case RESTarMetaConditions.Limit:
+                        mc.Limit = value;
+                        break;
+                    case RESTarMetaConditions.Order_desc:
+                        mc.OrderBy = new OrderBy
+                        {
+                            Descending = true,
+                            Key = value
+                        };
+                        break;
+                    case RESTarMetaConditions.Order_asc:
+                        mc.OrderBy = new OrderBy
+                        {
+                            Descending = false,
+                            Key = value
+                        };
+                        break;
+                    case RESTarMetaConditions.Unsafe:
+                        mc.Unsafe = value;
+                        break;
+                    case RESTarMetaConditions.Select:
+                        mc.Select = ((string) value).Split(',').ToArray();
+                        break;
+                    case RESTarMetaConditions.Rename:
+                        mc.Rename = ((string) value).Split(',').ToDictionary(
+                            p => p.Split(new[] {"->"}, StringSplitOptions.None)[0].ToLower(),
+                            p => p.Split(new[] {"->"}, StringSplitOptions.None)[1]
+                        );
+                        break;
+                    case RESTarMetaConditions.Dynamic:
+                        mc.Dynamic = value;
+                        break;
+                    case RESTarMetaConditions.Map:
+                        mc.Map = value;
+                        break;
+                    case RESTarMetaConditions.Safepost:
+                        mc.SafePost = value;
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException();
+                }
+            }
+            return mc;
+        }
+    }
+
     public sealed class Condition
     {
         public string Key;
         public Operator Operator;
         public dynamic Value;
 
-        internal static Conditions ParseConditions(IResource resource, string conditionString)
+        internal static Conditions Parse(IResource resource, string conditionString)
         {
             if (string.IsNullOrEmpty(conditionString))
                 return null;
@@ -71,7 +155,7 @@ namespace RESTar
                     var keyString = WebUtility.UrlDecode(pair[0]);
                     key = keyString;
                     var valueString = WebUtility.UrlDecode(pair[1]);
-                    value = GetValue(valueString, dynamit: true);
+                    value = GetValue(valueString);
                 }
                 else
                 {
@@ -79,7 +163,7 @@ namespace RESTar
                     var keyString = WebUtility.UrlDecode(pair[0]);
                     key = GetKey(resource, keyString, out type);
                     var valueString = WebUtility.UrlDecode(pair[1]);
-                    value = GetValue(valueString, key);
+                    value = GetValue(valueString);
                 }
 
                 return new Condition
@@ -91,36 +175,7 @@ namespace RESTar
             }).ToConditions();
         }
 
-        internal static IDictionary<string, object> ParseMetaConditions(string metaConditionString)
-        {
-            if (metaConditionString?.Equals("") != false)
-                return null;
-            metaConditionString = WebUtility.UrlDecode(metaConditionString);
-            return metaConditionString.Split('&').Select(s =>
-            {
-                if (s == "")
-                    throw new SyntaxException("Invalid meta-condition syntax");
-                var containsOneAndOnlyOneEquals = s.Count(c => c == '=') == 1;
-                if (!containsOneAndOnlyOneEquals)
-                    throw new SyntaxException("Invalid operator for meta-condition. One and only one '=' is allowed");
-                var pair = s.Split('=');
-
-                RESTarMetaConditions metaCondition;
-                var success = Enum.TryParse(pair[0].Capitalize(), out metaCondition);
-                if (!success)
-                    throw new SyntaxException($"Invalid meta-condition '{pair[0]}'. Available meta-conditions: " +
-                                              $"{string.Join(", ", Enum.GetNames(typeof(RESTarMetaConditions)))}. For more info, see " +
-                                              $"{Settings.Instance.HelpResourcePath}/topic=Meta-conditions");
-                var expectedType = metaCondition.ExpectedType();
-                var value = GetValue(pair[1]);
-                if (expectedType != value.GetType())
-                    throw new SyntaxException($"Invalid data type assigned to meta-condition '{pair[0]}'. " +
-                                              $"Expected {GetTypeString(expectedType)}.");
-                return new KeyValuePair<string, object>(pair[0].ToLower(), value);
-            }).ToDictionary(pair => pair.Key, pair => pair.Value);
-        }
-
-        private static string GetTypeString(Type type)
+        internal static string GetTypeString(Type type)
         {
             if (type == typeof(string)) return "string";
             if (type == typeof(int)) return "integer";
@@ -171,14 +226,14 @@ namespace RESTar
             return string.Join(".", parts);
         }
 
-        private static dynamic GetValue(string valueString, string key = null, bool dynamit = false)
+        internal static dynamic GetValue(string valueString)
         {
             if (valueString == null)
                 return null;
             if (valueString == "null")
                 return null;
-            if (valueString.First() == '\"')
-                return dynamit ? valueString : valueString.Replace("\"", "");
+            if (valueString.First() == '\"' && valueString.Last() == '\"')
+                return valueString.Remove(0, 1).Remove(valueString.Length - 2, 1);
             dynamic obj;
             int _int;
             decimal dec;

@@ -135,13 +135,6 @@ namespace RESTar
 
         internal static Response InsertedEntities(Request request, int count, Type resource)
         {
-            if (request.Imgput != null)
-                return new Response
-                {
-                    StatusCode = (ushort) HttpStatusCode.Created,
-                    Body = "R0lGODlhAQABAIAAAP///wAAACwAAAAAAQABAAACAkQBADs=",
-                    ContentType = "image/gif"
-                };
             var alias = ResourceAlias.ByResource(resource);
             return new Response
             {
@@ -153,13 +146,6 @@ namespace RESTar
 
         internal static Response UpdatedEntities(Request request, int count, Type resource)
         {
-            if (request.Imgput != null)
-                return new Response
-                {
-                    StatusCode = (ushort) HttpStatusCode.OK,
-                    Body = "R0lGODlhAQABAIAAAP///wAAACwAAAAAAQABAAACAkQBADs=",
-                    ContentType = "image/gif"
-                };
             var alias = ResourceAlias.ByResource(resource);
             return new Response
             {
@@ -183,7 +169,7 @@ namespace RESTar
         internal static Response GetEntities(Request request, IEnumerable<dynamic> entities)
         {
             Response response;
-            if (request.OutputMimeType != RESTarMimeType.Excel)
+            if (request.Accept != RESTarMimeType.Excel)
             {
                 string jsonString;
                 response = new Response();
@@ -203,7 +189,7 @@ namespace RESTar
                         .MakeGenericType(typeof(Dictionary<,>)
                             .MakeGenericType(typeof(string), request.Resource.TargetType)));
                 else jsonString = entities.Serialize(RESTarConfig.IEnumTypes[request.Resource]);
-                response.ContentType = "application/json";
+                response.ContentType = MimeTypes.JSON;
                 response.Body = jsonString;
             }
             else
@@ -218,7 +204,7 @@ namespace RESTar
                     workbook.SaveAs(memstream);
                     response.BodyBytes = memstream.ToArray();
                 }
-                response.ContentType = "application/vnd.ms-excel";
+                response.ContentType = MimeTypes.Excel;
                 response.Headers["Content-Disposition"] = $"attachment; filename={fileName}";
             }
             return response;
@@ -240,6 +226,8 @@ namespace RESTar
                     {
                         try
                         {
+                            if (!t.Columns.Contains(pair.Key))
+                                t.Columns.Add(pair.Key);
                             row[pair.Key] = pair.Value ?? DBNull.Value;
                         }
                         catch

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using Jil;
 using Newtonsoft.Json;
 using Starcounter;
@@ -49,7 +48,6 @@ namespace RESTar
             {
                 var access = Authenticate(scRequest);
                 request = new Request(scRequest, query, method, evaluator);
-                request.ResolveMethod();
                 MethodCheck(request, access);
                 request.ResolveDataSource();
                 var response = request.Evaluate();
@@ -89,7 +87,7 @@ namespace RESTar
             {
                 return AmbiguousColumn(e);
             }
-            catch (ExternalSourceException e)
+            catch (SourceException e)
             {
                 return BadRequest(e);
             }
@@ -165,13 +163,13 @@ namespace RESTar
             #endregion
         }
 
-        private static void MethodCheck(IRequest request, AccessRights accessRights)
+        private static void MethodCheck(Request request, AccessRights accessRights)
         {
             var method = request.Method;
             var availableMethods = request.Resource.AvailableMethods;
             if (!availableMethods.Contains(method))
                 throw new ForbiddenException();
-            if (!RequireApiKey)
+            if (!RequireApiKey || !request.ScRequest.IsExternal)
                 return;
             if (accessRights == null)
                 throw new ForbiddenException();
@@ -182,7 +180,7 @@ namespace RESTar
 
         private static AccessRights Authenticate(ScRequest request)
         {
-            if (!RequireApiKey)
+            if (!RequireApiKey || !request.IsExternal)
                 return null;
             var authorizationHeader = request.Headers["Authorization"];
             if (string.IsNullOrWhiteSpace(authorizationHeader))

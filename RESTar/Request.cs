@@ -16,41 +16,27 @@ namespace RESTar
 {
     internal class Request : IRequest
     {
-        private IResource _resource;
+        public IResource Resource { get; }
+        public RESTarMethods Method { get; }
+        public Conditions Conditions { get; }
+        private readonly Func<Request, Response> Evaluator;
+        public string Json { get; private set; }
 
-        public IResource Resource
-        {
-            get { return _resource; }
-            private set
-            {
-                _resource = value;
-                if (value.TargetType.IsSubclassOf(typeof(DDictionary)))
-                    DynamicMemberResource = true;
-            }
-        }
-
-        internal bool DynamicMemberResource;
-        public Conditions Conditions { get; private set; }
-        public IDictionary<string, object> MetaConditions { get; }
-        internal readonly ScRequest ScRequest;
-        internal readonly string Query;
-        public bool Unsafe { get; private set; }
-        public int Limit { get; set; } = -1;
+        public int Limit { get; internal set; }
         public OrderBy OrderBy { get; }
+        public bool Unsafe { get; private set; }
         internal readonly string[] Select;
         internal readonly IDictionary<string, string> Rename;
-        internal readonly string Source;
-        internal readonly string Destination;
-        public string Json { get; private set; }
-        internal byte[] BinaryBody;
         internal readonly bool Dynamic;
         internal readonly string Map;
         internal readonly string SafePost;
-        internal readonly RESTarMimeType InputMimeType;
-        internal readonly RESTarMimeType OutputMimeType;
-        internal string Imgput;
-        public RESTarMethods Method { get; private set; }
-        public Func<Request, Response> Evaluator;
+
+        private readonly string Source;
+        private readonly string Destination;
+        private readonly RESTarMimeType ContentType;
+        internal readonly RESTarMimeType Accept;
+        internal readonly ScRequest ScRequest;
+        private byte[] BinaryBody;
 
         internal Request(ScRequest scRequest, string query, RESTarMethods method, Func<Request, Response> evaluator)
         {
@@ -60,44 +46,36 @@ namespace RESTar
                 throw new SyntaxException("Invalid argument separator count. A RESTar URI can contain at most 3 " +
                                           $"forward slashes after the base uri. URI scheme: {Settings._ResourcesPath}" +
                                           "/[resource]/[conditions]/[meta-conditions]");
-            Evaluator = evaluator;
-            Query = query;
-            ScRequest = scRequest;
             Method = method;
+            Evaluator = evaluator;
             Source = scRequest.Headers["Source"];
             Destination = scRequest.Headers["Destination"];
+            ScRequest = scRequest;
 
-            var ContentType = scRequest.ContentType?.ToLower();
-            InputMimeType = ContentType?.Contains("excel") == true ||
-                            ContentType?.Equals("application/vnd.openxmlformats-" +
-                                                "officedocument.spreadsheetml.sheet") == true
+            var contentType = scRequest.ContentType?.ToLower();
+            ContentType = contentType?.Contains("excel") == true ||
+                          contentType?.Equals(MimeTypes.Excel) == true
                 ? RESTarMimeType.Excel
                 : RESTarMimeType.Json;
 
-            var Accept = scRequest.PreferredMimeTypeString?.ToLower();
-            OutputMimeType = Accept?.Contains("excel") == true ||
-                             Accept?.ToLower().Equals("application/vnd.openxmlformats-" +
-                                                      "officedocument.spreadsheetml.sheet") == true
+            var accept = scRequest.PreferredMimeTypeString?.ToLower();
+            Accept = accept?.Contains("excel") == true ||
+                     accept?.ToLower().Equals(MimeTypes.Excel) == true
                 ? RESTarMimeType.Excel
                 : RESTarMimeType.Json;
 
-            #region Parse arguments
-
-            var args = Query.Split('/');
+            var args = query.Split('/');
             var argLength = args.Length;
-
             if (argLength == 1)
             {
                 Resource = RESTarConfig.TypeResources[typeof(Resource)];
                 return;
             }
-
             if (args[1] == "")
                 Resource = RESTarConfig.TypeResources[typeof(Resource)];
             else Resource = args[1].FindResource();
             if (argLength == 2) return;
-
-            Conditions = Condition.ParseConditions(Resource, args[2]);
+            Conditions = Condition.Parse(Resource, args[2]);
             if (Conditions != null &&
                 (Resource.TargetType == typeof(Resource) || Resource.TargetType.IsSubclassOf(typeof(Resource))))
             {
@@ -106,36 +84,16 @@ namespace RESTar
                     nameCond.Value = ((string) nameCond.Value.ToString()).FindResource().Name;
             }
             if (argLength == 3) return;
-
-            MetaConditions = Condition.ParseMetaConditions(args[3]);
-            if (MetaConditions == null) return;
-
-            if (MetaConditions.ContainsKey("limit"))
-                Limit = decimal.ToInt32((int) MetaConditions["limit"]);
-            if (MetaConditions.ContainsKey("unsafe"))
-                Unsafe = (bool) MetaConditions["unsafe"];
-            if (MetaConditions.ContainsKey("select"))
-                Select = ((string) MetaConditions["select"]).Split(',').ToArray();
-            if (MetaConditions.ContainsKey("dynamic"))
-                Dynamic = (bool) MetaConditions["dynamic"];
-            if (MetaConditions.ContainsKey("rename"))
-                Rename = ((string) MetaConditions["rename"]).Split(',').ToDictionary(
-                    pair => pair.Split(new[] {"->"}, StringSplitOptions.None)[0].ToLower(),
-                    pair => pair.Split(new[] {"->"}, StringSplitOptions.None)[1]
-                );
-            if (MetaConditions.ContainsKey("map"))
-                Map = (string) MetaConditions["map"];
-            if (MetaConditions.ContainsKey("safepost"))
-                SafePost = (string) MetaConditions["safepost"];
-            var orderKey = MetaConditions.Keys.FirstOrDefault(key => key.Contains("order"));
-            if (orderKey == null) return;
-            OrderBy = new OrderBy
-            {
-                Descending = orderKey.Contains("desc"),
-                Key = MetaConditions[orderKey].ToString()
-            };
-
-            #endregion
+            var metaConditions = MetaConditions.Parse(args[3]);
+            if (metaConditions == null) return;
+            Limit = metaConditions.Limit;
+            Unsafe = metaConditions.Unsafe;
+            Select = metaConditions.Select;
+            Dynamic = metaConditions.Dynamic;
+            Rename = metaConditions.Rename;
+            Map = metaConditions.Map;
+            SafePost = metaConditions.SafePost;
+            OrderBy = metaConditions.OrderBy;
         }
 
         public Condition GetCondition(string key)
@@ -143,72 +101,40 @@ namespace RESTar
             return Conditions?.FirstOrDefault(c => c.Key.Equals(key, StringComparison.CurrentCultureIgnoreCase));
         }
 
-        internal void ResolveMethod()
-        {
-            if (Method == RESTarMethods.GET && MetaConditions?.ContainsKey("imgput") == true)
-            {
-                Method = RESTarMethods.PUT;
-                Imgput = (string) MetaConditions["imgput"];
-                Evaluator = Evaluators.PUT;
-            }
-        }
-
         internal void ResolveDataSource()
         {
-            if (Imgput != null)
-            {
-                if (Conditions == null || !Conditions.Any())
-                    throw new SyntaxException("Missing data source for method " + Method);
-                try
-                {
-                    var dict = Conditions.EqualsDict;
-                    var keys = Imgput.Split(',');
-                    Conditions = keys.Select(key =>
-                    {
-                        var match = dict.FirstOrDefault(pair =>
-                            string.Equals(pair.Key, key, StringComparison.CurrentCultureIgnoreCase));
-                        return new Condition
-                        {
-                            Key = match.Key,
-                            Operator = new Operator(Operators.EQUALS),
-                            Value = match.Value
-                        };
-                    }).ToConditions();
-                    Json = dict.SerializeDyn();
-                    return;
-                }
-                catch (KeyNotFoundException)
-                {
-                    throw new Exception("Invalid imgput request. One of the property " +
-                                        "locators was not found among conditions.");
-                }
-            }
-
             if (Source != null)
             {
-                var method_uri = Source.Split(new[] {' '}, 2);
-                if (method_uri.Length == 1 || method_uri[0].ToUpper() != "GET")
-                    throw new SyntaxException("Source must be of form 'GET [URI]'");
-                var response = HTTP.Request
-                (
-                    method: method_uri[0],
-                    uri: method_uri[1],
-                    bodyString: null,
-                    contentType: null,
-                    accept: InputMimeType == RESTarMimeType.Excel
-                        ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                        : "application/json"
-                );
-                if (response?.IsSuccessStatusCode != true)
-                    throw new ExternalSourceException(Source,
-                        $"{response?.StatusCode}: " +
-                        $"{response?.StatusDescription}"
+                var sourceRequest = HttpRequest.Parse(Source);
+                if (sourceRequest.Method != RESTarMethods.GET)
+                    throw new SyntaxException("Only GET is allowed in Source headers");
+
+                sourceRequest.Accept = ContentType == RESTarMimeType.Excel ? MimeTypes.Excel : MimeTypes.JSON;
+
+                var response = sourceRequest.Internal
+                    ? HTTP.InternalRequest
+                    (
+                        method: RESTarMethods.GET,
+                        relativeUri: sourceRequest.URI,
+                        headers: sourceRequest.Headers,
+                        accept: sourceRequest.Accept
+                    )
+                    : HTTP.ExternalRequest
+                    (
+                        method: RESTarMethods.GET,
+                        uri: sourceRequest.URI,
+                        headers: sourceRequest.Headers,
+                        accept: sourceRequest.Accept
                     );
-                if (InputMimeType == RESTarMimeType.Excel)
+
+                if (response?.IsSuccessStatusCode != true)
+                    throw new SourceException(Source, $"{response?.StatusCode}: {response?.StatusDescription}");
+
+                if (ContentType == RESTarMimeType.Excel)
                 {
                     BinaryBody = response.BodyBytes;
                     if (BinaryBody?.Any() != true)
-                        throw new ExternalSourceException(Source, "Response was empty");
+                        throw new SourceException(Source, "Response was empty");
                 }
                 else
                 {
@@ -216,7 +142,7 @@ namespace RESTar
                     if (Json.First() == '[' && Method != RESTarMethods.POST)
                         throw new InvalidInputCountException(Resource, Method);
                     if (Json == null)
-                        throw new ExternalSourceException(Source, "Response was empty");
+                        throw new SourceException(Source, "Response was empty");
                     return;
                 }
             }
@@ -229,7 +155,7 @@ namespace RESTar
                     return;
             }
 
-            switch (InputMimeType)
+            switch (ContentType)
             {
                 case RESTarMimeType.Json:
                     Json = Json?.Trim() ?? ScRequest.Body.Trim();
@@ -549,18 +475,33 @@ namespace RESTar
         internal Response GetResponse(Response response)
         {
             if (Destination == null) return response;
-            var method_uri = Destination.Split(new[] {' '}, 2);
-            if (method_uri.Length == 1)
-                throw new SyntaxException("Destination must be of form '[METHOD] [URI]'");
-            return HTTP.Request
-            (
-                method: method_uri[0].ToUpper(),
-                uri: method_uri[1],
-                bodyString: response.Body,
-                contentType: InputMimeType == RESTarMimeType.Excel
-                    ? "application/vnd-ms.excel"
-                    : "application/json"
-            );
+            var destinationRequest = HttpRequest.Parse(Destination);
+            destinationRequest.ContentType = Accept == RESTarMimeType.Excel ? MimeTypes.Excel : MimeTypes.JSON;
+
+            var _response = destinationRequest.Internal
+                ? HTTP.InternalRequest
+                (
+                    method: destinationRequest.Method,
+                    relativeUri: destinationRequest.URI,
+                    bodyBytes: response.BodyBytes,
+                    contentType: destinationRequest.ContentType,
+                    headers: destinationRequest.Headers
+                )
+                : HTTP.ExternalRequest
+                (
+                    method: destinationRequest.Method,
+                    uri: destinationRequest.URI,
+                    bodyBytes: response.BodyBytes,
+                    contentType: destinationRequest.ContentType,
+                    headers: destinationRequest.Headers
+                );
+
+            if (_response == null)
+                throw new Exception($"No response for destination request: '{Destination}'");
+            if (!_response.IsSuccessStatusCode)
+                throw new Exception($"Failed upload at destination server at '{destinationRequest.URI}'. " +
+                                    $"Status: {_response.StatusCode}, {_response.StatusDescription}");
+            return _response;
         }
     }
 }
