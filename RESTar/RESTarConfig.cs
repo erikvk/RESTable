@@ -106,58 +106,54 @@ namespace RESTar
             }
         }
 
-        private static void SetupOrigins(JToken allowedOrigin)
+        private static void SetupOrigins(JToken originToken)
         {
-            switch (allowedOrigin.Type)
+            if (originToken == null) return;
+            switch (originToken.Type)
             {
                 case JTokenType.String:
-                    AllowedOrigins.Add(new Uri(allowedOrigin.Value<string>()));
+                    var value = originToken.Value<string>();
+                    if (string.IsNullOrWhiteSpace(value))
+                        return;
+                    AllowedOrigins.Add(new Uri(value));
                     break;
                 case JTokenType.Array:
-                    AllowedOrigins.AddRange(allowedOrigin.Select(i => new Uri(i.Value<string>())));
+                    originToken.ForEach(SetupOrigins);
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();
             }
         }
 
-        private static void SetupApiKeys(JToken apiKey)
+        private static void SetupApiKeys(JToken keyToken)
         {
-            switch (apiKey.Type)
+            switch (keyToken.Type)
             {
                 case JTokenType.Object:
-                    List<AccessRight> access;
-                    var key = apiKey["Key"].Value<string>().MD5();
-                    var accessToken = apiKey["AllowAccess"];
-                    switch (accessToken.Type)
+                    var key = keyToken["Key"].Value<string>().MD5();
+                    var access = new List<AccessRight>();
+                    Action<JToken> GetAccessRight = null;
+                    GetAccessRight = token =>
                     {
-                        case JTokenType.Object:
-                            access = new List<AccessRight>
-                            {
-                                new AccessRight
+                        switch (token.Type)
+                        {
+                            case JTokenType.Object:
+                                access.Add(new AccessRight
                                 {
-                                    Resources = accessToken["Resource"].Value<string>().FindResources(),
-                                    AllowedMethods = accessToken["Methods"].Value<string>().ToUpper().ToMethodsList()
-                                }
-                            };
-                            break;
-                        case JTokenType.Array:
-                            access = accessToken.Select(item => new AccessRight
-                            {
-                                Resources = item["Resource"].Value<string>().FindResources(),
-                                AllowedMethods = item["Methods"].Value<string>().ToUpper().ToMethodsList()
-                            }).ToList();
-                            break;
-                        default:
-                            throw new ArgumentOutOfRangeException();
-                    }
+                                    Resources = token["Resource"].Value<string>().FindResources(),
+                                    AllowedMethods = token["Methods"].Value<string>().ToUpper().ToMethodsList()
+                                });
+                                break;
+                            case JTokenType.Array:
+                                token.ForEach(GetAccessRight);
+                                break;
+                        }
+                    };
+                    GetAccessRight(keyToken["AllowAccess"]);
                     ApiKeys[key] = access.ToAccessRights();
                     break;
-
                 case JTokenType.Array:
-                    var array = (JArray) apiKey;
-                    foreach (var jToken in array)
-                        SetupApiKeys((JObject) jToken);
+                    keyToken.ForEach(SetupApiKeys);
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();
