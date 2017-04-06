@@ -2,6 +2,7 @@
 using Jil;
 using Newtonsoft.Json;
 using Starcounter;
+using static RESTar.ErrorCode;
 using static RESTar.Responses;
 using static RESTar.RESTarConfig;
 using static RESTar.RESTarMethods;
@@ -27,9 +28,9 @@ namespace RESTar
         {
             try
             {
-                var request = new Request(scRequest, query, default(RESTarMethods), null);
+                var request = new Request(scRequest);
+                request.Populate(query, default(RESTarMethods), null);
                 var origin = request.ScRequest.Headers["Origin"].ToLower();
-                Log.Info("Options request: Origin " + origin);
                 if (AllowAllOrigins || AllowedOrigins.Contains(new Uri(origin)))
                     return AllowOrigin(origin, request.Resource.AvailableMethods);
                 return Forbidden();
@@ -46,152 +47,120 @@ namespace RESTar
             Request request = null;
             try
             {
-                var access = Authenticate(scRequest);
-                request = new Request(scRequest, query, method, evaluator);
-                MethodCheck(request, access);
-                request.ResolveDataSource();
-                var response = request.Evaluate();
-                return request.GetResponse(response);
-            }       
+                using (request = new Request(scRequest))
+                {
+                    request.Authenticate();
+                    request.Populate(query, method, evaluator);
+                    request.MethodCheck();
+                    request.ResolveDataSource();
+                    var response = request.Evaluate();
+                    return request.Respond(response);
+                }
+            }
+
             #region Catch exceptions
 
-            catch (DeserializationException e)
-            {
-                if (e.InnerException != null)
-                    return BadRequest(e.InnerException);
-                return DeserializationError(scRequest.Body);
-            }
-            catch (JsonSerializationException e)
-            {
-                if (e.InnerException != null)
-                    return BadRequest(e.InnerException);
-                return DeserializationError(scRequest.Body);
-            }
-            catch (SqlException e)
-            {
-                return SemanticsError(e);
-            }
-            catch (SyntaxException e)
-            {
-                return BadRequest(e);
-            }
-            catch (UnknownColumnException e)
-            {
-                return NotFound(e);
-            }
-            catch (CustomEntityUnknownColumnException e)
-            {
-                return NotFound(e);
-            }
-            catch (AmbiguousColumnException e)
-            {
-                return AmbiguousColumn(e);
-            }
-            catch (SourceException e)
-            {
-                return BadRequest(e);
-            }
-            catch (UnknownResourceException e)
-            {
-                return NotFound(e);
-            }
-            catch (UnknownResourceForMappingException e)
-            {
-                return NotFound(e);
-            }
-            catch (AmbiguousResourceException e)
-            {
-                return AmbiguousResource(e);
-            }
-            catch (InvalidInputCountException e)
-            {
-                return BadRequest(e);
-            }
-            catch (AmbiguousMatchException e)
-            {
-                return AmbiguousMatch(e.Resource.TargetType);
-            }
-            catch (ExcelInputException e)
-            {
-                return BadRequest(e);
-            }
-            catch (ExcelFormatException e)
-            {
-                return BadRequest(e);
-            }
-            catch (RESTarInternalException e)
-            {
-                return RESTarInternalError(e);
-            }
-            catch (NoContentException)
-            {
-                return NoContent();
-            }
-            catch (JsonReaderException)
-            {
-                return DeserializationError(scRequest.Body);
-            }
-            catch (DbException e)
-            {
-                return DatabaseError(e);
-            }
-            catch (AbortedSelectorException e)
-            {
-                return AbortedOperation(e, method, request?.Resource.TargetType);
-            }
-            catch (AbortedInserterException e)
-            {
-                return AbortedOperation(e, method, request?.Resource.TargetType);
-            }
-            catch (AbortedUpdaterException e)
-            {
-                return AbortedOperation(e, method, request?.Resource.TargetType);
-            }
-            catch (AbortedDeleterException e)
-            {
-                return AbortedOperation(e, method, request?.Resource.TargetType);
-            }
-            catch (ForbiddenException e)
-            {
-                return Forbidden();
-            }
             catch (Exception e)
             {
-                return InternalError(e);
+                Response errorResponse;
+                ErrorCode errorCode;
+
+                if (e is ForbiddenException) return Forbidden();
+                if (e is NoContentException) return NoContent();
+
+                if (e is SyntaxException)
+                {
+                    errorCode = ((SyntaxException) e).errorCode;
+                    errorResponse = BadRequest(e);
+                }
+                else if (e is UnknownColumnException)
+                {
+                    errorCode = UnknownColumnError;
+                    errorResponse = NotFound(e);
+                }
+                else if (e is CustomEntityUnknownColumnException)
+                {
+                    errorCode = UnknownColumnInGeneratedObjectError;
+                    errorResponse = NotFound(e);
+                }
+                else if (e is AmbiguousColumnException)
+                {
+                    errorCode = AmbiguousColumnError;
+                    errorResponse = AmbiguousColumn((AmbiguousColumnException) e);
+                }
+                else if (e is SourceException)
+                {
+                    errorCode = InvalidSourceDataError;
+                    errorResponse = BadRequest(e);
+                }
+                else if (e is UnknownResourceException)
+                {
+                    errorCode = UnknownResourceError;
+                    errorResponse = NotFound(e);
+                }
+                else if (e is AmbiguousResourceException)
+                {
+                    errorCode = AmbiguousResourceError;
+                    errorResponse = AmbiguousResource((AmbiguousResourceException) e);
+                }
+                else if (e is InvalidInputCountException)
+                {
+                    errorCode = DataSourceFormatError;
+                    errorResponse = BadRequest(e);
+                }
+                else if (e is ExcelInputException)
+                {
+                    errorCode = ExcelReaderError;
+                    errorResponse = BadRequest(e);
+                }
+                else if (e is ExcelFormatException)
+                {
+                    errorCode = ExcelReaderError;
+                    errorResponse = BadRequest(e);
+                }
+                else if (e is JsonReaderException)
+                {
+                    errorCode = JsonDeserializationError;
+                    errorResponse = DeserializationError(scRequest.Body);
+                }
+                else if (e is DbException)
+                {
+                    errorCode = ErrorCode.DatabaseError;
+                    errorResponse = DatabaseError(e);
+                }
+                else if (e is AbortedSelectorException)
+                {
+                    errorCode = ErrorCode.AbortedOperation;
+                    errorResponse = AbortedOperation(e, method, request?.Resource.TargetType);
+                }
+                else if (e is AbortedInserterException)
+                {
+                    errorCode = ErrorCode.AbortedOperation;
+                    errorResponse = AbortedOperation(e, method, request?.Resource.TargetType);
+                }
+                else if (e is AbortedUpdaterException)
+                {
+                    errorCode = ErrorCode.AbortedOperation;
+                    errorResponse = AbortedOperation(e, method, request?.Resource.TargetType);
+                }
+                else if (e is AbortedDeleterException)
+                {
+                    errorCode = ErrorCode.AbortedOperation;
+                    errorResponse = AbortedOperation(e, method, request?.Resource.TargetType);
+                }
+                else
+                {
+                    errorCode = UnknownError;
+                    errorResponse = InternalError(e);
+                }
+                Error error = null;
+                Error.ClearOld();
+                Db.TransactAsync(() => error = new Error(errorCode, e, request));
+                errorResponse.Headers["ErrorInfo"] = $"{_Uri}/{typeof(Error).FullName}/id={error.Id}";
+                return errorResponse;
             }
 
             #endregion
-        }
-
-        private static void MethodCheck(Request request, AccessRights accessRights)
-        {
-            var method = request.Method;
-            var availableMethods = request.Resource.AvailableMethods;
-            if (!availableMethods.Contains(method))
-                throw new ForbiddenException();
-            if (!RequireApiKey || !request.ScRequest.IsExternal)
-                return;
-            if (accessRights == null)
-                throw new ForbiddenException();
-            var rights = accessRights[request.Resource];
-            if (rights == null || !rights.Contains(method))
-                throw new ForbiddenException();
-        }
-
-        private static AccessRights Authenticate(ScRequest request)
-        {
-            if (!RequireApiKey || !request.IsExternal)
-                return null;
-            var authorizationHeader = request.Headers["Authorization"];
-            if (string.IsNullOrWhiteSpace(authorizationHeader))
-                throw new ForbiddenException();
-            var apikey_key = authorizationHeader.Split(' ');
-            if (apikey_key[0].ToLower() != "apikey" || apikey_key.Length != 2)
-                throw new ForbiddenException();
-            AccessRights accessRights;
-            if (!ApiKeys.TryGetValue(apikey_key[1].MD5(), out accessRights))
-                throw new ForbiddenException();
-            return accessRights;
         }
     }
 }

@@ -14,6 +14,9 @@ namespace RESTar
         public ICollection<RESTarMethods> AvailableMethods { get; set; }
         public string Alias { get; set; }
 
+        [DataMember(Name = "TargetType")]
+        public string TargetTypeString => TargetType?.FullName;
+
         [IgnoreDataMember]
         public Type TargetType { get; set; }
 
@@ -26,7 +29,8 @@ namespace RESTar
                 Name = m.Name,
                 Alias = m.Alias,
                 AvailableMethods = m.AvailableMethods,
-                Editable = m.Editable
+                Editable = m.Editable,
+                TargetType = m.TargetType
             }).ToList();
         }
 
@@ -49,7 +53,7 @@ namespace RESTar
             }
             catch (Exception e)
             {
-                throw new AbortedInserterException($"Invalid resource: {e.Message}");
+                throw new AbortedInserterException(e, $"Invalid resource: {e.Message}");
             }
             return count;
         }

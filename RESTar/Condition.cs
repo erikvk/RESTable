@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Linq;
 using System.Net;
 using Dynamit;
+using static RESTar.ErrorCode;
 using IResource = RESTar.Internal.IResource;
 
 namespace RESTar
@@ -52,22 +53,25 @@ namespace RESTar
             foreach (var s in metaConditionString.Split('&'))
             {
                 if (s == "")
-                    throw new SyntaxException("Invalid meta-condition syntax");
+                    throw new SyntaxException("Invalid meta-condition syntax", InvalidMetaConditionSyntaxError);
                 var containsOneAndOnlyOneEquals = s.Count(c => c == '=') == 1;
                 if (!containsOneAndOnlyOneEquals)
-                    throw new SyntaxException("Invalid operator for meta-condition. One and only one '=' is allowed");
+                    throw new SyntaxException("Invalid operator for meta-condition. One and only one '=' is allowed",
+                        InvalidMetaConditionOperatorError);
                 var pair = s.Split('=');
 
                 RESTarMetaConditions metaCondition;
                 if (!Enum.TryParse(pair[0], true, out metaCondition))
                     throw new SyntaxException($"Invalid meta-condition '{pair[0]}'. Available meta-conditions: " +
                                               $"{string.Join(", ", Enum.GetNames(typeof(RESTarMetaConditions)))}. For more info, see " +
-                                              $"{Settings.Instance.HelpResourcePath}/topic=Meta-conditions");
+                                              $"{Settings.Instance.HelpResourcePath}/topic=Meta-conditions",
+                        InvalidMetaConditionKey);
                 var expectedType = metaCondition.ExpectedType();
                 var value = Condition.GetValue(pair[1]);
                 if (expectedType != value.GetType())
                     throw new SyntaxException($"Invalid data type assigned to meta-condition '{pair[0]}'. " +
-                                              $"Expected {Condition.GetTypeString(expectedType)}.");
+                                              $"Expected {Condition.GetTypeString(expectedType)}.",
+                        InvalidMetaConditionValueTypeError);
                 switch (metaCondition)
                 {
                     case RESTarMetaConditions.Limit:
@@ -129,7 +133,7 @@ namespace RESTar
             return conditionString.Split('&').Select(s =>
             {
                 if (s == "")
-                    throw new SyntaxException("Invalid condition syntax");
+                    throw new SyntaxException("Invalid condition syntax", InvalidConditionSyntaxError);
                 var matched = new string(s.Where(c => OpMatchChars.Contains(c)).ToArray());
 
                 Operator op;
@@ -143,7 +147,8 @@ namespace RESTar
                         $"Invalid or missing operator(s) for condition '{s}'. The presence of one (and only one) " +
                         $"operator is required per condition. Make sure to URI encode all equals (\'=\' to \'%3D\') " +
                         $"and exclamation marks (\'!\' to \'%21\') in request URI value literals, to avoid capture. " +
-                        $"Accepted operators: " + string.Join(", ", Operator.AvailableOperators));
+                        $"Accepted operators: " + string.Join(", ", Operator.AvailableOperators),
+                        InvalidConditionOperatorError);
                 }
                 var pair = s.Split(new[] {op.Common}, StringSplitOptions.None);
                 var dynamit = resource.TargetType.HasAttribute<DDictionaryAttribute>();
@@ -202,7 +207,7 @@ namespace RESTar
             }
             var parts = keyString.Split('.');
             if (parts.Length == 1)
-                throw new SyntaxException($"Invalid condition '{keyString}'");
+                throw new SyntaxException($"Invalid condition '{keyString}'", InvalidConditionSyntaxError);
             var types = new List<Type>();
             foreach (var str in parts.Take(parts.Length - 1))
             {

@@ -14,8 +14,8 @@ namespace RESTar
 {
     public static class ExtensionMethods
     {
-        internal static string UrlDecode(this string str) => HttpUtility.UrlDecode(str);
-        internal static string UrlEncode(this string str) => HttpUtility.UrlEncode(str);
+        internal static string UriDecode(this string str) => HttpUtility.UrlDecode(str);
+        internal static string UriEncode(this string str) => HttpUtility.UrlEncode(str);
 
         internal static Selector<T> GetSelector<T>(this Type type)
         {
@@ -61,10 +61,7 @@ namespace RESTar
         private static readonly MethodInfo ListGenerator = typeof(ExtensionMethods).GetMethod("GenerateList",
             BindingFlags.NonPublic | BindingFlags.Static);
 
-        internal static List<T> GenerateList<T>(this T thing) where T : class
-        {
-            return new List<T> {thing};
-        }
+        private static List<T> GenerateList<T>(T thing) => new List<T> {thing};
 
         internal static dynamic MakeList(this object thing, Type resource)
         {
@@ -350,12 +347,12 @@ namespace RESTar
             throw new ArgumentOutOfRangeException(nameof(preset));
         }
 
-        public static void ForEach<T>(this IEnumerable<T> source, Action<T> action)
+        internal static void ForEach<T>(this IEnumerable<T> source, Action<T> action)
         {
             foreach (var e in source) action(e);
         }
 
-        public static void ForEach<T>(this IEnumerable<T> source, Action<T, int> action)
+        internal static void ForEach<T>(this IEnumerable<T> source, Action<T, int> action)
         {
             var i = 0;
             foreach (var e in source) action(e, i++);
@@ -388,9 +385,9 @@ namespace RESTar
             return _accessRights;
         }
 
-        internal static string MD5(this string input)
+        internal static string SHA256(this string input)
         {
-            using (var hasher = System.Security.Cryptography.MD5.Create())
+            using (var hasher = System.Security.Cryptography.SHA256.Create())
                 return Convert.ToBase64String(hasher.ComputeHash(Encoding.UTF8.GetBytes(input)));
         }
 
@@ -419,6 +416,32 @@ namespace RESTar
                 default:
                     throw new ArgumentOutOfRangeException(nameof(condition), condition, null);
             }
+        }
+
+        public static byte[] ToBytes(this string json) => Encoding.UTF8.GetBytes(json);
+
+        public static string TotalStackTrace(this Exception e)
+        {
+            var stacktrace = new StringBuilder(e.StackTrace);
+            var ie = e.InnerException;
+            while (ie != null)
+            {
+                stacktrace.Insert(0, ie.StackTrace + " | ");
+                ie = ie.InnerException;
+            }
+            return stacktrace.ToString();
+        }
+
+        public static string TotalMessage(this Exception e)
+        {
+            var message = new StringBuilder(e.Message);
+            var ie = e.InnerException;
+            while (ie != null)
+            {
+                message.Append(" : " + ie.Message);
+                ie = ie.InnerException;
+            }
+            return message.ToString();
         }
     }
 }

@@ -9,56 +9,65 @@ using Dynamit;
 using Excel;
 using Newtonsoft.Json.Linq;
 using Starcounter;
+using static RESTar.ErrorCode;
 using IResource = RESTar.Internal.IResource;
 using ScRequest = Starcounter.Request;
+using static RESTar.RESTarConfig;
 
 namespace RESTar
 {
-    internal class Request : IRequest
+    internal class Request : IRequest, IDisposable
     {
-        public IResource Resource { get; }
-        public RESTarMethods Method { get; }
-        public Conditions Conditions { get; }
-        private readonly Func<Request, Response> Evaluator;
+        internal ScRequest ScRequest { get; }
+        public string AuthToken { get; private set; }
+        private bool Internal => !ScRequest.IsExternal;
+
+        public IResource Resource { get; private set; }
+        public RESTarMethods Method { get; private set; }
+        public Conditions Conditions { get; private set; }
+        private Func<Request, Response> Evaluator { get; set; }
         public string Json { get; private set; }
+        internal string Query { get; private set; }
 
         public int Limit { get; internal set; }
-        public OrderBy OrderBy { get; }
+        public OrderBy OrderBy { get; private set; }
         public bool Unsafe { get; private set; }
-        internal readonly string[] Select;
-        internal readonly IDictionary<string, string> Rename;
-        internal readonly bool Dynamic;
-        internal readonly string Map;
-        internal readonly string SafePost;
+        internal string[] Select { get; private set; }
+        internal IDictionary<string, string> Rename { get; private set; }
+        internal bool Dynamic { get; private set; }
+        internal string Map { get; private set; }
+        internal string SafePost { get; private set; }
 
-        private readonly string Source;
-        private readonly string Destination;
-        private readonly RESTarMimeType ContentType;
-        internal readonly RESTarMimeType Accept;
-        internal readonly ScRequest ScRequest;
-        private byte[] BinaryBody;
+        private string Source { get; set; }
+        private string Destination { get; set; }
+        private RESTarMimeType ContentType { get; set; }
+        internal RESTarMimeType Accept { get; private set; }
+        private byte[] BinaryBody { get; set; }
+        private string Origin { get; set; }
+        public IDictionary<string, string> ResponseHeaders { get; }
 
-        internal Request(ScRequest scRequest, string query, RESTarMethods method, Func<Request, Response> evaluator)
+        internal Request(ScRequest scRequest)
         {
-            if (query == null)
-                throw new RESTarInternalException("Query not loaded");
-            if (query.CharCount('/') > 3)
-                throw new SyntaxException("Invalid argument separator count. A RESTar URI can contain at most 3 " +
-                                          $"forward slashes after the base uri. URI scheme: {Settings._ResourcesPath}" +
-                                          "/[resource]/[conditions]/[meta-conditions]");
-            Method = method;
-            Evaluator = evaluator;
-            Source = scRequest.Headers["Source"];
-            Destination = scRequest.Headers["Destination"];
             ScRequest = scRequest;
+            ResponseHeaders = new Dictionary<string, string>();
+        }
 
-            var contentType = scRequest.ContentType?.ToLower();
+        internal void Populate(string query, RESTarMethods method, Func<Request, Response> evaluator)
+        {
+            Method = method;
+            query = CheckQuery(query, ScRequest);
+            Evaluator = evaluator;
+            Source = ScRequest.Headers["Source"];
+            Destination = ScRequest.Headers["Destination"];
+            Origin = ScRequest.Headers["Origin"];
+
+            var contentType = ScRequest.ContentType?.ToLower();
             ContentType = contentType?.Contains("excel") == true ||
                           contentType?.Equals(MimeTypes.Excel) == true
                 ? RESTarMimeType.Excel
                 : RESTarMimeType.Json;
 
-            var accept = scRequest.PreferredMimeTypeString?.ToLower();
+            var accept = ScRequest.PreferredMimeTypeString?.ToLower();
             Accept = accept?.Contains("excel") == true ||
                      accept?.ToLower().Equals(MimeTypes.Excel) == true
                 ? RESTarMimeType.Excel
@@ -68,11 +77,11 @@ namespace RESTar
             var argLength = args.Length;
             if (argLength == 1)
             {
-                Resource = RESTarConfig.TypeResources[typeof(Resource)];
+                Resource = TypeResources[typeof(Resource)];
                 return;
             }
             if (args[1] == "")
-                Resource = RESTarConfig.TypeResources[typeof(Resource)];
+                Resource = TypeResources[typeof(Resource)];
             else Resource = args[1].FindResource();
             if (argLength == 2) return;
             Conditions = Condition.Parse(Resource, args[2]);
@@ -107,7 +116,7 @@ namespace RESTar
             {
                 var sourceRequest = HttpRequest.Parse(Source);
                 if (sourceRequest.Method != RESTarMethods.GET)
-                    throw new SyntaxException("Only GET is allowed in Source headers");
+                    throw new SyntaxException("Only GET is allowed in Source headers", InvalidSourceFormatError);
 
                 sourceRequest.Accept = ContentType == RESTarMimeType.Excel ? MimeTypes.Excel : MimeTypes.JSON;
 
@@ -116,6 +125,7 @@ namespace RESTar
                     (
                         method: RESTarMethods.GET,
                         relativeUri: sourceRequest.URI,
+                        authToken: AuthToken,
                         headers: sourceRequest.Headers,
                         accept: sourceRequest.Accept
                     )
@@ -150,7 +160,7 @@ namespace RESTar
             {
                 if (ScRequest.Body == null &&
                     (Method == RESTarMethods.PATCH || Method == RESTarMethods.POST || Method == RESTarMethods.PUT))
-                    throw new SyntaxException("Missing data source for method " + Method);
+                    throw new SyntaxException("Missing data source for method " + Method, NoDataSourceError);
                 if (ScRequest.Body == null)
                     return;
             }
@@ -201,7 +211,7 @@ namespace RESTar
             }
             catch (Exception e)
             {
-                throw new AbortedSelectorException(e.Message);
+                throw new AbortedSelectorException(e);
             }
             if (entities == null)
                 throw new NoContentException();
@@ -472,17 +482,22 @@ namespace RESTar
             throw new ArgumentOutOfRangeException();
         }
 
-        internal Response GetResponse(Response response)
+        internal Response Respond(Response response)
         {
-            if (Destination == null) return response;
+            ResponseHeaders.ForEach(h => response.Headers["X-" + h.Key] = h.Value);
+            response.Headers["Access-Control-Allow-Origin"] = AllowAllOrigins ? "*" : (Origin ?? "null");
+
+            if (Destination == null)
+                return response;
+
             var destinationRequest = HttpRequest.Parse(Destination);
             destinationRequest.ContentType = Accept == RESTarMimeType.Excel ? MimeTypes.Excel : MimeTypes.JSON;
-
             var _response = destinationRequest.Internal
                 ? HTTP.InternalRequest
                 (
                     method: destinationRequest.Method,
                     relativeUri: destinationRequest.URI,
+                    authToken: AuthToken,
                     bodyBytes: response.BodyBytes,
                     contentType: destinationRequest.ContentType,
                     headers: destinationRequest.Headers
@@ -495,13 +510,78 @@ namespace RESTar
                     contentType: destinationRequest.ContentType,
                     headers: destinationRequest.Headers
                 );
-
             if (_response == null)
                 throw new Exception($"No response for destination request: '{Destination}'");
             if (!_response.IsSuccessStatusCode)
                 throw new Exception($"Failed upload at destination server at '{destinationRequest.URI}'. " +
                                     $"Status: {_response.StatusCode}, {_response.StatusDescription}");
+            _response.Headers["Access-Control-Allow-Origin"] = AllowAllOrigins ? "*" : (Origin ?? "null");
             return _response;
+        }
+
+        internal void Authenticate()
+        {
+            if (!RequireApiKey)
+                return;
+
+            AccessRights accessRights;
+
+            if (!ScRequest.IsExternal)
+            {
+                var authToken = ScRequest.Headers["RESTar-AuthToken"];
+                if (string.IsNullOrWhiteSpace(authToken))
+                    throw new ForbiddenException();
+                if (!AuthTokens.TryGetValue(authToken, out accessRights))
+                    throw new ForbiddenException();
+                AuthToken = authToken;
+                return;
+            }
+
+            var authorizationHeader = ScRequest.Headers["Authorization"];
+            if (string.IsNullOrWhiteSpace(authorizationHeader))
+                throw new ForbiddenException();
+            var apikey_key = authorizationHeader.Split(' ');
+            if (apikey_key[0].ToLower() != "apikey" || apikey_key.Length != 2)
+                throw new ForbiddenException();
+            var apiKey = apikey_key[1].SHA256();
+            if (!ApiKeys.TryGetValue(apiKey, out accessRights))
+                throw new ForbiddenException();
+            AuthToken = Guid.NewGuid().ToString();
+            AuthTokens[AuthToken] = accessRights;
+        }
+
+        internal void MethodCheck()
+        {
+            var method = Method;
+            var availableMethods = Resource.AvailableMethods;
+            if (!availableMethods.Contains(method))
+                throw new ForbiddenException();
+            if (!RequireApiKey)
+                return;
+            var accessRights = AuthTokens[AuthToken];
+            if (accessRights == null)
+                throw new ForbiddenException();
+            var rights = accessRights[Resource];
+            if (rights == null || !rights.Contains(method))
+                throw new ForbiddenException();
+        }
+
+        public void Dispose()
+        {
+            if (AuthToken == null || Internal) return;
+            AccessRights accessRights;
+            AuthTokens.TryRemove(AuthToken, out accessRights);
+        }
+
+        private static string CheckQuery(string query, ScRequest request)
+        {
+            if (query.CharCount('/') > 3)
+                throw new SyntaxException("Invalid argument separator count. A RESTar URI can contain at most 3 " +
+                                          $"forward slashes after the base uri. URI scheme: {Settings._ResourcesPath}" +
+                                          "/[resource]/[conditions]/[meta-conditions]", InvalidSeparatorCount);
+            if (request.HeadersDictionary.ContainsKey("X-ARR-LOG-ID"))
+                return query.Replace("%25", "%");
+            return query;
         }
     }
 }

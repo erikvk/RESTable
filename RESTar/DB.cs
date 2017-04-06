@@ -35,7 +35,7 @@ namespace RESTar
             var whereClause = conditions?.ToWhereClause();
             var sql = $"SELECT t FROM {typeof(T).FullName} t {whereClause?.stringPart} {orderBy?.SQL}";
             if (limit < 1)
-                return Db.SQL<T>(sql, whereClause?.valuesPart);
+                return Db.SQL<T>(sql, whereClause?.valuesPart).ToList();
             return Db.SQL<T>(sql, whereClause?.valuesPart).Take(limit).ToList();
         }
     }

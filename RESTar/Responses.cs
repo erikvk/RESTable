@@ -17,21 +17,33 @@ namespace RESTar
         internal static Response AmbiguousResource(AmbiguousResourceException e) => new Response
         {
             StatusCode = (ushort) HttpStatusCode.NotFound,
-            StatusDescription = e.Message + "Try qualifying the resource name further, e.g. from " +
-                                $"'{e.SearchString}' to '{e.Candidates.First()}'."
+            StatusDescription = "Not found",
+            Headers =
+            {
+                ["RESTar-info"] = $"{e.Message}Try qualifying the resource name further, e.g. from " +
+                                  $"'{e.SearchString}' to '{e.Candidates.First()}'."
+            }
         };
 
         internal static Response NotFound(Exception e) => new Response
         {
             StatusCode = (ushort) HttpStatusCode.NotFound,
-            StatusDescription = e.Message
+            StatusDescription = "Not found",
+            Headers =
+            {
+                ["RESTar-info"] = e.Message
+            }
         };
 
         internal static Response AmbiguousColumn(AmbiguousColumnException e) => new Response
         {
             StatusCode = (ushort) HttpStatusCode.NotFound,
-            StatusDescription = e.Message + "Try qualifying the column name further, e.g. from " +
-                                $"'{e.SearchString}' to '{e.Candidates.First()}'."
+            StatusDescription = "Not found",
+            Headers =
+            {
+                ["RESTar-info"] = $"{e.Message}Try qualifying the column name further, e.g. from " +
+                                  $"'{e.SearchString}' to '{e.Candidates.First()}'."
+            }
         };
 
         #endregion
@@ -44,28 +56,44 @@ namespace RESTar
             return new Response
             {
                 StatusCode = (ushort) HttpStatusCode.BadRequest,
-                StatusDescription = $"Aborted {method} on resource '{resource.FullName}'" +
-                                    $"{(alias != null ? $" ('{alias}')" : "")} due to an error: {e.Message}"
+                StatusDescription = "Bad request",
+                Headers =
+                {
+                    ["RESTar-info"] = $"Aborted {method} on resource '{resource.FullName}'" +
+                                      $"{(alias != null ? $" ('{alias}')" : "")} due to an error: {e.TotalMessage()}"
+                }
             };
         }
 
         internal static Response BadRequest(Exception e) => new Response
         {
             StatusCode = (ushort) HttpStatusCode.BadRequest,
-            StatusDescription = e.Message
+            StatusDescription = "Bad request",
+            Headers =
+            {
+                ["RESTar-info"] = e.Message
+            }
         };
 
         internal static Response SemanticsError(Exception e) => new Response
         {
             StatusCode = (ushort) HttpStatusCode.BadRequest,
-            StatusDescription = $"{e.Message}To enumerate columns in a resource R: GET " +
-                                $"{Settings._ResourcesPath}/RESTar.resource/name=R"
+            StatusDescription = "Bad request",
+            Headers =
+            {
+                ["RESTar-info"] = $"{e.Message}To enumerate columns in a resource R: GET " +
+                                  $"{Settings._ResourcesPath}/RESTar.resource/name=R"
+            }
         };
 
         internal static Response DeserializationError(string json) => new Response
         {
             StatusCode = (ushort) HttpStatusCode.BadRequest,
-            StatusDescription = $"Error while deserializing JSON. Check JSON syntax:\n{json}"
+            StatusDescription = "Bad request",
+            Headers =
+            {
+                ["RESTar-info"] = $"Error while deserializing JSON. Check JSON syntax:\n{json}"
+            }
         };
 
         internal static Response DatabaseError(Exception e)
@@ -74,14 +102,22 @@ namespace RESTar
                 return new Response
                 {
                     StatusCode = (ushort) HttpStatusCode.Forbidden,
-                    StatusDescription = "The operation was aborted by a commit hook. " +
-                                        (e.InnerException?.Message ?? e.Message)
+                    StatusDescription = "Forbidden",
+                    Headers =
+                    {
+                        ["RESTar-info"] = "The operation was aborted by a commit hook. " +
+                                          (e.InnerException?.Message ?? e.Message)
+                    }
                 };
             return new Response
             {
                 StatusCode = (ushort) HttpStatusCode.InternalServerError,
-                StatusDescription = "The Starcounter database encountered an error: " +
-                                    (e.InnerException?.Message ?? e.Message)
+                StatusDescription = "Internal server error",
+                Headers =
+                {
+                    ["RESTar-info"] = "The Starcounter database encountered an error: " +
+                                      (e.InnerException?.Message ?? e.Message)
+                }
             };
         }
 
@@ -92,35 +128,23 @@ namespace RESTar
         internal static Response InternalError(Exception e) => new Response
         {
             StatusCode = (ushort) HttpStatusCode.InternalServerError,
-            StatusDescription = $"Internal error: {e.Message} " +
-                                $"{e.InnerException?.Message} " +
-                                $"{e.InnerException?.InnerException?.Message}"
+            StatusDescription = "Internal server error",
+            Headers =
+            {
+                ["RESTar-info"] = $"Internal error: {e.Message} " +
+                                  $"{e.InnerException?.Message} " +
+                                  $"{e.InnerException?.InnerException?.Message}"
+            }
         };
 
         internal static Response RESTarInternalError(Exception e) => new Response
         {
             StatusCode = (ushort) HttpStatusCode.InternalServerError,
-            StatusDescription = $"Internal RESTar error: {e.Message}"
-        };
-
-        #endregion
-
-        #region Ambiguous
-
-        internal static Response AmbiguousMatch(Type resource) => new Response
-        {
-            StatusCode = (ushort) HttpStatusCode.Conflict,
-            StatusDescription =
-                $"Expected a uniquely matched entity in resource '{resource.FullName}' for this request, " +
-                "but matched multiple entities satisfying the given conditions. To enable manipulation of " +
-                "multiple matched entities (for methods that support this), add 'unsafe=true' to the " +
-                $"request's meta-conditions. See help article with topic 'unsafe' for more info."
-        };
-
-        internal static Response AmbiguousPutMatch() => new Response
-        {
-            StatusCode = (ushort) HttpStatusCode.Conflict,
-            StatusDescription = "Found multiple entities matching the given conditions in a PUT request."
+            StatusDescription = "Internal server error",
+            Headers =
+            {
+                ["RESTar-info"] = $"Internal RESTar error: {e.Message}"
+            }
         };
 
         #endregion
@@ -130,7 +154,11 @@ namespace RESTar
         internal static Response NoContent() => new Response
         {
             StatusCode = (ushort) HttpStatusCode.NoContent,
-            StatusDescription = "No results found for query"
+            StatusDescription = "No content",
+            Headers =
+            {
+                ["RESTar-info"] = "No entities found matching request"
+            }
         };
 
         internal static Response InsertedEntities(Request request, int count, Type resource)
@@ -139,8 +167,12 @@ namespace RESTar
             return new Response
             {
                 StatusCode = (ushort) HttpStatusCode.Created,
-                StatusDescription = $"{count} entities inserted into resource '{resource.FullName}'" +
-                                    $"{(alias != null ? $" ('{alias}')" : "")}"
+                StatusDescription = "Created",
+                Headers =
+                {
+                    ["RESTar-info"] = $"{count} entities inserted into resource '{resource.FullName}'" +
+                                      $"{(alias != null ? $" ('{alias}')" : "")}"
+                }
             };
         }
 
@@ -150,8 +182,25 @@ namespace RESTar
             return new Response
             {
                 StatusCode = (ushort) HttpStatusCode.OK,
-                StatusDescription = $"{count} entities updated in resource '{resource.FullName}'" +
-                                    $"{(alias != null ? $" ('{alias}')" : "")}"
+                StatusDescription = "OK",
+                Headers =
+                {
+                    ["RESTar-info"] = $"{count} entities updated in resource '{resource.FullName}'" +
+                                      $"{(alias != null ? $" ('{alias}')" : "")}"
+                }
+            };
+        }
+
+        internal static Response SafePostedEntities(Request request, int insertedCount, int updatedCount)
+        {
+            return new Response
+            {
+                StatusCode = 200,
+                Headers =
+                {
+                    ["RESTar-info"] = $"Inserted {insertedCount} and updated {updatedCount} entities " +
+                                      $"in resource {request.Resource.Name}"
+                }
             };
         }
 
@@ -161,18 +210,21 @@ namespace RESTar
             return new Response
             {
                 StatusCode = (ushort) HttpStatusCode.OK,
-                StatusDescription = $"{count} entities deleted from resource '{resource.FullName}'" +
-                                    $"{(alias != null ? $" ('{alias}')" : "")}"
+                StatusDescription = "OK",
+                Headers =
+                {
+                    ["RESTar-info"] = $"{count} entities deleted from resource '{resource.FullName}'" +
+                                      $"{(alias != null ? $" ('{alias}')" : "")}"
+                }
             };
         }
 
         internal static Response GetEntities(Request request, IEnumerable<dynamic> entities)
         {
-            Response response;
+            var response = new Response();
             if (request.Accept != RESTarMimeType.Excel)
             {
                 string jsonString;
-                response = new Response();
                 if
                 (
                     request.Dynamic ||
@@ -194,7 +246,6 @@ namespace RESTar
             }
             else
             {
-                response = new Response();
                 var data = ToDataSet(entities);
                 var workbook = new XLWorkbook();
                 workbook.AddWorksheet(data);
@@ -210,7 +261,7 @@ namespace RESTar
             return response;
         }
 
-        public static DataSet ToDataSet(this IEnumerable<dynamic> list)
+        private static DataSet ToDataSet(this IEnumerable<dynamic> list)
         {
             var ds = new DataSet();
             var t = new DataTable();

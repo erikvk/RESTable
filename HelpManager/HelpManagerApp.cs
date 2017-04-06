@@ -7,7 +7,13 @@ namespace HelpManager
     {
         public static void Main()
         {
-            RESTarConfig.Init();
+            RESTarConfig.Init
+            (
+                port: 8010,
+                requireApiKey: true,
+                allowAllOrigins: true,
+                configFilePath: "C:\\Mopedo\\HelpManager.config"
+            );
         }
     }
 

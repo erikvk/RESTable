@@ -11,7 +11,10 @@ namespace RESTar
 
     public class SyntaxException : Exception
     {
-        public SyntaxException(string message) : base("Syntax error while parsing request: " + message)
+        internal ErrorCode errorCode;
+
+        public SyntaxException(string message, ErrorCode errorCode)
+            : base("Syntax error while parsing request: " + message)
         {
         }
     }
@@ -55,20 +58,11 @@ namespace RESTar
         }
     }
 
-    public class UnknownResourceForMappingException : Exception
+    public class UnknownResourceForAliasException : Exception
     {
-        public UnknownResourceForMappingException(string searchString, Type match)
-            : base("Resource mappings must be provided with fully qualified resource names. No match " +
+        public UnknownResourceForAliasException(string searchString, Type match)
+            : base("Resource alias mappings must be provided with fully qualified resource names. No match " +
                    $"for '{searchString}'. {(match != null ? $"Did you mean '{match.FullName}'? " : "")}")
-        {
-        }
-    }
-
-    public class ResourceMappingException : Exception
-    {
-        public ResourceMappingException(string alias)
-            : base($"RESTar could not map alias '{alias}' to resource. Alias is already mapped to a " +
-                   "resource.")
         {
         }
     }
@@ -151,18 +145,14 @@ namespace RESTar
 
     public class AmbiguousMatchException : Exception
     {
-        public IResource Resource;
-
         public AmbiguousMatchException(IResource resource)
-        {
-            Resource = resource;
-        }
-    }
-
-    public class RESTarInternalException : Exception
-    {
-        public RESTarInternalException(string message)
-            : base($"An internal RESTar error has been encountered: {message} . ")
+            : base(
+                $"Expected a uniquely matched entity in resource '{resource.Name}' " +
+                "for this request, but matched multiple entities satisfying the given " +
+                "conditions. To enable manipulation of multiple matched entities (for " +
+                "methods that support this), add 'unsafe=true' to the request's meta-" +
+                "conditions. See help article with topic 'unsafe' for more info."
+            )
         {
         }
     }
@@ -181,24 +171,6 @@ namespace RESTar
     {
     }
 
-    public class VirtualResourceSignatureException : Exception
-    {
-        public VirtualResourceSignatureException(string message)
-            : base(message)
-        {
-        }
-    }
-
-    public class CustomEvaluatorSignatureException : Exception
-    {
-        public CustomEvaluatorSignatureException(MethodInfo method, Type resource)
-            : base($"Error in signature of custom evaluator '{method.Name}' in resource '{resource.FullName}'. " +
-                   $"Signature must be of form 'public static Starcounter.Response [GET|POST|PATCH|PUT|DELETE]" +
-                   $"(IRequest request)'")
-        {
-        }
-    }
-
     public class VirtualResourceMemberException : Exception
     {
         public VirtualResourceMemberException(string message)
@@ -207,39 +179,54 @@ namespace RESTar
         }
     }
 
-    public class InvalidResourceDefinitionException : Exception
-    {
-        public InvalidResourceDefinitionException(string message)
-            : base(message)
-        {
-        }
-    }
-
-
     public class AbortedSelectorException : Exception
     {
-        public AbortedSelectorException(string message) : base(message)
+        public AbortedSelectorException(Exception innerException, string message = null)
+            : base(message ??
+                   (innerException.GetType() == typeof(Jil.DeserializationException) ||
+                    innerException.GetType() == typeof(Newtonsoft.Json.JsonSerializationException) ||
+                    innerException.GetType() == typeof(Newtonsoft.Json.JsonReaderException)
+                       ? "JSON serialization error, check JSON syntax"
+                       : $"An exception of type {innerException.GetType().FullName} was thrown"), innerException)
         {
         }
     }
 
     public class AbortedInserterException : Exception
     {
-        public AbortedInserterException(string message) : base(message)
+        public AbortedInserterException(Exception innerException, string message = null)
+            : base(message ??
+                   (innerException.GetType() == typeof(Jil.DeserializationException) ||
+                    innerException.GetType() == typeof(Newtonsoft.Json.JsonSerializationException) ||
+                    innerException.GetType() == typeof(Newtonsoft.Json.JsonReaderException)
+                       ? "JSON serialization error, check JSON syntax"
+                       : $"An exception of type {innerException.GetType().FullName} was thrown"), innerException)
         {
         }
     }
 
     public class AbortedUpdaterException : Exception
     {
-        public AbortedUpdaterException(string message) : base(message)
+        public AbortedUpdaterException(Exception innerException, string message = null)
+            : base(message ??
+                   (innerException.GetType() == typeof(Jil.DeserializationException) ||
+                    innerException.GetType() == typeof(Newtonsoft.Json.JsonSerializationException) ||
+                    innerException.GetType() == typeof(Newtonsoft.Json.JsonReaderException)
+                       ? "JSON serialization error, check JSON syntax"
+                       : $"An exception of type {innerException.GetType().FullName} was thrown"), innerException)
         {
         }
     }
 
     public class AbortedDeleterException : Exception
     {
-        public AbortedDeleterException(string message) : base(message)
+        public AbortedDeleterException(Exception innerException, string message = null)
+            : base(message ??
+                   (innerException.GetType() == typeof(Jil.DeserializationException) ||
+                    innerException.GetType() == typeof(Newtonsoft.Json.JsonSerializationException) ||
+                    innerException.GetType() == typeof(Newtonsoft.Json.JsonReaderException)
+                       ? "JSON serialization error, check JSON syntax"
+                       : $"An exception of type {innerException.GetType().FullName} was thrown"), innerException)
         {
         }
     }

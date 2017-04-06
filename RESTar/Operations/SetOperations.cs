@@ -8,6 +8,8 @@ using System.Text.RegularExpressions;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Starcounter;
+using static System.UriKind;
+using static RESTar.RESTarMethods;
 
 namespace RESTar
 {
@@ -42,9 +44,11 @@ namespace RESTar
                     else if (char.IsDigit(first) || first == '/')
                     {
                         var uri = str;
-                        var response = Self.GET(Settings._Port, Settings._Uri + uri);
+                        var response = HTTP.InternalRequest(GET, new Uri(uri, Relative), request.AuthToken);
                         if (response?.IsSuccessStatusCode != true)
-                            throw new Exception($"Could not get source data from '<self>:{Settings._Port}{Settings._Uri}{uri}'");
+                            throw new Exception(
+                                $"Could not get source data from '<self>:{Settings._Port}{Settings._Uri}{uri}'. " +
+                                $"{response?.StatusCode}: {response?.StatusDescription}");
                         if (response.StatusCode == 204 || string.IsNullOrEmpty(response.Body))
                             json = "[]";
                         else json = response.Body;
@@ -84,7 +88,7 @@ namespace RESTar
                         case "map":
                             if (arr.Count != 2)
                                 throw new Exception("Map takes two and only two arguments");
-                            return Map(treeRecursor(arr[0]), (string) arr[1]);
+                            return Map(treeRecursor(arr[0]), (string) arr[1], request);
                         default:
                             throw new ArgumentOutOfRangeException($"Unknown operation '{prop.Name}'. " +
                                                                   "Avaliable operations: distinct, except, " +
@@ -162,7 +166,7 @@ namespace RESTar
 
         private static readonly Regex macroRegex = new Regex(@"\$\([^\$\(\)]+\)");
 
-        private static JArray Map(JArray set, string mapper)
+        private static JArray Map(JArray set, string mapper, IRequest request)
         {
             if (set == null) throw new ArgumentException(nameof(set));
             if (string.IsNullOrEmpty(mapper)) throw new ArgumentException(nameof(mapper));
@@ -188,9 +192,10 @@ namespace RESTar
                 if (!skip)
                 {
                     var uri = localMapper.ToString();
-                    var response = Self.GET(Settings._Port, Settings._Uri + uri);
+                    var response = HTTP.InternalRequest(GET, new Uri(uri, Relative), request.AuthToken);
                     if (response?.IsSuccessStatusCode != true)
-                        throw new Exception($"Could not get source data from '<self>:{Settings._Port}{Settings._Uri}{uri}'");
+                        throw new Exception(
+                            $"Could not get source data from '<self>:{Settings._Port}{Settings._Uri}{uri}'");
                     JArray toAdd;
                     if (response.StatusCode == 204 || string.IsNullOrEmpty(response.Body))
                         toAdd = new JArray {new JObject()};

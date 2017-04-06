@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Starcounter;
+using static System.UriKind;
 using static RESTar.Responses;
 using static RESTar.Settings;
 
@@ -31,28 +32,31 @@ namespace RESTar
             }
             catch (Exception e)
             {
-                throw new AbortedInserterException(e.Message);
+                throw new AbortedInserterException(e);
             }
         }
 
-        internal static Response SafePOST(Request request, string json)
+        private static Response SafePOST(Request request, string json)
         {
             var inputEntities = json.DeserializeDyn();
             var insertedCount = 0;
             var updatedCount = 0;
             var keys = request.SafePost.Split(',');
-            foreach (var entity in inputEntities)
+            foreach (IDictionary<string, dynamic> entity in inputEntities)
             {
-                var entityJson = Serializer.SerializeDyn(entity);
+                var jsonBytes = entity.SerializeDyn().ToBytes();
                 Response response;
                 try
                 {
-                    response = Self.PUT
+                    var valuePairs = keys.Select(k => $"{k}={((string) entity.GetNoCase(k).ToString()).UriEncode()}");
+                    var uriString = $"/{request.Resource.Name}/" + $"{string.Join("&", valuePairs)}";
+                    response = HTTP.InternalRequest
                     (
-                        port: _Port,
-                        uri: $"{_Uri}/{request.Resource.Name}/" +
-                             $"{string.Join("&", keys.Select(k => $"{k}={((IDictionary<string, dynamic>) entity).GetNoCase(k)}"))}",
-                        body: entityJson
+                        method: RESTarMethods.PUT,
+                        relativeUri: new Uri(uriString, Relative),
+                        authToken: request.AuthToken,
+                        bodyBytes: jsonBytes,
+                        headers: new Dictionary<string, string> {["Authorization"] = request.AuthToken}
                     );
                 }
                 catch (InvalidOperationException)
@@ -68,12 +72,7 @@ namespace RESTar
                 else if (response.StatusCode == 201)
                     insertedCount += 1;
             }
-            return new Response
-            {
-                StatusCode = 200,
-                StatusDescription = $"Inserted {insertedCount} and updated {updatedCount} entities " +
-                                    $"in resource {request.Resource.Name}"
-            };
+            return SafePostedEntities(request, insertedCount, updatedCount);
         }
 
         internal static Response PATCH(Request request)
@@ -88,7 +87,7 @@ namespace RESTar
             }
             catch (Exception e)
             {
-                throw new AbortedUpdaterException(e.Message);
+                throw new AbortedUpdaterException(e);
             }
         }
 
@@ -107,7 +106,7 @@ namespace RESTar
                 }
                 catch (Exception e)
                 {
-                    throw new AbortedInserterException(e.Message);
+                    throw new AbortedInserterException(e);
                 }
             }
             try
@@ -119,7 +118,7 @@ namespace RESTar
             }
             catch (Exception e)
             {
-                throw new AbortedUpdaterException(e.Message);
+                throw new AbortedUpdaterException(e);
             }
         }
 
@@ -133,7 +132,7 @@ namespace RESTar
             }
             catch (Exception e)
             {
-                throw new AbortedDeleterException(e.Message);
+                throw new AbortedDeleterException(e);
             }
         }
 

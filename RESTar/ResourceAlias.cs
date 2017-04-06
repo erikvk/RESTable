@@ -30,7 +30,7 @@ namespace RESTar
                 {
                     this.Delete();
                     var match = value.FindResource();
-                    throw new UnknownResourceForMappingException(value, match.TargetType);
+                    throw new UnknownResourceForAliasException(value, match.TargetType);
                 }
                 catch
                 {

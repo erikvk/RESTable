@@ -7,12 +7,13 @@ using Starcounter;
 
 namespace RESTar
 {
-    internal static class HTTP
+    public static class HTTP
     {
         internal static Response InternalRequest
         (
             RESTarMethods method,
             Uri relativeUri,
+            string authToken,
             byte[] bodyBytes = null,
             string contentType = null,
             string accept = null,
@@ -22,14 +23,15 @@ namespace RESTar
         {
             try
             {
+                headers = headers ?? new Dictionary<string, string>();
                 if (contentType != null || accept != null)
                 {
-                    headers = headers ?? new Dictionary<string, string>();
                     if (contentType != null)
                         headers["Content-Type"] = contentType;
                     if (accept != null)
                         headers["Accept"] = accept;
                 }
+                headers["RESTar-AuthToken"] = authToken;
                 var response = Self.CustomRESTRequest
                 (
                     method: method.ToString(),

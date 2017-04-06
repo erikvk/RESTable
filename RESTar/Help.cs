@@ -11,11 +11,11 @@ namespace RESTar
         public string Topic { get; set; }
         public string Body { get; set; }
         public string SeeAlso { get; set; }
-        private const string URL = "http://restarhelp.mopedo-drtb.com:8282/restar/helparticle/";
+        private const string URL = "https://restarhelp.mopedo-drtb.com/restar/helparticle/";
 
         public IEnumerable<Help> Select(IRequest request)
         {
-            var topic = ((string) request.Conditions?["topic", EQUALS])?.UrlEncode();
+            var topic = ((string) request.Conditions?["topic", EQUALS])?.UriEncode();
             var uri = new Uri(URL + (topic != null ? $"topic={topic}" : ""));
             return HTTP.ExternalRequest(GET, uri)?.Body?.Deserialize<Help[]>();
         }

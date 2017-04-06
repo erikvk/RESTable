@@ -1,4 +1,5 @@
-﻿using RESTar.Internal;
+﻿using System.Collections.Generic;
+using RESTar.Internal;
 
 namespace RESTar
 {
@@ -12,5 +13,7 @@ namespace RESTar
         bool Unsafe { get; }
         Condition GetCondition(string key);
         string Json { get; }
+        string AuthToken { get; }
+        IDictionary<string, string> ResponseHeaders { get; }
     }
 }

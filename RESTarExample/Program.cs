@@ -22,7 +22,7 @@ namespace RESTarExample
         }
     }
 
-    [Database, RESTar(RESTarMethods.GET, RESTarMethods.PUT)]
+    [Database, RESTar(RESTarPresets.ReadAndWrite)]
     public class MyResource
     {
         public string Str;

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.Serialization;
 using Dynamit;
@@ -14,8 +15,8 @@ namespace RESTar
         {
             var validCondition = request.GetCondition("resource")?.Value as string;
             if (validCondition == null)
-                throw new AbortedSelectorException("Invalid request: No valid 'resource' argument. " +
-                                                   "Example: /schema/resource=my_resource_name");
+                throw new Exception("Invalid request: No valid 'resource' argument. " +
+                                    "Example: /schema/resource=my_resource_name");
             var _resource = validCondition.FindResource();
             if (_resource.TargetType.IsSubclassOf(typeof(DDictionary)))
                 return null;

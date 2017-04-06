@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -23,12 +24,23 @@ namespace RESTar
         internal static readonly RESTarMethods[] Methods = {GET, POST, PATCH, PUT, DELETE};
         internal static bool RequireApiKey { get; private set; }
         internal static bool AllowAllOrigins { get; private set; }
+        private static string ConfigFilePath;
+
+        internal static readonly ConcurrentDictionary<string, AccessRights> AuthTokens =
+            new ConcurrentDictionary<string, AccessRights>();
+
+        private static void UpdateAuthInfo()
+        {
+            if (ConfigFilePath != null)
+                ReadConfig();
+        }
 
         internal static void AddResource(IResource toAdd)
         {
             NameResources[toAdd.Name.ToLower()] = toAdd;
             TypeResources[toAdd.TargetType] = toAdd;
             IEnumTypes[toAdd] = typeof(IEnumerable<>).MakeGenericType(toAdd.TargetType);
+            UpdateAuthInfo();
         }
 
         internal static void RemoveResource(IResource toRemove)
@@ -36,6 +48,7 @@ namespace RESTar
             NameResources.Remove(toRemove.Name.ToLower());
             TypeResources.Remove(toRemove.TargetType);
             IEnumTypes.Remove(toRemove);
+            UpdateAuthInfo();
         }
 
         /// <summary>
@@ -48,6 +61,7 @@ namespace RESTar
         /// <param name="camelCase">Should resources be parsed and serialized using camelCase as 
         /// opposed to default PascalCase?</param>
         /// <param name="localTimes">Should datetimes be handled as local times or as UTC?</param>
+        /// <param name="daysToSaveErrors">The number of days to save errors in the Error resource</param>
         public static void Init
         (
             ushort port = 8282,
@@ -57,7 +71,8 @@ namespace RESTar
             string configFilePath = null,
             bool prettyPrint = true,
             bool camelCase = false,
-            bool localTimes = true
+            bool localTimes = true,
+            ushort daysToSaveErrors = 30
         )
         {
             if (uri.Trim().First() != '/')
@@ -71,22 +86,23 @@ namespace RESTar
 
             RequireApiKey = requireApiKey;
             AllowAllOrigins = allowAllOrigins;
-            SetupConfig(configFilePath);
+            ConfigFilePath = configFilePath;
+            ReadConfig();
             DynamitConfig.Init(true, true);
-            Settings.Init(uri, port, prettyPrint, camelCase, localTimes);
+            Settings.Init(uri, port, prettyPrint, camelCase, localTimes, daysToSaveErrors);
             Log.Init();
             Handlers.Register(uri);
         }
 
-        private static void SetupConfig(string filePath)
+        private static void ReadConfig()
         {
             if (!RequireApiKey && AllowAllOrigins) return;
-            if (filePath == null)
+            if (ConfigFilePath == null)
                 throw new Exception("RESTar init error: No config file path to get API keys and/or allowed origins from");
             try
             {
                 dynamic config;
-                using (var appConfig = File.OpenText(filePath))
+                using (var appConfig = File.OpenText(ConfigFilePath))
                 {
                     var document = new XmlDocument();
                     document.Load(appConfig);
@@ -130,7 +146,10 @@ namespace RESTar
             switch (keyToken.Type)
             {
                 case JTokenType.Object:
-                    var key = keyToken["Key"].Value<string>().MD5();
+                    var keyString = keyToken["Key"].Value<string>();
+                    if (string.IsNullOrWhiteSpace(keyString))
+                        throw new Exception("An API key was invalid");
+                    var key = keyString.SHA256();
                     var access = new List<AccessRight>();
                     Action<JToken> GetAccessRight = null;
                     GetAccessRight = token =>
@@ -156,7 +175,7 @@ namespace RESTar
                     keyToken.ForEach(SetupApiKeys);
                     break;
                 default:
-                    throw new ArgumentOutOfRangeException();
+                    throw new Exception("Invalid API key XML syntax in config file");
             }
         }
     }

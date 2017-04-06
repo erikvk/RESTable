@@ -15,11 +15,12 @@ namespace RESTar
         internal static string _ResourcesPath => Instance.ResourcesPath;
         internal static string _HelpResourcePath => Instance.HelpResourcePath;
         internal static bool _LocalTimes => Instance.LocalTimes;
+        internal static int _DaysToSaveErrors => Instance.DaysToSaveErrors;
 
         private bool _prettyPrint;
         private bool _camelCase;
         private bool _localTimes;
-
+        
         public bool PrettyPrint
         {
             get { return _prettyPrint; }
@@ -93,6 +94,7 @@ namespace RESTar
         public ushort Port { get; private set; }
         public string ResourcesPath => $"http://[IP address]:{Port}{Uri}";
         public string HelpResourcePath => ResourcesPath + "/RESTar.help";
+        public int DaysToSaveErrors { get; private set; }
 
         internal static void Init
         (
@@ -100,7 +102,8 @@ namespace RESTar
             ushort port,
             bool prettyPrint,
             bool camelCase,
-            bool localTimes
+            bool localTimes,
+            int daysToSaveErrors
         )
         {
             Db.TransactAsync(() =>
@@ -140,7 +143,8 @@ namespace RESTar
                     Port = port,
                     _prettyPrint = prettyPrint,
                     _camelCase = camelCase,
-                    _localTimes = localTimes
+                    _localTimes = localTimes,
+                    DaysToSaveErrors = daysToSaveErrors
                 };
             });
         }
