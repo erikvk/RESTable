@@ -22,7 +22,7 @@ namespace RESTar
         /// <summary>
         /// Makes all methods available for this resource
         /// </summary>
-        ReadAndWrite,
+        ReadAndWrite
     }
 
     public enum RESTarMethods
