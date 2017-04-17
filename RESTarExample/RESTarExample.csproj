@@ -47,6 +47,7 @@
     <StartupObject>RESTarExample.Program</StartupObject>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Starcounter.XSON, Version=2.0.0.0, Culture=neutral, PublicKeyToken=d2df1e81d0ca3abf, processorArchitecture=MSIL" />
     <Reference Include="System" />
     <Reference Include="System.Core">
       <RequiredTargetFramework>4.0</RequiredTargetFramework>

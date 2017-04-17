@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Serialization;
 using RESTar.Internal;
+using Starcounter;
 
 namespace RESTar
 {
@@ -38,6 +39,7 @@ namespace RESTar
         {
             var count = 0;
             var dynamicTables = resources.ToList();
+
             try
             {
                 foreach (var entity in dynamicTables)

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -29,6 +30,11 @@ namespace RESTar
         }
 
         internal static JsonSerializerSettings JsonNetSettings;
+
+        internal static string SerializeDyn<T>(this IEnumerable<T> obj)
+        {
+            return JSON.SerializeDynamic(obj, SerializerOptions);
+        }
 
         internal static string SerializeDyn(this object obj)
         {
@@ -109,7 +115,7 @@ namespace RESTar
             JsonConvert.PopulateObject(json, target, JsonNetSettings);
         }
 
-        internal static string JsonNetSerialize(object value)
+        internal static string JsonNetSerialize(this object value)
         {
             return JsonConvert.SerializeObject(value, JsonNetSettings);
         }

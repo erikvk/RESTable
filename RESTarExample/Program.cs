@@ -1,7 +1,6 @@
 ﻿using RESTar;
 using Starcounter;
 
-
 namespace RESTarExample
 {
     public class Program

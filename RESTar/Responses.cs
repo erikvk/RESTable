@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Data;
 using System.IO;
@@ -6,6 +7,7 @@ using System.Linq;
 using System.Net;
 using ClosedXML.Excel;
 using Dynamit;
+using RESTar.Internal;
 using Starcounter;
 
 namespace RESTar
@@ -356,12 +358,13 @@ namespace RESTar
         private static IEnumerable<RESTarMethods> ToExternalMethodsList(IEnumerable<RESTarMethods> methods)
         {
             return methods.Select(i =>
-            {
-                var str = i.ToString();
-                if (str.Contains("ADMIN"))
-                    return (RESTarMethods) Enum.Parse(typeof(RESTarMethods), str.Split('_')[1]);
-                return i;
-            }).Distinct();
+                {
+                    var str = i.ToString();
+                    if (str.Contains("ADMIN"))
+                        return (RESTarMethods) Enum.Parse(typeof(RESTarMethods), str.Split('_')[1]);
+                    return i;
+                })
+                .Distinct();
         }
     }
 }
