@@ -1,10 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using Starcounter;
 using static System.UriKind;
 using static RESTar.Responses;
-using static RESTar.Settings;
 
 namespace RESTar
 {
@@ -22,12 +23,26 @@ namespace RESTar
         {
             try
             {
-                var json = request.Json.First() == '[' ? request.Json : $"[{request.Json}]";
+                var json = request.Body.First() == '[' ? request.Body : $"[{request.Body}]";
                 if (request.SafePost != null)
                     return SafePOST(request, json);
-                dynamic results = null;
-                Db.TransactAsync(() => results = json.Deserialize(RESTarConfig.IEnumTypes[request.Resource]));
-                int count = request.Resource.Insert(results, request);
+                dynamic results;
+                var count = 0;
+                request.Transaction.Scope(() =>
+                {
+                    results = json.Deserialize(RESTarConfig.IEnumTypes[request.Resource]);
+                    foreach (var result in results)
+                    {
+                        var validatableResult = result as IValidatable;
+                        if (validatableResult != null)
+                        {
+                            string reason;
+                            if (!validatableResult.Validate(out reason))
+                                throw new ValidatableException(reason);
+                        }
+                    }
+                    count = request.Resource.Insert(results, request);
+                });
                 return InsertedEntities(request, count, request.Resource.TargetType);
             }
             catch (Exception e)
@@ -80,9 +95,22 @@ namespace RESTar
             var entities = request.GetExtension();
             try
             {
-                foreach (var entity in entities)
-                    Db.TransactAsync(() => Serializer.PopulateObject(request.Json, entity));
-                int count = request.Resource.Update((dynamic) entities, request);
+                var count = 0;
+                request.Transaction.Scope(() =>
+                {
+                    entities.ForEach(entity => JsonSerializer.PopulateObject(request.Body, entity));
+                    foreach (var entity in entities)
+                    {
+                        var validatableResult = entity as IValidatable;
+                        if (validatableResult != null)
+                        {
+                            string reason;
+                            if (!validatableResult.Validate(out reason))
+                                throw new ValidatableException(reason);
+                        }
+                    }
+                    count = request.Resource.Update((dynamic) entities, request);
+                });
                 return UpdatedEntities(request, count, request.Resource.TargetType);
             }
             catch (Exception e)
@@ -94,14 +122,24 @@ namespace RESTar
         internal static Response PUT(Request request)
         {
             var entities = request.GetExtension(false);
-            object obj = null;
-            int count;
+            object obj;
+            var count = 0;
             if (!entities.Any())
             {
                 try
                 {
-                    Db.TransactAsync(() => obj = request.Json.Deserialize(request.Resource.TargetType));
-                    count = request.Resource.Insert(obj.MakeList(request.Resource.TargetType), request);
+                    request.Transaction.Scope(() =>
+                    {
+                        obj = request.Body.Deserialize(request.Resource.TargetType);
+                        var validatableResult = obj as IValidatable;
+                        if (validatableResult != null)
+                        {
+                            string reason;
+                            if (!validatableResult.Validate(out reason))
+                                throw new ValidatableException(reason);
+                        }
+                        count = request.Resource.Insert(obj.MakeList(request.Resource.TargetType), request);
+                    });
                     return InsertedEntities(request, count, request.Resource.TargetType);
                 }
                 catch (Exception e)
@@ -112,8 +150,18 @@ namespace RESTar
             try
             {
                 obj = entities.First();
-                Db.TransactAsync(() => Serializer.PopulateObject(request.Json, obj));
-                count = request.Resource.Update(obj.MakeList(request.Resource.TargetType), request);
+                request.Transaction.Scope(() =>
+                {
+                    JsonSerializer.PopulateObject(request.Body, obj);
+                    var validatableResult = obj as IValidatable;
+                    if (validatableResult != null)
+                    {
+                        string reason;
+                        if (!validatableResult.Validate(out reason))
+                            throw new ValidatableException(reason);
+                    }
+                    count = request.Resource.Update(obj.MakeList(request.Resource.TargetType), request);
+                });
                 return UpdatedEntities(request, count, request.Resource.TargetType);
             }
             catch (Exception e)
@@ -124,10 +172,11 @@ namespace RESTar
 
         internal static Response DELETE(Request request)
         {
+            var count = 0;
             var entities = request.GetExtension(true);
             try
             {
-                int count = request.Resource.Delete((dynamic) entities, request);
+                request.Transaction.Scope(() => count = request.Resource.Delete((dynamic) entities, request));
                 return DeleteEntities(count, request.Resource.TargetType);
             }
             catch (Exception e)
@@ -135,34 +184,5 @@ namespace RESTar
                 throw new AbortedDeleterException(e);
             }
         }
-
-        //        internal static Response MIGRATE(Request request)
-        //        {
-        //            if (request.Destination == null)
-        //                throw new SyntaxException("Missing destination header in MIGRATE request");
-        //            var method_uri = request.Destination.Split(new[] {' '}, 2);
-        //            if (method_uri.Length == 1 || method_uri[0].ToUpper() != "IMPORT")
-        //                throw new SyntaxException("MIGRATE destination must be of form 'IMPORT [URI]'");
-        //
-        //            var entities = request.GetExtension(true);
-        //            if (!entities.Any())
-        //                return NoContent();
-        //            var outDict = entities.ToDictionary(
-        //                e => DbHelper.GetObjectNo(e),
-        //                e => e
-        //            );
-        //
-        //            string jsonString;
-        //            if (request.Select == null && request.Rename == null)
-        //                jsonString = outDict.Serialize(typeof(IDictionary<,>).MakeGenericType(typeof(ulong),
-        //                    RESTarConfig.IEnumTypes[request.Resource]));
-        //            else jsonString = outDict.Serialize(typeof(IDictionary<ulong, dynamic>));
-        //            return HTTP.Request("IMPORT", method_uri[1], jsonString);
-        //        }
-
-        //        internal static Response IMPORT(Request request)
-        //        {
-        //            return null;
-        //        }
     }
 }

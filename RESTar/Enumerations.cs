@@ -65,12 +65,6 @@ namespace RESTar
         Safepost
     }
 
-    internal enum RESTarMimeType : byte
-    {
-        Json,
-        Excel
-    }
-
     public enum ErrorCode
     {
         // 000: Unknown error
@@ -91,6 +85,7 @@ namespace RESTar
         ExcelReaderError = 011,
         DataSourceFormatError = 012,
         NoDataSourceError = 013,
+        UnsupportedContentType = 014,
         // 020-029: Headers error
         InvalidSourceDataError = 020,
         InvalidSourceFormatError = 021,

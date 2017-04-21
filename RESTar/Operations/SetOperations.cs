@@ -18,9 +18,9 @@ namespace RESTar
     {
         public IEnumerable<SetOperations> Select(IRequest request)
         {
-            if (request.Json == null)
+            if (request.Body == null)
                 throw new Exception("Missing data source for operation");
-            var jobject = JObject.Parse(request.Json);
+            var jobject = JObject.Parse(request.Body);
             Func<JToken, JArray> treeRecursor = null;
             treeRecursor = token =>
             {
@@ -56,7 +56,7 @@ namespace RESTar
                     else
                         throw new Exception($"Invalid string '{str}'. Must be a relative REST request URI " +
                                             $"beginning wmuith '/<resource locator>' or a JSON array.");
-                    return JsonConvert.DeserializeObject<JArray>(json, Serializer.JsonNetSettings);
+                    return JsonConvert.DeserializeObject<JArray>(json, JsonSerializer.JsonNetSettings);
                 }
 
                 if (obj != null)
@@ -98,7 +98,7 @@ namespace RESTar
                 throw new ArgumentException($"Invalid type '{token.Type}' in operations tree");
             };
 
-            var results = JsonConvert.SerializeObject(treeRecursor(jobject), Serializer.JsonNetSettings);
+            var results = JsonConvert.SerializeObject(treeRecursor(jobject), JsonSerializer.JsonNetSettings);
             try
             {
                 return results.Deserialize<IEnumerable<SetOperations>>();

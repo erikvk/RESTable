@@ -27,7 +27,7 @@ namespace RESTar
             set
             {
                 _prettyPrint = value;
-                Serializer.SerializerOptions = new Options
+                JsonSerializer.SerializerOptions = new Options
                 (
                     includeInherited: true,
                     dateFormat: DateTimeFormat.ISO8601,
@@ -48,7 +48,7 @@ namespace RESTar
             set
             {
                 _camelCase = value;
-                Serializer.SerializerOptions = new Options
+                JsonSerializer.SerializerOptions = new Options
                 (
                     includeInherited: true,
                     dateFormat: DateTimeFormat.ISO8601,
@@ -60,7 +60,7 @@ namespace RESTar
                         ? SerializationNameFormat.CamelCase
                         : SerializationNameFormat.Verbatim
                 );
-                Serializer.JsonNetSettings.ContractResolver = value
+                JsonSerializer.JsonNetSettings.ContractResolver = value
                     ? new CamelCasePropertyNamesContractResolver()
                     : new DefaultContractResolver();
             }
@@ -72,7 +72,7 @@ namespace RESTar
             set
             {
                 _localTimes = value;
-                Serializer.SerializerOptions = new Options
+                JsonSerializer.SerializerOptions = new Options
                 (
                     includeInherited: true,
                     dateFormat: DateTimeFormat.ISO8601,
@@ -84,7 +84,7 @@ namespace RESTar
                         ? SerializationNameFormat.CamelCase
                         : SerializationNameFormat.Verbatim
                 );
-                Serializer.JsonNetSettings.DateTimeZoneHandling = value
+                JsonSerializer.JsonNetSettings.DateTimeZoneHandling = value
                     ? DateTimeZoneHandling.Local
                     : DateTimeZoneHandling.Utc;
             }
@@ -111,7 +111,7 @@ namespace RESTar
                 foreach (var obj in DB.All<Settings>())
                     obj.Delete();
 
-                Serializer.SerializerOptions = new Options
+                JsonSerializer.SerializerOptions = new Options
                 (
                     includeInherited: true,
                     dateFormat: DateTimeFormat.ISO8601,
@@ -124,7 +124,7 @@ namespace RESTar
                         : SerializationNameFormat.Verbatim
                 );
 
-                Serializer.JsonNetSettings = new JsonSerializerSettings
+                JsonSerializer.JsonNetSettings = new JsonSerializerSettings
                 {
                     DateParseHandling = DateParseHandling.DateTime,
                     DateTimeZoneHandling = localTimes

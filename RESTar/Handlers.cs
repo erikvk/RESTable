@@ -8,6 +8,7 @@ using static RESTar.RESTarConfig;
 using static RESTar.RESTarMethods;
 using static RESTar.Settings;
 using ScRequest = Starcounter.Request;
+using ScHandle = Starcounter.Handle;
 
 namespace RESTar
 {
@@ -16,12 +17,12 @@ namespace RESTar
         internal static void Register(string uri)
         {
             uri += "{?}";
-            Handle.GET(_Port, uri, (ScRequest r, string q) => Evaluate(r, q, Evaluators.GET, GET));
-            Handle.POST(_Port, uri, (ScRequest r, string q) => Evaluate(r, q, Evaluators.POST, POST));
-            Handle.PUT(_Port, uri, (ScRequest r, string q) => Evaluate(r, q, Evaluators.PUT, PUT));
-            Handle.PATCH(_Port, uri, (ScRequest r, string q) => Evaluate(r, q, Evaluators.PATCH, PATCH));
-            Handle.DELETE(_Port, uri, (ScRequest r, string q) => Evaluate(r, q, Evaluators.DELETE, DELETE));
-            Handle.OPTIONS(_Port, uri, (ScRequest r, string q) => CheckOrigin(r, q));
+            ScHandle.GET(_Port, uri, (ScRequest r, string q) => Handle(r, q, Evaluators.GET, GET));
+            ScHandle.POST(_Port, uri, (ScRequest r, string q) => Handle(r, q, Evaluators.POST, POST));
+            ScHandle.PUT(_Port, uri, (ScRequest r, string q) => Handle(r, q, Evaluators.PUT, PUT));
+            ScHandle.PATCH(_Port, uri, (ScRequest r, string q) => Handle(r, q, Evaluators.PATCH, PATCH));
+            ScHandle.DELETE(_Port, uri, (ScRequest r, string q) => Handle(r, q, Evaluators.DELETE, DELETE));
+            ScHandle.OPTIONS(_Port, uri, (ScRequest r, string q) => CheckOrigin(r, q));
         }
 
         private static Response CheckOrigin(ScRequest scRequest, string query)
@@ -41,7 +42,7 @@ namespace RESTar
             }
         }
 
-        private static Response Evaluate(ScRequest scRequest, string query, Func<Request, Response> evaluator,
+        private static Response Handle(ScRequest scRequest, string query, Func<Request, Response> evaluator,
             RESTarMethods method)
         {
             Request request = null;
@@ -52,9 +53,10 @@ namespace RESTar
                     request.Authenticate();
                     request.Populate(query, method, evaluator);
                     request.MethodCheck();
-                    request.ResolveDataSource();
-                    var response = request.Evaluate();
-                    return request.Respond(response);
+                    request.GetRequestData();
+                    request.Evaluate();
+                    request.Transaction.Commit();
+                    return request.GetResponse();
                 }
             }
 
@@ -62,6 +64,8 @@ namespace RESTar
 
             catch (Exception e)
             {
+                request?.Transaction.Rollback();
+
                 Response errorResponse;
                 ErrorCode errorCode;
 
@@ -71,6 +75,11 @@ namespace RESTar
                 if (e is SyntaxException)
                 {
                     errorCode = ((SyntaxException) e).errorCode;
+                    errorResponse = BadRequest(e);
+                }
+                else if (e is FormatException)
+                {
+                    errorCode = UnsupportedContentType;
                     errorResponse = BadRequest(e);
                 }
                 else if (e is UnknownColumnException)
@@ -153,6 +162,7 @@ namespace RESTar
                     errorCode = UnknownError;
                     errorResponse = InternalError(e);
                 }
+
                 Error error = null;
                 Error.ClearOld();
                 Db.TransactAsync(() => error = new Error(errorCode, e, request));

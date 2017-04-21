@@ -14,9 +14,9 @@ namespace RESTar
     {
         public IEnumerable<Counter> Select(IRequest request)
         {
-            if (request.Json == null)
+            if (request.Body == null)
                 throw new Exception("Missing data source for operation");
-            var jtoken = JToken.Parse(request.Json);
+            var jtoken = JToken.Parse(request.Body);
             var array = jtoken as JArray;
             var obj = jtoken as JObject;
             if (array != null)

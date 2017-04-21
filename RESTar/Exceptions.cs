@@ -9,6 +9,11 @@ namespace RESTar
     {
     }
 
+    public class ValidatableException : Exception
+    {
+        public ValidatableException(string message) : base(message) { }
+    }
+
     public class SyntaxException : Exception
     {
         internal ErrorCode errorCode;

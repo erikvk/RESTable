@@ -12,7 +12,7 @@ namespace RESTar
         int Limit { get; }
         bool Unsafe { get; }
         Condition GetCondition(string key);
-        string Json { get; }
+        string Body { get; }
         string AuthToken { get; }
         IDictionary<string, string> ResponseHeaders { get; }
     }

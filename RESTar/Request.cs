@@ -4,30 +4,41 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
+using System.Xml;
 using ClosedXML.Excel;
 using Dynamit;
 using Excel;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Starcounter;
 using static RESTar.ErrorCode;
 using IResource = RESTar.Internal.IResource;
 using ScRequest = Starcounter.Request;
 using static RESTar.RESTarConfig;
+using static RESTar.RESTarMethods;
+using Formatting = Newtonsoft.Json.Formatting;
 
 namespace RESTar
 {
     internal class Request : IRequest, IDisposable
     {
         internal ScRequest ScRequest { get; }
+        internal Response Response { get; private set; }
         public string AuthToken { get; private set; }
         private bool Internal => !ScRequest.IsExternal;
+        internal Transaction Transaction { get; }
 
         public IResource Resource { get; private set; }
         public RESTarMethods Method { get; private set; }
         public Conditions Conditions { get; private set; }
         private Func<Request, Response> Evaluator { get; set; }
-        public string Json { get; private set; }
+        public string Body { get; private set; }
+        private byte[] BinaryBody { get; set; }
         internal string Query { get; private set; }
+
+        internal bool SerializeDynamic => Dynamic || Select != null || Rename != null ||
+                                          Resource.TargetType.IsSubclassOf(typeof(DDictionary)) ||
+                                          Resource.TargetType.GetAttribute<RESTarAttribute>()?.Dynamic == true;
 
         public int Limit { get; internal set; }
         public OrderBy OrderBy { get; private set; }
@@ -42,7 +53,6 @@ namespace RESTar
         private string Destination { get; set; }
         private RESTarMimeType ContentType { get; set; }
         internal RESTarMimeType Accept { get; private set; }
-        private byte[] BinaryBody { get; set; }
         private string Origin { get; set; }
         public IDictionary<string, string> ResponseHeaders { get; }
 
@@ -50,6 +60,7 @@ namespace RESTar
         {
             ScRequest = scRequest;
             ResponseHeaders = new Dictionary<string, string>();
+            Transaction = new Transaction();
         }
 
         internal void Populate(string query, RESTarMethods method, Func<Request, Response> evaluator)
@@ -61,17 +72,8 @@ namespace RESTar
             Destination = ScRequest.Headers["Destination"];
             Origin = ScRequest.Headers["Origin"];
 
-            var contentType = ScRequest.ContentType?.ToLower();
-            ContentType = contentType?.Contains("excel") == true ||
-                          contentType?.Equals(MimeTypes.Excel) == true
-                ? RESTarMimeType.Excel
-                : RESTarMimeType.Json;
-
-            var accept = ScRequest.PreferredMimeTypeString?.ToLower();
-            Accept = accept?.Contains("excel") == true ||
-                     accept?.ToLower().Equals(MimeTypes.Excel) == true
-                ? RESTarMimeType.Excel
-                : RESTarMimeType.Json;
+            ContentType = MimeTypes.Match(ScRequest.ContentType);
+            Accept = MimeTypes.Match(ScRequest.PreferredMimeTypeString);
 
             var args = query.Split('/');
             var argLength = args.Length;
@@ -110,20 +112,20 @@ namespace RESTar
             return Conditions?.FirstOrDefault(c => c.Key.Equals(key, StringComparison.CurrentCultureIgnoreCase));
         }
 
-        internal void ResolveDataSource()
+        internal void GetRequestData()
         {
             if (Source != null)
             {
                 var sourceRequest = HttpRequest.Parse(Source);
-                if (sourceRequest.Method != RESTarMethods.GET)
+                if (sourceRequest.Method != GET)
                     throw new SyntaxException("Only GET is allowed in Source headers", InvalidSourceFormatError);
 
-                sourceRequest.Accept = ContentType == RESTarMimeType.Excel ? MimeTypes.Excel : MimeTypes.JSON;
+                sourceRequest.Accept = ContentType.ToMimeString();
 
                 var response = sourceRequest.Internal
                     ? HTTP.InternalRequest
                     (
-                        method: RESTarMethods.GET,
+                        method: GET,
                         relativeUri: sourceRequest.URI,
                         authToken: AuthToken,
                         headers: sourceRequest.Headers,
@@ -131,7 +133,7 @@ namespace RESTar
                     )
                     : HTTP.ExternalRequest
                     (
-                        method: RESTarMethods.GET,
+                        method: GET,
                         uri: sourceRequest.URI,
                         headers: sourceRequest.Headers,
                         accept: sourceRequest.Accept
@@ -148,10 +150,8 @@ namespace RESTar
                 }
                 else
                 {
-                    Json = response.Body.RemoveTabsAndBreaks();
-                    if (Json.First() == '[' && Method != RESTarMethods.POST)
-                        throw new InvalidInputCountException(Resource, Method);
-                    if (Json == null)
+                    Body = response.Body?.RemoveTabsAndBreaks();
+                    if (Body == null)
                         throw new SourceException(Source, "Response was empty");
                     return;
                 }
@@ -159,7 +159,7 @@ namespace RESTar
             else
             {
                 if (ScRequest.Body == null &&
-                    (Method == RESTarMethods.PATCH || Method == RESTarMethods.POST || Method == RESTarMethods.PUT))
+                    (Method == PATCH || Method == POST || Method == PUT))
                     throw new SyntaxException("Missing data source for method " + Method, NoDataSourceError);
                 if (ScRequest.Body == null)
                     return;
@@ -168,7 +168,9 @@ namespace RESTar
             switch (ContentType)
             {
                 case RESTarMimeType.Json:
-                    Json = Json?.Trim() ?? ScRequest.Body.Trim();
+                    Body = Body?.Trim() ?? ScRequest.Body.Trim();
+                    if (Body?.First() == '[' && Method != POST)
+                        throw new InvalidInputCountException(Resource, Method);
                     break;
                 case RESTarMimeType.Excel:
                     using (var stream = new MemoryStream(BinaryBody ?? ScRequest.BodyBytes))
@@ -179,23 +181,67 @@ namespace RESTar
                         var result = excelReader.AsDataSet();
                         if (result == null)
                             throw new ExcelInputException();
-                        if (Method == RESTarMethods.POST)
+                        if (Method == POST)
                         {
-                            Json = Serializer.JsonNetSerialize(result.Tables[0]);
-                            Json = regex.Replace(Json, "$1$2");
+                            Body = result.Tables[0].JsonNetSerialize();
+                            Body = regex.Replace(Body, "$1$2");
                         }
                         else
                         {
                             if (result.Tables[0].Rows.Count > 1)
                                 throw new InvalidInputCountException(Resource, Method);
-                            Json = Serializer.JsonNetSerialize(JArray.FromObject(result.Tables[0]).First());
+                            Body = JArray.FromObject(result.Tables[0]).First().JsonNetSerialize();
                         }
                     }
                     break;
+                case RESTarMimeType.XML:
+                    throw new FormatException("XML is only supported as output format");
             }
         }
 
-        internal Response Evaluate() => Evaluator?.Invoke(this);
+        internal void SetResponseData(IEnumerable<dynamic> entities, Response response)
+        {
+            if (Accept == RESTarMimeType.Excel)
+            {
+                var data = entities.ToDataSet();
+                var workbook = new XLWorkbook();
+                workbook.AddWorksheet(data);
+                var fileName = $"{Resource.Name}_export_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
+                using (var memstream = new MemoryStream())
+                {
+                    workbook.SaveAs(memstream);
+                    response.BodyBytes = memstream.ToArray();
+                }
+                response.Headers["Content-Disposition"] = $"attachment; filename={fileName}";
+                response.ContentType = MimeTypes.Excel;
+                return;
+            }
+
+            string jsonString;
+            if (SerializeDynamic)
+                jsonString = entities.SerializeDyn();
+            else if (Map != null)
+                jsonString = entities.Serialize(typeof(IEnumerable<>)
+                    .MakeGenericType(typeof(Dictionary<,>)
+                        .MakeGenericType(typeof(string), Resource.TargetType)));
+            else jsonString = entities.Serialize(IEnumTypes[Resource]);
+
+            switch (Accept)
+            {
+                case RESTarMimeType.Json:
+                    response.Body = jsonString;
+                    response.ContentType = MimeTypes.JSON;
+                    break;
+                case RESTarMimeType.XML:
+                    var xml = JsonConvert.DeserializeXmlNode($@"{{""row"":{jsonString}}}", "root", true);
+                    response.Body = xml.SerializeXml();
+                    response.ContentType = MimeTypes.XML;
+                    break;
+                default: throw new ArgumentOutOfRangeException(nameof(Accept));
+            }
+        }
+
+        internal void Evaluate() => Response = Evaluator?.Invoke(this);
 
         private static readonly MethodInfo Mapper = typeof(Request).GetMethod("MapEntities",
             BindingFlags.NonPublic | BindingFlags.Static);
@@ -482,23 +528,23 @@ namespace RESTar
             throw new ArgumentOutOfRangeException();
         }
 
-        internal Response Respond(Response response)
+        internal Response GetResponse()
         {
-            ResponseHeaders.ForEach(h => response.Headers["X-" + h.Key] = h.Value);
-            response.Headers["Access-Control-Allow-Origin"] = AllowAllOrigins ? "*" : (Origin ?? "null");
+            ResponseHeaders.ForEach(h => Response.Headers["X-" + h.Key] = h.Value);
+            Response.Headers["Access-Control-Allow-Origin"] = AllowAllOrigins ? "*" : (Origin ?? "null");
 
             if (Destination == null)
-                return response;
+                return Response;
 
             var destinationRequest = HttpRequest.Parse(Destination);
-            destinationRequest.ContentType = Accept == RESTarMimeType.Excel ? MimeTypes.Excel : MimeTypes.JSON;
+            destinationRequest.ContentType = Accept.ToMimeString();
             var _response = destinationRequest.Internal
                 ? HTTP.InternalRequest
                 (
                     method: destinationRequest.Method,
                     relativeUri: destinationRequest.URI,
                     authToken: AuthToken,
-                    bodyBytes: response.BodyBytes,
+                    bodyBytes: Response.BodyBytes,
                     contentType: destinationRequest.ContentType,
                     headers: destinationRequest.Headers
                 )
@@ -506,7 +552,7 @@ namespace RESTar
                 (
                     method: destinationRequest.Method,
                     uri: destinationRequest.URI,
-                    bodyBytes: response.BodyBytes,
+                    bodyBytes: Response.BodyBytes,
                     contentType: destinationRequest.ContentType,
                     headers: destinationRequest.Headers
                 );

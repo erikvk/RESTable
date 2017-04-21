@@ -1,4 +1,6 @@
-﻿using RESTar;
+﻿using System;
+using System.Collections.Generic;
+using RESTar;
 using Starcounter;
 
 namespace RESTarExample
@@ -22,9 +24,28 @@ namespace RESTarExample
     }
 
     [Database, RESTar(RESTarPresets.ReadAndWrite)]
-    public class MyResource
+    public class MyResource : IInserter<MyResource>
     {
         public string Str;
         public int Inte;
+
+        public int Insert(IEnumerable<MyResource> entities, IRequest request)
+        {
+            var count = 0;
+            foreach (var entity in entities)
+            {
+                if (entity.Str == "ASD ASD")
+                    throw new Exception("Invalid string");
+                count += 1;
+            }
+            return count;
+        }
+    }
+
+    [Database, RESTar(RESTarPresets.ReadAndWrite)]
+    public class MyOther
+    {
+        public string Str;
+        public Binary Binary;
     }
 }

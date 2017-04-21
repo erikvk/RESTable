@@ -30,7 +30,7 @@ namespace RESTar
             ErrorCode = errorCode;
             StackTrace = e.StackTrace + e.InnerException?.StackTrace;
             Message = e.TotalMessage();
-            Body = request.Json;
+            Body = request.Body;
             Uri = request.ScRequest.Uri;
             if (request.ScRequest.HeadersDictionary != null)
                 Headers = string.Join(" | ", request.ScRequest.HeadersDictionary
