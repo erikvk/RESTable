@@ -11,7 +11,6 @@ namespace RESTar
         OrderBy OrderBy { get; }
         int Limit { get; }
         bool Unsafe { get; }
-        Condition GetCondition(string key);
         string Body { get; }
         string AuthToken { get; }
         IDictionary<string, string> ResponseHeaders { get; }

@@ -16,7 +16,6 @@ using IResource = RESTar.Internal.IResource;
 using ScRequest = Starcounter.Request;
 using static RESTar.RESTarConfig;
 using static RESTar.RESTarMethods;
-using Formatting = Newtonsoft.Json.Formatting;
 
 namespace RESTar
 {
@@ -32,11 +31,12 @@ namespace RESTar
         public RESTarMethods Method { get; private set; }
         public Conditions Conditions { get; private set; }
         private Func<Request, Response> Evaluator { get; set; }
+        internal void Evaluate() => Response = Evaluator?.Invoke(this);
         public string Body { get; private set; }
         private byte[] BinaryBody { get; set; }
         internal string Query { get; private set; }
 
-        internal bool SerializeDynamic => Dynamic || Select != null || Rename != null ||
+        private bool SerializeDynamic => Dynamic || Select != null || Rename != null ||
                                           Resource.TargetType.IsSubclassOf(typeof(DDictionary)) ||
                                           Resource.TargetType.GetAttribute<RESTarAttribute>()?.Dynamic == true;
 
@@ -55,6 +55,9 @@ namespace RESTar
         internal RESTarMimeType Accept { get; private set; }
         private string Origin { get; set; }
         public IDictionary<string, string> ResponseHeaders { get; }
+
+        private static readonly MethodInfo Mapper = typeof(Request).GetMethod("MapEntities",
+            BindingFlags.NonPublic | BindingFlags.Static);
 
         internal Request(ScRequest scRequest)
         {
@@ -105,11 +108,6 @@ namespace RESTar
             Map = metaConditions.Map;
             SafePost = metaConditions.SafePost;
             OrderBy = metaConditions.OrderBy;
-        }
-
-        public Condition GetCondition(string key)
-        {
-            return Conditions?.FirstOrDefault(c => c.Key.Equals(key, StringComparison.CurrentCultureIgnoreCase));
         }
 
         internal void GetRequestData()
@@ -240,11 +238,6 @@ namespace RESTar
                 default: throw new ArgumentOutOfRangeException(nameof(Accept));
             }
         }
-
-        internal void Evaluate() => Response = Evaluator?.Invoke(this);
-
-        private static readonly MethodInfo Mapper = typeof(Request).GetMethod("MapEntities",
-            BindingFlags.NonPublic | BindingFlags.Static);
 
         internal IEnumerable<dynamic> GetExtension(bool? unsafeOverride = null)
         {
