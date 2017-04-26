@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using Starcounter;
 
 namespace RESTar
@@ -13,7 +14,7 @@ namespace RESTar
             Deleter = Deleter<T>()
         };
 
-        public static Selector<T> Selector<T>() => new Selector<T>(DbTools.StaticSelect<T>);
+        public static Selector<T> Selector<T>() => new Selector<T>(DbTools.Select<T>);
         public static Inserter<T> Inserter<T>() => new Inserter<T>((entities, request) => entities.Count());
         public static Updater<T> Updater<T>() => new Updater<T>((entities, request) => entities.Count());
 

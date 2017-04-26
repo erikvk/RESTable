@@ -11,7 +11,9 @@ namespace RESTar
 
     public class ValidatableException : Exception
     {
-        public ValidatableException(string message) : base(message) { }
+        public ValidatableException(string message) : base(message)
+        {
+        }
     }
 
     public class SyntaxException : Exception
@@ -20,6 +22,20 @@ namespace RESTar
 
         public SyntaxException(string message, ErrorCode errorCode)
             : base("Syntax error while parsing request: " + message)
+        {
+        }
+    }
+
+    public class OperatorException : SyntaxException
+    {
+        public OperatorException(string c)
+            : base($"Invalid or missing operator for condition '{c}'. The pr" +
+                   "esence of one (and only one) operator is required per co" +
+                   "ndition. Make sure to URI encode all equals (\'=\' to \'" +
+                   "%3D\') and exclamation marks (\'!\' to \'%21\') in reque" +
+                   "st URI value literals, to avoid capture. Accepted operat" +
+                   "ors: " + string.Join(", ", Operator.AvailableOperators),
+                ErrorCode.InvalidConditionOperatorError)
         {
         }
     }
@@ -86,7 +102,7 @@ namespace RESTar
         public ExcelFormatException()
             : base($"RESTar was unable to write a query response to an Excel table due to a format error. " +
                    $"This is likely due to the serializer trying to push an array of heterogeneous objects " +
-                   $"to a single table, or some object including inner objects.")
+                   $"onto a single table, or that some object contains an inner object.")
         {
         }
     }
@@ -97,9 +113,7 @@ namespace RESTar
         public readonly string SearchString;
 
         public UnknownColumnException(Type resource, string searchString)
-            : base($"RESTar could not locate any column in resource {resource.Name} by '{searchString}'. Are " +
-                   "you trying to reference a member of a dynamic resource? To enumerate columns in this " +
-                   $"resource, GET: {Settings._ResourcesPath}/{resource.Name} . ")
+            : base($"RESTar could not locate any column in resource {resource.Name} by '{searchString}'.")
         {
             SearchString = searchString;
             Resource = resource;

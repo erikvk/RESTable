@@ -1,6 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.Serialization;
+using Dynamit;
 using RESTar;
+
 using Starcounter;
 
 namespace RESTarExample
@@ -26,6 +29,7 @@ namespace RESTarExample
     [Database, RESTar(RESTarPresets.ReadAndWrite)]
     public class MyResource : IInserter<MyResource>
     {
+        [DataMember(Name = "Swoo")]
         public string Str;
         public int Inte;
 
@@ -42,10 +46,37 @@ namespace RESTarExample
         }
     }
 
-    [Database, RESTar(RESTarPresets.ReadAndWrite)]
+    [Database, RESTar(RESTarPresets.ReadAndWrite, Dynamic = true)]
     public class MyOther
     {
+        [DataMember(Name="Swoo")]
         public string Str;
-        public Binary Binary;
+        private MyDynamicTable _ext;
+
+        public MyDynamicTable Ext
+        {
+            get { return _ext; }
+            set
+            {
+                _ext?.Delete();
+                _ext = value;
+            }
+        }
+    }
+
+    [DDictionary(typeof(MyDynamicTableKvp))]
+    public class MyDynamicTable : DDictionary
+    {
+        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
+        {
+            return new MyDynamicTableKvp(dict, key, value);
+        }
+    }
+
+    public class MyDynamicTableKvp : DKeyValuePair
+    {
+        public MyDynamicTableKvp(DDictionary dict, string key, object value = null) : base(dict, key, value)
+        {
+        }
     }
 }

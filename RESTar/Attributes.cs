@@ -45,4 +45,8 @@ namespace RESTar
             Nr = nr;
         }
     }
+
+    public class OverrideAttribute : Attribute
+    {
+    }
 }

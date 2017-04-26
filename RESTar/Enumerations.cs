@@ -59,9 +59,9 @@ namespace RESTar
         Order_asc,
         Unsafe,
         Select,
+        Add,
         Rename,
         Dynamic,
-        Map,
         Safepost
     }
 

@@ -10,8 +10,11 @@ using Dynamit;
 using Excel;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using RESTar.Internal;
 using Starcounter;
+using static System.StringComparison;
 using static RESTar.ErrorCode;
+using static RESTar.PostOperations;
 using IResource = RESTar.Internal.IResource;
 using ScRequest = Starcounter.Request;
 using static RESTar.RESTarConfig;
@@ -30,24 +33,17 @@ namespace RESTar
         public IResource Resource { get; private set; }
         public RESTarMethods Method { get; private set; }
         public Conditions Conditions { get; private set; }
+        public MetaConditions MetaConditions { get; private set; }
         private Func<Request, Response> Evaluator { get; set; }
         internal void Evaluate() => Response = Evaluator?.Invoke(this);
         public string Body { get; private set; }
         private byte[] BinaryBody { get; set; }
         internal string Query { get; private set; }
 
-        private bool SerializeDynamic => Dynamic || Select != null || Rename != null ||
-                                          Resource.TargetType.IsSubclassOf(typeof(DDictionary)) ||
-                                          Resource.TargetType.GetAttribute<RESTarAttribute>()?.Dynamic == true;
-
-        public int Limit { get; internal set; }
-        public OrderBy OrderBy { get; private set; }
-        public bool Unsafe { get; private set; }
-        internal string[] Select { get; private set; }
-        internal IDictionary<string, string> Rename { get; private set; }
-        internal bool Dynamic { get; private set; }
-        internal string Map { get; private set; }
-        internal string SafePost { get; private set; }
+        private bool SerializeDynamic => MetaConditions.Dynamic || MetaConditions.Select != null ||
+                                         MetaConditions.Rename != null || MetaConditions.Add != null ||
+                                         Resource.TargetType.IsSubclassOf(typeof(DDictionary)) ||
+                                         Resource.TargetType.GetAttribute<RESTarAttribute>()?.Dynamic == true;
 
         private string Source { get; set; }
         private string Destination { get; set; }
@@ -56,13 +52,11 @@ namespace RESTar
         private string Origin { get; set; }
         public IDictionary<string, string> ResponseHeaders { get; }
 
-        private static readonly MethodInfo Mapper = typeof(Request).GetMethod("MapEntities",
-            BindingFlags.NonPublic | BindingFlags.Static);
-
         internal Request(ScRequest scRequest)
         {
             ScRequest = scRequest;
             ResponseHeaders = new Dictionary<string, string>();
+            MetaConditions = new MetaConditions();
             Transaction = new Transaction();
         }
 
@@ -89,25 +83,18 @@ namespace RESTar
                 Resource = TypeResources[typeof(Resource)];
             else Resource = args[1].FindResource();
             if (argLength == 2) return;
-            Conditions = Condition.Parse(Resource, args[2]);
+
+            Conditions = Conditions.Parse(args[2], Resource);
             if (Conditions != null &&
                 (Resource.TargetType == typeof(Resource) || Resource.TargetType.IsSubclassOf(typeof(Resource))))
             {
-                var nameCond = Conditions.FirstOrDefault(c => c.Key.ToLower() == "name");
+                var nameCond = Conditions["name"];
                 if (nameCond != null)
                     nameCond.Value = ((string) nameCond.Value.ToString()).FindResource().Name;
             }
             if (argLength == 3) return;
-            var metaConditions = MetaConditions.Parse(args[3]);
-            if (metaConditions == null) return;
-            Limit = metaConditions.Limit;
-            Unsafe = metaConditions.Unsafe;
-            Select = metaConditions.Select;
-            Dynamic = metaConditions.Dynamic;
-            Rename = metaConditions.Rename;
-            Map = metaConditions.Map;
-            SafePost = metaConditions.SafePost;
-            OrderBy = metaConditions.OrderBy;
+
+            MetaConditions = MetaConditions.Parse(args[3], Resource);
         }
 
         internal void GetRequestData()
@@ -218,10 +205,6 @@ namespace RESTar
             string jsonString;
             if (SerializeDynamic)
                 jsonString = entities.SerializeDyn();
-            else if (Map != null)
-                jsonString = entities.Serialize(typeof(IEnumerable<>)
-                    .MakeGenericType(typeof(Dictionary<,>)
-                        .MakeGenericType(typeof(string), Resource.TargetType)));
             else jsonString = entities.Serialize(IEnumTypes[Resource]);
 
             switch (Accept)
@@ -239,286 +222,107 @@ namespace RESTar
             }
         }
 
-        internal IEnumerable<dynamic> GetExtension(bool? unsafeOverride = null)
+        internal IEnumerable<dynamic> PostProcess(IEnumerable<dynamic> entities)
         {
-            if (unsafeOverride != null)
-                Unsafe = unsafeOverride.Value;
-            IEnumerable<dynamic> entities;
-            try
+            switch (MetaConditions.PostOperation)
             {
-                entities = Resource.Select(this);
-            }
-            catch (Exception e)
-            {
-                throw new AbortedSelectorException(e);
-            }
-            if (entities == null)
-                throw new NoContentException();
-            if (!Unsafe && entities.Count() > 1)
-                throw new AmbiguousMatchException(Resource);
-            if (Select == null && Rename == null)
-            {
-                if (Map == null) return entities;
-                if (entities is IEnumerable<DDictionary>)
-                    return MapCustomEntities(this, (IEnumerable<DDictionary>) entities);
-                var method = Mapper.MakeGenericMethod(Resource.TargetType);
-                return (IEnumerable<dynamic>) method.Invoke(null, new object[] {this, entities});
-            }
-            var customEntities = entities is IEnumerable<DDictionary>
-                ? SelectRenameDynamic(this, (IEnumerable<DDictionary>) entities)
-                : SelectRenameStatic(this, entities);
-            return MapCustomEntities(this, customEntities);
-        }
-
-        private static IEnumerable<dynamic> MapCustomEntities(Request request,
-            IEnumerable<IDictionary<string, dynamic>> customEntities)
-        {
-            if (request.Map == null)
-                return customEntities;
-            return customEntities.Select(entity =>
-            {
-                KeyValuePair<string, dynamic> mapPair;
-                try
-                {
-                    mapPair = entity.First(kv => string.Equals(kv.Key, request.Map,
-                        StringComparison.CurrentCultureIgnoreCase));
-                }
-                catch (InvalidOperationException)
-                {
-                    throw new CustomEntityUnknownColumnException(request.Map, entity.SerializeDyn());
-                }
-                return new Dictionary<string, IDictionary<string, dynamic>>
-                {
-                    [mapPair.Value?.ToString() ?? "null"] = entity
-                };
-            });
-        }
-
-        private static IEnumerable<dynamic> MapEntities<T>(Request request, IEnumerable<T> entities) where T : class
-        {
-            if (request.Map == null)
-                return entities;
-            if (request.Map.ToLower() == "objectno")
-                return entities.Select(entity => new Dictionary<string, T>
-                {
-                    [entity.GetObjectNo().ToString()] = entity
-                });
-            if (request.Map.ToLower() == "objectid")
-                return entities.Select(entity => new Dictionary<string, T>
-                {
-                    [entity.GetObjectID()] = entity
-                });
-            return entities.Select(entity =>
-            {
-                object value;
-                ExtensionMethods.GetValueFromKeyString(request.Resource.TargetType, request.Map, entity, out value);
-                return new Dictionary<string, T>
-                {
-                    [value?.ToString() ?? "null"] = entity
-                };
-            });
-        }
-
-        private static IEnumerable<Dictionary<string, dynamic>> SelectRenameDynamic(Request request,
-            IEnumerable<DDictionary> entities)
-        {
-            #region Select
-
-            if (request.Select != null && request.Rename == null)
-            {
-                var newEntitiesList = new List<Dictionary<string, dynamic>>();
-                foreach (var entity in entities)
-                {
-                    var newEntity = new Dictionary<string, dynamic>();
-                    foreach (var s in request.Select)
+                case NoOperation: return entities;
+                case Select:
+                    return entities.Select(entity => MetaConditions.Select.ToDictionary(
+                        prop => prop.Key, prop => prop.GetValue(entity)));
+                case Rename:
+                    return entities.Select(entity =>
                     {
-                        if (s.ToLower() == "objectno")
-                            newEntity["ObjectNo"] = entity.GetObjectNo();
-                        else if (s.ToLower() == "objectid")
-                            newEntity["ObjectID"] = entity.GetObjectID();
-                        newEntity[s] = entity.SafeGet(s);
-                    }
-                    newEntitiesList.Add(newEntity);
-                }
-                return newEntitiesList;
-            }
-
-            #endregion
-
-            #region Rename
-
-            if (request.Select == null && request.Rename != null)
-            {
-                var newEntitiesList = new List<Dictionary<string, dynamic>>();
-                foreach (var entity in entities)
-                {
-                    var newEntity = new Dictionary<string, dynamic>();
-                    foreach (var pair in entity)
+                        IDictionary<string, dynamic> dict = ExtensionMethods.MakeDictionary(entity);
+                        MetaConditions.Rename.ForEach(pair =>
+                        {
+                            var oldPropertyName = pair.Key.Key;
+                            var newPropertyName = pair.Value;
+                            string actualKey;
+                            if (dict.ContainsKeyIgnorecase(oldPropertyName, out actualKey))
+                            {
+                                var value = dict[actualKey];
+                                dict.Remove(actualKey);
+                                dict[newPropertyName] = value;
+                            }
+                        });
+                        return dict;
+                    });
+                case SelectRename:
+                    return entities.Select(entity => MetaConditions.Select.ToDictionary(
+                        prop => MetaConditions.Rename
+                            .FirstOrDefault(pair => string.Equals(pair.Key.Key, prop.Key, CurrentCultureIgnoreCase))
+                            .Value, prop => prop.GetValue(entity)));
+                case Add:
+                    return entities.Select(entity =>
                     {
-                        var name = pair.Key;
-                        string newKey;
-                        request.Rename.TryGetValue(name.ToLower(), out newKey);
-                        newEntity[newKey ?? name] = entity.SafeGet(name);
-                    }
-                    newEntitiesList.Add(newEntity);
-                }
-                return newEntitiesList;
-            }
-
-            #endregion
-
-            #region Select and Rename
-
-            if (request.Select != null && request.Rename != null)
-            {
-                var newEntitiesList = new List<Dictionary<string, dynamic>>();
-                foreach (var entity in entities)
-                {
-                    var newEntity = new Dictionary<string, dynamic>();
-                    foreach (var s in request.Select)
+                        IDictionary<string, dynamic> dict = ExtensionMethods.MakeDictionary(entity);
+                        MetaConditions.Add.ForEach(propToAdd =>
+                        {
+                            if (!dict.ContainsKey(propToAdd.Key))
+                                dict[propToAdd.Key] = propToAdd.GetValue(entity);
+                        });
+                        return dict;
+                    });
+                case SelectAdd:
+                    return entities.Select(entity =>
                     {
-                        if (s.ToLower() == "objectno")
+                        var dict = MetaConditions.Select.ToDictionary(s => s.Key, s => s.GetValue(entity));
+                        MetaConditions.Add.ForEach(propToAdd =>
                         {
-                            var value = entity.GetObjectNo();
-                            string newKey;
-                            request.Rename.TryGetValue(s.ToLower(), out newKey);
-                            newEntity[newKey ?? "ObjectNo"] = value;
-                        }
-                        else if (s.ToLower() == "objectid")
-                        {
-                            var value = entity.GetObjectID();
-                            string newKey;
-                            request.Rename.TryGetValue(s.ToLower(), out newKey);
-                            newEntity[newKey ?? "ObjectID"] = value;
-                        }
-                        else
-                        {
-                            string newKey;
-                            request.Rename.TryGetValue(s.ToLower(), out newKey);
-                            newEntity[newKey ?? s] = entity.SafeGet(s);
-                        }
-                    }
-                    newEntitiesList.Add(newEntity);
-                }
-                return newEntitiesList;
-            }
-
-            #endregion
-
-            throw new ArgumentOutOfRangeException();
-        }
-
-        private static IEnumerable<Dictionary<string, dynamic>> SelectRenameStatic(Request request,
-            IEnumerable<dynamic> entities)
-        {
-            #region Select
-
-            if (request.Select != null && request.Rename == null)
-            {
-                var columns = request.Resource.TargetType.GetColumns();
-                var newEntitiesList = new List<Dictionary<string, dynamic>>();
-                foreach (var entity in entities)
-                {
-                    var newEntity = new Dictionary<string, dynamic>();
-                    foreach (var s in request.Select)
+                            if (!dict.ContainsKey(propToAdd.Key))
+                                dict[propToAdd.Key] = propToAdd.GetValue(entity);
+                        });
+                        return dict;
+                    });
+                case RenameAdd:
+                    return entities.Select(entity =>
                     {
-                        if (s.ToLower() == "objectno")
-                            newEntity["ObjectNo"] = DbHelper.GetObjectNo(entity);
-                        else if (s.ToLower() == "objectid")
-                            newEntity["ObjectID"] = DbHelper.GetObjectID(entity);
-                        else if (s.Contains('.'))
+                        IDictionary<string, dynamic> dict = ExtensionMethods.MakeDictionary(entity);
+                        MetaConditions.Add.ForEach(propToAdd =>
                         {
-                            dynamic value;
-                            string key = ExtensionMethods.GetValueFromKeyString(request.Resource.TargetType, s, entity,
-                                out value);
-                            newEntity[key] = value;
-                        }
-                        else
+                            if (!dict.ContainsKey(propToAdd.Key))
+                                dict[propToAdd.Key] = propToAdd.GetValue(entity);
+                        });
+                        MetaConditions.Rename.ForEach(pair =>
                         {
-                            var column = columns.FindColumn(request.Resource.TargetType, s);
-                            newEntity[column.GetColumnName()] = column.GetValue(entity);
-                        }
-                    }
-                    newEntitiesList.Add(newEntity);
-                }
-                return newEntitiesList;
-            }
-
-            #endregion
-
-            #region Rename
-
-            if (request.Select == null && request.Rename != null)
-            {
-                var columns = request.Resource.TargetType.GetColumns();
-                var newEntitiesList = new List<Dictionary<string, dynamic>>();
-                foreach (var entity in entities)
-                {
-                    var newEntity = new Dictionary<string, dynamic>();
-                    foreach (var column in columns)
+                            var oldPropertyName = pair.Key.Key;
+                            var newPropertyName = pair.Value;
+                            string actualKey;
+                            if (dict.ContainsKeyIgnorecase(oldPropertyName, out actualKey))
+                            {
+                                var value = dict[actualKey];
+                                dict.Remove(actualKey);
+                                dict[newPropertyName] = value;
+                            }
+                        });
+                        return dict;
+                    });
+                case SelectRenameAdd:
+                    return entities.Select(entity =>
                     {
-                        var name = column.GetColumnName();
-                        string newKey;
-                        request.Rename.TryGetValue(name.ToLower(), out newKey);
-                        newEntity[newKey ?? name] = column.GetValue(entity);
-                    }
-                    newEntitiesList.Add(newEntity);
-                }
-                return newEntitiesList;
+                        var dict = MetaConditions.Select.ToDictionary(prop => prop.Key, prop => prop.GetValue(entity));
+                        MetaConditions.Add.ForEach(propToAdd =>
+                        {
+                            if (!dict.ContainsKey(propToAdd.Key))
+                                dict[propToAdd.Key] = propToAdd.GetValue(entity);
+                        });
+                        MetaConditions.Rename.ForEach(pair =>
+                        {
+                            var oldPropertyName = pair.Key.Key;
+                            var newPropertyName = pair.Value;
+                            string actualKey;
+                            if (dict.ContainsKeyIgnorecase(oldPropertyName, out actualKey))
+                            {
+                                var value = dict[actualKey];
+                                dict.Remove(actualKey);
+                                dict[newPropertyName] = value;
+                            }
+                        });
+                        return dict;
+                    });
+                default: throw new ArgumentOutOfRangeException();
             }
-
-            #endregion
-
-            #region Select and Rename
-
-            if (request.Select != null && request.Rename != null)
-            {
-                var columns = request.Resource.TargetType.GetColumns();
-                var newEntitiesList = new List<Dictionary<string, dynamic>>();
-                foreach (var entity in entities)
-                {
-                    var newEntity = new Dictionary<string, dynamic>();
-                    foreach (var s in request.Select)
-                    {
-                        if (s.ToLower() == "objectno")
-                        {
-                            var value = DbHelper.GetObjectNo(entity);
-                            string newKey;
-                            request.Rename.TryGetValue(s, out newKey);
-                            newEntity[newKey ?? "ObjectNo"] = value;
-                        }
-                        else if (s.ToLower() == "objectid")
-                        {
-                            var value = DbHelper.GetObjectID(entity);
-                            string newKey;
-                            request.Rename.TryGetValue(s, out newKey);
-                            newEntity[newKey ?? "ObjectID"] = value;
-                        }
-                        else if (s.Contains('.'))
-                        {
-                            dynamic value;
-                            string key = ExtensionMethods.GetValueFromKeyString(request.Resource.TargetType, s, entity,
-                                out value);
-                            string newKey;
-                            request.Rename.TryGetValue(key.ToLower(), out newKey);
-                            newEntity[newKey ?? key] = value;
-                        }
-                        else
-                        {
-                            var column = columns.FindColumn(request.Resource.TargetType, s);
-                            string newKey;
-                            request.Rename.TryGetValue(s, out newKey);
-                            newEntity[newKey ?? column.GetColumnName()] = column.GetValue(entity);
-                        }
-                    }
-                    newEntitiesList.Add(newEntity);
-                }
-                return newEntitiesList;
-            }
-
-            #endregion
-
-            throw new ArgumentOutOfRangeException();
         }
 
         internal Response GetResponse()

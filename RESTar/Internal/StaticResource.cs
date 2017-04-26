@@ -14,6 +14,7 @@ namespace RESTar.Internal
         public ICollection<RESTarMethods> AvailableMethods { get; }
         public string AvailableMethodsString => AvailableMethods.ToMethodsString();
         public Type TargetType { get; }
+        public bool IsDynamic => typeof(DDictionary).IsAssignableFrom(typeof(T1));
 
         public string Alias
         {
@@ -191,22 +192,24 @@ namespace RESTar.Internal
         private static ICollection<RESTarOperations> NecessaryOpDefs(IEnumerable<RESTarMethods> restMethods)
         {
             return restMethods.SelectMany(method =>
-            {
-                switch (method)
                 {
-                    case RESTarMethods.GET:
-                        return new[] {RESTarOperations.Select};
-                    case RESTarMethods.POST:
-                        return new[] {RESTarOperations.Insert};
-                    case RESTarMethods.PUT:
-                        return new[] {RESTarOperations.Select, RESTarOperations.Insert, RESTarOperations.Update};
-                    case RESTarMethods.PATCH:
-                        return new[] {RESTarOperations.Select, RESTarOperations.Update};
-                    case RESTarMethods.DELETE:
-                        return new[] {RESTarOperations.Select, RESTarOperations.Delete};
-                }
-                return null;
-            }).Distinct().ToList();
+                    switch (method)
+                    {
+                        case RESTarMethods.GET:
+                            return new[] {RESTarOperations.Select};
+                        case RESTarMethods.POST:
+                            return new[] {RESTarOperations.Insert};
+                        case RESTarMethods.PUT:
+                            return new[] {RESTarOperations.Select, RESTarOperations.Insert, RESTarOperations.Update};
+                        case RESTarMethods.PATCH:
+                            return new[] {RESTarOperations.Select, RESTarOperations.Update};
+                        case RESTarMethods.DELETE:
+                            return new[] {RESTarOperations.Select, RESTarOperations.Delete};
+                    }
+                    return null;
+                })
+                .Distinct()
+                .ToList();
         }
 
         public bool Equals(IResource x, IResource y) => x.Name == y.Name;

@@ -23,31 +23,31 @@ namespace RESTar
         private static IEnumerable<DDictionary> SelectSlow(IRequest request)
         {
             IEnumerable<DDictionary> all = Db.SQL<DDictionary>($"SELECT t FROM {request.Resource.TargetType.FullName} t");
-            if (request.OrderBy != null)
+            if (request.MetaConditions.OrderBy != null)
             {
-                if (request.OrderBy.Ascending)
+                if (request.MetaConditions.OrderBy.Ascending)
                     all = all.OrderBy<DDictionary, string>(
-                        dict => dict.SafeGet(request.OrderBy.Key)?.ToString() ?? "",
+                        dict => dict.SafeGet(request.MetaConditions.OrderBy.Key)?.ToString() ?? "",
                         new NumericComparer());
                 else
                     all = all.OrderByDescending<DDictionary, string>(
-                        dict => dict.SafeGet(request.OrderBy.Key)?.ToString() ?? "",
+                        dict => dict.SafeGet(request.MetaConditions.OrderBy.Key)?.ToString() ?? "",
                         new NumericComparer());
             }
             if (request.Conditions == null)
             {
-                if (request.Limit < 1) return all;
-                return all.Take(request.Limit);
+                if (request.MetaConditions.Limit < 1) return all;
+                return all.Take(request.MetaConditions.Limit);
             }
             var predicate = request.Conditions?.ToDDictionaryPredicate();
             var matches = all.Where(dict => predicate(dict));
-            if (request.Limit < 1) return matches;
-            return matches.Take(request.Limit);
+            if (request.MetaConditions.Limit < 1) return matches;
+            return matches.Take(request.MetaConditions.Limit);
         }
 
         private static IEnumerable<DDictionary> Select(IRequest request)
         {
-            if (request.Conditions == null || request.OrderBy != null)
+            if (request.Conditions == null || request.MetaConditions.OrderBy != null)
                 return SelectSlow(request);
             var kvpTable = request.Resource.TargetType.GetAttribute<DDictionaryAttribute>().KeyValuePairTable.FullName;
             var equalityConds = request.Conditions.Where(c => c.Operator == Operators.EQUALS).ToList();
@@ -90,8 +90,8 @@ namespace RESTar
             {
                 matches = matches?.Where(comparisonConds.ToDDictionaryPredicate().Invoke);
             }
-            if (request.Limit < 1) return matches;
-            return matches?.Take(request.Limit);
+            if (request.MetaConditions.Limit < 1) return matches;
+            return matches?.Take(request.MetaConditions.Limit);
         }
 
         private static int Insert(IEnumerable<DDictionary> entities, IRequest request)

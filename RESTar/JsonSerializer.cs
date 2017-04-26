@@ -177,7 +177,7 @@ namespace RESTar
             else
             {
                 Type elementType = first.GetType();
-                foreach (var propInfo in elementType.GetColumns())
+                foreach (var propInfo in elementType.Properties())
                 {
                     var ColType = propInfo.PropertyType.IsClass && propInfo.PropertyType != typeof(string)
                         ? typeof(string)
@@ -187,7 +187,7 @@ namespace RESTar
                 foreach (var item in list)
                 {
                     var row = t.NewRow();
-                    foreach (var propInfo in elementType.GetColumns())
+                    foreach (var propInfo in elementType.Properties())
                     {
                         var value = propInfo.GetValue(item, null);
                         try

@@ -12,6 +12,7 @@ namespace RESTar.Internal
         Type TargetType { get; }
         string Alias { get; }
         long? NrOfEntities { get; }
+        bool IsDynamic { get; }
 
         IEnumerable<dynamic> Select(IRequest request);
         int Insert(IEnumerable<dynamic> entities, IRequest request);

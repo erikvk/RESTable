@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using Starcounter;
 using static System.UriKind;
 using static RESTar.Responses;
@@ -13,10 +11,19 @@ namespace RESTar
     {
         internal static Response GET(Request request)
         {
-            if (!request.Unsafe && request.Limit == -1)
-                request.Limit = 1000;
-            var entities = request.GetExtension(true);
-            return !entities.Any() ? NoContent() : GetEntities(request, entities);
+            try
+            {
+                if (!request.MetaConditions.Unsafe && request.MetaConditions.Limit == -1)
+                    request.MetaConditions.Limit = 1000;
+                request.MetaConditions.Unsafe = true;
+                var entities = request.Resource.Select(request);
+                entities = request.PostProcess(entities);
+                return entities?.Any() != true ? NoContent() : GetEntities(request, entities);
+            }
+            catch (Exception e)
+            {
+                throw new AbortedSelectorException(e);
+            }
         }
 
         internal static Response POST(Request request)
@@ -24,7 +31,7 @@ namespace RESTar
             try
             {
                 var json = request.Body.First() == '[' ? request.Body : $"[{request.Body}]";
-                if (request.SafePost != null)
+                if (request.MetaConditions.SafePost != null)
                     return SafePOST(request, json);
                 dynamic results;
                 var count = 0;
@@ -56,7 +63,7 @@ namespace RESTar
             var inputEntities = json.DeserializeDyn();
             var insertedCount = 0;
             var updatedCount = 0;
-            var keys = request.SafePost.Split(',');
+            var keys = request.MetaConditions.SafePost.Split(',');
             foreach (IDictionary<string, dynamic> entity in inputEntities)
             {
                 var jsonBytes = entity.SerializeDyn().ToBytes();
@@ -92,9 +99,11 @@ namespace RESTar
 
         internal static Response PATCH(Request request)
         {
-            var entities = request.GetExtension();
             try
             {
+                var entities = request.Resource.Select(request);
+                if (!request.MetaConditions.Unsafe && entities.Count() > 1)
+                    throw new AmbiguousMatchException(request.Resource);
                 var count = 0;
                 request.Transaction.Scope(() =>
                 {
@@ -121,7 +130,20 @@ namespace RESTar
 
         internal static Response PUT(Request request)
         {
-            var entities = request.GetExtension(false);
+            IEnumerable<dynamic> entities;
+
+            try
+            {
+                request.MetaConditions.Unsafe = false;
+                entities = request.Resource.Select(request);
+                if (entities.Count() > 1)
+                    throw new AmbiguousMatchException(request.Resource);
+            }
+            catch (Exception e)
+            {
+                throw new AbortedSelectorException(e);
+            }
+
             object obj;
             var count = 0;
             if (!entities.Any())
@@ -147,6 +169,7 @@ namespace RESTar
                     throw new AbortedInserterException(e);
                 }
             }
+
             try
             {
                 obj = entities.First();
@@ -172,10 +195,12 @@ namespace RESTar
 
         internal static Response DELETE(Request request)
         {
-            var count = 0;
-            var entities = request.GetExtension(true);
             try
             {
+                var count = 0;
+                var entities = request.Resource.Select(request);
+                if (!request.MetaConditions.Unsafe && entities.Count() > 1)
+                    throw new AmbiguousMatchException(request.Resource);
                 request.Transaction.Scope(() => count = request.Resource.Delete((dynamic) entities, request));
                 return DeleteEntities(count, request.Resource.TargetType);
             }

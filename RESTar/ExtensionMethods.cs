@@ -8,6 +8,8 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Web;
 using Starcounter;
+using static System.StringComparison;
+using static RESTar.Operators;
 using IResource = RESTar.Internal.IResource;
 
 namespace RESTar
@@ -58,7 +60,7 @@ namespace RESTar
             return baseType.GetSubclasses().Where(type => !type.IsAbstract).ToList();
         }
 
-        private static readonly MethodInfo ListGenerator = typeof(ExtensionMethods).GetMethod("GenerateList",
+        private static readonly MethodInfo ListGenerator = typeof(ExtensionMethods).GetMethod(nameof(GenerateList),
             BindingFlags.NonPublic | BindingFlags.Static);
 
         private static List<T> GenerateList<T>(T thing) => new List<T> {thing};
@@ -118,63 +120,63 @@ namespace RESTar
             return RESTarConfig.NameResources[keys.First()];
         }
 
-        internal static string GetValueFromKeyString(Type resource, string keyString, dynamic root, out dynamic value)
-        {
-            value = null;
-            keyString = keyString.ToLower();
-            var parts = keyString.Split('.');
-            if (parts.Length == 1)
-            {
-                var column = resource.GetColumns().FindColumn(resource, keyString);
-                value = column.GetValue(root);
-                return column.Name;
-            }
-            var types = new List<Type>();
-            var names = new List<string>();
-            var first = true;
-            foreach (var str in parts.Take(parts.Length - 1))
-            {
-                var containingType = types.LastOrDefault() ?? resource;
-                var column = containingType.GetProperties().FirstOrDefault(prop => str == prop.Name.ToLower());
-                if (column == null)
-                    throw new UnknownColumnException(resource, keyString);
-                var type = column.PropertyType;
-                if (first)
-                    value = column.GetValue(root);
-                else if (value != null)
-                    value = column.GetValue(value);
-                types.Add(type);
-                names.Add(column.Name);
-                first = false;
-            }
-            if (parts.Last() == "objectno")
-            {
-                if (value != null)
-                    value = DbHelper.GetObjectNo(value);
-                names.Add("ObjectNo");
-            }
-            else if (parts.Last() == "objectid")
-            {
-                if (value != null)
-                    value = DbHelper.GetObjectID(value);
-                names.Add("ObjectID");
-            }
-            else
-            {
-                var lastType = types.Last();
-                var lastColumns = lastType.GetColumns();
-                var lastColumn = lastColumns.FindColumn(lastType, parts.Last());
-                if (value != null)
-                    value = lastColumn.GetValue(value);
-                names.Add(lastColumn.Name);
-            }
-            return string.Join(".", names);
-        }
+//        internal static string GetValueFromKeyString(Type resource, string keyString, dynamic root, out dynamic value)
+//        {
+//            value = null;
+//            keyString = keyString.ToLower();
+//            var parts = keyString.Split('.');
+//            if (parts.Length == 1)
+//            {
+//                var column = resource.GetColumns().MatchProperty(resource, keyString);
+//                value = column.GetValue(root);
+//                return column.Name;
+//            }
+//            var types = new List<Type>();
+//            var names = new List<string>();
+//            var first = true;
+//            foreach (var str in parts.Take(parts.Length - 1))
+//            {
+//                var containingType = types.LastOrDefault() ?? resource;
+//                var column = containingType.GetProperties().FirstOrDefault(prop => str == prop.Name.ToLower());
+//                if (column == null)
+//                    throw new UnknownColumnException(resource, keyString);
+//                var type = column.PropertyType;
+//                if (first)
+//                    value = column.GetValue(root);
+//                else if (value != null)
+//                    value = column.GetValue(value);
+//                types.Add(type);
+//                names.Add(column.Name);
+//                first = false;
+//            }
+//            if (parts.Last() == "objectno")
+//            {
+//                if (value != null)
+//                    value = DbHelper.GetObjectNo(value);
+//                names.Add("ObjectNo");
+//            }
+//            else if (parts.Last() == "objectid")
+//            {
+//                if (value != null)
+//                    value = DbHelper.GetObjectID(value);
+//                names.Add("ObjectID");
+//            }
+//            else
+//            {
+//                var lastType = types.Last();
+//                var lastColumns = lastType.GetColumns();
+//                var lastColumn = lastColumns.MatchProperty(lastType, parts.Last());
+//                if (value != null)
+//                    value = lastColumn.GetValue(value);
+//                names.Add(lastColumn.Name);
+//            }
+//            return string.Join(".", names);
+//        }
 
-        internal static PropertyInfo FindColumn(this IEnumerable<PropertyInfo> columns, Type resource, string str)
+        internal static PropertyInfo MatchProperty(this IEnumerable<PropertyInfo> columns, Type resource, string str)
         {
-            var matches = columns.Where(p => str.ToLower() == (p.GetAttribute<DataMemberAttribute>()?.Name?.ToLower()
-                                                               ?? p.Name.ToLower())).ToList();
+            var matches = columns.Where(p => str.ToLower() == (p.GetDataMemberName()?.ToLower() ?? p.Name.ToLower()))
+                .ToList();
             var count = matches.Count;
             if (count < 1) throw new UnknownColumnException(resource, str);
             if (count > 1) throw new AmbiguousColumnException(resource, str, matches.Select(m => m.Name).ToList());
@@ -183,12 +185,12 @@ namespace RESTar
 
         internal static string GetColumnName(this PropertyInfo column)
         {
-            return column.GetAttribute<DataMemberAttribute>()?.Name ?? column.Name;
+            return column.GetDataMemberName() ?? column.Name;
         }
 
-        internal static PropertyInfo[] GetColumns(this Type resource)
+        internal static IEnumerable<PropertyInfo> Properties(this Type resource)
         {
-            return resource.GetProperties().Where(p => !p.HasAttribute<IgnoreDataMemberAttribute>()).ToArray();
+            return resource.GetProperties().Where(p => !p.HasAttribute<IgnoreDataMemberAttribute>());
         }
 
         internal static IEnumerable<Type> GetSubclasses(this Type baseType)
@@ -197,12 +199,6 @@ namespace RESTar
                 from type in assembly.GetTypes()
                 where type.IsSubclassOf(baseType)
                 select type;
-        }
-
-        internal static string Capitalize(this string str)
-        {
-            var lower = str.ToLower();
-            return lower.Substring(0, 1).ToUpper() + lower.Substring(1);
         }
 
         internal static TAttribute GetAttribute<TAttribute>(this MemberInfo type) where TAttribute : Attribute
@@ -220,30 +216,7 @@ namespace RESTar
             return input != null ? Regex.Replace(input, @"\t|\n|\r", "") : null;
         }
 
-        internal static WhereClause ToDDictWhereClause(this Condition condition)
-        {
-            if (condition == null)
-                return null;
-
-            string stringPart;
-            object[] valuePart = null;
-
-            if (condition.Value == null)
-                stringPart = "WHERE t.Key =? AND t.Value " +
-                             $"{(condition.Operator == Operators.NOT_EQUALS ? "IS NOT NULL" : "IS NULL")}";
-            else
-            {
-                stringPart = $"t.Key ?= AND t.Value {condition.Operator.SQL}?";
-                valuePart = new object[] {condition.Key, condition.Value};
-            }
-            return new WhereClause
-            {
-                stringPart = stringPart,
-                valuesPart = valuePart
-            };
-        }
-
-        public static WhereClause ToWhereClause(this ICollection<Condition> conditions)
+        public static WhereClause ToWhereClause(this Conditions conditions)
         {
             if (conditions == null)
                 return null;
@@ -253,14 +226,14 @@ namespace RESTar
             var stringPart = new List<string>();
             var valuesPart = new List<object>();
 
-            foreach (var c in conditions)
+            foreach (var c in conditions.StarcounterQueryable)
             {
                 if (c.Value == null)
-                    stringPart.Add(
-                        $"t.{c.Key.Fnuttify()} {(c.Operator == Operators.NOT_EQUALS ? " IS NOT NULL " : " IS NULL ")}");
+                    stringPart.Add($"t.{c.PropertyChain.DbKey.Fnuttify()} " +
+                                   $"{(c.Operator == NOT_EQUALS ? "IS NOT NULL" : "IS NULL")} ");
                 else
                 {
-                    stringPart.Add($"t.{c.Key.Fnuttify()} {c.Operator.SQL}?");
+                    stringPart.Add($"t.{c.PropertyChain.DbKey.Fnuttify()} {c.Operator.SQL}?");
                     valuesPart.Add(c.Value);
                 }
             }
@@ -309,15 +282,17 @@ namespace RESTar
         public static dynamic SafeGetNoCase(this IDictionary<string, dynamic> dict, string key)
         {
             return dict.FirstOrDefault(
-                pair => string.Equals(pair.Key, key, StringComparison.CurrentCultureIgnoreCase)
-            ).Value;
+                    pair => string.Equals(pair.Key, key, CurrentCultureIgnoreCase)
+                )
+                .Value;
         }
 
         public static dynamic GetNoCase(this IDictionary<string, dynamic> dict, string key)
         {
             return dict.First(
-                pair => string.Equals(pair.Key, key, StringComparison.CurrentCultureIgnoreCase)
-            ).Value;
+                    pair => string.Equals(pair.Key, key, CurrentCultureIgnoreCase)
+                )
+                .Value;
         }
 
         internal static RESTarMethods[] ToMethods(this RESTarPresets preset)
@@ -356,11 +331,6 @@ namespace RESTar
         {
             var i = 0;
             foreach (var e in source) action(e, i++);
-        }
-
-        internal static int Count(this IResource resource, IRequest request)
-        {
-            return resource.Select(request).Count();
         }
 
         internal static Conditions ToConditions(this IEnumerable<Condition> conditions)
@@ -405,12 +375,12 @@ namespace RESTar
                     return typeof(bool);
                 case RESTarMetaConditions.Select:
                     return typeof(string);
+                case RESTarMetaConditions.Add:
+                    return typeof(string);
                 case RESTarMetaConditions.Rename:
                     return typeof(string);
                 case RESTarMetaConditions.Dynamic:
                     return typeof(bool);
-                case RESTarMetaConditions.Map:
-                    return typeof(string);
                 case RESTarMetaConditions.Safepost:
                     return typeof(string);
                 default:
@@ -418,9 +388,9 @@ namespace RESTar
             }
         }
 
-        public static byte[] ToBytes(this string json) => Encoding.UTF8.GetBytes(json);
+        internal static byte[] ToBytes(this string json) => Encoding.UTF8.GetBytes(json);
 
-        public static string TotalStackTrace(this Exception e)
+        internal static string TotalStackTrace(this Exception e)
         {
             var stacktrace = new StringBuilder(e.StackTrace);
             var ie = e.InnerException;
@@ -432,7 +402,7 @@ namespace RESTar
             return stacktrace.ToString();
         }
 
-        public static string TotalMessage(this Exception e)
+        internal static string TotalMessage(this Exception e)
         {
             var message = new StringBuilder(e.Message);
             var ie = e.InnerException;
@@ -443,5 +413,42 @@ namespace RESTar
             }
             return message.ToString();
         }
+
+        internal static string GetDataMemberName(this PropertyInfo propertyInfo)
+        {
+            return propertyInfo.GetAttribute<DataMemberAttribute>()?.Name;
+        }
+
+        internal static string GetDataMemberNameOrName(this PropertyInfo propertyInfo)
+        {
+            return propertyInfo.GetAttribute<DataMemberAttribute>()?.Name ?? propertyInfo.Name;
+        }
+
+        internal static bool ContainsKeyIgnorecase(this IDictionary<string, dynamic> dict, string key,
+            out string actualKey)
+        {
+            string _actualKey = null;
+            var results = dict.Keys.FirstOrDefault(k =>
+            {
+                var equals = string.Equals(k, key, CurrentCultureIgnoreCase);
+                if (equals) _actualKey = k;
+                return equals;
+            });
+            actualKey = _actualKey;
+            return results != null;
+        }
+
+        internal static IDictionary<string, dynamic> MakeDictionary(this object entity)
+        {
+            if (entity is IDictionary<string, dynamic>)
+                return (IDictionary<string, dynamic>) entity;
+            return RESTarConfig.GetPropertyList(entity.GetType())
+                .ToDictionary(prop => prop.GetDataMemberNameOrName(), prop => prop.GetValue(entity));
+        }
+
+        internal static PropertyInfo FindProperty(this Type resource, string searchString) => resource
+            .GetProperties()
+            .Where(p => !p.HasAttribute<IgnoreDataMemberAttribute>())
+            .FirstOrDefault(p => searchString.ToLower() == (p.GetDataMemberName()?.ToLower() ?? p.Name.ToLower()));
     }
 }

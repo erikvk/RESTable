@@ -17,7 +17,8 @@ namespace RESTar
         {
             var topic = ((string) request.Conditions?["topic", EQUALS])?.UriEncode();
             var uri = new Uri(URL + (topic != null ? $"topic={topic}" : ""));
-            return HTTP.ExternalRequest(GET, uri)?.Body?.Deserialize<Help[]>();
+            var headers = new Dictionary<string, string> {["Authorization"] = "apikey restar"};
+            return HTTP.ExternalRequest(GET, uri, headers: headers)?.Body?.Deserialize<Help[]>();
         }
     }
 }

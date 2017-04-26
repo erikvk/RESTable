@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Xml;
 using Dynamit;
 using Newtonsoft.Json;
@@ -20,6 +21,7 @@ namespace RESTar
         internal static readonly IDictionary<Type, IResource> TypeResources = new Dictionary<Type, IResource>();
         internal static readonly IDictionary<IResource, Type> IEnumTypes = new Dictionary<IResource, Type>();
         internal static readonly IDictionary<string, AccessRights> ApiKeys = new Dictionary<string, AccessRights>();
+        private static readonly IDictionary<Type, IEnumerable<PropertyInfo>> Properties = new Dictionary<Type, IEnumerable<PropertyInfo>>();
         internal static readonly List<Uri> AllowedOrigins = new List<Uri>();
         internal static readonly RESTarMethods[] Methods = {GET, POST, PATCH, PUT, DELETE};
         internal static bool RequireApiKey { get; private set; }
@@ -41,6 +43,7 @@ namespace RESTar
             TypeResources[toAdd.TargetType] = toAdd;
             IEnumTypes[toAdd] = typeof(IEnumerable<>).MakeGenericType(toAdd.TargetType);
             UpdateAuthInfo();
+            Properties[toAdd.TargetType] = toAdd.TargetType.Properties();
         }
 
         internal static void RemoveResource(IResource toRemove)
@@ -49,6 +52,13 @@ namespace RESTar
             TypeResources.Remove(toRemove.TargetType);
             IEnumTypes.Remove(toRemove);
             UpdateAuthInfo();
+        }
+
+        internal static IEnumerable<PropertyInfo> GetPropertyList(Type type)
+        {
+            if (Properties.ContainsKey(type))
+                return Properties[type];
+            return Properties[type] = type.Properties();
         }
 
         /// <summary>
@@ -98,7 +108,8 @@ namespace RESTar
         {
             if (!RequireApiKey && AllowAllOrigins) return;
             if (ConfigFilePath == null)
-                throw new Exception("RESTar init error: No config file path to get API keys and/or allowed origins from");
+                throw new Exception(
+                    "RESTar init error: No config file path to get API keys and/or allowed origins from");
             try
             {
                 dynamic config;

@@ -10,6 +10,7 @@ namespace RESTar.Internal
     {
         public string Name { get; }
         public bool Editable { get; }
+        public bool IsDynamic => true;
 
         public ICollection<RESTarMethods> AvailableMethods
         {

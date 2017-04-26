@@ -94,9 +94,14 @@
   <ItemGroup>
     <Compile Include="AccessRights.cs" />
     <Compile Include="Attributes.cs" />
+    <Compile Include="Conditions.cs" />
+    <Compile Include="Do.cs" />
+    <Compile Include="Internal\DynamicProperty.cs" />
     <Compile Include="Handlers.cs" />
     <Compile Include="HttpRequest.cs" />
     <Compile Include="IValidatable.cs" />
+    <Compile Include="KeyData.cs" />
+    <Compile Include="MetaConditions.cs" />
     <Compile Include="MimeTypes.cs" />
     <Compile Include="Operations\Counter.cs" />
     <Compile Include="Internal\DynamicResource.cs" />
@@ -104,6 +109,8 @@
     <Compile Include="DDictionaryOperations.cs" />
     <Compile Include="DynamicTables.cs" />
     <Compile Include="Internal\IResource.cs" />
+    <Compile Include="Internal\Property.cs" />
+    <Compile Include="Internal\PropertyChain.cs" />
     <Compile Include="ResourceHelper.cs" />
     <Compile Include="OperationInterfaces.cs" />
     <Compile Include="PredicateMaker.cs" />
@@ -113,7 +120,7 @@
     <Compile Include="Help.cs" />
     <Compile Include="Import.cs" />
     <Compile Include="IRequest.cs" />
-    <Compile Include="Internal\Resource.cs" />
+    <Compile Include="Internal\StaticResource.cs" />
     <Compile Include="Log.cs" />
     <Compile Include="Operator.cs" />
     <Compile Include="Resource.cs" />
@@ -134,6 +141,7 @@
     <Compile Include="StarcounterOperations.cs" />
     <Compile Include="Responses.cs" />
     <Compile Include="Settings.cs" />
+    <Compile Include="Internal\StaticProperty.cs" />
     <Compile Include="StringLogicalComparer.cs" />
     <Compile Include="Temp.cs" />
     <Compile Include="TestClass.cs" />
