@@ -4,11 +4,14 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.Serialization;
 using System.Xml;
 using Dynamit;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using RESTar.Auth;
 using RESTar.Internal;
+using RESTar.Requests;
 using static RESTar.RESTarMethods;
 using IResource = RESTar.Internal.IResource;
 
@@ -17,24 +20,31 @@ namespace RESTar
     public static class RESTarConfig
     {
         internal static ICollection<IResource> Resources => NameResources.Values;
-        internal static readonly IDictionary<string, IResource> NameResources = new Dictionary<string, IResource>();
-        internal static readonly IDictionary<Type, IResource> TypeResources = new Dictionary<Type, IResource>();
-        internal static readonly IDictionary<IResource, Type> IEnumTypes = new Dictionary<IResource, Type>();
-        internal static readonly IDictionary<string, AccessRights> ApiKeys = new Dictionary<string, AccessRights>();
-        private static readonly IDictionary<Type, IEnumerable<PropertyInfo>> Properties = new Dictionary<Type, IEnumerable<PropertyInfo>>();
+        internal static readonly IDictionary<string, IResource> NameResources;
+        internal static readonly IDictionary<Type, IResource> TypeResources;
+        internal static readonly IDictionary<IResource, Type> IEnumTypes;
+        internal static readonly IDictionary<string, AccessRights> ApiKeys;
+        private static readonly IDictionary<Type, IEnumerable<PropertyInfo>> Properties;
+        internal static readonly ConcurrentDictionary<string, AccessRights> AuthTokens;
         internal static readonly List<Uri> AllowedOrigins = new List<Uri>();
         internal static readonly RESTarMethods[] Methods = {GET, POST, PATCH, PUT, DELETE};
         internal static bool RequireApiKey { get; private set; }
         internal static bool AllowAllOrigins { get; private set; }
         private static string ConfigFilePath;
 
-        internal static readonly ConcurrentDictionary<string, AccessRights> AuthTokens =
-            new ConcurrentDictionary<string, AccessRights>();
+        static RESTarConfig()
+        {
+            ApiKeys = new Dictionary<string, AccessRights>();
+            TypeResources = new Dictionary<Type, IResource>();
+            NameResources = new Dictionary<string, IResource>();
+            IEnumTypes = new Dictionary<IResource, Type>();
+            Properties = new Dictionary<Type, IEnumerable<PropertyInfo>>();
+            AuthTokens = new ConcurrentDictionary<string, AccessRights>();
+        }
 
         private static void UpdateAuthInfo()
         {
-            if (ConfigFilePath != null)
-                ReadConfig();
+            if (ConfigFilePath != null) ReadConfig();
         }
 
         internal static void AddResource(IResource toAdd)
@@ -43,7 +53,7 @@ namespace RESTar
             TypeResources[toAdd.TargetType] = toAdd;
             IEnumTypes[toAdd] = typeof(IEnumerable<>).MakeGenericType(toAdd.TargetType);
             UpdateAuthInfo();
-            Properties[toAdd.TargetType] = toAdd.TargetType.Properties();
+            Properties[toAdd.TargetType] = FindProperties(toAdd.TargetType);
         }
 
         internal static void RemoveResource(IResource toRemove)
@@ -54,12 +64,16 @@ namespace RESTar
             UpdateAuthInfo();
         }
 
-        internal static IEnumerable<PropertyInfo> GetPropertyList(Type type)
+        internal static IEnumerable<PropertyInfo> GetPropertyList(this Type type)
         {
             if (Properties.ContainsKey(type))
                 return Properties[type];
-            return Properties[type] = type.Properties();
+            return Properties[type] = FindProperties(type);
         }
+
+        private static IEnumerable<PropertyInfo> FindProperties(Type resource) => resource
+            .GetProperties()
+            .Where(p => !p.HasAttribute<IgnoreDataMemberAttribute>());
 
         /// <summary>
         /// Initiates the RESTar interface
@@ -72,28 +86,15 @@ namespace RESTar
         /// opposed to default PascalCase?</param>
         /// <param name="localTimes">Should datetimes be handled as local times or as UTC?</param>
         /// <param name="daysToSaveErrors">The number of days to save errors in the Error resource</param>
-        public static void Init
-        (
-            ushort port = 8282,
-            string uri = "/rest",
-            bool requireApiKey = false,
-            bool allowAllOrigins = true,
-            string configFilePath = null,
-            bool prettyPrint = true,
-            bool camelCase = false,
-            bool localTimes = true,
-            ushort daysToSaveErrors = 30
-        )
+        public static void Init(ushort port = 8282, string uri = "/rest", bool requireApiKey = false,
+            bool allowAllOrigins = true, string configFilePath = null, bool prettyPrint = true, bool camelCase = false,
+            bool localTimes = true, ushort daysToSaveErrors = 30)
         {
-            if (uri.Trim().First() != '/')
-                uri = $"/{uri}";
-
-            foreach (var type in typeof(object).GetSubclasses().Where(t => t.HasAttribute<RESTarAttribute>()))
-                ResourceHelper.AutoMakeResource(type);
-
-            foreach (var dynamicResource in DB.All<DynamicResource>())
-                AddResource(dynamicResource);
-
+            if (uri.Trim().First() != '/') uri = $"/{uri}";
+            typeof(object).GetSubclasses()
+                .Where(t => t.HasAttribute<RESTarAttribute>())
+                .ForEach(Registrator.AutoMakeResource);
+            DB.All<DynamicResource>().ForEach(AddResource);
             RequireApiKey = requireApiKey;
             AllowAllOrigins = allowAllOrigins;
             ConfigFilePath = configFilePath;
@@ -171,7 +172,7 @@ namespace RESTar
                                 access.Add(new AccessRight
                                 {
                                     Resources = token["Resource"].Value<string>().FindResources(),
-                                    AllowedMethods = token["Methods"].Value<string>().ToUpper().ToMethodsList()
+                                    AllowedMethods = token["Methods"].Value<string>().ToUpper().ToMethodsArray()
                                 });
                                 break;
                             case JTokenType.Array:

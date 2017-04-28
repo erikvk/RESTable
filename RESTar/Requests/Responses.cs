@@ -1,17 +1,10 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Data;
-using System.IO;
 using System.Linq;
 using System.Net;
-using ClosedXML.Excel;
-using Dynamit;
-using Newtonsoft.Json;
-using RESTar.Internal;
 using Starcounter;
 
-namespace RESTar
+namespace RESTar.Requests
 {
     internal static class Responses
     {

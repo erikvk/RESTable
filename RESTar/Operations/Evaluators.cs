@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using RESTar.Requests;
 using Starcounter;
-using static System.UriKind;
-using static RESTar.Responses;
+using Request = RESTar.Requests.Request;
 
-namespace RESTar
+namespace RESTar.Operations
 {
     internal static class Evaluators
     {
@@ -16,9 +16,13 @@ namespace RESTar
                 if (!request.MetaConditions.Unsafe && request.MetaConditions.Limit == -1)
                     request.MetaConditions.Limit = 1000;
                 request.MetaConditions.Unsafe = true;
-                var entities = request.Resource.Select(request);
-                entities = request.PostProcess(entities);
-                return entities?.Any() != true ? NoContent() : GetEntities(request, entities);
+                var entities = request.Resource.Select(request)
+                    .Process(request.MetaConditions.Add)
+                    .Process(request.MetaConditions.Select)
+                    .Process(request.MetaConditions.Rename)
+                    .Filter(request.MetaConditions.OrderBy)
+                    .Filter(request.MetaConditions.Limit);
+                return entities?.Any() != true ? Responses.NoContent() : Responses.GetEntities(request, entities);
             }
             catch (Exception e)
             {
@@ -50,7 +54,7 @@ namespace RESTar
                     }
                     count = request.Resource.Insert(results, request);
                 });
-                return InsertedEntities(request, count, request.Resource.TargetType);
+                return Responses.InsertedEntities(request, count, request.Resource.TargetType);
             }
             catch (Exception e)
             {
@@ -75,7 +79,7 @@ namespace RESTar
                     response = HTTP.InternalRequest
                     (
                         method: RESTarMethods.PUT,
-                        relativeUri: new Uri(uriString, Relative),
+                        relativeUri: new Uri(uriString, UriKind.Relative),
                         authToken: request.AuthToken,
                         bodyBytes: jsonBytes,
                         headers: new Dictionary<string, string> {["Authorization"] = request.AuthToken}
@@ -94,7 +98,7 @@ namespace RESTar
                 else if (response.StatusCode == 201)
                     insertedCount += 1;
             }
-            return SafePostedEntities(request, insertedCount, updatedCount);
+            return Responses.SafePostedEntities(request, insertedCount, updatedCount);
         }
 
         internal static Response PATCH(Request request)
@@ -120,7 +124,7 @@ namespace RESTar
                     }
                     count = request.Resource.Update((dynamic) entities, request);
                 });
-                return UpdatedEntities(request, count, request.Resource.TargetType);
+                return Responses.UpdatedEntities(request, count, request.Resource.TargetType);
             }
             catch (Exception e)
             {
@@ -162,7 +166,7 @@ namespace RESTar
                         }
                         count = request.Resource.Insert(obj.MakeList(request.Resource.TargetType), request);
                     });
-                    return InsertedEntities(request, count, request.Resource.TargetType);
+                    return Responses.InsertedEntities(request, count, request.Resource.TargetType);
                 }
                 catch (Exception e)
                 {
@@ -185,7 +189,7 @@ namespace RESTar
                     }
                     count = request.Resource.Update(obj.MakeList(request.Resource.TargetType), request);
                 });
-                return UpdatedEntities(request, count, request.Resource.TargetType);
+                return Responses.UpdatedEntities(request, count, request.Resource.TargetType);
             }
             catch (Exception e)
             {
@@ -202,7 +206,7 @@ namespace RESTar
                 if (!request.MetaConditions.Unsafe && entities.Count() > 1)
                     throw new AmbiguousMatchException(request.Resource);
                 request.Transaction.Scope(() => count = request.Resource.Delete((dynamic) entities, request));
-                return DeleteEntities(count, request.Resource.TargetType);
+                return Responses.DeleteEntities(count, request.Resource.TargetType);
             }
             catch (Exception e)
             {

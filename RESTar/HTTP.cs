@@ -74,7 +74,6 @@ namespace RESTar
                         headers: headers,
                         then: then
                     );
-
                 if (contentType != null || accept != null)
                 {
                     headers = headers ?? new Dictionary<string, string>();

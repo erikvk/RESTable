@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Dynamit;
+using RESTar.Operations;
 using Starcounter;
 
 namespace RESTar.Internal
@@ -11,26 +13,35 @@ namespace RESTar.Internal
         public string Name { get; }
         public bool Editable { get; }
         public bool IsDynamic => true;
-
-        public ICollection<RESTarMethods> AvailableMethods
-        {
-            get { return AvailableMethodsString.ToMethodsList(); }
-            set { AvailableMethodsString = value.ToMethodsString(); }
-        }
-
         public string AvailableMethodsString { get; private set; }
         public Type TargetType => DynamitControl.GetByTableName(Name);
         public string Alias => ResourceAlias.ByResource(TargetType);
         public long? NrOfEntities => DB.RowCount(Name);
 
-        public DynamicResource(Type table, ICollection<RESTarMethods> availableMethods)
+        public bool Equals(IResource x, IResource y) => x.Name == y.Name;
+        public int GetHashCode(IResource obj) => obj.Name.GetHashCode();
+        public int CompareTo(IResource other) => string.Compare(Name, other.Name, StringComparison.Ordinal);
+        public override int GetHashCode() => Name.GetHashCode();
+
+        public Selector<dynamic> Select => DynOperations.Select;
+        public Inserter<dynamic> Insert => (e, r) => DynOperations.Insert((IEnumerable<DDictionary>) e, r);
+        public Updater<dynamic> Update => (e, r) => DynOperations.Update((IEnumerable<DDictionary>) e, r);
+        public Deleter<dynamic> Delete => (e, r) => DynOperations.Delete((IEnumerable<DDictionary>) e, r);
+
+        public RESTarMethods[] AvailableMethods
+        {
+            get { return AvailableMethodsString.ToMethodsArray(); }
+            private set { AvailableMethodsString = value.ToMethodsString(); }
+        }
+
+        private DynamicResource(Type table, RESTarMethods[] availableMethods)
         {
             Name = table.FullName;
             Editable = true;
             AvailableMethods = availableMethods;
         }
 
-        public static DynamicResource Make(Resource resource)
+        public static DynamicResource MakeTable(Resource resource)
         {
             DynamicResource dynamicResource = null;
             Db.TransactAsync(() =>
@@ -49,32 +60,18 @@ namespace RESTar.Internal
             return dynamicResource;
         }
 
-        public static void Delete(Resource resource)
+        public static void DeleteTable(Resource resource)
         {
             var iresource = RESTarConfig.NameResources[resource.Name.ToLower()];
             if (!(iresource is DynamicResource)) return;
             DynamitControl.ClearTable(iresource.Name);
             RESTarConfig.RemoveResource(iresource);
             var alias = DB.Get<ResourceAlias>("Resource", iresource.TargetType.FullName);
-            Db.TransactAsync(() => alias?.Delete());
-            Db.TransactAsync(() => (iresource as DynamicResource)?.Delete());
+            Db.TransactAsync(() =>
+            {
+                alias?.Delete();
+                Db.Delete((DynamicResource) iresource);
+            });
         }
-
-        public IEnumerable<object> Select(IRequest request) =>
-            DDictionaryOperations.Selector().Select(request);
-
-        public int Insert(IEnumerable<object> entities, IRequest request) =>
-            DDictionaryOperations.Inserter().Insert((dynamic) entities, request);
-
-        public int Update(IEnumerable<object> entities, IRequest request) =>
-            DDictionaryOperations.Updater().Update((dynamic) entities, request);
-
-        public int Delete(IEnumerable<object> entities, IRequest request) =>
-            DDictionaryOperations.Deleter().Delete((dynamic) entities, request);
-
-        public bool Equals(IResource x, IResource y) => x.Name == y.Name;
-        public int GetHashCode(IResource obj) => obj.Name.GetHashCode();
-        public int CompareTo(IResource other) => string.Compare(Name, other.Name, StringComparison.Ordinal);
-        public override int GetHashCode() => Name.GetHashCode();
     }
 }

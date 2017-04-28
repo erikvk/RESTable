@@ -7,11 +7,8 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using Starcounter;
-using static System.UriKind;
-using static RESTar.RESTarMethods;
 
-namespace RESTar
+namespace RESTar.Operations
 {
     [RESTar(RESTarPresets.ReadOnly, Dynamic = true)]
     public class SetOperations : Dictionary<string, dynamic>, ISelector<SetOperations>
@@ -44,7 +41,7 @@ namespace RESTar
                     else if (char.IsDigit(first) || first == '/')
                     {
                         var uri = str;
-                        var response = HTTP.InternalRequest(GET, new Uri(uri, Relative), request.AuthToken);
+                        var response = HTTP.InternalRequest(RESTarMethods.GET, new Uri(uri, UriKind.Relative), request.AuthToken);
                         if (response?.IsSuccessStatusCode != true)
                             throw new Exception(
                                 $"Could not get source data from '<self>:{Settings._Port}{Settings._Uri}{uri}'. " +
@@ -140,13 +137,9 @@ namespace RESTar
                 throw new ArgumentException(nameof(arrays));
             var output = new JArray();
             foreach (var array in arrays)
-            {
-                foreach (var item in array)
-                {
-                    if (!output.Any(i => JToken.DeepEquals(item, i)))
-                        output.Add(item);
-                }
-            }
+            foreach (var item in array)
+                if (!output.Any(i => JToken.DeepEquals(item, i)))
+                    output.Add(item);
             return Distinct(output);
         }
 
@@ -155,12 +148,12 @@ namespace RESTar
             if (array1 == null) throw new ArgumentException(nameof(array1));
             if (array2 == null) throw new ArgumentException(nameof(array2));
             array1 = Distinct(array1);
-            var toRemove = (from item2 in array2
-                from item1 in array1
-                where JToken.DeepEquals(item1, item2)
-                select item1).ToList();
-            foreach (var item in toRemove)
-                array1.Remove(item);
+            (from item2 in array2
+                    from item1 in array1
+                    where JToken.DeepEquals(item1, item2)
+                    select item1)
+                .ToList()
+                .ForEach(item => array1.Remove(item));
             return array1;
         }
 
@@ -192,7 +185,7 @@ namespace RESTar
                 if (!skip)
                 {
                     var uri = localMapper.ToString();
-                    var response = HTTP.InternalRequest(GET, new Uri(uri, Relative), request.AuthToken);
+                    var response = HTTP.InternalRequest(RESTarMethods.GET, new Uri(uri, UriKind.Relative), request.AuthToken);
                     if (response?.IsSuccessStatusCode != true)
                         throw new Exception(
                             $"Could not get source data from '<self>:{Settings._Port}{Settings._Uri}{uri}'");

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Reflection;
 using RESTar.Internal;
+using RESTar.Requests;
 
 namespace RESTar
 {
@@ -113,7 +113,7 @@ namespace RESTar
         public readonly string SearchString;
 
         public UnknownColumnException(Type resource, string searchString)
-            : base($"RESTar could not locate any column in resource {resource.Name} by '{searchString}'.")
+            : base($"RESTar could not uniquely locate any column in resource {resource.Name} by '{searchString}'.")
         {
             SearchString = searchString;
             Resource = resource;
@@ -134,11 +134,11 @@ namespace RESTar
 
     public class AmbiguousColumnException : Exception
     {
-        public readonly ICollection<string> Candidates;
+        public readonly IEnumerable<string> Candidates;
         public readonly Type Resource;
         public readonly string SearchString;
 
-        public AmbiguousColumnException(Type resource, string searchString, ICollection<string> candidates)
+        public AmbiguousColumnException(Type resource, string searchString, IEnumerable<string> candidates)
             : base($"RESTar could not uniquely identify a column in resource {resource.Name} by " +
                    $"'{searchString}'. Candidates were: {string.Join(", ", candidates)}. ")
         {

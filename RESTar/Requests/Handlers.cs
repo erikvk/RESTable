@@ -1,28 +1,23 @@
 ﻿using System;
-using Jil;
 using Newtonsoft.Json;
+using RESTar.Operations;
 using Starcounter;
-using static RESTar.ErrorCode;
-using static RESTar.Responses;
-using static RESTar.RESTarConfig;
-using static RESTar.RESTarMethods;
-using static RESTar.Settings;
 using ScRequest = Starcounter.Request;
 using ScHandle = Starcounter.Handle;
 
-namespace RESTar
+namespace RESTar.Requests
 {
     internal static class Handlers
     {
         internal static void Register(string uri)
         {
             uri += "{?}";
-            ScHandle.GET(_Port, uri, (ScRequest r, string q) => Handle(r, q, Evaluators.GET, GET));
-            ScHandle.POST(_Port, uri, (ScRequest r, string q) => Handle(r, q, Evaluators.POST, POST));
-            ScHandle.PUT(_Port, uri, (ScRequest r, string q) => Handle(r, q, Evaluators.PUT, PUT));
-            ScHandle.PATCH(_Port, uri, (ScRequest r, string q) => Handle(r, q, Evaluators.PATCH, PATCH));
-            ScHandle.DELETE(_Port, uri, (ScRequest r, string q) => Handle(r, q, Evaluators.DELETE, DELETE));
-            ScHandle.OPTIONS(_Port, uri, (ScRequest r, string q) => CheckOrigin(r, q));
+            ScHandle.GET(Settings._Port, uri, (ScRequest r, string q) => Handle(r, q, Evaluators.GET, RESTarMethods.GET));
+            ScHandle.POST(Settings._Port, uri, (ScRequest r, string q) => Handle(r, q, Evaluators.POST, RESTarMethods.POST));
+            ScHandle.PUT(Settings._Port, uri, (ScRequest r, string q) => Handle(r, q, Evaluators.PUT, RESTarMethods.PUT));
+            ScHandle.PATCH(Settings._Port, uri, (ScRequest r, string q) => Handle(r, q, Evaluators.PATCH, RESTarMethods.PATCH));
+            ScHandle.DELETE(Settings._Port, uri, (ScRequest r, string q) => Handle(r, q, Evaluators.DELETE, RESTarMethods.DELETE));
+            ScHandle.OPTIONS(Settings._Port, uri, (ScRequest r, string q) => CheckOrigin(r, q));
         }
 
         private static Response CheckOrigin(ScRequest scRequest, string query)
@@ -32,13 +27,13 @@ namespace RESTar
                 var request = new Request(scRequest);
                 request.Populate(query, default(RESTarMethods), null);
                 var origin = request.ScRequest.Headers["Origin"].ToLower();
-                if (AllowAllOrigins || AllowedOrigins.Contains(new Uri(origin)))
-                    return AllowOrigin(origin, request.Resource.AvailableMethods);
-                return Forbidden();
+                if (RESTarConfig.AllowAllOrigins || RESTarConfig.AllowedOrigins.Contains(new Uri(origin)))
+                    return Responses.AllowOrigin(origin, request.Resource.AvailableMethods);
+                return Responses.Forbidden();
             }
             catch
             {
-                return Forbidden();
+                return Responses.Forbidden();
             }
         }
 
@@ -69,104 +64,104 @@ namespace RESTar
                 Response errorResponse;
                 ErrorCode errorCode;
 
-                if (e is ForbiddenException) return Forbidden();
-                if (e is NoContentException) return NoContent();
+                if (e is ForbiddenException) return Responses.Forbidden();
+                if (e is NoContentException) return Responses.NoContent();
 
                 if (e is SyntaxException)
                 {
                     errorCode = ((SyntaxException) e).errorCode;
-                    errorResponse = BadRequest(e);
+                    errorResponse = Responses.BadRequest(e);
                 }
                 else if (e is FormatException)
                 {
-                    errorCode = UnsupportedContentType;
-                    errorResponse = BadRequest(e);
+                    errorCode = ErrorCode.UnsupportedContentType;
+                    errorResponse = Responses.BadRequest(e);
                 }
                 else if (e is UnknownColumnException)
                 {
-                    errorCode = UnknownColumnError;
-                    errorResponse = NotFound(e);
+                    errorCode = ErrorCode.UnknownColumnError;
+                    errorResponse = Responses.NotFound(e);
                 }
                 else if (e is CustomEntityUnknownColumnException)
                 {
-                    errorCode = UnknownColumnInGeneratedObjectError;
-                    errorResponse = NotFound(e);
+                    errorCode = ErrorCode.UnknownColumnInGeneratedObjectError;
+                    errorResponse = Responses.NotFound(e);
                 }
                 else if (e is AmbiguousColumnException)
                 {
-                    errorCode = AmbiguousColumnError;
-                    errorResponse = AmbiguousColumn((AmbiguousColumnException) e);
+                    errorCode = ErrorCode.AmbiguousColumnError;
+                    errorResponse = Responses.AmbiguousColumn((AmbiguousColumnException) e);
                 }
                 else if (e is SourceException)
                 {
-                    errorCode = InvalidSourceDataError;
-                    errorResponse = BadRequest(e);
+                    errorCode = ErrorCode.InvalidSourceDataError;
+                    errorResponse = Responses.BadRequest(e);
                 }
                 else if (e is UnknownResourceException)
                 {
-                    errorCode = UnknownResourceError;
-                    errorResponse = NotFound(e);
+                    errorCode = ErrorCode.UnknownResourceError;
+                    errorResponse = Responses.NotFound(e);
                 }
                 else if (e is AmbiguousResourceException)
                 {
-                    errorCode = AmbiguousResourceError;
-                    errorResponse = AmbiguousResource((AmbiguousResourceException) e);
+                    errorCode = ErrorCode.AmbiguousResourceError;
+                    errorResponse = Responses.AmbiguousResource((AmbiguousResourceException) e);
                 }
                 else if (e is InvalidInputCountException)
                 {
-                    errorCode = DataSourceFormatError;
-                    errorResponse = BadRequest(e);
+                    errorCode = ErrorCode.DataSourceFormatError;
+                    errorResponse = Responses.BadRequest(e);
                 }
                 else if (e is ExcelInputException)
                 {
-                    errorCode = ExcelReaderError;
-                    errorResponse = BadRequest(e);
+                    errorCode = ErrorCode.ExcelReaderError;
+                    errorResponse = Responses.BadRequest(e);
                 }
                 else if (e is ExcelFormatException)
                 {
-                    errorCode = ExcelReaderError;
-                    errorResponse = BadRequest(e);
+                    errorCode = ErrorCode.ExcelReaderError;
+                    errorResponse = Responses.BadRequest(e);
                 }
                 else if (e is JsonReaderException)
                 {
-                    errorCode = JsonDeserializationError;
-                    errorResponse = DeserializationError(scRequest.Body);
+                    errorCode = ErrorCode.JsonDeserializationError;
+                    errorResponse = Responses.DeserializationError(scRequest.Body);
                 }
                 else if (e is DbException)
                 {
                     errorCode = ErrorCode.DatabaseError;
-                    errorResponse = DatabaseError(e);
+                    errorResponse = Responses.DatabaseError(e);
                 }
                 else if (e is AbortedSelectorException)
                 {
                     errorCode = ErrorCode.AbortedOperation;
-                    errorResponse = AbortedOperation(e, method, request?.Resource.TargetType);
+                    errorResponse = Responses.AbortedOperation(e, method, request?.Resource.TargetType);
                 }
                 else if (e is AbortedInserterException)
                 {
                     errorCode = ErrorCode.AbortedOperation;
-                    errorResponse = AbortedOperation(e, method, request?.Resource.TargetType);
+                    errorResponse = Responses.AbortedOperation(e, method, request?.Resource.TargetType);
                 }
                 else if (e is AbortedUpdaterException)
                 {
                     errorCode = ErrorCode.AbortedOperation;
-                    errorResponse = AbortedOperation(e, method, request?.Resource.TargetType);
+                    errorResponse = Responses.AbortedOperation(e, method, request?.Resource.TargetType);
                 }
                 else if (e is AbortedDeleterException)
                 {
                     errorCode = ErrorCode.AbortedOperation;
-                    errorResponse = AbortedOperation(e, method, request?.Resource.TargetType);
+                    errorResponse = Responses.AbortedOperation(e, method, request?.Resource.TargetType);
                 }
                 else
                 {
-                    errorCode = UnknownError;
-                    errorResponse = InternalError(e);
+                    errorCode = ErrorCode.UnknownError;
+                    errorResponse = Responses.InternalError(e);
                 }
 
                 Error error = null;
                 Error.ClearOld();
                 Db.TransactAsync(() => error = new Error(errorCode, e, request));
-                errorResponse.Headers["ErrorInfo"] = $"{_Uri}/{typeof(Error).FullName}/id={error.Id}";
+                errorResponse.Headers["ErrorInfo"] = $"{Settings._Uri}/{typeof(Error).FullName}/id={error.Id}";
                 return errorResponse;
             }
 

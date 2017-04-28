@@ -2,14 +2,10 @@
 using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json.Linq;
-using Starcounter;
-using static System.UriKind;
-using static RESTar.RESTarMethods;
-using static RESTar.RESTarPresets;
 
-namespace RESTar
+namespace RESTar.Operations
 {
-    [RESTar(ReadOnly)]
+    [RESTar(RESTarPresets.ReadOnly)]
     public class Counter : Dictionary<string, int>, ISelector<Counter>
     {
         public IEnumerable<Counter> Select(IRequest request)
@@ -27,7 +23,7 @@ namespace RESTar
             if (uriToken.Value?.Type != JTokenType.String)
                 throw new Exception("Invalid source URI");
             var uri = uriToken.Value.Value<string>();
-            var response = HTTP.InternalRequest(GET, new Uri(uri, Relative), request.AuthToken);
+            var response = HTTP.InternalRequest(RESTarMethods.GET, new Uri(uri, UriKind.Relative), request.AuthToken);
             if (response?.IsSuccessStatusCode != true)
                 throw new Exception($"Could not get source data from '<self>:{Settings._Port}{Settings._Uri}{uri}'");
             if (response.StatusCode == 204 || string.IsNullOrEmpty(response.Body))

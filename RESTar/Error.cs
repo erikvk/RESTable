@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Linq;
-using System.Text;
 using Starcounter;
 using static RESTar.RESTarMethods;
 using static RESTar.Settings;
+using Request = RESTar.Requests.Request;
 
 namespace RESTar
 {

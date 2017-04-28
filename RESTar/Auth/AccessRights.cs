@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using RESTar.Internal;
 
-namespace RESTar
+namespace RESTar.Auth
 {
     internal class AccessRights : Dictionary<IResource, ICollection<RESTarMethods>>
     {
@@ -10,11 +10,5 @@ namespace RESTar
             get { return ContainsKey(resource) ? base[resource] : null; }
             set { base[resource] = value; }
         }
-    }
-
-    internal class AccessRight
-    {
-        internal ICollection<IResource> Resources;
-        internal ICollection<RESTarMethods> AllowedMethods;
     }
 }

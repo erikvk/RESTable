@@ -1,8 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Reflection;
-using System.Runtime.Serialization;
 using Dynamit;
+using static RESTar.Requests.Operators;
 
 namespace RESTar
 {
@@ -13,24 +12,14 @@ namespace RESTar
 
         public IEnumerable<Schema> Select(IRequest request)
         {
-            var validCondition = request.Conditions["resource", Operators.EQUALS]?.Value as string;
+            var validCondition = request.Conditions["resource", EQUALS]?.Value as string;
             if (validCondition == null)
-                throw new Exception("Invalid request: No valid 'resource' argument. " +
-                                    "Example: /schema/resource=my_resource_name");
-            var _resource = validCondition.FindResource();
-            if (_resource.TargetType.IsSubclassOf(typeof(DDictionary)))
-                return null;
-            var properties = _resource.TargetType.GetProperties(BindingFlags.Instance | BindingFlags.Public);
-            var schema = new Schema();
-            foreach (var property in properties)
-            {
-                if (!property.HasAttribute<IgnoreDataMemberAttribute>())
-                {
-                    var alias = property.GetAttribute<DataMemberAttribute>()?.Name;
-                    schema[alias ?? property.Name] = property.PropertyType.FullName;
-                }
-            }
-            return new[] {schema};
+                throw new Exception("Invalid resource argument, format: /schema/resource=my_resource_name");
+            var res = validCondition.FindResource();
+            if (res.TargetType.IsSubclassOf(typeof(DDictionary))) return null;
+            var s = new Schema();
+            res.TargetType.GetPropertyList().ForEach(p => s[p.RESTarMemberName()] = p.PropertyType.FullName);
+            return new[] {s};
         }
     }
 }

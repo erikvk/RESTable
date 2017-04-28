@@ -1,28 +1,9 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using Starcounter;
 
-namespace RESTar
+namespace RESTar.Internal
 {
-    public static class DbTools
-    {
-        public static IEnumerable<T> Select<T>(IRequest request)
-        {
-            var where = request.Conditions?.StarcounterQueryable?.ToWhereClause();
-            var sql = $"SELECT t FROM {typeof(T).FullName} t {where?.stringPart} {request.MetaConditions.OrderBy?.SQL}";
-            IEnumerable<T> results = request.MetaConditions.Limit < 1
-                ? Db.SQL<T>(sql, where?.valuesPart).ToList()
-                : Db.SQL<T>(sql, where?.valuesPart).Take(request.MetaConditions.Limit).ToList();
-            if (request.Conditions == null || request.Conditions.AllStarcounterQueryable)
-                return results;
-            if (typeof(T) != request.Resource.TargetType)
-                request.Conditions.NonStarcounterQueryable.AdaptTo(typeof(T));
-            return request.Conditions.NonStarcounterQueryable.Evaluate(results);
-        }
-    }
-
-
     /// <summary>
     /// This class provides static methods for database queries in the DRTB system.
     /// </summary>

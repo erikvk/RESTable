@@ -1,37 +1,21 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using RESTar.Internal;
+using RESTar.Operations;
 
-namespace RESTar
+namespace RESTar.Requests
 {
     public sealed class MetaConditions
     {
-        internal int Limit { get; set; } = -1;
+        internal Limit Limit { get; set; } = Limit.NoLimit;
         internal OrderBy OrderBy { get; private set; }
         internal bool Unsafe { get; set; }
-        internal List<PropertyChain> Select { get; private set; }
-        internal List<PropertyChain> Add { get; private set; }
-        internal IDictionary<PropertyChain, string> Rename { get; private set; }
+        internal Select Select { get; private set; }
+        internal Add Add { get; private set; }
+        internal Rename Rename { get; private set; }
         internal bool Dynamic { get; private set; }
         internal string SafePost { get; private set; }
-
-        internal PostOperations PostOperation
-        {
-            get
-            {
-                if (Select == null && Rename == null && Add == null) return PostOperations.NoOperation;
-                if (Select != null && Rename == null && Add == null) return PostOperations.Select;
-                if (Select == null && Rename != null && Add == null) return PostOperations.Rename;
-                if (Select != null && Rename != null && Add == null) return PostOperations.SelectRename;
-                if (Select == null && Rename == null && Add != null) return PostOperations.Add;
-                if (Select != null && Rename == null && Add != null) return PostOperations.SelectAdd;
-                if (Select == null && Rename != null && Add != null) return PostOperations.RenameAdd;
-                if (Select != null && Rename != null && Add != null) return PostOperations.SelectRenameAdd;
-                return PostOperations.Error;
-            }
-        }
 
         internal static MetaConditions Parse(string metaConditionString, IResource resource)
         {
@@ -43,8 +27,7 @@ namespace RESTar
             foreach (var s in metaConditionString.Split('&'))
             {
                 if (s == "")
-                    throw new SyntaxException("Invalid meta-condition syntax",
-                        ErrorCode.InvalidMetaConditionSyntaxError);
+                    throw new SyntaxException("Invalid meta-condition syntax", ErrorCode.InvalidMetaConditionSyntaxError);
 
                 var containsOneAndOnlyOneEquals = s.Count(c => c == '=') == 1;
                 if (!containsOneAndOnlyOneEquals)
@@ -63,17 +46,18 @@ namespace RESTar
                 var value = Conditions.GetValue(pair[1]);
                 if (expectedType != value.GetType())
                     throw new SyntaxException($"Invalid data type assigned to meta-condition '{pair[0]}'. " +
-                                              $"Expected {Condition.GetTypeString(expectedType)}.",
+                                              $"Expected {GetTypeString(expectedType)}.",
                         ErrorCode.InvalidMetaConditionValueTypeError);
 
                 switch (metaCondition)
                 {
                     case RESTarMetaConditions.Limit:
-                        mc.Limit = value;
+                        mc.Limit = (int) value;
                         break;
                     case RESTarMetaConditions.Order_desc:
                         mc.OrderBy = new OrderBy
                         {
+                            Resource = resource,
                             Descending = true,
                             PropertyChain = PropertyChain.Parse((string) value, resource)
                         };
@@ -81,6 +65,7 @@ namespace RESTar
                     case RESTarMetaConditions.Order_asc:
                         mc.OrderBy = new OrderBy
                         {
+                            Resource = resource,
                             Descending = false,
                             PropertyChain = PropertyChain.Parse((string) value, resource)
                         };
@@ -91,21 +76,15 @@ namespace RESTar
                     case RESTarMetaConditions.Select:
                         mc.Select = ((string) value).Split(',')
                             .Select(str => PropertyChain.Parse(str, resource))
-                            .ToList();
+                            .ToSelect();
                         break;
                     case RESTarMetaConditions.Add:
                         mc.Add = ((string) value).Split(',')
                             .Select(str => PropertyChain.Parse(str, resource))
-                            .ToList();
+                            .ToAdd();
                         break;
                     case RESTarMetaConditions.Rename:
-                        mc.Rename = ((string) value).Split(',')
-                            .ToDictionary(
-                                str => PropertyChain.Parse(
-                                    str.Split(new[] {"->"}, StringSplitOptions.None)[0].ToLower(),
-                                    resource),
-                                str => str.Split(new[] {"->"}, StringSplitOptions.None)[1]
-                            );
+                        mc.Rename = Rename.Parse((string) value, resource);
                         break;
                     case RESTarMetaConditions.Dynamic:
                         mc.Dynamic = value;
@@ -116,21 +95,30 @@ namespace RESTar
                     default:
                         throw new ArgumentOutOfRangeException();
                 }
+
+                if (mc.OrderBy != null)
+                {
+                    if (mc.Add?.Any(pc => pc.Key.EqualsNoCase(mc.OrderBy.Key)) == true)
+                        mc.OrderBy.IsStarcounterQueryable = false;
+                    if (mc.Rename?.Any(pc => pc.Value.EqualsNoCase(mc.OrderBy.Key)) == true)
+                        mc.OrderBy.IsStarcounterQueryable = false;
+                    if (mc.Rename?.Any(pc => pc.Key.Key.EqualsNoCase(mc.OrderBy.Key)) == true)
+                        throw new SyntaxException($"The {(mc.OrderBy.Ascending ? "'Order_asc'" : "'Order_desc'")} " +
+                                                  "meta-condition cannot refer to a property that is to be renamed",
+                            ErrorCode.InvalidMetaConditionSyntaxError);
+                    if (mc.OrderBy.PropertyChain.ScQueryable == false)
+                        mc.OrderBy.IsStarcounterQueryable = false;
+                }
             }
             return mc;
         }
-    }
 
-    internal enum PostOperations
-    {
-        Error,
-        NoOperation,
-        Select,
-        Rename,
-        Add,
-        SelectRename,
-        SelectAdd,
-        RenameAdd,
-        SelectRenameAdd
+        private static string GetTypeString(Type type)
+        {
+            if (type == typeof(string)) return "string";
+            if (type == typeof(int)) return "integer";
+            if (type == typeof(bool)) return "boolean";
+            return null;
+        }
     }
 }

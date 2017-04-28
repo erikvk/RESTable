@@ -1,6 +1,7 @@
 ﻿using Jil;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
+using RESTar.Internal;
 using Starcounter;
 
 namespace RESTar

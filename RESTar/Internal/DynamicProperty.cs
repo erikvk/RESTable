@@ -1,31 +1,26 @@
 using System;
 using System.Collections.Generic;
-using System.Reflection;
-using Dynamit;
+using static RESTar.Operations.Do;
 
 namespace RESTar.Internal
 {
     public class DynamicProperty : Property
     {
         public override bool Dynamic => true;
-        public override bool IsStarcounterQueryable => false;
+        public override bool ScQueryable => false;
+        public static DynamicProperty Parse(string keyString) => new DynamicProperty(keyString);
 
-        public DynamicProperty(string name)
+        internal DynamicProperty(string name)
         {
             Name = DatabaseQueryName = name;
         }
 
-        public static DynamicProperty Parse(string keyString)
-        {
-            return new DynamicProperty(keyString);
-        }
-
         internal override dynamic GetValue(dynamic input)
         {
-            var ddict = input as IDictionary<string,dynamic>;
+            var ddict = input as IDictionary<string, dynamic>;
             if (ddict != null) return ddict.SafeGetNoCase(Name);
             Type type = input.GetType();
-            return type.FindProperty(Name)?.GetValue(input);
+            return Try(() => type.MatchProperty(Name)?.GetValue(input), null);
         }
     }
 }

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Runtime.Serialization;
 using Dynamit;
 using RESTar;
-
+using RESTar.Internal;
 using Starcounter;
 
 namespace RESTarExample
@@ -29,8 +29,7 @@ namespace RESTarExample
     [Database, RESTar(RESTarPresets.ReadAndWrite)]
     public class MyResource : IInserter<MyResource>
     {
-        [DataMember(Name = "Swoo")]
-        public string Str;
+        [DataMember(Name = "Swoo")] public string Str;
         public int Inte;
 
         public int Insert(IEnumerable<MyResource> entities, IRequest request)
@@ -49,8 +48,7 @@ namespace RESTarExample
     [Database, RESTar(RESTarPresets.ReadAndWrite, Dynamic = true)]
     public class MyOther
     {
-        [DataMember(Name="Swoo")]
-        public string Str;
+        [DataMember(Name = "Swoo")] public string Str;
         private MyDynamicTable _ext;
 
         public MyDynamicTable Ext
@@ -76,6 +74,24 @@ namespace RESTarExample
     public class MyDynamicTableKvp : DKeyValuePair
     {
         public MyDynamicTableKvp(DDictionary dict, string key, object value = null) : base(dict, key, value)
+        {
+        }
+    }
+
+    [RESTar(RESTarPresets.ReadAndWrite), DDictionary(typeof(MyDynamicTable2Kvp))]
+    public class MyDynamicTable2 : DDictionary, ISelector<DDictionary>
+    {
+        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
+        {
+            return new MyDynamicTable2Kvp(dict, key, value);
+        }
+
+        public IEnumerable<DDictionary> Select(IRequest request) => DynOperations.Select(request);
+    }
+
+    public class MyDynamicTable2Kvp : DKeyValuePair
+    {
+        public MyDynamicTable2Kvp(DDictionary dict, string key, object value = null) : base(dict, key, value)
         {
         }
     }

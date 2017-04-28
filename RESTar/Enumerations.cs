@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace RESTar
+﻿namespace RESTar
 {
     public enum RESTarPresets : byte
     {
@@ -34,7 +32,7 @@ namespace RESTar
         DELETE
     }
 
-    public enum RESTarOperations
+    internal enum RESTarOperations
     {
         Select,
         Insert,
@@ -42,17 +40,7 @@ namespace RESTar
         Delete
     }
 
-    internal class TypeAttribute : Attribute
-    {
-        internal readonly Type Type;
-
-        internal TypeAttribute(Type type)
-        {
-            Type = type;
-        }
-    }
-
-    public enum RESTarMetaConditions
+    internal enum RESTarMetaConditions
     {
         Limit,
         Order_desc,

@@ -1,10 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using Dynamit;
-using Starcounter;
-using static RESTar.RESTarConfig;
 
 namespace RESTar.Internal
 {
@@ -12,7 +9,7 @@ namespace RESTar.Internal
     {
         public string Key => string.Join(".", this.Select(p => p.Name));
         public string DbKey => string.Join(".", this.Select(p => p.DatabaseQueryName));
-        public bool IsStarcounterQueryable => this.All(p => p.IsStarcounterQueryable);
+        public bool ScQueryable => this.All(p => p.ScQueryable);
 
         internal static PropertyChain Parse(string keyString, IResource resource)
         {
@@ -30,30 +27,21 @@ namespace RESTar.Internal
                 if (previous.Static)
                 {
                     var _previous = (StaticProperty) previous;
-                    if (typeof(DDictionary).IsAssignableFrom(_previous.Type))
+                    if (_previous.Type.IsSubclassOf(typeof(DDictionary)))
                         return DynamicProperty.Parse(str);
                     return StaticProperty.Parse(str, ((StaticProperty) previous).Type);
                 }
                 return DynamicProperty.Parse(str);
             });
-            keyString.ToLower().Split('.').ForEach(s => chain.Add(propertyMaker(s)));
+            keyString.Split('.').ForEach(s => chain.Add(propertyMaker(s)));
             return chain;
         }
 
-        internal static PropertyChain ParseDynamic(string keyString)
+        internal void MakeDynamic()
         {
-            var chain = new PropertyChain();
-            var propertyMaker = new Func<string, Property>(str =>
-            {
-                if (string.IsNullOrWhiteSpace(str))
-                    throw new SyntaxException($"Invalid condition '{str}'",
-                        ErrorCode.InvalidConditionSyntaxError);
-                if (str == "objectno") return StaticProperty.ObjectNo;
-                if (str == "objectid") return StaticProperty.ObjectID;
-                return DynamicProperty.Parse(str);
-            });
-            keyString.ToLower().Split('.').ForEach(s => chain.Add(propertyMaker(s)));
-            return chain;
+            var newProperties = this.Select(prop => new DynamicProperty(prop.Name)).ToList();
+            Clear();
+            AddRange(newProperties);
         }
 
         internal void Migrate(Type type)

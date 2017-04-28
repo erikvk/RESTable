@@ -2,25 +2,18 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Text.RegularExpressions;
-using System.Xml;
 using ClosedXML.Excel;
 using Dynamit;
 using Excel;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using RESTar.Internal;
+using RESTar.Auth;
 using Starcounter;
-using static System.StringComparison;
-using static RESTar.ErrorCode;
-using static RESTar.PostOperations;
 using IResource = RESTar.Internal.IResource;
 using ScRequest = Starcounter.Request;
-using static RESTar.RESTarConfig;
-using static RESTar.RESTarMethods;
 
-namespace RESTar
+namespace RESTar.Requests
 {
     internal class Request : IRequest, IDisposable
     {
@@ -29,7 +22,6 @@ namespace RESTar
         public string AuthToken { get; private set; }
         private bool Internal => !ScRequest.IsExternal;
         internal Transaction Transaction { get; }
-
         public IResource Resource { get; private set; }
         public RESTarMethods Method { get; private set; }
         public Conditions Conditions { get; private set; }
@@ -38,19 +30,17 @@ namespace RESTar
         internal void Evaluate() => Response = Evaluator?.Invoke(this);
         public string Body { get; private set; }
         private byte[] BinaryBody { get; set; }
-        internal string Query { get; private set; }
-
-        private bool SerializeDynamic => MetaConditions.Dynamic || MetaConditions.Select != null ||
-                                         MetaConditions.Rename != null || MetaConditions.Add != null ||
-                                         Resource.TargetType.IsSubclassOf(typeof(DDictionary)) ||
-                                         Resource.TargetType.GetAttribute<RESTarAttribute>()?.Dynamic == true;
-
         private string Source { get; set; }
         private string Destination { get; set; }
         private RESTarMimeType ContentType { get; set; }
         internal RESTarMimeType Accept { get; private set; }
         private string Origin { get; set; }
         public IDictionary<string, string> ResponseHeaders { get; }
+        
+        private bool SerializeDynamic => MetaConditions.Dynamic || MetaConditions.Select != null ||
+                                         MetaConditions.Rename != null || MetaConditions.Add != null ||
+                                         Resource.TargetType.IsSubclassOf(typeof(DDictionary)) ||
+                                         Resource.TargetType.GetAttribute<RESTarAttribute>()?.Dynamic == true;
 
         internal Request(ScRequest scRequest)
         {
@@ -68,22 +58,19 @@ namespace RESTar
             Source = ScRequest.Headers["Source"];
             Destination = ScRequest.Headers["Destination"];
             Origin = ScRequest.Headers["Origin"];
-
             ContentType = MimeTypes.Match(ScRequest.ContentType);
             Accept = MimeTypes.Match(ScRequest.PreferredMimeTypeString);
-
             var args = query.Split('/');
             var argLength = args.Length;
             if (argLength == 1)
             {
-                Resource = TypeResources[typeof(Resource)];
+                Resource = RESTarConfig.TypeResources[typeof(Resource)];
                 return;
             }
             if (args[1] == "")
-                Resource = TypeResources[typeof(Resource)];
+                Resource = RESTarConfig.TypeResources[typeof(Resource)];
             else Resource = args[1].FindResource();
             if (argLength == 2) return;
-
             Conditions = Conditions.Parse(args[2], Resource);
             if (Conditions != null &&
                 (Resource.TargetType == typeof(Resource) || Resource.TargetType.IsSubclassOf(typeof(Resource))))
@@ -93,7 +80,6 @@ namespace RESTar
                     nameCond.Value = ((string) nameCond.Value.ToString()).FindResource().Name;
             }
             if (argLength == 3) return;
-
             MetaConditions = MetaConditions.Parse(args[3], Resource);
         }
 
@@ -102,15 +88,15 @@ namespace RESTar
             if (Source != null)
             {
                 var sourceRequest = HttpRequest.Parse(Source);
-                if (sourceRequest.Method != GET)
-                    throw new SyntaxException("Only GET is allowed in Source headers", InvalidSourceFormatError);
+                if (sourceRequest.Method != RESTarMethods.GET)
+                    throw new SyntaxException("Only GET is allowed in Source headers", ErrorCode.InvalidSourceFormatError);
 
                 sourceRequest.Accept = ContentType.ToMimeString();
 
                 var response = sourceRequest.Internal
                     ? HTTP.InternalRequest
                     (
-                        method: GET,
+                        method: RESTarMethods.GET,
                         relativeUri: sourceRequest.URI,
                         authToken: AuthToken,
                         headers: sourceRequest.Headers,
@@ -118,7 +104,7 @@ namespace RESTar
                     )
                     : HTTP.ExternalRequest
                     (
-                        method: GET,
+                        method: RESTarMethods.GET,
                         uri: sourceRequest.URI,
                         headers: sourceRequest.Headers,
                         accept: sourceRequest.Accept
@@ -144,8 +130,8 @@ namespace RESTar
             else
             {
                 if (ScRequest.Body == null &&
-                    (Method == PATCH || Method == POST || Method == PUT))
-                    throw new SyntaxException("Missing data source for method " + Method, NoDataSourceError);
+                    (Method == RESTarMethods.PATCH || Method == RESTarMethods.POST || Method == RESTarMethods.PUT))
+                    throw new SyntaxException("Missing data source for method " + Method, ErrorCode.NoDataSourceError);
                 if (ScRequest.Body == null)
                     return;
             }
@@ -154,7 +140,7 @@ namespace RESTar
             {
                 case RESTarMimeType.Json:
                     Body = Body?.Trim() ?? ScRequest.Body.Trim();
-                    if (Body?.First() == '[' && Method != POST)
+                    if (Body?.First() == '[' && Method != RESTarMethods.POST)
                         throw new InvalidInputCountException(Resource, Method);
                     break;
                 case RESTarMimeType.Excel:
@@ -166,7 +152,7 @@ namespace RESTar
                         var result = excelReader.AsDataSet();
                         if (result == null)
                             throw new ExcelInputException();
-                        if (Method == POST)
+                        if (Method == RESTarMethods.POST)
                         {
                             Body = result.Tables[0].JsonNetSerialize();
                             Body = regex.Replace(Body, "$1$2");
@@ -205,7 +191,7 @@ namespace RESTar
             string jsonString;
             if (SerializeDynamic)
                 jsonString = entities.SerializeDyn();
-            else jsonString = entities.Serialize(IEnumTypes[Resource]);
+            else jsonString = entities.Serialize(RESTarConfig.IEnumTypes[Resource]);
 
             switch (Accept)
             {
@@ -222,113 +208,95 @@ namespace RESTar
             }
         }
 
-        internal IEnumerable<dynamic> PostProcess(IEnumerable<dynamic> entities)
-        {
-            switch (MetaConditions.PostOperation)
-            {
-                case NoOperation: return entities;
-                case Select:
-                    return entities.Select(entity => MetaConditions.Select.ToDictionary(
-                        prop => prop.Key, prop => prop.GetValue(entity)));
-                case Rename:
-                    return entities.Select(entity =>
-                    {
-                        IDictionary<string, dynamic> dict = ExtensionMethods.MakeDictionary(entity);
-                        MetaConditions.Rename.ForEach(pair =>
-                        {
-                            var oldPropertyName = pair.Key.Key;
-                            var newPropertyName = pair.Value;
-                            string actualKey;
-                            if (dict.ContainsKeyIgnorecase(oldPropertyName, out actualKey))
-                            {
-                                var value = dict[actualKey];
-                                dict.Remove(actualKey);
-                                dict[newPropertyName] = value;
-                            }
-                        });
-                        return dict;
-                    });
-                case SelectRename:
-                    return entities.Select(entity => MetaConditions.Select.ToDictionary(
-                        prop => MetaConditions.Rename
-                            .FirstOrDefault(pair => string.Equals(pair.Key.Key, prop.Key, CurrentCultureIgnoreCase))
-                            .Value, prop => prop.GetValue(entity)));
-                case Add:
-                    return entities.Select(entity =>
-                    {
-                        IDictionary<string, dynamic> dict = ExtensionMethods.MakeDictionary(entity);
-                        MetaConditions.Add.ForEach(propToAdd =>
-                        {
-                            if (!dict.ContainsKey(propToAdd.Key))
-                                dict[propToAdd.Key] = propToAdd.GetValue(entity);
-                        });
-                        return dict;
-                    });
-                case SelectAdd:
-                    return entities.Select(entity =>
-                    {
-                        var dict = MetaConditions.Select.ToDictionary(s => s.Key, s => s.GetValue(entity));
-                        MetaConditions.Add.ForEach(propToAdd =>
-                        {
-                            if (!dict.ContainsKey(propToAdd.Key))
-                                dict[propToAdd.Key] = propToAdd.GetValue(entity);
-                        });
-                        return dict;
-                    });
-                case RenameAdd:
-                    return entities.Select(entity =>
-                    {
-                        IDictionary<string, dynamic> dict = ExtensionMethods.MakeDictionary(entity);
-                        MetaConditions.Add.ForEach(propToAdd =>
-                        {
-                            if (!dict.ContainsKey(propToAdd.Key))
-                                dict[propToAdd.Key] = propToAdd.GetValue(entity);
-                        });
-                        MetaConditions.Rename.ForEach(pair =>
-                        {
-                            var oldPropertyName = pair.Key.Key;
-                            var newPropertyName = pair.Value;
-                            string actualKey;
-                            if (dict.ContainsKeyIgnorecase(oldPropertyName, out actualKey))
-                            {
-                                var value = dict[actualKey];
-                                dict.Remove(actualKey);
-                                dict[newPropertyName] = value;
-                            }
-                        });
-                        return dict;
-                    });
-                case SelectRenameAdd:
-                    return entities.Select(entity =>
-                    {
-                        var dict = MetaConditions.Select.ToDictionary(prop => prop.Key, prop => prop.GetValue(entity));
-                        MetaConditions.Add.ForEach(propToAdd =>
-                        {
-                            if (!dict.ContainsKey(propToAdd.Key))
-                                dict[propToAdd.Key] = propToAdd.GetValue(entity);
-                        });
-                        MetaConditions.Rename.ForEach(pair =>
-                        {
-                            var oldPropertyName = pair.Key.Key;
-                            var newPropertyName = pair.Value;
-                            string actualKey;
-                            if (dict.ContainsKeyIgnorecase(oldPropertyName, out actualKey))
-                            {
-                                var value = dict[actualKey];
-                                dict.Remove(actualKey);
-                                dict[newPropertyName] = value;
-                            }
-                        });
-                        return dict;
-                    });
-                default: throw new ArgumentOutOfRangeException();
-            }
-        }
+//        internal IEnumerable<dynamic> RunPostOperations(IEnumerable<dynamic> entities)
+//        {
+//            switch (MetaConditions.PostOperation)
+//            {
+//                case NoOperation: return entities;
+//                case Select:
+//                case Rename:
+//                case SelectRename:
+//                    return entities.Select(entity => MetaConditions.Select.ToDictionary(
+//                        prop => MetaConditions.Rename
+//                            .FirstOrDefault(pair => pair.Key.Key.EqualsNoCase(prop.Key))
+//                            .Value,
+//                        prop => prop.GetValue(entity)));
+//                case Add:
+//                    return entities.Select(entity =>
+//                    {
+//                        IDictionary<string, dynamic> dict = ExtensionMethods.MakeDictionary(entity);
+//                        MetaConditions.Add.ForEach(propToAdd =>
+//                        {
+//                            if (!dict.ContainsKey(propToAdd.Key))
+//                                dict[propToAdd.Key] = propToAdd.GetValue(entity);
+//                        });
+//                        return dict;
+//                    });
+//                case SelectAdd:
+//                    return entities.Select(entity =>
+//                    {
+//                        var dict = MetaConditions.Select.ToDictionary(s => s.Key, s => s.GetValue(entity));
+//                        MetaConditions.Add.ForEach(propToAdd =>
+//                        {
+//                            if (!dict.ContainsKey(propToAdd.Key))
+//                                dict[propToAdd.Key] = propToAdd.GetValue(entity);
+//                        });
+//                        return dict;
+//                    });
+//                case RenameAdd:
+//                    return entities.Select(entity =>
+//                    {
+//                        IDictionary<string, dynamic> dict = ExtensionMethods.MakeDictionary(entity);
+//                        MetaConditions.Add.ForEach(propToAdd =>
+//                        {
+//                            if (!dict.ContainsKey(propToAdd.Key))
+//                                dict[propToAdd.Key] = propToAdd.GetValue(entity);
+//                        });
+//                        MetaConditions.Rename.ForEach(pair =>
+//                        {
+//                            var oldPropertyName = pair.Key.Key;
+//                            var newPropertyName = pair.Value;
+//                            string actualKey;
+//                            if (dict.ContainsKeyIgnorecase(oldPropertyName, out actualKey))
+//                            {
+//                                var value = dict[actualKey];
+//                                dict.Remove(actualKey);
+//                                dict[newPropertyName] = value;
+//                            }
+//                        });
+//                        return dict;
+//                    });
+//                case SelectRenameAdd:
+//                    return entities.Select(entity =>
+//                    {
+//                        var dict = MetaConditions.Select.ToDictionary(prop => prop.Key, prop => prop.GetValue(entity));
+//                        MetaConditions.Add.ForEach(propToAdd =>
+//                        {
+//                            if (!dict.ContainsKey(propToAdd.Key))
+//                                dict[propToAdd.Key] = propToAdd.GetValue(entity);
+//                        });
+//                        MetaConditions.Rename.ForEach(pair =>
+//                        {
+//                            var oldPropertyName = pair.Key.Key;
+//                            var newPropertyName = pair.Value;
+//                            string actualKey;
+//                            if (dict.ContainsKeyIgnorecase(oldPropertyName, out actualKey))
+//                            {
+//                                var value = dict[actualKey];
+//                                dict.Remove(actualKey);
+//                                dict[newPropertyName] = value;
+//                            }
+//                        });
+//                        return dict;
+//                    });
+//                default: throw new ArgumentOutOfRangeException();
+//            }
+//        }
 
         internal Response GetResponse()
         {
             ResponseHeaders.ForEach(h => Response.Headers["X-" + h.Key] = h.Value);
-            Response.Headers["Access-Control-Allow-Origin"] = AllowAllOrigins ? "*" : (Origin ?? "null");
+            Response.Headers["Access-Control-Allow-Origin"] = RESTarConfig.AllowAllOrigins ? "*" : (Origin ?? "null");
 
             if (Destination == null)
                 return Response;
@@ -358,13 +326,13 @@ namespace RESTar
             if (!_response.IsSuccessStatusCode)
                 throw new Exception($"Failed upload at destination server at '{destinationRequest.URI}'. " +
                                     $"Status: {_response.StatusCode}, {_response.StatusDescription}");
-            _response.Headers["Access-Control-Allow-Origin"] = AllowAllOrigins ? "*" : (Origin ?? "null");
+            _response.Headers["Access-Control-Allow-Origin"] = RESTarConfig.AllowAllOrigins ? "*" : (Origin ?? "null");
             return _response;
         }
 
         internal void Authenticate()
         {
-            if (!RequireApiKey)
+            if (!RESTarConfig.RequireApiKey)
                 return;
 
             AccessRights accessRights;
@@ -374,7 +342,7 @@ namespace RESTar
                 var authToken = ScRequest.Headers["RESTar-AuthToken"];
                 if (string.IsNullOrWhiteSpace(authToken))
                     throw new ForbiddenException();
-                if (!AuthTokens.TryGetValue(authToken, out accessRights))
+                if (!RESTarConfig.AuthTokens.TryGetValue(authToken, out accessRights))
                     throw new ForbiddenException();
                 AuthToken = authToken;
                 return;
@@ -387,10 +355,10 @@ namespace RESTar
             if (apikey_key[0].ToLower() != "apikey" || apikey_key.Length != 2)
                 throw new ForbiddenException();
             var apiKey = apikey_key[1].SHA256();
-            if (!ApiKeys.TryGetValue(apiKey, out accessRights))
+            if (!RESTarConfig.ApiKeys.TryGetValue(apiKey, out accessRights))
                 throw new ForbiddenException();
             AuthToken = Guid.NewGuid().ToString();
-            AuthTokens[AuthToken] = accessRights;
+            RESTarConfig.AuthTokens[AuthToken] = accessRights;
         }
 
         internal void MethodCheck()
@@ -399,9 +367,9 @@ namespace RESTar
             var availableMethods = Resource.AvailableMethods;
             if (!availableMethods.Contains(method))
                 throw new ForbiddenException();
-            if (!RequireApiKey)
+            if (!RESTarConfig.RequireApiKey)
                 return;
-            var accessRights = AuthTokens[AuthToken];
+            var accessRights = RESTarConfig.AuthTokens[AuthToken];
             if (accessRights == null)
                 throw new ForbiddenException();
             var rights = accessRights[Resource];
@@ -413,7 +381,7 @@ namespace RESTar
         {
             if (AuthToken == null || Internal) return;
             AccessRights accessRights;
-            AuthTokens.TryRemove(AuthToken, out accessRights);
+            RESTarConfig.AuthTokens.TryRemove(AuthToken, out accessRights);
         }
 
         private static string CheckQuery(string query, ScRequest request)
@@ -421,7 +389,7 @@ namespace RESTar
             if (query.CharCount('/') > 3)
                 throw new SyntaxException("Invalid argument separator count. A RESTar URI can contain at most 3 " +
                                           $"forward slashes after the base uri. URI scheme: {Settings._ResourcesPath}" +
-                                          "/[resource]/[conditions]/[meta-conditions]", InvalidSeparatorCount);
+                                          "/[resource]/[conditions]/[meta-conditions]", ErrorCode.InvalidSeparatorCount);
             if (request.HeadersDictionary.ContainsKey("X-ARR-LOG-ID"))
                 return query.Replace("%25", "%");
             return query;

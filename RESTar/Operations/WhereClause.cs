@@ -1,4 +1,4 @@
-﻿namespace RESTar
+﻿namespace RESTar.Operations
 {
     public class WhereClause
     {

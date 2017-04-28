@@ -7,68 +7,56 @@ using System.Runtime.Serialization;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Web;
-using Starcounter;
+using Dynamit;
+using RESTar.Auth;
+using RESTar.Internal;
+using RESTar.Operations;
+using RESTar.Requests;
+using static System.Reflection.BindingFlags;
 using static System.StringComparison;
-using static RESTar.Operators;
+using static RESTar.ResourceAlias;
+using static RESTar.RESTarConfig;
+using static RESTar.RESTarMethods;
+using static Starcounter.DbHelper;
 using IResource = RESTar.Internal.IResource;
 
 namespace RESTar
 {
     public static class ExtensionMethods
     {
-        internal static string UriDecode(this string str) => HttpUtility.UrlDecode(str);
-        internal static string UriEncode(this string str) => HttpUtility.UrlEncode(str);
+        internal static Selector<T> GetSelector<T>(this Type type) => typeof(ISelector<T>).IsAssignableFrom(type)
+            ? (Selector<T>) type.GetMethod("Select", Instance | Public).CreateDelegate(typeof(Selector<T>), null)
+            : null;
 
-        internal static Selector<T> GetSelector<T>(this Type type)
-        {
-            if (!typeof(ISelector<T>).IsAssignableFrom(type)) return null;
-            return new Selector<T>((Func<IRequest, IEnumerable<T>>)
-                type.GetMethod("Select", BindingFlags.Instance | BindingFlags.Public)
-                    .CreateDelegate(typeof(Func<IRequest, IEnumerable<T>>), null)
-            );
-        }
+        internal static Inserter<T> GetInserter<T>(this Type type) => typeof(IInserter<T>).IsAssignableFrom(type)
+            ? (Inserter<T>) type.GetMethod("Insert", Instance | Public).CreateDelegate(typeof(Inserter<T>), null)
+            : null;
 
-        internal static Inserter<T> GetInserter<T>(this Type type)
-        {
-            if (!typeof(IInserter<T>).IsAssignableFrom(type)) return null;
-            return new Inserter<T>((Func<IEnumerable<T>, IRequest, int>)
-                type.GetMethod("Insert", BindingFlags.Instance | BindingFlags.Public)
-                    .CreateDelegate(typeof(Func<IEnumerable<T>, IRequest, int>), null)
-            );
-        }
+        internal static Updater<T> GetUpdater<T>(this Type type) => typeof(IUpdater<T>).IsAssignableFrom(type)
+            ? (Updater<T>) type.GetMethod("Update", Instance | Public).CreateDelegate(typeof(Updater<T>), null)
+            : null;
 
-        internal static Updater<T> GetUpdater<T>(this Type type)
-        {
-            if (!typeof(IUpdater<T>).IsAssignableFrom(type)) return null;
-            return new Updater<T>((Func<IEnumerable<T>, IRequest, int>)
-                type.GetMethod("Update", BindingFlags.Instance | BindingFlags.Public)
-                    .CreateDelegate(typeof(Func<IEnumerable<T>, IRequest, int>), null)
-            );
-        }
+        internal static Deleter<T> GetDeleter<T>(this Type type) => typeof(IDeleter<T>).IsAssignableFrom(type)
+            ? (Deleter<T>) type.GetMethod("Delete", Instance | Public).CreateDelegate(typeof(Deleter<T>), null)
+            : null;
 
-        internal static Deleter<T> GetDeleter<T>(this Type type)
-        {
-            if (!typeof(IDeleter<T>).IsAssignableFrom(type)) return null;
-            return new Deleter<T>((Func<IEnumerable<T>, IRequest, int>)
-                type.GetMethod("Delete", BindingFlags.Instance | BindingFlags.Public)
-                    .CreateDelegate(typeof(Func<IEnumerable<T>, IRequest, int>), null)
-            );
-        }
+        internal static IList<Type> GetConcreteSubclasses(this Type baseType) => baseType.GetSubclasses()
+            .Where(type => !type.IsAbstract)
+            .ToList();
 
-        internal static IList<Type> GetConcreteSubclasses(this Type baseType)
-        {
-            return baseType.GetSubclasses().Where(type => !type.IsAbstract).ToList();
-        }
-
-        private static readonly MethodInfo ListGenerator = typeof(ExtensionMethods).GetMethod(nameof(GenerateList),
-            BindingFlags.NonPublic | BindingFlags.Static);
+        private static readonly MethodInfo ListGenerator = typeof(ExtensionMethods)
+            .GetMethod(nameof(GenerateList), NonPublic | Static);
 
         private static List<T> GenerateList<T>(T thing) => new List<T> {thing};
+        internal static string UriDecode(this string str) => HttpUtility.UrlDecode(str);
+        internal static string UriEncode(this string str) => HttpUtility.UrlEncode(str);
+        public static T GetReference<T>(this ulong? objectNo) where T : class => FromID(objectNo ?? 0) as T;
+        public static T GetReference<T>(this ulong objectNo) where T : class => FromID(objectNo) as T;
+        public static bool EqualsNoCase(this string s1, string s2) => string.Equals(s1, s2, CurrentCultureIgnoreCase);
 
-        internal static dynamic MakeList(this object thing, Type resource)
-        {
-            return ListGenerator.MakeGenericMethod(resource).Invoke(null, new[] {thing});
-        }
+        internal static dynamic MakeList(this object thing, Type resource) => ListGenerator
+            .MakeGenericMethod(resource)
+            .Invoke(null, new[] {thing});
 
         internal static ICollection<IResource> FindResources(this string searchString)
         {
@@ -81,20 +69,19 @@ namespace RESTar
                 if (searchString.Last() != '*')
                     throw new Exception("Invalid resource string syntax");
                 var commonPart = searchString.Split('*')[0];
-                var matches = RESTarConfig.NameResources
+                var matches = NameResources
                     .Where(pair => pair.Key.StartsWith(commonPart))
                     .Select(pair => pair.Value)
                     .Union(DB.All<ResourceAlias>()
                         .Where(alias => alias.Alias.StartsWith(commonPart))
                         .Select(alias => alias.GetResource()))
                     .ToList();
-                if (matches.Any())
-                    return matches;
+                if (matches.Any()) return matches;
                 throw new UnknownResourceException(searchString);
             }
-            var resource = ResourceAlias.ByAlias(searchString);
+            var resource = ByAlias(searchString);
             if (resource == null)
-                RESTarConfig.NameResources.TryGetValue(searchString, out resource);
+                NameResources.TryGetValue(searchString, out resource);
             if (resource != null)
                 return new[] {resource};
             throw new UnknownResourceException(searchString);
@@ -103,164 +90,79 @@ namespace RESTar
         internal static IResource FindResource(this string searchString)
         {
             searchString = searchString.ToLower();
-            var resource = ResourceAlias.ByAlias(searchString);
+            var resource = ByAlias(searchString);
             if (resource == null)
-                RESTarConfig.NameResources.TryGetValue(searchString, out resource);
+                NameResources.TryGetValue(searchString, out resource);
             if (resource != null)
                 return resource;
-            var keys = RESTarConfig.NameResources
-                .Keys
+            var keys = NameResources.Keys
                 .Where(key => key.EndsWith($".{searchString}"))
                 .ToList();
             if (keys.Count < 1)
                 throw new UnknownResourceException(searchString);
             if (keys.Count > 1)
                 throw new AmbiguousResourceException(searchString,
-                    keys.Select(k => RESTarConfig.NameResources[k].Name).ToList());
-            return RESTarConfig.NameResources[keys.First()];
+                    keys.Select(k => NameResources[k].Name).ToList());
+            return NameResources[keys.First()];
         }
 
-//        internal static string GetValueFromKeyString(Type resource, string keyString, dynamic root, out dynamic value)
-//        {
-//            value = null;
-//            keyString = keyString.ToLower();
-//            var parts = keyString.Split('.');
-//            if (parts.Length == 1)
-//            {
-//                var column = resource.GetColumns().MatchProperty(resource, keyString);
-//                value = column.GetValue(root);
-//                return column.Name;
-//            }
-//            var types = new List<Type>();
-//            var names = new List<string>();
-//            var first = true;
-//            foreach (var str in parts.Take(parts.Length - 1))
-//            {
-//                var containingType = types.LastOrDefault() ?? resource;
-//                var column = containingType.GetProperties().FirstOrDefault(prop => str == prop.Name.ToLower());
-//                if (column == null)
-//                    throw new UnknownColumnException(resource, keyString);
-//                var type = column.PropertyType;
-//                if (first)
-//                    value = column.GetValue(root);
-//                else if (value != null)
-//                    value = column.GetValue(value);
-//                types.Add(type);
-//                names.Add(column.Name);
-//                first = false;
-//            }
-//            if (parts.Last() == "objectno")
-//            {
-//                if (value != null)
-//                    value = DbHelper.GetObjectNo(value);
-//                names.Add("ObjectNo");
-//            }
-//            else if (parts.Last() == "objectid")
-//            {
-//                if (value != null)
-//                    value = DbHelper.GetObjectID(value);
-//                names.Add("ObjectID");
-//            }
-//            else
-//            {
-//                var lastType = types.Last();
-//                var lastColumns = lastType.GetColumns();
-//                var lastColumn = lastColumns.MatchProperty(lastType, parts.Last());
-//                if (value != null)
-//                    value = lastColumn.GetValue(value);
-//                names.Add(lastColumn.Name);
-//            }
-//            return string.Join(".", names);
-//        }
-
-        internal static PropertyInfo MatchProperty(this IEnumerable<PropertyInfo> columns, Type resource, string str)
+        public static IEnumerable<T> Filter<T>(this IEnumerable<T> entities, Conditions filter)
         {
-            var matches = columns.Where(p => str.ToLower() == (p.GetDataMemberName()?.ToLower() ?? p.Name.ToLower()))
-                .ToList();
-            var count = matches.Count;
-            if (count < 1) throw new UnknownColumnException(resource, str);
-            if (count > 1) throw new AmbiguousColumnException(resource, str, matches.Select(m => m.Name).ToList());
-            return matches.First();
+            return filter?.Apply(entities) ?? entities;
         }
 
-        internal static string GetColumnName(this PropertyInfo column)
+        internal static IEnumerable<T> Filter<T>(this IEnumerable<T> entities, IFilter filter)
         {
-            return column.GetDataMemberName() ?? column.Name;
+            return filter?.Apply(entities) ?? entities;
         }
 
-        internal static IEnumerable<PropertyInfo> Properties(this Type resource)
+        internal static IEnumerable<T> Filter<T>(this IEnumerable<T> entities, IFilter[] filters)
         {
-            return resource.GetProperties().Where(p => !p.HasAttribute<IgnoreDataMemberAttribute>());
+            return filters?.Any() == true ? filters.Aggregate(entities, (e, f) => f?.Apply(e) ?? e) : entities;
         }
 
-        internal static IEnumerable<Type> GetSubclasses(this Type baseType)
+        internal static IEnumerable<dynamic> Process<T>(this IEnumerable<T> entities, IProcessor processor)
         {
-            return from assembly in AppDomain.CurrentDomain.GetAssemblies()
-                from type in assembly.GetTypes()
-                where type.IsSubclassOf(baseType)
-                select type;
+            return processor?.Apply(entities) ?? (IEnumerable<dynamic>) entities;
         }
 
-        internal static TAttribute GetAttribute<TAttribute>(this MemberInfo type) where TAttribute : Attribute
+        internal static IEnumerable<dynamic> Process<T>(this IEnumerable<T> entities, IProcessor[] processors)
         {
-            return type?.GetCustomAttributes<TAttribute>().FirstOrDefault();
-        }
-
-        internal static bool HasAttribute<TAttribute>(this MemberInfo type) where TAttribute : Attribute
-        {
-            return (type?.GetCustomAttributes<TAttribute>().Any()).GetValueOrDefault();
-        }
-
-        internal static string RemoveTabsAndBreaks(this string input)
-        {
-            return input != null ? Regex.Replace(input, @"\t|\n|\r", "") : null;
-        }
-
-        public static WhereClause ToWhereClause(this Conditions conditions)
-        {
-            if (conditions == null)
-                return null;
-            if (!conditions.Any())
-                return new WhereClause();
-
-            var stringPart = new List<string>();
-            var valuesPart = new List<object>();
-
-            foreach (var c in conditions.StarcounterQueryable)
+            if (processors?.Any() != true)
+                return (IEnumerable<dynamic>) entities;
+            IEnumerable<dynamic> results = null;
+            processors.ForEach(processor =>
             {
-                if (c.Value == null)
-                    stringPart.Add($"t.{c.PropertyChain.DbKey.Fnuttify()} " +
-                                   $"{(c.Operator == NOT_EQUALS ? "IS NOT NULL" : "IS NULL")} ");
-                else
-                {
-                    stringPart.Add($"t.{c.PropertyChain.DbKey.Fnuttify()} {c.Operator.SQL}?");
-                    valuesPart.Add(c.Value);
-                }
-            }
-
-            return new WhereClause
-            {
-                stringPart = $"WHERE {string.Join(" AND ", stringPart)}",
-                valuesPart = valuesPart.ToArray()
-            };
+                if (processor == null) return;
+                results = results == null
+                    ? processor.Apply(entities)
+                    : processor.Apply(results);
+            });
+            return results;
         }
 
-        public static T GetReference<T>(this ulong? objectNo) where T : class
-        {
-            return DbHelper.FromID(objectNo.GetValueOrDefault()) as T;
-        }
+        internal static IEnumerable<Type> GetSubclasses(this Type baseType) =>
+            from assembly in AppDomain.CurrentDomain.GetAssemblies()
+            from type in assembly.GetTypes()
+            where type.IsSubclassOf(baseType)
+            select type;
 
-        public static T GetReference<T>(this ulong objectNo) where T : class
-        {
-            return DbHelper.FromID(objectNo) as T;
-        }
+        internal static TAttribute GetAttribute<TAttribute>(this MemberInfo type) where TAttribute : Attribute =>
+            type?.GetCustomAttributes<TAttribute>().FirstOrDefault();
 
-        internal static ICollection<RESTarMethods> ToMethodsList(this string methodsString)
+        internal static bool HasAttribute<TAttribute>(this MemberInfo type)
+            where TAttribute : Attribute => (type?.GetCustomAttributes<TAttribute>().Any()).GetValueOrDefault();
+
+        internal static string RemoveTabsAndBreaks(this string input) => input != null
+            ? Regex.Replace(input, @"\t|\n|\r", "")
+            : null;
+
+        internal static RESTarMethods[] ToMethodsArray(this string methodsString)
         {
             if (methodsString == null) return null;
             if (methodsString.Trim() == "*")
-                return RESTarConfig.Methods;
-            return methodsString.Split(',').Select(s => (RESTarMethods) Enum.Parse(typeof(RESTarMethods), s)).ToList();
+                return Methods;
+            return methodsString.Split(',').Select(s => (RESTarMethods) Enum.Parse(typeof(RESTarMethods), s)).ToArray();
         }
 
         internal static string ToMethodsString(this IEnumerable<RESTarMethods> ie) => string.Join(", ", ie);
@@ -279,47 +181,39 @@ namespace RESTar
             return stream.ReadBytes((int) (stream.Length - stream.Position));
         }
 
-        public static dynamic SafeGetNoCase(this IDictionary<string, dynamic> dict, string key)
+        public static T SafeGet<T>(this IDictionary<string, T> dict, string key)
         {
-            return dict.FirstOrDefault(
-                    pair => string.Equals(pair.Key, key, CurrentCultureIgnoreCase)
-                )
-                .Value;
+            return dict.ContainsKey(key) ? dict[key] : default(T);
         }
 
-        public static dynamic GetNoCase(this IDictionary<string, dynamic> dict, string key)
+        public static T SafeGetNoCase<T>(this IDictionary<string, T> dict, string key)
         {
-            return dict.First(
-                    pair => string.Equals(pair.Key, key, CurrentCultureIgnoreCase)
-                )
-                .Value;
+            var matches = dict.Where(pair => pair.Key.EqualsNoCase(key));
+            return matches.Count() > 1 ? dict.SafeGet(key) : matches.FirstOrDefault().Value;
+        }
+
+        public static T GetNoCase<T>(this IDictionary<string, T> dict, string key)
+        {
+            return dict.First(pair => pair.Key.EqualsNoCase(key)).Value;
+        }
+
+        public static Dictionary<string, dynamic> ToTransient(this DDictionary d)
+        {
+            var dict = new Dictionary<string, dynamic>();
+            d.KeyValuePairs.ForEach(pair => dict.Add(pair.Key, pair.Value));
+            return dict;
         }
 
         internal static RESTarMethods[] ToMethods(this RESTarPresets preset)
         {
             switch (preset)
             {
-                case RESTarPresets.ReadOnly:
-                    return new[]
-                    {
-                        RESTarMethods.GET
-                    };
-                case RESTarPresets.WriteOnly:
-                    return new[]
-                    {
-                        RESTarMethods.POST,
-                        RESTarMethods.DELETE
-                    };
-                case RESTarPresets.ReadAndUpdate:
-                    return new[]
-                    {
-                        RESTarMethods.GET,
-                        RESTarMethods.PATCH
-                    };
-                case RESTarPresets.ReadAndWrite:
-                    return RESTarConfig.Methods;
+                case RESTarPresets.ReadOnly: return new[] {GET};
+                case RESTarPresets.WriteOnly: return new[] {POST, DELETE};
+                case RESTarPresets.ReadAndUpdate: return new[] {GET, PATCH};
+                case RESTarPresets.ReadAndWrite: return Methods;
+                default: throw new ArgumentOutOfRangeException(nameof(preset));
             }
-            throw new ArgumentOutOfRangeException(nameof(preset));
         }
 
         internal static void ForEach<T>(this IEnumerable<T> source, Action<T> action)
@@ -333,11 +227,28 @@ namespace RESTar
             foreach (var e in source) action(e, i++);
         }
 
-        internal static Conditions ToConditions(this IEnumerable<Condition> conditions)
+        internal static Conditions ToConditions(this IEnumerable<Condition> conditions, IResource resource)
         {
-            var _conditions = new Conditions();
+            if (conditions?.Any() != true) return null;
+            var _conditions = new Conditions(resource);
             _conditions.AddRange(conditions);
             return _conditions;
+        }
+
+        internal static Select ToSelect(this IEnumerable<PropertyChain> props)
+        {
+            if (props?.Any() != true) return null;
+            var _props = new Select();
+            _props.AddRange(props);
+            return _props;
+        }
+
+        internal static Add ToAdd(this IEnumerable<PropertyChain> props)
+        {
+            if (props?.Any() != true) return null;
+            var _props = new Add();
+            _props.AddRange(props);
+            return _props;
         }
 
         internal static AccessRights ToAccessRights(this IEnumerable<AccessRight> accessRights)
@@ -365,42 +276,20 @@ namespace RESTar
         {
             switch (condition)
             {
-                case RESTarMetaConditions.Limit:
-                    return typeof(int);
-                case RESTarMetaConditions.Order_desc:
-                    return typeof(string);
-                case RESTarMetaConditions.Order_asc:
-                    return typeof(string);
-                case RESTarMetaConditions.Unsafe:
-                    return typeof(bool);
-                case RESTarMetaConditions.Select:
-                    return typeof(string);
-                case RESTarMetaConditions.Add:
-                    return typeof(string);
-                case RESTarMetaConditions.Rename:
-                    return typeof(string);
-                case RESTarMetaConditions.Dynamic:
-                    return typeof(bool);
-                case RESTarMetaConditions.Safepost:
-                    return typeof(string);
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(condition), condition, null);
+                case RESTarMetaConditions.Limit: return typeof(int);
+                case RESTarMetaConditions.Order_desc: return typeof(string);
+                case RESTarMetaConditions.Order_asc: return typeof(string);
+                case RESTarMetaConditions.Unsafe: return typeof(bool);
+                case RESTarMetaConditions.Select: return typeof(string);
+                case RESTarMetaConditions.Add: return typeof(string);
+                case RESTarMetaConditions.Rename: return typeof(string);
+                case RESTarMetaConditions.Dynamic: return typeof(bool);
+                case RESTarMetaConditions.Safepost: return typeof(string);
+                default: throw new ArgumentOutOfRangeException(nameof(condition), condition, null);
             }
         }
 
         internal static byte[] ToBytes(this string json) => Encoding.UTF8.GetBytes(json);
-
-        internal static string TotalStackTrace(this Exception e)
-        {
-            var stacktrace = new StringBuilder(e.StackTrace);
-            var ie = e.InnerException;
-            while (ie != null)
-            {
-                stacktrace.Insert(0, ie.StackTrace + " | ");
-                ie = ie.InnerException;
-            }
-            return stacktrace.ToString();
-        }
 
         internal static string TotalMessage(this Exception e)
         {
@@ -414,12 +303,7 @@ namespace RESTar
             return message.ToString();
         }
 
-        internal static string GetDataMemberName(this PropertyInfo propertyInfo)
-        {
-            return propertyInfo.GetAttribute<DataMemberAttribute>()?.Name;
-        }
-
-        internal static string GetDataMemberNameOrName(this PropertyInfo propertyInfo)
+        internal static string RESTarMemberName(this PropertyInfo propertyInfo)
         {
             return propertyInfo.GetAttribute<DataMemberAttribute>()?.Name ?? propertyInfo.Name;
         }
@@ -430,7 +314,7 @@ namespace RESTar
             string _actualKey = null;
             var results = dict.Keys.FirstOrDefault(k =>
             {
-                var equals = string.Equals(k, key, CurrentCultureIgnoreCase);
+                var equals = k.EqualsNoCase(key);
                 if (equals) _actualKey = k;
                 return equals;
             });
@@ -438,17 +322,31 @@ namespace RESTar
             return results != null;
         }
 
-        internal static IDictionary<string, dynamic> MakeDictionary(this object entity)
+        internal static Dictionary<string, dynamic> MakeDictionary(this object entity)
         {
-            if (entity is IDictionary<string, dynamic>)
-                return (IDictionary<string, dynamic>) entity;
-            return RESTarConfig.GetPropertyList(entity.GetType())
-                .ToDictionary(prop => prop.GetDataMemberNameOrName(), prop => prop.GetValue(entity));
+            if (entity is DDictionary) return ((DDictionary) entity).ToTransient();
+            if (entity is Dictionary<string, dynamic>) return (Dictionary<string, object>) entity;
+            return entity.GetType()
+                .GetPropertyList()
+                .ToDictionary(prop => prop.RESTarMemberName(),
+                    prop => prop.GetValue(entity));
         }
 
-        internal static PropertyInfo FindProperty(this Type resource, string searchString) => resource
-            .GetProperties()
-            .Where(p => !p.HasAttribute<IgnoreDataMemberAttribute>())
-            .FirstOrDefault(p => searchString.ToLower() == (p.GetDataMemberName()?.ToLower() ?? p.Name.ToLower()));
+        internal static PropertyInfo MatchProperty(this Type resource, string str, bool ignoreCase = true)
+        {
+            var matches = resource.GetPropertyList()
+                .Where(p => string.Equals(str, p.RESTarMemberName(), ignoreCase
+                    ? CurrentCultureIgnoreCase
+                    : CurrentCulture));
+            var count = matches.Count();
+            if (count == 0) throw new UnknownColumnException(resource, str);
+            if (count > 1)
+            {
+                if (!ignoreCase)
+                    throw new AmbiguousColumnException(resource, str, matches.Select(m => m.RESTarMemberName()));
+                return MatchProperty(resource, str, false);
+            }
+            return matches.First();
+        }
     }
 }

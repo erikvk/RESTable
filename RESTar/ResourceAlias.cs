@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using RESTar.Internal;
 using Starcounter;
 using IResource = RESTar.Internal.IResource;
 

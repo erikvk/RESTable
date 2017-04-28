@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Serialization;
 using RESTar.Internal;
-using Starcounter;
+using static RESTar.Internal.DynamicResource;
 
 namespace RESTar
 {
@@ -12,7 +12,7 @@ namespace RESTar
     {
         public string Name { get; set; }
         public bool Editable { get; private set; }
-        public ICollection<RESTarMethods> AvailableMethods { get; set; }
+        public RESTarMethods[] AvailableMethods { get; set; }
         public string Alias { get; set; }
 
         [DataMember(Name = "TargetType")]
@@ -23,23 +23,22 @@ namespace RESTar
 
         public IEnumerable<Resource> Select(IRequest request)
         {
-            var all = RESTarConfig.Resources;
-            var matches = request.EvaluateEntitites(all);
-            return matches.Select(m => new Resource
-            {
-                Name = m.Name,
-                Alias = m.Alias,
-                AvailableMethods = m.AvailableMethods,
-                Editable = m.Editable,
-                TargetType = m.TargetType
-            }).ToList();
+            return RESTarConfig.Resources
+                .Filter(request.Conditions)
+                .Select(m => new Resource
+                {
+                    Name = m.Name,
+                    Alias = m.Alias,
+                    AvailableMethods = m.AvailableMethods,
+                    Editable = m.Editable,
+                    TargetType = m.TargetType
+                });
         }
 
         public int Insert(IEnumerable<Resource> resources, IRequest request)
         {
             var count = 0;
             var dynamicTables = resources.ToList();
-
             try
             {
                 foreach (var entity in dynamicTables)
@@ -49,7 +48,7 @@ namespace RESTar
                     if (DB.Exists<ResourceAlias>("Alias", entity.Alias))
                         throw new Exception($"Invalid Alias: '{entity.Alias}' is used to refer to another resource");
                     entity.AvailableMethods = RESTarConfig.Methods;
-                    DynamicResource.Make(entity);
+                    MakeTable(entity);
                     count += 1;
                 }
             }
@@ -65,8 +64,8 @@ namespace RESTar
             var count = 0;
             foreach (var resource in entities)
             {
-                DynamicResource.Delete(resource);
-                DynamicResource.Make(resource);
+                DeleteTable(resource);
+                MakeTable(resource);
                 count += 1;
             }
             return count;
@@ -77,7 +76,7 @@ namespace RESTar
             var count = 0;
             foreach (var resource in entities)
             {
-                DynamicResource.Delete(resource);
+                DeleteTable(resource);
                 count += 1;
             }
             return count;

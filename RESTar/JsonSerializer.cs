@@ -4,7 +4,6 @@ using System.Data;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Text;
 using System.Xml;
 using Dynamit;
 using Jil;
@@ -177,7 +176,7 @@ namespace RESTar
             else
             {
                 Type elementType = first.GetType();
-                foreach (var propInfo in elementType.Properties())
+                foreach (var propInfo in elementType.GetPropertyList())
                 {
                     var ColType = propInfo.PropertyType.IsClass && propInfo.PropertyType != typeof(string)
                         ? typeof(string)
@@ -187,7 +186,7 @@ namespace RESTar
                 foreach (var item in list)
                 {
                     var row = t.NewRow();
-                    foreach (var propInfo in elementType.Properties())
+                    foreach (var propInfo in elementType.GetPropertyList())
                     {
                         var value = propInfo.GetValue(item, null);
                         try
