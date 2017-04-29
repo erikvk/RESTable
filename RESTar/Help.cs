@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using static RESTar.Requests.Operators;
+using static RESTar.Operators;
 using static RESTar.RESTarMethods;
 
 namespace RESTar

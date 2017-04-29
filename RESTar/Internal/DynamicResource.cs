@@ -23,10 +23,10 @@ namespace RESTar.Internal
         public int CompareTo(IResource other) => string.Compare(Name, other.Name, StringComparison.Ordinal);
         public override int GetHashCode() => Name.GetHashCode();
 
-        public Selector<dynamic> Select => DynOperations.Select;
-        public Inserter<dynamic> Insert => (e, r) => DynOperations.Insert((IEnumerable<DDictionary>) e, r);
-        public Updater<dynamic> Update => (e, r) => DynOperations.Update((IEnumerable<DDictionary>) e, r);
-        public Deleter<dynamic> Delete => (e, r) => DynOperations.Delete((IEnumerable<DDictionary>) e, r);
+        public Selector<dynamic> Select => DynamitOperations.Select;
+        public Inserter<dynamic> Insert => (e, r) => DynamitOperations.Insert((IEnumerable<DDictionary>) e, r);
+        public Updater<dynamic> Update => (e, r) => DynamitOperations.Update((IEnumerable<DDictionary>) e, r);
+        public Deleter<dynamic> Delete => (e, r) => DynamitOperations.Delete((IEnumerable<DDictionary>) e, r);
 
         public RESTarMethods[] AvailableMethods
         {

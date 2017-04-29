@@ -79,10 +79,10 @@ namespace RESTar.Internal
                 var dDeleter = selector as Deleter<DDictionary>;
 
                 new Resource<DDictionary>(type, editable, methods,
-                    dSelector ?? type.GetSelector<DDictionary>() ?? DynOperations.Select,
-                    dInserter ?? type.GetInserter<DDictionary>() ?? DynOperations.Insert,
-                    dUpdater ?? type.GetUpdater<DDictionary>() ?? DynOperations.Update,
-                    dDeleter ?? type.GetDeleter<DDictionary>() ?? DynOperations.Delete
+                    dSelector ?? type.GetSelector<DDictionary>() ?? DynamitOperations.Select,
+                    dInserter ?? type.GetInserter<DDictionary>() ?? DynamitOperations.Insert,
+                    dUpdater ?? type.GetUpdater<DDictionary>() ?? DynamitOperations.Update,
+                    dDeleter ?? type.GetDeleter<DDictionary>() ?? DynamitOperations.Delete
                 );
                 return;
             }
@@ -94,10 +94,10 @@ namespace RESTar.Internal
 
             if (type.HasAttribute<DatabaseAttribute>())
             {
-                selector = selector ?? ScOperations<T>.Select;
-                inserter = inserter ?? ScOperations<T>.Insert;
-                updater = updater ?? ScOperations<T>.Update;
-                deleter = deleter ?? ScOperations<T>.Delete;
+                selector = selector ?? StarcounterOperations<T>.Select;
+                inserter = inserter ?? StarcounterOperations<T>.Insert;
+                updater = updater ?? StarcounterOperations<T>.Update;
+                deleter = deleter ?? StarcounterOperations<T>.Delete;
             }
             else
             {

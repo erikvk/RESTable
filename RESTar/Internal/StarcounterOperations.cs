@@ -5,7 +5,7 @@ using Request = RESTar.Requests.Request;
 
 namespace RESTar.Internal
 {
-    internal static class ScOperations<T> where T : class
+    public static class StarcounterOperations<T> where T : class
     {
         public static Selector<T> Select => r =>
         {

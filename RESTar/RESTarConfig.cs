@@ -95,7 +95,7 @@ namespace RESTar
             if (uri == null) throw new ArgumentNullException(nameof(uri));
             typeof(object).GetSubclasses()
                 .Where(t => t.HasAttribute<RESTarAttribute>())
-                .ForEach(Registrator.AutoMakeResource);
+                .ForEach(Resource.AutoMakeResource);
             DB.All<DynamicResource>().ForEach(AddResource);
             RequireApiKey = requireApiKey;
             AllowAllOrigins = allowAllOrigins;

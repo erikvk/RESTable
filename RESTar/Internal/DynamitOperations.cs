@@ -7,7 +7,7 @@ using Starcounter;
 
 namespace RESTar.Internal
 {
-    public static class DynOperations
+    public static class DynamitOperations
     {
         private static IEnumerable<DDictionary> EqualitySQL(Condition c, string kvp)
         {
@@ -35,8 +35,8 @@ namespace RESTar.Internal
             return results.Filter(r.Conditions.Compare);
         };
 
-        public static Inserter<DDictionary> Insert => ScOperations<DDictionary>.Insert;
-        public static Updater<DDictionary> Update => ScOperations<DDictionary>.Update;
-        public static Deleter<DDictionary> Delete => ScOperations<DDictionary>.Delete;
+        public static Inserter<DDictionary> Insert => StarcounterOperations<DDictionary>.Insert;
+        public static Updater<DDictionary> Update => StarcounterOperations<DDictionary>.Update;
+        public static Deleter<DDictionary> Delete => StarcounterOperations<DDictionary>.Delete;
     }
 }

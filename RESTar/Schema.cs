@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Dynamit;
-using static RESTar.Requests.Operators;
+using static RESTar.Operators;
 
 namespace RESTar
 {

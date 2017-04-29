@@ -86,7 +86,7 @@ namespace RESTarExample
             return new MyDynamicTable2Kvp(dict, key, value);
         }
 
-        public IEnumerable<DDictionary> Select(IRequest request) => DynOperations.Select(request);
+        public IEnumerable<DDictionary> Select(IRequest request) => DynamitOperations.Select(request);
     }
 
     public class MyDynamicTable2Kvp : DKeyValuePair
