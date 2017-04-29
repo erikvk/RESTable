@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Dynamit;
@@ -10,8 +11,9 @@ namespace RESTar.Internal
         public string Key => string.Join(".", this.Select(p => p.Name));
         public string DbKey => string.Join(".", this.Select(p => p.DatabaseQueryName));
         public bool ScQueryable => this.All(p => p.ScQueryable);
+        private static readonly NoCaseComparer Comparer = new NoCaseComparer();
 
-        internal static PropertyChain Parse(string keyString, IResource resource)
+        internal static PropertyChain Parse(string keyString, IResource resource, List<string> dynamicDomain = null)
         {
             var chain = new PropertyChain();
             var propertyMaker = new Func<string, Property>(str =>
@@ -21,6 +23,8 @@ namespace RESTar.Internal
                         ErrorCode.InvalidConditionSyntaxError);
                 if (str == "objectno") return StaticProperty.ObjectNo;
                 if (str == "objectid") return StaticProperty.ObjectID;
+                if (dynamicDomain?.Contains(str, Comparer) == true)
+                    return DynamicProperty.Parse(str);
                 var previous = chain.LastOrDefault();
                 if (previous == null)
                     return Property.Parse(str, resource.TargetType, resource.IsDynamic);
@@ -39,7 +43,10 @@ namespace RESTar.Internal
 
         internal void MakeDynamic()
         {
-            var newProperties = this.Select(prop => new DynamicProperty(prop.Name)).ToList();
+            var newProperties = this.Select(prop => prop.Static
+                    ? new DynamicProperty(prop.Name)
+                    : prop)
+                .ToList();
             Clear();
             AddRange(newProperties);
         }
@@ -58,6 +65,7 @@ namespace RESTar.Internal
 
         internal dynamic GetValue(dynamic val)
         {
+            if (val is IDictionary<string, dynamic>) MakeDynamic();
             foreach (var prop in this)
             {
                 if (val == null) return null;

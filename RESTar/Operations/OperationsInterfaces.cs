@@ -16,8 +16,8 @@ namespace RESTar.Operations
     {
         Conditions,
         Add,
-        Select,
         Rename,
+        Select,
         OrderBy,
         Limit
     }

@@ -2,6 +2,8 @@
 using Newtonsoft.Json;
 using RESTar.Operations;
 using Starcounter;
+using static RESTar.RESTarMethods;
+using static RESTar.Settings;
 using ScRequest = Starcounter.Request;
 using ScHandle = Starcounter.Handle;
 
@@ -12,12 +14,12 @@ namespace RESTar.Requests
         internal static void Register(string uri)
         {
             uri += "{?}";
-            ScHandle.GET(Settings._Port, uri, (ScRequest r, string q) => Handle(r, q, Evaluators.GET, RESTarMethods.GET));
-            ScHandle.POST(Settings._Port, uri, (ScRequest r, string q) => Handle(r, q, Evaluators.POST, RESTarMethods.POST));
-            ScHandle.PUT(Settings._Port, uri, (ScRequest r, string q) => Handle(r, q, Evaluators.PUT, RESTarMethods.PUT));
-            ScHandle.PATCH(Settings._Port, uri, (ScRequest r, string q) => Handle(r, q, Evaluators.PATCH, RESTarMethods.PATCH));
-            ScHandle.DELETE(Settings._Port, uri, (ScRequest r, string q) => Handle(r, q, Evaluators.DELETE, RESTarMethods.DELETE));
-            ScHandle.OPTIONS(Settings._Port, uri, (ScRequest r, string q) => CheckOrigin(r, q));
+            ScHandle.GET(_Port, uri, (ScRequest r, string q) => Handle(r, q, Evaluators.GET, GET));
+            ScHandle.POST(_Port, uri, (ScRequest r, string q) => Handle(r, q, Evaluators.POST, POST));
+            ScHandle.PUT(_Port, uri, (ScRequest r, string q) => Handle(r, q, Evaluators.PUT, PUT));
+            ScHandle.PATCH(_Port, uri, (ScRequest r, string q) => Handle(r, q, Evaluators.PATCH, PATCH));
+            ScHandle.DELETE(_Port, uri, (ScRequest r, string q) => Handle(r, q, Evaluators.DELETE, DELETE));
+            ScHandle.OPTIONS(_Port, uri, (ScRequest r, string q) => CheckOrigin(r, q));
         }
 
         private static Response CheckOrigin(ScRequest scRequest, string query)
@@ -37,7 +39,7 @@ namespace RESTar.Requests
             }
         }
 
-        private static Response Handle(ScRequest scRequest, string query, Func<Request, Response> evaluator,
+        private static Response Handle(ScRequest scRequest, string query, Evaluator evaluator,
             RESTarMethods method)
         {
             Request request = null;
@@ -161,7 +163,7 @@ namespace RESTar.Requests
                 Error error = null;
                 Error.ClearOld();
                 Db.TransactAsync(() => error = new Error(errorCode, e, request));
-                errorResponse.Headers["ErrorInfo"] = $"{Settings._Uri}/{typeof(Error).FullName}/id={error.Id}";
+                errorResponse.Headers["ErrorInfo"] = $"{_Uri}/{typeof(Error).FullName}/id={error.Id}";
                 return errorResponse;
             }
 

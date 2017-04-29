@@ -70,10 +70,8 @@ namespace RESTar.Internal
             }
             catch (InvalidCastException)
             {
-                if (IsObjectNo)
-                    throw new Exception("Could not get ObjectNo from non-Starcounter resource.");
-                if (IsObjectID)
-                    throw new Exception("Could not get ObjectID from non-Starcounter resource.");
+                if (IsObjectNo) throw new Exception("Could not get ObjectNo from non-Starcounter resource.");
+                if (IsObjectID) throw new Exception("Could not get ObjectID from non-Starcounter resource.");
                 throw;
             }
         }

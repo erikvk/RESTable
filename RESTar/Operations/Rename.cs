@@ -1,7 +1,7 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using RESTar.Internal;
+using static System.StringSplitOptions;
 
 namespace RESTar.Operations
 {
@@ -11,9 +11,8 @@ namespace RESTar.Operations
         {
             var rename = new Rename();
             input.Split(',')
-                .ForEach(str => rename.Add(
-                    PropertyChain.Parse(str.Split(new[] {"->"}, StringSplitOptions.None)[0].ToLower(), resource),
-                    str.Split(new[] {"->"}, StringSplitOptions.None)[1]));
+                .ForEach(str => rename.Add(PropertyChain.Parse(str.Split(new[] {"->"}, None)[0].ToLower(), resource),
+                    str.Split(new[] {"->"}, None)[1]));
             return rename;
         }
 
@@ -22,10 +21,9 @@ namespace RESTar.Operations
             this.ForEach(pair =>
             {
                 string actualKey;
-                if (!entity.ContainsKeyIgnorecase(pair.Key.Key, out actualKey))
-                    return;
-                var value = entity[actualKey];
-                entity.Remove(actualKey);
+                var value = entity.SafeGetNoCase(pair.Key.Key, out actualKey);
+                if (actualKey != null)
+                    entity.Remove(actualKey);
                 entity[pair.Value] = value;
             });
             return entity;
@@ -33,8 +31,7 @@ namespace RESTar.Operations
 
         public IEnumerable<dynamic> Apply<T>(IEnumerable<T> entities)
         {
-            var customEntities = entities as IEnumerable<IDictionary<string, dynamic>>;
-            return customEntities?.Select(RenameDict) ?? entities.Select(entity => RenameDict(entity.MakeDictionary()));
+            return entities.Select(entity => RenameDict(entity.MakeDictionary()));
         }
     }
 }

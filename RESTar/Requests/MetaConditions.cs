@@ -1,8 +1,11 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using RESTar.Internal;
 using RESTar.Operations;
+using static System.StringComparison;
+using static RESTar.ErrorCode;
 
 namespace RESTar.Requests
 {
@@ -24,15 +27,26 @@ namespace RESTar.Requests
             metaConditionString = WebUtility.UrlDecode(metaConditionString);
             var mc = new MetaConditions();
 
-            foreach (var s in metaConditionString.Split('&'))
+            var mcStrings = metaConditionString.Split('&').ToList();
+            var renameIndex = mcStrings.FindIndex(s => s.StartsWith("rename", CurrentCultureIgnoreCase));
+            if (renameIndex != -1)
+            {
+                var rename = mcStrings[renameIndex];
+                mcStrings.RemoveAt(renameIndex);
+                mcStrings.Insert(0, rename);
+            }
+            var dynamicMembers = new List<string>();
+
+            foreach (var s in mcStrings)
             {
                 if (s == "")
-                    throw new SyntaxException("Invalid meta-condition syntax", ErrorCode.InvalidMetaConditionSyntaxError);
+                    throw new SyntaxException("Invalid meta-condition syntax",
+                        InvalidMetaConditionSyntaxError);
 
                 var containsOneAndOnlyOneEquals = s.Count(c => c == '=') == 1;
                 if (!containsOneAndOnlyOneEquals)
                     throw new SyntaxException("Invalid operator for meta-condition. One and only one '=' is allowed",
-                        ErrorCode.InvalidMetaConditionOperatorError);
+                        InvalidMetaConditionOperatorError);
                 var pair = s.Split('=');
 
                 RESTarMetaConditions metaCondition;
@@ -40,14 +54,14 @@ namespace RESTar.Requests
                     throw new SyntaxException($"Invalid meta-condition '{pair[0]}'. Available meta-conditions: " +
                                               $"{string.Join(", ", Enum.GetNames(typeof(RESTarMetaConditions)))}. For more info, see " +
                                               $"{Settings.Instance.HelpResourcePath}/topic=Meta-conditions",
-                        ErrorCode.InvalidMetaConditionKey);
+                        InvalidMetaConditionKey);
 
                 var expectedType = metaCondition.ExpectedType();
                 var value = Conditions.GetValue(pair[1]);
                 if (expectedType != value.GetType())
                     throw new SyntaxException($"Invalid data type assigned to meta-condition '{pair[0]}'. " +
                                               $"Expected {GetTypeString(expectedType)}.",
-                        ErrorCode.InvalidMetaConditionValueTypeError);
+                        InvalidMetaConditionValueTypeError);
 
                 switch (metaCondition)
                 {
@@ -59,7 +73,7 @@ namespace RESTar.Requests
                         {
                             Resource = resource,
                             Descending = true,
-                            PropertyChain = PropertyChain.Parse((string) value, resource)
+                            PropertyChain = PropertyChain.Parse((string) value, resource, dynamicMembers)
                         };
                         break;
                     case RESTarMetaConditions.Order_asc:
@@ -67,7 +81,7 @@ namespace RESTar.Requests
                         {
                             Resource = resource,
                             Descending = false,
-                            PropertyChain = PropertyChain.Parse((string) value, resource)
+                            PropertyChain = PropertyChain.Parse((string) value, resource, dynamicMembers)
                         };
                         break;
                     case RESTarMetaConditions.Unsafe:
@@ -75,7 +89,7 @@ namespace RESTar.Requests
                         break;
                     case RESTarMetaConditions.Select:
                         mc.Select = ((string) value).Split(',')
-                            .Select(str => PropertyChain.Parse(str, resource))
+                            .Select(str => PropertyChain.Parse(str, resource, dynamicMembers))
                             .ToSelect();
                         break;
                     case RESTarMetaConditions.Add:
@@ -85,6 +99,7 @@ namespace RESTar.Requests
                         break;
                     case RESTarMetaConditions.Rename:
                         mc.Rename = Rename.Parse((string) value, resource);
+                        dynamicMembers.AddRange(mc.Rename.Values);
                         break;
                     case RESTarMetaConditions.Dynamic:
                         mc.Dynamic = value;
@@ -92,8 +107,7 @@ namespace RESTar.Requests
                     case RESTarMetaConditions.Safepost:
                         mc.SafePost = value;
                         break;
-                    default:
-                        throw new ArgumentOutOfRangeException();
+                    default: throw new ArgumentOutOfRangeException();
                 }
 
                 if (mc.OrderBy != null)
@@ -102,12 +116,22 @@ namespace RESTar.Requests
                         mc.OrderBy.IsStarcounterQueryable = false;
                     if (mc.Rename?.Any(pc => pc.Value.EqualsNoCase(mc.OrderBy.Key)) == true)
                         mc.OrderBy.IsStarcounterQueryable = false;
-                    if (mc.Rename?.Any(pc => pc.Key.Key.EqualsNoCase(mc.OrderBy.Key)) == true)
+                    if (mc.Rename?.Any(p => p.Key.Key.EqualsNoCase(mc.OrderBy.Key)) == true
+                        && !mc.Rename.Any(p => p.Value.EqualsNoCase(mc.OrderBy.Key)))
                         throw new SyntaxException($"The {(mc.OrderBy.Ascending ? "'Order_asc'" : "'Order_desc'")} " +
-                                                  "meta-condition cannot refer to a property that is to be renamed",
-                            ErrorCode.InvalidMetaConditionSyntaxError);
+                                                  "meta-condition cannot refer to a property x that is to be renamed " +
+                                                  "unless some other property is renamed to x",
+                            InvalidMetaConditionSyntaxError);
                     if (mc.OrderBy.PropertyChain.ScQueryable == false)
                         mc.OrderBy.IsStarcounterQueryable = false;
+                }
+                if (mc.Select != null && mc.Rename != null)
+                {
+                    if (mc.Select.Any(pc => mc.Rename.Any(p => p.Key.Key.EqualsNoCase(pc.Key)) &&
+                                            !mc.Rename.Any(p => p.Value.EqualsNoCase(pc.Key))))
+                        throw new SyntaxException("A 'Select' meta-condition cannot refer to a property x that is " +
+                                                  "to be renamed unless some other property is renamed to x",
+                            InvalidMetaConditionSyntaxError);
                 }
             }
             return mc;

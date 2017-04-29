@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Xml;
 using Dynamit;
@@ -19,14 +20,14 @@ namespace RESTar
 {
     public static class RESTarConfig
     {
-        internal static ICollection<IResource> Resources => NameResources.Values;
         internal static readonly IDictionary<string, IResource> NameResources;
         internal static readonly IDictionary<Type, IResource> TypeResources;
         internal static readonly IDictionary<IResource, Type> IEnumTypes;
         internal static readonly IDictionary<string, AccessRights> ApiKeys;
         private static readonly IDictionary<Type, IEnumerable<PropertyInfo>> Properties;
         internal static readonly ConcurrentDictionary<string, AccessRights> AuthTokens;
-        internal static readonly List<Uri> AllowedOrigins = new List<Uri>();
+        internal static IEnumerable<IResource> Resources => NameResources.Values;
+        internal static readonly List<Uri> AllowedOrigins;
         internal static readonly RESTarMethods[] Methods = {GET, POST, PATCH, PUT, DELETE};
         internal static bool RequireApiKey { get; private set; }
         internal static bool AllowAllOrigins { get; private set; }
@@ -40,6 +41,7 @@ namespace RESTar
             IEnumTypes = new Dictionary<IResource, Type>();
             Properties = new Dictionary<Type, IEnumerable<PropertyInfo>>();
             AuthTokens = new ConcurrentDictionary<string, AccessRights>();
+            AllowedOrigins = new List<Uri>();
         }
 
         private static void UpdateAuthInfo()
@@ -90,7 +92,7 @@ namespace RESTar
             bool allowAllOrigins = true, string configFilePath = null, bool prettyPrint = true, bool camelCase = false,
             bool localTimes = true, ushort daysToSaveErrors = 30)
         {
-            if (uri.Trim().First() != '/') uri = $"/{uri}";
+            if (uri == null) throw new ArgumentNullException(nameof(uri));
             typeof(object).GetSubclasses()
                 .Where(t => t.HasAttribute<RESTarAttribute>())
                 .ForEach(Registrator.AutoMakeResource);
@@ -100,6 +102,7 @@ namespace RESTar
             ConfigFilePath = configFilePath;
             ReadConfig();
             DynamitConfig.Init(true, true);
+            if (uri.Trim().First() != '/') uri = $"/{uri}";
             Settings.Init(uri, port, prettyPrint, camelCase, localTimes, daysToSaveErrors);
             Log.Init();
             Handlers.Register(uri);

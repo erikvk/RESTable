@@ -18,8 +18,8 @@ namespace RESTar.Operations
                 request.MetaConditions.Unsafe = true;
                 var entities = request.Resource.Select(request)
                     .Process(request.MetaConditions.Add)
-                    .Process(request.MetaConditions.Select)
                     .Process(request.MetaConditions.Rename)
+                    .Process(request.MetaConditions.Select)
                     .Filter(request.MetaConditions.OrderBy)
                     .Filter(request.MetaConditions.Limit);
                 return entities?.Any() != true ? Responses.NoContent() : Responses.GetEntities(request, entities);

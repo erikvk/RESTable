@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Net;
+using Dynamit;
 using RESTar.Internal;
 using RESTar.Operations;
 
@@ -10,7 +11,7 @@ namespace RESTar.Requests
 {
     public sealed class Conditions : List<Condition>, IFilter
     {
-        internal IResource Resource;
+        internal Type Resource;
         internal Conditions StarcounterQueryable => this.Where(c => c.ScQueryable).ToConditions(Resource);
         internal Conditions NonStarcounterQueryable => this.Where(c => !c.ScQueryable).ToConditions(Resource);
         internal Conditions Equality => this.Where(c => c.Operator.Equality).ToConditions(Resource);
@@ -22,7 +23,7 @@ namespace RESTar.Requests
             .FirstOrDefault(c => c.Operator == op && c.Key.EqualsNoCase(key))
             ?.Value;
 
-        internal Conditions(IResource resource)
+        internal Conditions(Type resource)
         {
             Resource = resource;
         }
@@ -46,7 +47,7 @@ namespace RESTar.Requests
                     var value = GetValue(valueString);
                     return new Condition(chain, op, value);
                 })
-                .ToConditions(resource);
+                .ToConditions(resource.TargetType);
         }
 
         internal static dynamic GetValue(string valueString)
@@ -83,13 +84,13 @@ namespace RESTar.Requests
         public IEnumerable<T> Apply<T>(IEnumerable<T> entities)
         {
             var type = typeof(T);
-            if (type != Resource.TargetType && !Resource.IsDynamic)
+            if (type != Resource && Resource != typeof(DDictionary))
             {
                 var newTypeProperties = type.GetPropertyList();
                 RemoveAll(cond => newTypeProperties.All(prop => prop.RESTarMemberName()
                                                                 != cond.PropertyChain.FirstOrDefault()?.Name));
                 ForEach(condition => condition.Migrate(type));
-                Resource = RESTarConfig.TypeResources[type];
+                Resource = type;
             }
             return entities.Where(entity => this.All(condition => condition.HoldsFor(entity)));
         }

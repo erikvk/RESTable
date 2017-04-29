@@ -108,37 +108,17 @@ namespace RESTar
 
         public static IEnumerable<T> Filter<T>(this IEnumerable<T> entities, Conditions filter)
         {
-            return filter?.Apply(entities) ?? entities;
+            return filter?.Apply((dynamic) entities) ?? entities;
         }
 
         internal static IEnumerable<T> Filter<T>(this IEnumerable<T> entities, IFilter filter)
         {
-            return filter?.Apply(entities) ?? entities;
-        }
-
-        internal static IEnumerable<T> Filter<T>(this IEnumerable<T> entities, IFilter[] filters)
-        {
-            return filters?.Any() == true ? filters.Aggregate(entities, (e, f) => f?.Apply(e) ?? e) : entities;
+            return filter?.Apply((dynamic) entities) ?? entities;
         }
 
         internal static IEnumerable<dynamic> Process<T>(this IEnumerable<T> entities, IProcessor processor)
         {
-            return processor?.Apply(entities) ?? (IEnumerable<dynamic>) entities;
-        }
-
-        internal static IEnumerable<dynamic> Process<T>(this IEnumerable<T> entities, IProcessor[] processors)
-        {
-            if (processors?.Any() != true)
-                return (IEnumerable<dynamic>) entities;
-            IEnumerable<dynamic> results = null;
-            processors.ForEach(processor =>
-            {
-                if (processor == null) return;
-                results = results == null
-                    ? processor.Apply(entities)
-                    : processor.Apply(results);
-            });
-            return results;
+            return processor?.Apply((dynamic) entities) ?? (IEnumerable<dynamic>) entities;
         }
 
         internal static IEnumerable<Type> GetSubclasses(this Type baseType) =>
@@ -192,6 +172,25 @@ namespace RESTar
             return matches.Count() > 1 ? dict.SafeGet(key) : matches.FirstOrDefault().Value;
         }
 
+        public static T SafeGetNoCase<T>(this IDictionary<string, T> dict, string key, out string actualKey)
+        {
+            var matches = dict.Where(pair => pair.Key.EqualsNoCase(key));
+            if (matches.Count() > 1)
+            {
+                var val = dict.SafeGet(key);
+                if (val == null)
+                {
+                    actualKey = null;
+                    return default(T);
+                }
+                actualKey = key;
+                return val;
+            }
+            var match = matches.FirstOrDefault();
+            actualKey = match.Key;
+            return match.Value;
+        }
+
         public static T GetNoCase<T>(this IDictionary<string, T> dict, string key)
         {
             return dict.First(pair => pair.Key.EqualsNoCase(key)).Value;
@@ -227,7 +226,7 @@ namespace RESTar
             foreach (var e in source) action(e, i++);
         }
 
-        internal static Conditions ToConditions(this IEnumerable<Condition> conditions, IResource resource)
+        internal static Conditions ToConditions(this IEnumerable<Condition> conditions, Type resource)
         {
             if (conditions?.Any() != true) return null;
             var _conditions = new Conditions(resource);
@@ -239,7 +238,8 @@ namespace RESTar
         {
             if (props?.Any() != true) return null;
             var _props = new Select();
-            _props.AddRange(props);
+            var propsGroups = props.GroupBy(p => p.Key);
+            _props.AddRange(propsGroups.Select(g => g.First()));
             return _props;
         }
 
@@ -247,7 +247,8 @@ namespace RESTar
         {
             if (props?.Any() != true) return null;
             var _props = new Add();
-            _props.AddRange(props);
+            var propsGroups = props.GroupBy(p => p.Key);
+            _props.AddRange(propsGroups.Select(g => g.First()));
             return _props;
         }
 
@@ -308,18 +309,27 @@ namespace RESTar
             return propertyInfo.GetAttribute<DataMemberAttribute>()?.Name ?? propertyInfo.Name;
         }
 
-        internal static bool ContainsKeyIgnorecase(this IDictionary<string, dynamic> dict, string key,
-            out string actualKey)
+        internal static string MatchKey(this IDictionary<string, dynamic> dict, string key)
+        {
+            return dict.Keys.FirstOrDefault(k => key == k);
+        }
+
+        internal static string MatchKeyIgnoreCase(this IDictionary<string, dynamic> dict, string key)
         {
             string _actualKey = null;
-            var results = dict.Keys.FirstOrDefault(k =>
+            var results = dict.Keys.Where(k =>
             {
                 var equals = k.EqualsNoCase(key);
                 if (equals) _actualKey = k;
                 return equals;
             });
-            actualKey = _actualKey;
-            return results != null;
+            var count = results.Count();
+            switch (count)
+            {
+                case 0: return null;
+                case 1: return _actualKey;
+                default: return MatchKey(dict, key);
+            }
         }
 
         internal static Dictionary<string, dynamic> MakeDictionary(this object entity)

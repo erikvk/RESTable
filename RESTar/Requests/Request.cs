@@ -10,6 +10,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using RESTar.Auth;
 using Starcounter;
+using static RESTar.RESTarConfig;
 using IResource = RESTar.Internal.IResource;
 using ScRequest = Starcounter.Request;
 
@@ -26,8 +27,8 @@ namespace RESTar.Requests
         public RESTarMethods Method { get; private set; }
         public Conditions Conditions { get; private set; }
         public MetaConditions MetaConditions { get; private set; }
-        private Func<Request, Response> Evaluator { get; set; }
-        internal void Evaluate() => Response = Evaluator?.Invoke(this);
+        private Evaluator Evaluator { get; set; }
+        internal void Evaluate() => Response = Evaluator(this);
         public string Body { get; private set; }
         private byte[] BinaryBody { get; set; }
         private string Source { get; set; }
@@ -36,7 +37,7 @@ namespace RESTar.Requests
         internal RESTarMimeType Accept { get; private set; }
         private string Origin { get; set; }
         public IDictionary<string, string> ResponseHeaders { get; }
-        
+
         private bool SerializeDynamic => MetaConditions.Dynamic || MetaConditions.Select != null ||
                                          MetaConditions.Rename != null || MetaConditions.Add != null ||
                                          Resource.TargetType.IsSubclassOf(typeof(DDictionary)) ||
@@ -50,7 +51,7 @@ namespace RESTar.Requests
             Transaction = new Transaction();
         }
 
-        internal void Populate(string query, RESTarMethods method, Func<Request, Response> evaluator)
+        internal void Populate(string query, RESTarMethods method, Evaluator evaluator)
         {
             Method = method;
             query = CheckQuery(query, ScRequest);
@@ -64,11 +65,11 @@ namespace RESTar.Requests
             var argLength = args.Length;
             if (argLength == 1)
             {
-                Resource = RESTarConfig.TypeResources[typeof(Resource)];
+                Resource = TypeResources[typeof(Resource)];
                 return;
             }
             if (args[1] == "")
-                Resource = RESTarConfig.TypeResources[typeof(Resource)];
+                Resource = TypeResources[typeof(Resource)];
             else Resource = args[1].FindResource();
             if (argLength == 2) return;
             Conditions = Conditions.Parse(args[2], Resource);
@@ -80,7 +81,7 @@ namespace RESTar.Requests
                     nameCond.Value = ((string) nameCond.Value.ToString()).FindResource().Name;
             }
             if (argLength == 3) return;
-            MetaConditions = MetaConditions.Parse(args[3], Resource);
+            MetaConditions = MetaConditions.Parse(args[3], Resource) ?? MetaConditions;
         }
 
         internal void GetRequestData()
@@ -89,7 +90,8 @@ namespace RESTar.Requests
             {
                 var sourceRequest = HttpRequest.Parse(Source);
                 if (sourceRequest.Method != RESTarMethods.GET)
-                    throw new SyntaxException("Only GET is allowed in Source headers", ErrorCode.InvalidSourceFormatError);
+                    throw new SyntaxException("Only GET is allowed in Source headers",
+                        ErrorCode.InvalidSourceFormatError);
 
                 sourceRequest.Accept = ContentType.ToMimeString();
 
@@ -191,7 +193,7 @@ namespace RESTar.Requests
             string jsonString;
             if (SerializeDynamic)
                 jsonString = entities.SerializeDyn();
-            else jsonString = entities.Serialize(RESTarConfig.IEnumTypes[Resource]);
+            else jsonString = entities.Serialize(IEnumTypes[Resource]);
 
             switch (Accept)
             {
@@ -208,95 +210,10 @@ namespace RESTar.Requests
             }
         }
 
-//        internal IEnumerable<dynamic> RunPostOperations(IEnumerable<dynamic> entities)
-//        {
-//            switch (MetaConditions.PostOperation)
-//            {
-//                case NoOperation: return entities;
-//                case Select:
-//                case Rename:
-//                case SelectRename:
-//                    return entities.Select(entity => MetaConditions.Select.ToDictionary(
-//                        prop => MetaConditions.Rename
-//                            .FirstOrDefault(pair => pair.Key.Key.EqualsNoCase(prop.Key))
-//                            .Value,
-//                        prop => prop.GetValue(entity)));
-//                case Add:
-//                    return entities.Select(entity =>
-//                    {
-//                        IDictionary<string, dynamic> dict = ExtensionMethods.MakeDictionary(entity);
-//                        MetaConditions.Add.ForEach(propToAdd =>
-//                        {
-//                            if (!dict.ContainsKey(propToAdd.Key))
-//                                dict[propToAdd.Key] = propToAdd.GetValue(entity);
-//                        });
-//                        return dict;
-//                    });
-//                case SelectAdd:
-//                    return entities.Select(entity =>
-//                    {
-//                        var dict = MetaConditions.Select.ToDictionary(s => s.Key, s => s.GetValue(entity));
-//                        MetaConditions.Add.ForEach(propToAdd =>
-//                        {
-//                            if (!dict.ContainsKey(propToAdd.Key))
-//                                dict[propToAdd.Key] = propToAdd.GetValue(entity);
-//                        });
-//                        return dict;
-//                    });
-//                case RenameAdd:
-//                    return entities.Select(entity =>
-//                    {
-//                        IDictionary<string, dynamic> dict = ExtensionMethods.MakeDictionary(entity);
-//                        MetaConditions.Add.ForEach(propToAdd =>
-//                        {
-//                            if (!dict.ContainsKey(propToAdd.Key))
-//                                dict[propToAdd.Key] = propToAdd.GetValue(entity);
-//                        });
-//                        MetaConditions.Rename.ForEach(pair =>
-//                        {
-//                            var oldPropertyName = pair.Key.Key;
-//                            var newPropertyName = pair.Value;
-//                            string actualKey;
-//                            if (dict.ContainsKeyIgnorecase(oldPropertyName, out actualKey))
-//                            {
-//                                var value = dict[actualKey];
-//                                dict.Remove(actualKey);
-//                                dict[newPropertyName] = value;
-//                            }
-//                        });
-//                        return dict;
-//                    });
-//                case SelectRenameAdd:
-//                    return entities.Select(entity =>
-//                    {
-//                        var dict = MetaConditions.Select.ToDictionary(prop => prop.Key, prop => prop.GetValue(entity));
-//                        MetaConditions.Add.ForEach(propToAdd =>
-//                        {
-//                            if (!dict.ContainsKey(propToAdd.Key))
-//                                dict[propToAdd.Key] = propToAdd.GetValue(entity);
-//                        });
-//                        MetaConditions.Rename.ForEach(pair =>
-//                        {
-//                            var oldPropertyName = pair.Key.Key;
-//                            var newPropertyName = pair.Value;
-//                            string actualKey;
-//                            if (dict.ContainsKeyIgnorecase(oldPropertyName, out actualKey))
-//                            {
-//                                var value = dict[actualKey];
-//                                dict.Remove(actualKey);
-//                                dict[newPropertyName] = value;
-//                            }
-//                        });
-//                        return dict;
-//                    });
-//                default: throw new ArgumentOutOfRangeException();
-//            }
-//        }
-
         internal Response GetResponse()
         {
             ResponseHeaders.ForEach(h => Response.Headers["X-" + h.Key] = h.Value);
-            Response.Headers["Access-Control-Allow-Origin"] = RESTarConfig.AllowAllOrigins ? "*" : (Origin ?? "null");
+            Response.Headers["Access-Control-Allow-Origin"] = AllowAllOrigins ? "*" : (Origin ?? "null");
 
             if (Destination == null)
                 return Response;
@@ -326,13 +243,13 @@ namespace RESTar.Requests
             if (!_response.IsSuccessStatusCode)
                 throw new Exception($"Failed upload at destination server at '{destinationRequest.URI}'. " +
                                     $"Status: {_response.StatusCode}, {_response.StatusDescription}");
-            _response.Headers["Access-Control-Allow-Origin"] = RESTarConfig.AllowAllOrigins ? "*" : (Origin ?? "null");
+            _response.Headers["Access-Control-Allow-Origin"] = AllowAllOrigins ? "*" : (Origin ?? "null");
             return _response;
         }
 
         internal void Authenticate()
         {
-            if (!RESTarConfig.RequireApiKey)
+            if (!RequireApiKey)
                 return;
 
             AccessRights accessRights;
@@ -342,7 +259,7 @@ namespace RESTar.Requests
                 var authToken = ScRequest.Headers["RESTar-AuthToken"];
                 if (string.IsNullOrWhiteSpace(authToken))
                     throw new ForbiddenException();
-                if (!RESTarConfig.AuthTokens.TryGetValue(authToken, out accessRights))
+                if (!AuthTokens.TryGetValue(authToken, out accessRights))
                     throw new ForbiddenException();
                 AuthToken = authToken;
                 return;
@@ -355,10 +272,10 @@ namespace RESTar.Requests
             if (apikey_key[0].ToLower() != "apikey" || apikey_key.Length != 2)
                 throw new ForbiddenException();
             var apiKey = apikey_key[1].SHA256();
-            if (!RESTarConfig.ApiKeys.TryGetValue(apiKey, out accessRights))
+            if (!ApiKeys.TryGetValue(apiKey, out accessRights))
                 throw new ForbiddenException();
             AuthToken = Guid.NewGuid().ToString();
-            RESTarConfig.AuthTokens[AuthToken] = accessRights;
+            AuthTokens[AuthToken] = accessRights;
         }
 
         internal void MethodCheck()
@@ -367,9 +284,9 @@ namespace RESTar.Requests
             var availableMethods = Resource.AvailableMethods;
             if (!availableMethods.Contains(method))
                 throw new ForbiddenException();
-            if (!RESTarConfig.RequireApiKey)
+            if (!RequireApiKey)
                 return;
-            var accessRights = RESTarConfig.AuthTokens[AuthToken];
+            var accessRights = AuthTokens[AuthToken];
             if (accessRights == null)
                 throw new ForbiddenException();
             var rights = accessRights[Resource];
@@ -381,7 +298,7 @@ namespace RESTar.Requests
         {
             if (AuthToken == null || Internal) return;
             AccessRights accessRights;
-            RESTarConfig.AuthTokens.TryRemove(AuthToken, out accessRights);
+            AuthTokens.TryRemove(AuthToken, out accessRights);
         }
 
         private static string CheckQuery(string query, ScRequest request)
@@ -389,7 +306,8 @@ namespace RESTar.Requests
             if (query.CharCount('/') > 3)
                 throw new SyntaxException("Invalid argument separator count. A RESTar URI can contain at most 3 " +
                                           $"forward slashes after the base uri. URI scheme: {Settings._ResourcesPath}" +
-                                          "/[resource]/[conditions]/[meta-conditions]", ErrorCode.InvalidSeparatorCount);
+                                          "/[resource]/[conditions]/[meta-conditions]",
+                    ErrorCode.InvalidSeparatorCount);
             if (request.HeadersDictionary.ContainsKey("X-ARR-LOG-ID"))
                 return query.Replace("%25", "%");
             return query;

@@ -94,8 +94,10 @@
   <ItemGroup>
     <Compile Include="Auth\AccessRight.cs" />
     <Compile Include="Auth\AccessRights.cs" />
+    <Compile Include="Delegates.cs" />
     <Compile Include="Operations\Add.cs" />
     <Compile Include="Attributes.cs" />
+    <Compile Include="NoCaseComparer.cs" />
     <Compile Include="Requests\Conditions.cs" />
     <Compile Include="Operations\Do.cs" />
     <Compile Include="Operations\OperationsInterfaces.cs" />
@@ -116,7 +118,7 @@
     <Compile Include="Internal\Property.cs" />
     <Compile Include="Internal\PropertyChain.cs" />
     <Compile Include="Registrator.cs" />
-    <Compile Include="Operations\Delegates.cs" />
+    <Compile Include="Operations\OperationsDelegates.cs" />
     <Compile Include="Operations\Rename.cs" />
     <Compile Include="Requests\Request.cs" />
     <Compile Include="Requests\Condition.cs" />
