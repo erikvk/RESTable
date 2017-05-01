@@ -12,7 +12,7 @@ namespace RESTar.Requests
         public PropertyChain PropertyChain { get; set; }
         internal bool ScQueryable => PropertyChain.ScQueryable;
         internal void Migrate(Type type) => PropertyChain.Migrate(type);
-
+  
         internal Condition(PropertyChain propertyChain, Operator op, dynamic value)
         {
             PropertyChain = propertyChain;

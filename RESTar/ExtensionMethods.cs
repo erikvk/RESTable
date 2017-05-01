@@ -12,6 +12,7 @@ using RESTar.Auth;
 using RESTar.Internal;
 using RESTar.Operations;
 using RESTar.Requests;
+using Starcounter;
 using static System.Reflection.BindingFlags;
 using static System.StringComparison;
 using static RESTar.ResourceAlias;
@@ -358,5 +359,36 @@ namespace RESTar
             }
             return matches.First();
         }
+
+        internal static bool IsStarcounterCompatible(this Type type)
+        {
+            switch (Type.GetTypeCode(type))
+            {
+                case TypeCode.Empty: return false;
+                case TypeCode.DBNull: return false;
+                case TypeCode.Object:
+                    if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))
+                        return IsStarcounterCompatible(type.GenericTypeArguments[0]);
+                    return type.IsClass && type.HasAttribute<DatabaseAttribute>();
+                case TypeCode.Boolean:
+                case TypeCode.Char:
+                case TypeCode.SByte:
+                case TypeCode.Byte:
+                case TypeCode.Int16:
+                case TypeCode.UInt16:
+                case TypeCode.Int32:
+                case TypeCode.UInt32:
+                case TypeCode.Int64:
+                case TypeCode.UInt64:
+                case TypeCode.Single:
+                case TypeCode.Double:
+                case TypeCode.Decimal:
+                case TypeCode.DateTime:
+                case TypeCode.String: return true;
+            }
+            if (type == typeof(Binary)) return true;
+            return false;
+        }
+
     }
 }

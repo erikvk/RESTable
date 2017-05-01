@@ -10,13 +10,15 @@ namespace RESTar.Internal
         public override string DatabaseQueryName => PropertyInfo?.Name ?? _databaseQueryName;
         public Type Type => PropertyInfo?.PropertyType ?? _type;
         public override bool Dynamic => false;
-        public override bool ScQueryable => PropertyInfo?.DeclaringType?.HasAttribute<DatabaseAttribute>() ?? false;
         private bool IsObjectNo;
         private bool IsObjectID;
         private string _name;
         private string _databaseQueryName;
         private Type _type;
         private PropertyInfo PropertyInfo { get; set; }
+
+        public override bool ScQueryable => PropertyInfo?.DeclaringType?.HasAttribute<DatabaseAttribute>() == true &&
+                                            PropertyInfo.PropertyType.IsStarcounterCompatible();
 
         private StaticProperty(PropertyInfo property)
         {

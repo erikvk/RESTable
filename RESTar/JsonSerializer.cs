@@ -22,10 +22,7 @@ namespace RESTar
             set
             {
                 if (!value.Equals(_serializerOptions))
-                {
                     _serializerOptions = value;
-                    InitSerializers();
-                }
                 _serializerOptions = value;
             }
         }
@@ -64,16 +61,7 @@ namespace RESTar
         {
             var generic = SerializeMethod.MakeGenericMethod(resource);
             var writer = new StringWriter();
-            generic.Invoke
-            (
-                null,
-                new[]
-                {
-                    obj,
-                    writer,
-                    SerializerOptions
-                }
-            );
+            generic.Invoke(null, new[] {obj, writer, SerializerOptions});
             return writer.ToString();
         }
 
