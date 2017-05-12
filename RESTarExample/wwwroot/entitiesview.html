@@ -1,0 +1,29 @@
+﻿<link rel="import" href="/sys/polymer/polymer.html">
+<link rel="import" href="/sys/puppet-redirect/puppet-redirect.html"/>
+
+<template>
+    <template is="dom-bind">
+
+        <h3>{{model.ResourceName}}</h3>
+
+        <table class="table">
+            <thead>
+            <tr>
+                <template is="dom-repeat" items="{{model.TableHead}}">
+                    <th>{{item}}</th>
+                </template>
+            </tr>
+            </thead>
+            <tbody>
+            <template is="dom-repeat" items="{{model.TableRows}}" as="row">
+                <tr>
+                    <template is="dom-repeat" items="{{row}}">
+                        <td>{{item}}</td>
+                    </template>
+                </tr>
+            </template>
+            </tbody>
+        </table>
+    
+    </template>
+</template>

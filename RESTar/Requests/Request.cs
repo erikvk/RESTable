@@ -22,7 +22,6 @@ namespace RESTar.Requests
         internal Response Response { get; private set; }
         public string AuthToken { get; private set; }
         private bool Internal => !ScRequest.IsExternal;
-        internal Transaction Transaction { get; }
         public IResource Resource { get; private set; }
         public RESTarMethods Method { get; private set; }
         public Conditions Conditions { get; private set; }
@@ -48,7 +47,6 @@ namespace RESTar.Requests
             ScRequest = scRequest;
             ResponseHeaders = new Dictionary<string, string>();
             MetaConditions = new MetaConditions();
-            Transaction = new Transaction();
         }
 
         internal void Populate(string query, RESTarMethods method, Evaluator evaluator)
@@ -176,7 +174,7 @@ namespace RESTar.Requests
         {
             if (Accept == RESTarMimeType.Excel)
             {
-                var data = entities.ToDataSet();
+                var data = entities.ToDataSet(Resource);
                 var workbook = new XLWorkbook();
                 workbook.AddWorksheet(data);
                 var fileName = $"{Resource.Name}_export_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";

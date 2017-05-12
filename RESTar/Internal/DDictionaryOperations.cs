@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using Dynamit;
 using RESTar.Operations;
@@ -7,7 +8,7 @@ using Starcounter;
 
 namespace RESTar.Internal
 {
-    public static class DynamitOperations
+    public static class DDictionaryOperations
     {
         private static IEnumerable<DDictionary> EqualitySQL(Condition c, string kvp)
         {

@@ -17,16 +17,21 @@ namespace RESTar.Internal
         public Type TargetType => DynamitControl.GetByTableName(Name);
         public string Alias => ResourceAlias.ByResource(TargetType);
         public long? NrOfEntities => DB.RowCount(Name);
+        public bool Visible { get; }
+        public string EntityViewHtmlPath { get; }
+        public string EntitiesViewHtmlPath { get; }
 
         public bool Equals(IResource x, IResource y) => x.Name == y.Name;
         public int GetHashCode(IResource obj) => obj.Name.GetHashCode();
         public int CompareTo(IResource other) => string.Compare(Name, other.Name, StringComparison.Ordinal);
         public override int GetHashCode() => Name.GetHashCode();
 
-        public Selector<dynamic> Select => DynamitOperations.Select;
-        public Inserter<dynamic> Insert => (e, r) => DynamitOperations.Insert((IEnumerable<DDictionary>) e, r);
-        public Updater<dynamic> Update => (e, r) => DynamitOperations.Update((IEnumerable<DDictionary>) e, r);
-        public Deleter<dynamic> Delete => (e, r) => DynamitOperations.Delete((IEnumerable<DDictionary>) e, r);
+        public RESTarResourceType ResourceType => RESTarResourceType.Dynamic;
+
+        public Selector<dynamic> Select => DDictionaryOperations.Select;
+        public Inserter<dynamic> Insert => (e, r) => DDictionaryOperations.Insert((IEnumerable<DDictionary>) e, r);
+        public Updater<dynamic> Update => (e, r) => DDictionaryOperations.Update((IEnumerable<DDictionary>) e, r);
+        public Deleter<dynamic> Delete => (e, r) => DDictionaryOperations.Delete((IEnumerable<DDictionary>) e, r);
 
         public RESTarMethods[] AvailableMethods
         {
@@ -34,11 +39,14 @@ namespace RESTar.Internal
             private set { AvailableMethodsString = value.ToMethodsString(); }
         }
 
-        private DynamicResource(Type table, RESTarMethods[] availableMethods)
+        private DynamicResource(Type table, RESTarMethods[] availableMethods, bool visible, string entityViewHtmlPath, string entitiesViewHtmlPath)
         {
             Name = table.FullName;
             Editable = true;
             AvailableMethods = availableMethods;
+            Visible = visible;
+            EntityViewHtmlPath = entityViewHtmlPath;
+            EntitiesViewHtmlPath = entitiesViewHtmlPath;
         }
 
         public static DynamicResource MakeTable(Resource resource)
@@ -54,7 +62,14 @@ namespace RESTar.Internal
                     Alias = resource.Alias,
                     Resource = newTable.FullName
                 };
-                dynamicResource = new DynamicResource(newTable, resource.AvailableMethods);
+                dynamicResource = new DynamicResource
+                (
+                    newTable,
+                    resource.AvailableMethods,
+                    resource.Visible,
+                    resource.EntityViewHtmlPath,
+                    resource.EntitiesViewHtmlPath
+                );
             });
             RESTarConfig.AddResource(dynamicResource);
             return dynamicResource;

@@ -10,8 +10,8 @@ namespace RESTar.Internal
         public override string DatabaseQueryName => PropertyInfo?.Name ?? _databaseQueryName;
         public Type Type => PropertyInfo?.PropertyType ?? _type;
         public override bool Dynamic => false;
-        private bool IsObjectNo;
-        private bool IsObjectID;
+        internal bool IsObjectNo;
+        internal bool IsObjectID;
         private string _name;
         private string _databaseQueryName;
         private Type _type;

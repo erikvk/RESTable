@@ -16,6 +16,17 @@ namespace RESTar.Operations
             }
         }
 
+        internal static void Try(Action thingy)
+        {
+            try
+            {
+                thingy();
+            }
+            catch
+            {
+            }
+        }
+
         internal static T Run<T>(Action thingy, T @return = default(T))
         {
             thingy();

@@ -43,9 +43,13 @@ namespace RESTar.Internal
 
         internal void MakeDynamic()
         {
-            var newProperties = this.Select(prop => prop.Static
-                    ? new DynamicProperty(prop.Name)
-                    : prop)
+            var newProperties = this.Select(prop =>
+                {
+                    var stat = prop as StaticProperty;
+                    if (stat != null && !stat.IsObjectID && !stat.IsObjectNo)
+                        new DynamicProperty(prop.Name);
+                    return prop;
+                })
                 .ToList();
             Clear();
             AddRange(newProperties);

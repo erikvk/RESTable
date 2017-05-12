@@ -12,7 +12,7 @@ namespace RESTar
 
         public IEnumerable<Schema> Select(IRequest request)
         {
-            var validCondition = request.Conditions["resource", EQUALS]?.Value as string;
+            var validCondition = request.Conditions["resource", EQUALS] as string;
             if (validCondition == null)
                 throw new Exception("Invalid resource argument, format: /schema/resource=my_resource_name");
             var res = validCondition.FindResource();

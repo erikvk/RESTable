@@ -12,7 +12,9 @@ using Newtonsoft.Json.Linq;
 using RESTar.Auth;
 using RESTar.Internal;
 using RESTar.Requests;
+using Starcounter;
 using static RESTar.RESTarMethods;
+using static RESTar.Settings;
 using IResource = RESTar.Internal.IResource;
 
 namespace RESTar
@@ -87,11 +89,23 @@ namespace RESTar
         /// opposed to default PascalCase?</param>
         /// <param name="localTimes">Should datetimes be handled as local times or as UTC?</param>
         /// <param name="daysToSaveErrors">The number of days to save errors in the Error resource</param>
-        public static void Init(ushort port = 8282, string uri = "/rest", bool requireApiKey = false,
+        public static void Init(ushort port = 8282, string uri = "/rest", string viewUri = "/restview",
+            bool requireApiKey = false,
             bool allowAllOrigins = true, string configFilePath = null, bool prettyPrint = true, bool camelCase = false,
             bool localTimes = true, ushort daysToSaveErrors = 30)
         {
             if (uri == null) throw new ArgumentNullException(nameof(uri));
+            if (viewUri == null) throw new ArgumentNullException(nameof(viewUri));
+            uri = uri.Trim();
+            viewUri = viewUri.Trim();
+            if (uri.Contains("?")) throw new ArgumentException("Uri cannot contain '?'", nameof(uri));
+            if (viewUri.Contains("?")) throw new ArgumentException("View uri cannot contain '?'", nameof(viewUri));
+            if (uri.First() != '/') uri = $"/{uri}";
+            if (viewUri.First() != '/') viewUri = $"/{viewUri}";
+            // uri += "?";
+            // viewUri += "?";
+
+            Settings.Init(uri, viewUri, port, prettyPrint, camelCase, localTimes, daysToSaveErrors);
             typeof(object).GetSubclasses()
                 .Where(t => t.HasAttribute<RESTarAttribute>())
                 .ForEach(Resource.AutoMakeResource);
@@ -101,8 +115,6 @@ namespace RESTar
             ConfigFilePath = configFilePath;
             ReadConfig();
             DynamitConfig.Init(true, true);
-            if (uri.Trim().First() != '/') uri = $"/{uri}";
-            Settings.Init(uri, port, prettyPrint, camelCase, localTimes, daysToSaveErrors);
             Log.Init();
             Handlers.Register(uri);
         }

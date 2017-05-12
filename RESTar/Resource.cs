@@ -10,14 +10,17 @@ using static RESTar.Internal.DynamicResource;
 
 namespace RESTar
 {
-    [RESTar(RESTarPresets.ReadAndWrite)]
+    [RESTar(RESTarPresets.ReadAndWrite, Visible = true)]
     public sealed class Resource : IOperationsProvider<Resource>
     {
         public string Name { get; set; }
         public bool Editable { get; private set; }
+        public bool Visible { get; set; }
         public RESTarMethods[] AvailableMethods { get; set; }
         public string Alias { get; set; }
-
+        public string EntityViewHtmlPath { get; set; }
+        public string EntitiesViewHtmlPath { get; set; }
+        
         [DataMember(Name = "TargetType")]
         public string TargetTypeString => TargetType?.FullName;
 
@@ -35,7 +38,10 @@ namespace RESTar
                     Alias = m.Alias,
                     AvailableMethods = m.AvailableMethods,
                     Editable = m.Editable,
-                    TargetType = m.TargetType
+                    TargetType = m.TargetType,
+                    Visible = m.Visible,
+                    EntityViewHtmlPath = m.EntityViewHtmlPath,
+                    EntitiesViewHtmlPath = m.EntitiesViewHtmlPath
                 });
         }
 
@@ -97,9 +103,7 @@ namespace RESTar
             .Invoke(null, null);
 
         private static void AUTO_MAKE<T>() where T : class => Resource<T>
-            .Make<T>(typeof(T)
-                .GetAttribute<RESTarAttribute>()
-                .AvailableMethods);
+            .Make(typeof(T).GetAttribute<RESTarAttribute>());
 
         public static void Register<T>(RESTarPresets preset, params RESTarMethods[] additionalMethods) where T : class
         {
@@ -120,7 +124,8 @@ namespace RESTar
             Selector<T> selector = null,
             Inserter<T> inserter = null,
             Updater<T> updater = null,
-            Deleter<T> deleter = null
+            Deleter<T> deleter = null,
+            bool visible = false
         ) where T : class
         {
             var methods = preset.ToMethods().Union(addMethods ?? new RESTarMethods[0]).ToArray();
@@ -151,8 +156,8 @@ namespace RESTar
                 throw new InvalidOperationException("Cannot manually register resources that have a RESTar " +
                                                     "attribute. Resources decorated with a RESTar attribute " +
                                                     "are registered automatically");
-            var availableMethods = new[] {method}.Union(addMethods ?? new RESTarMethods[0]).ToArray();
-            Resource<T>.Make(availableMethods, selector, inserter, updater, deleter);
+            var attribute = new RESTarAttribute(method, addMethods?.ToArray());
+            Resource<T>.Make(attribute, selector, inserter, updater, deleter);
         }
     }
 }

@@ -50,7 +50,7 @@ namespace RESTar.Requests
                 .ToConditions(resource.TargetType);
         }
 
-        internal static dynamic GetValue(string valueString)
+        public static dynamic GetValue(string valueString)
         {
             if (valueString == null)
                 return null;

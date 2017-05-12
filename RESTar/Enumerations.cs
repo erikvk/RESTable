@@ -40,6 +40,31 @@
         Delete
     }
 
+    public enum RESTarResourceType
+    {
+        /// <summary>
+        /// Created by user, non-persistent - should be initialized. Regular
+        /// Starcounter resources.
+        /// </summary>
+        ScStatic,
+
+        /// <summary>
+        /// Created by user, non-persistent - should not be initialized.
+        /// Resources that inherit from DDictionary.
+        /// </summary>
+        ScDynamic,
+
+        /// <summary>
+        /// Created by user, non-persistent - no public fields
+        /// </summary>
+        Virtual,
+
+        /// <summary>
+        /// Created by RESTar, DynamicResource 01-64. Persistent resources.
+        /// </summary>
+        Dynamic
+    }
+
     public enum Operators
     {
         nil,
@@ -68,6 +93,7 @@
     {
         // 000: Unknown error
         UnknownError = 000,
+
         // - - - - - - - - - 
         // 001-099: Request errors
         // 000-009: URI errors
@@ -79,12 +105,14 @@
         InvalidConditionSyntaxError = 006,
         InvalidConditionOperatorError = 007,
         InvalidSeparatorCount = 009,
+
         // 010-019: Data source syntax and format errors
         JsonDeserializationError = 010,
         ExcelReaderError = 011,
         DataSourceFormatError = 012,
         NoDataSourceError = 013,
         UnsupportedContentType = 014,
+
         // 020-029: Headers error
         InvalidSourceDataError = 020,
         InvalidSourceFormatError = 021,
@@ -97,12 +125,13 @@
         UnknownResourceForMappingError = 101,
         AmbiguousResourceError = 102,
         AmbiguousMatchError = 103,
+
         // 110-119: Column locator errors
         UnknownColumnError = 110,
         AmbiguousColumnError = 111,
         UnknownColumnInGeneratedObjectError = 112,
 
         AbortedOperation = 200,
-        DatabaseError = 300   
+        DatabaseError = 300
     }
 }

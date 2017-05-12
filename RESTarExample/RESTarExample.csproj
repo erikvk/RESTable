@@ -82,6 +82,16 @@
       <Name>RESTar</Name>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="wwwroot\entityview.html" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="wwwroot\__page.html" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="wwwroot\default.css" />
+    <None Include="wwwroot\entitiesview.html" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="$(StarcounterBin)\Starcounter.MsBuild.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

@@ -41,11 +41,12 @@ namespace RESTar.Operations
                     else if (char.IsDigit(first) || first == '/')
                     {
                         var uri = str;
-                        var response = HTTP.InternalRequest(RESTarMethods.GET, new Uri(uri, UriKind.Relative), request.AuthToken);
+                        var response = HTTP.InternalRequest(RESTarMethods.GET, new Uri(uri, UriKind.Relative),
+                            request.AuthToken);
                         if (response?.IsSuccessStatusCode != true)
                             throw new Exception(
                                 $"Could not get source data from '<self>:{Settings._Port}{Settings._Uri}{uri}'. " +
-                                $"{response?.StatusCode}: {response?.StatusDescription}");
+                                $"{response?.StatusCode}: {response?.StatusDescription}. {response?.Headers["ErrorInfo"]}");
                         if (response.StatusCode == 204 || string.IsNullOrEmpty(response.Body))
                             json = "[]";
                         else json = response.Body;
@@ -185,7 +186,8 @@ namespace RESTar.Operations
                 if (!skip)
                 {
                     var uri = localMapper.ToString();
-                    var response = HTTP.InternalRequest(RESTarMethods.GET, new Uri(uri, UriKind.Relative), request.AuthToken);
+                    var response = HTTP.InternalRequest(RESTarMethods.GET, new Uri(uri, UriKind.Relative),
+                        request.AuthToken);
                     if (response?.IsSuccessStatusCode != true)
                         throw new Exception(
                             $"Could not get source data from '<self>:{Settings._Port}{Settings._Uri}{uri}'");

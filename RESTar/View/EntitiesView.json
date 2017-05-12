@@ -1,0 +1,8 @@
+{
+  "Html": "/entitiesview.html",
+  "ResourceName": "",
+  "TableHead": [""],
+  "TableRows": [[]],
+  "$TableRows": { "Bind": "ResultRows" },
+  "Entities": [{}]
+}

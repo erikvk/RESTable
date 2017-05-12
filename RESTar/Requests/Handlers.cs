@@ -1,11 +1,14 @@
 ﻿using System;
 using Newtonsoft.Json;
 using RESTar.Operations;
+using RESTar.View;
 using Starcounter;
 using static RESTar.RESTarMethods;
+using static Starcounter.SessionOptions;
 using static RESTar.Settings;
 using ScRequest = Starcounter.Request;
 using ScHandle = Starcounter.Handle;
+using IResource = RESTar.Internal.IResource;
 
 namespace RESTar.Requests
 {
@@ -20,6 +23,43 @@ namespace RESTar.Requests
             ScHandle.PATCH(_Port, uri, (ScRequest r, string q) => Handle(r, q, Evaluators.PATCH, PATCH));
             ScHandle.DELETE(_Port, uri, (ScRequest r, string q) => Handle(r, q, Evaluators.DELETE, DELETE));
             ScHandle.OPTIONS(_Port, uri, (ScRequest r, string q) => CheckOrigin(r, q));
+
+            ScHandle.GET(_Port, $"/__restar/__page", () =>
+            {
+                if (Session.Current?.Data is AppPage)
+                    return Session.Current.Data;
+                Session.Current = Session.Current ?? new Session(PatchVersioning);
+                return new AppPage {Session = Session.Current};
+            });
+
+            var viewUri = _ViewUri + "{?}";
+            ScHandle.GET(_Port, viewUri, (ScRequest r, string q) =>
+            {
+                try
+                {
+                    r.Headers["Authorization"] = "apikey mykey";
+                    using (var request = new Request(r))
+                    {
+                        request.Authenticate();
+                        request.Populate(q, GET, Evaluators.GETVIEW);
+//                        if (!request.Resource.Visible)
+//                            return Responses.Forbidden();
+                        request.MethodCheck();
+                        request.Evaluate();
+                        var partial = (Json)request.GetResponse();
+                        var master = Self.GET<AppPage>(_Port, "/__restar/__page");
+                        master.CurrentPage = partial;
+                        return master;
+                    }
+                }
+                catch (Exception e)
+                {
+                    return e.ToString();    
+                }
+            });
+
+            Application.Current.Use(new HtmlFromJsonProvider());
+            Application.Current.Use(new PartialToStandaloneHtmlProvider());
         }
 
         private static Response CheckOrigin(ScRequest scRequest, string query)
@@ -52,7 +92,6 @@ namespace RESTar.Requests
                     request.MethodCheck();
                     request.GetRequestData();
                     request.Evaluate();
-                    request.Transaction.Commit();
                     return request.GetResponse();
                 }
             }
@@ -61,8 +100,6 @@ namespace RESTar.Requests
 
             catch (Exception e)
             {
-                request?.Transaction.Rollback();
-
                 Response errorResponse;
                 ErrorCode errorCode;
 

@@ -1,0 +1,19 @@
+﻿<link rel="import" href="/sys/polymer/polymer.html">
+<link rel="import" href="/sys/puppet-redirect/puppet-redirect.html"/>
+
+<template>
+
+    <template is="dom-bind">
+        
+        <label>Name<input type="text" value="{{model.Entity$.Name$::input}}" /></label>
+        <label>PrettyPrint<input type="checkbox" checked="{{model.Entity$.PrettyPrint$::input}}" /></label>
+        <label>Inte<input type="number" value="{{model.Entity$.Inte$::input}}" /></label>
+
+        <div>
+            <button class="btn btn-sm btn-primary" value="{{model.Save$::click}}" on onmouseup="++this.value">Save</button>
+            <button class="btn btn-sm btn-default" value="{{model.Close$::click}}" on onmouseup="++this.value">Close</button>
+        </div>
+        <link is="puppet-redirect" history url$="{{model.RedirectUrl$}}"/>
+        <br/>
+    </template>
+</template>

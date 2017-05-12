@@ -12,6 +12,7 @@ namespace RESTar
         internal static bool _PrettyPrint => Instance.PrettyPrint;
         internal static bool _CamelCase => Instance.CamelCase;
         internal static string _Uri => Instance.Uri;
+        internal static string _ViewUri => Instance.ViewUri;
         internal static ushort _Port => Instance.Port;
         internal static string _ResourcesPath => Instance.ResourcesPath;
         internal static string _HelpResourcePath => Instance.HelpResourcePath;
@@ -21,7 +22,7 @@ namespace RESTar
         private bool _prettyPrint;
         private bool _camelCase;
         private bool _localTimes;
-        
+
         public bool PrettyPrint
         {
             get { return _prettyPrint; }
@@ -92,6 +93,7 @@ namespace RESTar
         }
 
         public string Uri { get; private set; }
+        public string ViewUri { get; private set; }
         public ushort Port { get; private set; }
         public string ResourcesPath => $"http://[IP address]:{Port}{Uri}";
         public string HelpResourcePath => ResourcesPath + "/RESTar.help";
@@ -100,6 +102,7 @@ namespace RESTar
         internal static void Init
         (
             string uri,
+            string viewUri,
             ushort port,
             bool prettyPrint,
             bool camelCase,
@@ -109,8 +112,7 @@ namespace RESTar
         {
             Db.TransactAsync(() =>
             {
-                foreach (var obj in DB.All<Settings>())
-                    obj.Delete();
+                DB.All<Settings>().ForEach(Db.Delete);
 
                 JsonSerializer.SerializerOptions = new Options
                 (
@@ -141,6 +143,7 @@ namespace RESTar
                 new Settings
                 {
                     Uri = uri,
+                    ViewUri = viewUri,
                     Port = port,
                     _prettyPrint = prettyPrint,
                     _camelCase = camelCase,

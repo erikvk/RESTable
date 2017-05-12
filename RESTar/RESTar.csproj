@@ -72,6 +72,7 @@
       <HintPath>..\packages\Sigil.4.7.0\lib\net45\Sigil.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="Starcounter.XSON, Version=2.0.0.0, Culture=neutral, PublicKeyToken=d2df1e81d0ca3abf, processorArchitecture=MSIL" />
     <Reference Include="System" />
     <Reference Include="System.Core">
       <RequiredTargetFramework>4.0</RequiredTargetFramework>
@@ -98,6 +99,7 @@
     <Compile Include="Operations\Add.cs" />
     <Compile Include="Attributes.cs" />
     <Compile Include="NoCaseComparer.cs" />
+    <Compile Include="Operations\Patcher.cs" />
     <Compile Include="Requests\Conditions.cs" />
     <Compile Include="Operations\Do.cs" />
     <Compile Include="Operations\OperationsInterfaces.cs" />
@@ -112,7 +114,7 @@
     <Compile Include="Operations\Counter.cs" />
     <Compile Include="Internal\DynamicResource.cs" />
     <Compile Include="DynamitControl.cs" />
-    <Compile Include="Internal\DynamitOperations.cs" />
+    <Compile Include="Internal\DDictionaryOperations.cs" />
     <Compile Include="DynamicTables.cs" />
     <Compile Include="Internal\IResource.cs" />
     <Compile Include="Internal\Property.cs" />
@@ -151,12 +153,36 @@
     <Compile Include="StringLogicalComparer.cs" />
     <Compile Include="Temp.cs" />
     <Compile Include="Operations\WhereClause.cs" />
+    <Compile Include="View\AppPage.json.cs">
+      <DependentUpon>AppPage.json</DependentUpon>
+    </Compile>
+    <Compile Include="View\EmptyView.json.cs">
+      <DependentUpon>EmptyView.json</DependentUpon>
+    </Compile>
+    <Compile Include="View\EntitiesView.json.cs">
+      <DependentUpon>EntitiesView.json</DependentUpon>
+    </Compile>
+    <Compile Include="View\EntityView.json.cs">
+      <DependentUpon>EntityView.json</DependentUpon>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
     <None Include="RESTar.nuspec">
       <SubType>Designer</SubType>
     </None>
+    <TypedJSON Include="View\EntityView.json">
+      <Generator>MsBuild:Compile</Generator>
+    </TypedJSON>
+    <TypedJSON Include="View\AppPage.json">
+      <Generator>MsBuild:Compile</Generator>
+    </TypedJSON>
+    <TypedJSON Include="View\EntitiesView.json">
+      <Generator>MsBuild:Compile</Generator>
+    </TypedJSON>
+    <TypedJSON Include="View\EmptyView.json">
+      <Generator>MsBuild:Compile</Generator>
+    </TypedJSON>
     <None Include="weaver.ignore">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

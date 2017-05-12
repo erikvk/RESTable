@@ -26,10 +26,10 @@ namespace RESTarExample
         }
     }
 
-    [Database, RESTar(RESTarPresets.ReadAndWrite)]
+    [Database, RESTar(RESTarPresets.ReadAndWrite, Visible = true)]
     public class MyResource : IInserter<MyResource>
     {
-        [DataMember(Name = "Swoo")] public string Str;
+        public string Str;
         public int Inte;
 
         public int Insert(IEnumerable<MyResource> entities, IRequest request)
@@ -86,7 +86,7 @@ namespace RESTarExample
             return new MyDynamicTable2Kvp(dict, key, value);
         }
 
-        public IEnumerable<DDictionary> Select(IRequest request) => DynamitOperations.Select(request);
+        public IEnumerable<DDictionary> Select(IRequest request) => DDictionaryOperations.Select(request);
     }
 
     public class MyDynamicTable2Kvp : DKeyValuePair

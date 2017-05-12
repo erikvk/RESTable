@@ -11,6 +11,9 @@ namespace RESTar
     {
         internal RESTarMethods[] AvailableMethods { get; private set; }
         public bool Dynamic { get; set; }
+        public bool Visible { get; set; }
+        public string EntityViewHtmlPath { get; set; }
+        public string EntitiesViewHtmlPath { get; set; }
 
         public RESTarAttribute(RESTarPresets preset)
         {

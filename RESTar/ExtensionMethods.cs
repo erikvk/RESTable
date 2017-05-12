@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -8,17 +9,24 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Web;
 using Dynamit;
+using Jil;
 using RESTar.Auth;
 using RESTar.Internal;
 using RESTar.Operations;
 using RESTar.Requests;
+using RESTar.View;
 using Starcounter;
 using static System.Reflection.BindingFlags;
 using static System.StringComparison;
+using static Jil.DateTimeFormat;
+using static Jil.UnspecifiedDateTimeKindBehavior;
 using static RESTar.ResourceAlias;
 using static RESTar.RESTarConfig;
 using static RESTar.RESTarMethods;
+using static RESTar.Settings;
 using static Starcounter.DbHelper;
+using Conditions = RESTar.Requests.Conditions;
+using DateTimeFormat = System.Runtime.Serialization.DateTimeFormat;
 using IResource = RESTar.Internal.IResource;
 
 namespace RESTar
@@ -26,19 +34,23 @@ namespace RESTar
     public static class ExtensionMethods
     {
         internal static Selector<T> GetSelector<T>(this Type type) => typeof(ISelector<T>).IsAssignableFrom(type)
-            ? (Selector<T>) type.GetMethod("Select", Instance | Public).CreateDelegate(typeof(Selector<T>), null)
+            ? (Selector<T>) type.GetMethod("Select", BindingFlags.Instance | Public)
+                .CreateDelegate(typeof(Selector<T>), null)
             : null;
 
         internal static Inserter<T> GetInserter<T>(this Type type) => typeof(IInserter<T>).IsAssignableFrom(type)
-            ? (Inserter<T>) type.GetMethod("Insert", Instance | Public).CreateDelegate(typeof(Inserter<T>), null)
+            ? (Inserter<T>) type.GetMethod("Insert", BindingFlags.Instance | Public)
+                .CreateDelegate(typeof(Inserter<T>), null)
             : null;
 
         internal static Updater<T> GetUpdater<T>(this Type type) => typeof(IUpdater<T>).IsAssignableFrom(type)
-            ? (Updater<T>) type.GetMethod("Update", Instance | Public).CreateDelegate(typeof(Updater<T>), null)
+            ? (Updater<T>) type.GetMethod("Update", BindingFlags.Instance | Public)
+                .CreateDelegate(typeof(Updater<T>), null)
             : null;
 
         internal static Deleter<T> GetDeleter<T>(this Type type) => typeof(IDeleter<T>).IsAssignableFrom(type)
-            ? (Deleter<T>) type.GetMethod("Delete", Instance | Public).CreateDelegate(typeof(Deleter<T>), null)
+            ? (Deleter<T>) type.GetMethod("Delete", BindingFlags.Instance | Public)
+                .CreateDelegate(typeof(Deleter<T>), null)
             : null;
 
         internal static IList<Type> GetConcreteSubclasses(this Type baseType) => baseType.GetSubclasses()
@@ -197,6 +209,24 @@ namespace RESTar
             return dict.First(pair => pair.Key.EqualsNoCase(key)).Value;
         }
 
+        public static Json ToViewModel(this DDictionary d)
+        {
+            var options = new Options(excludeNulls: true, includeInherited: true, dateFormat: ISO8601,
+                unspecifiedDateTimeKindBehavior: _LocalTimes ? IsLocal : IsUTC);
+            var dict = new Dictionary<string, dynamic>();
+            d.KeyValuePairs.ForEach(pair => dict.Add(pair.Key + "$", pair.Value));
+            return new Json(JSON.SerializeDynamic(dict, options));
+        }
+
+        public static Json ToViewModel(this Dictionary<string, dynamic> d)
+        {
+            var options = new Options(excludeNulls: true, includeInherited: true, dateFormat: ISO8601,
+                unspecifiedDateTimeKindBehavior: _LocalTimes ? IsLocal : IsUTC);
+            var dict = new Dictionary<string, dynamic>();
+            d.ForEach(pair => dict.Add(pair.Key + "$", pair.Value));
+            return new Json(JSON.SerializeDynamic(dict, options));
+        }
+
         public static Dictionary<string, dynamic> ToTransient(this DDictionary d)
         {
             var dict = new Dictionary<string, dynamic>();
@@ -343,6 +373,61 @@ namespace RESTar
                     prop => prop.GetValue(entity));
         }
 
+        internal static Json MakeViewModelJsonObject(this object entity)
+        {
+            if (entity is DDictionary) return ((DDictionary) entity).ToViewModel();
+            if (entity is Dictionary<string, dynamic>) return ((Dictionary<string, dynamic>) entity).ToViewModel();
+            var options = new Options(excludeNulls: true, includeInherited: true, dateFormat: ISO8601,
+                unspecifiedDateTimeKindBehavior: _LocalTimes ? IsLocal : IsUTC);
+            var str = JSON.SerializeDynamic(
+                entity.GetType()
+                    .GetPropertyList()
+                    .ToDictionary(prop => prop.RESTarMemberName() + "$",
+                        prop => prop.GetValue(entity))
+                , options);
+            return new Json(str);
+        }
+
+        internal static IEnumerable<Json> MakeViewModelJsonArray(this IEnumerable<object> entities)
+        {
+            var options = new Options(excludeNulls: true, includeInherited: true, dateFormat: ISO8601,
+                unspecifiedDateTimeKindBehavior: _LocalTimes ? IsLocal : IsUTC);
+            var list = new List<Dictionary<string, dynamic>>();
+
+            if (entities is IEnumerable<DDictionary>)
+            {
+                foreach (DDictionary entity in entities)
+                {
+                    var dict = new Dictionary<string, dynamic>();
+                    entity.KeyValuePairs.ForEach(pair => dict.Add(pair.Key + "$", pair.Value));
+                    list.Add(dict);
+                }
+                return list.Select(dict => new Json(JSON.SerializeDynamic(dict, options)));
+            }
+
+            if (entities is IEnumerable<Dictionary<string, dynamic>>)
+            {
+                foreach (Dictionary<string, dynamic> entity in entities)
+                {
+                    var dict = new Dictionary<string, dynamic>();
+                    entity.ForEach(pair => dict.Add(pair.Key + "$", pair.Value));
+                    list.Add(dict);
+                }
+                return list.Select(dict => new Json(JSON.SerializeDynamic(dict, options)));
+            }
+
+            entities.Select(entity => entity.GetType()
+                    .GetPropertyList()
+                    .ToDictionary(prop =>
+                    {
+                        var name = prop.RESTarMemberName();
+                        return name + "$";
+                    }, prop => prop.GetValue(entity)))
+                .ForEach(list.Add);
+
+            return list.Select(dict => new Json(JSON.SerializeDynamic(dict, options)));
+        }
+
         internal static PropertyInfo MatchProperty(this Type resource, string str, bool ignoreCase = true)
         {
             var matches = resource.GetPropertyList()
@@ -390,5 +475,134 @@ namespace RESTar
             return false;
         }
 
+        internal static void Commit(this EntityView page)
+        {
+            var json = page.Entity.ToJson().Replace(@"$"":", @""":");
+            Patcher.PATCH(page.Data, json, page.Request);
+        }
+
+        internal static Json ToEntity(this object data)
+        {
+            return data.MakeViewModelJsonObject();
+        }
+
+        internal static IEnumerable<Json> ToEntities(this IEnumerable<object> data)
+        {
+            return data.MakeViewModelJsonArray();
+        }
+
+        internal static DataTable MakeTable(this IEnumerable<object> entities, IResource resource)
+        {
+            var table = new DataTable();
+            var dicts = entities as IEnumerable<IDictionary<string, object>>;
+            if (dicts != null)
+            {
+                foreach (var item in dicts)
+                {
+                    var row = table.NewRow();
+                    foreach (var pair in item)
+                    {
+                        if (!table.Columns.Contains(pair.Key))
+                            table.Columns.Add(pair.Key);
+                        row.SetCellValue(pair.Key, pair.Value);
+                    }
+                    table.Rows.Add(row);
+                }
+            }
+            else
+            {
+                var properties = resource.TargetType.GetPropertyList();
+                foreach (var propInfo in properties)
+                {
+                    var ColType = propInfo.PropertyType.IsClass && propInfo.PropertyType != typeof(string)
+                        ? typeof(string)
+                        : Nullable.GetUnderlyingType(propInfo.PropertyType) ?? propInfo.PropertyType;
+                    table.Columns.Add(propInfo.RESTarMemberName(), ColType);
+                }
+                foreach (var item in entities)
+                {
+                    var row = table.NewRow();
+                    foreach (var propInfo in properties)
+                    {
+                        var key = propInfo.RESTarMemberName();
+                        object value;
+                        if (propInfo.HasAttribute<ExcelFlattenToString>())
+                            value = propInfo.GetValue(item, null)?.ToString();
+                        else value = propInfo.GetValue(item, null);
+                        row.SetCellValue(key, value);
+                    }
+                    table.Rows.Add(row);
+                }
+            }
+            return table;
+        }
+
+        internal static void SetCellValue(this DataRow row, string name, dynamic value)
+        {
+            if (value == null)
+            {
+                row[name] = "";
+                return;
+            }
+            Type type = value.GetType();
+            switch (Type.GetTypeCode(type))
+            {
+                case TypeCode.Object:
+                    var enumerable = value as IEnumerable<object>;
+                    if (enumerable != null)
+                        value = string.Join(", ", enumerable.Select(o => o.ToString()));
+                    else
+                    {
+                        var array = value as Array;
+                        if (array != null)
+                            value = string.Join(", ", array.Cast<object>().Select(o => o.ToString()));
+                    }
+                    try
+                    {
+                        row[name] = value;
+                    }
+                    catch
+                    {
+                        try
+                        {
+                            row[name] = "$(ObjectID: " + DbHelper.GetObjectID(value) + ")";
+                        }
+                        catch
+                        {
+                            row[name] = value.ToString();
+                        }
+                    }
+                    return;
+                case TypeCode.DBNull:
+                    row[name] = "";
+                    return;
+                case TypeCode.Boolean:
+                case TypeCode.Decimal:
+                case TypeCode.Int64:
+                case TypeCode.String:
+                    row[name] = value;
+                    return;
+                case TypeCode.SByte:
+                case TypeCode.Byte:
+                case TypeCode.Int16:
+                case TypeCode.UInt16:
+                case TypeCode.Int32:
+                case TypeCode.UInt32:
+                case TypeCode.UInt64:
+                    row[name] = (long) value;
+                    return;
+                case TypeCode.Single:
+                case TypeCode.Double:
+                    row[name] = (decimal) value;
+                    return;
+                case TypeCode.DateTime:
+                    var dateTime = (DateTime) value;
+                    row[name] = dateTime.ToString("O");
+                    return;
+                case TypeCode.Char:
+                    row[name] = value.ToString();
+                    return;
+            }
+        }
     }
 }

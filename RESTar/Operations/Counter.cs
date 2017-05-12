@@ -25,7 +25,8 @@ namespace RESTar.Operations
             var uri = uriToken.Value.Value<string>();
             var response = HTTP.InternalRequest(RESTarMethods.GET, new Uri(uri, UriKind.Relative), request.AuthToken);
             if (response?.IsSuccessStatusCode != true)
-                throw new Exception($"Could not get source data from '<self>:{Settings._Port}{Settings._Uri}{uri}'");
+                throw new Exception($"Could not get source data from '<self>:{Settings._Port}{Settings._Uri}{uri}'. " +
+                                    $"{response?.StatusCode}: {response?.StatusDescription}. {response?.Headers["ErrorInfo"]}");
             if (response.StatusCode == 204 || string.IsNullOrEmpty(response.Body))
                 return new[] {new Counter {["Count"] = 0}};
             IEnumerable<object> items = response.Body.DeserializeDyn();
