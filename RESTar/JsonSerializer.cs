@@ -5,10 +5,12 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Xml;
-using Dynamit;
 using Jil;
 using Newtonsoft.Json;
 using Starcounter;
+using static Jil.DateTimeFormat;
+using static Jil.UnspecifiedDateTimeKindBehavior;
+using static RESTar.Settings;
 
 namespace RESTar
 {
@@ -26,6 +28,9 @@ namespace RESTar
 
         private static readonly MethodInfo SerializeMethod;
 
+        internal static Options VmSerializerOptions => new Options(excludeNulls: true, includeInherited: true,
+            dateFormat: ISO8601, unspecifiedDateTimeKindBehavior: _LocalTimes ? IsLocal : IsUTC);
+        
         internal static string Serialize(this object obj, Type resource)
         {
             var generic = SerializeMethod.MakeGenericMethod(resource);

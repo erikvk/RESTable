@@ -18,8 +18,8 @@ namespace RESTar.Internal
         public string Alias => ResourceAlias.ByResource(TargetType);
         public long? NrOfEntities => DB.RowCount(Name);
         public bool Visible { get; }
-        public string EntityViewHtmlPath { get; }
-        public string EntitiesViewHtmlPath { get; }
+        public string EntityViewHtml { get; }
+        public string EntitiesViewHtml { get; }
 
         public bool Equals(IResource x, IResource y) => x.Name == y.Name;
         public int GetHashCode(IResource obj) => obj.Name.GetHashCode();
@@ -45,8 +45,8 @@ namespace RESTar.Internal
             Editable = true;
             AvailableMethods = availableMethods;
             Visible = visible;
-            EntityViewHtmlPath = entityViewHtmlPath;
-            EntitiesViewHtmlPath = entitiesViewHtmlPath;
+            EntityViewHtml = entityViewHtmlPath;
+            EntitiesViewHtml = entitiesViewHtmlPath;
         }
 
         public static DynamicResource MakeTable(Resource resource)

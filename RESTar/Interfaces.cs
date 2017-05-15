@@ -1,6 +1,4 @@
 ﻿using System.Collections.Generic;
-using Starcounter;
-using IResource = RESTar.Internal.IResource;
 
 namespace RESTar
 {
@@ -30,12 +28,5 @@ namespace RESTar
         IUpdater<T>,
         IDeleter<T>
     {
-    }
-
-    internal interface IRESTarView
-    {
-        IResource Resource { get; set; }
-        IRequest Request { get; set; }
-        string Html { get; set; }
     }
 }

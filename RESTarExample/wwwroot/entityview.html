@@ -1,14 +1,21 @@
 ﻿<link rel="import" href="/sys/polymer/polymer.html">
 <link rel="import" href="/sys/puppet-redirect/puppet-redirect.html"/>
 
+<!--
+
+iterera över members
+ha en RESTar-default-tag som kollar typ och printar
+se till att saker binder
+
+-->
+
 <template>
-
     <template is="dom-bind">
-        
-        <label>Name<input type="text" value="{{model.Entity$.Name$::input}}" /></label>
-        <label>PrettyPrint<input type="checkbox" checked="{{model.Entity$.PrettyPrint$::input}}" /></label>
-        <label>Inte<input type="number" value="{{model.Entity$.Inte$::input}}" /></label>
-
+        <h3>
+            <a href="{{model.ResourcePath}}">{{model.ResourceName}}</a>
+        </h3>
+        <RESTar-alldefault entity="{{model.Entity$}}"></RESTar-alldefault>
+        <br/>
         <div>
             <button class="btn btn-sm btn-primary" value="{{model.Save$::click}}" on onmouseup="++this.value">Save</button>
             <button class="btn btn-sm btn-default" value="{{model.Close$::click}}" on onmouseup="++this.value">Close</button>
@@ -17,3 +24,47 @@
         <br/>
     </template>
 </template>
+
+
+<dom-module is="RESTar-alldefault">
+    <template>
+        <template is="dom-repeat" items="{{_members(entity)}}" as="member">
+            <template is="dom-if" if="{{_bool(member)}}">
+                <label>{{member.name}}<input type="checkbox" checked="{{member.value::change}}"/></label>
+            </template>
+            <template is="dom-if" if="{{_arr(member)}}">
+                <label>{{member.name}}<input type="text" value="{{member.value::input}}"/></label>
+            </template>
+            <template is="dom-if" if="{{_obj(member)}}">
+                <label>{{member.name}}<input type="text" checked="{{member.value::input}}"/></label>
+            </template>
+            <template is="dom-if" if="{{_num(member)}}">
+                <label>{{member.name}}<input type="number" value="{{member.value::input}}"/></label>
+            </template>
+            <template is="dom-if" if="{{_str(member)}}">
+                <label>{{member.name}}<input type="text" value="{{member.value::input}}"/></label>
+            </template>
+            <br/>
+        </template>
+
+    </template>
+    <script>
+        _getType = o => Array.isArray(o) ? "array" : typeof(o);
+        Polymer({
+            is: "RESTar-alldefault",
+            properties: {
+                entity: Object
+            },
+            _bool: member => member.type === "boolean",
+            _arr: member => member.type === "array",
+            _obj: member => member.type === "object",
+            _num: member => member.type === "number",
+            _str: member => member.type === "string",
+            _members: obj => Object.keys(obj).map(key => ({
+                name: key.slice(0, -1),
+                value: obj[key],
+                type: _getType(obj[key])
+            }))
+        });
+    </script>
+</dom-module>

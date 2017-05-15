@@ -215,13 +215,6 @@ namespace RESTar.Requests
             };
         }
 
-        internal static Response GetEntities(Request request, IEnumerable<dynamic> entities)
-        {
-            var response = new Response();
-            request.SetResponseData(entities, response);
-            return response;
-        }
-
         #endregion
 
         internal static Response Forbidden() => new Response

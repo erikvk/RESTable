@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Data;
 using System.IO;
@@ -14,7 +15,6 @@ using RESTar.Auth;
 using RESTar.Internal;
 using RESTar.Operations;
 using RESTar.Requests;
-using RESTar.View;
 using Starcounter;
 using static System.Reflection.BindingFlags;
 using static System.StringComparison;
@@ -26,7 +26,6 @@ using static RESTar.RESTarMethods;
 using static RESTar.Settings;
 using static Starcounter.DbHelper;
 using Conditions = RESTar.Requests.Conditions;
-using DateTimeFormat = System.Runtime.Serialization.DateTimeFormat;
 using IResource = RESTar.Internal.IResource;
 
 namespace RESTar
@@ -218,10 +217,8 @@ namespace RESTar
             return new Json(JSON.SerializeDynamic(dict, options));
         }
 
-        public static Json ToViewModel(this Dictionary<string, dynamic> d)
+        public static Json ToJson(this Dictionary<string, dynamic> d, Options options)
         {
-            var options = new Options(excludeNulls: true, includeInherited: true, dateFormat: ISO8601,
-                unspecifiedDateTimeKindBehavior: _LocalTimes ? IsLocal : IsUTC);
             var dict = new Dictionary<string, dynamic>();
             d.ForEach(pair => dict.Add(pair.Key + "$", pair.Value));
             return new Json(JSON.SerializeDynamic(dict, options));
@@ -367,26 +364,33 @@ namespace RESTar
         {
             if (entity is DDictionary) return ((DDictionary) entity).ToTransient();
             if (entity is Dictionary<string, dynamic>) return (Dictionary<string, object>) entity;
+            if (entity is IDictionary)
+            {
+                var dict = new Dictionary<string, dynamic>();
+                foreach (DictionaryEntry pair in (IDictionary) entity)
+                    dict[pair.Key.ToString()] = pair.Value;
+                return dict;
+            }
             return entity.GetType()
                 .GetPropertyList()
                 .ToDictionary(prop => prop.RESTarMemberName(),
                     prop => prop.GetValue(entity));
         }
 
-        internal static Json MakeViewModelJsonObject(this object entity)
-        {
-            if (entity is DDictionary) return ((DDictionary) entity).ToViewModel();
-            if (entity is Dictionary<string, dynamic>) return ((Dictionary<string, dynamic>) entity).ToViewModel();
-            var options = new Options(excludeNulls: true, includeInherited: true, dateFormat: ISO8601,
-                unspecifiedDateTimeKindBehavior: _LocalTimes ? IsLocal : IsUTC);
-            var str = JSON.SerializeDynamic(
-                entity.GetType()
-                    .GetPropertyList()
-                    .ToDictionary(prop => prop.RESTarMemberName() + "$",
-                        prop => prop.GetValue(entity))
-                , options);
-            return new Json(str);
-        }
+//        internal static Dictionary<string, dynamic> ToDictionary(this object entity)
+//        {
+//            if (entity is DDictionary) return ((DDictionary) entity).ToTransient();
+//            if (entity is Dictionary<string, dynamic>) return (Dictionary<string, dynamic>) entity;
+//            var options = new Options(excludeNulls: true, includeInherited: true, dateFormat: ISO8601,
+//                unspecifiedDateTimeKindBehavior: _LocalTimes ? IsLocal : IsUTC);
+//            var str = JSON.SerializeDynamic(
+//                entity.GetType()
+//                    .GetPropertyList()
+//                    .ToDictionary(prop => prop.RESTarMemberName() + "$",
+//                        prop => prop.GetValue(entity))
+//                , options);
+//            return new Json(str);
+//        }
 
         internal static IEnumerable<Json> MakeViewModelJsonArray(this IEnumerable<object> entities)
         {
@@ -411,6 +415,18 @@ namespace RESTar
                 {
                     var dict = new Dictionary<string, dynamic>();
                     entity.ForEach(pair => dict.Add(pair.Key + "$", pair.Value));
+                    list.Add(dict);
+                }
+                return list.Select(dict => new Json(JSON.SerializeDynamic(dict, options)));
+            }
+
+            if (entities is IEnumerable<IDictionary>)
+            {
+                foreach (IDictionary entity in entities)
+                {
+                    var dict = new Dictionary<string, dynamic>();
+                    foreach (DictionaryEntry pair in entity)
+                        dict[pair + "$"] = pair.Value;
                     list.Add(dict);
                 }
                 return list.Select(dict => new Json(JSON.SerializeDynamic(dict, options)));
@@ -475,22 +491,6 @@ namespace RESTar
             return false;
         }
 
-        internal static void Commit(this EntityView page)
-        {
-            var json = page.Entity.ToJson().Replace(@"$"":", @""":");
-            Patcher.PATCH(page.Data, json, page.Request);
-        }
-
-        internal static Json ToEntity(this object data)
-        {
-            return data.MakeViewModelJsonObject();
-        }
-
-        internal static IEnumerable<Json> ToEntities(this IEnumerable<object> data)
-        {
-            return data.MakeViewModelJsonArray();
-        }
-
         internal static DataTable MakeTable(this IEnumerable<object> entities, IResource resource)
         {
             var table = new DataTable();
@@ -537,7 +537,7 @@ namespace RESTar
             return table;
         }
 
-        internal static void SetCellValue(this DataRow row, string name, dynamic value)
+        private static void SetCellValue(this DataRow row, string name, dynamic value)
         {
             if (value == null)
             {

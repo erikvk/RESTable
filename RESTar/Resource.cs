@@ -40,8 +40,8 @@ namespace RESTar
                     Editable = m.Editable,
                     TargetType = m.TargetType,
                     Visible = m.Visible,
-                    EntityViewHtmlPath = m.EntityViewHtmlPath,
-                    EntitiesViewHtmlPath = m.EntitiesViewHtmlPath
+                    EntityViewHtmlPath = m.EntityViewHtml,
+                    EntitiesViewHtmlPath = m.EntitiesViewHtml
                 });
         }
 

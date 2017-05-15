@@ -1,9 +1,10 @@
 {
-  "Html": "/entityview.html",
+  "Html": "",
   "RedirectUrl$": "",
   "ResourceName": "",
+  "ResourcePath": "", 
   "Static": false,
-  "Entity$": {}, 
+  "Entity$": {},
   "Save$": 0,
   "Close$": 0
 }

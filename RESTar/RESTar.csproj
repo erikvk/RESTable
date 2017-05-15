@@ -99,7 +99,6 @@
     <Compile Include="Operations\Add.cs" />
     <Compile Include="Attributes.cs" />
     <Compile Include="NoCaseComparer.cs" />
-    <Compile Include="Operations\Patcher.cs" />
     <Compile Include="Requests\Conditions.cs" />
     <Compile Include="Operations\Do.cs" />
     <Compile Include="Operations\OperationsInterfaces.cs" />
@@ -165,6 +164,10 @@
     <Compile Include="View\EntityView.json.cs">
       <DependentUpon>EntityView.json</DependentUpon>
     </Compile>
+    <Compile Include="View\ErrorView.json.cs">
+      <DependentUpon>ErrorView.json</DependentUpon>
+    </Compile>
+    <Compile Include="View\RESTarView.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -181,6 +184,9 @@
       <Generator>MsBuild:Compile</Generator>
     </TypedJSON>
     <TypedJSON Include="View\EmptyView.json">
+      <Generator>MsBuild:Compile</Generator>
+    </TypedJSON>
+    <TypedJSON Include="View\ErrorView.json">
       <Generator>MsBuild:Compile</Generator>
     </TypedJSON>
     <None Include="weaver.ignore">

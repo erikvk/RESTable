@@ -1,41 +1,32 @@
 using System;
-using System.Collections.Generic;
+using Jil;
+using RESTar.Operations;
 using Starcounter;
-using IResource = RESTar.Internal.IResource;
 
 namespace RESTar.View
 {
-    partial class EntityView : Json, IRESTarView, IBound<object>
+    partial class EntityView : RESTarView<object>
     {
-        public IResource Resource { get; set; }
-        public IRequest Request { get; set; }
-
-        protected override void OnData()
-        {
-            base.OnData();
-            Entity = Data.ToEntity();
-        }
+        protected override string HtmlMatcher => $"${Resource.Name}.html";
+        protected override string DefaultHtml => Resource.EntityViewHtml ?? "entityview.html";
+        protected override void SetHtml(string html) => Html = html;
+        protected override void SetResourceName(string resourceName) => ResourceName = resourceName;
+        protected override void SetResourcePath(string resourcePath) => ResourcePath = resourcePath;
 
         public void Handle(Input.Save action)
         {
-            this.Commit();
+            var entityJson = Entity.ToJson().Replace(@"$"":", @""":");
+            Evaluators.PATCH(RESTarData, entityJson, Request);
         }
 
-        public void Handle(Input.Close action)
+        internal override RESTarView<object> Populate(IRequest request, object data)
         {
-        }
+            base.Populate(request, data);
+            Entity = data.MakeDictionary().ToJson(JsonSerializer.VmSerializerOptions);
 
-        internal static EntityView Make(IRequest request, object data)
-        {
-            var view = new EntityView
-            {
-                Request = request,
-                Resource = request.Resource,
-                Data = data,
-                ResourceName = request.Resource.Name
-            };
-            view.Html = request.Resource.EntityViewHtmlPath ?? view.Html;
-            return view;
+            var eJson = Entity.ToJson();
+
+            return this;
         }
     }
 }

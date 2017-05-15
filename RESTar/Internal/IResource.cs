@@ -16,8 +16,8 @@ namespace RESTar.Internal
         bool IsDynamic { get; }
         RESTarResourceType ResourceType { get; }
         bool Visible { get; }
-        string EntityViewHtmlPath { get; }
-        string EntitiesViewHtmlPath { get; }
+        string EntityViewHtml { get; }
+        string EntitiesViewHtml { get; }
         Selector<dynamic> Select { get; }
         Inserter<dynamic> Insert { get; }
         Updater<dynamic> Update { get; }

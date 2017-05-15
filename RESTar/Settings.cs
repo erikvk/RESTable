@@ -1,23 +1,33 @@
-﻿using Jil;
+﻿using System.Runtime.Serialization;
+using Jil;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using RESTar.Internal;
 using Starcounter;
+using DateTimeFormat = Jil.DateTimeFormat;
 
 namespace RESTar
 {
     [Database, RESTar(RESTarPresets.ReadAndUpdate)]
     public class Settings
     {
+        internal static ushort _Port => Instance.Port;
+        internal static string _Uri => Instance.Uri;
+        internal static bool _ViewEnabled => Instance.ViewEnabled;
+        internal static ushort _ViewPort => Instance.ViewPort;
+        internal static string _ViewUri => Instance.ViewUri;
         internal static bool _PrettyPrint => Instance.PrettyPrint;
         internal static bool _CamelCase => Instance.CamelCase;
-        internal static string _Uri => Instance.Uri;
-        internal static string _ViewUri => Instance.ViewUri;
-        internal static ushort _Port => Instance.Port;
-        internal static string _ResourcesPath => Instance.ResourcesPath;
-        internal static string _HelpResourcePath => Instance.HelpResourcePath;
         internal static bool _LocalTimes => Instance.LocalTimes;
         internal static int _DaysToSaveErrors => Instance.DaysToSaveErrors;
+        internal static string _ResourcesPath => Instance.ResourcesPath;
+        internal static string _HelpResourcePath => Instance.HelpResourcePath;
+
+        public ushort Port { get; private set; }
+        public string Uri { get; private set; }
+        public bool ViewEnabled { get; private set; }
+        public ushort ViewPort { get; private set; }
+        public string ViewUri { get; private set; }
 
         private bool _prettyPrint;
         private bool _camelCase;
@@ -92,18 +102,18 @@ namespace RESTar
             }
         }
 
-        public string Uri { get; private set; }
-        public string ViewUri { get; private set; }
-        public ushort Port { get; private set; }
         public string ResourcesPath => $"http://[IP address]:{Port}{Uri}";
         public string HelpResourcePath => ResourcesPath + "/RESTar.help";
         public int DaysToSaveErrors { get; private set; }
 
+
         internal static void Init
         (
-            string uri,
-            string viewUri,
             ushort port,
+            string uri,
+            bool viewEnabled,
+            ushort viewPort,
+            string viewUri,
             bool prettyPrint,
             bool camelCase,
             bool localTimes,
@@ -142,9 +152,11 @@ namespace RESTar
 
                 new Settings
                 {
-                    Uri = uri,
-                    ViewUri = viewUri,
                     Port = port,
+                    Uri = uri,
+                    ViewEnabled = viewEnabled,
+                    ViewPort = viewPort,
+                    ViewUri = viewUri,
                     _prettyPrint = prettyPrint,
                     _camelCase = camelCase,
                     _localTimes = localTimes,
@@ -153,6 +165,7 @@ namespace RESTar
             });
         }
 
+        [IgnoreDataMember]
         public static Settings Instance => DB.First<Settings>();
     }
 }

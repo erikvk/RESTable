@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
 using RESTar.Requests;
 using RESTar.View;
 using Starcounter;
@@ -11,26 +10,30 @@ namespace RESTar.Operations
 {
     internal static class Evaluators
     {
-        internal static Response GETVIEW(Request request)
+        private static IEnumerable<dynamic> SELECT(Request request)
+        {
+            if (!request.MetaConditions.Unsafe && request.MetaConditions.Limit == -1)
+                request.MetaConditions.Limit = 1000;
+            request.MetaConditions.Unsafe = true;
+            return request.Resource
+                .Select(request)
+                .Process(request.MetaConditions.Add)
+                .Process(request.MetaConditions.Rename)
+                .Process(request.MetaConditions.Select)
+                .Filter(request.MetaConditions.OrderBy)
+                .Filter(request.MetaConditions.Limit);
+        }
+
+        internal static Response VIEW(Request request)
         {
             try
             {
-                if (!request.MetaConditions.Unsafe && request.MetaConditions.Limit == -1)
-                    request.MetaConditions.Limit = 1000;
-                request.MetaConditions.Unsafe = true;
-                var entities = request.Resource
-                    .Select(request)
-                    .Process(request.MetaConditions.Add)
-                    .Process(request.MetaConditions.Rename)
-                    .Process(request.MetaConditions.Select)
-                    .Filter(request.MetaConditions.OrderBy)
-                    .Filter(request.MetaConditions.Limit);
-
+                var entities = SELECT(request);
                 switch (entities.Count())
                 {
                     case 0: return new EmptyView();
-                    case 1: return EntityView.Make(request, entities.First());
-                    default: return EntitiesView.Make(request, entities);
+                    case 1: return new EntityView().Populate(request, entities.First());
+                    default: return new EntitiesView().Populate(request, entities);
                 }
             }
             catch (Exception e)
@@ -43,17 +46,12 @@ namespace RESTar.Operations
         {
             try
             {
-                if (!request.MetaConditions.Unsafe && request.MetaConditions.Limit == -1)
-                    request.MetaConditions.Limit = 1000;
-                request.MetaConditions.Unsafe = true;
-                var entities = request.Resource
-                    .Select(request)
-                    .Process(request.MetaConditions.Add)
-                    .Process(request.MetaConditions.Rename)
-                    .Process(request.MetaConditions.Select)
-                    .Filter(request.MetaConditions.OrderBy)
-                    .Filter(request.MetaConditions.Limit);
-                return entities?.Any() != true ? Responses.NoContent() : Responses.GetEntities(request, entities);
+                var entities = SELECT(request);
+                if (entities?.Any() != true)
+                    return Responses.NoContent();
+                var response = new Response();
+                request.SetResponseData(entities, response);
+                return response;
             }
             catch (Exception e)
             {
@@ -137,6 +135,31 @@ namespace RESTar.Operations
                     insertedCount += 1;
             }
             return Responses.SafePostedEntities(request, insertedCount, updatedCount);
+        }
+
+        internal static int PATCH(object entity, string json, IRequest request)
+        {
+            try
+            {
+                var count = 0;
+                Db.TransactAsync(() =>
+                {
+                    JsonSerializer.PopulateObject(json, entity);
+                    var validatableResult = entity as IValidatable;
+                    if (validatableResult != null)
+                    {
+                        string reason;
+                        if (!validatableResult.Validate(out reason))
+                            throw new ValidatableException(reason);
+                    }
+                    count = request.Resource.Update(entity.MakeList(request.Resource.TargetType), request);
+                });
+                return count;
+            }
+            catch (Exception e)
+            {
+                throw new AbortedUpdaterException(e);
+            }
         }
 
         internal static Response PATCH(Request request)

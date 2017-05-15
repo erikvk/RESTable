@@ -90,6 +90,8 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="wwwroot\default.css" />
+    <None Include="wwwroot\errorview.html" />
+    <None Include="wwwroot\RESTar-default.html" />
     <None Include="wwwroot\entitiesview.html" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

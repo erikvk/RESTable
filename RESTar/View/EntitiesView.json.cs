@@ -1,31 +1,25 @@
 using System.Collections.Generic;
 using System.Data;
-using Starcounter;
-using IResource = RESTar.Internal.IResource;
 
 namespace RESTar.View
 {
-    partial class EntitiesView : Json, IRESTarView, IBound<IEnumerable<object>>
+    partial class EntitiesView : RESTarView<IEnumerable<object>>
     {
-        public IResource Resource { get; set; }
-        public IRequest Request { get; set; }
+        protected override string HtmlMatcher => $"${Resource.Name}-list.html";
+        public List<object[]> _TableRows { get; private set; }
+        protected override string DefaultHtml => Resource.EntitiesViewHtml ?? "entitiesview.html";
+        protected override void SetHtml(string html) => Html = html;
+        protected override void SetResourceName(string resourceName) => ResourceName = resourceName;
+        protected override void SetResourcePath(string resourcePath) => ResourcePath = resourcePath;
 
-        public List<object[]> ResultRows { get; set; }
-
-        internal static EntitiesView Make(IRequest request, IEnumerable<object> data)
+        internal override RESTarView<IEnumerable<object>> Populate(IRequest request, IEnumerable<object> data)
         {
-            var view = new EntitiesView
-            {
-                Request = request,
-                Resource = request.Resource,
-                ResourceName = request.Resource.Name
-            };
-            view.Html = request.Resource.EntitiesViewHtmlPath ?? view.Html;
-            var table = data.MakeTable(request.Resource);
+            base.Populate(request, data);
+            var table = data.MakeTable(Resource);
             foreach (DataColumn column in table.Columns)
-                view.TableHead.Add().StringValue = column.ColumnName;
+                TableHead.Add().StringValue = column.ColumnName;
             var columncount = table.Columns.Count;
-            view.ResultRows = new List<object[]>();
+            _TableRows = new List<object[]>();
             foreach (DataRow row in table.Rows)
             {
                 var outputRow = new object[columncount];
@@ -38,13 +32,11 @@ namespace RESTar.View
                         toInclude = string.Join(", ", (IEnumerable<object>) item);
                     outputRow[index] = toInclude;
                 });
-                view.ResultRows.Add(outputRow);
+                _TableRows.Add(outputRow);
             }
-            foreach (var entity in data.ToEntities())
-            {
-                view.Entities.Add(entity);
-            }
-            return view;
+            foreach (var entity in data.MakeViewModelJsonArray())
+                Entities.Add(entity);
+            return this;
         }
     }
 }

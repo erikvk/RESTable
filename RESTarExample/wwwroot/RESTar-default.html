@@ -1,0 +1,23 @@
+﻿<link rel="import" href="/sys/polymer/polymer.html">
+
+<dom-module is="RESTar-alldefault">
+    <template>
+        <template is="dom-repeat" items="{{members(entity)}}">
+            
+        </template>
+    </template>
+    <script>
+        _getType = o => Array.isArray(o) ? "array" : typeof(o);
+        Polymer({
+            is: "RESTar-iterate",
+            properties: {
+                entity: Object
+            },
+            members: obj => Object.keys(obj).map(key => ({
+                name: key.slice(0, -1),
+                value: obj[key],
+                type: _getType(entity[key])
+            }))
+        });
+    </script>
+</dom-module>

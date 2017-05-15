@@ -8,21 +8,22 @@ using static Starcounter.SessionOptions;
 using static RESTar.Settings;
 using ScRequest = Starcounter.Request;
 using ScHandle = Starcounter.Handle;
-using IResource = RESTar.Internal.IResource;
 
 namespace RESTar.Requests
 {
     internal static class Handlers
     {
-        internal static void Register(string uri)
+        internal static void Register()
         {
-            uri += "{?}";
+            var uri = _Uri + "{?}";
             ScHandle.GET(_Port, uri, (ScRequest r, string q) => Handle(r, q, Evaluators.GET, GET));
             ScHandle.POST(_Port, uri, (ScRequest r, string q) => Handle(r, q, Evaluators.POST, POST));
             ScHandle.PUT(_Port, uri, (ScRequest r, string q) => Handle(r, q, Evaluators.PUT, PUT));
             ScHandle.PATCH(_Port, uri, (ScRequest r, string q) => Handle(r, q, Evaluators.PATCH, PATCH));
             ScHandle.DELETE(_Port, uri, (ScRequest r, string q) => Handle(r, q, Evaluators.DELETE, DELETE));
             ScHandle.OPTIONS(_Port, uri, (ScRequest r, string q) => CheckOrigin(r, q));
+
+            if (!_ViewEnabled) return;
 
             ScHandle.GET(_Port, $"/__restar/__page", () =>
             {
@@ -41,12 +42,12 @@ namespace RESTar.Requests
                     using (var request = new Request(r))
                     {
                         request.Authenticate();
-                        request.Populate(q, GET, Evaluators.GETVIEW);
+                        request.Populate(q, GET, Evaluators.VIEW);
 //                        if (!request.Resource.Visible)
 //                            return Responses.Forbidden();
                         request.MethodCheck();
                         request.Evaluate();
-                        var partial = (Json)request.GetResponse();
+                        var partial = (Json) request.GetResponse();
                         var master = Self.GET<AppPage>(_Port, "/__restar/__page");
                         master.CurrentPage = partial;
                         return master;
@@ -54,7 +55,10 @@ namespace RESTar.Requests
                 }
                 catch (Exception e)
                 {
-                    return e.ToString();    
+                    var partial = new ErrorView {Message = e.Message};
+                    var master = Self.GET<AppPage>(_Port, "/__restar/__page");
+                    master.CurrentPage = partial;
+                    return master;
                 }
             });
 

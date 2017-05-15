@@ -1,8 +1,9 @@
 {
-  "Html": "/entitiesview.html",
+  "Html": "",
   "ResourceName": "",
+  "ResourcePath": "",
   "TableHead": [""],
   "TableRows": [[]],
-  "$TableRows": { "Bind": "ResultRows" },
+  "$TableRows": { "Bind": "_TableRows" },
   "Entities": [{}]
 }

@@ -21,8 +21,8 @@ namespace RESTar.Internal
         public bool IsDynamic => typeof(T) == typeof(DDictionary);
         public long? NrOfEntities => Try(() => DB.RowCount(Name), null);
         public bool Visible { get; }
-        public string EntityViewHtmlPath { get; }
-        public string EntitiesViewHtmlPath { get; }
+        public string EntityViewHtml { get; }
+        public string EntitiesViewHtml { get; }
         
         public RESTarResourceType ResourceType =>
             TargetType.HasAttribute<DatabaseAttribute>()
