@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using RESTar.Internal;
 using RESTar.Requests;
 using RESTar.View;
 using Starcounter;
@@ -24,23 +25,7 @@ namespace RESTar.Operations
                 .Filter(request.MetaConditions.Limit);
         }
 
-        internal static Response VIEW(Request request)
-        {
-            try
-            {
-                var entities = SELECT(request);
-                switch (entities.Count())
-                {
-                    case 0: return new EmptyView();
-                    case 1: return new EntityView().Populate(request, entities.First());
-                    default: return new EntitiesView().Populate(request, entities);
-                }
-            }
-            catch (Exception e)
-            {
-                throw new AbortedSelectorException(e);
-            }
-        }
+        #region REST
 
         internal static Response GET(Request request)
         {
@@ -137,31 +122,6 @@ namespace RESTar.Operations
             return Responses.SafePostedEntities(request, insertedCount, updatedCount);
         }
 
-        internal static int PATCH(object entity, string json, IRequest request)
-        {
-            try
-            {
-                var count = 0;
-                Db.TransactAsync(() =>
-                {
-                    JsonSerializer.PopulateObject(json, entity);
-                    var validatableResult = entity as IValidatable;
-                    if (validatableResult != null)
-                    {
-                        string reason;
-                        if (!validatableResult.Validate(out reason))
-                            throw new ValidatableException(reason);
-                    }
-                    count = request.Resource.Update(entity.MakeList(request.Resource.TargetType), request);
-                });
-                return count;
-            }
-            catch (Exception e)
-            {
-                throw new AbortedUpdaterException(e);
-            }
-        }
-
         internal static Response PATCH(Request request)
         {
             try
@@ -172,7 +132,13 @@ namespace RESTar.Operations
                 var count = 0;
                 Db.TransactAsync(() =>
                 {
-                    entities.ForEach(entity => JsonSerializer.PopulateObject(request.Body, entity));
+                    foreach (var entity in entities)
+                    {
+                        JsonSerializer.PopulateObject(request.Body, entity);
+                    }
+                });
+                Db.TransactAsync(() =>
+                {
                     foreach (var entity in entities)
                     {
                         var validatableResult = entity as IValidatable;
@@ -273,5 +239,97 @@ namespace RESTar.Operations
                 throw new AbortedDeleterException(e);
             }
         }
+
+        #endregion
+
+        #region VIEW
+
+        internal static Response VIEW(Request request)
+        {
+            try
+            {
+
+                if (request.MetaConditions.New)
+                    return new Item().Populate(request, null);
+                var entities = SELECT(request);
+                if (entities.IsSingular(request))
+                    return new Item().Populate(request, entities.First());
+                return new List().Populate(request, entities);
+            }
+            catch (Exception e)
+            {
+                throw new AbortedSelectorException(e);
+            }
+        }
+
+        internal static int PATCH(object entity, string json, IRequest request)
+        {
+            try
+            {
+                var count = 0;
+                Db.TransactAsync(() =>
+                {
+                    JsonSerializer.PopulateObject(json, entity);
+                    var validatableResult = entity as IValidatable;
+                    if (validatableResult != null)
+                    {
+                        string reason;
+                        if (!validatableResult.Validate(out reason))
+                            throw new ValidatableException(reason);
+                    }
+                    count = request.Resource.Update(entity.MakeList(request.Resource.TargetType), request);
+                });
+                return count;
+            }
+            catch (Exception e)
+            {
+                throw new AbortedUpdaterException(e);
+            }
+        }
+
+        internal static int DELETE(object entity, IRequest request)
+        {
+            try
+            {
+                var count = 0;
+                Db.TransactAsync(() => count =
+                    request.Resource.Delete(entity.MakeList(request.Resource.TargetType), request));
+                return count;
+            }
+            catch (Exception e)
+            {
+                throw new AbortedDeleterException(e);
+            }
+        }
+
+        internal static int POST(string json, IRequest request)
+        {
+            object result = null;
+            try
+            {
+                var count = 0;
+                Db.TransactAsync(() =>
+                {
+                    result = json.Deserialize(request.Resource.TargetType);
+                    var validatableResult = result as IValidatable;
+                    if (validatableResult != null)
+                    {
+                        string reason;
+                        if (!validatableResult.Validate(out reason))
+                            throw new ValidatableException(reason);
+                    }
+                    count = request.Resource.Insert(result.MakeList(request.Resource.TargetType), request);
+                });
+                return count;
+            }
+            catch (Exception e)
+            {
+                if (result != null)
+                    Db.TransactAsync(() => { Do.Try(() => result.Delete()); });
+                throw new AbortedInserterException(e);
+            }
+        }
+
+        #endregion
     }
 }

@@ -15,13 +15,13 @@ namespace RESTar.Internal
         internal static PropertyChain Parse(string keyString, IResource resource, List<string> dynamicDomain = null)
         {
             var chain = new PropertyChain();
-            var propertyMaker = new Func<string, Property>(str =>
+            Func<string, Property> propertyMaker = str =>
             {
                 if (string.IsNullOrWhiteSpace(str))
                     throw new SyntaxException($"Invalid condition '{str}'",
                         ErrorCode.InvalidConditionSyntaxError);
-                if (str == "objectno") return StaticProperty.ObjectNo;
-                if (str == "objectid") return StaticProperty.ObjectID;
+                if (str.ToLower() == "objectno") return StaticProperty.ObjectNo;
+                if (str.ToLower() == "objectid") return StaticProperty.ObjectID;
                 if (dynamicDomain?.Contains(str, Comparer) == true)
                     return DynamicProperty.Parse(str);
                 var previous = chain.LastOrDefault();
@@ -35,7 +35,7 @@ namespace RESTar.Internal
                     return StaticProperty.Parse(str, ((StaticProperty) previous).Type);
                 }
                 return DynamicProperty.Parse(str);
-            });
+            };
             keyString.Split('.').ForEach(s => chain.Add(propertyMaker(s)));
             return chain;
         }

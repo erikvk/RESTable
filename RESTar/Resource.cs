@@ -10,17 +10,17 @@ using static RESTar.Internal.DynamicResource;
 
 namespace RESTar
 {
-    [RESTar(RESTarPresets.ReadAndWrite, Visible = true)]
+    [RESTar(RESTarPresets.ReadAndWrite, Viewable = true)]
     public sealed class Resource : IOperationsProvider<Resource>
     {
+        [UniqueId]
         public string Name { get; set; }
+
         public bool Editable { get; private set; }
         public bool Visible { get; set; }
         public RESTarMethods[] AvailableMethods { get; set; }
         public string Alias { get; set; }
-        public string EntityViewHtmlPath { get; set; }
-        public string EntitiesViewHtmlPath { get; set; }
-        
+
         [DataMember(Name = "TargetType")]
         public string TargetTypeString => TargetType?.FullName;
 
@@ -39,10 +39,8 @@ namespace RESTar
                     AvailableMethods = m.AvailableMethods,
                     Editable = m.Editable,
                     TargetType = m.TargetType,
-                    Visible = m.Visible,
-                    EntityViewHtmlPath = m.EntityViewHtml,
-                    EntitiesViewHtmlPath = m.EntitiesViewHtml
-                });
+                    Visible = m.Viewable
+                }).ToList();
         }
 
         public int Insert(IEnumerable<Resource> resources, IRequest request)
@@ -105,15 +103,15 @@ namespace RESTar
         private static void AUTO_MAKE<T>() where T : class => Resource<T>
             .Make(typeof(T).GetAttribute<RESTarAttribute>());
 
-        public static void Register<T>(RESTarPresets preset, params RESTarMethods[] additionalMethods) where T : class
+        public static void Register<T>(RESTarPresets preset, params RESTarMethods[] addMethods) where T : class
         {
-            var methods = preset.ToMethods().Union(additionalMethods).ToArray();
+            var methods = preset.ToMethods().Union(addMethods ?? new RESTarMethods[0]).ToArray();
             Register<T>(methods.First(), methods.Length > 1 ? methods.Skip(1).ToArray() : null);
         }
 
         public static void Register<T>(RESTarMethods method, params RESTarMethods[] addMethods) where T : class
         {
-            var methods = new[] {method}.Union(addMethods).ToArray();
+            var methods = new[] {method}.Union(addMethods ?? new RESTarMethods[0]).ToArray();
             Register<T>(methods.First(), methods.Length > 1 ? methods.Skip(1).ToArray() : null, null);
         }
 
@@ -124,8 +122,7 @@ namespace RESTar
             Selector<T> selector = null,
             Inserter<T> inserter = null,
             Updater<T> updater = null,
-            Deleter<T> deleter = null,
-            bool visible = false
+            Deleter<T> deleter = null
         ) where T : class
         {
             var methods = preset.ToMethods().Union(addMethods ?? new RESTarMethods[0]).ToArray();

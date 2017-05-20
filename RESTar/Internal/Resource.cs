@@ -20,12 +20,14 @@ namespace RESTar.Internal
         public Type TargetType { get; }
         public bool IsDynamic => typeof(T) == typeof(DDictionary);
         public long? NrOfEntities => Try(() => DB.RowCount(Name), null);
-        public bool Visible { get; }
-        public string EntityViewHtml { get; }
-        public string EntitiesViewHtml { get; }
-        
+        public bool Viewable { get; }
+        public bool Singleton { get; }
+        public string AliasOrName => Alias ?? Name;
+        public override string ToString() => AliasOrName;
+        public bool IsStarcounterResource => TargetType.HasAttribute<DatabaseAttribute>();
+
         public RESTarResourceType ResourceType =>
-            TargetType.HasAttribute<DatabaseAttribute>()
+            IsStarcounterResource
                 ? IsDynamic
                     ? ScDynamic
                     : ScStatic
@@ -69,7 +71,8 @@ namespace RESTar.Internal
             Name = targetType.FullName;
             Editable = editable;
             AvailableMethods = attribute.AvailableMethods;
-            Visible = attribute.Visible;
+            Viewable = attribute.Viewable;
+            Singleton = attribute.Singleton;
             TargetType = targetType;
             Select = selector;
             Insert = (e, r) => inserter((IEnumerable<T>) e, r);
@@ -112,8 +115,12 @@ namespace RESTar.Internal
                 if (fields.Any())
                     throw new VirtualResourceMemberException(
                         "A virtual resource cannot include public instance fields, " +
-                        $"only properties. Fields: {string.Join(", ", fields.Select(f => $"'{f.Name}'"))} in resource '{type.FullName}'"
-                    );
+                        $"only properties. Resource: '{type.FullName}' Fields: {string.Join(", ", fields.Select(f => $"'{f.Name}'"))} in resource '{type.FullName}'");
+                if (attribute.Viewable && !attribute.Singleton &&
+                    !type.GetProperties().Any(i => i.HasAttribute<UniqueId>()))
+                    throw new VirtualResourceMemberException(
+                        $"Invalid virtual resource: '{type.FullName}' . A non-singleton viewable virtual resource must declare at least one unique id property using " +
+                        $"the UniqueId attribute ({typeof(UniqueId).FullName})");
             }
 
             new Resource<T>(type, editable, attribute, selector, inserter, updater, deleter);

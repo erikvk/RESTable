@@ -1,9 +1,0 @@
-{
-  "Html": "",
-  "ResourceName": "",
-  "ResourcePath": "",
-  "TableHead": [""],
-  "TableRows": [[]],
-  "$TableRows": { "Bind": "_TableRows" },
-  "Entities": [{}]
-}

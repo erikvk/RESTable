@@ -29,4 +29,9 @@ namespace RESTar
         IDeleter<T>
     {
     }
+
+    public interface IVirtualResource
+    {
+        string UUID { get; }
+    }
 }

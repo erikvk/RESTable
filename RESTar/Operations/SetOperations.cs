@@ -10,7 +10,7 @@ using Newtonsoft.Json.Linq;
 
 namespace RESTar.Operations
 {
-    [RESTar(RESTarPresets.ReadOnly, Dynamic = true)]
+    [RESTar(RESTarPresets.ReadOnly, Dynamic = true, Singleton = true)]
     public class SetOperations : Dictionary<string, dynamic>, ISelector<SetOperations>
     {
         public IEnumerable<SetOperations> Select(IRequest request)

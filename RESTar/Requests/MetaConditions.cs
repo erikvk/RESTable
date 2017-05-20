@@ -9,23 +9,60 @@ using static RESTar.ErrorCode;
 
 namespace RESTar.Requests
 {
+    internal enum RESTarMetaConditions
+    {
+        Limit,
+        Order_desc,
+        Order_asc,
+        Unsafe,
+        Select,
+        Add,
+        Rename,
+        Dynamic,
+        Safepost,
+        New
+    }
+
+    internal static class MetaConditionsExtensions
+    {
+        internal static Type ExpectedType(this RESTarMetaConditions condition)
+        {
+            switch (condition)
+            {
+                case RESTarMetaConditions.Limit: return typeof(int);
+                case RESTarMetaConditions.Order_desc: return typeof(string);
+                case RESTarMetaConditions.Order_asc: return typeof(string);
+                case RESTarMetaConditions.Unsafe: return typeof(bool);
+                case RESTarMetaConditions.Select: return typeof(string);
+                case RESTarMetaConditions.Add: return typeof(string);
+                case RESTarMetaConditions.Rename: return typeof(string);
+                case RESTarMetaConditions.Dynamic: return typeof(bool);
+                case RESTarMetaConditions.Safepost: return typeof(string);
+                case RESTarMetaConditions.New: return typeof(bool);
+                default: throw new ArgumentOutOfRangeException(nameof(condition), condition, null);
+            }
+        }
+    }
+
     public sealed class MetaConditions
     {
         internal Limit Limit { get; set; } = Limit.NoLimit;
         internal OrderBy OrderBy { get; private set; }
         internal bool Unsafe { get; set; }
         internal Select Select { get; private set; }
-        internal Add Add { get; private set; }
+        internal Add Add { get; set; }
         internal Rename Rename { get; private set; }
         internal bool Dynamic { get; private set; }
         internal string SafePost { get; private set; }
+        internal bool New { get; private set; }
+        internal bool Empty = true;
 
         internal static MetaConditions Parse(string metaConditionString, IResource resource)
         {
             if (metaConditionString?.Equals("") != false)
                 return null;
             metaConditionString = WebUtility.UrlDecode(metaConditionString);
-            var mc = new MetaConditions();
+            var mc = new MetaConditions {Empty = false};
 
             var mcStrings = metaConditionString.Split('&').ToList();
             var renameIndex = mcStrings.FindIndex(s => s.StartsWith("rename", CurrentCultureIgnoreCase));
@@ -106,6 +143,9 @@ namespace RESTar.Requests
                         break;
                     case RESTarMetaConditions.Safepost:
                         mc.SafePost = value;
+                        break;
+                    case RESTarMetaConditions.New:
+                        mc.New = value;
                         break;
                     default: throw new ArgumentOutOfRangeException();
                 }

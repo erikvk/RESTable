@@ -16,8 +16,11 @@ namespace RESTarExample
             (
                 requireApiKey: true,
                 allowAllOrigins: false,
-                configFilePath: "C:\\Mopedo\\Mopedo.config"
+                viewEnabled: true,
+                configFilePath: "C:\\Mopedo\\Mopedo.config",
+                setupMenu: true
             );
+
             TestDatabase.Init();
 
             // Activate the test database by setting the Active flag 
@@ -26,9 +29,10 @@ namespace RESTarExample
         }
     }
 
-    [Database, RESTar(RESTarPresets.ReadAndWrite, Visible = true)]
+    [Database, RESTar(RESTarPresets.ReadAndWrite, Viewable = true)]
     public class MyResource : IInserter<MyResource>
     {
+        [UniqueId]
         public string Str;
         public int Inte;
 
@@ -49,16 +53,32 @@ namespace RESTarExample
     public class MyOther
     {
         [DataMember(Name = "Swoo")] public string Str;
-        private MyDynamicTable _ext;
+        private MyList _list;
 
-        public MyDynamicTable Ext
+        public MyList List
         {
-            get { return _ext; }
+            get { return _list; }
             set
             {
-                _ext?.Delete();
-                _ext = value;
+                _list?.Delete();
+                _list = value;
             }
+        }
+    }
+
+    [DList(typeof(MyElement))]
+    public class MyList : DList
+    {
+        protected override DElement NewElement(DList list, int index, object value = null)
+        {
+            return new MyElement(list, index, value);
+        }
+    }
+
+    public class MyElement : DElement
+    {
+        public MyElement(DList list, int index, object value = null) : base(list, index, value)
+        {
         }
     }
 

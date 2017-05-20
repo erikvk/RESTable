@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
@@ -72,9 +73,14 @@ namespace RESTar
             return Properties[type] = FindProperties(type);
         }
 
-        private static IEnumerable<PropertyInfo> FindProperties(Type resource) => resource
-            .GetProperties()
-            .Where(p => !p.HasAttribute<IgnoreDataMemberAttribute>());
+        private static IEnumerable<PropertyInfo> FindProperties(Type resource)
+        {
+            if (resource.IsSubclassOf(typeof(DDictionary)))
+                return new PropertyInfo[0];
+            return resource
+                .GetProperties()
+                .Where(p => !p.HasAttribute<IgnoreDataMemberAttribute>());
+        }
 
         /// <summary>
         /// Initiates the RESTar interface
@@ -94,6 +100,7 @@ namespace RESTar
             bool viewEnabled = false,
             ushort viewPort = 8283,
             string viewUri = "/restview",
+            bool setupMenu = false,
             bool requireApiKey = false,
             bool allowAllOrigins = true,
             string configFilePath = null,
@@ -102,12 +109,18 @@ namespace RESTar
             bool localTimes = true,
             ushort daysToSaveErrors = 30)
         {
-            if (uri == null) throw new ArgumentNullException(nameof(uri));
-            if (viewUri == null) throw new ArgumentNullException(nameof(viewUri));
+            uri = uri ?? "/rest";
+            viewUri = viewUri ?? "/restview";
             uri = uri.Trim();
             viewUri = viewUri.Trim();
-            if (uri.Contains("?")) throw new ArgumentException("Uri cannot contain '?'", nameof(uri));
-            if (viewUri.Contains("?")) throw new ArgumentException("View uri cannot contain '?'", nameof(viewUri));
+            if (uri.Contains("?")) throw new ArgumentException("URI cannot contain '?'", nameof(uri));
+            if (viewUri.Contains("?")) throw new ArgumentException("View URI cannot contain '?'", nameof(viewUri));
+            var appName = Starcounter.Application.Current.Name;
+            if (uri.EqualsNoCase(appName))
+                throw new ArgumentException($"URI cannot be the same as the application name ({appName})");
+            if (viewUri.EqualsNoCase(appName))
+                throw new ArgumentException($"View URI cannot be the same as the application name ({appName})");
+
             if (uri.First() != '/') uri = $"/{uri}";
             if (viewUri.First() != '/') viewUri = $"/{viewUri}";
 
@@ -126,7 +139,19 @@ namespace RESTar
 
             typeof(object).GetSubclasses()
                 .Where(t => t.HasAttribute<RESTarAttribute>())
-                .ForEach(Resource.AutoMakeResource);
+                .ForEach(t =>
+                {
+                    try
+                    {
+                        Resource.AutoMakeResource(t);
+                    }
+                    catch (Exception e)
+                    {
+                        if (e.InnerException != null)
+                            throw e.InnerException;
+                        throw;
+                    }
+                });
             DB.All<DynamicResource>().ForEach(AddResource);
             RequireApiKey = requireApiKey;
             AllowAllOrigins = allowAllOrigins;
@@ -134,7 +159,7 @@ namespace RESTar
             ReadConfig();
             DynamitConfig.Init(true, true);
             Log.Init();
-            Handlers.Register();
+            Handlers.Register(setupMenu);
         }
 
         private static void ReadConfig()

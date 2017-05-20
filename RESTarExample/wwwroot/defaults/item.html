@@ -1,20 +1,17 @@
 ﻿<link rel="import" href="/sys/polymer/polymer.html">
 <link rel="import" href="/sys/puppet-redirect/puppet-redirect.html"/>
-
-<!--
-
-iterera över members
-ha en RESTar-default-tag som kollar typ och printar
-se till att saker binder
-
--->
+<link rel="import" href="/sys/paper-alert-dialog/paper-alert-dialog.html"/>
 
 <template>
     <template is="dom-bind">
         <h3>
             <a href="{{model.ResourcePath}}">{{model.ResourceName}}</a>
         </h3>
-        <RESTar-alldefault entity="{{model.Entity$}}"></RESTar-alldefault>
+        
+        <template is="dom-repeat" items="{{model.Members$}}"as="member">
+            <RESTar-default member="{{member}}"></RESTar-default>
+        </template>
+
         <br/>
         <div>
             <button class="btn btn-sm btn-primary" value="{{model.Save$::click}}" on onmouseup="++this.value">Save</button>
@@ -25,6 +22,39 @@ se till att saker binder
     </template>
 </template>
 
+<dom-module is="RESTar-default">
+    <template>
+        <template is="dom-if" if="{{_bool(member)}}">
+            <label>{{member.Name$}}<input type="checkbox" checked="{{member.Value$::change}}"/></label>
+        </template>
+        <template is="dom-if" if="{{_arr(member)}}">
+            <label>{{member.Name$}}<input type="text" value="{{member.Value$::input}}"/></label>
+        </template>
+        <template is="dom-if" if="{{_obj(member)}}">
+            <label>{{member.Name$}}<input type="text" checked="{{member.Value$::input}}"/></label>
+        </template>
+        <template is="dom-if" if="{{_num(member)}}">
+            <label>{{member.Name$}}<input type="number" value="{{member.Value$::input}}"/></label>
+        </template>
+        <template is="dom-if" if="{{_str(member)}}">
+            <label>{{member.Name$}}<input type="text" value="{{member.Value$::input}}"/></label>
+        </template>
+        <br/>
+    </template>
+    <script>
+        Polymer({
+            is: "RESTar-default",
+            properties: {
+                member: Object
+            },
+            _bool: member => member.Type === "boolean",
+            _arr: member => member.Type === "array",
+            _obj: member => member.Type === "object",
+            _num: member => member.Type === "number",
+            _str: member => member.Type === "string"
+        });
+    </script>
+</dom-module>
 
 <dom-module is="RESTar-alldefault">
     <template>

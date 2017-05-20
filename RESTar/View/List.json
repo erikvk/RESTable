@@ -1,0 +1,25 @@
+{
+  // general:
+  "Html": "",
+  "ResourceName": "",
+  "ResourcePath": "",
+  "RedirectUrl$": "",
+  "Message": "",
+  "MessageType": "",
+
+  // data:
+
+  "CanInsert": false,
+  "TableHead": [""],
+  "TableRows": [[]],
+  "$TableRows": { "Bind": "_TableRows" },
+  "Entities": [{}],
+  "UniqueIdentifiers": [""],
+
+  // buttons:
+
+  "Add$": 0
+
+  // other:
+
+}

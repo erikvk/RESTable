@@ -32,7 +32,7 @@ namespace RESTar.Internal
                 if (index == 0) results.UnionWith(EqualitySQL(cond, kvpTable));
                 else results.IntersectWith(EqualitySQL(cond, kvpTable));
             });
-            return results.Filter(r.Conditions.Compare);
+            return results.Filter(r.Conditions.Compare).ToList();
         };
 
         public static Inserter<DDictionary> Insert => StarcounterOperations<DDictionary>.Insert;

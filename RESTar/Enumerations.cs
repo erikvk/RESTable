@@ -76,19 +76,6 @@
         GREATER_THAN_OR_EQUALS
     }
 
-    internal enum RESTarMetaConditions
-    {
-        Limit,
-        Order_desc,
-        Order_asc,
-        Unsafe,
-        Select,
-        Add,
-        Rename,
-        Dynamic,
-        Safepost
-    }
-
     public enum ErrorCode
     {
         // 000: Unknown error

@@ -9,6 +9,7 @@ using Excel;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using RESTar.Auth;
+using RESTar.Internal;
 using Starcounter;
 using static RESTar.RESTarConfig;
 using IResource = RESTar.Internal.IResource;
@@ -36,6 +37,7 @@ namespace RESTar.Requests
         internal RESTarMimeType Accept { get; private set; }
         private string Origin { get; set; }
         public IDictionary<string, string> ResponseHeaders { get; }
+        internal bool ResourceHome => MetaConditions.Empty && Conditions == null;
 
         private bool SerializeDynamic => MetaConditions.Dynamic || MetaConditions.Select != null ||
                                          MetaConditions.Rename != null || MetaConditions.Add != null ||
@@ -247,48 +249,13 @@ namespace RESTar.Requests
 
         internal void Authenticate()
         {
-            if (!RequireApiKey)
-                return;
-
-            AccessRights accessRights;
-
-            if (!ScRequest.IsExternal)
-            {
-                var authToken = ScRequest.Headers["RESTar-AuthToken"];
-                if (string.IsNullOrWhiteSpace(authToken))
-                    throw new ForbiddenException();
-                if (!AuthTokens.TryGetValue(authToken, out accessRights))
-                    throw new ForbiddenException();
-                AuthToken = authToken;
-                return;
-            }
-
-            var authorizationHeader = ScRequest.Headers["Authorization"];
-            if (string.IsNullOrWhiteSpace(authorizationHeader))
-                throw new ForbiddenException();
-            var apikey_key = authorizationHeader.Split(' ');
-            if (apikey_key[0].ToLower() != "apikey" || apikey_key.Length != 2)
-                throw new ForbiddenException();
-            var apiKey = apikey_key[1].SHA256();
-            if (!ApiKeys.TryGetValue(apiKey, out accessRights))
-                throw new ForbiddenException();
-            AuthToken = Guid.NewGuid().ToString();
-            AuthTokens[AuthToken] = accessRights;
+            if (!RequireApiKey) return;
+            AuthToken = Authenticator.Authenticate(ScRequest);
         }
 
         internal void MethodCheck()
         {
-            var method = Method;
-            var availableMethods = Resource.AvailableMethods;
-            if (!availableMethods.Contains(method))
-                throw new ForbiddenException();
-            if (!RequireApiKey)
-                return;
-            var accessRights = AuthTokens[AuthToken];
-            if (accessRights == null)
-                throw new ForbiddenException();
-            var rights = accessRights[Resource];
-            if (rights == null || !rights.Contains(method))
+            if (!Authenticator.MethodCheck(Method, Resource, AuthToken))
                 throw new ForbiddenException();
         }
 

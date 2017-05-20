@@ -2,13 +2,15 @@
 using System.Collections.Generic;
 using RESTar.Internal;
 using Starcounter;
+using static RESTar.RESTarPresets;
 using IResource = RESTar.Internal.IResource;
 
 namespace RESTar
 {
-    [Database, RESTar(RESTarPresets.ReadAndWrite)]
+    [Database, RESTar(ReadAndWrite, Viewable = true)]
     public class ResourceAlias
     {
+        [UniqueId]
         public string Alias;
         private string _resource;
 

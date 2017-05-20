@@ -2,7 +2,7 @@ using Starcounter;
 
 namespace RESTar.View
 {
-    partial class ErrorView : Json
+    partial class Page : Json
     {
     }
 }

@@ -1,5 +1,6 @@
 ﻿using System;
 using Newtonsoft.Json;
+using RESTar.Internal;
 using RESTar.Operations;
 using RESTar.View;
 using Starcounter;
@@ -13,7 +14,7 @@ namespace RESTar.Requests
 {
     internal static class Handlers
     {
-        internal static void Register()
+        internal static void Register(bool setupMenu)
         {
             var uri = _Uri + "{?}";
             ScHandle.GET(_Port, uri, (ScRequest r, string q) => Handle(r, q, Evaluators.GET, GET));
@@ -25,45 +26,65 @@ namespace RESTar.Requests
 
             if (!_ViewEnabled) return;
 
-            ScHandle.GET(_Port, $"/__restar/__page", () =>
+            Application.Current.Use(new HtmlFromJsonProvider());
+            Application.Current.Use(new PartialToStandaloneHtmlProvider());
+
+            ScHandle.GET(_Port, "/__restar/__page", () =>
             {
-                if (Session.Current?.Data is AppPage)
+                if (Session.Current?.Data is View.Page)
                     return Session.Current.Data;
                 Session.Current = Session.Current ?? new Session(PatchVersioning);
-                return new AppPage {Session = Session.Current};
+                return new View.Page {Session = Session.Current};
             });
 
             var viewUri = _ViewUri + "{?}";
-            ScHandle.GET(_Port, viewUri, (ScRequest r, string q) =>
+
+            ScHandle.GET(_Port, viewUri, (ScRequest r, string query) =>
             {
                 try
                 {
-                    r.Headers["Authorization"] = "apikey mykey";
+                    Authenticator.UserCheck();
                     using (var request = new Request(r))
                     {
-                        request.Authenticate();
-                        request.Populate(q, GET, Evaluators.VIEW);
-//                        if (!request.Resource.Visible)
-//                            return Responses.Forbidden();
+                        request.Populate(query, GET, Evaluators.VIEW);
+                        if (!request.Resource.Viewable)
+                            throw new ForbiddenException();
                         request.MethodCheck();
                         request.Evaluate();
                         var partial = (Json) request.GetResponse();
-                        var master = Self.GET<AppPage>(_Port, "/__restar/__page");
+                        var master = Self.GET<View.Page>(_Port, "/__restar/__page");
                         master.CurrentPage = partial;
                         return master;
                     }
                 }
                 catch (Exception e)
                 {
-                    var partial = new ErrorView {Message = e.Message};
-                    var master = Self.GET<AppPage>(_Port, "/__restar/__page");
-                    master.CurrentPage = partial;
+                    var master = Self.GET<View.Page>(_Port, "/__restar/__page");
+                    var partial = master.CurrentPage as IRESTarView;
+                    partial?.SetMessage(e.Message, MessageType.error);
                     return master;
                 }
             });
 
-            Application.Current.Use(new HtmlFromJsonProvider());
-            Application.Current.Use(new PartialToStandaloneHtmlProvider());
+            if (!setupMenu) return;
+            ScHandle.GET(_Port, $"/{Application.Current.Name}", () =>
+            {
+                try
+                {
+                    Authenticator.UserCheck();
+                    var partial = new Menu().Populate();
+                    var master = Self.GET<View.Page>(_Port, "/__restar/__page");
+                    master.CurrentPage = partial;
+                    return master;
+                }
+                catch (Exception e)
+                {
+                    var master = Self.GET<View.Page>(_Port, "/__restar/__page");
+                    var partial = master.CurrentPage as IRESTarView;
+                    partial?.SetMessage(e.Message, MessageType.error);
+                    return master;
+                }
+            });
         }
 
         private static Response CheckOrigin(ScRequest scRequest, string query)

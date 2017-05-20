@@ -70,9 +70,9 @@ namespace RESTar
             return JSON.Deserialize<T>(json, SerializerOptions);
         }
 
-        internal static void PopulateObject(string json, object target, JsonSerializerSettings settings = null)
+        internal static void PopulateObject(string json, object target)
         {
-            JsonConvert.PopulateObject(json, target, settings ?? JsonNetSettings);
+            JsonConvert.PopulateObject(json, target);
         }
 
         internal static string JsonNetSerialize(this object value)

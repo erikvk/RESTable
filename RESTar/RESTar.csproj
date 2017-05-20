@@ -72,8 +72,12 @@
       <HintPath>..\packages\Sigil.4.7.0\lib\net45\Sigil.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="Simplified.Data.Model, Version=1.0.0.0, Culture=neutral, processorArchitecture=AMD64">
+      <Private>False</Private>
+    </Reference>
     <Reference Include="Starcounter.XSON, Version=2.0.0.0, Culture=neutral, PublicKeyToken=d2df1e81d0ca3abf, processorArchitecture=MSIL" />
     <Reference Include="System" />
+    <Reference Include="System.ComponentModel.DataAnnotations" />
     <Reference Include="System.Core">
       <RequiredTargetFramework>4.0</RequiredTargetFramework>
     </Reference>
@@ -96,9 +100,11 @@
     <Compile Include="Auth\AccessRight.cs" />
     <Compile Include="Auth\AccessRights.cs" />
     <Compile Include="Delegates.cs" />
+    <Compile Include="Internal\Authenticator.cs" />
     <Compile Include="Operations\Add.cs" />
     <Compile Include="Attributes.cs" />
     <Compile Include="NoCaseComparer.cs" />
+    <Compile Include="Operations\Identifier.cs" />
     <Compile Include="Requests\Conditions.cs" />
     <Compile Include="Operations\Do.cs" />
     <Compile Include="Operations\OperationsInterfaces.cs" />
@@ -152,20 +158,17 @@
     <Compile Include="StringLogicalComparer.cs" />
     <Compile Include="Temp.cs" />
     <Compile Include="Operations\WhereClause.cs" />
-    <Compile Include="View\AppPage.json.cs">
-      <DependentUpon>AppPage.json</DependentUpon>
+    <Compile Include="View\Menu.json.cs">
+      <DependentUpon>Menu.json</DependentUpon>
     </Compile>
-    <Compile Include="View\EmptyView.json.cs">
-      <DependentUpon>EmptyView.json</DependentUpon>
+    <Compile Include="View\Page.json.cs">
+      <DependentUpon>Page.json</DependentUpon>
     </Compile>
-    <Compile Include="View\EntitiesView.json.cs">
-      <DependentUpon>EntitiesView.json</DependentUpon>
+    <Compile Include="View\List.json.cs">
+      <DependentUpon>List.json</DependentUpon>
     </Compile>
-    <Compile Include="View\EntityView.json.cs">
-      <DependentUpon>EntityView.json</DependentUpon>
-    </Compile>
-    <Compile Include="View\ErrorView.json.cs">
-      <DependentUpon>ErrorView.json</DependentUpon>
+    <Compile Include="View\Item.json.cs">
+      <DependentUpon>Item.json</DependentUpon>
     </Compile>
     <Compile Include="View\RESTarView.cs" />
   </ItemGroup>
@@ -174,19 +177,16 @@
     <None Include="RESTar.nuspec">
       <SubType>Designer</SubType>
     </None>
-    <TypedJSON Include="View\EntityView.json">
+    <TypedJSON Include="View\Item.json">
       <Generator>MsBuild:Compile</Generator>
     </TypedJSON>
-    <TypedJSON Include="View\AppPage.json">
+    <TypedJSON Include="View\Page.json">
       <Generator>MsBuild:Compile</Generator>
     </TypedJSON>
-    <TypedJSON Include="View\EntitiesView.json">
+    <TypedJSON Include="View\List.json">
       <Generator>MsBuild:Compile</Generator>
     </TypedJSON>
-    <TypedJSON Include="View\EmptyView.json">
-      <Generator>MsBuild:Compile</Generator>
-    </TypedJSON>
-    <TypedJSON Include="View\ErrorView.json">
+    <TypedJSON Include="View\Menu.json">
       <Generator>MsBuild:Compile</Generator>
     </TypedJSON>
     <None Include="weaver.ignore">

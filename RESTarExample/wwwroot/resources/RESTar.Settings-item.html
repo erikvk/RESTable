@@ -2,7 +2,6 @@
 <link rel="import" href="/sys/puppet-redirect/puppet-redirect.html"/>
 
 <template>
-
     <template is="dom-bind">
         <h3>Settings</h3>
         <label>Pretty print<input type="checkbox" checked="{{model.Entity$.PrettyPrint$::change}}"/></label>
@@ -27,5 +26,6 @@
             <button class="btn btn-sm btn-primary" value="{{model.Save$::click}}" on onmouseup="++this.value">Save</button>
             <button class="btn btn-sm btn-default" value="{{model.Close$::click}}" on onmouseup="++this.value">Close</button>
         </div>
-        <link is="puppet-redirect" history url$="{{model.RedirectUrl$}}" />    </template>
+        <link is="puppet-redirect" history url$="{{model.RedirectUrl$}}" />    
+    </template>
 </template>

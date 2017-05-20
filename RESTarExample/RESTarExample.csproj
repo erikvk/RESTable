@@ -51,6 +51,9 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\Dynamit\Dynamit\bin\Release\Dynamit.dll</HintPath>
     </Reference>
+    <Reference Include="Simplified.Data.Model, Version=1.0.0.0, Culture=neutral, processorArchitecture=AMD64">
+      <Private>False</Private>
+    </Reference>
     <Reference Include="Starcounter.XSON, Version=2.0.0.0, Culture=neutral, PublicKeyToken=d2df1e81d0ca3abf, processorArchitecture=MSIL" />
     <Reference Include="System" />
     <Reference Include="System.Core">
@@ -83,16 +86,15 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <None Include="wwwroot\entityview.html" />
+    <None Include="wwwroot\defaults\item.html" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="wwwroot\__page.html" />
+    <None Include="wwwroot\defaults\__page.html" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="wwwroot\resources\RESTar.Settings-item.html" />
     <Content Include="wwwroot\default.css" />
-    <None Include="wwwroot\errorview.html" />
-    <None Include="wwwroot\RESTar-default.html" />
-    <None Include="wwwroot\entitiesview.html" />
+    <None Include="wwwroot\defaults\list.html" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="$(StarcounterBin)\Starcounter.MsBuild.targets" />

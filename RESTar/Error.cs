@@ -7,7 +7,7 @@ using Request = RESTar.Requests.Request;
 
 namespace RESTar
 {
-    [Database, RESTar(GET, DELETE)]
+    [Database, RESTar(GET, DELETE, Viewable = true)]
     public class Error
     {
         public string Id => this.GetObjectID();

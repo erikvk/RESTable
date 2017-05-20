@@ -5,7 +5,7 @@ using Newtonsoft.Json.Linq;
 
 namespace RESTar.Operations
 {
-    [RESTar(RESTarPresets.ReadOnly)]
+    [RESTar(RESTarPresets.ReadOnly, Singleton = true)]
     public class Counter : Dictionary<string, int>, ISelector<Counter>
     {
         public IEnumerable<Counter> Select(IRequest request)

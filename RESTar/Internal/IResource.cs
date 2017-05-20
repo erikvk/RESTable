@@ -15,9 +15,10 @@ namespace RESTar.Internal
         long? NrOfEntities { get; }
         bool IsDynamic { get; }
         RESTarResourceType ResourceType { get; }
-        bool Visible { get; }
-        string EntityViewHtml { get; }
-        string EntitiesViewHtml { get; }
+        bool IsStarcounterResource { get; }
+        bool Viewable { get; }
+        bool Singleton { get; }
+        string AliasOrName { get; }
         Selector<dynamic> Select { get; }
         Inserter<dynamic> Insert { get; }
         Updater<dynamic> Update { get; }

@@ -5,21 +5,28 @@ using static RESTar.Operators;
 
 namespace RESTar
 {
-    [RESTar(RESTarMethods.GET)]
+    [RESTar(RESTarMethods.GET, Singleton = true, Viewable = true)]
     public class Schema : Dictionary<string, string>, ISelector<Schema>
     {
-        public string resource { private get; set; }
+        [UniqueId]
+        public string Resource { private get; set; }
 
         public IEnumerable<Schema> Select(IRequest request)
         {
             var validCondition = request.Conditions?["resource", EQUALS] as string;
             if (validCondition == null)
                 throw new Exception("Invalid resource argument, format: /schema/resource=my_resource_name");
-            var res = validCondition.FindResource();
+            var schema = MakeSchema(validCondition);
+            return new[] {schema};
+        }
+
+        internal static Schema MakeSchema(string resourceName)
+        {
+            var res = resourceName.FindResource();
             if (res.TargetType.IsSubclassOf(typeof(DDictionary))) return null;
-            var s = new Schema();
-            res.TargetType.GetPropertyList().ForEach(p => s[p.RESTarMemberName()] = p.PropertyType.FullName);
-            return new[] {s};
+            var schema = new Schema();
+            res.TargetType.GetPropertyList().ForEach(p => schema[p.RESTarMemberName()] = p.PropertyType.FullName);
+            return schema;
         }
     }
 }

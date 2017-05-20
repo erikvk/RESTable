@@ -220,7 +220,7 @@ namespace RESTar
         public static Json ToJson(this Dictionary<string, dynamic> d, Options options)
         {
             var dict = new Dictionary<string, dynamic>();
-            d.ForEach(pair => dict.Add(pair.Key + "$", pair.Value));
+            d.ForEach(pair => dict.Add(pair.Key + "$", pair.Value ?? ""));
             return new Json(JSON.SerializeDynamic(dict, options));
         }
 
@@ -301,23 +301,6 @@ namespace RESTar
                 return Convert.ToBase64String(hasher.ComputeHash(Encoding.UTF8.GetBytes(input)));
         }
 
-        internal static Type ExpectedType(this RESTarMetaConditions condition)
-        {
-            switch (condition)
-            {
-                case RESTarMetaConditions.Limit: return typeof(int);
-                case RESTarMetaConditions.Order_desc: return typeof(string);
-                case RESTarMetaConditions.Order_asc: return typeof(string);
-                case RESTarMetaConditions.Unsafe: return typeof(bool);
-                case RESTarMetaConditions.Select: return typeof(string);
-                case RESTarMetaConditions.Add: return typeof(string);
-                case RESTarMetaConditions.Rename: return typeof(string);
-                case RESTarMetaConditions.Dynamic: return typeof(bool);
-                case RESTarMetaConditions.Safepost: return typeof(string);
-                default: throw new ArgumentOutOfRangeException(nameof(condition), condition, null);
-            }
-        }
-
         internal static byte[] ToBytes(this string json) => Encoding.UTF8.GetBytes(json);
 
         internal static string TotalMessage(this Exception e)
@@ -360,6 +343,19 @@ namespace RESTar
             }
         }
 
+        internal static string[] GetUniqueIdentifiers(this IResource resource)
+        {
+            var declared = resource.TargetType
+                .GetPropertyList()
+                .Where(prop => prop.HasAttribute<UniqueId>())
+                .Select(prop => prop.RESTarMemberName())
+                .ToArray();
+            var objectId_objectNo = resource.IsStarcounterResource
+                ? new[] {"ObjectID", "ObjectNo"}
+                : new string[0];
+            return declared.Union(objectId_objectNo).ToArray();
+        }
+
         internal static Dictionary<string, dynamic> MakeDictionary(this object entity)
         {
             if (entity is DDictionary) return ((DDictionary) entity).ToTransient();
@@ -377,22 +373,14 @@ namespace RESTar
                     prop => prop.GetValue(entity));
         }
 
-//        internal static Dictionary<string, dynamic> ToDictionary(this object entity)
-//        {
-//            if (entity is DDictionary) return ((DDictionary) entity).ToTransient();
-//            if (entity is Dictionary<string, dynamic>) return (Dictionary<string, dynamic>) entity;
-//            var options = new Options(excludeNulls: true, includeInherited: true, dateFormat: ISO8601,
-//                unspecifiedDateTimeKindBehavior: _LocalTimes ? IsLocal : IsUTC);
-//            var str = JSON.SerializeDynamic(
-//                entity.GetType()
-//                    .GetPropertyList()
-//                    .ToDictionary(prop => prop.RESTarMemberName() + "$",
-//                        prop => prop.GetValue(entity))
-//                , options);
-//            return new Json(str);
-//        }
+        internal static Dictionary<string, dynamic> MakeTemplate(this IResource resouce) => Schema
+            .MakeSchema(resouce.Name)
+            .ToDictionary(
+                pair => pair.Key,
+                pair => Type.GetType(pair.Value).GetDefault()
+            );
 
-        internal static IEnumerable<Json> MakeViewModelJsonArray(this IEnumerable<object> entities)
+        internal static IEnumerable<Json> MakeViewModelJsonArray(this IEnumerable<dynamic> entities)
         {
             var options = new Options(excludeNulls: true, includeInherited: true, dateFormat: ISO8601,
                 unspecifiedDateTimeKindBehavior: _LocalTimes ? IsLocal : IsUTC);
@@ -403,7 +391,7 @@ namespace RESTar
                 foreach (DDictionary entity in entities)
                 {
                     var dict = new Dictionary<string, dynamic>();
-                    entity.KeyValuePairs.ForEach(pair => dict.Add(pair.Key + "$", pair.Value));
+                    entity.KeyValuePairs.ForEach(pair => dict.Add(pair.Key + "$", pair.Value ?? ""));
                     list.Add(dict);
                 }
                 return list.Select(dict => new Json(JSON.SerializeDynamic(dict, options)));
@@ -414,7 +402,7 @@ namespace RESTar
                 foreach (Dictionary<string, dynamic> entity in entities)
                 {
                     var dict = new Dictionary<string, dynamic>();
-                    entity.ForEach(pair => dict.Add(pair.Key + "$", pair.Value));
+                    entity.ForEach(pair => dict.Add(pair.Key + "$", pair.Value ?? ""));
                     list.Add(dict);
                 }
                 return list.Select(dict => new Json(JSON.SerializeDynamic(dict, options)));
@@ -426,20 +414,11 @@ namespace RESTar
                 {
                     var dict = new Dictionary<string, dynamic>();
                     foreach (DictionaryEntry pair in entity)
-                        dict[pair + "$"] = pair.Value;
+                        dict[pair + "$"] = pair.Value ?? "";
                     list.Add(dict);
                 }
                 return list.Select(dict => new Json(JSON.SerializeDynamic(dict, options)));
             }
-
-            entities.Select(entity => entity.GetType()
-                    .GetPropertyList()
-                    .ToDictionary(prop =>
-                    {
-                        var name = prop.RESTarMemberName();
-                        return name + "$";
-                    }, prop => prop.GetValue(entity)))
-                .ForEach(list.Add);
 
             return list.Select(dict => new Json(JSON.SerializeDynamic(dict, options)));
         }
@@ -603,6 +582,55 @@ namespace RESTar
                     row[name] = value.ToString();
                     return;
             }
+        }
+
+        internal static string GetJsType(this Type type)
+        {
+            switch (Type.GetTypeCode(type))
+            {
+                case TypeCode.Object:
+                    return typeof(IEnumerable).IsAssignableFrom(type)
+                        ? "array"
+                        : "object";
+                case TypeCode.Boolean: return "boolean";
+                case TypeCode.Char: return "string";
+                case TypeCode.SByte:
+                case TypeCode.Byte:
+                case TypeCode.Int16:
+                case TypeCode.UInt16:
+                case TypeCode.Int32:
+                case TypeCode.UInt32:
+                case TypeCode.Int64:
+                case TypeCode.UInt64:
+                case TypeCode.Single:
+                case TypeCode.Double:
+                case TypeCode.Decimal: return "number";
+                case TypeCode.DateTime: return "datetime";
+                case TypeCode.String: return "string";
+                default: return null;
+            }
+        }
+
+        static ExtensionMethods()
+        {
+            DEFAULT_MAKER = typeof(ExtensionMethods)
+                .GetMethod(nameof(DEFAULT), NonPublic | Static);
+        }
+
+        internal static object GetDefault(this Type type)
+        {
+            if (type == null)
+                throw new ArgumentNullException(nameof(type));
+            return DEFAULT_MAKER.MakeGenericMethod(type).Invoke(null, null);
+        }
+
+        private static readonly MethodInfo DEFAULT_MAKER;
+
+        private static object DEFAULT<T>() => default(T);
+
+        internal static bool IsSingular(this IEnumerable<object> ienum, Requests.Request request)
+        {
+            return request.Resource.Singleton || ienum?.Count() == 1 && !request.ResourceHome;
         }
     }
 }

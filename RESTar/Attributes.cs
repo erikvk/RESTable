@@ -11,9 +11,8 @@ namespace RESTar
     {
         internal RESTarMethods[] AvailableMethods { get; private set; }
         public bool Dynamic { get; set; }
-        public bool Visible { get; set; }
-        public string EntityViewHtmlPath { get; set; }
-        public string EntitiesViewHtmlPath { get; set; }
+        public bool Viewable { get; set; }
+        public bool Singleton { get; set; }
 
         public RESTarAttribute(RESTarPresets preset)
         {
@@ -22,12 +21,12 @@ namespace RESTar
 
         public RESTarAttribute(RESTarPresets preset, params RESTarMethods[] additionalMethods)
         {
-            AvailableMethods = preset.ToMethods().Union(additionalMethods).ToArray();
+            AvailableMethods = preset.ToMethods().Union(additionalMethods ?? new RESTarMethods[0]).ToArray();
         }
 
         public RESTarAttribute(RESTarMethods method, params RESTarMethods[] addMethods)
         {
-            AvailableMethods = new[] {method}.Union(addMethods).ToArray();
+            AvailableMethods = new[] {method}.Union(addMethods ?? new RESTarMethods[0]).ToArray();
         }
     }
 
@@ -47,6 +46,10 @@ namespace RESTar
         {
             Nr = nr;
         }
+    }
+
+    public class UniqueId : Attribute
+    {
     }
 
     public class OverrideAttribute : Attribute
