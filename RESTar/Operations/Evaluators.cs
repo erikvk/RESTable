@@ -17,7 +17,7 @@ namespace RESTar.Operations
                 request.MetaConditions.Limit = 1000;
             request.MetaConditions.Unsafe = true;
             return request.Resource
-                .Select(request)
+                .Select(request)?
                 .Process(request.MetaConditions.Add)
                 .Process(request.MetaConditions.Rename)
                 .Process(request.MetaConditions.Select)
@@ -40,7 +40,7 @@ namespace RESTar.Operations
             }
             catch (Exception e)
             {
-                throw new AbortedSelectorException(e);
+                throw new AbortedSelectorException(e, request);
             }
         }
 
@@ -79,7 +79,7 @@ namespace RESTar.Operations
                             if (item != null)
                                 Do.Try(() => Db.Delete(item));
                     });
-                throw new AbortedInserterException(e);
+                throw new AbortedInserterException(e, request);
             }
         }
 
@@ -155,7 +155,7 @@ namespace RESTar.Operations
             }
             catch (Exception e)
             {
-                throw new AbortedUpdaterException(e);
+                throw new AbortedUpdaterException(e, request);
             }
         }
 
@@ -171,7 +171,7 @@ namespace RESTar.Operations
             }
             catch (Exception e)
             {
-                throw new AbortedSelectorException(e);
+                throw new AbortedSelectorException(e, request);
             }
 
             object obj = null;
@@ -197,7 +197,7 @@ namespace RESTar.Operations
                 catch (Exception e)
                 {
                     Db.TransactAsync(() => Do.Try(() => obj?.Delete()));
-                    throw new AbortedInserterException(e);
+                    throw new AbortedInserterException(e, request);
                 }
             }
             try
@@ -219,7 +219,7 @@ namespace RESTar.Operations
             }
             catch (Exception e)
             {
-                throw new AbortedUpdaterException(e);
+                throw new AbortedUpdaterException(e, request);
             }
         }
 
@@ -236,7 +236,7 @@ namespace RESTar.Operations
             }
             catch (Exception e)
             {
-                throw new AbortedDeleterException(e);
+                throw new AbortedDeleterException(e, request);
             }
         }
 
@@ -248,21 +248,20 @@ namespace RESTar.Operations
         {
             try
             {
-
                 if (request.MetaConditions.New)
                     return new Item().Populate(request, null);
                 var entities = SELECT(request);
-                if (entities.IsSingular(request))
+                if (entities?.IsSingular(request) == true)
                     return new Item().Populate(request, entities.First());
                 return new List().Populate(request, entities);
             }
             catch (Exception e)
             {
-                throw new AbortedSelectorException(e);
+                throw new AbortedSelectorException(e, request);
             }
         }
 
-        internal static int PATCH(object entity, string json, IRequest request)
+        internal static int PATCH(object entity, string json, Request request)
         {
             try
             {
@@ -283,11 +282,11 @@ namespace RESTar.Operations
             }
             catch (Exception e)
             {
-                throw new AbortedUpdaterException(e);
+                throw new AbortedUpdaterException(e, request);
             }
         }
 
-        internal static int DELETE(object entity, IRequest request)
+        internal static int DELETE(object entity, Request request)
         {
             try
             {
@@ -298,11 +297,11 @@ namespace RESTar.Operations
             }
             catch (Exception e)
             {
-                throw new AbortedDeleterException(e);
+                throw new AbortedDeleterException(e, request);
             }
         }
 
-        internal static int POST(string json, IRequest request)
+        internal static int POST(string json, Request request)
         {
             object result = null;
             try
@@ -326,7 +325,7 @@ namespace RESTar.Operations
             {
                 if (result != null)
                     Db.TransactAsync(() => { Do.Try(() => result.Delete()); });
-                throw new AbortedInserterException(e);
+                throw new AbortedInserterException(e, request);
             }
         }
 

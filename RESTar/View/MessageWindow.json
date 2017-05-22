@@ -3,8 +3,5 @@
   "Message": "",
   "ErrorCode": 0,
   "MessageType": "",
-  "HasMessage":  false,
-
-  "MetaResourcePath": "",
-  "Resources": [{}]
+  "HasMessage":  false
 }

@@ -78,6 +78,8 @@
 
     public enum ErrorCode
     {
+        NoError = -1,
+
         // 000: Unknown error
         UnknownError = 000,
 
@@ -112,13 +114,23 @@
         UnknownResourceForMappingError = 101,
         AmbiguousResourceError = 102,
         AmbiguousMatchError = 103,
+        InvalidResourceEntityError = 104,
 
         // 110-119: Column locator errors
         UnknownColumnError = 110,
         AmbiguousColumnError = 111,
         UnknownColumnInGeneratedObjectError = 112,
 
+        // 120-129: Resource registration errors
+        VirtualResourceMissingInterfaceImplementationError = 120,
+        VirtualResourceMemberError = 121,
+        NoAvalailableDynamicTableError = 122,
+
+        // 200-300: Handler errors
         AbortedOperation = 200,
-        DatabaseError = 300
+        NotSignedIn = 201,
+        NotAuthorized = 202,
+
+        DatabaseError = 300,
     }
 }

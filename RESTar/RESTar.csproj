@@ -141,7 +141,7 @@
     <Compile Include="Internal\DB.cs" />
     <Compile Include="Operations\Evaluators.cs" />
     <Compile Include="Enumerations.cs" />
-    <Compile Include="Exceptions.cs" />
+    <Compile Include="RESTarExceptions.cs" />
     <Compile Include="HTTP.cs" />
     <Compile Include="Operations\OrderBy.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -158,8 +158,12 @@
     <Compile Include="StringLogicalComparer.cs" />
     <Compile Include="Temp.cs" />
     <Compile Include="Operations\WhereClause.cs" />
+    <Compile Include="View\Json.cs" />
     <Compile Include="View\Menu.json.cs">
       <DependentUpon>Menu.json</DependentUpon>
+    </Compile>
+    <Compile Include="View\MessageWindow.json.cs">
+      <DependentUpon>MessageWindow.json</DependentUpon>
     </Compile>
     <Compile Include="View\Page.json.cs">
       <DependentUpon>Page.json</DependentUpon>
@@ -187,6 +191,9 @@
       <Generator>MsBuild:Compile</Generator>
     </TypedJSON>
     <TypedJSON Include="View\Menu.json">
+      <Generator>MsBuild:Compile</Generator>
+    </TypedJSON>
+    <TypedJSON Include="View\MessageWindow.json">
       <Generator>MsBuild:Compile</Generator>
     </TypedJSON>
     <None Include="weaver.ignore">

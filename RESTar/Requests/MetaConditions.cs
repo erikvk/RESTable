@@ -77,28 +77,27 @@ namespace RESTar.Requests
             foreach (var s in mcStrings)
             {
                 if (s == "")
-                    throw new SyntaxException("Invalid meta-condition syntax",
-                        InvalidMetaConditionSyntaxError);
+                    throw new SyntaxException(InvalidMetaConditionSyntaxError, "Invalid meta-condition syntax");
 
                 var containsOneAndOnlyOneEquals = s.Count(c => c == '=') == 1;
                 if (!containsOneAndOnlyOneEquals)
-                    throw new SyntaxException("Invalid operator for meta-condition. One and only one '=' is allowed",
-                        InvalidMetaConditionOperatorError);
+                    throw new SyntaxException(InvalidMetaConditionOperatorError,
+                        "Invalid operator for meta-condition. One and only one '=' is allowed");
                 var pair = s.Split('=');
 
                 RESTarMetaConditions metaCondition;
                 if (!Enum.TryParse(pair[0], true, out metaCondition))
-                    throw new SyntaxException($"Invalid meta-condition '{pair[0]}'. Available meta-conditions: " +
-                                              $"{string.Join(", ", Enum.GetNames(typeof(RESTarMetaConditions)))}. For more info, see " +
-                                              $"{Settings.Instance.HelpResourcePath}/topic=Meta-conditions",
-                        InvalidMetaConditionKey);
+                    throw new SyntaxException(InvalidMetaConditionKey,
+                        $"Invalid meta-condition '{pair[0]}'. Available meta-conditions: " +
+                        $"{string.Join(", ", Enum.GetNames(typeof(RESTarMetaConditions)))}. For more info, see " +
+                        $"{Settings.Instance.HelpResourcePath}/topic=Meta-conditions");
 
                 var expectedType = metaCondition.ExpectedType();
                 var value = Conditions.GetValue(pair[1]);
                 if (expectedType != value.GetType())
-                    throw new SyntaxException($"Invalid data type assigned to meta-condition '{pair[0]}'. " +
-                                              $"Expected {GetTypeString(expectedType)}.",
-                        InvalidMetaConditionValueTypeError);
+                    throw new SyntaxException(InvalidMetaConditionValueTypeError,
+                        $"Invalid data type assigned to meta-condition '{pair[0]}'. " +
+                        $"Expected {GetTypeString(expectedType)}.");
 
                 switch (metaCondition)
                 {
@@ -158,10 +157,10 @@ namespace RESTar.Requests
                         mc.OrderBy.IsStarcounterQueryable = false;
                     if (mc.Rename?.Any(p => p.Key.Key.EqualsNoCase(mc.OrderBy.Key)) == true
                         && !mc.Rename.Any(p => p.Value.EqualsNoCase(mc.OrderBy.Key)))
-                        throw new SyntaxException($"The {(mc.OrderBy.Ascending ? "'Order_asc'" : "'Order_desc'")} " +
-                                                  "meta-condition cannot refer to a property x that is to be renamed " +
-                                                  "unless some other property is renamed to x",
-                            InvalidMetaConditionSyntaxError);
+                        throw new SyntaxException(InvalidMetaConditionSyntaxError,
+                            $"The {(mc.OrderBy.Ascending ? "'Order_asc'" : "'Order_desc'")} " +
+                            "meta-condition cannot refer to a property x that is to be renamed " +
+                            "unless some other property is renamed to x");
                     if (mc.OrderBy.PropertyChain.ScQueryable == false)
                         mc.OrderBy.IsStarcounterQueryable = false;
                 }
@@ -169,12 +168,19 @@ namespace RESTar.Requests
                 {
                     if (mc.Select.Any(pc => mc.Rename.Any(p => p.Key.Key.EqualsNoCase(pc.Key)) &&
                                             !mc.Rename.Any(p => p.Value.EqualsNoCase(pc.Key))))
-                        throw new SyntaxException("A 'Select' meta-condition cannot refer to a property x that is " +
-                                                  "to be renamed unless some other property is renamed to x",
-                            InvalidMetaConditionSyntaxError);
+                        throw new SyntaxException(InvalidMetaConditionSyntaxError,
+                            "A 'Select' meta-condition cannot refer to a property x that is " +
+                            "to be renamed unless some other property is renamed to x");
                 }
             }
             return mc;
+        }
+
+        internal void DeactivateProcessors()
+        {
+            Add = null;
+            Select = null;
+            Rename = null;
         }
 
         private static string GetTypeString(Type type)

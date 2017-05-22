@@ -1,7 +1,10 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using Dynamit;
+using Newtonsoft.Json;
 using Starcounter;
+using Request = RESTar.Requests.Request;
 
 namespace RESTar.View
 {
@@ -14,10 +17,12 @@ namespace RESTar.View
         protected override void SetResourceName(string resourceName) => ResourceName = resourceName;
         protected override void SetResourcePath(string resourcePath) => ResourcePath = resourcePath;
 
-        public override void SetMessage(string message, MessageType messageType)
+        public override void SetMessage(string message, ErrorCode errorCode, MessageType messageType)
         {
             Message = message;
+            ErrorCode = (long) errorCode;
             MessageType = messageType.ToString();
+            HasMessage = true;
         }
 
         public void Handle(Input.Add action)
@@ -25,7 +30,7 @@ namespace RESTar.View
             RedirectUrl = $"{ResourcePath}//new=true";
         }
 
-        internal override RESTarView<IEnumerable<object>> Populate(IRequest request, IEnumerable<object> data)
+        internal override RESTarView<IEnumerable<object>> Populate(Request request, IEnumerable<object> data)
         {
             base.Populate(request, data);
             CanInsert = Resource.AvailableMethods.Contains(RESTarMethods.POST);
@@ -33,17 +38,24 @@ namespace RESTar.View
             var uniqueIdentifiers = Resource.GetUniqueIdentifiers();
             uniqueIdentifiers.ForEach(id => UniqueIdentifiers.Add().StringValue = id);
             var propertyNames = new HashSet<string>();
-            data.Select(item =>
+            foreach (var item in data)
             {
-                var dict = item.MakeDictionary();
-                dict.Keys.ForEach(k => propertyNames.Add(k));
-                if (request.Resource.IsStarcounterResource)
-                    dict["ObjectID"] = item.GetObjectID();
-                return dict;
-            }).MakeViewModelJsonArray().ForEach(e => Entities.Add(e));
+                string json;
+                IDictionary<string, object> original;
+                if (item is DDictionary)
+                {
+                    original = ((DDictionary) item).ToDictionary(pair => pair.Key + "$", pair => pair.Value);
+                    json = original.SerializeDyn();
+                }
+                else
+                {
+                    json = item.SerializeToViewModel();
+                    original = JsonConvert.DeserializeObject<Dictionary<string, object>>(json);
+                }
+                original.Keys.ForEach(k => propertyNames.Add(k.TrimEnd('$')));
+                Entities.Add(new Json(json));
+            }
             propertyNames.ForEach(name => TableHead.Add().StringValue = name);
-            TableHead.Add().StringValue = "ObjectID";
-
 
             #region table
 

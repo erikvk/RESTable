@@ -5,7 +5,9 @@
   "ResourcePath": "",
   "RedirectUrl$": "",
   "Message": "",
+  "ErrorCode": 0,
   "MessageType": "",
+  "HasMessage":  false, 
 
   // data:
 

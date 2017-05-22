@@ -4,9 +4,11 @@ using RESTar.Internal;
 using RESTar.Operations;
 using RESTar.View;
 using Starcounter;
+using static RESTar.ErrorCode;
 using static RESTar.RESTarMethods;
 using static Starcounter.SessionOptions;
 using static RESTar.Settings;
+using static RESTar.View.MessageType;
 using ScRequest = Starcounter.Request;
 using ScHandle = Starcounter.Handle;
 
@@ -47,8 +49,9 @@ namespace RESTar.Requests
                     using (var request = new Request(r))
                     {
                         request.Populate(query, GET, Evaluators.VIEW);
+                        request.MetaConditions.DeactivateProcessors();
                         if (!request.Resource.Viewable)
-                            throw new ForbiddenException();
+                            throw new ForbiddenException(NotAuthorized, "Resource is not viewable");
                         request.MethodCheck();
                         request.Evaluate();
                         var partial = (Json) request.GetResponse();
@@ -59,10 +62,7 @@ namespace RESTar.Requests
                 }
                 catch (Exception e)
                 {
-                    var master = Self.GET<View.Page>(_Port, "/__restar/__page");
-                    var partial = master.CurrentPage as IRESTarView;
-                    partial?.SetMessage(e.Message, MessageType.error);
-                    return master;
+                    return RESTarException.HandleViewException(e);
                 }
             });
 
@@ -79,10 +79,7 @@ namespace RESTar.Requests
                 }
                 catch (Exception e)
                 {
-                    var master = Self.GET<View.Page>(_Port, "/__restar/__page");
-                    var partial = master.CurrentPage as IRESTarView;
-                    partial?.SetMessage(e.Message, MessageType.error);
-                    return master;
+                    return RESTarException.HandleViewException(e);
                 }
             });
         }
@@ -128,97 +125,32 @@ namespace RESTar.Requests
                 Response errorResponse;
                 ErrorCode errorCode;
 
-                if (e is ForbiddenException) return Responses.Forbidden();
                 if (e is NoContentException) return Responses.NoContent();
 
-                if (e is SyntaxException)
+                if (e is RESTarException)
                 {
-                    errorCode = ((SyntaxException) e).errorCode;
-                    errorResponse = Responses.BadRequest(e);
+                    var re = (RESTarException) e;
+                    errorCode = re.ErrorCode;
+                    errorResponse = re.Response;
                 }
                 else if (e is FormatException)
                 {
-                    errorCode = ErrorCode.UnsupportedContentType;
-                    errorResponse = Responses.BadRequest(e);
-                }
-                else if (e is UnknownColumnException)
-                {
-                    errorCode = ErrorCode.UnknownColumnError;
-                    errorResponse = Responses.NotFound(e);
-                }
-                else if (e is CustomEntityUnknownColumnException)
-                {
-                    errorCode = ErrorCode.UnknownColumnInGeneratedObjectError;
-                    errorResponse = Responses.NotFound(e);
-                }
-                else if (e is AmbiguousColumnException)
-                {
-                    errorCode = ErrorCode.AmbiguousColumnError;
-                    errorResponse = Responses.AmbiguousColumn((AmbiguousColumnException) e);
-                }
-                else if (e is SourceException)
-                {
-                    errorCode = ErrorCode.InvalidSourceDataError;
-                    errorResponse = Responses.BadRequest(e);
-                }
-                else if (e is UnknownResourceException)
-                {
-                    errorCode = ErrorCode.UnknownResourceError;
-                    errorResponse = Responses.NotFound(e);
-                }
-                else if (e is AmbiguousResourceException)
-                {
-                    errorCode = ErrorCode.AmbiguousResourceError;
-                    errorResponse = Responses.AmbiguousResource((AmbiguousResourceException) e);
-                }
-                else if (e is InvalidInputCountException)
-                {
-                    errorCode = ErrorCode.DataSourceFormatError;
-                    errorResponse = Responses.BadRequest(e);
-                }
-                else if (e is ExcelInputException)
-                {
-                    errorCode = ErrorCode.ExcelReaderError;
-                    errorResponse = Responses.BadRequest(e);
-                }
-                else if (e is ExcelFormatException)
-                {
-                    errorCode = ErrorCode.ExcelReaderError;
+                    errorCode = UnsupportedContentType;
                     errorResponse = Responses.BadRequest(e);
                 }
                 else if (e is JsonReaderException)
                 {
-                    errorCode = ErrorCode.JsonDeserializationError;
+                    errorCode = JsonDeserializationError;
                     errorResponse = Responses.DeserializationError(scRequest.Body);
                 }
                 else if (e is DbException)
                 {
-                    errorCode = ErrorCode.DatabaseError;
+                    errorCode = DatabaseError;
                     errorResponse = Responses.DatabaseError(e);
-                }
-                else if (e is AbortedSelectorException)
-                {
-                    errorCode = ErrorCode.AbortedOperation;
-                    errorResponse = Responses.AbortedOperation(e, method, request?.Resource.TargetType);
-                }
-                else if (e is AbortedInserterException)
-                {
-                    errorCode = ErrorCode.AbortedOperation;
-                    errorResponse = Responses.AbortedOperation(e, method, request?.Resource.TargetType);
-                }
-                else if (e is AbortedUpdaterException)
-                {
-                    errorCode = ErrorCode.AbortedOperation;
-                    errorResponse = Responses.AbortedOperation(e, method, request?.Resource.TargetType);
-                }
-                else if (e is AbortedDeleterException)
-                {
-                    errorCode = ErrorCode.AbortedOperation;
-                    errorResponse = Responses.AbortedOperation(e, method, request?.Resource.TargetType);
                 }
                 else
                 {
-                    errorCode = ErrorCode.UnknownError;
+                    errorCode = UnknownError;
                     errorResponse = Responses.InternalError(e);
                 }
 

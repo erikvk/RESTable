@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Xml;
 using Jil;
 using Newtonsoft.Json;
+using RESTar.View;
 using Starcounter;
 using static Jil.DateTimeFormat;
 using static Jil.UnspecifiedDateTimeKindBehavior;
@@ -20,6 +21,7 @@ namespace RESTar
         {
             SerializeMethod = typeof(JSON).GetMethods()
                 .First(n => n.Name == "Serialize" && n.ReturnType == typeof(void));
+            VmSettings = new JsonSerializerSettings {ContractResolver = new CreateViewModelResolver() };
         }
 
         internal static Options SerializerOptions { private get; set; }
@@ -30,7 +32,7 @@ namespace RESTar
 
         internal static Options VmSerializerOptions => new Options(excludeNulls: true, includeInherited: true,
             dateFormat: ISO8601, unspecifiedDateTimeKindBehavior: _LocalTimes ? IsLocal : IsUTC);
-        
+
         internal static string Serialize(this object obj, Type resource)
         {
             var generic = SerializeMethod.MakeGenericMethod(resource);
@@ -72,12 +74,19 @@ namespace RESTar
 
         internal static void PopulateObject(string json, object target)
         {
-            JsonConvert.PopulateObject(json, target);
+            JsonConvert.PopulateObject(json, target, JsonNetSettings);
         }
 
         internal static string JsonNetSerialize(this object value)
         {
             return JsonConvert.SerializeObject(value, JsonNetSettings);
+        }
+
+        private static readonly JsonSerializerSettings VmSettings;
+
+        internal static string SerializeToViewModel(this object value)
+        {
+            return JsonConvert.SerializeObject(value, VmSettings);
         }
     }
 

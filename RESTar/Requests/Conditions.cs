@@ -6,6 +6,7 @@ using System.Net;
 using Dynamit;
 using RESTar.Internal;
 using RESTar.Operations;
+using static RESTar.ErrorCode;
 
 namespace RESTar.Requests
 {
@@ -35,11 +36,16 @@ namespace RESTar.Requests
                 .Select(s =>
                 {
                     if (s == "")
-                        throw new SyntaxException("Invalid condition syntax", ErrorCode.InvalidConditionSyntaxError);
+                        throw new SyntaxException(InvalidConditionSyntaxError, "Invalid condition syntax");
                     var matched = new string(s.Where(c => OpMatchChars.Contains(c)).ToArray());
                     Operator op;
                     if (!Operator.TryParse(matched, out op))
-                        throw new OperatorException(s);
+                    {
+                        s = s.ReplaceFirst("%3C", "<").ReplaceFirst("%3E", ">");
+                        matched = new string(s.Where(c => OpMatchChars.Contains(c)).ToArray());
+                        if (!Operator.TryParse(matched, out op))
+                            throw new OperatorException(s);
+                    }
                     var pair = s.Split(new[] {op.Common}, StringSplitOptions.None);
                     var keyString = WebUtility.UrlDecode(pair[0]);
                     var chain = PropertyChain.Parse(keyString, resource);

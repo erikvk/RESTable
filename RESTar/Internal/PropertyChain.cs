@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Dynamit;
+using static RESTar.ErrorCode;
 
 namespace RESTar.Internal
 {
@@ -18,8 +19,7 @@ namespace RESTar.Internal
             Func<string, Property> propertyMaker = str =>
             {
                 if (string.IsNullOrWhiteSpace(str))
-                    throw new SyntaxException($"Invalid condition '{str}'",
-                        ErrorCode.InvalidConditionSyntaxError);
+                    throw new SyntaxException(InvalidConditionSyntaxError, $"Invalid condition '{str}'");
                 if (str.ToLower() == "objectno") return StaticProperty.ObjectNo;
                 if (str.ToLower() == "objectid") return StaticProperty.ObjectID;
                 if (dynamicDomain?.Contains(str, Comparer) == true)

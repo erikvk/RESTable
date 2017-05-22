@@ -1,8 +1,10 @@
 using System.Collections.Generic;
 using System.Linq;
+using Dynamit;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Starcounter;
+using Request = RESTar.Requests.Request;
 
 namespace RESTar.View
 {
@@ -13,29 +15,30 @@ namespace RESTar.View
         protected override void SetHtml(string html) => Html = html;
         protected override void SetResourceName(string resourceName) => ResourceName = resourceName;
         protected override void SetResourcePath(string resourcePath) => ResourcePath = resourcePath;
-        
+
         private bool IsTemplate;
         private IDictionary<string, JToken> Original;
 
-        public override void SetMessage(string message, MessageType messageType)
+        public override void SetMessage(string message, ErrorCode errorCode, MessageType messageType)
         {
             Message = message;
+            ErrorCode = (long) errorCode;
             MessageType = messageType.ToString();
+            HasMessage = true;
         }
 
         public void Handle(Input.Save action)
         {
-            IDictionary<string, JToken> entityJson = JObject.Parse(Entity.ToJson().Replace(@"$"":", @""":"));
-            var membersJsonArray = JArray.Parse(Members.ToJson().Replace(@"$"":", @""":"));
+            IDictionary<string, JToken> entityJson = JObject.Parse(Entity.ToJson());
+            var membersJsonArray = JArray.Parse(Members.ToJson());
             IDictionary<string, JToken> membersJson = new JObject();
             foreach (var member in membersJsonArray)
-                membersJson[member["Name"].ToString()] = member["Value"];
+                membersJson[$"{member["Name$"]}$"] = member["Value$"];
             var mchanges = membersJson.Except(Original, Comparer).ToList();
             var echanges = entityJson.Except(Original, Comparer).ToList();
             mchanges.ForEach(c => Original[c.Key] = c.Value);
             echanges.ForEach(c => Original[c.Key] = c.Value);
-
-            var json = JsonConvert.SerializeObject(Original);
+            var json = JsonConvert.SerializeObject(Original).Replace(@"$"":", @""":");
             if (IsTemplate) POST(json);
             else PATCH(json);
             RedirectUrl = ResourcePath;
@@ -50,32 +53,51 @@ namespace RESTar.View
         {
         }
 
-        internal override RESTarView<object> Populate(IRequest request, object restarData)
+        internal override RESTarView<object> Populate(Request request, object restarData)
         {
+            string json;
+            IDictionary<string, object> original;
+
             if (restarData == null)
             {
                 IsTemplate = true;
-                restarData = request.Resource.MakeTemplate();
+                original = request.Resource.MakeViewModelTemplate();
+                json = original.SerializeDyn();
+                base.Populate(request, original);
             }
-            base.Populate(request, restarData);
-            var original = restarData.MakeDictionary();
-            Entity = original.ToJson(JsonSerializer.VmSerializerOptions);
-            var properties = request.Resource.TargetType.GetPropertyList();
+            else
+            {
+                base.Populate(request, restarData);
+                if (restarData is DDictionary)
+                {
+                    original = ((DDictionary) restarData).ToDictionary(pair => pair.Key + "$", pair => pair.Value);
+                    json = original.SerializeDyn();
+                }
+                else
+                {
+                    json = restarData.SerializeToViewModel();
+                    original = JsonConvert.DeserializeObject<Dictionary<string, object>>(json);
+                }
+            }
+
+            Entity = new Json(json);
             Original = new JObject();
             original.ForEach(member =>
             {
-                if (member.Key == "ObjectID" || member.Key == "ObjectNo") return;
-                var okvp = new KeyValuePair<string, JToken>(member.Key, JToken.FromObject(member.Value ?? ""));
+                if (member.Key == "ObjectID$" || member.Key == "ObjectNo$") return;
+                var okvp = new KeyValuePair<string, JToken>(member.Key, JToken.FromObject(member.Value));
                 Original.Add(okvp);
-                var json = new Dictionary<string, object>
+                var memberJson = new Dictionary<string, object>
                 {
-                    ["Name$"] = member.Key,
-                    ["Value$"] = member.Value ?? "",
-                    ["Type"] = properties.First(p => p.RESTarMemberName() == member.Key).PropertyType.GetJsType()
+                    ["Name$"] = member.Key.TrimEnd('$'),
+                    ["Value$"] = member.Value,
+                    ["Type"] = member.Value.GetType().GetJsType()
                 }.SerializeDyn();
-                Members.Add(new Json(json));
+                Members.Add(new Json(memberJson));
             });
-            properties
+            if (restarData is DDictionary)
+                return this;
+            request.Resource.TargetType.GetPropertyList()
                 .Where(p => p.SetMethod?.IsPublic != true)
                 .ForEach(p => ReadOnlyMembers.Add().StringValue = p.RESTarMemberName() + "$");
             return this;

@@ -92,6 +92,8 @@
     <None Include="wwwroot\defaults\__page.html" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="wwwroot\menu.html" />
+    <None Include="wwwroot\message.html" />
     <Content Include="wwwroot\resources\RESTar.Settings-item.html" />
     <Content Include="wwwroot\default.css" />
     <None Include="wwwroot\defaults\list.html" />

@@ -11,7 +11,9 @@ using Newtonsoft.Json.Linq;
 using RESTar.Auth;
 using RESTar.Internal;
 using Starcounter;
+using static RESTar.ErrorCode;
 using static RESTar.RESTarConfig;
+using static RESTar.RESTarMethods;
 using IResource = RESTar.Internal.IResource;
 using ScRequest = Starcounter.Request;
 
@@ -89,16 +91,15 @@ namespace RESTar.Requests
             if (Source != null)
             {
                 var sourceRequest = HttpRequest.Parse(Source);
-                if (sourceRequest.Method != RESTarMethods.GET)
-                    throw new SyntaxException("Only GET is allowed in Source headers",
-                        ErrorCode.InvalidSourceFormatError);
+                if (sourceRequest.Method != GET)
+                    throw new SyntaxException(InvalidSourceFormatError, "Only GET is allowed in Source headers");
 
                 sourceRequest.Accept = ContentType.ToMimeString();
 
                 var response = sourceRequest.Internal
                     ? HTTP.InternalRequest
                     (
-                        method: RESTarMethods.GET,
+                        method: GET,
                         relativeUri: sourceRequest.URI,
                         authToken: AuthToken,
                         headers: sourceRequest.Headers,
@@ -106,7 +107,7 @@ namespace RESTar.Requests
                     )
                     : HTTP.ExternalRequest
                     (
-                        method: RESTarMethods.GET,
+                        method: GET,
                         uri: sourceRequest.URI,
                         headers: sourceRequest.Headers,
                         accept: sourceRequest.Accept
@@ -131,9 +132,8 @@ namespace RESTar.Requests
             }
             else
             {
-                if (ScRequest.Body == null &&
-                    (Method == RESTarMethods.PATCH || Method == RESTarMethods.POST || Method == RESTarMethods.PUT))
-                    throw new SyntaxException("Missing data source for method " + Method, ErrorCode.NoDataSourceError);
+                if (ScRequest.Body == null && (Method == PATCH || Method == POST || Method == PUT))
+                    throw new SyntaxException(NoDataSourceError, "Missing data source for method " + Method);
                 if (ScRequest.Body == null)
                     return;
             }
@@ -142,8 +142,8 @@ namespace RESTar.Requests
             {
                 case RESTarMimeType.Json:
                     Body = Body?.Trim() ?? ScRequest.Body.Trim();
-                    if (Body?.First() == '[' && Method != RESTarMethods.POST)
-                        throw new InvalidInputCountException(Resource, Method);
+                    if (Body?.First() == '[' && Method != POST)
+                        throw new InvalidInputCountException(Method);
                     break;
                 case RESTarMimeType.Excel:
                     using (var stream = new MemoryStream(BinaryBody ?? ScRequest.BodyBytes))
@@ -154,7 +154,7 @@ namespace RESTar.Requests
                         var result = excelReader.AsDataSet();
                         if (result == null)
                             throw new ExcelInputException();
-                        if (Method == RESTarMethods.POST)
+                        if (Method == POST)
                         {
                             Body = result.Tables[0].JsonNetSerialize();
                             Body = regex.Replace(Body, "$1$2");
@@ -162,7 +162,7 @@ namespace RESTar.Requests
                         else
                         {
                             if (result.Tables[0].Rows.Count > 1)
-                                throw new InvalidInputCountException(Resource, Method);
+                                throw new InvalidInputCountException(Method);
                             Body = JArray.FromObject(result.Tables[0]).First().JsonNetSerialize();
                         }
                     }
@@ -256,7 +256,7 @@ namespace RESTar.Requests
         internal void MethodCheck()
         {
             if (!Authenticator.MethodCheck(Method, Resource, AuthToken))
-                throw new ForbiddenException();
+                throw Authenticator.NotAuthorizedException;
         }
 
         public void Dispose()
@@ -269,10 +269,10 @@ namespace RESTar.Requests
         private static string CheckQuery(string query, ScRequest request)
         {
             if (query.CharCount('/') > 3)
-                throw new SyntaxException("Invalid argument separator count. A RESTar URI can contain at most 3 " +
-                                          $"forward slashes after the base uri. URI scheme: {Settings._ResourcesPath}" +
-                                          "/[resource]/[conditions]/[meta-conditions]",
-                    ErrorCode.InvalidSeparatorCount);
+                throw new SyntaxException(InvalidSeparatorCount,
+                    "Invalid argument separator count. A RESTar URI can contain at most 3 " +
+                    $"forward slashes after the base uri. URI scheme: {Settings._ResourcesPath}" +
+                    "/[resource]/[conditions]/[meta-conditions]");
             if (request.HeadersDictionary.ContainsKey("X-ARR-LOG-ID"))
                 return query.Replace("%25", "%");
             return query;

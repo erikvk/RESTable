@@ -2,6 +2,7 @@
 using System.Linq;
 using RESTar.Auth;
 using Simplified.Ring3;
+using static RESTar.ErrorCode;
 using static RESTar.RESTarConfig;
 
 namespace RESTar.Internal
@@ -13,8 +14,10 @@ namespace RESTar.Internal
         internal static void UserCheck()
         {
             if (!SignedIn)
-                throw new ForbiddenException();
+                throw new ForbiddenException(NotSignedIn, "User is not signed in");
         }
+
+        internal static ForbiddenException NotAuthorizedException => new ForbiddenException(NotAuthorized, "Not authorized");
 
         internal static string Authenticate(Starcounter.Request ScRequest)
         {
@@ -24,20 +27,20 @@ namespace RESTar.Internal
             {
                 authToken = ScRequest.Headers["RESTar-AuthToken"];
                 if (string.IsNullOrWhiteSpace(authToken))
-                    throw new ForbiddenException();
+                    throw NotAuthorizedException;
                 if (!AuthTokens.TryGetValue(authToken, out accessRights))
-                    throw new ForbiddenException();
+                    throw NotAuthorizedException;
                 return authToken;
             }
             var authorizationHeader = ScRequest.Headers["Authorization"];
             if (string.IsNullOrWhiteSpace(authorizationHeader))
-                throw new ForbiddenException();
+                throw NotAuthorizedException;
             var apikey_key = authorizationHeader.Split(' ');
             if (apikey_key[0].ToLower() != "apikey" || apikey_key.Length != 2)
-                throw new ForbiddenException();
+                throw NotAuthorizedException;
             var apiKey = apikey_key[1].SHA256();
             if (!ApiKeys.TryGetValue(apiKey, out accessRights))
-                throw new ForbiddenException();
+                throw NotAuthorizedException;
             authToken = Guid.NewGuid().ToString();
             AuthTokens[authToken] = accessRights;
             return authToken;

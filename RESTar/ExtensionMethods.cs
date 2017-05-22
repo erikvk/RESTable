@@ -11,6 +11,7 @@ using System.Text.RegularExpressions;
 using System.Web;
 using Dynamit;
 using Jil;
+using Newtonsoft.Json;
 using RESTar.Auth;
 using RESTar.Internal;
 using RESTar.Operations;
@@ -217,18 +218,9 @@ namespace RESTar
             return new Json(JSON.SerializeDynamic(dict, options));
         }
 
-        public static Json ToJson(this Dictionary<string, dynamic> d, Options options)
-        {
-            var dict = new Dictionary<string, dynamic>();
-            d.ForEach(pair => dict.Add(pair.Key + "$", pair.Value ?? ""));
-            return new Json(JSON.SerializeDynamic(dict, options));
-        }
-
         public static Dictionary<string, dynamic> ToTransient(this DDictionary d)
         {
-            var dict = new Dictionary<string, dynamic>();
-            d.KeyValuePairs.ForEach(pair => dict.Add(pair.Key, pair.Value));
-            return dict;
+            return d.KeyValuePairs.ToDictionary(pair => pair.Key, pair => pair.Value);
         }
 
         internal static RESTarMethods[] ToMethods(this RESTarPresets preset)
@@ -315,7 +307,7 @@ namespace RESTar
             return message.ToString();
         }
 
-        internal static string RESTarMemberName(this PropertyInfo propertyInfo)
+        internal static string RESTarMemberName(this MemberInfo propertyInfo)
         {
             return propertyInfo.GetAttribute<DataMemberAttribute>()?.Name ?? propertyInfo.Name;
         }
@@ -373,54 +365,39 @@ namespace RESTar
                     prop => prop.GetValue(entity));
         }
 
-        internal static Dictionary<string, dynamic> MakeTemplate(this IResource resouce) => Schema
-            .MakeSchema(resouce.Name)
-            .ToDictionary(
-                pair => pair.Key,
-                pair => Type.GetType(pair.Value).GetDefault()
-            );
-
-        internal static IEnumerable<Json> MakeViewModelJsonArray(this IEnumerable<dynamic> entities)
+        private static dynamic VmValueRecurser(Type propType)
         {
-            var options = new Options(excludeNulls: true, includeInherited: true, dateFormat: ISO8601,
-                unspecifiedDateTimeKindBehavior: _LocalTimes ? IsLocal : IsUTC);
-            var list = new List<Dictionary<string, dynamic>>();
+            if (propType == typeof(string))
+                return "";
 
-            if (entities is IEnumerable<DDictionary>)
+            var ienumImplementation = propType.GetInterfaces()
+                .FirstOrDefault(t => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(IEnumerable<>));
+            if (ienumImplementation != null)
             {
-                foreach (DDictionary entity in entities)
-                {
-                    var dict = new Dictionary<string, dynamic>();
-                    entity.KeyValuePairs.ForEach(pair => dict.Add(pair.Key + "$", pair.Value ?? ""));
-                    list.Add(dict);
-                }
-                return list.Select(dict => new Json(JSON.SerializeDynamic(dict, options)));
+                var elementType = ienumImplementation.GenericTypeArguments[0];
+                return new object[] {VmValueRecurser(elementType)};
             }
-
-            if (entities is IEnumerable<Dictionary<string, dynamic>>)
+            if (propType.IsClass)
             {
-                foreach (Dictionary<string, dynamic> entity in entities)
-                {
-                    var dict = new Dictionary<string, dynamic>();
-                    entity.ForEach(pair => dict.Add(pair.Key + "$", pair.Value ?? ""));
-                    list.Add(dict);
-                }
-                return list.Select(dict => new Json(JSON.SerializeDynamic(dict, options)));
+                var props = propType.GetPropertyList();
+                return props.ToDictionary(
+                    p => p.RESTarMemberName() + "$",
+                    p => VmValueRecurser(p.PropertyType));
             }
-
-            if (entities is IEnumerable<IDictionary>)
+            if (propType.IsValueType)
             {
-                foreach (IDictionary entity in entities)
-                {
-                    var dict = new Dictionary<string, dynamic>();
-                    foreach (DictionaryEntry pair in entity)
-                        dict[pair + "$"] = pair.Value ?? "";
-                    list.Add(dict);
-                }
-                return list.Select(dict => new Json(JSON.SerializeDynamic(dict, options)));
+                if (propType.IsGenericType && propType.GetGenericTypeDefinition() == typeof(Nullable<>))
+                    return GetDefault(propType.GetGenericArguments().First());
+                return GetDefault(propType);
             }
+            throw new ArgumentOutOfRangeException();
+        }
 
-            return list.Select(dict => new Json(JSON.SerializeDynamic(dict, options)));
+        internal static Dictionary<string, dynamic> MakeViewModelTemplate(this IResource resouce)
+        {
+            if (resouce.IsDynamic) return new Dictionary<string, dynamic>();
+            return resouce.TargetType.GetPropertyList().ToDictionary(p => p.RESTarMemberName() + "$",
+                p => VmValueRecurser(p.PropertyType));
         }
 
         internal static PropertyInfo MatchProperty(this Type resource, string str, bool ignoreCase = true)
@@ -582,6 +559,13 @@ namespace RESTar
                     row[name] = value.ToString();
                     return;
             }
+        }
+
+        internal static string ReplaceFirst(this string text, string search, string replace)
+        {
+            var pos = text.IndexOf(search, Ordinal);
+            if (pos < 0) return text;
+            return $"{text.Substring(0, pos)}{replace}{text.Substring(pos + search.Length)}";
         }
 
         internal static string GetJsType(this Type type)

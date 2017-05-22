@@ -5,6 +5,7 @@ using System.Reflection;
 using System.Runtime.Serialization;
 using RESTar.Internal;
 using RESTar.Operations;
+using RESTar.Requests;
 using static System.Reflection.BindingFlags;
 using static RESTar.Internal.DynamicResource;
 
@@ -48,22 +49,15 @@ namespace RESTar
             if (request == null) throw new ArgumentNullException(nameof(request));
             var count = 0;
             var dynamicTables = resources.ToList();
-            try
+            foreach (var entity in dynamicTables)
             {
-                foreach (var entity in dynamicTables)
-                {
-                    if (string.IsNullOrEmpty(entity.Alias))
-                        throw new Exception("No Alias for new resource");
-                    if (DB.Exists<ResourceAlias>("Alias", entity.Alias))
-                        throw new Exception($"Invalid Alias: '{entity.Alias}' is used to refer to another resource");
-                    entity.AvailableMethods = RESTarConfig.Methods;
-                    MakeTable(entity);
-                    count += 1;
-                }
-            }
-            catch (Exception e)
-            {
-                throw new AbortedInserterException(e, $"Invalid resource: {e.Message}");
+                if (string.IsNullOrEmpty(entity.Alias))
+                    throw new Exception("No Alias for new resource");
+                if (DB.Exists<ResourceAlias>("Alias", entity.Alias))
+                    throw new Exception($"Invalid Alias: '{entity.Alias}' is used to refer to another resource");
+                entity.AvailableMethods = RESTarConfig.Methods;
+                MakeTable(entity);
+                count += 1;
             }
             return count;
         }
