@@ -14,8 +14,6 @@ namespace RESTar
         internal static ushort _Port => Instance.Port;
         internal static string _Uri => Instance.Uri;
         internal static bool _ViewEnabled => Instance.ViewEnabled;
-        internal static ushort _ViewPort => Instance.ViewPort;
-        internal static string _ViewUri => Instance.ViewUri;
         internal static bool _PrettyPrint => Instance.PrettyPrint;
         internal static bool _CamelCase => Instance.CamelCase;
         internal static bool _LocalTimes => Instance.LocalTimes;
@@ -26,16 +24,14 @@ namespace RESTar
         public ushort Port { get; private set; }
         public string Uri { get; private set; }
         public bool ViewEnabled { get; private set; }
-        public ushort ViewPort { get; private set; }
-        public string ViewUri { get; private set; }
-
+     
         private bool _prettyPrint;
         private bool _camelCase;
         private bool _localTimes;
 
         public bool PrettyPrint
         {
-            get { return _prettyPrint; }
+            get => _prettyPrint;
             set
             {
                 _prettyPrint = value;
@@ -56,7 +52,7 @@ namespace RESTar
 
         public bool CamelCase
         {
-            get { return _camelCase; }
+            get => _camelCase;
             set
             {
                 _camelCase = value;
@@ -80,7 +76,7 @@ namespace RESTar
 
         public bool LocalTimes
         {
-            get { return _localTimes; }
+            get => _localTimes;
             set
             {
                 _localTimes = value;
@@ -112,8 +108,6 @@ namespace RESTar
             ushort port,
             string uri,
             bool viewEnabled,
-            ushort viewPort,
-            string viewUri,
             bool prettyPrint,
             bool camelCase,
             bool localTimes,
@@ -155,8 +149,6 @@ namespace RESTar
                     Port = port,
                     Uri = uri,
                     ViewEnabled = viewEnabled,
-                    ViewPort = viewPort,
-                    ViewUri = viewUri,
                     _prettyPrint = prettyPrint,
                     _camelCase = camelCase,
                     _localTimes = localTimes,

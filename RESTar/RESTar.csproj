@@ -158,7 +158,14 @@
     <Compile Include="StringLogicalComparer.cs" />
     <Compile Include="Temp.cs" />
     <Compile Include="Operations\WhereClause.cs" />
-    <Compile Include="View\Json.cs" />
+    <Compile Include="View\Serializer\ArrayNullToEmptyListProvider.cs" />
+    <Compile Include="View\Serializer\ClassNullToEmptyObjectProvider.cs" />
+    <Compile Include="View\Serializer\CreateViewModelResolver.cs" />
+    <Compile Include="View\Serializer\NullableValueProvider.cs" />
+    <Compile Include="View\Serializer\NullToEmptyStringValueProvider.cs" />
+    <Compile Include="View\Serializer\ObjectNoProvider.cs" />
+    <Compile Include="View\Serializer\ObjectIDProvider.cs" />
+    <Compile Include="View\Serializer\RESTarMacroWrapperProvider.cs" />
     <Compile Include="View\Menu.json.cs">
       <DependentUpon>Menu.json</DependentUpon>
     </Compile>
@@ -200,7 +207,12 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <ProjectReference Include="..\..\Deflector\Deflector\Deflector.csproj">
+      <Project>{68879089-541d-41c3-baa1-9d0805e3ccfb}</Project>
+      <Name>Deflector</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="$(StarcounterBin)\Starcounter.MsBuild.targets" />
   <PropertyGroup>

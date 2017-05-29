@@ -13,14 +13,13 @@
 
   "CanInsert": false,
   "TableHead": [""],
-  "TableRows": [[]],
-  "$TableRows": { "Bind": "_TableRows" },
   "Entities": [{}],
   "UniqueIdentifiers": [""],
 
   // buttons:
 
-  "Add$": 0
+  "Add$": 0,
+  "Delete$": "" 
 
   // other:
 

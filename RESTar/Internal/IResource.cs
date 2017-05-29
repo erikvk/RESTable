@@ -13,7 +13,7 @@ namespace RESTar.Internal
         Type TargetType { get; }
         string Alias { get; }
         long? NrOfEntities { get; }
-        bool IsDynamic { get; }
+        bool IsDDictionary { get; }
         RESTarResourceType ResourceType { get; }
         bool IsStarcounterResource { get; }
         bool Viewable { get; }

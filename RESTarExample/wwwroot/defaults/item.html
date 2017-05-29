@@ -7,7 +7,7 @@
         <h3>
             <a href="{{model.ResourcePath}}">{{model.ResourceName}}</a>
         </h3>
-        
+       
         <template is="dom-repeat" items="{{model.Members$}}"as="member">
             <RESTar-default member="{{member}}"></RESTar-default>
         </template>

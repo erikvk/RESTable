@@ -35,6 +35,7 @@ namespace RESTarExample
         [UniqueId]
         public string Str;
         public int Inte;
+        public DateTime Date;
 
         public int Insert(IEnumerable<MyResource> entities, IRequest request)
         {

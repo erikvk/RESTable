@@ -31,7 +31,6 @@ namespace RESTar.View
         internal Request Request { get; private set; }
         internal IResource Resource => Request.Resource;
         protected abstract string HtmlMatcher { get; }
-        protected abstract string DefaultHtml { get; }
         protected TData RESTarData { get; private set; }
 
         protected void POST(string json)
@@ -50,11 +49,11 @@ namespace RESTar.View
             else SetMessage($"You are not allowed to update the '{Resource}' resource", NotAuthorized, error);
         }
 
-        protected void DELETE()
+        protected void DELETE(object item)
         {
             UserCheck();
             if (MethodAllowed(RESTarMethods.DELETE))
-                Evaluators.DELETE(RESTarData, Request);
+                Evaluators.DELETE(item, Request);
             else SetMessage($"You are not allowed to delete from the '{Resource}' resource", NotAuthorized, error);
         }
 
@@ -64,10 +63,12 @@ namespace RESTar.View
         {
             Request = request;
             SetResourceName(Resource.Alias ?? Resource.Name);
-            SetResourcePath($"{Settings._ViewUri}/{Resource.Alias ?? Resource.Name}");
+            SetResourcePath($"/{Application.Current.Name}/{Resource.Alias ?? Resource.Name}");
             var wd = Application.Current.WorkingDirectory;
-            var exists = File.Exists($"{wd}/wwwroot{HtmlMatcher}");
-            SetHtml(exists ? HtmlMatcher : DefaultHtml);
+            var exists = File.Exists($"{wd}/wwwroot/resources/{HtmlMatcher}");
+            if (!exists) exists = File.Exists($"{wd}/../wwwroot/resources/{HtmlMatcher}");
+            if (!exists) throw new NoHtmlException(Resource, HtmlMatcher);
+            SetHtml($"/resources/{HtmlMatcher}");
             if (data == null)
                 SetMessage("No entities found maching query", NoError, info);
             RESTarData = data;

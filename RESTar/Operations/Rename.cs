@@ -9,10 +9,11 @@ namespace RESTar.Operations
     {
         public static Rename Parse(string input, IResource resource)
         {
+            var opMatcher = input.Contains("->") ? "->" : "-%3E";
             var rename = new Rename();
             input.Split(',')
-                .ForEach(str => rename.Add(PropertyChain.Parse(str.Split(new[] {"->"}, None)[0].ToLower(), resource),
-                    str.Split(new[] {"->"}, None)[1]));
+                .ForEach(str => rename.Add(PropertyChain.Parse(str.Split(new[] {opMatcher}, None)[0].ToLower(), resource),
+                    str.Split(new[] {opMatcher}, None)[1]));
             return rename;
         }
 

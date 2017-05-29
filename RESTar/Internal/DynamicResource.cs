@@ -12,7 +12,7 @@ namespace RESTar.Internal
     {
         public string Name { get; }
         public bool Editable { get; }
-        public bool IsDynamic => true;
+        public bool IsDDictionary => true;
         public string AvailableMethodsString { get; private set; }
         public Type TargetType => DynamitControl.GetByTableName(Name);
         public string Alias => ResourceAlias.ByResource(TargetType);

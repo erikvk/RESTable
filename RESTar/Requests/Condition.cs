@@ -22,7 +22,7 @@ namespace RESTar.Requests
 
         internal bool HoldsFor(dynamic subject)
         {
-            var subjectValue = PropertyChain.GetValue(subject);
+            var subjectValue = PropertyChain.Get(subject);
             switch (Operator.OpCode)
             {
                 case Operators.EQUALS: return Do.Try<bool>(() => subjectValue == Value, false);

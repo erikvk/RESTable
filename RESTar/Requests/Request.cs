@@ -212,6 +212,9 @@ namespace RESTar.Requests
 
         internal Response GetResponse()
         {
+            if (Response == null)
+                return null;
+
             ResponseHeaders.ForEach(h => Response.Headers["X-" + h.Key] = h.Value);
             Response.Headers["Access-Control-Allow-Origin"] = AllowAllOrigins ? "*" : (Origin ?? "null");
 

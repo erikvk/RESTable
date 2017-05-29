@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using RESTar.Internal;
 using RESTar.Requests;
 using RESTar.View;
 using Starcounter;
@@ -144,8 +143,7 @@ namespace RESTar.Operations
                         var validatableResult = entity as IValidatable;
                         if (validatableResult != null)
                         {
-                            string reason;
-                            if (!validatableResult.Validate(out reason))
+                            if (!validatableResult.Validate(out string reason))
                                 throw new ValidatableException(reason);
                         }
                     }
@@ -255,6 +253,10 @@ namespace RESTar.Operations
                     return new Item().Populate(request, entities.First());
                 return new List().Populate(request, entities);
             }
+            catch (NoHtmlException)
+            {
+                throw;
+            }
             catch (Exception e)
             {
                 throw new AbortedSelectorException(e, request);
@@ -269,11 +271,9 @@ namespace RESTar.Operations
                 Db.TransactAsync(() =>
                 {
                     JsonSerializer.PopulateObject(json, entity);
-                    var validatableResult = entity as IValidatable;
-                    if (validatableResult != null)
+                    if (entity is IValidatable validatableResult)
                     {
-                        string reason;
-                        if (!validatableResult.Validate(out reason))
+                        if (!validatableResult.Validate(out string reason))
                             throw new ValidatableException(reason);
                     }
                     count = request.Resource.Update(entity.MakeList(request.Resource.TargetType), request);
@@ -310,11 +310,9 @@ namespace RESTar.Operations
                 Db.TransactAsync(() =>
                 {
                     result = json.Deserialize(request.Resource.TargetType);
-                    var validatableResult = result as IValidatable;
-                    if (validatableResult != null)
+                    if (result is IValidatable validatableResult)
                     {
-                        string reason;
-                        if (!validatableResult.Validate(out reason))
+                        if (!validatableResult.Validate(out string reason))
                             throw new ValidatableException(reason);
                     }
                     count = request.Resource.Insert(result.MakeList(request.Resource.TargetType), request);
@@ -324,7 +322,7 @@ namespace RESTar.Operations
             catch (Exception e)
             {
                 if (result != null)
-                    Db.TransactAsync(() => { Do.Try(() => result.Delete()); });
+                    Db.TransactAsync(() => Do.Try(() => result.Delete()));
                 throw new AbortedInserterException(e, request);
             }
         }

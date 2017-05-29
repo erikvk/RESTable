@@ -16,14 +16,14 @@ namespace RESTar.View
         public Menu Populate()
         {
             Html = "/menu.html";
-            MetaResourcePath = $"{Settings._ViewUri}/{typeof(Resource).FullName}";
+            MetaResourcePath = $"/{Application.Current.Name}/{typeof(Resource).FullName}";
             RESTarConfig
                 .Resources
                 .Where(r => r.Viewable)
                 .Select(r => new
                 {
                     Name = r.AliasOrName,
-                    Url = $"{Settings._ViewUri}/{r.AliasOrName}"
+                    Url = $"/{Application.Current.Name}/{r.AliasOrName}"
                 }.SerializeDyn())
                 .ForEach(str => Resources.Add(new Json(str)));
             return this;

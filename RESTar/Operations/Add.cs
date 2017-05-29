@@ -14,7 +14,7 @@ namespace RESTar.Operations
                 ForEach(propToAdd =>
                 {
                     if (!dict.ContainsKey(propToAdd.Key))
-                        dict[propToAdd.Key] = propToAdd.GetValue(entity);
+                        dict[propToAdd.Key] = propToAdd.Get(entity);
                 });
                 return dict;
             });

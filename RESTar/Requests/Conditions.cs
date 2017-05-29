@@ -1,11 +1,11 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using System.Net;
 using Dynamit;
 using RESTar.Internal;
 using RESTar.Operations;
+using static System.Globalization.DateTimeStyles;
 using static RESTar.ErrorCode;
 
 namespace RESTar.Requests
@@ -29,7 +29,7 @@ namespace RESTar.Requests
             Resource = resource;
         }
 
-        internal static Conditions Parse(string conditionString, IResource resource)
+        public static Conditions Parse(string conditionString, IResource resource)
         {
             if (string.IsNullOrEmpty(conditionString)) return null;
             return conditionString.Split('&')
@@ -37,15 +37,13 @@ namespace RESTar.Requests
                 {
                     if (s == "")
                         throw new SyntaxException(InvalidConditionSyntaxError, "Invalid condition syntax");
+                    s = s.ReplaceFirst("%3E=", ">=", out bool replaced);
+                    if (!replaced) s = s.ReplaceFirst("%3C=", "<=", out replaced);
+                    if (!replaced) s = s.ReplaceFirst("%3E", ">", out replaced);
+                    if (!replaced) s = s.ReplaceFirst("%3C", "<", out replaced);
                     var matched = new string(s.Where(c => OpMatchChars.Contains(c)).ToArray());
-                    Operator op;
-                    if (!Operator.TryParse(matched, out op))
-                    {
-                        s = s.ReplaceFirst("%3C", "<").ReplaceFirst("%3E", ">");
-                        matched = new string(s.Where(c => OpMatchChars.Contains(c)).ToArray());
-                        if (!Operator.TryParse(matched, out op))
-                            throw new OperatorException(s);
-                    }
+                    if (!Operator.TryParse(matched, out Operator op))
+                        throw new OperatorException(s);
                     var pair = s.Split(new[] {op.Common}, StringSplitOptions.None);
                     var keyString = WebUtility.UrlDecode(pair[0]);
                     var chain = PropertyChain.Parse(keyString, resource);
@@ -65,23 +63,16 @@ namespace RESTar.Requests
             if (valueString.First() == '\"' && valueString.Last() == '\"')
                 return valueString.Remove(0, 1).Remove(valueString.Length - 2, 1);
             dynamic obj;
-            int _int;
-            decimal dec;
-            bool boo;
-            DateTime dat;
-            if (bool.TryParse(valueString, out boo))
+            var dtStyle = Settings._LocalTimes ? AssumeLocal : AssumeUniversal;
+            if (bool.TryParse(valueString, out bool boo))
                 obj = boo;
-            else if (int.TryParse(valueString, out _int))
+            else if (int.TryParse(valueString, out int _int))
                 obj = _int;
-            else if (decimal.TryParse(valueString, out dec))
-            {
-                var rounded = decimal.Round(dec, 6);
-                obj = rounded;
-            }
-            else if (DateTime.TryParseExact(valueString, "yyyy-MM-dd", null, DateTimeStyles.AssumeLocal, out dat) ||
-                     DateTime.TryParseExact(valueString, "yyyy-MM-ddThh:mm:ss", null, DateTimeStyles.AssumeLocal,
-                         out dat) ||
-                     DateTime.TryParseExact(valueString, "O", null, DateTimeStyles.AssumeLocal, out dat))
+            else if (decimal.TryParse(valueString, out decimal dec))
+                obj = decimal.Round(dec, 6);
+            else if (DateTime.TryParseExact(valueString, "yyyy-MM-dd", null, dtStyle, out DateTime dat) ||
+                     DateTime.TryParseExact(valueString, "yyyy-MM-ddTHH:mm:ss", null, dtStyle, out dat) ||
+                     DateTime.TryParseExact(valueString, "O", null, dtStyle, out dat))
                 obj = dat;
             else obj = valueString;
             return obj;
@@ -92,8 +83,8 @@ namespace RESTar.Requests
             var type = typeof(T);
             if (type != Resource && Resource != typeof(DDictionary))
             {
-                var newTypeProperties = type.GetPropertyList();
-                RemoveAll(cond => newTypeProperties.All(prop => prop.RESTarMemberName()
+                var newTypeProperties = type.GetStaticProperties();
+                RemoveAll(cond => newTypeProperties.All(prop => prop.Name
                                                                 != cond.PropertyChain.FirstOrDefault()?.Name));
                 ForEach(condition => condition.Migrate(type));
                 Resource = type;

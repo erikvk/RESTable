@@ -7,19 +7,17 @@
   "Message": "",
   "ErrorCode": 0,
   "MessageType": "",
-  "HasMessage":  false, 
+  "HasMessage": false,
 
   // data:
 
-  "Entity$": {},
-  "Members$": [{}],
-  "ReadOnlyMembers": [""],
+  "Entity": {},
 
   // buttons:
 
   "Save$": 0,
   "Close$": 0,
-  "AddMember$": 0,
+  "AddElementTo$": "",
 
   // other:
 

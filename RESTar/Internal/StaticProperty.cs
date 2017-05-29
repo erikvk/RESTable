@@ -1,81 +1,92 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using Starcounter;
+using Deflector.Dynamic;
+using RESTar.Operations;
 
 namespace RESTar.Internal
 {
+    public class SpecialProperty : StaticProperty
+    {
+        public SpecialProperty(bool scQueryable) : base(scQueryable)
+        {
+        }
+
+        public static SpecialProperty ObjectNo => new SpecialProperty(true)
+        {
+            Name = "ObjectNo",
+            DatabaseQueryName = "ObjectNo",
+            Type = typeof(ulong),
+            Getter = t => Do.TryAndThrow(() => t.GetObjectNo(),
+                "Could not get ObjectNo from non-Starcounter resource."),
+            Attributes = new[] {new UniqueId()}
+        };
+
+        public static SpecialProperty ObjectID => new SpecialProperty(true)
+        {
+            Name = "ObjectID",
+            DatabaseQueryName = "ObjectID",
+            Type = typeof(string),
+            Getter = t => Do.TryAndThrow(() => t.GetObjectID(),
+                "Could not get ObjectID from non-Starcounter resource."),
+            Attributes = new[] {new UniqueId()}
+        };
+    }
+
     public class StaticProperty : Property
     {
-        public override string Name => PropertyInfo?.RESTarMemberName() ?? _name;
-        public override string DatabaseQueryName => PropertyInfo?.Name ?? _databaseQueryName;
-        public Type Type => PropertyInfo?.PropertyType ?? _type;
+        public override string Name { get; protected set; }
+        public override string DatabaseQueryName { get; protected set; }
+        public Type Type { get; protected set; }
         public override bool Dynamic => false;
-        internal bool IsObjectNo;
-        internal bool IsObjectID;
-        private string _name;
-        private string _databaseQueryName;
-        private Type _type;
-        private PropertyInfo PropertyInfo { get; set; }
+        public override bool ScQueryable { get; protected set; }
+        public IEnumerable<Attribute> Attributes;
 
-        public override bool ScQueryable => PropertyInfo?.DeclaringType?.HasAttribute<DatabaseAttribute>() == true &&
-                                            PropertyInfo.PropertyType.IsStarcounterCompatible();
+        internal TAttribute GetAttribute<TAttribute>() where TAttribute : Attribute =>
+            Attributes.OfType<TAttribute>().FirstOrDefault();
 
-        private StaticProperty(PropertyInfo property)
+        internal bool HasAttribute<TAttribute>() where TAttribute : Attribute =>
+            GetAttribute<TAttribute>() != null;
+
+        internal StaticProperty(PropertyInfo p)
         {
-            if (property == null) return;
-            PropertyInfo = property;
+            if (p == null) return;
+            Name = p.RESTarMemberName();
+            DatabaseQueryName = p.Name;
+            Type = p.PropertyType;
+            ScQueryable = p.DeclaringType?.HasAttribute<DatabaseAttribute>() == true &&
+                          p.PropertyType.IsStarcounterCompatible();
+            Attributes = p.GetCustomAttributes();
+            Getter = p.MakeDynamicGetter();
+            Setter = p.MakeDynamicSetter();
         }
 
-        private StaticProperty()
+        protected StaticProperty(bool scQueryable)
         {
+            ScQueryable = scQueryable;
         }
 
-        public static StaticProperty Parse(string keyString, Type resource)
+        private void Populate(StaticProperty property)
         {
-            var propertyInfo = resource.MatchProperty(keyString);
-            return new StaticProperty(propertyInfo);
+            Name = property.Name;
+            DatabaseQueryName = property.DatabaseQueryName;
+            Type = property.Type;
+            ScQueryable = property.ScQueryable;
+            Attributes = property.Attributes;
+            Getter = property.Getter;
+            Setter = property.Setter;
         }
 
-        public static StaticProperty ObjectNo => new StaticProperty
-        {
-            _name = "ObjectNo",
-            _databaseQueryName = "ObjectNo",
-            _type = typeof(ulong),
-            IsObjectNo = true
-        };
-
-        public static StaticProperty ObjectID => new StaticProperty
-        {
-            _name = "ObjectID",
-            _databaseQueryName = "ObjectID",
-            _type = typeof(string),
-            IsObjectID = true
-        };
+        public static StaticProperty Parse(string keyString, Type resource) => resource.MatchProperty(keyString);
 
         internal void Migrate(Type type, StaticProperty previous)
         {
-            if (IsObjectID || IsObjectNo) return;
+            if (this is SpecialProperty) return;
             var parentType = previous?.Type ?? type;
-            var propertyInfo = parentType.MatchProperty(PropertyInfo.RESTarMemberName());
-            if (propertyInfo == null)
-                throw new UnknownColumnException(type, PropertyInfo.RESTarMemberName());
-            PropertyInfo = propertyInfo;
-        }
-
-        internal override dynamic GetValue(dynamic input)
-        {
-            try
-            {
-                if (IsObjectNo) return DbHelper.GetObjectNo(input);
-                if (IsObjectID) return DbHelper.GetObjectID(input);
-                return PropertyInfo.GetValue(input);
-            }
-            catch (InvalidCastException)
-            {
-                if (IsObjectNo) throw new Exception("Could not get ObjectNo from non-Starcounter resource.");
-                if (IsObjectID) throw new Exception("Could not get ObjectID from non-Starcounter resource.");
-                throw;
-            }
+            var property = parentType.MatchProperty(Name);
+            Populate(property);
         }
     }
 }

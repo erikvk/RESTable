@@ -126,10 +126,11 @@
         VirtualResourceMemberError = 121,
         NoAvalailableDynamicTableError = 122,
 
-        // 200-300: Handler errors
+        // 200-399: Handler errors
         AbortedOperation = 200,
         NotSignedIn = 201,
         NotAuthorized = 202,
+        NoMatchingHtml = 203,
 
         DatabaseError = 300,
     }

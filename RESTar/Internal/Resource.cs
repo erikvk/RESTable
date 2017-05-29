@@ -18,7 +18,7 @@ namespace RESTar.Internal
         public RESTarMethods[] AvailableMethods { get; }
         public string AvailableMethodsString => AvailableMethods.ToMethodsString();
         public Type TargetType { get; }
-        public bool IsDynamic => typeof(T) == typeof(DDictionary);
+        public bool IsDDictionary => typeof(T) == typeof(DDictionary);
         public long? NrOfEntities => Try(() => DB.RowCount(Name), null);
         public bool Viewable { get; }
         public bool Singleton { get; }
@@ -28,7 +28,7 @@ namespace RESTar.Internal
 
         public RESTarResourceType ResourceType =>
             IsStarcounterResource
-                ? IsDynamic
+                ? IsDDictionary
                     ? ScDynamic
                     : ScStatic
                 : Virtual;

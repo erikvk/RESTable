@@ -2,7 +2,7 @@
 <package >
   <metadata>
     <id>RESTar</id>
-    <version>0.2.2</version>
+    <version>0.2.3</version>
     <title>RESTar</title>
     <authors>Erik von Krusenstierna</authors>
     <owners>Mopedo AB</owners>
@@ -15,7 +15,7 @@
     <projectUrl>https://goo.gl/cR5lph</projectUrl>
     <iconUrl>https://storage.googleapis.com/mopedo-resources/Mopedo_logo_whitefull.png</iconUrl>  
     <dependencies>
-        <dependency id="Dynamit" version="0.1.7" />
+        <dependency id="Dynamit" version="0.1.8" />
         <dependency id="ExcelDataReader" version="2.1.2.3" />
         <dependency id="ClosedXML" version="0.86.0" />
         <dependency id="Jil" version="2.15.0" />

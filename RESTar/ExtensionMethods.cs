@@ -11,7 +11,6 @@ using System.Text.RegularExpressions;
 using System.Web;
 using Dynamit;
 using Jil;
-using Newtonsoft.Json;
 using RESTar.Auth;
 using RESTar.Internal;
 using RESTar.Operations;
@@ -168,6 +167,11 @@ namespace RESTar
                 return bytes;
             throw new ArgumentOutOfRangeException($"Count was {count}, read was {read}");
         }
+
+        internal static bool IsDDictionary(this Type type) => type.IsSubclassOf(typeof(DDictionary));
+        internal static bool IsStatic(this Type type) => !type.IsDDictionary();
+        internal static bool IsStarcounter(this Type type) => type.HasAttribute<DatabaseAttribute>();
+
 
         public static byte[] ReadRest(this Stream stream)
         {
@@ -337,15 +341,12 @@ namespace RESTar
 
         internal static string[] GetUniqueIdentifiers(this IResource resource)
         {
-            var declared = resource.TargetType
-                .GetPropertyList()
+            var list = resource.TargetType
+                .GetStaticProperties()
                 .Where(prop => prop.HasAttribute<UniqueId>())
-                .Select(prop => prop.RESTarMemberName())
-                .ToArray();
-            var objectId_objectNo = resource.IsStarcounterResource
-                ? new[] {"ObjectID", "ObjectNo"}
-                : new string[0];
-            return declared.Union(objectId_objectNo).ToArray();
+                .Select(prop => prop.Name)
+                .ToList();
+            return list.ToArray();
         }
 
         internal static Dictionary<string, dynamic> MakeDictionary(this object entity)
@@ -360,50 +361,61 @@ namespace RESTar
                 return dict;
             }
             return entity.GetType()
-                .GetPropertyList()
-                .ToDictionary(prop => prop.RESTarMemberName(),
-                    prop => prop.GetValue(entity));
+                .GetStaticProperties()
+                .Where(p => !(p is SpecialProperty))
+                .ToDictionary(prop => prop.Name, prop => prop.Get(entity));
         }
 
-        private static dynamic VmValueRecurser(Type propType)
+        internal static Dictionary<string, dynamic> MakeViewModelTemplate(this IResource resource)
         {
-            if (propType == typeof(string))
-                return "";
-
-            var ienumImplementation = propType.GetInterfaces()
-                .FirstOrDefault(t => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(IEnumerable<>));
-            if (ienumImplementation != null)
-            {
-                var elementType = ienumImplementation.GenericTypeArguments[0];
-                return new object[] {VmValueRecurser(elementType)};
-            }
-            if (propType.IsClass)
-            {
-                var props = propType.GetPropertyList();
-                return props.ToDictionary(
-                    p => p.RESTarMemberName() + "$",
-                    p => VmValueRecurser(p.PropertyType));
-            }
-            if (propType.IsValueType)
-            {
-                if (propType.IsGenericType && propType.GetGenericTypeDefinition() == typeof(Nullable<>))
-                    return GetDefault(propType.GetGenericArguments().First());
-                return GetDefault(propType);
-            }
-            throw new ArgumentOutOfRangeException();
+            if (resource.IsDDictionary)
+                return new Dictionary<string, dynamic>();
+            var properties = resource.TargetType.GetStaticProperties();
+            return properties.ToDictionary(
+                p => p.CanWrite ? p.Name + "$" : p.Name,
+                p => p.Type.MakeViewModelDefault(p)
+            );
         }
 
-        internal static Dictionary<string, dynamic> MakeViewModelTemplate(this IResource resouce)
+        public static dynamic MakeViewModelDefault(this Type type, StaticProperty property = null)
         {
-            if (resouce.IsDynamic) return new Dictionary<string, dynamic>();
-            return resouce.TargetType.GetPropertyList().ToDictionary(p => p.RESTarMemberName() + "$",
-                p => VmValueRecurser(p.PropertyType));
+            dynamic DefaultValueRecurser(Type propType, StaticProperty prop = null)
+            {
+                if (propType == typeof(string))
+                    return "";
+                var ienumImplementation = propType.GetInterfaces()
+                    .FirstOrDefault(t => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(IEnumerable<>));
+                if (ienumImplementation != null)
+                {
+                    var elementType = ienumImplementation.GenericTypeArguments[0];
+                    return new object[] {DefaultValueRecurser(elementType)};
+                }
+                if (propType.IsClass)
+                {
+                    if (prop?.HasAttribute<DynamicAttribute>() == true)
+                        return "@RESTar()";
+                    var props = propType.GetStaticProperties();
+                    return props.ToDictionary(
+                        p => p.CanWrite ? p.Name + "$" : p.Name,
+                        p => DefaultValueRecurser(p.Type, p));
+                }
+                if (propType.IsValueType)
+                {
+                    if (propType.IsGenericType && propType.GetGenericTypeDefinition() == typeof(Nullable<>))
+                        return propType.GetGenericArguments().First().GetDefault();
+                    return propType.GetDefault();
+                }
+                throw new ArgumentOutOfRangeException();
+            }
+
+            return DefaultValueRecurser(type, property);
         }
 
-        internal static PropertyInfo MatchProperty(this Type resource, string str, bool ignoreCase = true)
+
+        internal static StaticProperty MatchProperty(this Type resource, string str, bool ignoreCase = true)
         {
-            var matches = resource.GetPropertyList()
-                .Where(p => string.Equals(str, p.RESTarMemberName(), ignoreCase
+            var matches = resource.GetStaticProperties()
+                .Where(p => string.Equals(str, p.Name, ignoreCase
                     ? CurrentCultureIgnoreCase
                     : CurrentCulture));
             var count = matches.Count();
@@ -411,7 +423,7 @@ namespace RESTar
             if (count > 1)
             {
                 if (!ignoreCase)
-                    throw new AmbiguousColumnException(resource, str, matches.Select(m => m.RESTarMemberName()));
+                    throw new AmbiguousColumnException(resource, str, matches.Select(m => m.Name));
                 return MatchProperty(resource, str, false);
             }
             return matches.First();
@@ -467,24 +479,24 @@ namespace RESTar
             }
             else
             {
-                var properties = resource.TargetType.GetPropertyList();
-                foreach (var propInfo in properties)
+                var properties = resource.TargetType.GetStaticProperties();
+                foreach (var prop in properties)
                 {
-                    var ColType = propInfo.PropertyType.IsClass && propInfo.PropertyType != typeof(string)
+                    var ColType = prop.Type.IsClass && prop.Type != typeof(string)
                         ? typeof(string)
-                        : Nullable.GetUnderlyingType(propInfo.PropertyType) ?? propInfo.PropertyType;
-                    table.Columns.Add(propInfo.RESTarMemberName(), ColType);
+                        : Nullable.GetUnderlyingType(prop.Type) ?? prop.Type;
+                    table.Columns.Add(prop.Name, ColType);
                 }
                 foreach (var item in entities)
                 {
                     var row = table.NewRow();
-                    foreach (var propInfo in properties)
+                    foreach (var prop in properties)
                     {
-                        var key = propInfo.RESTarMemberName();
+                        var key = prop.Name;
                         object value;
-                        if (propInfo.HasAttribute<ExcelFlattenToString>())
-                            value = propInfo.GetValue(item, null)?.ToString();
-                        else value = propInfo.GetValue(item, null);
+                        if (prop.HasAttribute<ExcelFlattenToString>())
+                            value = prop.Get(item)?.ToString();
+                        else value = prop.Get(item);
                         row.SetCellValue(key, value);
                     }
                     table.Rows.Add(row);
@@ -561,10 +573,15 @@ namespace RESTar
             }
         }
 
-        internal static string ReplaceFirst(this string text, string search, string replace)
+        internal static string ReplaceFirst(this string text, string search, string replace, out bool replaced)
         {
             var pos = text.IndexOf(search, Ordinal);
-            if (pos < 0) return text;
+            if (pos < 0)
+            {
+                replaced = false;
+                return text;
+            }
+            replaced = true;
             return $"{text.Substring(0, pos)}{replace}{text.Substring(pos + search.Length)}";
         }
 

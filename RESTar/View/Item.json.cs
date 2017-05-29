@@ -1,5 +1,7 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using Dynamit;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -10,8 +12,7 @@ namespace RESTar.View
 {
     partial class Item : RESTarView<object>
     {
-        protected override string HtmlMatcher => $"/resources/{Resource.Name}-item.html";
-        protected override string DefaultHtml => "/defaults/item.html";
+        protected override string HtmlMatcher => $"{Resource.Name}-item.html";
         protected override void SetHtml(string html) => Html = html;
         protected override void SetResourceName(string resourceName) => ResourceName = resourceName;
         protected override void SetResourcePath(string resourcePath) => ResourcePath = resourcePath;
@@ -27,18 +28,15 @@ namespace RESTar.View
             HasMessage = true;
         }
 
+        private const string regex = @"\@RESTar\((?<content>[^\(\)]*)\)";
+
         public void Handle(Input.Save action)
         {
             IDictionary<string, JToken> entityJson = JObject.Parse(Entity.ToJson());
-            var membersJsonArray = JArray.Parse(Members.ToJson());
-            IDictionary<string, JToken> membersJson = new JObject();
-            foreach (var member in membersJsonArray)
-                membersJson[$"{member["Name$"]}$"] = member["Value$"];
-            var mchanges = membersJson.Except(Original, Comparer).ToList();
-            var echanges = entityJson.Except(Original, Comparer).ToList();
-            mchanges.ForEach(c => Original[c.Key] = c.Value);
-            echanges.ForEach(c => Original[c.Key] = c.Value);
+            var changes = entityJson.Except(Original, Comparer).ToList();
+            changes.ForEach(c => Original[c.Key] = c.Value);
             var json = JsonConvert.SerializeObject(Original).Replace(@"$"":", @""":");
+            json = Regex.Replace(json, regex, "${content}");
             if (IsTemplate) POST(json);
             else PATCH(json);
             RedirectUrl = ResourcePath;
@@ -46,60 +44,69 @@ namespace RESTar.View
 
         public void Handle(Input.Close action)
         {
-            RedirectUrl = ResourcePath;
+            RedirectUrl = Resource.Singleton
+                ? $"/{Application.Current.Name}"
+                : ResourcePath;
         }
 
-        public void Handle(Input.AddMember action)
+        public void Handle(Input.AddElementTo action)
         {
+            try
+            {
+                var array = (Arr<Json>) action.Value
+                    .Replace("$", "")
+                    .Split('.')
+                    .Aggregate(Entity, (json, key) =>
+                        int.TryParse(key, out int index)
+                            ? (Json) json[index]
+                            : (Json) json[key]);
+                array.Add();
+            }
+            catch
+            {
+                throw new Exception($"Could not add element to '{action.Value}'. Not an array.");
+            }
         }
 
         internal override RESTarView<object> Populate(Request request, object restarData)
         {
-            string json;
             IDictionary<string, object> original;
+            var json = "";
+
+            var template = request.Resource.MakeViewModelTemplate();
+            var jsonTemplate = template.SerializeVmJsonTemplate();
 
             if (restarData == null)
             {
                 IsTemplate = true;
-                original = request.Resource.MakeViewModelTemplate();
-                json = original.SerializeDyn();
+                original = template;
                 base.Populate(request, original);
             }
             else
             {
                 base.Populate(request, restarData);
-                if (restarData is DDictionary)
+                if (restarData is DDictionary dict)
                 {
-                    original = ((DDictionary) restarData).ToDictionary(pair => pair.Key + "$", pair => pair.Value);
-                    json = original.SerializeDyn();
+                    original = dict.ToDictionary(pair => pair.Key + "$", pair => pair.Value);
+                    json = original.SerializeDynamicResourceToViewModel();
                 }
                 else
                 {
-                    json = restarData.SerializeToViewModel();
-                    original = JsonConvert.DeserializeObject<Dictionary<string, object>>(json);
+                    json = restarData.SerializeStaticResourceToViewModel();
+                    original = json.Deserialize<IDictionary<string, dynamic>>();
                 }
             }
 
-            Entity = new Json(json);
+            Entity = new Json {Template = Starcounter.Templates.Template.CreateFromJson(jsonTemplate)};
+            if (!IsTemplate)
+                Entity.PopulateFromJson(json);
             Original = new JObject();
             original.ForEach(member =>
             {
-                if (member.Key == "ObjectID$" || member.Key == "ObjectNo$") return;
+                if (member.Key == "ObjectID" || member.Key == "ObjectNo") return;
                 var okvp = new KeyValuePair<string, JToken>(member.Key, JToken.FromObject(member.Value));
                 Original.Add(okvp);
-                var memberJson = new Dictionary<string, object>
-                {
-                    ["Name$"] = member.Key.TrimEnd('$'),
-                    ["Value$"] = member.Value,
-                    ["Type"] = member.Value.GetType().GetJsType()
-                }.SerializeDyn();
-                Members.Add(new Json(memberJson));
             });
-            if (restarData is DDictionary)
-                return this;
-            request.Resource.TargetType.GetPropertyList()
-                .Where(p => p.SetMethod?.IsPublic != true)
-                .ForEach(p => ReadOnlyMembers.Add().StringValue = p.RESTarMemberName() + "$");
             return this;
         }
 
@@ -107,14 +114,17 @@ namespace RESTar.View
 
         private class MemberComparer : IEqualityComparer<KeyValuePair<string, JToken>>
         {
-            private readonly JTokenEqualityComparer Comparer = new JTokenEqualityComparer();
+            private readonly JTokenEqualityComparer comparer = new JTokenEqualityComparer();
 
-            public bool Equals(KeyValuePair<string, JToken> x, KeyValuePair<string, JToken> y) => x.Key == y.Key &&
-                                                                                                  JToken.DeepEquals(
-                                                                                                      x.Value, y.Value);
+            public bool Equals(KeyValuePair<string, JToken> x, KeyValuePair<string, JToken> y)
+            {
+                return x.Key == y.Key && JToken.DeepEquals(x.Value, y.Value);
+            }
 
-            public int GetHashCode(KeyValuePair<string, JToken> obj) => $"{obj.Key}_{Comparer.GetHashCode(obj.Value)}"
-                .GetHashCode();
+            public int GetHashCode(KeyValuePair<string, JToken> obj)
+            {
+                return $"{obj.Key}_{comparer.GetHashCode(obj.Value)}".GetHashCode();
+            }
         }
     }
 }

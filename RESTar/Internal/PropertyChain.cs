@@ -16,26 +16,25 @@ namespace RESTar.Internal
         internal static PropertyChain Parse(string keyString, IResource resource, List<string> dynamicDomain = null)
         {
             var chain = new PropertyChain();
-            Func<string, Property> propertyMaker = str =>
+
+            Property propertyMaker(string str)
             {
                 if (string.IsNullOrWhiteSpace(str))
                     throw new SyntaxException(InvalidConditionSyntaxError, $"Invalid condition '{str}'");
-                if (str.ToLower() == "objectno") return StaticProperty.ObjectNo;
-                if (str.ToLower() == "objectid") return StaticProperty.ObjectID;
                 if (dynamicDomain?.Contains(str, Comparer) == true)
                     return DynamicProperty.Parse(str);
                 var previous = chain.LastOrDefault();
                 if (previous == null)
-                    return Property.Parse(str, resource.TargetType, resource.IsDynamic);
-                if (previous.Static)
+                    return Property.Parse(str, resource.TargetType, resource.IsDDictionary);
+                if (previous is StaticProperty _static)
                 {
-                    var _previous = (StaticProperty) previous;
-                    if (_previous.Type.IsSubclassOf(typeof(DDictionary)))
+                    if (_static.Type.IsSubclassOf(typeof(DDictionary)))
                         return DynamicProperty.Parse(str);
-                    return StaticProperty.Parse(str, ((StaticProperty) previous).Type);
+                    return StaticProperty.Parse(str, _static.Type);
                 }
                 return DynamicProperty.Parse(str);
-            };
+            }
+
             keyString.Split('.').ForEach(s => chain.Add(propertyMaker(s)));
             return chain;
         }
@@ -44,9 +43,8 @@ namespace RESTar.Internal
         {
             var newProperties = this.Select(prop =>
                 {
-                    var stat = prop as StaticProperty;
-                    if (stat != null && !stat.IsObjectID && !stat.IsObjectNo)
-                        new DynamicProperty(prop.Name);
+                    if (prop is StaticProperty stat && !(stat is SpecialProperty))
+                        return new DynamicProperty(prop.Name);
                     return prop;
                 })
                 .ToList();
@@ -66,15 +64,16 @@ namespace RESTar.Internal
             }
         }
 
-        internal dynamic GetValue(dynamic val)
+        internal dynamic Get(object obj)
         {
-            if (val is IDictionary<string, dynamic>) MakeDynamic();
+            if (obj is IDictionary<string, dynamic>)
+                MakeDynamic();
             foreach (var prop in this)
             {
-                if (val == null) return null;
-                val = prop.GetValue(val);
+                if (obj == null) return null;
+                obj = prop.Get(obj);
             }
-            return val;
+            return obj;
         }
     }
 }

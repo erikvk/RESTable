@@ -29,7 +29,7 @@ namespace RESTar
         public static Json HandleViewException(Exception e)
         {
             var re = e as RESTarException;
-            var master = Self.GET<View.Page>(_Port, "/__restar/__page");
+            var master = Self.GET<View.Page>("/__restar/__page");
             var partial = master.CurrentPage as IRESTarView ?? new MessageWindow().Populate();
             partial.SetMessage(e.Message, re?.ErrorCode ?? UnknownError, error);
             master.CurrentPage = (Json) partial;
@@ -42,6 +42,15 @@ namespace RESTar
         public ForbiddenException(ErrorCode code, string message) : base(code, message)
         {
             Response = Forbidden();
+        }
+    }
+
+    public class NoHtmlException : RESTarException
+    {
+        public NoHtmlException(IResource resource, string matcher) : base(NoMatchingHtml,
+            $"No matching HTML file found for resource '{resource.Name}'. Add a HTML file " +
+            $"'{matcher}' to the 'wwwroot/resources' directory.")
+        {
         }
     }
 

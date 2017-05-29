@@ -1,10 +1,8 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Runtime.Serialization;
 using System.Xml;
 using Dynamit;
@@ -12,7 +10,9 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using RESTar.Auth;
 using RESTar.Internal;
+using RESTar.Operations;
 using RESTar.Requests;
+using static RESTar.Internal.SpecialProperty;
 using static RESTar.RESTarMethods;
 using IResource = RESTar.Internal.IResource;
 
@@ -24,7 +24,7 @@ namespace RESTar
         internal static readonly IDictionary<Type, IResource> TypeResources;
         internal static readonly IDictionary<IResource, Type> IEnumTypes;
         internal static readonly IDictionary<string, AccessRights> ApiKeys;
-        private static readonly IDictionary<Type, IEnumerable<PropertyInfo>> Properties;
+        private static readonly IDictionary<Type, IEnumerable<StaticProperty>> StaticProperties;
         internal static readonly ConcurrentDictionary<string, AccessRights> AuthTokens;
         internal static IEnumerable<IResource> Resources => NameResources.Values;
         internal static readonly List<Uri> AllowedOrigins;
@@ -39,7 +39,7 @@ namespace RESTar
             TypeResources = new Dictionary<Type, IResource>();
             NameResources = new Dictionary<string, IResource>();
             IEnumTypes = new Dictionary<IResource, Type>();
-            Properties = new Dictionary<Type, IEnumerable<PropertyInfo>>();
+            StaticProperties = new Dictionary<Type, IEnumerable<StaticProperty>>();
             AuthTokens = new ConcurrentDictionary<string, AccessRights>();
             AllowedOrigins = new List<Uri>();
         }
@@ -55,7 +55,7 @@ namespace RESTar
             TypeResources[toAdd.TargetType] = toAdd;
             IEnumTypes[toAdd] = typeof(IEnumerable<>).MakeGenericType(toAdd.TargetType);
             UpdateAuthInfo();
-            Properties[toAdd.TargetType] = FindProperties(toAdd.TargetType);
+            StaticProperties[toAdd.TargetType] = GetStaticProperties(toAdd.TargetType);
         }
 
         internal static void RemoveResource(IResource toRemove)
@@ -66,20 +66,27 @@ namespace RESTar
             UpdateAuthInfo();
         }
 
-        internal static IEnumerable<PropertyInfo> GetPropertyList(this Type type)
+        internal static IEnumerable<StaticProperty> GetStaticProperties(this Type type)
         {
-            if (Properties.ContainsKey(type))
-                return Properties[type];
-            return Properties[type] = FindProperties(type);
+            if (StaticProperties.ContainsKey(type))
+                return StaticProperties[type];
+            return StaticProperties[type] = FindStaticProperties(type);
         }
 
-        private static IEnumerable<PropertyInfo> FindProperties(Type resource)
+        private static IEnumerable<StaticProperty> FindStaticProperties(Type type)
         {
-            if (resource.IsSubclassOf(typeof(DDictionary)))
-                return new PropertyInfo[0];
-            return resource
-                .GetProperties()
-                .Where(p => !p.HasAttribute<IgnoreDataMemberAttribute>());
+            if (type.IsDDictionary())
+                return new[] {ObjectNo, ObjectID};
+            var declared = type.GetProperties()
+                .Where(p => !p.HasAttribute<IgnoreDataMemberAttribute>())
+                .Select(p => new StaticProperty(p))
+                .ToList();
+            if (type.IsStarcounter())
+            {
+                declared.Add(ObjectNo);
+                declared.Add(ObjectID);
+            }
+            return declared;
         }
 
         /// <summary>
@@ -91,15 +98,13 @@ namespace RESTar
         ///  (can be changed in settings during runtime)</param>
         /// <param name="camelCase">Should resources be parsed and serialized using camelCase as 
         /// opposed to default PascalCase?</param>
-        /// <param name="localTimes">Should datetimes be handled as local times or as UTC?</param>
+        /// <param name="localTimes">Should input datetimes be handled as local times or as UTC?</param>
         /// <param name="daysToSaveErrors">The number of days to save errors in the Error resource</param>
         public static void Init
         (
             ushort port = 8282,
             string uri = "/rest",
             bool viewEnabled = false,
-            ushort viewPort = 8283,
-            string viewUri = "/restview",
             bool setupMenu = false,
             bool requireApiKey = false,
             bool allowAllOrigins = true,
@@ -110,48 +115,16 @@ namespace RESTar
             ushort daysToSaveErrors = 30)
         {
             uri = uri ?? "/rest";
-            viewUri = viewUri ?? "/restview";
             uri = uri.Trim();
-            viewUri = viewUri.Trim();
             if (uri.Contains("?")) throw new ArgumentException("URI cannot contain '?'", nameof(uri));
-            if (viewUri.Contains("?")) throw new ArgumentException("View URI cannot contain '?'", nameof(viewUri));
             var appName = Starcounter.Application.Current.Name;
             if (uri.EqualsNoCase(appName))
                 throw new ArgumentException($"URI cannot be the same as the application name ({appName})");
-            if (viewUri.EqualsNoCase(appName))
-                throw new ArgumentException($"View URI cannot be the same as the application name ({appName})");
-
             if (uri.First() != '/') uri = $"/{uri}";
-            if (viewUri.First() != '/') viewUri = $"/{viewUri}";
-
-            Settings.Init
-            (
-                port: port,
-                uri: uri,
-                viewEnabled: viewEnabled,
-                viewPort: viewPort,
-                viewUri: viewUri,
-                prettyPrint: prettyPrint,
-                camelCase: camelCase,
-                localTimes: localTimes,
-                daysToSaveErrors: daysToSaveErrors
-            );
-
+            Settings.Init(port, uri, viewEnabled, prettyPrint, camelCase, localTimes, daysToSaveErrors);
             typeof(object).GetSubclasses()
                 .Where(t => t.HasAttribute<RESTarAttribute>())
-                .ForEach(t =>
-                {
-                    try
-                    {
-                        Resource.AutoMakeResource(t);
-                    }
-                    catch (Exception e)
-                    {
-                        if (e.InnerException != null)
-                            throw e.InnerException;
-                        throw;
-                    }
-                });
+                .ForEach(t => Do.TryCatch(() => Resource.AutoMakeResource(t), e => throw (e.InnerException ?? e)));
             DB.All<DynamicResource>().ForEach(AddResource);
             RequireApiKey = requireApiKey;
             AllowAllOrigins = allowAllOrigins;
@@ -220,8 +193,8 @@ namespace RESTar
                         throw new Exception("An API key was invalid");
                     var key = keyString.SHA256();
                     var access = new List<AccessRight>();
-                    Action<JToken> GetAccessRight = null;
-                    GetAccessRight = token =>
+
+                    void getAccessRight(JToken token)
                     {
                         switch (token.Type)
                         {
@@ -233,11 +206,12 @@ namespace RESTar
                                 });
                                 break;
                             case JTokenType.Array:
-                                token.ForEach(GetAccessRight);
+                                token.ForEach(getAccessRight);
                                 break;
                         }
-                    };
-                    GetAccessRight(keyToken["AllowAccess"]);
+                    }
+
+                    getAccessRight(keyToken["AllowAccess"]);
                     ApiKeys[key] = access.ToAccessRights();
                     break;
                 case JTokenType.Array:

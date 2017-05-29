@@ -5,7 +5,6 @@ using System.Reflection;
 using System.Runtime.Serialization;
 using RESTar.Internal;
 using RESTar.Operations;
-using RESTar.Requests;
 using static System.Reflection.BindingFlags;
 using static RESTar.Internal.DynamicResource;
 

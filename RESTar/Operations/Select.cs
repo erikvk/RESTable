@@ -16,7 +16,7 @@ namespace RESTar.Operations
                 {
                     var dictKey = entityDict?.MatchKeyIgnoreCase(propToAdd.Key);
                     if (!dict.ContainsKey(propToAdd.Key))
-                        dict[dictKey ?? propToAdd.Key] = propToAdd.GetValue(entity);
+                        dict[dictKey ?? propToAdd.Key] = propToAdd.Get(entity);
                 });
                 return dict;
             });

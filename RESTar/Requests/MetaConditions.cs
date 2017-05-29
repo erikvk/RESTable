@@ -20,7 +20,8 @@ namespace RESTar.Requests
         Rename,
         Dynamic,
         Safepost,
-        New
+        New,
+        Delete
     }
 
     internal static class MetaConditionsExtensions
@@ -39,6 +40,7 @@ namespace RESTar.Requests
                 case RESTarMetaConditions.Dynamic: return typeof(bool);
                 case RESTarMetaConditions.Safepost: return typeof(string);
                 case RESTarMetaConditions.New: return typeof(bool);
+                case RESTarMetaConditions.Delete: return typeof(bool);
                 default: throw new ArgumentOutOfRangeException(nameof(condition), condition, null);
             }
         }
@@ -56,6 +58,7 @@ namespace RESTar.Requests
         internal string SafePost { get; private set; }
         internal bool New { get; private set; }
         internal bool Empty = true;
+        internal bool Delete { get; private set; }
 
         internal static MetaConditions Parse(string metaConditionString, IResource resource)
         {
@@ -89,8 +92,8 @@ namespace RESTar.Requests
                 if (!Enum.TryParse(pair[0], true, out metaCondition))
                     throw new SyntaxException(InvalidMetaConditionKey,
                         $"Invalid meta-condition '{pair[0]}'. Available meta-conditions: " +
-                        $"{string.Join(", ", Enum.GetNames(typeof(RESTarMetaConditions)))}. For more info, see " +
-                        $"{Settings.Instance.HelpResourcePath}/topic=Meta-conditions");
+                        $"{string.Join(", ", Enum.GetNames(typeof(RESTarMetaConditions)).Except(new[] {"New", "Delete"}))}. " +
+                        $"For more info, see {Settings.Instance.HelpResourcePath}/topic=Meta-conditions");
 
                 var expectedType = metaCondition.ExpectedType();
                 var value = Conditions.GetValue(pair[1]);
@@ -145,6 +148,9 @@ namespace RESTar.Requests
                         break;
                     case RESTarMetaConditions.New:
                         mc.New = value;
+                        break;
+                    case RESTarMetaConditions.Delete:
+                        mc.Delete = value;
                         break;
                     default: throw new ArgumentOutOfRangeException();
                 }

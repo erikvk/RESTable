@@ -8,7 +8,6 @@ using static RESTar.ErrorCode;
 using static RESTar.RESTarMethods;
 using static Starcounter.SessionOptions;
 using static RESTar.Settings;
-using static RESTar.View.MessageType;
 using ScRequest = Starcounter.Request;
 using ScHandle = Starcounter.Handle;
 
@@ -31,7 +30,7 @@ namespace RESTar.Requests
             Application.Current.Use(new HtmlFromJsonProvider());
             Application.Current.Use(new PartialToStandaloneHtmlProvider());
 
-            ScHandle.GET(_Port, "/__restar/__page", () =>
+            ScHandle.GET("/__restar/__page", () =>
             {
                 if (Session.Current?.Data is View.Page)
                     return Session.Current.Data;
@@ -39,9 +38,9 @@ namespace RESTar.Requests
                 return new View.Page {Session = Session.Current};
             });
 
-            var viewUri = _ViewUri + "{?}";
+            //var viewUri = _ViewUri + "{?}";
 
-            ScHandle.GET(_Port, viewUri, (ScRequest r, string query) =>
+            ScHandle.GET($"/{Application.Current.Name}{{?}}", (ScRequest r, string query) =>
             {
                 try
                 {
@@ -55,8 +54,8 @@ namespace RESTar.Requests
                         request.MethodCheck();
                         request.Evaluate();
                         var partial = (Json) request.GetResponse();
-                        var master = Self.GET<View.Page>(_Port, "/__restar/__page");
-                        master.CurrentPage = partial;
+                        var master = Self.GET<View.Page>("/__restar/__page");
+                        master.CurrentPage = partial ?? master.CurrentPage;
                         return master;
                     }
                 }
@@ -67,13 +66,13 @@ namespace RESTar.Requests
             });
 
             if (!setupMenu) return;
-            ScHandle.GET(_Port, $"/{Application.Current.Name}", () =>
+            ScHandle.GET($"/{Application.Current.Name}", () =>
             {
                 try
                 {
                     Authenticator.UserCheck();
                     var partial = new Menu().Populate();
-                    var master = Self.GET<View.Page>(_Port, "/__restar/__page");
+                    var master = Self.GET<View.Page>("/__restar/__page");
                     master.CurrentPage = partial;
                     return master;
                 }
