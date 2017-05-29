@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Dynamit;
-using static RESTar.ErrorCode;
+using static RESTar.Internal.ErrorCodes;
 
 namespace RESTar.Internal
 {

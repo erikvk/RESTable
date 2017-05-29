@@ -1,5 +1,4 @@
 {
-  // general:
   "Html": "",
   "ResourceName": "",
   "ResourcePath": "",
@@ -8,19 +7,8 @@
   "ErrorCode": 0,
   "MessageType": "",
   "HasMessage":  false,
-
-  // data:
-
   "CanInsert": false,
-  "TableHead": [""],
   "Entities": [{}],
-  "UniqueIdentifiers": [""],
-
-  // buttons:
-
   "Add$": 0,
   "Delete$": "" 
-
-  // other:
-
 }

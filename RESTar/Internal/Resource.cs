@@ -7,7 +7,7 @@ using Starcounter;
 using static System.Reflection.BindingFlags;
 using static RESTar.Operations.Do;
 using static RESTar.RESTarMethods;
-using static RESTar.RESTarResourceType;
+using static RESTar.Internal.RESTarResourceType;
 
 namespace RESTar.Internal
 {
@@ -116,11 +116,6 @@ namespace RESTar.Internal
                     throw new VirtualResourceMemberException(
                         "A virtual resource cannot include public instance fields, " +
                         $"only properties. Resource: '{type.FullName}' Fields: {string.Join(", ", fields.Select(f => $"'{f.Name}'"))} in resource '{type.FullName}'");
-                if (attribute.Viewable && !attribute.Singleton &&
-                    !type.GetProperties().Any(i => i.HasAttribute<UniqueId>()))
-                    throw new VirtualResourceMemberException(
-                        $"Invalid virtual resource: '{type.FullName}' . A non-singleton viewable virtual resource must declare at least one unique id property using " +
-                        $"the UniqueId attribute ({typeof(UniqueId).FullName})");
             }
 
             new Resource<T>(type, editable, attribute, selector, inserter, updater, deleter);
@@ -143,8 +138,7 @@ namespace RESTar.Internal
                     {
                         case GET: return new[] {RESTarOperations.Select};
                         case POST: return new[] {RESTarOperations.Insert};
-                        case PUT:
-                            return new[] {RESTarOperations.Select, RESTarOperations.Insert, RESTarOperations.Update};
+                        case PUT: return new[] {RESTarOperations.Select, RESTarOperations.Insert, RESTarOperations.Update};
                         case PATCH: return new[] {RESTarOperations.Select, RESTarOperations.Update};
                         case DELETE: return new[] {RESTarOperations.Select, RESTarOperations.Delete};
                         default: return null;

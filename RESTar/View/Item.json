@@ -1,5 +1,4 @@
 {
-  // general:
   "Html": "",
   "ResourceName": "",
   "ResourcePath": "",
@@ -8,18 +7,11 @@
   "ErrorCode": 0,
   "MessageType": "",
   "HasMessage": false,
-
-  // data:
-
   "Entity": {},
-
-  // buttons:
-
   "Save$": 0,
   "Close$": 0,
   "AddElementTo$": "",
-
-  // other:
-
+  "SaveRedirectUrl$": "",
+  "CloseRedirectUrl$": "", 
   "Static": false
 }

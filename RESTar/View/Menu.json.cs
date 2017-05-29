@@ -1,11 +1,12 @@
 using System.Linq;
 using Starcounter;
+using RESTar.Internal;
 
 namespace RESTar.View
 {
     partial class Menu : Json, IRESTarView
     {
-        public void SetMessage(string message, ErrorCode errorCode, MessageType messageType)
+        public void SetMessage(string message, ErrorCodes errorCode, MessageType messageType)
         {
             Message = message;
             ErrorCode = (long) errorCode;

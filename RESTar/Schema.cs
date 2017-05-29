@@ -8,7 +8,6 @@ namespace RESTar
     [RESTar(RESTarMethods.GET, Singleton = true, Viewable = true)]
     public class Schema : Dictionary<string, string>, ISelector<Schema>
     {
-        [UniqueId]
         public string Resource { private get; set; }
 
         public IEnumerable<Schema> Select(IRequest request)

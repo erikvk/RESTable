@@ -13,9 +13,7 @@ namespace RESTar
     [RESTar(RESTarPresets.ReadAndWrite, Viewable = true)]
     public sealed class Resource : IOperationsProvider<Resource>
     {
-        [UniqueId]
         public string Name { get; set; }
-
         public bool Editable { get; private set; }
         public bool Visible { get; set; }
         public RESTarMethods[] AvailableMethods { get; set; }

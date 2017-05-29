@@ -1,12 +1,32 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
+using RESTar.Internal;
 using Starcounter;
 using static RESTar.RESTarMethods;
+using static RESTar.RESTarPresets;
 using static RESTar.Settings;
 using Request = RESTar.Requests.Request;
 
 namespace RESTar
 {
+    [RESTar(ReadOnly)]
+    public class ErrorCode : ISelector<ErrorCode>
+    {
+        public string Name { get; private set; }
+        public int Code { get; private set; }
+
+        public IEnumerable<ErrorCode> Select(IRequest request)
+        {
+            var values = Enum.GetValues(typeof(ErrorCodes)).Cast<int>().ToList();
+            return Enum
+                .GetNames(typeof(ErrorCodes))
+                .Select((name, index) => new ErrorCode {Name = name, Code = values[index]})
+                .Filter(request.Conditions)
+                .ToList();
+        }
+    }
+
     [Database, RESTar(GET, DELETE, Viewable = true)]
     public class Error
     {
@@ -14,14 +34,14 @@ namespace RESTar
         public DateTime Time;
         public string ResourceName;
         public RESTarMethods Method;
-        public ErrorCode ErrorCode;
+        public ErrorCodes ErrorCode;
         public string StackTrace;
         public string Message;
         public string Uri;
         public string Headers;
         public string Body;
 
-        internal Error(ErrorCode errorCode, Exception e, Request request)
+        internal Error(ErrorCodes errorCode, Exception e, Request request)
         {
             Time = DateTime.Now;
             ResourceName = (request.Resource?.Name ?? "<unknown>") +

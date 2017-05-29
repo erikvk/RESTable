@@ -5,7 +5,7 @@ using System.Net;
 using RESTar.Internal;
 using RESTar.Operations;
 using static System.StringComparison;
-using static RESTar.ErrorCode;
+using static RESTar.Internal.ErrorCodes;
 
 namespace RESTar.Requests
 {

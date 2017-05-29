@@ -11,7 +11,7 @@ using Newtonsoft.Json.Linq;
 using RESTar.Auth;
 using RESTar.Internal;
 using Starcounter;
-using static RESTar.ErrorCode;
+using static RESTar.Internal.ErrorCodes;
 using static RESTar.RESTarConfig;
 using static RESTar.RESTarMethods;
 using IResource = RESTar.Internal.IResource;

@@ -40,10 +40,6 @@ namespace RESTar
         }
     }
 
-    public class UniqueId : Attribute
-    {
-    }
-
     [AttributeUsage(AttributeTargets.Property)]
     public class DynamicAttribute : Attribute
     {

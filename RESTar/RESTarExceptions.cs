@@ -1,9 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using RESTar.Internal;
 using RESTar.Requests;
 using RESTar.View;
 using Starcounter;
-using static RESTar.ErrorCode;
+using static RESTar.Internal.ErrorCodes;
 using static RESTar.Requests.Responses;
 using static RESTar.Settings;
 using static RESTar.View.MessageType;
@@ -13,15 +14,15 @@ namespace RESTar
 {
     public class RESTarException : Exception
     {
-        public ErrorCode ErrorCode;
+        public ErrorCodes ErrorCode;
         public Response Response;
 
-        public RESTarException(ErrorCode code, string message) : base(message)
+        public RESTarException(ErrorCodes code, string message) : base(message)
         {
             ErrorCode = code;
         }
 
-        public RESTarException(ErrorCode code, string message, Exception ie) : base(message, ie)
+        public RESTarException(ErrorCodes code, string message, Exception ie) : base(message, ie)
         {
             ErrorCode = code;
         }
@@ -39,7 +40,7 @@ namespace RESTar
 
     public class ForbiddenException : RESTarException
     {
-        public ForbiddenException(ErrorCode code, string message) : base(code, message)
+        public ForbiddenException(ErrorCodes code, string message) : base(code, message)
         {
             Response = Forbidden();
         }
@@ -56,7 +57,7 @@ namespace RESTar
 
     public class SyntaxException : RESTarException
     {
-        public SyntaxException(ErrorCode errorCode, string message)
+        public SyntaxException(ErrorCodes errorCode, string message)
             : base(errorCode, "Syntax error while parsing request: " + message)
         {
             Response = BadRequest(this);
@@ -185,14 +186,14 @@ namespace RESTar
     public class AbortedSelectorException : RESTarException
     {
         internal AbortedSelectorException(Exception innerException, Requests.Request request, string message = null)
-            : base(ErrorCode.AbortedOperation, message ??
-                                               (innerException.GetType() == typeof(Jil.DeserializationException) ||
-                                                innerException.GetType() ==
-                                                typeof(Newtonsoft.Json.JsonSerializationException) ||
-                                                innerException.GetType() == typeof(Newtonsoft.Json.JsonReaderException)
-                                                   ? "JSON serialization error, check JSON syntax"
-                                                   : $"An exception of type {innerException.GetType().FullName} was thrown"
-                                               ), innerException)
+            : base(AbortedSelect, message ??
+                                  (innerException.GetType() == typeof(Jil.DeserializationException) ||
+                                   innerException.GetType() ==
+                                   typeof(Newtonsoft.Json.JsonSerializationException) ||
+                                   innerException.GetType() == typeof(Newtonsoft.Json.JsonReaderException)
+                                      ? "JSON serialization error, check JSON syntax"
+                                      : $"An exception of type {innerException.GetType().FullName} was thrown"
+                                  ), innerException)
         {
             Response = AbortedOperation(this, request.Method, request.Resource.TargetType);
         }
@@ -201,14 +202,14 @@ namespace RESTar
     public class AbortedInserterException : RESTarException
     {
         internal AbortedInserterException(Exception innerException, Requests.Request request, string message = null)
-            : base(ErrorCode.AbortedOperation, message ??
-                                               (innerException.GetType() == typeof(Jil.DeserializationException) ||
-                                                innerException.GetType() ==
-                                                typeof(Newtonsoft.Json.JsonSerializationException) ||
-                                                innerException.GetType() == typeof(Newtonsoft.Json.JsonReaderException)
-                                                   ? "JSON serialization error, check JSON syntax"
-                                                   : $"An exception of type {innerException.GetType().FullName} was thrown"
-                                               ), innerException)
+            : base(AbortedInsert, message ??
+                                  (innerException.GetType() == typeof(Jil.DeserializationException) ||
+                                   innerException.GetType() ==
+                                   typeof(Newtonsoft.Json.JsonSerializationException) ||
+                                   innerException.GetType() == typeof(Newtonsoft.Json.JsonReaderException)
+                                      ? "JSON serialization error, check JSON syntax"
+                                      : $"An exception of type {innerException.GetType().FullName} was thrown"
+                                  ), innerException)
         {
             Response = AbortedOperation(this, request.Method, request.Resource.TargetType);
         }
@@ -217,14 +218,14 @@ namespace RESTar
     public class AbortedUpdaterException : RESTarException
     {
         internal AbortedUpdaterException(Exception innerException, Requests.Request request, string message = null)
-            : base(ErrorCode.AbortedOperation, message ??
-                                               (innerException.GetType() == typeof(Jil.DeserializationException) ||
-                                                innerException.GetType() ==
-                                                typeof(Newtonsoft.Json.JsonSerializationException) ||
-                                                innerException.GetType() == typeof(Newtonsoft.Json.JsonReaderException)
-                                                   ? "JSON serialization error, check JSON syntax"
-                                                   : $"An exception of type {innerException.GetType().FullName} was thrown"
-                                               ), innerException)
+            : base(AbortedUpdate, message ??
+                                  (innerException.GetType() == typeof(Jil.DeserializationException) ||
+                                   innerException.GetType() ==
+                                   typeof(Newtonsoft.Json.JsonSerializationException) ||
+                                   innerException.GetType() == typeof(Newtonsoft.Json.JsonReaderException)
+                                      ? "JSON serialization error, check JSON syntax"
+                                      : $"An exception of type {innerException.GetType().FullName} was thrown"
+                                  ), innerException)
         {
             Response = AbortedOperation(this, request.Method, request.Resource.TargetType);
         }
@@ -233,14 +234,14 @@ namespace RESTar
     public class AbortedDeleterException : RESTarException
     {
         internal AbortedDeleterException(Exception innerException, Requests.Request request, string message = null)
-            : base(ErrorCode.AbortedOperation, message ??
-                                               (innerException.GetType() == typeof(Jil.DeserializationException) ||
-                                                innerException.GetType() ==
-                                                typeof(Newtonsoft.Json.JsonSerializationException) ||
-                                                innerException.GetType() == typeof(Newtonsoft.Json.JsonReaderException)
-                                                   ? "JSON serialization error, check JSON syntax"
-                                                   : $"An exception of type {innerException.GetType().FullName} was thrown"
-                                               ), innerException)
+            : base(AbortedDelete, message ??
+                                  (innerException.GetType() == typeof(Jil.DeserializationException) ||
+                                   innerException.GetType() ==
+                                   typeof(Newtonsoft.Json.JsonSerializationException) ||
+                                   innerException.GetType() == typeof(Newtonsoft.Json.JsonReaderException)
+                                      ? "JSON serialization error, check JSON syntax"
+                                      : $"An exception of type {innerException.GetType().FullName} was thrown"
+                                  ), innerException)
         {
             Response = AbortedOperation(this, request.Method, request.Resource.TargetType);
         }

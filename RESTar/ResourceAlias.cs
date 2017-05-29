@@ -10,7 +10,6 @@ namespace RESTar
     [Database, RESTar(ReadAndWrite, Viewable = true)]
     public class ResourceAlias
     {
-        [UniqueId]
         public string Alias;
         private string _resource;
 

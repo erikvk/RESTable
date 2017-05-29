@@ -2,7 +2,7 @@
 using System.Linq;
 using RESTar.Auth;
 using Simplified.Ring3;
-using static RESTar.ErrorCode;
+using static RESTar.Internal.ErrorCodes;
 using static RESTar.RESTarConfig;
 
 namespace RESTar.Internal

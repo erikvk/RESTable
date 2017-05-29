@@ -1,7 +1,9 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
+using RESTar.Internal;
 using RESTar.Operations;
 using Starcounter;
-using static RESTar.ErrorCode;
+using static RESTar.Internal.ErrorCodes;
 using static RESTar.Internal.Authenticator;
 using static RESTar.View.MessageType;
 using IResource = RESTar.Internal.IResource;
@@ -18,7 +20,7 @@ namespace RESTar.View
 
     internal interface IRESTarView
     {
-        void SetMessage(string message, ErrorCode errorCode, MessageType messageType);
+        void SetMessage(string message, ErrorCodes errorCode, MessageType messageType);
     }
 
     public abstract class RESTarView<TData> : Json, IRESTarView
@@ -26,18 +28,29 @@ namespace RESTar.View
         protected abstract void SetHtml(string html);
         protected abstract void SetResourceName(string resourceName);
         protected abstract void SetResourcePath(string resourceName);
-        public abstract void SetMessage(string message, ErrorCode errorCode, MessageType messageType);
-
+        public abstract void SetMessage(string message, ErrorCodes errorCode, MessageType messageType);
+        
         internal Request Request { get; private set; }
         internal IResource Resource => Request.Resource;
         protected abstract string HtmlMatcher { get; }
         protected TData RESTarData { get; private set; }
+        protected bool Success;
 
         protected void POST(string json)
         {
             UserCheck();
             if (MethodAllowed(RESTarMethods.POST))
-                Evaluators.POST(json, Request);
+            {
+                try
+                {
+                    Evaluators.POST(json, Request);
+                    Success = true;
+                }
+                catch (AbortedInserterException e)
+                {
+                    SetMessage(e.InnerException?.Message ?? e.Message, e.ErrorCode, error);
+                }
+            }
             else SetMessage($"You are not allowed to insert into the '{Resource}' resource", NotAuthorized, error);
         }
 
@@ -45,7 +58,17 @@ namespace RESTar.View
         {
             UserCheck();
             if (MethodAllowed(RESTarMethods.PATCH))
-                Evaluators.PATCH(RESTarData, json, Request);
+            {
+                try
+                {
+                    Evaluators.PATCH(RESTarData, json, Request);
+                    Success = true;
+                }
+                catch (AbortedUpdaterException e)
+                {
+                    SetMessage(e.InnerException?.Message ?? e.Message, e.ErrorCode, error);
+                }
+            }
             else SetMessage($"You are not allowed to update the '{Resource}' resource", NotAuthorized, error);
         }
 
@@ -53,7 +76,17 @@ namespace RESTar.View
         {
             UserCheck();
             if (MethodAllowed(RESTarMethods.DELETE))
-                Evaluators.DELETE(item, Request);
+            {
+                try
+                {
+                    Evaluators.DELETE(item, Request);
+                    Success = true;
+                }
+                catch (AbortedDeleterException e)
+                {
+                    SetMessage(e.InnerException?.Message ?? e.Message, e.ErrorCode, error);
+                }
+            }
             else SetMessage($"You are not allowed to delete from the '{Resource}' resource", NotAuthorized, error);
         }
 

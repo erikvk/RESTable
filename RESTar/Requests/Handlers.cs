@@ -4,7 +4,7 @@ using RESTar.Internal;
 using RESTar.Operations;
 using RESTar.View;
 using Starcounter;
-using static RESTar.ErrorCode;
+using static RESTar.Internal.ErrorCodes;
 using static RESTar.RESTarMethods;
 using static Starcounter.SessionOptions;
 using static RESTar.Settings;
@@ -122,7 +122,7 @@ namespace RESTar.Requests
             catch (Exception e)
             {
                 Response errorResponse;
-                ErrorCode errorCode;
+                ErrorCodes errorCode;
 
                 if (e is NoContentException) return Responses.NoContent();
 

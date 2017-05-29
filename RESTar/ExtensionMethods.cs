@@ -339,24 +339,14 @@ namespace RESTar
             }
         }
 
-        internal static string[] GetUniqueIdentifiers(this IResource resource)
-        {
-            var list = resource.TargetType
-                .GetStaticProperties()
-                .Where(prop => prop.HasAttribute<UniqueId>())
-                .Select(prop => prop.Name)
-                .ToList();
-            return list.ToArray();
-        }
-
         internal static Dictionary<string, dynamic> MakeDictionary(this object entity)
         {
-            if (entity is DDictionary) return ((DDictionary) entity).ToTransient();
-            if (entity is Dictionary<string, dynamic>) return (Dictionary<string, object>) entity;
-            if (entity is IDictionary)
+            if (entity is DDictionary ddict) return ddict.ToTransient();
+            if (entity is Dictionary<string, dynamic> _idict) return _idict;
+            if (entity is IDictionary idict)
             {
                 var dict = new Dictionary<string, dynamic>();
-                foreach (DictionaryEntry pair in (IDictionary) entity)
+                foreach (DictionaryEntry pair in idict)
                     dict[pair.Key.ToString()] = pair.Value;
                 return dict;
             }
@@ -372,7 +362,7 @@ namespace RESTar
                 return new Dictionary<string, dynamic>();
             var properties = resource.TargetType.GetStaticProperties();
             return properties.ToDictionary(
-                p => p.CanWrite ? p.Name + "$" : p.Name,
+                p => p.ViewModelName,
                 p => p.Type.MakeViewModelDefault(p)
             );
         }
@@ -396,7 +386,7 @@ namespace RESTar
                         return "@RESTar()";
                     var props = propType.GetStaticProperties();
                     return props.ToDictionary(
-                        p => p.CanWrite ? p.Name + "$" : p.Name,
+                        p => p.ViewModelName,
                         p => DefaultValueRecurser(p.Type, p));
                 }
                 if (propType.IsValueType)

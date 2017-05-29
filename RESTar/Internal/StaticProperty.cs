@@ -21,7 +21,6 @@ namespace RESTar.Internal
             Type = typeof(ulong),
             Getter = t => Do.TryAndThrow(() => t.GetObjectNo(),
                 "Could not get ObjectNo from non-Starcounter resource."),
-            Attributes = new[] {new UniqueId()}
         };
 
         public static SpecialProperty ObjectID => new SpecialProperty(true)
@@ -31,7 +30,6 @@ namespace RESTar.Internal
             Type = typeof(string),
             Getter = t => Do.TryAndThrow(() => t.GetObjectID(),
                 "Could not get ObjectID from non-Starcounter resource."),
-            Attributes = new[] {new UniqueId()}
         };
     }
 

@@ -8,9 +8,7 @@ namespace RESTar
     [RESTar(GET, Viewable = true)]
     public class Help : ISelector<Help>
     {
-        [UniqueId]
         public string Topic { get; set; }
-
         public string Body { get; set; }
         public string SeeAlso { get; set; }
         private const string URL = "https://restarhelp.mopedo-drtb.com/rest/helparticle/";
