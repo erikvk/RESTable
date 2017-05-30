@@ -35,7 +35,7 @@ namespace RESTar.View
             var conditions = Requests.Conditions.Parse(id, Resource);
             var item = RESTarData.Filter(conditions).First();
             DELETE(item);
-            RedirectUrl = $"{ResourcePath}";
+            RedirectUrl = !string.IsNullOrWhiteSpace(RedirectUrl) ? RedirectUrl : ResourcePath;
         }
 
         internal override RESTarView<IEnumerable<object>> Populate(Request request, IEnumerable<object> data)
