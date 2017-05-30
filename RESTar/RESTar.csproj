@@ -99,6 +99,7 @@
   <ItemGroup>
     <Compile Include="Auth\AccessRight.cs" />
     <Compile Include="Auth\AccessRights.cs" />
+    <Compile Include="DatabaseIndex.cs" />
     <Compile Include="Delegates.cs" />
     <Compile Include="Internal\ErrorCodes.cs" />
     <Compile Include="Operators.cs" />
