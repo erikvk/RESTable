@@ -86,17 +86,15 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <None Include="wwwroot\defaults\item.html" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="wwwroot\defaults\__page.html" />
+    <None Include="wwwroot\__page.html" />
   </ItemGroup>
   <ItemGroup>
     <None Include="wwwroot\menu.html" />
     <None Include="wwwroot\message.html" />
+    <Content Include="wwwroot\resources\RESTarExample.R-list.html" />
+    <Content Include="wwwroot\resources\RESTarExample.R-item.html" />
     <Content Include="wwwroot\resources\RESTar.Settings-item.html" />
     <Content Include="wwwroot\default.css" />
-    <None Include="wwwroot\defaults\list.html" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="$(StarcounterBin)\Starcounter.MsBuild.targets" />

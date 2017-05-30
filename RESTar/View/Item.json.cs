@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using RESTar.Internal;
 using Starcounter;
@@ -34,14 +35,14 @@ namespace RESTar.View
             if (IsTemplate) POST(json);
             else PATCH(json);
             if (IsTemplate && Success)
-                RedirectUrl = !string.IsNullOrWhiteSpace(SaveRedirectUrl) ? SaveRedirectUrl : ResourcePath;
+                RedirectUrl = !string.IsNullOrWhiteSpace(RedirectUrl) ? RedirectUrl : ResourcePath;
             Success = false;
         }
 
         public void Handle(Input.Close action)
         {
-            RedirectUrl = !string.IsNullOrWhiteSpace(CloseRedirectUrl)
-                ? CloseRedirectUrl
+            RedirectUrl = !string.IsNullOrWhiteSpace(RedirectUrl)
+                ? RedirectUrl
                 : Resource.Singleton
                     ? $"/{Application.Current.Name}"
                     : ResourcePath;
@@ -51,16 +52,49 @@ namespace RESTar.View
         {
             try
             {
-                var array = (Arr<Json>) action.Value
+                var parts = action.Value.Split(',');
+                var path = parts[0];
+                var array = (Arr<Json>) path
                     .Replace("$", "")
                     .Split('.')
                     .Aggregate(Entity, (json, key) =>
                         int.TryParse(key, out int index)
                             ? (Json) json[index]
                             : (Json) json[key]);
-                array.Add();
+
+                if (parts.Length == 1)
+                    array.Add();
+                else
+                {
+                    var value = JToken.Parse(regex.Replace(parts[1], "${content}"));
+                    switch (value.Type)
+                    {
+                        case JTokenType.Integer:
+                            array.Add().IntegerValue = value.Value<int>();
+                            return;
+                        case JTokenType.Float:
+                            array.Add().DecimalValue = value.Value<decimal>();
+                            return;
+                        case JTokenType.String:
+                            array.Add().StringValue = value.Value<string>();
+                            return;
+                        case JTokenType.Boolean:
+                            array.Add().BoolValue = value.Value<bool>();
+                            return;
+                        default: throw new ArgumentOutOfRangeException();
+                    }
+                }
+                action.Cancel();
             }
-            catch
+            catch (JsonReaderException)
+            {
+                throw new Exception($"Could not add element to '{action.Value}'. Invalid syntax.");
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                throw new Exception($"Could not add element to '{action.Value}'. Invalid syntax.");
+            }
+            catch (Exception)
             {
                 throw new Exception($"Could not add element to '{action.Value}'. Not an array.");
             }

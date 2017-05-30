@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.Serialization;
 using Dynamit;
 using RESTar;
@@ -8,7 +9,7 @@ using Starcounter;
 
 namespace RESTarExample
 {
-    public class Program 
+    public class Program
     {
         public static void Main()
         {
@@ -18,9 +19,36 @@ namespace RESTarExample
                 allowAllOrigins: false,
                 viewEnabled: true,
                 configFilePath: "C:\\Mopedo\\Mopedo.config",
-                setupMenu: true 
-            ); 
+                setupMenu: true
+            );
             TestDatabase.Init();
+        }
+    }
+
+    [RESTar(RESTarPresets.ReadAndWrite, Viewable = true)]
+    public class R : IInserter<R>, ISelector<R>, IUpdater<R>, IDeleter<R>
+    {
+        public string S { get; set; }
+        public string[] Ss { get; set; }
+
+        public int Insert(IEnumerable<R> entities, IRequest request)
+        {
+            return entities.Count();
+        }
+
+        public IEnumerable<R> Select(IRequest request)
+        {
+            return new R[] {new R {S = "Swoo", Ss = new[] {"S", "Sd"}}};
+        }
+
+        public int Update(IEnumerable<R> entities, IRequest request)
+        {
+            return entities.Count();
+        }
+
+        public int Delete(IEnumerable<R> entities, IRequest request)
+        {
+            return entities.Count();
         }
     }
 
