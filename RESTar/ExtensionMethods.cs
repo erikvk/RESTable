@@ -452,8 +452,7 @@ namespace RESTar
         internal static DataTable MakeTable(this IEnumerable<object> entities, IResource resource)
         {
             var table = new DataTable();
-            var dicts = entities as IEnumerable<IDictionary<string, object>>;
-            if (dicts != null)
+            if (entities is IEnumerable<IDictionary<string, object>> dicts)
             {
                 foreach (var item in dicts)
                 {
