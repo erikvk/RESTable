@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using RESTar.Internal;
 using RESTar.Operations;
 
@@ -12,7 +13,9 @@ namespace RESTar.Requests
         public PropertyChain PropertyChain { get; set; }
         internal bool ScQueryable => PropertyChain.ScQueryable;
         internal void Migrate(Type type) => PropertyChain.Migrate(type);
-  
+        internal Type Type => PropertyChain.IsStatic ? ((StaticProperty) PropertyChain.Last())?.Type : null;
+        internal bool IsOfType<T>() => Type == typeof(T);
+
         internal Condition(PropertyChain propertyChain, Operator op, dynamic value)
         {
             PropertyChain = propertyChain;

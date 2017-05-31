@@ -15,7 +15,7 @@ namespace RESTar
 
         public string Resource
         {
-            get { return _resource; }
+            get => _resource;
             set
             {
                 try
@@ -43,19 +43,9 @@ namespace RESTar
         }
 
         public IResource GetResource() => RESTarConfig.NameResources[Resource.ToLower()];
-
-        public static IResource ByAlias(string alias)
-        {
-            return DB.Get<ResourceAlias>("Alias", alias)?.GetResource();
-        }
-
-        public static string ByResource(Type resource)
-        {
-            return DB.Get<ResourceAlias>("Resource", resource.FullName)?.Alias;
-        }
-
+        public static IResource ByAlias(string alias) => DB.Get<ResourceAlias>("Alias", alias)?.GetResource();
+        public static string ByResource(Type resource) => DB.Get<ResourceAlias>("Resource", resource.FullName)?.Alias;
         public static bool Exists(Type resource) => DB.Exists<ResourceAlias>("Resource", resource.FullName);
-
         public static bool NotExists(Type resource) => !Exists(resource);
     }
 }

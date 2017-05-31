@@ -14,8 +14,8 @@ namespace RESTar.Requests
     public sealed class Conditions : List<Condition>, IFilter
     {
         internal Type Resource;
-        internal Conditions StarcounterQueryable => this.Where(c => c.ScQueryable).ToConditions(Resource);
-        internal Conditions NonStarcounterQueryable => this.Where(c => !c.ScQueryable).ToConditions(Resource);
+        internal Conditions SQL => this.Where(c => c.ScQueryable).ToConditions(Resource);
+        internal Conditions PostSQL => this.Where(c => !c.ScQueryable || c.IsOfType<string>()).ToConditions(Resource);
         internal Conditions Equality => this.Where(c => c.Operator.Equality).ToConditions(Resource);
         internal Conditions Compare => this.Where(c => c.Operator.Compare).ToConditions(Resource);
         private static readonly char[] OpMatchChars = {'<', '>', '=', '!'};
@@ -98,7 +98,7 @@ namespace RESTar.Requests
             if (!this.Any()) return new WhereClause();
             var stringPart = new List<string>();
             var valuesPart = new List<object>();
-            StarcounterQueryable.ForEach(c =>
+            SQL.ForEach(c =>
             {
                 if (c.Value == null)
                     stringPart.Add($"t.{c.PropertyChain.DbKey.Fnuttify()} " +

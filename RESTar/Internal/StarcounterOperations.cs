@@ -10,10 +10,10 @@ namespace RESTar.Internal
         public static Selector<T> Select => r =>
         {
             var request = (Request) r;
-            var where = r.Conditions?.StarcounterQueryable?.ToWhereClause();
+            var where = r.Conditions?.SQL?.ToWhereClause();
             return Db.SQL<T>($"SELECT t FROM {typeof(T).FullName} t {where?.stringPart} " +
                              $"{request.MetaConditions.OrderBy?.SQL}", where?.valuesPart)
-                .Filter(r.Conditions?.NonStarcounterQueryable);
+                .Filter(r.Conditions?.PostSQL);
         };
 
         public static Inserter<T> Insert => (e, r) => e.Count();

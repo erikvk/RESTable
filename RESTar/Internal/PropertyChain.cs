@@ -12,6 +12,8 @@ namespace RESTar.Internal
         public string DbKey => string.Join(".", this.Select(p => p.DatabaseQueryName));
         public bool ScQueryable => this.All(p => p.ScQueryable);
         private static readonly NoCaseComparer Comparer = new NoCaseComparer();
+        public bool IsStatic => this.All(p => p is StaticProperty);
+        public bool IsDynamic => !IsStatic;
 
         internal static PropertyChain Parse(string keyString, IResource resource, List<string> dynamicDomain = null)
         {

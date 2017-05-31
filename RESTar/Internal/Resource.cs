@@ -40,7 +40,7 @@ namespace RESTar.Internal
 
         public string Alias
         {
-            get { return DB.Get<ResourceAlias>("Resource", Name)?.Alias; }
+            get => DB.Get<ResourceAlias>("Resource", Name)?.Alias;
             set
             {
                 var existingMapping = DB.Get<ResourceAlias>("Resource", Name);

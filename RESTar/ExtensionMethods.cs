@@ -222,10 +222,9 @@ namespace RESTar
             return new Json(JSON.SerializeDynamic(dict, options));
         }
 
-        public static Dictionary<string, dynamic> ToTransient(this DDictionary d)
-        {
-            return d.KeyValuePairs.ToDictionary(pair => pair.Key, pair => pair.Value);
-        }
+        public static Dictionary<string, dynamic> ToTransient(this DDictionary d) => d
+            .KeyValuePairs
+            .ToDictionary(pair => pair.Key, pair => pair.Value);
 
         internal static RESTarMethods[] ToMethods(this RESTarPresets preset)
         {
