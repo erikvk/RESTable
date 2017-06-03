@@ -46,16 +46,16 @@ namespace RESTar.Requests
 
         #region Bad request
 
-        internal static Response AbortedOperation(Exception e, RESTarMethods method, Type resource)
+        internal static Response AbortedOperation(Exception e, RESTarMethods method, Internal.IResource resource)
         {
-            var alias = ResourceAlias.ByResource(resource);
+            var alias = ResourceAlias.ByResource(resource.TargetType);
             return new Response
             {
                 StatusCode = (ushort) HttpStatusCode.BadRequest,
                 StatusDescription = "Bad request",
                 Headers =
                 {
-                    ["RESTar-info"] = $"Aborted {method} on resource '{resource.FullName}'" +
+                    ["RESTar-info"] = $"Aborted {method} on resource '{resource.TargetType.FullName}'" +
                                       $"{(alias != null ? $" ('{alias}')" : "")} due to an error: {e.TotalMessage()}"
                 }
             };

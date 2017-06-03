@@ -7,8 +7,8 @@ namespace RESTar.Auth
     {
         internal new ICollection<RESTarMethods> this[IResource resource]
         {
-            get { return ContainsKey(resource) ? base[resource] : null; }
-            set { base[resource] = value; }
+            get => ContainsKey(resource) ? base[resource] : null;
+            set => base[resource] = value;
         }
     }
 }

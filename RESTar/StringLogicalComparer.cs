@@ -5,8 +5,7 @@ using System;
 
 namespace RESTar
 {
-
-	// emulates StrCmpLogicalW, but not fully
+    // emulates StrCmpLogicalW, but not fully
 	public class StringLogicalComparer
 	{
 		public static int Compare(string s1, string s2)

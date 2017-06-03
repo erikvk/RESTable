@@ -7,10 +7,11 @@ using RESTar.Internal;
 using RESTar.Operations;
 using static System.Reflection.BindingFlags;
 using static RESTar.Internal.DynamicResource;
+using static RESTar.RESTarPresets;
 
 namespace RESTar
 {
-    [RESTar(RESTarPresets.ReadAndWrite, Viewable = true)]
+    [RESTar(ReadAndWrite)]
     public sealed class Resource : IOperationsProvider<Resource>
     {
         public string Name { get; set; }

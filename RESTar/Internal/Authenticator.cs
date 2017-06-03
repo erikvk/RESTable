@@ -46,11 +46,6 @@ namespace RESTar.Internal
             return authToken;
         }
 
-        internal static string Authenticate()
-        {
-            return null;
-        }
-
         internal static bool MethodCheck(RESTarMethods requestedMethod, IResource resource, string authToken)
         {
             if (!resource.AvailableMethods.Contains(requestedMethod)) return false;

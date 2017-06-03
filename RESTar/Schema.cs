@@ -5,7 +5,7 @@ using static RESTar.Operators;
 
 namespace RESTar
 {
-    [RESTar(RESTarMethods.GET, Singleton = true, Viewable = true)]
+    [RESTar(RESTarMethods.GET, Singleton = true)]
     public class Schema : Dictionary<string, string>, ISelector<Schema>
     {
         public string Resource { private get; set; }

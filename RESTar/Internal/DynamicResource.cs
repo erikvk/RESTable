@@ -37,8 +37,8 @@ namespace RESTar.Internal
 
         public RESTarMethods[] AvailableMethods
         {
-            get { return AvailableMethodsString.ToMethodsArray(); }
-            private set { AvailableMethodsString = value.ToMethodsString(); }
+            get => AvailableMethodsString.ToMethodsArray();
+            private set => AvailableMethodsString = value.ToMethodsString();
         }
 
         private DynamicResource(Type table, RESTarMethods[] availableMethods, bool visible)

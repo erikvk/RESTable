@@ -38,8 +38,6 @@ namespace RESTar.Requests
                 return new View.Page {Session = Session.Current};
             });
 
-            //var viewUri = _ViewUri + "{?}";
-
             ScHandle.GET($"/{Application.Current.Name}{{?}}", (ScRequest r, string query) =>
             {
                 try
@@ -126,9 +124,8 @@ namespace RESTar.Requests
 
                 if (e is NoContentException) return Responses.NoContent();
 
-                if (e is RESTarException)
+                if (e is RESTarException re)
                 {
-                    var re = (RESTarException) e;
                     errorCode = re.ErrorCode;
                     errorResponse = re.Response;
                 }

@@ -5,7 +5,7 @@ using static RESTar.RESTarMethods;
 
 namespace RESTar
 {
-    [RESTar(GET, Viewable = true)]
+    [RESTar(GET)]
     public class Help : ISelector<Help>
     {
         public string Topic { get; set; }

@@ -265,8 +265,7 @@ namespace RESTar.Requests
         public void Dispose()
         {
             if (AuthToken == null || Internal) return;
-            AccessRights accessRights;
-            AuthTokens.TryRemove(AuthToken, out accessRights);
+            AuthTokens.TryRemove(AuthToken, out AccessRights a);
         }
 
         private static string CheckQuery(string query, ScRequest request)

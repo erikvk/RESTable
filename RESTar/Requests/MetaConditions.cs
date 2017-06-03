@@ -88,11 +88,10 @@ namespace RESTar.Requests
                         "Invalid operator for meta-condition. One and only one '=' is allowed");
                 var pair = s.Split('=');
 
-                RESTarMetaConditions metaCondition;
-                if (!Enum.TryParse(pair[0], true, out metaCondition))
+                if (!Enum.TryParse(pair[0], true, out RESTarMetaConditions metaCondition))
                     throw new SyntaxException(InvalidMetaConditionKey,
                         $"Invalid meta-condition '{pair[0]}'. Available meta-conditions: " +
-                        $"{string.Join(", ", Enum.GetNames(typeof(RESTarMetaConditions)).Except(new[] {"New", "Delete"}))}. " +
+                        $"{string.Join(", ", Enum.GetNames(typeof(RESTarMetaConditions)).Except(new[] { "New", "Delete" }))}. " +
                         $"For more info, see {Settings.Instance.HelpResourcePath}/topic=Meta-conditions");
 
                 var expectedType = metaCondition.ExpectedType();

@@ -7,7 +7,7 @@ using IResource = RESTar.Internal.IResource;
 
 namespace RESTar
 {
-    [Database, RESTar(ReadAndWrite, Viewable = true)]
+    [Database, RESTar(ReadAndWrite)]
     public class ResourceAlias
     {
         public string Alias;

@@ -8,7 +8,7 @@ using DateTimeFormat = Jil.DateTimeFormat;
 
 namespace RESTar
 {
-    [Database, RESTar(RESTarPresets.ReadAndUpdate, Singleton = true, Viewable = true)]
+    [Database, RESTar(RESTarPresets.ReadAndUpdate, Singleton = true)]
     public class Settings
     {
         internal static ushort _Port => Instance.Port;

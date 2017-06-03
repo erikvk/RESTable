@@ -110,7 +110,6 @@
     <Compile Include="Operations\Add.cs" />
     <Compile Include="Attributes.cs" />
     <Compile Include="NoCaseComparer.cs" />
-    <Compile Include="Operations\Identifier.cs" />
     <Compile Include="Requests\Conditions.cs" />
     <Compile Include="Operations\Do.cs" />
     <Compile Include="Operations\OperationsInterfaces.cs" />

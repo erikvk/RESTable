@@ -27,7 +27,7 @@ namespace RESTar
         }
     }
 
-    [Database, RESTar(GET, DELETE, Viewable = true)]
+    [Database, RESTar(GET, DELETE)]
     public class Error
     {
         public string Id => this.GetObjectID();
@@ -52,9 +52,13 @@ namespace RESTar
             Message = e.TotalMessage();
             Body = request.Body;
             Uri = request.ScRequest.Uri;
-            if (request.ScRequest.HeadersDictionary != null)
-                Headers = string.Join(" | ", request.ScRequest.HeadersDictionary
-                    .Select(pair => $"{pair.Key}: {pair.Value}"));
+            var headers = request.ScRequest.HeadersDictionary;
+            if (headers != null)
+            {
+                if (headers.ContainsKey("Authorization"))
+                    headers["Authorization"] = "apikey *******";
+                Headers = string.Join(" | ", headers.Select(pair => $"{pair.Key}: {pair.Value}"));
+            }
         }
 
         private static DateTime Checked;

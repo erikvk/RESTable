@@ -28,13 +28,6 @@ namespace RESTar
 
     public class NumericComparer : IComparer<string>
     {
-        public NumericComparer()
-        {
-        }
-
-        public int Compare(string x, string y)
-        {
-            return StringLogicalComparer.Compare(x, y);
-        }
+        public int Compare(string x, string y) => StringLogicalComparer.Compare(x, y);
     }
 }

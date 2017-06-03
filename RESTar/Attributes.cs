@@ -33,11 +33,7 @@ namespace RESTar
     public class DynamicTableAttribute : Attribute
     {
         public int Nr;
-
-        public DynamicTableAttribute(int nr)
-        {
-            Nr = nr;
-        }
+        public DynamicTableAttribute(int nr) => Nr = nr;
     }
 
     [AttributeUsage(AttributeTargets.Property)]

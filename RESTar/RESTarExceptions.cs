@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using RESTar.Internal;
 using RESTar.Requests;
 using RESTar.View;
@@ -17,15 +18,8 @@ namespace RESTar
         public ErrorCodes ErrorCode;
         public Response Response;
 
-        public RESTarException(ErrorCodes code, string message) : base(message)
-        {
-            ErrorCode = code;
-        }
-
-        public RESTarException(ErrorCodes code, string message, Exception ie) : base(message, ie)
-        {
-            ErrorCode = code;
-        }
+        public RESTarException(ErrorCodes code, string message) : base(message) => ErrorCode = code;
+        public RESTarException(ErrorCodes code, string message, Exception ie) : base(message, ie) => ErrorCode = code;
 
         public static Json HandleViewException(Exception e)
         {
@@ -40,10 +34,7 @@ namespace RESTar
 
     public class ForbiddenException : RESTarException
     {
-        public ForbiddenException(ErrorCodes code, string message) : base(code, message)
-        {
-            Response = Forbidden();
-        }
+        public ForbiddenException(ErrorCodes code, string message) : base(code, message) => Response = Forbidden();
     }
 
     public class NoHtmlException : RESTarException
@@ -57,11 +48,8 @@ namespace RESTar
 
     public class SyntaxException : RESTarException
     {
-        public SyntaxException(ErrorCodes errorCode, string message)
-            : base(errorCode, "Syntax error while parsing request: " + message)
-        {
-            Response = BadRequest(this);
-        }
+        public SyntaxException(ErrorCodes errorCode, string message) : base(errorCode,
+            "Syntax error while parsing request: " + message) => Response = BadRequest(this);
     }
 
     public class OperatorException : SyntaxException
@@ -79,77 +67,43 @@ namespace RESTar
 
     public class SourceException : RESTarException
     {
-        public SourceException(string uri, string message)
-            : base(InvalidSourceDataError, $"RESTar could not get entities from source at '{uri}'. {message}")
-        {
-            Response = BadRequest(this);
-        }
+        public SourceException(string uri, string message) : base(InvalidSourceDataError,
+            $"RESTar could not get entities from source at '{uri}'. {message}") => Response = BadRequest(this);
     }
 
     public class InvalidInputCountException : RESTarException
     {
-        public InvalidInputCountException(RESTarMethods method)
-            : base(DataSourceFormatError,
-                $"Invalid input count for method {method:G}. Expected object/row, but found array/multiple rows. " +
-                "Only POST accepts multiple objects/rows as input.")
-        {
-            Response = BadRequest(this);
-        }
+        public InvalidInputCountException(RESTarMethods method) : base(DataSourceFormatError,
+            $"Invalid input count for method {method:G}. Expected object/row, but found array/multiple rows. " +
+            "Only POST accepts multiple objects/rows as input.") => Response = BadRequest(this);
     }
 
     public class UnknownResourceException : RESTarException
     {
-        public UnknownResourceException(string searchString)
-            : base(UnknownResourceError,
-                $"RESTar could not locate any resource by '{searchString}'. To enumerate available " +
-                $"resources, GET: {_ResourcesPath} . ")
-        {
-            Response = NotFound(this);
-        }
+        public UnknownResourceException(string searchString) : base(UnknownResourceError,
+            $"RESTar could not locate any resource by '{searchString}'. To enumerate available " +
+            $"resources, GET: {_ResourcesPath} . ") => Response = NotFound(this);
     }
 
     public class ExcelInputException : RESTarException
     {
-        public ExcelInputException()
-            : base(ExcelReaderError,
-                "There was a format error in the excel input. Check that the file is being transmitted " +
-                "properly. In curl, make sure the flag '--data-binary' is used and not '--data' or '-d'")
-        {
-            Response = BadRequest(this);
-        }
+        public ExcelInputException() : base(ExcelReaderError,
+            "There was a format error in the excel input. Check that the file is being transmitted properly. In " +
+            "curl, make sure the flag '--data-binary' is used and not '--data' or '-d'") => Response = BadRequest(this);
     }
 
     public class ExcelFormatException : RESTarException
     {
-        public ExcelFormatException()
-            : base(ExcelReaderError,
-                "RESTar was unable to write a query response to an Excel table due to a format error. " +
-                "This is likely due to the serializer trying to push an array of heterogeneous objects " +
-                "onto a single table, or that some object contains an inner object.")
-        {
-            Response = BadRequest(this);
-        }
+        public ExcelFormatException() : base(ExcelReaderError,
+            "RESTar was unable to write a query response to an Excel table due to a format error. " +
+            "This is likely due to the serializer trying to push an array of heterogeneous objects " +
+            "onto a single table, or that some object contains an inner object.") => Response = BadRequest(this);
     }
 
     public class UnknownColumnException : RESTarException
     {
-        public UnknownColumnException(Type resource, string searchString)
-            : base(UnknownColumnError,
-                $"RESTar could not uniquely locate any column in resource {resource.Name} by '{searchString}'.")
-        {
-            Response = NotFound(this);
-        }
-    }
-
-    public class CustomEntityUnknownColumnException : RESTarException
-    {
-        public CustomEntityUnknownColumnException(string searchString, string jsonRepresentation)
-            : base(UnknownColumnInGeneratedObjectError,
-                $"RESTar could not locate any column by '{searchString}' when working with the selected entity:" +
-                $"\n{jsonRepresentation}. ")
-        {
-            Response = NotFound(this);
-        }
+        public UnknownColumnException(Type resource, string str) : base(UnknownColumnError,
+            $"Could not find any property in resource '{resource.Name}' by '{str}'.") => Response = NotFound(this);
     }
 
     public class AmbiguousColumnException : RESTarException
@@ -157,13 +111,12 @@ namespace RESTar
         public readonly IEnumerable<string> Candidates;
         public readonly string SearchString;
 
-        public AmbiguousColumnException(Type resource, string searchString, IEnumerable<string> candidates)
-            : base(AmbiguousColumnError,
-                $"RESTar could not uniquely identify a column in resource {resource.Name} by " +
-                $"'{searchString}'. Candidates were: {string.Join(", ", candidates)}. ")
+        public AmbiguousColumnException(Type resource, string str, IEnumerable<string> cands)
+            : base(AmbiguousColumnError, $"Could not uniquely identify a property in resource '{resource.Name}' by " +
+                                         $"'{str}'. Candidates: {string.Join(", ", cands)}. ")
         {
-            SearchString = searchString;
-            Candidates = candidates;
+            SearchString = str;
+            Candidates = cands.ToList();
             Response = AmbiguousColumn(this);
         }
     }
@@ -185,66 +138,46 @@ namespace RESTar
 
     public class AbortedSelectorException : RESTarException
     {
-        internal AbortedSelectorException(Exception innerException, Requests.Request request, string message = null)
-            : base(AbortedSelect, message ??
-                                  (innerException.GetType() == typeof(Jil.DeserializationException) ||
-                                   innerException.GetType() ==
-                                   typeof(Newtonsoft.Json.JsonSerializationException) ||
-                                   innerException.GetType() == typeof(Newtonsoft.Json.JsonReaderException)
+        internal AbortedSelectorException(Exception ie, Requests.Request request, string message = null)
+            : base(AbortedSelect, message ?? (ie.GetType() == typeof(Jil.DeserializationException) ||
+                                              ie.GetType() == typeof(Newtonsoft.Json.JsonSerializationException) ||
+                                              ie.GetType() == typeof(Newtonsoft.Json.JsonReaderException)
                                       ? "JSON serialization error, check JSON syntax"
-                                      : $"An exception of type {innerException.GetType().FullName} was thrown"
-                                  ), innerException)
-        {
-            Response = AbortedOperation(this, request.Method, request.Resource.TargetType);
-        }
+                                      : $"An exception of type {ie.GetType().FullName} was thrown"
+                                  ), ie) => Response = AbortedOperation(this, request.Method, request.Resource);
     }
 
     public class AbortedInserterException : RESTarException
     {
-        internal AbortedInserterException(Exception innerException, Requests.Request request, string message = null)
-            : base(AbortedInsert, message ??
-                                  (innerException.GetType() == typeof(Jil.DeserializationException) ||
-                                   innerException.GetType() ==
-                                   typeof(Newtonsoft.Json.JsonSerializationException) ||
-                                   innerException.GetType() == typeof(Newtonsoft.Json.JsonReaderException)
+        internal AbortedInserterException(Exception ie, Requests.Request request, string message = null)
+            : base(AbortedInsert, message ?? (ie.GetType() == typeof(Jil.DeserializationException) ||
+                                              ie.GetType() == typeof(Newtonsoft.Json.JsonSerializationException) ||
+                                              ie.GetType() == typeof(Newtonsoft.Json.JsonReaderException)
                                       ? "JSON serialization error, check JSON syntax"
-                                      : $"An exception of type {innerException.GetType().FullName} was thrown"
-                                  ), innerException)
-        {
-            Response = AbortedOperation(this, request.Method, request.Resource.TargetType);
-        }
+                                      : $"An exception of type {ie.GetType().FullName} was thrown"
+                                  ), ie) => Response = AbortedOperation(this, request.Method, request.Resource);
     }
 
     public class AbortedUpdaterException : RESTarException
     {
-        internal AbortedUpdaterException(Exception innerException, Requests.Request request, string message = null)
-            : base(AbortedUpdate, message ??
-                                  (innerException.GetType() == typeof(Jil.DeserializationException) ||
-                                   innerException.GetType() ==
-                                   typeof(Newtonsoft.Json.JsonSerializationException) ||
-                                   innerException.GetType() == typeof(Newtonsoft.Json.JsonReaderException)
+        internal AbortedUpdaterException(Exception ie, Requests.Request request, string message = null)
+            : base(AbortedUpdate, message ?? (ie.GetType() == typeof(Jil.DeserializationException) ||
+                                              ie.GetType() == typeof(Newtonsoft.Json.JsonSerializationException) ||
+                                              ie.GetType() == typeof(Newtonsoft.Json.JsonReaderException)
                                       ? "JSON serialization error, check JSON syntax"
-                                      : $"An exception of type {innerException.GetType().FullName} was thrown"
-                                  ), innerException)
-        {
-            Response = AbortedOperation(this, request.Method, request.Resource.TargetType);
-        }
+                                      : $"An exception of type {ie.GetType().FullName} was thrown"
+                                  ), ie) => Response = AbortedOperation(this, request.Method, request.Resource);
     }
 
     public class AbortedDeleterException : RESTarException
     {
-        internal AbortedDeleterException(Exception innerException, Requests.Request request, string message = null)
-            : base(AbortedDelete, message ??
-                                  (innerException.GetType() == typeof(Jil.DeserializationException) ||
-                                   innerException.GetType() ==
-                                   typeof(Newtonsoft.Json.JsonSerializationException) ||
-                                   innerException.GetType() == typeof(Newtonsoft.Json.JsonReaderException)
+        internal AbortedDeleterException(Exception ie, Requests.Request request, string message = null)
+            : base(AbortedDelete, message ?? (ie.GetType() == typeof(Jil.DeserializationException) ||
+                                              ie.GetType() == typeof(Newtonsoft.Json.JsonSerializationException) ||
+                                              ie.GetType() == typeof(Newtonsoft.Json.JsonReaderException)
                                       ? "JSON serialization error, check JSON syntax"
-                                      : $"An exception of type {innerException.GetType().FullName} was thrown"
-                                  ), innerException)
-        {
-            Response = AbortedOperation(this, request.Method, request.Resource.TargetType);
-        }
+                                      : $"An exception of type {ie.GetType().FullName} was thrown"
+                                  ), ie) => Response = AbortedOperation(this, request.Method, request.Resource);
     }
 
     public class NoContentException : Exception
@@ -260,10 +193,9 @@ namespace RESTar
 
     public class UnknownResourceForAliasException : RESTarException
     {
-        public UnknownResourceForAliasException(string searchString, Type match)
-            : base(UnknownResourceError,
-                "Resource alias mappings must be provided with fully qualified resource names. No match " +
-                $"for '{searchString}'. {(match != null ? $"Did you mean '{match.FullName}'? " : "")}")
+        public UnknownResourceForAliasException(string searchString, Type match) : base(UnknownResourceError,
+            "Resource alias mappings must be provided with fully qualified resource names. No match " +
+            $"for '{searchString}'. {(match != null ? $"Did you mean '{match.FullName}'? " : "")}")
         {
         }
     }

@@ -10,7 +10,7 @@ namespace RESTar.Internal
 {
     public class SpecialProperty : StaticProperty
     {
-        public SpecialProperty(bool scQueryable) : base(scQueryable)
+        private SpecialProperty(bool scQueryable) : base(scQueryable)
         {
         }
 
