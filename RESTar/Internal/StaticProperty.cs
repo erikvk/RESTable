@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using Starcounter;
-using Deflector.Dynamic;
 using RESTar.Operations;
 
 namespace RESTar.Internal

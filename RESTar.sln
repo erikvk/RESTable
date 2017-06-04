@@ -1,15 +1,13 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26430.6
+VisualStudioVersion = 15.0.26430.12
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RESTar", "RESTar\RESTar.csproj", "{3CA9602F-FC6F-4DFE-8749-C6DBDD9A4809}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RESTarExample", "RESTarExample\RESTarExample.csproj", "{3CA79076-25F8-4273-BE99-D144E0606A35}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HelpManager", "HelpManager\HelpManager.csproj", "{EEA917B1-796A-4676-B089-FECFDA6E3D49}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Deflector", "..\Deflector\Deflector\Deflector.csproj", "{68879089-541D-41C3-BAA1-9D0805E3CCFB}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -37,14 +35,6 @@ Global
 		{EEA917B1-796A-4676-B089-FECFDA6E3D49}.Release|Any CPU.ActiveCfg = Release|x64
 		{EEA917B1-796A-4676-B089-FECFDA6E3D49}.Release|x64.ActiveCfg = Release|x64
 		{EEA917B1-796A-4676-B089-FECFDA6E3D49}.Release|x64.Build.0 = Release|x64
-		{68879089-541D-41C3-BAA1-9D0805E3CCFB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{68879089-541D-41C3-BAA1-9D0805E3CCFB}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{68879089-541D-41C3-BAA1-9D0805E3CCFB}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{68879089-541D-41C3-BAA1-9D0805E3CCFB}.Debug|x64.Build.0 = Debug|Any CPU
-		{68879089-541D-41C3-BAA1-9D0805E3CCFB}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{68879089-541D-41C3-BAA1-9D0805E3CCFB}.Release|Any CPU.Build.0 = Release|Any CPU
-		{68879089-541D-41C3-BAA1-9D0805E3CCFB}.Release|x64.ActiveCfg = Release|Any CPU
-		{68879089-541D-41C3-BAA1-9D0805E3CCFB}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

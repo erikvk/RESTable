@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<coreProperties xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://schemas.openxmlformats.org/package/2006/metadata/core-properties">
+  <dc:creator>Erik von Krusenstierna</dc:creator>
+  <dc:description>Create powerful RESTful web services with Starcounter. Spec: https://goo.gl/cR5lph</dc:description>
+  <dc:identifier>RESTar</dc:identifier>
+  <version>0.2.3</version>
+  <keywords>mopedo starcounter REST RESTful web services dynamit</keywords>
+  <lastModifiedBy>NuGet, Version=4.0.0.2275, Culture=neutral, PublicKeyToken=31bf3856ad364e35;Microsoft Windows NT 6.2.9200.0;.NET Framework 4.5</lastModifiedBy>
+</coreProperties>

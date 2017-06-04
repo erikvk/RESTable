@@ -1,9 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using Starcounter;
 using Starcounter.Metadata;
-using static RESTar.Internal.RESTarResourceType;
 using static RESTar.RESTarPresets;
 
 namespace RESTar

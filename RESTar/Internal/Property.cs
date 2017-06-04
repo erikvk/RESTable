@@ -1,5 +1,4 @@
 using System;
-using Deflector.Dynamic;
 
 namespace RESTar.Internal
 {

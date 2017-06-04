@@ -2,20 +2,21 @@
 <package >
   <metadata>
     <id>RESTar</id>
-    <version>0.2.3</version>
+    <version>0.2.4</version>
     <title>RESTar</title>
     <authors>Erik von Krusenstierna</authors>
     <owners>Mopedo AB</owners>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
-    <description>Create powerful RESTful web services with Starcounter. Spec: https://goo.gl/cR5lph</description>
-    <releaseNotes>New version of Dynamit</releaseNotes>
+    <description>Create powerful RESTful web services with Starcounter. Spec: https://goo.gl/TIkN7m</description>
+    <releaseNotes>Fixes for Deflector dependancy</releaseNotes>
     <copyright>Copyright 2017 Mopedo AB. All rights reserved.</copyright>
     <tags>mopedo starcounter REST RESTful web services dynamit</tags>
     <licenseUrl>https://goo.gl/eJS8o9</licenseUrl>
-    <projectUrl>https://goo.gl/cR5lph</projectUrl>
+    <projectUrl>https://goo.gl/TIkN7m</projectUrl>
     <iconUrl>https://storage.googleapis.com/mopedo-resources/Mopedo_logo_whitefull.png</iconUrl>  
     <dependencies>
         <dependency id="Dynamit" version="0.1.8" />
+        <dependency id="Mopedo.Deflector" version="0.1.0" />
         <dependency id="ExcelDataReader" version="2.1.2.3" />
         <dependency id="ClosedXML" version="0.86.0" />
         <dependency id="Jil" version="2.15.0" />

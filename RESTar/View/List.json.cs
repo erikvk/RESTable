@@ -1,8 +1,5 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
-using Dynamit;
-using Newtonsoft.Json;
 using RESTar.Internal;
 using Starcounter;
 using Request = RESTar.Requests.Request;

@@ -7,7 +7,6 @@ using RESTar.Internal;
 using RESTar.Operations;
 using static System.Globalization.DateTimeStyles;
 using static RESTar.Internal.ErrorCodes;
-using Operators = RESTar.Operators;
 
 namespace RESTar.Requests
 {

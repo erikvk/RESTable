@@ -1,0 +1,73 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>RESTar</name>
+    </assembly>
+    <members>
+        <member name="F:RESTar.Internal.RESTarResourceType.ScStatic">
+            <summary>
+            Created by user, non-persistent - should be initialized. Regular
+            Starcounter resources.
+            </summary>
+        </member>
+        <member name="F:RESTar.Internal.RESTarResourceType.ScDynamic">
+            <summary>
+            Created by user, non-persistent - should not be initialized.
+            Resources that inherit from DDictionary.
+            </summary>
+        </member>
+        <member name="F:RESTar.Internal.RESTarResourceType.Virtual">
+            <summary>
+            Created by user, non-persistent - no public fields
+            </summary>
+        </member>
+        <member name="F:RESTar.Internal.RESTarResourceType.Dynamic">
+            <summary>
+            Created by RESTar, DynamicResource 01-64. Persistent resources.
+            </summary>
+        </member>
+        <member name="T:RESTar.Internal.DB">
+            <summary>
+            This class provides static methods for database queries in the DRTB system.
+            </summary>
+        </member>
+        <member name="T:RESTar.RESTarAttribute">
+            <summary>
+            Registers a new RESTar resource and provides permissions.
+            </summary>
+        </member>
+        <member name="M:RESTar.RESTarConfig.Init(System.UInt16,System.String,System.Boolean,System.Boolean,System.Boolean,System.Boolean,System.String,System.Boolean,System.Boolean,System.Boolean,System.UInt16)">
+            <summary>
+            Initiates the RESTar interface
+            </summary>
+            <param name="port">The port that RESTar should listen on</param>
+            <param name="uri">The URI that RESTar should listen on. E.g. '/rest'</param>
+            <param name="prettyPrint">Should JSON output be pretty print formatted as default?
+             (can be changed in settings during runtime)</param>
+            <param name="camelCase">Should resources be parsed and serialized using camelCase as 
+            opposed to default PascalCase?</param>
+            <param name="localTimes">Should input datetimes be handled as local times or as UTC?</param>
+            <param name="daysToSaveErrors">The number of days to save errors in the Error resource</param>
+        </member>
+        <member name="F:RESTar.RESTarPresets.ReadOnly">
+            <summary>
+            Makes GET available for this resource
+            </summary>
+        </member>
+        <member name="F:RESTar.RESTarPresets.WriteOnly">
+            <summary>
+            Makes POST and DELETE available for this resource
+            </summary>
+        </member>
+        <member name="F:RESTar.RESTarPresets.ReadAndUpdate">
+            <summary>
+            Makes GET and PATCH available for this resource
+            </summary>
+        </member>
+        <member name="F:RESTar.RESTarPresets.ReadAndWrite">
+            <summary>
+            Makes all methods available for this resource
+            </summary>
+        </member>
+    </members>
+</doc>

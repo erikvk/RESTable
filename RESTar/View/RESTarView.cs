@@ -1,5 +1,4 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 using RESTar.Internal;
 using RESTar.Operations;
 using Starcounter;

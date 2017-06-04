@@ -15,8 +15,7 @@ namespace RESTar.Operations
             if (!request.MetaConditions.Unsafe && request.MetaConditions.Limit == -1)
                 request.MetaConditions.Limit = 1000;
             request.MetaConditions.Unsafe = true;
-            return request.Resource
-                .Select(request)?
+            return request.Resource.Select(request)?
                 .Process(request.MetaConditions.Add)
                 .Process(request.MetaConditions.Rename)
                 .Process(request.MetaConditions.Select)
