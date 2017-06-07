@@ -26,8 +26,10 @@ namespace RESTar
 
     // Modified version by Erik von Krusenstierna to work with only strings:
 
-    public class NumericComparer : IComparer<string>
+    public class RESTarComparer : IComparer<object>
     {
-        public int Compare(string x, string y) => StringLogicalComparer.Compare(x, y);
+        public int Compare(object x, object y) => x is string xs && y is string ys
+            ? StringLogicalComparer.Compare(xs, ys)
+            : Comparer<object>.Default.Compare(x, y);
     }
 }

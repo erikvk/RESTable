@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Dynamit;
+using RESTar.Deflection;
 using static RESTar.Operators;
 
 namespace RESTar

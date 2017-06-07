@@ -12,6 +12,7 @@ using System.Web;
 using Dynamit;
 using Jil;
 using RESTar.Auth;
+using RESTar.Deflection;
 using RESTar.Internal;
 using RESTar.Operations;
 using RESTar.Requests;
@@ -401,23 +402,6 @@ namespace RESTar
         }
 
 
-        internal static StaticProperty MatchProperty(this Type resource, string str, bool ignoreCase = true)
-        {
-            var matches = resource.GetStaticProperties()
-                .Where(p => string.Equals(str, p.Name, ignoreCase
-                    ? CurrentCultureIgnoreCase
-                    : CurrentCulture));
-            var count = matches.Count();
-            if (count == 0) throw new UnknownColumnException(resource, str);
-            if (count > 1)
-            {
-                if (!ignoreCase)
-                    throw new AmbiguousColumnException(resource, str, matches.Select(m => m.Name));
-                return MatchProperty(resource, str, false);
-            }
-            return matches.First();
-        }
-
         internal static bool IsStarcounterCompatible(this Type type)
         {
             switch (Type.GetTypeCode(type))
@@ -620,40 +604,6 @@ namespace RESTar
         internal static bool IsSingular(this IEnumerable<object> ienum, Requests.Request request)
         {
             return request.Resource.Singleton || ienum?.Count() == 1 && !request.ResourceHome;
-        }
-
-        public static Getter MakeDynamicGetter(this PropertyInfo p)
-        {
-            try
-            {
-                var getterDelegate = p
-                    .GetGetMethod()?
-                    .CreateDelegate(typeof(Func<,>)
-                        .MakeGenericType(p.DeclaringType, p.PropertyType));
-                return getterDelegate != null ? obj => ((dynamic)getterDelegate)((dynamic)obj) : default(Getter);
-            }
-            catch
-            {
-                return null;
-            }
-        }
-
-        public static Setter MakeDynamicSetter(this PropertyInfo p)
-        {
-            try
-            {
-                var setterDelegate = p
-                    .GetSetMethod()?
-                    .CreateDelegate(typeof(Action<,>)
-                        .MakeGenericType(p.DeclaringType, p.PropertyType));
-                return setterDelegate != null
-                    ? (obj, value) => ((dynamic)setterDelegate)((dynamic)obj, value)
-                    : default(Setter);
-            }
-            catch
-            {
-                return null;
-            }
         }
     }
 }

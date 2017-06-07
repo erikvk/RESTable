@@ -11,5 +11,6 @@
   "Save$": 0,
   "Close$": 0,
   "AddElementTo$": "",
+  "RemoveElementFrom$": "",
   "Static": false
 }

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using RESTar.Deflection;
 using RESTar.Internal;
 using static System.StringSplitOptions;
 

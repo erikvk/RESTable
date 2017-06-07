@@ -1,7 +1,7 @@
 using System.Collections.Generic;
-using static RESTar.Operations.Do;
+using RESTar.Operations;
 
-namespace RESTar.Internal
+namespace RESTar.Deflection
 {
     public class DynamicProperty : Property
     {
@@ -20,7 +20,7 @@ namespace RESTar.Internal
                 if (obj is IDictionary<string, dynamic> ddict)
                     return ddict.SafeGetNoCase(Name);
                 var type = obj.GetType();
-                return Try(() => type.MatchProperty(Name)?.Get(obj), null);
+                return Do.Try(() => type.MatchProperty(Name)?.Get(obj), null);
             };
 
             Setter = (obj, value) =>
@@ -28,7 +28,7 @@ namespace RESTar.Internal
                 if (obj is IDictionary<string, dynamic> ddict)
                     ddict[Name] = value;
                 var type = obj.GetType();
-                Try(() => type.MatchProperty(Name)?.Set(obj, value));
+                Do.Try(() => type.MatchProperty(Name)?.Set(obj, value));
             };
         }
     }

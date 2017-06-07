@@ -9,10 +9,11 @@ using Dynamit;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using RESTar.Auth;
+using RESTar.Deflection;
 using RESTar.Internal;
 using RESTar.Operations;
 using RESTar.Requests;
-using static RESTar.Internal.SpecialProperty;
+using static RESTar.Deflection.SpecialProperty;
 using static RESTar.RESTarMethods;
 using IResource = RESTar.Internal.IResource;
 
@@ -24,7 +25,6 @@ namespace RESTar
         internal static readonly IDictionary<Type, IResource> TypeResources;
         internal static readonly IDictionary<IResource, Type> IEnumTypes;
         internal static readonly IDictionary<string, AccessRights> ApiKeys;
-        private static readonly IDictionary<Type, IEnumerable<StaticProperty>> StaticProperties;
         internal static readonly ConcurrentDictionary<string, AccessRights> AuthTokens;
         internal static IEnumerable<IResource> Resources => NameResources.Values;
         internal static readonly List<Uri> AllowedOrigins;
@@ -39,7 +39,6 @@ namespace RESTar
             TypeResources = new Dictionary<Type, IResource>();
             NameResources = new Dictionary<string, IResource>();
             IEnumTypes = new Dictionary<IResource, Type>();
-            StaticProperties = new Dictionary<Type, IEnumerable<StaticProperty>>();
             AuthTokens = new ConcurrentDictionary<string, AccessRights>();
             AllowedOrigins = new List<Uri>();
         }
@@ -55,7 +54,7 @@ namespace RESTar
             TypeResources[toAdd.TargetType] = toAdd;
             IEnumTypes[toAdd] = typeof(IEnumerable<>).MakeGenericType(toAdd.TargetType);
             UpdateAuthInfo();
-            StaticProperties[toAdd.TargetType] = GetStaticProperties(toAdd.TargetType);
+            toAdd.TargetType.GetStaticProperties();
         }
 
         internal static void RemoveResource(IResource toRemove)
@@ -64,29 +63,6 @@ namespace RESTar
             TypeResources.Remove(toRemove.TargetType);
             IEnumTypes.Remove(toRemove);
             UpdateAuthInfo();
-        }
-
-        internal static IEnumerable<StaticProperty> GetStaticProperties(this Type type)
-        {
-            if (StaticProperties.ContainsKey(type))
-                return StaticProperties[type];
-            return StaticProperties[type] = FindStaticProperties(type);
-        }
-
-        private static IEnumerable<StaticProperty> FindStaticProperties(Type type)
-        {
-            if (type.IsDDictionary())
-                return new[] {ObjectNo, ObjectID};
-            var declared = type.GetProperties()
-                .Where(p => !p.HasAttribute<IgnoreDataMemberAttribute>())
-                .Select(p => new StaticProperty(p))
-                .ToList();
-            if (type.IsStarcounter())
-            {
-                declared.Add(ObjectNo);
-                declared.Add(ObjectID);
-            }
-            return declared;
         }
 
         /// <summary>

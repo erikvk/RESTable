@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Dynamit;
+using RESTar.Deflection;
 using RESTar.Internal;
 
 namespace RESTar.Operations
@@ -15,7 +16,7 @@ namespace RESTar.Operations
         internal PropertyChain PropertyChain;
         internal bool IsStarcounterQueryable = true;
         private Func<T1, dynamic> ToSelector<T1>() => item => Do.Try(() => PropertyChain.Get(item), null);
-
+        
         public string SQL => IsStarcounterQueryable
             ? $"ORDER BY t.{PropertyChain.DbKey.Fnuttify()} {(Descending ? "DESC" : "ASC")}"
             : null;
@@ -27,10 +28,11 @@ namespace RESTar.Operations
         public IEnumerable<T> Apply<T>(IEnumerable<T> entities)
         {
             if (IsStarcounterQueryable) return entities;
+            var type = typeof(T);
             if (entities is IEnumerable<IDictionary<string, dynamic>> && !(entities is IEnumerable<DDictionary>))
                 PropertyChain.MakeDynamic();
-            else if (typeof(T) != Resource.TargetType)
-                PropertyChain.Migrate(typeof(T));
+            else if (type != Resource.TargetType)
+                PropertyChain = PropertyChain.MakeFromPrototype(PropertyChain, type);
             return Ascending
                 ? entities.OrderBy(ToSelector<T>())
                 : entities.OrderByDescending(ToSelector<T>());

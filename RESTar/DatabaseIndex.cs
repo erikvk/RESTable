@@ -19,7 +19,7 @@ namespace RESTar
         public string Name { get; set; }
         public string Resource { get; set; }
         public Column[] Columns { get; set; }
-
+            
         private const string IndexSQL = "SELECT t FROM Starcounter.Metadata.\"Index\" t";
 
         private const string ColumnSQL = "SELECT t FROM Starcounter.Metadata.IndexedColumn t " +

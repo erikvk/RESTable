@@ -1,6 +1,6 @@
 using System;
 
-namespace RESTar.Internal
+namespace RESTar.Deflection
 {
     public abstract class Property
     {

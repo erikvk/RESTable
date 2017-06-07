@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using Dynamit;
+using RESTar.Deflection;
 using RESTar.Internal;
 using RESTar.Operations;
 using static System.Globalization.DateTimeStyles;

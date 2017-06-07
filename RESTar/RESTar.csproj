@@ -100,6 +100,9 @@
     <Compile Include="Auth\AccessRight.cs" />
     <Compile Include="Auth\AccessRights.cs" />
     <Compile Include="DatabaseIndex.cs" />
+    <Compile Include="Deflection\Delegates.cs" />
+    <Compile Include="Deflection\SpecialProperty.cs" />
+    <Compile Include="Deflection\TypeCache.cs" />
     <Compile Include="Delegates.cs" />
     <Compile Include="Internal\ErrorCodes.cs" />
     <Compile Include="Operators.cs" />
@@ -114,7 +117,7 @@
     <Compile Include="Operations\Do.cs" />
     <Compile Include="Operations\OperationsInterfaces.cs" />
     <Compile Include="Interfaces.cs" />
-    <Compile Include="Internal\DynamicProperty.cs" />
+    <Compile Include="Deflection\DynamicProperty.cs" />
     <Compile Include="Requests\Handlers.cs" />
     <Compile Include="HttpRequest.cs" />
     <Compile Include="IValidatable.cs" />
@@ -127,8 +130,8 @@
     <Compile Include="Internal\DDictionaryOperations.cs" />
     <Compile Include="DynamicTables.cs" />
     <Compile Include="Internal\IResource.cs" />
-    <Compile Include="Internal\Property.cs" />
-    <Compile Include="Internal\PropertyChain.cs" />
+    <Compile Include="Deflection\Property.cs" />
+    <Compile Include="Deflection\PropertyChain.cs" />
     <Compile Include="Operations\OperationsDelegates.cs" />
     <Compile Include="Operations\Rename.cs" />
     <Compile Include="Requests\Request.cs" />
@@ -153,13 +156,13 @@
     <Compile Include="Error.cs" />
     <Compile Include="Schema.cs" />
     <Compile Include="JsonSerializer.cs" />
-    <Compile Include="NumericComparer.cs" />
+    <Compile Include="RESTarComparer.cs" />
     <Compile Include="Operations\SetOperations.cs" />
     <Compile Include="Internal\StarcounterOperations.cs" />
     <Compile Include="Requests\Responses.cs" />
     <Compile Include="Operations\Select.cs" />
     <Compile Include="Settings.cs" />
-    <Compile Include="Internal\StaticProperty.cs" />
+    <Compile Include="Deflection\StaticProperty.cs" />
     <Compile Include="StringLogicalComparer.cs" />
     <Compile Include="Temp.cs" />
     <Compile Include="Operations\WhereClause.cs" />

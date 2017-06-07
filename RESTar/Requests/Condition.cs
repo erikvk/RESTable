@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
+using RESTar.Deflection;
 using RESTar.Internal;
 using RESTar.Operations;
 
@@ -12,9 +14,13 @@ namespace RESTar.Requests
         public dynamic Value { get; set; }
         public PropertyChain PropertyChain { get; set; }
         internal bool ScQueryable => PropertyChain.ScQueryable;
-        internal void Migrate(Type type) => PropertyChain.Migrate(type);
         internal Type Type => PropertyChain.IsStatic ? ((StaticProperty) PropertyChain.Last())?.Type : null;
         internal bool IsOfType<T>() => Type == typeof(T);
+
+        internal void Migrate(Type newType)
+        {
+            PropertyChain = PropertyChain.MakeFromPrototype(PropertyChain, newType);
+        }
 
         internal Condition(PropertyChain propertyChain, Operator op, dynamic value)
         {

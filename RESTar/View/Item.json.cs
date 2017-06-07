@@ -48,6 +48,37 @@ namespace RESTar.View
                     : ResourcePath;
         }
 
+        public void Handle(Input.RemoveElementFrom action)
+        {
+            try
+            {
+                var parts = action.Value.Split(',');
+                var path = parts[0];
+                var elementIndex = int.Parse(parts[1]);
+                var array = (Arr<Json>) path
+                    .Replace("$", "")
+                    .Split('.')
+                    .Aggregate(Entity, (json, key) =>
+                        int.TryParse(key, out int index)
+                            ? (Json) json[index]
+                            : (Json) json[key]);
+                array.RemoveAt(elementIndex);
+                action.Cancel();
+            }
+            catch (FormatException)
+            {
+                throw new Exception($"Could not remove element from '{action.Value}'. Invalid syntax.");
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                throw new Exception($"Could not remove element from '{action.Value}'. Invalid syntax.");
+            }
+            catch (Exception)
+            {
+                throw new Exception($"Could not remove element from '{action.Value}'. Not an array.");
+            }
+        }
+
         public void Handle(Input.AddElementTo action)
         {
             try
@@ -61,7 +92,6 @@ namespace RESTar.View
                         int.TryParse(key, out int index)
                             ? (Json) json[index]
                             : (Json) json[key]);
-
                 if (parts.Length == 1)
                     array.Add();
                 else

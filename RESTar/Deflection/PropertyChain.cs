@@ -2,9 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Dynamit;
-using static RESTar.Internal.ErrorCodes;
+using RESTar.Internal;
 
-namespace RESTar.Internal
+namespace RESTar.Deflection
 {
     public class PropertyChain : List<Property>
     {
@@ -18,11 +18,10 @@ namespace RESTar.Internal
         internal static PropertyChain Parse(string keyString, IResource resource, List<string> dynamicDomain = null)
         {
             var chain = new PropertyChain();
-
             Property propertyMaker(string str)
             {
                 if (string.IsNullOrWhiteSpace(str))
-                    throw new SyntaxException(InvalidConditionSyntaxError, $"Invalid condition '{str}'");
+                    throw new SyntaxException(ErrorCodes.InvalidConditionSyntaxError, $"Invalid condition '{str}'");
                 if (dynamicDomain?.Contains(str, Comparer) == true)
                     return DynamicProperty.Parse(str);
                 var previous = chain.LastOrDefault();
@@ -36,9 +35,20 @@ namespace RESTar.Internal
                 }
                 return DynamicProperty.Parse(str);
             }
-
             keyString.Split('.').ForEach(s => chain.Add(propertyMaker(s)));
             return chain;
+        }
+
+        internal static PropertyChain MakeFromPrototype(PropertyChain chain, Type type)
+        {
+            var newChain = new PropertyChain();
+            chain.ForEach(item =>
+            {
+                var newProp = type.MatchProperty(item.Name, false);
+                newChain.Add(newProp);
+                type = newProp.Type;
+            });
+            return newChain;
         }
 
         internal void MakeDynamic()
@@ -52,18 +62,6 @@ namespace RESTar.Internal
                 .ToList();
             Clear();
             AddRange(newProperties);
-        }
-
-        internal void Migrate(Type type)
-        {
-            StaticProperty previousStatic = null;
-            foreach (var property in this)
-            {
-                if (property.Dynamic) return;
-                var stat = (StaticProperty) property;
-                stat.Migrate(type, previousStatic);
-                previousStatic = stat;
-            }
         }
 
         internal dynamic Get(object obj)
