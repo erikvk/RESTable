@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using RESTar.Deflection;
 using RESTar.Internal;
 using Starcounter;
 using static RESTar.RESTarMethods;
@@ -16,15 +17,11 @@ namespace RESTar
         public string Name { get; private set; }
         public int Code { get; private set; }
 
-        public IEnumerable<ErrorCode> Select(IRequest request)
-        {
-            var values = Enum.GetValues(typeof(ErrorCodes)).Cast<int>().ToList();
-            return Enum
-                .GetNames(typeof(ErrorCodes))
-                .Select((name, index) => new ErrorCode {Name = name, Code = values[index]})
-                .Filter(request.Conditions)
-                .ToList();
-        }
+        public IEnumerable<ErrorCode> Select(IRequest request) => typeof(ErrorCodes)
+            .GetEnumMembers()
+            .Select(m => new ErrorCode {Name = m.Name, Code = m.Value})
+            .Filter(request.Conditions)
+            .ToList();
     }
 
     [Database, RESTar(GET, DELETE)]

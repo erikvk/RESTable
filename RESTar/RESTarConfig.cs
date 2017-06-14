@@ -3,7 +3,6 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Runtime.Serialization;
 using System.Xml;
 using Dynamit;
 using Newtonsoft.Json;
@@ -13,7 +12,6 @@ using RESTar.Deflection;
 using RESTar.Internal;
 using RESTar.Operations;
 using RESTar.Requests;
-using static RESTar.Deflection.SpecialProperty;
 using static RESTar.RESTarMethods;
 using IResource = RESTar.Internal.IResource;
 
@@ -54,7 +52,7 @@ namespace RESTar
             TypeResources[toAdd.TargetType] = toAdd;
             IEnumTypes[toAdd] = typeof(IEnumerable<>).MakeGenericType(toAdd.TargetType);
             UpdateAuthInfo();
-            toAdd.TargetType.GetStaticProperties();
+            toAdd.GetStaticProperties();
         }
 
         internal static void RemoveResource(IResource toRemove)

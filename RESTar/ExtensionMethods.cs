@@ -360,7 +360,7 @@ namespace RESTar
         {
             if (resource.IsDDictionary)
                 return new Dictionary<string, dynamic>();
-            var properties = resource.TargetType.GetStaticProperties();
+            var properties = resource.GetStaticProperties();
             return properties.ToDictionary(
                 p => p.ViewModelName,
                 p => p.Type.MakeViewModelDefault(p)
@@ -451,7 +451,7 @@ namespace RESTar
             }
             else
             {
-                var properties = resource.TargetType.GetStaticProperties();
+                var properties = resource.GetStaticProperties();
                 foreach (var prop in properties)
                 {
                     var ColType = prop.Type.IsClass && prop.Type != typeof(string)

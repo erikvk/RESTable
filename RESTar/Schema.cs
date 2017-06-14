@@ -25,7 +25,7 @@ namespace RESTar
             var res = resourceName.FindResource();
             if (res.TargetType.IsSubclassOf(typeof(DDictionary))) return null;
             var schema = new Schema();
-            res.TargetType.GetStaticProperties().ForEach(p => schema[p.Name] = p.Type.FullName);
+            res.GetStaticProperties().ForEach(p => schema[p.Name] = p.Type.FullName);
             return schema;
         }
     }

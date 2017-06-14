@@ -16,7 +16,7 @@ namespace RESTar.Operations
         internal PropertyChain PropertyChain;
         internal bool IsStarcounterQueryable = true;
         private Func<T1, dynamic> ToSelector<T1>() => item => Do.Try(() => PropertyChain.Get(item), null);
-        
+
         public string SQL => IsStarcounterQueryable
             ? $"ORDER BY t.{PropertyChain.DbKey.Fnuttify()} {(Descending ? "DESC" : "ASC")}"
             : null;
@@ -33,9 +33,7 @@ namespace RESTar.Operations
                 PropertyChain.MakeDynamic();
             else if (type != Resource.TargetType)
                 PropertyChain = PropertyChain.MakeFromPrototype(PropertyChain, type);
-            return Ascending
-                ? entities.OrderBy(ToSelector<T>())
-                : entities.OrderByDescending(ToSelector<T>());
+            return Ascending ? entities.OrderBy(ToSelector<T>()) : entities.OrderByDescending(ToSelector<T>());
         }
     }
 }

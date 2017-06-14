@@ -2,13 +2,15 @@
 // Version 2
 
 using System;
+using System.Collections;
+using System.Collections.Generic;
 
 namespace RESTar
 {
     // emulates StrCmpLogicalW, but not fully
-	public class StringLogicalComparer
+	public class StringLogicalComparer : IComparer<string>
 	{
-		public static int Compare(string s1, string s2)
+		public int Compare(string s1, string s2)
 		{
 			//get rid of special cases
 			if((s1 == null) && (s2 == null)) return 0;

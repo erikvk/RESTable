@@ -50,6 +50,20 @@ namespace RESTar.Requests
                     var chain = PropertyChain.Parse(keyString, resource);
                     var valueString = WebUtility.UrlDecode(pair[1]);
                     var value = GetValue(valueString);
+                    if (chain.IsStatic && chain.LastOrDefault() is StaticProperty prop && prop.Type.IsEnum &&
+                        value is string)
+                    {
+                        try
+                        {
+                            value = Enum.Parse(prop.Type, value);
+                        }
+                        catch
+                        {
+                            throw new SyntaxException(InvalidConditionSyntaxError,
+                                $"Invalid string value for condition '{chain.Key}'. The property type for '{prop.Name}' " +
+                                $"has a predefined set of allowed values, not containing '{value}'.");
+                        }
+                    }
                     return new Condition(chain, op, value);
                 })
                 .ToConditions(resource.TargetType);

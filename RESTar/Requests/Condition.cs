@@ -1,8 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using RESTar.Deflection;
-using RESTar.Internal;
 using RESTar.Operations;
 
 namespace RESTar.Requests

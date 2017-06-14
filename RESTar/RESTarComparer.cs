@@ -29,7 +29,7 @@ namespace RESTar
     public class RESTarComparer : IComparer<object>
     {
         public int Compare(object x, object y) => x is string xs && y is string ys
-            ? StringLogicalComparer.Compare(xs, ys)
+            ? new StringLogicalComparer().Compare(xs, ys)
             : Comparer<object>.Default.Compare(x, y);
     }
 }

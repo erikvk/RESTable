@@ -52,24 +52,18 @@ namespace RESTarExample
         }
     }
 
+    public enum EE
+    {
+        A,B,C
+    }
+
     [Database, RESTar(RESTarPresets.ReadAndWrite, Viewable = true)]
-    public class MyResource : IInserter<MyResource>
+    public class MyResource
     {
         public string Str;
         public int Inte;
         public DateTime Date;
-
-        public int Insert(IEnumerable<MyResource> entities, IRequest request)
-        {
-            var count = 0;
-            foreach (var entity in entities)
-            {
-                if (entity.Str == "ASD ASD")
-                    throw new Exception("Invalid string");
-                count += 1;
-            }
-            return count;
-        }
+        public EE Enum;
     }
 
     [Database, RESTar(RESTarPresets.ReadAndWrite, Dynamic = true)]
