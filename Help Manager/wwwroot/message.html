@@ -1,0 +1,12 @@
+﻿<link rel="import" href="/sys/polymer/polymer.html">
+
+<template>
+    <template is="dom-bind">
+        <template is="dom-if" if="{{model.HasMessage}}">
+            <div class="alert alert-danger alert-dismissable">
+                <span class="close" aria-label="close" on-click="close">&times;</span>
+                <strong>{{model.MessageType}}</strong> {{model.Message}} (Error code {{model.ErrorCode}})
+            </div>
+        </template>
+    </template>
+</template>

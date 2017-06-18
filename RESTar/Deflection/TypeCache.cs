@@ -18,6 +18,12 @@ namespace RESTar.Deflection
                 ? StaticProperties[resource.TargetType]
                 : (StaticProperties[resource.TargetType] = FindStaticProperties(resource.TargetType));
 
+        public static IEnumerable<StaticProperty> GetTableColumns(this IResource resource)
+        {
+            if (!resource.IsStarcounterResource)
+                throw new Exception($"Cannot get table columns for non-starcounter resource '{resource.Name}'");
+            return resource.TargetType.GetProperties(Instance | Public).Select(p => new StaticProperty(p));
+        }
 
         public static IEnumerable<StaticProperty> GetStaticProperties(this Type type) =>
             StaticProperties.ContainsKey(type)

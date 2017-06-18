@@ -1,13 +1,13 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26430.12
+VisualStudioVersion = 15.0.26430.13
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RESTar", "RESTar\RESTar.csproj", "{3CA9602F-FC6F-4DFE-8749-C6DBDD9A4809}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RESTarExample", "RESTarExample\RESTarExample.csproj", "{3CA79076-25F8-4273-BE99-D144E0606A35}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HelpManager", "HelpManager\HelpManager.csproj", "{EEA917B1-796A-4676-B089-FECFDA6E3D49}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Help Manager", "Help Manager\Help Manager.csproj", "{EEA917B1-796A-4676-B089-FECFDA6E3D49}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

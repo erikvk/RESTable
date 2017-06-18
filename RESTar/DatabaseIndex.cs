@@ -6,7 +6,7 @@ using static RESTar.RESTarPresets;
 
 namespace RESTar
 {
-    public class Column
+    public class ColumnInfo
     {
         public string Name { get; set; }
         public bool Descending { get; set; }
@@ -18,7 +18,7 @@ namespace RESTar
     {
         public string Name { get; set; }
         public string Resource { get; set; }
-        public Column[] Columns { get; set; }
+        public ColumnInfo[] Columns { get; set; }
             
         private const string IndexSQL = "SELECT t FROM Starcounter.Metadata.\"Index\" t";
 
@@ -36,11 +36,11 @@ namespace RESTar
                 {
                     Name = i.Name,
                     Resource = i.Table.FullName,
-                    Columns = columns.Select(c => new Column
+                    Columns = columns.Select(c => new ColumnInfo
                     {
                         Name = c.Column.Name,
                         Descending = c.Ascending == 0
-                    }).ToArray(),
+                    }).ToArray()
                 };
             });
 

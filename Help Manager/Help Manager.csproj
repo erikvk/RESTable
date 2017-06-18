@@ -91,14 +91,7 @@
   <PropertyGroup>
     <PostBuildEvent>IF $(ConfigurationName)==Debug EXIT;
 cd "$(ProjectDir)"
-
-@echo off
-For /f "tokens=1-2 delims=/ " %25%25a in ('date /t') do (set mydate=%25%25a)
-For /f "tokens=1-2 delims=/:" %25%25a in ("%25TIME%25") do (set mytime=%25%25a%25%25b)
-
-C:\Users\erik\bin\7za.exe a -tzip "$(ProjectName).zip" "$(OutDir)".\* "$(SolutionDir)\Mopedo_logo_whitefull.ico"
-move "$(ProjectDir)$(ProjectName).zip" "C:\Users\erik\OneDrive\DRTB-projektet\Private Assemblies\$(ProjectName)\$(ProjectName)_%25mydate%25_%25mytime%25.zip"
-</PostBuildEvent>
+starpack -p "$(ProjectFileName)" -c=release -o=R:\</PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

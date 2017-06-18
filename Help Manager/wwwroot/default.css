@@ -1,0 +1,158 @@
+﻿:root {
+    --font-primary: Segoe UI, Frutiger, Frutiger Linotype, Dejavu Sans, Helvetica Neue, Arial, sans-serif; 
+}
+
+body {
+    background-color: #f1f1f1;
+}
+
+.dsp-item,
+.dsp-list {
+    margin: 0 auto 20px auto;
+    box-shadow: 0 1px 3px #999;
+    padding: 20px;
+    background-color: white;
+    max-width: 900px;
+    font-family: var(--font-primary);
+}
+
+.dsp-item__form {
+    display: flex; 
+    flex-direction: column; 
+}
+
+.dsp-headline {
+    font-size: 3em;
+    text-align: center;
+    color: #333;
+    margin: 0 0 32px 0;
+}
+
+.dsp-item__row {
+    display: flex;
+    justify-content: space-between;
+}
+
+.dsp-item__row label {
+    width: 45%;
+}
+
+.dsp-main-menu {
+    max-width: 800px;
+    margin: 0 auto;
+    text-align: center;
+}
+
+.dsp-main-menu__navigation-item {
+    display: inline-block;
+    color: #333;
+    background-color: #fff;
+    font-family: var(--font-primary);
+    width: 300px;
+    height: 130px;
+    font-size: 3em;
+    margin: 20px;
+    padding: 20px;
+    box-shadow: 0 1px 3px #999;
+}
+
+.dsp-main-menu__navigation-item h2 {
+    font-size: 2rem;
+    margin: 0;
+}
+
+.dsp-discrete-error-message {
+    margin-left: 10px;
+}
+
+.dsp-form-text-block {
+    margin: 5px 0 0 0;
+    font-size: 1.2em;
+    font-family: var(--font-primary);
+}
+
+.dsp-budget-row {
+    display: none;
+    justify-content: space-between;
+}
+
+.dsp-condition-row {
+    display: flex;
+    justify-content: space-between;
+}
+
+.dsp-condition-row__value-type {
+    width: 100px;
+}
+
+.dsp-budget-open,
+.dsp-budget-add {
+    float: right;
+    margin-right: 20px;
+    cursor: pointer;
+    color: #333;
+}
+
+.dsp-budget-row__text {
+    font-size: 1.3em;
+}
+
+.dsp-bid-rule-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.dsp-hide-item {
+    display: none;
+}
+
+.dsp-bid-rule-box {
+    padding: 10px;
+    box-shadow: 0 1px 3px #999;
+}
+
+.dsp-bid-rule-box:not(:last-child) {
+    margin-bottom: 10px;
+}
+
+.dsp-markup-textarea {
+    width: 100%;
+    resize: vertical;
+}
+
+.dsp-input-with-button {
+    display: flex;    
+}
+
+.dsp-input-with-button__input {
+    margin-right: 30px;
+}
+
+.glyphicon-menu-down {
+    transition: transform .3s ease-in-out;
+}
+
+.glyphicon-menu-down--rotate {
+    transform: rotate(180deg);
+} 
+
+.dsp-statistics-container {
+    display: flex;
+    justify-content: space-around;
+}
+
+.dsp-statistics-simple-entry {
+    text-align: center;
+    font-size: 1.2em;
+}
+
+.dsp-statistics-simple-entry__number {
+    font-size: 1.5em;
+    margin-bottom: 0;
+}
+
+.list-group-item {
+    display: flex;
+    justify-content: space-between;
+}

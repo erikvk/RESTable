@@ -16,8 +16,8 @@ namespace RESTar.Deflection
         public override bool ScQueryable { get; protected set; }
         public IEnumerable<Attribute> Attributes;
 
-        internal TAttribute GetAttribute<TAttribute>() where TAttribute : Attribute => Attributes
-            .OfType<TAttribute>().FirstOrDefault();
+        internal TAttribute GetAttribute<TAttribute>() where TAttribute : Attribute =>
+            Attributes.OfType<TAttribute>().FirstOrDefault();
 
         internal bool HasAttribute<TAttribute>() where TAttribute : Attribute => GetAttribute<TAttribute>() != null;
 
@@ -43,18 +43,20 @@ namespace RESTar.Deflection
             {
                 case null: return 0;
                 case string s: return Encoding.UTF8.GetByteCount(s);
+                case Binary binary: return binary.ToArray().Length;
                 default: return CountBytes(Type);
             }
         }
 
         private static long CountBytes(Type type)
         {
+            if (type.IsEnum) return 8;
             switch (Type.GetTypeCode(type))
             {
                 case TypeCode.Object:
                     if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))
                         return CountBytes(type.GenericTypeArguments[0]);
-                    if (type.IsStarcounter()) return 8;
+                    if (type.IsStarcounter()) return 16;
                     throw new Exception($"Unknown type encountered: '{type.FullName}'");
                 case TypeCode.Boolean: return 4;
                 case TypeCode.Char: return 2;

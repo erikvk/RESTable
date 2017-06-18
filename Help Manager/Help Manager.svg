@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xl="http://www.w3.org/1999/xlink" version="1.1" viewBox="761 489 137 137" width="137pt" height="137pt" xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <metadata> Produced by OmniGraffle 7.3.1 
+    <dc:date>2017-06-03 21:50:42 +0000</dc:date>
+  </metadata>
+  <defs/>
+  <g stroke="none" stroke-opacity="1" stroke-dasharray="none" fill="none" fill-opacity="1">
+    <title>Canvas 2</title>
+    <g>
+      <title>Layer 1</title>
+      <circle cx="829.8425" cy="557.71654" r="64.48829" fill="white"/>
+      <circle cx="829.8425" cy="557.71654" r="64.48829" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="7"/>
+      <path d="M 851.6103 540.925 L 863.0874 529.86535 L 863.0943 591.43395 L 851.7557 591.43395 Z" fill="black"/>
+      <path d="M 851.6103 540.925 L 863.0874 529.86535 L 863.0943 591.43395 L 851.7557 591.43395 Z" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width=".5"/>
+      <path d="M 809.376 591.44295 L 797.0507 591.42494 L 829.8441 559.7744 L 836.0198 565.73355 Z" fill="black"/>
+      <path d="M 809.376 591.44295 L 797.0507 591.42494 L 829.8441 559.7744 L 836.0198 565.73355 Z" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width=".5"/>
+      <path d="M 850.3364 591.44295 L 862.6617 591.42494 L 829.8684 559.7744 L 823.6927 565.73355 Z" fill="black"/>
+      <path d="M 850.3364 591.44295 L 862.6617 591.42494 L 829.8684 559.7744 L 823.6927 565.73355 Z" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width=".5"/>
+      <path d="M 808.0748 574.5081 L 796.5976 585.5677 L 796.5908 523.99913 L 807.9294 523.99913 Z" fill="black"/>
+      <path d="M 808.0748 574.5081 L 796.5976 585.5677 L 796.5908 523.99913 L 807.9294 523.99913 Z" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width=".5"/>
+      <path d="M 850.3091 523.9901 L 862.6343 524.00814 L 829.841 555.65865 L 823.6653 549.6995 Z" fill="black"/>
+      <path d="M 850.3091 523.9901 L 862.6343 524.00814 L 829.841 555.65865 L 823.6653 549.6995 Z" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width=".5"/>
+      <path d="M 809.3486 523.9901 L 797.0234 524.00814 L 829.8167 555.65865 L 835.9924 549.6995 Z" fill="black"/>
+      <path d="M 809.3486 523.9901 L 797.0234 524.00814 L 829.8167 555.65865 L 835.9924 549.6995 Z" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width=".5"/>
+      <line x1="827.8342" y1="558.9921" x2="795.2835" y2="589.2226" stroke="white" stroke-linecap="square" stroke-linejoin="round" stroke-width="6"/>
+      <line x1="868.3088" y1="520.8224" x2="832.5931" y2="556.1443" stroke="white" stroke-linecap="square" stroke-linejoin="round" stroke-width="6"/>
+    </g>
+  </g>
+</svg>

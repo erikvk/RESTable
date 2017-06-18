@@ -54,7 +54,9 @@ namespace RESTarExample
 
     public enum EE
     {
-        A,B,C
+        A,
+        B,
+        C
     }
 
     [Database, RESTar(RESTarPresets.ReadAndWrite, Viewable = true)]
@@ -64,6 +66,18 @@ namespace RESTarExample
         public int Inte;
         public DateTime Date;
         public EE Enum;
+
+        public MyOther SomeThing;
+
+        public string Computed => "ASD";
+
+        private string Private;
+
+        public string Getter
+        {
+            get => Private;
+            set => Private = value;
+        }
     }
 
     [Database, RESTar(RESTarPresets.ReadAndWrite, Dynamic = true)]

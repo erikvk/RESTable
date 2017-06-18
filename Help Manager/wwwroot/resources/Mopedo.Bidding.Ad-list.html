@@ -1,0 +1,75 @@
+﻿<link rel="import" href="/sys/polymer/polymer.html">
+<link rel="import" href="/sys/puppet-redirect/puppet-redirect.html"/>
+
+<template>
+    <template is="dom-bind">
+        <template is="dom-if" if="{{model.HasMessage}}">
+            <div class="alert alert-danger alert-dismissable">
+                <span class="close" aria-label="close" on-click="close">&times;</span>
+                <strong>{{model.MessageType}}</strong> {{model.Message}} (Error code {{model.ErrorCode}})
+            </div>
+        </template>
+
+        <h3 class="dsp-headline">Ads</h3>
+
+        <ol class="breadcrumb dsp-list">
+            <li class="breadcrumb-item">
+                <a href="/dsp">Home</a>
+            </li>
+            <li class="breadcrumb-item active">Ads list</li>
+        </ol>
+
+        <div class="dsp-list">
+            <table class="table">
+                <thead>
+                <th>Ad ID</th>
+                <th>Type</th>
+                <th>Label</th>
+                <th>Dimensions</th>
+                <th></th>
+                </thead>
+                <tbody>
+                <template is="dom-repeat" items="{{model.Entities}}">
+                    <tr>
+                        <td>{{item.AdId$}}</td>
+                        <td>{{item.AdType$}}</td>
+                        <td>{{item.Label$}}</td>
+                        <td>{{item.Dimensions}}</td>
+                        <td>
+                            <button value="{{item.AdId$}}" class="btn btn-sm btn-default" on-click="editAd">edit</button>
+                            <button value="{{item.AdId$}}" class="btn btn-sm btn-default" on-click="deleteAd">delete</button>
+                        </td>
+                    </tr>
+                </template>
+                </tbody>
+            </table>
+
+            <template is="dom-if" if="{{model.CanInsert}}">
+                <button class="btn btn-primary" value="{{model.Add$::click}}" onclick="++this.value">Add</button>
+            </template>
+            <template is="dom-if" if="{{!model.CanInsert}}">
+                <button class="btn btn-primary disabled">Add</button>
+            </template>
+        </div>
+
+        <link is="puppet-redirect" history url$="{{model.RedirectUrl$}}"/>
+    </template>
+    <script>
+        (function() {
+            const script = document._currentScript || document.currentScript;
+            const template = script.previousElementSibling;
+
+            template.editAd = function(event) {
+                const adId = event.target.value;
+                template.model.RedirectUrl$ = `${template.model.ResourcePath}/AdId=${adId}`
+            }
+
+            template.deleteAd = function(event) {
+                const adId = event.target.value;
+                template.model.Delete$ = `AdId=${adId}`;
+            }
+
+            template.close = (event) => event.target.parentElement.style.display = "none";
+        })();
+    </script>
+</template>

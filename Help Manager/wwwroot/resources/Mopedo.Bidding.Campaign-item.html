@@ -1,0 +1,563 @@
+﻿<link rel="import" href="/sys/polymer/polymer.html">
+<link rel="import" href="/sys/puppet-redirect/puppet-redirect.html"/>
+
+<template>
+<style>
+
+    
+    
+    
+    
+    
+    
+</style>
+<template is="dom-bind">
+<template is="dom-if" if="{{model.HasMessage}}">
+    <div class="alert alert-danger alert-dismissable">
+        <span class="close" aria-label="close" on-click="close">&times;</span>
+        <strong>{{model.MessageType}}</strong> {{model.Message}} (Error code {{model.ErrorCode}})
+    </div>
+</template>
+
+<h1 class="dsp-headline">Campaign</h1>
+<ol class="breadcrumb dsp-item">
+    <li class="breadcrumb-item">
+        <a href="/dsp">Home</a>
+    </li>
+    <li class="breadcrumb-item">
+        <a href="{{model.ResourcePath}}">Campaign list</a>
+    </li>
+    <li class="breadcrumb-item active">Campaign</li>
+</ol>
+
+<form class="dsp-item">
+    <fieldset>
+        <legend>Status</legend>
+        <div class="dsp-form-text-block">Is active: {{model.Entity.IsActive}}</div>
+        <div class="dsp-form-text-block">Is valid: {{model.Entity.IsValid}}</div>
+        <template is="dom-if" if="{{!model.Entity.IsValid}}">
+            <div class="dsp-form-text-block">Invalid reason: {{model.Entity.InvalidReason}}</div>
+        </template>
+    </fieldset>
+</form>
+
+<form class="dsp-item">
+    <fieldset>
+        <legend>Basic info</legend>
+        <div class="dsp-item__row">
+            <label>
+                Id
+                <input class="form-control" type="text" value="{{model.Entity.Id$::input}}">
+                <small class="form-text text-muted">A unique id for the campaign</small>
+            </label>
+            <label>
+                Label
+                <input class="form-control" type="text" value="{{model.Entity.Label$::input}}">
+                <small class="form-text text-muted">A describing label for the campaign</small>
+            </label>
+        </div>
+        <div class="dsp-item__row">
+            <label>
+                Priority
+                <input class="form-control" type="number" value="{{model.Entity.Priority$::input}}">
+                <small class="form-text text-muted">A campaign with a higher number will be evaluated first</small>
+            </label>
+            <label>
+                Paused
+                <input class="form-control" type="checkbox" checked="{{model.Entity.Paused$::change}}">
+                <small class="form-text text-muted">Paused campaigns are skipped during bid request evaluation</small>
+            </label>
+        </div>
+        <br/>
+        <div class="form-group">
+            <label>Advertiser domain</label>
+            <input class="form-control" type="text" value="{{model.Entity.AdvertiserDomain$::input}}">
+            <small class="form-text text-muted">The domain of the advertiser</small>
+        </div>
+
+        <div class="form-group">
+            <label>Sample image</label>
+            <input class="form-control" type="text" value="{{model.Entity.SampleImageUrl$::input}}">
+            <small class="form-text text-muted">A URL to an image, representative of this campaign</small>
+        </div>
+    </fieldset>
+</form>
+
+<form class="dsp-item">
+    <fieldset>
+        <legend>Schedule</legend>
+        <div class="dsp-item__row">
+            <label>
+                Set start date
+                <input class="form-control" type="date" value="{{model.Entity.StartDateTime$::input}}">
+                <small class="form-text text-muted">The point in time when the campaign begins</small>
+            </label>
+            <label>
+                Set end date
+                <input class="form-control" type="date" value="{{model.Entity.EndDateTime$::input}}">
+                <small class="form-text text-muted">The point in time when the campaign ends</small>
+            </label>
+        </div>
+        <br/>
+        <p class="dsp-form-text-block">Start date: {{model.Entity.StartDateTime$}}</p>
+        <p class="dsp-form-text-block">End date: {{model.Entity.EndDateTime$}}</p>
+    </fieldset>
+</form>
+
+<form class="dsp-item">
+    <fieldset>
+        <legend>Daily budget <i on-click="toggleBudget" class="glyphicon glyphicon-menu-down dsp-budget-open"></i></legend>
+        <div class="dsp-budget-row">
+            <div class="form-group">
+                <label>Amount</label>
+                <input class="form-control" type="number" value="{{model.Entity.Budget$.DailyBudget.Amount$::input}}">
+                <small class="form-text text-muted">The amount of currency</small>
+            </div>
+            <div class="form-group">
+                <label>Currency</label>
+                <input class="form-control" type="text" value="{{model.Entity.Budget$.DailyBudget.Currency$::input}}">
+                <small class="form-text text-muted">An ISO 4217 code representing the currency</small>
+            </div>
+            <div class="form-group">
+                <label>CPM</label>
+                <input class="form-control" type="checkbox" checked="{{model.Entity.Budget$.DailyBudget.CPM$::change}}">
+                <small class="form-text text-muted">Whether this price is encoded in CPM or not</small>
+            </div>
+        </div>
+    </fieldset>
+
+    <fieldset>
+        <legend>Total budget <i on-click="toggleBudget" class="glyphicon glyphicon-menu-down dsp-budget-open"></i></legend>
+        <div class="dsp-budget-row">
+            <div class="form-group">
+                <label>Amount</label>
+                <input class="form-control" type="number" value="{{model.Entity.Budget$.TotalBudget.Amount$::input}}">
+                <small class="form-text text-muted">The amount of currency</small>
+            </div>
+            <div class="form-group">
+                <label>Currency</label>
+                <input class="form-control" type="text" value="{{model.Entity.Budget$.TotalBudget.Currency$::input}}">
+                <small class="form-text text-muted">An ISO 4217 code representing the currency</small>
+            </div>
+            <div class="form-group">
+                <label>CPM</label>
+                <input class="form-control" type="checkbox" checked="{{model.Entity.Budget$.TotalBudget.CPM$::change}}">
+                <small class="form-text text-muted">Whether this price is encoded in CPM or not</small>
+            </div>
+        </div>
+    </fieldset>
+
+    <fieldset>
+        <legend>Daily spent <i on-click="toggleBudget" class="glyphicon glyphicon-menu-down dsp-budget-open"></i></legend>
+        <div class="dsp-budget-row">
+            <div class="form-group">
+                <label>Amount</label>
+                <p class="dsp-budget-row__text">{{model.Entity.Budget$.DailySpent.Amount$}}</p>
+                <small class="form-text text-muted">The amount of currency</small>
+            </div>
+            <div class="form-group">
+                <label>Currency</label>
+                <p class="dsp-budget-row__text">{{model.Entity.Budget$.DailySpent.Currency$}}</p>
+                <small class="form-text text-muted">An ISO 4217 code representing the currency</small>
+            </div>
+            <div class="form-group">
+                <label>CPM</label>
+                <input class="form-control" type="checkbox" disabled checked="{{model.Entity.Budget$.DailySpent.CPM$}}">
+                <small class="form-text text-muted">Whether this price is encoded in CPM or not</small>
+            </div>
+        </div>
+    </fieldset>
+
+    <fieldset>
+        <legend>Total spent <i on-click="toggleBudget" class="glyphicon glyphicon-menu-down dsp-budget-open"></i></legend>
+        <div class="dsp-budget-row">
+            <div class="form-group">
+                <label>Amount</label>
+                <p class="dsp-budget-row__text">{{model.Entity.Budget$.TotalSpent.Amount$}}</p>
+                <small class="form-text text-muted">The amount of currency</small>
+            </div>
+            <div class="form-group">
+                <label>Currency</label>
+                <p class="dsp-budget-row__text">{{model.Entity.Budget$.TotalSpent.Currency$}}</p>
+                <small class="form-text text-muted">An ISO 4217 code representing the currency</small>
+            </div>
+            <div class="form-group">
+                <label>CPM</label>
+                <input class="form-control" type="checkbox" checked="{{model.Entity.Budget$.TotalSpent.CPM$::change}}">
+                <small class="form-text text-muted">Whether this price is encoded in CPM or not</small>
+            </div>
+        </div>
+    </fieldset>
+
+    <fieldset>
+        <legend>Daily remaining <i on-click="toggleBudget" class="glyphicon glyphicon-menu-down dsp-budget-open"></i></legend>
+        <div class="dsp-budget-row">
+            <div class="form-group">
+                <label>Amount</label>
+                <p class="dsp-budget-row__text">{{model.Entity.Budget$.DailyRemaining.Amount$}}</p>
+                <small class="form-text text-muted">The amount of currency</small>
+            </div>
+            <div class="form-group">
+                <label>Currency</label>
+                <p class="dsp-budget-row__text">{{model.Entity.Budget$.DailyRemaining.Currency$}}</p>
+                <small class="form-text text-muted">An ISO 4217 code representing the currency</small>
+            </div>
+            <div class="form-group">
+                <label>CPM</label>
+                <input class="form-control" type="checkbox" checked="{{model.Entity.Budget$.DailyRemaining.CPM$::change}}">
+                <small class="form-text text-muted">Whether this price is encoded in CPM or not</small>
+            </div>
+        </div>
+    </fieldset>
+
+    <fieldset>
+        <legend>Total remaining <i on-click="toggleBudget" class="glyphicon glyphicon-menu-down dsp-budget-open"></i></legend>
+        <div class="dsp-budget-row">
+            <div class="form-group">
+                <label>Amount</label>
+                <p class="dsp-budget-row__text">{{model.Entity.Budget$.TotalRemaining.Amount$}}</p>
+                <small class="form-text text-muted">The amount of currency</small>
+            </div>
+            <div class="form-group">
+                <label>Currency</label>
+                <p class="dsp-budget-row__text">{{model.Entity.Budget$.TotalRemaining.Currency$}}</p>
+                <small class="form-text text-muted">An ISO 4217 code representing the currency</small>
+            </div>
+            <div class="form-group">
+                <label>CPM</label>
+                <input class="form-control" type="checkbox" checked="{{model.Entity.Budget$.TotalRemaining.CPM$::change}}">
+                <small class="form-text text-muted">Whether this price is encoded in CPM or not</small>
+            </div>
+        </div>
+    </fieldset>
+</form>
+
+<form class="dsp-item">
+    <fieldset>
+        <legend class="dsp-legend-with-button">
+            Bid rules
+            <span>
+                <i on-click="addBidRule" class="glyphicon glyphicon-plus dsp-budget-add"></i>
+                <i on-click="toggleBidRule" class="glyphicon glyphicon-menu-down dsp-budget-add"></i>
+            </span>
+        </legend>
+    </fieldset>
+    <p class$="{{hasNoBidRules(model.Entity.BidRules$)}}">There are currently no bid rules, add one by clicking the plus sign</p>
+
+    <div>
+        <template is="dom-repeat" items="{{model.Entity.BidRules$}}" as="bidRule" index-as="bidRuleIndex">
+            <div class="panel panel-default">
+                <div class="panel-heading dsp-bid-rule-header">
+                    Bid rule<button class="btn btn-sm btn-default" index="{{bidRuleIndex}}" on-click="deleteBidRule">Delete</button>
+                </div>
+                <div class="panel-body">
+                    <div class="panel panel-default">
+                        <div class="dsp-bid-rule-header panel-heading">
+                            Conditions
+                            <div>
+                                <i on-click="addCondition" value="{{bidRuleIndex}}" class="glyphicon glyphicon-plus dsp-budget-add"></i>
+                                <i on-click="toggleBidRuleProperties" class="glyphicon glyphicon-menu-down dsp-budget-add"></i>
+                            </div>
+                        </div>
+
+                        <div class="panel-body">
+                            <table class="table">
+                                <thead>
+                                <tr>
+                                    <th>Key</th>
+                                    <th>Operator</th>
+                                    <th>Value</th>
+                                    <th>Value type</th>
+                                    <th></th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <template is="dom-repeat" items="{{bidRule.Conditions$}}" as="condition" index-as="conditionIndex">
+                                    <tr>
+                                        <td>
+                                            <input class="form-control" type="text" value="{{condition.Key$::input}}" placeholder="Key">
+                                        </td>
+                                        <td>
+                                            <select class="form-control" value="{{condition.Operator$::change}}">
+                                                <option value="EQUALS">EQUALS</option>
+                                                <option value="NOT EQUALS">NOT EQUALS</option>
+                                                <option value="CONTAINS">CONTAINS</option>
+                                                <option value="NOT CONTAINS">NOT CONTAINS</option>
+                                                <option value="GREATER THAN">GREATER THAN</option>
+                                                <option value="LESS THAN">LESS THAN</option>
+                                                <option value="GREATER THAN OR EQUALS">GREATER THAN OR EQUALS</option>
+                                                <option value="LESS THAN OR EQUALS">LESS THAN OR EQUALS</option>
+                                            </select>
+                                        </td>
+                                        <td>
+                                            <input class="form-control" type="text" on-change="setConditionValueFromInput" index="{{bidRuleIndex}}.{{conditionIndex}}" value="" placeholder="Value">
+                                        </td>
+                                        <td>
+                                            <select class="form-control" on-change="setConditionValueFromDropDown">
+                                                <option value="number">number</option>
+                                                <option value="bool">true/false</option>
+                                                <option value="date">date</option>
+                                                <option value="string">text</option>
+                                            </select>
+                                        </td>
+                                        <td>
+                                            <button class="btn btn-default btn-sm" index="{{bidRuleIndex}}.{{conditionIndex}}" on-click="deleteCondition">Delete</button>
+                                        </td>
+                                    </tr>
+                                </template>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="panel panel-default">
+                        <div class="dsp-bid-rule-header panel-heading">
+                            Bid templates
+                            <div>
+                                <i on-click="addTemplate" value="{{bidRuleIndex}}" class="glyphicon glyphicon-plus dsp-budget-add"></i>
+                                <i on-click="toggleBidRuleProperties" class="glyphicon glyphicon-menu-down dsp-budget-add"></i>
+                            </div>
+                        </div>
+                        <div class="panel-body">
+                            <template is="dom-repeat" items="{{bidRule.BidTemplates$}}" as="template" index-as="templateIndex">
+                                <div class="panel panel-default">
+                                    <div class="panel-heading dsp-bid-rule-header">
+                                        Bid template<button class="btn btn-default btn-sm" index="{{bidRuleIndex}},{{templateIndex}}" on-click="deleteTemplate">Delete</button>
+                                    </div>
+                                    <div class="panel-body">
+                                        <div class="dsp-condition-row">
+                                            <div class="form-group">
+                                                <label>Amount</label>
+                                                <input class="form-control" type="number" value="{{template.Price$.Amount$::input}}">
+                                                <small class="form-text text-muted">The amount of currency</small>
+                                            </div>
+                                            <div class="form-group">
+                                                <label>Currency</label>
+                                                <input class="form-control" type="text" value="{{template.Price$.Currency$::input}}">
+                                                <small class="form-text text-muted">An ISO 4217 code representing the currency</small>
+                                            </div>
+                                            <div class="form-group">
+                                                <label>CPM</label>
+                                                <input class="form-control" type="checkbox" checked="{{template.Price$.CPM$::change}}">
+                                                <small class="form-text text-muted">Whether this price is encoded in CPM or not</small>
+                                            </div>
+                                        </div>
+                                        <h6>Ad Ids</h6>
+                                        <ul class="list-group">
+                                            <template is="dom-repeat" items="{{template.AdIds$}}" as="id" index-as="adIndex">
+                                                <li class="list-group-item">{{id}} <button class="btn btn-default btn-sm" index="{{bidRuleIndex}},{{templateIndex}},{{adIndex}}" on-click="deleteIdFromTemplate">Delete</button></li>
+                                            </template>
+                                        </ul>
+                                        <div class="dsp-input-with-button">
+                                            <input class="form-control dsp-input-with-button__input" type="text" value="">
+                                            <button class="btn btn-primary" value="{{bidRuleIndex}},{{templateIndex}}" on-click="addAdId">Bind ad ID</button>
+                                        </div>
+                                        <small class="form-text text-muted">Bind an ad to this bid template by adding its ad ID to this list</small>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </template>
+    </div>
+</form>
+
+<div class="dsp-item">
+    <fieldset>
+        <legend>Statistics <i on-click="toggleStatistics" class="glyphicon glyphicon-menu-down dsp-budget-add"></i></legend>
+        <div>
+            <div class="dsp-statistics-container">
+                <label class="dsp-statistics-simple-entry">
+                    Clicks
+                    <p class="dsp-statistics-simple-entry__number">{{model.Entity.NrOfClicks}}</p>
+                </label>
+                <label class="dsp-statistics-simple-entry">
+                    Wins
+                    <p class="dsp-statistics-simple-entry__number">{{model.Entity.NrOfWins}}</p>
+                </label>
+                <label class="dsp-statistics-simple-entry">
+                    Bids
+                    <p class="dsp-statistics-simple-entry__number">{{model.Entity.NrOfBids}}</p>
+                </label>
+            </div>
+            <hr>
+            <div class="dsp-statistics-container">
+                <label class="dsp-statistics-simple-entry">
+                    Click rate
+                    <p class="dsp-statistics-simple-entry__number">{{model.Entity.ClickRate}}</p>
+                </label>
+                <label class="dsp-statistics-simple-entry">
+                    Win rate
+                    <p class="dsp-statistics-simple-entry__number">{{model.Entity.WinRate}}</p>
+                </label>
+            </div>
+            <hr>
+            <div class="dsp-statistics-container">
+                <label class="dsp-statistics-simple-entry">
+                    Average win price
+                    <p class="dsp-statistics-simple-entry__number">{{model.Entity.AverageWinPrice.Amount$}} {{model.Entity.AverageWinPrice.Currency$}}</p>
+                    <span>CPM: {{model.Entity.AverageWinPrice.CPM$}}</span>
+                </label>
+                <label class="dsp-statistics-simple-entry">
+                    Average bid price
+                    <p class="dsp-statistics-simple-entry__number">{{model.Entity.AverageBidPrice.Amount$}} {{model.Entity.AverageBidPrice.Currency$}}</p>
+                    <span>CPM: {{model.Entity.AverageBidPrice.CPM$}}</span>
+                </label>
+            </div>
+            <hr>
+            <div class="dsp-statistics-container">
+                <label class="dsp-statistics-simple-entry">
+                    Latest win at
+                    <p class="dsp-statistics-simple-entry__number">{{model.Entity.LatestWinAt}}</p>
+                </label>
+            </div>
+        </div>
+    </fieldset>
+</div>
+
+<div class="dsp-item">
+    <button class="btn btn-sm btn-success" on-click="save">Save</button>
+    <button class="btn btn-sm btn-default" on-click="cancel">Close</button>
+</div>
+
+<link is="puppet-redirect" history url$="{{model.RedirectUrl$}}"/>
+</template>
+<script>
+    (function() {
+        const script = document._currentScript || document.currentScript;
+        const template = script.previousElementSibling;
+
+        template.close = (event) => event.target.parentElement.style.display = "none";
+
+        template.save = function(event) {
+            template.model.Save$ += 1;
+            template.model.RedirectUrl$ = template.model.ResourcePath;
+        };
+
+        template.cancel = function() {
+            template.model.Cancel$ += 1;
+            template.model.RedirectUrl$ = template.model.ResourcePath;
+        }
+
+        template.toggleBidRule = function(event) {
+            const bidRule = event.target.parentElement.parentElement.parentElement.nextElementSibling
+                .nextElementSibling;
+            const targetClasses = event.target.classList;
+            if (bidRule.children.length > 1) {
+                toggleItem(bidRule, targetClasses, "block", true);
+            }
+        }
+
+        template.toggleStatistics = function(event) {
+            const statistics = event.target.parentNode.nextElementSibling;
+            toggleItem(statistics, event.target.classList, "block", true);
+        }
+
+        template.toggleBidRuleProperties = function(event) {
+            const templates = event.target.parentElement.parentElement.nextElementSibling;
+            let targetClasses = event.target.classList;
+            if (templates.children.length > 1) {
+                toggleItem(templates, targetClasses, "block", true);
+            }
+        }
+
+        template.toggleBudget = function(event) {
+            const budgetItem = event.target.parentElement.nextElementSibling;
+            let targetClasses = event.target.classList;
+            toggleItem(budgetItem, targetClasses, "flex", false);
+        }
+
+        toggleItem = function(item, classes, display, reverse) {
+            const rotateClass = "glyphicon-menu-down--rotate"
+            if (reverse ? !classes.toggle(rotateClass) : classes.toggle(rotateClass)) {
+                item.style.display = display;
+            } else {
+                item.style.display = "none"
+            }
+        }
+
+        template.hasNoBidRules = (bidRules) => bidRules.length === 0 ? "" : "dsp-hide-item";
+
+        template.addBidRule = function(event) {
+            template.model.AddElementTo$ = "BidRules$";
+            const noBidRulesMessage = event.target.parentElement.parentElement.parentElement.nextElementSibling;
+            if (!noBidRulesMessage.classList.contains("dsp-hide-item")) {
+                noBidRulesMessage.classList.add("dsp-hide-item");
+            }
+        }
+
+        template.addCondition = function(event) {
+            const index = event.target.value;
+            template.model.AddElementTo$ = `BidRules$.${index}.Conditions$`;
+        }
+
+        template.addTemplate = function(event) {
+            const index = event.target.value;
+            template.model.AddElementTo$ = `BidRules$.${index}.BidTemplates$`;
+        }
+
+        template.addAdId = function(event) {
+            const value = event.target.value;
+            const inputElement = event.target.previousElementSibling;
+            if (!inputElement.value) return;
+            const bidIndex = value.split(",")[0];
+            const templateIndex = value.split(",")[1];
+            template.model.AddElementTo$ =
+                `BidRules$.${bidIndex}.BidTemplates$.${templateIndex}.AdIds$,"${inputElement.value}"`;
+            inputElement.value = "";
+        }
+
+        template.setConditionValueFromInput = function(event) {
+            const index = event.target.index;
+            const dropDown = event.target.parentElement.nextElementSibling.children[1];
+            const valueType = dropDown.options[dropDown.selectedIndex].value;
+            const value = event.target.value;
+
+            setConditionValueAtIndex(index, value, valueType);
+        }
+
+        template.setConditionValueFromDropDown = function(event) {
+            const inputElement = event.target.parentElement.previousElementSibling.children[1];
+            const inputValue = inputElement.value;
+            const index = inputElement.index;
+            const valueType = event.target.options[event.target.selectedIndex].value;
+
+            setConditionValueAtIndex(index, inputValue, valueType);
+        }
+
+        setConditionValueAtIndex = function(index, value, valueType) {
+            if (valueType == "string" || valueType == "date") {
+                value = `'${value}'`;
+            }
+
+            const bidRuleIndex = index.split(".")[0];
+            const conditionIndex = index.split(".")[1];
+            template.model.Entity.BidRules$[bidRuleIndex].Conditions$[conditionIndex].Value$ = `@RESTar(${value})`;
+        }
+
+        template.deleteCondition = function(event) {
+            const index = event.target.index;
+            const bidRuleIndex = index.split(".")[0];
+            const conditionIndex = index.split(".")[1];
+            template.model.RemoveElementFrom$ = `BidRules$.${bidRuleIndex}.Conditions$,${conditionIndex}`;
+        }
+
+        template.deleteIdFromTemplate = function(event) {
+            const indexes = event.target.index.split(",");
+            template.model.RemoveElementFrom$ =
+                `BidRules$.${indexes[0]}.BidTemplates$.${indexes[1]}.AdIds$,${indexes[2]}`;
+        }
+
+        template.deleteTemplate = function(event) {
+            const indexes = event.target.index.split(",");
+            template.model.RemoveElementFrom$ = `BidRules$.${indexes[0]}.BidTemplates$,${indexes[1]}`;
+        }
+
+        template.deleteBidRule = function(event) {
+            template.model.RemoveElementFrom$ = `BidRules$,${event.target.index}`;
+        }
+    })();
+</script>
+</template>
