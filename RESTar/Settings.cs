@@ -24,7 +24,7 @@ namespace RESTar
         public ushort Port { get; private set; }
         public string Uri { get; private set; }
         public bool ViewEnabled { get; private set; }
-     
+
         private bool _prettyPrint;
         private bool _camelCase;
         private bool _localTimes;

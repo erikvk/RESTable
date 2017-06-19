@@ -5,12 +5,14 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Xml;
+using Dynamit;
 using Jil;
 using Newtonsoft.Json;
 using RESTar.View.Serializer;
 using Starcounter;
 using static Jil.DateTimeFormat;
 using static Jil.UnspecifiedDateTimeKindBehavior;
+using static Newtonsoft.Json.Formatting;
 using static RESTar.Settings;
 
 namespace RESTar
@@ -65,6 +67,9 @@ namespace RESTar
 
         internal static string SerializeDyn<T>(this IEnumerable<T> obj)
         {
+            var type = obj.FirstOrDefault()?.GetType();
+            if (typeof(IDictionary<string, object>).IsAssignableFrom(type))
+                return JsonNetSerialize(obj);
             return JSON.SerializeDynamic(obj, SerializerOptions);
         }
 
@@ -95,7 +100,9 @@ namespace RESTar
 
         internal static string JsonNetSerialize(this object value)
         {
-            return JsonConvert.SerializeObject(value, JsonNetSettings);
+            return _PrettyPrint
+                ? JsonConvert.SerializeObject(value, Indented, JsonNetSettings).Replace("\r\n", "\n")
+                : JsonConvert.SerializeObject(value, None, JsonNetSettings);
         }
 
         private static readonly JsonSerializerSettings VmSettings;
