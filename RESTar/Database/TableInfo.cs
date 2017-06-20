@@ -39,7 +39,10 @@ namespace RESTar
                     throw new Exception($"'{resource.Name}' is not a Starcounter resource, and has no table info");
                 resources = new[] {resource};
             }
-            return resources.Select(GetTableInfo).ToList();
+            return resources
+                .Select(GetTableInfo)
+                .OrderByDescending(t => t.ApproximateTableSize.Bytes)
+                .ToList();
         }
 
         private static IEnumerable<Column> GetColumns(string resourceName) => Db.SQL<Column>(
@@ -67,7 +70,7 @@ namespace RESTar
                 var sample = extension.Where((_, i) => i % step == 0).ToList();
                 var sampleRate = (decimal) sample.Count / domainCount;
                 var sampleBytes = 0L;
-                sample.ForEach(e => 
+                sample.ForEach(e =>
                 {
                     foreach (var p in properties)
                         sampleBytes += p.ByteCount(e);

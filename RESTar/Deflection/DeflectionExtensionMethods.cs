@@ -12,22 +12,13 @@ namespace RESTar.Deflection
         {
             try
             {
-                Delegate getterDelegate;
                 if (p.DeclaringType?.IsValueType == true)
-                {
-                    getterDelegate = p
-                        .GetGetMethod()?
-                        .CreateDelegate(typeof(RefGetter<,>)
-                            .MakeGenericType(p.DeclaringType, p.PropertyType));
-                    return getterDelegate != null
-                        ? (dynamic obj) => ((dynamic) getterDelegate)(ref obj)
-                        : default(Getter);
-                }
-                getterDelegate = p
+                    return p.GetValue;
+                var getterDelegate = p
                     .GetGetMethod()?
                     .CreateDelegate(typeof(Func<,>)
                         .MakeGenericType(p.DeclaringType, p.PropertyType));
-                return getterDelegate != null ? (dynamic obj) => ((dynamic) getterDelegate)(obj) : default(Getter);
+                return getterDelegate != null ? obj => ((dynamic) getterDelegate)((dynamic) obj) : default(Getter);
             }
             catch
             {
@@ -39,6 +30,8 @@ namespace RESTar.Deflection
         {
             try
             {
+                if (p.DeclaringType?.IsValueType == true)
+                    return p.SetValue;
                 var setterDelegate = p
                     .GetSetMethod()?
                     .CreateDelegate(typeof(Action<,>)
