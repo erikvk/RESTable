@@ -2,7 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Dynamit;
+using Newtonsoft.Json.Linq;
 using RESTar.Internal;
+using static RESTar.Internal.ErrorCodes;
+using static RESTar.Operations.Do;
 
 namespace RESTar.Deflection
 {
@@ -15,26 +18,37 @@ namespace RESTar.Deflection
         public bool IsStatic => this.All(p => p is StaticProperty);
         public bool IsDynamic => !IsStatic;
 
-        internal static PropertyChain Parse(string keyString, IResource resource, List<string> dynamicDomain = null)
+        internal static PropertyChain Parse(string keyString, IResource resource, bool dynamicUnknowns,
+            List<string> dynamicDomain = null)
         {
             var chain = new PropertyChain();
+
             Property propertyMaker(string str)
             {
                 if (string.IsNullOrWhiteSpace(str))
-                    throw new SyntaxException(ErrorCodes.InvalidConditionSyntaxError, $"Invalid condition '{str}'");
+                    throw new SyntaxException(InvalidConditionSyntaxError, $"Invalid condition '{str}'");
                 if (dynamicDomain?.Contains(str, Comparer) == true)
                     return DynamicProperty.Parse(str);
-                var previous = chain.LastOrDefault();
-                if (previous == null)
-                    return Property.Parse(str, resource.TargetType, resource.IsDDictionary);
-                if (previous is StaticProperty _static)
+
+                Property make(Type type)
                 {
-                    if (_static.Type.IsSubclassOf(typeof(DDictionary)))
+                    if (type.IsDDictionary())
                         return DynamicProperty.Parse(str);
-                    return StaticProperty.Parse(str, _static.Type);
+                    if (dynamicUnknowns)
+                        return Try<Property>(
+                            () => StaticProperty.Parse(str, type),
+                            () => DynamicProperty.Parse(str));
+                    return StaticProperty.Parse(str, type);
                 }
-                return DynamicProperty.Parse(str);
+
+                switch (chain.LastOrDefault())
+                {
+                    case null: return make(resource.TargetType);
+                    case StaticProperty stat: return make(stat.Type);
+                    default: return DynamicProperty.Parse(str);
+                }
             }
+
             keyString.Split('.').ForEach(s => chain.Add(propertyMaker(s)));
             return chain;
         }
@@ -53,6 +67,7 @@ namespace RESTar.Deflection
 
         internal void MakeDynamic()
         {
+            if (IsDynamic) return;
             var newProperties = this.Select(prop =>
                 {
                     if (prop is StaticProperty stat && !(stat is SpecialProperty))
@@ -66,8 +81,12 @@ namespace RESTar.Deflection
 
         internal dynamic Get(object obj)
         {
-            if (obj is IDictionary<string, dynamic>)
+            if (obj is JObject jobj)
+            {
+                var val = jobj.SafeGetNoCase(Key);
+                if (val != null) return val.ToObject<dynamic>();
                 MakeDynamic();
+            }
             foreach (var prop in this)
             {
                 if (obj == null) return null;

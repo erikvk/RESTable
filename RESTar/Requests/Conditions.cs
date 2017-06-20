@@ -47,7 +47,7 @@ namespace RESTar.Requests
                         throw new OperatorException(s);
                     var pair = s.Split(new[] {op.Common}, StringSplitOptions.None);
                     var keyString = WebUtility.UrlDecode(pair[0]);
-                    var chain = PropertyChain.Parse(keyString, resource);
+                    var chain = PropertyChain.Parse(keyString, resource, false);
                     var valueString = WebUtility.UrlDecode(pair[1]);
                     var value = GetValue(valueString);
                     if (chain.IsStatic && chain.LastOrDefault() is StaticProperty prop && prop.Type.IsEnum &&
@@ -78,16 +78,15 @@ namespace RESTar.Requests
             if (valueString.First() == '\"' && valueString.Last() == '\"')
                 return valueString.Remove(0, 1).Remove(valueString.Length - 2, 1);
             dynamic obj;
-            var dtStyle = Settings._LocalTimes ? AssumeLocal : AssumeUniversal;
             if (bool.TryParse(valueString, out bool boo))
                 obj = boo;
             else if (int.TryParse(valueString, out int _int))
                 obj = _int;
             else if (decimal.TryParse(valueString, out decimal dec))
                 obj = decimal.Round(dec, 6);
-            else if (DateTime.TryParseExact(valueString, "yyyy-MM-dd", null, dtStyle, out DateTime dat) ||
-                     DateTime.TryParseExact(valueString, "yyyy-MM-ddTHH:mm:ss", null, dtStyle, out dat) ||
-                     DateTime.TryParseExact(valueString, "O", null, dtStyle, out dat))
+            else if (DateTime.TryParseExact(valueString, "yyyy-MM-dd", null, AssumeUniversal, out DateTime dat) ||
+                     DateTime.TryParseExact(valueString, "yyyy-MM-ddTHH:mm:ss", null, AssumeUniversal, out dat) ||
+                     DateTime.TryParseExact(valueString, "O", null, AssumeUniversal, out dat))
                 obj = dat;
             else obj = valueString;
             return obj;

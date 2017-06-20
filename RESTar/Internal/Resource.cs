@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Dynamit;
+using Newtonsoft.Json.Linq;
 using RESTar.Operations;
 using Starcounter;
 using static System.Reflection.BindingFlags;
@@ -19,9 +21,14 @@ namespace RESTar.Internal
         public string AvailableMethodsString => AvailableMethods.ToMethodsString();
         public Type TargetType { get; }
         public bool IsDDictionary => typeof(T) == typeof(DDictionary);
-        public long? NrOfEntities => Try(() => DB.RowCount(Name), null);
-        public bool Viewable { get; }
-        public bool Singleton { get; }
+
+        public bool IsDynamic => IsDDictionary || DeclaredDynamic || TargetType.IsSubclassOf(typeof(JObject)) ||
+                                 typeof(IDictionary).IsAssignableFrom(TargetType);
+
+        public long? NrOfEntities => Try(() => DB.RowCount(Name), default(long?));
+        public bool IsViewable { get; }
+        public bool IsSingleton { get; }
+        public bool DeclaredDynamic { get; }
         public string AliasOrName => Alias ?? Name;
         public override string ToString() => AliasOrName;
         public bool IsStarcounterResource => TargetType.HasAttribute<DatabaseAttribute>();
@@ -71,8 +78,9 @@ namespace RESTar.Internal
             Name = targetType.FullName;
             Editable = editable;
             AvailableMethods = attribute.AvailableMethods;
-            Viewable = attribute.Viewable;
-            Singleton = attribute.Singleton;
+            IsViewable = attribute.Viewable;
+            IsSingleton = attribute.Singleton;
+            DeclaredDynamic = attribute.Dynamic;
             TargetType = targetType;
             Select = selector;
             Insert = (e, r) => inserter((IEnumerable<T>) e, r);
@@ -138,7 +146,8 @@ namespace RESTar.Internal
                     {
                         case GET: return new[] {RESTarOperations.Select};
                         case POST: return new[] {RESTarOperations.Insert};
-                        case PUT: return new[] {RESTarOperations.Select, RESTarOperations.Insert, RESTarOperations.Update};
+                        case PUT:
+                            return new[] {RESTarOperations.Select, RESTarOperations.Insert, RESTarOperations.Update};
                         case PATCH: return new[] {RESTarOperations.Select, RESTarOperations.Update};
                         case DELETE: return new[] {RESTarOperations.Select, RESTarOperations.Delete};
                         default: return null;

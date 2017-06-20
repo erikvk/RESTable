@@ -2,7 +2,6 @@
 // Version 2
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 
 namespace RESTar

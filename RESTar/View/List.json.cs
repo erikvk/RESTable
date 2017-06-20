@@ -41,9 +41,9 @@ namespace RESTar.View
             CanInsert = Resource.AvailableMethods.Contains(RESTarMethods.POST);
             if (data?.Any() != true) return this;
             var template = request.Resource.MakeViewModelTemplate();
-            var jsonTemplate = $"[{template.SerializeVmJsonTemplate()}]";
+            var jsonTemplate = $"[{template.Serialize()}]";
             Entities = new Arr<Json> {Template = Starcounter.Templates.Template.CreateFromJson(jsonTemplate)};
-            data.ForEach(e => Entities.Add().PopulateFromJson(e.SerializeStaticResourceToViewModel()));
+            data.ForEach(e => Entities.Add().PopulateFromJson(e.SerializeToViewModel()));
             return this;
         }
     }

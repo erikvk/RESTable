@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Dynamit;
+using Newtonsoft.Json.Linq;
 using RESTar.Deflection;
 using RESTar.Internal;
 
@@ -29,7 +30,8 @@ namespace RESTar.Operations
         {
             if (IsStarcounterQueryable) return entities;
             var type = typeof(T);
-            if (entities is IEnumerable<IDictionary<string, dynamic>> && !(entities is IEnumerable<DDictionary>))
+            if ((entities is IEnumerable<IDictionary<string, dynamic>> || entities is IEnumerable<JObject>) &&
+                !(entities is IEnumerable<DDictionary>))
                 PropertyChain.MakeDynamic();
             else if (type != Resource.TargetType)
                 PropertyChain = PropertyChain.MakeFromPrototype(PropertyChain, type);

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Reflection;
 
 namespace RESTar.Deflection
@@ -11,11 +12,22 @@ namespace RESTar.Deflection
         {
             try
             {
-                var getterDelegate = p
+                Delegate getterDelegate;
+                if (p.DeclaringType?.IsValueType == true)
+                {
+                    getterDelegate = p
+                        .GetGetMethod()?
+                        .CreateDelegate(typeof(RefGetter<,>)
+                            .MakeGenericType(p.DeclaringType, p.PropertyType));
+                    return getterDelegate != null
+                        ? (dynamic obj) => ((dynamic) getterDelegate)(ref obj)
+                        : default(Getter);
+                }
+                getterDelegate = p
                     .GetGetMethod()?
                     .CreateDelegate(typeof(Func<,>)
                         .MakeGenericType(p.DeclaringType, p.PropertyType));
-                return getterDelegate != null ? obj => ((dynamic) getterDelegate)((dynamic) obj) : default(Getter);
+                return getterDelegate != null ? (dynamic obj) => ((dynamic) getterDelegate)(obj) : default(Getter);
             }
             catch
             {

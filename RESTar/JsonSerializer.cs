@@ -1,116 +1,64 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Data;
 using System.IO;
-using System.Linq;
-using System.Reflection;
 using System.Xml;
-using Dynamit;
-using Jil;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 using RESTar.View.Serializer;
-using Starcounter;
-using static Jil.DateTimeFormat;
-using static Jil.UnspecifiedDateTimeKindBehavior;
+using Newtonsoft.Json.Converters;
+using Newtonsoft.Json.Linq;
+using static Newtonsoft.Json.DateFormatHandling;
+using static Newtonsoft.Json.DateTimeZoneHandling;
 using static Newtonsoft.Json.Formatting;
+using static Newtonsoft.Json.DateParseHandling;
+using static Newtonsoft.Json.FloatParseHandling;
+using static Newtonsoft.Json.NullValueHandling;
+using static Newtonsoft.Json.JsonConvert;
 using static RESTar.Settings;
+using Type = System.Type;
+using Formatting = Newtonsoft.Json.Formatting;
 
 namespace RESTar
 {
     internal static class JsonSerializer
     {
+        private static readonly JsonSerializerSettings VmSettings;
+        internal static readonly JsonSerializerSettings Settings;
+
         static JsonSerializer()
         {
-            SerializeMethod = typeof(JSON).GetMethods()
-                .First(n => n.Name == "Serialize" && n.ReturnType == typeof(void));
+            Settings = new JsonSerializerSettings
+            {
+                DateParseHandling = DateTime,
+                DateFormatHandling = IsoDateFormat,
+                DateTimeZoneHandling = Utc,
+                ContractResolver = _CamelCase
+                    ? new CamelCasePropertyNamesContractResolver()
+                    : new DefaultContractResolver(),
+                NullValueHandling = Include,
+                FloatParseHandling = Decimal
+            };
             VmSettings = new JsonSerializerSettings
             {
                 ContractResolver = new CreateViewModelResolver(),
-                DateFormatHandling = DateFormatHandling.IsoDateFormat,
-                DateTimeZoneHandling = DateTimeZoneHandling.Utc
+                DateFormatHandling = IsoDateFormat,
+                DateTimeZoneHandling = Utc
             };
-            VmSettings.Converters.Add(new Newtonsoft.Json.Converters.StringEnumConverter());
+            var enumConverter = new StringEnumConverter();
+            Settings.Converters.Add(enumConverter);
+            VmSettings.Converters.Add(enumConverter);
         }
 
-        internal static Options SerializerOptions { private get; set; }
-
-        internal static JsonSerializerSettings JsonNetSettings;
-
-        private static readonly MethodInfo SerializeMethod;
-
-        private static Options VmSerializerOptions => new Options(excludeNulls: true, includeInherited: true,
-            dateFormat: ISO8601, unspecifiedDateTimeKindBehavior: _LocalTimes ? IsLocal : IsUTC);
-
-        internal static string Serialize(this object obj, Type resource)
+        internal static string Serialize(this object value, Type type = null)
         {
-            var generic = SerializeMethod.MakeGenericMethod(resource);
-            var writer = new StringWriter();
-            try
-            {
-                generic.Invoke(null, new[] {obj, writer, SerializerOptions});
-            }
-            catch (DbException)
-            {
-            }
-            return writer.ToString();
+            return SerializeObject(value, type, _PrettyPrint ? Indented : Formatting.None, Settings);
         }
 
-        internal static string SerializeVmJsonTemplate(this IDictionary<string, dynamic> template)
-        {
-            return JSON.SerializeDynamic(template, VmSerializerOptions);
-        }
-
-        internal static string SerializeDynamicResourceToViewModel(this IDictionary<string, dynamic> template)
-        {
-            return JSON.SerializeDynamic(template, VmSerializerOptions);
-        }
-
-        internal static string SerializeDyn<T>(this IEnumerable<T> obj)
-        {
-            var type = obj.FirstOrDefault()?.GetType();
-            if (typeof(IDictionary<string, object>).IsAssignableFrom(type))
-                return JsonNetSerialize(obj);
-            return JSON.SerializeDynamic(obj, SerializerOptions);
-        }
-
-        internal static string SerializeDyn(this object obj)
-        {
-            return JSON.SerializeDynamic(obj, SerializerOptions);
-        }
-
-        internal static dynamic DeserializeDyn(this string json)
-        {
-            return JSON.DeserializeDynamic(json, SerializerOptions);
-        }
-
-        internal static dynamic Deserialize(this string json, Type resource)
-        {
-            return JSON.Deserialize(json, resource, SerializerOptions);
-        }
-
-        internal static dynamic Deserialize<T>(this string json)
-        {
-            return JSON.Deserialize<T>(json, SerializerOptions);
-        }
-
-        internal static void PopulateObject(string json, object target)
-        {
-            JsonConvert.PopulateObject(json, target, JsonNetSettings);
-        }
-
-        internal static string JsonNetSerialize(this object value)
-        {
-            return _PrettyPrint
-                ? JsonConvert.SerializeObject(value, Indented, JsonNetSettings).Replace("\r\n", "\n")
-                : JsonConvert.SerializeObject(value, None, JsonNetSettings);
-        }
-
-        private static readonly JsonSerializerSettings VmSettings;
-
-        internal static string SerializeStaticResourceToViewModel(this object value)
-        {
-            return JsonConvert.SerializeObject(value, VmSettings);
-        }
+        internal static dynamic Deserialize(this string json, Type type) => DeserializeObject(json, type);
+        internal static JToken Deserialize(this string json) => DeserializeObject<JToken>(json);
+        internal static T Deserialize<T>(this string json) => DeserializeObject<T>(json);
+        internal static void Populate(string json, object target) => PopulateObject(json, target, Settings);
+        internal static string SerializeToViewModel(this object value) => SerializeObject(value, VmSettings);
     }
 
     internal static class XmlSerializer

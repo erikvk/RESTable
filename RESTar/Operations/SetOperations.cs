@@ -5,7 +5,6 @@ using System.Linq;
 using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using static System.UriKind;
 using static RESTar.RESTarMethods;
@@ -14,13 +13,21 @@ using static RESTar.Settings;
 namespace RESTar.Operations
 {
     [RESTar(RESTarPresets.ReadOnly, Dynamic = true, Singleton = true)]
-    public class SetOperations : Dictionary<string, dynamic>, ISelector<SetOperations>
+    public class SetOperations : JObject, ISelector<SetOperations>
     {
+        public SetOperations()
+        {
+        }
+
+        private SetOperations(JObject other) : base(other)
+        {
+        }
+
         public IEnumerable<SetOperations> Select(IRequest request)
         {
             if (request.Body == null)
                 throw new Exception("Missing data source for operation");
-            var jobject = JObject.Parse(request.Body);
+            var jobject = Parse(request.Body);
 
             JArray recursor(JToken token)
             {
@@ -47,7 +54,7 @@ namespace RESTar.Operations
                         if (response?.IsSuccessStatusCode != true)
                             throw new Exception(
                                 $"Could not get source data from '<self>:{_Port}{_Uri}{uri}'. " +
-                                $"{response?.StatusCode}: {response?.StatusDescription}. {response?.Headers["ErrorInfo"]}");
+                                $"{response?.StatusCode}: {response?.StatusDescription}. {response?.Headers["RESTar-info"]}");
                         if (response.StatusCode == 204 || string.IsNullOrEmpty(response.Body))
                             json = "[]";
                         else json = response.Body;
@@ -55,7 +62,7 @@ namespace RESTar.Operations
                     else
                         throw new Exception($"Invalid string '{str}'. Must be a relative REST request URI " +
                                             $"beginning wmuith '/<resource locator>' or a JSON array.");
-                    return JsonConvert.DeserializeObject<JArray>(json, JsonSerializer.JsonNetSettings);
+                    return json.Deserialize<JArray>();
                 }
 
                 if (obj != null)
@@ -97,15 +104,10 @@ namespace RESTar.Operations
                 throw new ArgumentException($"Invalid type '{token.Type}' in operations tree");
             }
 
-            var results = JsonConvert.SerializeObject(recursor(jobject), JsonSerializer.JsonNetSettings);
-            try
-            {
-                return results.Deserialize<IEnumerable<SetOperations>>();
-            }
-            catch
-            {
-                throw new Exception("JSON format error");
-            }
+            return recursor(jobject)
+                .OfType<JObject>()
+                .Select(jobj => new SetOperations(jobj))
+                .ToList();
         }
 
         private static JArray Distinct(JArray array)
@@ -114,7 +116,7 @@ namespace RESTar.Operations
             if (!array.Any()) return new JArray();
             var output = new JArray();
             foreach (var item in array)
-                if (!output.Any(i => JToken.DeepEquals(item, i)))
+                if (!output.Any(i => DeepEquals(item, i)))
                     output.Add(item);
             return output;
         }
@@ -128,7 +130,7 @@ namespace RESTar.Operations
             var shortest = Distinct(orderedByCount.First());
             var others = orderedByCount.Skip(1).ToList();
             foreach (var item in shortest)
-                if (others.All(array => array.Any(_item => JToken.DeepEquals(item, _item))))
+                if (others.All(array => array.Any(_item => DeepEquals(item, _item))))
                     output.Add(item);
             return Distinct(output);
         }
@@ -140,7 +142,7 @@ namespace RESTar.Operations
             var output = new JArray();
             arrays.ForEach(array => array.ForEach(item =>
             {
-                if (!output.Any(i => JToken.DeepEquals(item, i)))
+                if (!output.Any(i => DeepEquals(item, i)))
                     output.Add(item);
             }));
             return Distinct(output);
@@ -153,7 +155,7 @@ namespace RESTar.Operations
             array1 = Distinct(array1);
             array2
                 .SelectMany(item2 => array1, (item2, item1) => new {item2, item1})
-                .Where(t => JToken.DeepEquals(t.item1, t.item2))
+                .Where(t => DeepEquals(t.item1, t.item2))
                 .Select(t => t.item1)
                 .ForEach(item => array1.Remove(item));
             return array1;
@@ -192,7 +194,7 @@ namespace RESTar.Operations
                         ? new JArray {new JObject()}
                         : JArray.Parse(response.Body);
                     foreach (var i in toAdd)
-                        if (!mapped.Any(_i => JToken.DeepEquals(i, _i)))
+                        if (!mapped.Any(_i => DeepEquals(i, _i)))
                             mapped.Add(i);
                 }
             }

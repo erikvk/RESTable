@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using Newtonsoft.Json.Linq;
 using RESTar.Deflection;
 using RESTar.Internal;
 using static System.StringSplitOptions;
@@ -13,17 +14,17 @@ namespace RESTar.Operations
             var opMatcher = input.Contains("->") ? "->" : "-%3E";
             var rename = new Rename();
             input.Split(',')
-                .ForEach(str => rename.Add(PropertyChain.Parse(str.Split(new[] {opMatcher}, None)[0].ToLower(), resource),
+                .ForEach(str => rename.Add(
+                    PropertyChain.Parse(str.Split(new[] {opMatcher}, None)[0].ToLower(), resource, resource.IsDynamic),
                     str.Split(new[] {opMatcher}, None)[1]));
             return rename;
         }
 
-        private IDictionary<string, dynamic> RenameDict(IDictionary<string, dynamic> entity)
+        private JObject RenameJObject(JObject entity)
         {
             this.ForEach(pair =>
             {
-                string actualKey;
-                var value = entity.SafeGetNoCase(pair.Key.Key, out actualKey);
+                var value = entity.SafeGetNoCase(pair.Key.Key, out string actualKey);
                 if (actualKey != null)
                     entity.Remove(actualKey);
                 entity[pair.Value] = value;
@@ -31,9 +32,9 @@ namespace RESTar.Operations
             return entity;
         }
 
-        public IEnumerable<dynamic> Apply<T>(IEnumerable<T> entities)
+        public IEnumerable<JObject> Apply<T>(IEnumerable<T> entities)
         {
-            return entities.Select(entity => RenameDict(entity.MakeDictionary()));
+            return entities.Select(entity => RenameJObject(entity.MakeJObject()));
         }
     }
 }

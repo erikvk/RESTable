@@ -139,8 +139,7 @@ namespace RESTar
     public class AbortedSelectorException : RESTarException
     {
         internal AbortedSelectorException(Exception ie, Requests.Request request, string message = null)
-            : base(AbortedSelect, message ?? (ie.GetType() == typeof(Jil.DeserializationException) ||
-                                              ie.GetType() == typeof(Newtonsoft.Json.JsonSerializationException) ||
+            : base(AbortedSelect, message ?? (ie.GetType() == typeof(Newtonsoft.Json.JsonSerializationException) ||
                                               ie.GetType() == typeof(Newtonsoft.Json.JsonReaderException)
                                       ? "JSON serialization error, check JSON syntax"
                                       : $"An exception of type {ie.GetType().FullName} was thrown"
@@ -150,8 +149,7 @@ namespace RESTar
     public class AbortedInserterException : RESTarException
     {
         internal AbortedInserterException(Exception ie, Requests.Request request, string message = null)
-            : base(AbortedInsert, message ?? (ie.GetType() == typeof(Jil.DeserializationException) ||
-                                              ie.GetType() == typeof(Newtonsoft.Json.JsonSerializationException) ||
+            : base(AbortedInsert, message ?? (ie.GetType() == typeof(Newtonsoft.Json.JsonSerializationException) ||
                                               ie.GetType() == typeof(Newtonsoft.Json.JsonReaderException)
                                       ? "JSON serialization error, check JSON syntax"
                                       : $"An exception of type {ie.GetType().FullName} was thrown"
@@ -161,8 +159,7 @@ namespace RESTar
     public class AbortedUpdaterException : RESTarException
     {
         internal AbortedUpdaterException(Exception ie, Requests.Request request, string message = null)
-            : base(AbortedUpdate, message ?? (ie.GetType() == typeof(Jil.DeserializationException) ||
-                                              ie.GetType() == typeof(Newtonsoft.Json.JsonSerializationException) ||
+            : base(AbortedUpdate, message ?? (ie.GetType() == typeof(Newtonsoft.Json.JsonSerializationException) ||
                                               ie.GetType() == typeof(Newtonsoft.Json.JsonReaderException)
                                       ? "JSON serialization error, check JSON syntax"
                                       : $"An exception of type {ie.GetType().FullName} was thrown"
@@ -172,8 +169,7 @@ namespace RESTar
     public class AbortedDeleterException : RESTarException
     {
         internal AbortedDeleterException(Exception ie, Requests.Request request, string message = null)
-            : base(AbortedDelete, message ?? (ie.GetType() == typeof(Jil.DeserializationException) ||
-                                              ie.GetType() == typeof(Newtonsoft.Json.JsonSerializationException) ||
+            : base(AbortedDelete, message ?? (ie.GetType() == typeof(Newtonsoft.Json.JsonSerializationException) ||
                                               ie.GetType() == typeof(Newtonsoft.Json.JsonReaderException)
                                       ? "JSON serialization error, check JSON syntax"
                                       : $"An exception of type {ie.GetType().FullName} was thrown"

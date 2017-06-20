@@ -38,7 +38,7 @@ namespace RESTar
                     AvailableMethods = m.AvailableMethods,
                     Editable = m.Editable,
                     TargetType = m.TargetType,
-                    Visible = m.Viewable
+                    Visible = m.IsViewable
                 }).ToList();
         }
 

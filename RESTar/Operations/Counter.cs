@@ -29,7 +29,7 @@ namespace RESTar.Operations
                                     $"{response?.StatusCode}: {response?.StatusDescription}. {response?.Headers["ErrorInfo"]}");
             if (response.StatusCode == 204 || string.IsNullOrEmpty(response.Body))
                 return new[] {new Counter {["Count"] = 0}};
-            IEnumerable<object> items = response.Body.DeserializeDyn();
+            IEnumerable<object> items = response.Body.Deserialize<dynamic>();
             var count = items.Count();
             return new[] {new Counter {["Count"] = count}};
         }

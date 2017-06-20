@@ -43,7 +43,7 @@ namespace RESTar.View
         {
             RedirectUrl = !string.IsNullOrWhiteSpace(RedirectUrl)
                 ? RedirectUrl
-                : Resource.Singleton
+                : Resource.IsSingleton
                     ? $"/{Application.Current.Name}"
                     : ResourcePath;
         }
@@ -133,7 +133,7 @@ namespace RESTar.View
         internal override RESTarView<object> Populate(Request request, object restarData)
         {
             var template = request.Resource.MakeViewModelTemplate();
-            var jsonTemplate = template.SerializeVmJsonTemplate();
+            var jsonTemplate = template.Serialize();
             Entity = new Json {Template = Starcounter.Templates.Template.CreateFromJson(jsonTemplate)};
             if (restarData == null)
             {
@@ -143,7 +143,7 @@ namespace RESTar.View
             else
             {
                 base.Populate(request, restarData);
-                var json = restarData.SerializeStaticResourceToViewModel();
+                var json = restarData.SerializeToViewModel();
                 Entity.PopulateFromJson(json);
             }
             return this;

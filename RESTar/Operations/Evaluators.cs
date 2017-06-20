@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Newtonsoft.Json.Linq;
 using RESTar.Requests;
 using RESTar.View;
 using Starcounter;
@@ -15,7 +16,8 @@ namespace RESTar.Operations
             if (!request.MetaConditions.Unsafe && request.MetaConditions.Limit == -1)
                 request.MetaConditions.Limit = 1000;
             request.MetaConditions.Unsafe = true;
-            return request.Resource.Select(request)?
+            return request.Resource
+                .Select(request)?
                 .Process(request.MetaConditions.Add)
                 .Process(request.MetaConditions.Rename)
                 .Process(request.MetaConditions.Select)
@@ -103,13 +105,13 @@ namespace RESTar.Operations
 
         private static Response SafePOST(Request request, string json)
         {
-            var inputEntities = json.DeserializeDyn();
+            var inputEntities = json.Deserialize<IEnumerable<JObject>>();
             var insertedCount = 0;
             var updatedCount = 0;
             var keys = request.MetaConditions.SafePost.Split(',');
-            foreach (IDictionary<string, dynamic> entity in inputEntities)
+            foreach (var entity in inputEntities)
             {
-                var jsonBytes = entity.SerializeDyn().ToBytes();
+                var jsonBytes = entity.Serialize().ToBytes();
                 Response response;
                 try
                 {
@@ -154,7 +156,7 @@ namespace RESTar.Operations
                 if (request.Resource.TargetType == typeof(DatabaseIndex))
                 {
                     foreach (var entity in entities)
-                        JsonSerializer.PopulateObject(request.Body, entity);
+                        JsonSerializer.Populate(request.Body, entity);
                     foreach (var entity in entities)
                     {
                         var validatableResult = entity as IValidatable;
@@ -173,7 +175,7 @@ namespace RESTar.Operations
                 Db.TransactAsync(() =>
                 {
                     foreach (var entity in entities)
-                        JsonSerializer.PopulateObject(request.Body, entity);
+                        JsonSerializer.Populate(request.Body, entity);
                 });
                 Db.TransactAsync(() =>
                 {
@@ -264,7 +266,7 @@ namespace RESTar.Operations
 
                 if (request.Resource.TargetType == typeof(DatabaseIndex))
                 {
-                    JsonSerializer.PopulateObject(request.Body, obj);
+                    JsonSerializer.Populate(request.Body, obj);
                     var validatableResult = obj as IValidatable;
                     if (validatableResult != null)
                     {
@@ -280,7 +282,7 @@ namespace RESTar.Operations
 
                 Db.TransactAsync(() =>
                 {
-                    JsonSerializer.PopulateObject(request.Body, obj);
+                    JsonSerializer.Populate(request.Body, obj);
                     var validatableResult = obj as IValidatable;
                     if (validatableResult != null)
                     {
@@ -361,7 +363,7 @@ namespace RESTar.Operations
 
                 if (request.Resource.TargetType == typeof(DatabaseIndex))
                 {
-                    JsonSerializer.PopulateObject(json, entity);
+                    JsonSerializer.Populate(json, entity);
                     if (entity is IValidatable validatableResult)
                     {
                         if (!validatableResult.Validate(out string reason))
@@ -374,7 +376,7 @@ namespace RESTar.Operations
 
                 Db.TransactAsync(() =>
                 {
-                    JsonSerializer.PopulateObject(json, entity);
+                    JsonSerializer.Populate(json, entity);
                     if (entity is IValidatable validatableResult)
                     {
                         if (!validatableResult.Validate(out string reason))

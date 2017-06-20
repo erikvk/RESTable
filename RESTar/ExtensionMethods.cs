@@ -10,7 +10,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Web;
 using Dynamit;
-using Jil;
+using Newtonsoft.Json.Linq;
 using RESTar.Auth;
 using RESTar.Deflection;
 using RESTar.Internal;
@@ -19,12 +19,9 @@ using RESTar.Requests;
 using Starcounter;
 using static System.Reflection.BindingFlags;
 using static System.StringComparison;
-using static Jil.DateTimeFormat;
-using static Jil.UnspecifiedDateTimeKindBehavior;
 using static RESTar.ResourceAlias;
 using static RESTar.RESTarConfig;
 using static RESTar.RESTarMethods;
-using static RESTar.Settings;
 using static Starcounter.DbHelper;
 using Conditions = RESTar.Requests.Conditions;
 using IResource = RESTar.Internal.IResource;
@@ -214,18 +211,19 @@ namespace RESTar
             return dict.First(pair => pair.Key.EqualsNoCase(key)).Value;
         }
 
-        public static Json ToViewModel(this DDictionary d)
+        public static JObject ToJObject(this DDictionary d)
         {
-            var options = new Options(excludeNulls: true, includeInherited: true, dateFormat: ISO8601,
-                unspecifiedDateTimeKindBehavior: _LocalTimes ? IsLocal : IsUTC);
-            var dict = new Dictionary<string, dynamic>();
-            d.KeyValuePairs.ForEach(pair => dict.Add(pair.Key + "$", pair.Value));
-            return new Json(JSON.SerializeDynamic(dict, options));
+            var jobj = new JObject();
+            d.KeyValuePairs.ForEach(pair => jobj[pair.Key] = pair.Value);
+            return jobj;
         }
 
-        public static Dictionary<string, dynamic> ToTransient(this DDictionary d) => d
-            .KeyValuePairs
-            .ToDictionary(pair => pair.Key, pair => pair.Value);
+        public static JObject ToJObject(this Dictionary<string, dynamic> d)
+        {
+            var jobj = new JObject();
+            d.ForEach(pair => jobj[pair.Key] = pair.Value);
+            return jobj;
+        }
 
         internal static RESTarMethods[] ToMethods(this RESTarPresets preset)
         {
@@ -316,12 +314,12 @@ namespace RESTar
             return propertyInfo.GetAttribute<DataMemberAttribute>()?.Name ?? propertyInfo.Name;
         }
 
-        internal static string MatchKey(this IDictionary<string, dynamic> dict, string key)
+        internal static string MatchKey<T>(this IDictionary<string, T> dict, string key)
         {
             return dict.Keys.FirstOrDefault(k => key == k);
         }
 
-        internal static string MatchKeyIgnoreCase(this IDictionary<string, dynamic> dict, string key)
+        internal static string MatchKeyIgnoreCase<T>(this IDictionary<string, T> dict, string key)
         {
             string _actualKey = null;
             var results = dict.Keys.Where(k =>
@@ -339,22 +337,48 @@ namespace RESTar
             }
         }
 
-        internal static Dictionary<string, dynamic> MakeDictionary(this object entity)
+        internal static JObject MakeJObject(this object entity)
         {
-            if (entity is DDictionary ddict) return ddict.ToTransient();
-            if (entity is Dictionary<string, dynamic> _idict) return _idict;
+            if (entity is JObject j) return j;
+            if (entity is DDictionary ddict) return ddict.ToJObject();
+            if (entity is Dictionary<string, dynamic> _idict) return _idict.ToJObject();
+            JObject jobj;
             if (entity is IDictionary idict)
             {
-                var dict = new Dictionary<string, dynamic>();
+                jobj = new JObject();
                 foreach (DictionaryEntry pair in idict)
-                    dict[pair.Key.ToString()] = pair.Value;
-                return dict;
+                    jobj[pair.Key.ToString()] = pair.Value == null ? null : JToken.FromObject(pair.Value);
+                return jobj;
             }
-            return entity.GetType()
+            jobj = new JObject();
+            entity.GetType()
                 .GetStaticProperties()
                 .Where(p => !(p is SpecialProperty))
-                .ToDictionary(prop => prop.Name, prop => prop.Get(entity));
+                .ForEach(prop =>
+                {
+                    var val = prop.Get(entity);
+                    jobj[prop.Name] = val == null ? null : JToken.FromObject(val);
+                });
+            return jobj;
         }
+
+        //internal static Dictionary<string, dynamic> MakeDictionary(this object entity)
+        //{
+        //    if (entity is JObject) return entity;
+        //    if (entity is DDictionary ddict) return ddict.ToTransient();
+        //    if (entity is Dictionary<string, dynamic> _idict) return _idict;
+        //    if (entity is IDictionary idict)
+        //    {
+        //        var dict = new Dictionary<string, dynamic>();
+        //        foreach (DictionaryEntry pair in idict)
+        //            dict[pair.Key.ToString()] = pair.Value;
+        //        return dict;
+        //    }
+        //    return entity.GetType()
+        //        .GetStaticProperties()
+        //        .Where(p => !(p is SpecialProperty))
+        //        .ToDictionary(prop => prop.Name, prop => prop.Get(entity));
+        //}
 
         internal static Dictionary<string, dynamic> MakeViewModelTemplate(this IResource resource)
         {
@@ -438,6 +462,20 @@ namespace RESTar
             if (entities is IEnumerable<IDictionary<string, object>> dicts)
             {
                 foreach (var item in dicts)
+                {
+                    var row = table.NewRow();
+                    foreach (var pair in item)
+                    {
+                        if (!table.Columns.Contains(pair.Key))
+                            table.Columns.Add(pair.Key);
+                        row.SetCellValue(pair.Key, pair.Value);
+                    }
+                    table.Rows.Add(row);
+                }
+            }
+            else if (entities is IEnumerable<JObject> jobjects)
+            {
+                foreach (var item in jobjects)
                 {
                     var row = table.NewRow();
                     foreach (var pair in item)
@@ -603,7 +641,7 @@ namespace RESTar
 
         internal static bool IsSingular(this IEnumerable<object> ienum, Requests.Request request)
         {
-            return request.Resource.Singleton || ienum?.Count() == 1 && !request.ResourceHome;
+            return request.Resource.IsSingleton || ienum?.Count() == 1 && !request.ResourceHome;
         }
     }
 }

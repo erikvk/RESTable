@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using Newtonsoft.Json.Linq;
 
 namespace RESTar.Operations
 {
@@ -9,7 +10,7 @@ namespace RESTar.Operations
 
     public interface IProcessor
     {
-        IEnumerable<dynamic> Apply<T>(IEnumerable<T> entities);
+        IEnumerable<JObject> Apply<T>(IEnumerable<T> entities);
     }
 
     public enum Operations

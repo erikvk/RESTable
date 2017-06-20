@@ -6,6 +6,7 @@ using Dynamit;
 using RESTar;
 using RESTar.Internal;
 using Starcounter;
+using static RESTar.RESTarMethods;
 
 namespace RESTarExample
 {
@@ -59,42 +60,20 @@ namespace RESTarExample
         C
     }
 
-    [Database, RESTar(RESTarPresets.ReadAndWrite, Viewable = true)]
+    [Database, RESTar(RESTarPresets.ReadAndWrite)]
     public class MyResource
     {
-        public string Str;
-        public int Inte;
+        public string String;
+        public int Integer;
         public DateTime Date;
-        public EE Enum;
+        public MyOther Other;
 
-        public MyOther SomeThing;
-
-        public string Computed => "ASD";
-
-        private string Private;
-
-        public string Getter
-        {
-            get => Private;
-            set => Private = value;
-        }
     }
 
     [Database, RESTar(RESTarPresets.ReadAndWrite, Dynamic = true)]
     public class MyOther
     {
-        [DataMember(Name = "Swoo")] public string Str;
-        private MyList _list;
-
-        public MyList List
-        {
-            get { return _list; }
-            set
-            {
-                _list?.Delete();
-                _list = value;
-            }
-        }
+        public string Str;
     }
 
     [DList(typeof(MyElement))]

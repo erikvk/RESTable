@@ -85,7 +85,6 @@ namespace RESTar
             string configFilePath = null,
             bool prettyPrint = true,
             bool camelCase = false,
-            bool localTimes = true,
             ushort daysToSaveErrors = 30)
         {
             uri = uri ?? "/rest";
@@ -95,7 +94,7 @@ namespace RESTar
             if (uri.EqualsNoCase(appName))
                 throw new ArgumentException($"URI cannot be the same as the application name ({appName})");
             if (uri.First() != '/') uri = $"/{uri}";
-            Settings.Init(port, uri, viewEnabled, prettyPrint, camelCase, localTimes, daysToSaveErrors);
+            Settings.Init(port, uri, viewEnabled, prettyPrint, camelCase, daysToSaveErrors);
             typeof(object).GetSubclasses()
                 .Where(t => t.HasAttribute<RESTarAttribute>())
                 .ForEach(t => Do.TryCatch(() => Resource.AutoMakeResource(t), e => throw (e.InnerException ?? e)));
@@ -113,8 +112,7 @@ namespace RESTar
         {
             if (!RequireApiKey && AllowAllOrigins) return;
             if (ConfigFilePath == null)
-                throw new Exception(
-                    "RESTar init error: No config file path to get API keys and/or allowed origins from");
+                throw new Exception("RESTar init error: No config file path given for API keys and/or allowed origins");
             try
             {
                 dynamic config;

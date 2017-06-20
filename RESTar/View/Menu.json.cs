@@ -20,12 +20,12 @@ namespace RESTar.View
             MetaResourcePath = $"/{Application.Current.Name}/{typeof(Resource).FullName}";
             RESTarConfig
                 .Resources
-                .Where(r => r.Viewable)
+                .Where(r => r.IsViewable)
                 .Select(r => new
                 {
                     Name = r.AliasOrName,
                     Url = $"/{Application.Current.Name}/{r.AliasOrName}"
-                }.SerializeDyn())
+                }.Serialize())
                 .ForEach(str => Resources.Add(new Json(str)));
             return this;
         }

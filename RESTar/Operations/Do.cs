@@ -16,6 +16,18 @@ namespace RESTar.Operations
             }
         }
 
+        internal static T Try<T>(Func<T> thingy, Func<T> onFail)
+        {
+            try
+            {
+                return thingy();
+            }
+            catch
+            {
+                return onFail();
+            }
+        }
+
         internal static T TryAndThrow<T>(Func<T> thingy, Exception onFail)
         {
             try

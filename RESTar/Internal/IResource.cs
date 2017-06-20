@@ -13,11 +13,12 @@ namespace RESTar.Internal
         Type TargetType { get; }
         string Alias { get; }
         long? NrOfEntities { get; }
-        bool IsDDictionary { get; }
         RESTarResourceType ResourceType { get; }
+        bool IsDDictionary { get; }
+        bool IsDynamic { get; }
         bool IsStarcounterResource { get; }
-        bool Viewable { get; }
-        bool Singleton { get; }
+        bool IsViewable { get; }
+        bool IsSingleton { get; }
         string AliasOrName { get; }
         Selector<dynamic> Select { get; }
         Inserter<dynamic> Insert { get; }

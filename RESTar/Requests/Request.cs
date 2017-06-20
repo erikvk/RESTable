@@ -40,11 +40,7 @@ namespace RESTar.Requests
         private string Origin { get; set; }
         public IDictionary<string, string> ResponseHeaders { get; }
         internal bool ResourceHome => MetaConditions.Empty && Conditions == null;
-
-        private bool SerializeDynamic => MetaConditions.Dynamic || MetaConditions.Select != null ||
-                                         MetaConditions.Rename != null || MetaConditions.Add != null ||
-                                         Resource.TargetType.IsSubclassOf(typeof(DDictionary)) ||
-                                         Resource.TargetType.GetAttribute<RESTarAttribute>()?.Dynamic == true;
+        private bool SerializeDynamic => MetaConditions.Dynamic || Resource.IsDynamic || MetaConditions.HasProcessors;
 
         internal Request(ScRequest scRequest)
         {
@@ -156,14 +152,14 @@ namespace RESTar.Requests
                             throw new ExcelInputException();
                         if (Method == POST)
                         {
-                            Body = result.Tables[0].JsonNetSerialize();
+                            Body = result.Tables[0].Serialize();
                             Body = regex.Replace(Body, "$1$2");
                         }
                         else
                         {
                             if (result.Tables[0].Rows.Count > 1)
                                 throw new InvalidInputCountException(Method);
-                            Body = JArray.FromObject(result.Tables[0]).First().JsonNetSerialize();
+                            Body = JArray.FromObject(result.Tables[0]).First().Serialize();
                         }
                     }
                     break;
@@ -192,7 +188,7 @@ namespace RESTar.Requests
 
             string jsonString;
             if (SerializeDynamic)
-                jsonString = entities.SerializeDyn();
+                jsonString = entities.Serialize();
             else jsonString = entities.Serialize(IEnumTypes[Resource]);
 
             switch (Accept)

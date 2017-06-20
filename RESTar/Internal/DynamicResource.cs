@@ -17,12 +17,12 @@ namespace RESTar.Internal
         public Type TargetType => DynamitControl.GetByTableName(Name);
         public string Alias => ResourceAlias.ByResource(TargetType);
         public long? NrOfEntities => DB.RowCount(Name);
-        public bool Viewable { get; }
-        public bool Singleton => false;
+        public bool IsViewable { get; }
+        public bool IsSingleton => false;
         public string AliasOrName => Alias ?? Name;
         public override string ToString() => AliasOrName;
         public bool IsStarcounterResource => true;
-
+        public bool IsDynamic => true;
         public bool Equals(IResource x, IResource y) => x.Name == y.Name;
         public int GetHashCode(IResource obj) => obj.Name.GetHashCode();
         public int CompareTo(IResource other) => string.Compare(Name, other.Name, StringComparison.Ordinal);
@@ -46,7 +46,7 @@ namespace RESTar.Internal
             Name = table.FullName;
             Editable = true;
             AvailableMethods = availableMethods;
-            Viewable = visible;
+            IsViewable = visible;
         }
 
         public static DynamicResource MakeTable(Resource resource)

@@ -92,7 +92,7 @@ namespace RESTar.Requests
                 if (!Enum.TryParse(pair[0], true, out RESTarMetaConditions metaCondition))
                     throw new SyntaxException(InvalidMetaConditionKey,
                         $"Invalid meta-condition '{pair[0]}'. Available meta-conditions: " +
-                        $"{string.Join(", ", Enum.GetNames(typeof(RESTarMetaConditions)).Except(new[] { "New", "Delete" }))}. " +
+                        $"{string.Join(", ", Enum.GetNames(typeof(RESTarMetaConditions)).Except(new[] {"New", "Delete"}))}. " +
                         $"For more info, see {Settings.Instance.HelpResourcePath}/topic=Meta-conditions");
 
                 var expectedType = metaCondition.ExpectedType();
@@ -112,7 +112,7 @@ namespace RESTar.Requests
                         {
                             Resource = resource,
                             Descending = true,
-                            PropertyChain = PropertyChain.Parse((string) value, resource, dynamicMembers)
+                            PropertyChain = PropertyChain.Parse((string) value, resource, resource.IsDynamic, dynamicMembers)
                         };
                         break;
                     case RESTarMetaConditions.Order_asc:
@@ -120,7 +120,7 @@ namespace RESTar.Requests
                         {
                             Resource = resource,
                             Descending = false,
-                            PropertyChain = PropertyChain.Parse((string) value, resource, dynamicMembers)
+                            PropertyChain = PropertyChain.Parse((string) value, resource, resource.IsDynamic, dynamicMembers)
                         };
                         break;
                     case RESTarMetaConditions.Unsafe:
@@ -128,12 +128,12 @@ namespace RESTar.Requests
                         break;
                     case RESTarMetaConditions.Select:
                         mc.Select = ((string) value).Split(',')
-                            .Select(str => PropertyChain.Parse(str, resource, dynamicMembers))
+                            .Select(str => PropertyChain.Parse(str, resource, resource.IsDynamic, dynamicMembers))
                             .ToSelect();
                         break;
                     case RESTarMetaConditions.Add:
                         mc.Add = ((string) value).Split(',')
-                            .Select(str => PropertyChain.Parse(str, resource))
+                            .Select(str => PropertyChain.Parse(str, resource, resource.IsDynamic))
                             .ToAdd();
                         break;
                     case RESTarMetaConditions.Rename:
@@ -181,6 +181,8 @@ namespace RESTar.Requests
             }
             return mc;
         }
+
+        internal bool HasProcessors => Select != null || Rename != null || Add != null;
 
         internal void DeactivateProcessors()
         {
