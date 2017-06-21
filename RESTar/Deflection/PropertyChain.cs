@@ -79,19 +79,30 @@ namespace RESTar.Deflection
             AddRange(newProperties);
         }
 
-        internal dynamic Get(object obj)
+        internal dynamic Get(object obj) => Get(obj, out string s);
+
+        internal dynamic Get(object obj, out string actualKey)
         {
             if (obj is JObject jobj)
             {
-                var val = jobj.SafeGetNoCase(Key);
-                if (val != null) return val.ToObject<dynamic>();
+                var val = jobj.SafeGetNoCase(Key, out string actual);
+                if (val != null)
+                {
+                    actualKey = actual;
+                    return val.ToObject<dynamic>();
+                }
                 MakeDynamic();
             }
             foreach (var prop in this)
             {
-                if (obj == null) return null;
+                if (obj == null)
+                {
+                    actualKey = Key;
+                    return null;
+                }
                 obj = prop.Get(obj);
             }
+            actualKey = Key;
             return obj;
         }
     }

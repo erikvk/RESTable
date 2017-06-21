@@ -31,7 +31,7 @@ namespace RESTar
             set
             {
                 _camelCase = value;
-                JsonSerializer.Settings.ContractResolver = value
+                Serializer.Settings.ContractResolver = value
                     ? new CamelCasePropertyNamesContractResolver()
                     : new DefaultContractResolver();
             }

@@ -119,6 +119,18 @@ namespace RESTar.Internal
             }
             else
             {
+                var idictionaryImplementation = type
+                    .GetInterfaces()
+                    .FirstOrDefault(i => i.FullName.StartsWith("System.Collections.Generic.IDictionary"));
+                if (idictionaryImplementation != null)
+                {
+                    var firstTypeParameter = idictionaryImplementation.GenericTypeArguments.First();
+                    if (firstTypeParameter != typeof(string))
+                        throw new VirtualResourceDeclarationException(
+                            $"Invalid virtual resource declaration for type '{type.FullName}. All resources implementing " +
+                            "the generic 'System.Collections.Generic.IDictionary`2' interface must have System.String as " +
+                            $"first type parameter. Found {firstTypeParameter.FullName}");
+                }
                 var fields = type.GetFields(Public | Instance);
                 if (fields.Any())
                     throw new VirtualResourceMemberException(

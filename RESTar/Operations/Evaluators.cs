@@ -156,7 +156,7 @@ namespace RESTar.Operations
                 if (request.Resource.TargetType == typeof(DatabaseIndex))
                 {
                     foreach (var entity in entities)
-                        JsonSerializer.Populate(request.Body, entity);
+                        Serializer.Populate(request.Body, entity);
                     foreach (var entity in entities)
                     {
                         var validatableResult = entity as IValidatable;
@@ -175,7 +175,7 @@ namespace RESTar.Operations
                 Db.TransactAsync(() =>
                 {
                     foreach (var entity in entities)
-                        JsonSerializer.Populate(request.Body, entity);
+                        Serializer.Populate(request.Body, entity);
                 });
                 Db.TransactAsync(() =>
                 {
@@ -266,7 +266,7 @@ namespace RESTar.Operations
 
                 if (request.Resource.TargetType == typeof(DatabaseIndex))
                 {
-                    JsonSerializer.Populate(request.Body, obj);
+                    Serializer.Populate(request.Body, obj);
                     var validatableResult = obj as IValidatable;
                     if (validatableResult != null)
                     {
@@ -282,7 +282,7 @@ namespace RESTar.Operations
 
                 Db.TransactAsync(() =>
                 {
-                    JsonSerializer.Populate(request.Body, obj);
+                    Serializer.Populate(request.Body, obj);
                     var validatableResult = obj as IValidatable;
                     if (validatableResult != null)
                     {
@@ -363,7 +363,7 @@ namespace RESTar.Operations
 
                 if (request.Resource.TargetType == typeof(DatabaseIndex))
                 {
-                    JsonSerializer.Populate(json, entity);
+                    Serializer.Populate(json, entity);
                     if (entity is IValidatable validatableResult)
                     {
                         if (!validatableResult.Validate(out string reason))
@@ -376,7 +376,7 @@ namespace RESTar.Operations
 
                 Db.TransactAsync(() =>
                 {
-                    JsonSerializer.Populate(json, entity);
+                    Serializer.Populate(json, entity);
                     if (entity is IValidatable validatableResult)
                     {
                         if (!validatableResult.Validate(out string reason))

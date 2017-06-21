@@ -1,4 +1,6 @@
+using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using Newtonsoft.Json.Linq;
 using RESTar.Operations;
 
@@ -18,13 +20,32 @@ namespace RESTar.Deflection
 
             Getter = obj =>
             {
+                dynamic value;
+                string actualKey = null;
                 switch (obj)
                 {
-                    case IDictionary<string, dynamic> ddict: return ddict.SafeGetNoCase(Name);
-                    case JObject jobj: return jobj.SafeGetNoCase(Name)?.ToObject<dynamic>();
+                    case IDictionary<string, dynamic> ddict:
+                        value = ddict.SafeGetNoCase(Name, out actualKey);
+                        Name = actualKey ?? Name;
+                        return value;
+                    case IDictionary idict:
+                        value = idict.SafeGetNoCase(Name, out actualKey);
+                        Name = actualKey ?? Name;
+                        return value;
+                    case JObject jobj:
+                        value = jobj.SafeGetNoCase(Name, out actualKey)?.ToObject<dynamic>();
+                        Name = actualKey ?? Name;
+                        return value;
                     default:
                         var type = obj.GetType();
-                        return Do.Try(() => type.MatchProperty(Name)?.Get(obj), null);
+                        value = Do.Try(() =>
+                        {
+                            var prop = type.MatchProperty(Name);
+                            actualKey = prop.Name;
+                            return prop.Get(obj);
+                        }, default(object));
+                        Name = actualKey ?? Name;
+                        return value;
                 }
             };
 

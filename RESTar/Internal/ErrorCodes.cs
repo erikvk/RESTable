@@ -49,6 +49,7 @@ namespace RESTar.Internal
         VirtualResourceMissingInterfaceImplementationError = 120,
         VirtualResourceMemberError = 121,
         NoAvalailableDynamicTableError = 122,
+        VirtualResourceDeclarationError = 123,
 
         // 200-399: Handler errors
         AbortedSelect = 201,

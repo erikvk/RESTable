@@ -227,6 +227,14 @@ namespace RESTar
         }
     }
 
+    public class VirtualResourceDeclarationException : RESTarException
+    {
+        public VirtualResourceDeclarationException(string message)
+            : base(VirtualResourceDeclarationError, message)
+        {
+        }
+    }
+
     public class NoAvalailableDynamicTableException : RESTarException
     {
         public NoAvalailableDynamicTableException() : base(NoAvalailableDynamicTableError,

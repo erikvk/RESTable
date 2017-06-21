@@ -20,12 +20,13 @@ using Formatting = Newtonsoft.Json.Formatting;
 
 namespace RESTar
 {
-    internal static class JsonSerializer
+    internal static class Serializer
     {
         private static readonly JsonSerializerSettings VmSettings;
         internal static readonly JsonSerializerSettings Settings;
+        internal static JsonSerializer JsonSerializer;
 
-        static JsonSerializer()
+        static Serializer()
         {
             Settings = new JsonSerializerSettings
             {
@@ -47,6 +48,7 @@ namespace RESTar
             var enumConverter = new StringEnumConverter();
             Settings.Converters.Add(enumConverter);
             VmSettings.Converters.Add(enumConverter);
+            JsonSerializer = JsonSerializer.Create(Settings);
         }
 
         internal static string Serialize(this object value, Type type = null)

@@ -181,10 +181,42 @@ namespace RESTar
             return dict.ContainsKey(key) ? dict[key] : default(T);
         }
 
+        public static dynamic SafeGet(this IDictionary dict, string key)
+        {
+            return dict.Contains(key) ? dict[key] : null;
+        }
+
         public static T SafeGetNoCase<T>(this IDictionary<string, T> dict, string key)
         {
             var matches = dict.Where(pair => pair.Key.EqualsNoCase(key));
             return matches.Count() > 1 ? dict.SafeGet(key) : matches.FirstOrDefault().Value;
+        }
+
+        public static dynamic SafeGetNoCase(this IDictionary dict, string key, out string actualKey)
+        {
+            IEnumerable<string> matches;
+            try
+            {
+                matches = dict.Keys.Cast<string>().Where(k => k.EqualsNoCase(key));
+            }
+            catch (InvalidCastException)
+            {
+                throw new Exception("Invalid key type in Dictionary resource. Must be string");
+            }
+            if (matches.Count() > 1)
+            {
+                var val = dict.SafeGet(key);
+                if (val == null)
+                {
+                    actualKey = null;
+                    return null;
+                }
+                actualKey = key;
+                return val;
+            }
+            var match = matches.FirstOrDefault();
+            actualKey = match;
+            return match == null ? null : dict[match];
         }
 
         public static T SafeGetNoCase<T>(this IDictionary<string, T> dict, string key, out string actualKey)
@@ -347,7 +379,9 @@ namespace RESTar
             {
                 jobj = new JObject();
                 foreach (DictionaryEntry pair in idict)
-                    jobj[pair.Key.ToString()] = pair.Value == null ? null : JToken.FromObject(pair.Value);
+                    jobj[pair.Key.ToString()] = pair.Value == null
+                        ? null
+                        : JToken.FromObject(pair.Value, Serializer.JsonSerializer);
                 return jobj;
             }
             jobj = new JObject();
@@ -357,7 +391,7 @@ namespace RESTar
                 .ForEach(prop =>
                 {
                     var val = prop.Get(entity);
-                    jobj[prop.Name] = val == null ? null : JToken.FromObject(val);
+                    jobj[prop.Name] = val == null ? null : JToken.FromObject(val, Serializer.JsonSerializer);
                 });
             return jobj;
         }
