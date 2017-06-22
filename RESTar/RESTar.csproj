@@ -216,7 +216,7 @@
   <PropertyGroup>
     <PostBuildEvent>IF $(ConfigurationName)==Debug EXIT;
 cd "$(ProjectDir)"
-nuget pack -OutputDirectory R:\</PostBuildEvent>
+nuget pack -OutputDirectory R:\ -Prop Configuration=Release</PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
