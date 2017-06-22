@@ -13,7 +13,6 @@ namespace RESTar
         internal static string _Uri => Instance.Uri;
         internal static bool _ViewEnabled => Instance.ViewEnabled;
         internal static bool _PrettyPrint => Instance.PrettyPrint;
-        internal static bool _CamelCase => Instance.CamelCase;
         internal static int _DaysToSaveErrors => Instance.DaysToSaveErrors;
         internal static string _ResourcesPath => Instance.ResourcesPath;
         internal static string _HelpResourcePath => Instance.HelpResourcePath;
@@ -22,20 +21,6 @@ namespace RESTar
         public string Uri { get; private set; }
         public bool ViewEnabled { get; private set; }
         public bool PrettyPrint { get; set; }
-
-        private bool _camelCase;
-
-        public bool CamelCase
-        {
-            get => _camelCase;
-            set
-            {
-                _camelCase = value;
-                Serializer.Settings.ContractResolver = value
-                    ? new CamelCasePropertyNamesContractResolver()
-                    : new DefaultContractResolver();
-            }
-        }
 
         public string ResourcesPath => $"http://[IP address]:{Port}{Uri}";
         public string HelpResourcePath => ResourcesPath + "/RESTar.help";
@@ -53,7 +38,6 @@ namespace RESTar
                     Uri = uri,
                     ViewEnabled = viewEnabled,
                     PrettyPrint = prettyPrint,
-                    _camelCase = camelCase,
                     DaysToSaveErrors = daysToSaveErrors
                 };
             });

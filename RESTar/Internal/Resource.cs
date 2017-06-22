@@ -29,6 +29,7 @@ namespace RESTar.Internal
         public bool IsViewable { get; }
         public bool IsSingleton { get; }
         public bool DeclaredDynamic { get; }
+        public bool DynamicConditionsAllowed { get; }
         public string AliasOrName => Alias ?? Name;
         public override string ToString() => AliasOrName;
         public bool IsStarcounterResource => TargetType.HasAttribute<DatabaseAttribute>();
@@ -81,6 +82,7 @@ namespace RESTar.Internal
             IsViewable = attribute.Viewable;
             IsSingleton = attribute.Singleton;
             DeclaredDynamic = attribute.Dynamic;
+            DynamicConditionsAllowed = attribute.AllowDynamicConditions;
             TargetType = targetType;
             Select = selector;
             Insert = (e, r) => inserter((IEnumerable<T>) e, r);

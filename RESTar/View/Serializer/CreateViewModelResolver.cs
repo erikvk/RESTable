@@ -15,8 +15,8 @@ namespace RESTar.View.Serializer
         {
             var property = base.CreateProperty(member, memberSerialization);
             if (property.Writable)
-                property.PropertyName = member.RESTarMemberName() + "$";
-            else property.PropertyName = member.RESTarMemberName();
+                property.PropertyName = member.MemberName() + "$";
+            else property.PropertyName = member.MemberName();
             return property;
         }
 

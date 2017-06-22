@@ -33,15 +33,13 @@ namespace RESTar
                 DateParseHandling = DateTime,
                 DateFormatHandling = IsoDateFormat,
                 DateTimeZoneHandling = Utc,
-                ContractResolver = _CamelCase
-                    ? new CamelCasePropertyNamesContractResolver()
-                    : new DefaultContractResolver(),
+                ContractResolver = new DefaultResolver(),
                 NullValueHandling = Include,
                 FloatParseHandling = Decimal
             };
             VmSettings = new JsonSerializerSettings
             {
-                ContractResolver = new CreateViewModelResolver(),
+                ContractResolver = new DefaultResolver(),
                 DateFormatHandling = IsoDateFormat,
                 DateTimeZoneHandling = Utc
             };

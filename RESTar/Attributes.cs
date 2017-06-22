@@ -11,6 +11,7 @@ namespace RESTar
     {
         internal RESTarMethods[] AvailableMethods { get; private set; }
         public bool Dynamic { get; set; }
+        public bool AllowDynamicConditions { get; set; }
         public bool Viewable { get; set; }
         public bool Singleton { get; set; }
         public RESTarAttribute(RESTarPresets preset) => AvailableMethods = preset.ToMethods();

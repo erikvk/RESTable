@@ -2,23 +2,22 @@
 <package >
   <metadata>
     <id>RESTar</id>
-    <version>0.2.4</version>
+    <version>0.2.6</version>
     <title>RESTar</title>
     <authors>Erik von Krusenstierna</authors>
     <owners>Mopedo AB</owners>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>Create powerful RESTful web services with Starcounter. Spec: https://goo.gl/TIkN7m</description>
-    <releaseNotes>Fix for missing dependancy</releaseNotes>
+    <releaseNotes>New serializer, various improvments</releaseNotes>
     <copyright>Copyright 2017 Mopedo AB. All rights reserved.</copyright>
     <tags>mopedo starcounter REST RESTful web services dynamit</tags>
     <licenseUrl>https://goo.gl/eJS8o9</licenseUrl>
     <projectUrl>https://goo.gl/TIkN7m</projectUrl>
     <iconUrl>https://storage.googleapis.com/mopedo-resources/Mopedo_logo_whitefull.png</iconUrl>  
     <dependencies>
-        <dependency id="Dynamit" version="0.1.8" />
+        <dependency id="Dynamit" version="0.1.9" />
         <dependency id="ExcelDataReader" version="2.1.2.3" />
         <dependency id="ClosedXML" version="0.86.0" />
-        <dependency id="Jil" version="2.15.0" />
         <dependency id="Newtonsoft.Json" version="9.0.1" />
     </dependencies>
 </metadata>

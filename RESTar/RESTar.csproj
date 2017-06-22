@@ -98,6 +98,7 @@
     <Compile Include="Deflection\SpecialProperty.cs" />
     <Compile Include="Deflection\TypeCache.cs" />
     <Compile Include="Delegates.cs" />
+    <Compile Include="Echo.cs" />
     <Compile Include="Internal\ErrorCodes.cs" />
     <Compile Include="Operators.cs" />
     <Compile Include="RESTarMethods.cs" />
@@ -163,6 +164,7 @@
     <Compile Include="View\Serializer\ArrayNullToEmptyListProvider.cs" />
     <Compile Include="View\Serializer\ClassNullToEmptyObjectProvider.cs" />
     <Compile Include="View\Serializer\CreateViewModelResolver.cs" />
+    <Compile Include="View\Serializer\DefaultResolver.cs" />
     <Compile Include="View\Serializer\NullableValueProvider.cs" />
     <Compile Include="View\Serializer\NullToEmptyStringValueProvider.cs" />
     <Compile Include="View\Serializer\ObjectNoProvider.cs" />

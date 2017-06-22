@@ -17,14 +17,14 @@ namespace RESTar.Deflection
         public IEnumerable<Attribute> Attributes;
 
         internal TAttribute GetAttribute<TAttribute>() where TAttribute : Attribute =>
-            Attributes.OfType<TAttribute>().FirstOrDefault();
+            Attributes?.OfType<TAttribute>().FirstOrDefault();
 
         internal bool HasAttribute<TAttribute>() where TAttribute : Attribute => GetAttribute<TAttribute>() != null;
 
         internal StaticProperty(PropertyInfo p)
         {
             if (p == null) return;
-            Name = p.RESTarMemberName();
+            Name = p.MemberName();
             DatabaseQueryName = p.Name;
             Type = p.PropertyType;
             ScQueryable = p.DeclaringType?.HasAttribute<DatabaseAttribute>() == true &&

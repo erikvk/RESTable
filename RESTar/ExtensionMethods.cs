@@ -25,48 +25,147 @@ using static RESTar.RESTarMethods;
 using static Starcounter.DbHelper;
 using Conditions = RESTar.Requests.Conditions;
 using IResource = RESTar.Internal.IResource;
+using Request = RESTar.Requests.Request;
 
 namespace RESTar
 {
     public static class ExtensionMethods
     {
+        static ExtensionMethods()
+        {
+            DEFAULT_MAKER = typeof(ExtensionMethods).GetMethod(nameof(DEFAULT), NonPublic | Static);
+            ListGenerator = typeof(ExtensionMethods).GetMethod(nameof(GenerateList), NonPublic | Static);
+        }
+
+        #region Operation finders
+
         internal static Selector<T> GetSelector<T>(this Type type) => typeof(ISelector<T>).IsAssignableFrom(type)
-            ? (Selector<T>) type.GetMethod("Select", BindingFlags.Instance | Public)
-                .CreateDelegate(typeof(Selector<T>), null)
+            ? (Selector<T>) type.GetMethod("Select", Instance | Public).CreateDelegate(typeof(Selector<T>), null)
             : null;
 
         internal static Inserter<T> GetInserter<T>(this Type type) => typeof(IInserter<T>).IsAssignableFrom(type)
-            ? (Inserter<T>) type.GetMethod("Insert", BindingFlags.Instance | Public)
-                .CreateDelegate(typeof(Inserter<T>), null)
+            ? (Inserter<T>) type.GetMethod("Insert", Instance | Public).CreateDelegate(typeof(Inserter<T>), null)
             : null;
 
         internal static Updater<T> GetUpdater<T>(this Type type) => typeof(IUpdater<T>).IsAssignableFrom(type)
-            ? (Updater<T>) type.GetMethod("Update", BindingFlags.Instance | Public)
-                .CreateDelegate(typeof(Updater<T>), null)
+            ? (Updater<T>) type.GetMethod("Update", Instance | Public).CreateDelegate(typeof(Updater<T>), null)
             : null;
 
         internal static Deleter<T> GetDeleter<T>(this Type type) => typeof(IDeleter<T>).IsAssignableFrom(type)
-            ? (Deleter<T>) type.GetMethod("Delete", BindingFlags.Instance | Public)
-                .CreateDelegate(typeof(Deleter<T>), null)
+            ? (Deleter<T>) type.GetMethod("Delete", Instance | Public).CreateDelegate(typeof(Deleter<T>), null)
             : null;
+
+        #endregion
+
+        #region Reflection
 
         internal static IList<Type> GetConcreteSubclasses(this Type baseType) => baseType.GetSubclasses()
             .Where(type => !type.IsAbstract)
             .ToList();
 
-        private static readonly MethodInfo ListGenerator = typeof(ExtensionMethods)
-            .GetMethod(nameof(GenerateList), NonPublic | Static);
+        private static readonly MethodInfo ListGenerator;
 
         private static List<T> GenerateList<T>(T thing) => new List<T> {thing};
+
+        internal static dynamic MakeList(this object thing, Type resource) => ListGenerator
+            .MakeGenericMethod(resource)
+            .Invoke(null, new[] {thing});
+
+        internal static IEnumerable<Type> GetSubclasses(this Type baseType) =>
+            from assembly in AppDomain.CurrentDomain.GetAssemblies()
+            from type in assembly.GetTypes()
+            where type.IsSubclassOf(baseType)
+            select type;
+
+        internal static TAttribute GetAttribute<TAttribute>(this MemberInfo type) where TAttribute : Attribute =>
+            type?.GetCustomAttributes<TAttribute>().FirstOrDefault();
+
+        internal static bool HasAttribute<TAttribute>(this MemberInfo type)
+            where TAttribute : Attribute => (type?.GetCustomAttributes<TAttribute>().Any()).GetValueOrDefault();
+
+        #endregion
+
+        #region Other
+
         internal static string UriDecode(this string str) => HttpUtility.UrlDecode(str);
         internal static string UriEncode(this string str) => HttpUtility.UrlEncode(str);
         public static T GetReference<T>(this ulong? objectNo) where T : class => FromID(objectNo ?? 0) as T;
         public static T GetReference<T>(this ulong objectNo) where T : class => FromID(objectNo) as T;
         public static bool EqualsNoCase(this string s1, string s2) => string.Equals(s1, s2, CurrentCultureIgnoreCase);
+        internal static string ToMethodsString(this IEnumerable<RESTarMethods> ie) => string.Join(", ", ie);
 
-        internal static dynamic MakeList(this object thing, Type resource) => ListGenerator
-            .MakeGenericMethod(resource)
-            .Invoke(null, new[] {thing});
+        internal static string RemoveTabsAndBreaks(this string input) => input != null
+            ? Regex.Replace(input, @"\t|\n|\r", "")
+            : null;
+
+        internal static string ReplaceFirst(this string text, string search, string replace, out bool replaced)
+        {
+            var pos = text.IndexOf(search, Ordinal);
+            if (pos < 0)
+            {
+                replaced = false;
+                return text;
+            }
+            replaced = true;
+            return $"{text.Substring(0, pos)}{replace}{text.Substring(pos + search.Length)}";
+        }
+
+        internal static RESTarMethods[] ToMethodsArray(this string methodsString)
+        {
+            if (methodsString == null) return null;
+            if (methodsString.Trim() == "*")
+                return Methods;
+            return methodsString.Split(',').Select(s => (RESTarMethods) Enum.Parse(typeof(RESTarMethods), s)).ToArray();
+        }
+
+        internal static RESTarMethods[] ToMethods(this RESTarPresets preset)
+        {
+            switch (preset)
+            {
+                case RESTarPresets.ReadOnly: return new[] {GET};
+                case RESTarPresets.WriteOnly: return new[] {POST, DELETE};
+                case RESTarPresets.ReadAndUpdate: return new[] {GET, PATCH};
+                case RESTarPresets.ReadAndWrite: return Methods;
+                default: throw new ArgumentOutOfRangeException(nameof(preset));
+            }
+        }
+
+        internal static object GetDefault(this Type type)
+        {
+            if (type == null)
+                throw new ArgumentNullException(nameof(type));
+            return DEFAULT_MAKER.MakeGenericMethod(type).Invoke(null, null);
+        }
+
+        private static readonly MethodInfo DEFAULT_MAKER;
+
+        private static object DEFAULT<T>() => default(T);
+
+        internal static AccessRights ToAccessRights(this IEnumerable<AccessRight> accessRights)
+        {
+            var _accessRights = new AccessRights();
+            foreach (var right in accessRights)
+            {
+                foreach (var resource in right.Resources)
+                {
+                    _accessRights[resource] = _accessRights.ContainsKey(resource)
+                        ? _accessRights[resource].Union(right.AllowedMethods).ToList()
+                        : right.AllowedMethods;
+                }
+            }
+            return _accessRights;
+        }
+
+        #endregion
+
+        #region Resource helpers
+
+        internal static bool IsDDictionary(this Type type) => type.IsSubclassOf(typeof(DDictionary));
+        internal static bool IsStarcounter(this Type type) => type.HasAttribute<DatabaseAttribute>();
+        internal static string MemberName(this MemberInfo m) => m.GetAttribute<DataMemberAttribute>()?.Name ?? m.Name;
+
+        internal static bool IsSingular(this IEnumerable<object> ienum, Request request) =>
+            request.Resource.IsSingleton || ienum?.Count() == 1 && !request.ResourceHome;
 
         internal static ICollection<IResource> FindResources(this string searchString)
         {
@@ -116,6 +215,69 @@ namespace RESTar
             return NameResources[keys.First()];
         }
 
+        internal static JObject ToJObject(this IEnumerable<JProperty> props) => new JObject(props);
+
+        internal static JObject MakeJObject(this object entity)
+        {
+            if (entity is JObject j) return j;
+            if (entity is DDictionary ddict) return ddict.ToJObject();
+            if (entity is Dictionary<string, dynamic> _idict) return _idict.ToJObject();
+            JObject jobj;
+            if (entity is IDictionary idict)
+            {
+                jobj = new JObject();
+                foreach (DictionaryEntry pair in idict)
+                    jobj[pair.Key.ToString()] = pair.Value == null
+                        ? null
+                        : JToken.FromObject(pair.Value, Serializer.JsonSerializer);
+                return jobj;
+            }
+            jobj = new JObject();
+            entity.GetType()
+                .GetStaticProperties()
+                .Where(p => !(p is SpecialProperty))
+                .ForEach(prop =>
+                {
+                    var val = prop.Get(entity);
+                    jobj[prop.Name] = val == null ? null : JToken.FromObject(val, Serializer.JsonSerializer);
+                });
+            return jobj;
+        }
+
+        internal static bool IsStarcounterCompatible(this Type type)
+        {
+            switch (Type.GetTypeCode(type))
+            {
+                case TypeCode.Empty: return false;
+                case TypeCode.DBNull: return false;
+                case TypeCode.Object:
+                    if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))
+                        return IsStarcounterCompatible(type.GenericTypeArguments[0]);
+                    return type.IsClass && type.HasAttribute<DatabaseAttribute>();
+                case TypeCode.Boolean:
+                case TypeCode.Char:
+                case TypeCode.SByte:
+                case TypeCode.Byte:
+                case TypeCode.Int16:
+                case TypeCode.UInt16:
+                case TypeCode.Int32:
+                case TypeCode.UInt32:
+                case TypeCode.Int64:
+                case TypeCode.UInt64:
+                case TypeCode.Single:
+                case TypeCode.Double:
+                case TypeCode.Decimal:
+                case TypeCode.DateTime:
+                case TypeCode.String: return true;
+            }
+            if (type == typeof(Binary)) return true;
+            return false;
+        }
+
+        #endregion
+
+        #region Filter and Process
+
         public static IEnumerable<T> Filter<T>(this IEnumerable<T> entities, Conditions filter)
         {
             return filter?.Apply((dynamic) entities) ?? entities;
@@ -131,50 +293,9 @@ namespace RESTar
             return processor?.Apply((dynamic) entities) ?? (IEnumerable<dynamic>) entities;
         }
 
-        internal static IEnumerable<Type> GetSubclasses(this Type baseType) =>
-            from assembly in AppDomain.CurrentDomain.GetAssemblies()
-            from type in assembly.GetTypes()
-            where type.IsSubclassOf(baseType)
-            select type;
+        #endregion
 
-        internal static TAttribute GetAttribute<TAttribute>(this MemberInfo type) where TAttribute : Attribute =>
-            type?.GetCustomAttributes<TAttribute>().FirstOrDefault();
-
-        internal static bool HasAttribute<TAttribute>(this MemberInfo type)
-            where TAttribute : Attribute => (type?.GetCustomAttributes<TAttribute>().Any()).GetValueOrDefault();
-
-        internal static string RemoveTabsAndBreaks(this string input) => input != null
-            ? Regex.Replace(input, @"\t|\n|\r", "")
-            : null;
-
-        internal static RESTarMethods[] ToMethodsArray(this string methodsString)
-        {
-            if (methodsString == null) return null;
-            if (methodsString.Trim() == "*")
-                return Methods;
-            return methodsString.Split(',').Select(s => (RESTarMethods) Enum.Parse(typeof(RESTarMethods), s)).ToArray();
-        }
-
-        internal static string ToMethodsString(this IEnumerable<RESTarMethods> ie) => string.Join(", ", ie);
-
-        public static byte[] ReadBytes(this Stream stream, int count)
-        {
-            var bytes = new byte[count];
-            int read;
-            if ((read = stream.Read(bytes, 0, count)) == count)
-                return bytes;
-            throw new ArgumentOutOfRangeException($"Count was {count}, read was {read}");
-        }
-
-        internal static bool IsDDictionary(this Type type) => type.IsSubclassOf(typeof(DDictionary));
-        internal static bool IsStatic(this Type type) => !type.IsDDictionary();
-        internal static bool IsStarcounter(this Type type) => type.HasAttribute<DatabaseAttribute>();
-
-
-        public static byte[] ReadRest(this Stream stream)
-        {
-            return stream.ReadBytes((int) (stream.Length - stream.Position));
-        }
+        #region Dictionary helpers
 
         public static T SafeGet<T>(this IDictionary<string, T> dict, string key)
         {
@@ -186,6 +307,11 @@ namespace RESTar
             return dict.Contains(key) ? dict[key] : null;
         }
 
+        public static T GetNoCase<T>(this IDictionary<string, T> dict, string key)
+        {
+            return dict.First(pair => pair.Key.EqualsNoCase(key)).Value;
+        }
+
         public static T SafeGetNoCase<T>(this IDictionary<string, T> dict, string key)
         {
             var matches = dict.Where(pair => pair.Key.EqualsNoCase(key));
@@ -194,15 +320,8 @@ namespace RESTar
 
         public static dynamic SafeGetNoCase(this IDictionary dict, string key, out string actualKey)
         {
-            IEnumerable<string> matches;
-            try
-            {
-                matches = dict.Keys.Cast<string>().Where(k => k.EqualsNoCase(key));
-            }
-            catch (InvalidCastException)
-            {
-                throw new Exception("Invalid key type in Dictionary resource. Must be string");
-            }
+            var matches = Do.TryAndThrow(() => dict.Keys.Cast<string>().Where(k => k.EqualsNoCase(key)),
+                "Invalid key type in Dictionary resource. Must be string");
             if (matches.Count() > 1)
             {
                 var val = dict.SafeGet(key);
@@ -238,11 +357,6 @@ namespace RESTar
             return match.Value;
         }
 
-        public static T GetNoCase<T>(this IDictionary<string, T> dict, string key)
-        {
-            return dict.First(pair => pair.Key.EqualsNoCase(key)).Value;
-        }
-
         public static JObject ToJObject(this DDictionary d)
         {
             var jobj = new JObject();
@@ -257,17 +371,32 @@ namespace RESTar
             return jobj;
         }
 
-        internal static RESTarMethods[] ToMethods(this RESTarPresets preset)
+        internal static string MatchKey<T>(this IDictionary<string, T> dict, string key)
         {
-            switch (preset)
+            return dict.Keys.FirstOrDefault(k => key == k);
+        }
+
+        internal static string MatchKeyIgnoreCase<T>(this IDictionary<string, T> dict, string key)
+        {
+            string _actualKey = null;
+            var results = dict.Keys.Where(k =>
             {
-                case RESTarPresets.ReadOnly: return new[] {GET};
-                case RESTarPresets.WriteOnly: return new[] {POST, DELETE};
-                case RESTarPresets.ReadAndUpdate: return new[] {GET, PATCH};
-                case RESTarPresets.ReadAndWrite: return Methods;
-                default: throw new ArgumentOutOfRangeException(nameof(preset));
+                var equals = k.EqualsNoCase(key);
+                if (equals) _actualKey = k;
+                return equals;
+            });
+            var count = results.Count();
+            switch (count)
+            {
+                case 0: return null;
+                case 1: return _actualKey;
+                default: return MatchKey(dict, key);
             }
         }
+
+        #endregion
+
+        #region IEnumerable
 
         internal static void ForEach<T>(this IEnumerable<T> source, Action<T> action)
         {
@@ -279,6 +408,10 @@ namespace RESTar
             var i = 0;
             foreach (var e in source) action(e, i++);
         }
+
+        #endregion
+
+        #region Requests
 
         internal static Conditions ToConditions(this IEnumerable<Condition> conditions, Type resource)
         {
@@ -306,20 +439,9 @@ namespace RESTar
             return _props;
         }
 
-        internal static AccessRights ToAccessRights(this IEnumerable<AccessRight> accessRights)
-        {
-            var _accessRights = new AccessRights();
-            foreach (var right in accessRights)
-            {
-                foreach (var resource in right.Resources)
-                {
-                    _accessRights[resource] = _accessRights.ContainsKey(resource)
-                        ? _accessRights[resource].Union(right.AllowedMethods).ToList()
-                        : right.AllowedMethods;
-                }
-            }
-            return _accessRights;
-        }
+        #endregion
+
+        #region Conversion
 
         internal static string SHA256(this string input)
         {
@@ -339,155 +461,6 @@ namespace RESTar
                 ie = ie.InnerException;
             }
             return message.ToString();
-        }
-
-        internal static string RESTarMemberName(this MemberInfo propertyInfo)
-        {
-            return propertyInfo.GetAttribute<DataMemberAttribute>()?.Name ?? propertyInfo.Name;
-        }
-
-        internal static string MatchKey<T>(this IDictionary<string, T> dict, string key)
-        {
-            return dict.Keys.FirstOrDefault(k => key == k);
-        }
-
-        internal static string MatchKeyIgnoreCase<T>(this IDictionary<string, T> dict, string key)
-        {
-            string _actualKey = null;
-            var results = dict.Keys.Where(k =>
-            {
-                var equals = k.EqualsNoCase(key);
-                if (equals) _actualKey = k;
-                return equals;
-            });
-            var count = results.Count();
-            switch (count)
-            {
-                case 0: return null;
-                case 1: return _actualKey;
-                default: return MatchKey(dict, key);
-            }
-        }
-
-        internal static JObject MakeJObject(this object entity)
-        {
-            if (entity is JObject j) return j;
-            if (entity is DDictionary ddict) return ddict.ToJObject();
-            if (entity is Dictionary<string, dynamic> _idict) return _idict.ToJObject();
-            JObject jobj;
-            if (entity is IDictionary idict)
-            {
-                jobj = new JObject();
-                foreach (DictionaryEntry pair in idict)
-                    jobj[pair.Key.ToString()] = pair.Value == null
-                        ? null
-                        : JToken.FromObject(pair.Value, Serializer.JsonSerializer);
-                return jobj;
-            }
-            jobj = new JObject();
-            entity.GetType()
-                .GetStaticProperties()
-                .Where(p => !(p is SpecialProperty))
-                .ForEach(prop =>
-                {
-                    var val = prop.Get(entity);
-                    jobj[prop.Name] = val == null ? null : JToken.FromObject(val, Serializer.JsonSerializer);
-                });
-            return jobj;
-        }
-
-        //internal static Dictionary<string, dynamic> MakeDictionary(this object entity)
-        //{
-        //    if (entity is JObject) return entity;
-        //    if (entity is DDictionary ddict) return ddict.ToTransient();
-        //    if (entity is Dictionary<string, dynamic> _idict) return _idict;
-        //    if (entity is IDictionary idict)
-        //    {
-        //        var dict = new Dictionary<string, dynamic>();
-        //        foreach (DictionaryEntry pair in idict)
-        //            dict[pair.Key.ToString()] = pair.Value;
-        //        return dict;
-        //    }
-        //    return entity.GetType()
-        //        .GetStaticProperties()
-        //        .Where(p => !(p is SpecialProperty))
-        //        .ToDictionary(prop => prop.Name, prop => prop.Get(entity));
-        //}
-
-        internal static Dictionary<string, dynamic> MakeViewModelTemplate(this IResource resource)
-        {
-            if (resource.IsDDictionary)
-                return new Dictionary<string, dynamic>();
-            var properties = resource.GetStaticProperties();
-            return properties.ToDictionary(
-                p => p.ViewModelName,
-                p => p.Type.MakeViewModelDefault(p)
-            );
-        }
-
-        public static dynamic MakeViewModelDefault(this Type type, StaticProperty property = null)
-        {
-            dynamic DefaultValueRecurser(Type propType, StaticProperty prop = null)
-            {
-                if (propType == typeof(string))
-                    return "";
-                var ienumImplementation = propType.GetInterfaces()
-                    .FirstOrDefault(t => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(IEnumerable<>));
-                if (ienumImplementation != null)
-                {
-                    var elementType = ienumImplementation.GenericTypeArguments[0];
-                    return new object[] {DefaultValueRecurser(elementType)};
-                }
-                if (propType.IsClass)
-                {
-                    if (prop?.HasAttribute<DynamicAttribute>() == true)
-                        return "@RESTar()";
-                    var props = propType.GetStaticProperties();
-                    return props.ToDictionary(
-                        p => p.ViewModelName,
-                        p => DefaultValueRecurser(p.Type, p));
-                }
-                if (propType.IsValueType)
-                {
-                    if (propType.IsGenericType && propType.GetGenericTypeDefinition() == typeof(Nullable<>))
-                        return propType.GetGenericArguments().First().GetDefault();
-                    return propType.GetDefault();
-                }
-                throw new ArgumentOutOfRangeException();
-            }
-
-            return DefaultValueRecurser(type, property);
-        }
-
-
-        internal static bool IsStarcounterCompatible(this Type type)
-        {
-            switch (Type.GetTypeCode(type))
-            {
-                case TypeCode.Empty: return false;
-                case TypeCode.DBNull: return false;
-                case TypeCode.Object:
-                    if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))
-                        return IsStarcounterCompatible(type.GenericTypeArguments[0]);
-                    return type.IsClass && type.HasAttribute<DatabaseAttribute>();
-                case TypeCode.Boolean:
-                case TypeCode.Char:
-                case TypeCode.SByte:
-                case TypeCode.Byte:
-                case TypeCode.Int16:
-                case TypeCode.UInt16:
-                case TypeCode.Int32:
-                case TypeCode.UInt32:
-                case TypeCode.Int64:
-                case TypeCode.UInt64:
-                case TypeCode.Single:
-                case TypeCode.Double:
-                case TypeCode.Decimal:
-                case TypeCode.DateTime:
-                case TypeCode.String: return true;
-            }
-            if (type == typeof(Binary)) return true;
-            return false;
         }
 
         internal static DataTable MakeTable(this IEnumerable<object> entities, IResource resource)
@@ -516,7 +489,7 @@ namespace RESTar
                     {
                         if (!table.Columns.Contains(pair.Key))
                             table.Columns.Add(pair.Key);
-                        row.SetCellValue(pair.Key, pair.Value);
+                        row.SetCellValue(pair.Key, pair.Value.ToObject<object>());
                     }
                     table.Rows.Add(row);
                 }
@@ -553,7 +526,7 @@ namespace RESTar
         {
             if (value == null)
             {
-                row[name] = "";
+                row[name] = DBNull.Value;
                 return;
             }
             Type type = value.GetType();
@@ -617,65 +590,55 @@ namespace RESTar
             }
         }
 
-        internal static string ReplaceFirst(this string text, string search, string replace, out bool replaced)
+        #endregion
+
+        #region View models
+
+        internal static Dictionary<string, dynamic> MakeViewModelTemplate(this IResource resource)
         {
-            var pos = text.IndexOf(search, Ordinal);
-            if (pos < 0)
+            if (resource.IsDDictionary)
+                return new Dictionary<string, dynamic>();
+            var properties = resource.GetStaticProperties();
+            return properties.ToDictionary(
+                p => p.ViewModelName,
+                p => p.Type.MakeViewModelDefault(p)
+            );
+        }
+
+        public static dynamic MakeViewModelDefault(this Type type, StaticProperty property = null)
+        {
+            dynamic DefaultValueRecurser(Type propType, StaticProperty prop = null)
             {
-                replaced = false;
-                return text;
+                if (propType == typeof(string))
+                    return "";
+                var ienumImplementation = propType.GetInterfaces()
+                    .FirstOrDefault(t => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(IEnumerable<>));
+                if (ienumImplementation != null)
+                {
+                    var elementType = ienumImplementation.GenericTypeArguments[0];
+                    return new object[] {DefaultValueRecurser(elementType)};
+                }
+                if (propType.IsClass)
+                {
+                    if (prop?.HasAttribute<DynamicAttribute>() == true)
+                        return "@RESTar()";
+                    var props = propType.GetStaticProperties();
+                    return props.ToDictionary(
+                        p => p.ViewModelName,
+                        p => DefaultValueRecurser(p.Type, p));
+                }
+                if (propType.IsValueType)
+                {
+                    if (propType.IsGenericType && propType.GetGenericTypeDefinition() == typeof(Nullable<>))
+                        return propType.GetGenericArguments().First().GetDefault();
+                    return propType.GetDefault();
+                }
+                throw new ArgumentOutOfRangeException();
             }
-            replaced = true;
-            return $"{text.Substring(0, pos)}{replace}{text.Substring(pos + search.Length)}";
+
+            return DefaultValueRecurser(type, property);
         }
 
-        internal static string GetJsType(this Type type)
-        {
-            switch (Type.GetTypeCode(type))
-            {
-                case TypeCode.Object:
-                    return typeof(IEnumerable).IsAssignableFrom(type)
-                        ? "array"
-                        : "object";
-                case TypeCode.Boolean: return "boolean";
-                case TypeCode.Char: return "string";
-                case TypeCode.SByte:
-                case TypeCode.Byte:
-                case TypeCode.Int16:
-                case TypeCode.UInt16:
-                case TypeCode.Int32:
-                case TypeCode.UInt32:
-                case TypeCode.Int64:
-                case TypeCode.UInt64:
-                case TypeCode.Single:
-                case TypeCode.Double:
-                case TypeCode.Decimal: return "number";
-                case TypeCode.DateTime: return "datetime";
-                case TypeCode.String: return "string";
-                default: return null;
-            }
-        }
-
-        static ExtensionMethods()
-        {
-            DEFAULT_MAKER = typeof(ExtensionMethods)
-                .GetMethod(nameof(DEFAULT), NonPublic | Static);
-        }
-
-        internal static object GetDefault(this Type type)
-        {
-            if (type == null)
-                throw new ArgumentNullException(nameof(type));
-            return DEFAULT_MAKER.MakeGenericMethod(type).Invoke(null, null);
-        }
-
-        private static readonly MethodInfo DEFAULT_MAKER;
-
-        private static object DEFAULT<T>() => default(T);
-
-        internal static bool IsSingular(this IEnumerable<object> ienum, Requests.Request request)
-        {
-            return request.Resource.IsSingleton || ienum?.Count() == 1 && !request.ResourceHome;
-        }
+        #endregion
     }
 }

@@ -16,6 +16,7 @@ namespace RESTar.Internal
         RESTarResourceType ResourceType { get; }
         bool IsDDictionary { get; }
         bool IsDynamic { get; }
+        bool DynamicConditionsAllowed { get; }
         bool IsStarcounterResource { get; }
         bool IsViewable { get; }
         bool IsSingleton { get; }

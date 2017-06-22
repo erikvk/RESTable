@@ -115,7 +115,7 @@ namespace RESTar.Operations
                 Response response;
                 try
                 {
-                    var valuePairs = keys.Select(k => $"{k}={((string) entity.GetNoCase(k).ToString()).UriEncode()}");
+                    var valuePairs = keys.Select(k => $"{k}={entity.GetNoCase(k).ToString().UriEncode()}");
                     var uriString = $"/{request.Resource.Name}/" + $"{string.Join("&", valuePairs)}";
                     response = HTTP.InternalRequest
                     (

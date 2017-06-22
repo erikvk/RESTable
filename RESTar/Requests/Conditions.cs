@@ -33,40 +33,40 @@ namespace RESTar.Requests
         public static Conditions Parse(string conditionString, IResource resource)
         {
             if (string.IsNullOrEmpty(conditionString)) return null;
-            return conditionString.Split('&')
-                .Select(s =>
+            var conditions = new Conditions(resource.TargetType);
+            conditionString.Split('&').ForEach(s =>
+            {
+                if (s == "")
+                    throw new SyntaxException(InvalidConditionSyntaxError, "Invalid condition syntax");
+                s = s.ReplaceFirst("%3E=", ">=", out bool replaced);
+                if (!replaced) s = s.ReplaceFirst("%3C=", "<=", out replaced);
+                if (!replaced) s = s.ReplaceFirst("%3E", ">", out replaced);
+                if (!replaced) s = s.ReplaceFirst("%3C", "<", out replaced);
+                var matched = new string(s.Where(c => OpMatchChars.Contains(c)).ToArray());
+                if (!Operator.TryParse(matched, out Operator op))
+                    throw new OperatorException(s);
+                var pair = s.Split(new[] {op.Common}, StringSplitOptions.None);
+                var keyString = WebUtility.UrlDecode(pair[0]);
+                var chain = PropertyChain.Parse(keyString, resource, resource.DynamicConditionsAllowed);
+                var valueString = WebUtility.UrlDecode(pair[1]);
+                var value = GetValue(valueString);
+                if (chain.IsStatic && chain.LastOrDefault() is StaticProperty prop && prop.Type.IsEnum &&
+                    value is string)
                 {
-                    if (s == "")
-                        throw new SyntaxException(InvalidConditionSyntaxError, "Invalid condition syntax");
-                    s = s.ReplaceFirst("%3E=", ">=", out bool replaced);
-                    if (!replaced) s = s.ReplaceFirst("%3C=", "<=", out replaced);
-                    if (!replaced) s = s.ReplaceFirst("%3E", ">", out replaced);
-                    if (!replaced) s = s.ReplaceFirst("%3C", "<", out replaced);
-                    var matched = new string(s.Where(c => OpMatchChars.Contains(c)).ToArray());
-                    if (!Operator.TryParse(matched, out Operator op))
-                        throw new OperatorException(s);
-                    var pair = s.Split(new[] {op.Common}, StringSplitOptions.None);
-                    var keyString = WebUtility.UrlDecode(pair[0]);
-                    var chain = PropertyChain.Parse(keyString, resource, false);
-                    var valueString = WebUtility.UrlDecode(pair[1]);
-                    var value = GetValue(valueString);
-                    if (chain.IsStatic && chain.LastOrDefault() is StaticProperty prop && prop.Type.IsEnum &&
-                        value is string)
+                    try
                     {
-                        try
-                        {
-                            value = Enum.Parse(prop.Type, value);
-                        }
-                        catch
-                        {
-                            throw new SyntaxException(InvalidConditionSyntaxError,
-                                $"Invalid string value for condition '{chain.Key}'. The property type for '{prop.Name}' " +
-                                $"has a predefined set of allowed values, not containing '{value}'.");
-                        }
+                        value = Enum.Parse(prop.Type, value);
                     }
-                    return new Condition(chain, op, value);
-                })
-                .ToConditions(resource.TargetType);
+                    catch
+                    {
+                        throw new SyntaxException(InvalidConditionSyntaxError,
+                            $"Invalid string value for condition '{chain.Key}'. The property type for '{prop.Name}' " +
+                            $"has a predefined set of allowed values, not containing '{value}'.");
+                    }
+                }
+                conditions.Add(new Condition(chain, op, value));
+            });
+            return conditions;
         }
 
         public static dynamic GetValue(string valueString)

@@ -23,6 +23,7 @@ namespace RESTar.Internal
         public override string ToString() => AliasOrName;
         public bool IsStarcounterResource => true;
         public bool IsDynamic => true;
+        public bool DynamicConditionsAllowed => true;
         public bool Equals(IResource x, IResource y) => x.Name == y.Name;
         public int GetHashCode(IResource obj) => obj.Name.GetHashCode();
         public int CompareTo(IResource other) => string.Compare(Name, other.Name, StringComparison.Ordinal);
