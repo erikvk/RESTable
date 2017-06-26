@@ -33,6 +33,7 @@ namespace RESTar.Internal
         public string AliasOrName => Alias ?? Name;
         public override string ToString() => AliasOrName;
         public bool IsStarcounterResource => TargetType.HasAttribute<DatabaseAttribute>();
+        public bool RequiresValidation { get; }
 
         public RESTarResourceType ResourceType =>
             IsStarcounterResource
@@ -83,6 +84,7 @@ namespace RESTar.Internal
             IsSingleton = attribute.Singleton;
             DeclaredDynamic = attribute.Dynamic;
             DynamicConditionsAllowed = attribute.AllowDynamicConditions;
+            RequiresValidation = typeof(IValidatable).IsAssignableFrom(targetType);
             TargetType = targetType;
             Select = selector;
             Insert = (e, r) => inserter((IEnumerable<T>) e, r);

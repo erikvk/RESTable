@@ -148,5 +148,8 @@ namespace RESTar
             var attribute = new RESTarAttribute(method, addMethods?.ToArray());
             Resource<T>.Make(attribute, selector, inserter, updater, deleter);
         }
+
+        public static IResource Find(string name) => RESTarConfig.ResourceByName.SafeGetNoCase(name);
+        public static IResource Find(Type type) => RESTarConfig.ResourceByType.SafeGet(type);
     }
 }

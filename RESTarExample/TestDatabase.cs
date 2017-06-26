@@ -9,7 +9,7 @@ namespace RESTarExample
     {
         public bool Active
         {
-            get { return DB.Exists<TestBase>(); }
+            get => DB.Exists<TestBase>();
             set
             {
                 if (value)

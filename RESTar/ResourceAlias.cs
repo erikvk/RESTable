@@ -25,7 +25,7 @@ namespace RESTar
                         _resource = DynamitControl.GetByTableNameLower(value.ToLower()).FullName;
                         return;
                     }
-                    var r = RESTarConfig.NameResources[value.ToLower()];
+                    var r = RESTarConfig.ResourceByName[value.ToLower()];
                     _resource = r.Name;
                 }
                 catch (KeyNotFoundException)
@@ -42,7 +42,7 @@ namespace RESTar
             }
         }
 
-        public IResource GetResource() => RESTarConfig.NameResources[Resource.ToLower()];
+        public IResource GetResource() => RESTarConfig.ResourceByName[Resource.ToLower()];
         public static IResource ByAlias(string alias) => DB.Get<ResourceAlias>("Alias", alias)?.GetResource();
         public static string ByResource(Type resource) => DB.Get<ResourceAlias>("Resource", resource.FullName)?.Alias;
         public static bool Exists(Type resource) => DB.Exists<ResourceAlias>("Resource", resource.FullName);

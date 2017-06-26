@@ -43,7 +43,7 @@ namespace RESTar.Requests
                 try
                 {
                     Authenticator.UserCheck();
-                    using (var request = new Request(r))
+                    using (var request = new HttpRequest(r))
                     {
                         request.Populate(query, GET, Evaluators.VIEW);
                         request.MetaConditions.DeactivateProcessors();
@@ -85,7 +85,7 @@ namespace RESTar.Requests
         {
             try
             {
-                var request = new Request(scRequest);
+                var request = new HttpRequest(scRequest);
                 request.Populate(query, default(RESTarMethods), null);
                 var origin = request.ScRequest.Headers["Origin"].ToLower();
                 if (RESTarConfig.AllowAllOrigins || RESTarConfig.AllowedOrigins.Contains(new Uri(origin)))
@@ -101,10 +101,10 @@ namespace RESTar.Requests
         private static Response Handle(ScRequest scRequest, string query, Evaluator evaluator,
             RESTarMethods method)
         {
-            Request request = null;
+            HttpRequest request = null;
             try
             {
-                using (request = new Request(scRequest))
+                using (request = new HttpRequest(scRequest))
                 {
                     request.Authenticate();
                     request.Populate(query, method, evaluator);

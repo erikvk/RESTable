@@ -2,7 +2,6 @@
 using System.Linq;
 using Dynamit;
 using RESTar.Operations;
-using RESTar.Requests;
 using Starcounter;
 
 namespace RESTar.Internal

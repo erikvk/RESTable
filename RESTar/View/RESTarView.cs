@@ -6,7 +6,6 @@ using static RESTar.Internal.ErrorCodes;
 using static RESTar.Internal.Authenticator;
 using static RESTar.View.MessageType;
 using IResource = RESTar.Internal.IResource;
-using Request = RESTar.Requests.Request;
 
 namespace RESTar.View
 {
@@ -29,7 +28,7 @@ namespace RESTar.View
         protected abstract void SetResourcePath(string resourceName);
         public abstract void SetMessage(string message, ErrorCodes errorCode, MessageType messageType);
         
-        internal Request Request { get; private set; }
+        internal Requests.HttpRequest Request { get; private set; }
         internal IResource Resource => Request.Resource;
         protected abstract string HtmlMatcher { get; }
         protected TData RESTarData { get; private set; }
@@ -91,7 +90,7 @@ namespace RESTar.View
 
         protected bool MethodAllowed(RESTarMethods method) => MethodCheck(method, Resource, Request.AuthToken);
 
-        internal virtual RESTarView<TData> Populate(Request request, TData data)
+        internal virtual RESTarView<TData> Populate(Requests.HttpRequest request, TData data)
         {
             Request = request;
             SetResourceName(Resource.Alias ?? Resource.Name);

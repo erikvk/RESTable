@@ -1,8 +1,9 @@
 <?xml version="1.0"?>
-<package >
+
+<package>
   <metadata>
     <id>RESTar</id>
-    <version>0.2.7</version>
+    <version>0.2.8</version>
     <title>RESTar</title>
     <authors>Erik von Krusenstierna</authors>
     <owners>Mopedo AB</owners>
@@ -13,12 +14,13 @@
     <tags>mopedo starcounter REST RESTful web services dynamit</tags>
     <licenseUrl>https://goo.gl/eJS8o9</licenseUrl>
     <projectUrl>https://goo.gl/TIkN7m</projectUrl>
-    <iconUrl>https://storage.googleapis.com/mopedo-resources/Mopedo_logo_whitefull.png</iconUrl>  
+    <iconUrl>https://storage.googleapis.com/mopedo-resources/Mopedo_logo_whitefull.png</iconUrl>
     <dependencies>
-        <dependency id="Dynamit" version="0.1.10" />
-        <dependency id="ExcelDataReader" version="2.1.2.3" />
-        <dependency id="ClosedXML" version="0.86.0" />
-        <dependency id="Newtonsoft.Json" version="10.0.3" />
+      <dependency id="Dynamit" version="0.1.10" />
+      <dependency id="ExcelDataReader" version="2.1.2.3" />
+      <dependency id="ClosedXML" version="0.86.0" />
+      <dependency id="Newtonsoft.Json" version="10.0.3" />
+      <dependency id="System.ValueTuple" version="4.3.1" />
     </dependencies>
-</metadata>
+  </metadata>
 </package>

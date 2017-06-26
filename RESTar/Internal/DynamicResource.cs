@@ -28,7 +28,7 @@ namespace RESTar.Internal
         public int GetHashCode(IResource obj) => obj.Name.GetHashCode();
         public int CompareTo(IResource other) => string.Compare(Name, other.Name, StringComparison.Ordinal);
         public override int GetHashCode() => Name.GetHashCode();
-
+        public bool RequiresValidation => false;
         public RESTarResourceType ResourceType => RESTarResourceType.Dynamic;
 
         public Selector<dynamic> Select => DDictionaryOperations.Select;
@@ -76,7 +76,7 @@ namespace RESTar.Internal
 
         public static void DeleteTable(Resource resource)
         {
-            var iresource = RESTarConfig.NameResources[resource.Name.ToLower()];
+            var iresource = RESTarConfig.ResourceByName[resource.Name.ToLower()];
             if (!(iresource is DynamicResource)) return;
             DynamitControl.ClearTable(iresource.Name);
             RESTarConfig.RemoveResource(iresource);

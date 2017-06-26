@@ -1,43 +1,51 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Net;
-using Dynamit;
 using RESTar.Deflection;
 using RESTar.Internal;
 using RESTar.Operations;
-using static System.Globalization.DateTimeStyles;
-using static RESTar.Internal.ErrorCodes;
 
-namespace RESTar.Requests
+namespace RESTar
 {
     public sealed class Conditions : List<Condition>, IFilter
     {
-        internal Type Resource;
+        internal IResource Resource;
         internal Conditions SQL => this.Where(c => c.ScQueryable).ToConditions(Resource);
         internal Conditions PostSQL => this.Where(c => !c.ScQueryable || c.IsOfType<string>()).ToConditions(Resource);
         internal Conditions Equality => this.Where(c => c.Operator.Equality).ToConditions(Resource);
         internal Conditions Compare => this.Where(c => c.Operator.Compare).ToConditions(Resource);
         private static readonly char[] OpMatchChars = {'<', '>', '=', '!'};
-        public Condition this[string key] => this.FirstOrDefault(c => c.Key.EqualsNoCase(key));
+        internal Conditions(IResource resource) => Resource = resource;
 
-        public dynamic this[string key, Operators op] => this
-            .FirstOrDefault(c => c.Operator == op && c.Key.EqualsNoCase(key))
-            ?.Value;
-
-        internal Conditions(Type resource)
+        public Condition this[string key]
         {
-            Resource = resource;
+            get => this.FirstOrDefault(c => c.Key.EqualsNoCase(key));
+            set => this.Add(value);
+        }
+
+        public dynamic this[string key, Operator op]
+        {
+            get => this
+                .FirstOrDefault(c => c.Operator == op && c.Key.EqualsNoCase(key))
+                ?.Value;
+            set => this[key] = new Condition
+            (
+                propertyChain: PropertyChain.Parse(key, Resource, Resource.DynamicConditionsAllowed),
+                op: op,
+                value: value
+            );
         }
 
         public static Conditions Parse(string conditionString, IResource resource)
         {
             if (string.IsNullOrEmpty(conditionString)) return null;
-            var conditions = new Conditions(resource.TargetType);
+            var conditions = new Conditions(resource);
             conditionString.Split('&').ForEach(s =>
             {
                 if (s == "")
-                    throw new SyntaxException(InvalidConditionSyntaxError, "Invalid condition syntax");
+                    throw new SyntaxException(ErrorCodes.InvalidConditionSyntaxError, "Invalid condition syntax");
                 s = s.ReplaceFirst("%3E=", ">=", out bool replaced);
                 if (!replaced) s = s.ReplaceFirst("%3C=", "<=", out replaced);
                 if (!replaced) s = s.ReplaceFirst("%3E", ">", out replaced);
@@ -59,7 +67,7 @@ namespace RESTar.Requests
                     }
                     catch
                     {
-                        throw new SyntaxException(InvalidConditionSyntaxError,
+                        throw new SyntaxException(ErrorCodes.InvalidConditionSyntaxError,
                             $"Invalid string value for condition '{chain.Key}'. The property type for '{prop.Name}' " +
                             $"has a predefined set of allowed values, not containing '{value}'.");
                     }
@@ -84,9 +92,11 @@ namespace RESTar.Requests
                 obj = _int;
             else if (decimal.TryParse(valueString, out decimal dec))
                 obj = decimal.Round(dec, 6);
-            else if (DateTime.TryParseExact(valueString, "yyyy-MM-dd", null, AssumeUniversal, out DateTime dat) ||
-                     DateTime.TryParseExact(valueString, "yyyy-MM-ddTHH:mm:ss", null, AssumeUniversal, out dat) ||
-                     DateTime.TryParseExact(valueString, "O", null, AssumeUniversal, out dat))
+            else if (DateTime.TryParseExact(valueString, "yyyy-MM-dd", null, DateTimeStyles.AssumeUniversal,
+                         out DateTime dat) ||
+                     DateTime.TryParseExact(valueString, "yyyy-MM-ddTHH:mm:ss", null, DateTimeStyles.AssumeUniversal,
+                         out dat) ||
+                     DateTime.TryParseExact(valueString, "O", null, DateTimeStyles.AssumeUniversal, out dat))
                 obj = dat;
             else obj = valueString;
             return obj;
@@ -95,13 +105,13 @@ namespace RESTar.Requests
         public IEnumerable<T> Apply<T>(IEnumerable<T> entities)
         {
             var type = typeof(T);
-            if (type != Resource && Resource != typeof(DDictionary))
+            if (type != Resource.TargetType && !Resource.IsDDictionary)
             {
                 var newTypeProperties = type.GetStaticProperties();
                 RemoveAll(cond => newTypeProperties.All(prop => prop.Name
                                                                 != cond.PropertyChain.FirstOrDefault()?.Name));
                 ForEach(condition => condition.Migrate(type));
-                Resource = type;
+                Resource = type.GetIResource();
             }
             return entities.Where(entity => this.All(condition => condition.HoldsFor(entity)));
         }

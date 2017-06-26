@@ -50,16 +50,16 @@ namespace RESTar.Requests
     public sealed class MetaConditions
     {
         internal Limit Limit { get; set; } = Limit.NoLimit;
-        internal OrderBy OrderBy { get; private set; }
+        internal OrderBy OrderBy { get; set; }
         internal bool Unsafe { get; set; }
-        internal Select Select { get; private set; }
+        internal Select Select { get; set; }
         internal Add Add { get; set; }
-        internal Rename Rename { get; private set; }
-        internal bool Dynamic { get; private set; }
-        internal string SafePost { get; private set; }
-        internal bool New { get; private set; }
+        internal Rename Rename { get; set; }
+        internal bool Dynamic { get; set; }
+        internal string SafePost { get; set; }
+        internal bool New { get; set; }
         internal bool Empty = true;
-        internal bool Delete { get; private set; }
+        internal bool Delete { get; set; }
 
         internal static MetaConditions Parse(string metaConditionString, IResource resource)
         {
@@ -108,20 +108,10 @@ namespace RESTar.Requests
                         mc.Limit = (int) value;
                         break;
                     case RESTarMetaConditions.Order_desc:
-                        mc.OrderBy = new OrderBy
-                        {
-                            Resource = resource,
-                            Descending = true,
-                            PropertyChain = PropertyChain.Parse((string) value, resource, resource.IsDynamic, dynamicMembers)
-                        };
+                        mc.OrderBy = new OrderBy(resource, true, (string) value, dynamicMembers);
                         break;
                     case RESTarMetaConditions.Order_asc:
-                        mc.OrderBy = new OrderBy
-                        {
-                            Resource = resource,
-                            Descending = false,
-                            PropertyChain = PropertyChain.Parse((string) value, resource, resource.IsDynamic, dynamicMembers)
-                        };
+                        mc.OrderBy = new OrderBy(resource, false, (string) value, dynamicMembers);
                         break;
                     case RESTarMetaConditions.Unsafe:
                         mc.Unsafe = value;

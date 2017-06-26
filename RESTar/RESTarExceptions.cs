@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using RESTar.Internal;
-using RESTar.Requests;
 using RESTar.View;
 using Starcounter;
 using static RESTar.Internal.ErrorCodes;
@@ -138,7 +137,7 @@ namespace RESTar
 
     public class AbortedSelectorException : RESTarException
     {
-        internal AbortedSelectorException(Exception ie, Requests.Request request, string message = null)
+        internal AbortedSelectorException(Exception ie, IRequest request, string message = null)
             : base(AbortedSelect, message ?? (ie.GetType() == typeof(Newtonsoft.Json.JsonSerializationException) ||
                                               ie.GetType() == typeof(Newtonsoft.Json.JsonReaderException)
                                       ? "JSON serialization error, check JSON syntax"
@@ -148,7 +147,7 @@ namespace RESTar
 
     public class AbortedInserterException : RESTarException
     {
-        internal AbortedInserterException(Exception ie, Requests.Request request, string message = null)
+        internal AbortedInserterException(Exception ie, IRequest request, string message = null)
             : base(AbortedInsert, message ?? (ie.GetType() == typeof(Newtonsoft.Json.JsonSerializationException) ||
                                               ie.GetType() == typeof(Newtonsoft.Json.JsonReaderException)
                                       ? "JSON serialization error, check JSON syntax"
@@ -158,7 +157,7 @@ namespace RESTar
 
     public class AbortedUpdaterException : RESTarException
     {
-        internal AbortedUpdaterException(Exception ie, Requests.Request request, string message = null)
+        internal AbortedUpdaterException(Exception ie, IRequest request, string message = null)
             : base(AbortedUpdate, message ?? (ie.GetType() == typeof(Newtonsoft.Json.JsonSerializationException) ||
                                               ie.GetType() == typeof(Newtonsoft.Json.JsonReaderException)
                                       ? "JSON serialization error, check JSON syntax"
@@ -168,7 +167,7 @@ namespace RESTar
 
     public class AbortedDeleterException : RESTarException
     {
-        internal AbortedDeleterException(Exception ie, Requests.Request request, string message = null)
+        internal AbortedDeleterException(Exception ie, IRequest request, string message = null)
             : base(AbortedDelete, message ?? (ie.GetType() == typeof(Newtonsoft.Json.JsonSerializationException) ||
                                               ie.GetType() == typeof(Newtonsoft.Json.JsonReaderException)
                                       ? "JSON serialization error, check JSON syntax"

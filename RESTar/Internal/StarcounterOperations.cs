@@ -1,19 +1,17 @@
 ﻿using System.Linq;
 using RESTar.Operations;
 using Starcounter;
-using Request = RESTar.Requests.Request;
 
 namespace RESTar.Internal
 {
     public static class StarcounterOperations<T> where T : class
     {
-        public static Selector<T> Select => r =>
+        public static Selector<T> Select => request =>
         {
-            var request = (Request) r;
-            var where = r.Conditions?.SQL?.ToWhereClause();
+            var where = request.Conditions?.SQL?.ToWhereClause();
             return Db.SQL<T>($"SELECT t FROM {typeof(T).FullName} t {where?.stringPart} " +
                              $"{request.MetaConditions.OrderBy?.SQL}", where?.valuesPart)
-                .Filter(r.Conditions?.PostSQL);
+                .Filter(request.Conditions?.PostSQL);
         };
 
         public static Inserter<T> Insert => (e, r) => e.Count();

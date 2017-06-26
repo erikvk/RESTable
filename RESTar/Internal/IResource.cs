@@ -21,6 +21,7 @@ namespace RESTar.Internal
         bool IsViewable { get; }
         bool IsSingleton { get; }
         string AliasOrName { get; }
+        bool RequiresValidation { get; }
         Selector<dynamic> Select { get; }
         Inserter<dynamic> Insert { get; }
         Updater<dynamic> Update { get; }

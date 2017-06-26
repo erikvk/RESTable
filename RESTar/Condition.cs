@@ -3,14 +3,33 @@ using System.Linq;
 using RESTar.Deflection;
 using RESTar.Operations;
 
-namespace RESTar.Requests
+namespace RESTar
 {
+    /// <summary>
+    /// A condition encodes a predicate that is either true or false of an entity
+    /// in a resource. It is used to match entities in resources while selecting 
+    /// entities to include in a GET, PUT, PATCH or DELETE request.
+    /// </summary>
     public class Condition
     {
+        /// <summary>
+        /// The key of the condition, the path to a property of an entity.
+        /// </summary>
         public string Key => PropertyChain.Key;
+
+        /// <summary>
+        /// The operator of the condition, specifies the operation of the truth
+        /// evaluation. Should the condition check for equality, for example.
+        /// </summary>
         public Operator Operator { get; set; }
+
+        /// <summary>
+        /// The second operand for the operation defined by the operator. Defines
+        /// the object for comparison.
+        /// </summary>
         public dynamic Value { get; set; }
-        public PropertyChain PropertyChain { get; set; }
+
+        internal PropertyChain PropertyChain { get; private set; }
         internal bool ScQueryable => PropertyChain.ScQueryable;
         internal Type Type => PropertyChain.IsStatic ? ((StaticProperty) PropertyChain.Last())?.Type : null;
         internal bool IsOfType<T>() => Type == typeof(T);
@@ -29,7 +48,7 @@ namespace RESTar.Requests
 
         internal bool HoldsFor(dynamic subject)
         {
-            var subjectValue = PropertyChain.Get(subject, out string s);
+            var subjectValue = PropertyChain.Get(subject);
             switch (Operator.OpCode)
             {
                 case Operators.EQUALS: return Do.Try<bool>(() => subjectValue == Value, false);

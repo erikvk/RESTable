@@ -4,7 +4,6 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using ClosedXML.Excel;
-using Dynamit;
 using Excel;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -19,7 +18,7 @@ using ScRequest = Starcounter.Request;
 
 namespace RESTar.Requests
 {
-    internal class Request : IRequest, IDisposable
+    internal class HttpRequest : IRequest, IDisposable
     {
         internal ScRequest ScRequest { get; }
         internal Response Response { get; private set; }
@@ -42,7 +41,7 @@ namespace RESTar.Requests
         internal bool ResourceHome => MetaConditions.Empty && Conditions == null;
         private bool SerializeDynamic => MetaConditions.Dynamic || Resource.IsDynamic || MetaConditions.HasProcessors;
 
-        internal Request(ScRequest scRequest)
+        internal HttpRequest(ScRequest scRequest)
         {
             ScRequest = scRequest;
             ResponseHeaders = new Dictionary<string, string>();
@@ -51,6 +50,8 @@ namespace RESTar.Requests
 
         internal void Populate(string query, RESTarMethods method, Evaluator evaluator)
         {
+            if (method == none)
+                throw new ArgumentException("Method cannot be 'none'", nameof(method));
             Method = method;
             query = CheckQuery(query, ScRequest);
             Evaluator = evaluator;
@@ -63,11 +64,11 @@ namespace RESTar.Requests
             var argLength = args.Length;
             if (argLength == 1)
             {
-                Resource = TypeResources[typeof(Resource)];
+                Resource = ResourceByType[typeof(Resource)];
                 return;
             }
             if (args[1] == "")
-                Resource = TypeResources[typeof(Resource)];
+                Resource = ResourceByType[typeof(Resource)];
             else Resource = args[1].FindResource();
             if (argLength == 2) return;
             Conditions = Conditions.Parse(args[2], Resource);
@@ -86,7 +87,7 @@ namespace RESTar.Requests
         {
             if (Source != null)
             {
-                var sourceRequest = HttpRequest.Parse(Source);
+                var sourceRequest = RESTar.HttpRequest.Parse(Source);
                 if (sourceRequest.Method != GET)
                     throw new SyntaxException(InvalidSourceFormatError, "Only GET is allowed in Source headers");
 
@@ -217,7 +218,7 @@ namespace RESTar.Requests
             if (Destination == null)
                 return Response;
 
-            var destinationRequest = HttpRequest.Parse(Destination);
+            var destinationRequest = RESTar.HttpRequest.Parse(Destination);
             destinationRequest.ContentType = Accept.ToMimeString();
             var _response = destinationRequest.Internal
                 ? HTTP.InternalRequest

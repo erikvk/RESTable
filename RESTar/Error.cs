@@ -7,7 +7,6 @@ using Starcounter;
 using static RESTar.RESTarMethods;
 using static RESTar.RESTarPresets;
 using static RESTar.Settings;
-using Request = RESTar.Requests.Request;
 
 namespace RESTar
 {
@@ -38,7 +37,7 @@ namespace RESTar
         public string Headers;
         public string Body;
 
-        internal Error(ErrorCodes errorCode, Exception e, Request request)
+        internal Error(ErrorCodes errorCode, Exception e, Requests.HttpRequest request)
         {
             Time = DateTime.Now;
             ResourceName = (request.Resource?.Name ?? "<unknown>") +

@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace RESTar.Requests
+namespace RESTar
 {
     public struct Operator
     {
@@ -13,14 +13,16 @@ namespace RESTar.Requests
         public override string ToString() => Common;
         internal static readonly string[] AvailableOperators = {"=", "!=", "<", ">", "<=", ">="};
         public static bool operator ==(Operator o1, Operator o2) => o1.OpCode == o2.OpCode;
-        public static bool operator ==(Operator o1, Operators o2) => o1.OpCode == o2;
         public static bool operator !=(Operator o1, Operator o2) => !(o1 == o2);
-        public static bool operator !=(Operator o1, Operators o2) => !(o1 == o2);
 
-        private Operator(Operators op)
-        {
-            OpCode = op;
-        }
+        public static Operator EQUALS => Operators.EQUALS;
+        public static Operator NOT_EQUALS => Operators.NOT_EQUALS;
+        public static Operator LESS_THAN => Operators.LESS_THAN;
+        public static Operator GREATER_THAN => Operators.GREATER_THAN;
+        public static Operator LESS_THAN_OR_EQUALS => Operators.LESS_THAN_OR_EQUALS;
+        public static Operator GREATER_THAN_OR_EQUALS => Operators.GREATER_THAN_OR_EQUALS;
+
+        internal Operator(Operators op) => OpCode = op;
 
         internal static string GetString(Operators op)
         {
@@ -63,5 +65,8 @@ namespace RESTar.Requests
                 return false;
             }
         }
+
+        public static implicit operator Operator(string op) => TryParse(op, out Operator o) ? o : Operators.nil;
+        public static implicit operator Operator(Operators op) => new Operator(op);
     }
 }

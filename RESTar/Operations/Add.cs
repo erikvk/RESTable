@@ -11,7 +11,7 @@ namespace RESTar.Operations
         {
             return entities.Select(entity =>
             {
-                var jobj = entity.MakeJObject();
+                var jobj = entity.ToJObject();
                 ForEach(prop =>
                 {
                     if (jobj[prop.Key] == null)

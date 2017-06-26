@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Dynamit;
 using Newtonsoft.Json.Linq;
 using RESTar.Internal;
 using static RESTar.Internal.ErrorCodes;
@@ -18,7 +17,7 @@ namespace RESTar.Deflection
         public bool IsStatic => this.All(p => p is StaticProperty);
         public bool IsDynamic => !IsStatic;
 
-        internal static PropertyChain Parse(string keyString, IResource resource, bool dynamicUnknowns,
+        public static PropertyChain Parse(string keyString, IResource resource, bool dynamicUnknowns,
             List<string> dynamicDomain = null)
         {
             var chain = new PropertyChain();
@@ -53,7 +52,7 @@ namespace RESTar.Deflection
             return chain;
         }
 
-        internal static PropertyChain MakeFromPrototype(PropertyChain chain, Type type)
+        public static PropertyChain MakeFromPrototype(PropertyChain chain, Type type)
         {
             var newChain = new PropertyChain();
             chain.ForEach(item =>
@@ -64,8 +63,8 @@ namespace RESTar.Deflection
             });
             return newChain;
         }
-
-        internal void MakeDynamic()
+        
+        public void MakeDynamic()
         {
             if (IsDynamic) return;
             var newProperties = this.Select(prop =>
@@ -79,9 +78,9 @@ namespace RESTar.Deflection
             AddRange(newProperties);
         }
 
-        internal dynamic Get(object obj) => Get(obj, out string s);
+        public dynamic Get(object obj) => Get(obj, out string s);
 
-        internal dynamic Get(object obj, out string actualKey)
+        public dynamic Get(object obj, out string actualKey)
         {
             if (obj is JObject jobj)
             {

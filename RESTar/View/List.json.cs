@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using System.Linq;
 using RESTar.Internal;
 using Starcounter;
-using Request = RESTar.Requests.Request;
 
 namespace RESTar.View
 {
@@ -29,13 +28,13 @@ namespace RESTar.View
         public void Handle(Input.Delete action)
         {
             var id = action.Value;
-            var conditions = Requests.Conditions.Parse(id, Resource);
+            var conditions = Conditions.Parse(id, Resource);
             var item = RESTarData.Filter(conditions).First();
             DELETE(item);
             RedirectUrl = !string.IsNullOrWhiteSpace(RedirectUrl) ? RedirectUrl : ResourcePath;
         }
 
-        internal override RESTarView<IEnumerable<object>> Populate(Request request, IEnumerable<object> data)
+        internal override RESTarView<IEnumerable<object>> Populate(Requests.HttpRequest request, IEnumerable<object> data)
         {
             base.Populate(request, data);
             CanInsert = Resource.AvailableMethods.Contains(RESTarMethods.POST);

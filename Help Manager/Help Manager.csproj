@@ -90,6 +90,7 @@
   <Import Project="$(StarcounterBin)\Starcounter.MsBuild.targets" />
   <PropertyGroup>
     <PostBuildEvent>IF $(ConfigurationName)==Debug EXIT;
+net use R: \\mac\builds
 cd "$(ProjectDir)"
 starpack -p "$(ProjectFileName)" -c=release -o=R:\</PostBuildEvent>
   </PropertyGroup>

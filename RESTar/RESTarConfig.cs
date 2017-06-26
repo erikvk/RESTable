@@ -19,12 +19,12 @@ namespace RESTar
 {
     public static class RESTarConfig
     {
-        internal static readonly IDictionary<string, IResource> NameResources;
-        internal static readonly IDictionary<Type, IResource> TypeResources;
+        internal static readonly IDictionary<string, IResource> ResourceByName;
+        internal static readonly IDictionary<Type, IResource> ResourceByType;
         internal static readonly IDictionary<IResource, Type> IEnumTypes;
         internal static readonly IDictionary<string, AccessRights> ApiKeys;
         internal static readonly ConcurrentDictionary<string, AccessRights> AuthTokens;
-        internal static IEnumerable<IResource> Resources => NameResources.Values;
+        internal static IEnumerable<IResource> Resources => ResourceByName.Values;
         internal static readonly List<Uri> AllowedOrigins;
         internal static readonly RESTarMethods[] Methods = {GET, POST, PATCH, PUT, DELETE};
         internal static bool RequireApiKey { get; private set; }
@@ -34,8 +34,8 @@ namespace RESTar
         static RESTarConfig()
         {
             ApiKeys = new Dictionary<string, AccessRights>();
-            TypeResources = new Dictionary<Type, IResource>();
-            NameResources = new Dictionary<string, IResource>();
+            ResourceByType = new Dictionary<Type, IResource>();
+            ResourceByName = new Dictionary<string, IResource>();
             IEnumTypes = new Dictionary<IResource, Type>();
             AuthTokens = new ConcurrentDictionary<string, AccessRights>();
             AllowedOrigins = new List<Uri>();
@@ -48,8 +48,8 @@ namespace RESTar
 
         internal static void AddResource(IResource toAdd)
         {
-            NameResources[toAdd.Name.ToLower()] = toAdd;
-            TypeResources[toAdd.TargetType] = toAdd;
+            ResourceByName[toAdd.Name.ToLower()] = toAdd;
+            ResourceByType[toAdd.TargetType] = toAdd;
             IEnumTypes[toAdd] = typeof(IEnumerable<>).MakeGenericType(toAdd.TargetType);
             UpdateAuthInfo();
             toAdd.GetStaticProperties();
@@ -57,8 +57,8 @@ namespace RESTar
 
         internal static void RemoveResource(IResource toRemove)
         {
-            NameResources.Remove(toRemove.Name.ToLower());
-            TypeResources.Remove(toRemove.TargetType);
+            ResourceByName.Remove(toRemove.Name.ToLower());
+            ResourceByType.Remove(toRemove.TargetType);
             IEnumTypes.Remove(toRemove);
             UpdateAuthInfo();
         }

@@ -5,13 +5,23 @@ using Newtonsoft.Json.Linq;
 using RESTar.Requests;
 using RESTar.View;
 using Starcounter;
-using Request = RESTar.Requests.Request;
 
 namespace RESTar.Operations
 {
     internal static class Evaluators
     {
-        private static IEnumerable<dynamic> SELECT(Request request)
+        internal static IEnumerable<T> StaticSELECT<T>(IRequest request)
+        {
+            if (!request.MetaConditions.Unsafe && request.MetaConditions.Limit == -1)
+                request.MetaConditions.Limit = 1000;
+            request.MetaConditions.Unsafe = true;
+            return (IEnumerable<T>) request.Resource
+                .Select(request)?
+                .Filter(request.MetaConditions.OrderBy)
+                .Filter(request.MetaConditions.Limit);
+        }
+
+        internal static IEnumerable<dynamic> SELECT(IRequest request)
         {
             if (!request.MetaConditions.Unsafe && request.MetaConditions.Limit == -1)
                 request.MetaConditions.Limit = 1000;
@@ -27,7 +37,7 @@ namespace RESTar.Operations
 
         #region REST
 
-        internal static Response GET(Request request)
+        internal static Response GET(Requests.HttpRequest request)
         {
             try
             {
@@ -44,7 +54,7 @@ namespace RESTar.Operations
             }
         }
 
-        internal static Response POST(Request request)
+        internal static Response POST(Requests.HttpRequest request)
         {
             dynamic results = null;
             try
@@ -59,15 +69,6 @@ namespace RESTar.Operations
                 if (request.Resource.TargetType == typeof(DatabaseIndex))
                 {
                     results = json.Deserialize(RESTarConfig.IEnumTypes[request.Resource]);
-                    foreach (var result in results)
-                    {
-                        var validatableResult = result as IValidatable;
-                        if (validatableResult != null)
-                        {
-                            if (!validatableResult.Validate(out string reason))
-                                throw new ValidatableException(reason);
-                        }
-                    }
                     count = request.Resource.Insert(results, request);
                     return Responses.InsertedEntities(request, count, request.Resource.TargetType);
                 }
@@ -77,13 +78,16 @@ namespace RESTar.Operations
                 Db.TransactAsync(() =>
                 {
                     results = json.Deserialize(RESTarConfig.IEnumTypes[request.Resource]);
-                    foreach (var result in results)
+                    if (request.Resource.RequiresValidation)
                     {
-                        var validatableResult = result as IValidatable;
-                        if (validatableResult != null)
+                        foreach (var result in results)
                         {
-                            if (!validatableResult.Validate(out string reason))
-                                throw new ValidatableException(reason);
+                            var validatableResult = result as IValidatable;
+                            if (validatableResult != null)
+                            {
+                                if (!validatableResult.Validate(out string reason))
+                                    throw new ValidatableException(reason);
+                            }
                         }
                     }
                     count = request.Resource.Insert(results, request);
@@ -103,13 +107,13 @@ namespace RESTar.Operations
             }
         }
 
-        private static Response SafePOST(Request request, string json)
+        private static Response SafePOST(Requests.HttpRequest request, string json)
         {
-            var inputEntities = json.Deserialize<IEnumerable<JObject>>();
+            var source = json.Deserialize<IEnumerable<JObject>>();
             var insertedCount = 0;
             var updatedCount = 0;
             var keys = request.MetaConditions.SafePost.Split(',');
-            foreach (var entity in inputEntities)
+            foreach (var entity in source)
             {
                 var jsonBytes = entity.Serialize().ToBytes();
                 Response response;
@@ -142,12 +146,12 @@ namespace RESTar.Operations
             return Responses.SafePostedEntities(request, insertedCount, updatedCount);
         }
 
-        internal static Response PATCH(Request request)
+        internal static Response PATCH(Requests.HttpRequest request)
         {
             try
             {
-                var entities = request.Resource.Select(request);
-                if (!request.MetaConditions.Unsafe && entities.Count() > 1)
+                var source = request.Resource.Select(request);
+                if (!request.MetaConditions.Unsafe && source.Count() > 1)
                     throw new AmbiguousMatchException(request.Resource);
                 var count = 0;
 
@@ -155,18 +159,9 @@ namespace RESTar.Operations
 
                 if (request.Resource.TargetType == typeof(DatabaseIndex))
                 {
-                    foreach (var entity in entities)
+                    foreach (var entity in source)
                         Serializer.Populate(request.Body, entity);
-                    foreach (var entity in entities)
-                    {
-                        var validatableResult = entity as IValidatable;
-                        if (validatableResult != null)
-                        {
-                            if (!validatableResult.Validate(out string reason))
-                                throw new ValidatableException(reason);
-                        }
-                    }
-                    count = request.Resource.Update((dynamic) entities, request);
+                    count = request.Resource.Update((dynamic) source, request);
                     return Responses.UpdatedEntities(request, count, request.Resource.TargetType);
                 }
 
@@ -174,21 +169,24 @@ namespace RESTar.Operations
 
                 Db.TransactAsync(() =>
                 {
-                    foreach (var entity in entities)
+                    foreach (var entity in source)
                         Serializer.Populate(request.Body, entity);
                 });
                 Db.TransactAsync(() =>
                 {
-                    foreach (var entity in entities)
+                    if (request.Resource.RequiresValidation)
                     {
-                        var validatableResult = entity as IValidatable;
-                        if (validatableResult != null)
+                        foreach (var entity in source)
                         {
-                            if (!validatableResult.Validate(out string reason))
-                                throw new ValidatableException(reason);
+                            var validatableResult = entity as IValidatable;
+                            if (validatableResult != null)
+                            {
+                                if (!validatableResult.Validate(out string reason))
+                                    throw new ValidatableException(reason);
+                            }
                         }
                     }
-                    count = request.Resource.Update((dynamic) entities, request);
+                    count = request.Resource.Update((dynamic) source, request);
                 });
                 return Responses.UpdatedEntities(request, count, request.Resource.TargetType);
             }
@@ -198,14 +196,14 @@ namespace RESTar.Operations
             }
         }
 
-        internal static Response PUT(Request request)
+        internal static Response PUT(Requests.HttpRequest request)
         {
-            IEnumerable<dynamic> entities;
+            IEnumerable<dynamic> source;
             try
             {
                 request.MetaConditions.Unsafe = false;
-                entities = request.Resource.Select(request);
-                if (entities.Count() > 1)
+                source = request.Resource.Select(request);
+                if (source.Count() > 1)
                     throw new AmbiguousMatchException(request.Resource);
             }
             catch (Exception e)
@@ -215,7 +213,7 @@ namespace RESTar.Operations
 
             object obj = null;
             var count = 0;
-            if (!entities.Any())
+            if (!source.Any())
             {
                 try
                 {
@@ -224,13 +222,6 @@ namespace RESTar.Operations
                     if (request.Resource.TargetType == typeof(DatabaseIndex))
                     {
                         obj = request.Body.Deserialize(request.Resource.TargetType);
-                        var validatableResult = obj as IValidatable;
-                        if (validatableResult != null)
-                        {
-                            string reason;
-                            if (!validatableResult.Validate(out reason))
-                                throw new ValidatableException(reason);
-                        }
                         count = request.Resource.Insert(obj.MakeList(request.Resource.TargetType), request);
                         return Responses.InsertedEntities(request, count, request.Resource.TargetType);
                     }
@@ -241,11 +232,9 @@ namespace RESTar.Operations
                     Db.TransactAsync(() =>
                     {
                         obj = request.Body.Deserialize(request.Resource.TargetType);
-                        var validatableResult = obj as IValidatable;
-                        if (validatableResult != null)
+                        if (obj is IValidatable validatableResult)
                         {
-                            string reason;
-                            if (!validatableResult.Validate(out reason))
+                            if (!validatableResult.Validate(out string reason))
                                 throw new ValidatableException(reason);
                         }
                         count = request.Resource.Insert(obj.MakeList(request.Resource.TargetType), request);
@@ -260,20 +249,13 @@ namespace RESTar.Operations
             }
             try
             {
-                obj = entities.First();
+                obj = source.First();
 
                 #region Index
 
                 if (request.Resource.TargetType == typeof(DatabaseIndex))
                 {
                     Serializer.Populate(request.Body, obj);
-                    var validatableResult = obj as IValidatable;
-                    if (validatableResult != null)
-                    {
-                        string reason;
-                        if (!validatableResult.Validate(out reason))
-                            throw new ValidatableException(reason);
-                    }
                     count = request.Resource.Update(obj.MakeList(request.Resource.TargetType), request);
                     return Responses.UpdatedEntities(request, count, request.Resource.TargetType);
                 }
@@ -283,11 +265,9 @@ namespace RESTar.Operations
                 Db.TransactAsync(() =>
                 {
                     Serializer.Populate(request.Body, obj);
-                    var validatableResult = obj as IValidatable;
-                    if (validatableResult != null)
+                    if (obj is IValidatable validatableResult)
                     {
-                        string reason;
-                        if (!validatableResult.Validate(out reason))
+                        if (!validatableResult.Validate(out string reason))
                             throw new ValidatableException(reason);
                     }
                     count = request.Resource.Update(obj.MakeList(request.Resource.TargetType), request);
@@ -300,26 +280,26 @@ namespace RESTar.Operations
             }
         }
 
-        internal static Response DELETE(Request request)
+        internal static Response DELETE(Requests.HttpRequest request)
         {
             try
             {
                 var count = 0;
-                var entities = request.Resource.Select(request);
-                if (!request.MetaConditions.Unsafe && entities.Count() > 1)
+                var source = request.Resource.Select(request);
+                if (!request.MetaConditions.Unsafe && source.Count() > 1)
                     throw new AmbiguousMatchException(request.Resource);
 
                 #region Index
 
                 if (request.Resource.TargetType == typeof(DatabaseIndex))
                 {
-                    count = request.Resource.Delete((dynamic) entities, request);
+                    count = request.Resource.Delete((dynamic) source, request);
                     return Responses.DeleteEntities(count, request.Resource.TargetType);
                 }
 
                 #endregion
 
-                Db.TransactAsync(() => count = request.Resource.Delete((dynamic) entities, request));
+                Db.TransactAsync(() => count = request.Resource.Delete((dynamic) source, request));
                 return Responses.DeleteEntities(count, request.Resource.TargetType);
             }
             catch (Exception e)
@@ -332,7 +312,7 @@ namespace RESTar.Operations
 
         #region VIEW
 
-        internal static Response VIEW(Request request)
+        internal static Response VIEW(Requests.HttpRequest request)
         {
             try
             {
@@ -353,7 +333,7 @@ namespace RESTar.Operations
             }
         }
 
-        internal static int PATCH(object entity, string json, Request request)
+        internal static int PATCH(object entity, string json, Requests.HttpRequest request)
         {
             try
             {
@@ -392,7 +372,7 @@ namespace RESTar.Operations
             }
         }
 
-        internal static int DELETE(object entity, Request request)
+        internal static int DELETE(object entity, Requests.HttpRequest request)
         {
             try
             {
@@ -415,7 +395,7 @@ namespace RESTar.Operations
             }
         }
 
-        internal static int POST(string json, Request request)
+        internal static int POST(string json, Requests.HttpRequest request)
         {
             object result = null;
             try

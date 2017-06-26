@@ -10,20 +10,32 @@ namespace RESTar.Operations
 {
     public class OrderBy : IFilter
     {
-        internal IResource Resource;
+        public string Key
+        {
+            get => PropertyChain.Key;
+            set => PropertyChain = PropertyChain.Parse(value, Resource, Resource.IsDynamic);
+        }
+
         public bool Descending;
         public bool Ascending => !Descending;
-        public string Key => PropertyChain.Key;
+
+        internal readonly IResource Resource;
         internal PropertyChain PropertyChain;
+        
         internal bool IsStarcounterQueryable = true;
         private Func<T1, dynamic> ToSelector<T1>() => item => Do.Try(() => PropertyChain.Get(item), default(object));
 
-        public string SQL => IsStarcounterQueryable
+        internal string SQL => IsStarcounterQueryable
             ? $"ORDER BY t.{PropertyChain.DbKey.Fnuttify()} {(Descending ? "DESC" : "ASC")}"
             : null;
 
-        internal OrderBy()
+        internal OrderBy(IResource resource) => Resource = resource;
+
+        internal OrderBy(IResource resource, bool descending, string key, List<string> dynamicMembers)
         {
+            Resource = resource;
+            Descending = descending;
+            PropertyChain = PropertyChain.Parse(key, resource, resource.IsDynamic, dynamicMembers);
         }
 
         public IEnumerable<T> Apply<T>(IEnumerable<T> entities)

@@ -2,7 +2,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Data;
-using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Serialization;
@@ -15,7 +14,6 @@ using RESTar.Auth;
 using RESTar.Deflection;
 using RESTar.Internal;
 using RESTar.Operations;
-using RESTar.Requests;
 using Starcounter;
 using static System.Reflection.BindingFlags;
 using static System.StringComparison;
@@ -23,9 +21,7 @@ using static RESTar.ResourceAlias;
 using static RESTar.RESTarConfig;
 using static RESTar.RESTarMethods;
 using static Starcounter.DbHelper;
-using Conditions = RESTar.Requests.Conditions;
 using IResource = RESTar.Internal.IResource;
-using Request = RESTar.Requests.Request;
 
 namespace RESTar
 {
@@ -91,7 +87,7 @@ namespace RESTar
         internal static string UriEncode(this string str) => HttpUtility.UrlEncode(str);
         public static T GetReference<T>(this ulong? objectNo) where T : class => FromID(objectNo ?? 0) as T;
         public static T GetReference<T>(this ulong objectNo) where T : class => FromID(objectNo) as T;
-        public static bool EqualsNoCase(this string s1, string s2) => string.Equals(s1, s2, CurrentCultureIgnoreCase);
+        internal static bool EqualsNoCase(this string s1, string s2) => string.Equals(s1, s2, CurrentCultureIgnoreCase);
         internal static string ToMethodsString(this IEnumerable<RESTarMethods> ie) => string.Join(", ", ie);
 
         internal static string RemoveTabsAndBreaks(this string input) => input != null
@@ -160,11 +156,16 @@ namespace RESTar
 
         #region Resource helpers
 
+        internal static IResource GetIResource(this Type type) => ResourceByType.TryGetValue(type,
+            out IResource resource)
+            ? resource
+            : null;
+
         internal static bool IsDDictionary(this Type type) => type.IsSubclassOf(typeof(DDictionary));
         internal static bool IsStarcounter(this Type type) => type.HasAttribute<DatabaseAttribute>();
         internal static string MemberName(this MemberInfo m) => m.GetAttribute<DataMemberAttribute>()?.Name ?? m.Name;
 
-        internal static bool IsSingular(this IEnumerable<object> ienum, Request request) =>
+        internal static bool IsSingular(this IEnumerable<object> ienum, Requests.HttpRequest request) =>
             request.Resource.IsSingleton || ienum?.Count() == 1 && !request.ResourceHome;
 
         internal static ICollection<IResource> FindResources(this string searchString)
@@ -178,7 +179,7 @@ namespace RESTar
                 if (searchString.Last() != '*')
                     throw new Exception("Invalid resource string syntax");
                 var commonPart = searchString.Split('*')[0];
-                var matches = NameResources
+                var matches = ResourceByName
                     .Where(pair => pair.Key.StartsWith(commonPart))
                     .Select(pair => pair.Value)
                     .Union(DB.All<ResourceAlias>()
@@ -190,7 +191,7 @@ namespace RESTar
             }
             var resource = ByAlias(searchString);
             if (resource == null)
-                NameResources.TryGetValue(searchString, out resource);
+                ResourceByName.TryGetValue(searchString, out resource);
             if (resource != null)
                 return new[] {resource};
             throw new UnknownResourceException(searchString);
@@ -201,23 +202,26 @@ namespace RESTar
             searchString = searchString.ToLower();
             var resource = ByAlias(searchString);
             if (resource == null)
-                NameResources.TryGetValue(searchString, out resource);
+                ResourceByName.TryGetValue(searchString, out resource);
             if (resource != null)
                 return resource;
-            var keys = NameResources.Keys
+            var keys = ResourceByName.Keys
                 .Where(key => key.EndsWith($".{searchString}"))
                 .ToList();
             if (keys.Count < 1)
                 throw new UnknownResourceException(searchString);
             if (keys.Count > 1)
                 throw new AmbiguousResourceException(searchString,
-                    keys.Select(k => NameResources[k].Name).ToList());
-            return NameResources[keys.First()];
+                    keys.Select(k => ResourceByName[k].Name).ToList());
+            return ResourceByName[keys.First()];
         }
 
         internal static JObject ToJObject(this IEnumerable<JProperty> props) => new JObject(props);
 
-        internal static JObject MakeJObject(this object entity)
+        public static IEnumerable<JObject> ToJObjects(this IEnumerable<object> entities) =>
+            entities.Select(ToJObject);
+
+        public static JObject ToJObject(this object entity)
         {
             if (entity is JObject j) return j;
             if (entity is DDictionary ddict) return ddict.ToJObject();
@@ -297,9 +301,9 @@ namespace RESTar
 
         #region Dictionary helpers
 
-        public static T SafeGet<T>(this IDictionary<string, T> dict, string key)
+        public static TValue SafeGet<TKey, TValue>(this IDictionary<TKey, TValue> dict, TKey key)
         {
-            return dict.ContainsKey(key) ? dict[key] : default(T);
+            return dict.ContainsKey(key) ? dict[key] : default(TValue);
         }
 
         public static dynamic SafeGet(this IDictionary dict, string key)
@@ -413,7 +417,7 @@ namespace RESTar
 
         #region Requests
 
-        internal static Conditions ToConditions(this IEnumerable<Condition> conditions, Type resource)
+        internal static Conditions ToConditions(this IEnumerable<Condition> conditions, IResource resource)
         {
             if (conditions?.Any() != true) return null;
             var _conditions = new Conditions(resource);
@@ -605,7 +609,7 @@ namespace RESTar
             );
         }
 
-        public static dynamic MakeViewModelDefault(this Type type, StaticProperty property = null)
+        internal static dynamic MakeViewModelDefault(this Type type, StaticProperty property = null)
         {
             dynamic DefaultValueRecurser(Type propType, StaticProperty prop = null)
             {

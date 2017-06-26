@@ -34,7 +34,7 @@ namespace RESTar.Operations
 
         public IEnumerable<JObject> Apply<T>(IEnumerable<T> entities)
         {
-            return entities.Select(entity => RenameJObject(entity.MakeJObject()));
+            return entities.Select(entity => RenameJObject(entity.ToJObject()));
         }
     }
 }

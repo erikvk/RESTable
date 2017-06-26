@@ -3,7 +3,6 @@ using System.Data;
 using System.IO;
 using System.Xml;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Serialization;
 using RESTar.View.Serializer;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
@@ -20,7 +19,7 @@ using Formatting = Newtonsoft.Json.Formatting;
 
 namespace RESTar
 {
-    internal static class Serializer
+    public static class Serializer
     {
         private static readonly JsonSerializerSettings VmSettings;
         internal static readonly JsonSerializerSettings Settings;
@@ -48,6 +47,9 @@ namespace RESTar
             VmSettings.Converters.Add(enumConverter);
             JsonSerializer = JsonSerializer.Create(Settings);
         }
+
+        public static string ToJSON(this object value) => value.Serialize();
+        public static T FromJSON<T>(this string json) => json.Deserialize<T>();
 
         internal static string Serialize(this object value, Type type = null)
         {

@@ -8,7 +8,7 @@ using Starcounter.Internal;
 [assembly: AssemblyTitle("RESTar")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("Starcounter")]
+[assembly: AssemblyCompany("Mopedo AB")]
 [assembly: AssemblyProduct("RESTar")]
 [assembly: AssemblyCopyright("Copyright © Starcounter 2013")]
 [assembly: AssemblyTrademark("")]
@@ -32,8 +32,8 @@ using Starcounter.Internal;
 // You can specify all the values or you can default the Build and Revision Numbers
 // by using the '*' as shown below:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion("1.0.0.0")]
-[assembly: AssemblyFileVersion("1.0.0.0")]
+[assembly: AssemblyVersion("0.2.8")]
+[assembly: AssemblyFileVersion("0.2.8")]
 
 // Assures the current assembly has a reference to the Starcounter
 // assembly. A reference to Starcounter is currently required for

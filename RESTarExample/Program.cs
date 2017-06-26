@@ -1,12 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.Serialization;
 using Dynamit;
 using RESTar;
 using RESTar.Internal;
 using Starcounter;
-using static RESTar.RESTarMethods;
 
 namespace RESTarExample
 {
@@ -24,6 +22,13 @@ namespace RESTarExample
             );
             TestDatabase.Init();
         }
+    }
+
+    public class C
+    {
+        public string Key;
+        public string Operator;
+        public dynamic Value;
     }
 
     [RESTar(RESTarPresets.ReadAndWrite, Viewable = true)]
@@ -67,7 +72,6 @@ namespace RESTarExample
         public int Integer;
         public DateTime Date;
         public MyOther Other;
-
     }
 
     [Database, RESTar(RESTarPresets.ReadAndWrite, Dynamic = true)]

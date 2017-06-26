@@ -6,7 +6,6 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using RESTar.Internal;
 using Starcounter;
-using Request = RESTar.Requests.Request;
 
 namespace RESTar.View
 {
@@ -130,7 +129,7 @@ namespace RESTar.View
             }
         }
 
-        internal override RESTarView<object> Populate(Request request, object restarData)
+        internal override RESTarView<object> Populate(Requests.HttpRequest request, object restarData)
         {
             var template = request.Resource.MakeViewModelTemplate();
             var jsonTemplate = template.Serialize();
