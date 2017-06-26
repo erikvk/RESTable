@@ -23,26 +23,18 @@ namespace RESTar
             new[] {method}.Union(addMethods ?? new RESTarMethods[0]).ToArray();
     }
 
-    public class ObjectRefAttribute : Attribute
-    {
-    }
-
+    /// <summary>
+    /// An attribute that, when used on a property, flattens that 
+    /// property using its ToString() method when writing to Excel.
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Property)]
     public class ExcelFlattenToString : Attribute
     {
     }
 
-    public class DynamicTableAttribute : Attribute
+    internal class DynamicTableAttribute : Attribute
     {
         public int Nr;
         public DynamicTableAttribute(int nr) => Nr = nr;
-    }
-
-    [AttributeUsage(AttributeTargets.Property)]
-    public class DynamicAttribute : Attribute
-    {
-    }
-
-    public class OverrideAttribute : Attribute
-    {
     }
 }

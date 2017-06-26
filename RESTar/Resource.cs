@@ -11,21 +11,52 @@ using static RESTar.RESTarPresets;
 
 namespace RESTar
 {
+    /// <summary>
+    /// A resource that lists all available resources in a RESTar instance
+    /// </summary>
     [RESTar(ReadAndWrite)]
     public sealed class Resource : IOperationsProvider<Resource>
     {
+        /// <summary>
+        /// The name of the resource
+        /// </summary>
         public string Name { get; set; }
+
+        /// <summary>
+        /// Is this resource editable?
+        /// </summary>
         public bool Editable { get; private set; }
+
+        /// <summary>
+        /// Is this resource visible in the view?
+        /// </summary>
         public bool Visible { get; set; }
+
+        /// <summary>
+        /// The methods that have been enabled for this resource
+        /// </summary>
         public RESTarMethods[] AvailableMethods { get; set; }
+
+        /// <summary>
+        /// The alias of this resource, if any
+        /// </summary>
         public string Alias { get; set; }
 
+        /// <summary>
+        /// The string name of the target type. Is shown as "TargetType"
+        /// in JSON.
+        /// </summary>
         [DataMember(Name = "TargetType")]
         public string TargetTypeString => TargetType?.FullName;
 
+        /// <summary>
+        /// The type targeted by this resource.
+        /// </summary>
         [IgnoreDataMember]
         public Type TargetType { get; set; }
 
+        /// <summary>
+        /// </summary>
         public IEnumerable<Resource> Select(IRequest request)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
@@ -42,6 +73,8 @@ namespace RESTar
                 }).ToList();
         }
 
+        /// <summary>
+        /// </summary>
         public int Insert(IEnumerable<Resource> resources, IRequest request)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
@@ -60,6 +93,8 @@ namespace RESTar
             return count;
         }
 
+        /// <summary>
+        /// </summary>
         public int Update(IEnumerable<Resource> entities, IRequest request)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
@@ -73,6 +108,8 @@ namespace RESTar
             return count;
         }
 
+        /// <summary>
+        /// </summary>
         public int Delete(IEnumerable<Resource> entities, IRequest request)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
@@ -95,18 +132,40 @@ namespace RESTar
         private static void AUTO_MAKE<T>() where T : class => Resource<T>
             .Make(typeof(T).GetAttribute<RESTarAttribute>());
 
+        /// <summary>
+        /// Registers a new resource with the RESTar instance
+        /// </summary>
+        /// <typeparam name="T">The type to register</typeparam>
+        /// <param name="preset">The preset to configure available methods from</param>
+        /// <param name="addMethods">Additional methods, apart from the ones defined by the preset</param>
         public static void Register<T>(RESTarPresets preset, params RESTarMethods[] addMethods) where T : class
         {
             var methods = preset.ToMethods().Union(addMethods ?? new RESTarMethods[0]).ToArray();
             Register<T>(methods.First(), methods.Length > 1 ? methods.Skip(1).ToArray() : null);
         }
 
+        /// <summary>
+        /// Registers a new resource with the RESTar instance
+        /// </summary>
+        /// <typeparam name="T">The type to register</typeparam>
+        /// <param name="method">A method to make available for this resource</param>
+        /// <param name="addMethods">Additional methods to make available</param>
         public static void Register<T>(RESTarMethods method, params RESTarMethods[] addMethods) where T : class
         {
             var methods = new[] {method}.Union(addMethods ?? new RESTarMethods[0]).ToArray();
             Register<T>(methods.First(), methods.Length > 1 ? methods.Skip(1).ToArray() : null, null);
         }
 
+        /// <summary>
+        /// Registers a new resource with the RESTar instance
+        /// </summary>
+        /// <typeparam name="T">The type to register</typeparam>
+        /// <param name="preset">The preset to configure available methods from</param>
+        /// <param name="addMethods">Additional methods, apart from the ones defined by the preset</param>
+        /// <param name="selector">The selector to use for this resource</param>
+        /// <param name="inserter">The inserter to use for this resource</param>
+        /// <param name="updater">The updater to use for this resource</param>
+        /// <param name="deleter">The deleter to use for this resource</param>
         public static void Register<T>
         (
             RESTarPresets preset,
@@ -131,6 +190,16 @@ namespace RESTar
             );
         }
 
+        /// <summary>
+        /// Registers a new resource with the RESTar instance
+        /// </summary>
+        /// <typeparam name="T">The type to register</typeparam>
+        /// <param name="method">A method to make available for this resource</param>
+        /// <param name="addMethods">Additional methods to make available</param>
+        /// <param name="selector">The selector to use for this resource</param>
+        /// <param name="inserter">The inserter to use for this resource</param>
+        /// <param name="updater">The updater to use for this resource</param>
+        /// <param name="deleter">The deleter to use for this resource</param>
         public static void Register<T>
         (
             RESTarMethods method,
@@ -149,7 +218,14 @@ namespace RESTar
             Resource<T>.Make(attribute, selector, inserter, updater, deleter);
         }
 
+        /// <summary>
+        /// Finds a resource by name (case insensitive)
+        /// </summary>
         public static IResource Find(string name) => RESTarConfig.ResourceByName.SafeGetNoCase(name);
+
+        /// <summary>
+        /// Finds a resource by target type
+        /// </summary>
         public static IResource Find(Type type) => RESTarConfig.ResourceByType.SafeGet(type);
     }
 }

@@ -9,6 +9,9 @@ using RESTar.Operations;
 
 namespace RESTar
 {
+    /// <summary>
+    /// A collection of conditions
+    /// </summary>
     public sealed class Conditions : List<Condition>, IFilter
     {
         internal IResource Resource;
@@ -19,12 +22,18 @@ namespace RESTar
         private static readonly char[] OpMatchChars = {'<', '>', '=', '!'};
         internal Conditions(IResource resource) => Resource = resource;
 
+        /// <summary>
+        /// Access a condition by its key (case insensitive)
+        /// </summary>
         public Condition this[string key]
         {
             get => this.FirstOrDefault(c => c.Key.EqualsNoCase(key));
-            set => this.Add(value);
+            set => Add(value);
         }
 
+        /// <summary>
+        /// Access a condition value by its key (case insensitive) and operator
+        /// </summary>
         public dynamic this[string key, Operator op]
         {
             get => this
@@ -38,6 +47,9 @@ namespace RESTar
             );
         }
 
+        /// <summary>
+        /// Parses a Conditions object from a conditions section of a REST request URI
+        /// </summary>
         public static Conditions Parse(string conditionString, IResource resource)
         {
             if (string.IsNullOrEmpty(conditionString)) return null;
@@ -77,12 +89,10 @@ namespace RESTar
             return conditions;
         }
 
-        public static dynamic GetValue(string valueString)
+        internal static dynamic GetValue(string valueString)
         {
-            if (valueString == null)
-                return null;
-            if (valueString == "null")
-                return null;
+            if (valueString == null) return null;
+            if (valueString == "null") return null;
             if (valueString.First() == '\"' && valueString.Last() == '\"')
                 return valueString.Remove(0, 1).Remove(valueString.Length - 2, 1);
             dynamic obj;
@@ -102,21 +112,26 @@ namespace RESTar
             return obj;
         }
 
+        /// <summary>
+        /// Applies this list of conditions to an IEnumerable of entities and returns
+        /// the entities for which all the conditions hold.
+        /// </summary>
+        /// <typeparam name="T">The resource type</typeparam>
         public IEnumerable<T> Apply<T>(IEnumerable<T> entities)
         {
             var type = typeof(T);
             if (type != Resource.TargetType && !Resource.IsDDictionary)
             {
                 var newTypeProperties = type.GetStaticProperties();
-                RemoveAll(cond => newTypeProperties.All(prop => prop.Name
-                                                                != cond.PropertyChain.FirstOrDefault()?.Name));
+                RemoveAll(cond => newTypeProperties.All(prop =>
+                    prop.Name != cond.PropertyChain.FirstOrDefault()?.Name));
                 ForEach(condition => condition.Migrate(type));
                 Resource = type.GetIResource();
             }
             return entities.Where(entity => this.All(condition => condition.HoldsFor(entity)));
         }
 
-        public WhereClause ToWhereClause()
+        internal WhereClause ToWhereClause()
         {
             if (!this.Any()) return new WhereClause();
             var stringPart = new List<string>();

@@ -4,7 +4,7 @@ using Starcounter;
 
 namespace RESTar.View.Serializer
 {
-    public class ObjectIDProvider : IValueProvider
+    internal class ObjectIDProvider : IValueProvider
     {
         public object GetValue(object target) => Do.Try(target.GetObjectID, "");
 

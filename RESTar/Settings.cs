@@ -4,6 +4,9 @@ using Starcounter;
 
 namespace RESTar
 {
+    /// <summary>
+    /// The settings resource for the RESTar instance, stores its settings.
+    /// </summary>
     [Database, RESTar(RESTarPresets.ReadAndUpdate, Singleton = true)]
     public class Settings
     {
@@ -15,13 +18,39 @@ namespace RESTar
         internal static string _ResourcesPath => Instance.ResourcesPath;
         internal static string _HelpResourcePath => Instance.HelpResourcePath;
 
+        /// <summary>
+        /// The port of the RESTar REST API
+        /// </summary>
         public ushort Port { get; private set; }
+
+        /// <summary>
+        /// The URI of the RESTar REST API
+        /// </summary>
         public string Uri { get; private set; }
+
+        /// <summary>
+        /// Is the view enabled?
+        /// </summary>
         public bool ViewEnabled { get; private set; }
+
+        /// <summary>
+        /// Will JSON be serialized with pretty print? (indented JSON)
+        /// </summary>
         public bool PrettyPrint { get; set; }
 
+        /// <summary>
+        /// The path where resources are available
+        /// </summary>
         public string ResourcesPath => $"http://[IP address]:{Port}{Uri}";
+
+        /// <summary>
+        /// The path where help resources are available
+        /// </summary>
         public string HelpResourcePath => ResourcesPath + "/RESTar.help";
+
+        /// <summary>
+        /// The number of days to store errors in the RESTar.Error resource
+        /// </summary>
         public int DaysToSaveErrors { get; private set; }
 
         internal static void Init(ushort port, string uri, bool viewEnabled, bool prettyPrint, bool camelCase,
@@ -41,6 +70,9 @@ namespace RESTar
             });
         }
 
+        /// <summary>
+        /// Gets the only instance of the Settings resource
+        /// </summary>
         [IgnoreDataMember]
         public static Settings Instance => DB.First<Settings>();
     }

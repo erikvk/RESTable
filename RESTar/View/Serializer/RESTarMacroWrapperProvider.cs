@@ -4,7 +4,7 @@ using Newtonsoft.Json.Serialization;
 
 namespace RESTar.View.Serializer
 {
-    public class RESTarMacroWrapperProvider : IValueProvider
+    internal class RESTarMacroWrapperProvider : IValueProvider
     {
         private readonly PropertyInfo Property;
 

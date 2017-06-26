@@ -624,7 +624,7 @@ namespace RESTar
                 }
                 if (propType.IsClass)
                 {
-                    if (prop?.HasAttribute<DynamicAttribute>() == true)
+                    if (propType == typeof(object))
                         return "@RESTar()";
                     var props = propType.GetStaticProperties();
                     return props.ToDictionary(

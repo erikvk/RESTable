@@ -6,11 +6,19 @@ using static RESTar.Operators;
 
 namespace RESTar
 {
+    /// <summary>
+    /// Gets a schema for a given resource
+    /// </summary>
     [RESTar(RESTarMethods.GET, Singleton = true)]
     public class Schema : Dictionary<string, string>, ISelector<Schema>
     {
+        /// <summary>
+        /// The name of the resource to get the schema for
+        /// </summary>
         public string Resource { private get; set; }
 
+        /// <summary>
+        /// </summary>
         public IEnumerable<Schema> Select(IRequest request)
         {
             var validCondition = request.Conditions?["resource", EQUALS] as string;

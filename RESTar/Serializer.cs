@@ -19,11 +19,14 @@ using Formatting = Newtonsoft.Json.Formatting;
 
 namespace RESTar
 {
+    /// <summary>
+    /// The serializer for the RESTar instance
+    /// </summary>
     public static class Serializer
     {
         private static readonly JsonSerializerSettings VmSettings;
         internal static readonly JsonSerializerSettings Settings;
-        internal static JsonSerializer JsonSerializer;
+        internal static readonly JsonSerializer JsonSerializer;
 
         static Serializer()
         {
@@ -48,7 +51,15 @@ namespace RESTar
             JsonSerializer = JsonSerializer.Create(Settings);
         }
 
+        /// <summary>
+        /// Serializes the object to JSON
+        /// </summary>
         public static string ToJSON(this object value) => value.Serialize();
+
+        /// <summary>
+        /// Deserializes the given JSON string to an object of the given type
+        /// </summary>
+        /// <typeparam name="T">The type to deserialize to</typeparam>
         public static T FromJSON<T>(this string json) => json.Deserialize<T>();
 
         internal static string Serialize(this object value, Type type = null)

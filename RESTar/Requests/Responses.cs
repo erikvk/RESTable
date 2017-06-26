@@ -71,18 +71,7 @@ namespace RESTar.Requests
             }
         };
 
-        internal static Response SemanticsError(Exception e) => new Response
-        {
-            StatusCode = (ushort) HttpStatusCode.BadRequest,
-            StatusDescription = "Bad request",
-            Headers =
-            {
-                ["RESTar-info"] = $"{e.Message}To enumerate columns in a resource R: GET " +
-                                  $"{Settings._ResourcesPath}/RESTar.resource/name=R"
-            }
-        };
-
-        internal static Response DeserializationError(string json) => new Response
+        internal static Response JsonError(string json) => new Response
         {
             StatusCode = (ushort) HttpStatusCode.BadRequest,
             StatusDescription = "Bad request",
@@ -92,7 +81,7 @@ namespace RESTar.Requests
             }
         };
 
-        internal static Response DatabaseError(Exception e)
+        internal static Response DbError(Exception e)
         {
             if (e.Message.Contains("SCERR4034"))
                 return new Response

@@ -9,14 +9,30 @@ using Starcounter;
 
 namespace RESTar.View
 {
+    /// <summary>
+    /// </summary>
     partial class Item : RESTarView<object>
     {
+        /// <summary>
+        /// </summary>
         protected override string HtmlMatcher => $"{Resource.Name}-item.html";
+
+        /// <summary>
+        /// </summary>
         protected override void SetHtml(string html) => Html = html;
+
+        /// <summary>
+        /// </summary>
         protected override void SetResourceName(string resourceName) => ResourceName = resourceName;
+
+        /// <summary>
+        /// </summary>
         protected override void SetResourcePath(string resourcePath) => ResourcePath = resourcePath;
+
         private bool IsTemplate;
 
+        /// <summary>
+        /// </summary>
         public override void SetMessage(string message, ErrorCodes errorCode, MessageType messageType)
         {
             Message = message;
@@ -27,6 +43,8 @@ namespace RESTar.View
 
         private static readonly Regex regex = new Regex(@"\@RESTar\((?<content>[^\(\)]*)\)");
 
+        /// <summary>
+        /// </summary>
         public void Handle(Input.Save action)
         {
             var entityJson = Entity.ToJson().Replace(@"$"":", @""":");
@@ -38,6 +56,8 @@ namespace RESTar.View
             Success = false;
         }
 
+        /// <summary>
+        /// </summary>
         public void Handle(Input.Close action)
         {
             RedirectUrl = !string.IsNullOrWhiteSpace(RedirectUrl)
@@ -47,6 +67,8 @@ namespace RESTar.View
                     : ResourcePath;
         }
 
+        /// <summary>
+        /// </summary>
         public void Handle(Input.RemoveElementFrom action)
         {
             try
@@ -78,6 +100,8 @@ namespace RESTar.View
             }
         }
 
+        /// <summary>
+        /// </summary>
         public void Handle(Input.AddElementTo action)
         {
             try

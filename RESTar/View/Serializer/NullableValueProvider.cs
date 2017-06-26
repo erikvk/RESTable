@@ -4,7 +4,7 @@ using Newtonsoft.Json.Serialization;
 
 namespace RESTar.View.Serializer
 {
-    public class NullableValueProvider : IValueProvider
+    internal class NullableValueProvider : IValueProvider
     {
         private readonly object DefaultValue;
         private readonly IValueProvider UnderlyingValueProvider;

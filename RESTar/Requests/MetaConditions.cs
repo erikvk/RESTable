@@ -47,6 +47,9 @@ namespace RESTar.Requests
         }
     }
 
+    /// <summary>
+    /// Contains the metaconditions for a request
+    /// </summary>
     public sealed class MetaConditions
     {
         internal Limit Limit { get; set; } = Limit.NoLimit;

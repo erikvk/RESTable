@@ -9,10 +9,20 @@ using IResource = RESTar.Internal.IResource;
 
 namespace RESTar.View
 {
+    /// <summary>
+    /// </summary>
     public enum MessageType
     {
+        /// <summary>
+        /// </summary>
         info,
+
+        /// <summary>
+        /// </summary>
         error,
+
+        /// <summary>
+        /// </summary>
         warning
     }
 
@@ -21,19 +31,43 @@ namespace RESTar.View
         void SetMessage(string message, ErrorCodes errorCode, MessageType messageType);
     }
 
+    /// <summary>
+    /// </summary>
     public abstract class RESTarView<TData> : Json, IRESTarView
     {
+        /// <summary>
+        /// </summary>
         protected abstract void SetHtml(string html);
+
+        /// <summary>
+        /// </summary>
         protected abstract void SetResourceName(string resourceName);
+
+        /// <summary>
+        /// </summary>
         protected abstract void SetResourcePath(string resourceName);
+
+        /// <summary>
+        /// </summary>
         public abstract void SetMessage(string message, ErrorCodes errorCode, MessageType messageType);
-        
+
         internal Requests.HttpRequest Request { get; private set; }
         internal IResource Resource => Request.Resource;
+
+        /// <summary>
+        /// </summary>
         protected abstract string HtmlMatcher { get; }
+
+        /// <summary>
+        /// </summary>
         protected TData RESTarData { get; private set; }
+
+        /// <summary>
+        /// </summary>
         protected bool Success;
 
+        /// <summary>
+        /// </summary>
         protected void POST(string json)
         {
             UserCheck();
@@ -52,6 +86,8 @@ namespace RESTar.View
             else SetMessage($"You are not allowed to insert into the '{Resource}' resource", NotAuthorized, error);
         }
 
+        /// <summary>
+        /// </summary>
         protected void PATCH(string json)
         {
             UserCheck();
@@ -70,6 +106,8 @@ namespace RESTar.View
             else SetMessage($"You are not allowed to update the '{Resource}' resource", NotAuthorized, error);
         }
 
+        /// <summary>
+        /// </summary>
         protected void DELETE(object item)
         {
             UserCheck();
@@ -88,6 +126,8 @@ namespace RESTar.View
             else SetMessage($"You are not allowed to delete from the '{Resource}' resource", NotAuthorized, error);
         }
 
+        /// <summary>
+        /// </summary>
         protected bool MethodAllowed(RESTarMethods method) => MethodCheck(method, Resource, Request.AuthToken);
 
         internal virtual RESTarView<TData> Populate(Requests.HttpRequest request, TData data)

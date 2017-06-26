@@ -17,6 +17,10 @@ using IResource = RESTar.Internal.IResource;
 
 namespace RESTar
 {
+    /// <summary>
+    /// The main configuration class for the RESTar instance. Use Init() to 
+    /// initialize the instance.
+    /// </summary>
     public static class RESTarConfig
     {
         internal static readonly IDictionary<string, IResource> ResourceByName;
@@ -68,12 +72,17 @@ namespace RESTar
         /// </summary>
         /// <param name="port">The port that RESTar should listen on</param>
         /// <param name="uri">The URI that RESTar should listen on. E.g. '/rest'</param>
+        /// <param name="configFilePath">The path to the config file containing API keys and 
+        /// allowed origins</param>
         /// <param name="prettyPrint">Should JSON output be pretty print formatted as default?
         ///  (can be changed in settings during runtime)</param>
         /// <param name="camelCase">Should resources be parsed and serialized using camelCase as 
         /// opposed to default PascalCase?</param>
-        /// <param name="localTimes">Should input datetimes be handled as local times or as UTC?</param>
         /// <param name="daysToSaveErrors">The number of days to save errors in the Error resource</param>
+        /// <param name="viewEnabled">Should the view be enabled?</param>
+        /// <param name="setupMenu">Shoud a menu be setup automatically in the view?</param>
+        /// <param name="requireApiKey">Should the REST API require an API key?</param>
+        /// <param name="allowAllOrigins">Should any origin be allowed to make CORS requests?</param>
         public static void Init
         (
             ushort port = 8282,

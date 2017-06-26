@@ -5,6 +5,7 @@ using RESTar.Operations;
 using RESTar.View;
 using Starcounter;
 using static RESTar.Internal.ErrorCodes;
+using static RESTar.Requests.Responses;
 using static RESTar.RESTarMethods;
 using static Starcounter.SessionOptions;
 using static RESTar.Settings;
@@ -89,12 +90,12 @@ namespace RESTar.Requests
                 request.Populate(query, default(RESTarMethods), null);
                 var origin = request.ScRequest.Headers["Origin"].ToLower();
                 if (RESTarConfig.AllowAllOrigins || RESTarConfig.AllowedOrigins.Contains(new Uri(origin)))
-                    return Responses.AllowOrigin(origin, request.Resource.AvailableMethods);
-                return Responses.Forbidden();
+                    return AllowOrigin(origin, request.Resource.AvailableMethods);
+                return Forbidden();
             }
             catch
             {
-                return Responses.Forbidden();
+                return Forbidden();
             }
         }
 
@@ -119,42 +120,24 @@ namespace RESTar.Requests
 
             catch (Exception e)
             {
-                Response errorResponse;
-                ErrorCodes errorCode;
-
-                if (e is NoContentException) return Responses.NoContent();
-
-                if (e is RESTarException re)
+                (ErrorCodes code, Response response) getError(Exception ex)
                 {
-                    errorCode = re.ErrorCode;
-                    errorResponse = re.Response;
-                }
-                else if (e is FormatException)
-                {
-                    errorCode = UnsupportedContentType;
-                    errorResponse = Responses.BadRequest(e);
-                }
-                else if (e is JsonReaderException)
-                {
-                    errorCode = JsonDeserializationError;
-                    errorResponse = Responses.DeserializationError(scRequest.Body);
-                }
-                else if (e is DbException)
-                {
-                    errorCode = DatabaseError;
-                    errorResponse = Responses.DatabaseError(e);
-                }
-                else
-                {
-                    errorCode = UnknownError;
-                    errorResponse = Responses.InternalError(e);
+                    switch (ex)
+                    {
+                        case RESTarException re: return (re.ErrorCode, re.Response);
+                        case FormatException _: return (UnsupportedContentType, BadRequest(ex));
+                        case JsonReaderException _: return (JsonDeserializationError, JsonError(scRequest.Body));
+                        case DbException _: return (DatabaseError, DbError(ex));
+                        default: return (UnknownError, InternalError(ex));
+                    }
                 }
 
+                var errorInfo = getError(e);
                 Error error = null;
                 Error.ClearOld();
-                Db.TransactAsync(() => error = new Error(errorCode, e, request));
-                errorResponse.Headers["ErrorInfo"] = $"{_Uri}/{typeof(Error).FullName}/id={error.Id}";
-                return errorResponse;
+                Db.TransactAsync(() => error = new Error(errorInfo.code, e, request));
+                errorInfo.response.Headers["ErrorInfo"] = $"{_Uri}/{typeof(Error).FullName}/id={error.Id}";
+                return errorInfo.response;
             }
 
             #endregion

@@ -3,7 +3,7 @@ using Newtonsoft.Json.Serialization;
 
 namespace RESTar.View.Serializer
 {
-    public class NullToEmptyStringValueProvider : IValueProvider
+    internal class NullToEmptyStringValueProvider : IValueProvider
     {
         private readonly PropertyInfo Property;
 

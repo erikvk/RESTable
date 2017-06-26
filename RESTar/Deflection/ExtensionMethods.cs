@@ -5,8 +5,14 @@ using System.Reflection;
 
 namespace RESTar.Deflection
 {
-    public static class DeflectionExtensionMethods
+    /// <summary>
+    /// Extension methods for deflection operations
+    /// </summary>
+    public static class ExtensionMethods
     {
+        /// <summary>
+        /// Makes a fast delegate for getting the value for a given property.
+        /// </summary>
         public static Getter MakeDynamicGetter(this PropertyInfo p)
         {
             try
@@ -25,6 +31,9 @@ namespace RESTar.Deflection
             }
         }
 
+        /// <summary>
+        /// Makes a fast delegate for setting the value for a given property.
+        /// </summary>
         public static Setter MakeDynamicSetter(this PropertyInfo p)
         {
             try
@@ -62,6 +71,9 @@ namespace RESTar.Deflection
             return matches.First();
         }
 
+        /// <summary>
+        /// Gets the members of an enumeration
+        /// </summary>
         public static List<EnumMember> GetEnumMembers(this Type type) => type.IsEnum
             ? type.GetFields()
                 .Where(t => t.FieldType.IsEnum)
@@ -74,12 +86,36 @@ namespace RESTar.Deflection
                 .ToList()
             : throw new ArgumentException("Must be enum", nameof(type));
 
+        /// <summary>
+        /// A struct to describe a member of an enumeration
+        /// </summary>
         public struct EnumMember
         {
+            /// <summary>
+            /// The attributes of the enumeration member
+            /// </summary>
             public IEnumerable<Attribute> Attributes;
+
+            /// <summary>
+            /// The name of the enumeration members
+            /// </summary>
             public string Name;
+
+            /// <summary>
+            /// The integer value of the enumeration
+            /// </summary>
             public int Value;
+
+            /// <summary>
+            /// Returns true if and only if the enumeration member has an attribute
+            /// of the given attribute type
+            /// </summary>
             public bool HasAttribute<T>() where T : Attribute => Attributes.OfType<T>().Any();
+
+            /// <summary>
+            /// Returns an attribute for an enumeration, or null if there is no such
+            /// attribute decoration for this member
+            /// </summary>
             public T GetAttribute<T>() where T : Attribute => Attributes.OfType<T>().FirstOrDefault();
         }
     }

@@ -4,8 +4,12 @@ using RESTar.Internal;
 
 namespace RESTar.View
 {
+    /// <summary>
+    /// </summary>
     partial class Menu : Json, IRESTarView
     {
+        /// <summary>
+        /// </summary>
         public void SetMessage(string message, ErrorCodes errorCode, MessageType messageType)
         {
             Message = message;
@@ -14,6 +18,8 @@ namespace RESTar.View
             HasMessage = true;
         }
 
+        /// <summary>
+        /// </summary>
         public Menu Populate()
         {
             Html = "/menu.html";

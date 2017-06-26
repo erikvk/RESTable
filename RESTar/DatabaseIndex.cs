@@ -6,20 +6,44 @@ using static RESTar.RESTarPresets;
 
 namespace RESTar
 {
+    /// <summary>
+    /// Contains information about a column on which an index is registered.
+    /// </summary>
     public class ColumnInfo
     {
+        /// <summary>
+        /// The name of the column (property name)
+        /// </summary>
         public string Name { get; set; }
+
+        /// <summary>
+        /// Is this index descending? (otherwise ascending)
+        /// </summary>
         public bool Descending { get; set; }
     }
 
+    /// <summary>
+    /// A resource for handling database indices for Starcounter resources.
+    /// </summary>
     [RESTar(ReadAndWrite)]
     public class DatabaseIndex : ISelector<DatabaseIndex>, IInserter<DatabaseIndex>, IUpdater<DatabaseIndex>,
         IDeleter<DatabaseIndex>
     {
+        /// <summary>
+        /// The name of the index
+        /// </summary>
         public string Name { get; set; }
+
+        /// <summary>
+        /// The resource (table) for which this index is registered
+        /// </summary>
         public string Resource { get; set; }
+
+        /// <summary>
+        /// The columns on which this index is registered
+        /// </summary>
         public ColumnInfo[] Columns { get; set; }
-            
+
         private const string IndexSQL = "SELECT t FROM Starcounter.Metadata.\"Index\" t";
 
         private const string ColumnSQL = "SELECT t FROM Starcounter.Metadata.IndexedColumn t " +
@@ -44,8 +68,12 @@ namespace RESTar
                 };
             });
 
+        /// <summary>
+        /// </summary>
         public IEnumerable<DatabaseIndex> Select(IRequest request) => All.Filter(request.Conditions).ToList();
 
+        /// <summary>
+        /// </summary>
         public int Insert(IEnumerable<DatabaseIndex> indices, IRequest request)
         {
             var count = 0;
@@ -58,6 +86,8 @@ namespace RESTar
             return count;
         }
 
+        /// <summary>
+        /// </summary>
         public int Update(IEnumerable<DatabaseIndex> indices, IRequest request)
         {
             var count = 0;
@@ -71,6 +101,8 @@ namespace RESTar
             return count;
         }
 
+        /// <summary>
+        /// </summary>
         public int Delete(IEnumerable<DatabaseIndex> indices, IRequest request)
         {
             var count = 0;

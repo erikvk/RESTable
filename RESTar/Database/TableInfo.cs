@@ -10,22 +10,60 @@ using Starcounter.Metadata;
 
 namespace RESTar
 {
+    /// <summary>
+    /// Contains a description of a table size
+    /// </summary>
     public class TableSize
     {
+        /// <summary>
+        /// The size in bytes
+        /// </summary>
         public long Bytes { get; set; }
+
+        /// <summary>
+        /// The size in kilobytes
+        /// </summary>
         public decimal KB { get; set; }
+
+        /// <summary>
+        /// The size in megabytes
+        /// </summary>
         public decimal MB { get; set; }
+
+        /// <summary>
+        /// The size in gigabytes
+        /// </summary>
         public decimal GB { get; set; }
     }
 
+    /// <summary>
+    /// Gets an aggregated info view for a given Starcounter table
+    /// </summary>
     [RESTar(ReadOnly, Dynamic = true)]
     public class TableInfo : ISelector<TableInfo>
     {
+        /// <summary>
+        /// The name of the table
+        /// </summary>
         public string TableName { get; set; }
+
+        /// <summary>
+        /// The number of rows in the table
+        /// </summary>
         public long NumberOfRows { get; set; }
+
+        /// <summary>
+        /// The number of columns in the talbe
+        /// </summary>
         public int NumberOfColumns { get; set; }
+
+        /// <summary>
+        /// An approximation of the table size in memory
+        /// </summary>
         public TableSize ApproximateTableSize { get; set; }
 
+        /// <summary>
+        /// </summary>
         public IEnumerable<TableInfo> Select(IRequest request)
         {
             IEnumerable<Internal.IResource> resources;

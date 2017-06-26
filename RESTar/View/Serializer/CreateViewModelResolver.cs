@@ -9,7 +9,9 @@ using Starcounter;
 
 namespace RESTar.View.Serializer
 {
-    public class CreateViewModelResolver : DefaultContractResolver
+    /// <summary>
+    /// </summary>
+    internal class CreateViewModelResolver : DefaultContractResolver
     {
         protected override JsonProperty CreateProperty(MemberInfo member, MemberSerialization memberSerialization)
         {
@@ -56,7 +58,7 @@ namespace RESTar.View.Serializer
                     return new NullToEmptyStringValueProvider(pi);
                 if (typeof(IEnumerable).IsAssignableFrom(pi.PropertyType))
                     return new ArrayNullToEmptyListProvider(pi);
-                if (pi.HasAttribute<DynamicAttribute>())
+                if (pi.PropertyType == typeof(object))
                     return new RESTarMacroWrapperProvider(pi);
                 if (pi.PropertyType.IsClass)
                     return new ClassNullToEmptyObjectProvider(pi);

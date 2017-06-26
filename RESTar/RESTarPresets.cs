@@ -1,6 +1,9 @@
 ﻿namespace RESTar
 {
-    public enum RESTarPresets : byte
+    /// <summary>
+    /// Presets for specifying available resources for a resource
+    /// </summary>
+    public enum RESTarPresets
     {
         /// <summary>
         /// Makes GET available for this resource

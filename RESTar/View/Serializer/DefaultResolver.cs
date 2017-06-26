@@ -5,7 +5,7 @@ using Newtonsoft.Json.Serialization;
 
 namespace RESTar.View.Serializer
 {
-    public class DefaultResolver : DefaultContractResolver
+    internal class DefaultResolver : DefaultContractResolver
     {
         protected override JsonProperty CreateProperty(MemberInfo member, MemberSerialization memberSerialization)
         {
