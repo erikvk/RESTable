@@ -19,7 +19,7 @@ namespace RESTar.Requests
         Select,
         Add,
         Rename,
-        Dynamic,
+        [Obsolete] Dynamic,
         Safepost,
         New,
         Delete

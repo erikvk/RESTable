@@ -24,6 +24,14 @@ namespace RESTarExample
         }
     }
 
+    [Database, RESTar(RESTarPresets.ReadAndWrite)]
+    public class MyResource
+    {
+        public int MyId;
+        public string MyMember;
+        public string SomeMember;
+    }
+
     public class C
     {
         public string Key;
@@ -63,15 +71,6 @@ namespace RESTarExample
         A,
         B,
         C
-    }
-
-    [Database, RESTar(RESTarPresets.ReadAndWrite)]
-    public class MyResource
-    {
-        public string String;
-        public int Integer;
-        public DateTime Date;
-        public MyOther Other;
     }
 
     [Database, RESTar(RESTarPresets.ReadAndWrite, Dynamic = true)]

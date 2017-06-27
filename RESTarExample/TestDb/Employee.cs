@@ -10,13 +10,13 @@ namespace RESTarExample.TestDb
     {
         public string Name;
 
-        [ObjectRef, DataMember(Name = "Details")]
+        [DataMember(Name = "Details")]
         public ulong? DetailsObjectNo;
 
-        [ObjectRef, DataMember(Name = "Boss")]
+        [DataMember(Name = "Boss")]
         public ulong? BossObjectNo;
 
-        [ObjectRef, DataMember(Name = "Company")]
+        [DataMember(Name = "Company")]
         public ulong? CompanyObjectNo;
    
         [IgnoreDataMember]
