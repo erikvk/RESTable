@@ -26,7 +26,6 @@ namespace RESTar.View
             MetaResourcePath = $"/{Application.Current.Name}/{typeof(Resource).FullName}";
             RESTarConfig
                 .Resources
-                .Where(r => r.IsViewable)
                 .Select(r => new
                 {
                     Name = r.AliasOrName,

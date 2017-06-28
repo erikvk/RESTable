@@ -138,7 +138,6 @@
     <Compile Include="Condition.cs" />
     <Compile Include="ExtensionMethods.cs" />
     <Compile Include="Help.cs" />
-    <Compile Include="Import.cs" />
     <Compile Include="IRequest.cs" />
     <Compile Include="Internal\Resource.cs" />
     <Compile Include="Log.cs" />
@@ -162,7 +161,6 @@
     <Compile Include="Operations\Select.cs" />
     <Compile Include="Settings.cs" />
     <Compile Include="Deflection\StaticProperty.cs" />
-    <Compile Include="Temp.cs" />
     <Compile Include="Operations\WhereClause.cs" />
     <Compile Include="View\Serializer\ArrayNullToEmptyListProvider.cs" />
     <Compile Include="View\Serializer\ClassNullToEmptyObjectProvider.cs" />

@@ -10,12 +10,12 @@ namespace RESTar.Deflection
         /// <summary>
         /// The name of the property
         /// </summary>
-        public virtual string Name { get; protected set; }
+        public string Name { get; protected set; }
 
         /// <summary>
-        /// The database query name to use in SQL
+        /// The database query name to use in Starcounter SQL queries
         /// </summary>
-        public virtual string DatabaseQueryName { get; protected set; }
+        public string DatabaseQueryName { get; protected set; }
 
         /// <summary>
         /// The name to use in Starcounter view models
@@ -35,7 +35,7 @@ namespace RESTar.Deflection
         /// <summary>
         /// Can this property be referred to in a Starcounter SQL query?
         /// </summary>
-        public abstract bool ScQueryable { get; protected set; }
+        public bool ScQueryable { get; protected set; }
 
         /// <summary>
         /// Gets the value of this property, for a given target object

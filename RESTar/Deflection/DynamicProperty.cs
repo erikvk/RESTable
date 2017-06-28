@@ -5,11 +5,23 @@ using RESTar.Operations;
 
 namespace RESTar.Deflection
 {
+    /// <summary>
+    /// A dynamic property represents a dynamic property of a class, that is,
+    /// a member that is not known at compile time.
+    /// </summary>
     public class DynamicProperty : Property
     {
+        /// <summary>
+        /// Is this property dynamic?
+        /// </summary>
         public override bool Dynamic => true;
-        public override bool ScQueryable { get; protected set; }
 
+        /// <summary>
+        /// Creates a dynamic property instance from a key string
+        /// </summary>
+        /// <param name="keyString">The string to parse</param>
+        /// <returns>A dynamic property that represents the runtime property
+        /// described by the key string</returns>
         public static DynamicProperty Parse(string keyString) => new DynamicProperty(keyString);
 
         internal DynamicProperty(string name)

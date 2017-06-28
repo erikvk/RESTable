@@ -2,60 +2,155 @@
 using System.Collections.Generic;
 using RESTar.Requests;
 
+// ReSharper disable UnusedMember.Global
+
 namespace RESTar
 {
+    /// <summary>
+    /// Used to create internal RESTar requests
+    /// </summary>
+    /// <typeparam name="T">The resource type to query</typeparam>
     public static class Request<T> where T : class
     {
         #region GET
 
+        /// <summary>
+        /// Returns all entitites in the resource that matches a set of conditions. To order
+        /// the entitites, include an orderBy tuple. To restrict the entities to a certain cardinality,
+        /// include a limit.
+        /// </summary>
+        /// <param name="conditions">A list of conditions to match against</param>
+        /// <param name="limit">The number of entities to restrict the response to</param>
+        /// <param name="orderBy">To order the response, include the property name to order by as key and 
+        /// whether the ordering should be in descending order (as opposed to ascending)</param>
         public static IEnumerable<T> GET((string key, Operator @operator, dynamic value)?[] conditions,
-            bool @unsafe, int limit, (string key, bool descending)? orderBy)
+            int limit, (string key, bool descending)? orderBy)
         {
-            var ar = new AppRequest<T>
-            {
-                Unsafe = @unsafe,
-                Limit = limit
-            };
+            var ar = new AppRequest<T> {Unsafe = true, Limit = limit};
             ar.AddOrderBy(orderBy);
             ar.AddConditions(conditions);
             return ar.GET();
         }
 
+        /// <summary>
+        /// Returns all entitites in the resource that matches a set of conditions. To order
+        /// the entitites, include an orderBy tuple. To restrict the entities to a certain cardinality,
+        /// include a limit.
+        /// </summary>
+        /// <param name="condition">A condition to match against</param>
+        /// <param name="limit">The number of entities to restrict the response to</param>
+        /// <param name="orderBy">To order the response, include the property name to order by as key and 
+        /// whether the ordering should be in descending order (as opposed to ascending)</param>
         public static IEnumerable<T> GET(
             (string key, Operator @operator, dynamic value)? condition = null,
-            bool @unsafe = false, int limit = -1, (string key, bool descending)? orderBy = null) =>
-            GET(new[] {condition}, @unsafe, limit, orderBy);
+            int limit = -1, (string key, bool descending)? orderBy = null) =>
+            GET(new[]
+            {
+                condition
+            }, limit, orderBy);
 
+        /// <summary>
+        /// Returns all entitites in the resource that matches a set of conditions. To order
+        /// the entitites, include an orderBy tuple. To restrict the entities to a certain cardinality,
+        /// include a limit.
+        /// </summary>
+        /// <param name="limit">The number of entities to restrict the response to</param>
+        /// <param name="orderBy">To order the response, include the property name to order by as key and 
+        /// whether the ordering should be in descending order (as opposed to ascending)</param>
+        /// <param name="condition1">A condition to match against</param>
+        /// <param name="condition2">A condition to match against</param>
         public static IEnumerable<T> GET(
             (string key, Operator @operator, dynamic value)? condition1,
             (string key, Operator @operator, dynamic value)? condition2,
-            bool @unsafe = false, int limit = -1, (string key, bool descending)? orderBy = null) =>
-            GET(new[] {condition1, condition2}, @unsafe, limit, orderBy);
+            int limit = -1, (string key, bool descending)? orderBy = null) =>
+            GET(new[]
+            {
+                condition1, condition2
+            }, limit, orderBy);
 
+        /// <summary>
+        /// Returns all entitites in the resource that matches a set of conditions. To order
+        /// the entitites, include an orderBy tuple. To restrict the entities to a certain cardinality,
+        /// include a limit.
+        /// </summary>
+        /// <param name="limit">The number of entities to restrict the response to</param>
+        /// <param name="orderBy">To order the response, include the property name to order by as key and 
+        /// whether the ordering should be in descending order (as opposed to ascending)</param>
+        /// <param name="condition1">A condition to match against</param>
+        /// <param name="condition2">A condition to match against</param>
+        /// <param name="condition3">A condition to match against</param>
         public static IEnumerable<T> GET(
             (string key, Operator @operator, dynamic value)? condition1,
             (string key, Operator @operator, dynamic value)? condition2,
             (string key, Operator @operator, dynamic value)? condition3,
-            bool @unsafe = false, int limit = -1, (string key, bool descending)? orderBy = null) =>
-            GET(new[] {condition1, condition2, condition3}, @unsafe, limit, orderBy);
+            int limit = -1, (string key, bool descending)? orderBy = null) =>
+            GET(new[]
+            {
+                condition1, condition2, condition3
+            }, limit, orderBy);
 
+        /// <summary>
+        /// Returns all entitites in the resource that matches a set of conditions. To order
+        /// the entitites, include an orderBy tuple. To restrict the entities to a certain cardinality,
+        /// include a limit.
+        /// </summary>
+        /// <param name="limit">The number of entities to restrict the response to</param>
+        /// <param name="orderBy">To order the response, include the property name to order by as key and 
+        /// whether the ordering should be in descending order (as opposed to ascending)</param>
+        /// <param name="condition1">A condition to match against</param>
+        /// <param name="condition2">A condition to match against</param>
+        /// <param name="condition3">A condition to match against</param>
+        /// <param name="condition4">A condition to match against</param>
         public static IEnumerable<T> GET(
             (string key, Operator @operator, dynamic value)? condition1,
             (string key, Operator @operator, dynamic value)? condition2,
             (string key, Operator @operator, dynamic value)? condition3,
             (string key, Operator @operator, dynamic value)? condition4,
-            bool @unsafe = false, int limit = -1, (string key, bool descending)? orderBy = null) =>
-            GET(new[] {condition1, condition2, condition3, condition4}, @unsafe, limit, orderBy);
+            int limit = -1, (string key, bool descending)? orderBy = null) =>
+            GET(new[]
+            {
+                condition1, condition2, condition3, condition4
+            }, limit, orderBy);
 
+        /// <summary>
+        /// Returns all entitites in the resource that matches a set of conditions. To order
+        /// the entitites, include an orderBy tuple. To restrict the entities to a certain cardinality,
+        /// include a limit.
+        /// </summary>
+        /// <param name="limit">The number of entities to restrict the response to</param>
+        /// <param name="orderBy">To order the response, include the property name to order by as key and 
+        /// whether the ordering should be in descending order (as opposed to ascending)</param>
+        /// <param name="condition1">A condition to match against</param>
+        /// <param name="condition2">A condition to match against</param>
+        /// <param name="condition3">A condition to match against</param>
+        /// <param name="condition4">A condition to match against</param>
+        /// <param name="condition5">A condition to match against</param>
         public static IEnumerable<T> GET(
             (string key, Operator @operator, dynamic value)? condition1,
             (string key, Operator @operator, dynamic value)? condition2,
             (string key, Operator @operator, dynamic value)? condition3,
             (string key, Operator @operator, dynamic value)? condition4,
             (string key, Operator @operator, dynamic value)? condition5,
-            bool @unsafe = false, int limit = -1, (string key, bool descending)? orderBy = null) =>
-            GET(new[] {condition1, condition2, condition3, condition4, condition5}, @unsafe, limit, orderBy);
+            int limit = -1, (string key, bool descending)? orderBy = null) =>
+            GET(new[]
+            {
+                condition1, condition2, condition3, condition4, condition5
+            }, limit, orderBy);
 
+        /// <summary>
+        /// Returns all entitites in the resource that matches a set of conditions. To order
+        /// the entitites, include an orderBy tuple. To restrict the entities to a certain cardinality,
+        /// include a limit.
+        /// </summary>
+        /// <param name="limit">The number of entities to restrict the response to</param>
+        /// <param name="orderBy">To order the response, include the property name to order by as key and 
+        /// whether the ordering should be in descending order (as opposed to ascending)</param>
+        /// <param name="condition1">A condition to match against</param>
+        /// <param name="condition2">A condition to match against</param>
+        /// <param name="condition3">A condition to match against</param>
+        /// <param name="condition4">A condition to match against</param>
+        /// <param name="condition5">A condition to match against</param>
+        /// <param name="condition6">A condition to match against</param>
         public static IEnumerable<T> GET(
             (string key, Operator @operator, dynamic value)? condition1,
             (string key, Operator @operator, dynamic value)? condition2,
@@ -63,10 +158,28 @@ namespace RESTar
             (string key, Operator @operator, dynamic value)? condition4,
             (string key, Operator @operator, dynamic value)? condition5,
             (string key, Operator @operator, dynamic value)? condition6,
-            bool @unsafe = false, int limit = -1, (string key, bool descending)? orderBy = null) =>
-            GET(new[] {condition1, condition2, condition3, condition4, condition5, condition6}, @unsafe, limit,
-                orderBy);
+            int limit = -1, (string key, bool descending)? orderBy = null) =>
+            GET(new[]
+            {
+                condition1, condition2, condition3, condition4, condition5,
+                condition6
+            }, limit, orderBy);
 
+        /// <summary>
+        /// Returns all entitites in the resource that matches a set of conditions. To order
+        /// the entitites, include an orderBy tuple. To restrict the entities to a certain cardinality,
+        /// include a limit.
+        /// </summary>
+        /// <param name="limit">The number of entities to restrict the response to</param>
+        /// <param name="orderBy">To order the response, include the property name to order by as key and 
+        /// whether the ordering should be in descending order (as opposed to ascending)</param>
+        /// <param name="condition1">A condition to match against</param>
+        /// <param name="condition2">A condition to match against</param>
+        /// <param name="condition3">A condition to match against</param>
+        /// <param name="condition4">A condition to match against</param>
+        /// <param name="condition5">A condition to match against</param>
+        /// <param name="condition6">A condition to match against</param>
+        /// <param name="condition7">A condition to match against</param>
         public static IEnumerable<T> GET(
             (string key, Operator @operator, dynamic value)? condition1,
             (string key, Operator @operator, dynamic value)? condition2,
@@ -75,10 +188,29 @@ namespace RESTar
             (string key, Operator @operator, dynamic value)? condition5,
             (string key, Operator @operator, dynamic value)? condition6,
             (string key, Operator @operator, dynamic value)? condition7,
-            bool @unsafe = false, int limit = -1, (string key, bool descending)? orderBy = null) =>
-            GET(new[] {condition1, condition2, condition3, condition4, condition5, condition6, condition7}, @unsafe,
-                limit, orderBy);
+            int limit = -1, (string key, bool descending)? orderBy = null) =>
+            GET(new[]
+            {
+                condition1, condition2, condition3, condition4, condition5,
+                condition6, condition7
+            }, limit, orderBy);
 
+        /// <summary>
+        /// Returns all entitites in the resource that matches a set of conditions. To order
+        /// the entitites, include an orderBy tuple. To restrict the entities to a certain cardinality,
+        /// include a limit.
+        /// </summary>
+        /// <param name="limit">The number of entities to restrict the response to</param>
+        /// <param name="orderBy">To order the response, include the property name to order by as key and 
+        /// whether the ordering should be in descending order (as opposed to ascending)</param>
+        /// <param name="condition1">A condition to match against</param>
+        /// <param name="condition2">A condition to match against</param>
+        /// <param name="condition3">A condition to match against</param>
+        /// <param name="condition4">A condition to match against</param>
+        /// <param name="condition5">A condition to match against</param>
+        /// <param name="condition6">A condition to match against</param>
+        /// <param name="condition7">A condition to match against</param>
+        /// <param name="condition8">A condition to match against</param>
         public static IEnumerable<T> GET(
             (string key, Operator @operator, dynamic value)? condition1,
             (string key, Operator @operator, dynamic value)? condition2,
@@ -88,10 +220,30 @@ namespace RESTar
             (string key, Operator @operator, dynamic value)? condition6,
             (string key, Operator @operator, dynamic value)? condition7,
             (string key, Operator @operator, dynamic value)? condition8,
-            bool @unsafe = false, int limit = -1, (string key, bool descending)? orderBy = null) =>
-            GET(new[] {condition1, condition2, condition3, condition4, condition5, condition6, condition7, condition8},
-                @unsafe, limit, orderBy);
+            int limit = -1, (string key, bool descending)? orderBy = null) =>
+            GET(new[]
+            {
+                condition1, condition2, condition3, condition4, condition5,
+                condition6, condition7, condition8
+            }, limit, orderBy);
 
+        /// <summary>
+        /// Returns all entitites in the resource that matches a set of conditions. To order
+        /// the entitites, include an orderBy tuple. To restrict the entities to a certain cardinality,
+        /// include a limit.
+        /// </summary>
+        /// <param name="limit">The number of entities to restrict the response to</param>
+        /// <param name="orderBy">To order the response, include the property name to order by as key and 
+        /// whether the ordering should be in descending order (as opposed to ascending)</param>
+        /// <param name="condition1">A condition to match against</param>
+        /// <param name="condition2">A condition to match against</param>
+        /// <param name="condition3">A condition to match against</param>
+        /// <param name="condition4">A condition to match against</param>
+        /// <param name="condition5">A condition to match against</param>
+        /// <param name="condition6">A condition to match against</param>
+        /// <param name="condition7">A condition to match against</param>
+        /// <param name="condition8">A condition to match against</param>
+        /// <param name="condition9">A condition to match against</param>
         public static IEnumerable<T> GET(
             (string key, Operator @operator, dynamic value)? condition1,
             (string key, Operator @operator, dynamic value)? condition2,
@@ -102,13 +254,31 @@ namespace RESTar
             (string key, Operator @operator, dynamic value)? condition7,
             (string key, Operator @operator, dynamic value)? condition8,
             (string key, Operator @operator, dynamic value)? condition9,
-            bool @unsafe = false, int limit = -1, (string key, bool descending)? orderBy = null) =>
+            int limit = -1, (string key, bool descending)? orderBy = null) =>
             GET(new[]
             {
-                condition1, condition2, condition3, condition4, condition5, condition6, condition7, condition8,
-                condition9
-            }, @unsafe, limit, orderBy);
+                condition1, condition2, condition3, condition4, condition5,
+                condition6, condition7, condition8, condition9
+            }, limit, orderBy);
 
+        /// <summary>
+        /// Returns all entitites in the resource that matches a set of conditions. To order
+        /// the entitites, include an orderBy tuple. To restrict the entities to a certain cardinality,
+        /// include a limit.
+        /// </summary>
+        /// <param name="limit">The number of entities to restrict the response to</param>
+        /// <param name="orderBy">To order the response, include the property name to order by as key and 
+        /// whether the ordering should be in descending order (as opposed to ascending)</param>
+        /// <param name="condition1">A condition to match against</param>
+        /// <param name="condition2">A condition to match against</param>
+        /// <param name="condition3">A condition to match against</param>
+        /// <param name="condition4">A condition to match against</param>
+        /// <param name="condition5">A condition to match against</param>
+        /// <param name="condition6">A condition to match against</param>
+        /// <param name="condition7">A condition to match against</param>
+        /// <param name="condition8">A condition to match against</param>
+        /// <param name="condition9">A condition to match against</param>
+        /// <param name="condition10">A condition to match against</param>
         public static IEnumerable<T> GET(
             (string key, Operator @operator, dynamic value)? condition1,
             (string key, Operator @operator, dynamic value)? condition2,
@@ -120,69 +290,203 @@ namespace RESTar
             (string key, Operator @operator, dynamic value)? condition8,
             (string key, Operator @operator, dynamic value)? condition9,
             (string key, Operator @operator, dynamic value)? condition10,
-            bool @unsafe = false, int limit = -1, (string key, bool descending)? orderBy = null) =>
+            int limit = -1, (string key, bool descending)? orderBy = null) =>
             GET(new[]
             {
-                condition1, condition2, condition3, condition4, condition5, condition6, condition7, condition8,
-                condition9, condition10
-            }, @unsafe, limit, orderBy);
+                condition1, condition2, condition3, condition4, condition5,
+                condition6, condition7, condition8, condition9, condition10
+            }, limit, orderBy);
 
         #endregion
 
+        #region POST
+
+        /// <summary>
+        /// Inserts an entity into the specified resource. The inserter delegate will automatically
+        /// be invoked within a transaction scope if the resource is a Starcounter database type.
+        /// </summary>
+        /// <param name="inserter">A function that returns one entity of the resource type.</param>
+        /// <returns>The number of entities successfully inserted (0 or 1)</returns>
         public static int POST(Func<T> inserter) => new AppRequest<T>().POST(inserter);
+
+        /// <summary>
+        /// Inserts one or more entities into the specified resource. The inserter delegate will automatically
+        /// be invoked within a transaction scope if the resource is a Starcounter database type.
+        /// </summary>
+        /// <param name="inserter">A function that returns an IEnumerable of entities of the resource type</param>
+        /// <returns>The number of entities successfully inserted</returns>
         public static int POST(Func<IEnumerable<T>> inserter) => new AppRequest<T>().POST(inserter);
+
+        #endregion
 
         #region PATCH
 
+        /// <summary>
+        /// Updates one more entities in the specified resource. The updater delegate will automatically
+        /// be invoked within a transaction scope if the resource is a Starcounter database type.
+        /// </summary>
+        /// <param name="updater">A function that is applied to the matched entities and returns an IEnumerable of
+        /// updated entities</param>
+        /// <param name="conditions">A list of conditions to match against</param>
+        /// <param name="unsafe">If true, the request will update multiple entities if more than one is matched by
+        /// the conditions and limit. Else RESTar will return an error in those cases.</param>
+        /// <param name="limit">The number of entities to restrict the matching to</param>
+        /// <param name="orderBy">To order the matched entities, include the property name to order by as key and 
+        /// whether the ordering should be in descending order (as opposed to ascending)</param>
+        /// <returns>The number of entities successfully updated</returns>
         public static int PATCH(Func<IEnumerable<T>, IEnumerable<T>> updater,
             (string key, Operator @operator, dynamic value)?[] conditions,
             bool @unsafe, int limit, (string key, bool descending)? orderBy = null)
         {
-            var ar = new AppRequest<T>
-            {
-                Unsafe = @unsafe,
-                Limit = limit
-            };
+            var ar = new AppRequest<T> {Unsafe = @unsafe, Limit = limit};
             ar.AddOrderBy(orderBy);
             ar.AddConditions(conditions);
             return ar.PATCH(updater);
         }
 
+        /// <summary>
+        /// Updates one more entities in the specified resource. The updater delegate will automatically
+        /// be invoked within a transaction scope if the resource is a Starcounter database type.
+        /// </summary>
+        /// <param name="updater">A function that is applied to the matched entities and returns an IEnumerable of
+        /// updated entities</param>
+        /// <param name="unsafe">If true, the request will update multiple entities if more than one is matched by
+        /// the conditions and limit. Else RESTar will return an error in those cases.</param>
+        /// <param name="limit">The number of entities to restrict the matching to</param>
+        /// <param name="orderBy">To order the matched entities, include the property name to order by as key and 
+        /// whether the ordering should be in descending order (as opposed to ascending)</param>
+        /// <param name="condition">A condition to match against</param>
+        /// <returns>The number of entities successfully updated</returns>
         public static int PATCH(Func<IEnumerable<T>, IEnumerable<T>> updater,
             (string key, Operator @operator, dynamic value)? condition = null,
-            bool @unsafe = false, int limit = -1) =>
-            PATCH(updater, new[] {condition}, @unsafe, limit);
+            bool @unsafe = false, int limit = -1, (string key, bool descending)? orderBy = null) =>
+            PATCH(updater, new[]
+            {
+                condition
+            }, @unsafe, limit, orderBy);
 
+        /// <summary>
+        /// Updates one more entities in the specified resource. The updater delegate will automatically
+        /// be invoked within a transaction scope if the resource is a Starcounter database type.
+        /// </summary>
+        /// <param name="updater">A function that is applied to the matched entities and returns an IEnumerable of
+        /// updated entities</param>
+        /// <param name="unsafe">If true, the request will update multiple entities if more than one is matched by
+        /// the conditions and limit. Else RESTar will return an error in those cases.</param>
+        /// <param name="limit">The number of entities to restrict the matching to</param>
+        /// <param name="orderBy">To order the matched entities, include the property name to order by as key and 
+        /// whether the ordering should be in descending order (as opposed to ascending)</param>
+        /// <param name="condition1">A condition to match against</param>
+        /// <param name="condition2">A condition to match against</param>
+        /// <returns>The number of entities successfully updated</returns>
         public static int PATCH(Func<IEnumerable<T>, IEnumerable<T>> updater,
             (string key, Operator @operator, dynamic value)? condition1,
             (string key, Operator @operator, dynamic value)? condition2,
-            bool @unsafe = false, int limit = -1) =>
-            PATCH(updater, new[] {condition1, condition2}, @unsafe, limit);
+            bool @unsafe = false, int limit = -1, (string key, bool descending)? orderBy = null) =>
+            PATCH(updater, new[]
+            {
+                condition1, condition2
+            }, @unsafe, limit, orderBy);
 
+        /// <summary>
+        /// Updates one more entities in the specified resource. The updater delegate will automatically
+        /// be invoked within a transaction scope if the resource is a Starcounter database type.
+        /// </summary>
+        /// <param name="updater">A function that is applied to the matched entities and returns an IEnumerable of
+        /// updated entities</param>
+        /// <param name="unsafe">If true, the request will update multiple entities if more than one is matched by
+        /// the conditions and limit. Else RESTar will return an error in those cases.</param>
+        /// <param name="limit">The number of entities to restrict the matching to</param>
+        /// <param name="orderBy">To order the matched entities, include the property name to order by as key and 
+        /// whether the ordering should be in descending order (as opposed to ascending)</param>
+        /// <param name="condition1">A condition to match against</param>
+        /// <param name="condition2">A condition to match against</param>
+        /// <param name="condition3">A condition to match against</param>
+        /// <returns>The number of entities successfully updated</returns>
         public static int PATCH(Func<IEnumerable<T>, IEnumerable<T>> updater,
             (string key, Operator @operator, dynamic value)? condition1,
             (string key, Operator @operator, dynamic value)? condition2,
             (string key, Operator @operator, dynamic value)? condition3,
-            bool @unsafe = false, int limit = -1) =>
-            PATCH(updater, new[] {condition1, condition2, condition3}, @unsafe, limit);
+            bool @unsafe = false, int limit = -1, (string key, bool descending)? orderBy = null) =>
+            PATCH(updater, new[]
+            {
+                condition1, condition2, condition3
+            }, @unsafe, limit, orderBy);
 
+        /// <summary>
+        /// Updates one more entities in the specified resource. The updater delegate will automatically
+        /// be invoked within a transaction scope if the resource is a Starcounter database type.
+        /// </summary>
+        /// <param name="updater">A function that is applied to the matched entities and returns an IEnumerable of
+        /// updated entities</param>
+        /// <param name="unsafe">If true, the request will update multiple entities if more than one is matched by
+        /// the conditions and limit. Else RESTar will return an error in those cases.</param>
+        /// <param name="limit">The number of entities to restrict the matching to</param>
+        /// <param name="orderBy">To order the matched entities, include the property name to order by as key and 
+        /// whether the ordering should be in descending order (as opposed to ascending)</param>
+        /// <param name="condition1">A condition to match against</param>
+        /// <param name="condition2">A condition to match against</param>
+        /// <param name="condition3">A condition to match against</param>
+        /// <param name="condition4">A condition to match against</param>
+        /// <returns>The number of entities successfully updated</returns>
         public static int PATCH(Func<IEnumerable<T>, IEnumerable<T>> updater,
             (string key, Operator @operator, dynamic value)? condition1,
             (string key, Operator @operator, dynamic value)? condition2,
             (string key, Operator @operator, dynamic value)? condition3,
             (string key, Operator @operator, dynamic value)? condition4,
-            bool @unsafe = false, int limit = -1) =>
-            PATCH(updater, new[] {condition1, condition2, condition3, condition4}, @unsafe, limit);
+            bool @unsafe = false, int limit = -1, (string key, bool descending)? orderBy = null) =>
+            PATCH(updater, new[]
+            {
+                condition1, condition2, condition3, condition4
+            }, @unsafe, limit, orderBy);
 
+        /// <summary>
+        /// Updates one more entities in the specified resource. The updater delegate will automatically
+        /// be invoked within a transaction scope if the resource is a Starcounter database type.
+        /// </summary>
+        /// <param name="updater">A function that is applied to the matched entities and returns an IEnumerable of
+        /// updated entities</param>
+        /// <param name="unsafe">If true, the request will update multiple entities if more than one is matched by
+        /// the conditions and limit. Else RESTar will return an error in those cases.</param>
+        /// <param name="limit">The number of entities to restrict the matching to</param>
+        /// <param name="orderBy">To order the matched entities, include the property name to order by as key and 
+        /// whether the ordering should be in descending order (as opposed to ascending)</param>
+        /// <param name="condition1">A condition to match against</param>
+        /// <param name="condition2">A condition to match against</param>
+        /// <param name="condition3">A condition to match against</param>
+        /// <param name="condition4">A condition to match against</param>
+        /// <param name="condition5">A condition to match against</param>
+        /// <returns>The number of entities successfully updated</returns>
         public static int PATCH(Func<IEnumerable<T>, IEnumerable<T>> updater,
             (string key, Operator @operator, dynamic value)? condition1,
             (string key, Operator @operator, dynamic value)? condition2,
             (string key, Operator @operator, dynamic value)? condition3,
             (string key, Operator @operator, dynamic value)? condition4,
             (string key, Operator @operator, dynamic value)? condition5,
-            bool @unsafe = false, int limit = -1) =>
-            PATCH(updater, new[] {condition1, condition2, condition3, condition4, condition5}, @unsafe, limit);
+            bool @unsafe = false, int limit = -1, (string key, bool descending)? orderBy = null) =>
+            PATCH(updater, new[]
+            {
+                condition1, condition2, condition3, condition4, condition5
+            }, @unsafe, limit, orderBy);
 
+        /// <summary>
+        /// Updates one more entities in the specified resource. The updater delegate will automatically
+        /// be invoked within a transaction scope if the resource is a Starcounter database type.
+        /// </summary>
+        /// <param name="updater">A function that is applied to the matched entities and returns an IEnumerable of
+        /// updated entities</param>
+        /// <param name="unsafe">If true, the request will update multiple entities if more than one is matched by
+        /// the conditions and limit. Else RESTar will return an error in those cases.</param>
+        /// <param name="limit">The number of entities to restrict the matching to</param>
+        /// <param name="orderBy">To order the matched entities, include the property name to order by as key and 
+        /// whether the ordering should be in descending order (as opposed to ascending)</param>
+        /// <param name="condition1">A condition to match against</param>
+        /// <param name="condition2">A condition to match against</param>
+        /// <param name="condition3">A condition to match against</param>
+        /// <param name="condition4">A condition to match against</param>
+        /// <param name="condition5">A condition to match against</param>
+        /// <param name="condition6">A condition to match against</param>
+        /// <returns>The number of entities successfully updated</returns>
         public static int PATCH(Func<IEnumerable<T>, IEnumerable<T>> updater,
             (string key, Operator @operator, dynamic value)? condition1,
             (string key, Operator @operator, dynamic value)? condition2,
@@ -190,10 +494,32 @@ namespace RESTar
             (string key, Operator @operator, dynamic value)? condition4,
             (string key, Operator @operator, dynamic value)? condition5,
             (string key, Operator @operator, dynamic value)? condition6,
-            bool @unsafe = false, int limit = -1) =>
-            PATCH(updater, new[] {condition1, condition2, condition3, condition4, condition5, condition6}, @unsafe,
-                limit);
+            bool @unsafe = false, int limit = -1, (string key, bool descending)? orderBy = null) =>
+            PATCH(updater, new[]
+            {
+                condition1, condition2, condition3, condition4, condition5,
+                condition6
+            }, @unsafe, limit, orderBy);
 
+        /// <summary>
+        /// Updates one more entities in the specified resource. The updater delegate will automatically
+        /// be invoked within a transaction scope if the resource is a Starcounter database type.
+        /// </summary>
+        /// <param name="updater">A function that is applied to the matched entities and returns an IEnumerable of
+        /// updated entities</param>
+        /// <param name="unsafe">If true, the request will update multiple entities if more than one is matched by
+        /// the conditions and limit. Else RESTar will return an error in those cases.</param>
+        /// <param name="limit">The number of entities to restrict the matching to</param>
+        /// <param name="orderBy">To order the matched entities, include the property name to order by as key and 
+        /// whether the ordering should be in descending order (as opposed to ascending)</param>
+        /// <param name="condition1">A condition to match against</param>
+        /// <param name="condition2">A condition to match against</param>
+        /// <param name="condition3">A condition to match against</param>
+        /// <param name="condition4">A condition to match against</param>
+        /// <param name="condition5">A condition to match against</param>
+        /// <param name="condition6">A condition to match against</param>
+        /// <param name="condition7">A condition to match against</param>
+        /// <returns>The number of entities successfully updated</returns>
         public static int PATCH(Func<IEnumerable<T>, IEnumerable<T>> updater,
             (string key, Operator @operator, dynamic value)? condition1,
             (string key, Operator @operator, dynamic value)? condition2,
@@ -202,10 +528,33 @@ namespace RESTar
             (string key, Operator @operator, dynamic value)? condition5,
             (string key, Operator @operator, dynamic value)? condition6,
             (string key, Operator @operator, dynamic value)? condition7,
-            bool @unsafe = false, int limit = -1) =>
-            PATCH(updater, new[] {condition1, condition2, condition3, condition4, condition5, condition6, condition7},
-                @unsafe, limit);
+            bool @unsafe = false, int limit = -1, (string key, bool descending)? orderBy = null) =>
+            PATCH(updater, new[]
+            {
+                condition1, condition2, condition3, condition4, condition5,
+                condition6, condition7
+            }, @unsafe, limit, orderBy);
 
+        /// <summary>
+        /// Updates one more entities in the specified resource. The updater delegate will automatically
+        /// be invoked within a transaction scope if the resource is a Starcounter database type.
+        /// </summary>
+        /// <param name="updater">A function that is applied to the matched entities and returns an IEnumerable of
+        /// updated entities</param>
+        /// <param name="unsafe">If true, the request will update multiple entities if more than one is matched by
+        /// the conditions and limit. Else RESTar will return an error in those cases.</param>
+        /// <param name="limit">The number of entities to restrict the matching to</param>
+        /// <param name="orderBy">To order the matched entities, include the property name to order by as key and 
+        /// whether the ordering should be in descending order (as opposed to ascending)</param>
+        /// <param name="condition1">A condition to match against</param>
+        /// <param name="condition2">A condition to match against</param>
+        /// <param name="condition3">A condition to match against</param>
+        /// <param name="condition4">A condition to match against</param>
+        /// <param name="condition5">A condition to match against</param>
+        /// <param name="condition6">A condition to match against</param>
+        /// <param name="condition7">A condition to match against</param>
+        /// <param name="condition8">A condition to match against</param>
+        /// <returns>The number of entities successfully updated</returns>
         public static int PATCH(Func<IEnumerable<T>, IEnumerable<T>> updater,
             (string key, Operator @operator, dynamic value)? condition1,
             (string key, Operator @operator, dynamic value)? condition2,
@@ -215,11 +564,34 @@ namespace RESTar
             (string key, Operator @operator, dynamic value)? condition6,
             (string key, Operator @operator, dynamic value)? condition7,
             (string key, Operator @operator, dynamic value)? condition8,
-            bool @unsafe = false, int limit = -1) =>
-            PATCH(updater,
-                new[] {condition1, condition2, condition3, condition4, condition5, condition6, condition7, condition8},
-                @unsafe, limit);
+            bool @unsafe = false, int limit = -1, (string key, bool descending)? orderBy = null) =>
+            PATCH(updater, new[]
+            {
+                condition1, condition2, condition3, condition4, condition5,
+                condition6, condition7, condition8
+            }, @unsafe, limit, orderBy);
 
+        /// <summary>
+        /// Updates one more entities in the specified resource. The updater delegate will automatically
+        /// be invoked within a transaction scope if the resource is a Starcounter database type.
+        /// </summary>
+        /// <param name="updater">A function that is applied to the matched entities and returns an IEnumerable of
+        /// updated entities</param>
+        /// <param name="unsafe">If true, the request will update multiple entities if more than one is matched by
+        /// the conditions and limit. Else RESTar will return an error in those cases.</param>
+        /// <param name="limit">The number of entities to restrict the matching to</param>
+        /// <param name="orderBy">To order the matched entities, include the property name to order by as key and 
+        /// whether the ordering should be in descending order (as opposed to ascending)</param>
+        /// <param name="condition1">A condition to match against</param>
+        /// <param name="condition2">A condition to match against</param>
+        /// <param name="condition3">A condition to match against</param>
+        /// <param name="condition4">A condition to match against</param>
+        /// <param name="condition5">A condition to match against</param>
+        /// <param name="condition6">A condition to match against</param>
+        /// <param name="condition7">A condition to match against</param>
+        /// <param name="condition8">A condition to match against</param>
+        /// <param name="condition9">A condition to match against</param>
+        /// <returns>The number of entities successfully updated</returns>
         public static int PATCH(Func<IEnumerable<T>, IEnumerable<T>> updater,
             (string key, Operator @operator, dynamic value)? condition1,
             (string key, Operator @operator, dynamic value)? condition2,
@@ -230,13 +602,35 @@ namespace RESTar
             (string key, Operator @operator, dynamic value)? condition7,
             (string key, Operator @operator, dynamic value)? condition8,
             (string key, Operator @operator, dynamic value)? condition9,
-            bool @unsafe = false, int limit = -1) =>
+            bool @unsafe = false, int limit = -1, (string key, bool descending)? orderBy = null) =>
             PATCH(updater, new[]
             {
-                condition1, condition2, condition3, condition4, condition5, condition6, condition7, condition8,
-                condition9
-            }, @unsafe, limit);
+                condition1, condition2, condition3, condition4, condition5,
+                condition6, condition7, condition8, condition9
+            }, @unsafe, limit, orderBy);
 
+        /// <summary>
+        /// Updates one more entities in the specified resource. The updater delegate will automatically
+        /// be invoked within a transaction scope if the resource is a Starcounter database type.
+        /// </summary>
+        /// <param name="updater">A function that is applied to the matched entities and returns an IEnumerable of
+        /// updated entities</param>
+        /// <param name="unsafe">If true, the request will update multiple entities if more than one is matched by
+        /// the conditions and limit. Else RESTar will return an error in those cases.</param>
+        /// <param name="limit">The number of entities to restrict the matching to</param>
+        /// <param name="orderBy">To order the matched entities, include the property name to order by as key and 
+        /// whether the ordering should be in descending order (as opposed to ascending)</param>
+        /// <param name="condition1">A condition to match against</param>
+        /// <param name="condition2">A condition to match against</param>
+        /// <param name="condition3">A condition to match against</param>
+        /// <param name="condition4">A condition to match against</param>
+        /// <param name="condition5">A condition to match against</param>
+        /// <param name="condition6">A condition to match against</param>
+        /// <param name="condition7">A condition to match against</param>
+        /// <param name="condition8">A condition to match against</param>
+        /// <param name="condition9">A condition to match against</param>
+        /// <param name="condition10">A condition to match against</param>
+        /// <returns>The number of entities successfully updated</returns>
         public static int PATCH(Func<IEnumerable<T>, IEnumerable<T>> updater,
             (string key, Operator @operator, dynamic value)? condition1,
             (string key, Operator @operator, dynamic value)? condition2,
@@ -248,17 +642,32 @@ namespace RESTar
             (string key, Operator @operator, dynamic value)? condition8,
             (string key, Operator @operator, dynamic value)? condition9,
             (string key, Operator @operator, dynamic value)? condition10,
-            bool @unsafe = false, int limit = -1) =>
+            bool @unsafe = false, int limit = -1, (string key, bool descending)? orderBy = null) =>
             PATCH(updater, new[]
             {
-                condition1, condition2, condition3, condition4, condition5, condition6, condition7, condition8,
-                condition9, condition10
-            }, @unsafe, limit);
+                condition1, condition2, condition3, condition4, condition5,
+                condition6, condition7, condition8, condition9, condition10
+            }, @unsafe, limit, orderBy);
 
         #endregion
 
         #region PUT
 
+        /// <summary>
+        /// Matches against existing entities and tries to locate a single uniquely matched
+        /// entity. If such an entity is found, the provided updater is invoked with it as
+        /// argument. Else the inserter is invoked. If no unique match can be made, an exception
+        /// will be thrown. The delegate invocation will automatically be performed within a 
+        /// transaction scope if the resource is a Starcounter database type.
+        /// </summary>
+        /// <param name="inserter">A function that returns one entity of the resource type.</param>
+        /// <param name="updater">A function that is applied to the matched entity and returns an 
+        /// updated entity</param>
+        /// <param name="conditions">A list of conditions to match against</param>
+        /// <param name="limit">The number of entities to restrict the matching to</param>
+        /// <param name="orderBy">To order the matched entities, include the property name to order by as key and 
+        /// whether the ordering should be in descending order (as opposed to ascending)</param>
+        /// <returns>The number of entities successfully updated or inserted (0 or 1)</returns>
         public static int PUT(Func<T> inserter, Func<T, T> updater,
             (string key, Operator @operator, dynamic value)?[] conditions,
             int limit = -1, (string key, bool descending)? orderBy = null)
@@ -269,45 +678,161 @@ namespace RESTar
             return ar.PUT(inserter, updater);
         }
 
+        /// <summary>
+        /// Matches against existing entities and tries to locate a single uniquely matched
+        /// entity. If such an entity is found, the provided updater is invoked with it as
+        /// argument. Else the inserter is invoked. If no unique match can be made, an exception
+        /// will be thrown. The delegate invocation will automatically be performed within a 
+        /// transaction scope if the resource is a Starcounter database type.
+        /// </summary>
+        /// <param name="inserter">A function that returns one entity of the resource type.</param>
+        /// <param name="updater">A function that is applied to the matched entity and returns an 
+        /// updated entity</param>
+        /// <param name="limit">The number of entities to restrict the matching to</param>
+        /// <param name="orderBy">To order the matched entities, include the property name to order by as key and 
+        /// whether the ordering should be in descending order (as opposed to ascending)</param>
+        /// <param name="condition">A condition to match against</param>
+        /// <returns>The number of entities successfully updated or inserted (0 or 1)</returns>
         public static int PUT(Func<T> inserter, Func<T, T> updater,
-            (string key, Operator @operator, dynamic value)? condition = null) =>
-            PUT(inserter, updater, new[] {condition});
+            (string key, Operator @operator, dynamic value)? condition = null,
+            int limit = -1, (string key, bool descending)? orderBy = null) =>
+            PUT(inserter, updater, new[]
+            {
+                condition
+            }, limit, orderBy);
 
-        public static int PUT(Func<T> inserter, Func<T, T> updater,
-            (string key, Operator @operator, dynamic value)? condition1,
-            (string key, Operator @operator, dynamic value)? condition2) =>
-            PUT(inserter, updater, new[] {condition1, condition2});
-
+        /// <summary>
+        /// Matches against existing entities and tries to locate a single uniquely matched
+        /// entity. If such an entity is found, the provided updater is invoked with it as
+        /// argument. Else the inserter is invoked. If no unique match can be made, an exception
+        /// will be thrown. The delegate invocation will automatically be performed within a 
+        /// transaction scope if the resource is a Starcounter database type.
+        /// </summary>
+        /// <param name="inserter">A function that returns one entity of the resource type.</param>
+        /// <param name="updater">A function that is applied to the matched entity and returns an 
+        /// updated entity</param>
+        /// <param name="limit">The number of entities to restrict the matching to</param>
+        /// <param name="orderBy">To order the matched entities, include the property name to order by as key and 
+        /// whether the ordering should be in descending order (as opposed to ascending)</param>
+        /// <param name="condition1">A condition to match against</param>
+        /// <param name="condition2">A condition to match against</param>
+        /// <returns>The number of entities successfully updated or inserted (0 or 1)</returns>
         public static int PUT(Func<T> inserter, Func<T, T> updater,
             (string key, Operator @operator, dynamic value)? condition1,
             (string key, Operator @operator, dynamic value)? condition2,
-            (string key, Operator @operator, dynamic value)? condition3) =>
-            PUT(inserter, updater, new[] {condition1, condition2, condition3});
+            int limit = -1, (string key, bool descending)? orderBy = null) =>
+            PUT(inserter, updater, new[]
+            {
+                condition1, condition2
+            }, limit, orderBy);
 
+        /// <summary>
+        /// Matches against existing entities and tries to locate a single uniquely matched
+        /// entity. If such an entity is found, the provided updater is invoked with it as
+        /// argument. Else the inserter is invoked. If no unique match can be made, an exception
+        /// will be thrown. The delegate invocation will automatically be performed within a 
+        /// transaction scope if the resource is a Starcounter database type.
+        /// </summary>
+        /// <param name="inserter">A function that returns one entity of the resource type.</param>
+        /// <param name="updater">A function that is applied to the matched entity and returns an 
+        /// updated entity</param>
+        /// <param name="limit">The number of entities to restrict the matching to</param>
+        /// <param name="orderBy">To order the matched entities, include the property name to order by as key and 
+        /// whether the ordering should be in descending order (as opposed to ascending)</param>
+        /// <param name="condition1">A condition to match against</param>
+        /// <param name="condition2">A condition to match against</param>
+        /// <param name="condition3">A condition to match against</param>
+        /// <returns>The number of entities successfully updated or inserted (0 or 1)</returns>
         public static int PUT(Func<T> inserter, Func<T, T> updater,
             (string key, Operator @operator, dynamic value)? condition1,
             (string key, Operator @operator, dynamic value)? condition2,
             (string key, Operator @operator, dynamic value)? condition3,
-            (string key, Operator @operator, dynamic value)? condition4) =>
-            PUT(inserter, updater, new[] {condition1, condition2, condition3, condition4});
+            int limit = -1, (string key, bool descending)? orderBy = null) =>
+            PUT(inserter, updater, new[]
+            {
+                condition1, condition2, condition3
+            }, limit, orderBy);
 
+        /// <summary>
+        /// Matches against existing entities and tries to locate a single uniquely matched
+        /// entity. If such an entity is found, the provided updater is invoked with it as
+        /// argument. Else the inserter is invoked. If no unique match can be made, an exception
+        /// will be thrown. The delegate invocation will automatically be performed within a 
+        /// transaction scope if the resource is a Starcounter database type.
+        /// </summary>
+        /// <param name="inserter">A function that returns one entity of the resource type.</param>
+        /// <param name="updater">A function that is applied to the matched entity and returns an 
+        /// updated entity</param>
+        /// <param name="limit">The number of entities to restrict the matching to</param>
+        /// <param name="orderBy">To order the matched entities, include the property name to order by as key and 
+        /// whether the ordering should be in descending order (as opposed to ascending)</param>
+        /// <param name="condition1">A condition to match against</param>
+        /// <param name="condition2">A condition to match against</param>
+        /// <param name="condition3">A condition to match against</param>
+        /// <param name="condition4">A condition to match against</param>
+        /// <returns>The number of entities successfully updated or inserted (0 or 1)</returns>
         public static int PUT(Func<T> inserter, Func<T, T> updater,
             (string key, Operator @operator, dynamic value)? condition1,
             (string key, Operator @operator, dynamic value)? condition2,
             (string key, Operator @operator, dynamic value)? condition3,
             (string key, Operator @operator, dynamic value)? condition4,
-            (string key, Operator @operator, dynamic value)? condition5) =>
-            PUT(inserter, updater, new[] {condition1, condition2, condition3, condition4, condition5});
+            int limit = -1, (string key, bool descending)? orderBy = null) =>
+            PUT(inserter, updater, new[]
+            {
+                condition1, condition2, condition3, condition4
+            }, limit, orderBy);
 
+        /// <summary>
+        /// Matches against existing entities and tries to locate a single uniquely matched
+        /// entity. If such an entity is found, the provided updater is invoked with it as
+        /// argument. Else the inserter is invoked. If no unique match can be made, an exception
+        /// will be thrown. The delegate invocation will automatically be performed within a 
+        /// transaction scope if the resource is a Starcounter database type.
+        /// </summary>
+        /// <param name="inserter">A function that returns one entity of the resource type.</param>
+        /// <param name="updater">A function that is applied to the matched entity and returns an 
+        /// updated entity</param>
+        /// <param name="limit">The number of entities to restrict the matching to</param>
+        /// <param name="orderBy">To order the matched entities, include the property name to order by as key and 
+        /// whether the ordering should be in descending order (as opposed to ascending)</param>
+        /// <param name="condition1">A condition to match against</param>
+        /// <param name="condition2">A condition to match against</param>
+        /// <param name="condition3">A condition to match against</param>
+        /// <param name="condition4">A condition to match against</param>
+        /// <param name="condition5">A condition to match against</param>
+        /// <returns>The number of entities successfully updated or inserted (0 or 1)</returns>
         public static int PUT(Func<T> inserter, Func<T, T> updater,
             (string key, Operator @operator, dynamic value)? condition1,
             (string key, Operator @operator, dynamic value)? condition2,
             (string key, Operator @operator, dynamic value)? condition3,
             (string key, Operator @operator, dynamic value)? condition4,
             (string key, Operator @operator, dynamic value)? condition5,
-            (string key, Operator @operator, dynamic value)? condition6) =>
-            PUT(inserter, updater, new[] {condition1, condition2, condition3, condition4, condition5, condition6});
+            int limit = -1, (string key, bool descending)? orderBy = null) =>
+            PUT(inserter, updater, new[]
+            {
+                condition1, condition2, condition3, condition4, condition5
+            }, limit, orderBy);
 
+        /// <summary>
+        /// Matches against existing entities and tries to locate a single uniquely matched
+        /// entity. If such an entity is found, the provided updater is invoked with it as
+        /// argument. Else the inserter is invoked. If no unique match can be made, an exception
+        /// will be thrown. The delegate invocation will automatically be performed within a 
+        /// transaction scope if the resource is a Starcounter database type.
+        /// </summary>
+        /// <param name="inserter">A function that returns one entity of the resource type.</param>
+        /// <param name="updater">A function that is applied to the matched entity and returns an 
+        /// updated entity</param>
+        /// <param name="limit">The number of entities to restrict the matching to</param>
+        /// <param name="orderBy">To order the matched entities, include the property name to order by as key and 
+        /// whether the ordering should be in descending order (as opposed to ascending)</param>
+        /// <param name="condition1">A condition to match against</param>
+        /// <param name="condition2">A condition to match against</param>
+        /// <param name="condition3">A condition to match against</param>
+        /// <param name="condition4">A condition to match against</param>
+        /// <param name="condition5">A condition to match against</param>
+        /// <param name="condition6">A condition to match against</param>
+        /// <returns>The number of entities successfully updated or inserted (0 or 1)</returns>
         public static int PUT(Func<T> inserter, Func<T, T> updater,
             (string key, Operator @operator, dynamic value)? condition1,
             (string key, Operator @operator, dynamic value)? condition2,
@@ -315,11 +840,34 @@ namespace RESTar
             (string key, Operator @operator, dynamic value)? condition4,
             (string key, Operator @operator, dynamic value)? condition5,
             (string key, Operator @operator, dynamic value)? condition6,
-            (string key, Operator @operator, dynamic value)? condition7) =>
-            PUT(inserter, updater,
-                new[] {condition1, condition2, condition3, condition4, condition5, condition6, condition7}
-            );
+            int limit = -1, (string key, bool descending)? orderBy = null) =>
+            PUT(inserter, updater, new[]
+            {
+                condition1, condition2, condition3, condition4, condition5,
+                condition6
+            }, limit, orderBy);
 
+        /// <summary>
+        /// Matches against existing entities and tries to locate a single uniquely matched
+        /// entity. If such an entity is found, the provided updater is invoked with it as
+        /// argument. Else the inserter is invoked. If no unique match can be made, an exception
+        /// will be thrown. The delegate invocation will automatically be performed within a 
+        /// transaction scope if the resource is a Starcounter database type.
+        /// </summary>
+        /// <param name="inserter">A function that returns one entity of the resource type.</param>
+        /// <param name="updater">A function that is applied to the matched entity and returns an 
+        /// updated entity</param>
+        /// <param name="limit">The number of entities to restrict the matching to</param>
+        /// <param name="orderBy">To order the matched entities, include the property name to order by as key and 
+        /// whether the ordering should be in descending order (as opposed to ascending)</param>
+        /// <param name="condition1">A condition to match against</param>
+        /// <param name="condition2">A condition to match against</param>
+        /// <param name="condition3">A condition to match against</param>
+        /// <param name="condition4">A condition to match against</param>
+        /// <param name="condition5">A condition to match against</param>
+        /// <param name="condition6">A condition to match against</param>
+        /// <param name="condition7">A condition to match against</param>
+        /// <returns>The number of entities successfully updated or inserted (0 or 1)</returns>
         public static int PUT(Func<T> inserter, Func<T, T> updater,
             (string key, Operator @operator, dynamic value)? condition1,
             (string key, Operator @operator, dynamic value)? condition2,
@@ -328,11 +876,35 @@ namespace RESTar
             (string key, Operator @operator, dynamic value)? condition5,
             (string key, Operator @operator, dynamic value)? condition6,
             (string key, Operator @operator, dynamic value)? condition7,
-            (string key, Operator @operator, dynamic value)? condition8) =>
-            PUT(inserter, updater,
-                new[] {condition1, condition2, condition3, condition4, condition5, condition6, condition7, condition8}
-            );
+            int limit = -1, (string key, bool descending)? orderBy = null) =>
+            PUT(inserter, updater, new[]
+            {
+                condition1, condition2, condition3, condition4, condition5,
+                condition6, condition7
+            }, limit, orderBy);
 
+        /// <summary>
+        /// Matches against existing entities and tries to locate a single uniquely matched
+        /// entity. If such an entity is found, the provided updater is invoked with it as
+        /// argument. Else the inserter is invoked. If no unique match can be made, an exception
+        /// will be thrown. The delegate invocation will automatically be performed within a 
+        /// transaction scope if the resource is a Starcounter database type.
+        /// </summary>
+        /// <param name="inserter">A function that returns one entity of the resource type.</param>
+        /// <param name="updater">A function that is applied to the matched entity and returns an 
+        /// updated entity</param>
+        /// <param name="limit">The number of entities to restrict the matching to</param>
+        /// <param name="orderBy">To order the matched entities, include the property name to order by as key and 
+        /// whether the ordering should be in descending order (as opposed to ascending)</param>
+        /// <param name="condition1">A condition to match against</param>
+        /// <param name="condition2">A condition to match against</param>
+        /// <param name="condition3">A condition to match against</param>
+        /// <param name="condition4">A condition to match against</param>
+        /// <param name="condition5">A condition to match against</param>
+        /// <param name="condition6">A condition to match against</param>
+        /// <param name="condition7">A condition to match against</param>
+        /// <param name="condition8">A condition to match against</param>
+        /// <returns>The number of entities successfully updated or inserted (0 or 1)</returns>
         public static int PUT(Func<T> inserter, Func<T, T> updater,
             (string key, Operator @operator, dynamic value)? condition1,
             (string key, Operator @operator, dynamic value)? condition2,
@@ -342,13 +914,36 @@ namespace RESTar
             (string key, Operator @operator, dynamic value)? condition6,
             (string key, Operator @operator, dynamic value)? condition7,
             (string key, Operator @operator, dynamic value)? condition8,
-            (string key, Operator @operator, dynamic value)? condition9) =>
+            int limit = -1, (string key, bool descending)? orderBy = null) =>
             PUT(inserter, updater, new[]
             {
-                condition1, condition2, condition3, condition4, condition5, condition6, condition7, condition8,
-                condition9
-            });
+                condition1, condition2, condition3, condition4, condition5,
+                condition6, condition7, condition8
+            }, limit, orderBy);
 
+        /// <summary>
+        /// Matches against existing entities and tries to locate a single uniquely matched
+        /// entity. If such an entity is found, the provided updater is invoked with it as
+        /// argument. Else the inserter is invoked. If no unique match can be made, an exception
+        /// will be thrown. The delegate invocation will automatically be performed within a 
+        /// transaction scope if the resource is a Starcounter database type.
+        /// </summary>
+        /// <param name="inserter">A function that returns one entity of the resource type.</param>
+        /// <param name="updater">A function that is applied to the matched entity and returns an 
+        /// updated entity</param>
+        /// <param name="limit">The number of entities to restrict the matching to</param>
+        /// <param name="orderBy">To order the matched entities, include the property name to order by as key and 
+        /// whether the ordering should be in descending order (as opposed to ascending)</param>
+        /// <param name="condition1">A condition to match against</param>
+        /// <param name="condition2">A condition to match against</param>
+        /// <param name="condition3">A condition to match against</param>
+        /// <param name="condition4">A condition to match against</param>
+        /// <param name="condition5">A condition to match against</param>
+        /// <param name="condition6">A condition to match against</param>
+        /// <param name="condition7">A condition to match against</param>
+        /// <param name="condition8">A condition to match against</param>
+        /// <param name="condition9">A condition to match against</param>
+        /// <returns>The number of entities successfully updated or inserted (0 or 1)</returns>
         public static int PUT(Func<T> inserter, Func<T, T> updater,
             (string key, Operator @operator, dynamic value)? condition1,
             (string key, Operator @operator, dynamic value)? condition2,
@@ -359,56 +954,182 @@ namespace RESTar
             (string key, Operator @operator, dynamic value)? condition7,
             (string key, Operator @operator, dynamic value)? condition8,
             (string key, Operator @operator, dynamic value)? condition9,
-            (string key, Operator @operator, dynamic value)? condition10) =>
+            int limit = -1, (string key, bool descending)? orderBy = null) =>
             PUT(inserter, updater, new[]
             {
-                condition1, condition2, condition3, condition4, condition5, condition6, condition7, condition8,
-                condition9, condition10
-            });
+                condition1, condition2, condition3, condition4, condition5,
+                condition6, condition7, condition8, condition9
+            }, limit, orderBy);
+
+        /// <summary>
+        /// Matches against existing entities and tries to locate a single uniquely matched
+        /// entity. If such an entity is found, the provided updater is invoked with it as
+        /// argument. Else the inserter is invoked. If no unique match can be made, an exception
+        /// will be thrown. The delegate invocation will automatically be performed within a 
+        /// transaction scope if the resource is a Starcounter database type.
+        /// </summary>
+        /// <param name="inserter">A function that returns one entity of the resource type.</param>
+        /// <param name="updater">A function that is applied to the matched entity and returns an 
+        /// updated entity</param>
+        /// <param name="limit">The number of entities to restrict the matching to</param>
+        /// <param name="orderBy">To order the matched entities, include the property name to order by as key and 
+        /// whether the ordering should be in descending order (as opposed to ascending)</param>
+        /// <param name="condition1">A condition to match against</param>
+        /// <param name="condition2">A condition to match against</param>
+        /// <param name="condition3">A condition to match against</param>
+        /// <param name="condition4">A condition to match against</param>
+        /// <param name="condition5">A condition to match against</param>
+        /// <param name="condition6">A condition to match against</param>
+        /// <param name="condition7">A condition to match against</param>
+        /// <param name="condition8">A condition to match against</param>
+        /// <param name="condition9">A condition to match against</param>
+        /// <param name="condition10">A condition to match against</param>
+        /// <returns>The number of entities successfully updated or inserted (0 or 1)</returns>
+        public static int PUT(Func<T> inserter, Func<T, T> updater,
+            (string key, Operator @operator, dynamic value)? condition1,
+            (string key, Operator @operator, dynamic value)? condition2,
+            (string key, Operator @operator, dynamic value)? condition3,
+            (string key, Operator @operator, dynamic value)? condition4,
+            (string key, Operator @operator, dynamic value)? condition5,
+            (string key, Operator @operator, dynamic value)? condition6,
+            (string key, Operator @operator, dynamic value)? condition7,
+            (string key, Operator @operator, dynamic value)? condition8,
+            (string key, Operator @operator, dynamic value)? condition9,
+            (string key, Operator @operator, dynamic value)? condition10,
+            int limit = -1, (string key, bool descending)? orderBy = null) =>
+            PUT(inserter, updater, new[]
+            {
+                condition1, condition2, condition3, condition4, condition5,
+                condition6, condition7, condition8, condition9, condition10
+            }, limit, orderBy);
 
         #endregion
 
         #region DELETE
 
+        /// <summary>
+        /// Deletes one or more entitites from the specified resource.
+        /// </summary>
+        /// <param name="conditions">A list of conditions to match against</param>
+        /// <param name="unsafe">If true, RESTar will delete all entities matched after applying the given
+        /// conditions and limit. If false, RESTar will only delete a uniquely matched entity, and throw 
+        /// an exception if more than one entity was matched</param>
+        /// <param name="limit">The number of entities to restrict the response to</param>
+        /// <param name="orderBy">To order the response, include the property name to order by as key and 
+        /// whether the ordering should be in descending order (as opposed to ascending)</param>
+        /// <returns>The number of entities successfully deleted</returns>
         public static int DELETE((string key, Operator @operator, dynamic value)?[] conditions,
             bool @unsafe, int limit, (string key, bool descending)? orderBy)
         {
-            var ar = new AppRequest<T>
-            {
-                Unsafe = @unsafe,
-                Limit = limit
-            };
+            var ar = new AppRequest<T> {Unsafe = @unsafe, Limit = limit};
             ar.AddOrderBy(orderBy);
             ar.AddConditions(conditions);
             return ar.DELETE();
         }
 
+        /// <summary>
+        /// Deletes one or more entitites from the specified resource.
+        /// </summary>
+        /// <param name="unsafe">If true, RESTar will delete all entities matched after applying the given
+        /// conditions and limit. If false, RESTar will only delete a uniquely matched entity, and throw 
+        /// an exception if more than one entity was matched</param>
+        /// <param name="limit">The number of entities to restrict the response to</param>
+        /// <param name="orderBy">To order the response, include the property name to order by as key and 
+        /// whether the ordering should be in descending order (as opposed to ascending)</param>
+        /// <param name="condition">A condition to match against</param>
+        /// <returns>The number of entities successfully deleted</returns>
         public static int DELETE(
             (string key, Operator @operator, dynamic value)? condition = null,
             bool @unsafe = false, int limit = -1, (string key, bool descending)? orderBy = null) =>
-            DELETE(new[] {condition}, @unsafe, limit, orderBy);
+            DELETE(new[]
+            {
+                condition
+            }, @unsafe, limit, orderBy);
 
+        /// <summary>
+        /// Deletes one or more entitites from the specified resource.
+        /// </summary>
+        /// <param name="unsafe">If true, RESTar will delete all entities matched after applying the given
+        /// conditions and limit. If false, RESTar will only delete a uniquely matched entity, and throw 
+        /// an exception if more than one entity was matched</param>
+        /// <param name="limit">The number of entities to restrict the response to</param>
+        /// <param name="orderBy">To order the response, include the property name to order by as key and 
+        /// whether the ordering should be in descending order (as opposed to ascending)</param>
+        /// <param name="condition1">A condition to match against</param>
+        /// <param name="condition2">A condition to match against</param>
+        /// <returns>The number of entities successfully deleted</returns>
         public static int DELETE(
             (string key, Operator @operator, dynamic value)? condition1,
             (string key, Operator @operator, dynamic value)? condition2,
             bool @unsafe = false, int limit = -1, (string key, bool descending)? orderBy = null) =>
-            DELETE(new[] {condition1, condition2}, @unsafe, limit, orderBy);
+            DELETE(new[]
+            {
+                condition1, condition2
+            }, @unsafe, limit, orderBy);
 
+        /// <summary>
+        /// Deletes one or more entitites from the specified resource.
+        /// </summary>
+        /// <param name="unsafe">If true, RESTar will delete all entities matched after applying the given
+        /// conditions and limit. If false, RESTar will only delete a uniquely matched entity, and throw 
+        /// an exception if more than one entity was matched</param>
+        /// <param name="limit">The number of entities to restrict the response to</param>
+        /// <param name="orderBy">To order the response, include the property name to order by as key and 
+        /// whether the ordering should be in descending order (as opposed to ascending)</param>
+        /// <param name="condition1">A condition to match against</param>
+        /// <param name="condition2">A condition to match against</param>
+        /// <param name="condition3">A condition to match against</param>
+        /// <returns>The number of entities successfully deleted</returns>
         public static int DELETE(
             (string key, Operator @operator, dynamic value)? condition1,
             (string key, Operator @operator, dynamic value)? condition2,
             (string key, Operator @operator, dynamic value)? condition3,
             bool @unsafe = false, int limit = -1, (string key, bool descending)? orderBy = null) =>
-            DELETE(new[] {condition1, condition2, condition3}, @unsafe, limit, orderBy);
+            DELETE(new[]
+            {
+                condition1, condition2, condition3
+            }, @unsafe, limit, orderBy);
 
+        /// <summary>
+        /// Deletes one or more entitites from the specified resource.
+        /// </summary>
+        /// <param name="unsafe">If true, RESTar will delete all entities matched after applying the given
+        /// conditions and limit. If false, RESTar will only delete a uniquely matched entity, and throw 
+        /// an exception if more than one entity was matched</param>
+        /// <param name="limit">The number of entities to restrict the response to</param>
+        /// <param name="orderBy">To order the response, include the property name to order by as key and 
+        /// whether the ordering should be in descending order (as opposed to ascending)</param>
+        /// <param name="condition1">A condition to match against</param>
+        /// <param name="condition2">A condition to match against</param>
+        /// <param name="condition3">A condition to match against</param>
+        /// <param name="condition4">A condition to match against</param>
+        /// <returns>The number of entities successfully deleted</returns>
         public static int DELETE(
             (string key, Operator @operator, dynamic value)? condition1,
             (string key, Operator @operator, dynamic value)? condition2,
             (string key, Operator @operator, dynamic value)? condition3,
             (string key, Operator @operator, dynamic value)? condition4,
             bool @unsafe = false, int limit = -1, (string key, bool descending)? orderBy = null) =>
-            DELETE(new[] {condition1, condition2, condition3, condition4}, @unsafe, limit, orderBy);
+            DELETE(new[]
+            {
+                condition1, condition2, condition3, condition4
+            }, @unsafe, limit, orderBy);
 
+        /// <summary>
+        /// Deletes one or more entitites from the specified resource.
+        /// </summary>
+        /// <param name="unsafe">If true, RESTar will delete all entities matched after applying the given
+        /// conditions and limit. If false, RESTar will only delete a uniquely matched entity, and throw 
+        /// an exception if more than one entity was matched</param>
+        /// <param name="limit">The number of entities to restrict the response to</param>
+        /// <param name="orderBy">To order the response, include the property name to order by as key and 
+        /// whether the ordering should be in descending order (as opposed to ascending)</param>
+        /// <param name="condition1">A condition to match against</param>
+        /// <param name="condition2">A condition to match against</param>
+        /// <param name="condition3">A condition to match against</param>
+        /// <param name="condition4">A condition to match against</param>
+        /// <param name="condition5">A condition to match against</param>
+        /// <returns>The number of entities successfully deleted</returns>
         public static int DELETE(
             (string key, Operator @operator, dynamic value)? condition1,
             (string key, Operator @operator, dynamic value)? condition2,
@@ -416,8 +1137,27 @@ namespace RESTar
             (string key, Operator @operator, dynamic value)? condition4,
             (string key, Operator @operator, dynamic value)? condition5,
             bool @unsafe = false, int limit = -1, (string key, bool descending)? orderBy = null) =>
-            DELETE(new[] {condition1, condition2, condition3, condition4, condition5}, @unsafe, limit, orderBy);
+            DELETE(new[]
+            {
+                condition1, condition2, condition3, condition4, condition5
+            }, @unsafe, limit, orderBy);
 
+        /// <summary>
+        /// Deletes one or more entitites from the specified resource.
+        /// </summary>
+        /// <param name="unsafe">If true, RESTar will delete all entities matched after applying the given
+        /// conditions and limit. If false, RESTar will only delete a uniquely matched entity, and throw 
+        /// an exception if more than one entity was matched</param>
+        /// <param name="limit">The number of entities to restrict the response to</param>
+        /// <param name="orderBy">To order the response, include the property name to order by as key and 
+        /// whether the ordering should be in descending order (as opposed to ascending)</param>
+        /// <param name="condition1">A condition to match against</param>
+        /// <param name="condition2">A condition to match against</param>
+        /// <param name="condition3">A condition to match against</param>
+        /// <param name="condition4">A condition to match against</param>
+        /// <param name="condition5">A condition to match against</param>
+        /// <param name="condition6">A condition to match against</param>
+        /// <returns>The number of entities successfully deleted</returns>
         public static int DELETE(
             (string key, Operator @operator, dynamic value)? condition1,
             (string key, Operator @operator, dynamic value)? condition2,
@@ -426,9 +1166,29 @@ namespace RESTar
             (string key, Operator @operator, dynamic value)? condition5,
             (string key, Operator @operator, dynamic value)? condition6,
             bool @unsafe = false, int limit = -1, (string key, bool descending)? orderBy = null) =>
-            DELETE(new[] {condition1, condition2, condition3, condition4, condition5, condition6}, @unsafe, limit,
-                orderBy);
+            DELETE(new[]
+            {
+                condition1, condition2, condition3, condition4, condition5,
+                condition6
+            }, @unsafe, limit, orderBy);
 
+        /// <summary>
+        /// Deletes one or more entitites from the specified resource.
+        /// </summary>
+        /// <param name="unsafe">If true, RESTar will delete all entities matched after applying the given
+        /// conditions and limit. If false, RESTar will only delete a uniquely matched entity, and throw 
+        /// an exception if more than one entity was matched</param>
+        /// <param name="limit">The number of entities to restrict the response to</param>
+        /// <param name="orderBy">To order the response, include the property name to order by as key and 
+        /// whether the ordering should be in descending order (as opposed to ascending)</param>
+        /// <param name="condition1">A condition to match against</param>
+        /// <param name="condition2">A condition to match against</param>
+        /// <param name="condition3">A condition to match against</param>
+        /// <param name="condition4">A condition to match against</param>
+        /// <param name="condition5">A condition to match against</param>
+        /// <param name="condition6">A condition to match against</param>
+        /// <param name="condition7">A condition to match against</param>
+        /// <returns>The number of entities successfully deleted</returns>
         public static int DELETE(
             (string key, Operator @operator, dynamic value)? condition1,
             (string key, Operator @operator, dynamic value)? condition2,
@@ -438,9 +1198,30 @@ namespace RESTar
             (string key, Operator @operator, dynamic value)? condition6,
             (string key, Operator @operator, dynamic value)? condition7,
             bool @unsafe = false, int limit = -1, (string key, bool descending)? orderBy = null) =>
-            DELETE(new[] {condition1, condition2, condition3, condition4, condition5, condition6, condition7}, @unsafe,
-                limit, orderBy);
+            DELETE(new[]
+            {
+                condition1, condition2, condition3, condition4, condition5,
+                condition6, condition7
+            }, @unsafe, limit, orderBy);
 
+        /// <summary>
+        /// Deletes one or more entitites from the specified resource.
+        /// </summary>
+        /// <param name="unsafe">If true, RESTar will delete all entities matched after applying the given
+        /// conditions and limit. If false, RESTar will only delete a uniquely matched entity, and throw 
+        /// an exception if more than one entity was matched</param>
+        /// <param name="limit">The number of entities to restrict the response to</param>
+        /// <param name="orderBy">To order the response, include the property name to order by as key and 
+        /// whether the ordering should be in descending order (as opposed to ascending)</param>
+        /// <param name="condition1">A condition to match against</param>
+        /// <param name="condition2">A condition to match against</param>
+        /// <param name="condition3">A condition to match against</param>
+        /// <param name="condition4">A condition to match against</param>
+        /// <param name="condition5">A condition to match against</param>
+        /// <param name="condition6">A condition to match against</param>
+        /// <param name="condition7">A condition to match against</param>
+        /// <param name="condition8">A condition to match against</param>
+        /// <returns>The number of entities successfully deleted</returns>
         public static int DELETE(
             (string key, Operator @operator, dynamic value)? condition1,
             (string key, Operator @operator, dynamic value)? condition2,
@@ -451,10 +1232,31 @@ namespace RESTar
             (string key, Operator @operator, dynamic value)? condition7,
             (string key, Operator @operator, dynamic value)? condition8,
             bool @unsafe = false, int limit = -1, (string key, bool descending)? orderBy = null) =>
-            DELETE(
-                new[] {condition1, condition2, condition3, condition4, condition5, condition6, condition7, condition8},
-                @unsafe, limit, orderBy);
+            DELETE(new[]
+            {
+                condition1, condition2, condition3, condition4, condition5,
+                condition6, condition7, condition8
+            }, @unsafe, limit, orderBy);
 
+        /// <summary>
+        /// Deletes one or more entitites from the specified resource.
+        /// </summary>
+        /// <param name="unsafe">If true, RESTar will delete all entities matched after applying the given
+        /// conditions and limit. If false, RESTar will only delete a uniquely matched entity, and throw 
+        /// an exception if more than one entity was matched</param>
+        /// <param name="limit">The number of entities to restrict the response to</param>
+        /// <param name="orderBy">To order the response, include the property name to order by as key and 
+        /// whether the ordering should be in descending order (as opposed to ascending)</param>
+        /// <param name="condition1">A condition to match against</param>
+        /// <param name="condition2">A condition to match against</param>
+        /// <param name="condition3">A condition to match against</param>
+        /// <param name="condition4">A condition to match against</param>
+        /// <param name="condition5">A condition to match against</param>
+        /// <param name="condition6">A condition to match against</param>
+        /// <param name="condition7">A condition to match against</param>
+        /// <param name="condition8">A condition to match against</param>
+        /// <param name="condition9">A condition to match against</param>
+        /// <returns>The number of entities successfully deleted</returns>
         public static int DELETE(
             (string key, Operator @operator, dynamic value)? condition1,
             (string key, Operator @operator, dynamic value)? condition2,
@@ -468,10 +1270,30 @@ namespace RESTar
             bool @unsafe = false, int limit = -1, (string key, bool descending)? orderBy = null) =>
             DELETE(new[]
             {
-                condition1, condition2, condition3, condition4, condition5, condition6, condition7, condition8,
-                condition9
+                condition1, condition2, condition3, condition4, condition5,
+                condition6, condition7, condition8, condition9
             }, @unsafe, limit, orderBy);
 
+        /// <summary>
+        /// Deletes one or more entitites from the specified resource.
+        /// </summary>
+        /// <param name="unsafe">If true, RESTar will delete all entities matched after applying the given
+        /// conditions and limit. If false, RESTar will only delete a uniquely matched entity, and throw 
+        /// an exception if more than one entity was matched</param>
+        /// <param name="limit">The number of entities to restrict the response to</param>
+        /// <param name="orderBy">To order the response, include the property name to order by as key and 
+        /// whether the ordering should be in descending order (as opposed to ascending)</param>
+        /// <param name="condition1">A condition to match against</param>
+        /// <param name="condition2">A condition to match against</param>
+        /// <param name="condition3">A condition to match against</param>
+        /// <param name="condition4">A condition to match against</param>
+        /// <param name="condition5">A condition to match against</param>
+        /// <param name="condition6">A condition to match against</param>
+        /// <param name="condition7">A condition to match against</param>
+        /// <param name="condition8">A condition to match against</param>
+        /// <param name="condition9">A condition to match against</param>
+        /// <param name="condition10">A condition to match against</param>
+        /// <returns>The number of entities successfully deleted</returns>
         public static int DELETE(
             (string key, Operator @operator, dynamic value)? condition1,
             (string key, Operator @operator, dynamic value)? condition2,
@@ -486,8 +1308,8 @@ namespace RESTar
             bool @unsafe = false, int limit = -1, (string key, bool descending)? orderBy = null) =>
             DELETE(new[]
             {
-                condition1, condition2, condition3, condition4, condition5, condition6, condition7, condition8,
-                condition9, condition10
+                condition1, condition2, condition3, condition4, condition5,
+                condition6, condition7, condition8, condition9, condition10
             }, @unsafe, limit, orderBy);
 
         #endregion

@@ -1,6 +1,6 @@
 ﻿namespace RESTar.Operations
 {
-    public class WhereClause
+    internal class WhereClause
     {
         public string stringPart = "";
         public object[] valuesPart = {};

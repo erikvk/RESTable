@@ -2,6 +2,8 @@
 using RESTarExample.TestDb;
 using Starcounter;
 
+#pragma warning disable 1591
+
 namespace RESTarExample
 {
     [Database, RESTar(RESTarPresets.ReadAndUpdate)]

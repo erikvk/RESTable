@@ -1,10 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using Dynamit;
 using RESTar;
 using RESTar.Internal;
 using Starcounter;
+// ReSharper disable RedundantExplicitArrayCreation
+
+#pragma warning disable 1591
 
 namespace RESTarExample
 {
@@ -39,7 +41,7 @@ namespace RESTarExample
         public dynamic Value;
     }
 
-    [RESTar(RESTarPresets.ReadAndWrite, Viewable = true)]
+    [RESTar(RESTarPresets.ReadAndWrite)]
     public class R : IInserter<R>, ISelector<R>, IUpdater<R>, IDeleter<R>
     {
         public string S { get; set; }
@@ -73,7 +75,7 @@ namespace RESTarExample
         C
     }
 
-    [Database, RESTar(RESTarPresets.ReadAndWrite, Dynamic = true)]
+    [Database, RESTar(RESTarPresets.ReadAndWrite)]
     public class MyOther
     {
         public string Str;

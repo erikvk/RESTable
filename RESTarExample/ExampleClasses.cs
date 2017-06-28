@@ -4,6 +4,8 @@ using System.Runtime.Serialization;
 using RESTar;
 using Starcounter;
 
+#pragma warning disable 1591
+
 namespace RESTarExample
 {
     // Below is a common Starcounter-style database class describing an employee in 
@@ -103,8 +105,9 @@ namespace RESTarExample
         [IgnoreDataMember] // first we ignore this member
         public BetterEmployee Boss // then we make it into a property like so:
         {
-            get { return DbHelper.FromID(BossObjectNo.GetValueOrDefault()) as BetterEmployee; }
-            set { BossObjectNo = value.GetObjectNo(); }
+            // ReSharper disable once SuspiciousTypeConversion.Global
+            get => DbHelper.FromID(BossObjectNo.GetValueOrDefault()) as BetterEmployee;
+            set => BossObjectNo = value.GetObjectNo();
         }
 
         /// <summary>
@@ -113,8 +116,7 @@ namespace RESTarExample
         /// attribute. This way we still have control over what the resulting JSON will 
         /// look like.
         /// </summary>
-        [DataMember(Name = "Boss")]
-        public ulong? BossObjectNo;
+        [DataMember(Name = "Boss")] public ulong? BossObjectNo;
 
         // This means that an entity of this resource will be serialized as (for example):
         // {
@@ -146,7 +148,11 @@ namespace RESTarExample
         /// </summary>
         public IEnumerable<BetterEmployee> Subordinates
         {
-            get { return Db.SQL<BetterEmployee>($"SELECT t FROM {typeof(BetterEmployee).FullName} t WHERE t.Boss =?", this); }
+            get
+            {
+                return Db.SQL<BetterEmployee>($"SELECT t FROM {typeof(BetterEmployee).FullName} t WHERE t.Boss =?",
+                    this);
+            }
             set { }
         }
     }

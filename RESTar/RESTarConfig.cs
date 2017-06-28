@@ -34,6 +34,7 @@ namespace RESTar
         internal static bool RequireApiKey { get; private set; }
         internal static bool AllowAllOrigins { get; private set; }
         private static string ConfigFilePath;
+        internal static bool Initialized { get; private set; }
 
         static RESTarConfig()
         {
@@ -115,6 +116,7 @@ namespace RESTar
             DynamitConfig.Init(true, true);
             Log.Init();
             Handlers.Register(setupMenu);
+            Initialized = true;
         }
 
         private static void ReadConfig()

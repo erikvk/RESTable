@@ -1,5 +1,11 @@
+
+#pragma warning disable 1591
+
 namespace RESTar
 {
+    /// <summary>
+    /// An enumeration of available condition operators
+    /// </summary>
     public enum Operators
     {
         nil,

@@ -7,6 +7,7 @@ using RESTar.Internal;
 using RESTar.Operations;
 using static System.Reflection.BindingFlags;
 using static RESTar.Internal.DynamicResource;
+using static RESTar.RESTarConfig;
 using static RESTar.RESTarPresets;
 
 namespace RESTar
@@ -56,11 +57,12 @@ namespace RESTar
         public Type TargetType { get; set; }
 
         /// <summary>
+        /// RESTar selector (don't use)
         /// </summary>
         public IEnumerable<Resource> Select(IRequest request)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
-            return RESTarConfig.Resources
+            return Resources
                 .Filter(request.Conditions)
                 .Select(m => new Resource
                 {
@@ -69,7 +71,6 @@ namespace RESTar
                     AvailableMethods = m.AvailableMethods,
                     Editable = m.Editable,
                     TargetType = m.TargetType,
-                    Visible = m.IsViewable
                 }).ToList();
         }
 
@@ -86,7 +87,7 @@ namespace RESTar
                     throw new Exception("No Alias for new resource");
                 if (DB.Exists<ResourceAlias>("Alias", entity.Alias))
                     throw new Exception($"Invalid Alias: '{entity.Alias}' is used to refer to another resource");
-                entity.AvailableMethods = RESTarConfig.Methods;
+                entity.AvailableMethods = Methods;
                 MakeTable(entity);
                 count += 1;
             }
@@ -221,11 +222,11 @@ namespace RESTar
         /// <summary>
         /// Finds a resource by name (case insensitive)
         /// </summary>
-        public static IResource Find(string name) => RESTarConfig.ResourceByName.SafeGetNoCase(name);
+        public static IResource Find(string name) => ResourceByName.SafeGetNoCase(name);
 
         /// <summary>
         /// Finds a resource by target type
         /// </summary>
-        public static IResource Find(Type type) => RESTarConfig.ResourceByType.SafeGet(type);
+        public static IResource Find(Type type) => ResourceByType.SafeGet(type);
     }
 }

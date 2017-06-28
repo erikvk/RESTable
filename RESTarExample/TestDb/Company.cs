@@ -3,6 +3,8 @@ using System.Runtime.Serialization;
 using RESTar;
 using Starcounter;
 
+#pragma warning disable 1591
+
 namespace RESTarExample.TestDb
 {
     [Database, RESTar(RESTarPresets.ReadAndWrite)]

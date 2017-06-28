@@ -69,6 +69,7 @@ namespace RESTar
             });
 
         /// <summary>
+        /// RESTar selector (don't use)
         /// </summary>
         public IEnumerable<DatabaseIndex> Select(IRequest request) => All.Filter(request.Conditions).ToList();
 

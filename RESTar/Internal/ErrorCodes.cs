@@ -1,5 +1,10 @@
+
+#pragma warning disable 1591
 namespace RESTar.Internal
 {
+    /// <summary>
+    /// The error codes used by RESTar
+    /// </summary>
     public enum ErrorCodes
     {
         NoError = -1,
@@ -61,5 +66,6 @@ namespace RESTar.Internal
         NoMatchingHtml = 212,
 
         DatabaseError = 300,
+        NotInitialized = 400,
     }
 }

@@ -6,6 +6,9 @@ using Starcounter;
 
 namespace RESTar.Internal
 {
+    /// <summary>
+    /// The default operations for classes inheriting from DDictionary
+    /// </summary>
     public static class DDictionaryOperations
     {
         private static IEnumerable<DDictionary> EqualitySQL(Condition c, string kvp)
@@ -19,6 +22,9 @@ namespace RESTar.Internal
             return Db.SQL<DDictionary>($"SELECT t FROM {table} t");
         }
 
+        /// <summary>
+        /// Selects DDictionary entites
+        /// </summary>
         public static Selector<DDictionary> Select => r =>
         {
             var equalityConditions = r.Conditions?.Equality;
@@ -34,8 +40,19 @@ namespace RESTar.Internal
             return results.Filter(r.Conditions.Compare).ToList();
         };
 
+        /// <summary>
+        /// Inserter for DDictionary entites (used by RESTar internally, don't use)
+        /// </summary>
         public static Inserter<DDictionary> Insert => StarcounterOperations<DDictionary>.Insert;
+
+        /// <summary>
+        /// Updater for DDictionary entites (used by RESTar internally, don't use)
+        /// </summary>
         public static Updater<DDictionary> Update => StarcounterOperations<DDictionary>.Update;
+
+        /// <summary>
+        /// Deleter for DDictionary entites (used by RESTar internally, don't use)
+        /// </summary>
         public static Deleter<DDictionary> Delete => StarcounterOperations<DDictionary>.Delete;
     }
 }

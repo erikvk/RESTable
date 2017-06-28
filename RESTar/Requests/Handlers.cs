@@ -48,8 +48,6 @@ namespace RESTar.Requests
                     {
                         request.Populate(query, GET, Evaluators.VIEW);
                         request.MetaConditions.DeactivateProcessors();
-                        if (!request.Resource.IsViewable)
-                            throw new ForbiddenException(NotAuthorized, "Resource is not viewable");
                         request.MethodCheck();
                         request.Evaluate();
                         var partial = (Json) request.GetResponse();

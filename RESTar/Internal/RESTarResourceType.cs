@@ -1,5 +1,8 @@
 namespace RESTar.Internal
 {
+    /// <summary>
+    /// The resource types used internally by RESTar
+    /// </summary>
     public enum RESTarResourceType
     {
         /// <summary>

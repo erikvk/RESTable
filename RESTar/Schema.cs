@@ -18,6 +18,7 @@ namespace RESTar
         public string Resource { private get; set; }
 
         /// <summary>
+        /// RESTar selector (don't use)
         /// </summary>
         public IEnumerable<Schema> Select(IRequest request)
         {

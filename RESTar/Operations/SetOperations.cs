@@ -10,11 +10,16 @@ using static System.UriKind;
 using static RESTar.RESTarMethods;
 using static RESTar.Settings;
 using JTokens = System.Collections.Generic.IEnumerable<Newtonsoft.Json.Linq.JToken>;
-using JObjects = System.Collections.Generic.IEnumerable<Newtonsoft.Json.Linq.JObject>;
+
+#pragma warning disable 1591
 
 namespace RESTar.Operations
 {
-    [RESTar(RESTarPresets.ReadOnly, Dynamic = true, Singleton = true)]
+    /// <summary>
+    /// The SetOperations resource can perform advanced operations on entities in one
+    /// or more RESTar resources. See the RESTar Specification for details.
+    /// </summary>
+    [RESTar(RESTarPresets.ReadOnly, Singleton = true)]
     public class SetOperations : JObject, ISelector<SetOperations>
     {
         public SetOperations()
@@ -27,6 +32,9 @@ namespace RESTar.Operations
 
         static SetOperations() => macroRegex = new Regex(@"\$\([^\$\(\)]+\)");
 
+        /// <summary>
+        /// RESTar selector (don't use)
+        /// </summary>
         public IEnumerable<SetOperations> Select(IRequest request)
         {
             if (request.Body == null)

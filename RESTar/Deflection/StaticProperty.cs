@@ -7,19 +7,37 @@ using Starcounter;
 
 namespace RESTar.Deflection
 {
+    /// <summary>
+    /// A static property represents a compile time known property of a class.
+    /// </summary>
     public class StaticProperty : Property
     {
-        public override string Name { get; protected set; }
-        public override string DatabaseQueryName { get; protected set; }
+        /// <summary>
+        /// The property type for this property
+        /// </summary>
         public Type Type { get; protected set; }
+
+        /// <summary>
+        /// Is this property dynamic?
+        /// </summary>
         public override bool Dynamic => false;
-        public override bool ScQueryable { get; protected set; }
-        public IEnumerable<Attribute> Attributes;
 
-        internal TAttribute GetAttribute<TAttribute>() where TAttribute : Attribute =>
-            Attributes?.OfType<TAttribute>().FirstOrDefault();
+        /// <summary>
+        /// The attributes that this property has been decorated with
+        /// </summary>
+        public IEnumerable<Attribute> Attributes { get; }
 
+        internal T GetAttribute<T>() where T : Attribute => Attributes?.OfType<T>().FirstOrDefault();
         internal bool HasAttribute<TAttribute>() where TAttribute : Attribute => GetAttribute<TAttribute>() != null;
+        internal StaticProperty(bool scQueryable) => ScQueryable = scQueryable;
+
+        /// <summary>
+        /// Parses a static property from a key string and a type
+        /// </summary>
+        /// <param name="keyString">The string to match a property from</param>
+        /// <param name="type">The type to match the property from</param>
+        /// <returns></returns>
+        public static StaticProperty Parse(string keyString, Type type) => type.MatchProperty(keyString);
 
         internal StaticProperty(PropertyInfo p)
         {
@@ -75,9 +93,5 @@ namespace RESTar.Deflection
                 default: throw new ArgumentOutOfRangeException();
             }
         }
-
-        protected StaticProperty(bool scQueryable) => ScQueryable = scQueryable;
-
-        public static StaticProperty Parse(string keyString, Type resource) => resource.MatchProperty(keyString);
     }
 }

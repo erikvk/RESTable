@@ -25,6 +25,9 @@ using IResource = RESTar.Internal.IResource;
 
 namespace RESTar
 {
+    /// <summary>
+    /// Extension methods used by RESTar
+    /// </summary>
     public static class ExtensionMethods
     {
         static ExtensionMethods()
@@ -85,8 +88,21 @@ namespace RESTar
 
         internal static string UriDecode(this string str) => HttpUtility.UrlDecode(str);
         internal static string UriEncode(this string str) => HttpUtility.UrlEncode(str);
+
+        /// <summary>
+        /// Gets the object for a Starcounter object number
+        /// </summary>
+        /// <param name="objectNo">The Starcounter ObjectNo to get the extension for</param>
+        /// <returns>The object with the specified ObjectNo</returns>
         public static T GetReference<T>(this ulong? objectNo) where T : class => FromID(objectNo ?? 0) as T;
+
+        /// <summary>
+        /// Gets the object for a Starcounter object number
+        /// </summary>
+        /// <param name="objectNo">The Starcounter ObjectNo to get the extension for</param>
+        /// <returns>The object with the specified ObjectNo</returns>
         public static T GetReference<T>(this ulong objectNo) where T : class => FromID(objectNo) as T;
+
         internal static bool EqualsNoCase(this string s1, string s2) => string.Equals(s1, s2, CurrentCultureIgnoreCase);
         internal static string ToMethodsString(this IEnumerable<RESTarMethods> ie) => string.Join(", ", ie);
 
@@ -156,11 +172,6 @@ namespace RESTar
 
         #region Resource helpers
 
-        internal static IResource GetIResource(this Type type) => ResourceByType.TryGetValue(type,
-            out IResource resource)
-            ? resource
-            : null;
-
         internal static bool IsDDictionary(this Type type) => type.IsSubclassOf(typeof(DDictionary));
         internal static bool IsStarcounter(this Type type) => type.HasAttribute<DatabaseAttribute>();
         internal static string MemberName(this MemberInfo m) => m.GetAttribute<DataMemberAttribute>()?.Name ?? m.Name;
@@ -218,9 +229,15 @@ namespace RESTar
 
         internal static JObject ToJObject(this IEnumerable<JProperty> props) => new JObject(props);
 
+        /// <summary>
+        /// Converts an IEnumerable of resource entities to JSON.net JObjects.
+        /// </summary>
         public static IEnumerable<JObject> ToJObjects(this IEnumerable<object> entities) =>
             entities.Select(ToJObject);
 
+        /// <summary>
+        /// Converts a resource entitiy to a JSON.net JObject.
+        /// </summary>
         public static JObject ToJObject(this object entity)
         {
             if (entity is JObject j) return j;
@@ -282,6 +299,10 @@ namespace RESTar
 
         #region Filter and Process
 
+        /// <summary>
+        /// Filters an IEnumerable of resource entities and returns all entities x such that all the 
+        /// conditions are true of x.
+        /// </summary>
         public static IEnumerable<T> Filter<T>(this IEnumerable<T> entities, Conditions filter)
         {
             return filter?.Apply((dynamic) entities) ?? entities;
@@ -301,27 +322,45 @@ namespace RESTar
 
         #region Dictionary helpers
 
+        /// <summary>
+        /// Gets the value of a key from an IDictionary, or null if the dictionary does not contain the key.
+        /// </summary>
         public static TValue SafeGet<TKey, TValue>(this IDictionary<TKey, TValue> dict, TKey key)
         {
             return dict.ContainsKey(key) ? dict[key] : default(TValue);
         }
 
+        /// <summary>
+        /// Gets the value of a key from an IDictionary, or null if the dictionary does not contain the key.
+        /// </summary>
         public static dynamic SafeGet(this IDictionary dict, string key)
         {
             return dict.Contains(key) ? dict[key] : null;
         }
 
+        /// <summary>
+        /// Gets the value of a key from an IDictionary, without case sensitivity, or throws a KeyNotFoundException
+        /// if the dictionary does not contain the key.
+        /// </summary>
         public static T GetNoCase<T>(this IDictionary<string, T> dict, string key)
         {
             return dict.First(pair => pair.Key.EqualsNoCase(key)).Value;
         }
 
+        /// <summary>
+        /// Gets the value of a key from an IDictionary, without case sensitivity, or null if the dictionary does 
+        /// not contain the key.
+        /// </summary>
         public static T SafeGetNoCase<T>(this IDictionary<string, T> dict, string key)
         {
             var matches = dict.Where(pair => pair.Key.EqualsNoCase(key));
             return matches.Count() > 1 ? dict.SafeGet(key) : matches.FirstOrDefault().Value;
         }
 
+        /// <summary>
+        /// Gets the value of a key from an IDictionary, without case sensitivity, or null if the dictionary does 
+        /// not contain the key.
+        /// </summary>
         public static dynamic SafeGetNoCase(this IDictionary dict, string key, out string actualKey)
         {
             var matches = Do.TryAndThrow(() => dict.Keys.Cast<string>().Where(k => k.EqualsNoCase(key)),
@@ -342,6 +381,10 @@ namespace RESTar
             return match == null ? null : dict[match];
         }
 
+        /// <summary>
+        /// Gets the value of a key from an IDictionary, without case sensitivity, or null if the dictionary does 
+        /// not contain the key. The actual key is returned in the actualKey out parameter.
+        /// </summary>
         public static T SafeGetNoCase<T>(this IDictionary<string, T> dict, string key, out string actualKey)
         {
             var matches = dict.Where(pair => pair.Key.EqualsNoCase(key));
@@ -361,6 +404,9 @@ namespace RESTar
             return match.Value;
         }
 
+        /// <summary>
+        /// Converts a DDictionary object to a JSON.net JObject
+        /// </summary>
         public static JObject ToJObject(this DDictionary d)
         {
             var jobj = new JObject();
@@ -368,6 +414,9 @@ namespace RESTar
             return jobj;
         }
 
+        /// <summary>
+        /// Converts a Dictionary object to a JSON.net JObject
+        /// </summary>
         public static JObject ToJObject(this Dictionary<string, dynamic> d)
         {
             var jobj = new JObject();
@@ -611,7 +660,7 @@ namespace RESTar
 
         internal static dynamic MakeViewModelDefault(this Type type, StaticProperty property = null)
         {
-            dynamic DefaultValueRecurser(Type propType, StaticProperty prop = null)
+            dynamic DefaultValueRecurser(Type propType)
             {
                 if (propType == typeof(string))
                     return "";
@@ -629,7 +678,7 @@ namespace RESTar
                     var props = propType.GetStaticProperties();
                     return props.ToDictionary(
                         p => p.ViewModelName,
-                        p => DefaultValueRecurser(p.Type, p));
+                        p => DefaultValueRecurser(p.Type));
                 }
                 if (propType.IsValueType)
                 {
@@ -640,7 +689,7 @@ namespace RESTar
                 throw new ArgumentOutOfRangeException();
             }
 
-            return DefaultValueRecurser(type, property);
+            return DefaultValueRecurser(type);
         }
 
         #endregion

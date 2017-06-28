@@ -39,7 +39,7 @@ namespace RESTar
     /// <summary>
     /// Gets an aggregated info view for a given Starcounter table
     /// </summary>
-    [RESTar(ReadOnly, Dynamic = true)]
+    [RESTar(ReadOnly)]
     public class TableInfo : ISelector<TableInfo>
     {
         /// <summary>
@@ -63,6 +63,7 @@ namespace RESTar
         public TableSize ApproximateTableSize { get; set; }
 
         /// <summary>
+        /// RESTar selector (don't use)
         /// </summary>
         public IEnumerable<TableInfo> Select(IRequest request)
         {

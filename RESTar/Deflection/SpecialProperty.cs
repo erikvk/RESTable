@@ -3,12 +3,20 @@ using Starcounter;
 
 namespace RESTar.Deflection
 {
+    /// <summary>
+    /// Special properties are properties that are not strictly members, but still
+    /// important parts of class definitions. For example Starcounter ObjectID and 
+    /// ObjectNo.
+    /// </summary>
     public class SpecialProperty : StaticProperty
     {
         private SpecialProperty(bool scQueryable) : base(scQueryable)
         {
         }
 
+        /// <summary>
+        /// A property describing the ObjectNo of a class
+        /// </summary>
         public static SpecialProperty ObjectNo => new SpecialProperty(true)
         {
             Name = "ObjectNo",
@@ -17,6 +25,9 @@ namespace RESTar.Deflection
             Getter = t => Do.TryAndThrow(() => t.GetObjectNo(), "Could not get ObjectNo from non-Starcounter resource.")
         };
 
+        /// <summary>
+        /// A property describing the ObjectNo of a class
+        /// </summary>
         public static SpecialProperty ObjectID => new SpecialProperty(true)
         {
             Name = "ObjectID",

@@ -7,7 +7,7 @@ using static System.StringSplitOptions;
 
 namespace RESTar.Operations
 {
-    public class Rename : Dictionary<PropertyChain, string>, IProcessor
+    internal class Rename : Dictionary<PropertyChain, string>, IProcessor
     {
         public static Rename Parse(string input, IResource resource)
         {

@@ -3,6 +3,8 @@ using System.Runtime.Serialization;
 using RESTar;
 using Starcounter;
 
+#pragma warning disable 1591
+
 namespace RESTarExample.TestDb
 {
     [Database, RESTar(RESTarPresets.ReadAndWrite)]
@@ -10,15 +12,12 @@ namespace RESTarExample.TestDb
     {
         public string Name;
 
-        [DataMember(Name = "Details")]
-        public ulong? DetailsObjectNo;
+        [DataMember(Name = "Details")] public ulong? DetailsObjectNo;
 
-        [DataMember(Name = "Boss")]
-        public ulong? BossObjectNo;
+        [DataMember(Name = "Boss")] public ulong? BossObjectNo;
 
-        [DataMember(Name = "Company")]
-        public ulong? CompanyObjectNo;
-   
+        [DataMember(Name = "Company")] public ulong? CompanyObjectNo;
+
         [IgnoreDataMember]
         public EmployeeDetails Details
         {

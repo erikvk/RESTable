@@ -19,7 +19,7 @@ namespace RESTar
 
         /// <summary>
         /// The operator of the condition, specifies the operation of the truth
-        /// evaluation. Should the condition check for equality, for example.
+        /// evaluation. Should the condition check for equality, for example?
         /// </summary>
         public Operator Operator { get; set; }
 

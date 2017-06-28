@@ -1,7 +1,12 @@
 ﻿using System;
 
+#pragma warning disable 1591
+
 namespace RESTar
 {
+    /// <summary>
+    /// Contains the supported mime types used in RESTar
+    /// </summary>
     public struct MimeTypes
     {
         public const string Excel = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";

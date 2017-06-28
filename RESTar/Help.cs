@@ -5,14 +5,32 @@ using static RESTar.RESTarMethods;
 
 namespace RESTar
 {
+    /// <summary>
+    /// Contains help articles for RESTar
+    /// </summary>
     [RESTar(GET)]
     public class Help : ISelector<Help>
     {
+        /// <summary>
+        /// The topic of the help article
+        /// </summary>
         public string Topic { get; set; }
+
+        /// <summary>
+        /// The body of the help article
+        /// </summary>
         public string Body { get; set; }
+
+        /// <summary>
+        /// The "see also" part of the help article
+        /// </summary>
         public string SeeAlso { get; set; }
+
         private const string URL = "https://restarhelp.mopedo-drtb.com/rest/helparticle/";
 
+        /// <summary>
+        /// RESTar selector (don't use)
+        /// </summary>
         public IEnumerable<Help> Select(IRequest request)
         {
             var topic = ((string) request.Conditions?["topic", EQUALS])?.UriEncode();

@@ -8,7 +8,7 @@ using RESTar.Internal;
 
 namespace RESTar.Operations
 {
-    public class OrderBy : IFilter
+    internal class OrderBy : IFilter
     {
         public string Key
         {

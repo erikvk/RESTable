@@ -10,12 +10,25 @@ using static RESTar.Settings;
 
 namespace RESTar
 {
+    /// <summary>
+    /// Gets all error codes used by RESTar
+    /// </summary>
     [RESTar(ReadOnly)]
     public class ErrorCode : ISelector<ErrorCode>
     {
+        /// <summary>
+        /// The name of the error
+        /// </summary>
         public string Name { get; private set; }
+
+        /// <summary>
+        /// The numeric code of the error
+        /// </summary>
         public int Code { get; private set; }
 
+        /// <summary>
+        /// RESTar selector (don't use)
+        /// </summary>
         public IEnumerable<ErrorCode> Select(IRequest request) => typeof(ErrorCodes)
             .GetEnumMembers()
             .Select(m => new ErrorCode {Name = m.Name, Code = m.Value})
@@ -23,18 +36,62 @@ namespace RESTar
             .ToList();
     }
 
+    /// <summary>
+    /// The error resource contains instances where an error was encountered while
+    /// handling a request. You can control how long entities remain in the resource
+    /// by setting the daysToSaveErrors parameter in the call to RESTarConfig.Init().
+    /// </summary>
     [Database, RESTar(GET, DELETE)]
     public class Error
     {
+        /// <summary>
+        /// A unique ID for this error instance
+        /// </summary>
         public string Id => this.GetObjectID();
+
+        /// <summary>
+        /// The date and time when this error was created
+        /// </summary>
         public DateTime Time;
+
+        /// <summary>
+        /// The name of the resource that the request was aimed at
+        /// </summary>
         public string ResourceName;
+
+        /// <summary>
+        /// The method used when the error was created
+        /// </summary>
         public RESTarMethods Method;
+
+        /// <summary>
+        /// The error code of the error
+        /// </summary>
         public ErrorCodes ErrorCode;
+
+        /// <summary>
+        /// The runtime stack trace for the thrown exception
+        /// </summary>
         public string StackTrace;
+
+        /// <summary>
+        /// A message describing the error
+        /// </summary>
         public string Message;
+
+        /// <summary>
+        /// The URI of the request that generated the error
+        /// </summary>
         public string Uri;
+
+        /// <summary>
+        /// The headers of the request that generated the error (API keys are not saved here)
+        /// </summary>
         public string Headers;
+
+        /// <summary>
+        /// The body of the request that generated the error
+        /// </summary>
         public string Body;
 
         internal Error(ErrorCodes errorCode, Exception e, Requests.HttpRequest request)

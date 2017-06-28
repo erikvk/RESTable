@@ -1,13 +1,18 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json.Linq;
+using static RESTar.RESTarPresets;
 
 namespace RESTar
 {
-    [RESTar(RESTarPresets.ReadOnly, Dynamic = true, AllowDynamicConditions = true)]
+    /// <summary>
+    /// The echo resource is a test resource that returns the conditions
+    /// inputted as a JSON object.
+    /// </summary>
+    [RESTar(ReadOnly, AllowDynamicConditions = true)]
     public class Echo : JObject, ISelector<Echo>
     {
-        public Echo()
+        private Echo()
         {
         }
 
@@ -15,6 +20,9 @@ namespace RESTar
         {
         }
 
+        /// <summary>
+        /// RESTar selector (don't use)
+        /// </summary>
         public IEnumerable<Echo> Select(IRequest request) => request.Conditions == null
             ? new[] {new Echo()}
             : new[] {new Echo(request.Conditions.Select(c => new JProperty(c.Key, c.Value)))};

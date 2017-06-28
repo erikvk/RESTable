@@ -7,7 +7,7 @@ using Starcounter;
 
 namespace RESTar
 {
-    public static class HTTP
+    internal static class HTTP
     {
         internal static Response InternalRequest
         (
@@ -92,7 +92,7 @@ namespace RESTar
                 then?.Invoke(response);
                 return response;
             }
-            catch (Exception e)
+            catch
             {
                 return null;
             }

@@ -22,13 +22,11 @@ namespace RESTar.Internal
         public Type TargetType { get; }
         public bool IsDDictionary => typeof(T) == typeof(DDictionary);
 
-        public bool IsDynamic => IsDDictionary || DeclaredDynamic || TargetType.IsSubclassOf(typeof(JObject)) ||
+        public bool IsDynamic => IsDDictionary || TargetType.IsSubclassOf(typeof(JObject)) ||
                                  typeof(IDictionary).IsAssignableFrom(TargetType);
 
         public long? NrOfEntities => Try(() => DB.RowCount(Name), default(long?));
-        public bool IsViewable { get; }
         public bool IsSingleton { get; }
-        public bool DeclaredDynamic { get; }
         public bool DynamicConditionsAllowed { get; }
         public string AliasOrName => Alias ?? Name;
         public override string ToString() => AliasOrName;
@@ -80,9 +78,7 @@ namespace RESTar.Internal
             Name = targetType.FullName;
             Editable = editable;
             AvailableMethods = attribute.AvailableMethods;
-            IsViewable = attribute.Viewable;
             IsSingleton = attribute.Singleton;
-            DeclaredDynamic = attribute.Dynamic;
             DynamicConditionsAllowed = attribute.AllowDynamicConditions;
             RequiresValidation = typeof(IValidatable).IsAssignableFrom(targetType);
             TargetType = targetType;

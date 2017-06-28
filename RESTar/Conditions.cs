@@ -126,7 +126,7 @@ namespace RESTar
                 RemoveAll(cond => newTypeProperties.All(prop =>
                     prop.Name != cond.PropertyChain.FirstOrDefault()?.Name));
                 ForEach(condition => condition.Migrate(type));
-                Resource = type.GetIResource();
+                Resource = RESTar.Resource.Find(type);
             }
             return entities.Where(entity => this.All(condition => condition.HoldsFor(entity)));
         }

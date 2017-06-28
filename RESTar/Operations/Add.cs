@@ -5,7 +5,7 @@ using RESTar.Deflection;
 
 namespace RESTar.Operations
 {
-    public class Add : List<PropertyChain>, IProcessor
+    internal class Add : List<PropertyChain>, IProcessor
     {
         public IEnumerable<JObject> Apply<T>(IEnumerable<T> entities)
         {

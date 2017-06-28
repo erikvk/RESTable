@@ -1,15 +1,25 @@
 ﻿using System;
+#pragma warning disable 1591
 
 namespace RESTar
 {
+    /// <summary>
+    /// Encodes an operator, used in conditions
+    /// </summary>
     public struct Operator
     {
-        public Operators OpCode;
+        /// <summary>
+        /// The code for this operator
+        /// </summary>
+        public readonly Operators OpCode;
+
         internal string Common => GetString(OpCode);
         internal bool Equality => OpCode == Operators.EQUALS || OpCode == Operators.NOT_EQUALS;
         internal bool Compare => !Equality;
         internal string SQL => OpCode == Operators.NOT_EQUALS ? "<>" : Common;
         public override bool Equals(object obj) => obj is Operator && (Operator) obj == OpCode;
+        public bool Equals(Operator other) => OpCode == other.OpCode;
+        public override int GetHashCode() => (int) OpCode;
         public override string ToString() => Common;
         internal static readonly string[] AvailableOperators = {"=", "!=", "<", ">", "<=", ">="};
         public static bool operator ==(Operator o1, Operator o2) => o1.OpCode == o2.OpCode;

@@ -1,5 +1,8 @@
 ﻿using Dynamit;
 
+// ReSharper disable UnusedMember.Global
+#pragma warning disable 1591
+
 namespace RESTar
 {
     [DynamicTable(1), DDictionary(typeof(DynamicResource1KeyValuePair))]

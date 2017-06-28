@@ -18,7 +18,7 @@ namespace RESTar.Requests
 
         #region Explicit
 
-        RESTarMethods IRequest.Method { get; }
+        RESTarMethods IRequest.Method => RESTarMethods.none;
         string IRequest.AuthToken => null;
         string IRequest.Body => null;
 
@@ -29,13 +29,13 @@ namespace RESTar.Requests
             Unsafe = Unsafe
         };
 
-        IDictionary<string, string> IRequest.ResponseHeaders => null;
-
         #endregion
 
         public AppRequest()
         {
-            Resource = typeof(T).GetIResource();
+            if (!RESTarConfig.Initialized)
+                throw new NotInitializedException();
+            Resource = RESTar.Resource.Find(typeof(T));
             if (Resource == null)
                 throw new ArgumentException($"Unknown resource type '{typeof(T).FullName}'. " +
                                             "Must be a registered RESTar resource.");
@@ -63,7 +63,9 @@ namespace RESTar.Requests
         internal void AddConditions(params (string key, Operator @operator, dynamic value)?[] conds)
         {
             if (conds == null || conds.All(c => c == null)) return;
-            if (Conditions == null) Conditions = new Conditions(Resource);
+            if (Conditions == null)
+                Conditions = new Conditions(Resource);
+            // ReSharper disable once PossibleInvalidOperationException
             conds.Where(ConditionValid).ForEach(c => Conditions[c.Value.key, c.Value.@operator] = c.Value.value);
         }
 
@@ -86,7 +88,7 @@ namespace RESTar.Requests
                 {
                     results = inserter?.Invoke();
                     if (results == null) return 0;
-                    return Resource.Insert((IEnumerable<dynamic>) results, this);
+                    return Resource.Insert(results, this);
                 }
 
                 #endregion

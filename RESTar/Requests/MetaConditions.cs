@@ -8,6 +8,8 @@ using RESTar.Operations;
 using static System.StringComparison;
 using static RESTar.Internal.ErrorCodes;
 
+#pragma warning disable 612
+
 namespace RESTar.Requests
 {
     internal enum RESTarMetaConditions

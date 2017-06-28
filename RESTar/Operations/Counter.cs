@@ -5,9 +5,15 @@ using Newtonsoft.Json.Linq;
 
 namespace RESTar.Operations
 {
+    /// <summary>
+    /// The counter resource returns the entity count for a given resource
+    /// </summary>
     [RESTar(RESTarPresets.ReadOnly, Singleton = true)]
     public class Counter : Dictionary<string, int>, ISelector<Counter>
     {
+        /// <summary>
+        /// RESTar selector (don't use)
+        /// </summary>
         public IEnumerable<Counter> Select(IRequest request)
         {
             if (request.Body == null)

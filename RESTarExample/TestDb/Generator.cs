@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using Starcounter;
 
+#pragma warning disable 1591
+
 namespace RESTarExample.TestDb
 {
     public static class Generator
@@ -756,7 +758,7 @@ namespace RESTarExample.TestDb
                 ceo = _ceo;
             });
 
-            foreach (var i in Enumerable.Range(0, 4000))
+            foreach (var unused in Enumerable.Range(0, 4000))
             {
                 Db.TransactAsync(() =>
                 {
@@ -772,7 +774,7 @@ namespace RESTarExample.TestDb
                         Company = c1
                     };
 
-                    foreach (var k in Enumerable.Range(0, rand.Next(20, 40)))
+                    foreach (var unused1 in Enumerable.Range(0, rand.Next(20, 40)))
                     {
                         new Employee
                         {
