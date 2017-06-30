@@ -153,7 +153,7 @@ namespace RESTar.View
             }
         }
 
-        internal override RESTarView<object> Populate(Requests.HttpRequest request, object restarData)
+        internal override RESTarView<object> Populate(Requests.RESTRequest request, object restarData)
         {
             var template = request.Resource.MakeViewModelTemplate();
             var jsonTemplate = template.Serialize();

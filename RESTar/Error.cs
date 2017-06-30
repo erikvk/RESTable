@@ -94,7 +94,7 @@ namespace RESTar
         /// </summary>
         public string Body;
 
-        internal Error(ErrorCodes errorCode, Exception e, Requests.HttpRequest request)
+        internal Error(ErrorCodes errorCode, Exception e, Requests.RESTRequest request)
         {
             Time = DateTime.Now;
             ResourceName = (request.Resource?.Name ?? "<unknown>") +

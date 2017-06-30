@@ -51,7 +51,7 @@ namespace RESTar.View
         /// </summary>
         public abstract void SetMessage(string message, ErrorCodes errorCode, MessageType messageType);
 
-        internal Requests.HttpRequest Request { get; private set; }
+        internal Requests.RESTRequest Request { get; private set; }
         internal IResource Resource => Request.Resource;
 
         /// <summary>
@@ -75,7 +75,7 @@ namespace RESTar.View
             {
                 try
                 {
-                    Evaluators.POST(json, Request);
+                    REST.POST(json, Request);
                     Success = true;
                 }
                 catch (AbortedInserterException e)
@@ -95,7 +95,7 @@ namespace RESTar.View
             {
                 try
                 {
-                    Evaluators.PATCH(RESTarData, json, Request);
+                    REST.PATCH(RESTarData, json, Request);
                     Success = true;
                 }
                 catch (AbortedUpdaterException e)
@@ -115,7 +115,7 @@ namespace RESTar.View
             {
                 try
                 {
-                    Evaluators.DELETE(item, Request);
+                    REST.DELETE(item, Request);
                     Success = true;
                 }
                 catch (AbortedDeleterException e)
@@ -130,7 +130,7 @@ namespace RESTar.View
         /// </summary>
         protected bool MethodAllowed(RESTarMethods method) => MethodCheck(method, Resource, Request.AuthToken);
 
-        internal virtual RESTarView<TData> Populate(Requests.HttpRequest request, TData data)
+        internal virtual RESTarView<TData> Populate(Requests.RESTRequest request, TData data)
         {
             Request = request;
             SetResourceName(Resource.Alias ?? Resource.Name);

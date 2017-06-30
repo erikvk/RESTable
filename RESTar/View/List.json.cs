@@ -53,7 +53,7 @@ namespace RESTar.View
             RedirectUrl = !string.IsNullOrWhiteSpace(RedirectUrl) ? RedirectUrl : ResourcePath;
         }
 
-        internal override RESTarView<IEnumerable<object>> Populate(Requests.HttpRequest request,
+        internal override RESTarView<IEnumerable<object>> Populate(Requests.RESTRequest request,
             IEnumerable<object> data)
         {
             base.Populate(request, data);

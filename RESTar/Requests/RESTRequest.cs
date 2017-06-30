@@ -18,7 +18,7 @@ using ScRequest = Starcounter.Request;
 
 namespace RESTar.Requests
 {
-    internal class HttpRequest : IRequest, IDisposable
+    internal class RESTRequest : IRequest, IDisposable
     {
         internal ScRequest ScRequest { get; }
         internal Response Response { get; private set; }
@@ -41,7 +41,7 @@ namespace RESTar.Requests
         internal bool ResourceHome => MetaConditions.Empty && Conditions == null;
         private bool SerializeDynamic => MetaConditions.Dynamic || Resource.IsDynamic || MetaConditions.HasProcessors;
 
-        internal HttpRequest(ScRequest scRequest)
+        internal RESTRequest(ScRequest scRequest)
         {
             ScRequest = scRequest;
             ResponseHeaders = new Dictionary<string, string>();
@@ -83,14 +83,17 @@ namespace RESTar.Requests
             MetaConditions = MetaConditions.Parse(args[3], Resource) ?? MetaConditions;
         }
 
+        internal void GetDataFromSource()
+        {
+        }
+
         internal void GetRequestData()
         {
             if (Source != null)
             {
-                var sourceRequest = RESTar.HttpRequest.Parse(Source);
+                var sourceRequest = HttpRequest.Parse(Source);
                 if (sourceRequest.Method != GET)
                     throw new SyntaxException(InvalidSourceFormatError, "Only GET is allowed in Source headers");
-
                 sourceRequest.Accept = ContentType.ToMimeString();
 
                 var response = sourceRequest.Internal
@@ -164,61 +167,51 @@ namespace RESTar.Requests
                         }
                     }
                     break;
-                case RESTarMimeType.XML:
-                    throw new FormatException("XML is only supported as output format");
+                case RESTarMimeType.XML: throw new FormatException("XML is only supported as output format");
             }
         }
 
-        internal void SetResponseData(IEnumerable<dynamic> entities, Response response)
+        internal void SetResponseData(IEnumerable<dynamic> data, Response response)
         {
-            if (Accept == RESTarMimeType.Excel)
-            {
-                var data = entities.ToDataSet(Resource);
-                var workbook = new XLWorkbook();
-                workbook.AddWorksheet(data);
-                var fileName = $"{Resource.Name}_export_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
-                using (var memstream = new MemoryStream())
-                {
-                    workbook.SaveAs(memstream);
-                    response.BodyBytes = memstream.ToArray();
-                }
-                response.Headers["Content-Disposition"] = $"attachment; filename={fileName}";
-                response.ContentType = MimeTypes.Excel;
-                return;
-            }
-
-            string jsonString;
-            if (SerializeDynamic)
-                jsonString = entities.Serialize();
-            else jsonString = entities.Serialize(IEnumTypes[Resource]);
-
             switch (Accept)
             {
                 case RESTarMimeType.Json:
-                    response.Body = jsonString;
+                    response.Body = SerializeDynamic ? data.Serialize() : data.Serialize(IEnumTypes[Resource]);
                     response.ContentType = MimeTypes.JSON;
-                    break;
+                    return;
+                case RESTarMimeType.Excel:
+                    var dataSet = data.ToDataSet(Resource);
+                    var workbook = new XLWorkbook();
+                    workbook.AddWorksheet(dataSet);
+                    var fileName = $"{Resource.Name}_export_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
+                    using (var memstream = new MemoryStream())
+                    {
+                        workbook.SaveAs(memstream);
+                        response.BodyBytes = memstream.ToArray();
+                    }
+                    response.Headers["Content-Disposition"] = $"attachment; filename={fileName}";
+                    response.ContentType = MimeTypes.Excel;
+                    return;
                 case RESTarMimeType.XML:
-                    var xml = JsonConvert.DeserializeXmlNode($@"{{""row"":{jsonString}}}", "root", true);
+                    var json = SerializeDynamic ? data.Serialize() : data.Serialize(IEnumTypes[Resource]);
+                    var xml = JsonConvert.DeserializeXmlNode($@"{{""row"":{json}}}", "root", true);
                     response.Body = xml.SerializeXml();
                     response.ContentType = MimeTypes.XML;
-                    break;
+                    return;
                 default: throw new ArgumentOutOfRangeException(nameof(Accept));
             }
         }
 
         internal Response GetResponse()
         {
-            if (Response == null)
-                return null;
+            if (Response == null) return null;
 
             ResponseHeaders.ForEach(h => Response.Headers["X-" + h.Key] = h.Value);
             Response.Headers["Access-Control-Allow-Origin"] = AllowAllOrigins ? "*" : (Origin ?? "null");
 
-            if (Destination == null)
-                return Response;
+            if (Destination == null) return Response;
 
-            var destinationRequest = RESTar.HttpRequest.Parse(Destination);
+            var destinationRequest = HttpRequest.Parse(Destination);
             destinationRequest.ContentType = Accept.ToMimeString();
             var _response = destinationRequest.Internal
                 ? HTTP.InternalRequest

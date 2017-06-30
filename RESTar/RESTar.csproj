@@ -134,7 +134,7 @@
     <Compile Include="Deflection\PropertyChain.cs" />
     <Compile Include="Operations\OperationsDelegates.cs" />
     <Compile Include="Operations\Rename.cs" />
-    <Compile Include="Requests\HttpRequest.cs" />
+    <Compile Include="Requests\RESTRequest.cs" />
     <Compile Include="Condition.cs" />
     <Compile Include="ExtensionMethods.cs" />
     <Compile Include="Help.cs" />
@@ -146,7 +146,7 @@
     <Compile Include="ResourceAlias.cs" />
     <Compile Include="RESTarConfig.cs" />
     <Compile Include="Internal\DB.cs" />
-    <Compile Include="Operations\Evaluators.cs" />
+    <Compile Include="Operations\REST.cs" />
     <Compile Include="RESTarPresets.cs" />
     <Compile Include="RESTarExceptions.cs" />
     <Compile Include="HTTP.cs" />

@@ -8,7 +8,7 @@ using Starcounter;
 
 namespace RESTar.Operations
 {
-    internal static class Evaluators
+    internal static class REST
     {
         internal static IEnumerable<T> StaticSELECT<T>(IRequest request)
         {
@@ -37,7 +37,7 @@ namespace RESTar.Operations
 
         #region REST
 
-        internal static Response GET(Requests.HttpRequest request)
+        internal static Response GET(RESTRequest request)
         {
             try
             {
@@ -54,7 +54,7 @@ namespace RESTar.Operations
             }
         }
 
-        internal static Response POST(Requests.HttpRequest request)
+        internal static Response POST(RESTRequest request)
         {
             dynamic results = null;
             try
@@ -107,7 +107,7 @@ namespace RESTar.Operations
             }
         }
 
-        private static Response SafePOST(Requests.HttpRequest request, string json)
+        private static Response SafePOST(RESTRequest request, string json)
         {
             var source = json.Deserialize<IEnumerable<JObject>>();
             var insertedCount = 0;
@@ -146,7 +146,7 @@ namespace RESTar.Operations
             return Responses.SafePostedEntities(request, insertedCount, updatedCount);
         }
 
-        internal static Response PATCH(Requests.HttpRequest request)
+        internal static Response PATCH(RESTRequest request)
         {
             try
             {
@@ -196,7 +196,7 @@ namespace RESTar.Operations
             }
         }
 
-        internal static Response PUT(Requests.HttpRequest request)
+        internal static Response PUT(RESTRequest request)
         {
             IEnumerable<dynamic> source;
             try
@@ -280,7 +280,7 @@ namespace RESTar.Operations
             }
         }
 
-        internal static Response DELETE(Requests.HttpRequest request)
+        internal static Response DELETE(RESTRequest request)
         {
             try
             {
@@ -312,7 +312,7 @@ namespace RESTar.Operations
 
         #region VIEW
 
-        internal static Response VIEW(Requests.HttpRequest request)
+        internal static Response VIEW(RESTRequest request)
         {
             try
             {
@@ -333,7 +333,7 @@ namespace RESTar.Operations
             }
         }
 
-        internal static int PATCH(object entity, string json, Requests.HttpRequest request)
+        internal static int PATCH(object entity, string json, RESTRequest request)
         {
             try
             {
@@ -372,7 +372,7 @@ namespace RESTar.Operations
             }
         }
 
-        internal static int DELETE(object entity, Requests.HttpRequest request)
+        internal static int DELETE(object entity, RESTRequest request)
         {
             try
             {
@@ -395,7 +395,7 @@ namespace RESTar.Operations
             }
         }
 
-        internal static int POST(string json, Requests.HttpRequest request)
+        internal static int POST(string json, RESTRequest request)
         {
             object result = null;
             try

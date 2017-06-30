@@ -2,5 +2,5 @@
 
 namespace RESTar
 {
-    internal delegate Response Evaluator(Requests.HttpRequest request);
+    internal delegate Response Evaluator(Requests.RESTRequest request);
 }

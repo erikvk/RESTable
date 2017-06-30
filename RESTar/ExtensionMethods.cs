@@ -176,7 +176,7 @@ namespace RESTar
         internal static bool IsStarcounter(this Type type) => type.HasAttribute<DatabaseAttribute>();
         internal static string MemberName(this MemberInfo m) => m.GetAttribute<DataMemberAttribute>()?.Name ?? m.Name;
 
-        internal static bool IsSingular(this IEnumerable<object> ienum, Requests.HttpRequest request) =>
+        internal static bool IsSingular(this IEnumerable<object> ienum, Requests.RESTRequest request) =>
             request.Resource.IsSingleton || ienum?.Count() == 1 && !request.ResourceHome;
 
         internal static ICollection<IResource> FindResources(this string searchString)

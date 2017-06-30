@@ -5,10 +5,10 @@ using RESTar.Operations;
 using RESTar.View;
 using Starcounter;
 using static RESTar.Internal.ErrorCodes;
-using static RESTar.Requests.Responses;
 using static RESTar.RESTarMethods;
 using static Starcounter.SessionOptions;
 using static RESTar.Settings;
+using static RESTar.Requests.Responses;
 using ScRequest = Starcounter.Request;
 using ScHandle = Starcounter.Handle;
 
@@ -19,11 +19,11 @@ namespace RESTar.Requests
         internal static void Register(bool setupMenu)
         {
             var uri = _Uri + "{?}";
-            ScHandle.GET(_Port, uri, (ScRequest r, string q) => Handle(r, q, Evaluators.GET, GET));
-            ScHandle.POST(_Port, uri, (ScRequest r, string q) => Handle(r, q, Evaluators.POST, POST));
-            ScHandle.PUT(_Port, uri, (ScRequest r, string q) => Handle(r, q, Evaluators.PUT, PUT));
-            ScHandle.PATCH(_Port, uri, (ScRequest r, string q) => Handle(r, q, Evaluators.PATCH, PATCH));
-            ScHandle.DELETE(_Port, uri, (ScRequest r, string q) => Handle(r, q, Evaluators.DELETE, DELETE));
+            ScHandle.GET(_Port, uri, (ScRequest r, string q) => Handle(r, q, REST.GET, GET));
+            ScHandle.POST(_Port, uri, (ScRequest r, string q) => Handle(r, q, REST.POST, POST));
+            ScHandle.PUT(_Port, uri, (ScRequest r, string q) => Handle(r, q, REST.PUT, PUT));
+            ScHandle.PATCH(_Port, uri, (ScRequest r, string q) => Handle(r, q, REST.PATCH, PATCH));
+            ScHandle.DELETE(_Port, uri, (ScRequest r, string q) => Handle(r, q, REST.DELETE, DELETE));
             ScHandle.OPTIONS(_Port, uri, (ScRequest r, string q) => CheckOrigin(r, q));
 
             if (!_ViewEnabled) return;
@@ -44,9 +44,9 @@ namespace RESTar.Requests
                 try
                 {
                     Authenticator.UserCheck();
-                    using (var request = new HttpRequest(r))
+                    using (var request = new RESTRequest(r))
                     {
-                        request.Populate(query, GET, Evaluators.VIEW);
+                        request.Populate(query, GET, REST.VIEW);
                         request.MetaConditions.DeactivateProcessors();
                         request.MethodCheck();
                         request.Evaluate();
@@ -84,7 +84,7 @@ namespace RESTar.Requests
         {
             try
             {
-                var request = new HttpRequest(scRequest);
+                var request = new RESTRequest(scRequest);
                 request.Populate(query, default(RESTarMethods), null);
                 var origin = request.ScRequest.Headers["Origin"].ToLower();
                 if (RESTarConfig.AllowAllOrigins || RESTarConfig.AllowedOrigins.Contains(new Uri(origin)))
@@ -100,10 +100,10 @@ namespace RESTar.Requests
         private static Response Handle(ScRequest scRequest, string query, Evaluator evaluator,
             RESTarMethods method)
         {
-            HttpRequest request = null;
+            RESTRequest request = null;
             try
             {
-                using (request = new HttpRequest(scRequest))
+                using (request = new RESTRequest(scRequest))
                 {
                     request.Authenticate();
                     request.Populate(query, method, evaluator);

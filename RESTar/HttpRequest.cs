@@ -13,10 +13,7 @@ namespace RESTar
         internal string ContentType;
         internal bool Internal { get; private set; }
 
-        private HttpRequest()
-        {
-            Headers = new Dictionary<string, string>();
-        }
+        private HttpRequest() => Headers = new Dictionary<string, string>();
 
         internal static HttpRequest Parse(string uriString)
         {
@@ -37,16 +34,14 @@ namespace RESTar
                             if (!part.StartsWith("/"))
                             {
                                 r.Internal = false;
-                                Uri uri;
-                                if (!Uri.TryCreate(part, UriKind.Absolute, out uri))
+                                if (!Uri.TryCreate(part, UriKind.Absolute, out Uri uri))
                                     throw new Exception($"Invalid uri '{part}'");
                                 r.URI = uri;
                             }
                             else
                             {
                                 r.Internal = true;
-                                Uri uri;
-                                if (!Uri.TryCreate(part, UriKind.Relative, out uri))
+                                if (!Uri.TryCreate(part, UriKind.Relative, out Uri uri))
                                     throw new Exception($"Invalid uri '{part}'");
                                 r.URI = uri;
                             }

@@ -146,7 +146,7 @@ namespace RESTar.Requests
             }
         };
 
-        internal static Response InsertedEntities(HttpRequest request, int count, Type resource)
+        internal static Response InsertedEntities(RESTRequest request, int count, Type resource)
         {
             var alias = ResourceAlias.ByResource(resource);
             return new Response
@@ -161,7 +161,7 @@ namespace RESTar.Requests
             };
         }
 
-        internal static Response UpdatedEntities(HttpRequest request, int count, Type resource)
+        internal static Response UpdatedEntities(RESTRequest request, int count, Type resource)
         {
             var alias = ResourceAlias.ByResource(resource);
             return new Response
@@ -176,7 +176,7 @@ namespace RESTar.Requests
             };
         }
 
-        internal static Response SafePostedEntities(HttpRequest request, int insertedCount, int updatedCount)
+        internal static Response SafePostedEntities(RESTRequest request, int insertedCount, int updatedCount)
         {
             return new Response
             {

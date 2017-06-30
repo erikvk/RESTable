@@ -247,7 +247,7 @@ namespace RESTar.Requests
             Check(RESTarMethods.GET);
             try
             {
-                return Evaluators.StaticSELECT<T>(this);
+                return REST.StaticSELECT<T>(this);
             }
             catch (Exception e)
             {
