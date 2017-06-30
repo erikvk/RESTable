@@ -1,4 +1,5 @@
-﻿using RESTar.Internal;
+﻿using System.Collections.Generic;
+using RESTar.Internal;
 using RESTar.Requests;
 
 namespace RESTar
@@ -37,5 +38,12 @@ namespace RESTar
         /// The auth token assigned to this request
         /// </summary>
         string AuthToken { get; }
+
+        /// <summary>
+        /// To include additional HTTP headers in the response, add them to 
+        /// this dictionary. Header names will be renamed to "X-[name]" where
+        /// name is the key-value pair key.
+        /// </summary>
+        IDictionary<string, string> ResponseHeaders { get; }
     }
 }

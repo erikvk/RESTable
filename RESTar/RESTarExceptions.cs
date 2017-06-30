@@ -207,7 +207,7 @@ namespace RESTar
             : base(AbortedSelect, message ?? (ie.GetType() == typeof(Newtonsoft.Json.JsonSerializationException) ||
                                               ie.GetType() == typeof(Newtonsoft.Json.JsonReaderException)
                                       ? "JSON serialization error, check JSON syntax"
-                                      : $"An exception of type {ie.GetType().FullName} was thrown"
+                                      : ""
                                   ), ie) => Response = AbortedOperation(this, request.Method, request.Resource);
     }
 
@@ -221,7 +221,7 @@ namespace RESTar
             : base(AbortedInsert, message ?? (ie.GetType() == typeof(Newtonsoft.Json.JsonSerializationException) ||
                                               ie.GetType() == typeof(Newtonsoft.Json.JsonReaderException)
                                       ? "JSON serialization error, check JSON syntax"
-                                      : $"An exception of type {ie.GetType().FullName} was thrown"
+                                      : ""
                                   ), ie) => Response = AbortedOperation(this, request.Method, request.Resource);
     }
 
@@ -235,7 +235,7 @@ namespace RESTar
             : base(AbortedUpdate, message ?? (ie.GetType() == typeof(Newtonsoft.Json.JsonSerializationException) ||
                                               ie.GetType() == typeof(Newtonsoft.Json.JsonReaderException)
                                       ? "JSON serialization error, check JSON syntax"
-                                      : $"An exception of type {ie.GetType().FullName} was thrown"
+                                      : ""
                                   ), ie) => Response = AbortedOperation(this, request.Method, request.Resource);
     }
 
@@ -249,7 +249,7 @@ namespace RESTar
             : base(AbortedDelete, message ?? (ie.GetType() == typeof(Newtonsoft.Json.JsonSerializationException) ||
                                               ie.GetType() == typeof(Newtonsoft.Json.JsonReaderException)
                                       ? "JSON serialization error, check JSON syntax"
-                                      : $"An exception of type {ie.GetType().FullName} was thrown"
+                                      : ""
                                   ), ie) => Response = AbortedOperation(this, request.Method, request.Resource);
     }
 

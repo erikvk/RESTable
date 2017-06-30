@@ -510,7 +510,10 @@ namespace RESTar
             var ie = e.InnerException;
             while (ie != null)
             {
-                message.Append(" : " + ie.Message);
+                if (!string.IsNullOrWhiteSpace(ie.Message))
+                    message.Append(ie.Message);
+                if (ie.InnerException != null)
+                    message.Append(" : ");
                 ie = ie.InnerException;
             }
             return message.ToString();

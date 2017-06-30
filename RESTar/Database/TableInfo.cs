@@ -123,7 +123,7 @@ namespace RESTar
             {
                 TableName = resource.Name,
                 NumberOfRows = domainCount.GetValueOrDefault(),
-                NumberOfColumns = properties.Count(),
+                NumberOfColumns = properties.Count,
                 ApproximateTableSize = new TableSize
                 {
                     GB = decimal.Round((decimal) totalBytes / 1000000000, 6),

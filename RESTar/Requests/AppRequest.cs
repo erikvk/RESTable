@@ -21,6 +21,7 @@ namespace RESTar.Requests
         RESTarMethods IRequest.Method => RESTarMethods.none;
         string IRequest.AuthToken => null;
         string IRequest.Body => null;
+        IDictionary<string, string> IRequest.ResponseHeaders => null;
 
         MetaConditions IRequest.MetaConditions => new MetaConditions
         {
@@ -150,11 +151,7 @@ namespace RESTar.Requests
             catch (Exception e)
             {
                 if (result != null)
-                    Db.TransactAsync(() =>
-                    {
-                        if (result != null)
-                            Do.Try(() => result.Delete());
-                    });
+                    Db.TransactAsync(() => Do.Try(() => result.Delete()));
                 throw new AbortedInserterException(e, this);
             }
             return count;
