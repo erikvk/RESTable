@@ -130,8 +130,8 @@ namespace RESTar
             .MakeGenericMethod(type)
             .Invoke(null, null);
 
-        private static void AUTO_MAKE<T>() where T : class => Resource<T>
-            .Make(typeof(T).GetAttribute<RESTarAttribute>());
+        private static void AUTO_MAKE<T>() where T : class =>
+            Resource<T>.Make(typeof(T).GetAttribute<RESTarAttribute>());
 
         /// <summary>
         /// Registers a new resource with the RESTar instance

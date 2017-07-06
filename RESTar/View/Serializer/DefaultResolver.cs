@@ -12,7 +12,7 @@ namespace RESTar.View.Serializer
             if (member.HasAttribute<IgnoreDataMemberAttribute>())
                 return null;
             var property = base.CreateProperty(member, memberSerialization);
-            property.PropertyName = member.MemberName();
+            property.PropertyName = member.RESTarMemberName();
             return property;
         }
     }

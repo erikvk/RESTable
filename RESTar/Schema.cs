@@ -22,7 +22,7 @@ namespace RESTar
         /// </summary>
         public IEnumerable<Schema> Select(IRequest request)
         {
-            var validCondition = request.Conditions?["resource", EQUALS] as string;
+            var validCondition = request.Conditions?["resource", EQUALS]?.Value as string;
             if (validCondition == null)
                 throw new Exception("Invalid resource argument, format: /schema/resource=my_resource_name");
             var schema = MakeSchema(validCondition);
@@ -34,7 +34,7 @@ namespace RESTar
             var res = resourceName.FindResource();
             if (res.TargetType.IsSubclassOf(typeof(DDictionary))) return null;
             var schema = new Schema();
-            res.GetStaticProperties().ForEach(p => schema[p.Name] = p.Type.FullName);
+            res.GetStaticProperties().Values.ForEach(p => schema[p.Name] = p.Type.FullName);
             return schema;
         }
     }

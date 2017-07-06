@@ -18,7 +18,7 @@ namespace RESTar.Requests
 
         #region Explicit
 
-        RESTarMethods IRequest.Method => RESTarMethods.none;
+        RESTarMethods IRequest.Method => default(RESTarMethods);
         string IRequest.AuthToken => null;
         string IRequest.Body => null;
         IDictionary<string, string> IRequest.ResponseHeaders => null;
@@ -42,22 +42,11 @@ namespace RESTar.Requests
                                             "Must be a registered RESTar resource.");
         }
 
-        private static bool ConditionValid((string key, Operator @operator, dynamic value)? condition)
-        {
-            if (!condition.HasValue) return false;
-            if (string.IsNullOrWhiteSpace(condition.Value.key))
-                throw new SyntaxException(InvalidConditionSyntaxError, "Key cannot be null or empty");
-            if (condition.Value.@operator == Operators.nil)
-                throw new SyntaxException(InvalidConditionOperatorError,
-                    "Invalid operator. Allowed operators: '=', '!=', '<', '>', '<=', '>='");
-            return true;
-        }
-
         internal void AddOrderBy((string key, bool descending)? orderBy)
         {
             if (orderBy == null) return;
             OrderBy = OrderBy ?? new OrderBy(Resource);
-            OrderBy.Key = orderBy.Value.key;
+            OrderBy.SetStaticKey(orderBy.Value.key);
             OrderBy.Descending = orderBy.Value.descending;
         }
 
@@ -67,7 +56,7 @@ namespace RESTar.Requests
             if (Conditions == null)
                 Conditions = new Conditions(Resource);
             // ReSharper disable once PossibleInvalidOperationException
-            conds.Where(ConditionValid).ForEach(c => Conditions[c.Value.key, c.Value.@operator] = c.Value.value);
+            conds.ForEach(c => Conditions.Add(c.Value.key, c.Value.@operator, c.Value.value));
         }
 
         private void Check(RESTarMethods method)

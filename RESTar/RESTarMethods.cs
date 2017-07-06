@@ -6,11 +6,6 @@ namespace RESTar
     public enum RESTarMethods
     {
         /// <summary>
-        /// No method
-        /// </summary>
-        none,
-
-        /// <summary>
         /// GET, returns entities from a resource
         /// </summary>
         GET,

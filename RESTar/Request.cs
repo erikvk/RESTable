@@ -1,11 +1,24 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using RESTar.Requests;
 
+// ReSharper disable RedundantUsingDirective
 // ReSharper disable UnusedMember.Global
+using RESTar.Deflection;
+using RESTar.Internal;
+using Starcounter;
+using static RESTar.Deflection.TypeCache;
+using static RESTar.Internal.RESTarResourceType;
 
 namespace RESTar
 {
+    internal static class SQLCache
+    {
+        internal static readonly IDictionary<int, string> SQLQueries;
+        static SQLCache() => SQLQueries = new ConcurrentDictionary<int, string>();
+    }
+
     /// <summary>
     /// Used to create internal RESTar requests
     /// </summary>
@@ -13,6 +26,42 @@ namespace RESTar
     public static class Request<T> where T : class
     {
         #region GET
+
+        private static readonly string _SELECT = $"SELECT t FROM {typeof(T).FullName} t";
+
+        ///// <summary>
+        ///// Returns all entitites in the resource that matches a condition.
+        ///// </summary>
+        ///// <param name="key">The condition key</param>
+        ///// <param name="operator">The condition operator</param>
+        ///// <param name="value">The conditions value</param>
+        //public static IEnumerable<T> GET(string key, Operator @operator, dynamic value)
+        //{
+        //    if (!RESTarConfig.ResourceByType.TryGetValue(typeof(T), out Internal.IResource resource))
+        //        throw new ArgumentException($"Unknown resource '{typeof(T).FullName}'. Not a RESTar resource.");
+
+        //    switch (resource.ResourceType)
+        //    {
+        //        case ScStatic:
+        //            var th = typeof(T).GetHashCode();
+        //            var kh = key.GetHashCode();
+        //            var oh = @operator.GetHashCode();
+        //            var ah = resource.DynamicConditionsAllowed.GetHashCode();
+        //            var ph = th + kh + ah;
+        //            if (!PropertyChains.TryGetValue(ph, out PropertyChain propChain))
+        //                propChain = PropertyChains[ph] = PropertyChain
+        //                    .Parse(key, resource, resource.DynamicConditionsAllowed);
+        //            if (propChain.ScQueryable)
+        //            {
+        //                var sh = th + kh + oh;
+        //                if (!SQLCache.SQLQueries.TryGetValue(sh, out string query))
+        //                    query = SQLCache.SQLQueries[sh] = $"{_SELECT} WHERE t.{key.Fnuttify()} =?";
+        //                return Db.SQL<T>(query, value);
+        //            }
+        //            throw new ArgumentOutOfRangeException();
+        //        default: throw new ArgumentOutOfRangeException();
+        //    }
+        //}
 
         /// <summary>
         /// Returns all entitites in the resource that matches a set of conditions. To order
@@ -32,8 +81,17 @@ namespace RESTar
             return ar.GET();
         }
 
+        static decimal Time(Action action)
+        {
+            var s = System.Diagnostics.Stopwatch.StartNew();
+            for (var i = 1; i < 300000; i++)
+                action();
+            s.Stop();
+            return s.ElapsedMilliseconds;
+        }
+
         /// <summary>
-        /// Returns all entitites in the resource that matches a set of conditions. To order
+        /// Returns all entitites in the resource that matches a condition. To order
         /// the entitites, include an orderBy tuple. To restrict the entities to a certain cardinality,
         /// include a limit.
         /// </summary>
@@ -1006,6 +1064,15 @@ namespace RESTar
         #endregion
 
         #region DELETE
+
+        /// <summary>
+        /// Deletes an entitity in the resource uniquely individuated by a condition, or throws 
+        /// an exception if a single entity cannot be located.
+        /// </summary>
+        /// <param name="key">The condition key</param>
+        /// <param name="operator">The condition operator</param>
+        /// <param name="value">The conditions value</param>
+        public static int DELETE(string key, Operator @operator, dynamic value) => DELETE((key, @operator, value));
 
         /// <summary>
         /// Deletes one or more entitites from the specified resource.

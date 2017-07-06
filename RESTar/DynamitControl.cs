@@ -28,9 +28,7 @@ namespace RESTar
 
         internal static void ClearTable(string tableId)
         {
-            var dicts = Db.SQL<DDictionary>($"SELECT t FROM {tableId} t");
-            foreach (var dict in dicts)
-                Db.TransactAsync(() => dict.Delete());
+            Db.SQL<DDictionary>($"SELECT t FROM {tableId} t").ForEach(dict => Db.TransactAsync(dict.Delete));
         }
     }
 }

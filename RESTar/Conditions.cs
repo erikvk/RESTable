@@ -15,37 +15,42 @@ namespace RESTar
     public sealed class Conditions : List<Condition>, IFilter
     {
         internal IResource Resource;
-        internal Conditions SQL => this.Where(c => c.ScQueryable).ToConditions(Resource);
+        internal IEnumerable<Condition> SQL => this.Where(c => c.ScQueryable);
         internal Conditions PostSQL => this.Where(c => !c.ScQueryable || c.IsOfType<string>()).ToConditions(Resource);
         internal Conditions Equality => this.Where(c => c.Operator.Equality).ToConditions(Resource);
         internal Conditions Compare => this.Where(c => c.Operator.Compare).ToConditions(Resource);
         private static readonly char[] OpMatchChars = {'<', '>', '=', '!'};
         internal Conditions(IResource resource) => Resource = resource;
+        internal bool HasPost { get; private set; }
 
         /// <summary>
         /// Access a condition by its key (case insensitive)
         /// </summary>
-        public Condition this[string key]
+        public Condition this[string key] => this.FirstOrDefault(c => c.Key.EqualsNoCase(key));
+
+        /// <summary>
+        /// Access a condition by its key (case insensitive) and operator
+        /// </summary>
+        public Condition this[string key, Operator op] => this.FirstOrDefault(
+            c => c.Operator == op && c.Key.EqualsNoCase(key));
+
+        /// <summary>
+        /// Adds a condition to the list
+        /// </summary>
+        /// <param name="value"></param>
+        public new void Add(Condition value)
         {
-            get => this.FirstOrDefault(c => c.Key.EqualsNoCase(key));
-            set => Add(value);
+            if (!value.ScQueryable || value.IsOfType<string>())
+                HasPost = true;
+            base.Add(value);
         }
 
         /// <summary>
-        /// Access a condition value by its key (case insensitive) and operator
+        /// Creates and adds a new condition to the list
         /// </summary>
-        public dynamic this[string key, Operator op]
-        {
-            get => this
-                .FirstOrDefault(c => c.Operator == op && c.Key.EqualsNoCase(key))
-                ?.Value;
-            set => this[key] = new Condition
-            (
-                propertyChain: PropertyChain.Parse(key, Resource, Resource.DynamicConditionsAllowed),
-                op: op,
-                value: value
-            );
-        }
+        public void Add(string key, Operator op, dynamic value) => Add(new Condition(
+            PropertyChain.GetOrMake(Resource, key, Resource.DynamicConditionsAllowed), op, value
+        ));
 
         /// <summary>
         /// Parses a Conditions object from a conditions section of a REST request URI
@@ -67,7 +72,11 @@ namespace RESTar
                     throw new OperatorException(s);
                 var pair = s.Split(new[] {op.Common}, StringSplitOptions.None);
                 var keyString = WebUtility.UrlDecode(pair[0]);
-                var chain = PropertyChain.Parse(keyString, resource, resource.DynamicConditionsAllowed);
+                var chain = PropertyChain.GetOrMake(resource, keyString, resource.DynamicConditionsAllowed);
+                if (chain.LastOrDefault() is StaticProperty stat &&
+                    stat.GetAttribute<AllowedConditionOperators>()?.Operators?.Contains(op) == false)
+                    throw new ForbiddenOperatorException(s, resource, op, chain,
+                        stat.GetAttribute<AllowedConditionOperators>()?.Operators);
                 var valueString = WebUtility.UrlDecode(pair[1]);
                 var value = GetValue(valueString);
                 if (chain.IsStatic && chain.LastOrDefault() is StaticProperty prop && prop.Type.IsEnum &&
@@ -122,7 +131,7 @@ namespace RESTar
             var type = typeof(T);
             if (type != Resource.TargetType && !Resource.IsDDictionary)
             {
-                var newTypeProperties = type.GetStaticProperties();
+                var newTypeProperties = type.GetStaticProperties().Values;
                 RemoveAll(cond => newTypeProperties.All(prop =>
                     prop.Name != cond.PropertyChain.FirstOrDefault()?.Name));
                 ForEach(condition => condition.Migrate(type));
@@ -131,27 +140,27 @@ namespace RESTar
             return entities.Where(entity => this.All(condition => condition.HoldsFor(entity)));
         }
 
-        internal WhereClause ToWhereClause()
-        {
-            if (!this.Any()) return new WhereClause();
-            var stringPart = new List<string>();
-            var valuesPart = new List<object>();
-            SQL.ForEach(c =>
-            {
-                if (c.Value == null)
-                    stringPart.Add($"t.{c.PropertyChain.DbKey.Fnuttify()} " +
-                                   $"{(c.Operator == Operators.NOT_EQUALS ? "IS NOT NULL" : "IS NULL")} ");
-                else
-                {
-                    stringPart.Add($"t.{c.PropertyChain.DbKey.Fnuttify()} {c.Operator.SQL}?");
-                    valuesPart.Add(c.Value);
-                }
-            });
-            return new WhereClause
-            {
-                stringPart = $"WHERE {string.Join(" AND ", stringPart)}",
-                valuesPart = valuesPart.ToArray()
-            };
-        }
+        //internal WhereClause ToWhereClause()
+        //{
+        //    if (!this.Any()) return new WhereClause();
+        //    var stringPart = new List<string>();
+        //    var valuesPart = new List<object>();
+        //    SQL.ForEach(c =>
+        //    {
+        //        if (c.Value == null)
+        //            stringPart.Add($"t.{c.PropertyChain.DbKey.Fnuttify()} " +
+        //                           $"{(c.Operator == Operators.NOT_EQUALS ? "IS NOT NULL" : "IS NULL")} ");
+        //        else
+        //        {
+        //            stringPart.Add($"t.{c.PropertyChain.DbKey.Fnuttify()} {c.Operator.SQL}?");
+        //            valuesPart.Add(c.Value);
+        //        }
+        //    });
+        //    return new WhereClause
+        //    {
+        //        stringPart = $"WHERE {string.Join(" AND ", stringPart)}",
+        //        valuesPart = valuesPart.ToArray()
+        //    };
+        //}
     }
 }

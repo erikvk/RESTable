@@ -10,18 +10,17 @@ namespace RESTar.Operations
 {
     internal class OrderBy : IFilter
     {
-        public string Key
-        {
-            get => PropertyChain.Key;
-            set => PropertyChain = PropertyChain.Parse(value, Resource, Resource.IsDynamic);
-        }
+        public string Key => PropertyChain.Key;
+
+        internal void SetStaticKey(string key) => PropertyChain = PropertyChain
+            .GetOrMake(Resource, key, Resource.IsDynamic);
 
         public bool Descending;
         public bool Ascending => !Descending;
 
         internal readonly IResource Resource;
         internal PropertyChain PropertyChain;
-        
+
         internal bool IsStarcounterQueryable = true;
         private Func<T1, dynamic> ToSelector<T1>() => item => Do.Try(() => PropertyChain.Get(item), default(object));
 
@@ -35,7 +34,7 @@ namespace RESTar.Operations
         {
             Resource = resource;
             Descending = descending;
-            PropertyChain = PropertyChain.Parse(key, resource, resource.IsDynamic, dynamicMembers);
+            PropertyChain = PropertyChain.ParseInternal(key, resource, resource.IsDynamic, dynamicMembers);
         }
 
         public IEnumerable<T> Apply<T>(IEnumerable<T> entities)

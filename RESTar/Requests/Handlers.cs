@@ -9,6 +9,7 @@ using static RESTar.RESTarMethods;
 using static Starcounter.SessionOptions;
 using static RESTar.Settings;
 using static RESTar.Requests.Responses;
+using static RESTar.RESTarConfig;
 using ScRequest = Starcounter.Request;
 using ScHandle = Starcounter.Handle;
 
@@ -86,8 +87,8 @@ namespace RESTar.Requests
             {
                 var request = new RESTRequest(scRequest);
                 request.Populate(query, default(RESTarMethods), null);
-                var origin = request.ScRequest.Headers["Origin"].ToLower();
-                if (RESTarConfig.AllowAllOrigins || RESTarConfig.AllowedOrigins.Contains(new Uri(origin)))
+                var origin = request.ScRequest.Headers["Origin"];
+                if (AllowAllOrigins || AllowedOrigins.Contains(new Uri(origin)))
                     return AllowOrigin(origin, request.Resource.AvailableMethods);
                 return Forbidden();
             }

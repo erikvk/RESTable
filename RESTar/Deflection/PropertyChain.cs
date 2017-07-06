@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json.Linq;
 using RESTar.Internal;
+using static RESTar.Deflection.TypeCache;
 using static RESTar.Internal.ErrorCodes;
 using static RESTar.Operations.Do;
 
@@ -26,24 +27,35 @@ namespace RESTar.Deflection
         /// <summary>
         /// Can this property chain be used to reference a property in an SQL statement?
         /// </summary>
-        public bool ScQueryable => this.All(p => p.ScQueryable);
+        public bool ScQueryable { get; private set; }
 
         private static readonly NoCaseComparer Comparer = new NoCaseComparer();
 
         /// <summary>
         /// Is this property chain static? (Are all its properties static members?)
         /// </summary>
-        public bool IsStatic => this.All(p => p is StaticProperty);
+        public bool IsStatic { get; private set; }
 
         /// <summary>
         /// Is this property chain dynamic? (Are not all its properties static members?)
         /// </summary>
         public bool IsDynamic => !IsStatic;
 
+        internal static PropertyChain GetOrMake(IResource Resource, string key, bool dynamicUnknowns)
+        {
+            var hash = Resource.TargetType.GetHashCode() + key.ToLower().GetHashCode() +
+                       dynamicUnknowns.GetHashCode();
+            if (!PropertyChains.TryGetValue(hash, out PropertyChain propChain))
+                propChain = PropertyChains[hash] = ParseInternal(key, Resource, dynamicUnknowns);
+            return propChain;
+        }
+
         /// <summary>
-        /// Parses a property chain key string and returns a property chain describing it.
+        /// Parses a property chain key string and returns a property chain describing it. This method
+        /// is used for output property chains, that is, property chains that select property of outbound
+        /// entities. They may have dynamic entities generated during the request, hence the dynamic domain.
         /// </summary>
-        public static PropertyChain Parse(string keyString, IResource resource, bool dynamicUnknowns,
+        internal static PropertyChain ParseInternal(string keyString, IResource resource, bool dynamicUnknowns,
             List<string> dynamicDomain = null)
         {
             var chain = new PropertyChain();
@@ -61,9 +73,9 @@ namespace RESTar.Deflection
                         return DynamicProperty.Parse(str);
                     if (dynamicUnknowns)
                         return Try<Property>(
-                            () => StaticProperty.Parse(str, type),
+                            () => StaticProperty.Get(type, str),
                             () => DynamicProperty.Parse(str));
-                    return StaticProperty.Parse(str, type);
+                    return StaticProperty.Get(type, str);
                 }
 
                 switch (chain.LastOrDefault())
@@ -75,6 +87,8 @@ namespace RESTar.Deflection
             }
 
             keyString.Split('.').ForEach(s => chain.Add(propertyMaker(s)));
+            chain.ScQueryable = chain.All(p => p.ScQueryable);
+            chain.IsStatic = chain.All(p => p is StaticProperty);
             return chain;
         }
 
@@ -86,10 +100,12 @@ namespace RESTar.Deflection
             var newChain = new PropertyChain();
             chain.ForEach(item =>
             {
-                var newProp = type.MatchProperty(item.Name, false);
+                var newProp = StaticProperty.Get(type, item.Name);
                 newChain.Add(newProp);
                 type = newProp.Type;
             });
+            newChain.ScQueryable = newChain.All(p => p.ScQueryable);
+            newChain.IsStatic = newChain.All(p => p is StaticProperty);
             return newChain;
         }
 

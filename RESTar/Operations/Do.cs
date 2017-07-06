@@ -1,10 +1,12 @@
 ﻿using System;
 
+#pragma warning disable 1591
+
 namespace RESTar.Operations
 {
-    internal static class Do
+    public static class Do
     {
-        internal static T Try<T>(Func<T> thingy, T onfail)
+        public static T Try<T>(Func<T> thingy, T onfail)
         {
             try
             {
@@ -16,7 +18,20 @@ namespace RESTar.Operations
             }
         }
 
-        internal static T Try<T>(Func<T> thingy, Func<T> onFail)
+        public static T Try<T>(Action thingy, T onfail)
+        {
+            try
+            {
+                thingy();
+                return default(T);
+            }
+            catch
+            {
+                return onfail;
+            }
+        }
+
+        public static T Try<T>(Func<T> thingy, Func<T> onFail)
         {
             try
             {
@@ -28,7 +43,7 @@ namespace RESTar.Operations
             }
         }
 
-        internal static T TryAndThrow<T>(Func<T> thingy, Exception onFail)
+        public static T TryAndThrow<T>(Func<T> thingy, Exception onFail)
         {
             try
             {
@@ -40,7 +55,7 @@ namespace RESTar.Operations
             }
         }
 
-        internal static void TryCatch(Action thingy, Action<Exception> onCatch)
+        public static void TryCatch(Action thingy, Action<Exception> onCatch)
         {
             try
             {
@@ -52,7 +67,7 @@ namespace RESTar.Operations
             }
         }
 
-        internal static T TryAndThrow<T>(Func<T> thingy, string onFailMessage)
+        public static T TryAndThrow<T>(Func<T> thingy, string onFailMessage)
         {
             try
             {
@@ -64,7 +79,7 @@ namespace RESTar.Operations
             }
         }
 
-        internal static void Try(Action thingy)
+        public static void Try(Action thingy)
         {
             try
             {
@@ -75,13 +90,13 @@ namespace RESTar.Operations
             }
         }
 
-        internal static T Run<T>(Action thingy, T @return = default(T))
+        public static T Run<T>(Action thingy, T @return = default(T))
         {
             thingy();
             return @return;
         }
 
-        internal static T Run<T>(Func<T> thingy)
+        public static T Run<T>(Func<T> thingy)
         {
             return thingy();
         }

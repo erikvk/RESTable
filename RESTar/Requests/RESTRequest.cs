@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Xml;
 using ClosedXML.Excel;
 using Excel;
 using Newtonsoft.Json;
@@ -50,8 +51,6 @@ namespace RESTar.Requests
 
         internal void Populate(string query, RESTarMethods method, Evaluator evaluator)
         {
-            if (method == none)
-                throw new ArgumentException("Method cannot be 'none'", nameof(method));
             Method = method;
             query = CheckQuery(query, ScRequest);
             Evaluator = evaluator;
@@ -76,15 +75,10 @@ namespace RESTar.Requests
                 (Resource.TargetType == typeof(Resource) || Resource.TargetType.IsSubclassOf(typeof(Resource))))
             {
                 var nameCond = Conditions["name"];
-                if (nameCond != null)
-                    nameCond.Value = ((string) nameCond.Value.ToString()).FindResource().Name;
+                nameCond?.SetValue(((string) nameCond.Value.ToString()).FindResource().Name);
             }
             if (argLength == 3) return;
             MetaConditions = MetaConditions.Parse(args[3], Resource) ?? MetaConditions;
-        }
-
-        internal void GetDataFromSource()
-        {
         }
 
         internal void GetRequestData()
@@ -180,22 +174,21 @@ namespace RESTar.Requests
                     response.ContentType = MimeTypes.JSON;
                     return;
                 case RESTarMimeType.Excel:
-                    var dataSet = data.ToDataSet(Resource);
-                    var workbook = new XLWorkbook();
-                    workbook.AddWorksheet(dataSet);
-                    var fileName = $"{Resource.Name}_export_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
-                    using (var memstream = new MemoryStream())
-                    {
-                        workbook.SaveAs(memstream);
-                        response.BodyBytes = memstream.ToArray();
-                    }
+                    var fileName = $"{Resource.Name}_output_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
+                    response.BodyBytes = data.ToExcel(Resource).SerializeExcel();
                     response.Headers["Content-Disposition"] = $"attachment; filename={fileName}";
                     response.ContentType = MimeTypes.Excel;
                     return;
                 case RESTarMimeType.XML:
                     var json = SerializeDynamic ? data.Serialize() : data.Serialize(IEnumTypes[Resource]);
                     var xml = JsonConvert.DeserializeXmlNode($@"{{""row"":{json}}}", "root", true);
-                    response.Body = xml.SerializeXml();
+                    using (var stringWriter = new StringWriter())
+                    using (var xmlTextWriter = XmlWriter.Create(stringWriter))
+                    {
+                        xml.WriteTo(xmlTextWriter);
+                        xmlTextWriter.Flush();
+                        response.Body = stringWriter.GetStringBuilder().ToString();
+                    }
                     response.ContentType = MimeTypes.XML;
                     return;
                 default: throw new ArgumentOutOfRangeException(nameof(Accept));

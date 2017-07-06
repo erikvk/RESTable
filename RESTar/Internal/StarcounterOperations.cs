@@ -14,10 +14,13 @@ namespace RESTar.Internal
         /// </summary>
         public static Selector<T> Select => request =>
         {
-            var where = request.Conditions?.SQL?.ToWhereClause();
-            return Db.SQL<T>($"SELECT t FROM {typeof(T).FullName} t {where?.stringPart} " +
-                             $"{request.MetaConditions.OrderBy?.SQL}", where?.valuesPart)
-                .Filter(request.Conditions?.PostSQL);
+            if (request.Conditions == null)
+                return Db.SQL<T>($"SELECT t FROM {typeof(T).FullName} t " +
+                                 $"{request.MetaConditions.OrderBy?.SQL}");
+            var where = request.Conditions?.SQL?.MakeWhereClause();
+            var results = Db.SQL<T>($"SELECT t FROM {typeof(T).FullName} t {where?.WhereString} " +
+                                    $"{request.MetaConditions.OrderBy?.SQL}", where?.Values);
+            return !request.Conditions.HasPost ? results : results.Filter(request.Conditions?.PostSQL);
         };
 
         /// <summary>

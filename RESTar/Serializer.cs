@@ -1,8 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Data;
-using System.IO;
-using System.Xml;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using RESTar.View.Serializer;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
@@ -72,29 +68,5 @@ namespace RESTar
         internal static T Deserialize<T>(this string json) => DeserializeObject<T>(json);
         internal static void Populate(string json, object target) => PopulateObject(json, target, Settings);
         internal static string SerializeToViewModel(this object value) => SerializeObject(value, VmSettings);
-    }
-
-    internal static class XmlSerializer
-    {
-        internal static string SerializeXml(this XmlDocument xml)
-        {
-            using (var stringWriter = new StringWriter())
-            using (var xmlTextWriter = XmlWriter.Create(stringWriter))
-            {
-                xml.WriteTo(xmlTextWriter);
-                xmlTextWriter.Flush();
-                return stringWriter.GetStringBuilder().ToString();
-            }
-        }
-    }
-
-    internal static class ExcelSerializer
-    {
-        internal static DataSet ToDataSet(this IEnumerable<dynamic> list, Internal.IResource resource)
-        {
-            var ds = new DataSet();
-            ds.Tables.Add(list.MakeTable(resource));
-            return ds;
-        }
     }
 }

@@ -51,7 +51,7 @@ namespace RESTar.Deflection
                         var type = obj.GetType();
                         value = Do.Try(() =>
                         {
-                            var prop = type.MatchProperty(Name);
+                            var prop = StaticProperty.Get(type, Name);
                             actualKey = prop.Name;
                             return prop.Get(obj);
                         }, default(object));
@@ -67,7 +67,7 @@ namespace RESTar.Deflection
                 if (obj is JObject jobj)
                     jobj[Name] = value;
                 var type = obj.GetType();
-                Do.Try(() => type.MatchProperty(Name)?.Set(obj, value));
+                Do.Try(() => StaticProperty.Get(type, Name)?.Set(obj, value));
             };
         }
     }

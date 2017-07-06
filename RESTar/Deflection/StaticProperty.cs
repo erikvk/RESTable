@@ -24,8 +24,8 @@ namespace RESTar.Deflection
 
         /// <summary>
         /// The attributes that this property has been decorated with
-        /// </summary>
-        public IEnumerable<Attribute> Attributes { get; }
+        /// </summary>  
+        public ICollection<Attribute> Attributes { get; protected set; }
 
         internal T GetAttribute<T>() where T : Attribute => Attributes?.OfType<T>().FirstOrDefault();
         internal bool HasAttribute<TAttribute>() where TAttribute : Attribute => GetAttribute<TAttribute>() != null;
@@ -34,20 +34,24 @@ namespace RESTar.Deflection
         /// <summary>
         /// Parses a static property from a key string and a type
         /// </summary>
-        /// <param name="keyString">The string to match a property from</param>
         /// <param name="type">The type to match the property from</param>
+        /// <param name="key">The string to match a property from</param>
         /// <returns></returns>
-        public static StaticProperty Parse(string keyString, Type type) => type.MatchProperty(keyString);
+        public static StaticProperty Get(Type type, string key)
+        {
+            type.GetStaticProperties().TryGetValue(key.ToLower(), out StaticProperty prop);
+            return prop ?? throw new UnknownColumnException(type, key);
+        }
 
         internal StaticProperty(PropertyInfo p)
         {
             if (p == null) return;
-            Name = p.MemberName();
+            Name = p.RESTarMemberName();
             DatabaseQueryName = p.Name;
             Type = p.PropertyType;
             ScQueryable = p.DeclaringType?.HasAttribute<DatabaseAttribute>() == true &&
                           p.PropertyType.IsStarcounterCompatible();
-            Attributes = p.GetCustomAttributes();
+            Attributes = p.GetCustomAttributes().ToList();
             Getter = p.MakeDynamicGetter();
             Setter = p.MakeDynamicSetter();
         }

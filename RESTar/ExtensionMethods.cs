@@ -2,12 +2,14 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Data;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Serialization;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Web;
+using ClosedXML.Excel;
 using Dynamit;
 using Newtonsoft.Json.Linq;
 using RESTar.Auth;
@@ -174,7 +176,9 @@ namespace RESTar
 
         internal static bool IsDDictionary(this Type type) => type.IsSubclassOf(typeof(DDictionary));
         internal static bool IsStarcounter(this Type type) => type.HasAttribute<DatabaseAttribute>();
-        internal static string MemberName(this MemberInfo m) => m.GetAttribute<DataMemberAttribute>()?.Name ?? m.Name;
+
+        internal static string RESTarMemberName(this MemberInfo m) => m.GetAttribute<DataMemberAttribute>()?.Name ??
+                                                                      m.Name;
 
         internal static bool IsSingular(this IEnumerable<object> ienum, Requests.RESTRequest request) =>
             request.Resource.IsSingleton || ienum?.Count() == 1 && !request.ResourceHome;
@@ -256,6 +260,7 @@ namespace RESTar
             jobj = new JObject();
             entity.GetType()
                 .GetStaticProperties()
+                .Values
                 .Where(p => !(p is SpecialProperty))
                 .ForEach(prop =>
                 {
@@ -318,6 +323,21 @@ namespace RESTar
             return processor?.Apply((dynamic) entities) ?? (IEnumerable<dynamic>) entities;
         }
 
+        internal static (string WhereString, object[] Values)? MakeWhereClause(this IEnumerable<Condition> conds)
+        {
+            if (!conds.Any()) return null;
+            var Values = new List<object>();
+            var WhereString = string.Join(" AND ", conds.Select(c =>
+            {
+                var key = c.PropertyChain.DbKey.Fnuttify();
+                if (c.Value == null)
+                    return $"t.{key} {(c.Operator == Operator.NOT_EQUALS ? "IS NOT NULL" : "IS NULL")}";
+                Values.Add(c.Value);
+                return $"t.{key} {c.Operator.SQL}?";
+            }));
+            return ($"WHERE {WhereString}", Values.ToArray());
+        }
+
         #endregion
 
         #region Dictionary helpers
@@ -327,7 +347,8 @@ namespace RESTar
         /// </summary>
         public static TValue SafeGet<TKey, TValue>(this IDictionary<TKey, TValue> dict, TKey key)
         {
-            return dict.ContainsKey(key) ? dict[key] : default(TValue);
+            dict.TryGetValue(key, out TValue value);
+            return value;
         }
 
         /// <summary>
@@ -451,6 +472,47 @@ namespace RESTar
 
         #region IEnumerable
 
+        internal static bool ContainsDuplicates<T>(this IEnumerable<T> source, out T duplicate)
+        {
+            duplicate = default(T);
+            var d = new HashSet<T>();
+            foreach (var t in source)
+            {
+                if (!d.Add(t))
+                {
+                    duplicate = t;
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        internal static IEnumerable<T> Apply<T>(this IEnumerable<T> source, Action<T> action)
+        {
+            return source.Select(e =>
+            {
+                action(e);
+                return e;
+            });
+        }
+
+        internal static void Collect<T>(this IEnumerable<T> source, Action<IEnumerable<T>> action)
+        {
+            action(source);
+        }
+
+        internal static IEnumerable<T> If<T>(this IEnumerable<T> source, Func<bool> predicate,
+            Func<IEnumerable<T>, IEnumerable<T>> action)
+        {
+            return predicate() ? action(source) : source;
+        }
+
+        internal static IEnumerable<T> If<T>(this IEnumerable<T> source, Predicate<IEnumerable<T>> predicate,
+            Func<IEnumerable<T>, IEnumerable<T>> action)
+        {
+            return predicate(source) ? action(source) : source;
+        }
+
         internal static void ForEach<T>(this IEnumerable<T> source, Action<T> action)
         {
             foreach (var e in source) action(e);
@@ -492,6 +554,17 @@ namespace RESTar
             return _props;
         }
 
+        /// <summary>
+        /// Returns true if and only if the request contains a condition with the given key and 
+        /// operator. If true, the out Condition parameter will contain a reference to the found
+        /// condition.
+        /// </summary>
+        public static bool HasCondition(this IRequest request, string key, Operator op, out Condition condition)
+        {
+            condition = request.Conditions?[key, op];
+            return condition != null;
+        }
+
         #endregion
 
         #region Conversion
@@ -519,63 +592,98 @@ namespace RESTar
             return message.ToString();
         }
 
+        internal static XLWorkbook ToExcel(this IEnumerable<object> entities, IResource resource)
+        {
+            var dataSet = new DataSet();
+            dataSet.Tables.Add(entities.MakeTable(resource));
+            var workbook = new XLWorkbook();
+            workbook.AddWorksheet(dataSet);
+            return workbook;
+        }
+
+        /// <summary>
+        /// Converts an IEnumerable of T to an Excel workbook
+        /// </summary>
+        public static XLWorkbook ToExcel<T>(this IEnumerable<T> entities) where T : class
+        {
+            if (!ResourceByType.TryGetValue(typeof(T), out var resource))
+                throw new UnknownResourceException(typeof(T).FullName);
+            var dataSet = new DataSet();
+            dataSet.Tables.Add(entities.MakeTable(resource));
+            var workbook = new XLWorkbook();
+            workbook.AddWorksheet(dataSet);
+            return workbook;
+        }
+
+        /// <summary>
+        /// Serializes an Excel workbook to a byte array
+        /// </summary>
+        public static byte[] SerializeExcel(this XLWorkbook excel)
+        {
+            using (var memstream = new MemoryStream())
+            {
+                excel.SaveAs(memstream);
+                return memstream.ToArray();
+            }
+        }
+
         internal static DataTable MakeTable(this IEnumerable<object> entities, IResource resource)
         {
             var table = new DataTable();
-            if (entities is IEnumerable<IDictionary<string, object>> dicts)
+            switch (entities)
             {
-                foreach (var item in dicts)
-                {
-                    var row = table.NewRow();
-                    foreach (var pair in item)
+                case IEnumerable<IDictionary<string, object>> dicts:
+                    foreach (var item in dicts)
                     {
-                        if (!table.Columns.Contains(pair.Key))
-                            table.Columns.Add(pair.Key);
-                        row.SetCellValue(pair.Key, pair.Value);
+                        var row = table.NewRow();
+                        foreach (var pair in item)
+                        {
+                            if (!table.Columns.Contains(pair.Key))
+                                table.Columns.Add(pair.Key);
+                            row.SetCellValue(pair.Key, pair.Value);
+                        }
+                        table.Rows.Add(row);
                     }
-                    table.Rows.Add(row);
-                }
-            }
-            else if (entities is IEnumerable<JObject> jobjects)
-            {
-                foreach (var item in jobjects)
-                {
-                    var row = table.NewRow();
-                    foreach (var pair in item)
+                    return table;
+                case IEnumerable<JObject> jobjects:
+                    foreach (var item in jobjects)
                     {
-                        if (!table.Columns.Contains(pair.Key))
-                            table.Columns.Add(pair.Key);
-                        row.SetCellValue(pair.Key, pair.Value.ToObject<object>());
+                        var row = table.NewRow();
+                        foreach (var pair in item)
+                        {
+                            if (!table.Columns.Contains(pair.Key))
+                                table.Columns.Add(pair.Key);
+                            row.SetCellValue(pair.Key, pair.Value.ToObject<object>());
+                        }
+                        table.Rows.Add(row);
                     }
-                    table.Rows.Add(row);
-                }
-            }
-            else
-            {
-                var properties = resource.GetStaticProperties();
-                foreach (var prop in properties)
-                {
-                    var ColType = prop.Type.IsClass && prop.Type != typeof(string)
-                        ? typeof(string)
-                        : Nullable.GetUnderlyingType(prop.Type) ?? prop.Type;
-                    table.Columns.Add(prop.Name, ColType);
-                }
-                foreach (var item in entities)
-                {
-                    var row = table.NewRow();
+                    return table;
+                default:
+                    var properties = resource.GetStaticProperties().Values;
                     foreach (var prop in properties)
                     {
-                        var key = prop.Name;
-                        object value;
-                        if (prop.HasAttribute<ExcelFlattenToString>())
-                            value = prop.Get(item)?.ToString();
-                        else value = prop.Get(item);
-                        row.SetCellValue(key, value);
+                        var ColType = prop.Type.IsEnum || prop.Type.IsClass && prop.Type != typeof(string) ||
+                                      prop.HasAttribute<ExcelFlattenToString>()
+                            ? typeof(string)
+                            : Nullable.GetUnderlyingType(prop.Type) ?? prop.Type;
+                        table.Columns.Add(prop.Name, ColType);
                     }
-                    table.Rows.Add(row);
-                }
+                    foreach (var item in entities)
+                    {
+                        var row = table.NewRow();
+                        foreach (var prop in properties)
+                        {
+                            var key = prop.Name;
+                            object value;
+                            if (prop.Type.IsEnum || prop.HasAttribute<ExcelFlattenToString>())
+                                value = prop.Get(item)?.ToString();
+                            else value = prop.Get(item);
+                            row.SetCellValue(key, value);
+                        }
+                        table.Rows.Add(row);
+                    }
+                    return table;
             }
-            return table;
         }
 
         private static void SetCellValue(this DataRow row, string name, dynamic value)
@@ -654,7 +762,7 @@ namespace RESTar
         {
             if (resource.IsDDictionary)
                 return new Dictionary<string, dynamic>();
-            var properties = resource.GetStaticProperties();
+            var properties = resource.GetStaticProperties().Values;
             return properties.ToDictionary(
                 p => p.ViewModelName,
                 p => p.Type.MakeViewModelDefault(p)
@@ -678,7 +786,7 @@ namespace RESTar
                 {
                     if (propType == typeof(object))
                         return "@RESTar()";
-                    var props = propType.GetStaticProperties();
+                    var props = propType.GetStaticProperties().Values;
                     return props.ToDictionary(
                         p => p.ViewModelName,
                         p => DefaultValueRecurser(p.Type));

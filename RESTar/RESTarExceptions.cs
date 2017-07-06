@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using RESTar.Deflection;
 using RESTar.Internal;
 using RESTar.View;
 using Starcounter;
@@ -81,6 +82,18 @@ namespace RESTar
             "ors: " + string.Join(", ", Operator.AvailableOperators))
         {
         }
+    }
+
+    /// <summary>
+    /// Thrown when a provided operator was forbidden for the given property
+    /// </summary>
+    public class ForbiddenOperatorException : RESTarException
+    {
+        internal ForbiddenOperatorException(string c, IResource resource, Operator found, PropertyChain chain,
+            IEnumerable<Operator> allowed) : base(InvalidConditionOperatorError,
+            $"Invalid operator for condition '{c}'. Operator '{found}' is not allowed when " +
+            $"comparing against '{chain.Key}' in resource '{resource.Name}'. Allowed operators" +
+            $": {string.Join(", ", allowed.Select(a => $"'{a.Common}'"))}") => Response = BadRequest(this);
     }
 
     /// <summary>

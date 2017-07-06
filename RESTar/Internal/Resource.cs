@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.Serialization;
 using Dynamit;
 using Newtonsoft.Json.Linq;
 using RESTar.Operations;
@@ -20,25 +21,16 @@ namespace RESTar.Internal
         public RESTarMethods[] AvailableMethods { get; }
         public string AvailableMethodsString => AvailableMethods.ToMethodsString();
         public Type TargetType { get; }
-        public bool IsDDictionary => typeof(T) == typeof(DDictionary);
-
-        public bool IsDynamic => IsDDictionary || TargetType.IsSubclassOf(typeof(JObject)) ||
-                                 typeof(IDictionary).IsAssignableFrom(TargetType);
-
+        public bool IsDDictionary { get; }
+        public bool IsDynamic { get; }
         public long? NrOfEntities => Try(() => DB.RowCount(Name), default(long?));
         public bool IsSingleton { get; }
         public bool DynamicConditionsAllowed { get; }
         public string AliasOrName => Alias ?? Name;
         public override string ToString() => AliasOrName;
-        public bool IsStarcounterResource => TargetType.HasAttribute<DatabaseAttribute>();
+        public bool IsStarcounterResource { get; }
         public bool RequiresValidation { get; }
-
-        public RESTarResourceType ResourceType =>
-            IsStarcounterResource
-                ? IsDDictionary
-                    ? ScDynamic
-                    : ScStatic
-                : Virtual;
+        public RESTarResourceType ResourceType { get; }
 
         public Selector<dynamic> Select { get; }
         public Inserter<dynamic> Insert { get; }
@@ -83,6 +75,15 @@ namespace RESTar.Internal
             RequiresValidation = typeof(IValidatable).IsAssignableFrom(targetType);
             TargetType = targetType;
             Select = selector;
+            IsStarcounterResource = TargetType.HasAttribute<DatabaseAttribute>();
+            IsDDictionary = typeof(T) == typeof(DDictionary);
+            IsDynamic = IsDDictionary || TargetType.IsSubclassOf(typeof(JObject)) ||
+                        typeof(IDictionary).IsAssignableFrom(TargetType);
+            ResourceType = IsStarcounterResource
+                ? IsDDictionary
+                    ? ScDynamic
+                    : ScStatic
+                : Virtual;
             Insert = (e, r) => inserter((IEnumerable<T>) e, r);
             Update = (e, r) => updater((IEnumerable<T>) e, r);
             Delete = (e, r) => deleter((IEnumerable<T>) e, r);
@@ -136,6 +137,14 @@ namespace RESTar.Internal
                     throw new VirtualResourceMemberException(
                         "A virtual resource cannot include public instance fields, " +
                         $"only properties. Resource: '{type.FullName}' Fields: {string.Join(", ", fields.Select(f => $"'{f.Name}'"))} in resource '{type.FullName}'");
+                var props = type.GetProperties(Public | Instance)
+                    .Where(p => !p.HasAttribute<IgnoreDataMemberAttribute>())
+                    .Where(p => !(p.DeclaringType?.GetInterface("IDictionary`2") != null && p.Name == "Item"))
+                    .Select(p => p.RESTarMemberName().ToLower());
+                if (props.ContainsDuplicates(out string duplicate))
+                    throw new VirtualResourceMemberException(
+                        $"Invalid properties for resource '{type.FullName}'. Names of public instance properties declared " +
+                        $"for a virtual resource must be unique (case insensitive). Two or more property names evaluated to {duplicate}.");
             }
 
             new Resource<T>(type, editable, attribute, selector, inserter, updater, deleter);

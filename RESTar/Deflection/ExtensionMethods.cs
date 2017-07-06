@@ -54,23 +54,6 @@ namespace RESTar.Deflection
             }
         }
 
-        internal static StaticProperty MatchProperty(this Type resource, string str, bool ignoreCase = true)
-        {
-            var matches = resource.GetStaticProperties()
-                .Where(p => string.Equals(str, p.Name, ignoreCase
-                    ? StringComparison.CurrentCultureIgnoreCase
-                    : StringComparison.CurrentCulture));
-            var count = matches.Count();
-            if (count == 0) throw new UnknownColumnException(resource, str);
-            if (count > 1)
-            {
-                if (!ignoreCase)
-                    throw new AmbiguousColumnException(resource, str, matches.Select(m => m.Name));
-                return MatchProperty(resource, str, false);
-            }
-            return matches.First();
-        }
-
         /// <summary>
         /// Gets the members of an enumeration
         /// </summary>

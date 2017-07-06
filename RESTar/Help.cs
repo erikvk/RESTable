@@ -33,7 +33,7 @@ namespace RESTar
         /// </summary>
         public IEnumerable<Help> Select(IRequest request)
         {
-            var topic = ((string) request.Conditions?["topic", EQUALS])?.UriEncode();
+            var topic = ((string) request.Conditions?["topic", EQUALS]?.Value)?.UriEncode();
             var uri = new Uri(URL + (topic != null ? $"topic={topic}" : ""));
             var headers = new Dictionary<string, string> {["Authorization"] = "apikey restar"};
             return HTTP.ExternalRequest(method: GET, uri: uri, headers: headers)?.Body?.Deserialize<Help[]>();

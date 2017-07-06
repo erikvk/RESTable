@@ -46,18 +46,49 @@ namespace RESTar
             new[] {method}.Union(addMethods ?? new RESTarMethods[0]).ToArray();
     }
 
-    /// <summary>
-    /// An attribute that, when used on a property, flattens that 
-    /// property using its ToString() method when writing to Excel.
-    /// </summary>
-    [AttributeUsage(AttributeTargets.Property)]
-    public class ExcelFlattenToString : Attribute
-    {
-    }
-
     internal class DynamicTableAttribute : Attribute
     {
         public int Nr;
         public DynamicTableAttribute(int nr) => Nr = nr;
+    }
+
+    /// <summary>
+    /// An attribute that can be used to decorate field and property declarations, and assign
+    /// allowed operators for use in conditions that reference them.
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
+    public class AllowedConditionOperators : Attribute
+    {
+        /// <summary>
+        /// Only these operators will be allowed in conditions targeting this property
+        /// </summary>
+        public Operator[] Operators { get; set; }
+
+        /// <summary>
+        /// Creates a new instance ot the AllowedOperators attribute, using the 
+        /// provided list of strings to parse allowed operators.
+        /// </summary>
+        /// <param name="allowedOperators"></param>
+        public AllowedConditionOperators(params string[] allowedOperators)
+        {
+            try
+            {
+                Operators = allowedOperators.Select(a => (Operator) a).ToArray();
+            }
+            catch
+            {
+                throw new Exception("Invalid RESTarMemberAttribute declaration. Invalid operator string in " +
+                                    "allowedOperators.");
+            }
+        }
+    }
+
+    /// <summary>
+    /// An attribute that can be used to decorate field and property declarations, and tell
+    /// the serializer to flatten them using the ToString() method when writing to excel.
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
+    public class ExcelFlattenToString : Attribute
+    {
     }
 }

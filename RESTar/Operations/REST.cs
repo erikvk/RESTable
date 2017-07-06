@@ -12,13 +12,14 @@ namespace RESTar.Operations
     {
         internal static IEnumerable<T> StaticSELECT<T>(IRequest request)
         {
-            if (!request.MetaConditions.Unsafe && request.MetaConditions.Limit == -1)
-                request.MetaConditions.Limit = 1000;
             request.MetaConditions.Unsafe = true;
-            return (IEnumerable<T>) request.Resource
-                .Select(request)?
-                .Filter(request.MetaConditions.OrderBy)
-                .Filter(request.MetaConditions.Limit);
+            var results = (IEnumerable<T>) request.Resource.Select(request);
+            if (results == null) return null;
+            if (request.MetaConditions.OrderBy != null)
+                results = results.Filter(request.MetaConditions.OrderBy);
+            if (request.MetaConditions.Limit != -1)
+                results = results.Filter(request.MetaConditions.Limit);
+            return results;
         }
 
         internal static IEnumerable<dynamic> SELECT(IRequest request)
