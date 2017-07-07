@@ -14,8 +14,8 @@ namespace RESTar.Operations
             var opMatcher = input.Contains("->") ? "->" : "-%3E";
             var rename = new Rename();
             input.Split(',')
-                .ForEach(str => rename.Add(PropertyChain.ParseInternal(str.Split(new[] {opMatcher}, None)[0].ToLower(),
-                        resource, resource.IsDynamic),
+                .ForEach(str => rename.Add(PropertyChain.ParseInternal(resource,
+                    str.Split(new[] { opMatcher }, None)[0].ToLower(), resource.IsDynamic),
                     str.Split(new[] {opMatcher}, None)[1]));
             return rename;
         }

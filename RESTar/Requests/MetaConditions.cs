@@ -123,7 +123,7 @@ namespace RESTar.Requests
                         break;
                     case RESTarMetaConditions.Select:
                         mc.Select = ((string) value).Split(',')
-                            .Select(str => PropertyChain.ParseInternal(str, resource, resource.IsDynamic,
+                            .Select(str => PropertyChain.ParseInternal(resource, str, resource.IsDynamic,
                                 dynamicMembers))
                             .ToSelect();
                         break;

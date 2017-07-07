@@ -75,7 +75,7 @@ namespace RESTar.View
             {
                 try
                 {
-                    REST.POST(json, Request);
+                    RESTEvaluators.POST(json, Request);
                     Success = true;
                 }
                 catch (AbortedInserterException e)
@@ -95,7 +95,7 @@ namespace RESTar.View
             {
                 try
                 {
-                    REST.PATCH(RESTarData, json, Request);
+                    RESTEvaluators.PATCH(RESTarData, json, Request);
                     Success = true;
                 }
                 catch (AbortedUpdaterException e)
@@ -115,7 +115,7 @@ namespace RESTar.View
             {
                 try
                 {
-                    REST.DELETE(item, Request);
+                    RESTEvaluators.DELETE(item, Request);
                     Success = true;
                 }
                 catch (AbortedDeleterException e)

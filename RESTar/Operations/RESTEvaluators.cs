@@ -8,20 +8,8 @@ using Starcounter;
 
 namespace RESTar.Operations
 {
-    internal static class REST
+    internal static class RESTEvaluators
     {
-        internal static IEnumerable<T> StaticSELECT<T>(IRequest request)
-        {
-            request.MetaConditions.Unsafe = true;
-            var results = (IEnumerable<T>) request.Resource.Select(request);
-            if (results == null) return null;
-            if (request.MetaConditions.OrderBy != null)
-                results = results.Filter(request.MetaConditions.OrderBy);
-            if (request.MetaConditions.Limit != -1)
-                results = results.Filter(request.MetaConditions.Limit);
-            return results;
-        }
-
         internal static IEnumerable<dynamic> SELECT(IRequest request)
         {
             if (!request.MetaConditions.Unsafe && request.MetaConditions.Limit == -1)

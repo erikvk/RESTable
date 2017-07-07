@@ -236,12 +236,24 @@ namespace RESTar.Requests
             Check(RESTarMethods.GET);
             try
             {
-                return REST.StaticSELECT<T>(this);
+                return StaticSELECT(this);
             }
             catch (Exception e)
             {
                 throw new AbortedSelectorException(e, this);
             }
+        }
+
+        internal static IEnumerable<T> StaticSELECT(IRequest request)
+        {
+            request.MetaConditions.Unsafe = true;
+            var results = (IEnumerable<T>) request.Resource.Select(request);
+            if (results == null) return null;
+            if (request.MetaConditions.OrderBy != null)
+                results = results.Filter(request.MetaConditions.OrderBy);
+            if (request.MetaConditions.Limit != -1)
+                results = results.Filter(request.MetaConditions.Limit);
+            return results;
         }
 
         public int POST(Func<T> inserter)

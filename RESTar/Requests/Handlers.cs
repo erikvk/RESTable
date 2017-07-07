@@ -20,11 +20,11 @@ namespace RESTar.Requests
         internal static void Register(bool setupMenu)
         {
             var uri = _Uri + "{?}";
-            ScHandle.GET(_Port, uri, (ScRequest r, string q) => Handle(r, q, REST.GET, GET));
-            ScHandle.POST(_Port, uri, (ScRequest r, string q) => Handle(r, q, REST.POST, POST));
-            ScHandle.PUT(_Port, uri, (ScRequest r, string q) => Handle(r, q, REST.PUT, PUT));
-            ScHandle.PATCH(_Port, uri, (ScRequest r, string q) => Handle(r, q, REST.PATCH, PATCH));
-            ScHandle.DELETE(_Port, uri, (ScRequest r, string q) => Handle(r, q, REST.DELETE, DELETE));
+            ScHandle.GET(_Port, uri, (ScRequest r, string q) => Handle(r, q, RESTEvaluators.GET, GET));
+            ScHandle.POST(_Port, uri, (ScRequest r, string q) => Handle(r, q, RESTEvaluators.POST, POST));
+            ScHandle.PUT(_Port, uri, (ScRequest r, string q) => Handle(r, q, RESTEvaluators.PUT, PUT));
+            ScHandle.PATCH(_Port, uri, (ScRequest r, string q) => Handle(r, q, RESTEvaluators.PATCH, PATCH));
+            ScHandle.DELETE(_Port, uri, (ScRequest r, string q) => Handle(r, q, RESTEvaluators.DELETE, DELETE));
             ScHandle.OPTIONS(_Port, uri, (ScRequest r, string q) => CheckOrigin(r, q));
 
             if (!_ViewEnabled) return;
@@ -47,7 +47,7 @@ namespace RESTar.Requests
                     Authenticator.UserCheck();
                     using (var request = new RESTRequest(r))
                     {
-                        request.Populate(query, GET, REST.VIEW);
+                        request.Populate(query, GET, RESTEvaluators.VIEW);
                         request.MetaConditions.DeactivateProcessors();
                         request.MethodCheck();
                         request.Evaluate();

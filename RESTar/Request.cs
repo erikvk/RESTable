@@ -29,39 +29,37 @@ namespace RESTar
 
         private static readonly string _SELECT = $"SELECT t FROM {typeof(T).FullName} t";
 
-        ///// <summary>
-        ///// Returns all entitites in the resource that matches a condition.
-        ///// </summary>
-        ///// <param name="key">The condition key</param>
-        ///// <param name="operator">The condition operator</param>
-        ///// <param name="value">The conditions value</param>
-        //public static IEnumerable<T> GET(string key, Operator @operator, dynamic value)
-        //{
-        //    if (!RESTarConfig.ResourceByType.TryGetValue(typeof(T), out Internal.IResource resource))
-        //        throw new ArgumentException($"Unknown resource '{typeof(T).FullName}'. Not a RESTar resource.");
+        /// <summary>
+        /// Returns all entitites in the resource that matches a condition.
+        /// </summary>
+        /// <param name="key">The condition key</param>
+        /// <param name="operator">The condition operator</param>
+        /// <param name="value">The conditions value</param>
+        public static IEnumerable<T> GET(string key, Operator @operator, dynamic value)
+        {
+            if (!RESTarConfig.ResourceByType.TryGetValue(typeof(T), out Internal.IResource resource))
+                throw new ArgumentException($"Unknown resource '{typeof(T).FullName}'. Not a RESTar resource.");
 
-        //    switch (resource.ResourceType)
-        //    {
-        //        case ScStatic:
-        //            var th = typeof(T).GetHashCode();
-        //            var kh = key.GetHashCode();
-        //            var oh = @operator.GetHashCode();
-        //            var ah = resource.DynamicConditionsAllowed.GetHashCode();
-        //            var ph = th + kh + ah;
-        //            if (!PropertyChains.TryGetValue(ph, out PropertyChain propChain))
-        //                propChain = PropertyChains[ph] = PropertyChain
-        //                    .Parse(key, resource, resource.DynamicConditionsAllowed);
-        //            if (propChain.ScQueryable)
-        //            {
-        //                var sh = th + kh + oh;
-        //                if (!SQLCache.SQLQueries.TryGetValue(sh, out string query))
-        //                    query = SQLCache.SQLQueries[sh] = $"{_SELECT} WHERE t.{key.Fnuttify()} =?";
-        //                return Db.SQL<T>(query, value);
-        //            }
-        //            throw new ArgumentOutOfRangeException();
-        //        default: throw new ArgumentOutOfRangeException();
-        //    }
-        //}
+            switch (resource.ResourceType)
+            {
+                case ScStatic:
+                    var th = typeof(T).GetHashCode();
+                    var kh = key.GetHashCode();
+                    var oh = @operator.GetHashCode();
+                    var ah = resource.DynamicConditionsAllowed.GetHashCode();
+                    var ph = th + kh + ah;
+                    var propChain = PropertyChain.GetOrMake(ph, resource, key, resource.DynamicConditionsAllowed);
+                    if (propChain.ScQueryable)
+                    {
+                        var sh = th + kh + oh;
+                        if (!SQLCache.SQLQueries.TryGetValue(sh, out string query))
+                            query = SQLCache.SQLQueries[sh] = $"{_SELECT} WHERE t.{key.Fnuttify()} =?";
+                        return Db.SQL<T>(query, value);
+                    }
+                    throw new ArgumentOutOfRangeException();
+                default: throw new ArgumentOutOfRangeException();
+            }
+        }
 
         /// <summary>
         /// Returns all entitites in the resource that matches a set of conditions. To order

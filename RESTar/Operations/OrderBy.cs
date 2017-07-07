@@ -34,7 +34,7 @@ namespace RESTar.Operations
         {
             Resource = resource;
             Descending = descending;
-            PropertyChain = PropertyChain.ParseInternal(key, resource, resource.IsDynamic, dynamicMembers);
+            PropertyChain = PropertyChain.ParseInternal(resource, key, resource.IsDynamic, dynamicMembers);
         }
 
         public IEnumerable<T> Apply<T>(IEnumerable<T> entities)
