@@ -41,7 +41,7 @@ namespace RESTar.Deflection
         /// </summary>
         public bool IsDynamic => !IsStatic;
 
-        internal static PropertyChain GetOrMake(IResource Resource, string key, bool dynamicUnknowns)
+        internal static PropertyChain GetOrMake(IResourceView Resource, string key, bool dynamicUnknowns)
         {
             var hash = Resource.TargetType.GetHashCode() + key.ToLower().GetHashCode() +
                        dynamicUnknowns.GetHashCode();
@@ -50,7 +50,7 @@ namespace RESTar.Deflection
             return propChain;
         }
 
-        internal static PropertyChain GetOrMake(int hash, IResource Resource, string key, bool dynamicUnknowns)
+        internal static PropertyChain GetOrMake(int hash, IResourceView Resource, string key, bool dynamicUnknowns)
         {
             if (!PropertyChains.TryGetValue(hash, out PropertyChain propChain))
                 propChain = PropertyChains[hash] = ParseInternal(Resource, key, dynamicUnknowns);
@@ -62,7 +62,7 @@ namespace RESTar.Deflection
         /// is used for output property chains, that is, property chains that select property of outbound
         /// entities. They may have dynamic entities generated during the request, hence the dynamic domain.
         /// </summary>
-        internal static PropertyChain ParseInternal(IResource resource, string key, bool dynamicUnknowns,
+        internal static PropertyChain ParseInternal(IResourceView resource, string key, bool dynamicUnknowns,
             List<string> dynamicDomain = null)
         {
             var chain = new PropertyChain();

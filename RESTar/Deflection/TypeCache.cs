@@ -30,7 +30,7 @@ namespace RESTar.Deflection
         /// <summary>
         /// Gets the static properties for a given resource
         /// </summary>
-        public static IDictionary<string, StaticProperty> GetStaticProperties(this IResource resource) =>
+        public static IDictionary<string, StaticProperty> GetStaticProperties(this IResourceView resource) =>
             GetStaticProperties(resource.TargetType);
 
         /// <summary>
@@ -59,7 +59,7 @@ namespace RESTar.Deflection
         /// <summary>
         /// Gets the table columns for a Starcounter database resource
         /// </summary>
-        public static IEnumerable<StaticProperty> GetTableColumns(this IResource resource)
+        public static IEnumerable<StaticProperty> GetTableColumns(this IResourceView resource)
         {
             if (!resource.IsStarcounterResource)
                 throw new Exception($"Cannot get table columns for non-starcounter resource '{resource.Name}'");

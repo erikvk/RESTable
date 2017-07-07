@@ -66,7 +66,7 @@ namespace RESTar.Requests
         internal bool Empty = true;
         internal bool Delete { get; set; }
 
-        internal static MetaConditions Parse(string metaConditionString, IResource resource)
+        internal static MetaConditions Parse(string metaConditionString, IResourceView resource)
         {
             if (metaConditionString?.Equals("") != false)
                 return null;

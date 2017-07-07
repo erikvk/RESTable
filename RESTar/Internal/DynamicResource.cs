@@ -1,9 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using Dynamit;
 using RESTar.Operations;
 using Starcounter;
+using static System.StringComparison;
 
 namespace RESTar.Internal
 {
@@ -11,7 +11,7 @@ namespace RESTar.Internal
     /// Creates and structures all the dynamic resources for this RESTar instance
     /// </summary>
     [Database]
-    public class DynamicResource : IResource
+    public class DynamicResource : IResource<DDictionary>
     {
         /// <summary>
         /// The name of this resource
@@ -84,21 +84,6 @@ namespace RESTar.Internal
         public bool DynamicConditionsAllowed => true;
 
         /// <summary>
-        /// Compares two resource entities for equality
-        /// </summary>
-        public bool Equals(IResource x, IResource y) => x.Name == y.Name;
-
-        /// <summary>
-        /// Gets a hash code for this resource instance
-        /// </summary>
-        public int GetHashCode(IResource obj) => obj.Name.GetHashCode();
-
-        /// <summary>
-        /// Compares a resource entity to another
-        /// </summary>
-        public int CompareTo(IResource other) => string.Compare(Name, other.Name, StringComparison.Ordinal);
-
-        /// <summary>
         /// Gets a hash code for this resource instance
         /// </summary>
         public override int GetHashCode() => Name.GetHashCode();
@@ -116,22 +101,37 @@ namespace RESTar.Internal
         /// <summary>
         /// RESTar selector (don't use)
         /// </summary>
-        public Selector<dynamic> Select => DDictionaryOperations.Select;
+        public Selector<DDictionary> Select => DDictionaryOperations.Select;
 
         /// <summary>
         /// RESTar inserter (don't use)
         /// </summary>
-        public Inserter<dynamic> Insert => (e, r) => DDictionaryOperations.Insert((IEnumerable<DDictionary>) e, r);
+        public Inserter<DDictionary> Insert => (e, r) => DDictionaryOperations.Insert(e, r);
 
         /// <summary>
         /// RESTar updater (don't use)
         /// </summary>
-        public Updater<dynamic> Update => (e, r) => DDictionaryOperations.Update((IEnumerable<DDictionary>) e, r);
+        public Updater<DDictionary> Update => (e, r) => DDictionaryOperations.Update(e, r);
 
         /// <summary>
         /// RESTar deleter (don't use)
         /// </summary>
-        public Deleter<dynamic> Delete => (e, r) => DDictionaryOperations.Delete((IEnumerable<DDictionary>) e, r);
+        public Deleter<DDictionary> Delete => (e, r) => DDictionaryOperations.Delete(e, r);
+
+        /// <summary>
+        /// Compares two dynamic resources for equality
+        /// </summary>
+        public bool Equals(IResource<DDictionary> x, IResource<DDictionary> y) => x.Name == y.Name;
+
+        /// <summary>
+        /// Gets the hashcode for a dynamic resource
+        /// </summary>
+        public int GetHashCode(IResource<DDictionary> obj) => obj.Name.GetHashCode();
+
+        /// <summary>
+        /// Compares two dynamic resources
+        /// </summary>
+        public int CompareTo(IResource<DDictionary> other) => string.Compare(Name, other.Name, Ordinal);
 
         /// <summary>
         /// The available methods for this resource

@@ -9,7 +9,6 @@ using static RESTar.Internal.ErrorCodes;
 using static RESTar.Requests.Responses;
 using static RESTar.Settings;
 using static RESTar.View.MessageType;
-using IResource = RESTar.Internal.IResource;
 
 namespace RESTar
 {
@@ -44,7 +43,7 @@ namespace RESTar
     /// </summary>
     public class ForbiddenException : RESTarException
     {
-        internal ForbiddenException(ErrorCodes code, string message) : base(code, message) => Response = Forbidden();
+        internal ForbiddenException(ErrorCodes code, string message) : base(code, message) => Response = Forbidden;
     }
 
     /// <summary>
@@ -52,7 +51,7 @@ namespace RESTar
     /// </summary>
     public class NoHtmlException : RESTarException
     {
-        internal NoHtmlException(IResource resource, string matcher) : base(NoMatchingHtml,
+        internal NoHtmlException(IResourceView resource, string matcher) : base(NoMatchingHtml,
             $"No matching HTML file found for resource '{resource.Name}'. Add a HTML file " +
             $"'{matcher}' to the 'wwwroot/resources' directory.")
         {
@@ -89,7 +88,7 @@ namespace RESTar
     /// </summary>
     public class ForbiddenOperatorException : RESTarException
     {
-        internal ForbiddenOperatorException(string c, IResource resource, Operator found, PropertyChain chain,
+        internal ForbiddenOperatorException(string c, IResourceView resource, Operator found, PropertyChain chain,
             IEnumerable<Operator> allowed) : base(InvalidConditionOperatorError,
             $"Invalid operator for condition '{c}'. Operator '{found}' is not allowed when " +
             $"comparing against '{chain.Key}' in resource '{resource.Name}'. Allowed operators" +
@@ -216,7 +215,7 @@ namespace RESTar
     /// </summary>
     public class AbortedSelectorException : RESTarException
     {
-        internal AbortedSelectorException(Exception ie, IRequest request, string message = null)
+        internal AbortedSelectorException(Exception ie, IRequestView request, string message = null)
             : base(AbortedSelect, message ?? (ie.GetType() == typeof(Newtonsoft.Json.JsonSerializationException) ||
                                               ie.GetType() == typeof(Newtonsoft.Json.JsonReaderException)
                                       ? "JSON serialization error, check JSON syntax"
@@ -230,7 +229,7 @@ namespace RESTar
     /// </summary>
     public class AbortedInserterException : RESTarException
     {
-        internal AbortedInserterException(Exception ie, IRequest request, string message = null)
+        internal AbortedInserterException(Exception ie, IRequestView request, string message = null)
             : base(AbortedInsert, message ?? (ie.GetType() == typeof(Newtonsoft.Json.JsonSerializationException) ||
                                               ie.GetType() == typeof(Newtonsoft.Json.JsonReaderException)
                                       ? "JSON serialization error, check JSON syntax"
@@ -244,7 +243,7 @@ namespace RESTar
     /// </summary>
     public class AbortedUpdaterException : RESTarException
     {
-        internal AbortedUpdaterException(Exception ie, IRequest request, string message = null)
+        internal AbortedUpdaterException(Exception ie, IRequestView request, string message = null)
             : base(AbortedUpdate, message ?? (ie.GetType() == typeof(Newtonsoft.Json.JsonSerializationException) ||
                                               ie.GetType() == typeof(Newtonsoft.Json.JsonReaderException)
                                       ? "JSON serialization error, check JSON syntax"
@@ -258,7 +257,7 @@ namespace RESTar
     /// </summary>
     public class AbortedDeleterException : RESTarException
     {
-        internal AbortedDeleterException(Exception ie, IRequest request, string message = null)
+        internal AbortedDeleterException(Exception ie, IRequestView request, string message = null)
             : base(AbortedDelete, message ?? (ie.GetType() == typeof(Newtonsoft.Json.JsonSerializationException) ||
                                               ie.GetType() == typeof(Newtonsoft.Json.JsonReaderException)
                                       ? "JSON serialization error, check JSON syntax"
@@ -294,7 +293,7 @@ namespace RESTar
     /// </summary>
     public class AmbiguousMatchException : RESTarException
     {
-        internal AmbiguousMatchException(IResource resource) : base(AmbiguousMatchError,
+        internal AmbiguousMatchException(IResourceView resource) : base(AmbiguousMatchError,
             $"Expected a uniquely matched entity in resource '{resource.Name}' " +
             "for this request, but matched multiple entities satisfying the given " +
             "conditions. To enable manipulation of multiple matched entities (for " +

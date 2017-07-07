@@ -4,80 +4,63 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Xml;
-using ClosedXML.Excel;
 using Excel;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using RESTar.Auth;
 using RESTar.Internal;
+using RESTar.Operations;
 using Starcounter;
 using static RESTar.Internal.ErrorCodes;
 using static RESTar.RESTarConfig;
 using static RESTar.RESTarMethods;
-using IResource = RESTar.Internal.IResource;
-using ScRequest = Starcounter.Request;
 
 namespace RESTar.Requests
 {
-    internal class RESTRequest : IRequest, IDisposable
+    internal class RESTRequest<T> : IRequest<T> where T : class
     {
-        internal ScRequest ScRequest { get; }
-        internal Response Response { get; private set; }
-        public string AuthToken { get; private set; }
-        private bool Internal => !ScRequest.IsExternal;
-        public IResource Resource { get; private set; }
         public RESTarMethods Method { get; private set; }
+        public IResource<T> Resource { get; }
         public Conditions Conditions { get; private set; }
         public MetaConditions MetaConditions { get; private set; }
-        private Evaluator Evaluator { get; set; }
-        internal void Evaluate() => Response = Evaluator(this);
         public string Body { get; private set; }
+        public string AuthToken { get; internal set; }
+        public bool Internal => !ScRequest.IsExternal;
+        public IDictionary<string, string> ResponseHeaders { get; }
+        IResourceView IRequestView.Resource => Resource;
+
+        internal Request ScRequest { get; }
+        private Response Response { get; set; }
+        private RESTEvaluator<T> Evaluator { get; set; }
+        internal void Evaluate() => Response = Evaluator(this);
         private byte[] BinaryBody { get; set; }
         private string Source { get; set; }
         private string Destination { get; set; }
         private RESTarMimeType ContentType { get; set; }
-        internal RESTarMimeType Accept { get; private set; }
+        private RESTarMimeType Accept { get; set; }
         private string Origin { get; set; }
-        public IDictionary<string, string> ResponseHeaders { get; }
-        internal bool ResourceHome => MetaConditions.Empty && Conditions == null;
         private bool SerializeDynamic => MetaConditions.Dynamic || Resource.IsDynamic || MetaConditions.HasProcessors;
 
-        internal RESTRequest(ScRequest scRequest)
+        internal RESTRequest(IResource<T> resource, Request scRequest)
         {
+            Resource = resource;
             ScRequest = scRequest;
             ResponseHeaders = new Dictionary<string, string>();
             MetaConditions = new MetaConditions();
         }
 
-        internal void Populate(string query, RESTarMethods method, Evaluator evaluator)
+        internal void Populate(string[] args, RESTarMethods method)
         {
             Method = method;
-            query = CheckQuery(query, ScRequest);
-            Evaluator = evaluator;
+            Evaluator = Evaluators<T>.REST.GetEvaluator(method);
             Source = ScRequest.Headers["Source"];
             Destination = ScRequest.Headers["Destination"];
             Origin = ScRequest.Headers["Origin"];
             ContentType = MimeTypes.Match(ScRequest.ContentType);
             Accept = MimeTypes.Match(ScRequest.PreferredMimeTypeString);
-            var args = query.Split('/');
-            var argLength = args.Length;
-            if (argLength == 1)
-            {
-                Resource = ResourceByType[typeof(Resource)];
-                return;
-            }
-            if (args[1] == "")
-                Resource = ResourceByType[typeof(Resource)];
-            else Resource = args[1].FindResource();
-            if (argLength == 2) return;
+            if (args.Length <= 2) return;
             Conditions = Conditions.Parse(args[2], Resource);
-            if (Conditions != null &&
-                (Resource.TargetType == typeof(Resource) || Resource.TargetType.IsSubclassOf(typeof(Resource))))
-            {
-                var nameCond = Conditions["name"];
-                nameCond?.SetValue(((string) nameCond.Value.ToString()).FindResource().Name);
-            }
-            if (argLength == 3) return;
+            if (args.Length == 3) return;
             MetaConditions = MetaConditions.Parse(args[3], Resource) ?? MetaConditions;
         }
 
@@ -233,34 +216,10 @@ namespace RESTar.Requests
             return _response;
         }
 
-        internal void Authenticate()
-        {
-            if (!RequireApiKey) return;
-            AuthToken = Authenticator.Authenticate(ScRequest);
-        }
-
-        internal void MethodCheck()
-        {
-            if (!Authenticator.MethodCheck(Method, Resource, AuthToken))
-                throw Authenticator.NotAuthorizedException;
-        }
-
         public void Dispose()
         {
             if (AuthToken == null || Internal) return;
             AuthTokens.TryRemove(AuthToken, out AccessRights _);
-        }
-
-        private static string CheckQuery(string query, ScRequest request)
-        {
-            if (query.CharCount('/') > 3)
-                throw new SyntaxException(InvalidSeparatorCount,
-                    "Invalid argument separator count. A RESTar URI can contain at most 3 " +
-                    $"forward slashes after the base uri. URI scheme: {Settings._ResourcesPath}" +
-                    "/[resource]/[conditions]/[meta-conditions]");
-            if (request.HeadersDictionary.ContainsKey("X-ARR-LOG-ID"))
-                return query.Replace("%25", "%");
-            return query;
         }
     }
 }

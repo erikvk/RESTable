@@ -1,29 +1,31 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using RESTar.Internal;
 using RESTar.Operations;
 using Starcounter;
 using static RESTar.Internal.ErrorCodes;
-using IResource = RESTar.Internal.IResource;
 
 namespace RESTar.Requests
 {
-    internal class AppRequest<T> : IRequest where T : class
+    internal class AppRequest<T> : IRequest<T> where T : class
     {
         public Conditions Conditions { get; private set; }
-        public IResource Resource { get; }
+        public IResource<T> Resource { get; }
         public bool Unsafe { get; set; }
         public Limit Limit { get; set; } = Limit.NoLimit;
         public OrderBy OrderBy { get; private set; }
+        public string Body { get; set; }
+        public string AuthToken { get; internal set; }
+        public bool Internal => true;
 
         #region Explicit
 
-        RESTarMethods IRequest.Method => default(RESTarMethods);
-        string IRequest.AuthToken => null;
-        string IRequest.Body => null;
-        IDictionary<string, string> IRequest.ResponseHeaders => null;
+        RESTarMethods IRequestView.Method => default(RESTarMethods);
+        IDictionary<string, string> IRequestView.ResponseHeaders => null;
+        IResourceView IRequestView.Resource => Resource;
 
-        MetaConditions IRequest.MetaConditions => new MetaConditions
+        MetaConditions IRequestView.MetaConditions => new MetaConditions
         {
             OrderBy = OrderBy,
             Limit = Limit,
@@ -36,7 +38,7 @@ namespace RESTar.Requests
         {
             if (!RESTarConfig.Initialized)
                 throw new NotInitializedException();
-            Resource = RESTar.Resource.Find(typeof(T));
+            Resource = RESTar.Resource.Get<T>();
             if (Resource == null)
                 throw new ArgumentException($"Unknown resource type '{typeof(T).FullName}'. " +
                                             "Must be a registered RESTar resource.");
@@ -153,8 +155,8 @@ namespace RESTar.Requests
             try
             {
                 IEnumerable<T> results;
-                source = source ?? (IEnumerable<T>) Resource.Select(this);
-                if (!Unsafe && source.Count() > 1)
+                source = source ?? Resource.Select(this);
+                if (!Unsafe && source.MoreThanOne())
                     throw new AmbiguousMatchException(Resource);
 
                 #region Index
@@ -196,9 +198,9 @@ namespace RESTar.Requests
                 T result;
                 if (source == null)
                 {
-                    var matches = (IEnumerable<T>) Resource.Select(this);
+                    var matches = Resource.Select(this);
                     if (matches == null) return 0;
-                    if (!Unsafe && matches.Count() > 1)
+                    if (!Unsafe && matches.MoreThanOne())
                         throw new AmbiguousMatchException(Resource);
                     source = matches.First();
                 }
@@ -244,10 +246,10 @@ namespace RESTar.Requests
             }
         }
 
-        internal static IEnumerable<T> StaticSELECT(IRequest request)
+        internal static IEnumerable<T> StaticSELECT(IRequest<T> request)
         {
             request.MetaConditions.Unsafe = true;
-            var results = (IEnumerable<T>) request.Resource.Select(request);
+            var results = request.Resource.Select(request);
             if (results == null) return null;
             if (request.MetaConditions.OrderBy != null)
                 results = results.Filter(request.MetaConditions.OrderBy);
@@ -280,7 +282,7 @@ namespace RESTar.Requests
             try
             {
                 Unsafe = false;
-                var source = (IEnumerable<T>) Resource.Select(this);
+                var source = Resource.Select(this);
                 switch (source?.Count())
                 {
                     case null: return 0;
@@ -301,14 +303,14 @@ namespace RESTar.Requests
             try
             {
                 var count = 0;
-                var source = (IEnumerable<T>) Resource.Select(this);
+                var source = Resource.Select(this);
                 if (source == null) return 0;
-                if (!Unsafe && source.Count() > 1)
+                if (!Unsafe && source.MoreThanOne())
                     throw new AmbiguousMatchException(Resource);
 
                 #region Index
 
-                if (Resource.TargetType == typeof(DatabaseIndex))
+                if (typeof(T) == typeof(DatabaseIndex))
                     return Resource.Delete(source, this);
 
                 #endregion
@@ -320,6 +322,11 @@ namespace RESTar.Requests
             {
                 throw new AbortedDeleterException(e, this);
             }
+        }
+
+        public void Dispose()
+        {
+            throw new NotImplementedException();
         }
     }
 }

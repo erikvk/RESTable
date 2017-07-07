@@ -1,56 +1,45 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using RESTar.Internal;
 using Starcounter;
+#pragma warning disable 1591
 
 namespace RESTar.View
 {
-    /// <summary>
-    /// </summary>
-    partial class Item : RESTarView<object>
+    partial class Item : Json, IRESTarView
     {
-        /// <summary>
-        /// </summary>
-        protected override string HtmlMatcher => $"{Resource.Name}-item.html";
-
-        /// <summary>
-        /// </summary>
-        protected override void SetHtml(string html) => Html = html;
-
-        /// <summary>
-        /// </summary>
-        protected override void SetResourceName(string resourceName) => ResourceName = resourceName;
-
-        /// <summary>
-        /// </summary>
-        protected override void SetResourcePath(string resourcePath) => ResourcePath = resourcePath;
-
+        public object RESTarData;
+        public void SetHtml(string html) => Html = html;
+        public void SetResourceName(string resourceName) => ResourceName = resourceName;
+        public void SetResourcePath(string resourceName) => ResourcePath = resourceName;
+        public string HtmlMatcher => $"{Resource.Name}-item.html";
         private bool IsTemplate;
+        public IRequestView Request { get; set; }
+        public IResourceView Resource { get; private set; }
+        public bool Success { get; set; }
+        private static readonly Regex regex = new Regex(@"\@RESTar\((?<content>[^\(\)]*)\)");
 
-        /// <summary>
-        /// </summary>
-        public override void SetMessage(string message, ErrorCodes errorCode, MessageType messageType)
+        public void SetMessage(string message, ErrorCodes errorCode, MessageType messageType)
         {
             Message = message;
             ErrorCode = (long) errorCode;
             MessageType = messageType.ToString();
             HasMessage = true;
         }
-
-        private static readonly Regex regex = new Regex(@"\@RESTar\((?<content>[^\(\)]*)\)");
-
+        
         /// <summary>
         /// </summary>
         public void Handle(Input.Save action)
         {
             var entityJson = Entity.ToJson().Replace(@"$"":", @""":");
             var json = regex.Replace(entityJson, "${content}");
-            if (IsTemplate) POST(json);
-            else PATCH(json);
+            //if (IsTemplate) POST(json);
+            //else PATCH(json);
             if (IsTemplate && Success)
                 RedirectUrl = !string.IsNullOrWhiteSpace(RedirectUrl) ? RedirectUrl : ResourcePath;
             Success = false;
@@ -153,7 +142,23 @@ namespace RESTar.View
             }
         }
 
-        internal override RESTarView<object> Populate(Requests.RESTRequest request, object restarData)
+        private void PopulateInternal(IRequestView request, object restarData)
+        {
+            Request = request;
+            Resource = request.Resource;
+            SetResourceName(Resource.Alias ?? Resource.Name);
+            SetResourcePath($"/{Application.Current.Name}/{Resource.Alias ?? Resource.Name}");
+            var wd = Application.Current.WorkingDirectory;
+            var exists = File.Exists($"{wd}/wwwroot/resources/{HtmlMatcher}");
+            if (!exists) exists = File.Exists($"{wd}/../wwwroot/resources/{HtmlMatcher}");
+            if (!exists) throw new NoHtmlException(Resource, HtmlMatcher);
+            SetHtml($"/resources/{HtmlMatcher}");
+            if (restarData == null)
+                SetMessage("No entities found maching query", ErrorCodes.NoError, View.MessageType.info);
+            RESTarData = restarData;
+        }
+
+        internal Item Populate(IRequestView request, object restarData)
         {
             var template = request.Resource.MakeViewModelTemplate();
             var jsonTemplate = template.Serialize();
@@ -161,11 +166,11 @@ namespace RESTar.View
             if (restarData == null)
             {
                 IsTemplate = true;
-                base.Populate(request, template);
+                PopulateInternal(request, template);
             }
             else
             {
-                base.Populate(request, restarData);
+                PopulateInternal(request, restarData);
                 var json = restarData.SerializeToViewModel();
                 Entity.PopulateFromJson(json);
             }

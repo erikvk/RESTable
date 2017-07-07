@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using RESTar.Deflection;
 using RESTar.Internal;
+using RESTar.Requests;
 using Starcounter;
 using static RESTar.RESTarMethods;
 using static RESTar.RESTarPresets;
@@ -29,7 +30,7 @@ namespace RESTar
         /// <summary>
         /// RESTar selector (don't use)
         /// </summary>
-        public IEnumerable<ErrorCode> Select(IRequest request) => typeof(ErrorCodes)
+        public IEnumerable<ErrorCode> Select(IRequest<ErrorCode> request) => typeof(ErrorCodes)
             .GetEnumMembers()
             .Select(m => new ErrorCode {Name = m.Name, Code = m.Value})
             .Filter(request.Conditions)
@@ -62,7 +63,7 @@ namespace RESTar
         /// <summary>
         /// The method used when the error was created
         /// </summary>
-        public RESTarMethods Method;
+        public HandlerActions HandlerAction;
 
         /// <summary>
         /// The error code of the error
@@ -94,25 +95,28 @@ namespace RESTar
         /// </summary>
         public string Body;
 
-        internal Error(ErrorCodes errorCode, Exception e, Requests.RESTRequest request)
+        private Error()
         {
-            Time = DateTime.Now;
-            ResourceName = (request.Resource?.Name ?? "<unknown>") +
-                           (request.Resource?.Alias != null ? $" ({request.Resource.Alias})" : "");
-            Method = request.Method;
-            ErrorCode = errorCode;
-            StackTrace = e.StackTrace + e.InnerException?.StackTrace;
-            Message = e.TotalMessage();
-            Body = request.Body;
-            Uri = request.ScRequest.Uri;
-            var headers = request.ScRequest.HeadersDictionary;
-            if (headers != null)
-            {
-                if (headers.ContainsKey("Authorization"))
-                    headers["Authorization"] = "apikey *******";
-                Headers = string.Join(" | ", headers.Select(pair => $"{pair.Key}: {pair.Value}"));
-            }
         }
+
+        internal static Error Create(ErrorCodes errorCode, Exception e, IResourceView resource, Request scRequest, HandlerActions action) => new Error
+        {
+            Time = DateTime.Now,
+            ResourceName = (resource?.Name ?? "<unknown>") +
+                           (resource?.Alias != null ? $" ({resource.Alias})" : ""),
+            HandlerAction = action,
+            ErrorCode = errorCode,
+            StackTrace = e.StackTrace + e.InnerException?.StackTrace,
+            Message = e.TotalMessage(),
+            Body = scRequest.Body,
+            Uri = scRequest.Uri,
+            Headers = scRequest.HeadersDictionary?.StringJoin(" | ", dict => dict.Select(header =>
+            {
+                if (header.Key?.ToLower() == "authorization")
+                    return "Authorization: apikey *******";
+                return $"{header.Key}: {header.Value}";
+            }))
+        };
 
         private static DateTime Checked;
 

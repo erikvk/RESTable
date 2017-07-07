@@ -14,13 +14,13 @@ namespace RESTar
     /// </summary>
     public sealed class Conditions : List<Condition>, IFilter
     {
-        internal IResource Resource;
+        internal IResourceView Resource;
         internal IEnumerable<Condition> SQL => this.Where(c => c.ScQueryable);
         internal Conditions PostSQL => this.Where(c => !c.ScQueryable || c.IsOfType<string>()).ToConditions(Resource);
         internal Conditions Equality => this.Where(c => c.Operator.Equality).ToConditions(Resource);
         internal Conditions Compare => this.Where(c => c.Operator.Compare).ToConditions(Resource);
         private static readonly char[] OpMatchChars = {'<', '>', '=', '!'};
-        internal Conditions(IResource resource) => Resource = resource;
+        internal Conditions(IResourceView resource) => Resource = resource;
         internal bool HasPost { get; private set; }
 
         /// <summary>
@@ -55,7 +55,7 @@ namespace RESTar
         /// <summary>
         /// Parses a Conditions object from a conditions section of a REST request URI
         /// </summary>
-        public static Conditions Parse(string conditionString, IResource resource)
+        public static Conditions Parse(string conditionString, IResourceView resource)
         {
             if (string.IsNullOrEmpty(conditionString)) return null;
             var conditions = new Conditions(resource);
@@ -95,6 +95,11 @@ namespace RESTar
                 }
                 conditions.Add(new Condition(chain, op, value));
             });
+            if (resource.TargetType == typeof(Resource))
+            {
+                var nameCond = conditions["name"];
+                nameCond?.SetValue(((string) nameCond.Value.ToString()).FindResource().Name);
+            }
             return conditions;
         }
 
@@ -135,7 +140,7 @@ namespace RESTar
                 RemoveAll(cond => newTypeProperties.All(prop =>
                     prop.Name != cond.PropertyChain.FirstOrDefault()?.Name));
                 ForEach(condition => condition.Migrate(type));
-                Resource = RESTar.Resource.Find(type);
+                Resource = RESTar.Resource.Get(type);
             }
             return entities.Where(entity => this.All(condition => condition.HoldsFor(entity)));
         }

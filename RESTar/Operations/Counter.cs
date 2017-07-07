@@ -14,7 +14,7 @@ namespace RESTar.Operations
         /// <summary>
         /// RESTar selector (don't use)
         /// </summary>
-        public IEnumerable<Counter> Select(IRequest request)
+        public IEnumerable<Counter> Select(IRequest<Counter> request)
         {
             if (request.Body == null)
                 throw new Exception("Missing data source for operation");

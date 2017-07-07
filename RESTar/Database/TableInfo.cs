@@ -65,9 +65,9 @@ namespace RESTar
         /// <summary>
         /// RESTar selector (don't use)
         /// </summary>
-        public IEnumerable<TableInfo> Select(IRequest request)
+        public IEnumerable<TableInfo> Select(IRequest<TableInfo> request)
         {
-            IEnumerable<Internal.IResource> resources;
+            IEnumerable<IResourceView> resources;
             var input = (string) request.Conditions?[nameof(TableName), EQUALS]?.Value;
             if (input == null)
                 resources = RESTarConfig.Resources.Where(r => r.IsStarcounterResource);
@@ -87,7 +87,7 @@ namespace RESTar
         private static IEnumerable<Column> GetColumns(string resourceName) => Db.SQL<Column>(
             $"SELECT t FROM {typeof(Column).FullName} t WHERE t.Table.Fullname =?", resourceName);
 
-        internal static TableInfo GetTableInfo(Internal.IResource resource)
+        internal static TableInfo GetTableInfo(IResourceView resource)
         {
             var columns = GetColumns(resource.Name).Select(c => c.Name);
             var domainCount = DB.RowCount(resource.Name);

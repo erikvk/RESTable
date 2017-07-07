@@ -35,7 +35,7 @@ namespace RESTar.Operations
         /// <summary>
         /// RESTar selector (don't use)
         /// </summary>
-        public IEnumerable<SetOperations> Select(IRequest request)
+        public IEnumerable<SetOperations> Select(IRequest<SetOperations> request)
         {
             if (request.Body == null)
                 throw new Exception("Missing data source for operation");
@@ -147,7 +147,7 @@ namespace RESTar.Operations
 
         private static readonly Regex macroRegex;
 
-        private static JTokens Map(JTokens set, string mapper, IRequest request)
+        private static JTokens Map(JTokens set, string mapper, IRequestView request)
         {
             if (set == null)
                 throw new ArgumentException(nameof(set));

@@ -1,33 +1,25 @@
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using RESTar.Internal;
 using Starcounter;
 
+#pragma warning disable 1591
+
 namespace RESTar.View
 {
-    /// <summary>
-    /// </summary>
-    partial class List : RESTarView<IEnumerable<object>>
+    partial class List : Json, IRESTarView
     {
-        /// <summary>
-        /// </summary>
-        protected override string HtmlMatcher => $"{Resource.Name}-list.html";
+        public IEnumerable<object> RESTarData;
+        public string HtmlMatcher => $"{Resource.Name}-list.html";
+        public void SetHtml(string html) => Html = html;
+        public void SetResourceName(string resourceName) => ResourceName = resourceName;
+        public void SetResourcePath(string resourcePath) => ResourcePath = resourcePath;
+        public IRequestView Request { get; set; }
+        public IResourceView Resource { get; private set; }
+        public bool Success { get; }
 
-        /// <summary>
-        /// </summary>
-        protected override void SetHtml(string html) => Html = html;
-
-        /// <summary>
-        /// </summary>
-        protected override void SetResourceName(string resourceName) => ResourceName = resourceName;
-
-        /// <summary>
-        /// </summary>
-        protected override void SetResourcePath(string resourcePath) => ResourcePath = resourcePath;
-
-        /// <summary>
-        /// </summary>
-        public override void SetMessage(string message, ErrorCodes errorCode, MessageType messageType)
+        public void SetMessage(string message, ErrorCodes errorCode, MessageType messageType)
         {
             Message = message;
             ErrorCode = (long) errorCode;
@@ -49,14 +41,25 @@ namespace RESTar.View
             var id = action.Value;
             var conditions = Conditions.Parse(id, Resource);
             var item = RESTarData.Filter(conditions).First();
-            DELETE(item);
+            //DELETE(item);
             RedirectUrl = !string.IsNullOrWhiteSpace(RedirectUrl) ? RedirectUrl : ResourcePath;
         }
 
-        internal override RESTarView<IEnumerable<object>> Populate(Requests.RESTRequest request,
-            IEnumerable<object> data)
+        internal List Populate(IRequestView request, IEnumerable<object> data)
         {
-            base.Populate(request, data);
+            Request = request;
+            Resource = request.Resource;
+            SetResourceName(Resource.Alias ?? Resource.Name);
+            SetResourcePath($"/{Application.Current.Name}/{Resource.Alias ?? Resource.Name}");
+            var wd = Application.Current.WorkingDirectory;
+            var exists = File.Exists($"{wd}/wwwroot/resources/{HtmlMatcher}");
+            if (!exists) exists = File.Exists($"{wd}/../wwwroot/resources/{HtmlMatcher}");
+            if (!exists) throw new NoHtmlException(Resource, HtmlMatcher);
+            SetHtml($"/resources/{HtmlMatcher}");
+            if (data == null)
+                SetMessage("No entities found maching query", ErrorCodes.NoError, View.MessageType.info);
+            RESTarData = data;
+
             CanInsert = Resource.AvailableMethods.Contains(RESTarMethods.POST);
             if (data?.Any() != true) return this;
             var template = request.Resource.MakeViewModelTemplate();

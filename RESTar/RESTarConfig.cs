@@ -13,7 +13,6 @@ using RESTar.Internal;
 using RESTar.Operations;
 using RESTar.Requests;
 using static RESTar.RESTarMethods;
-using IResource = RESTar.Internal.IResource;
 
 namespace RESTar
 {
@@ -23,12 +22,12 @@ namespace RESTar
     /// </summary>
     public static class RESTarConfig
     {
-        internal static readonly IDictionary<string, IResource> ResourceByName;
-        internal static readonly IDictionary<Type, IResource> ResourceByType;
-        internal static readonly IDictionary<IResource, Type> IEnumTypes;
+        internal static readonly IDictionary<string, IResourceView> ResourceByName;
+        internal static readonly IDictionary<Type, IResourceView> ResourceByType;
+        internal static readonly IDictionary<IResourceView, Type> IEnumTypes;
         internal static readonly IDictionary<string, AccessRights> ApiKeys;
         internal static readonly ConcurrentDictionary<string, AccessRights> AuthTokens;
-        internal static IEnumerable<IResource> Resources => ResourceByName.Values;
+        internal static IEnumerable<IResourceView> Resources => ResourceByName.Values;
         internal static readonly List<Uri> AllowedOrigins;
         internal static readonly RESTarMethods[] Methods = {GET, POST, PATCH, PUT, DELETE};
         internal static bool RequireApiKey { get; private set; }
@@ -39,9 +38,9 @@ namespace RESTar
         static RESTarConfig()
         {
             ApiKeys = new Dictionary<string, AccessRights>();
-            ResourceByType = new Dictionary<Type, IResource>();
-            ResourceByName = new Dictionary<string, IResource>();
-            IEnumTypes = new Dictionary<IResource, Type>();
+            ResourceByType = new Dictionary<Type, IResourceView>();
+            ResourceByName = new Dictionary<string, IResourceView>();
+            IEnumTypes = new Dictionary<IResourceView, Type>();
             AuthTokens = new ConcurrentDictionary<string, AccessRights>();
             AllowedOrigins = new List<Uri>();
         }
@@ -51,7 +50,7 @@ namespace RESTar
             if (ConfigFilePath != null) ReadConfig();
         }
 
-        internal static void AddResource(IResource toAdd)
+        internal static void AddResource(IResourceView toAdd)
         {
             ResourceByName[toAdd.Name.ToLower()] = toAdd;
             ResourceByType[toAdd.TargetType] = toAdd;
@@ -60,7 +59,7 @@ namespace RESTar
             toAdd.GetStaticProperties();
         }
 
-        internal static void RemoveResource(IResource toRemove)
+        internal static void RemoveResource(IResourceView toRemove)
         {
             ResourceByName.Remove(toRemove.Name.ToLower());
             ResourceByType.Remove(toRemove.TargetType);

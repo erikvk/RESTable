@@ -2,6 +2,7 @@
 using System.Linq;
 using RESTar.Auth;
 using Simplified.Ring3;
+using Starcounter;
 using static RESTar.Internal.ErrorCodes;
 using static RESTar.RESTarConfig;
 
@@ -17,9 +18,10 @@ namespace RESTar.Internal
                 throw new ForbiddenException(NotSignedIn, "User is not signed in");
         }
 
-        internal static ForbiddenException NotAuthorizedException => new ForbiddenException(NotAuthorized, "Not authorized");
+        internal static ForbiddenException NotAuthorizedException => new ForbiddenException(NotAuthorized,
+            "Not authorized");
 
-        internal static string Authenticate(Starcounter.Request ScRequest)
+        internal static string Authenticate(Request ScRequest)
         {
             AccessRights accessRights;
             string authToken;
@@ -41,12 +43,17 @@ namespace RESTar.Internal
             var apiKey = apikey_key[1].SHA256();
             if (!ApiKeys.TryGetValue(apiKey, out accessRights))
                 throw NotAuthorizedException;
-            authToken = Guid.NewGuid().ToString();
-            AuthTokens[authToken] = accessRights;
-            return authToken;
+            return AssignAuthtoken(accessRights);
         }
 
-        internal static bool MethodCheck(RESTarMethods requestedMethod, IResource resource, string authToken)
+        internal static string AssignAuthtoken(AccessRights rights)
+        {
+            var token = Guid.NewGuid().ToString();
+            AuthTokens[token] = rights;
+            return token;
+        }
+
+        internal static bool MethodCheck(RESTarMethods requestedMethod, IResourceView resource, string authToken)
         {
             if (!resource.AvailableMethods.Contains(requestedMethod)) return false;
             if (SignedIn) return true;

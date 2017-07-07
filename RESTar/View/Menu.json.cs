@@ -1,6 +1,7 @@
 using System.Linq;
 using Starcounter;
 using RESTar.Internal;
+#pragma warning disable 1591
 
 namespace RESTar.View
 {
@@ -8,6 +9,21 @@ namespace RESTar.View
     /// </summary>
     partial class Menu : Json, IRESTarView
     {
+        public void SetHtml(string html) => Html = html;
+
+        public void SetResourceName(string resourceName)
+        {
+        }
+
+        public void SetResourcePath(string resourcePath)
+        {
+        }
+
+        public IRequestView Request { get; }
+        public IResourceView Resource { get; }
+        public string HtmlMatcher { get; }
+        public bool Success { get; }
+
         /// <summary>
         /// </summary>
         public void SetMessage(string message, ErrorCodes errorCode, MessageType messageType)

@@ -20,7 +20,7 @@ namespace RESTar
         /// <summary>
         /// RESTar selector (don't use)
         /// </summary>
-        public IEnumerable<Schema> Select(IRequest request)
+        public IEnumerable<Schema> Select(IRequest<Schema> request)
         {
             var validCondition = request.Conditions?["resource", EQUALS]?.Value as string;
             if (validCondition == null)

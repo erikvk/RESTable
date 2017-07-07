@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using RESTar.Requests;
 
@@ -8,17 +7,10 @@ using RESTar.Requests;
 using RESTar.Deflection;
 using RESTar.Internal;
 using Starcounter;
-using static RESTar.Deflection.TypeCache;
 using static RESTar.Internal.RESTarResourceType;
 
 namespace RESTar
 {
-    internal static class SQLCache
-    {
-        internal static readonly IDictionary<int, string> SQLQueries;
-        static SQLCache() => SQLQueries = new ConcurrentDictionary<int, string>();
-    }
-
     /// <summary>
     /// Used to create internal RESTar requests
     /// </summary>
@@ -26,8 +18,6 @@ namespace RESTar
     public static class Request<T> where T : class
     {
         #region GET
-
-        private static readonly string _SELECT = $"SELECT t FROM {typeof(T).FullName} t";
 
         /// <summary>
         /// Returns all entitites in the resource that matches a condition.
@@ -37,7 +27,7 @@ namespace RESTar
         /// <param name="value">The conditions value</param>
         public static IEnumerable<T> GET(string key, Operator @operator, dynamic value)
         {
-            if (!RESTarConfig.ResourceByType.TryGetValue(typeof(T), out Internal.IResource resource))
+            if (!RESTarConfig.ResourceByType.TryGetValue(typeof(T), out var resource))
                 throw new ArgumentException($"Unknown resource '{typeof(T).FullName}'. Not a RESTar resource.");
 
             switch (resource.ResourceType)
@@ -60,6 +50,8 @@ namespace RESTar
                 default: throw new ArgumentOutOfRangeException();
             }
         }
+
+        private static readonly string _SELECT = $"SELECT t FROM {typeof(T).FullName} t";
 
         /// <summary>
         /// Returns all entitites in the resource that matches a set of conditions. To order

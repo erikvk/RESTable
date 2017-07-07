@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using RESTar.Internal;
 using Starcounter;
 using static RESTar.RESTarPresets;
-using IResource = RESTar.Internal.IResource;
 
 namespace RESTar
 {
@@ -56,12 +55,12 @@ namespace RESTar
         /// <summary>
         /// Gets the resource denoted by this alias
         /// </summary>
-        public IResource GetResource() => RESTarConfig.ResourceByName[Resource.ToLower()];
+        public IResourceView GetResource() => RESTarConfig.ResourceByName[Resource.ToLower()];
 
         /// <summary>
         /// Gets a resource by its alias
         /// </summary>
-        public static IResource ByAlias(string alias) => DB.Get<ResourceAlias>("Alias", alias)?.GetResource();
+        public static IResourceView ByAlias(string alias) => DB.Get<ResourceAlias>("Alias", alias)?.GetResource();
 
         /// <summary>
         /// Gets an alias string by its resource type
@@ -71,8 +70,8 @@ namespace RESTar
         /// <summary>
         /// Gets an alias string by its resource
         /// </summary>
-        public static string ByResource(IResource resource) => DB.Get<ResourceAlias>("Resource", resource.Name)?.Alias;
-
+        public static string ByResource(IResourceView resource) => DB.Get<ResourceAlias>("Resource", resource.Name)?.Alias;
+        
         /// <summary>
         /// Returns true if and only if there is an alias for the given resource type
         /// </summary>
@@ -86,11 +85,11 @@ namespace RESTar
         /// <summary>
         /// Returns true if and only if there is an alias for the given resource
         /// </summary>
-        public static bool Exists(IResource resource) => DB.Exists<ResourceAlias>("Resource", resource.Name);
+        public static bool Exists(IResourceView resource) => DB.Exists<ResourceAlias>("Resource", resource.Name);
 
         /// <summary>
         /// Returns true if and only if there is no alias for the given resource
         /// </summary>
-        public static bool NotExists(IResource resource) => !Exists(resource);
+        public static bool NotExists(IResourceView resource) => !Exists(resource);
     }
 }

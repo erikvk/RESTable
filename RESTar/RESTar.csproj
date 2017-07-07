@@ -99,13 +99,17 @@
     <Compile Include="Deflection\ExtensionMethods.cs" />
     <Compile Include="Deflection\Delegates.cs" />
     <Compile Include="Deflection\SpecialProperty.cs" />
+    <Compile Include="Deflection\SQLCache.cs" />
     <Compile Include="Deflection\TypeCache.cs" />
     <Compile Include="Delegates.cs" />
     <Compile Include="Echo.cs" />
+    <Compile Include="Requests\HandlerActions.cs" />
     <Compile Include="Internal\ErrorCodes.cs" />
+    <Compile Include="Operations\ViewEvaluators.cs" />
     <Compile Include="Operators.cs" />
     <Compile Include="Request.cs" />
     <Compile Include="Requests\AppRequest.cs" />
+    <Compile Include="Requests\ViewRequest.cs" />
     <Compile Include="RESTarMethods.cs" />
     <Compile Include="Internal\RESTarOperations.cs" />
     <Compile Include="Internal\RESTarResourceType.cs" />
@@ -146,7 +150,7 @@
     <Compile Include="ResourceAlias.cs" />
     <Compile Include="RESTarConfig.cs" />
     <Compile Include="Internal\DB.cs" />
-    <Compile Include="Operations\RESTEvaluators.cs" />
+    <Compile Include="Operations\Evaluators.cs" />
     <Compile Include="RESTarPresets.cs" />
     <Compile Include="RESTarExceptions.cs" />
     <Compile Include="HTTP.cs" />

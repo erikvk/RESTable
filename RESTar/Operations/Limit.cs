@@ -18,8 +18,8 @@ namespace RESTar.Operations
         public static implicit operator Limit(int nr) => new Limit(nr);
         public static bool operator ==(Limit l, int i) => l.Number == i;
         public static bool operator !=(Limit l, int i) => l.Number != i;
-        public static bool operator <(Limit l, int i) => l.Number < i;
-        public static bool operator >(Limit l, int i) => l.Number > i;
+        public static bool operator < (Limit l, int i) => l.Number < i;
+        public static bool operator > (Limit l, int i) => l.Number > i;
         public static bool operator <=(Limit l, int i) => l.Number <= i;
         public static bool operator >=(Limit l, int i) => l.Number >= i;
         private Limit(int nr) => Number = nr;

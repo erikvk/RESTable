@@ -5,9 +5,9 @@ using RESTar.Operations;
 namespace RESTar.Internal
 {
     /// <summary>
-    /// The common interface for all resource entities used by RESTar
+    /// The common non-generic interface for all resource entities used by RESTar
     /// </summary>
-    public interface IResource : IEqualityComparer<IResource>, IComparable<IResource>
+    public interface IResourceView
     {
         /// <summary>
         /// The name of this resource
@@ -83,25 +83,32 @@ namespace RESTar.Internal
         /// Does this resource require validation on insertion and updating?
         /// </summary>
         bool RequiresValidation { get; }
+    }
 
+    /// <summary>
+    /// The common generic interface for all resource entities used by RESTar
+    /// </summary>
+    public interface IResource<T> : IEqualityComparer<IResource<T>>, IComparable<IResource<T>>, IResourceView
+        where T : class
+    {
         /// <summary>
         /// RESTar selector (don't use)
         /// </summary>
-        Selector<dynamic> Select { get; }
+        Selector<T> Select { get; }
 
         /// <summary>
         /// RESTar inserter (don't use)
         /// </summary>
-        Inserter<dynamic> Insert { get; }
+        Inserter<T> Insert { get; }
 
         /// <summary>
         /// RESTar updater (don't use)
         /// </summary>
-        Updater<dynamic> Update { get; }
+        Updater<T> Update { get; }
 
         /// <summary>
         /// RESTar deleter (don't use)
         /// </summary>
-        Deleter<dynamic> Delete { get; }
+        Deleter<T> Delete { get; }
     }
 }

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using RESTar.Internal;
 using Starcounter;
 
 namespace RESTar.Requests
@@ -46,7 +47,7 @@ namespace RESTar.Requests
 
         #region Bad request
 
-        internal static Response AbortedOperation(Exception e, RESTarMethods method, Internal.IResource resource)
+        internal static Response AbortedOperation(Exception e, RESTarMethods method, IResourceView resource)
         {
             var alias = ResourceAlias.ByResource(resource.TargetType);
             return new Response
@@ -71,13 +72,23 @@ namespace RESTar.Requests
             }
         };
 
-        internal static Response JsonError(string json) => new Response
+        internal static Response UnknownAction => new Response
+        {
+            StatusCode = (ushort)HttpStatusCode.BadRequest,
+            StatusDescription = "Bad request",
+            Headers =
+            {
+                ["RESTar-info"] = "Unknown action"
+            }
+        };
+
+        internal static Response JsonError => new Response
         {
             StatusCode = (ushort) HttpStatusCode.BadRequest,
             StatusDescription = "Bad request",
             Headers =
             {
-                ["RESTar-info"] = $"Error while deserializing JSON. Check JSON syntax:\n{json}"
+                ["RESTar-info"] = $"Error while deserializing JSON. Check JSON syntax"
             }
         };
 
@@ -136,7 +147,7 @@ namespace RESTar.Requests
 
         #region Success responses
 
-        internal static Response NoContent() => new Response
+        internal static Response NoContent => new Response
         {
             StatusCode = (ushort) HttpStatusCode.NoContent,
             StatusDescription = "No content",
@@ -146,7 +157,7 @@ namespace RESTar.Requests
             }
         };
 
-        internal static Response InsertedEntities(RESTRequest request, int count, Type resource)
+        internal static Response InsertedEntities(IRequestView request, int count, Type resource)
         {
             var alias = ResourceAlias.ByResource(resource);
             return new Response
@@ -161,7 +172,7 @@ namespace RESTar.Requests
             };
         }
 
-        internal static Response UpdatedEntities(RESTRequest request, int count, Type resource)
+        internal static Response UpdatedEntities(IRequestView request, int count, Type resource)
         {
             var alias = ResourceAlias.ByResource(resource);
             return new Response
@@ -176,7 +187,7 @@ namespace RESTar.Requests
             };
         }
 
-        internal static Response SafePostedEntities(RESTRequest request, int insertedCount, int updatedCount)
+        internal static Response SafePostedEntities(IRequestView request, int insertedCount, int updatedCount)
         {
             return new Response
             {
@@ -206,7 +217,7 @@ namespace RESTar.Requests
 
         #endregion
 
-        internal static Response Forbidden() => new Response
+        internal static Response Forbidden => new Response
         {
             StatusCode = (ushort) HttpStatusCode.Forbidden,
             StatusDescription = "Forbidden"

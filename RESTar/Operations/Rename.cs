@@ -9,7 +9,7 @@ namespace RESTar.Operations
 {
     internal class Rename : Dictionary<PropertyChain, string>, IProcessor
     {
-        public static Rename Parse(string input, IResource resource)
+        public static Rename Parse(string input, IResourceView resource)
         {
             var opMatcher = input.Contains("->") ? "->" : "-%3E";
             var rename = new Rename();

@@ -16,6 +16,7 @@ using RESTar.Auth;
 using RESTar.Deflection;
 using RESTar.Internal;
 using RESTar.Operations;
+using RESTar.Requests;
 using Starcounter;
 using static System.Reflection.BindingFlags;
 using static System.StringComparison;
@@ -23,7 +24,6 @@ using static RESTar.ResourceAlias;
 using static RESTar.RESTarConfig;
 using static RESTar.RESTarMethods;
 using static Starcounter.DbHelper;
-using IResource = RESTar.Internal.IResource;
 
 namespace RESTar
 {
@@ -40,19 +40,23 @@ namespace RESTar
 
         #region Operation finders
 
-        internal static Selector<T> GetSelector<T>(this Type type) => typeof(ISelector<T>).IsAssignableFrom(type)
+        internal static Selector<T> GetSelector<T>(this Type type)
+            where T : class => typeof(ISelector<T>).IsAssignableFrom(type)
             ? (Selector<T>) type.GetMethod("Select", Instance | Public).CreateDelegate(typeof(Selector<T>), null)
             : null;
 
-        internal static Inserter<T> GetInserter<T>(this Type type) => typeof(IInserter<T>).IsAssignableFrom(type)
+        internal static Inserter<T> GetInserter<T>(this Type type)
+            where T : class => typeof(IInserter<T>).IsAssignableFrom(type)
             ? (Inserter<T>) type.GetMethod("Insert", Instance | Public).CreateDelegate(typeof(Inserter<T>), null)
             : null;
 
-        internal static Updater<T> GetUpdater<T>(this Type type) => typeof(IUpdater<T>).IsAssignableFrom(type)
+        internal static Updater<T> GetUpdater<T>(this Type type)
+            where T : class => typeof(IUpdater<T>).IsAssignableFrom(type)
             ? (Updater<T>) type.GetMethod("Update", Instance | Public).CreateDelegate(typeof(Updater<T>), null)
             : null;
 
-        internal static Deleter<T> GetDeleter<T>(this Type type) => typeof(IDeleter<T>).IsAssignableFrom(type)
+        internal static Deleter<T> GetDeleter<T>(this Type type)
+            where T : class => typeof(IDeleter<T>).IsAssignableFrom(type)
             ? (Deleter<T>) type.GetMethod("Delete", Instance | Public).CreateDelegate(typeof(Deleter<T>), null)
             : null;
 
@@ -163,7 +167,7 @@ namespace RESTar
                 foreach (var resource in right.Resources)
                 {
                     _accessRights[resource] = _accessRights.ContainsKey(resource)
-                        ? _accessRights[resource].Union(right.AllowedMethods).ToList()
+                        ? _accessRights[resource].Union(right.AllowedMethods).ToArray()
                         : right.AllowedMethods;
                 }
             }
@@ -180,10 +184,13 @@ namespace RESTar
         internal static string RESTarMemberName(this MemberInfo m) => m.GetAttribute<DataMemberAttribute>()?.Name ??
                                                                       m.Name;
 
-        internal static bool IsSingular(this IEnumerable<object> ienum, Requests.RESTRequest request) =>
-            request.Resource.IsSingleton || ienum?.Count() == 1 && !request.ResourceHome;
+        internal static void RunValidation(this IValidatable ivalidatable)
+        {
+            if (!ivalidatable.Validate(out string reason))
+                throw new ValidatableException(reason);
+        }
 
-        internal static ICollection<IResource> FindResources(this string searchString)
+        internal static ICollection<IResourceView> FindResources(this string searchString)
         {
             searchString = searchString.ToLower();
             var asterisks = searchString.Count(i => i == '*');
@@ -212,7 +219,7 @@ namespace RESTar
             throw new UnknownResourceException(searchString);
         }
 
-        internal static IResource FindResource(this string searchString)
+        internal static IResourceView FindResource(this string searchString)
         {
             searchString = searchString.ToLower();
             var resource = ByAlias(searchString);
@@ -375,7 +382,7 @@ namespace RESTar
         public static T SafeGetNoCase<T>(this IDictionary<string, T> dict, string key)
         {
             var matches = dict.Where(pair => pair.Key.EqualsNoCase(key));
-            return matches.Count() > 1 ? dict.SafeGet(key) : matches.FirstOrDefault().Value;
+            return matches.MoreThanOne() ? dict.SafeGet(key) : matches.FirstOrDefault().Value;
         }
 
         /// <summary>
@@ -386,7 +393,7 @@ namespace RESTar
         {
             var matches = Do.TryAndThrow(() => dict.Keys.Cast<string>().Where(k => k.EqualsNoCase(key)),
                 "Invalid key type in Dictionary resource. Must be string");
-            if (matches.Count() > 1)
+            if (matches.MoreThanOne())
             {
                 var val = dict.SafeGet(key);
                 if (val == null)
@@ -409,7 +416,7 @@ namespace RESTar
         public static T SafeGetNoCase<T>(this IDictionary<string, T> dict, string key, out string actualKey)
         {
             var matches = dict.Where(pair => pair.Key.EqualsNoCase(key));
-            if (matches.Count() > 1)
+            if (matches.MoreThanOne())
             {
                 var val = dict.SafeGet(key);
                 if (val == null)
@@ -472,6 +479,14 @@ namespace RESTar
 
         #region IEnumerable
 
+        internal static string StringJoin<T>(this IEnumerable<T> source, string separator,
+            Func<IEnumerable<T>, IEnumerable<string>> converter)
+        {
+            return string.Join(separator, converter(source));
+        }
+
+        internal static bool MoreThanOne<T>(this IEnumerable<T> source) => source.Skip(1).Any();
+
         internal static bool ContainsDuplicates<T>(this IEnumerable<T> source, out T duplicate)
         {
             duplicate = default(T);
@@ -496,9 +511,15 @@ namespace RESTar
             });
         }
 
-        internal static void Collect<T>(this IEnumerable<T> source, Action<IEnumerable<T>> action)
+        internal static T2 Collect<T1, T2>(this IEnumerable<T1> source, Func<IEnumerable<T1>, T2> action)
         {
-            action(source);
+            return action(source);
+        }
+
+        internal static TResult CollectDict<TKey, TValue, TResult>(this IDictionary<TKey, TValue> source,
+            Func<IDictionary<TKey, TValue>, TResult> action)
+        {
+            return action(source);
         }
 
         internal static IEnumerable<T> If<T>(this IEnumerable<T> source, Func<bool> predicate,
@@ -528,7 +549,54 @@ namespace RESTar
 
         #region Requests
 
-        internal static Conditions ToConditions(this IEnumerable<Condition> conditions, IResource resource)
+        internal static void Authenticate<T>(this IRequest<T> request) where T : class
+        {
+            switch (request)
+            {
+                case RESTRequest<T> rest:
+                    if (!RequireApiKey) return;
+                    rest.AuthToken = Authenticator.Authenticate(rest.ScRequest);
+                    return;
+                case ViewRequest<T> view:
+                    view.AuthToken = Authenticator.AssignAuthtoken(AccessRights.Root);
+                    return;
+                case AppRequest<T> app:
+                    app.AuthToken = Authenticator.AssignAuthtoken(AccessRights.Root);
+                    return;
+            }
+        }
+
+        internal static string[] ToArgs(this string query, Request request)
+        {
+            if (query.CharCount('/') > 3)
+                throw new SyntaxException(ErrorCodes.InvalidSeparatorCount,
+                    "Invalid argument separator count. A RESTar URI can contain at most 3 " +
+                    $"forward slashes after the base uri. URI scheme: {Settings._ResourcesPath}" +
+                    "/[resource]/[conditions]/[meta-conditions]");
+            if (request.HeadersDictionary.ContainsKey("X-ARR-LOG-ID"))
+                query = query.Replace("%25", "%");
+            return query.TrimEnd('/').Split('/');
+        }
+
+        private static string CheckQuery(this string query, Request request)
+        {
+            if (query.CharCount('/') > 3)
+                throw new SyntaxException(ErrorCodes.InvalidSeparatorCount,
+                    "Invalid argument separator count. A RESTar URI can contain at most 3 " +
+                    $"forward slashes after the base uri. URI scheme: {Settings._ResourcesPath}" +
+                    "/[resource]/[conditions]/[meta-conditions]");
+            if (request.HeadersDictionary.ContainsKey("X-ARR-LOG-ID"))
+                return query.Replace("%25", "%");
+            return query;
+        }
+
+        internal static void MethodCheck(this IRequestView request)
+        {
+            if (!Authenticator.MethodCheck(request.Method, request.Resource, request.AuthToken))
+                throw Authenticator.NotAuthorizedException;
+        }
+
+        internal static Conditions ToConditions(this IEnumerable<Condition> conditions, IResourceView resource)
         {
             if (conditions?.Any() != true) return null;
             var _conditions = new Conditions(resource);
@@ -559,7 +627,7 @@ namespace RESTar
         /// operator. If true, the out Condition parameter will contain a reference to the found
         /// condition.
         /// </summary>
-        public static bool HasCondition(this IRequest request, string key, Operator op, out Condition condition)
+        public static bool HasCondition(this IRequestView request, string key, Operator op, out Condition condition)
         {
             condition = request.Conditions?[key, op];
             return condition != null;
@@ -592,7 +660,7 @@ namespace RESTar
             return message.ToString();
         }
 
-        internal static XLWorkbook ToExcel(this IEnumerable<object> entities, IResource resource)
+        internal static XLWorkbook ToExcel(this IEnumerable<object> entities, IResourceView resource)
         {
             var dataSet = new DataSet();
             dataSet.Tables.Add(entities.MakeTable(resource));
@@ -627,7 +695,7 @@ namespace RESTar
             }
         }
 
-        internal static DataTable MakeTable(this IEnumerable<object> entities, IResource resource)
+        internal static DataTable MakeTable(this IEnumerable<object> entities, IResourceView resource)
         {
             var table = new DataTable();
             switch (entities)
@@ -758,7 +826,7 @@ namespace RESTar
 
         #region View models
 
-        internal static Dictionary<string, dynamic> MakeViewModelTemplate(this IResource resource)
+        internal static Dictionary<string, dynamic> MakeViewModelTemplate(this IResourceView resource)
         {
             if (resource.IsDDictionary)
                 return new Dictionary<string, dynamic>();

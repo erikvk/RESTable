@@ -1,13 +1,14 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using RESTar.Internal;
 using RESTar.Requests;
 
 namespace RESTar
 {
     /// <summary>
-    /// A common interface for RESTar requests
+    /// A non-generic common interface for all request classes used in RESTar
     /// </summary>
-    public interface IRequest
+    public interface IRequestView : IDisposable
     {
         /// <summary>
         /// The method of the request
@@ -17,7 +18,7 @@ namespace RESTar
         /// <summary>
         /// The resource of the request
         /// </summary>
-        IResource Resource { get; }
+        IResourceView Resource { get; }
 
         /// <summary>
         /// The conditions of the request
@@ -40,10 +41,26 @@ namespace RESTar
         string AuthToken { get; }
 
         /// <summary>
+        /// Is this request internal?
+        /// </summary>
+        bool Internal { get; }
+
+        /// <summary>
         /// To include additional HTTP headers in the response, add them to 
         /// this dictionary. Header names will be renamed to "X-[name]" where
         /// name is the key-value pair key.
         /// </summary>
         IDictionary<string, string> ResponseHeaders { get; }
+    }
+
+    /// <summary>
+    /// A common interface for RESTar requests
+    /// </summary>
+    public interface IRequest<T> : IRequestView where T : class
+    {
+        /// <summary>
+        /// The resource of the request
+        /// </summary>
+        new IResource<T> Resource { get; }
     }
 }

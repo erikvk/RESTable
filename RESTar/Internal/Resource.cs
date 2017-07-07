@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections;
-using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Serialization;
 using Dynamit;
@@ -14,7 +13,7 @@ using static RESTar.Internal.RESTarResourceType;
 
 namespace RESTar.Internal
 {
-    internal class Resource<T> : IResource where T : class
+    internal class Resource<T> : IResource<T> where T : class
     {
         public string Name { get; }
         public bool Editable { get; }
@@ -32,10 +31,10 @@ namespace RESTar.Internal
         public bool RequiresValidation { get; }
         public RESTarResourceType ResourceType { get; }
 
-        public Selector<dynamic> Select { get; }
-        public Inserter<dynamic> Insert { get; }
-        public Updater<dynamic> Update { get; }
-        public Deleter<dynamic> Delete { get; }
+        public Selector<T> Select { get; }
+        public Inserter<T> Insert { get; }
+        public Updater<T> Update { get; }
+        public Deleter<T> Delete { get; }
 
         public string Alias
         {
@@ -74,7 +73,6 @@ namespace RESTar.Internal
             DynamicConditionsAllowed = attribute.AllowDynamicConditions;
             RequiresValidation = typeof(IValidatable).IsAssignableFrom(targetType);
             TargetType = targetType;
-            Select = selector;
             IsStarcounterResource = TargetType.HasAttribute<DatabaseAttribute>();
             IsDDictionary = typeof(T) == typeof(DDictionary);
             IsDynamic = IsDDictionary || TargetType.IsSubclassOf(typeof(JObject)) ||
@@ -84,9 +82,10 @@ namespace RESTar.Internal
                     ? ScDynamic
                     : ScStatic
                 : Virtual;
-            Insert = (e, r) => inserter((IEnumerable<T>) e, r);
-            Update = (e, r) => updater((IEnumerable<T>) e, r);
-            Delete = (e, r) => deleter((IEnumerable<T>) e, r);
+            Select = selector;
+            Insert = inserter;
+            Update = updater;
+            Delete = deleter;
             CheckOperationsSupport();
             RESTarConfig.AddResource(this);
         }
@@ -198,9 +197,9 @@ namespace RESTar.Internal
                     $"resource {Name}. Necessary operations: {string.Join(", ", necessaryOperations.Select(i => i.ToString()))}");
         }
 
-        public bool Equals(IResource x, IResource y) => x.Name == y.Name;
-        public int GetHashCode(IResource obj) => obj.Name.GetHashCode();
-        public int CompareTo(IResource other) => string.Compare(Name, other.Name, StringComparison.Ordinal);
+        public bool Equals(IResource<T> x, IResource<T> y) => x.Name == y.Name;
+        public int GetHashCode(IResource<T> obj) => obj.Name.GetHashCode();
+        public int CompareTo(IResource<T> other) => string.Compare(Name, other.Name, StringComparison.Ordinal);
         public override int GetHashCode() => Name.GetHashCode();
     }
 }

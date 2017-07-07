@@ -7,6 +7,23 @@ namespace RESTar.View
     /// </summary>
     partial class MessageWindow : Json, IRESTarView
     {
+        void IRESTarView.SetHtml(string html)
+        {
+        }
+
+        void IRESTarView.SetResourceName(string resourceName)
+        {
+        }
+
+        void IRESTarView.SetResourcePath(string resourceName)
+        {
+        }
+
+        IRequestView IRESTarView.Request { get; }
+        IResourceView IRESTarView.Resource { get; }
+        string IRESTarView.HtmlMatcher { get; }
+        bool IRESTarView.Success { get; }
+
         /// <summary>
         /// </summary>
         public void SetMessage(string message, ErrorCodes errorCode, MessageType messageType)

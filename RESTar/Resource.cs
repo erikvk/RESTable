@@ -59,7 +59,7 @@ namespace RESTar
         /// <summary>
         /// RESTar selector (don't use)
         /// </summary>
-        public IEnumerable<Resource> Select(IRequest request)
+        public IEnumerable<Resource> Select(IRequest<Resource> request)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
             return Resources
@@ -76,7 +76,7 @@ namespace RESTar
 
         /// <summary>
         /// </summary>
-        public int Insert(IEnumerable<Resource> resources, IRequest request)
+        public int Insert(IEnumerable<Resource> resources, IRequest<Resource> request)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
             var count = 0;
@@ -96,7 +96,7 @@ namespace RESTar
 
         /// <summary>
         /// </summary>
-        public int Update(IEnumerable<Resource> entities, IRequest request)
+        public int Update(IEnumerable<Resource> entities, IRequest<Resource> request)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
             var count = 0;
@@ -111,7 +111,7 @@ namespace RESTar
 
         /// <summary>
         /// </summary>
-        public int Delete(IEnumerable<Resource> entities, IRequest request)
+        public int Delete(IEnumerable<Resource> entities, IRequest<Resource> request)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
             var count = 0;
@@ -222,11 +222,18 @@ namespace RESTar
         /// <summary>
         /// Finds a resource by name (case insensitive)
         /// </summary>
-        public static IResource Find(string name) => ResourceByName.SafeGetNoCase(name);
+        public static IResourceView Find(string name) => ResourceByName.SafeGetNoCase(name);
 
         /// <summary>
         /// Finds a resource by target type
         /// </summary>
-        public static IResource Find(Type type) => ResourceByType.SafeGet(type);
+        public static IResourceView Get(Type type) => ResourceByType.SafeGet(type);
+
+        /// <summary>
+        /// Finds a resource by target type
+        /// </summary>
+        public static IResource<T> Get<T>() where T : class => ResourceByType.SafeGet(typeof(T)) as IResource<T>;
+
+        internal static IResource<Resource> MetaResource => Get<Resource>();
     }
 }

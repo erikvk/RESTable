@@ -4,6 +4,7 @@ using Dynamit;
 using RESTar;
 using RESTar.Internal;
 using Starcounter;
+
 // ReSharper disable RedundantExplicitArrayCreation
 
 #pragma warning disable 1591
@@ -47,22 +48,22 @@ namespace RESTarExample
         public string S { get; set; }
         public string[] Ss { get; set; }
 
-        public int Insert(IEnumerable<R> entities, IRequest request)
+        public int Insert(IEnumerable<R> entities, IRequest<R> request)
         {
             return entities.Count();
         }
 
-        public IEnumerable<R> Select(IRequest request)
+        public IEnumerable<R> Select(IRequest<R> request)
         {
             return new R[] {new R {S = "Swoo", Ss = new[] {"S", "Sd"}}};
         }
 
-        public int Update(IEnumerable<R> entities, IRequest request)
+        public int Update(IEnumerable<R> entities, IRequest<R> request)
         {
             return entities.Count();
         }
 
-        public int Delete(IEnumerable<R> entities, IRequest request)
+        public int Delete(IEnumerable<R> entities, IRequest<R> request)
         {
             return entities.Count();
         }
@@ -121,7 +122,7 @@ namespace RESTarExample
             return new MyDynamicTable2Kvp(dict, key, value);
         }
 
-        public IEnumerable<DDictionary> Select(IRequest request) => DDictionaryOperations.Select(request);
+        public IEnumerable<DDictionary> Select(IRequest<DDictionary> request) => DDictionaryOperations.Select(request);
     }
 
     public class MyDynamicTable2Kvp : DKeyValuePair
