@@ -4,7 +4,7 @@ using RESTar.Internal;
 
 namespace RESTar.Auth
 {
-    internal class AccessRights : Dictionary<IResourceView, RESTarMethods[]>
+    internal class AccessRights : Dictionary<IResource, RESTarMethods[]>
     {
         static AccessRights() => Root = RESTarConfig.Resources
             .ToDictionary(r => r, r => RESTarConfig.Methods)
@@ -14,11 +14,11 @@ namespace RESTar.Auth
 
         internal AccessRights() { }
 
-        internal AccessRights(IDictionary<IResourceView, RESTarMethods[]> other) : base(other)
+        internal AccessRights(IDictionary<IResource, RESTarMethods[]> other) : base(other)
         {
         }
 
-        internal new RESTarMethods[] this[IResourceView resource]
+        internal new RESTarMethods[] this[IResource resource]
         {
             get => ContainsKey(resource) ? base[resource] : null;
             set => base[resource] = value;

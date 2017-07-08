@@ -4,6 +4,7 @@ using System.Linq;
 using System.Net;
 using RESTar.Internal;
 using Starcounter;
+using IResource = RESTar.Internal.IResource;
 
 namespace RESTar.Requests
 {
@@ -47,7 +48,7 @@ namespace RESTar.Requests
 
         #region Bad request
 
-        internal static Response AbortedOperation(Exception e, RESTarMethods method, IResourceView resource)
+        internal static Response AbortedOperation(Exception e, RESTarMethods method, IResource resource)
         {
             var alias = ResourceAlias.ByResource(resource.TargetType);
             return new Response
@@ -157,7 +158,7 @@ namespace RESTar.Requests
             }
         };
 
-        internal static Response InsertedEntities(IRequestView request, int count, Type resource)
+        internal static Response InsertedEntities(IRequest request, int count, Type resource)
         {
             var alias = ResourceAlias.ByResource(resource);
             return new Response
@@ -172,7 +173,7 @@ namespace RESTar.Requests
             };
         }
 
-        internal static Response UpdatedEntities(IRequestView request, int count, Type resource)
+        internal static Response UpdatedEntities(IRequest request, int count, Type resource)
         {
             var alias = ResourceAlias.ByResource(resource);
             return new Response
@@ -187,7 +188,7 @@ namespace RESTar.Requests
             };
         }
 
-        internal static Response SafePostedEntities(IRequestView request, int insertedCount, int updatedCount)
+        internal static Response SafePostedEntities(IRequest request, int insertedCount, int updatedCount)
         {
             return new Response
             {

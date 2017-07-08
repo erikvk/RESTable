@@ -8,6 +8,7 @@ using Starcounter;
 using static RESTar.RESTarMethods;
 using static RESTar.RESTarPresets;
 using static RESTar.Settings;
+using IResource = RESTar.Internal.IResource;
 
 namespace RESTar
 {
@@ -99,7 +100,7 @@ namespace RESTar
         {
         }
 
-        internal static Error Create(ErrorCodes errorCode, Exception e, IResourceView resource, Request scRequest, HandlerActions action) => new Error
+        internal static Error Create(ErrorCodes errorCode, Exception e, IResource resource, Request scRequest, HandlerActions action) => new Error
         {
             Time = DateTime.Now,
             ResourceName = (resource?.Name ?? "<unknown>") +

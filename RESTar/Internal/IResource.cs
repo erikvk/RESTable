@@ -7,7 +7,7 @@ namespace RESTar.Internal
     /// <summary>
     /// The common non-generic interface for all resource entities used by RESTar
     /// </summary>
-    public interface IResourceView
+    public interface IResource
     {
         /// <summary>
         /// The name of this resource
@@ -88,7 +88,7 @@ namespace RESTar.Internal
     /// <summary>
     /// The common generic interface for all resource entities used by RESTar
     /// </summary>
-    public interface IResource<T> : IEqualityComparer<IResource<T>>, IComparable<IResource<T>>, IResourceView
+    public interface IResource<T> : IEqualityComparer<IResource<T>>, IComparable<IResource<T>>, IResource
         where T : class
     {
         /// <summary>

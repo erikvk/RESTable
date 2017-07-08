@@ -147,7 +147,7 @@ namespace RESTar.Operations
 
         private static readonly Regex macroRegex;
 
-        private static JTokens Map(JTokens set, string mapper, IRequestView request)
+        private static JTokens Map(JTokens set, string mapper, IRequest request)
         {
             if (set == null)
                 throw new ArgumentException(nameof(set));

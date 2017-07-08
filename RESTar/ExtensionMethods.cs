@@ -11,19 +11,24 @@ using System.Text.RegularExpressions;
 using System.Web;
 using ClosedXML.Excel;
 using Dynamit;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using RESTar.Auth;
 using RESTar.Deflection;
 using RESTar.Internal;
 using RESTar.Operations;
 using RESTar.Requests;
+using RESTar.View;
 using Starcounter;
 using static System.Reflection.BindingFlags;
 using static System.StringComparison;
 using static RESTar.ResourceAlias;
+using static RESTar.Requests.Responses;
 using static RESTar.RESTarConfig;
 using static RESTar.RESTarMethods;
+using static RESTar.Internal.ErrorCodes;
 using static Starcounter.DbHelper;
+using IResource = RESTar.Internal.IResource;
 
 namespace RESTar
 {
@@ -35,7 +40,7 @@ namespace RESTar
         static ExtensionMethods()
         {
             DEFAULT_MAKER = typeof(ExtensionMethods).GetMethod(nameof(DEFAULT), NonPublic | Static);
-            ListGenerator = typeof(ExtensionMethods).GetMethod(nameof(GenerateList), NonPublic | Static);
+            // ListGenerator = typeof(ExtensionMethods).GetMethod(nameof(GenerateList), NonPublic | Static);
         }
 
         #region Operation finders
@@ -68,13 +73,13 @@ namespace RESTar
             .Where(type => !type.IsAbstract)
             .ToList();
 
-        private static readonly MethodInfo ListGenerator;
+        // private static readonly MethodInfo ListGenerator;
 
-        private static List<T> GenerateList<T>(T thing) => new List<T> {thing};
+        // private static List<T> GenerateList<T>(T thing) => new List<T> {thing};
 
-        internal static dynamic MakeList(this object thing, Type resource) => ListGenerator
-            .MakeGenericMethod(resource)
-            .Invoke(null, new[] {thing});
+        //internal static dynamic MakeList(this object thing, Type resource) => ListGenerator
+        //    .MakeGenericMethod(resource)
+        //    .Invoke(null, new[] {thing});
 
         internal static IEnumerable<Type> GetSubclasses(this Type baseType) =>
             from assembly in AppDomain.CurrentDomain.GetAssemblies()
@@ -178,6 +183,10 @@ namespace RESTar
 
         #region Resource helpers
 
+        internal static IResource GetResource(this string[] args) => args.Length == 1
+            ? Resource.MetaResource
+            : args[1].FindResource();
+
         internal static bool IsDDictionary(this Type type) => type.IsSubclassOf(typeof(DDictionary));
         internal static bool IsStarcounter(this Type type) => type.HasAttribute<DatabaseAttribute>();
 
@@ -190,7 +199,7 @@ namespace RESTar
                 throw new ValidatableException(reason);
         }
 
-        internal static ICollection<IResourceView> FindResources(this string searchString)
+        internal static ICollection<IResource> FindResources(this string searchString)
         {
             searchString = searchString.ToLower();
             var asterisks = searchString.Count(i => i == '*');
@@ -219,7 +228,7 @@ namespace RESTar
             throw new UnknownResourceException(searchString);
         }
 
-        internal static IResourceView FindResource(this string searchString)
+        internal static IResource FindResource(this string searchString)
         {
             searchString = searchString.ToLower();
             var resource = ByAlias(searchString);
@@ -354,7 +363,7 @@ namespace RESTar
         /// </summary>
         public static TValue SafeGet<TKey, TValue>(this IDictionary<TKey, TValue> dict, TKey key)
         {
-            dict.TryGetValue(key, out TValue value);
+            dict.TryGetValue(key, out var value);
             return value;
         }
 
@@ -479,13 +488,17 @@ namespace RESTar
 
         #region IEnumerable
 
+        internal static bool IsNullOrEmpty<T>(this IEnumerable<T> ienum) => ienum?.Any() != true;
+
         internal static string StringJoin<T>(this IEnumerable<T> source, string separator,
             Func<IEnumerable<T>, IEnumerable<string>> converter)
         {
             return string.Join(separator, converter(source));
         }
 
-        internal static bool MoreThanOne<T>(this IEnumerable<T> source) => source.Skip(1).Any();
+        internal static bool MoreThanOne<T>(this IEnumerable<T> source) => source?.Skip(1).Any() == true;
+
+        internal static bool ExaclyOne<T>(this IEnumerable<T> source) => source?.Any() == true && !source.Skip(1).Any();
 
         internal static bool ContainsDuplicates<T>(this IEnumerable<T> source, out T duplicate)
         {
@@ -549,27 +562,28 @@ namespace RESTar
 
         #region Requests
 
-        internal static void Authenticate<T>(this IRequest<T> request) where T : class
+        internal static void Authenticate<T>(this RESTRequest<T> request) where T : class
         {
-            switch (request)
-            {
-                case RESTRequest<T> rest:
-                    if (!RequireApiKey) return;
-                    rest.AuthToken = Authenticator.Authenticate(rest.ScRequest);
-                    return;
-                case ViewRequest<T> view:
-                    view.AuthToken = Authenticator.AssignAuthtoken(AccessRights.Root);
-                    return;
-                case AppRequest<T> app:
-                    app.AuthToken = Authenticator.AssignAuthtoken(AccessRights.Root);
-                    return;
-            }
+            if (!RequireApiKey)
+                request.AuthToken = Authenticator.AssignRoot();
+            request.AuthToken = Authenticator.Authenticate(request.ScRequest);
+        }
+
+        internal static void Authenticate<T>(this ViewRequest<T> request) where T : class
+        {
+            Authenticator.UserCheck();
+            request.AuthToken = Authenticator.AssignRoot();
+        }
+
+        internal static void Authenticate<T>(this AppRequest<T> request) where T : class
+        {
+            request.AuthToken = Authenticator.AssignRoot();
         }
 
         internal static string[] ToArgs(this string query, Request request)
         {
             if (query.CharCount('/') > 3)
-                throw new SyntaxException(ErrorCodes.InvalidSeparatorCount,
+                throw new SyntaxException(InvalidSeparatorCount,
                     "Invalid argument separator count. A RESTar URI can contain at most 3 " +
                     $"forward slashes after the base uri. URI scheme: {Settings._ResourcesPath}" +
                     "/[resource]/[conditions]/[meta-conditions]");
@@ -581,7 +595,7 @@ namespace RESTar
         private static string CheckQuery(this string query, Request request)
         {
             if (query.CharCount('/') > 3)
-                throw new SyntaxException(ErrorCodes.InvalidSeparatorCount,
+                throw new SyntaxException(InvalidSeparatorCount,
                     "Invalid argument separator count. A RESTar URI can contain at most 3 " +
                     $"forward slashes after the base uri. URI scheme: {Settings._ResourcesPath}" +
                     "/[resource]/[conditions]/[meta-conditions]");
@@ -590,13 +604,13 @@ namespace RESTar
             return query;
         }
 
-        internal static void MethodCheck(this IRequestView request)
+        internal static void MethodCheck(this IRequest request)
         {
             if (!Authenticator.MethodCheck(request.Method, request.Resource, request.AuthToken))
                 throw Authenticator.NotAuthorizedException;
         }
 
-        internal static Conditions ToConditions(this IEnumerable<Condition> conditions, IResourceView resource)
+        internal static Conditions ToConditions(this IEnumerable<Condition> conditions, IResource resource)
         {
             if (conditions?.Any() != true) return null;
             var _conditions = new Conditions(resource);
@@ -627,10 +641,22 @@ namespace RESTar
         /// operator. If true, the out Condition parameter will contain a reference to the found
         /// condition.
         /// </summary>
-        public static bool HasCondition(this IRequestView request, string key, Operator op, out Condition condition)
+        public static bool HasCondition(this IRequest request, string key, Operator op, out Condition condition)
         {
             condition = request.Conditions?[key, op];
             return condition != null;
+        }
+
+        internal static (ErrorCodes code, Response response) GetError(this Exception ex)
+        {
+            switch (ex)
+            {
+                case RESTarException re: return (re.ErrorCode, re.Response);
+                case FormatException _: return (UnsupportedContentType, BadRequest(ex));
+                case JsonReaderException _: return (JsonDeserializationError, JsonError);
+                case DbException _: return (DatabaseError, DbError(ex));
+                default: return (UnknownError, InternalError(ex));
+            }
         }
 
         #endregion
@@ -660,7 +686,7 @@ namespace RESTar
             return message.ToString();
         }
 
-        internal static XLWorkbook ToExcel(this IEnumerable<object> entities, IResourceView resource)
+        internal static XLWorkbook ToExcel(this IEnumerable<object> entities, IResource resource)
         {
             var dataSet = new DataSet();
             dataSet.Tables.Add(entities.MakeTable(resource));
@@ -695,7 +721,7 @@ namespace RESTar
             }
         }
 
-        internal static DataTable MakeTable(this IEnumerable<object> entities, IResourceView resource)
+        internal static DataTable MakeTable(this IEnumerable<object> entities, IResource resource)
         {
             var table = new DataTable();
             switch (entities)
@@ -826,7 +852,14 @@ namespace RESTar
 
         #region View models
 
-        internal static Dictionary<string, dynamic> MakeViewModelTemplate(this IResourceView resource)
+        internal static Json MakeCurrentView(this RESTarView view)
+        {
+            var master = Self.GET<View.Page>("/__restar/__page");
+            master.CurrentPage = view ?? master.CurrentPage;
+            return master;
+        }
+
+        internal static Dictionary<string, dynamic> MakeViewModelTemplate(this IResource resource)
         {
             if (resource.IsDDictionary)
                 return new Dictionary<string, dynamic>();

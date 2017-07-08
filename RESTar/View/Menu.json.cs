@@ -1,32 +1,36 @@
 using System.Linq;
 using Starcounter;
 using RESTar.Internal;
+using IResource = RESTar.Internal.IResource;
+
 #pragma warning disable 1591
 
 namespace RESTar.View
 {
     /// <summary>
     /// </summary>
-    partial class Menu : Json, IRESTarView
+    partial class Menu : RESTarView
     {
-        public void SetHtml(string html) => Html = html;
-
-        public void SetResourceName(string resourceName)
+        internal override void SetHtml(string html)
         {
         }
 
-        public void SetResourcePath(string resourcePath)
+        internal override void SetResourceName(string resourceName)
         {
         }
 
-        public IRequestView Request { get; }
-        public IResourceView Resource { get; }
-        public string HtmlMatcher { get; }
-        public bool Success { get; }
+        internal override void SetResourcePath(string resourceName)
+        {
+        }
+
+        internal override IRequest Request { get; set; }
+        internal override IResource Resource { get; set; }
+        internal override string HtmlSuffix { get; }
+        internal override bool Success { get; set; }
 
         /// <summary>
         /// </summary>
-        public void SetMessage(string message, ErrorCodes errorCode, MessageType messageType)
+        internal override void SetMessage(string message, ErrorCodes errorCode, MessageTypes messageType)
         {
             Message = message;
             ErrorCode = (long) errorCode;

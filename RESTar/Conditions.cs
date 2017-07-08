@@ -14,13 +14,13 @@ namespace RESTar
     /// </summary>
     public sealed class Conditions : List<Condition>, IFilter
     {
-        internal IResourceView Resource;
+        internal IResource Resource;
         internal IEnumerable<Condition> SQL => this.Where(c => c.ScQueryable);
         internal Conditions PostSQL => this.Where(c => !c.ScQueryable || c.IsOfType<string>()).ToConditions(Resource);
         internal Conditions Equality => this.Where(c => c.Operator.Equality).ToConditions(Resource);
         internal Conditions Compare => this.Where(c => c.Operator.Compare).ToConditions(Resource);
         private static readonly char[] OpMatchChars = {'<', '>', '=', '!'};
-        internal Conditions(IResourceView resource) => Resource = resource;
+        internal Conditions(IResource resource) => Resource = resource;
         internal bool HasPost { get; private set; }
 
         /// <summary>
@@ -55,7 +55,7 @@ namespace RESTar
         /// <summary>
         /// Parses a Conditions object from a conditions section of a REST request URI
         /// </summary>
-        public static Conditions Parse(string conditionString, IResourceView resource)
+        public static Conditions Parse(string conditionString, IResource resource)
         {
             if (string.IsNullOrEmpty(conditionString)) return null;
             var conditions = new Conditions(resource);

@@ -7,13 +7,13 @@ using System.Xml;
 using Excel;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using RESTar.Auth;
 using RESTar.Internal;
 using RESTar.Operations;
 using Starcounter;
 using static RESTar.Internal.ErrorCodes;
 using static RESTar.RESTarConfig;
 using static RESTar.RESTarMethods;
+using IResource = RESTar.Internal.IResource;
 
 namespace RESTar.Requests
 {
@@ -23,28 +23,29 @@ namespace RESTar.Requests
         public IResource<T> Resource { get; }
         public Conditions Conditions { get; private set; }
         public MetaConditions MetaConditions { get; private set; }
-        public string Body { get; private set; }
+        public string Body { get; set; }
         public string AuthToken { get; internal set; }
-        public bool Internal => !ScRequest.IsExternal;
+        public bool IsInternal { get; }
         public IDictionary<string, string> ResponseHeaders { get; }
-        IResourceView IRequestView.Resource => Resource;
-
+        IResource IRequest.Resource => Resource;
         internal Request ScRequest { get; }
         private Response Response { get; set; }
         private RESTEvaluator<T> Evaluator { get; set; }
-        internal void Evaluate() => Response = Evaluator(this);
         private byte[] BinaryBody { get; set; }
         private string Source { get; set; }
         private string Destination { get; set; }
         private RESTarMimeType ContentType { get; set; }
         private RESTarMimeType Accept { get; set; }
         private string Origin { get; set; }
-        private bool SerializeDynamic => MetaConditions.Dynamic || Resource.IsDynamic || MetaConditions.HasProcessors;
+        private DataConfig InputDataConfig { get; set; }
+        private DataConfig OutputDataConfig { get; set; }
+        internal void Evaluate() => Response = Evaluator(this);
 
         internal RESTRequest(IResource<T> resource, Request scRequest)
         {
             Resource = resource;
             ScRequest = scRequest;
+            IsInternal = !ScRequest.IsExternal;
             ResponseHeaders = new Dictionary<string, string>();
             MetaConditions = new MetaConditions();
         }
@@ -58,94 +59,72 @@ namespace RESTar.Requests
             Origin = ScRequest.Headers["Origin"];
             ContentType = MimeTypes.Match(ScRequest.ContentType);
             Accept = MimeTypes.Match(ScRequest.PreferredMimeTypeString);
+            InputDataConfig = Source != null ? DataConfig.External : DataConfig.Internal;
+            OutputDataConfig = Destination != null ? DataConfig.External : DataConfig.Internal;
             if (args.Length <= 2) return;
             Conditions = Conditions.Parse(args[2], Resource);
             if (args.Length == 3) return;
             MetaConditions = MetaConditions.Parse(args[3], Resource) ?? MetaConditions;
         }
 
-        internal void GetRequestData()
+        internal void SetRequestData()
         {
-            if (Source != null)
+            #region Resolve data source
+
+            switch (InputDataConfig)
             {
-                var sourceRequest = HttpRequest.Parse(Source);
-                if (sourceRequest.Method != GET)
-                    throw new SyntaxException(InvalidSourceFormatError, "Only GET is allowed in Source headers");
-                sourceRequest.Accept = ContentType.ToMimeString();
-
-                var response = sourceRequest.Internal
-                    ? HTTP.InternalRequest
-                    (
-                        method: GET,
-                        relativeUri: sourceRequest.URI,
-                        authToken: AuthToken,
-                        headers: sourceRequest.Headers,
-                        accept: sourceRequest.Accept
-                    )
-                    : HTTP.ExternalRequest
-                    (
-                        method: GET,
-                        uri: sourceRequest.URI,
-                        headers: sourceRequest.Headers,
-                        accept: sourceRequest.Accept
-                    );
-
-                if (response?.IsSuccessStatusCode != true)
-                    throw new SourceException(Source, $"{response?.StatusCode}: {response?.StatusDescription}");
-
-                if (ContentType == RESTarMimeType.Excel)
-                {
+                case DataConfig.Internal:
+                    if (ScRequest.Body == null && (Method == PATCH || Method == POST || Method == PUT))
+                        throw new SyntaxException(NoDataSourceError, "Missing data source for method " + Method);
+                    if (ScRequest.Body == null) return;
+                    BinaryBody = ScRequest.BodyBytes;
+                    Body = ScRequest.Body;
+                    break;
+                case DataConfig.External:
+                    var rqst = HttpRequest.Parse(Source);
+                    if (rqst.Method != GET)
+                        throw new SyntaxException(InvalidSourceFormatError, "Only GET is allowed in Source headers");
+                    rqst.Accept = ContentType.ToMimeString();
+                    var response = rqst.Internal
+                        ? HTTP.InternalRequest(GET, rqst.URI, AuthToken, headers: rqst.Headers, accept: rqst.Accept)
+                        : HTTP.ExternalRequest(GET, rqst.URI, headers: rqst.Headers, accept: rqst.Accept);
+                    if (response?.IsSuccessStatusCode != true)
+                        throw new SourceException(Source, $"{response?.StatusCode}: {response?.StatusDescription}");
+                    if (response.BodyBytes.IsNullOrEmpty()) throw new SourceException(Source, "Response was empty");
                     BinaryBody = response.BodyBytes;
-                    if (BinaryBody?.Any() != true)
-                        throw new SourceException(Source, "Response was empty");
-                }
-                else
-                {
-                    Body = response.Body?.RemoveTabsAndBreaks();
-                    if (Body == null)
-                        throw new SourceException(Source, "Response was empty");
-                    return;
-                }
+                    Body = response.Body;
+                    break;
             }
-            else
-            {
-                if (ScRequest.Body == null && (Method == PATCH || Method == POST || Method == PUT))
-                    throw new SyntaxException(NoDataSourceError, "Missing data source for method " + Method);
-                if (ScRequest.Body == null)
-                    return;
-            }
+
+            #endregion
+
+            #region Check data format
 
             switch (ContentType)
             {
                 case RESTarMimeType.Json:
-                    Body = Body?.Trim() ?? ScRequest.Body.Trim();
-                    if (Body?.First() == '[' && Method != POST)
+                    if (Body.First() == '[' && Method != POST)
                         throw new InvalidInputCountException(Method);
-                    break;
+                    return;
+                case RESTarMimeType.XML: throw new FormatException("XML is only supported as output format");
                 case RESTarMimeType.Excel:
-                    using (var stream = new MemoryStream(BinaryBody ?? ScRequest.BodyBytes))
+                    using (var stream = new MemoryStream(BinaryBody))
                     {
                         var regex = new Regex(@"(:[\d]+).0([\D])");
                         var excelReader = ExcelReaderFactory.CreateOpenXmlReader(stream);
                         excelReader.IsFirstRowAsColumnNames = true;
-                        var result = excelReader.AsDataSet();
-                        if (result == null)
-                            throw new ExcelInputException();
-                        if (Method == POST)
-                        {
-                            Body = result.Tables[0].Serialize();
-                            Body = regex.Replace(Body, "$1$2");
-                        }
+                        var result = excelReader.AsDataSet() ?? throw new ExcelInputException();
+                        if (Method == POST) Body = regex.Replace(result.Tables[0].Serialize(), "$1$2");
                         else
                         {
-                            if (result.Tables[0].Rows.Count > 1)
-                                throw new InvalidInputCountException(Method);
+                            if (result.Tables[0].Rows.Count > 1) throw new InvalidInputCountException(Method);
                             Body = JArray.FromObject(result.Tables[0]).First().Serialize();
                         }
                     }
-                    break;
-                case RESTarMimeType.XML: throw new FormatException("XML is only supported as output format");
+                    return;
             }
+
+            #endregion
         }
 
         internal void SetResponseData(IEnumerable<dynamic> data, Response response)
@@ -153,7 +132,7 @@ namespace RESTar.Requests
             switch (Accept)
             {
                 case RESTarMimeType.Json:
-                    response.Body = SerializeDynamic ? data.Serialize() : data.Serialize(IEnumTypes[Resource]);
+                    response.Body = data.Serialize();
                     response.ContentType = MimeTypes.JSON;
                     return;
                 case RESTarMimeType.Excel:
@@ -163,7 +142,7 @@ namespace RESTar.Requests
                     response.ContentType = MimeTypes.Excel;
                     return;
                 case RESTarMimeType.XML:
-                    var json = SerializeDynamic ? data.Serialize() : data.Serialize(IEnumTypes[Resource]);
+                    var json = data.Serialize();
                     var xml = JsonConvert.DeserializeXmlNode($@"{{""row"":{json}}}", "root", true);
                     using (var stringWriter = new StringWriter())
                     using (var xmlTextWriter = XmlWriter.Create(stringWriter))
@@ -180,46 +159,28 @@ namespace RESTar.Requests
 
         internal Response GetResponse()
         {
-            if (Response == null) return null;
-
             ResponseHeaders.ForEach(h => Response.Headers["X-" + h.Key] = h.Value);
             Response.Headers["Access-Control-Allow-Origin"] = AllowAllOrigins ? "*" : (Origin ?? "null");
-
-            if (Destination == null) return Response;
-
-            var destinationRequest = HttpRequest.Parse(Destination);
-            destinationRequest.ContentType = Accept.ToMimeString();
-            var _response = destinationRequest.Internal
-                ? HTTP.InternalRequest
-                (
-                    method: destinationRequest.Method,
-                    relativeUri: destinationRequest.URI,
-                    authToken: AuthToken,
-                    bodyBytes: Response.BodyBytes,
-                    contentType: destinationRequest.ContentType,
-                    headers: destinationRequest.Headers
-                )
-                : HTTP.ExternalRequest
-                (
-                    method: destinationRequest.Method,
-                    uri: destinationRequest.URI,
-                    bodyBytes: Response.BodyBytes,
-                    contentType: destinationRequest.ContentType,
-                    headers: destinationRequest.Headers
-                );
-            if (_response == null)
-                throw new Exception($"No response for destination request: '{Destination}'");
-            if (!_response.IsSuccessStatusCode)
-                throw new Exception($"Failed upload at destination server at '{destinationRequest.URI}'. " +
-                                    $"Status: {_response.StatusCode}, {_response.StatusDescription}");
-            _response.Headers["Access-Control-Allow-Origin"] = AllowAllOrigins ? "*" : (Origin ?? "null");
-            return _response;
+            if (OutputDataConfig == DataConfig.Internal)
+                return Response;
+            var rqst = HttpRequest.Parse(Destination);
+            rqst.ContentType = Accept.ToMimeString();
+            var bytes = Response.BodyBytes;
+            Response = rqst.Internal
+                ? HTTP.InternalRequest(rqst.Method, rqst.URI, AuthToken, bytes, rqst.ContentType, headers: rqst.Headers)
+                : HTTP.ExternalRequest(rqst.Method, rqst.URI, bytes, rqst.ContentType, headers: rqst.Headers);
+            if (Response == null) throw new Exception($"No response for destination request: '{Destination}'");
+            if (!Response.IsSuccessStatusCode)
+                throw new Exception($"Failed upload at destination server at '{rqst.URI}'. " +
+                                    $"Status: {Response.StatusCode}, {Response.StatusDescription}");
+            Response.Headers["Access-Control-Allow-Origin"] = AllowAllOrigins ? "*" : (Origin ?? "null");
+            return Response;
         }
 
         public void Dispose()
         {
-            if (AuthToken == null || Internal) return;
-            AuthTokens.TryRemove(AuthToken, out AccessRights _);
+            if (IsInternal) return;
+            AuthTokens.TryRemove(AuthToken, out var _);
         }
     }
 }

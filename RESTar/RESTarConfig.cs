@@ -22,12 +22,11 @@ namespace RESTar
     /// </summary>
     public static class RESTarConfig
     {
-        internal static readonly IDictionary<string, IResourceView> ResourceByName;
-        internal static readonly IDictionary<Type, IResourceView> ResourceByType;
-        internal static readonly IDictionary<IResourceView, Type> IEnumTypes;
+        internal static readonly IDictionary<string, IResource> ResourceByName;
+        internal static readonly IDictionary<Type, IResource> ResourceByType;
         internal static readonly IDictionary<string, AccessRights> ApiKeys;
         internal static readonly ConcurrentDictionary<string, AccessRights> AuthTokens;
-        internal static IEnumerable<IResourceView> Resources => ResourceByName.Values;
+        internal static IEnumerable<IResource> Resources => ResourceByName.Values;
         internal static readonly List<Uri> AllowedOrigins;
         internal static readonly RESTarMethods[] Methods = {GET, POST, PATCH, PUT, DELETE};
         internal static bool RequireApiKey { get; private set; }
@@ -38,9 +37,8 @@ namespace RESTar
         static RESTarConfig()
         {
             ApiKeys = new Dictionary<string, AccessRights>();
-            ResourceByType = new Dictionary<Type, IResourceView>();
-            ResourceByName = new Dictionary<string, IResourceView>();
-            IEnumTypes = new Dictionary<IResourceView, Type>();
+            ResourceByType = new Dictionary<Type, IResource>();
+            ResourceByName = new Dictionary<string, IResource>();
             AuthTokens = new ConcurrentDictionary<string, AccessRights>();
             AllowedOrigins = new List<Uri>();
         }
@@ -50,20 +48,18 @@ namespace RESTar
             if (ConfigFilePath != null) ReadConfig();
         }
 
-        internal static void AddResource(IResourceView toAdd)
+        internal static void AddResource(IResource toAdd)
         {
             ResourceByName[toAdd.Name.ToLower()] = toAdd;
             ResourceByType[toAdd.TargetType] = toAdd;
-            IEnumTypes[toAdd] = typeof(IEnumerable<>).MakeGenericType(toAdd.TargetType);
             UpdateAuthInfo();
             toAdd.GetStaticProperties();
         }
 
-        internal static void RemoveResource(IResourceView toRemove)
+        internal static void RemoveResource(IResource toRemove)
         {
             ResourceByName.Remove(toRemove.Name.ToLower());
             ResourceByType.Remove(toRemove.TargetType);
-            IEnumTypes.Remove(toRemove);
             UpdateAuthInfo();
         }
 
@@ -133,12 +129,9 @@ namespace RESTar
                     var jsonstring = JsonConvert.SerializeXmlNode(document);
                     config = JObject.Parse(jsonstring)["config"] as JObject;
                 }
-                if (config == null)
-                    throw new Exception();
-                if (!AllowAllOrigins)
-                    SetupOrigins(config.AllowedOrigin);
-                if (RequireApiKey)
-                    SetupApiKeys(config.ApiKey);
+                if (config == null) throw new Exception();
+                if (!AllowAllOrigins) SetupOrigins(config.AllowedOrigin);
+                if (RequireApiKey) SetupApiKeys(config.ApiKey);
             }
             catch (Exception jse)
             {

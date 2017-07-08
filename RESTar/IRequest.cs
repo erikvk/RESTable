@@ -8,7 +8,7 @@ namespace RESTar
     /// <summary>
     /// A non-generic common interface for all request classes used in RESTar
     /// </summary>
-    public interface IRequestView : IDisposable
+    public interface IRequest : IDisposable
     {
         /// <summary>
         /// The method of the request
@@ -18,7 +18,7 @@ namespace RESTar
         /// <summary>
         /// The resource of the request
         /// </summary>
-        IResourceView Resource { get; }
+        IResource Resource { get; }
 
         /// <summary>
         /// The conditions of the request
@@ -43,7 +43,7 @@ namespace RESTar
         /// <summary>
         /// Is this request internal?
         /// </summary>
-        bool Internal { get; }
+        bool IsInternal { get; }
 
         /// <summary>
         /// To include additional HTTP headers in the response, add them to 
@@ -56,11 +56,17 @@ namespace RESTar
     /// <summary>
     /// A common interface for RESTar requests
     /// </summary>
-    public interface IRequest<T> : IRequestView where T : class
+    public interface IRequest<T> : IRequest where T : class
     {
         /// <summary>
         /// The resource of the request
         /// </summary>
         new IResource<T> Resource { get; }
+    }
+
+    internal interface IViewRequest : IRequest
+    {
+        void DeleteFromList(string id);
+        string SaveItem();
     }
 }

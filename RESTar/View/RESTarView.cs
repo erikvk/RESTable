@@ -1,10 +1,11 @@
 ﻿using RESTar.Internal;
+using Starcounter;
 
 namespace RESTar.View
 {
     /// <summary>
     /// </summary>
-    public enum MessageType
+    public enum MessageTypes
     {
         /// <summary>
         /// </summary>
@@ -19,15 +20,13 @@ namespace RESTar.View
         warning
     }
 
-    internal interface IRESTarView
+    public abstract class RESTarView : Json
     {
-        void SetHtml(string html);
-        void SetResourceName(string resourceName);
-        void SetMessage(string message, ErrorCodes errorCode, MessageType messageType);
-        void SetResourcePath(string resourceName);
-        IRequestView Request { get; }
-        IResourceView Resource { get; }
-        string HtmlMatcher { get; }
-        bool Success { get; }
+        internal abstract void SetHtml(string html);
+        internal abstract void SetResourceName(string resourceName);
+        internal abstract void SetMessage(string message, ErrorCodes errorCode, MessageTypes messageType);
+        internal abstract void SetResourcePath(string resourceName);
+        internal abstract IViewRequest Request { get; set; }
+        internal abstract string HtmlSuffix { get; }
     }
 }

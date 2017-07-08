@@ -5,6 +5,8 @@ using RESTar.Internal;
 using RESTar.Operations;
 using Starcounter;
 using static RESTar.Internal.ErrorCodes;
+using static RESTar.RESTarConfig;
+using IResource = RESTar.Internal.IResource;
 
 namespace RESTar.Requests
 {
@@ -17,15 +19,15 @@ namespace RESTar.Requests
         public OrderBy OrderBy { get; private set; }
         public string Body { get; set; }
         public string AuthToken { get; internal set; }
-        public bool Internal => true;
+        public bool IsInternal => true;
 
         #region Explicit
 
-        RESTarMethods IRequestView.Method => default(RESTarMethods);
-        IDictionary<string, string> IRequestView.ResponseHeaders => null;
-        IResourceView IRequestView.Resource => Resource;
+        RESTarMethods IRequest.Method => default(RESTarMethods);
+        IDictionary<string, string> IRequest.ResponseHeaders => null;
+        IResource IRequest.Resource => Resource;
 
-        MetaConditions IRequestView.MetaConditions => new MetaConditions
+        MetaConditions IRequest.MetaConditions => new MetaConditions
         {
             OrderBy = OrderBy,
             Limit = Limit,
@@ -36,7 +38,7 @@ namespace RESTar.Requests
 
         public AppRequest()
         {
-            if (!RESTarConfig.Initialized)
+            if (!Initialized)
                 throw new NotInitializedException();
             Resource = RESTar.Resource.Get<T>();
             if (Resource == null)
@@ -326,7 +328,8 @@ namespace RESTar.Requests
 
         public void Dispose()
         {
-            throw new NotImplementedException();
+            if (IsInternal) return;
+            AuthTokens.TryRemove(AuthToken, out var _);
         }
     }
 }

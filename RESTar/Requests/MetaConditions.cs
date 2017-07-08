@@ -60,13 +60,13 @@ namespace RESTar.Requests
         internal Select Select { get; set; }
         internal Add Add { get; set; }
         internal Rename Rename { get; set; }
-        internal bool Dynamic { get; set; }
         internal string SafePost { get; set; }
         internal bool New { get; set; }
         internal bool Empty = true;
         internal bool Delete { get; set; }
 
-        internal static MetaConditions Parse(string metaConditionString, IResourceView resource)
+        internal static MetaConditions Parse(string metaConditionString, IResource resource,
+            bool parseProcessors = true)
         {
             if (metaConditionString?.Equals("") != false)
                 return null;
@@ -122,23 +122,24 @@ namespace RESTar.Requests
                         mc.Unsafe = value;
                         break;
                     case RESTarMetaConditions.Select:
+                        if (!parseProcessors) break;
                         mc.Select = ((string) value).Split(',')
                             .Select(str => PropertyChain.ParseInternal(resource, str, resource.IsDynamic,
                                 dynamicMembers))
                             .ToSelect();
                         break;
                     case RESTarMetaConditions.Add:
+                        if (!parseProcessors) break;
                         mc.Add = ((string) value).Split(',')
                             .Select(str => PropertyChain.GetOrMake(resource, str, resource.IsDynamic))
                             .ToAdd();
                         break;
                     case RESTarMetaConditions.Rename:
+                        if (!parseProcessors) break;
                         mc.Rename = Rename.Parse((string) value, resource);
                         dynamicMembers.AddRange(mc.Rename.Values);
                         break;
-                    case RESTarMetaConditions.Dynamic:
-                        mc.Dynamic = value;
-                        break;
+                    case RESTarMetaConditions.Dynamic: break;
                     case RESTarMetaConditions.Safepost:
                         mc.SafePost = value;
                         break;

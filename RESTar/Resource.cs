@@ -222,12 +222,12 @@ namespace RESTar
         /// <summary>
         /// Finds a resource by name (case insensitive)
         /// </summary>
-        public static IResourceView Find(string name) => ResourceByName.SafeGetNoCase(name);
+        public static IResource Find(string name) => ResourceByName.SafeGetNoCase(name);
 
         /// <summary>
         /// Finds a resource by target type
         /// </summary>
-        public static IResourceView Get(Type type) => ResourceByType.SafeGet(type);
+        public static IResource Get(Type type) => ResourceByType.SafeGet(type);
 
         /// <summary>
         /// Finds a resource by target type

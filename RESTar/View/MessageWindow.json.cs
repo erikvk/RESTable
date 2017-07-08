@@ -1,32 +1,33 @@
 using RESTar.Internal;
 using Starcounter;
+using IResource = RESTar.Internal.IResource;
 
 namespace RESTar.View
 {
     /// <summary>
     /// </summary>
-    partial class MessageWindow : Json, IRESTarView
+    partial class MessageWindow : RESTarView
     {
-        void IRESTarView.SetHtml(string html)
+        internal override void SetHtml(string html)
         {
         }
 
-        void IRESTarView.SetResourceName(string resourceName)
+        internal override void SetResourceName(string resourceName)
         {
         }
 
-        void IRESTarView.SetResourcePath(string resourceName)
+        internal override void SetResourcePath(string resourceName)
         {
         }
 
-        IRequestView IRESTarView.Request { get; }
-        IResourceView IRESTarView.Resource { get; }
-        string IRESTarView.HtmlMatcher { get; }
-        bool IRESTarView.Success { get; }
+        internal override IRequest Request { get; set; }
+        internal override IResource Resource { get; set; }
+        internal override string HtmlSuffix { get; }
+        internal override bool Success { get; set; }
 
         /// <summary>
         /// </summary>
-        public void SetMessage(string message, ErrorCodes errorCode, MessageType messageType)
+        internal override void SetMessage(string message, ErrorCodes errorCode, MessageTypes messageType)
         {
             Message = message;
             ErrorCode = (long) errorCode;
@@ -36,7 +37,7 @@ namespace RESTar.View
 
         /// <summary>
         /// </summary>
-        public MessageWindow Populate()
+        internal MessageWindow Populate()
         {
             Html = "/message.html";
             return this;

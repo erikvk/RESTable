@@ -18,7 +18,7 @@ namespace RESTar.Operations
         public bool Descending;
         public bool Ascending => !Descending;
 
-        internal readonly IResourceView Resource;
+        internal readonly IResource Resource;
         internal PropertyChain PropertyChain;
 
         internal bool IsStarcounterQueryable = true;
@@ -28,9 +28,9 @@ namespace RESTar.Operations
             ? $"ORDER BY t.{PropertyChain.DbKey.Fnuttify()} {(Descending ? "DESC" : "ASC")}"
             : null;
 
-        internal OrderBy(IResourceView resource) => Resource = resource;
+        internal OrderBy(IResource resource) => Resource = resource;
 
-        internal OrderBy(IResourceView resource, bool descending, string key, List<string> dynamicMembers)
+        internal OrderBy(IResource resource, bool descending, string key, List<string> dynamicMembers)
         {
             Resource = resource;
             Descending = descending;
