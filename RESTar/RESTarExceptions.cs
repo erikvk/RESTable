@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Newtonsoft.Json;
 using RESTar.Deflection;
 using RESTar.Internal;
 using RESTar.View;
@@ -35,6 +36,18 @@ namespace RESTar
             partial.SetMessage(e.Message, re?.ErrorCode ?? UnknownError, error);
             master.CurrentPage = (Json) partial;
             return master;
+        }
+
+        internal static (ErrorCodes code, Response response) GetError(Exception ex)
+        {
+            switch (ex)
+            {
+                case RESTarException re: return (re.ErrorCode, re.Response);
+                case FormatException _: return (UnsupportedContentType, BadRequest(ex));
+                case JsonReaderException _: return (JsonDeserializationError, JsonError);
+                case DbException _: return (DatabaseError, DbError(ex));
+                default: return (UnknownError, InternalError(ex));
+            }
         }
     }
 
