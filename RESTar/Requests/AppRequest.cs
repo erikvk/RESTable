@@ -11,7 +11,7 @@ using IResource = RESTar.Internal.IResource;
 
 namespace RESTar.Requests
 {
-    internal class AppRequest<T> : IRequest<T> where T : class
+    internal class AppRequest<T> : IRequest<T>, IDisposable where T : class
     {
         public Conditions Conditions { get; private set; }
         public IResource<T> Resource { get; }

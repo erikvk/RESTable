@@ -1,37 +1,49 @@
 ﻿using System;
 using System.Linq;
 using RESTar.Auth;
-using Simplified.Ring3;
+using RESTar.Requests;
 using Starcounter;
 using static RESTar.Internal.ErrorCodes;
 using static RESTar.RESTarConfig;
+using static Simplified.Ring3.SystemUser;
 
 namespace RESTar.Internal
 {
     internal static class Authenticator
     {
-        internal static void UserCheck()
-        {
-            if (SystemUser.GetCurrentSystemUser() == null)
-                throw new ForbiddenException(NotSignedIn, "User is not signed in");
-        }
-
         internal static ForbiddenException NotAuthorizedException => new ForbiddenException(NotAuthorized,
             "Not authorized");
 
-        internal static string Authenticate(Request ScRequest)
+        internal static void CheckUser()
         {
+            if (GetCurrentSystemUser() == null)
+                throw new ForbiddenException(NotSignedIn, "User is not signed in");
+        }
+
+        internal static void Authenticate<T>(this ViewRequest<T> request) where T : class
+        {
+            var user = GetCurrentSystemUser() ?? throw new ForbiddenException(NotSignedIn, "User is not signed in");
+            var token = user.GetObjectID().SHA256();
+            if (AuthTokens.ContainsKey(token))
+                request.AuthToken = token;
+            request.AuthToken = AssignAuthtoken(AccessRights.Root, token);
+        }
+
+        internal static void Authenticate<T>(this RESTRequest<T> request) where T : class
+        {
+            if (!RequireApiKey)
+                request.AuthToken = AssignAuthtoken(AccessRights.Root);
             AccessRights accessRights;
-            if (!ScRequest.IsExternal)
+            if (!request.ScRequest.IsExternal)
             {
-                var authToken = ScRequest.Headers["RESTar-AuthToken"];
+                var authToken = request.ScRequest.Headers["RESTar-AuthToken"];
                 if (string.IsNullOrWhiteSpace(authToken))
                     throw NotAuthorizedException;
                 if (!AuthTokens.TryGetValue(authToken, out accessRights))
                     throw NotAuthorizedException;
-                return authToken;
+                request.AuthToken = authToken;
             }
-            var authorizationHeader = ScRequest.Headers["Authorization"];
+            var authorizationHeader = request.ScRequest.Headers["Authorization"];
             if (string.IsNullOrWhiteSpace(authorizationHeader))
                 throw NotAuthorizedException;
             var apikey_key = authorizationHeader.Split(' ');
@@ -40,14 +52,17 @@ namespace RESTar.Internal
             var apiKey = apikey_key[1].SHA256();
             if (!ApiKeys.TryGetValue(apiKey, out accessRights))
                 throw NotAuthorizedException;
-            return AssignAuthtoken(accessRights);
+            request.AuthToken = AssignAuthtoken(accessRights);
         }
 
-        internal static string AssignRoot() => AssignAuthtoken(AccessRights.Root);
-
-        private static string AssignAuthtoken(AccessRights rights)
+        internal static void Authenticate<T>(this AppRequest<T> request) where T : class
         {
-            var token = Guid.NewGuid().ToString();
+            request.AuthToken = AssignAuthtoken(AccessRights.Root);
+        }
+
+        private static string AssignAuthtoken(AccessRights rights, string token = null)
+        {
+            token = token ?? Guid.NewGuid().ToString();
             AuthTokens[token] = rights;
             return token;
         }

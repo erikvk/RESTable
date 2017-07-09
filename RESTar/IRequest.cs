@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using RESTar.Internal;
 using RESTar.Requests;
 
@@ -8,7 +7,7 @@ namespace RESTar
     /// <summary>
     /// A non-generic common interface for all request classes used in RESTar
     /// </summary>
-    public interface IRequest : IDisposable
+    public interface IRequest
     {
         /// <summary>
         /// The method of the request

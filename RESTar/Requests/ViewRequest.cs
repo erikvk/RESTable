@@ -11,6 +11,7 @@ using Starcounter;
 using static RESTar.RESTarMethods;
 using Starcounter.Templates;
 using static RESTar.Internal.ErrorCodes;
+using static RESTar.View.MessageTypes;
 using IResource = RESTar.Internal.IResource;
 
 // ReSharper disable UnassignedGetOnlyAutoProperty
@@ -48,9 +49,12 @@ namespace RESTar.Requests
                 View = new Item();
             }
             Entities = Evaluators<T>.Operations.StatSELECT(this);
-            if (IsSingular(Entities, out var item))
+
+            if (Entities.IsNullOrEmpty())
+                View.SetMessage("No entities found", NoError, warning);
+            else if (Resource.IsSingleton || Entities.ExaclyOne() && !Home)
             {
-                Entity = item;
+                Entity = Entities.First();
                 var itemView = new Item();
                 var itemTemplate = Resource.MakeViewModelTemplate().Serialize();
                 itemView.Entity = new Json {Template = Template.CreateFromJson(itemTemplate)};
@@ -64,17 +68,6 @@ namespace RESTar.Requests
             Entities.ForEach(e => listView.Entities.Add().PopulateFromJson(e.SerializeToViewModel()));
             View = listView;
             View.Request = this;
-        }
-
-        internal bool IsSingular(IEnumerable<T> ienum, out T item)
-        {
-            item = null;
-            if (Resource.IsSingleton || ienum.ExaclyOne() && !Home)
-            {
-                item = ienum.First();
-                return true;
-            }
-            return false;
         }
 
         internal ViewRequest(IResource<T> resource, Request scRequest)
@@ -94,15 +87,9 @@ namespace RESTar.Requests
             MetaConditions = MetaConditions.Parse(args[3], Resource, parseProcessors: false) ?? MetaConditions;
         }
 
-        public void Dispose()
-        {
-            // TODO: keep tokens as long as user is logged in
-            //if (IsInternal) return;
-            //AuthTokens.TryRemove(AuthToken, out var _);
-        }
-
         public void DeleteFromList(string id)
         {
+            Authenticator.CheckUser();
             var list = (List) View;
             var conditions = Conditions.Parse(id, Resource);
             var item = Entities.Filter(conditions).First();
@@ -114,7 +101,7 @@ namespace RESTar.Requests
 
         public void SaveItem()
         {
-            Authenticator.UserCheck();
+            Authenticator.CheckUser();
             var item = (Item) View;
             var entityJson = item.Entity.ToJson().Replace(@"$"":", @""":");
             Body = Regex.Replace(entityJson, MacroRegex, "${content}");
@@ -141,7 +128,7 @@ namespace RESTar.Requests
 
         public void RemoveElementFromArray(string input)
         {
-            Authenticator.UserCheck();
+            Authenticator.CheckUser();
             try
             {
                 var item = (Item) View;
@@ -173,6 +160,7 @@ namespace RESTar.Requests
 
         public void AddElementToArray(string input)
         {
+            Authenticator.CheckUser();
             try
             {
                 var item = (Item) View;

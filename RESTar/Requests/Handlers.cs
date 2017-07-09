@@ -56,7 +56,7 @@ namespace RESTar.Requests
                         Current = Current ?? new Session(PatchVersioning);
                         return new View.Page {Session = Current};
                     case MENU:
-                        UserCheck();
+                        CheckUser();
                         return new Menu().Populate().MakeCurrentView();
                     default: return UnknownAction;
                 }
@@ -91,14 +91,12 @@ namespace RESTar.Requests
 
         private static Response HandleView<T>(IResource<T> resource, Request scRequest, string[] args) where T : class
         {
-            using (var request = new ViewRequest<T>(resource, scRequest))
-            {
-                request.Authenticate();
-                request.Populate(args);
-                request.MethodCheck();
-                request.Evaluate();
-                return request.GetView();
-            }
+            var request = new ViewRequest<T>(resource, scRequest);
+            request.Authenticate();
+            request.Populate(args);
+            request.MethodCheck();
+            request.Evaluate();
+            return request.GetView();
         }
 
         private static Response HandleREST<T>(IResource<T> resource, Request scRequest, string[] args,

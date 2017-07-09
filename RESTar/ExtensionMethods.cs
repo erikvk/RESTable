@@ -17,7 +17,6 @@ using RESTar.Auth;
 using RESTar.Deflection;
 using RESTar.Internal;
 using RESTar.Operations;
-using RESTar.Requests;
 using RESTar.View;
 using Starcounter;
 using static System.Reflection.BindingFlags;
@@ -561,24 +560,6 @@ namespace RESTar
         #endregion
 
         #region Requests
-
-        internal static void Authenticate<T>(this RESTRequest<T> request) where T : class
-        {
-            if (!RequireApiKey)
-                request.AuthToken = Authenticator.AssignRoot();
-            request.AuthToken = Authenticator.Authenticate(request.ScRequest);
-        }
-
-        internal static void Authenticate<T>(this ViewRequest<T> request) where T : class
-        {
-            Authenticator.UserCheck();
-            request.AuthToken = Authenticator.AssignRoot();
-        }
-
-        internal static void Authenticate<T>(this AppRequest<T> request) where T : class
-        {
-            request.AuthToken = Authenticator.AssignRoot();
-        }
 
         internal static string[] ToArgs(this string query, Request request)
         {
