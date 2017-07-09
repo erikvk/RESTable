@@ -4,14 +4,13 @@ using RESTar.Internal;
 
 namespace RESTar.View
 {
-    partial class List : RESTarView
+    partial class List : RESTarDataView
     {
-        internal override string HtmlSuffix => "-list.html";
-        internal override void SetHtml(string html) => Html = html;
-        internal override void SetResourceName(string resourceName) => ResourceName = resourceName;
-        internal override void SetResourcePath(string resourcePath) => ResourcePath = resourcePath;
-        internal override IViewRequest Request { get; set; }
-
+        protected override string HtmlSuffix => "-list.html";
+        protected override void SetHtml(string html) => Html = html;
+        protected override void SetResourceName(string resourceName) => ResourceName = resourceName;
+        protected override void SetResourcePath(string resourcePath) => ResourcePath = resourcePath;
+        
         internal override void SetMessage(string message, ErrorCodes errorCode, MessageTypes messageType)
         {
             Message = message;
@@ -20,12 +19,7 @@ namespace RESTar.View
             HasMessage = true;
         }
 
-        public void Handle(Input.Add unused) => RedirectUrl = $"{ResourcePath}//new=true";
-
-        public void Handle(Input.Delete action)
-        {
-            Request.DeleteFromList(action.Value);
-            RedirectUrl = !string.IsNullOrWhiteSpace(RedirectUrl) ? RedirectUrl : ResourcePath;
-        }
+        public void Handle(Input.Add action) => RedirectUrl = $"{ResourcePath}//new=true";
+        public void Handle(Input.Delete action) => Request.DeleteFromList(action.Value);
     }
 }

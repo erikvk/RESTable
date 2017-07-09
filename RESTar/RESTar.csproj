@@ -106,7 +106,6 @@
     <Compile Include="Requests\DataConfig.cs" />
     <Compile Include="Requests\HandlerActions.cs" />
     <Compile Include="Internal\ErrorCodes.cs" />
-    <Compile Include="Operations\ViewEvaluators.cs" />
     <Compile Include="Operators.cs" />
     <Compile Include="Request.cs" />
     <Compile Include="Requests\AppRequest.cs" />
@@ -191,7 +190,7 @@
     <Compile Include="View\Item.json.cs">
       <DependentUpon>Item.json</DependentUpon>
     </Compile>
-    <Compile Include="View\RESTarView.cs" />
+    <Compile Include="View\RESTarDataView.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

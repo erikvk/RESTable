@@ -57,6 +57,12 @@ namespace RESTar
         public Type TargetType { get; set; }
 
         /// <summary>
+        /// The IResource of this resource
+        /// </summary>
+        [IgnoreDataMember]
+        public IResource IResource { get; private set; }
+
+        /// <summary>
         /// RESTar selector (don't use)
         /// </summary>
         public IEnumerable<Resource> Select(IRequest<Resource> request)
@@ -71,6 +77,7 @@ namespace RESTar
                     AvailableMethods = m.AvailableMethods,
                     Editable = m.Editable,
                     TargetType = m.TargetType,
+                    IResource = m
                 }).ToList();
         }
 

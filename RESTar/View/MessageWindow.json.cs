@@ -1,32 +1,11 @@
 using RESTar.Internal;
-using Starcounter;
-using IResource = RESTar.Internal.IResource;
+
+#pragma warning disable 1591
 
 namespace RESTar.View
 {
-    /// <summary>
-    /// </summary>
     partial class MessageWindow : RESTarView
     {
-        internal override void SetHtml(string html)
-        {
-        }
-
-        internal override void SetResourceName(string resourceName)
-        {
-        }
-
-        internal override void SetResourcePath(string resourceName)
-        {
-        }
-
-        internal override IRequest Request { get; set; }
-        internal override IResource Resource { get; set; }
-        internal override string HtmlSuffix { get; }
-        internal override bool Success { get; set; }
-
-        /// <summary>
-        /// </summary>
         internal override void SetMessage(string message, ErrorCodes errorCode, MessageTypes messageType)
         {
             Message = message;
@@ -35,8 +14,6 @@ namespace RESTar.View
             HasMessage = true;
         }
 
-        /// <summary>
-        /// </summary>
         internal MessageWindow Populate()
         {
             Html = "/message.html";

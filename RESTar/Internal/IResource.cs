@@ -25,11 +25,6 @@ namespace RESTar.Internal
         RESTarMethods[] AvailableMethods { get; }
 
         /// <summary>
-        /// A string representation of the available REST methods
-        /// </summary>
-        string AvailableMethodsString { get; }
-
-        /// <summary>
         /// The target type for this resource
         /// </summary>
         Type TargetType { get; }
@@ -38,11 +33,6 @@ namespace RESTar.Internal
         /// The alias of this resource (if any)
         /// </summary>
         string Alias { get; }
-
-        /// <summary>
-        /// The total number of entities in this resource
-        /// </summary>
-        long? NrOfEntities { get; }
 
         /// <summary>
         /// The RESTar resource type of this resource
@@ -60,7 +50,7 @@ namespace RESTar.Internal
         bool IsDynamic { get; }
 
         /// <summary>
-        /// Are runtime-defined conditions allowed for this resource?
+        /// Are runtime-defined conditions allowed in requests to this resource?
         /// </summary>
         bool DynamicConditionsAllowed { get; }
 

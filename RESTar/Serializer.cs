@@ -37,7 +37,7 @@ namespace RESTar
             };
             VmSettings = new JsonSerializerSettings
             {
-                ContractResolver = new DefaultResolver(),
+                ContractResolver = new CreateViewModelResolver(),
                 DateFormatHandling = IsoDateFormat,
                 DateTimeZoneHandling = Utc
             };

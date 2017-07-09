@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Dynamit;
 using Starcounter;
+using static RESTar.Internal.Transactions;
 
 namespace RESTar
 {
@@ -28,7 +29,7 @@ namespace RESTar
 
         internal static void ClearTable(string tableId)
         {
-            Db.SQL<DDictionary>($"SELECT t FROM {tableId} t").ForEach(dict => Db.TransactAsync(dict.Delete));
+            Db.SQL<DDictionary>($"SELECT t FROM {tableId} t").ForEach(dict => Trans(dict.Delete));
         }
     }
 }

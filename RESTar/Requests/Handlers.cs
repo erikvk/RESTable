@@ -3,7 +3,7 @@ using RESTar.Internal;
 using RESTar.View;
 using Starcounter;
 using static RESTar.Internal.Authenticator;
-using static RESTar.Internal.ErrorCodes;
+using static RESTar.Internal.Transactions;
 using static RESTar.Requests.HandlerActions;
 using static Starcounter.SessionOptions;
 using static RESTar.Settings;
@@ -52,7 +52,6 @@ namespace RESTar.Requests
                     case ORIGIN: return HandleOrigin((dynamic) resource, request);
                     case VIEW: return HandleView((dynamic) resource, request, args);
                     case PAGE:
-                        UserCheck();
                         if (Current?.Data is View.Page) return Current.Data;
                         Current = Current ?? new Session(PatchVersioning);
                         return new View.Page {Session = Current};
@@ -64,6 +63,9 @@ namespace RESTar.Requests
             }
             catch (Exception ex)
             {
+                var errorInfo = ex.GetError();
+                Error.ClearOld();
+                var error = Trans(() => Error.Create(errorInfo.Code, ex, resource, request, action));
                 switch (action)
                 {
                     case GET:
@@ -71,19 +73,15 @@ namespace RESTar.Requests
                     case PATCH:
                     case PUT:
                     case DELETE:
-                        var errorInfo = ex.GetError();
-                        Error.ClearOld();
-                        var error = Db.Transact(() => Error.Create(errorInfo.code, ex, resource, request, action));
-                        errorInfo.response.Headers["ErrorInfo"] = $"{_Uri}/{typeof(Error).FullName}/id={error.Id}";
-                        return errorInfo.response;
+                        errorInfo.Response.Headers["ErrorInfo"] = $"{_Uri}/{typeof(Error).FullName}/id={error.Id}";
+                        return errorInfo.Response;
                     case ORIGIN: return Forbidden;
                     case VIEW:
                     case PAGE:
                     case MENU:
-                        var re = ex as RESTarException;
                         var master = Self.GET<View.Page>("/__restar/__page");
                         var partial = master.CurrentPage as RESTarView ?? new MessageWindow().Populate();
-                        partial.SetMessage(ex.Message, re?.ErrorCode ?? UnknownError, MessageTypes.error);
+                        partial.SetMessage(ex.Message, errorInfo.Code, MessageTypes.error);
                         master.CurrentPage = partial;
                         return master;
                     default: return InternalError(ex);

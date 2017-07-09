@@ -1,6 +1,7 @@
 ﻿using System.Runtime.Serialization;
 using RESTar.Internal;
 using Starcounter;
+using static RESTar.Internal.Transactions;
 
 namespace RESTar
 {
@@ -56,7 +57,7 @@ namespace RESTar
         internal static void Init(ushort port, string uri, bool viewEnabled, bool prettyPrint, bool camelCase,
             int daysToSaveErrors)
         {
-            Db.TransactAsync(() =>
+            Trans(() =>
             {
                 DB.All<Settings>().ForEach(Db.Delete);
                 new Settings

@@ -647,7 +647,7 @@ namespace RESTar
             return condition != null;
         }
 
-        internal static (ErrorCodes code, Response response) GetError(this Exception ex)
+        internal static (ErrorCodes Code, Response Response) GetError(this Exception ex)
         {
             switch (ex)
             {

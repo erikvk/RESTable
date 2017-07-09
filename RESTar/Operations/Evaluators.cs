@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json.Linq;
 using RESTar.Requests;
-using RESTar.View;
 using Starcounter;
 using static RESTar.Internal.Transactions;
 using static RESTar.Operations.Do;
@@ -260,30 +259,20 @@ namespace RESTar.Operations
 
         internal static class View
         {
-            internal static RESTarView GET(ViewRequest<T> request)
-            {
-            }
-
-            internal static int PATCH(ViewRequest<T> request)
+            internal static int PATCH(ViewRequest<T> request, T item)
             {
                 return typeof(T) == typeof(DatabaseIndex)
-                    ? Operations.UPDATE_ONE(request, request.Data)
-                    : Trans(() => Operations.UPDATE_ONE(request, request.Data));
+                    ? Operations.UPDATE_ONE(request, item)
+                    : Trans(() => Operations.UPDATE_ONE(request, item));
             }
 
-            internal static int DELETE(ViewRequest<T> request)
-            {
-                return typeof(T) == typeof(DatabaseIndex)
-                    ? Operations.DELETE_ONE(request, request.Data)
-                    : Trans(() => Operations.DELETE_ONE(request, request.Data));
-            }
+            internal static int DELETE(ViewRequest<T> request, T item) => typeof(T) == typeof(DatabaseIndex)
+                ? Operations.DELETE_ONE(request, item)
+                : Trans(() => Operations.DELETE_ONE(request, item));
 
-            internal static int POST(ViewRequest<T> request)
-            {
-                return typeof(T) == typeof(DatabaseIndex)
-                    ? Operations.INSERT_ONE(request)
-                    : Trans(() => Operations.INSERT_ONE(request));
-            }
+            internal static int POST(ViewRequest<T> request) => typeof(T) == typeof(DatabaseIndex)
+                ? Operations.INSERT_ONE(request)
+                : Trans(() => Operations.INSERT_ONE(request));
         }
     }
 }

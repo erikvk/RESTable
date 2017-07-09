@@ -52,6 +52,17 @@ namespace RESTar.Internal
             Db.TransactAsync(action);
         }
 
+        /// <summary>
+        /// Performs the action delegate synchronously inside a transaction scope. 
+        /// Uses Db.TransactAsync
+        /// </summary>
+        public static void TransAsync(Action action)
+        {
+            if (action == null)
+                throw new ArgumentNullException(nameof(action));
+            Scheduling.ScheduleTask(() => Db.TransactAsync(action));
+        }
+
         #endregion
     }
 }

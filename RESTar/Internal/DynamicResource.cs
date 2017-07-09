@@ -4,6 +4,7 @@ using Dynamit;
 using RESTar.Operations;
 using Starcounter;
 using static System.StringComparison;
+using static RESTar.Internal.Transactions;
 
 namespace RESTar.Internal
 {
@@ -152,8 +153,7 @@ namespace RESTar.Internal
 
         internal static DynamicResource MakeTable(Resource resource)
         {
-            DynamicResource dynamicResource = null;
-            Db.TransactAsync(() =>
+            var dynamicResource = Trans(() =>
             {
                 var newTable = DynamitControl.DynamitTypes.FirstOrDefault(ResourceAlias.NotExists);
                 if (newTable == null)
@@ -163,7 +163,7 @@ namespace RESTar.Internal
                     Alias = resource.Alias,
                     Resource = newTable.FullName
                 };
-                dynamicResource = new DynamicResource
+                return new DynamicResource
                 (
                     newTable,
                     resource.AvailableMethods,
@@ -176,15 +176,15 @@ namespace RESTar.Internal
 
         internal static void DeleteTable(Resource resource)
         {
-            var iresource = RESTarConfig.ResourceByName[resource.Name.ToLower()];
-            if (!(iresource is DynamicResource)) return;
-            DynamitControl.ClearTable(iresource.Name);
-            RESTarConfig.RemoveResource(iresource);
-            var alias = DB.Get<ResourceAlias>("Resource", iresource.TargetType.FullName);
-            Db.TransactAsync(() =>
+            var dynamicResource = resource.IResource as DynamicResource;
+            if (dynamicResource == null) return;
+            DynamitControl.ClearTable(dynamicResource.Name);
+            RESTarConfig.RemoveResource(dynamicResource);
+            var alias = DB.Get<ResourceAlias>("Resource", dynamicResource.TargetType.FullName);
+            Trans(() =>
             {
                 alias?.Delete();
-                Db.Delete((DynamicResource) iresource);
+                Db.Delete(dynamicResource);
             });
         }
     }

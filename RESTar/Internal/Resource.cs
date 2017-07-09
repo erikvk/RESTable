@@ -10,6 +10,7 @@ using static System.Reflection.BindingFlags;
 using static RESTar.Operations.Do;
 using static RESTar.RESTarMethods;
 using static RESTar.Internal.RESTarResourceType;
+using static RESTar.Internal.Transactions;
 
 namespace RESTar.Internal
 {
@@ -44,7 +45,7 @@ namespace RESTar.Internal
                 var existingMapping = DB.Get<ResourceAlias>("Resource", Name);
                 if (value == null)
                 {
-                    Db.TransactAsync(() => existingMapping?.Delete());
+                    Trans(() => existingMapping?.Delete());
                     return;
                 }
                 var usedAliasMapping = DB.Get<ResourceAlias>("Alias", value);
@@ -55,7 +56,7 @@ namespace RESTar.Internal
                     throw new Exception($"Invalid alias: '{value}' is used to refer to another resource");
                 }
 
-                Db.TransactAsync(() =>
+                Trans(() =>
                 {
                     existingMapping = existingMapping ?? new ResourceAlias {Resource = Name};
                     existingMapping.Alias = value;

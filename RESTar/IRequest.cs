@@ -67,6 +67,9 @@ namespace RESTar
     internal interface IViewRequest : IRequest
     {
         void DeleteFromList(string id);
-        string SaveItem();
+        void SaveItem();
+        void CloseItem();
+        void RemoveElementFromArray(string input);
+        void AddElementToArray(string input);
     }
 }

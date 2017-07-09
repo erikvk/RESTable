@@ -5,6 +5,7 @@ using RESTar.Deflection;
 using RESTar.Internal;
 using RESTar.Requests;
 using Starcounter;
+using static RESTar.Internal.Transactions;
 using static RESTar.RESTarMethods;
 using static RESTar.RESTarPresets;
 using static RESTar.Settings;
@@ -126,8 +127,7 @@ namespace RESTar
             if (Checked >= DateTime.Now.Date) return;
             var matches = Db.SQL<Error>($"SELECT t FROM {typeof(Error).FullName} t WHERE t.\"Time\" <?",
                 DateTime.Now.AddDays(0 - _DaysToSaveErrors));
-            foreach (var match in matches)
-                Scheduling.ScheduleTask(() => Db.TransactAsync(() => match.Delete()));
+            matches.ForEach(match => TransAsync(match.Delete));
             Checked = DateTime.Now.Date;
         }
     }

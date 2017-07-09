@@ -5,6 +5,7 @@ using RESTar.Internal;
 using RESTar.Operations;
 using Starcounter;
 using static RESTar.Internal.ErrorCodes;
+using static RESTar.Internal.Transactions;
 using static RESTar.RESTarConfig;
 using IResource = RESTar.Internal.IResource;
 
@@ -87,7 +88,7 @@ namespace RESTar.Requests
 
                 #endregion
 
-                Db.TransactAsync(() =>
+                Trans(() =>
                 {
                     results = inserter?.Invoke();
                     if (results == null) return;
@@ -103,7 +104,7 @@ namespace RESTar.Requests
             catch (Exception e)
             {
                 if (results != null)
-                    Db.TransactAsync(() =>
+                    Trans(() =>
                     {
                         foreach (var item in results)
                             if (item != null)
@@ -131,7 +132,7 @@ namespace RESTar.Requests
 
                 #endregion
 
-                Db.TransactAsync(() =>
+                Trans(() =>
                 {
                     result = inserter?.Invoke();
                     if (result == null) return;
@@ -144,7 +145,7 @@ namespace RESTar.Requests
             catch (Exception e)
             {
                 if (result != null)
-                    Db.TransactAsync(() => Do.Try(() => result.Delete()));
+                    Trans(() => Do.Try(() => result.Delete()));
                 throw new AbortedInserterException(e, this);
             }
             return count;
@@ -172,7 +173,7 @@ namespace RESTar.Requests
 
                 #endregion
 
-                Db.TransactAsync(() =>
+                Trans(() =>
                 {
                     results = updater?.Invoke(source);
                     if (results == null) return;
@@ -218,7 +219,7 @@ namespace RESTar.Requests
 
                 #endregion
 
-                Db.TransactAsync(() =>
+                Trans(() =>
                 {
                     result = updater?.Invoke(source);
                     if (result == null) return;
@@ -317,7 +318,7 @@ namespace RESTar.Requests
 
                 #endregion
 
-                Db.TransactAsync(() => count = Resource.Delete(source, this));
+                Trans(() => count = Resource.Delete(source, this));
                 return count;
             }
             catch (Exception e)

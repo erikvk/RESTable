@@ -1,14 +1,16 @@
-﻿using System.Collections.Generic;
-using System.IO;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using RESTar.Internal;
 using RESTar.Operations;
 using RESTar.View;
 using Starcounter;
-using static RESTar.RESTarConfig;
 using static RESTar.RESTarMethods;
 using Starcounter.Templates;
+using static RESTar.Internal.ErrorCodes;
 using IResource = RESTar.Internal.IResource;
 
 // ReSharper disable UnassignedGetOnlyAutoProperty
@@ -24,56 +26,44 @@ namespace RESTar.Requests
         public string AuthToken { get; internal set; }
         public bool IsInternal { get; }
         public IDictionary<string, string> ResponseHeaders { get; }
-        public string Body { get; }
+        public string Body { get; private set; }
         RESTarMethods IRequest.Method { get; }
         IResource IRequest.Resource => Resource;
-
-        internal Json GetView() => View.MakeCurrentView();
         internal Request ScRequest { get; }
         public bool Home => MetaConditions.Empty && Conditions == null;
-        public IEnumerable<T> Data { get; set; }
-        private RESTarView View { get; set; }
-        private static readonly Regex MacroRegex = new Regex(@"\@RESTar\((?<content>[^\(\)]*)\)");
-
         internal bool IsTemplate { get; set; }
         internal bool CanInsert { get; set; }
 
-        private RESTarView SetView()
+        internal RESTarDataView View { get; set; }
+        internal IEnumerable<T> Entities { get; set; }
+        internal T Entity { get; set; }
+        internal Json GetView() => View.MakeCurrentView();
+        private const string MacroRegex = @"\@RESTar\((?<content>[^\(\)]*)\)";
+
+        internal void Evaluate()
         {
             if (MetaConditions.New)
             {
                 IsTemplate = true;
-                return new Item();
+                View = new Item();
             }
-            var entities = Evaluators<T>.Operations.StatSELECT(this);
-            if (IsSingular(entities, out var item))
+            Entities = Evaluators<T>.Operations.StatSELECT(this);
+            if (IsSingular(Entities, out var item))
             {
+                Entity = item;
                 var itemView = new Item();
                 var itemTemplate = Resource.MakeViewModelTemplate().Serialize();
                 itemView.Entity = new Json {Template = Template.CreateFromJson(itemTemplate)};
-                itemView.Entity.PopulateFromJson(item.SerializeToViewModel());
-                return itemView;
+                itemView.Entity.PopulateFromJson(Entity.SerializeToViewModel());
+                View = itemView;
             }
             var listView = new List();
             CanInsert = Resource.AvailableMethods.Contains(POST);
             var listTemplate = Resource.MakeViewModelTemplate();
             listView.Entities = new Arr<Json> {Template = Template.CreateFromJson($"[{listTemplate.Serialize()}]")};
-            entities.ForEach(e => listView.Entities.Add().PopulateFromJson(e.SerializeToViewModel()));
-            return listView;
-        }
-
-        internal void Evaluate()
-        {
-            View = SetView();
+            Entities.ForEach(e => listView.Entities.Add().PopulateFromJson(e.SerializeToViewModel()));
+            View = listView;
             View.Request = this;
-            View.SetResourceName(Resource.Alias ?? Resource.Name);
-            View.SetResourcePath($"/{Application.Current.Name}/{Resource.Alias ?? Resource.Name}");
-            var wd = Application.Current.WorkingDirectory;
-            var html = $"{Resource.Name}{View.HtmlSuffix}";
-            var exists = File.Exists($"{wd}/wwwroot/resources/{html}");
-            if (!exists) exists = File.Exists($"{wd}/../wwwroot/resources/{html}");
-            if (!exists) throw new NoHtmlException(Resource, html);
-            View.SetHtml($"/resources/{html}");
         }
 
         internal bool IsSingular(IEnumerable<T> ienum, out T item)
@@ -107,29 +97,135 @@ namespace RESTar.Requests
         public void Dispose()
         {
             // TODO: keep tokens as long as user is logged in
-            if (IsInternal) return;
-            AuthTokens.TryRemove(AuthToken, out var _);
+            //if (IsInternal) return;
+            //AuthTokens.TryRemove(AuthToken, out var _);
         }
 
         public void DeleteFromList(string id)
         {
             var list = (List) View;
             var conditions = Conditions.Parse(id, Resource);
-            var item = Data.Filter(conditions).First();
-            // DELETE(item);
+            var item = Entities.Filter(conditions).First();
+            CheckMethod(DELETE, $"You are not allowed to delete from the '{Resource}' resource");
+            Evaluators<T>.View.DELETE(this, item);
+            if (string.IsNullOrWhiteSpace(list.RedirectUrl))
+                list.RedirectUrl = list.ResourcePath;
         }
 
-        public string SaveItem()
+        public void SaveItem()
         {
+            Authenticator.UserCheck();
             var item = (Item) View;
             var entityJson = item.Entity.ToJson().Replace(@"$"":", @""":");
-            var json = MacroRegex.Replace(entityJson, "${content}");
+            Body = Regex.Replace(entityJson, MacroRegex, "${content}");
             if (IsTemplate)
-                POST(json);
-            else PATCH(json);
-            if (IsTemplate && Success)
-                return !string.IsNullOrWhiteSpace(item.RedirectUrl) ? item.RedirectUrl : item.ResourcePath;
-            Success = false;
+            {
+                CheckMethod(POST, $"You are not allowed to insert into the '{Resource}' resource");
+                Evaluators<T>.View.POST(this);
+                if (string.IsNullOrWhiteSpace(item.RedirectUrl))
+                    item.RedirectUrl = item.ResourcePath;
+            }
+            CheckMethod(PATCH, $"You are not allowed to update the '{Resource}' resource");
+            Evaluators<T>.View.PATCH(this, Entity);
+        }
+
+        public void CloseItem()
+        {
+            var item = (Item) View;
+            item.RedirectUrl = !string.IsNullOrWhiteSpace(item.RedirectUrl)
+                ? item.RedirectUrl
+                : Resource.IsSingleton
+                    ? $"/{Application.Current.Name}"
+                    : item.ResourcePath;
+        }
+
+        public void RemoveElementFromArray(string input)
+        {
+            Authenticator.UserCheck();
+            try
+            {
+                var item = (Item) View;
+                var parts = input.Split(',');
+                var path = parts[0];
+                var elementIndex = int.Parse(parts[1]);
+                var array = (Arr<Json>) path
+                    .Replace("$", "")
+                    .Split('.')
+                    .Aggregate(item.Entity, (json, key) =>
+                        int.TryParse(key, out int index)
+                            ? (Json) json[index]
+                            : (Json) json[key]);
+                array.RemoveAt(elementIndex);
+            }
+            catch (FormatException)
+            {
+                throw new Exception($"Could not remove element from '{input}'. Invalid syntax.");
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                throw new Exception($"Could not remove element from '{input}'. Invalid syntax.");
+            }
+            catch (Exception)
+            {
+                throw new Exception($"Could not remove element from '{input}'. Not an array.");
+            }
+        }
+
+        public void AddElementToArray(string input)
+        {
+            try
+            {
+                var item = (Item) View;
+                var parts = input.Split(',');
+                var path = parts[0];
+                var array = (Arr<Json>) path
+                    .Replace("$", "")
+                    .Split('.')
+                    .Aggregate(item.Entity, (json, key) =>
+                        int.TryParse(key, out int index)
+                            ? (Json) json[index]
+                            : (Json) json[key]);
+                if (parts.Length == 1)
+                    array.Add();
+                else
+                {
+                    var value = JToken.Parse(Regex.Replace(parts[1], MacroRegex, "${content}"));
+                    switch (value.Type)
+                    {
+                        case JTokenType.Integer:
+                            array.Add().IntegerValue = value.Value<int>();
+                            return;
+                        case JTokenType.Float:
+                            array.Add().DecimalValue = value.Value<decimal>();
+                            return;
+                        case JTokenType.String:
+                            array.Add().StringValue = value.Value<string>();
+                            return;
+                        case JTokenType.Boolean:
+                            array.Add().BoolValue = value.Value<bool>();
+                            return;
+                        default: throw new ArgumentOutOfRangeException();
+                    }
+                }
+            }
+            catch (JsonReaderException)
+            {
+                throw new Exception($"Could not add element to '{input}'. Invalid syntax.");
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                throw new Exception($"Could not add element to '{input}'. Invalid syntax.");
+            }
+            catch (Exception)
+            {
+                throw new Exception($"Could not add element to '{input}'. Not an array.");
+            }
+        }
+
+        private void CheckMethod(RESTarMethods method, string errorMessage)
+        {
+            if (!Authenticator.MethodCheck(method, Resource, AuthToken))
+                throw new RESTarException(NotAuthorized, errorMessage);
         }
     }
 }
