@@ -55,7 +55,7 @@ namespace RESTar.Internal
             request.AuthToken = AssignAuthtoken(accessRights);
         }
 
-        internal static void Authenticate<T>(this AppRequest<T> request) where T : class
+        internal static void Authenticate<T>(this Request<T> request) where T : class
         {
             request.AuthToken = AssignAuthtoken(AccessRights.Root);
         }

@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -12,45 +13,85 @@ namespace RESTar
     /// <summary>
     /// A collection of conditions
     /// </summary>
-    public sealed class Conditions : List<Condition>, IFilter
+    public sealed class Conditions : IEnumerable<Condition>, IFilter
     {
+        private readonly List<Condition> Store;
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+        public IEnumerator<Condition> GetEnumerator() => Store.GetEnumerator();
+
         internal IResource Resource;
-        internal IEnumerable<Condition> SQL => this.Where(c => c.ScQueryable);
-        internal Conditions PostSQL => this.Where(c => !c.ScQueryable || c.IsOfType<string>()).ToConditions(Resource);
-        internal Conditions Equality => this.Where(c => c.Operator.Equality).ToConditions(Resource);
-        internal Conditions Compare => this.Where(c => c.Operator.Compare).ToConditions(Resource);
+        internal IEnumerable<Condition> SQL => Store.Where(c => c.ScQueryable);
+        internal Conditions PostSQL => Store.Where(c => !c.ScQueryable || c.IsOfType<string>()).ToConditions(Resource);
+        internal Conditions Equality => Store.Where(c => c.Operator.Equality).ToConditions(Resource);
+        internal Conditions Compare => Store.Where(c => c.Operator.Compare).ToConditions(Resource);
         private static readonly char[] OpMatchChars = {'<', '>', '=', '!'};
-        internal Conditions(IResource resource) => Resource = resource;
+
+        internal Conditions(IResource resource)
+        {
+            Resource = resource;
+            Store = new List<Condition>();
+            HasChanged = true;
+        }
+
         internal bool HasPost { get; private set; }
+        internal int SqlHash { get; private set; }
+        internal bool HasChanged { get; private set; }
+
+        internal int Prep()
+        {
+            unchecked
+            {
+                SqlHash = Resource.Name.GetHashCode() +
+                          SQL.Select((item, index) => item.Prep() + index)
+                              .Aggregate(17, (a, b) => a + b * 23);
+            }
+            HasChanged = false;
+            return SqlHash;
+        }
 
         /// <summary>
         /// Access a condition by its key (case insensitive)
         /// </summary>
-        public Condition this[string key] => this.FirstOrDefault(c => c.Key.EqualsNoCase(key));
+        public Condition this[string key] => Store.FirstOrDefault(c => c.Key.EqualsNoCase(key));
 
         /// <summary>
         /// Access a condition by its key (case insensitive) and operator
         /// </summary>
-        public Condition this[string key, Operator op] => this.FirstOrDefault(
-            c => c.Operator == op && c.Key.EqualsNoCase(key));
+        public Condition this[string key, Operator op] => Store
+            .FirstOrDefault(c => c.Operator == op && c.Key.EqualsNoCase(key));
 
         /// <summary>
         /// Adds a condition to the list
         /// </summary>
         /// <param name="value"></param>
-        public new void Add(Condition value)
+        internal void Add(Condition value)
         {
+            if (value == null) throw new ArgumentNullException(nameof(value));
             if (!value.ScQueryable || value.IsOfType<string>())
                 HasPost = true;
-            base.Add(value);
+            Store.Add(value);
+            HasChanged = true;
         }
 
         /// <summary>
         /// Creates and adds a new condition to the list
         /// </summary>
-        public void Add(string key, Operator op, dynamic value) => Add(new Condition(
-            PropertyChain.GetOrMake(Resource, key, Resource.DynamicConditionsAllowed), op, value
-        ));
+        public void Add(string key, Operator op, dynamic value)
+        {
+            Add(new Condition(PropertyChain.GetOrMake(Resource, key, Resource.DynamicConditionsAllowed), op, value));
+            HasChanged = true;
+        }
+
+        internal void AddRange(IEnumerable<Condition> conditions)
+        {
+            Store.AddRange(conditions);
+            HasChanged = true;
+        }
+
+        /// <summary>
+        /// True if and only if the conditions collection contains one or more elements
+        /// </summary>
+        public bool Any => Store.Any();
 
         /// <summary>
         /// Parses a Conditions object from a conditions section of a REST request URI
@@ -73,13 +114,13 @@ namespace RESTar
                 var pair = s.Split(new[] {op.Common}, StringSplitOptions.None);
                 var keyString = WebUtility.UrlDecode(pair[0]);
                 var chain = PropertyChain.GetOrMake(resource, keyString, resource.DynamicConditionsAllowed);
-                if (chain.LastOrDefault() is StaticProperty stat &&
+                if (chain.Last is StaticProperty stat &&
                     stat.GetAttribute<AllowedConditionOperators>()?.Operators?.Contains(op) == false)
                     throw new ForbiddenOperatorException(s, resource, op, chain,
                         stat.GetAttribute<AllowedConditionOperators>()?.Operators);
                 var valueString = WebUtility.UrlDecode(pair[1]);
                 var value = GetValue(valueString);
-                if (chain.IsStatic && chain.LastOrDefault() is StaticProperty prop && prop.Type.IsEnum &&
+                if (chain.IsStatic && chain.Last is StaticProperty prop && prop.Type.IsEnum &&
                     value is string)
                 {
                     try
@@ -137,35 +178,12 @@ namespace RESTar
             if (type != Resource.TargetType && !Resource.IsDDictionary)
             {
                 var newTypeProperties = type.GetStaticProperties().Values;
-                RemoveAll(cond => newTypeProperties.All(prop =>
-                    prop.Name != cond.PropertyChain.FirstOrDefault()?.Name));
-                ForEach(condition => condition.Migrate(type));
+                Store.RemoveAll(cond => newTypeProperties.All(prop =>
+                    prop.Name != cond.PropertyChain.First?.Name));
+                Store.ForEach(condition => condition.Migrate(type));
                 Resource = RESTar.Resource.Get(type);
             }
-            return entities.Where(entity => this.All(condition => condition.HoldsFor(entity)));
+            return entities.Where(entity => Store.All(condition => condition.HoldsFor(entity)));
         }
-
-        //internal WhereClause ToWhereClause()
-        //{
-        //    if (!this.Any()) return new WhereClause();
-        //    var stringPart = new List<string>();
-        //    var valuesPart = new List<object>();
-        //    SQL.ForEach(c =>
-        //    {
-        //        if (c.Value == null)
-        //            stringPart.Add($"t.{c.PropertyChain.DbKey.Fnuttify()} " +
-        //                           $"{(c.Operator == Operators.NOT_EQUALS ? "IS NOT NULL" : "IS NULL")} ");
-        //        else
-        //        {
-        //            stringPart.Add($"t.{c.PropertyChain.DbKey.Fnuttify()} {c.Operator.SQL}?");
-        //            valuesPart.Add(c.Value);
-        //        }
-        //    });
-        //    return new WhereClause
-        //    {
-        //        stringPart = $"WHERE {string.Join(" AND ", stringPart)}",
-        //        valuesPart = valuesPart.ToArray()
-        //    };
-        //}
     }
 }

@@ -107,8 +107,8 @@
     <Compile Include="Requests\HandlerActions.cs" />
     <Compile Include="Internal\ErrorCodes.cs" />
     <Compile Include="Operators.cs" />
+    <Compile Include="oldRequest.cs" />
     <Compile Include="Request.cs" />
-    <Compile Include="Requests\AppRequest.cs" />
     <Compile Include="Requests\ViewRequest.cs" />
     <Compile Include="RESTarMethods.cs" />
     <Compile Include="Internal\RESTarOperations.cs" />

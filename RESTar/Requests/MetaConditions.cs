@@ -55,8 +55,8 @@ namespace RESTar.Requests
     public sealed class MetaConditions
     {
         internal Limit Limit { get; set; } = Limit.NoLimit;
-        internal OrderBy OrderBy { get; set; }
         internal bool Unsafe { get; set; }
+        internal OrderBy OrderBy { get; set; }
         internal Select Select { get; set; }
         internal Add Add { get; set; }
         internal Rename Rename { get; set; }

@@ -40,11 +40,6 @@ namespace RESTar
         string AuthToken { get; }
 
         /// <summary>
-        /// Is this request internal?
-        /// </summary>
-        bool IsInternal { get; }
-
-        /// <summary>
         /// To include additional HTTP headers in the response, add them to 
         /// this dictionary. Header names will be renamed to "X-[name]" where
         /// name is the key-value pair key.

@@ -25,7 +25,6 @@ namespace RESTar.Requests
         public Conditions Conditions { get; private set; }
         public MetaConditions MetaConditions { get; private set; }
         public string AuthToken { get; internal set; }
-        public bool IsInternal { get; }
         public IDictionary<string, string> ResponseHeaders { get; }
         public string Body { get; private set; }
         RESTarMethods IRequest.Method { get; }
@@ -48,7 +47,7 @@ namespace RESTar.Requests
                 IsTemplate = true;
                 View = new Item();
             }
-            Entities = Evaluators<T>.Operations.StatSELECT(this);
+            Entities = Evaluators<T>.StatSELECT(this);
 
             if (Entities.IsNullOrEmpty())
                 View.SetMessage("No entities found", NoError, warning);
@@ -74,7 +73,6 @@ namespace RESTar.Requests
         {
             Resource = resource;
             ScRequest = scRequest;
-            IsInternal = !ScRequest.IsExternal;
             ResponseHeaders = new Dictionary<string, string>();
             MetaConditions = new MetaConditions();
         }

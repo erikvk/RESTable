@@ -1,7 +1,8 @@
 ﻿using System;
-using System.Linq;
 using RESTar.Deflection;
 using RESTar.Operations;
+using static System.StringComparison;
+using static RESTar.Operators;
 
 namespace RESTar
 {
@@ -32,15 +33,31 @@ namespace RESTar
         /// <summary>
         /// The property chain describing the property to compare with
         /// </summary>
-        public PropertyChain PropertyChain { get; private set; }
+        internal PropertyChain PropertyChain { get; private set; }
+
+        /// <summary>
+        /// </summary>
+        public override int GetHashCode() => Key.GetHashCode() + Operator.GetHashCode();
+
+        internal int Hash { get; private set; }
+        internal bool HasChanged { get; private set; }
+
+        internal int Prep()
+        {
+            if (!HasChanged) return Hash;
+            Hash = GetHashCode();
+            HasChanged = false;
+            return Hash;
+        }
 
         internal bool ScQueryable => PropertyChain.ScQueryable;
-        internal Type Type => PropertyChain.IsStatic ? ((StaticProperty) PropertyChain.Last())?.Type : null;
+        internal Type Type => PropertyChain.IsStatic ? PropertyChain.LastAs<StaticProperty>()?.Type : null;
         internal bool IsOfType<T>() => Type == typeof(T);
 
         internal void Migrate(Type newType)
         {
             PropertyChain = PropertyChain.MakeFromPrototype(PropertyChain, newType);
+            HasChanged = true;
         }
 
         internal Condition(PropertyChain propertyChain, Operator op, dynamic value)
@@ -48,6 +65,7 @@ namespace RESTar
             PropertyChain = propertyChain;
             Operator = op;
             Value = value;
+            HasChanged = true;
         }
 
         /// <summary>
@@ -59,6 +77,7 @@ namespace RESTar
             if (!RESTarConfig.ResourceByType.TryGetValue(typeof(T), out var resource))
                 throw new UnknownResourceException(typeof(T).FullName);
             PropertyChain = PropertyChain.GetOrMake(resource, key, resource.DynamicConditionsAllowed);
+            HasChanged = true;
             return this;
         }
 
@@ -68,6 +87,7 @@ namespace RESTar
         public Condition SetOperator(Operator newOperator)
         {
             Operator = newOperator;
+            HasChanged = true;
             return this;
         }
 
@@ -77,6 +97,7 @@ namespace RESTar
         public Condition SetValue(dynamic value)
         {
             Value = value;
+            HasChanged = true;
             return this;
         }
 
@@ -85,34 +106,34 @@ namespace RESTar
             var subjectValue = PropertyChain.Get(subject);
             switch (Operator.OpCode)
             {
-                case Operators.EQUALS: return Do.Try<bool>(() => subjectValue == Value, false);
-                case Operators.NOT_EQUALS: return Do.Try<bool>(() => subjectValue != Value, true);
-                case Operators.LESS_THAN:
+                case EQUALS: return Do.Try<bool>(() => subjectValue == Value, false);
+                case NOT_EQUALS: return Do.Try<bool>(() => subjectValue != Value, true);
+                case LESS_THAN:
                     return Do.Try<bool>(() =>
                     {
                         if (subjectValue is string && Value is string)
-                            return string.Compare((string) subjectValue, (string) Value, StringComparison.Ordinal) < 0;
+                            return string.Compare((string) subjectValue, (string) Value, Ordinal) < 0;
                         return subjectValue < Value;
                     }, false);
-                case Operators.GREATER_THAN:
+                case GREATER_THAN:
                     return Do.Try<bool>(() =>
                     {
                         if (subjectValue is string && Value is string)
-                            return string.Compare((string) subjectValue, (string) Value, StringComparison.Ordinal) > 0;
+                            return string.Compare((string) subjectValue, (string) Value, Ordinal) > 0;
                         return subjectValue > Value;
                     }, false);
-                case Operators.LESS_THAN_OR_EQUALS:
+                case LESS_THAN_OR_EQUALS:
                     return Do.Try<bool>(() =>
                     {
                         if (subjectValue is string && Value is string)
-                            return string.Compare((string) subjectValue, (string) Value, StringComparison.Ordinal) <= 0;
+                            return string.Compare((string) subjectValue, (string) Value, Ordinal) <= 0;
                         return subjectValue <= Value;
                     }, false);
-                case Operators.GREATER_THAN_OR_EQUALS:
+                case GREATER_THAN_OR_EQUALS:
                     return Do.Try<bool>(() =>
                     {
                         if (subjectValue is string && Value is string)
-                            return string.Compare((string) subjectValue, (string) Value, StringComparison.Ordinal) >= 0;
+                            return string.Compare((string) subjectValue, (string) Value, Ordinal) >= 0;
                         return subjectValue >= Value;
                     }, false);
                 default: throw new ArgumentOutOfRangeException();

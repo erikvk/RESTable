@@ -25,7 +25,6 @@ namespace RESTar.Requests
         public MetaConditions MetaConditions { get; private set; }
         public string Body { get; set; }
         public string AuthToken { get; internal set; }
-        public bool IsInternal { get; }
         public IDictionary<string, string> ResponseHeaders { get; }
         IResource IRequest.Resource => Resource;
         internal Request ScRequest { get; }
@@ -45,7 +44,6 @@ namespace RESTar.Requests
         {
             Resource = resource;
             ScRequest = scRequest;
-            IsInternal = !ScRequest.IsExternal;
             ResponseHeaders = new Dictionary<string, string>();
             MetaConditions = new MetaConditions();
         }
@@ -179,7 +177,6 @@ namespace RESTar.Requests
 
         public void Dispose()
         {
-            if (IsInternal) return;
             AuthTokens.TryRemove(AuthToken, out var _);
         }
     }

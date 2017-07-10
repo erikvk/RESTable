@@ -1,5 +1,7 @@
-﻿using System.Linq;
+﻿using System.Collections.Generic;
+using System.Linq;
 using RESTar.Operations;
+using RESTar.Requests;
 using Starcounter;
 
 namespace RESTar.Internal
@@ -9,18 +11,30 @@ namespace RESTar.Internal
     /// </summary>
     public static class StarcounterOperations<T> where T : class
     {
+        internal static readonly string SELECT = $"SELECT t FROM {typeof(T).FullName} t ";
+
         /// <summary>
         /// Selects Starcounter database resource entites
         /// </summary>
         public static Selector<T> Select => request =>
         {
-            if (request.Conditions == null)
-                return Db.SQL<T>($"SELECT t FROM {typeof(T).FullName} t " +
-                                 $"{request.MetaConditions.OrderBy?.SQL}");
-            var where = request.Conditions?.SQL?.MakeWhereClause();
-            var results = Db.SQL<T>($"SELECT t FROM {typeof(T).FullName} t {where?.WhereString} " +
-                                    $"{request.MetaConditions.OrderBy?.SQL}", where?.Values);
-            return !request.Conditions.HasPost ? results : results.Filter(request.Conditions?.PostSQL);
+            IEnumerable<T> results;
+            switch (request)
+            {
+                case ViewRequest<T> _:
+                case RESTRequest<T> _:
+                    if (request.Conditions?.Any != true)
+                        return Db.SQL<T>($"{SELECT}{request.MetaConditions.OrderBy?.SQL}");
+                    var where = request.Conditions?.SQL?.MakeWhereClause();
+                    results = Db.SQL<T>($"{SELECT}{where?.WhereString} " +
+                                        $"{request.MetaConditions.OrderBy?.SQL}", where?.Values);
+                    return !request.Conditions.HasPost ? results : results.Filter(request.Conditions?.PostSQL);
+
+                case Request<T> appRequest:
+                    results = Db.SQL<T>(appRequest.SqlQuery, appRequest.SqlValues);
+                    return !appRequest.Conditions.HasPost ? results : results.Filter(appRequest.Conditions?.PostSQL);
+            }
+            return null;
         };
 
         /// <summary>
