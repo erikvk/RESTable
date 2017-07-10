@@ -99,7 +99,6 @@
     <Compile Include="Deflection\ExtensionMethods.cs" />
     <Compile Include="Deflection\Delegates.cs" />
     <Compile Include="Deflection\SpecialProperty.cs" />
-    <Compile Include="Deflection\SQLCache.cs" />
     <Compile Include="Deflection\TypeCache.cs" />
     <Compile Include="Delegates.cs" />
     <Compile Include="Echo.cs" />
@@ -107,7 +106,6 @@
     <Compile Include="Requests\HandlerActions.cs" />
     <Compile Include="Internal\ErrorCodes.cs" />
     <Compile Include="Operators.cs" />
-    <Compile Include="oldRequest.cs" />
     <Compile Include="Request.cs" />
     <Compile Include="Requests\ViewRequest.cs" />
     <Compile Include="RESTarMethods.cs" />
