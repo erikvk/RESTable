@@ -92,6 +92,13 @@ namespace RESTar
         internal static bool HasAttribute<TAttribute>(this MemberInfo type)
             where TAttribute : Attribute => (type?.GetCustomAttributes<TAttribute>().Any()).GetValueOrDefault();
 
+        internal static bool Implements(this Type type, Type interfaceType, out Type[] genericParameters)
+        {
+            var @interface = type.GetInterface(interfaceType.FullName);
+            genericParameters = @interface?.GetGenericArguments();
+            return @interface != null;
+        }
+
         #endregion
 
         #region Other

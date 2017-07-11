@@ -5,13 +5,11 @@
 
 namespace RESTar
 {
-    [DynamicTable(1), DDictionary(typeof(DynamicResource1KeyValuePair))]
-    public class DynamicResource01 : DDictionary
+    [DynamicTable(1)]
+    public class DynamicResource01 : DDictionary, IDDictionary<DynamicResource01, DynamicResource1KeyValuePair>
     {
-        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
-        {
-            return new DynamicResource1KeyValuePair(dict, key, value);
-        }
+        public DynamicResource1KeyValuePair NewKeyPair(DynamicResource01 dict, string key, object value = null) =>
+            new DynamicResource1KeyValuePair(dict, key, value);
     }
 
     public class DynamicResource1KeyValuePair : DKeyValuePair
@@ -21,13 +19,11 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(2), DDictionary(typeof(DynamicResource2KeyValuePair))]
-    public class DynamicResource02 : DDictionary
+    [DynamicTable(2)]
+    public class DynamicResource02 : DDictionary, IDDictionary<DynamicResource02, DynamicResource2KeyValuePair>
     {
-        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
-        {
-            return new DynamicResource2KeyValuePair(dict, key, value);
-        }
+        public DynamicResource2KeyValuePair NewKeyPair(DynamicResource02 dict, string key, object value = null) =>
+            new DynamicResource2KeyValuePair(dict, key, value);
     }
 
     public class DynamicResource2KeyValuePair : DKeyValuePair
@@ -37,13 +33,11 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(3), DDictionary(typeof(DynamicResource3KeyValuePair))]
-    public class DynamicResource03 : DDictionary
+    [DynamicTable(3)]
+    public class DynamicResource03 : DDictionary, IDDictionary<DynamicResource03, DynamicResource3KeyValuePair>
     {
-        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
-        {
-            return new DynamicResource3KeyValuePair(dict, key, value);
-        }
+        public DynamicResource3KeyValuePair NewKeyPair(DynamicResource03 dict, string key, object value = null) =>
+            new DynamicResource3KeyValuePair(dict, key, value);
     }
 
     public class DynamicResource3KeyValuePair : DKeyValuePair
@@ -53,13 +47,11 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(4), DDictionary(typeof(DynamicResource4KeyValuePair))]
-    public class DynamicResource04 : DDictionary
+    [DynamicTable(4)]
+    public class DynamicResource04 : DDictionary, IDDictionary<DynamicResource04, DynamicResource4KeyValuePair>
     {
-        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
-        {
-            return new DynamicResource4KeyValuePair(dict, key, value);
-        }
+        public DynamicResource4KeyValuePair NewKeyPair(DynamicResource04 dict, string key, object value = null) =>
+            new DynamicResource4KeyValuePair(dict, key, value);
     }
 
     public class DynamicResource4KeyValuePair : DKeyValuePair
@@ -69,13 +61,11 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(5), DDictionary(typeof(DynamicResource5KeyValuePair))]
-    public class DynamicResource05 : DDictionary
+    [DynamicTable(5)]
+    public class DynamicResource05 : DDictionary, IDDictionary<DynamicResource05, DynamicResource5KeyValuePair>
     {
-        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
-        {
-            return new DynamicResource5KeyValuePair(dict, key, value);
-        }
+        public DynamicResource5KeyValuePair NewKeyPair(DynamicResource05 dict, string key, object value = null) =>
+            new DynamicResource5KeyValuePair(dict, key, value);
     }
 
     public class DynamicResource5KeyValuePair : DKeyValuePair
@@ -85,13 +75,11 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(6), DDictionary(typeof(DynamicResource6KeyValuePair))]
-    public class DynamicResource06 : DDictionary
+    [DynamicTable(6)]
+    public class DynamicResource06 : DDictionary, IDDictionary<DynamicResource06, DynamicResource6KeyValuePair>
     {
-        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
-        {
-            return new DynamicResource6KeyValuePair(dict, key, value);
-        }
+        public DynamicResource6KeyValuePair NewKeyPair(DynamicResource06 dict, string key, object value = null) =>
+            new DynamicResource6KeyValuePair(dict, key, value);
     }
 
     public class DynamicResource6KeyValuePair : DKeyValuePair
@@ -101,13 +89,11 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(7), DDictionary(typeof(DynamicResource7KeyValuePair))]
-    public class DynamicResource07 : DDictionary
+    [DynamicTable(7)]
+    public class DynamicResource07 : DDictionary, IDDictionary<DynamicResource07, DynamicResource7KeyValuePair>
     {
-        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
-        {
-            return new DynamicResource7KeyValuePair(dict, key, value);
-        }
+        public DynamicResource7KeyValuePair NewKeyPair(DynamicResource07 dict, string key, object value = null) =>
+            new DynamicResource7KeyValuePair(dict, key, value);
     }
 
     public class DynamicResource7KeyValuePair : DKeyValuePair
@@ -117,13 +103,11 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(8), DDictionary(typeof(DynamicResource8KeyValuePair))]
-    public class DynamicResource08 : DDictionary
+    [DynamicTable(8)]
+    public class DynamicResource08 : DDictionary, IDDictionary<DynamicResource08, DynamicResource8KeyValuePair>
     {
-        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
-        {
-            return new DynamicResource8KeyValuePair(dict, key, value);
-        }
+        public DynamicResource8KeyValuePair NewKeyPair(DynamicResource08 dict, string key, object value = null) =>
+            new DynamicResource8KeyValuePair(dict, key, value);
     }
 
     public class DynamicResource8KeyValuePair : DKeyValuePair
@@ -133,13 +117,11 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(9), DDictionary(typeof(DynamicResource9KeyValuePair))]
-    public class DynamicResource09 : DDictionary
+    [DynamicTable(9)]
+    public class DynamicResource09 : DDictionary, IDDictionary<DynamicResource09, DynamicResource9KeyValuePair>
     {
-        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
-        {
-            return new DynamicResource9KeyValuePair(dict, key, value);
-        }
+        public DynamicResource9KeyValuePair NewKeyPair(DynamicResource09 dict, string key, object value = null) =>
+            new DynamicResource9KeyValuePair(dict, key, value);
     }
 
     public class DynamicResource9KeyValuePair : DKeyValuePair
@@ -149,13 +131,11 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(10), DDictionary(typeof(DynamicResource10KeyValuePair))]
-    public class DynamicResource10 : DDictionary
+    [DynamicTable(10)]
+    public class DynamicResource10 : DDictionary, IDDictionary<DynamicResource10, DynamicResource10KeyValuePair>
     {
-        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
-        {
-            return new DynamicResource10KeyValuePair(dict, key, value);
-        }
+        public DynamicResource10KeyValuePair NewKeyPair(DynamicResource10 dict, string key, object value = null) =>
+            new DynamicResource10KeyValuePair(dict, key, value);
     }
 
     public class DynamicResource10KeyValuePair : DKeyValuePair
@@ -165,13 +145,11 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(11), DDictionary(typeof(DynamicResource11KeyValuePair))]
-    public class DynamicResource11 : DDictionary
+    [DynamicTable(11)]
+    public class DynamicResource11 : DDictionary, IDDictionary<DynamicResource11, DynamicResource11KeyValuePair>
     {
-        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
-        {
-            return new DynamicResource11KeyValuePair(dict, key, value);
-        }
+        public DynamicResource11KeyValuePair NewKeyPair(DynamicResource11 dict, string key, object value = null) =>
+            new DynamicResource11KeyValuePair(dict, key, value);
     }
 
     public class DynamicResource11KeyValuePair : DKeyValuePair
@@ -181,13 +159,11 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(12), DDictionary(typeof(DynamicResource12KeyValuePair))]
-    public class DynamicResource12 : DDictionary
+    [DynamicTable(12)]
+    public class DynamicResource12 : DDictionary, IDDictionary<DynamicResource12, DynamicResource12KeyValuePair>
     {
-        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
-        {
-            return new DynamicResource12KeyValuePair(dict, key, value);
-        }
+        public DynamicResource12KeyValuePair NewKeyPair(DynamicResource12 dict, string key, object value = null) =>
+            new DynamicResource12KeyValuePair(dict, key, value);
     }
 
     public class DynamicResource12KeyValuePair : DKeyValuePair
@@ -197,13 +173,11 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(13), DDictionary(typeof(DynamicResource13KeyValuePair))]
-    public class DynamicResource13 : DDictionary
+    [DynamicTable(13)]
+    public class DynamicResource13 : DDictionary, IDDictionary<DynamicResource13, DynamicResource13KeyValuePair>
     {
-        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
-        {
-            return new DynamicResource13KeyValuePair(dict, key, value);
-        }
+        public DynamicResource13KeyValuePair NewKeyPair(DynamicResource13 dict, string key, object value = null) =>
+            new DynamicResource13KeyValuePair(dict, key, value);
     }
 
     public class DynamicResource13KeyValuePair : DKeyValuePair
@@ -213,13 +187,11 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(14), DDictionary(typeof(DynamicResource14KeyValuePair))]
-    public class DynamicResource14 : DDictionary
+    [DynamicTable(14)]
+    public class DynamicResource14 : DDictionary, IDDictionary<DynamicResource14, DynamicResource14KeyValuePair>
     {
-        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
-        {
-            return new DynamicResource14KeyValuePair(dict, key, value);
-        }
+        public DynamicResource14KeyValuePair NewKeyPair(DynamicResource14 dict, string key, object value = null) =>
+            new DynamicResource14KeyValuePair(dict, key, value);
     }
 
     public class DynamicResource14KeyValuePair : DKeyValuePair
@@ -229,13 +201,11 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(15), DDictionary(typeof(DynamicResource15KeyValuePair))]
-    public class DynamicResource15 : DDictionary
+    [DynamicTable(15)]
+    public class DynamicResource15 : DDictionary, IDDictionary<DynamicResource15, DynamicResource15KeyValuePair>
     {
-        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
-        {
-            return new DynamicResource15KeyValuePair(dict, key, value);
-        }
+        public DynamicResource15KeyValuePair NewKeyPair(DynamicResource15 dict, string key, object value = null) =>
+            new DynamicResource15KeyValuePair(dict, key, value);
     }
 
     public class DynamicResource15KeyValuePair : DKeyValuePair
@@ -245,13 +215,11 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(16), DDictionary(typeof(DynamicResource16KeyValuePair))]
-    public class DynamicResource16 : DDictionary
+    [DynamicTable(16)]
+    public class DynamicResource16 : DDictionary, IDDictionary<DynamicResource16, DynamicResource16KeyValuePair>
     {
-        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
-        {
-            return new DynamicResource16KeyValuePair(dict, key, value);
-        }
+        public DynamicResource16KeyValuePair NewKeyPair(DynamicResource16 dict, string key, object value = null) =>
+            new DynamicResource16KeyValuePair(dict, key, value);
     }
 
     public class DynamicResource16KeyValuePair : DKeyValuePair
@@ -261,13 +229,11 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(17), DDictionary(typeof(DynamicResource17KeyValuePair))]
-    public class DynamicResource17 : DDictionary
+    [DynamicTable(17)]
+    public class DynamicResource17 : DDictionary, IDDictionary<DynamicResource17, DynamicResource17KeyValuePair>
     {
-        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
-        {
-            return new DynamicResource17KeyValuePair(dict, key, value);
-        }
+        public DynamicResource17KeyValuePair NewKeyPair(DynamicResource17 dict, string key, object value = null) =>
+            new DynamicResource17KeyValuePair(dict, key, value);
     }
 
     public class DynamicResource17KeyValuePair : DKeyValuePair
@@ -277,13 +243,11 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(18), DDictionary(typeof(DynamicResource18KeyValuePair))]
-    public class DynamicResource18 : DDictionary
+    [DynamicTable(18)]
+    public class DynamicResource18 : DDictionary, IDDictionary<DynamicResource18, DynamicResource18KeyValuePair>
     {
-        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
-        {
-            return new DynamicResource18KeyValuePair(dict, key, value);
-        }
+        public DynamicResource18KeyValuePair NewKeyPair(DynamicResource18 dict, string key, object value = null) =>
+            new DynamicResource18KeyValuePair(dict, key, value);
     }
 
     public class DynamicResource18KeyValuePair : DKeyValuePair
@@ -293,13 +257,11 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(19), DDictionary(typeof(DynamicResource19KeyValuePair))]
-    public class DynamicResource19 : DDictionary
+    [DynamicTable(19)]
+    public class DynamicResource19 : DDictionary, IDDictionary<DynamicResource19, DynamicResource19KeyValuePair>
     {
-        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
-        {
-            return new DynamicResource19KeyValuePair(dict, key, value);
-        }
+        public DynamicResource19KeyValuePair NewKeyPair(DynamicResource19 dict, string key, object value = null) =>
+            new DynamicResource19KeyValuePair(dict, key, value);
     }
 
     public class DynamicResource19KeyValuePair : DKeyValuePair
@@ -309,13 +271,11 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(20), DDictionary(typeof(DynamicResource20KeyValuePair))]
-    public class DynamicResource20 : DDictionary
+    [DynamicTable(20)]
+    public class DynamicResource20 : DDictionary, IDDictionary<DynamicResource20, DynamicResource20KeyValuePair>
     {
-        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
-        {
-            return new DynamicResource20KeyValuePair(dict, key, value);
-        }
+        public DynamicResource20KeyValuePair NewKeyPair(DynamicResource20 dict, string key, object value = null) =>
+            new DynamicResource20KeyValuePair(dict, key, value);
     }
 
     public class DynamicResource20KeyValuePair : DKeyValuePair
@@ -325,13 +285,11 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(21), DDictionary(typeof(DynamicResource21KeyValuePair))]
-    public class DynamicResource21 : DDictionary
+    [DynamicTable(21)]
+    public class DynamicResource21 : DDictionary, IDDictionary<DynamicResource21, DynamicResource21KeyValuePair>
     {
-        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
-        {
-            return new DynamicResource21KeyValuePair(dict, key, value);
-        }
+        public DynamicResource21KeyValuePair NewKeyPair(DynamicResource21 dict, string key, object value = null) =>
+            new DynamicResource21KeyValuePair(dict, key, value);
     }
 
     public class DynamicResource21KeyValuePair : DKeyValuePair
@@ -341,13 +299,11 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(22), DDictionary(typeof(DynamicResource22KeyValuePair))]
-    public class DynamicResource22 : DDictionary
+    [DynamicTable(22)]
+    public class DynamicResource22 : DDictionary, IDDictionary<DynamicResource22, DynamicResource22KeyValuePair>
     {
-        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
-        {
-            return new DynamicResource22KeyValuePair(dict, key, value);
-        }
+        public DynamicResource22KeyValuePair NewKeyPair(DynamicResource22 dict, string key, object value = null) =>
+            new DynamicResource22KeyValuePair(dict, key, value);
     }
 
     public class DynamicResource22KeyValuePair : DKeyValuePair
@@ -357,13 +313,11 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(23), DDictionary(typeof(DynamicResource23KeyValuePair))]
-    public class DynamicResource23 : DDictionary
+    [DynamicTable(23)]
+    public class DynamicResource23 : DDictionary, IDDictionary<DynamicResource23, DynamicResource23KeyValuePair>
     {
-        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
-        {
-            return new DynamicResource23KeyValuePair(dict, key, value);
-        }
+        public DynamicResource23KeyValuePair NewKeyPair(DynamicResource23 dict, string key, object value = null) =>
+            new DynamicResource23KeyValuePair(dict, key, value);
     }
 
     public class DynamicResource23KeyValuePair : DKeyValuePair
@@ -373,13 +327,11 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(24), DDictionary(typeof(DynamicResource24KeyValuePair))]
-    public class DynamicResource24 : DDictionary
+    [DynamicTable(24)]
+    public class DynamicResource24 : DDictionary, IDDictionary<DynamicResource24, DynamicResource24KeyValuePair>
     {
-        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
-        {
-            return new DynamicResource24KeyValuePair(dict, key, value);
-        }
+        public DynamicResource24KeyValuePair NewKeyPair(DynamicResource24 dict, string key, object value = null) =>
+            new DynamicResource24KeyValuePair(dict, key, value);
     }
 
     public class DynamicResource24KeyValuePair : DKeyValuePair
@@ -389,13 +341,11 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(25), DDictionary(typeof(DynamicResource25KeyValuePair))]
-    public class DynamicResource25 : DDictionary
+    [DynamicTable(25)]
+    public class DynamicResource25 : DDictionary, IDDictionary<DynamicResource25, DynamicResource25KeyValuePair>
     {
-        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
-        {
-            return new DynamicResource25KeyValuePair(dict, key, value);
-        }
+        public DynamicResource25KeyValuePair NewKeyPair(DynamicResource25 dict, string key, object value = null) =>
+            new DynamicResource25KeyValuePair(dict, key, value);
     }
 
     public class DynamicResource25KeyValuePair : DKeyValuePair
@@ -405,13 +355,11 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(26), DDictionary(typeof(DynamicResource26KeyValuePair))]
-    public class DynamicResource26 : DDictionary
+    [DynamicTable(26)]
+    public class DynamicResource26 : DDictionary, IDDictionary<DynamicResource26, DynamicResource26KeyValuePair>
     {
-        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
-        {
-            return new DynamicResource26KeyValuePair(dict, key, value);
-        }
+        public DynamicResource26KeyValuePair NewKeyPair(DynamicResource26 dict, string key, object value = null) =>
+            new DynamicResource26KeyValuePair(dict, key, value);
     }
 
     public class DynamicResource26KeyValuePair : DKeyValuePair
@@ -421,13 +369,11 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(27), DDictionary(typeof(DynamicResource27KeyValuePair))]
-    public class DynamicResource27 : DDictionary
+    [DynamicTable(27)]
+    public class DynamicResource27 : DDictionary, IDDictionary<DynamicResource27, DynamicResource27KeyValuePair>
     {
-        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
-        {
-            return new DynamicResource27KeyValuePair(dict, key, value);
-        }
+        public DynamicResource27KeyValuePair NewKeyPair(DynamicResource27 dict, string key, object value = null) =>
+            new DynamicResource27KeyValuePair(dict, key, value);
     }
 
     public class DynamicResource27KeyValuePair : DKeyValuePair
@@ -437,13 +383,11 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(28), DDictionary(typeof(DynamicResource28KeyValuePair))]
-    public class DynamicResource28 : DDictionary
+    [DynamicTable(28)]
+    public class DynamicResource28 : DDictionary, IDDictionary<DynamicResource28, DynamicResource28KeyValuePair>
     {
-        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
-        {
-            return new DynamicResource28KeyValuePair(dict, key, value);
-        }
+        public DynamicResource28KeyValuePair NewKeyPair(DynamicResource28 dict, string key, object value = null) =>
+            new DynamicResource28KeyValuePair(dict, key, value);
     }
 
     public class DynamicResource28KeyValuePair : DKeyValuePair
@@ -453,13 +397,11 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(29), DDictionary(typeof(DynamicResource29KeyValuePair))]
-    public class DynamicResource29 : DDictionary
+    [DynamicTable(29)]
+    public class DynamicResource29 : DDictionary, IDDictionary<DynamicResource29, DynamicResource29KeyValuePair>
     {
-        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
-        {
-            return new DynamicResource29KeyValuePair(dict, key, value);
-        }
+        public DynamicResource29KeyValuePair NewKeyPair(DynamicResource29 dict, string key, object value = null) =>
+            new DynamicResource29KeyValuePair(dict, key, value);
     }
 
     public class DynamicResource29KeyValuePair : DKeyValuePair
@@ -469,13 +411,11 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(30), DDictionary(typeof(DynamicResource30KeyValuePair))]
-    public class DynamicResource30 : DDictionary
+    [DynamicTable(30)]
+    public class DynamicResource30 : DDictionary, IDDictionary<DynamicResource30, DynamicResource30KeyValuePair>
     {
-        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
-        {
-            return new DynamicResource30KeyValuePair(dict, key, value);
-        }
+        public DynamicResource30KeyValuePair NewKeyPair(DynamicResource30 dict, string key, object value = null) =>
+            new DynamicResource30KeyValuePair(dict, key, value);
     }
 
     public class DynamicResource30KeyValuePair : DKeyValuePair
@@ -485,13 +425,11 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(31), DDictionary(typeof(DynamicResource31KeyValuePair))]
-    public class DynamicResource31 : DDictionary
+    [DynamicTable(31)]
+    public class DynamicResource31 : DDictionary, IDDictionary<DynamicResource31, DynamicResource31KeyValuePair>
     {
-        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
-        {
-            return new DynamicResource31KeyValuePair(dict, key, value);
-        }
+        public DynamicResource31KeyValuePair NewKeyPair(DynamicResource31 dict, string key, object value = null) =>
+            new DynamicResource31KeyValuePair(dict, key, value);
     }
 
     public class DynamicResource31KeyValuePair : DKeyValuePair
@@ -501,13 +439,11 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(32), DDictionary(typeof(DynamicResource32KeyValuePair))]
-    public class DynamicResource32 : DDictionary
+    [DynamicTable(32)]
+    public class DynamicResource32 : DDictionary, IDDictionary<DynamicResource32, DynamicResource32KeyValuePair>
     {
-        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
-        {
-            return new DynamicResource32KeyValuePair(dict, key, value);
-        }
+        public DynamicResource32KeyValuePair NewKeyPair(DynamicResource32 dict, string key, object value = null) =>
+            new DynamicResource32KeyValuePair(dict, key, value);
     }
 
     public class DynamicResource32KeyValuePair : DKeyValuePair
@@ -517,13 +453,11 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(33), DDictionary(typeof(DynamicResource33KeyValuePair))]
-    public class DynamicResource33 : DDictionary
+    [DynamicTable(33)]
+    public class DynamicResource33 : DDictionary, IDDictionary<DynamicResource33, DynamicResource33KeyValuePair>
     {
-        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
-        {
-            return new DynamicResource33KeyValuePair(dict, key, value);
-        }
+        public DynamicResource33KeyValuePair NewKeyPair(DynamicResource33 dict, string key, object value = null) =>
+            new DynamicResource33KeyValuePair(dict, key, value);
     }
 
     public class DynamicResource33KeyValuePair : DKeyValuePair
@@ -533,13 +467,11 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(34), DDictionary(typeof(DynamicResource34KeyValuePair))]
-    public class DynamicResource34 : DDictionary
+    [DynamicTable(34)]
+    public class DynamicResource34 : DDictionary, IDDictionary<DynamicResource34, DynamicResource34KeyValuePair>
     {
-        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
-        {
-            return new DynamicResource34KeyValuePair(dict, key, value);
-        }
+        public DynamicResource34KeyValuePair NewKeyPair(DynamicResource34 dict, string key, object value = null) =>
+            new DynamicResource34KeyValuePair(dict, key, value);
     }
 
     public class DynamicResource34KeyValuePair : DKeyValuePair
@@ -549,13 +481,11 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(35), DDictionary(typeof(DynamicResource35KeyValuePair))]
-    public class DynamicResource35 : DDictionary
+    [DynamicTable(35)]
+    public class DynamicResource35 : DDictionary, IDDictionary<DynamicResource35, DynamicResource35KeyValuePair>
     {
-        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
-        {
-            return new DynamicResource35KeyValuePair(dict, key, value);
-        }
+        public DynamicResource35KeyValuePair NewKeyPair(DynamicResource35 dict, string key, object value = null) =>
+            new DynamicResource35KeyValuePair(dict, key, value);
     }
 
     public class DynamicResource35KeyValuePair : DKeyValuePair
@@ -565,13 +495,11 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(36), DDictionary(typeof(DynamicResource36KeyValuePair))]
-    public class DynamicResource36 : DDictionary
+    [DynamicTable(36)]
+    public class DynamicResource36 : DDictionary, IDDictionary<DynamicResource36, DynamicResource36KeyValuePair>
     {
-        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
-        {
-            return new DynamicResource36KeyValuePair(dict, key, value);
-        }
+        public DynamicResource36KeyValuePair NewKeyPair(DynamicResource36 dict, string key, object value = null) =>
+            new DynamicResource36KeyValuePair(dict, key, value);
     }
 
     public class DynamicResource36KeyValuePair : DKeyValuePair
@@ -581,13 +509,11 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(37), DDictionary(typeof(DynamicResource37KeyValuePair))]
-    public class DynamicResource37 : DDictionary
+    [DynamicTable(37)]
+    public class DynamicResource37 : DDictionary, IDDictionary<DynamicResource37, DynamicResource37KeyValuePair>
     {
-        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
-        {
-            return new DynamicResource37KeyValuePair(dict, key, value);
-        }
+        public DynamicResource37KeyValuePair NewKeyPair(DynamicResource37 dict, string key, object value = null) =>
+            new DynamicResource37KeyValuePair(dict, key, value);
     }
 
     public class DynamicResource37KeyValuePair : DKeyValuePair
@@ -597,13 +523,11 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(38), DDictionary(typeof(DynamicResource38KeyValuePair))]
-    public class DynamicResource38 : DDictionary
+    [DynamicTable(38)]
+    public class DynamicResource38 : DDictionary, IDDictionary<DynamicResource38, DynamicResource38KeyValuePair>
     {
-        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
-        {
-            return new DynamicResource38KeyValuePair(dict, key, value);
-        }
+        public DynamicResource38KeyValuePair NewKeyPair(DynamicResource38 dict, string key, object value = null) =>
+            new DynamicResource38KeyValuePair(dict, key, value);
     }
 
     public class DynamicResource38KeyValuePair : DKeyValuePair
@@ -613,13 +537,11 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(39), DDictionary(typeof(DynamicResource39KeyValuePair))]
-    public class DynamicResource39 : DDictionary
+    [DynamicTable(39)]
+    public class DynamicResource39 : DDictionary, IDDictionary<DynamicResource39, DynamicResource39KeyValuePair>
     {
-        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
-        {
-            return new DynamicResource39KeyValuePair(dict, key, value);
-        }
+        public DynamicResource39KeyValuePair NewKeyPair(DynamicResource39 dict, string key, object value = null) =>
+            new DynamicResource39KeyValuePair(dict, key, value);
     }
 
     public class DynamicResource39KeyValuePair : DKeyValuePair
@@ -629,13 +551,11 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(40), DDictionary(typeof(DynamicResource40KeyValuePair))]
-    public class DynamicResource40 : DDictionary
+    [DynamicTable(40)]
+    public class DynamicResource40 : DDictionary, IDDictionary<DynamicResource40, DynamicResource40KeyValuePair>
     {
-        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
-        {
-            return new DynamicResource40KeyValuePair(dict, key, value);
-        }
+        public DynamicResource40KeyValuePair NewKeyPair(DynamicResource40 dict, string key, object value = null) =>
+            new DynamicResource40KeyValuePair(dict, key, value);
     }
 
     public class DynamicResource40KeyValuePair : DKeyValuePair
@@ -645,13 +565,11 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(41), DDictionary(typeof(DynamicResource41KeyValuePair))]
-    public class DynamicResource41 : DDictionary
+    [DynamicTable(41)]
+    public class DynamicResource41 : DDictionary, IDDictionary<DynamicResource41, DynamicResource41KeyValuePair>
     {
-        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
-        {
-            return new DynamicResource41KeyValuePair(dict, key, value);
-        }
+        public DynamicResource41KeyValuePair NewKeyPair(DynamicResource41 dict, string key, object value = null) =>
+            new DynamicResource41KeyValuePair(dict, key, value);
     }
 
     public class DynamicResource41KeyValuePair : DKeyValuePair
@@ -661,13 +579,11 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(42), DDictionary(typeof(DynamicResource42KeyValuePair))]
-    public class DynamicResource42 : DDictionary
+    [DynamicTable(42)]
+    public class DynamicResource42 : DDictionary, IDDictionary<DynamicResource42, DynamicResource42KeyValuePair>
     {
-        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
-        {
-            return new DynamicResource42KeyValuePair(dict, key, value);
-        }
+        public DynamicResource42KeyValuePair NewKeyPair(DynamicResource42 dict, string key, object value = null) =>
+            new DynamicResource42KeyValuePair(dict, key, value);
     }
 
     public class DynamicResource42KeyValuePair : DKeyValuePair
@@ -677,13 +593,11 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(43), DDictionary(typeof(DynamicResource43KeyValuePair))]
-    public class DynamicResource43 : DDictionary
+    [DynamicTable(43)]
+    public class DynamicResource43 : DDictionary, IDDictionary<DynamicResource43, DynamicResource43KeyValuePair>
     {
-        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
-        {
-            return new DynamicResource43KeyValuePair(dict, key, value);
-        }
+        public DynamicResource43KeyValuePair NewKeyPair(DynamicResource43 dict, string key, object value = null) =>
+            new DynamicResource43KeyValuePair(dict, key, value);
     }
 
     public class DynamicResource43KeyValuePair : DKeyValuePair
@@ -693,13 +607,11 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(44), DDictionary(typeof(DynamicResource44KeyValuePair))]
-    public class DynamicResource44 : DDictionary
+    [DynamicTable(44)]
+    public class DynamicResource44 : DDictionary, IDDictionary<DynamicResource44, DynamicResource44KeyValuePair>
     {
-        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
-        {
-            return new DynamicResource44KeyValuePair(dict, key, value);
-        }
+        public DynamicResource44KeyValuePair NewKeyPair(DynamicResource44 dict, string key, object value = null) =>
+            new DynamicResource44KeyValuePair(dict, key, value);
     }
 
     public class DynamicResource44KeyValuePair : DKeyValuePair
@@ -709,13 +621,11 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(45), DDictionary(typeof(DynamicResource45KeyValuePair))]
-    public class DynamicResource45 : DDictionary
+    [DynamicTable(45)]
+    public class DynamicResource45 : DDictionary, IDDictionary<DynamicResource45, DynamicResource45KeyValuePair>
     {
-        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
-        {
-            return new DynamicResource45KeyValuePair(dict, key, value);
-        }
+        public DynamicResource45KeyValuePair NewKeyPair(DynamicResource45 dict, string key, object value = null) =>
+            new DynamicResource45KeyValuePair(dict, key, value);
     }
 
     public class DynamicResource45KeyValuePair : DKeyValuePair
@@ -725,13 +635,11 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(46), DDictionary(typeof(DynamicResource46KeyValuePair))]
-    public class DynamicResource46 : DDictionary
+    [DynamicTable(46)]
+    public class DynamicResource46 : DDictionary, IDDictionary<DynamicResource46, DynamicResource46KeyValuePair>
     {
-        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
-        {
-            return new DynamicResource46KeyValuePair(dict, key, value);
-        }
+        public DynamicResource46KeyValuePair NewKeyPair(DynamicResource46 dict, string key, object value = null) =>
+            new DynamicResource46KeyValuePair(dict, key, value);
     }
 
     public class DynamicResource46KeyValuePair : DKeyValuePair
@@ -741,13 +649,11 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(47), DDictionary(typeof(DynamicResource47KeyValuePair))]
-    public class DynamicResource47 : DDictionary
+    [DynamicTable(47)]
+    public class DynamicResource47 : DDictionary, IDDictionary<DynamicResource47, DynamicResource47KeyValuePair>
     {
-        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
-        {
-            return new DynamicResource47KeyValuePair(dict, key, value);
-        }
+        public DynamicResource47KeyValuePair NewKeyPair(DynamicResource47 dict, string key, object value = null) =>
+            new DynamicResource47KeyValuePair(dict, key, value);
     }
 
     public class DynamicResource47KeyValuePair : DKeyValuePair
@@ -757,13 +663,11 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(48), DDictionary(typeof(DynamicResource48KeyValuePair))]
-    public class DynamicResource48 : DDictionary
+    [DynamicTable(48)]
+    public class DynamicResource48 : DDictionary, IDDictionary<DynamicResource48, DynamicResource48KeyValuePair>
     {
-        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
-        {
-            return new DynamicResource48KeyValuePair(dict, key, value);
-        }
+        public DynamicResource48KeyValuePair NewKeyPair(DynamicResource48 dict, string key, object value = null) =>
+            new DynamicResource48KeyValuePair(dict, key, value);
     }
 
     public class DynamicResource48KeyValuePair : DKeyValuePair
@@ -773,13 +677,11 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(49), DDictionary(typeof(DynamicResource49KeyValuePair))]
-    public class DynamicResource49 : DDictionary
+    [DynamicTable(49)]
+    public class DynamicResource49 : DDictionary, IDDictionary<DynamicResource49, DynamicResource49KeyValuePair>
     {
-        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
-        {
-            return new DynamicResource49KeyValuePair(dict, key, value);
-        }
+        public DynamicResource49KeyValuePair NewKeyPair(DynamicResource49 dict, string key, object value = null) =>
+            new DynamicResource49KeyValuePair(dict, key, value);
     }
 
     public class DynamicResource49KeyValuePair : DKeyValuePair
@@ -789,13 +691,11 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(50), DDictionary(typeof(DynamicResource50KeyValuePair))]
-    public class DynamicResource50 : DDictionary
+    [DynamicTable(50)]
+    public class DynamicResource50 : DDictionary, IDDictionary<DynamicResource50, DynamicResource50KeyValuePair>
     {
-        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
-        {
-            return new DynamicResource50KeyValuePair(dict, key, value);
-        }
+        public DynamicResource50KeyValuePair NewKeyPair(DynamicResource50 dict, string key, object value = null) =>
+            new DynamicResource50KeyValuePair(dict, key, value);
     }
 
     public class DynamicResource50KeyValuePair : DKeyValuePair
@@ -805,13 +705,11 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(51), DDictionary(typeof(DynamicResource51KeyValuePair))]
-    public class DynamicResource51 : DDictionary
+    [DynamicTable(51)]
+    public class DynamicResource51 : DDictionary, IDDictionary<DynamicResource51, DynamicResource51KeyValuePair>
     {
-        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
-        {
-            return new DynamicResource51KeyValuePair(dict, key, value);
-        }
+        public DynamicResource51KeyValuePair NewKeyPair(DynamicResource51 dict, string key, object value = null) =>
+            new DynamicResource51KeyValuePair(dict, key, value);
     }
 
     public class DynamicResource51KeyValuePair : DKeyValuePair
@@ -821,13 +719,11 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(52), DDictionary(typeof(DynamicResource52KeyValuePair))]
-    public class DynamicResource52 : DDictionary
+    [DynamicTable(52)]
+    public class DynamicResource52 : DDictionary, IDDictionary<DynamicResource52, DynamicResource52KeyValuePair>
     {
-        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
-        {
-            return new DynamicResource52KeyValuePair(dict, key, value);
-        }
+        public DynamicResource52KeyValuePair NewKeyPair(DynamicResource52 dict, string key, object value = null) =>
+            new DynamicResource52KeyValuePair(dict, key, value);
     }
 
     public class DynamicResource52KeyValuePair : DKeyValuePair
@@ -837,13 +733,11 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(53), DDictionary(typeof(DynamicResource53KeyValuePair))]
-    public class DynamicResource53 : DDictionary
+    [DynamicTable(53)]
+    public class DynamicResource53 : DDictionary, IDDictionary<DynamicResource53, DynamicResource53KeyValuePair>
     {
-        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
-        {
-            return new DynamicResource53KeyValuePair(dict, key, value);
-        }
+        public DynamicResource53KeyValuePair NewKeyPair(DynamicResource53 dict, string key, object value = null) =>
+            new DynamicResource53KeyValuePair(dict, key, value);
     }
 
     public class DynamicResource53KeyValuePair : DKeyValuePair
@@ -853,13 +747,11 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(54), DDictionary(typeof(DynamicResource54KeyValuePair))]
-    public class DynamicResource54 : DDictionary
+    [DynamicTable(54)]
+    public class DynamicResource54 : DDictionary, IDDictionary<DynamicResource54, DynamicResource54KeyValuePair>
     {
-        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
-        {
-            return new DynamicResource54KeyValuePair(dict, key, value);
-        }
+        public DynamicResource54KeyValuePair NewKeyPair(DynamicResource54 dict, string key, object value = null) =>
+            new DynamicResource54KeyValuePair(dict, key, value);
     }
 
     public class DynamicResource54KeyValuePair : DKeyValuePair
@@ -869,13 +761,11 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(55), DDictionary(typeof(DynamicResource55KeyValuePair))]
-    public class DynamicResource55 : DDictionary
+    [DynamicTable(55)]
+    public class DynamicResource55 : DDictionary, IDDictionary<DynamicResource55, DynamicResource55KeyValuePair>
     {
-        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
-        {
-            return new DynamicResource55KeyValuePair(dict, key, value);
-        }
+        public DynamicResource55KeyValuePair NewKeyPair(DynamicResource55 dict, string key, object value = null) =>
+            new DynamicResource55KeyValuePair(dict, key, value);
     }
 
     public class DynamicResource55KeyValuePair : DKeyValuePair
@@ -885,13 +775,11 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(56), DDictionary(typeof(DynamicResource56KeyValuePair))]
-    public class DynamicResource56 : DDictionary
+    [DynamicTable(56)]
+    public class DynamicResource56 : DDictionary, IDDictionary<DynamicResource56, DynamicResource56KeyValuePair>
     {
-        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
-        {
-            return new DynamicResource56KeyValuePair(dict, key, value);
-        }
+        public DynamicResource56KeyValuePair NewKeyPair(DynamicResource56 dict, string key, object value = null) =>
+            new DynamicResource56KeyValuePair(dict, key, value);
     }
 
     public class DynamicResource56KeyValuePair : DKeyValuePair
@@ -901,13 +789,11 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(57), DDictionary(typeof(DynamicResource57KeyValuePair))]
-    public class DynamicResource57 : DDictionary
+    [DynamicTable(57)]
+    public class DynamicResource57 : DDictionary, IDDictionary<DynamicResource57, DynamicResource57KeyValuePair>
     {
-        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
-        {
-            return new DynamicResource57KeyValuePair(dict, key, value);
-        }
+        public DynamicResource57KeyValuePair NewKeyPair(DynamicResource57 dict, string key, object value = null) =>
+            new DynamicResource57KeyValuePair(dict, key, value);
     }
 
     public class DynamicResource57KeyValuePair : DKeyValuePair
@@ -917,13 +803,11 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(58), DDictionary(typeof(DynamicResource58KeyValuePair))]
-    public class DynamicResource58 : DDictionary
+    [DynamicTable(58)]
+    public class DynamicResource58 : DDictionary, IDDictionary<DynamicResource58, DynamicResource58KeyValuePair>
     {
-        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
-        {
-            return new DynamicResource58KeyValuePair(dict, key, value);
-        }
+        public DynamicResource58KeyValuePair NewKeyPair(DynamicResource58 dict, string key, object value = null) =>
+            new DynamicResource58KeyValuePair(dict, key, value);
     }
 
     public class DynamicResource58KeyValuePair : DKeyValuePair
@@ -933,13 +817,11 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(59), DDictionary(typeof(DynamicResource59KeyValuePair))]
-    public class DynamicResource59 : DDictionary
+    [DynamicTable(59)]
+    public class DynamicResource59 : DDictionary, IDDictionary<DynamicResource59, DynamicResource59KeyValuePair>
     {
-        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
-        {
-            return new DynamicResource59KeyValuePair(dict, key, value);
-        }
+        public DynamicResource59KeyValuePair NewKeyPair(DynamicResource59 dict, string key, object value = null) =>
+            new DynamicResource59KeyValuePair(dict, key, value);
     }
 
     public class DynamicResource59KeyValuePair : DKeyValuePair
@@ -949,13 +831,11 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(60), DDictionary(typeof(DynamicResource60KeyValuePair))]
-    public class DynamicResource60 : DDictionary
+    [DynamicTable(60)]
+    public class DynamicResource60 : DDictionary, IDDictionary<DynamicResource60, DynamicResource60KeyValuePair>
     {
-        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
-        {
-            return new DynamicResource60KeyValuePair(dict, key, value);
-        }
+        public DynamicResource60KeyValuePair NewKeyPair(DynamicResource60 dict, string key, object value = null) =>
+            new DynamicResource60KeyValuePair(dict, key, value);
     }
 
     public class DynamicResource60KeyValuePair : DKeyValuePair
@@ -965,13 +845,11 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(61), DDictionary(typeof(DynamicResource61KeyValuePair))]
-    public class DynamicResource61 : DDictionary
+    [DynamicTable(61)]
+    public class DynamicResource61 : DDictionary, IDDictionary<DynamicResource61, DynamicResource61KeyValuePair>
     {
-        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
-        {
-            return new DynamicResource61KeyValuePair(dict, key, value);
-        }
+        public DynamicResource61KeyValuePair NewKeyPair(DynamicResource61 dict, string key, object value = null) =>
+            new DynamicResource61KeyValuePair(dict, key, value);
     }
 
     public class DynamicResource61KeyValuePair : DKeyValuePair
@@ -981,13 +859,11 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(62), DDictionary(typeof(DynamicResource62KeyValuePair))]
-    public class DynamicResource62 : DDictionary
+    [DynamicTable(62)]
+    public class DynamicResource62 : DDictionary, IDDictionary<DynamicResource62, DynamicResource62KeyValuePair>
     {
-        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
-        {
-            return new DynamicResource62KeyValuePair(dict, key, value);
-        }
+        public DynamicResource62KeyValuePair NewKeyPair(DynamicResource62 dict, string key, object value = null) =>
+            new DynamicResource62KeyValuePair(dict, key, value);
     }
 
     public class DynamicResource62KeyValuePair : DKeyValuePair
@@ -997,13 +873,11 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(63), DDictionary(typeof(DynamicResource63KeyValuePair))]
-    public class DynamicResource63 : DDictionary
+    [DynamicTable(63)]
+    public class DynamicResource63 : DDictionary, IDDictionary<DynamicResource63, DynamicResource63KeyValuePair>
     {
-        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
-        {
-            return new DynamicResource63KeyValuePair(dict, key, value);
-        }
+        public DynamicResource63KeyValuePair NewKeyPair(DynamicResource63 dict, string key, object value = null) =>
+            new DynamicResource63KeyValuePair(dict, key, value);
     }
 
     public class DynamicResource63KeyValuePair : DKeyValuePair
@@ -1013,13 +887,11 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(64), DDictionary(typeof(DynamicResource64KeyValuePair))]
-    public class DynamicResource64 : DDictionary
+    [DynamicTable(64)]
+    public class DynamicResource64 : DDictionary, IDDictionary<DynamicResource64, DynamicResource64KeyValuePair>
     {
-        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
-        {
-            return new DynamicResource64KeyValuePair(dict, key, value);
-        }
+        public DynamicResource64KeyValuePair NewKeyPair(DynamicResource64 dict, string key, object value = null) =>
+            new DynamicResource64KeyValuePair(dict, key, value);
     }
 
     public class DynamicResource64KeyValuePair : DKeyValuePair

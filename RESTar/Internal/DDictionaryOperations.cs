@@ -9,29 +9,27 @@ namespace RESTar.Internal
     /// <summary>
     /// The default operations for classes inheriting from DDictionary
     /// </summary>
-    public static class DDictionaryOperations
+    public static class DDictionaryOperations<T> where T : class
     {
-        private static IEnumerable<DDictionary> EqualitySQL(Condition c, string kvp)
+        private static IEnumerable<T> EqualitySQL(Condition c, string kvp)
         {
-            var SQL = $"SELECT t.Dictionary FROM {kvp} t WHERE t.Key =? AND t.ValueHash {c.Operator.SQL}?";
-            return Db.SQL<DDictionary>(SQL, c.Key, c.Value.GetHashCode());
+            var SQL = $"SELECT CAST(t.Dictionary AS {typeof(T).FullName}) " +
+                      $"FROM {kvp} t WHERE t.Key =? AND t.ValueHash {c.Operator.SQL}?";
+            return Db.SQL<T>(SQL, c.Key, c.Value.GetHashCode());
         }
 
-        private static IEnumerable<DDictionary> AllSQL(string table)
-        {
-            return Db.SQL<DDictionary>($"SELECT t FROM {table} t");
-        }
+        private static QueryResultRows<T> AllSQL => Db.SQL<T>($"SELECT t FROM {typeof(T).FullName} t");
 
         /// <summary>
         /// Selects DDictionary entites
         /// </summary>
-        public static Selector<DDictionary> Select => r =>
+        public static Selector<T> Select => r =>
         {
             var equalityConditions = r.Conditions?.Equality;
             if (equalityConditions?.Any() != true)
-                return AllSQL(r.Resource.TargetType.FullName).Filter(r.Conditions);
-            var kvpTable = r.Resource.TargetType.GetAttribute<DDictionaryAttribute>().KeyValuePairTable.FullName;
-            var results = new HashSet<DDictionary>();
+                return AllSQL.Filter(r.Conditions);
+            var kvpTable = TableInfo<T>.KvpTable;
+            var results = new HashSet<T>();
             equalityConditions.ForEach((cond, index) =>
             {
                 if (index == 0) results.UnionWith(EqualitySQL(cond, kvpTable));
@@ -43,16 +41,16 @@ namespace RESTar.Internal
         /// <summary>
         /// Inserter for DDictionary entites (used by RESTar internally, don't use)
         /// </summary>
-        public static Inserter<DDictionary> Insert => StarcounterOperations<DDictionary>.Insert;
+        public static Inserter<T> Insert => StarcounterOperations<T>.Insert;
 
         /// <summary>
         /// Updater for DDictionary entites (used by RESTar internally, don't use)
         /// </summary>
-        public static Updater<DDictionary> Update => StarcounterOperations<DDictionary>.Update;
+        public static Updater<T> Update => StarcounterOperations<T>.Update;
 
         /// <summary>
         /// Deleter for DDictionary entites (used by RESTar internally, don't use)
         /// </summary>
-        public static Deleter<DDictionary> Delete => StarcounterOperations<DDictionary>.Delete;
+        public static Deleter<T> Delete => StarcounterOperations<T>.Delete;
     }
 }

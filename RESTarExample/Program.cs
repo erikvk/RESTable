@@ -98,36 +98,17 @@ namespace RESTarExample
         }
     }
 
-    [DDictionary(typeof(MyDynamicTableKvp))]
-    public class MyDynamicTable : DDictionary
+    public class MyDynamicTable : DDictionary, IDDictionary<MyDynamicTable, MyDynamicTableKvp>, ISelector<DDictionary>
     {
-        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
-        {
-            return new MyDynamicTableKvp(dict, key, value);
-        }
+        public MyDynamicTableKvp NewKeyPair(MyDynamicTable dict, string key, object value = null) =>
+            new MyDynamicTableKvp(dict, key, value);
+
+        public IEnumerable<DDictionary> Select(IRequest request) => DDictionaryOperations<DDictionary>.Select(request);
     }
 
     public class MyDynamicTableKvp : DKeyValuePair
     {
         public MyDynamicTableKvp(DDictionary dict, string key, object value = null) : base(dict, key, value)
-        {
-        }
-    }
-
-    [RESTar(RESTarPresets.ReadAndWrite), DDictionary(typeof(MyDynamicTable2Kvp))]
-    public class MyDynamicTable2 : DDictionary, ISelector<DDictionary>
-    {
-        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
-        {
-            return new MyDynamicTable2Kvp(dict, key, value);
-        }
-
-        public IEnumerable<DDictionary> Select(IRequest request) => DDictionaryOperations.Select(request);
-    }
-
-    public class MyDynamicTable2Kvp : DKeyValuePair
-    {
-        public MyDynamicTable2Kvp(DDictionary dict, string key, object value = null) : base(dict, key, value)
         {
         }
     }

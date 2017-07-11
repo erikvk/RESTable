@@ -64,6 +64,9 @@ namespace RESTar.Internal
             }
         }
 
+        /// <summary>
+        /// All custom resources are constructed here
+        /// </summary>
         private Resource(Type targetType, bool editable, RESTarAttribute attribute, Selector<T> selector,
             Inserter<T> inserter, Updater<T> updater, Deleter<T> deleter)
         {
@@ -91,17 +94,21 @@ namespace RESTar.Internal
             RESTarConfig.AddResource(this);
         }
 
+
+        /// <summary>
+        /// All custom resource registrations (using attribute as well as Resource.Register) terminate here
+        /// </summary>
         internal static void Make(RESTarAttribute attribute, Selector<T> selector = null, Inserter<T> inserter = null,
             Updater<T> updater = null, Deleter<T> deleter = null, bool editable = false)
         {
             var type = typeof(T);
-            if (type.IsSubclassOf(typeof(DDictionary)) && type.HasAttribute<DDictionaryAttribute>())
+            if (type.IsSubclassOf(typeof(DDictionary)) && type.Implements(typeof(IDDictionary<,>), out var _))
             {
-                new Resource<DDictionary>(type, editable, attribute,
-                    type.GetSelector<DDictionary>() ?? DDictionaryOperations.Select,
-                    type.GetInserter<DDictionary>() ?? DDictionaryOperations.Insert,
-                    type.GetUpdater<DDictionary>() ?? DDictionaryOperations.Update,
-                    type.GetDeleter<DDictionary>() ?? DDictionaryOperations.Delete
+                new Resource<T>(type, editable, attribute,
+                    type.GetSelector<T>() ?? DDictionaryOperations<T>.Select,
+                    type.GetInserter<T>() ?? DDictionaryOperations<T>.Insert,
+                    type.GetUpdater<T>() ?? DDictionaryOperations<T>.Update,
+                    type.GetDeleter<T>() ?? DDictionaryOperations<T>.Delete
                 );
                 return;
             }

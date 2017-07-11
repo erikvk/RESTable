@@ -102,22 +102,22 @@ namespace RESTar.Internal
         /// <summary>
         /// RESTar selector (don't use)
         /// </summary>
-        public Selector<DDictionary> Select => DDictionaryOperations.Select;
+        public Selector<DDictionary> Select => DDictionaryOperations<DDictionary>.Select;
 
         /// <summary>
         /// RESTar inserter (don't use)
         /// </summary>
-        public Inserter<DDictionary> Insert => (e, r) => DDictionaryOperations.Insert(e, r);
+        public Inserter<DDictionary> Insert => (e, r) => DDictionaryOperations<DDictionary>.Insert(e, r);
 
         /// <summary>
         /// RESTar updater (don't use)
         /// </summary>
-        public Updater<DDictionary> Update => (e, r) => DDictionaryOperations.Update(e, r);
+        public Updater<DDictionary> Update => (e, r) => DDictionaryOperations<DDictionary>.Update(e, r);
 
         /// <summary>
         /// RESTar deleter (don't use)
         /// </summary>
-        public Deleter<DDictionary> Delete => (e, r) => DDictionaryOperations.Delete(e, r);
+        public Deleter<DDictionary> Delete => (e, r) => DDictionaryOperations<DDictionary>.Delete(e, r);
 
         /// <summary>
         /// Compares two dynamic resources for equality
