@@ -16,7 +16,7 @@ namespace RESTar
     /// A resource that lists all available resources in a RESTar instance
     /// </summary>
     [RESTar(ReadAndWrite)]
-    public sealed class Resource : IOperationsProvider<Resource>
+    public sealed class Resource : ISelector<Resource>, IInserter<Resource>, IUpdater<Resource>, IDeleter<Resource>
     {
         /// <summary>
         /// The name of the resource

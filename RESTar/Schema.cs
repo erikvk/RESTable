@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using Dynamit;
 using RESTar.Deflection;
 using static RESTar.Operators;
 
@@ -32,7 +31,7 @@ namespace RESTar
         internal static Schema MakeSchema(string resourceName)
         {
             var res = resourceName.FindResource();
-            if (res.TargetType.IsSubclassOf(typeof(DDictionary))) return null;
+            if (res.IsDDictionary) return null;
             var schema = new Schema();
             res.GetStaticProperties().Values.ForEach(p => schema[p.Name] = p.Type.FullName);
             return schema;

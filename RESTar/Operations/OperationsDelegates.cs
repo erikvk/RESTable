@@ -8,7 +8,7 @@ namespace RESTar.Operations
     /// and returns them.
     /// </summary>
     /// <typeparam name="T">The resource type</typeparam>
-    public delegate IEnumerable<T> Selector<out T>(IRequest request) where T : class;
+    public delegate IEnumerable<T> Selector<T>(IRequest request) where T : class;
 
     /// <summary>
     /// Specifies the Insert operation used in POST and PUT. Takes a set of entities and inserts 

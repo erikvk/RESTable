@@ -50,12 +50,12 @@ namespace RESTar
         int Delete(IEnumerable<T> entities, IRequest request);
     }
 
-    internal interface IOperationsProvider<T> :
-        ISelector<T>,
-        IInserter<T>,
-        IUpdater<T>,
-        IDeleter<T>
-        where T : class
-    {
-    }
+    //internal interface IOperationsProvider<T> :
+    //    ISelector<T>,
+    //    IInserter<T>,
+    //    IUpdater<T>,
+    //    IDeleter<T>
+    //    where T : class
+    //{
+    //}
 }

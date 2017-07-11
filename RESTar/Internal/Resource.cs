@@ -78,7 +78,7 @@ namespace RESTar.Internal
             RequiresValidation = typeof(IValidatable).IsAssignableFrom(targetType);
             TargetType = targetType;
             IsStarcounterResource = TargetType.HasAttribute<DatabaseAttribute>();
-            IsDDictionary = typeof(T) == typeof(DDictionary);
+            IsDDictionary = typeof(T).IsDDictionary();
             IsDynamic = IsDDictionary || TargetType.IsSubclassOf(typeof(JObject)) ||
                         typeof(IDictionary).IsAssignableFrom(TargetType);
             ResourceType = IsStarcounterResource
@@ -102,7 +102,7 @@ namespace RESTar.Internal
             Updater<T> updater = null, Deleter<T> deleter = null, bool editable = false)
         {
             var type = typeof(T);
-            if (type.IsSubclassOf(typeof(DDictionary)) && type.Implements(typeof(IDDictionary<,>), out var _))
+            if (type.IsDDictionary() && type.Implements(typeof(IDDictionary<,>), out var _))
             {
                 new Resource<T>(type, editable, attribute,
                     type.GetSelector<T>() ?? DDictionaryOperations<T>.Select,
@@ -202,7 +202,8 @@ namespace RESTar.Internal
                 .Any(result => result == null))
                 throw new ArgumentException(
                     $"An operation is missing to support methods {AvailableMethods.ToMethodsString()} for " +
-                    $"resource {Name}. Necessary operations: {string.Join(", ", necessaryOperations.Select(i => i.ToString()))}");
+                    $"resource {Name}. Necessary operations: {string.Join(", ", necessaryOperations.Select(i => i.ToString()))}. " +
+                    $"Make sure that the generic resource operation (e.g. ISelector<T>) interfaces have {Name} as type parameter");
         }
 
         public bool Equals(IResource x, IResource y) => x.Name == y.Name;

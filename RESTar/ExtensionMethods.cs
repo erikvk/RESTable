@@ -39,30 +39,40 @@ namespace RESTar
         static ExtensionMethods()
         {
             DEFAULT_MAKER = typeof(ExtensionMethods).GetMethod(nameof(DEFAULT), NonPublic | Static);
-            // ListGenerator = typeof(ExtensionMethods).GetMethod(nameof(GenerateList), NonPublic | Static);
         }
 
         #region Operation finders
 
-        internal static Selector<T> GetSelector<T>(this Type type)
-            where T : class => typeof(ISelector<T>).IsAssignableFrom(type)
-            ? (Selector<T>) type.GetMethod("Select", Instance | Public).CreateDelegate(typeof(Selector<T>), null)
-            : null;
+        private static Exception InvalidImplementation(string i, string r, Type f) => new Exception(
+            $"Invalid {i} implementation for resource '{r}'. Expected '{i}<{r}>', but found '{i}<{f.FullName}>'");
 
-        internal static Inserter<T> GetInserter<T>(this Type type)
-            where T : class => typeof(IInserter<T>).IsAssignableFrom(type)
-            ? (Inserter<T>) type.GetMethod("Insert", Instance | Public).CreateDelegate(typeof(Inserter<T>), null)
-            : null;
+        internal static Selector<T> GetSelector<T>(this Type type) where T : class
+        {
+            if (!type.Implements(typeof(ISelector<>), out var p)) return null;
+            if (p[0] != typeof(T)) throw InvalidImplementation("ISelector", type.FullName, p[0]);
+            return (Selector<T>) type.GetMethod("Select", Instance | Public).CreateDelegate(typeof(Selector<T>), null);
+        }
 
-        internal static Updater<T> GetUpdater<T>(this Type type)
-            where T : class => typeof(IUpdater<T>).IsAssignableFrom(type)
-            ? (Updater<T>) type.GetMethod("Update", Instance | Public).CreateDelegate(typeof(Updater<T>), null)
-            : null;
+        internal static Inserter<T> GetInserter<T>(this Type type) where T : class
+        {
+            if (!type.Implements(typeof(IInserter<>), out var p)) return null;
+            if (p[0] != typeof(T)) throw InvalidImplementation("IInserter", type.FullName, p[0]);
+            return (Inserter<T>) type.GetMethod("Insert", Instance | Public).CreateDelegate(typeof(Inserter<T>), null);
+        }
 
-        internal static Deleter<T> GetDeleter<T>(this Type type)
-            where T : class => typeof(IDeleter<T>).IsAssignableFrom(type)
-            ? (Deleter<T>) type.GetMethod("Delete", Instance | Public).CreateDelegate(typeof(Deleter<T>), null)
-            : null;
+        internal static Updater<T> GetUpdater<T>(this Type type) where T : class
+        {
+            if (!type.Implements(typeof(IUpdater<>), out var p)) return null;
+            if (p[0] != typeof(T)) throw InvalidImplementation("IUpdater", type.FullName, p[0]);
+            return (Updater<T>) type.GetMethod("Update", Instance | Public).CreateDelegate(typeof(Updater<T>), null);
+        }
+
+        internal static Deleter<T> GetDeleter<T>(this Type type) where T : class
+        {
+            if (!type.Implements(typeof(IDeleter<>), out var p)) return null;
+            if (p[0] != typeof(T)) throw InvalidImplementation("IDeleter", type.FullName, p[0]);
+            return (Deleter<T>) type.GetMethod("Delete", Instance | Public).CreateDelegate(typeof(Deleter<T>), null);
+        }
 
         #endregion
 
@@ -71,14 +81,6 @@ namespace RESTar
         internal static IList<Type> GetConcreteSubclasses(this Type baseType) => baseType.GetSubclasses()
             .Where(type => !type.IsAbstract)
             .ToList();
-
-        // private static readonly MethodInfo ListGenerator;
-
-        // private static List<T> GenerateList<T>(T thing) => new List<T> {thing};
-
-        //internal static dynamic MakeList(this object thing, Type resource) => ListGenerator
-        //    .MakeGenericMethod(resource)
-        //    .Invoke(null, new[] {thing});
 
         internal static IEnumerable<Type> GetSubclasses(this Type baseType) =>
             from assembly in AppDomain.CurrentDomain.GetAssemblies()
@@ -193,7 +195,9 @@ namespace RESTar
             ? Resource.MetaResource
             : args[1].FindResource();
 
-        internal static bool IsDDictionary(this Type type) => type.IsSubclassOf(typeof(DDictionary));
+        internal static bool IsDDictionary(this Type type) => type == typeof(DDictionary) ||
+                                                              type.IsSubclassOf(typeof(DDictionary));
+
         internal static bool IsStarcounter(this Type type) => type.HasAttribute<DatabaseAttribute>();
 
         internal static string RESTarMemberName(this MemberInfo m) => m.GetAttribute<DataMemberAttribute>()?.Name ??

@@ -98,12 +98,15 @@ namespace RESTarExample
         }
     }
 
-    public class MyDynamicTable : DDictionary, IDDictionary<MyDynamicTable, MyDynamicTableKvp>, ISelector<DDictionary>
+    [RESTar(RESTarMethods.GET)]
+    public class MyDynamicTable : DDictionary, IDDictionary<MyDynamicTable, MyDynamicTableKvp>,
+        ISelector<MyDynamicTable>
     {
         public MyDynamicTableKvp NewKeyPair(MyDynamicTable dict, string key, object value = null) =>
             new MyDynamicTableKvp(dict, key, value);
 
-        public IEnumerable<DDictionary> Select(IRequest request) => DDictionaryOperations<DDictionary>.Select(request);
+        public IEnumerable<MyDynamicTable> Select(IRequest request) =>
+            DDictionaryOperations<MyDynamicTable>.Select(request);
     }
 
     public class MyDynamicTableKvp : DKeyValuePair

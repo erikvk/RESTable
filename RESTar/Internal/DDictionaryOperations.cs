@@ -41,16 +41,16 @@ namespace RESTar.Internal
         /// <summary>
         /// Inserter for DDictionary entites (used by RESTar internally, don't use)
         /// </summary>
-        public static Inserter<T> Insert => StarcounterOperations<T>.Insert;
+        public static Inserter<T> Insert => (e, r) => e.Count();
 
         /// <summary>
         /// Updater for DDictionary entites (used by RESTar internally, don't use)
         /// </summary>
-        public static Updater<T> Update => StarcounterOperations<T>.Update;
+        public static Updater<T> Update => (e, r) => e.Count();
 
         /// <summary>
         /// Deleter for DDictionary entites (used by RESTar internally, don't use)
         /// </summary>
-        public static Deleter<T> Delete => StarcounterOperations<T>.Delete;
+        public static Deleter<T> Delete => (e, r) => Do.Run(() => e.ForEach(Db.Delete), e.Count());
     }
 }
