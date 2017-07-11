@@ -47,17 +47,6 @@ namespace RESTar
             JsonSerializer = JsonSerializer.Create(Settings);
         }
 
-        /// <summary>
-        /// Serializes the object to JSON
-        /// </summary>
-        public static string ToJSON(this object value) => value.Serialize();
-
-        /// <summary>
-        /// Deserializes the given JSON string to an object of the given type
-        /// </summary>
-        /// <typeparam name="T">The type to deserialize to</typeparam>
-        public static T FromJSON<T>(this string json) => json.Deserialize<T>();
-
         internal static string Serialize(this object value, Type type = null)
         {
             return SerializeObject(value, type, _PrettyPrint ? Indented : Formatting.None, Settings);
@@ -66,6 +55,7 @@ namespace RESTar
         internal static dynamic Deserialize(this string json, Type type) => DeserializeObject(json, type);
         internal static JToken Deserialize(this string json) => DeserializeObject<JToken>(json);
         internal static T Deserialize<T>(this string json) => DeserializeObject<T>(json);
+        internal static T DeserializeExplicit<T>(this string json, Type type) => (T) DeserializeObject(json, type);
         internal static void Populate(string json, object target) => PopulateObject(json, target, Settings);
         internal static string SerializeToViewModel(this object value) => SerializeObject(value, VmSettings);
     }

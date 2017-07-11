@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Dynamit;
 using Newtonsoft.Json.Linq;
 using RESTar.Requests;
 using Starcounter;
@@ -71,7 +72,12 @@ namespace RESTar.Operations
             IEnumerable<T> results = null;
             try
             {
-                results = request.Body.Deserialize<IEnumerable<T>>();
+                if (typeof(T) == typeof(DDictionary))
+                {
+                    var type = request.Resource.TargetType.MakeArrayType();
+                    results = request.Body.DeserializeExplicit<IEnumerable<T>>(type);
+                }
+                else results = request.Body.Deserialize<IEnumerable<T>>();
                 if (request.Resource.RequiresValidation)
                     results.OfType<IValidatable>().ForEach(item => item.RunValidation());
                 return request.Resource.Insert(results, request);
@@ -116,7 +122,9 @@ namespace RESTar.Operations
             T result = null;
             try
             {
-                result = request.Body.Deserialize<T>();
+                if (typeof(T) == typeof(DDictionary))
+                    result = request.Body.DeserializeExplicit<T>(request.Resource.TargetType);
+                else result = request.Body.Deserialize<T>();
                 if (result is IValidatable i) i.RunValidation();
                 return request.Resource.Insert(new[] {result}, request);
             }
@@ -377,16 +385,16 @@ namespace RESTar.Operations
             internal static int PATCH(Func<T, T> updater, T source, Request<T> request)
             {
                 return typeof(T) == typeof(DatabaseIndex)
-                    ? UPDATE_ONE(request,updater, source)
-                    : Trans(() => UPDATE_ONE(request,updater, source));
+                    ? UPDATE_ONE(request, updater, source)
+                    : Trans(() => UPDATE_ONE(request, updater, source));
             }
 
             internal static int PATCH(Func<IEnumerable<T>, IEnumerable<T>> updater, IEnumerable<T> source,
                 Request<T> request)
             {
                 return typeof(T) == typeof(DatabaseIndex)
-                    ? UPDATE(request,updater, source)
-                    : Trans(() => UPDATE(request,updater, source));
+                    ? UPDATE(request, updater, source)
+                    : Trans(() => UPDATE(request, updater, source));
             }
 
             internal static int PUT(Func<T> inserter, Func<T, T> updater, IEnumerable<T> source,
@@ -394,13 +402,13 @@ namespace RESTar.Operations
             {
                 if (!source.Any())
                     return typeof(T) == typeof(DatabaseIndex)
-                        ? INSERT_ONE(request,inserter)
-                        : Trans(() => INSERT_ONE(request,inserter));
+                        ? INSERT_ONE(request, inserter)
+                        : Trans(() => INSERT_ONE(request, inserter));
                 if (source.MoreThanOne())
                     throw new AmbiguousMatchException(request.Resource);
                 return typeof(T) == typeof(DatabaseIndex)
-                    ? UPDATE_ONE(request,updater, source.First())
-                    : Trans(() => UPDATE_ONE(request,updater, source.First()));
+                    ? UPDATE_ONE(request, updater, source.First())
+                    : Trans(() => UPDATE_ONE(request, updater, source.First()));
             }
 
             internal static int DELETE(T item, Request<T> request) => typeof(T) == typeof(DatabaseIndex)
@@ -409,8 +417,8 @@ namespace RESTar.Operations
 
             internal static int DELETE(IEnumerable<T> items, Request<T> request) =>
                 typeof(T) == typeof(DatabaseIndex)
-                    ? DELETEop(request,items)
-                    : Trans(() => DELETEop(request,items));
+                    ? DELETEop(request, items)
+                    : Trans(() => DELETEop(request, items));
         }
     }
 }

@@ -44,6 +44,7 @@ namespace RESTar.Internal
                 if (!AuthTokens.TryGetValue(authToken, out accessRights))
                     throw NotAuthorizedException;
                 request.AuthToken = authToken;
+                return;
             }
             var authorizationHeader = request.ScRequest.Headers["Authorization"];
             if (string.IsNullOrWhiteSpace(authorizationHeader))

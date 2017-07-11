@@ -39,16 +39,7 @@ namespace RESTar
         /// </summary>
         public override int GetHashCode() => Key.GetHashCode() + Operator.GetHashCode();
 
-        internal int Hash { get; private set; }
-        internal bool HasChanged { get; private set; }
-
-        internal int Prep()
-        {
-            if (!HasChanged) return Hash;
-            Hash = GetHashCode();
-            HasChanged = false;
-            return Hash;
-        }
+        internal bool HasChanged { get; set; }
 
         internal bool ScQueryable => PropertyChain.ScQueryable;
         internal Type Type => PropertyChain.IsStatic ? PropertyChain.LastAs<StaticProperty>()?.Type : null;

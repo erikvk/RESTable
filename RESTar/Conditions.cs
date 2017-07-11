@@ -13,10 +13,12 @@ namespace RESTar
     /// <summary>
     /// A collection of conditions
     /// </summary>
-    public sealed class Conditions : IEnumerable<Condition>, IFilter
+    public class Conditions : IEnumerable<Condition>, IFilter
     {
         private readonly List<Condition> Store;
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+        /// <summary>
+        /// </summary>
         public IEnumerator<Condition> GetEnumerator() => Store.GetEnumerator();
 
         internal IResource Resource;
@@ -34,19 +36,18 @@ namespace RESTar
         }
 
         internal bool HasPost { get; private set; }
-        internal int SqlHash { get; private set; }
-        internal bool HasChanged { get; private set; }
+        private bool _hasChanged;
 
-        internal int Prep()
+        internal bool HasChanged
         {
-            unchecked
-            {
-                SqlHash = Resource.Name.GetHashCode() +
-                          SQL.Select((item, index) => item.Prep() + index)
-                              .Aggregate(17, (a, b) => a + b * 23);
-            }
+            get => _hasChanged || Store.Any(c => c.HasChanged);
+            set => _hasChanged = value;
+        }
+
+        internal void ResetStatus()
+        {
+            Store.ForEach(c => c.HasChanged = false);
             HasChanged = false;
-            return SqlHash;
         }
 
         /// <summary>

@@ -7,9 +7,17 @@ using Starcounter;
 
 namespace RESTar
 {
-    internal static class HTTP
+    /// <summary>
+    /// Provides easy methods for making internal or external HTTP and external
+    /// HTTPS calls.
+    /// </summary>
+    public static class HTTP
     {
-        internal static Response InternalRequest
+        /// <summary>
+        /// Makes an internal request. Make sure to include the original Request's
+        /// AuthToken if you're sending internal RESTar requests.
+        /// </summary>
+        public static Response InternalRequest
         (
             RESTarMethods method,
             Uri relativeUri,
@@ -50,7 +58,10 @@ namespace RESTar
             }
         }
 
-        internal static Response ExternalRequest
+        /// <summary>
+        /// Makes an external HTTP or HTTPS request
+        /// </summary>
+        public static Response ExternalRequest
         (
             RESTarMethods method,
             Uri uri,
@@ -111,6 +122,9 @@ namespace RESTar
                 request.ContentLength = bodyBytes?.Length ?? 0;
                 if (contentType != null) request.ContentType = contentType;
                 if (accept != null) request.Accept = accept;
+                if (bodyBytes != null)
+                    using (var stream = request.GetRequestStream())
+                        stream.Write(bodyBytes, 0, bodyBytes.Length);
                 var response = (HttpWebResponse) request.GetResponse();
                 var respLoc = response.Headers["Location"];
                 if (response.StatusCode == HttpStatusCode.MovedPermanently && respLoc != null)
@@ -125,11 +139,22 @@ namespace RESTar
                 }
                 var _response = new Response
                 {
-                    BodyBytes = responseBody,
-                    Body = Encoding.UTF8.GetString(responseBody),
-                    ContentType = response.ContentType,
-                    ContentLength = (int) response.ContentLength
+                    StatusCode = (ushort) response.StatusCode,
+                    StatusDescription = response.StatusDescription,
+                    ContentLength = (int) response.ContentLength,
+                    ContentType = accept ?? MimeTypes.JSON
                 };
+                foreach (var header in response.Headers.AllKeys)
+                    _response.Headers[header] = response.Headers[header];
+                switch (accept)
+                {
+                    case MimeTypes.Excel:
+                        _response.BodyBytes = responseBody;
+                        break;
+                    default:
+                        _response.Body = Encoding.UTF8.GetString(responseBody);
+                        break;
+                }
                 then?.Invoke(_response);
                 return _response;
             }

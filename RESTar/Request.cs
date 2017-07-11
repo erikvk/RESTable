@@ -5,6 +5,7 @@ using RESTar.Internal;
 using RESTar.Operations;
 using RESTar.Requests;
 using RESTar.Deflection;
+using static RESTar.Internal.RESTarResourceType;
 using IResource = RESTar.Internal.IResource;
 
 #pragma warning disable 1591
@@ -22,7 +23,7 @@ namespace RESTar
         public MetaConditions MetaConditions { get; }
         RESTarMethods IRequest.Method => 0;
 
-        internal int SqlHash { get; private set; }
+        private bool ScSql;
         internal string SqlQuery { get; private set; }
         internal object[] SqlValues { get; private set; }
 
@@ -34,7 +35,6 @@ namespace RESTar
 
         internal void Prep()
         {
-            SqlHash = Conditions.Prep();
             if (!Conditions.SQL.Any())
                 SqlQuery = StarcounterOperations<T>.SELECT;
             else
@@ -43,6 +43,7 @@ namespace RESTar
                 SqlQuery = $"{StarcounterOperations<T>.SELECT}{wh.WhereString}";
                 SqlValues = wh.Values;
             }
+            Conditions.ResetStatus();
         }
 
         public Request(string key, Operator op, object value) : this((key, op, value))
@@ -51,8 +52,8 @@ namespace RESTar
 
         public Request(params (string key, Operator op, object value)[] conditions)
         {
-            Resource = RESTar.Resource.Get<T>() ?? throw new ArgumentException($"'{typeof(T).FullName}' " +
-                                                                               "is not a RESTar resource.");
+            Resource = RESTar.Resource.Get<T>()
+                       ?? throw new ArgumentException($"'{typeof(T).FullName}' is not a RESTar resource.");
             ResponseHeaders = new Dictionary<string, string>();
             Conditions = new Conditions(Resource);
             MetaConditions = new MetaConditions {Unsafe = true};
@@ -62,6 +63,7 @@ namespace RESTar
                 value: c.value
             )).ForEach(Conditions.Add);
             this.Authenticate();
+            ScSql = Resource.ResourceType == ScStatic;
             Resource.AvailableMethods.ForEach(m =>
             {
                 switch (m)
@@ -83,6 +85,7 @@ namespace RESTar
                         break;
                 }
             });
+            if (ScSql) Prep();
         }
 
         private static Exception Deny(RESTarMethods method) => new ForbiddenException
@@ -90,7 +93,7 @@ namespace RESTar
 
         public IEnumerable<T> GET()
         {
-            if (Conditions.HasChanged) Prep();
+            if (ScSql && Conditions.HasChanged) Prep();
             if (GETAllowed)
                 return Evaluators<T>.AppSELECT(this);
             throw Deny(RESTarMethods.GET);
@@ -98,7 +101,7 @@ namespace RESTar
 
         public int COUNT()
         {
-            if (Conditions.HasChanged) Prep();
+            if (ScSql && Conditions.HasChanged) Prep();
             if (GETAllowed)
                 return Evaluators<T>.AppSELECT(this).Count();
             throw Deny(RESTarMethods.GET);
@@ -120,7 +123,7 @@ namespace RESTar
 
         public int PATCH(Func<T, T> updater)
         {
-            if (Conditions.HasChanged) Prep();
+            if (ScSql && Conditions.HasChanged) Prep();
             if (!PATCHAllowed) throw Deny(RESTarMethods.PATCH);
             var source = Evaluators<T>.AppSELECT(this);
             if (source.IsNullOrEmpty()) return 0;
@@ -131,7 +134,7 @@ namespace RESTar
 
         public int PATCH(Func<IEnumerable<T>, IEnumerable<T>> updater)
         {
-            if (Conditions.HasChanged) Prep();
+            if (ScSql && Conditions.HasChanged) Prep();
             if (!PATCHAllowed) throw Deny(RESTarMethods.PATCH);
             var source = Evaluators<T>.AppSELECT(this);
             if (source.IsNullOrEmpty()) return 0;
@@ -140,7 +143,7 @@ namespace RESTar
 
         public int PUT(Func<T> inserter, Func<T, T> updater)
         {
-            if (Conditions.HasChanged) Prep();
+            if (ScSql && Conditions.HasChanged) Prep();
             if (!PUTAllowed) throw Deny(RESTarMethods.PUT);
             var source = Evaluators<T>.AppSELECT(this);
             if (source == null) return 0;
@@ -149,7 +152,7 @@ namespace RESTar
 
         public int DELETE(bool @unsafe = false)
         {
-            if (Conditions.HasChanged) Prep();
+            if (ScSql && Conditions.HasChanged) Prep();
             if (!DELETEAllowed) throw Deny(RESTarMethods.DELETE);
             var source = Evaluators<T>.AppSELECT(this);
             if (source.IsNullOrEmpty()) return 0;

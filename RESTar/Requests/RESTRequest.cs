@@ -164,15 +164,15 @@ namespace RESTar.Requests
             var rqst = HttpRequest.Parse(Destination);
             rqst.ContentType = Accept.ToMimeString();
             var bytes = Response.BodyBytes;
-            Response = rqst.Internal
+            var response = rqst.Internal
                 ? HTTP.InternalRequest(rqst.Method, rqst.URI, AuthToken, bytes, rqst.ContentType, headers: rqst.Headers)
                 : HTTP.ExternalRequest(rqst.Method, rqst.URI, bytes, rqst.ContentType, headers: rqst.Headers);
-            if (Response == null) throw new Exception($"No response for destination request: '{Destination}'");
-            if (!Response.IsSuccessStatusCode)
+            if (response == null) throw new Exception($"No response for destination request: '{Destination}'");
+            if (!response.IsSuccessStatusCode)
                 throw new Exception($"Failed upload at destination server at '{rqst.URI}'. " +
-                                    $"Status: {Response.StatusCode}, {Response.StatusDescription}");
-            Response.Headers["Access-Control-Allow-Origin"] = AllowAllOrigins ? "*" : (Origin ?? "null");
-            return Response;
+                                    $"Status: {response.StatusCode}, {response.StatusDescription}");
+            response.Headers["Access-Control-Allow-Origin"] = AllowAllOrigins ? "*" : (Origin ?? "null");
+            return response;
         }
 
         public void Dispose()
