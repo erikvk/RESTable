@@ -9,8 +9,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RESTarExample", "RESTarExam
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Help Manager", "Help Manager\Help Manager.csproj", "{EEA917B1-796A-4676-B089-FECFDA6E3D49}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Dynamit", "..\Dynamit\Dynamit\Dynamit.csproj", "{1C0568E7-1BF6-406D-A345-2A870C23F20C}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -37,12 +35,6 @@ Global
 		{EEA917B1-796A-4676-B089-FECFDA6E3D49}.Release|Any CPU.ActiveCfg = Release|x64
 		{EEA917B1-796A-4676-B089-FECFDA6E3D49}.Release|x64.ActiveCfg = Release|x64
 		{EEA917B1-796A-4676-B089-FECFDA6E3D49}.Release|x64.Build.0 = Release|x64
-		{1C0568E7-1BF6-406D-A345-2A870C23F20C}.Debug|Any CPU.ActiveCfg = Debug|x64
-		{1C0568E7-1BF6-406D-A345-2A870C23F20C}.Debug|x64.ActiveCfg = Debug|x64
-		{1C0568E7-1BF6-406D-A345-2A870C23F20C}.Debug|x64.Build.0 = Debug|x64
-		{1C0568E7-1BF6-406D-A345-2A870C23F20C}.Release|Any CPU.ActiveCfg = Release|x64
-		{1C0568E7-1BF6-406D-A345-2A870C23F20C}.Release|x64.ActiveCfg = Release|x64
-		{1C0568E7-1BF6-406D-A345-2A870C23F20C}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
