@@ -29,12 +29,11 @@ namespace RESTar.Internal
                     results = Db.SQL<T>($"{SELECT}{where?.WhereString} " +
                                         $"{request.MetaConditions.OrderBy?.SQL}", where?.Values);
                     return !request.Conditions.HasPost ? results : results.Filter(request.Conditions?.PostSQL);
-
                 case Request<T> appRequest:
                     results = Db.SQL<T>(appRequest.SqlQuery, appRequest.SqlValues);
                     return !appRequest.Conditions.HasPost ? results : results.Filter(appRequest.Conditions?.PostSQL);
+                default: return null;
             }
-            return null;
         };
 
         /// <summary>

@@ -41,6 +41,7 @@ namespace RESTar
             ResourceByName = new Dictionary<string, IResource>();
             AuthTokens = new ConcurrentDictionary<string, AccessRights>();
             AllowedOrigins = new List<Uri>();
+            AuthTokens.TryAdd(Authenticator.AppToken, AccessRights.Root);
         }
 
         private static void UpdateAuthInfo()

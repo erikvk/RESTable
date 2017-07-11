@@ -122,17 +122,17 @@ namespace RESTar.Internal
         /// <summary>
         /// Compares two dynamic resources for equality
         /// </summary>
-        public bool Equals(IResource<DDictionary> x, IResource<DDictionary> y) => x.Name == y.Name;
+        public bool Equals(IResource x, IResource y) => x.Name == y.Name;
 
         /// <summary>
         /// Gets the hashcode for a dynamic resource
         /// </summary>
-        public int GetHashCode(IResource<DDictionary> obj) => obj.Name.GetHashCode();
+        public int GetHashCode(IResource obj) => obj.Name.GetHashCode();
 
         /// <summary>
         /// Compares two dynamic resources
         /// </summary>
-        public int CompareTo(IResource<DDictionary> other) => string.Compare(Name, other.Name, Ordinal);
+        public int CompareTo(IResource other) => string.Compare(Name, other.Name, Ordinal);
 
         /// <summary>
         /// The available methods for this resource

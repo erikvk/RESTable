@@ -14,6 +14,8 @@ namespace RESTar.Internal
         internal static ForbiddenException NotAuthorizedException => new ForbiddenException(NotAuthorized,
             "Not authorized");
 
+        internal static readonly string AppToken = Guid.NewGuid().ToString();
+
         internal static void CheckUser()
         {
             if (GetCurrentSystemUser() == null)
@@ -57,7 +59,7 @@ namespace RESTar.Internal
 
         internal static void Authenticate<T>(this Request<T> request) where T : class
         {
-            request.AuthToken = AssignAuthtoken(AccessRights.Root);
+            request.AuthToken = AppToken;
         }
 
         private static string AssignAuthtoken(AccessRights rights, string token = null)

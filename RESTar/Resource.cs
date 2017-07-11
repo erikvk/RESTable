@@ -65,7 +65,7 @@ namespace RESTar
         /// <summary>
         /// RESTar selector (don't use)
         /// </summary>
-        public IEnumerable<Resource> Select(IRequest<Resource> request)
+        public IEnumerable<Resource> Select(IRequest request)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
             return Resources
@@ -83,7 +83,7 @@ namespace RESTar
 
         /// <summary>
         /// </summary>
-        public int Insert(IEnumerable<Resource> resources, IRequest<Resource> request)
+        public int Insert(IEnumerable<Resource> resources, IRequest request)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
             var count = 0;
@@ -103,7 +103,7 @@ namespace RESTar
 
         /// <summary>
         /// </summary>
-        public int Update(IEnumerable<Resource> entities, IRequest<Resource> request)
+        public int Update(IEnumerable<Resource> entities, IRequest request)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
             var count = 0;
@@ -118,7 +118,7 @@ namespace RESTar
 
         /// <summary>
         /// </summary>
-        public int Delete(IEnumerable<Resource> entities, IRequest<Resource> request)
+        public int Delete(IEnumerable<Resource> entities, IRequest request)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
             var count = 0;
@@ -236,11 +236,8 @@ namespace RESTar
         /// </summary>
         public static IResource Get(Type type) => ResourceByType.SafeGet(type);
 
-        /// <summary>
-        /// Finds a resource by target type
-        /// </summary>
-        public static IResource<T> Get<T>() where T : class => ResourceByType.SafeGet(typeof(T)) as IResource<T>;
+        internal static IResource<T> Get<T>() where T : class => ResourceByType.SafeGet(typeof(T)) as IResource<T>;
 
-        internal static IResource<Resource> MetaResource => Get<Resource>();
+        internal static IResource<Resource> MetaResource => ResourceByType[typeof(Resource)] as IResource<Resource>;
     }
 }

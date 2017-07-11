@@ -31,7 +31,7 @@ namespace RESTar
         /// <summary>
         /// RESTar selector (don't use)
         /// </summary>
-        public IEnumerable<Help> Select(IRequest<Help> request)
+        public IEnumerable<Help> Select(IRequest request)
         {
             var topic = ((string) request.Conditions?["topic", EQUALS]?.Value)?.UriEncode();
             var uri = new Uri(URL + (topic != null ? $"topic={topic}" : ""));

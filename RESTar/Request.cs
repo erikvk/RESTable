@@ -11,7 +11,7 @@ using IResource = RESTar.Internal.IResource;
 
 namespace RESTar
 {
-    public class Request<T> : IRequest<T>, IDisposable where T : class
+    public class Request<T> : IRequest<T> where T : class
     {
         public IResource<T> Resource { get; }
         public Conditions Conditions { get; }
@@ -20,13 +20,17 @@ namespace RESTar
         public IDictionary<string, string> ResponseHeaders { get; }
         IResource IRequest.Resource => Resource;
         public MetaConditions MetaConditions { get; }
-        public RESTarMethods Method { get; private set; }
+        RESTarMethods IRequest.Method => 0;
 
         internal int SqlHash { get; private set; }
         internal string SqlQuery { get; private set; }
         internal object[] SqlValues { get; private set; }
 
-        internal bool HasChanged => Conditions.HasChanged;
+        private bool GETAllowed;
+        private bool POSTAllowed;
+        private bool PATCHAllowed;
+        private bool PUTAllowed;
+        private bool DELETEAllowed;
 
         internal void Prep()
         {
@@ -36,8 +40,8 @@ namespace RESTar
             else
             {
                 var wh = Conditions.SQL.MakeWhereClause();
-                SqlQuery = $"{StarcounterOperations<T>.SELECT}{wh?.WhereString}";
-                SqlValues = Conditions.SQL.Select(c => c.Value).ToArray();
+                SqlQuery = $"{StarcounterOperations<T>.SELECT}{wh.WhereString}";
+                SqlValues = wh.Values;
             }
         }
 
@@ -57,116 +61,103 @@ namespace RESTar
                 op: c.op,
                 value: c.value
             )).ForEach(Conditions.Add);
+            this.Authenticate();
+            Resource.AvailableMethods.ForEach(m =>
+            {
+                switch (m)
+                {
+                    case RESTarMethods.GET:
+                        GETAllowed = true;
+                        break;
+                    case RESTarMethods.POST:
+                        POSTAllowed = true;
+                        break;
+                    case RESTarMethods.PATCH:
+                        PATCHAllowed = true;
+                        break;
+                    case RESTarMethods.PUT:
+                        PUTAllowed = true;
+                        break;
+                    case RESTarMethods.DELETE:
+                        DELETEAllowed = true;
+                        break;
+                }
+            });
         }
 
-        private void Check(RESTarMethods method)
-        {
-            if (!Resource.AvailableMethods.Contains(method))
-                throw new ForbiddenException(ErrorCodes.NotAuthorized,
-                    $"{method} is not available for resource '{typeof(T).FullName}'");
-        }
+        private static Exception Deny(RESTarMethods method) => new ForbiddenException
+            (ErrorCodes.NotAuthorized, $"{method} is not available for resource '{typeof(T).FullName}'");
 
         public IEnumerable<T> GET()
         {
-            if (HasChanged) Prep();
-            Method = RESTarMethods.GET;
-            Check(Method);
-            using (Auth) return Evaluators<T>.AppSELECT(this);
+            if (Conditions.HasChanged) Prep();
+            if (GETAllowed)
+                return Evaluators<T>.AppSELECT(this);
+            throw Deny(RESTarMethods.GET);
         }
 
         public int COUNT()
         {
-            if (HasChanged) Prep();
-            Method = RESTarMethods.GET;
-            Check(Method);
-            using (Auth) return Evaluators<T>.AppSELECT(this).Count();
+            if (Conditions.HasChanged) Prep();
+            if (GETAllowed)
+                return Evaluators<T>.AppSELECT(this).Count();
+            throw Deny(RESTarMethods.GET);
         }
 
         public int POST(Func<T> inserter)
         {
-            Method = RESTarMethods.POST;
-            Check(Method);
-            using (Auth) return Evaluators<T>.App.POST(inserter, this);
+            if (POSTAllowed)
+                return Evaluators<T>.App.POST(inserter, this);
+            throw Deny(RESTarMethods.POST);
         }
 
         public int POST(Func<IEnumerable<T>> inserter)
         {
-            Method = RESTarMethods.POST;
-            Check(Method);
-            using (Auth) return Evaluators<T>.App.POST(inserter, this);
+            if (POSTAllowed)
+                return Evaluators<T>.App.POST(inserter, this);
+            throw Deny(RESTarMethods.POST);
         }
 
         public int PATCH(Func<T, T> updater)
         {
-            if (HasChanged) Prep();
-            Method = RESTarMethods.PATCH;
-            Check(Method);
-            using (Auth)
-            {
-                var source = Evaluators<T>.AppSELECT(this);
-                if (source.IsNullOrEmpty()) return 0;
-                if (source.MoreThanOne())
-                    throw new AmbiguousMatchException(Resource);
-                return Evaluators<T>.App.PATCH(updater, source.First(), this);
-            }
+            if (Conditions.HasChanged) Prep();
+            if (!PATCHAllowed) throw Deny(RESTarMethods.PATCH);
+            var source = Evaluators<T>.AppSELECT(this);
+            if (source.IsNullOrEmpty()) return 0;
+            if (source.MoreThanOne())
+                throw new AmbiguousMatchException(Resource);
+            return Evaluators<T>.App.PATCH(updater, source.First(), this);
         }
 
         public int PATCH(Func<IEnumerable<T>, IEnumerable<T>> updater)
         {
-            if (HasChanged) Prep();
-            Method = RESTarMethods.PATCH;
-            Check(Method);
-            using (Auth)
-            {
-                var source = Evaluators<T>.AppSELECT(this);
-                if (source.IsNullOrEmpty()) return 0;
-                return Evaluators<T>.App.PATCH(updater, source, this);
-            }
+            if (Conditions.HasChanged) Prep();
+            if (!PATCHAllowed) throw Deny(RESTarMethods.PATCH);
+            var source = Evaluators<T>.AppSELECT(this);
+            if (source.IsNullOrEmpty()) return 0;
+            return Evaluators<T>.App.PATCH(updater, source, this);
         }
 
         public int PUT(Func<T> inserter, Func<T, T> updater)
         {
-            if (HasChanged) Prep();
-            Method = RESTarMethods.PUT;
-            Check(Method);
-            using (Auth)
-            {
-                var source = Evaluators<T>.AppSELECT(this);
-                if (source == null) return 0;
-                return Evaluators<T>.App.PUT(inserter, updater, source, this);
-            }
+            if (Conditions.HasChanged) Prep();
+            if (!PUTAllowed) throw Deny(RESTarMethods.PUT);
+            var source = Evaluators<T>.AppSELECT(this);
+            if (source == null) return 0;
+            return Evaluators<T>.App.PUT(inserter, updater, source, this);
         }
 
         public int DELETE(bool @unsafe = false)
         {
-            if (HasChanged) Prep();
-            Method = RESTarMethods.DELETE;
-            Check(Method);
-            using (Auth)
-            {
-                var source = Evaluators<T>.AppSELECT(this);
-                if (source.IsNullOrEmpty()) return 0;
-                if (@unsafe)
-                    return Evaluators<T>.App.DELETE(source, this);
-                if (source.MoreThanOne())
-                    throw new AmbiguousMatchException(Resource);
-                return Evaluators<T>.App.DELETE(source.First(), this);
-            }
-        }
-
-        private Request<T> Auth
-        {
-            get
-            {
-                this.Authenticate();
-                return this;
-            }
-        }
-
-        public void Dispose()
-        {
-            Method = default(RESTarMethods);
-            RESTarConfig.AuthTokens.TryRemove(AuthToken, out var _);
+            if (Conditions.HasChanged) Prep();
+            if (!DELETEAllowed) throw Deny(RESTarMethods.DELETE);
+            var source = Evaluators<T>.AppSELECT(this);
+            if (source.IsNullOrEmpty()) return 0;
+            if (@unsafe)
+                return Evaluators<T>.App.DELETE(source, this);
+            if (source.MoreThanOne())
+                throw new AmbiguousMatchException(Resource);
+            return Evaluators<T>.App.DELETE(source.First(), this);
         }
     }
 }

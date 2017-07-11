@@ -71,11 +71,11 @@ namespace RESTar
         /// <summary>
         /// RESTar selector (don't use)
         /// </summary>
-        public IEnumerable<DatabaseIndex> Select(IRequest<DatabaseIndex> request) => All.Filter(request.Conditions).ToList();
+        public IEnumerable<DatabaseIndex> Select(IRequest request) => All.Filter(request.Conditions).ToList();
 
         /// <summary>
         /// </summary>
-        public int Insert(IEnumerable<DatabaseIndex> indices, IRequest<DatabaseIndex> request)
+        public int Insert(IEnumerable<DatabaseIndex> indices, IRequest request)
         {
             var count = 0;
             foreach (var index in indices)
@@ -89,7 +89,7 @@ namespace RESTar
 
         /// <summary>
         /// </summary>
-        public int Update(IEnumerable<DatabaseIndex> indices, IRequest<DatabaseIndex> request)
+        public int Update(IEnumerable<DatabaseIndex> indices, IRequest request)
         {
             var count = 0;
             foreach (var index in indices)
@@ -104,7 +104,7 @@ namespace RESTar
 
         /// <summary>
         /// </summary>
-        public int Delete(IEnumerable<DatabaseIndex> indices, IRequest<DatabaseIndex> request)
+        public int Delete(IEnumerable<DatabaseIndex> indices, IRequest request)
         {
             var count = 0;
             foreach (var index in indices)

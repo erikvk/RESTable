@@ -66,7 +66,7 @@ namespace RESTar
         /// <summary>
         /// RESTar selector (don't use)
         /// </summary>
-        public IEnumerable<TableInfo> Select(IRequest<TableInfo> request)
+        public IEnumerable<TableInfo> Select(IRequest request)
         {
             IEnumerable<IResource> resources;
             var input = (string) request.Conditions?[nameof(TableName), EQUALS]?.Value;

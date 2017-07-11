@@ -198,9 +198,9 @@ namespace RESTar.Internal
                     $"resource {Name}. Necessary operations: {string.Join(", ", necessaryOperations.Select(i => i.ToString()))}");
         }
 
-        public bool Equals(IResource<T> x, IResource<T> y) => x.Name == y.Name;
-        public int GetHashCode(IResource<T> obj) => obj.Name.GetHashCode();
-        public int CompareTo(IResource<T> other) => string.Compare(Name, other.Name, StringComparison.Ordinal);
+        public bool Equals(IResource x, IResource y) => x.Name == y.Name;
+        public int GetHashCode(IResource obj) => obj.Name.GetHashCode();
+        public int CompareTo(IResource other) => string.Compare(Name, other.Name, StringComparison.Ordinal);
         public override int GetHashCode() => Name.GetHashCode();
     }
 }

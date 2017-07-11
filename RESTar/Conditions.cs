@@ -74,6 +74,15 @@ namespace RESTar
         }
 
         /// <summary>
+        /// Removes a condition from the collection
+        /// </summary>
+        public void Remove(Condition condition)
+        {
+            Store.Remove(condition);
+            HasChanged = true;
+        }
+
+        /// <summary>
         /// Creates and adds a new condition to the list
         /// </summary>
         public void Add(string key, Operator op, dynamic value)

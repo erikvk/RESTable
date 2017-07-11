@@ -338,9 +338,9 @@ namespace RESTar
             return processor?.Apply((dynamic) entities) ?? (IEnumerable<dynamic>) entities;
         }
 
-        internal static (string WhereString, object[] Values)? MakeWhereClause(this IEnumerable<Condition> conds)
+        internal static (string WhereString, object[] Values) MakeWhereClause(this IEnumerable<Condition> conds)
         {
-            if (!conds.Any()) return null;
+            if (!conds.Any()) return (null, null);
             var Values = new List<object>();
             var WhereString = string.Join(" AND ", conds.Select(c =>
             {
