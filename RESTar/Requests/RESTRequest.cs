@@ -48,7 +48,7 @@ namespace RESTar.Requests
             MetaConditions = new MetaConditions();
         }
 
-        internal void Populate(string[] args, RESTarMethods method)
+        internal void Populate(Args args, RESTarMethods method)
         {
             Method = method;
             Evaluator = Evaluators<T>.REST.GetEvaluator(method);
@@ -59,10 +59,10 @@ namespace RESTar.Requests
             Accept = MimeTypes.Match(ScRequest.PreferredMimeTypeString);
             InputDataConfig = Source != null ? DataConfig.External : DataConfig.Internal;
             OutputDataConfig = Destination != null ? DataConfig.External : DataConfig.Internal;
-            if (args.Length <= 2) return;
-            Conditions = Conditions.Parse(args[2], Resource);
-            if (args.Length == 3) return;
-            MetaConditions = MetaConditions.Parse(args[3], Resource) ?? MetaConditions;
+            if (args.HasConditions)
+                Conditions = Conditions.Parse(args.Conditions, Resource);
+            if (args.HasMetaConditions)
+                MetaConditions = MetaConditions.Parse(args.MetaConditions, Resource) ?? MetaConditions;
         }
 
         internal void SetRequestData()

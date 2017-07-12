@@ -17,16 +17,18 @@ using RESTar.Auth;
 using RESTar.Deflection;
 using RESTar.Internal;
 using RESTar.Operations;
+using RESTar.Requests;
 using RESTar.View;
 using Starcounter;
 using static System.Reflection.BindingFlags;
 using static System.StringComparison;
+using static RESTar.RESTarMethods;
+using static RESTar.Internal.ErrorCodes;
 using static RESTar.ResourceAlias;
 using static RESTar.Requests.Responses;
 using static RESTar.RESTarConfig;
-using static RESTar.RESTarMethods;
-using static RESTar.Internal.ErrorCodes;
 using static Starcounter.DbHelper;
+using static RESTar.Deflection.TypeCache;
 using IResource = RESTar.Internal.IResource;
 
 namespace RESTar
@@ -191,9 +193,14 @@ namespace RESTar
 
         #region Resource helpers
 
-        internal static IResource GetResource(this string[] args) => args.Length == 1
-            ? Resource.MetaResource
-            : args[1].FindResource();
+        internal static PropertyChain MakePropertyChain(this IResource Resource, string key, bool dynamicUnknowns)
+        {
+            var hash = Resource.TargetType.GetHashCode() + key.ToLower().GetHashCode() +
+                       dynamicUnknowns.GetHashCode();
+            if (!PropertyChains.TryGetValue(hash, out PropertyChain propChain))
+                propChain = PropertyChains[hash] = PropertyChain.ParseInternal(Resource, key, dynamicUnknowns);
+            return propChain;
+        }
 
         internal static bool IsDDictionary(this Type type) => type == typeof(DDictionary) ||
                                                               type.IsSubclassOf(typeof(DDictionary));
@@ -572,17 +579,7 @@ namespace RESTar
 
         #region Requests
 
-        internal static string[] ToArgs(this string query, Request request)
-        {
-            if (query.CharCount('/') > 3)
-                throw new SyntaxException(InvalidSeparatorCount,
-                    "Invalid argument separator count. A RESTar URI can contain at most 3 " +
-                    $"forward slashes after the base uri. URI scheme: {Settings._ResourcesPath}" +
-                    "/[resource]/[conditions]/[meta-conditions]");
-            if (request.HeadersDictionary.ContainsKey("X-ARR-LOG-ID"))
-                query = query.Replace("%25", "%");
-            return query.TrimEnd('/').Split('/');
-        }
+        internal static Args ToArgs(this string query, Request request) => new Args(query, request);
 
         private static string CheckQuery(this string query, Request request)
         {

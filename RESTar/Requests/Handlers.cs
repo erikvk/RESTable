@@ -41,7 +41,7 @@ namespace RESTar.Requests
             try
             {
                 var args = query?.ToArgs(request);
-                resource = args?.GetResource();
+                resource = args?.IResource;
                 switch (action)
                 {
                     case GET:
@@ -89,23 +89,23 @@ namespace RESTar.Requests
             }
         }
 
-        private static Response HandleView<T>(IResource<T> resource, Request scRequest, string[] args) where T : class
+        private static Response HandleView<T>(IResource<T> resource, Request scRequest, Args? args) where T : class
         {
             var request = new ViewRequest<T>(resource, scRequest);
             request.Authenticate();
-            request.Populate(args);
+            request.Populate(args.GetValueOrDefault());
             request.MethodCheck();
             request.Evaluate();
             return request.GetView();
         }
 
-        private static Response HandleREST<T>(IResource<T> resource, Request scRequest, string[] args,
+        private static Response HandleREST<T>(IResource<T> resource, Request scRequest, Args? args,
             RESTarMethods method) where T : class
         {
             using (var request = new RESTRequest<T>(resource, scRequest))
             {
                 request.Authenticate();
-                request.Populate(args, method);
+                request.Populate(args.GetValueOrDefault(), method);
                 request.MethodCheck();
                 request.SetRequestData();
                 request.Evaluate();

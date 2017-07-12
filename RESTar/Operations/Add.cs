@@ -16,7 +16,7 @@ namespace RESTar.Operations
                 {
                     if (jobj[prop.Key] == null)
                     {
-                        var val = prop.Get(entity, out string actualKey);
+                        var val = prop.Evaluate(entity, out string actualKey);
                         jobj[actualKey] = val == null ? null : JToken.FromObject(val, Serializer.JsonSerializer);
                     }
                 });

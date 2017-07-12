@@ -102,6 +102,7 @@
     <Compile Include="Deflection\TypeCache.cs" />
     <Compile Include="Delegates.cs" />
     <Compile Include="Echo.cs" />
+    <Compile Include="Requests\Args.cs" />
     <Compile Include="Requests\DataConfig.cs" />
     <Compile Include="Requests\HandlerActions.cs" />
     <Compile Include="Internal\ErrorCodes.cs" />

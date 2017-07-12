@@ -66,7 +66,7 @@ namespace RESTar.Requests
         internal bool Delete { get; set; }
 
         internal static MetaConditions Parse(string metaConditionString, IResource resource,
-            bool parseProcessors = true)
+            bool processors = true)
         {
             if (metaConditionString?.Equals("") != false)
                 return null;
@@ -122,20 +122,20 @@ namespace RESTar.Requests
                         mc.Unsafe = value;
                         break;
                     case RESTarMetaConditions.Select:
-                        if (!parseProcessors) break;
+                        if (!processors) break;
                         mc.Select = ((string) value).Split(',')
                             .Select(str => PropertyChain.ParseInternal(resource, str, resource.IsDynamic,
                                 dynamicMembers))
                             .ToSelect();
                         break;
                     case RESTarMetaConditions.Add:
-                        if (!parseProcessors) break;
+                        if (!processors) break;
                         mc.Add = ((string) value).Split(',')
-                            .Select(str => PropertyChain.GetOrMake(resource, str, resource.IsDynamic))
+                            .Select(str => resource.MakePropertyChain(str, resource.IsDynamic))
                             .ToAdd();
                         break;
                     case RESTarMetaConditions.Rename:
-                        if (!parseProcessors) break;
+                        if (!processors) break;
                         mc.Rename = Rename.Parse((string) value, resource);
                         dynamicMembers.AddRange(mc.Rename.Values);
                         break;

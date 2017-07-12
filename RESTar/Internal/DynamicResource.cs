@@ -4,6 +4,7 @@ using Dynamit;
 using RESTar.Operations;
 using Starcounter;
 using static System.StringComparison;
+using static RESTar.Internal.RESTarResourceType;
 using static RESTar.Internal.Transactions;
 
 namespace RESTar.Internal
@@ -97,7 +98,7 @@ namespace RESTar.Internal
         /// <summary>
         /// The RESTar resource type of this resource
         /// </summary>
-        public RESTarResourceType ResourceType => RESTarResourceType.Dynamic;
+        public RESTarResourceType ResourceType => RESTarDynamicResource;
 
         /// <summary>
         /// RESTar selector (don't use)

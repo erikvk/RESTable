@@ -61,11 +61,11 @@ namespace RESTar.Deflection
             ? type.GetFields()
                 .Where(t => t.FieldType.IsEnum)
                 .Select(t => new EnumMember
-                {
-                    Attributes = t.GetCustomAttributes<Attribute>(),
-                    Name = t.Name,
-                    Value = (int) (Convert.ChangeType(t.GetValue(null), TypeCode.Int32) ?? -1)
-                })
+                (
+                    attributes: t.GetCustomAttributes<Attribute>(),
+                    name: t.Name,
+                    value: (int) (Convert.ChangeType(t.GetValue(null), TypeCode.Int32) ?? -1)
+                ))
                 .ToList()
             : throw new ArgumentException("Must be enum", nameof(type));
 
@@ -77,17 +77,26 @@ namespace RESTar.Deflection
             /// <summary>
             /// The attributes of the enumeration member
             /// </summary>
-            public IEnumerable<Attribute> Attributes;
+            public readonly IEnumerable<Attribute> Attributes;
 
             /// <summary>
             /// The name of the enumeration members
             /// </summary>
-            public string Name;
+            public readonly string Name;
 
             /// <summary>
             /// The integer value of the enumeration
             /// </summary>
-            public int Value;
+            public readonly int Value;
+
+            /// <summary>
+            ///  </summary>
+            internal EnumMember(IEnumerable<Attribute> attributes, string name, int value)
+            {
+                Attributes = attributes;
+                Name = name;
+                Value = value;
+            }
 
             /// <summary>
             /// Returns true if and only if the enumeration member has an attribute

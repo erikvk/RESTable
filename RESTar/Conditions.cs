@@ -17,6 +17,7 @@ namespace RESTar
     {
         private readonly List<Condition> Store;
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
         /// <summary>
         /// </summary>
         public IEnumerator<Condition> GetEnumerator() => Store.GetEnumerator();
@@ -84,11 +85,16 @@ namespace RESTar
         }
 
         /// <summary>
+        /// Removes all conditions from the collection
+        /// </summary>
+        public void Clear() => Store.Clear();
+
+        /// <summary>
         /// Creates and adds a new condition to the list
         /// </summary>
         public void Add(string key, Operator op, dynamic value)
         {
-            Add(new Condition(PropertyChain.GetOrMake(Resource, key, Resource.DynamicConditionsAllowed), op, value));
+            Add(new Condition(Resource.MakePropertyChain(key, Resource.DynamicConditionsAllowed), op, value));
             HasChanged = true;
         }
 
@@ -123,7 +129,7 @@ namespace RESTar
                     throw new OperatorException(s);
                 var pair = s.Split(new[] {op.Common}, StringSplitOptions.None);
                 var keyString = WebUtility.UrlDecode(pair[0]);
-                var chain = PropertyChain.GetOrMake(resource, keyString, resource.DynamicConditionsAllowed);
+                var chain = resource.MakePropertyChain(keyString, resource.DynamicConditionsAllowed);
                 if (chain.Last is StaticProperty stat &&
                     stat.GetAttribute<AllowedConditionOperators>()?.Operators?.Contains(op) == false)
                     throw new ForbiddenOperatorException(s, resource, op, chain,

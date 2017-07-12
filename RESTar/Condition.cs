@@ -67,7 +67,7 @@ namespace RESTar
         {
             if (!RESTarConfig.ResourceByType.TryGetValue(typeof(T), out var resource))
                 throw new UnknownResourceException(typeof(T).FullName);
-            PropertyChain = PropertyChain.GetOrMake(resource, key, resource.DynamicConditionsAllowed);
+            PropertyChain = resource.MakePropertyChain(key, resource.DynamicConditionsAllowed);
             HasChanged = true;
             return this;
         }
@@ -94,7 +94,7 @@ namespace RESTar
 
         internal bool HoldsFor(dynamic subject)
         {
-            var subjectValue = PropertyChain.Get(subject);
+            var subjectValue = PropertyChain.Evaluate(subject);
             switch (Operator.OpCode)
             {
                 case EQUALS: return Do.Try<bool>(() => subjectValue == Value, false);

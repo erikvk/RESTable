@@ -83,9 +83,11 @@ namespace RESTar.Internal
                         typeof(IDictionary).IsAssignableFrom(TargetType);
             ResourceType = IsStarcounterResource
                 ? IsDDictionary
-                    ? ScDynamic
-                    : ScStatic
-                : Virtual;
+                    ? DynamicStarcounter
+                    : StaticStarcounter
+                : IsDynamic
+                    ? DynamicVirtual
+                    : StaticVirtual;
             Select = selector;
             Insert = inserter;
             Update = updater;

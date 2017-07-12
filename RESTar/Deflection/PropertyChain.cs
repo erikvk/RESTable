@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json.Linq;
 using RESTar.Internal;
-using static RESTar.Deflection.TypeCache;
 using static RESTar.Internal.ErrorCodes;
 using static RESTar.Operations.Do;
 
@@ -64,27 +63,6 @@ namespace RESTar.Deflection
         private static readonly NoCaseComparer Comparer = new NoCaseComparer();
         private PropertyChain() => Store = new List<Property>();
 
-        internal static PropertyChain GetOrMake(IResource Resource, string key, bool dynamicUnknowns)
-        {
-            var hash = Resource.TargetType.GetHashCode() + key.ToLower().GetHashCode() +
-                       dynamicUnknowns.GetHashCode();
-            if (!PropertyChains.TryGetValue(hash, out PropertyChain propChain))
-                propChain = PropertyChains[hash] = ParseInternal(Resource, key, dynamicUnknowns);
-            return propChain;
-        }
-
-        internal static PropertyChain GetOrMake(int hash, IResource Resource, string key, bool dynamicUnknowns)
-        {
-            if (!PropertyChains.TryGetValue(hash, out PropertyChain propChain))
-                propChain = PropertyChains[hash] = ParseInternal(Resource, key, dynamicUnknowns);
-            return propChain;
-        }
-
-        public override int GetHashCode()
-        {
-            return 2;
-        }
-
         /// <summary>
         /// Parses a property chain key string and returns a property chain describing it. This method
         /// is used for output property chains, that is, property chains that select property of outbound
@@ -94,7 +72,6 @@ namespace RESTar.Deflection
             List<string> dynamicDomain = null)
         {
             var chain = new PropertyChain();
-
             Property propertyMaker(string str)
             {
                 if (string.IsNullOrWhiteSpace(str))
@@ -164,13 +141,13 @@ namespace RESTar.Deflection
         /// <summary>
         /// Gets the value of this property chain from a given target object
         /// </summary>
-        public dynamic Get(object target) => Get(target, out string _);
+        public dynamic Evaluate(object target) => Evaluate(target, out string _);
 
         /// <summary>
         /// Gets the value of this property chain from a given target object and
         /// returns the actual key for this property (matching is case insensitive).
         /// </summary>
-        public dynamic Get(object target, out string actualKey)
+        public dynamic Evaluate(object target, out string actualKey)
         {
             if (target is JObject jobj)
             {

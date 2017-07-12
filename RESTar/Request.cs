@@ -4,7 +4,6 @@ using System.Linq;
 using RESTar.Internal;
 using RESTar.Operations;
 using RESTar.Requests;
-using RESTar.Deflection;
 using static RESTar.Internal.RESTarResourceType;
 using IResource = RESTar.Internal.IResource;
 
@@ -58,12 +57,12 @@ namespace RESTar
             Conditions = new Conditions(Resource);
             MetaConditions = new MetaConditions {Unsafe = true};
             conditions?.Select(c => new Condition(
-                propertyChain: PropertyChain.GetOrMake(Resource, c.key, Resource.DynamicConditionsAllowed),
+                propertyChain: Resource.MakePropertyChain(c.key, Resource.DynamicConditionsAllowed),
                 op: c.op,
                 value: c.value
             )).ForEach(Conditions.Add);
             this.Authenticate();
-            ScSql = Resource.ResourceType == ScStatic;
+            ScSql = Resource.ResourceType == StaticStarcounter;
             Resource.AvailableMethods.ForEach(m =>
             {
                 switch (m)
@@ -94,31 +93,34 @@ namespace RESTar
         public IEnumerable<T> GET()
         {
             if (ScSql && Conditions.HasChanged) Prep();
-            if (GETAllowed)
-                return Evaluators<T>.AppSELECT(this);
-            throw Deny(RESTarMethods.GET);
+            if (!GETAllowed) throw Deny(RESTarMethods.GET);
+            return Evaluators<T>.AppSELECT(this);
+        }
+
+        public bool ANY()
+        {
+            if (ScSql && Conditions.HasChanged) Prep();
+            if (!GETAllowed) throw Deny(RESTarMethods.GET);
+            return Evaluators<T>.AppSELECT(this).Any();
         }
 
         public int COUNT()
         {
             if (ScSql && Conditions.HasChanged) Prep();
-            if (GETAllowed)
-                return Evaluators<T>.AppSELECT(this).Count();
-            throw Deny(RESTarMethods.GET);
+            if (!GETAllowed) throw Deny(RESTarMethods.GET);
+            return Evaluators<T>.AppSELECT(this).Count();
         }
 
         public int POST(Func<T> inserter)
         {
-            if (POSTAllowed)
-                return Evaluators<T>.App.POST(inserter, this);
-            throw Deny(RESTarMethods.POST);
+            if (!POSTAllowed) throw Deny(RESTarMethods.POST);
+            return Evaluators<T>.App.POST(inserter, this);
         }
 
         public int POST(Func<IEnumerable<T>> inserter)
         {
-            if (POSTAllowed)
-                return Evaluators<T>.App.POST(inserter, this);
-            throw Deny(RESTarMethods.POST);
+            if (!POSTAllowed) throw Deny(RESTarMethods.POST);
+            return Evaluators<T>.App.POST(inserter, this);
         }
 
         public int PATCH(Func<T, T> updater)

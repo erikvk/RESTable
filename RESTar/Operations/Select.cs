@@ -20,7 +20,7 @@ namespace RESTar.Operations
                                   entityJobj?.MatchKeyIgnoreCase(prop.Key);
                     if (jobj[prop.Key] == null)
                     {
-                        var val = prop.Get(entity, out string actualKey);
+                        var val = prop.Evaluate(entity, out string actualKey);
                         jobj[dictKey ?? actualKey] = val == null ? null : JToken.FromObject(val, Serializer.JsonSerializer);
                     }
                 });

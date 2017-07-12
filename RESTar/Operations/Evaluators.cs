@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using Dynamit;
 using Newtonsoft.Json.Linq;
 using RESTar.Requests;
 using Starcounter;
+using static RESTar.Internal.RESTarResourceType;
 using static RESTar.Internal.Transactions;
 using static RESTar.Operations.Do;
 using static RESTar.Requests.Responses;
@@ -72,10 +72,10 @@ namespace RESTar.Operations
             IEnumerable<T> results = null;
             try
             {
-                if (typeof(T) == typeof(DDictionary))
+                if (request.Resource.ResourceType == RESTarDynamicResource)
                 {
                     var type = request.Resource.TargetType.MakeArrayType();
-                    results = request.Body.DeserializeExplicit<IEnumerable<T>>(type);
+                    results = request.Body.DeserializeExplicit<T[]>(type);
                 }
                 else results = request.Body.Deserialize<IEnumerable<T>>();
                 if (request.Resource.RequiresValidation)
@@ -122,7 +122,7 @@ namespace RESTar.Operations
             T result = null;
             try
             {
-                if (typeof(T) == typeof(DDictionary))
+                if (request.Resource.ResourceType == RESTarDynamicResource)
                     result = request.Body.DeserializeExplicit<T>(request.Resource.TargetType);
                 else result = request.Body.Deserialize<T>();
                 if (result is IValidatable i) i.RunValidation();
@@ -310,41 +310,49 @@ namespace RESTar.Operations
 
             private static Response SafePOST(RESTRequest<T> request)
             {
-                var source = request.Body.Deserialize<IEnumerable<JObject>>();
                 var insertedCount = 0;
                 var updatedCount = 0;
-                var keys = request.MetaConditions.SafePost.Split(',');
-                foreach (var entity in source)
+                try
                 {
-                    var jsonBytes = entity.Serialize().ToBytes();
-                    Response response;
-                    try
+                    request.MetaConditions.Unsafe = false;
+                    var chains = request.MetaConditions.SafePost
+                        .Split(',')
+                        .Select(k => request.Resource.MakePropertyChain(k, request.Resource.DynamicConditionsAllowed));
+                    var conditions = chains.Select(chain => new Condition(chain, Operator.EQUALS, null)).ToList();
+                    var innerRequest = new Request<T>();
+                    foreach (var entity in request.Body.Deserialize<IEnumerable<JObject>>())
                     {
-                        var valuePairs = keys.Select(k => $"{k}={entity.GetNoCase(k).ToString().UriEncode()}");
-                        var uriString = $"/{request.Resource.Name}/" + $"{string.Join("&", valuePairs)}";
-                        response = HTTP.InternalRequest
-                        (
-                            method: RESTarMethods.PUT,
-                            relativeUri: new Uri(uriString, UriKind.Relative),
-                            authToken: request.AuthToken,
-                            bodyBytes: jsonBytes,
-                            headers: new Dictionary<string, string> {["Authorization"] = request.AuthToken}
-                        );
+                        conditions.ForEach(cond => cond.SetValue(cond.PropertyChain.Evaluate(entity)));
+                        innerRequest.Conditions.Clear();
+                        innerRequest.Conditions.AddRange(conditions);
+                        var results = innerRequest.GET();
+                        if (!results.Any())
+                        {
+                            innerRequest.Body = entity.Serialize();
+                            insertedCount += typeof(T) == typeof(DatabaseIndex)
+                                ? INSERT_ONE(innerRequest)
+                                : Trans(() => INSERT_ONE(innerRequest));
+                        }
+                        else if (results.MoreThanOne())
+                            throw new AmbiguousMatchException(request.Resource);
+                        else
+                        {
+                            var match = results.First();
+                            innerRequest.Body = entity.Serialize();
+                            updatedCount += typeof(T) == typeof(DatabaseIndex)
+                                ? UPDATE_ONE(innerRequest, match)
+                                : Trans(() => UPDATE_ONE(innerRequest, match));
+                        }
                     }
-                    catch (InvalidOperationException)
-                    {
-                        throw new Exception("Error during safe post: Check Safepost parameter syntax");
-                    }
-
-                    if (response?.IsSuccessStatusCode != true)
-                        throw new Exception("Error during safe post: " + (response?.StatusDescription ??
-                                                                          "unknown error"));
-                    if (response.StatusCode == 200)
-                        updatedCount += 1;
-                    else if (response.StatusCode == 201)
-                        insertedCount += 1;
+                    return SafePostedEntities(request, insertedCount, updatedCount);
                 }
-                return SafePostedEntities(request, insertedCount, updatedCount);
+                catch (Exception e)
+                {
+                    var message = $"Inserted {insertedCount} and updated {updatedCount} in resource " +
+                                  $"'{request.Resource.Name}' using SafePOST before encountering the error. " +
+                                  "These changes remain in the resource";
+                    throw new AbortedInserterException(e, request, $"{e.Message} : {message}");
+                }
             }
         }
 

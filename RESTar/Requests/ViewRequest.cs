@@ -77,12 +77,12 @@ namespace RESTar.Requests
             MetaConditions = new MetaConditions();
         }
 
-        internal void Populate(string[] args)
+        internal void Populate(Args args)
         {
-            if (args.Length <= 2) return;
-            Conditions = Conditions.Parse(args[2], Resource);
-            if (args.Length == 3) return;
-            MetaConditions = MetaConditions.Parse(args[3], Resource, parseProcessors: false) ?? MetaConditions;
+            if (args.HasConditions)
+                Conditions = Conditions.Parse(args.Conditions, Resource);
+            if (args.HasMetaConditions)
+                MetaConditions = MetaConditions.Parse(args.MetaConditions, Resource, false) ?? MetaConditions;
         }
 
         public void DeleteFromList(string id)
