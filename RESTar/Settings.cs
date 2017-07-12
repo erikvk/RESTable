@@ -18,6 +18,7 @@ namespace RESTar
         internal static int _DaysToSaveErrors => Instance.DaysToSaveErrors;
         internal static string _ResourcesPath => Instance.ResourcesPath;
         internal static string _HelpResourcePath => Instance.HelpResourcePath;
+        internal static bool _UseLRT => Instance.UseLRT;
 
         /// <summary>
         /// The port of the RESTar REST API
@@ -38,6 +39,11 @@ namespace RESTar
         /// Will JSON be serialized with pretty print? (indented JSON)
         /// </summary>
         public bool PrettyPrint { get; set; }
+
+        /// <summary>
+        /// Use long running transactions instead of regular transact calls
+        /// </summary>
+        public bool UseLRT { get; set; }
 
         /// <summary>
         /// The path where resources are available

@@ -9,6 +9,7 @@ using static RESTar.Internal.Transactions;
 using static RESTar.Operations.Do;
 using static RESTar.Requests.Responses;
 using static RESTar.Serializer;
+using static RESTar.Settings;
 
 namespace RESTar.Operations
 {
@@ -238,6 +239,23 @@ namespace RESTar.Operations
         {
             internal static RESTEvaluator<T> GetEvaluator(RESTarMethods method)
             {
+                #region Long running transactions test
+
+                if (_UseLRT)
+                {
+                    switch (method)
+                    {
+                        case RESTarMethods.GET: return GET;
+                        case RESTarMethods.POST: return lrPOST;
+                        case RESTarMethods.PATCH: return lrPATCH;
+                        case RESTarMethods.PUT: return lrPUT;
+                        case RESTarMethods.DELETE: return lrDELETE;
+                        default: return null;
+                    }
+                }
+
+                #endregion
+
                 switch (method)
                 {
                     case RESTarMethods.GET: return GET;
@@ -245,7 +263,7 @@ namespace RESTar.Operations
                     case RESTarMethods.PATCH: return PATCH;
                     case RESTarMethods.PUT: return PUT;
                     case RESTarMethods.DELETE: return DELETE;
-                    default: throw new ArgumentOutOfRangeException(nameof(method), method, null);
+                    default: return null;
                 }
             }
 
@@ -258,6 +276,209 @@ namespace RESTar.Operations
                 request.SetResponseData(entities, response);
                 return response;
             }
+
+            #region Using long running transactions
+
+            private static Response lrPOST(RESTRequest<T> request)
+            {
+                request.Body = request.Body.First() == '[' ? request.Body : $"[{request.Body}]";
+                if (request.MetaConditions.SafePost != null)
+                    return lrSafePOST(request);
+                int count;
+                if (typeof(T) == typeof(DatabaseIndex))
+                    count = INSERT(request);
+                else
+                {
+                    var t = new Transaction();
+                    try
+                    {
+                        count = t.Scope(() => INSERT(request));
+                        t.Commit();
+                    }
+                    catch
+                    {
+                        t.Rollback();
+                        throw;
+                    }
+                }
+                return InsertedEntities(request, count, request.Resource.TargetType);
+            }
+
+            private static Response lrPATCH(RESTRequest<T> request)
+            {
+                var source = StatSELECT(request);
+                if (!request.MetaConditions.Unsafe && source.MoreThanOne())
+                    throw new AmbiguousMatchException(request.Resource);
+
+                int count;
+                if (typeof(T) == typeof(DatabaseIndex))
+                    count = UPDATE(request, source);
+                else
+                {
+                    var t = new Transaction();
+                    try
+                    {
+                        count = t.Scope(() => UPDATE(request, source));
+                        t.Commit();
+                    }
+                    catch
+                    {
+                        t.Rollback();
+                        throw;
+                    }
+                }
+                return UpdatedEntities(request, count, request.Resource.TargetType);
+            }
+
+            private static Response lrPUT(RESTRequest<T> request)
+            {
+                request.MetaConditions.Unsafe = false;
+                var source = StatSELECT(request);
+                if (source.MoreThanOne())
+                    throw new AmbiguousMatchException(request.Resource);
+                int count;
+                if (source.Any())
+                {
+                    if (typeof(T) == typeof(DatabaseIndex))
+                        count = UPDATE_ONE(request, source.First());
+                    else
+                    {
+                        var t = new Transaction();
+                        try
+                        {
+                            count = t.Scope(() => UPDATE_ONE(request, source.First()));
+                            t.Commit();
+                        }
+                        catch
+                        {
+                            t.Rollback();
+                            throw;
+                        }
+                    }
+                    return UpdatedEntities(request, count, request.Resource.TargetType);
+                }
+                if (typeof(T) == typeof(DatabaseIndex))
+                    count = INSERT_ONE(request);
+                else
+                {
+                    var t = new Transaction();
+                    try
+                    {
+                        count = t.Scope(() => INSERT_ONE(request));
+                        t.Commit();
+                    }
+                    catch
+                    {
+                        t.Rollback();
+                        throw;
+                    }
+                }
+                return InsertedEntities(request, count, request.Resource.TargetType);
+            }
+
+            private static Response lrDELETE(RESTRequest<T> request)
+            {
+                var source = StatSELECT(request);
+                if (!request.MetaConditions.Unsafe && source.MoreThanOne())
+                    throw new AmbiguousMatchException(request.Resource);
+                int count;
+                if (typeof(T) == typeof(DatabaseIndex))
+                {
+                    count = DELETEop(request, source);
+                }
+                else
+                {
+                    var t = new Transaction();
+                    try
+                    {
+                        count = t.Scope(() => DELETEop(request, source));
+                        t.Commit();
+                    }
+                    catch
+                    {
+                        t.Rollback();
+                        throw;
+                    }
+                }
+                return DeleteEntities(count, request.Resource.TargetType);
+            }
+
+            private static Response lrSafePOST(RESTRequest<T> request)
+            {
+                var insertedCount = 0;
+                var updatedCount = 0;
+                try
+                {
+                    request.MetaConditions.Unsafe = false;
+                    var chains = request.MetaConditions.SafePost
+                        .Split(',')
+                        .Select(k => request.Resource.MakePropertyChain(k, request.Resource.DynamicConditionsAllowed));
+                    var conditions = chains.Select(chain => new Condition(chain, Operator.EQUALS, null)).ToList();
+                    var innerRequest = new Request<T>();
+                    foreach (var entity in request.Body.Deserialize<IEnumerable<JObject>>())
+                    {
+                        conditions.ForEach(cond => cond.SetValue(cond.PropertyChain.Evaluate(entity)));
+                        innerRequest.Conditions.Clear();
+                        innerRequest.Conditions.AddRange(conditions);
+                        var results = innerRequest.GET();
+                        if (results.MoreThanOne())
+                            throw new AmbiguousMatchException(request.Resource);
+                        if (results.Any())
+                        {
+                            var match = results.First();
+                            innerRequest.Body = entity.Serialize();
+                            if (typeof(T) == typeof(DatabaseIndex))
+                                updatedCount += UPDATE_ONE(innerRequest, match);
+                            else
+                            {
+                                var t = new Transaction();
+                                try
+                                {
+                                    updatedCount += t.Scope(() => UPDATE_ONE(innerRequest, match));
+                                    t.Commit();
+                                }
+                                catch
+                                {
+                                    t.Rollback();
+                                    throw;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            innerRequest.Body = entity.Serialize();
+                            if (typeof(T) == typeof(DatabaseIndex))
+                                insertedCount += INSERT_ONE(innerRequest);
+                            else
+                            {
+                                var t = new Transaction();
+                                try
+                                {
+                                    insertedCount += t.Scope(() => INSERT_ONE(innerRequest));
+                                    t.Commit();
+                                }
+                                catch
+                                {
+                                    t.Rollback();
+                                    throw;
+                                }
+                            }
+                        }
+                    }
+                    return SafePostedEntities(request, insertedCount, updatedCount);
+                }
+                catch (Exception e)
+                {
+                    var message = $"Inserted {insertedCount} and updated {updatedCount} in resource " +
+                                  $"'{request.Resource.Name}' using SafePOST before encountering the error. " +
+                                  "These changes remain in the resource";
+                    throw new AbortedInserterException(e, request, $"{e.Message} : {message}");
+                }
+            }
+
+            #endregion
+
+            #region Using Transactions.Trans()
 
             private static Response POST(RESTRequest<T> request)
             {
@@ -287,13 +508,17 @@ namespace RESTar.Operations
                 var source = StatSELECT(request);
                 if (source.MoreThanOne())
                     throw new AmbiguousMatchException(request.Resource);
-                var count = source.Any()
-                    ? (typeof(T) == typeof(DatabaseIndex)
+                int count;
+                if (source.Any())
+                {
+                    count = typeof(T) == typeof(DatabaseIndex)
                         ? UPDATE_ONE(request, source.First())
-                        : Trans(() => UPDATE_ONE(request, source.First())))
-                    : (typeof(T) == typeof(DatabaseIndex)
-                        ? INSERT_ONE(request)
-                        : Trans(() => INSERT_ONE(request)));
+                        : Trans(() => UPDATE_ONE(request, source.First()));
+                    return UpdatedEntities(request, count, request.Resource.TargetType);
+                }
+                count = typeof(T) == typeof(DatabaseIndex)
+                    ? INSERT_ONE(request)
+                    : Trans(() => INSERT_ONE(request));
                 return InsertedEntities(request, count, request.Resource.TargetType);
             }
 
@@ -354,6 +579,8 @@ namespace RESTar.Operations
                     throw new AbortedInserterException(e, request, $"{e.Message} : {message}");
                 }
             }
+
+            #endregion
         }
 
         internal static class View
