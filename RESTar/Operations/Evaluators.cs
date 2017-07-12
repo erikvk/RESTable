@@ -309,7 +309,6 @@ namespace RESTar.Operations
                 var source = StatSELECT(request);
                 if (!request.MetaConditions.Unsafe && source.MoreThanOne())
                     throw new AmbiguousMatchException(request.Resource);
-
                 int count;
                 if (typeof(T) == typeof(DatabaseIndex))
                     count = UPDATE(request, source);
