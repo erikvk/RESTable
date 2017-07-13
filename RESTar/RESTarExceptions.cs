@@ -43,9 +43,7 @@ namespace RESTar
     {
         internal NoHtmlException(IResource resource, string matcher) : base(NoMatchingHtml,
             $"No matching HTML file found for resource '{resource.Name}'. Add a HTML file " +
-            $"'{matcher}' to the 'wwwroot/resources' directory.")
-        {
-        }
+            $"'{matcher}' to the 'wwwroot/resources' directory.") => NotFound(this);
     }
 
     /// <summary>
@@ -261,8 +259,7 @@ namespace RESTar
     public class ValidatableException : RESTarException
     {
         internal ValidatableException(string message) : base(InvalidResourceEntityError, message)
-        {
-        }
+            => BadRequest(this);
     }
 
     /// <summary>
@@ -273,8 +270,7 @@ namespace RESTar
         internal UnknownResourceForAliasException(string searchString, Type match) : base(UnknownResourceError,
             "Resource alias mappings must be provided with fully qualified resource names. No match " +
             $"for '{searchString}'. {(match != null ? $"Did you mean '{match.FullName}'? " : "")}")
-        {
-        }
+            => BadRequest(this);
     }
 
     /// <summary>
@@ -288,9 +284,7 @@ namespace RESTar
             "for this request, but matched multiple entities satisfying the given " +
             "conditions. To enable manipulation of multiple matched entities (for " +
             "methods that support this), add 'unsafe=true' to the request's meta-" +
-            "conditions. See help article with topic 'unsafe' for more info.")
-        {
-        }
+            "conditions. See help article with topic 'unsafe' for more info.") => BadRequest(this);
     }
 
     /// <summary>
@@ -299,9 +293,7 @@ namespace RESTar
     public class VirtualResourceMemberException : RESTarException
     {
         internal VirtualResourceMemberException(string message)
-            : base(VirtualResourceMemberError, message)
-        {
-        }
+            : base(VirtualResourceMemberError, message) => BadRequest(this);
     }
 
     /// <summary>
@@ -310,9 +302,7 @@ namespace RESTar
     public class VirtualResourceDeclarationException : RESTarException
     {
         internal VirtualResourceDeclarationException(string message)
-            : base(VirtualResourceDeclarationError, message)
-        {
-        }
+            : base(VirtualResourceDeclarationError, message) => BadRequest(this);
     }
 
     /// <summary>
@@ -323,8 +313,7 @@ namespace RESTar
     {
         internal NoAvalailableDynamicTableException() : base(NoAvalailableDynamicTableError,
             "RESTar have no more unallocated dynamic tables. Remove an existing table and try again.")
-        {
-        }
+            => BadRequest(this);
     }
 
     /// <summary>
@@ -334,8 +323,6 @@ namespace RESTar
     {
         internal NotInitializedException() : base(NotInitialized,
             "A call has been made to RESTar before RESTarConfig.Init() was called. Always " +
-            "initialize the RESTar instance before making calls to it.")
-        {
-        }
+            "initialize the RESTar instance before making calls to it.") => BadRequest(this);
     }
 }

@@ -28,7 +28,7 @@ namespace RESTar.Requests
                     "/[resource]/[conditions]/[meta-conditions]");
             if (request.HeadersDictionary.ContainsKey("X-ARR-LOG-ID"))
                 query = query.Replace("%25", "%");
-            var arr = query.Trim('/').Split('/');
+            var arr = query.TrimStart('?').Trim('/').Split('/');
             for (var i = 0; i < arr.Length; i++)
             {
                 switch (i)
