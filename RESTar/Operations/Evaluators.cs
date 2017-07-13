@@ -246,10 +246,10 @@ namespace RESTar.Operations
                     switch (method)
                     {
                         case RESTarMethods.GET: return GET;
-                        case RESTarMethods.POST: return lrPOST;
-                        case RESTarMethods.PATCH: return lrPATCH;
-                        case RESTarMethods.PUT: return lrPUT;
-                        case RESTarMethods.DELETE: return lrDELETE;
+                        case RESTarMethods.POST: return LrPOST;
+                        case RESTarMethods.PATCH: return LrPATCH;
+                        case RESTarMethods.PUT: return LrPUT;
+                        case RESTarMethods.DELETE: return LrDELETE;
                         default: return null;
                     }
                 }
@@ -279,11 +279,11 @@ namespace RESTar.Operations
 
             #region Using long running transactions
 
-            private static Response lrPOST(RESTRequest<T> request)
+            private static Response LrPOST(RESTRequest<T> request)
             {
                 request.Body = request.Body.First() == '[' ? request.Body : $"[{request.Body}]";
                 if (request.MetaConditions.SafePost != null)
-                    return lrSafePOST(request);
+                    return LrSafePOST(request);
                 int count;
                 if (typeof(T) == typeof(DatabaseIndex))
                     count = INSERT(request);
@@ -304,7 +304,7 @@ namespace RESTar.Operations
                 return InsertedEntities(request, count, request.Resource.TargetType);
             }
 
-            private static Response lrPATCH(RESTRequest<T> request)
+            private static Response LrPATCH(RESTRequest<T> request)
             {
                 var source = StatSELECT(request);
                 if (!request.MetaConditions.Unsafe && source.MoreThanOne())
@@ -329,7 +329,7 @@ namespace RESTar.Operations
                 return UpdatedEntities(request, count, request.Resource.TargetType);
             }
 
-            private static Response lrPUT(RESTRequest<T> request)
+            private static Response LrPUT(RESTRequest<T> request)
             {
                 request.MetaConditions.Unsafe = false;
                 var source = StatSELECT(request);
@@ -375,7 +375,7 @@ namespace RESTar.Operations
                 return InsertedEntities(request, count, request.Resource.TargetType);
             }
 
-            private static Response lrDELETE(RESTRequest<T> request)
+            private static Response LrDELETE(RESTRequest<T> request)
             {
                 var source = StatSELECT(request);
                 if (!request.MetaConditions.Unsafe && source.MoreThanOne())
@@ -402,15 +402,14 @@ namespace RESTar.Operations
                 return DeleteEntities(count, request.Resource.TargetType);
             }
 
-            private static Response lrSafePOST(RESTRequest<T> request)
+            private static Response LrSafePOST(RESTRequest<T> request)
             {
-                var insertedCount = 0;
-                var updatedCount = 0;
+                var transaction = new Transaction();
                 try
                 {
-                    request.MetaConditions.Unsafe = false;
-                    var chains = request.MetaConditions.SafePost
-                        .Split(',')
+                    var insertedCount = 0;
+                    var updatedCount = 0;
+                    var chains = request.MetaConditions.SafePost.Split(',')
                         .Select(k => request.Resource.MakePropertyChain(k, request.Resource.DynamicConditionsAllowed));
                     var conditions = chains.Select(chain => new Condition(chain, Operator.EQUALS, null)).ToList();
                     var innerRequest = new Request<T>();
@@ -428,50 +427,23 @@ namespace RESTar.Operations
                             innerRequest.Body = entity.Serialize();
                             if (typeof(T) == typeof(DatabaseIndex))
                                 updatedCount += UPDATE_ONE(innerRequest, match);
-                            else
-                            {
-                                var t = new Transaction();
-                                try
-                                {
-                                    updatedCount += t.Scope(() => UPDATE_ONE(innerRequest, match));
-                                    t.Commit();
-                                }
-                                catch
-                                {
-                                    t.Rollback();
-                                    throw;
-                                }
-                            }
+                            else updatedCount += transaction.Scope(() => UPDATE_ONE(innerRequest, match));
                         }
                         else
                         {
                             innerRequest.Body = entity.Serialize();
                             if (typeof(T) == typeof(DatabaseIndex))
                                 insertedCount += INSERT_ONE(innerRequest);
-                            else
-                            {
-                                var t = new Transaction();
-                                try
-                                {
-                                    insertedCount += t.Scope(() => INSERT_ONE(innerRequest));
-                                    t.Commit();
-                                }
-                                catch
-                                {
-                                    t.Rollback();
-                                    throw;
-                                }
-                            }
+                            else insertedCount += transaction.Scope(() => INSERT_ONE(innerRequest));
                         }
                     }
+                    transaction.Commit();
                     return SafePostedEntities(request, insertedCount, updatedCount);
                 }
                 catch (Exception e)
                 {
-                    var message = $"Inserted {insertedCount} and updated {updatedCount} in resource " +
-                                  $"'{request.Resource.Name}' using SafePOST before encountering the error. " +
-                                  "These changes remain in the resource";
-                    throw new AbortedInserterException(e, request, $"{e.Message} : {message}");
+                    transaction.Rollback();
+                    throw new AbortedInserterException(e, request, e.Message);
                 }
             }
 
