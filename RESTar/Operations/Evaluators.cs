@@ -23,7 +23,6 @@ namespace RESTar.Operations
             {
                 if (!request.MetaConditions.Unsafe && request.MetaConditions.Limit == -1)
                     request.MetaConditions.Limit = 1000;
-                request.MetaConditions.Unsafe = true;
                 return request.Resource
                     .Select(request)?
                     .Filter(request.MetaConditions.OrderBy)
@@ -41,7 +40,6 @@ namespace RESTar.Operations
             {
                 if (!request.MetaConditions.Unsafe && request.MetaConditions.Limit == -1)
                     request.MetaConditions.Limit = 1000;
-                request.MetaConditions.Unsafe = true;
                 return request.Resource
                     .Select(request)?
                     .Process(request.MetaConditions.Add)
@@ -65,6 +63,26 @@ namespace RESTar.Operations
             catch (Exception e)
             {
                 throw new AbortedSelectorException(e, request);
+            }
+        }
+
+        internal static int INSERT_JArray(IRequest<T> request, JArray json)
+        {
+            IEnumerable<T> results = null;
+            try
+            {
+                if (request.Resource.ResourceType == RESTarDynamicResource)
+                    results = (T[]) json.ToObject(request.Resource.TargetType.MakeArrayType());
+                else results = json.ToObject<IEnumerable<T>>();
+                if (request.Resource.RequiresValidation)
+                    results.OfType<IValidatable>().ForEach(item => item.RunValidation());
+                return request.Resource.Insert(results, request);
+            }
+            catch (Exception e)
+            {
+                var _results = results;
+                Trans(() => _results?.Where(i => i != null).ForEach(item => Try(item.Delete)));
+                throw new AbortedInserterException(e, request);
             }
         }
 
@@ -99,6 +117,26 @@ namespace RESTar.Operations
                 if (request.Resource.RequiresValidation)
                     source.OfType<IValidatable>().ForEach(item => item.RunValidation());
                 return request.Resource.Update(source, request);
+            }
+            catch (Exception e)
+            {
+                throw new AbortedUpdaterException(e, request);
+            }
+        }
+
+        internal static int UPDATE_MANY(IRequest<T> request, IEnumerable<(JObject json, T source)> items)
+        {
+            try
+            {
+                var updated = new List<T>();
+                items.ForEach(item =>
+                {
+                    Populate(item.json, item.source);
+                    updated.Add(item.source);
+                });
+                if (request.Resource.RequiresValidation)
+                    updated.OfType<IValidatable>().ForEach(item => item.RunValidation());
+                return request.Resource.Update(updated, request);
             }
             catch (Exception e)
             {
@@ -281,7 +319,7 @@ namespace RESTar.Operations
 
             private static Response LrPOST(RESTRequest<T> request)
             {
-                request.Body = request.Body.First() == '[' ? request.Body : $"[{request.Body}]";
+                request.Body = request.Body[0] == '[' ? request.Body : $"[{request.Body}]";
                 if (request.MetaConditions.SafePost != null)
                     return LrSafePOST(request);
                 int count;
@@ -407,36 +445,32 @@ namespace RESTar.Operations
                 var transaction = new Transaction();
                 try
                 {
-                    var insertedCount = 0;
-                    var updatedCount = 0;
                     var chains = request.MetaConditions.SafePost.Split(',')
                         .Select(k => request.Resource.MakePropertyChain(k, request.Resource.DynamicConditionsAllowed));
                     var conditions = chains.Select(chain => new Condition(chain, Operator.EQUALS, null)).ToList();
                     var innerRequest = new Request<T>();
+                    var toInsert = new JArray();
+                    var toUpdate = new List<(JObject json, T source)>();
                     foreach (var entity in request.Body.Deserialize<IEnumerable<JObject>>())
                     {
                         conditions.ForEach(cond => cond.SetValue(cond.PropertyChain.Evaluate(entity)));
                         innerRequest.Conditions.Clear();
                         innerRequest.Conditions.AddRange(conditions);
                         var results = innerRequest.GET();
-                        if (results.MoreThanOne())
-                            throw new AmbiguousMatchException(request.Resource);
-                        if (results.Any())
-                        {
-                            var match = results.First();
-                            innerRequest.Body = entity.Serialize();
-                            if (typeof(T) == typeof(DatabaseIndex))
-                                updatedCount += UPDATE_ONE(innerRequest, match);
-                            else updatedCount += transaction.Scope(() => UPDATE_ONE(innerRequest, match));
-                        }
-                        else
-                        {
-                            innerRequest.Body = entity.Serialize();
-                            if (typeof(T) == typeof(DatabaseIndex))
-                                insertedCount += INSERT_ONE(innerRequest);
-                            else insertedCount += transaction.Scope(() => INSERT_ONE(innerRequest));
-                        }
+                        if (results.MoreThanOne()) throw new AmbiguousMatchException(request.Resource);
+                        if (results.Any()) toUpdate.Add((entity, results.First()));
+                        else toInsert.Add(entity);
                     }
+                    var insertedCount = 0;
+                    var updatedCount = 0;
+                    if (toInsert.Any())
+                        insertedCount = typeof(T) == typeof(DatabaseIndex)
+                            ? INSERT_JArray(innerRequest, toInsert)
+                            : transaction.Scope(() => INSERT_JArray(innerRequest, toInsert));
+                    if (toUpdate.Any())
+                        updatedCount = typeof(T) == typeof(DatabaseIndex)
+                            ? UPDATE_MANY(innerRequest, toUpdate)
+                            : transaction.Scope(() => UPDATE_MANY(innerRequest, toUpdate));
                     transaction.Commit();
                     return SafePostedEntities(request, insertedCount, updatedCount);
                 }
@@ -453,7 +487,7 @@ namespace RESTar.Operations
 
             private static Response POST(RESTRequest<T> request)
             {
-                request.Body = request.Body.First() == '[' ? request.Body : $"[{request.Body}]";
+                request.Body = request.Body[0] == '[' ? request.Body : $"[{request.Body}]";
                 if (request.MetaConditions.SafePost != null)
                     return SafePOST(request);
                 var count = typeof(T) == typeof(DatabaseIndex)

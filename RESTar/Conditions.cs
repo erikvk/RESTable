@@ -164,7 +164,7 @@ namespace RESTar
         {
             if (valueString == null) return null;
             if (valueString == "null") return null;
-            if (valueString.First() == '\"' && valueString.Last() == '\"')
+            if (valueString[0] == '\"' && valueString.Last() == '\"')
                 return valueString.Remove(0, 1).Remove(valueString.Length - 2, 1);
             dynamic obj;
             if (bool.TryParse(valueString, out bool boo))

@@ -53,7 +53,7 @@ namespace RESTar.Operations
                         if (string.IsNullOrEmpty(str))
                             throw new Exception("Operation arguments cannot be empty strings");
                         string json;
-                        var first = str.First();
+                        var first = str[0];
                         if (first == '[')
                             json = str;
                         else if (char.IsDigit(first) || first == '/')

@@ -134,7 +134,7 @@ namespace RESTar.Internal
                     .FirstOrDefault(i => i.FullName.StartsWith("System.Collections.Generic.IDictionary"));
                 if (idictionaryImplementation != null)
                 {
-                    var firstTypeParameter = idictionaryImplementation.GenericTypeArguments.First();
+                    var firstTypeParameter = idictionaryImplementation.GenericTypeArguments[0];
                     if (firstTypeParameter != typeof(string))
                         throw new VirtualResourceDeclarationException(
                             $"Invalid virtual resource declaration for type '{type.FullName}. All resources implementing " +

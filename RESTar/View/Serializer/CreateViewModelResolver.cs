@@ -1,7 +1,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
@@ -53,7 +52,7 @@ namespace RESTar.View.Serializer
             {
                 var pi = (PropertyInfo) member;
                 if (pi.PropertyType.IsGenericType && pi.PropertyType.GetGenericTypeDefinition() == typeof(Nullable<>))
-                    return new NullableValueProvider(member, pi.PropertyType.GetGenericArguments().First());
+                    return new NullableValueProvider(member, pi.PropertyType.GetGenericArguments()[0]);
                 if (pi.PropertyType == typeof(string))
                     return new NullToEmptyStringValueProvider(pi);
                 if (typeof(IEnumerable).IsAssignableFrom(pi.PropertyType))

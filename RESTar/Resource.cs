@@ -155,7 +155,7 @@ namespace RESTar
         public static void Register<T>(RESTarPresets preset, params RESTarMethods[] addMethods) where T : class
         {
             var methods = preset.ToMethods().Union(addMethods ?? new RESTarMethods[0]).ToArray();
-            Register<T>(methods.First(), methods.Length > 1 ? methods.Skip(1).ToArray() : null);
+            Register<T>(methods[0], methods.Length > 1 ? methods.Skip(1).ToArray() : null);
         }
 
         /// <summary>
@@ -167,7 +167,7 @@ namespace RESTar
         public static void Register<T>(RESTarMethods method, params RESTarMethods[] addMethods) where T : class
         {
             var methods = new[] {method}.Union(addMethods ?? new RESTarMethods[0]).ToArray();
-            Register<T>(methods.First(), methods.Length > 1 ? methods.Skip(1).ToArray() : null, null);
+            Register<T>(methods[0], methods.Length > 1 ? methods.Skip(1).ToArray() : null, null);
         }
 
         /// <summary>
@@ -193,7 +193,7 @@ namespace RESTar
             var methods = preset.ToMethods().Union(addMethods ?? new RESTarMethods[0]).ToArray();
             Register
             (
-                method: methods.First(),
+                method: methods[0],
                 addMethods: methods.Length > 1
                     ? methods.Skip(1).ToArray()
                     : null,

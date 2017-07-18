@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Text.RegularExpressions;
 using System.Xml;
 using Excel;
@@ -101,7 +100,7 @@ namespace RESTar.Requests
             switch (ContentType)
             {
                 case RESTarMimeType.Json:
-                    if (Body.First() == '[' && Method != POST)
+                    if (Body[0] == '[' && Method != POST)
                         throw new InvalidInputCountException(Method);
                     return;
                 case RESTarMimeType.XML: throw new FormatException("XML is only supported as output format");
@@ -116,7 +115,7 @@ namespace RESTar.Requests
                         else
                         {
                             if (result.Tables[0].Rows.Count > 1) throw new InvalidInputCountException(Method);
-                            Body = JArray.FromObject(result.Tables[0]).First().Serialize();
+                            Body = JArray.FromObject(result.Tables[0])[0].Serialize();
                         }
                     }
                     return;

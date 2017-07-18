@@ -18,7 +18,7 @@ namespace RESTar.Requests
             Headers =
             {
                 ["RESTar-info"] = $"{e.Message}Try qualifying the resource name further, e.g. from " +
-                                  $"'{e.SearchString}' to '{e.Candidates.First()}'."
+                                  $"'{e.SearchString}' to '{e.Candidates[0]}'."
             }
         };
 
@@ -39,7 +39,7 @@ namespace RESTar.Requests
             Headers =
             {
                 ["RESTar-info"] = $"{e.Message}Try qualifying the column name further, e.g. from " +
-                                  $"'{e.SearchString}' to '{e.Candidates.First()}'."
+                                  $"'{e.SearchString}' to '{e.Candidates[0]}'."
             }
         };
 

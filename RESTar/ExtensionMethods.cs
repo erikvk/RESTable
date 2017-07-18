@@ -261,7 +261,7 @@ namespace RESTar
             if (keys.Count > 1)
                 throw new AmbiguousResourceException(searchString,
                     keys.Select(k => ResourceByName[k].Name).ToList());
-            return ResourceByName[keys.First()];
+            return ResourceByName[keys[0]];
         }
 
         internal static JObject ToJObject(this IEnumerable<JProperty> props) => new JObject(props);
@@ -884,7 +884,7 @@ namespace RESTar
                 if (propType.IsValueType)
                 {
                     if (propType.IsGenericType && propType.GetGenericTypeDefinition() == typeof(Nullable<>))
-                        return propType.GetGenericArguments().First().GetDefault();
+                        return propType.GetGenericArguments()[0].GetDefault();
                     return propType.GetDefault();
                 }
                 throw new ArgumentOutOfRangeException();

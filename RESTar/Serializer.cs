@@ -52,6 +52,12 @@ namespace RESTar
             return SerializeObject(value, type, _PrettyPrint ? Indented : Formatting.None, Settings);
         }
 
+        internal static void Populate(JToken value, object target)
+        {
+            using (var sr = value.CreateReader())
+                JsonSerializer.Populate(sr, target);
+        }
+
         internal static dynamic Deserialize(this string json, Type type) => DeserializeObject(json, type);
         internal static JToken Deserialize(this string json) => DeserializeObject<JToken>(json);
         internal static T Deserialize<T>(this string json) => DeserializeObject<T>(json);

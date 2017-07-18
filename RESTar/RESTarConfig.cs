@@ -99,7 +99,7 @@ namespace RESTar
             var appName = Starcounter.Application.Current.Name;
             if (uri.EqualsNoCase(appName))
                 throw new ArgumentException($"URI cannot be the same as the application name ({appName})");
-            if (uri.First() != '/') uri = $"/{uri}";
+            if (uri[0] != '/') uri = $"/{uri}";
             Settings.Init(port, uri, viewEnabled, prettyPrint, camelCase, daysToSaveErrors);
             typeof(object).GetSubclasses()
                 .Where(t => t.HasAttribute<RESTarAttribute>())
