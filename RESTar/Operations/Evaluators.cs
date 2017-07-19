@@ -17,6 +17,8 @@ namespace RESTar.Operations
     {
         #region Operations
 
+        #region SELECT
+
         internal static IEnumerable<T> RAW_SELECT(IRequest<T> request)
         {
             try
@@ -64,27 +66,11 @@ namespace RESTar.Operations
             }
         }
 
-        internal static int INSERT_JArray(IRequest<T> request, JArray json)
-        {
-            IEnumerable<T> results = null;
-            try
-            {
-                if (request.Resource.ResourceType == RESTarDynamicResource)
-                    results = (T[]) json.ToObject(request.Resource.TargetType.MakeArrayType());
-                else results = json.ToObject<IEnumerable<T>>();
-                if (request.Resource.RequiresValidation)
-                    results.OfType<IValidatable>().ForEach(item => item.RunValidation());
-                return request.Resource.Insert(results, request);
-            }
-            catch (Exception e)
-            {
-                var _results = results;
-                Trans(() => _results?.Where(i => i != null).ForEach(item => Try(item.Delete)));
-                throw new AbortedInserterException(e, request);
-            }
-        }
+        #endregion
 
-        internal static int INSERT(IRequest<T> request)
+        #region INSERT
+
+        private static int INSERT(IRequest<T> request)
         {
             IEnumerable<T> results = null;
             try
@@ -107,99 +93,7 @@ namespace RESTar.Operations
             }
         }
 
-        internal static int UPDATE(IRequest<T> request, IEnumerable<T> source)
-        {
-            try
-            {
-                source.ForEach(entity => Populate(request.Body, entity));
-                if (request.Resource.RequiresValidation)
-                    source.OfType<IValidatable>().ForEach(item => item.RunValidation());
-                return request.Resource.Update(source, request);
-            }
-            catch (Exception e)
-            {
-                throw new AbortedUpdaterException(e, request);
-            }
-        }
-
-        internal static int UPDATE_MANY(IRequest<T> request, IEnumerable<(JObject json, T source)> items)
-        {
-            try
-            {
-                var updated = new List<T>();
-                items.ForEach(item =>
-                {
-                    Populate(item.json, item.source);
-                    updated.Add(item.source);
-                });
-                if (request.Resource.RequiresValidation)
-                    updated.OfType<IValidatable>().ForEach(item => item.RunValidation());
-                return request.Resource.Update(updated, request);
-            }
-            catch (Exception e)
-            {
-                throw new AbortedUpdaterException(e, request);
-            }
-        }
-
-        internal static int DELETEop(IRequest<T> request, IEnumerable<T> source)
-        {
-            try
-            {
-                return request.Resource.Delete(source, request);
-            }
-            catch (Exception e)
-            {
-                throw new AbortedDeleterException(e, request);
-            }
-        }
-
-        internal static int INSERT_ONE(IRequest<T> request)
-        {
-            T result = null;
-            try
-            {
-                if (request.Resource.ResourceType == RESTarDynamicResource)
-                    result = request.Body.DeserializeExplicit<T>(request.Resource.TargetType);
-                else result = request.Body.Deserialize<T>();
-                if (result is IValidatable i) i.RunValidation();
-                return request.Resource.Insert(new[] {result}, request);
-            }
-            catch (Exception e)
-            {
-                Trans(() => Try(() => result?.Delete()));
-                throw new AbortedInserterException(e, request);
-            }
-        }
-
-        internal static int UPDATE_ONE(IRequest<T> request, T source)
-        {
-            try
-            {
-                Populate(request.Body, source);
-                if (source is IValidatable i)
-                    i.RunValidation();
-                return request.Resource.Update(new[] {source}, request);
-            }
-            catch (Exception e)
-            {
-                throw new AbortedUpdaterException(e, request);
-            }
-        }
-
-        internal static int DELETEop_ONE(IRequest<T> request, T source)
-        {
-            try
-            {
-                return request.Resource.Delete(new[] {source}, request);
-            }
-            catch (Exception e)
-            {
-                throw new AbortedDeleterException(e, request);
-            }
-        }
-
-        internal static int INSERT(IRequest<T> request, Func<IEnumerable<T>> inserter)
+        private static int INSERT(IRequest<T> request, Func<IEnumerable<T>> inserter)
         {
             IEnumerable<T> results = null;
             try
@@ -218,7 +112,25 @@ namespace RESTar.Operations
             }
         }
 
-        internal static int INSERT_ONE(IRequest<T> request, Func<T> inserter)
+        private static int INSERT_ONE(IRequest<T> request)
+        {
+            T result = null;
+            try
+            {
+                if (request.Resource.ResourceType == RESTarDynamicResource)
+                    result = request.Body.DeserializeExplicit<T>(request.Resource.TargetType);
+                else result = request.Body.Deserialize<T>();
+                if (result is IValidatable i) i.RunValidation();
+                return request.Resource.Insert(new[] {result}, request);
+            }
+            catch (Exception e)
+            {
+                Trans(() => Try(() => result?.Delete()));
+                throw new AbortedInserterException(e, request);
+            }
+        }
+
+        private static int INSERT_ONE(IRequest<T> request, Func<T> inserter)
         {
             T result = null;
             try
@@ -236,7 +148,46 @@ namespace RESTar.Operations
             }
         }
 
-        internal static int UPDATE(IRequest<T> request, Func<IEnumerable<T>, IEnumerable<T>> updater,
+        private static int INSERT_JARRAY(IRequest<T> request, JArray json)
+        {
+            IEnumerable<T> results = null;
+            try
+            {
+                if (request.Resource.ResourceType == RESTarDynamicResource)
+                    results = (T[]) json.ToObject(request.Resource.TargetType.MakeArrayType());
+                else results = json.ToObject<IEnumerable<T>>();
+                if (request.Resource.RequiresValidation)
+                    results.OfType<IValidatable>().ForEach(item => item.RunValidation());
+                return request.Resource.Insert(results, request);
+            }
+            catch (Exception e)
+            {
+                var _results = results;
+                Trans(() => _results?.Where(i => i != null).ForEach(item => Try(item.Delete)));
+                throw new AbortedInserterException(e, request);
+            }
+        }
+
+        #endregion
+
+        #region UPDATE
+
+        private static int UPDATE(IRequest<T> request, IEnumerable<T> source)
+        {
+            try
+            {
+                source.ForEach(entity => Populate(request.Body, entity));
+                if (request.Resource.RequiresValidation)
+                    source.OfType<IValidatable>().ForEach(item => item.RunValidation());
+                return request.Resource.Update(source, request);
+            }
+            catch (Exception e)
+            {
+                throw new AbortedUpdaterException(e, request);
+            }
+        }
+
+        private static int UPDATE(IRequest<T> request, Func<IEnumerable<T>, IEnumerable<T>> updater,
             IEnumerable<T> source)
         {
             try
@@ -246,6 +197,21 @@ namespace RESTar.Operations
                 if (request.Resource.RequiresValidation)
                     results.OfType<IValidatable>().ForEach(item => item.RunValidation());
                 return request.Resource.Update(results, request);
+            }
+            catch (Exception e)
+            {
+                throw new AbortedUpdaterException(e, request);
+            }
+        }
+
+        private static int UPDATE_ONE(IRequest<T> request, T source)
+        {
+            try
+            {
+                Populate(request.Body, source);
+                if (source is IValidatable i)
+                    i.RunValidation();
+                return request.Resource.Update(new[] {source}, request);
             }
             catch (Exception e)
             {
@@ -268,6 +234,56 @@ namespace RESTar.Operations
                 throw new AbortedUpdaterException(e, request);
             }
         }
+
+        private static int UPDATE_MANY(IRequest<T> request, IEnumerable<(JObject json, T source)> items)
+        {
+            try
+            {
+                var updated = new List<T>();
+                items.ForEach(item =>
+                {
+                    Populate(item.json, item.source);
+                    updated.Add(item.source);
+                });
+                if (request.Resource.RequiresValidation)
+                    updated.OfType<IValidatable>().ForEach(item => item.RunValidation());
+                return request.Resource.Update(updated, request);
+            }
+            catch (Exception e)
+            {
+                throw new AbortedUpdaterException(e, request);
+            }
+        }
+
+        #endregion
+
+        #region DELETE
+
+        private static int OP_DELETE(IRequest<T> request, IEnumerable<T> source)
+        {
+            try
+            {
+                return request.Resource.Delete(source, request);
+            }
+            catch (Exception e)
+            {
+                throw new AbortedDeleterException(e, request);
+            }
+        }
+
+        private static int OP_DELETE_ONE(IRequest<T> request, T source)
+        {
+            try
+            {
+                return request.Resource.Delete(new[] {source}, request);
+            }
+            catch (Exception e)
+            {
+                throw new AbortedDeleterException(e, request);
+            }
+        }
+
+        #endregion
 
         #endregion
 
@@ -354,7 +370,7 @@ namespace RESTar.Operations
                 var source = STATIC_SELECT(request);
                 if (!request.MetaConditions.Unsafe && source.MoreThanOne())
                     throw new AmbiguousMatchException(request.Resource);
-                var count = Transaction<T>.Transact(() => DELETEop(request, source));
+                var count = Transaction<T>.Transact(() => OP_DELETE(request, source));
                 return DeleteEntities(count, request.Resource.TargetType);
             }
 
@@ -392,7 +408,7 @@ namespace RESTar.Operations
                 var trans = new Transaction<T>();
                 try
                 {
-                    var insertedCount = toInsert.Any() ? trans.Scope(() => INSERT_JArray(innerRequest, toInsert)) : 0;
+                    var insertedCount = toInsert.Any() ? trans.Scope(() => INSERT_JARRAY(innerRequest, toInsert)) : 0;
                     var updatedCount = toUpdate.Any() ? trans.Scope(() => UPDATE_MANY(innerRequest, toUpdate)) : 0;
                     trans.Commit();
                     return SafePostedEntities(request, insertedCount, updatedCount);
@@ -456,8 +472,8 @@ namespace RESTar.Operations
                 if (!request.MetaConditions.Unsafe && source.MoreThanOne())
                     throw new AmbiguousMatchException(request.Resource);
                 var count = typeof(T) == typeof(DatabaseIndex)
-                    ? DELETEop(request, source)
-                    : Trans(() => DELETEop(request, source));
+                    ? OP_DELETE(request, source)
+                    : Trans(() => OP_DELETE(request, source));
                 return DeleteEntities(count, request.Resource.TargetType);
             }
 
@@ -525,7 +541,7 @@ namespace RESTar.Operations
 
             internal static int DELETE(ViewRequest<T> request, T item)
             {
-                return Transaction<T>.Transact(() => DELETEop_ONE(request, item));
+                return Transaction<T>.Transact(() => OP_DELETE_ONE(request, item));
             }
         }
 
@@ -564,12 +580,12 @@ namespace RESTar.Operations
 
             internal static int DELETE(T item, Request<T> request)
             {
-                return Transaction<T>.Transact(() => DELETEop_ONE(request, item));
+                return Transaction<T>.Transact(() => OP_DELETE_ONE(request, item));
             }
 
             internal static int DELETE(IEnumerable<T> items, Request<T> request)
             {
-                return Transaction<T>.Transact(() => DELETEop(request, items));
+                return Transaction<T>.Transact(() => OP_DELETE(request, items));
             }
         }
     }
