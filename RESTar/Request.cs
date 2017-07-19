@@ -14,7 +14,7 @@ namespace RESTar
     public class Request<T> : IRequest<T> where T : class
     {
         public IResource<T> Resource { get; }
-        public Conditions Conditions { get; }
+        public Conditions<T> Conditions { get; }
         public string Body { get; set; }
         public string AuthToken { get; internal set; }
         public IDictionary<string, string> ResponseHeaders { get; }
@@ -51,11 +51,11 @@ namespace RESTar
 
         public Request(params (string key, Operator op, object value)[] conditions)
         {
-            Resource = Resource<T>.Get ?? throw new ArgumentException($"Unknown resource type '{typeof(T).FullName}'");
+            Resource = Resource<T>.Get;
             ResponseHeaders = new Dictionary<string, string>();
-            Conditions = new Conditions(Resource);
+            Conditions = new Conditions<T>();
             MetaConditions = new MetaConditions {Unsafe = true};
-            conditions?.Select(c => new Condition(
+            conditions?.Select(c => new Condition<T>(
                 propertyChain: Resource.MakePropertyChain(c.key, Resource.DynamicConditionsAllowed),
                 op: c.op,
                 value: c.value

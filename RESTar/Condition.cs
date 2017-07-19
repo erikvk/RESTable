@@ -11,7 +11,7 @@ namespace RESTar
     /// in a resource. It is used to match entities in resources while selecting 
     /// entities to include in a GET, PUT, PATCH or DELETE request.
     /// </summary>
-    public class Condition
+    public class Condition<T> where T : class
     {
         /// <summary>
         /// The key of the condition, the path to a property of an entity.
@@ -33,7 +33,7 @@ namespace RESTar
         /// <summary>
         /// The property chain describing the property to compare with
         /// </summary>
-        internal PropertyChain PropertyChain { get; private set; }
+        internal PropertyChain PropertyChain { get; }
 
         /// <summary>
         /// </summary>
@@ -43,12 +43,14 @@ namespace RESTar
 
         internal bool ScQueryable => PropertyChain.ScQueryable;
         internal Type Type => PropertyChain.IsStatic ? PropertyChain.LastAs<StaticProperty>()?.Type : null;
-        internal bool IsOfType<T>() => Type == typeof(T);
+        internal bool IsOfType<T1>() => Type == typeof(T1);
 
-        internal void Migrate(Type newType)
+        internal Condition<TResults> ConvertTo<TResults>() where TResults : class
         {
-            PropertyChain = PropertyChain.MakeFromPrototype(PropertyChain, newType);
-            HasChanged = true;
+            if (typeof(TResults) == typeof(T)) return this as Condition<TResults>;
+            var chain = PropertyChain.MakeFromPrototype(PropertyChain, typeof(TResults));
+            var newCondition = new Condition<TResults>(chain, Operator, Value);
+            return newCondition;
         }
 
         internal Condition(PropertyChain propertyChain, Operator op, dynamic value)
@@ -60,22 +62,9 @@ namespace RESTar
         }
 
         /// <summary>
-        /// Used to repoint the condition towards a different static or dynamic property
-        /// of a type T.
-        /// </summary>
-        public Condition Repoint<T>(string key)
-        {
-            if (!RESTarConfig.ResourceByType.TryGetValue(typeof(T), out var resource))
-                throw new UnknownResourceException(typeof(T).FullName);
-            PropertyChain = resource.MakePropertyChain(key, resource.DynamicConditionsAllowed);
-            HasChanged = true;
-            return this;
-        }
-
-        /// <summary>
         /// Sets the condition operator and returns the changed condition
         /// </summary>
-        public Condition SetOperator(Operator newOperator)
+        public Condition<T> SetOperator(Operator newOperator)
         {
             Operator = newOperator;
             HasChanged = true;
@@ -85,14 +74,14 @@ namespace RESTar
         /// <summary>
         /// Sets the condition value and returns the changed condition
         /// </summary>
-        public Condition SetValue(dynamic value)
+        public Condition<T> SetValue(dynamic value)
         {
             Value = value;
             HasChanged = true;
             return this;
         }
 
-        internal bool HoldsFor(dynamic subject)
+        internal bool HoldsFor(T subject)
         {
             var subjectValue = PropertyChain.Evaluate(subject);
             switch (Operator.OpCode)

@@ -35,7 +35,7 @@ namespace RESTar.Operations
         /// <summary>
         /// RESTar selector (don't use)
         /// </summary>
-        public IEnumerable<SetOperations> Select(IRequest request)
+        public IEnumerable<SetOperations> Select(IRequest<SetOperations> request)
         {
             if (request.Body == null)
                 throw new Exception("Missing data source for operation");

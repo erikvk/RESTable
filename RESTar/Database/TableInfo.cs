@@ -66,10 +66,10 @@ namespace RESTar
         /// <summary>
         /// RESTar selector (don't use)
         /// </summary>
-        public IEnumerable<TableInfo> Select(IRequest request)
+        public IEnumerable<TableInfo> Select(IRequest<TableInfo> request)
         {
             IEnumerable<IResource> resources;
-            var input = (string) request.Conditions?[nameof(TableName), EQUALS]?.Value;
+            var input = (string) request.Conditions[nameof(TableName), EQUALS]?.Value;
             if (input == null)
                 resources = RESTarConfig.Resources.Where(r => r.IsStarcounterResource);
             else

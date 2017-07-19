@@ -20,11 +20,6 @@ namespace RESTar
         IResource Resource { get; }
 
         /// <summary>
-        /// The conditions of the request
-        /// </summary>
-        Conditions Conditions { get; }
-
-        /// <summary>
         /// The meta-conditions of the request
         /// </summary>
         MetaConditions MetaConditions { get; }
@@ -56,6 +51,11 @@ namespace RESTar
         /// The resource of the request
         /// </summary>
         new IResource<T> Resource { get; }
+
+        /// <summary>
+        /// The conditions of the request
+        /// </summary>
+        Conditions<T> Conditions { get; }
     }
 
     internal interface IViewRequest : IRequest

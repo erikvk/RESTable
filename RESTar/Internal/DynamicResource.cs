@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Runtime.Serialization;
 using Dynamit;
 using RESTar.Operations;
 using Starcounter;
@@ -33,6 +34,7 @@ namespace RESTar.Internal
         /// <summary>
         /// A string representation of the available REST methods
         /// </summary>
+        [IgnoreDataMember]
         public string AvailableMethodsString { get; private set; }
 
         /// <summary>
@@ -44,16 +46,6 @@ namespace RESTar.Internal
         /// The alias of this resource (if any)
         /// </summary>
         public string Alias => ResourceAlias.ByResource(TargetType);
-
-        /// <summary>
-        /// The total number of entities in this resource
-        /// </summary>
-        public long? NrOfEntities => DB.RowCount(Name);
-
-        /// <summary>
-        /// Is this resource visible in the view?
-        /// </summary>
-        public bool IsViewable { get; }
 
         /// <summary>
         /// Is this a singleton resource?
@@ -144,12 +136,11 @@ namespace RESTar.Internal
             private set => AvailableMethodsString = value.ToMethodsString();
         }
 
-        private DynamicResource(Type table, RESTarMethods[] availableMethods, bool visible)
+        private DynamicResource(Type table, RESTarMethods[] availableMethods)
         {
             Name = table.FullName;
             Editable = true;
             AvailableMethods = availableMethods;
-            IsViewable = visible;
         }
 
         internal static DynamicResource MakeTable(Resource resource)
@@ -167,8 +158,7 @@ namespace RESTar.Internal
                 return new DynamicResource
                 (
                     newTable,
-                    resource.AvailableMethods,
-                    resource.Visible
+                    resource.AvailableMethods
                 );
             });
             RESTarConfig.AddResource(dynamicResource);

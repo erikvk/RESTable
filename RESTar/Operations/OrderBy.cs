@@ -17,12 +17,13 @@ namespace RESTar.Operations
         internal PropertyChain PropertyChain;
         internal bool IsStarcounterQueryable = true;
 
-        private Func<T1, dynamic> ToSelector<T1>() => item => Do.Try(() => PropertyChain.Evaluate(item), default(object));
+        private Func<T1, dynamic> ToSelector<T1>() => item => Do.Try(() => PropertyChain.Evaluate(item),
+            default(object));
 
         internal string SQL => IsStarcounterQueryable
             ? $"ORDER BY t.{PropertyChain.DbKey.Fnuttify()} {(Descending ? "DESC" : "ASC")}"
             : null;
-        
+
         internal OrderBy(IResource resource) => Resource = resource;
 
         internal OrderBy(IResource resource, bool descending, string key, List<string> dynamicMembers)

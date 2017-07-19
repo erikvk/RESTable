@@ -20,7 +20,7 @@ namespace RESTar.Requests
     {
         public RESTarMethods Method { get; private set; }
         public IResource<T> Resource { get; }
-        public Conditions Conditions { get; private set; }
+        public Conditions<T> Conditions { get; private set; }
         public MetaConditions MetaConditions { get; private set; }
         public string Body { get; set; }
         public string AuthToken { get; internal set; }
@@ -44,6 +44,7 @@ namespace RESTar.Requests
             Resource = resource;
             ScRequest = scRequest;
             ResponseHeaders = new Dictionary<string, string>();
+            Conditions = new Conditions<T>();
             MetaConditions = new MetaConditions();
         }
 
@@ -59,7 +60,7 @@ namespace RESTar.Requests
             InputDataConfig = Source != null ? DataConfig.External : DataConfig.Internal;
             OutputDataConfig = Destination != null ? DataConfig.External : DataConfig.Internal;
             if (args.HasConditions)
-                Conditions = Conditions.Parse(args.Conditions, Resource);
+                Conditions = Conditions<T>.Parse(args.Conditions, Resource) ?? Conditions;
             if (args.HasMetaConditions)
                 MetaConditions = MetaConditions.Parse(args.MetaConditions, Resource) ?? MetaConditions;
         }
@@ -126,16 +127,17 @@ namespace RESTar.Requests
 
         internal void SetResponseData(IEnumerable<dynamic> data, Response response)
         {
+            var fileName = $"{Resource.Name}_{DateTime.Now:yyyyMMdd_HHmmss}";
             switch (Accept)
             {
                 case RESTarMimeType.Json:
                     response.Body = data.Serialize();
+                    response.Headers["Content-Disposition"] = $"attachment; filename={fileName}.json";
                     response.ContentType = MimeTypes.JSON;
                     return;
                 case RESTarMimeType.Excel:
-                    var fileName = $"{Resource.Name}_output_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
                     response.BodyBytes = data.ToExcel(Resource).SerializeExcel();
-                    response.Headers["Content-Disposition"] = $"attachment; filename={fileName}";
+                    response.Headers["Content-Disposition"] = $"attachment; filename={fileName}.xlsx";
                     response.ContentType = MimeTypes.Excel;
                     return;
                 case RESTarMimeType.XML:
@@ -148,6 +150,7 @@ namespace RESTar.Requests
                         xmlTextWriter.Flush();
                         response.Body = stringWriter.GetStringBuilder().ToString();
                     }
+                    response.Headers["Content-Disposition"] = $"attachment; filename={fileName}.xml";
                     response.ContentType = MimeTypes.XML;
                     return;
                 default: throw new ArgumentOutOfRangeException(nameof(Accept));

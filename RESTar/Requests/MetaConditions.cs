@@ -101,7 +101,7 @@ namespace RESTar.Requests
                         $"For more info, see {Settings.Instance.HelpResourcePath}/topic=Meta-conditions");
 
                 var expectedType = metaCondition.ExpectedType();
-                var value = Conditions.GetValue(pair[1]);
+                var value = pair[1].GetConditionValue();
                 if (expectedType != value.GetType())
                     throw new SyntaxException(InvalidMetaConditionValueTypeError,
                         $"Invalid data type assigned to meta-condition '{pair[0]}'. " +

@@ -19,9 +19,9 @@ namespace RESTar
         /// <summary>
         /// RESTar selector (don't use)
         /// </summary>
-        public IEnumerable<Schema> Select(IRequest request)
+        public IEnumerable<Schema> Select(IRequest<Schema> request)
         {
-            var validCondition = request.Conditions?["resource", EQUALS]?.Value as string;
+            var validCondition = request.Conditions["resource", EQUALS]?.Value as string;
             if (validCondition == null)
                 throw new Exception("Invalid resource argument, format: /schema/resource=my_resource_name");
             var schema = MakeSchema(validCondition);

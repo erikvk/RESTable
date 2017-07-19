@@ -23,15 +23,15 @@ namespace RESTar.Internal
             {
                 case ViewRequest<T> _:
                 case RESTRequest<T> _:
-                    if (request.Conditions?.Any != true)
+                    if (!request.Conditions.Any)
                         return Db.SQL<T>($"{SELECT}{request.MetaConditions.OrderBy?.SQL}");
-                    var where = request.Conditions?.SQL?.MakeWhereClause();
-                    results = Db.SQL<T>($"{SELECT}{where?.WhereString} " +
-                                        $"{request.MetaConditions.OrderBy?.SQL}", where?.Values);
-                    return !request.Conditions.HasPost ? results : results.Filter(request.Conditions?.PostSQL);
+                    var where = request.Conditions.SQL.MakeWhereClause();
+                    results = Db.SQL<T>($"{SELECT}{where.WhereString} " +
+                                        $"{request.MetaConditions.OrderBy?.SQL}", where.Values);
+                    return !request.Conditions.HasPost ? results : results.Where(request.Conditions.PostSQL);
                 case Request<T> appRequest:
                     results = Db.SQL<T>(appRequest.SqlQuery, appRequest.SqlValues);
-                    return !appRequest.Conditions.HasPost ? results : results.Filter(appRequest.Conditions?.PostSQL);
+                    return !appRequest.Conditions.HasPost ? results : results.Where(appRequest.Conditions.PostSQL);
                 default: return null;
             }
         };

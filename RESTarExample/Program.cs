@@ -26,7 +26,7 @@ namespace RESTarExample
             TestDatabase.Init();
         }
     }
-
+    
     [Database, RESTar(RESTarPresets.ReadAndWrite)]
     public class MyResource
     {
@@ -48,22 +48,22 @@ namespace RESTarExample
         public string S { get; set; }
         public string[] Ss { get; set; }
 
-        public int Insert(IEnumerable<R> entities, IRequest request)
+        public int Insert(IEnumerable<R> entities, IRequest<R> request)
         {
             return entities.Count();
         }
 
-        public IEnumerable<R> Select(IRequest request)
+        public IEnumerable<R> Select(IRequest<R> request)
         {
             return new R[] {new R {S = "Swoo", Ss = new[] {"S", "Sd"}}};
         }
 
-        public int Update(IEnumerable<R> entities, IRequest request)
+        public int Update(IEnumerable<R> entities, IRequest<R> request)
         {
             return entities.Count();
         }
 
-        public int Delete(IEnumerable<R> entities, IRequest request)
+        public int Delete(IEnumerable<R> entities, IRequest<R> request)
         {
             return entities.Count();
         }
@@ -105,7 +105,7 @@ namespace RESTarExample
         public MyDynamicTableKvp NewKeyPair(MyDynamicTable dict, string key, object value = null) =>
             new MyDynamicTableKvp(dict, key, value);
 
-        public IEnumerable<MyDynamicTable> Select(IRequest request) =>
+        public IEnumerable<MyDynamicTable> Select(IRequest<MyDynamicTable> request) =>
             DDictionaryOperations<MyDynamicTable>.Select(request);
     }
 

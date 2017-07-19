@@ -22,7 +22,7 @@ namespace RESTar.Requests
     internal class ViewRequest<T> : IRequest<T>, IViewRequest where T : class
     {
         public IResource<T> Resource { get; }
-        public Conditions Conditions { get; private set; }
+        public Conditions<T> Conditions { get; private set; }
         public MetaConditions MetaConditions { get; private set; }
         public string AuthToken { get; internal set; }
         public IDictionary<string, string> ResponseHeaders { get; }
@@ -75,12 +75,13 @@ namespace RESTar.Requests
             ScRequest = scRequest;
             ResponseHeaders = new Dictionary<string, string>();
             MetaConditions = new MetaConditions();
+            Conditions = new Conditions<T>();
         }
 
         internal void Populate(Args args)
         {
             if (args.HasConditions)
-                Conditions = Conditions.Parse(args.Conditions, Resource);
+                Conditions = Conditions<T>.Parse(args.Conditions, Resource) ?? Conditions;
             if (args.HasMetaConditions)
                 MetaConditions = MetaConditions.Parse(args.MetaConditions, Resource, false) ?? MetaConditions;
         }
@@ -89,8 +90,8 @@ namespace RESTar.Requests
         {
             Authenticator.CheckUser();
             var list = (List) View;
-            var conditions = Conditions.Parse(id, Resource);
-            var item = Entities.Filter(conditions).First();
+            var conditions = Conditions<T>.Parse(id, Resource);
+            var item = Entities.Where(conditions).First();
             CheckMethod(DELETE, $"You are not allowed to delete from the '{Resource}' resource");
             Evaluators<T>.View.DELETE(this, item);
             if (string.IsNullOrWhiteSpace(list.RedirectUrl))

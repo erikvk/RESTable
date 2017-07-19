@@ -29,11 +29,6 @@ namespace RESTar
         public bool Editable { get; private set; }
 
         /// <summary>
-        /// Is this resource visible in the view?
-        /// </summary>
-        public bool Visible { get; set; }
-
-        /// <summary>
         /// The methods that have been enabled for this resource
         /// </summary>
         public RESTarMethods[] AvailableMethods { get; set; }
@@ -70,11 +65,11 @@ namespace RESTar
         /// <summary>
         /// RESTar selector (don't use)
         /// </summary>
-        public IEnumerable<Resource> Select(IRequest request)
+        public IEnumerable<Resource> Select(IRequest<Resource> request)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
             return Resources
-                .Filter(request.Conditions)
+                .Where(request.Conditions.For<IResource>())
                 .Select(m => new Resource
                 {
                     Name = m.Name,
@@ -89,7 +84,7 @@ namespace RESTar
 
         /// <summary>
         /// </summary>
-        public int Insert(IEnumerable<Resource> resources, IRequest request)
+        public int Insert(IEnumerable<Resource> resources, IRequest<Resource> request)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
             var count = 0;
@@ -109,7 +104,7 @@ namespace RESTar
 
         /// <summary>
         /// </summary>
-        public int Update(IEnumerable<Resource> entities, IRequest request)
+        public int Update(IEnumerable<Resource> entities, IRequest<Resource> request)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
             var count = 0;
@@ -124,7 +119,7 @@ namespace RESTar
 
         /// <summary>
         /// </summary>
-        public int Delete(IEnumerable<Resource> entities, IRequest request)
+        public int Delete(IEnumerable<Resource> entities, IRequest<Resource> request)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
             var count = 0;

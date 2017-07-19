@@ -11,7 +11,7 @@ namespace RESTar.Internal
     /// </summary>
     public static class DDictionaryOperations<T> where T : class
     {
-        private static IEnumerable<T> EqualitySQL(Condition c, string kvp)
+        private static IEnumerable<T> EqualitySQL(Condition<T> c, string kvp)
         {
             var SQL = $"SELECT CAST(t.Dictionary AS {typeof(T).FullName}) " +
                       $"FROM {kvp} t WHERE t.Key =? AND t.ValueHash {c.Operator.SQL}?";
@@ -25,9 +25,9 @@ namespace RESTar.Internal
         /// </summary>
         public static Selector<T> Select => r =>
         {
-            var equalityConditions = r.Conditions?.Equality;
+            var equalityConditions = r.Conditions.Equality;
             if (equalityConditions?.Any() != true)
-                return AllSQL.Filter(r.Conditions);
+                return AllSQL.Where(r.Conditions);
             var kvpTable = TableInfo<T>.KvpTable;
             var results = new HashSet<T>();
             equalityConditions.ForEach((cond, index) =>
@@ -35,7 +35,7 @@ namespace RESTar.Internal
                 if (index == 0) results.UnionWith(EqualitySQL(cond, kvpTable));
                 else results.IntersectWith(EqualitySQL(cond, kvpTable));
             });
-            return results.Filter(r.Conditions.Compare).ToList();
+            return results.Where(r.Conditions.Compare).ToList();
         };
 
         /// <summary>

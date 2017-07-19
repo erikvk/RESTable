@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Data;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -341,9 +342,10 @@ namespace RESTar
         /// Filters an IEnumerable of resource entities and returns all entities x such that all the 
         /// conditions are true of x.
         /// </summary>
-        public static IEnumerable<T> Filter<T>(this IEnumerable<T> entities, Conditions filter)
+        public static IEnumerable<T> Where<T>(this IEnumerable<T> entities, Conditions<T> conditions) where T : class
         {
-            return filter?.Apply((dynamic) entities) ?? entities;
+            if (conditions?.Any != true) return entities;
+            return conditions.Apply(entities);
         }
 
         internal static IEnumerable<T> Filter<T>(this IEnumerable<T> entities, IFilter filter)
@@ -356,7 +358,8 @@ namespace RESTar
             return processor?.Apply((dynamic) entities) ?? (IEnumerable<dynamic>) entities;
         }
 
-        internal static (string WhereString, object[] Values) MakeWhereClause(this IEnumerable<Condition> conds)
+        internal static (string WhereString, object[] Values) MakeWhereClause<T>(this IEnumerable<Condition<T>> conds)
+            where T : class
         {
             if (!conds.Any()) return (null, null);
             var Values = new List<object>();
@@ -579,6 +582,30 @@ namespace RESTar
 
         #region Requests
 
+        internal static dynamic GetConditionValue(this string valueString)
+        {
+            if (valueString == null) return null;
+            if (valueString == "null") return null;
+            if (valueString[0] == '\"' && valueString.Last() == '\"')
+                return valueString.Remove(0, 1).Remove(valueString.Length - 2, 1);
+            dynamic obj;
+            if (bool.TryParse(valueString, out bool boo))
+                obj = boo;
+            else if (int.TryParse(valueString, out int _int))
+                obj = _int;
+            else if (decimal.TryParse(valueString, out decimal dec))
+                obj = decimal.Round(dec, 6);
+            else if (DateTime.TryParseExact(valueString, "yyyy-MM-dd", null, DateTimeStyles.AssumeUniversal,
+                         out DateTime dat) ||
+                     DateTime.TryParseExact(valueString, "yyyy-MM-ddTHH:mm:ss", null, DateTimeStyles.AssumeUniversal,
+                         out dat) ||
+                     DateTime.TryParseExact(valueString, "O", null, DateTimeStyles.AssumeUniversal, out dat))
+                obj = dat;
+            else obj = valueString;
+            return obj;
+        }
+
+
         internal static Args ToArgs(this string query, Request request) => new Args(query, request);
 
         private static string CheckQuery(this string query, Request request)
@@ -599,10 +626,11 @@ namespace RESTar
                 throw Authenticator.NotAuthorizedException;
         }
 
-        internal static Conditions ToConditions(this IEnumerable<Condition> conditions, IResource resource)
+        internal static Conditions<T> ToConditions<T>(this IEnumerable<Condition<T>> conditions)
+            where T : class
         {
             if (conditions?.Any() != true) return null;
-            var _conditions = new Conditions(resource);
+            var _conditions = new Conditions<T>();
             _conditions.AddRange(conditions);
             return _conditions;
         }
@@ -630,7 +658,8 @@ namespace RESTar
         /// operator. If true, the out Condition parameter will contain a reference to the found
         /// condition.
         /// </summary>
-        public static bool HasCondition(this IRequest request, string key, Operator op, out Condition condition)
+        public static bool HasCondition<T>(this IRequest<T> request, string key, Operator op,
+            out Condition<T> condition) where T : class
         {
             condition = request.Conditions?[key, op];
             return condition != null;

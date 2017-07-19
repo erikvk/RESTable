@@ -384,7 +384,7 @@ namespace RESTar.Operations
                 {
                     var chains = request.MetaConditions.SafePost.Split(',').Select(k =>
                         request.Resource.MakePropertyChain(k, request.Resource.DynamicConditionsAllowed));
-                    var conditions = chains.Select(chain => new Condition(chain, Operator.EQUALS, null)).ToList();
+                    var conditions = chains.Select(chain => new Condition<T>(chain, Operator.EQUALS, null)).ToList();
                     foreach (var entity in request.Body.Deserialize<IEnumerable<JObject>>())
                     {
                         conditions.ForEach(cond => cond.SetValue(cond.PropertyChain.Evaluate(entity)));
@@ -487,7 +487,7 @@ namespace RESTar.Operations
                     var chains = request.MetaConditions.SafePost
                         .Split(',')
                         .Select(k => request.Resource.MakePropertyChain(k, request.Resource.DynamicConditionsAllowed));
-                    var conditions = chains.Select(chain => new Condition(chain, Operator.EQUALS, null)).ToList();
+                    var conditions = chains.Select(chain => new Condition<T>(chain, Operator.EQUALS, null)).ToList();
                     var innerRequest = new Request<T>();
                     foreach (var entity in request.Body.Deserialize<IEnumerable<JObject>>())
                     {

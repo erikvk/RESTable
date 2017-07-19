@@ -1,38 +1,30 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using System.Net;
 using RESTar.Deflection;
 using RESTar.Internal;
-using RESTar.Operations;
 
 namespace RESTar
 {
     /// <summary>
     /// A collection of conditions
     /// </summary>
-    public class Conditions : IEnumerable<Condition>, IFilter
+    public class Conditions<T> : IEnumerable<Condition<T>> where T : class
     {
-        private readonly List<Condition> Store;
+        private readonly List<Condition<T>> Store;
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+        private const string OpMatchChars = "<>=!";
+        public IEnumerator<Condition<T>> GetEnumerator() => Store.GetEnumerator();
+        internal IEnumerable<Condition<T>> SQL => Store.Where(c => c.ScQueryable);
+        internal Conditions<T> PostSQL => Store.Where(c => !c.ScQueryable || c.IsOfType<string>()).ToConditions();
+        internal Conditions<T> Equality => Store.Where(c => c.Operator.Equality).ToConditions();
+        internal Conditions<T> Compare => Store.Where(c => c.Operator.Compare).ToConditions();
 
-        /// <summary>
-        /// </summary>
-        public IEnumerator<Condition> GetEnumerator() => Store.GetEnumerator();
-
-        internal IResource Resource;
-        internal IEnumerable<Condition> SQL => Store.Where(c => c.ScQueryable);
-        internal Conditions PostSQL => Store.Where(c => !c.ScQueryable || c.IsOfType<string>()).ToConditions(Resource);
-        internal Conditions Equality => Store.Where(c => c.Operator.Equality).ToConditions(Resource);
-        internal Conditions Compare => Store.Where(c => c.Operator.Compare).ToConditions(Resource);
-        private static readonly char[] OpMatchChars = {'<', '>', '=', '!'};
-
-        internal Conditions(IResource resource)
+        internal Conditions()
         {
-            Resource = resource;
-            Store = new List<Condition>();
+            Store = new List<Condition<T>>();
             HasChanged = true;
         }
 
@@ -54,19 +46,35 @@ namespace RESTar
         /// <summary>
         /// Access a condition by its key (case insensitive)
         /// </summary>
-        public Condition this[string key] => Store.FirstOrDefault(c => c.Key.EqualsNoCase(key));
+        public Condition<T> this[string key] => Store.FirstOrDefault(c => c.Key.EqualsNoCase(key));
 
         /// <summary>
         /// Access a condition by its key (case insensitive) and operator
         /// </summary>
-        public Condition this[string key, Operator op] => Store
+        public Condition<T> this[string key, Operator op] => Store
             .FirstOrDefault(c => c.Operator == op && c.Key.EqualsNoCase(key));
+
+        /// <summary>
+        /// Converts the condition collection to target a new resource type
+        /// </summary>
+        /// <typeparam name="TResults">The new type to target</typeparam>
+        /// <returns></returns>
+        public Conditions<TResults> For<TResults>() where TResults : class
+        {
+            if (typeof(TResults) == typeof(T)) return this as Conditions<TResults>;
+            var newConditions = new Conditions<TResults>();
+            var props = typeof(TResults).GetStaticProperties().Values;
+            Store.Where(cond => props.Any(prop => prop.Name == cond.PropertyChain.First?.Name))
+                .Select(cond => cond.ConvertTo<TResults>())
+                .ForEach(newConditions.Add);
+            return newConditions;
+        }
 
         /// <summary>
         /// Adds a condition to the list
         /// </summary>
         /// <param name="value"></param>
-        internal void Add(Condition value)
+        internal void Add(Condition<T> value)
         {
             if (value == null) throw new ArgumentNullException(nameof(value));
             if (!value.ScQueryable || value.IsOfType<string>())
@@ -78,7 +86,7 @@ namespace RESTar
         /// <summary>
         /// Removes a condition from the collection
         /// </summary>
-        public void Remove(Condition condition)
+        public void Remove(Condition<T> condition)
         {
             Store.Remove(condition);
             HasChanged = true;
@@ -90,15 +98,17 @@ namespace RESTar
         public void Clear() => Store.Clear();
 
         /// <summary>
-        /// Creates and adds a new condition to the list
+        /// Creates and adds a new condition to the list. Only works if T is a 
+        /// resource type.
         /// </summary>
         public void Add(string key, Operator op, dynamic value)
         {
-            Add(new Condition(Resource.MakePropertyChain(key, Resource.DynamicConditionsAllowed), op, value));
+            var resource = Resource<T>.Get;
+            Add(new Condition<T>(resource.MakePropertyChain(key, resource.DynamicConditionsAllowed), op, value));
             HasChanged = true;
         }
 
-        internal void AddRange(IEnumerable<Condition> conditions)
+        internal void AddRange(IEnumerable<Condition<T>> conditions)
         {
             Store.AddRange(conditions);
             HasChanged = true;
@@ -112,10 +122,10 @@ namespace RESTar
         /// <summary>
         /// Parses a Conditions object from a conditions section of a REST request URI
         /// </summary>
-        public static Conditions Parse(string conditionString, IResource resource)
+        public static Conditions<T> Parse(string conditionString, IResource<T> resource)
         {
             if (string.IsNullOrEmpty(conditionString)) return null;
-            var conditions = new Conditions(resource);
+            var conditions = new Conditions<T>();
             conditionString.Split('&').ForEach(s =>
             {
                 if (s == "")
@@ -135,7 +145,7 @@ namespace RESTar
                     throw new ForbiddenOperatorException(s, resource, op, chain,
                         stat.GetAttribute<AllowedConditionOperators>()?.Operators);
                 var valueString = WebUtility.UrlDecode(pair[1]);
-                var value = GetValue(valueString);
+                var value = valueString.GetConditionValue();
                 if (chain.IsStatic && chain.Last is StaticProperty prop && prop.Type.IsEnum &&
                     value is string)
                 {
@@ -150,7 +160,7 @@ namespace RESTar
                             $"has a predefined set of allowed values, not containing '{value}'.");
                     }
                 }
-                conditions.Add(new Condition(chain, op, value));
+                conditions.Add(new Condition<T>(chain, op, value));
             });
             if (resource.TargetType == typeof(Resource))
             {
@@ -160,45 +170,12 @@ namespace RESTar
             return conditions;
         }
 
-        internal static dynamic GetValue(string valueString)
-        {
-            if (valueString == null) return null;
-            if (valueString == "null") return null;
-            if (valueString[0] == '\"' && valueString.Last() == '\"')
-                return valueString.Remove(0, 1).Remove(valueString.Length - 2, 1);
-            dynamic obj;
-            if (bool.TryParse(valueString, out bool boo))
-                obj = boo;
-            else if (int.TryParse(valueString, out int _int))
-                obj = _int;
-            else if (decimal.TryParse(valueString, out decimal dec))
-                obj = decimal.Round(dec, 6);
-            else if (DateTime.TryParseExact(valueString, "yyyy-MM-dd", null, DateTimeStyles.AssumeUniversal,
-                         out DateTime dat) ||
-                     DateTime.TryParseExact(valueString, "yyyy-MM-ddTHH:mm:ss", null, DateTimeStyles.AssumeUniversal,
-                         out dat) ||
-                     DateTime.TryParseExact(valueString, "O", null, DateTimeStyles.AssumeUniversal, out dat))
-                obj = dat;
-            else obj = valueString;
-            return obj;
-        }
-
         /// <summary>
         /// Applies this list of conditions to an IEnumerable of entities and returns
         /// the entities for which all the conditions hold.
         /// </summary>
-        /// <typeparam name="T">The resource type</typeparam>
-        public IEnumerable<T> Apply<T>(IEnumerable<T> entities)
+        public IEnumerable<T> Apply(IEnumerable<T> entities)
         {
-            var type = typeof(T);
-            if (type != Resource.TargetType && !Resource.IsDDictionary)
-            {
-                var newTypeProperties = type.GetStaticProperties().Values;
-                Store.RemoveAll(cond => newTypeProperties.All(prop =>
-                    prop.Name != cond.PropertyChain.First?.Name));
-                Store.ForEach(condition => condition.Migrate(type));
-                Resource = RESTar.Resource.Get(type);
-            }
             return entities.Where(entity => Store.All(condition => condition.HoldsFor(entity)));
         }
     }
