@@ -47,7 +47,7 @@ namespace RESTar.Requests
                 IsTemplate = true;
                 View = new Item();
             }
-            Entities = Evaluators<T>.StatSELECT(this);
+            Entities = Evaluators<T>.STATIC_SELECT(this);
 
             if (Entities.IsNullOrEmpty())
                 View.SetMessage("No entities found", NoError, warning);

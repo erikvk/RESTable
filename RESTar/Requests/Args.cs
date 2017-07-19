@@ -1,7 +1,7 @@
 ﻿using ClosedXML.Excel;
 using Starcounter;
 using static RESTar.Internal.ErrorCodes;
-using static RESTar.Resource;
+using RESTar.Internal;
 using IResource = RESTar.Internal.IResource;
 
 namespace RESTar.Requests
@@ -14,7 +14,7 @@ namespace RESTar.Requests
         internal readonly bool HasResource;
         internal readonly bool HasConditions;
         internal readonly bool HasMetaConditions;
-        internal IResource IResource => HasResource ? Resource.FindResource() : MetaResource;
+        internal IResource IResource => HasResource ? Resource.FindResource() : Resource<Resource>.Get;
 
         internal Args(string query, Request request)
         {

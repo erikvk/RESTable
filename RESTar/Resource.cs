@@ -241,9 +241,5 @@ namespace RESTar
         /// Finds a resource by target type
         /// </summary>
         public static IResource Get(Type type) => ResourceByType.SafeGet(type);
-
-        internal static IResource<T> Get<T>() where T : class => ResourceByType.SafeGet(typeof(T)) as IResource<T>;
-
-        internal static IResource<Resource> MetaResource => ResourceByType[typeof(Resource)] as IResource<Resource>;
     }
 }

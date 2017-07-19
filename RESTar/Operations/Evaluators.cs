@@ -17,14 +17,25 @@ namespace RESTar.Operations
     {
         #region Operations
 
-        internal static IEnumerable<T> StatSELECT(IRequest<T> request)
+        internal static IEnumerable<T> RAW_SELECT(IRequest<T> request)
+        {
+            try
+            {
+                return request.Resource.Select(request);
+            }
+            catch (Exception e)
+            {
+                throw new AbortedSelectorException(e, request);
+            }
+        }
+
+        internal static IEnumerable<T> STATIC_SELECT(IRequest<T> request)
         {
             try
             {
                 if (!request.MetaConditions.Unsafe && request.MetaConditions.Limit == -1)
                     request.MetaConditions.Limit = 1000;
-                return request.Resource
-                    .Select(request)?
+                return request.Resource.Select(request)?
                     .Filter(request.MetaConditions.OrderBy)
                     .Filter(request.MetaConditions.Limit);
             }
@@ -34,31 +45,18 @@ namespace RESTar.Operations
             }
         }
 
-        internal static IEnumerable<dynamic> DynSELECT(IRequest<T> request)
+        internal static IEnumerable<dynamic> DYNAMIC_SELECT(IRequest<T> request)
         {
             try
             {
                 if (!request.MetaConditions.Unsafe && request.MetaConditions.Limit == -1)
                     request.MetaConditions.Limit = 1000;
-                return request.Resource
-                    .Select(request)?
+                return request.Resource.Select(request)?
                     .Process(request.MetaConditions.Add)
                     .Process(request.MetaConditions.Rename)
                     .Process(request.MetaConditions.Select)
                     .Filter(request.MetaConditions.OrderBy)
                     .Filter(request.MetaConditions.Limit);
-            }
-            catch (Exception e)
-            {
-                throw new AbortedSelectorException(e, request);
-            }
-        }
-
-        internal static IEnumerable<T> AppSELECT(IRequest<T> request)
-        {
-            try
-            {
-                return request.Resource.Select(request);
             }
             catch (Exception e)
             {
@@ -307,7 +305,7 @@ namespace RESTar.Operations
 
             private static Response GET(RESTRequest<T> request)
             {
-                var entities = DynSELECT(request);
+                var entities = DYNAMIC_SELECT(request);
                 if (entities?.Any() != true)
                     return NoContent;
                 var response = new Response();
@@ -322,135 +320,55 @@ namespace RESTar.Operations
                 request.Body = request.Body[0] == '[' ? request.Body : $"[{request.Body}]";
                 if (request.MetaConditions.SafePost != null)
                     return LrSafePOST(request);
-                int count;
-                if (typeof(T) == typeof(DatabaseIndex))
-                    count = INSERT(request);
-                else
-                {
-                    var t = new Transaction();
-                    try
-                    {
-                        count = t.Scope(() => INSERT(request));
-                        t.Commit();
-                    }
-                    catch
-                    {
-                        t.Rollback();
-                        throw;
-                    }
-                }
+                var count = Transaction<T>.Transact(() => INSERT(request));
                 return InsertedEntities(request, count, request.Resource.TargetType);
             }
 
             private static Response LrPATCH(RESTRequest<T> request)
             {
-                var source = StatSELECT(request);
+                var source = STATIC_SELECT(request);
                 if (!request.MetaConditions.Unsafe && source.MoreThanOne())
                     throw new AmbiguousMatchException(request.Resource);
-                int count;
-                if (typeof(T) == typeof(DatabaseIndex))
-                    count = UPDATE(request, source);
-                else
-                {
-                    var t = new Transaction();
-                    try
-                    {
-                        count = t.Scope(() => UPDATE(request, source));
-                        t.Commit();
-                    }
-                    catch
-                    {
-                        t.Rollback();
-                        throw;
-                    }
-                }
+                var count = Transaction<T>.Transact(() => UPDATE(request, source));
                 return UpdatedEntities(request, count, request.Resource.TargetType);
             }
 
             private static Response LrPUT(RESTRequest<T> request)
             {
                 request.MetaConditions.Unsafe = false;
-                var source = StatSELECT(request);
+                var source = STATIC_SELECT(request);
                 if (source.MoreThanOne())
                     throw new AmbiguousMatchException(request.Resource);
                 int count;
                 if (source.Any())
                 {
-                    if (typeof(T) == typeof(DatabaseIndex))
-                        count = UPDATE_ONE(request, source.First());
-                    else
-                    {
-                        var t = new Transaction();
-                        try
-                        {
-                            count = t.Scope(() => UPDATE_ONE(request, source.First()));
-                            t.Commit();
-                        }
-                        catch
-                        {
-                            t.Rollback();
-                            throw;
-                        }
-                    }
+                    count = Transaction<T>.Transact(() => UPDATE_ONE(request, source.First()));
                     return UpdatedEntities(request, count, request.Resource.TargetType);
                 }
-                if (typeof(T) == typeof(DatabaseIndex))
-                    count = INSERT_ONE(request);
-                else
-                {
-                    var t = new Transaction();
-                    try
-                    {
-                        count = t.Scope(() => INSERT_ONE(request));
-                        t.Commit();
-                    }
-                    catch
-                    {
-                        t.Rollback();
-                        throw;
-                    }
-                }
+                count = Transaction<T>.Transact(() => INSERT_ONE(request));
                 return InsertedEntities(request, count, request.Resource.TargetType);
             }
 
             private static Response LrDELETE(RESTRequest<T> request)
             {
-                var source = StatSELECT(request);
+                var source = STATIC_SELECT(request);
                 if (!request.MetaConditions.Unsafe && source.MoreThanOne())
                     throw new AmbiguousMatchException(request.Resource);
-                int count;
-                if (typeof(T) == typeof(DatabaseIndex))
-                {
-                    count = DELETEop(request, source);
-                }
-                else
-                {
-                    var t = new Transaction();
-                    try
-                    {
-                        count = t.Scope(() => DELETEop(request, source));
-                        t.Commit();
-                    }
-                    catch
-                    {
-                        t.Rollback();
-                        throw;
-                    }
-                }
+                var count = Transaction<T>.Transact(() => DELETEop(request, source));
                 return DeleteEntities(count, request.Resource.TargetType);
             }
 
-            private static Response LrSafePOST(RESTRequest<T> request)
+            private static void GetSafePostTasks(RESTRequest<T> request, out Request<T> innerRequest,
+                out JArray toInsert, out IList<(JObject json, T source)> toUpdate)
             {
-                var transaction = new Transaction();
+                innerRequest = new Request<T>();
+                toInsert = new JArray();
+                toUpdate = new List<(JObject json, T source)>();
                 try
                 {
-                    var chains = request.MetaConditions.SafePost.Split(',')
-                        .Select(k => request.Resource.MakePropertyChain(k, request.Resource.DynamicConditionsAllowed));
+                    var chains = request.MetaConditions.SafePost.Split(',').Select(k =>
+                        request.Resource.MakePropertyChain(k, request.Resource.DynamicConditionsAllowed));
                     var conditions = chains.Select(chain => new Condition(chain, Operator.EQUALS, null)).ToList();
-                    var innerRequest = new Request<T>();
-                    var toInsert = new JArray();
-                    var toUpdate = new List<(JObject json, T source)>();
                     foreach (var entity in request.Body.Deserialize<IEnumerable<JObject>>())
                     {
                         conditions.ForEach(cond => cond.SetValue(cond.PropertyChain.Evaluate(entity)));
@@ -461,23 +379,28 @@ namespace RESTar.Operations
                         if (results.Any()) toUpdate.Add((entity, results.First()));
                         else toInsert.Add(entity);
                     }
-                    var insertedCount = 0;
-                    var updatedCount = 0;
-                    if (toInsert.Any())
-                        insertedCount = typeof(T) == typeof(DatabaseIndex)
-                            ? INSERT_JArray(innerRequest, toInsert)
-                            : transaction.Scope(() => INSERT_JArray(innerRequest, toInsert));
-                    if (toUpdate.Any())
-                        updatedCount = typeof(T) == typeof(DatabaseIndex)
-                            ? UPDATE_MANY(innerRequest, toUpdate)
-                            : transaction.Scope(() => UPDATE_MANY(innerRequest, toUpdate));
-                    transaction.Commit();
-                    return SafePostedEntities(request, insertedCount, updatedCount);
                 }
                 catch (Exception e)
                 {
-                    transaction.Rollback();
                     throw new AbortedInserterException(e, request, e.Message);
+                }
+            }
+
+            private static Response LrSafePOST(RESTRequest<T> request)
+            {
+                GetSafePostTasks(request, out var innerRequest, out var toInsert, out var toUpdate);
+                var trans = new Transaction<T>();
+                try
+                {
+                    var insertedCount = toInsert.Any() ? trans.Scope(() => INSERT_JArray(innerRequest, toInsert)) : 0;
+                    var updatedCount = toUpdate.Any() ? trans.Scope(() => UPDATE_MANY(innerRequest, toUpdate)) : 0;
+                    trans.Commit();
+                    return SafePostedEntities(request, insertedCount, updatedCount);
+                }
+                catch
+                {
+                    trans.Rollback();
+                    throw;
                 }
             }
 
@@ -498,7 +421,7 @@ namespace RESTar.Operations
 
             private static Response PATCH(RESTRequest<T> request)
             {
-                var source = StatSELECT(request);
+                var source = STATIC_SELECT(request);
                 if (!request.MetaConditions.Unsafe && source.MoreThanOne())
                     throw new AmbiguousMatchException(request.Resource);
                 var count = typeof(T) == typeof(DatabaseIndex)
@@ -510,7 +433,7 @@ namespace RESTar.Operations
             private static Response PUT(RESTRequest<T> request)
             {
                 request.MetaConditions.Unsafe = false;
-                var source = StatSELECT(request);
+                var source = STATIC_SELECT(request);
                 if (source.MoreThanOne())
                     throw new AmbiguousMatchException(request.Resource);
                 int count;
@@ -529,7 +452,7 @@ namespace RESTar.Operations
 
             private static Response DELETE(RESTRequest<T> request)
             {
-                var source = StatSELECT(request);
+                var source = STATIC_SELECT(request);
                 if (!request.MetaConditions.Unsafe && source.MoreThanOne())
                     throw new AmbiguousMatchException(request.Resource);
                 var count = typeof(T) == typeof(DatabaseIndex)
@@ -590,75 +513,64 @@ namespace RESTar.Operations
 
         internal static class View
         {
-            internal static int POST(ViewRequest<T> request) => typeof(T) == typeof(DatabaseIndex)
-                ? INSERT_ONE(request)
-                : Trans(() => INSERT_ONE(request));
+            internal static int POST(ViewRequest<T> request)
+            {
+                return Transaction<T>.Transact(() => INSERT_ONE(request));
+            }
 
             internal static int PATCH(ViewRequest<T> request, T item)
             {
-                return typeof(T) == typeof(DatabaseIndex)
-                    ? UPDATE_ONE(request, item)
-                    : Trans(() => UPDATE_ONE(request, item));
+                return Transaction<T>.Transact(() => UPDATE_ONE(request, item));
             }
 
-            internal static int DELETE(ViewRequest<T> request, T item) => typeof(T) == typeof(DatabaseIndex)
-                ? DELETEop_ONE(request, item)
-                : Trans(() => DELETEop_ONE(request, item));
+            internal static int DELETE(ViewRequest<T> request, T item)
+            {
+                return Transaction<T>.Transact(() => DELETEop_ONE(request, item));
+            }
         }
 
         internal static class App
         {
             internal static int POST(Func<T> inserter, Request<T> request)
             {
-                return typeof(T) == typeof(DatabaseIndex)
-                    ? INSERT_ONE(request, inserter)
-                    : Trans(() => INSERT_ONE(request, inserter));
+                return Transaction<T>.Transact(() => INSERT_ONE(request, inserter));
             }
 
             internal static int POST(Func<IEnumerable<T>> inserter, Request<T> request)
             {
-                return typeof(T) == typeof(DatabaseIndex)
-                    ? INSERT(request, inserter)
-                    : Trans(() => INSERT(request, inserter));
+                return Transaction<T>.Transact(() => INSERT(request, inserter));
             }
 
             internal static int PATCH(Func<T, T> updater, T source, Request<T> request)
             {
-                return typeof(T) == typeof(DatabaseIndex)
-                    ? UPDATE_ONE(request, updater, source)
-                    : Trans(() => UPDATE_ONE(request, updater, source));
+                return Transaction<T>.Transact(() => UPDATE_ONE(request, updater, source));
             }
 
             internal static int PATCH(Func<IEnumerable<T>, IEnumerable<T>> updater, IEnumerable<T> source,
                 Request<T> request)
             {
-                return typeof(T) == typeof(DatabaseIndex)
-                    ? UPDATE(request, updater, source)
-                    : Trans(() => UPDATE(request, updater, source));
+                return Transaction<T>.Transact(() => UPDATE(request, updater, source));
             }
 
             internal static int PUT(Func<T> inserter, Func<T, T> updater, IEnumerable<T> source,
                 Request<T> request)
             {
                 if (!source.Any())
-                    return typeof(T) == typeof(DatabaseIndex)
-                        ? INSERT_ONE(request, inserter)
-                        : Trans(() => INSERT_ONE(request, inserter));
+                    return Transaction<T>.Transact(() => INSERT_ONE(request, inserter));
                 if (source.MoreThanOne())
                     throw new AmbiguousMatchException(request.Resource);
-                return typeof(T) == typeof(DatabaseIndex)
-                    ? UPDATE_ONE(request, updater, source.First())
-                    : Trans(() => UPDATE_ONE(request, updater, source.First()));
+                return Transaction<T>.Transact(() => UPDATE_ONE(request, updater, source.First()));
             }
 
-            internal static int DELETE(T item, Request<T> request) => typeof(T) == typeof(DatabaseIndex)
-                ? DELETEop_ONE(request, item)
-                : Trans(() => DELETEop_ONE(request, item));
+            internal static int DELETE(T item, Request<T> request)
+            {
+                return Transaction<T>.Transact(() => DELETEop_ONE(request, item));
+            }
 
-            internal static int DELETE(IEnumerable<T> items, Request<T> request) =>
-                typeof(T) == typeof(DatabaseIndex)
-                    ? DELETEop(request, items)
-                    : Trans(() => DELETEop(request, items));
+            internal static int DELETE(IEnumerable<T> items, Request<T> request)
+            {
+                return Transaction<T>.Transact(() => DELETEop(request, items));
+            }
         }
     }
 }

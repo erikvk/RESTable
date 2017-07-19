@@ -78,8 +78,7 @@ namespace RESTar.Internal
     /// <summary>
     /// The common generic interface for all resource entities used by RESTar
     /// </summary>
-    public interface IResource<T> : IResource
-        where T : class
+    public interface IResource<T> : IResource where T : class
     {
         /// <summary>
         /// RESTar selector (don't use)

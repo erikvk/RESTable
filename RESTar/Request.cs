@@ -51,8 +51,7 @@ namespace RESTar
 
         public Request(params (string key, Operator op, object value)[] conditions)
         {
-            Resource = RESTar.Resource.Get<T>()
-                       ?? throw new ArgumentException($"'{typeof(T).FullName}' is not a RESTar resource.");
+            Resource = Resource<T>.Get ?? throw new ArgumentException($"Unknown resource type '{typeof(T).FullName}'");
             ResponseHeaders = new Dictionary<string, string>();
             Conditions = new Conditions(Resource);
             MetaConditions = new MetaConditions {Unsafe = true};
@@ -94,21 +93,21 @@ namespace RESTar
         {
             if (ScSql && Conditions.HasChanged) Prep();
             if (!GETAllowed) throw Deny(RESTarMethods.GET);
-            return Evaluators<T>.AppSELECT(this);
+            return Evaluators<T>.RAW_SELECT(this);
         }
 
         public bool ANY()
         {
             if (ScSql && Conditions.HasChanged) Prep();
             if (!GETAllowed) throw Deny(RESTarMethods.GET);
-            return Evaluators<T>.AppSELECT(this).Any();
+            return Evaluators<T>.RAW_SELECT(this).Any();
         }
 
         public int COUNT()
         {
             if (ScSql && Conditions.HasChanged) Prep();
             if (!GETAllowed) throw Deny(RESTarMethods.GET);
-            return Evaluators<T>.AppSELECT(this).Count();
+            return Evaluators<T>.RAW_SELECT(this).Count();
         }
 
         public int POST(Func<T> inserter)
@@ -127,7 +126,7 @@ namespace RESTar
         {
             if (ScSql && Conditions.HasChanged) Prep();
             if (!PATCHAllowed) throw Deny(RESTarMethods.PATCH);
-            var source = Evaluators<T>.AppSELECT(this);
+            var source = Evaluators<T>.RAW_SELECT(this);
             if (source.IsNullOrEmpty()) return 0;
             if (source.MoreThanOne())
                 throw new AmbiguousMatchException(Resource);
@@ -138,7 +137,7 @@ namespace RESTar
         {
             if (ScSql && Conditions.HasChanged) Prep();
             if (!PATCHAllowed) throw Deny(RESTarMethods.PATCH);
-            var source = Evaluators<T>.AppSELECT(this);
+            var source = Evaluators<T>.RAW_SELECT(this);
             if (source.IsNullOrEmpty()) return 0;
             return Evaluators<T>.App.PATCH(updater, source, this);
         }
@@ -147,7 +146,7 @@ namespace RESTar
         {
             if (ScSql && Conditions.HasChanged) Prep();
             if (!PUTAllowed) throw Deny(RESTarMethods.PUT);
-            var source = Evaluators<T>.AppSELECT(this);
+            var source = Evaluators<T>.RAW_SELECT(this);
             if (source == null) return 0;
             return Evaluators<T>.App.PUT(inserter, updater, source, this);
         }
@@ -156,7 +155,7 @@ namespace RESTar
         {
             if (ScSql && Conditions.HasChanged) Prep();
             if (!DELETEAllowed) throw Deny(RESTarMethods.DELETE);
-            var source = Evaluators<T>.AppSELECT(this);
+            var source = Evaluators<T>.RAW_SELECT(this);
             if (source.IsNullOrEmpty()) return 0;
             if (@unsafe)
                 return Evaluators<T>.App.DELETE(source, this);
