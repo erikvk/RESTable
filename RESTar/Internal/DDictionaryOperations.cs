@@ -9,7 +9,7 @@ namespace RESTar.Internal
     /// <summary>
     /// The default operations for classes inheriting from DDictionary
     /// </summary>
-    public static class DDictionaryOperations<T> where T : class
+    internal static class DDictionaryOperations<T> where T : class
     {
         private static IEnumerable<T> EqualitySQL(Condition<T> c, string kvp)
         {

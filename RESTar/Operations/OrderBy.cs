@@ -30,7 +30,7 @@ namespace RESTar.Operations
         {
             Resource = resource;
             Descending = descending;
-            PropertyChain = PropertyChain.ParseInternal(resource, key, resource.IsDynamic, dynamicMembers);
+            PropertyChain = PropertyChain.ParseInternal(resource.TargetType, key, resource.IsDynamic, dynamicMembers);
         }
 
         /// <summary>

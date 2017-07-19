@@ -65,22 +65,9 @@ namespace RESTar
             var newConditions = new Conditions<TResults>();
             var props = typeof(TResults).GetStaticProperties().Values;
             Store.Where(cond => props.Any(prop => prop.Name == cond.PropertyChain.First?.Name))
-                .Select(cond => cond.ConvertTo<TResults>())
+                .Select(cond => cond.For<TResults>())
                 .ForEach(newConditions.Add);
             return newConditions;
-        }
-
-        /// <summary>
-        /// Adds a condition to the list
-        /// </summary>
-        /// <param name="value"></param>
-        internal void Add(Condition<T> value)
-        {
-            if (value == null) throw new ArgumentNullException(nameof(value));
-            if (!value.ScQueryable || value.IsOfType<string>())
-                HasPost = true;
-            Store.Add(value);
-            HasChanged = true;
         }
 
         /// <summary>
@@ -105,6 +92,19 @@ namespace RESTar
         {
             var resource = Resource<T>.Get;
             Add(new Condition<T>(resource.MakePropertyChain(key, resource.DynamicConditionsAllowed), op, value));
+            HasChanged = true;
+        }
+
+        /// <summary>
+        /// Adds a condition to the list
+        /// </summary>
+        /// <param name="value"></param>
+        public void Add(Condition<T> value)
+        {
+            if (value == null) throw new ArgumentNullException(nameof(value));
+            if (!value.ScQueryable || value.IsOfType<string>())
+                HasPost = true;
+            Store.Add(value);
             HasChanged = true;
         }
 

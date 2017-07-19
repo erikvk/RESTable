@@ -1,5 +1,6 @@
 ﻿using System;
 using RESTar.Deflection;
+using RESTar.Internal;
 using RESTar.Operations;
 using static System.StringComparison;
 using static RESTar.Operators;
@@ -45,10 +46,15 @@ namespace RESTar
         internal Type Type => PropertyChain.IsStatic ? PropertyChain.LastAs<StaticProperty>()?.Type : null;
         internal bool IsOfType<T1>() => Type == typeof(T1);
 
-        internal Condition<TResults> ConvertTo<TResults>() where TResults : class
+        /// <summary>
+        /// Converts a condition to a new target type
+        /// </summary>
+        public Condition<TResults> For<TResults>(string newKey = null) where TResults : class
         {
             if (typeof(TResults) == typeof(T)) return this as Condition<TResults>;
-            var chain = PropertyChain.MakeFromPrototype(PropertyChain, typeof(TResults));
+            var chain = string.IsNullOrWhiteSpace(newKey)
+                ? PropertyChain.MakeFromPrototype(PropertyChain, typeof(TResults))
+                : typeof(TResults).MakePropertyChain(newKey, Resource<TResults>.AllowDynamicConditions);
             var newCondition = new Condition<TResults>(chain, Operator, Value);
             return newCondition;
         }

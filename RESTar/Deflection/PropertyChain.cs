@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json.Linq;
-using RESTar.Internal;
 using static RESTar.Internal.ErrorCodes;
 using static RESTar.Operations.Do;
 
@@ -68,7 +67,7 @@ namespace RESTar.Deflection
         /// is used for output property chains, that is, property chains that select property of outbound
         /// entities. They may have dynamic entities generated during the request, hence the dynamic domain.
         /// </summary>
-        internal static PropertyChain ParseInternal(IResource resource, string key, bool dynamicUnknowns,
+        internal static PropertyChain ParseInternal(Type resource, string key, bool dynamicUnknowns,
             List<string> dynamicDomain = null)
         {
             var chain = new PropertyChain();
@@ -92,7 +91,7 @@ namespace RESTar.Deflection
 
                 switch (chain.Store.LastOrDefault())
                 {
-                    case null: return make(resource.TargetType);
+                    case null: return make(resource);
                     case StaticProperty stat: return make(stat.Type);
                     default: return DynamicProperty.Parse(str);
                 }

@@ -124,7 +124,7 @@ namespace RESTar.Requests
                     case RESTarMetaConditions.Select:
                         if (!processors) break;
                         mc.Select = ((string) value).Split(',')
-                            .Select(str => PropertyChain.ParseInternal(resource, str, resource.IsDynamic,
+                            .Select(str => PropertyChain.ParseInternal(resource.TargetType, str, resource.IsDynamic,
                                 dynamicMembers))
                             .ToSelect();
                         break;

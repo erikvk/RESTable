@@ -9,7 +9,7 @@ namespace RESTar.Internal
     /// <summary>
     /// The default operations for static Starcounter database resources
     /// </summary>
-    public static class StarcounterOperations<T> where T : class
+    internal static class StarcounterOperations<T> where T : class
     {
         internal static readonly string SELECT = $"SELECT t FROM {typeof(T).FullName} t ";
 

@@ -86,6 +86,18 @@ namespace RESTar
             if (ScSql) Prep();
         }
 
+        public void SetConditions(Conditions<T> conditions)
+        {
+            Conditions.Clear();
+            Conditions.AddRange(conditions);
+        }
+
+        public void SetConditions(params Condition<T>[] conditions)
+        {
+            Conditions.Clear();
+            Conditions.AddRange(conditions);
+        }
+
         private static Exception Deny(RESTarMethods method) => new ForbiddenException
             (ErrorCodes.NotAuthorized, $"{method} is not available for resource '{typeof(T).FullName}'");
 

@@ -2,7 +2,6 @@
 using System.Linq;
 using Dynamit;
 using RESTar;
-using RESTar.Internal;
 using Starcounter;
 
 // ReSharper disable RedundantExplicitArrayCreation
@@ -26,7 +25,7 @@ namespace RESTarExample
             TestDatabase.Init();
         }
     }
-    
+
     [Database, RESTar(RESTarPresets.ReadAndWrite)]
     public class MyResource
     {
@@ -99,14 +98,10 @@ namespace RESTarExample
     }
 
     [RESTar(RESTarMethods.GET)]
-    public class MyDynamicTable : DDictionary, IDDictionary<MyDynamicTable, MyDynamicTableKvp>,
-        ISelector<MyDynamicTable>
+    public class MyDynamicTable : DDictionary, IDDictionary<MyDynamicTable, MyDynamicTableKvp>
     {
         public MyDynamicTableKvp NewKeyPair(MyDynamicTable dict, string key, object value = null) =>
             new MyDynamicTableKvp(dict, key, value);
-
-        public IEnumerable<MyDynamicTable> Select(IRequest<MyDynamicTable> request) =>
-            DDictionaryOperations<MyDynamicTable>.Select(request);
     }
 
     public class MyDynamicTableKvp : DKeyValuePair

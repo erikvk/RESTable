@@ -210,6 +210,8 @@ namespace RESTar.Internal
         public static IResource<T> Get => RESTarConfig.ResourceByType.SafeGet(typeof(T)) as IResource<T> ??
                                           throw new UnknownResourceException(typeof(T).FullName);
 
+        public static bool AllowDynamicConditions => Get?.DynamicConditionsAllowed ?? false;
+
         public bool Equals(IResource x, IResource y) => x.Name == y.Name;
         public int GetHashCode(IResource obj) => obj.Name.GetHashCode();
         public int CompareTo(IResource other) => string.Compare(Name, other.Name, StringComparison.Ordinal);

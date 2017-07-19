@@ -194,12 +194,17 @@ namespace RESTar
 
         #region Resource helpers
 
-        internal static PropertyChain MakePropertyChain(this IResource Resource, string key, bool dynamicUnknowns)
+        internal static PropertyChain MakePropertyChain(this IResource resource, string key, bool dynamicUnknowns)
         {
-            var hash = Resource.TargetType.GetHashCode() + key.ToLower().GetHashCode() +
+            return resource.TargetType.MakePropertyChain(key, dynamicUnknowns);
+        }
+
+        internal static PropertyChain MakePropertyChain(this Type resource, string key, bool dynamicUnknowns)
+        {
+            var hash = resource.GetHashCode() + key.ToLower().GetHashCode() +
                        dynamicUnknowns.GetHashCode();
             if (!PropertyChains.TryGetValue(hash, out PropertyChain propChain))
-                propChain = PropertyChains[hash] = PropertyChain.ParseInternal(Resource, key, dynamicUnknowns);
+                propChain = PropertyChains[hash] = PropertyChain.ParseInternal(resource, key, dynamicUnknowns);
             return propChain;
         }
 
@@ -658,7 +663,7 @@ namespace RESTar
         /// operator. If true, the out Condition parameter will contain a reference to the found
         /// condition.
         /// </summary>
-        public static bool HasCondition<T>(this IRequest<T> request, string key, Operator op,
+        public static bool TryGetCondition<T>(this IRequest<T> request, string key, Operator op,
             out Condition<T> condition) where T : class
         {
             condition = request.Conditions?[key, op];
