@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using Starcounter;
-using IResource = RESTar.Internal.IResource;
 
 namespace RESTar.Requests
 {
@@ -32,13 +31,13 @@ namespace RESTar.Requests
             }
         };
 
-        internal static Response AmbiguousColumn(AmbiguousColumnException e) => new Response
+        internal static Response AmbiguousProperty(AmbiguousPropertyException e) => new Response
         {
             StatusCode = (ushort) HttpStatusCode.NotFound,
             StatusDescription = "Not found",
             Headers =
             {
-                ["RESTar-info"] = $"{e.Message}Try qualifying the column name further, e.g. from " +
+                ["RESTar-info"] = $"{e.Message}Try qualifying the property name further, e.g. from " +
                                   $"'{e.SearchString}' to '{e.Candidates[0]}'."
             }
         };
@@ -47,16 +46,16 @@ namespace RESTar.Requests
 
         #region Bad request
 
-        internal static Response AbortedOperation(Exception e, RESTarMethods method, IResource resource)
+        internal static Response AbortedOperation<T>(Exception e, RESTarMethods method) where T : class
         {
-            var alias = ResourceAlias.ByResource(resource.TargetType);
+            var alias = ResourceAlias<T>.Get;
             return new Response
             {
                 StatusCode = (ushort) HttpStatusCode.BadRequest,
                 StatusDescription = "Bad request",
                 Headers =
                 {
-                    ["RESTar-info"] = $"Aborted {method} on resource '{resource.TargetType.FullName}'" +
+                    ["RESTar-info"] = $"Aborted {method} on resource '{typeof(T).FullName}'" +
                                       $"{(alias != null ? $" ('{alias}')" : "")} due to an error: {e.TotalMessage()}"
                 }
             };
@@ -74,7 +73,7 @@ namespace RESTar.Requests
 
         internal static Response UnknownAction => new Response
         {
-            StatusCode = (ushort)HttpStatusCode.BadRequest,
+            StatusCode = (ushort) HttpStatusCode.BadRequest,
             StatusDescription = "Bad request",
             Headers =
             {
@@ -157,59 +156,61 @@ namespace RESTar.Requests
             }
         };
 
-        internal static Response InsertedEntities(IRequest request, int count, Type resource)
+        internal static Response InsertedEntities<T>(int count) where T : class
         {
-            var alias = ResourceAlias.ByResource(resource);
+            var alias = ResourceAlias<T>.Get;
             return new Response
             {
                 StatusCode = (ushort) HttpStatusCode.Created,
                 StatusDescription = "Created",
                 Headers =
                 {
-                    ["RESTar-info"] = $"{count} entities inserted into resource '{resource.FullName}'" +
+                    ["RESTar-info"] = $"{count} entities inserted into resource '{typeof(T).FullName}'" +
                                       $"{(alias != null ? $" ('{alias}')" : "")}"
                 }
             };
         }
 
-        internal static Response UpdatedEntities(IRequest request, int count, Type resource)
+        internal static Response UpdatedEntities<T>(int count) where T : class
         {
-            var alias = ResourceAlias.ByResource(resource);
+            var alias = ResourceAlias<T>.Get;
             return new Response
             {
                 StatusCode = (ushort) HttpStatusCode.OK,
                 StatusDescription = "OK",
                 Headers =
                 {
-                    ["RESTar-info"] = $"{count} entities updated in resource '{resource.FullName}'" +
+                    ["RESTar-info"] = $"{count} entities updated in resource '{typeof(T).FullName}'" +
                                       $"{(alias != null ? $" ('{alias}')" : "")}"
                 }
             };
         }
 
-        internal static Response SafePostedEntities(IRequest request, int insertedCount, int updatedCount)
+        internal static Response SafePostedEntities<T>(int insertedCount, int updatedCount) where T : class
         {
+            var alias = ResourceAlias<T>.Get;
             return new Response
             {
                 StatusCode = 200,
                 Headers =
                 {
                     ["RESTar-info"] = $"Inserted {insertedCount} and updated {updatedCount} entities " +
-                                      $"in resource {request.Resource.Name}"
+                                      $"in resource {typeof(T).FullName}" +
+                                      $"{(alias != null ? $" ('{alias}')" : "")}"
                 }
             };
         }
 
-        internal static Response DeleteEntities(int count, Type resource)
+        internal static Response DeleteEntities<T>(int count) where T : class
         {
-            var alias = ResourceAlias.ByResource(resource);
+            var alias = ResourceAlias<T>.Get;
             return new Response
             {
                 StatusCode = (ushort) HttpStatusCode.OK,
                 StatusDescription = "OK",
                 Headers =
                 {
-                    ["RESTar-info"] = $"{count} entities deleted from resource '{resource.FullName}'" +
+                    ["RESTar-info"] = $"{count} entities deleted from resource '{typeof(T).FullName}'" +
                                       $"{(alias != null ? $" ('{alias}')" : "")}"
                 }
             };

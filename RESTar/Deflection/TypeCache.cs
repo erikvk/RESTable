@@ -18,12 +18,12 @@ namespace RESTar.Deflection
     {
         static TypeCache()
         {
-            StaticProperties = new ConcurrentDictionary<string, IDictionary<string, StaticProperty>>();
-            PropertyChains = new ConcurrentDictionary<int, PropertyChain>();
+            StaticPropertyCache = new ConcurrentDictionary<string, IDictionary<string, StaticProperty>>();
+            TermCache = new ConcurrentDictionary<int, Term>();
         }
 
-        private static readonly ConcurrentDictionary<string, IDictionary<string, StaticProperty>> StaticProperties;
-        internal static readonly ConcurrentDictionary<int, PropertyChain> PropertyChains;
+        private static readonly ConcurrentDictionary<string, IDictionary<string, StaticProperty>> StaticPropertyCache;
+        internal static readonly ConcurrentDictionary<int, Term> TermCache;
 
         #region Static properties
 
@@ -31,16 +31,16 @@ namespace RESTar.Deflection
         /// Gets the static properties for a given resource
         /// </summary>
         public static IDictionary<string, StaticProperty> GetStaticProperties(this IResource resource) =>
-            GetStaticProperties(resource.TargetType);
+            GetStaticProperties(resource.Type);
 
         /// <summary>
         /// Gets the static properties for a given type
         /// </summary>
         public static IDictionary<string, StaticProperty> GetStaticProperties(this Type type)
         {
-            if (StaticProperties.TryGetValue(type.FullName, out IDictionary<string, StaticProperty> props))
+            if (StaticPropertyCache.TryGetValue(type.FullName, out IDictionary<string, StaticProperty> props))
                 return props;
-            return StaticProperties[type.FullName] = type.IsDDictionary()
+            return StaticPropertyCache[type.FullName] = type.IsDDictionary()
                 ? new StaticProperty[] {ObjectNo, ObjectID}.ToDictionary(p => p.Name.ToLower(), p => p)
                 : type.GetProperties(Instance | Public)
                     .Where(p => !p.HasAttribute<IgnoreDataMemberAttribute>())
@@ -63,7 +63,7 @@ namespace RESTar.Deflection
         {
             if (!resource.IsStarcounterResource)
                 throw new Exception($"Cannot get table columns for non-starcounter resource '{resource.Name}'");
-            return resource.TargetType.GetProperties(Instance | Public).Select(p => new StaticProperty(p));
+            return resource.Type.GetProperties(Instance | Public).Select(p => new StaticProperty(p));
         }
 
         #endregion

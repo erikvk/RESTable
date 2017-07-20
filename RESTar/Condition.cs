@@ -17,7 +17,7 @@ namespace RESTar
         /// <summary>
         /// The key of the condition, the path to a property of an entity.
         /// </summary>
-        public string Key => PropertyChain.Key;
+        public string Key => Term.Key;
 
         /// <summary>
         /// The operator of the condition, specifies the operation of the truth
@@ -32,9 +32,9 @@ namespace RESTar
         public dynamic Value { get; private set; }
 
         /// <summary>
-        /// The property chain describing the property to compare with
+        /// The term describing the property to compare with
         /// </summary>
-        internal PropertyChain PropertyChain { get; }
+        internal Term Term { get; }
 
         /// <summary>
         /// </summary>
@@ -42,26 +42,26 @@ namespace RESTar
 
         internal bool HasChanged { get; set; }
 
-        internal bool ScQueryable => PropertyChain.ScQueryable;
-        internal Type Type => PropertyChain.IsStatic ? PropertyChain.LastAs<StaticProperty>()?.Type : null;
+        internal bool ScQueryable => Term.ScQueryable;
+        internal Type Type => Term.IsStatic ? Term.LastAs<StaticProperty>()?.Type : null;
         internal bool IsOfType<T1>() => Type == typeof(T1);
 
         /// <summary>
         /// Converts a condition to a new target type
         /// </summary>
-        public Condition<TResults> For<TResults>(string newKey = null) where TResults : class
+        public Condition<TResults> MakeFor<TResults>(string newKey = null) where TResults : class
         {
             if (typeof(TResults) == typeof(T)) return this as Condition<TResults>;
-            var chain = string.IsNullOrWhiteSpace(newKey)
-                ? PropertyChain.MakeFromPrototype(PropertyChain, typeof(TResults))
-                : typeof(TResults).MakePropertyChain(newKey, Resource<TResults>.AllowDynamicConditions);
-            var newCondition = new Condition<TResults>(chain, Operator, Value);
+            var term = string.IsNullOrWhiteSpace(newKey)
+                ? Term.MakeFromPrototype(Term, typeof(TResults))
+                : typeof(TResults).MakeTerm(newKey, Resource<TResults>.AllowDynamicConditions);
+            var newCondition = new Condition<TResults>(term, Operator, Value);
             return newCondition;
         }
 
-        internal Condition(PropertyChain propertyChain, Operator op, dynamic value)
+        internal Condition(Term term, Operator op, dynamic value)
         {
-            PropertyChain = propertyChain;
+            Term = term;
             Operator = op;
             Value = value;
             HasChanged = true;
@@ -89,7 +89,7 @@ namespace RESTar
 
         internal bool HoldsFor(T subject)
         {
-            var subjectValue = PropertyChain.Evaluate(subject);
+            var subjectValue = Term.Evaluate(subject);
             switch (Operator.OpCode)
             {
                 case EQUALS: return Do.Try<bool>(() => subjectValue == Value, false);

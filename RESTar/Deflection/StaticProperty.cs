@@ -40,7 +40,7 @@ namespace RESTar.Deflection
         public static StaticProperty Get(Type type, string key)
         {
             type.GetStaticProperties().TryGetValue(key.ToLower(), out StaticProperty prop);
-            return prop ?? throw new UnknownColumnException(type, key);
+            return prop ?? throw new UnknownPropertyException(type, key);
         }
 
         internal StaticProperty(PropertyInfo p)

@@ -124,14 +124,14 @@ namespace RESTar.Requests
                     case RESTarMetaConditions.Select:
                         if (!processors) break;
                         mc.Select = ((string) value).Split(',')
-                            .Select(str => PropertyChain.ParseInternal(resource.TargetType, str, resource.IsDynamic,
+                            .Select(str => Term.ParseInternal(resource.Type, str, resource.IsDynamic,
                                 dynamicMembers))
                             .ToSelect();
                         break;
                     case RESTarMetaConditions.Add:
                         if (!processors) break;
                         mc.Add = ((string) value).Split(',')
-                            .Select(str => resource.MakePropertyChain(str, resource.IsDynamic))
+                            .Select(str => resource.MakeTerm(str, resource.IsDynamic))
                             .ToAdd();
                         break;
                     case RESTarMetaConditions.Rename:
@@ -164,7 +164,7 @@ namespace RESTar.Requests
                             $"The {(mc.OrderBy.Ascending ? "'Order_asc'" : "'Order_desc'")} " +
                             "meta-condition cannot refer to a property x that is to be renamed " +
                             "unless some other property is renamed to x");
-                    if (mc.OrderBy.PropertyChain.ScQueryable == false)
+                    if (mc.OrderBy.Term.ScQueryable == false)
                         mc.OrderBy.IsStarcounterQueryable = false;
                 }
                 if (mc.Select != null && mc.Rename != null)

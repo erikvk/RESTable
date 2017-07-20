@@ -7,6 +7,11 @@ using IResource = RESTar.Internal.IResource;
 
 namespace RESTar
 {
+    internal static class ResourceAlias<T> where T : class
+    {
+        public static string Get => DB.Get<ResourceAlias>("Resource", typeof(T).FullName)?.Alias;
+    }
+
     /// <summary>
     /// The ResourceAlias resource is used to assign an alias to a resource, making 
     /// it possible to reference the resource with only the alias. 
@@ -43,7 +48,7 @@ namespace RESTar
                 {
                     this.Delete();
                     var match = value.FindResource();
-                    throw new UnknownResourceForAliasException(value, match.TargetType);
+                    throw new UnknownResourceForAliasException(value, match.Type);
                 }
                 catch
                 {
@@ -63,16 +68,6 @@ namespace RESTar
         /// </summary>
         public static IResource ByAlias(string alias) => DB.Get<ResourceAlias>("Alias", alias)?.GetResource();
 
-        /// <summary>
-        /// Gets an alias string by its resource type
-        /// </summary>
-        public static string ByResource(Type resource) => DB.Get<ResourceAlias>("Resource", resource.FullName)?.Alias;
-
-        /// <summary>
-        /// Gets an alias string by its resource
-        /// </summary>
-        public static string ByResource(IResource resource) => DB.Get<ResourceAlias>("Resource", resource.Name)?.Alias;
-        
         /// <summary>
         /// Returns true if and only if there is an alias for the given resource type
         /// </summary>

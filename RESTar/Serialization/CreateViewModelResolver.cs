@@ -6,7 +6,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using Starcounter;
 
-namespace RESTar.View.Serializer
+namespace RESTar.Serialization
 {
     /// <summary>
     /// </summary>

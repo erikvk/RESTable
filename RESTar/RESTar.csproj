@@ -103,6 +103,7 @@
     <Compile Include="Delegates.cs" />
     <Compile Include="Echo.cs" />
     <Compile Include="Operations\Transaction.cs" />
+    <Compile Include="Queries\QueryMaker.cs" />
     <Compile Include="Requests\Args.cs" />
     <Compile Include="Requests\DataConfig.cs" />
     <Compile Include="Requests\HandlerActions.cs" />
@@ -158,6 +159,8 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Error.cs" />
     <Compile Include="Schema.cs" />
+    <Compile Include="Queries\Select.cs" />
+    <Compile Include="Serialization\ToStringJsonConverter.cs" />
     <Compile Include="Serializer.cs" />
     <Compile Include="Operations\SetOperations.cs" />
     <Compile Include="Internal\StarcounterOperations.cs" />
@@ -166,15 +169,15 @@
     <Compile Include="Settings.cs" />
     <Compile Include="Deflection\StaticProperty.cs" />
     <Compile Include="Operations\WhereClause.cs" />
-    <Compile Include="View\Serializer\ArrayNullToEmptyListProvider.cs" />
-    <Compile Include="View\Serializer\ClassNullToEmptyObjectProvider.cs" />
-    <Compile Include="View\Serializer\CreateViewModelResolver.cs" />
-    <Compile Include="View\Serializer\DefaultResolver.cs" />
-    <Compile Include="View\Serializer\NullableValueProvider.cs" />
-    <Compile Include="View\Serializer\NullToEmptyStringValueProvider.cs" />
-    <Compile Include="View\Serializer\ObjectNoProvider.cs" />
-    <Compile Include="View\Serializer\ObjectIDProvider.cs" />
-    <Compile Include="View\Serializer\RESTarMacroWrapperProvider.cs" />
+    <Compile Include="Serialization\ArrayNullToEmptyListProvider.cs" />
+    <Compile Include="Serialization\ClassNullToEmptyObjectProvider.cs" />
+    <Compile Include="Serialization\CreateViewModelResolver.cs" />
+    <Compile Include="Serialization\DefaultResolver.cs" />
+    <Compile Include="Serialization\NullableValueProvider.cs" />
+    <Compile Include="Serialization\NullToEmptyStringValueProvider.cs" />
+    <Compile Include="Serialization\ObjectNoProvider.cs" />
+    <Compile Include="Serialization\ObjectIDProvider.cs" />
+    <Compile Include="Serialization\RESTarMacroWrapperProvider.cs" />
     <Compile Include="View\Menu.json.cs">
       <DependentUpon>Menu.json</DependentUpon>
     </Compile>

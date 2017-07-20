@@ -3,7 +3,7 @@ using System.Runtime.Serialization;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 
-namespace RESTar.View.Serializer
+namespace RESTar.Serialization
 {
     internal class DefaultResolver : DefaultContractResolver
     {

@@ -54,7 +54,7 @@ namespace RESTar
         public long NumberOfRows { get; set; }
 
         /// <summary>
-        /// The number of columns in the talbe
+        /// The number of columns in the table
         /// </summary>
         public int NumberOfColumns { get; set; }
 

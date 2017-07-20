@@ -22,12 +22,12 @@ namespace RESTar.Internal
         /// <summary>
         /// The available methods for this resource
         /// </summary>
-        RESTarMethods[] AvailableMethods { get; }
+        IReadOnlyList<RESTarMethods> AvailableMethods { get; }
 
         /// <summary>
         /// The target type for this resource
         /// </summary>
-        Type TargetType { get; }
+        Type Type { get; }
 
         /// <summary>
         /// The alias of this resource (if any)

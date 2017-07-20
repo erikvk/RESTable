@@ -45,10 +45,10 @@ namespace RESTar.Internal
         AmbiguousMatchError = 103,
         InvalidResourceEntityError = 104,
 
-        // 110-119: Column locator errors
-        UnknownColumnError = 110,
-        AmbiguousColumnError = 111,
-        UnknownColumnInGeneratedObjectError = 112,
+        // 110-119: Property locator errors
+        UnknownPropertyError = 110,
+        AmbiguousPropertyError = 111,
+        UnknownPropertyOfGeneratedObjectError = 112,
 
         // 120-129: Resource registration errors
         VirtualResourceMissingInterfaceImplementationError = 120,

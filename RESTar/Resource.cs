@@ -5,10 +5,11 @@ using System.Reflection;
 using System.Runtime.Serialization;
 using RESTar.Internal;
 using RESTar.Operations;
+using Starcounter;
 using static System.Reflection.BindingFlags;
-using static RESTar.Internal.DynamicResource;
 using static RESTar.RESTarConfig;
 using static RESTar.RESTarPresets;
+using IResource = RESTar.Internal.IResource;
 
 namespace RESTar
 {
@@ -19,9 +20,14 @@ namespace RESTar
     public sealed class Resource : ISelector<Resource>, IInserter<Resource>, IUpdater<Resource>, IDeleter<Resource>
     {
         /// <summary>
+        /// The methods that have been enabled for this resource
+        /// </summary>
+        public IReadOnlyList<RESTarMethods> AvailableMethods { get; set; }
+
+        /// <summary>
         /// The name of the resource
         /// </summary>
-        public string Name { get; set; }
+        public string Name { get; private set; }
 
         /// <summary>
         /// Is this resource editable?
@@ -29,27 +35,14 @@ namespace RESTar
         public bool Editable { get; private set; }
 
         /// <summary>
-        /// The methods that have been enabled for this resource
-        /// </summary>
-        public RESTarMethods[] AvailableMethods { get; set; }
-
-        /// <summary>
         /// The alias of this resource, if any
         /// </summary>
-        public string Alias { get; set; }
-
-        /// <summary>
-        /// The string name of the target type. Is shown as "TargetType"
-        /// in JSON.
-        /// </summary>
-        [DataMember(Name = "TargetType")]
-        public string TargetTypeString => TargetType?.FullName;
+        public string Alias { get; private set; }
 
         /// <summary>
         /// The type targeted by this resource.
         /// </summary>
-        [IgnoreDataMember]
-        public Type TargetType { get; set; }
+        public string Type { get; private set; }
 
         /// <summary>
         /// The IResource of this resource
@@ -60,7 +53,7 @@ namespace RESTar
         /// <summary>
         /// The resource type
         /// </summary>
-        public RESTarResourceType ResourceType { get; set; }
+        public RESTarResourceType ResourceType { get; private set; }
 
         /// <summary>
         /// RESTar selector (don't use)
@@ -68,41 +61,44 @@ namespace RESTar
         public IEnumerable<Resource> Select(IRequest<Resource> request)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
+            if (request.TryGetCondition(nameof(Name), "=", out var nameCond))
+                nameCond.SetValue(((string) nameCond.Value).FindResource().Name);
             return Resources
-                .Where(request.Conditions.For<IResource>())
+                .Where(request.Conditions.MakeFor<IResource>())
                 .Select(m => new Resource
                 {
                     Name = m.Name,
                     Alias = m.Alias,
                     AvailableMethods = m.AvailableMethods,
                     Editable = m.Editable,
-                    TargetType = m.TargetType,
+                    Type = m.Type.FullName,
                     IResource = m,
                     ResourceType = m.ResourceType
                 }).ToList();
         }
 
         /// <summary>
+        /// RESTar inserter (don't use)
         /// </summary>
         public int Insert(IEnumerable<Resource> resources, IRequest<Resource> request)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
             var count = 0;
-            var dynamicTables = resources.ToList();
-            foreach (var entity in dynamicTables)
+            foreach (var entity in resources)
             {
                 if (string.IsNullOrEmpty(entity.Alias))
                     throw new Exception("No Alias for new resource");
                 if (DB.Exists<ResourceAlias>("Alias", entity.Alias))
                     throw new Exception($"Invalid Alias: '{entity.Alias}' is used to refer to another resource");
                 entity.AvailableMethods = Methods;
-                MakeTable(entity);
+                DynamicResource.MakeTable(entity);
                 count += 1;
             }
             return count;
         }
 
         /// <summary>
+        /// RESTar updater (don't use)
         /// </summary>
         public int Update(IEnumerable<Resource> entities, IRequest<Resource> request)
         {
@@ -110,14 +106,17 @@ namespace RESTar
             var count = 0;
             foreach (var resource in entities)
             {
-                DeleteTable(resource);
-                MakeTable(resource);
+                if (!resource.Editable)
+                    throw new Exception($"Resource '{resource.Name}' not editable");
+                var dynamicResource = resource.GetDynamicResource();
+                dynamicResource.AvailableMethods = resource.AvailableMethods;
                 count += 1;
             }
             return count;
         }
 
         /// <summary>
+        /// RESTar deleter (don't use)
         /// </summary>
         public int Delete(IEnumerable<Resource> entities, IRequest<Resource> request)
         {
@@ -125,7 +124,7 @@ namespace RESTar
             var count = 0;
             foreach (var resource in entities)
             {
-                DeleteTable(resource);
+                DynamicResource.DeleteTable(resource);
                 count += 1;
             }
             return count;
@@ -134,12 +133,25 @@ namespace RESTar
         private static readonly MethodInfo AUTO_MAKER = typeof(Resource)
             .GetMethod(nameof(AUTO_MAKE), NonPublic | Static);
 
+        private static readonly MethodInfo DYNAMIC_AUTO_MAKER = typeof(Resource)
+            .GetMethod(nameof(DYNAMIC_AUTO_MAKE), NonPublic | Static);
+
+        internal static void AutoMakeDynamicResource(DynamicResource resource) => DYNAMIC_AUTO_MAKER
+            .MakeGenericMethod(resource.Table)
+            .Invoke(null, new object[] {resource.Attribute});
+
         internal static void AutoMakeResource(Type type) => AUTO_MAKER
             .MakeGenericMethod(type)
             .Invoke(null, null);
 
         private static void AUTO_MAKE<T>() where T : class =>
             Resource<T>.Make(typeof(T).GetAttribute<RESTarAttribute>());
+
+        private static void DYNAMIC_AUTO_MAKE<T>(RESTarAttribute attribute) where T : class =>
+            Resource<T>.Make(attribute);
+
+        private const string DynamicResourceSQL = "SELECT t FROM RESTar.Internal.DynamicResource t WHERE t.Name =?";
+        internal DynamicResource GetDynamicResource() => Db.SQL<DynamicResource>(DynamicResourceSQL, Name).First;
 
         /// <summary>
         /// Registers a new resource with the RESTar instance

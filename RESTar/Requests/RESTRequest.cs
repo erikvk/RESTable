@@ -2,9 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
-using System.Xml;
 using Excel;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using RESTar.Internal;
 using RESTar.Operations;
@@ -127,7 +125,7 @@ namespace RESTar.Requests
 
         internal void SetResponseData(IEnumerable<dynamic> data, Response response)
         {
-            var fileName = $"{Resource.Name}_{DateTime.Now:yyyyMMdd_HHmmss}";
+            var fileName = $"{Resource.AliasOrName}_{DateTime.Now:yyyyMMdd_HHmmss}";
             switch (Accept)
             {
                 case RESTarMimeType.Json:
@@ -141,21 +139,14 @@ namespace RESTar.Requests
                     response.ContentType = MimeTypes.Excel;
                     return;
                 case RESTarMimeType.XML:
-                    var json = data.Serialize();
-                    var xml = JsonConvert.DeserializeXmlNode($@"{{""row"":{json}}}", "root", true);
-                    using (var stringWriter = new StringWriter())
-                    using (var xmlTextWriter = XmlWriter.Create(stringWriter))
-                    {
-                        xml.WriteTo(xmlTextWriter);
-                        xmlTextWriter.Flush();
-                        response.Body = stringWriter.GetStringBuilder().ToString();
-                    }
+                    response.Body = data.SerializeXML();
                     response.Headers["Content-Disposition"] = $"attachment; filename={fileName}.xml";
                     response.ContentType = MimeTypes.XML;
                     return;
                 default: throw new ArgumentOutOfRangeException(nameof(Accept));
             }
         }
+
 
         internal Response GetResponse()
         {

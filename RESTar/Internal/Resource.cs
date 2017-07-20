@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Serialization;
 using Dynamit;
@@ -18,9 +19,9 @@ namespace RESTar.Internal
     {
         public string Name { get; }
         public bool Editable { get; }
-        public RESTarMethods[] AvailableMethods { get; }
+        public IReadOnlyList<RESTarMethods> AvailableMethods { get; }
         public string AvailableMethodsString => AvailableMethods.ToMethodsString();
-        public Type TargetType { get; }
+        public Type Type => typeof(T);
         public bool IsDDictionary { get; }
         public bool IsDynamic { get; }
         public long? NrOfEntities => Try(() => DB.RowCount(Name), default(long?));
@@ -67,20 +68,19 @@ namespace RESTar.Internal
         /// <summary>
         /// All custom resources are constructed here
         /// </summary>
-        private Resource(Type targetType, bool editable, RESTarAttribute attribute, Selector<T> selector,
+        private Resource(RESTarAttribute attribute, Selector<T> selector,
             Inserter<T> inserter, Updater<T> updater, Deleter<T> deleter)
         {
-            Name = targetType.FullName;
-            Editable = editable;
+            Name = typeof(T).FullName;
+            Editable = attribute.Editable;
             AvailableMethods = attribute.AvailableMethods;
             IsSingleton = attribute.Singleton;
             DynamicConditionsAllowed = attribute.AllowDynamicConditions;
-            RequiresValidation = typeof(IValidatable).IsAssignableFrom(targetType);
-            TargetType = targetType;
-            IsStarcounterResource = TargetType.HasAttribute<DatabaseAttribute>();
+            RequiresValidation = typeof(IValidatable).IsAssignableFrom(typeof(T));
+            IsStarcounterResource = typeof(T).HasAttribute<DatabaseAttribute>();
             IsDDictionary = typeof(T).IsDDictionary();
-            IsDynamic = IsDDictionary || TargetType.IsSubclassOf(typeof(JObject)) ||
-                        typeof(IDictionary).IsAssignableFrom(TargetType);
+            IsDynamic = IsDDictionary || typeof(T).IsSubclassOf(typeof(JObject)) ||
+                        typeof(IDictionary).IsAssignableFrom(typeof(T));
             ResourceType = IsStarcounterResource
                 ? IsDDictionary
                     ? DynamicStarcounter
@@ -100,12 +100,12 @@ namespace RESTar.Internal
         /// All custom resource registrations (using attribute as well as Resource.Register) terminate here
         /// </summary>
         internal static void Make(RESTarAttribute attribute, Selector<T> selector = null, Inserter<T> inserter = null,
-            Updater<T> updater = null, Deleter<T> deleter = null, bool editable = false)
+            Updater<T> updater = null, Deleter<T> deleter = null)
         {
             var type = typeof(T);
             if (type.IsDDictionary() && type.Implements(typeof(IDDictionary<,>), out var _))
             {
-                new Resource<T>(type, editable, attribute,
+                new Resource<T>(attribute,
                     type.GetSelector<T>() ?? DDictionaryOperations<T>.Select,
                     type.GetInserter<T>() ?? DDictionaryOperations<T>.Insert,
                     type.GetUpdater<T>() ?? DDictionaryOperations<T>.Update,
@@ -155,10 +155,10 @@ namespace RESTar.Internal
                         $"for a virtual resource must be unique (case insensitive). Two or more property names evaluated to {duplicate}.");
             }
 
-            new Resource<T>(type, editable, attribute, selector, inserter, updater, deleter);
+            new Resource<T>(attribute, selector, inserter, updater, deleter);
         }
 
-        private static RESTarMethods[] GetAvailableMethods(Type resource)
+        private static IReadOnlyList<RESTarMethods> GetAvailableMethods(Type resource)
         {
             if (resource == null)
                 return null;
@@ -167,7 +167,7 @@ namespace RESTar.Internal
             return resource.GetAttribute<RESTarAttribute>()?.AvailableMethods;
         }
 
-        private static RESTarOperations[] NecessaryOpDefs(RESTarMethods[] restMethods)
+        private static RESTarOperations[] NecessaryOpDefs(IEnumerable<RESTarMethods> restMethods)
         {
             return restMethods.SelectMany(method =>
                 {

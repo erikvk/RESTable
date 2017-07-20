@@ -22,7 +22,7 @@ namespace RESTar
         public MetaConditions MetaConditions { get; }
         RESTarMethods IRequest.Method => 0;
 
-        private bool ScSql;
+        private readonly bool ScSql;
         internal string SqlQuery { get; private set; }
         internal object[] SqlValues { get; private set; }
 
@@ -56,7 +56,7 @@ namespace RESTar
             Conditions = new Conditions<T>();
             MetaConditions = new MetaConditions {Unsafe = true};
             conditions?.Select(c => new Condition<T>(
-                propertyChain: Resource.MakePropertyChain(c.key, Resource.DynamicConditionsAllowed),
+                term: Resource.MakeTerm(c.key, Resource.DynamicConditionsAllowed),
                 op: c.op,
                 value: c.value
             )).ForEach(Conditions.Add);

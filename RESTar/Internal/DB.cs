@@ -6,7 +6,7 @@ using Starcounter;
 namespace RESTar.Internal
 {
     /// <summary>
-    /// This class provides static methods for database queries in the DRTB system.
+    /// This class provides static methods for database queries.
     /// </summary>
     internal static class DB
     {

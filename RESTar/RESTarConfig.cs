@@ -52,7 +52,7 @@ namespace RESTar
         internal static void AddResource(IResource toAdd)
         {
             ResourceByName[toAdd.Name.ToLower()] = toAdd;
-            ResourceByType[toAdd.TargetType] = toAdd;
+            ResourceByType[toAdd.Type] = toAdd;
             UpdateAuthInfo();
             toAdd.GetStaticProperties();
         }
@@ -60,7 +60,7 @@ namespace RESTar
         internal static void RemoveResource(IResource toRemove)
         {
             ResourceByName.Remove(toRemove.Name.ToLower());
-            ResourceByType.Remove(toRemove.TargetType);
+            ResourceByType.Remove(toRemove.Type);
             UpdateAuthInfo();
         }
 
@@ -104,7 +104,7 @@ namespace RESTar
             typeof(object).GetSubclasses()
                 .Where(t => t.HasAttribute<RESTarAttribute>())
                 .ForEach(t => Do.TryCatch(() => Resource.AutoMakeResource(t), e => throw (e.InnerException ?? e)));
-            DB.All<DynamicResource>().ForEach(AddResource);
+            DB.All<DynamicResource>().ForEach(Resource.AutoMakeDynamicResource);
             RequireApiKey = requireApiKey;
             AllowAllOrigins = allowAllOrigins;
             ConfigFilePath = configFilePath;

@@ -2,11 +2,11 @@ using Newtonsoft.Json.Serialization;
 using RESTar.Operations;
 using Starcounter;
 
-namespace RESTar.View.Serializer
+namespace RESTar.Serialization
 {
-    internal class ObjectNoProvider : IValueProvider
+    internal class ObjectIDProvider : IValueProvider
     {
-        public object GetValue(object target) => Do.Try(target.GetObjectNo, 0UL);
+        public object GetValue(object target) => Do.Try(target.GetObjectID, "");
 
         public void SetValue(object target, object value)
         {

@@ -10,18 +10,18 @@ namespace RESTar.Operations
 {
     internal class OrderBy : IFilter
     {
-        internal string Key => PropertyChain.Key;
+        internal string Key => Term.Key;
         internal bool Descending { get; }
         internal bool Ascending => !Descending;
         internal IResource Resource { get; }
-        internal PropertyChain PropertyChain;
+        internal Term Term;
         internal bool IsStarcounterQueryable = true;
 
-        private Func<T1, dynamic> ToSelector<T1>() => item => Do.Try(() => PropertyChain.Evaluate(item),
+        private Func<T1, dynamic> ToSelector<T1>() => item => Do.Try(() => Term.Evaluate(item),
             default(object));
 
         internal string SQL => IsStarcounterQueryable
-            ? $"ORDER BY t.{PropertyChain.DbKey.Fnuttify()} {(Descending ? "DESC" : "ASC")}"
+            ? $"ORDER BY t.{Term.DbKey.Fnuttify()} {(Descending ? "DESC" : "ASC")}"
             : null;
 
         internal OrderBy(IResource resource) => Resource = resource;
@@ -30,7 +30,7 @@ namespace RESTar.Operations
         {
             Resource = resource;
             Descending = descending;
-            PropertyChain = PropertyChain.ParseInternal(resource.TargetType, key, resource.IsDynamic, dynamicMembers);
+            Term = Term.ParseInternal(resource.Type, key, resource.IsDynamic, dynamicMembers);
         }
 
         /// <summary>
@@ -42,9 +42,9 @@ namespace RESTar.Operations
             var type = typeof(T);
             if ((entities is IEnumerable<IDictionary<string, dynamic>> || entities is IEnumerable<JObject>) &&
                 !(entities is IEnumerable<DDictionary>))
-                PropertyChain.MakeDynamic();
-            else if (type != Resource.TargetType)
-                PropertyChain = PropertyChain.MakeFromPrototype(PropertyChain, type);
+                Term.MakeDynamic();
+            else if (type != Resource.Type)
+                Term = Term.MakeFromPrototype(Term, type);
             return Ascending ? entities.OrderBy(ToSelector<T>()) : entities.OrderByDescending(ToSelector<T>());
         }
     }

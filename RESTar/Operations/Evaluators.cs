@@ -4,7 +4,6 @@ using System.Linq;
 using Newtonsoft.Json.Linq;
 using RESTar.Requests;
 using Starcounter;
-using static RESTar.Internal.RESTarResourceType;
 using static RESTar.Internal.Transactions;
 using static RESTar.Operations.Do;
 using static RESTar.Requests.Responses;
@@ -27,7 +26,7 @@ namespace RESTar.Operations
             }
             catch (Exception e)
             {
-                throw new AbortedSelectorException(e, request);
+                throw new AbortedSelectorException<T>(e, request);
             }
         }
 
@@ -43,7 +42,7 @@ namespace RESTar.Operations
             }
             catch (Exception e)
             {
-                throw new AbortedSelectorException(e, request);
+                throw new AbortedSelectorException<T>(e, request);
             }
         }
 
@@ -62,7 +61,7 @@ namespace RESTar.Operations
             }
             catch (Exception e)
             {
-                throw new AbortedSelectorException(e, request);
+                throw new AbortedSelectorException<T>(e, request);
             }
         }
 
@@ -75,12 +74,7 @@ namespace RESTar.Operations
             IEnumerable<T> results = null;
             try
             {
-                if (request.Resource.ResourceType == RESTarDynamicResource)
-                {
-                    var type = request.Resource.TargetType.MakeArrayType();
-                    results = request.Body.DeserializeExplicit<T[]>(type);
-                }
-                else results = request.Body.Deserialize<IEnumerable<T>>();
+                results = request.Body.Deserialize<IEnumerable<T>>();
                 if (request.Resource.RequiresValidation)
                     results.OfType<IValidatable>().ForEach(item => item.RunValidation());
                 return request.Resource.Insert(results, request);
@@ -89,7 +83,7 @@ namespace RESTar.Operations
             {
                 var _results = results;
                 Trans(() => _results?.Where(i => i != null).ForEach(item => Try(item.Delete)));
-                throw new AbortedInserterException(e, request);
+                throw new AbortedInserterException<T>(e, request);
             }
         }
 
@@ -108,7 +102,7 @@ namespace RESTar.Operations
             {
                 var _results = results;
                 Trans(() => _results?.Where(i => i != null).ForEach(item => Try(item.Delete)));
-                throw new AbortedInserterException(e, request);
+                throw new AbortedInserterException<T>(e, request);
             }
         }
 
@@ -117,16 +111,14 @@ namespace RESTar.Operations
             T result = null;
             try
             {
-                if (request.Resource.ResourceType == RESTarDynamicResource)
-                    result = request.Body.DeserializeExplicit<T>(request.Resource.TargetType);
-                else result = request.Body.Deserialize<T>();
+                result = request.Body.Deserialize<T>();
                 if (result is IValidatable i) i.RunValidation();
                 return request.Resource.Insert(new[] {result}, request);
             }
             catch (Exception e)
             {
                 Trans(() => Try(() => result?.Delete()));
-                throw new AbortedInserterException(e, request);
+                throw new AbortedInserterException<T>(e, request);
             }
         }
 
@@ -144,7 +136,7 @@ namespace RESTar.Operations
             catch (Exception e)
             {
                 Trans(() => Try(() => result?.Delete()));
-                throw new AbortedInserterException(e, request);
+                throw new AbortedInserterException<T>(e, request);
             }
         }
 
@@ -153,9 +145,7 @@ namespace RESTar.Operations
             IEnumerable<T> results = null;
             try
             {
-                if (request.Resource.ResourceType == RESTarDynamicResource)
-                    results = (T[]) json.ToObject(request.Resource.TargetType.MakeArrayType());
-                else results = json.ToObject<IEnumerable<T>>();
+                results = json.ToObject<IEnumerable<T>>();
                 if (request.Resource.RequiresValidation)
                     results.OfType<IValidatable>().ForEach(item => item.RunValidation());
                 return request.Resource.Insert(results, request);
@@ -164,7 +154,7 @@ namespace RESTar.Operations
             {
                 var _results = results;
                 Trans(() => _results?.Where(i => i != null).ForEach(item => Try(item.Delete)));
-                throw new AbortedInserterException(e, request);
+                throw new AbortedInserterException<T>(e, request);
             }
         }
 
@@ -183,7 +173,7 @@ namespace RESTar.Operations
             }
             catch (Exception e)
             {
-                throw new AbortedUpdaterException(e, request);
+                throw new AbortedUpdaterException<T>(e, request);
             }
         }
 
@@ -200,7 +190,7 @@ namespace RESTar.Operations
             }
             catch (Exception e)
             {
-                throw new AbortedUpdaterException(e, request);
+                throw new AbortedUpdaterException<T>(e, request);
             }
         }
 
@@ -215,7 +205,7 @@ namespace RESTar.Operations
             }
             catch (Exception e)
             {
-                throw new AbortedUpdaterException(e, request);
+                throw new AbortedUpdaterException<T>(e, request);
             }
         }
 
@@ -231,7 +221,7 @@ namespace RESTar.Operations
             }
             catch (Exception e)
             {
-                throw new AbortedUpdaterException(e, request);
+                throw new AbortedUpdaterException<T>(e, request);
             }
         }
 
@@ -251,7 +241,7 @@ namespace RESTar.Operations
             }
             catch (Exception e)
             {
-                throw new AbortedUpdaterException(e, request);
+                throw new AbortedUpdaterException<T>(e, request);
             }
         }
 
@@ -267,7 +257,7 @@ namespace RESTar.Operations
             }
             catch (Exception e)
             {
-                throw new AbortedDeleterException(e, request);
+                throw new AbortedDeleterException<T>(e, request);
             }
         }
 
@@ -279,7 +269,7 @@ namespace RESTar.Operations
             }
             catch (Exception e)
             {
-                throw new AbortedDeleterException(e, request);
+                throw new AbortedDeleterException<T>(e, request);
             }
         }
 
@@ -337,7 +327,7 @@ namespace RESTar.Operations
                 if (request.MetaConditions.SafePost != null)
                     return LrSafePOST(request);
                 var count = Transaction<T>.Transact(() => INSERT(request));
-                return InsertedEntities(request, count, request.Resource.TargetType);
+                return InsertedEntities<T>(count);
             }
 
             private static Response LrPATCH(RESTRequest<T> request)
@@ -346,7 +336,7 @@ namespace RESTar.Operations
                 if (!request.MetaConditions.Unsafe && source.MoreThanOne())
                     throw new AmbiguousMatchException(request.Resource);
                 var count = Transaction<T>.Transact(() => UPDATE(request, source));
-                return UpdatedEntities(request, count, request.Resource.TargetType);
+                return UpdatedEntities<T>(count);
             }
 
             private static Response LrPUT(RESTRequest<T> request)
@@ -359,10 +349,10 @@ namespace RESTar.Operations
                 if (source.Any())
                 {
                     count = Transaction<T>.Transact(() => UPDATE_ONE(request, source.First()));
-                    return UpdatedEntities(request, count, request.Resource.TargetType);
+                    return UpdatedEntities<T>(count);
                 }
                 count = Transaction<T>.Transact(() => INSERT_ONE(request));
-                return InsertedEntities(request, count, request.Resource.TargetType);
+                return InsertedEntities<T>(count);
             }
 
             private static Response LrDELETE(RESTRequest<T> request)
@@ -371,7 +361,7 @@ namespace RESTar.Operations
                 if (!request.MetaConditions.Unsafe && source.MoreThanOne())
                     throw new AmbiguousMatchException(request.Resource);
                 var count = Transaction<T>.Transact(() => OP_DELETE(request, source));
-                return DeleteEntities(count, request.Resource.TargetType);
+                return DeleteEntities<T>(count);
             }
 
             private static void GetSafePostTasks(RESTRequest<T> request, out Request<T> innerRequest,
@@ -382,12 +372,12 @@ namespace RESTar.Operations
                 toUpdate = new List<(JObject json, T source)>();
                 try
                 {
-                    var chains = request.MetaConditions.SafePost.Split(',').Select(k =>
-                        request.Resource.MakePropertyChain(k, request.Resource.DynamicConditionsAllowed));
-                    var conditions = chains.Select(chain => new Condition<T>(chain, Operator.EQUALS, null)).ToList();
+                    var terms = request.MetaConditions.SafePost.Split(',').Select(k =>
+                        request.Resource.MakeTerm(k, request.Resource.DynamicConditionsAllowed));
+                    var conditions = terms.Select(term => new Condition<T>(term, Operator.EQUALS, null)).ToList();
                     foreach (var entity in request.Body.Deserialize<IEnumerable<JObject>>())
                     {
-                        conditions.ForEach(cond => cond.SetValue(cond.PropertyChain.Evaluate(entity)));
+                        conditions.ForEach(cond => cond.SetValue(cond.Term.Evaluate(entity)));
                         innerRequest.Conditions.Clear();
                         innerRequest.Conditions.AddRange(conditions);
                         var results = innerRequest.GET();
@@ -398,7 +388,7 @@ namespace RESTar.Operations
                 }
                 catch (Exception e)
                 {
-                    throw new AbortedInserterException(e, request, e.Message);
+                    throw new AbortedInserterException<T>(e, request, e.Message);
                 }
             }
 
@@ -411,7 +401,7 @@ namespace RESTar.Operations
                     var insertedCount = toInsert.Any() ? trans.Scope(() => INSERT_JARRAY(innerRequest, toInsert)) : 0;
                     var updatedCount = toUpdate.Any() ? trans.Scope(() => UPDATE_MANY(innerRequest, toUpdate)) : 0;
                     trans.Commit();
-                    return SafePostedEntities(request, insertedCount, updatedCount);
+                    return SafePostedEntities<T>(insertedCount, updatedCount);
                 }
                 catch
                 {
@@ -432,7 +422,7 @@ namespace RESTar.Operations
                 var count = typeof(T) == typeof(DatabaseIndex)
                     ? INSERT(request)
                     : Trans(() => INSERT(request));
-                return InsertedEntities(request, count, request.Resource.TargetType);
+                return InsertedEntities<T>(count);
             }
 
             private static Response PATCH(RESTRequest<T> request)
@@ -443,7 +433,7 @@ namespace RESTar.Operations
                 var count = typeof(T) == typeof(DatabaseIndex)
                     ? UPDATE(request, source)
                     : Trans(() => UPDATE(request, source));
-                return UpdatedEntities(request, count, request.Resource.TargetType);
+                return UpdatedEntities<T>(count);
             }
 
             private static Response PUT(RESTRequest<T> request)
@@ -458,12 +448,12 @@ namespace RESTar.Operations
                     count = typeof(T) == typeof(DatabaseIndex)
                         ? UPDATE_ONE(request, source.First())
                         : Trans(() => UPDATE_ONE(request, source.First()));
-                    return UpdatedEntities(request, count, request.Resource.TargetType);
+                    return UpdatedEntities<T>(count);
                 }
                 count = typeof(T) == typeof(DatabaseIndex)
                     ? INSERT_ONE(request)
                     : Trans(() => INSERT_ONE(request));
-                return InsertedEntities(request, count, request.Resource.TargetType);
+                return InsertedEntities<T>(count);
             }
 
             private static Response DELETE(RESTRequest<T> request)
@@ -474,7 +464,7 @@ namespace RESTar.Operations
                 var count = typeof(T) == typeof(DatabaseIndex)
                     ? OP_DELETE(request, source)
                     : Trans(() => OP_DELETE(request, source));
-                return DeleteEntities(count, request.Resource.TargetType);
+                return DeleteEntities<T>(count);
             }
 
             private static Response SafePOST(RESTRequest<T> request)
@@ -484,14 +474,14 @@ namespace RESTar.Operations
                 try
                 {
                     request.MetaConditions.Unsafe = false;
-                    var chains = request.MetaConditions.SafePost
+                    var terms = request.MetaConditions.SafePost
                         .Split(',')
-                        .Select(k => request.Resource.MakePropertyChain(k, request.Resource.DynamicConditionsAllowed));
-                    var conditions = chains.Select(chain => new Condition<T>(chain, Operator.EQUALS, null)).ToList();
+                        .Select(k => request.Resource.MakeTerm(k, request.Resource.DynamicConditionsAllowed));
+                    var conditions = terms.Select(term => new Condition<T>(term, Operator.EQUALS, null)).ToList();
                     var innerRequest = new Request<T>();
                     foreach (var entity in request.Body.Deserialize<IEnumerable<JObject>>())
                     {
-                        conditions.ForEach(cond => cond.SetValue(cond.PropertyChain.Evaluate(entity)));
+                        conditions.ForEach(cond => cond.SetValue(cond.Term.Evaluate(entity)));
                         innerRequest.Conditions.Clear();
                         innerRequest.Conditions.AddRange(conditions);
                         var results = innerRequest.GET();
@@ -513,14 +503,14 @@ namespace RESTar.Operations
                                 : Trans(() => UPDATE_ONE(innerRequest, match));
                         }
                     }
-                    return SafePostedEntities(request, insertedCount, updatedCount);
+                    return SafePostedEntities<T>(insertedCount, updatedCount);
                 }
                 catch (Exception e)
                 {
                     var message = $"Inserted {insertedCount} and updated {updatedCount} in resource " +
                                   $"'{request.Resource.Name}' using SafePOST before encountering the error. " +
                                   "These changes remain in the resource";
-                    throw new AbortedInserterException(e, request, $"{e.Message} : {message}");
+                    throw new AbortedInserterException<T>(e, request, $"{e.Message} : {message}");
                 }
             }
 

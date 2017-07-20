@@ -25,11 +25,6 @@ namespace RESTar.Internal
         /// Non-starcounter resource. Members not known at compile time. Resource 
         /// created at runtime
         /// </summary>
-        DynamicVirtual,
-
-        /// <summary>
-        /// Created by RESTar, DynamicResource 01-64. Resources persist
-        /// </summary>
-        RESTarDynamicResource,
+        DynamicVirtual
     }
 }

@@ -59,13 +59,13 @@ namespace RESTar
         /// </summary>
         /// <typeparam name="TResults">The new type to target</typeparam>
         /// <returns></returns>
-        public Conditions<TResults> For<TResults>() where TResults : class
+        public Conditions<TResults> MakeFor<TResults>() where TResults : class
         {
             if (typeof(TResults) == typeof(T)) return this as Conditions<TResults>;
             var newConditions = new Conditions<TResults>();
             var props = typeof(TResults).GetStaticProperties().Values;
-            Store.Where(cond => props.Any(prop => prop.Name == cond.PropertyChain.First?.Name))
-                .Select(cond => cond.For<TResults>())
+            Store.Where(cond => props.Any(prop => prop.Name == cond.Term.First?.Name))
+                .Select(cond => cond.MakeFor<TResults>())
                 .ForEach(newConditions.Add);
             return newConditions;
         }
@@ -91,7 +91,7 @@ namespace RESTar
         public void Add(string key, Operator op, dynamic value)
         {
             var resource = Resource<T>.Get;
-            Add(new Condition<T>(resource.MakePropertyChain(key, resource.DynamicConditionsAllowed), op, value));
+            Add(new Condition<T>(resource.MakeTerm(key, resource.DynamicConditionsAllowed), op, value));
             HasChanged = true;
         }
 
@@ -139,14 +139,14 @@ namespace RESTar
                     throw new OperatorException(s);
                 var pair = s.Split(new[] {op.Common}, StringSplitOptions.None);
                 var keyString = WebUtility.UrlDecode(pair[0]);
-                var chain = resource.MakePropertyChain(keyString, resource.DynamicConditionsAllowed);
-                if (chain.Last is StaticProperty stat &&
+                var term = resource.MakeTerm(keyString, resource.DynamicConditionsAllowed);
+                if (term.Last is StaticProperty stat &&
                     stat.GetAttribute<AllowedConditionOperators>()?.Operators?.Contains(op) == false)
-                    throw new ForbiddenOperatorException(s, resource, op, chain,
+                    throw new ForbiddenOperatorException(s, resource, op, term,
                         stat.GetAttribute<AllowedConditionOperators>()?.Operators);
                 var valueString = WebUtility.UrlDecode(pair[1]);
                 var value = valueString.GetConditionValue();
-                if (chain.IsStatic && chain.Last is StaticProperty prop && prop.Type.IsEnum &&
+                if (term.IsStatic && term.Last is StaticProperty prop && prop.Type.IsEnum &&
                     value is string)
                 {
                     try
@@ -156,17 +156,12 @@ namespace RESTar
                     catch
                     {
                         throw new SyntaxException(ErrorCodes.InvalidConditionSyntaxError,
-                            $"Invalid string value for condition '{chain.Key}'. The property type for '{prop.Name}' " +
+                            $"Invalid string value for condition '{term.Key}'. The property type for '{prop.Name}' " +
                             $"has a predefined set of allowed values, not containing '{value}'.");
                     }
                 }
-                conditions.Add(new Condition<T>(chain, op, value));
+                conditions.Add(new Condition<T>(term, op, value));
             });
-            if (resource.TargetType == typeof(Resource))
-            {
-                var nameCond = conditions["name"];
-                nameCond?.SetValue(((string) nameCond.Value.ToString()).FindResource().Name);
-            }
             return conditions;
         }
 

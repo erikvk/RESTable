@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace RESTar
@@ -9,7 +10,7 @@ namespace RESTar
     [AttributeUsage(AttributeTargets.Class, Inherited = false)]
     public sealed class RESTarAttribute : Attribute
     {
-        internal RESTarMethods[] AvailableMethods { get; private set; }
+        internal IReadOnlyList<RESTarMethods> AvailableMethods { get; }
 
         /// <summary>
         /// If true, unknown conditions encountered when handling incoming requests
@@ -18,6 +19,11 @@ namespace RESTar
         /// resource selector.
         /// </summary>
         public bool AllowDynamicConditions { get; set; }
+
+        /// <summary>
+        /// Should this resource be editable after registration?
+        /// </summary>
+        public bool Editable { get; set; }
 
         /// <summary>
         /// Singleton resources get special treatment in the view. They have no list 
@@ -29,6 +35,8 @@ namespace RESTar
         /// </summary>
         /// <param name="preset">A preset used for setting up available methods for the resource</param>
         public RESTarAttribute(RESTarPresets preset) => AvailableMethods = preset.ToMethods();
+
+        internal RESTarAttribute(IReadOnlyList<RESTarMethods> methods) => AvailableMethods = methods;
 
         /// <summary>
         /// </summary>

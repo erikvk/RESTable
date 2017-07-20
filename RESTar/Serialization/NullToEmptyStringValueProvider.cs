@@ -1,7 +1,7 @@
 using System.Reflection;
 using Newtonsoft.Json.Serialization;
 
-namespace RESTar.View.Serializer
+namespace RESTar.Serialization
 {
     internal class NullToEmptyStringValueProvider : IValueProvider
     {

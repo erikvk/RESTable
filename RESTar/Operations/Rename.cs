@@ -7,14 +7,14 @@ using static System.StringSplitOptions;
 
 namespace RESTar.Operations
 {
-    internal class Rename : Dictionary<PropertyChain, string>, IProcessor
+    internal class Rename : Dictionary<Term, string>, IProcessor
     {
         public static Rename Parse(string input, IResource resource)
         {
             var opMatcher = input.Contains("->") ? "->" : "-%3E";
             var rename = new Rename();
             input.Split(',')
-                .ForEach(str => rename.Add(PropertyChain.ParseInternal(resource.TargetType,
+                .ForEach(str => rename.Add(Term.ParseInternal(resource.Type,
                     str.Split(new[] { opMatcher }, None)[0].ToLower(), resource.IsDynamic),
                     str.Split(new[] {opMatcher}, None)[1]));
             return rename;

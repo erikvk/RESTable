@@ -76,10 +76,10 @@ namespace RESTar
     /// </summary>
     public class ForbiddenOperatorException : RESTarException
     {
-        internal ForbiddenOperatorException(string c, IResource resource, Operator found, PropertyChain chain,
+        internal ForbiddenOperatorException(string c, IResource resource, Operator found, Term term,
             IEnumerable<Operator> allowed) : base(InvalidConditionOperatorError,
             $"Invalid operator for condition '{c}'. Operator '{found}' is not allowed when " +
-            $"comparing against '{chain.Key}' in resource '{resource.Name}'. Allowed operators" +
+            $"comparing against '{term.Key}' in resource '{resource.Name}'. Allowed operators" +
             $": {string.Join(", ", allowed.Select(a => $"'{a.Common}'"))}") => Response = BadRequest(this);
     }
 
@@ -139,17 +139,17 @@ namespace RESTar
     /// Thrown when RESTar cannot find a property/column in a given resource by a 
     /// given property name.
     /// </summary>
-    public class UnknownColumnException : RESTarException
+    public class UnknownPropertyException : RESTarException
     {
-        internal UnknownColumnException(Type resource, string str) : base(UnknownColumnError,
-            $"Could not find any property in resource '{resource.Name}' by '{str}'.") => Response = NotFound(this);
+        internal UnknownPropertyException(Type resource, string str) : base(UnknownPropertyError,
+            $"Could not find any property in type '{resource.Name}' by '{str}'.") => Response = NotFound(this);
     }
 
     /// <summary>
     /// Thrown when RESTar expected a unique match for a property/column in a resource, but
     /// found more than one.
     /// </summary>
-    public class AmbiguousColumnException : RESTarException
+    public class AmbiguousPropertyException : RESTarException
     {
         /// <summary>
         /// The possible candidates found
@@ -161,13 +161,13 @@ namespace RESTar
         /// </summary>
         public readonly string SearchString;
 
-        internal AmbiguousColumnException(Type resource, string str, IEnumerable<string> cands)
-            : base(AmbiguousColumnError, $"Could not uniquely identify a property in resource '{resource.Name}' by " +
+        internal AmbiguousPropertyException(Type resource, string str, IEnumerable<string> cands)
+            : base(AmbiguousPropertyError, $"Could not uniquely identify a property in resource '{resource.Name}' by " +
                                          $"'{str}'. Candidates: {string.Join(", ", cands)}. ")
         {
             SearchString = str;
             Candidates = cands.ToList();
-            Response = AmbiguousColumn(this);
+            Response = AmbiguousProperty(this);
         }
     }
 
@@ -201,56 +201,56 @@ namespace RESTar
     /// Thrown when RESTar encounters an error selecting entities from 
     /// a given resource.
     /// </summary>
-    public class AbortedSelectorException : RESTarException
+    public class AbortedSelectorException<T> : RESTarException where T : class
     {
         internal AbortedSelectorException(Exception ie, IRequest request, string message = null)
             : base(AbortedSelect, message ?? (ie.GetType() == typeof(JsonSerializationException) ||
                                               ie.GetType() == typeof(JsonReaderException)
                                       ? "JSON serialization error, check JSON syntax"
                                       : ""
-                                  ), ie) => Response = AbortedOperation(this, request.Method, request.Resource);
+                                  ), ie) => Response = AbortedOperation<T>(this, request.Method);
     }
 
     /// <summary>
     /// Thrown when RESTar encounters an error inserting entities into
     /// a given resource.
     /// </summary>
-    public class AbortedInserterException : RESTarException
+    public class AbortedInserterException<T> : RESTarException where T : class
     {
         internal AbortedInserterException(Exception ie, IRequest request, string message = null)
             : base(AbortedInsert, message ?? (ie.GetType() == typeof(JsonSerializationException) ||
                                               ie.GetType() == typeof(JsonReaderException)
                                       ? "JSON serialization error, check JSON syntax"
                                       : ""
-                                  ), ie) => Response = AbortedOperation(this, request.Method, request.Resource);
+                                  ), ie) => Response = AbortedOperation<T>(this, request.Method);
     }
 
     /// <summary>
     /// Thrown when RESTar encounters an error updating entities in
     /// a given resource.
     /// </summary>
-    public class AbortedUpdaterException : RESTarException
+    public class AbortedUpdaterException<T> : RESTarException where T : class
     {
         internal AbortedUpdaterException(Exception ie, IRequest request, string message = null)
             : base(AbortedUpdate, message ?? (ie.GetType() == typeof(JsonSerializationException) ||
                                               ie.GetType() == typeof(JsonReaderException)
                                       ? "JSON serialization error, check JSON syntax"
                                       : ""
-                                  ), ie) => Response = AbortedOperation(this, request.Method, request.Resource);
+                                  ), ie) => Response = AbortedOperation<T>(this, request.Method);
     }
 
     /// <summary>
     /// Thrown when RESTar encounters an error deleting entities from
     /// a given resource.
     /// </summary>
-    public class AbortedDeleterException : RESTarException
+    public class AbortedDeleterException<T> : RESTarException where T : class
     {
         internal AbortedDeleterException(Exception ie, IRequest request, string message = null)
             : base(AbortedDelete, message ?? (ie.GetType() == typeof(JsonSerializationException) ||
                                               ie.GetType() == typeof(JsonReaderException)
                                       ? "JSON serialization error, check JSON syntax"
                                       : ""
-                                  ), ie) => Response = AbortedOperation(this, request.Method, request.Resource);
+                                  ), ie) => Response = AbortedOperation<T>(this, request.Method);
     }
 
     /// <summary>

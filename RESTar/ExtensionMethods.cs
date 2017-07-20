@@ -194,18 +194,18 @@ namespace RESTar
 
         #region Resource helpers
 
-        internal static PropertyChain MakePropertyChain(this IResource resource, string key, bool dynamicUnknowns)
+        internal static Term MakeTerm(this IResource resource, string key, bool dynamicUnknowns)
         {
-            return resource.TargetType.MakePropertyChain(key, dynamicUnknowns);
+            return resource.Type.MakeTerm(key, dynamicUnknowns);
         }
 
-        internal static PropertyChain MakePropertyChain(this Type resource, string key, bool dynamicUnknowns)
+        internal static Term MakeTerm(this Type resource, string key, bool dynamicUnknowns)
         {
             var hash = resource.GetHashCode() + key.ToLower().GetHashCode() +
                        dynamicUnknowns.GetHashCode();
-            if (!PropertyChains.TryGetValue(hash, out PropertyChain propChain))
-                propChain = PropertyChains[hash] = PropertyChain.ParseInternal(resource, key, dynamicUnknowns);
-            return propChain;
+            if (!TermCache.TryGetValue(hash, out Term term))
+                term = TermCache[hash] = Term.ParseInternal(resource, key, dynamicUnknowns);
+            return term;
         }
 
         internal static bool IsDDictionary(this Type type) => type == typeof(DDictionary) ||
@@ -370,7 +370,7 @@ namespace RESTar
             var Values = new List<object>();
             var WhereString = string.Join(" AND ", conds.Select(c =>
             {
-                var key = c.PropertyChain.DbKey.Fnuttify();
+                var key = c.Term.DbKey.Fnuttify();
                 if (c.Value == null)
                     return $"t.{key} {(c.Operator == Operator.NOT_EQUALS ? "IS NOT NULL" : "IS NULL")}";
                 Values.Add(c.Value);
@@ -640,7 +640,7 @@ namespace RESTar
             return _conditions;
         }
 
-        internal static Select ToSelect(this IEnumerable<PropertyChain> props)
+        internal static Select ToSelect(this IEnumerable<Term> props)
         {
             if (props?.Any() != true) return null;
             var _props = new Select();
@@ -649,7 +649,7 @@ namespace RESTar
             return _props;
         }
 
-        internal static Add ToAdd(this IEnumerable<PropertyChain> props)
+        internal static Add ToAdd(this IEnumerable<Term> props)
         {
             if (props?.Any() != true) return null;
             var _props = new Add();
@@ -660,7 +660,7 @@ namespace RESTar
 
         /// <summary>
         /// Returns true if and only if the request contains a condition with the given key and 
-        /// operator. If true, the out Condition parameter will contain a reference to the found
+        /// operator (case insensitive). If true, the out Condition parameter will contain a reference to the found
         /// condition.
         /// </summary>
         public static bool TryGetCondition<T>(this IRequest<T> request, string key, Operator op,
@@ -668,6 +668,22 @@ namespace RESTar
         {
             condition = request.Conditions?[key, op];
             return condition != null;
+        }
+
+        /// <summary>
+        /// If the resource is a static Starcounter resource, returns an SQL query for the request.
+        /// </summary>
+        public static void GetSQL<T>(this IRequest<T> request, out string SQL, out object[] Values) where T : class
+        {
+            if (request.Resource.ResourceType != RESTarResourceType.StaticStarcounter)
+                throw new ArgumentException("Can only get SQL for static Starcounter resources. Resource " +
+                                            $"'{request.Resource.Name}' was of type {request.Resource.ResourceType}");
+            var whereClause = request.Conditions.MakeWhereClause();
+            SQL = $"SELECT t FROM {typeof(T).FullName} t " +
+                  $"{whereClause.WhereString} " +
+                  $"{request.MetaConditions.OrderBy?.SQL} " +
+                  $"{request.MetaConditions.Limit.SQL}";
+            Values = whereClause.Values;
         }
 
         internal static (ErrorCodes Code, Response Response) GetError(this Exception ex)

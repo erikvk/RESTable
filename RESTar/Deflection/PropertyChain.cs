@@ -8,14 +8,15 @@ using static RESTar.Operations.Do;
 namespace RESTar.Deflection
 {
     /// <summary>
-    /// A chain of properties, used in queries to refer to properties and properties of properties.
+    /// A term denotes a node in a static or dynamic member tree. Contains a chain of properties, 
+    /// used in queries to refer to properties and properties of properties.
     /// </summary>
-    public class PropertyChain
+    public class Term
     {
         private readonly List<Property> Store;
 
         /// <summary>
-        /// The path to the property, using dot notation
+        /// A string representation of the path to the property, using dot notation
         /// </summary>
         public string Key => string.Join(".", Store.Select(p => p.Name));
 
@@ -25,52 +26,51 @@ namespace RESTar.Deflection
         public string DbKey => string.Join(".", Store.Select(p => p.DatabaseQueryName));
 
         /// <summary>
-        /// Can this property chain be used to reference a property in an SQL statement?
+        /// Can this term be used to reference a property in an SQL statement?
         /// </summary>
         public bool ScQueryable { get; private set; }
 
         /// <summary>
-        /// Is this property chain static? (Are all its properties static members?)
+        /// Is this term static? (Are all of its containing property references denoting static members?)
         /// </summary>
         public bool IsStatic { get; private set; }
 
         /// <summary>
-        /// Is this property chain dynamic? (Are not all its properties static members?)
+        /// Is this term dynamic? (Are not all of its containing property references denoting static members?)
         /// </summary>
         public bool IsDynamic => !IsStatic;
 
         /// <summary>
-        /// Gets the first property in the chain, and safe casts it to T
+        /// Gets the first property reference of the term, and safe casts it to T
         /// </summary>
         public T FirstAs<T>() where T : Property => Store.FirstOrDefault() as T;
 
         /// <summary>
-        /// Gets the first property in the chain, or null of the chain is empty
+        /// Gets the first property reference of the term, or null of the term is empty
         /// </summary>
         public Property First => Store.FirstOrDefault();
 
         /// <summary>
-        /// Gets the last property in the chain, and safe casts it to T
+        /// Gets the last property reference of the term, and safe casts it to T
         /// </summary>
         public T LastAs<T>() where T : Property => Store.LastOrDefault() as T;
 
         /// <summary>
-        /// Gets the last property in the chain, or null of the chain is empty
+        /// Gets the last property reference of the term, or null of the term is empty
         /// </summary>
         public Property Last => Store.LastOrDefault();
 
         private static readonly NoCaseComparer Comparer = new NoCaseComparer();
-        private PropertyChain() => Store = new List<Property>();
+        private Term() => Store = new List<Property>();
 
         /// <summary>
-        /// Parses a property chain key string and returns a property chain describing it. This method
-        /// is used for output property chains, that is, property chains that select property of outbound
-        /// entities. They may have dynamic entities generated during the request, hence the dynamic domain.
+        /// Parses a term key string and returns a term describing it.
         /// </summary>
-        internal static PropertyChain ParseInternal(Type resource, string key, bool dynamicUnknowns,
+        internal static Term ParseInternal(Type resource, string key, bool dynamicUnknowns,
             List<string> dynamicDomain = null)
         {
-            var chain = new PropertyChain();
+            var term = new Term();
+
             Property propertyMaker(string str)
             {
                 if (string.IsNullOrWhiteSpace(str))
@@ -89,7 +89,7 @@ namespace RESTar.Deflection
                     return StaticProperty.Get(type, str);
                 }
 
-                switch (chain.Store.LastOrDefault())
+                switch (term.Store.LastOrDefault())
                 {
                     case null: return make(resource);
                     case StaticProperty stat: return make(stat.Type);
@@ -97,31 +97,31 @@ namespace RESTar.Deflection
                 }
             }
 
-            key.Split('.').ForEach(s => chain.Store.Add(propertyMaker(s)));
-            chain.ScQueryable = chain.Store.All(p => p.ScQueryable);
-            chain.IsStatic = chain.Store.All(p => p is StaticProperty);
-            return chain;
+            key.Split('.').ForEach(s => term.Store.Add(propertyMaker(s)));
+            term.ScQueryable = term.Store.All(p => p.ScQueryable);
+            term.IsStatic = term.Store.All(p => p is StaticProperty);
+            return term;
         }
 
         /// <summary>
-        /// Creates a new property chain from a prototype
+        /// Creates a new term from a prototype
         /// </summary>
-        public static PropertyChain MakeFromPrototype(PropertyChain chain, Type type)
+        public static Term MakeFromPrototype(Term term, Type type)
         {
-            var newChain = new PropertyChain();
-            chain.Store.ForEach(item =>
+            var newTerm = new Term();
+            term.Store.ForEach(item =>
             {
                 var newProp = StaticProperty.Get(type, item.Name);
-                newChain.Store.Add(newProp);
+                newTerm.Store.Add(newProp);
                 type = newProp.Type;
             });
-            newChain.ScQueryable = newChain.Store.All(p => p.ScQueryable);
-            newChain.IsStatic = newChain.Store.All(p => p is StaticProperty);
-            return newChain;
+            newTerm.ScQueryable = newTerm.Store.All(p => p.ScQueryable);
+            newTerm.IsStatic = newTerm.Store.All(p => p is StaticProperty);
+            return newTerm;
         }
 
         /// <summary>
-        /// Converts all properties in this property chain to dynamic properties
+        /// Converts all properties in this term to dynamic properties
         /// </summary>
         public void MakeDynamic()
         {
@@ -138,13 +138,13 @@ namespace RESTar.Deflection
         }
 
         /// <summary>
-        /// Gets the value of this property chain from a given target object
+        /// Returns the value that this term denotes for a given target object
         /// </summary>
         public dynamic Evaluate(object target) => Evaluate(target, out string _);
 
         /// <summary>
-        /// Gets the value of this property chain from a given target object and
-        /// returns the actual key for this property (matching is case insensitive).
+        /// Returns the value that this term denotes for a given target object as well as
+        /// the actual key for this property (matching is case insensitive).
         /// </summary>
         public dynamic Evaluate(object target, out string actualKey)
         {
