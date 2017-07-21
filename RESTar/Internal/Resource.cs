@@ -8,7 +8,6 @@ using Newtonsoft.Json.Linq;
 using RESTar.Operations;
 using Starcounter;
 using static System.Reflection.BindingFlags;
-using static RESTar.Operations.Do;
 using static RESTar.RESTarMethods;
 using static RESTar.Internal.RESTarResourceType;
 using static RESTar.Internal.Transactions;
@@ -19,12 +18,10 @@ namespace RESTar.Internal
     {
         public string Name { get; }
         public bool Editable { get; }
-        public IReadOnlyList<RESTarMethods> AvailableMethods { get; }
-        public string AvailableMethodsString => AvailableMethods.ToMethodsString();
+        public IReadOnlyList<RESTarMethods> AvailableMethods { get; set; }
         public Type Type => typeof(T);
         public bool IsDDictionary { get; }
         public bool IsDynamic { get; }
-        public long? NrOfEntities => Try(() => DB.RowCount(Name), default(long?));
         public bool IsSingleton { get; }
         public bool DynamicConditionsAllowed { get; }
         public string AliasOrName => Alias ?? Name;
@@ -40,21 +37,21 @@ namespace RESTar.Internal
 
         public string Alias
         {
-            get => DB.Get<ResourceAlias>("Resource", Name)?.Alias;
+            get => ResourceAlias<T>.Get?.Alias;
             set
             {
-                var existingMapping = DB.Get<ResourceAlias>("Resource", Name);
+                var existingMapping = ResourceAlias<T>.Get;
                 if (value == null)
                 {
                     Trans(() => existingMapping?.Delete());
                     return;
                 }
-                var usedAliasMapping = DB.Get<ResourceAlias>("Alias", value);
+                var usedAliasMapping = ResourceAlias.ByAlias(value);
                 if (usedAliasMapping != null)
                 {
                     if (usedAliasMapping.Resource == Name)
                         return;
-                    throw new Exception($"Invalid alias: '{value}' is used to refer to another resource");
+                    throw new AliasAlreadyInUseException(usedAliasMapping);
                 }
 
                 Trans(() =>
@@ -210,7 +207,9 @@ namespace RESTar.Internal
         public static IResource<T> Get => RESTarConfig.ResourceByType.SafeGet(typeof(T)) as IResource<T> ??
                                           throw new UnknownResourceException(typeof(T).FullName);
 
-        public static bool AllowDynamicConditions => Get?.DynamicConditionsAllowed ?? false;
+        public static IResource<T> SafeGet => RESTarConfig.ResourceByType.SafeGet(typeof(T)) as IResource<T>;
+
+        public static bool AllowDynamicConditions => SafeGet?.DynamicConditionsAllowed ?? false;
 
         public bool Equals(IResource x, IResource y) => x.Name == y.Name;
         public int GetHashCode(IResource obj) => obj.Name.GetHashCode();

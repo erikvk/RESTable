@@ -136,7 +136,7 @@
     <Compile Include="DynamicTables.cs" />
     <Compile Include="Internal\IResource.cs" />
     <Compile Include="Deflection\Property.cs" />
-    <Compile Include="Deflection\PropertyChain.cs" />
+    <Compile Include="Deflection\Term.cs" />
     <Compile Include="Operations\OperationsDelegates.cs" />
     <Compile Include="Operations\Rename.cs" />
     <Compile Include="Requests\RESTRequest.cs" />

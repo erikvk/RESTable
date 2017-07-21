@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics.Contracts;
 using RESTar.Deflection;
 using RESTar.Internal;
 using RESTar.Operations;
@@ -49,7 +50,8 @@ namespace RESTar
         /// <summary>
         /// Converts a condition to a new target type
         /// </summary>
-        public Condition<TResults> MakeFor<TResults>(string newKey = null) where TResults : class
+        [Pure]
+        public Condition<TResults> Redirect<TResults>(string newKey = null) where TResults : class
         {
             if (typeof(TResults) == typeof(T)) return this as Condition<TResults>;
             var term = string.IsNullOrWhiteSpace(newKey)

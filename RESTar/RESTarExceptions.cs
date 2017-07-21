@@ -163,7 +163,7 @@ namespace RESTar
 
         internal AmbiguousPropertyException(Type resource, string str, IEnumerable<string> cands)
             : base(AmbiguousPropertyError, $"Could not uniquely identify a property in resource '{resource.Name}' by " +
-                                         $"'{str}'. Candidates: {string.Join(", ", cands)}. ")
+                                           $"'{str}'. Candidates: {string.Join(", ", cands)}. ")
         {
             SearchString = str;
             Candidates = cands.ToList();
@@ -267,10 +267,20 @@ namespace RESTar
     /// </summary>
     public class UnknownResourceForAliasException : RESTarException
     {
-        internal UnknownResourceForAliasException(string searchString, Type match) : base(UnknownResourceError,
+        internal UnknownResourceForAliasException(string searchString, IResource match) : base(UnknownResourceError,
             "Resource alias mappings must be provided with fully qualified resource names. No match " +
-            $"for '{searchString}'. {(match != null ? $"Did you mean '{match.FullName}'? " : "")}")
+            $"for '{searchString}'. {(match != null ? $"Did you mean '{match.Name}'? " : "")}")
             => Response = BadRequest(this);
+    }
+
+    /// <summary>
+    /// Thrown when an alias cannot be registered for a resource because it is already in use
+    /// </summary>
+    public class AliasAlreadyInUseException : RESTarException
+    {
+        internal AliasAlreadyInUseException(ResourceAlias alias) : base(AliasAlreadyInUseError,
+            $"Invalid Alias: '{alias.Alias}' is already in use for resource '{alias.IResource.Name}'") =>
+            Response = BadRequest(this);
     }
 
     /// <summary>

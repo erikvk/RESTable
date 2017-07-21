@@ -18,7 +18,7 @@ namespace RESTar.Deflection
         /// <summary>
         /// A string representation of the path to the property, using dot notation
         /// </summary>
-        public string Key => string.Join(".", Store.Select(p => p.Name));
+        public string Key { get; private set; }
 
         /// <summary>
         /// The property path for use in SQL queries
@@ -100,6 +100,7 @@ namespace RESTar.Deflection
             key.Split('.').ForEach(s => term.Store.Add(propertyMaker(s)));
             term.ScQueryable = term.Store.All(p => p.ScQueryable);
             term.IsStatic = term.Store.All(p => p is StaticProperty);
+            term.Key = string.Join(".", term.Store.Select(p => p.Name));
             return term;
         }
 
@@ -117,6 +118,7 @@ namespace RESTar.Deflection
             });
             newTerm.ScQueryable = newTerm.Store.All(p => p.ScQueryable);
             newTerm.IsStatic = newTerm.Store.All(p => p is StaticProperty);
+            newTerm.Key = string.Join(".", newTerm.Store.Select(p => p.Name));
             return newTerm;
         }
 
@@ -135,6 +137,7 @@ namespace RESTar.Deflection
                 .ToList();
             Store.Clear();
             Store.AddRange(newProperties);
+            Key = string.Join(".", Store.Select(p => p.Name));
         }
 
         /// <summary>

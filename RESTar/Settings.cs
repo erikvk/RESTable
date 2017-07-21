@@ -18,7 +18,7 @@ namespace RESTar
         internal static int _DaysToSaveErrors => Instance.DaysToSaveErrors;
         internal static string _ResourcesPath => Instance.ResourcesPath;
         internal static string _HelpResourcePath => Instance.HelpResourcePath;
-        internal static bool _UseLRT => Instance.UseLRT;
+        internal static bool _DontUseLRT => Instance.DontUseLRT;
 
         /// <summary>
         /// The port of the RESTar REST API
@@ -43,7 +43,7 @@ namespace RESTar
         /// <summary>
         /// Use long running transactions instead of regular transact calls
         /// </summary>
-        public bool UseLRT { get; set; }
+        public bool DontUseLRT { get; set; }
 
         /// <summary>
         /// The path where resources are available

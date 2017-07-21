@@ -56,6 +56,9 @@ namespace RESTar.Internal
         NoAvalailableDynamicTableError = 122,
         VirtualResourceDeclarationError = 123,
 
+        // 130-139: Alias errors
+        AliasAlreadyInUseError = 124,
+
         // 200-399: Handler errors
         AbortedSelect = 201,
         AbortedInsert = 202,

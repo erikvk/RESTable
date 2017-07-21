@@ -283,7 +283,7 @@ namespace RESTar.Operations
             {
                 #region Long running transactions test
 
-                if (_UseLRT)
+                if (!_DontUseLRT)
                 {
                     switch (method)
                     {

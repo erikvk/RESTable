@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Net;
 using RESTar.Deflection;
@@ -44,9 +45,9 @@ namespace RESTar
         }
 
         /// <summary>
-        /// Access a condition by its key (case insensitive)
+        /// Access all conditions with a given key (case insensitive)
         /// </summary>
-        public Condition<T> this[string key] => Store.FirstOrDefault(c => c.Key.EqualsNoCase(key));
+        public IEnumerable<Condition<T>> this[string key] => Store.Where(c => c.Key.EqualsNoCase(key));
 
         /// <summary>
         /// Access a condition by its key (case insensitive) and operator
@@ -59,13 +60,38 @@ namespace RESTar
         /// </summary>
         /// <typeparam name="TResults">The new type to target</typeparam>
         /// <returns></returns>
-        public Conditions<TResults> MakeFor<TResults>() where TResults : class
+        [Pure]
+        public Conditions<TResults> Redirect<TResults>(string direct, string to)
+            where TResults : class
         {
             if (typeof(TResults) == typeof(T)) return this as Conditions<TResults>;
             var newConditions = new Conditions<TResults>();
             var props = typeof(TResults).GetStaticProperties().Values;
             Store.Where(cond => props.Any(prop => prop.Name == cond.Term.First?.Name))
-                .Select(cond => cond.MakeFor<TResults>())
+                .Select(cond => direct.EqualsNoCase(cond.Key) ? cond.Redirect<TResults>(to) : cond.Redirect<TResults>())
+                .ForEach(newConditions.Add);
+            return newConditions;
+        }
+
+        /// <summary>
+        /// Converts the condition collection to target a new resource type
+        /// </summary>
+        /// <typeparam name="TResults">The new type to target</typeparam>
+        /// <returns></returns>
+        public Conditions<TResults> Redirect<TResults>(params (string direct, string to)[] newKeyAssignments)
+            where TResults : class
+        {
+            if (typeof(TResults) == typeof(T)) return this as Conditions<TResults>;
+            var newConditions = new Conditions<TResults>();
+            var props = typeof(TResults).GetStaticProperties().Values;
+            Store.Where(cond => props.Any(prop => prop.Name == cond.Term.First?.Name))
+                .Select(cond =>
+                {
+                    foreach (var keyAssignment in newKeyAssignments)
+                        if (keyAssignment.direct.EqualsNoCase(cond.Key))
+                            return cond.Redirect<TResults>(keyAssignment.to);
+                    return cond.Redirect<TResults>();
+                })
                 .ForEach(newConditions.Add);
             return newConditions;
         }

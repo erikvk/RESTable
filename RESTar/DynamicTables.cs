@@ -5,7 +5,7 @@
 
 namespace RESTar
 {
-    [DynamicTable(1)]
+    [DynamicTable]
     public class DynamicResource01 : DDictionary, IDDictionary<DynamicResource01, DynamicResource1KeyValuePair>
     {
         public DynamicResource1KeyValuePair NewKeyPair(DynamicResource01 dict, string key, object value = null) =>
@@ -19,7 +19,7 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(2)]
+    [DynamicTable]
     public class DynamicResource02 : DDictionary, IDDictionary<DynamicResource02, DynamicResource2KeyValuePair>
     {
         public DynamicResource2KeyValuePair NewKeyPair(DynamicResource02 dict, string key, object value = null) =>
@@ -33,7 +33,7 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(3)]
+    [DynamicTable]
     public class DynamicResource03 : DDictionary, IDDictionary<DynamicResource03, DynamicResource3KeyValuePair>
     {
         public DynamicResource3KeyValuePair NewKeyPair(DynamicResource03 dict, string key, object value = null) =>
@@ -47,7 +47,7 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(4)]
+    [DynamicTable]
     public class DynamicResource04 : DDictionary, IDDictionary<DynamicResource04, DynamicResource4KeyValuePair>
     {
         public DynamicResource4KeyValuePair NewKeyPair(DynamicResource04 dict, string key, object value = null) =>
@@ -61,7 +61,7 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(5)]
+    [DynamicTable]
     public class DynamicResource05 : DDictionary, IDDictionary<DynamicResource05, DynamicResource5KeyValuePair>
     {
         public DynamicResource5KeyValuePair NewKeyPair(DynamicResource05 dict, string key, object value = null) =>
@@ -75,7 +75,7 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(6)]
+    [DynamicTable]
     public class DynamicResource06 : DDictionary, IDDictionary<DynamicResource06, DynamicResource6KeyValuePair>
     {
         public DynamicResource6KeyValuePair NewKeyPair(DynamicResource06 dict, string key, object value = null) =>
@@ -89,7 +89,7 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(7)]
+    [DynamicTable]
     public class DynamicResource07 : DDictionary, IDDictionary<DynamicResource07, DynamicResource7KeyValuePair>
     {
         public DynamicResource7KeyValuePair NewKeyPair(DynamicResource07 dict, string key, object value = null) =>
@@ -103,7 +103,7 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(8)]
+    [DynamicTable]
     public class DynamicResource08 : DDictionary, IDDictionary<DynamicResource08, DynamicResource8KeyValuePair>
     {
         public DynamicResource8KeyValuePair NewKeyPair(DynamicResource08 dict, string key, object value = null) =>
@@ -117,7 +117,7 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(9)]
+    [DynamicTable]
     public class DynamicResource09 : DDictionary, IDDictionary<DynamicResource09, DynamicResource9KeyValuePair>
     {
         public DynamicResource9KeyValuePair NewKeyPair(DynamicResource09 dict, string key, object value = null) =>
@@ -131,7 +131,7 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(10)]
+    [DynamicTable]
     public class DynamicResource10 : DDictionary, IDDictionary<DynamicResource10, DynamicResource10KeyValuePair>
     {
         public DynamicResource10KeyValuePair NewKeyPair(DynamicResource10 dict, string key, object value = null) =>
@@ -145,7 +145,7 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(11)]
+    [DynamicTable]
     public class DynamicResource11 : DDictionary, IDDictionary<DynamicResource11, DynamicResource11KeyValuePair>
     {
         public DynamicResource11KeyValuePair NewKeyPair(DynamicResource11 dict, string key, object value = null) =>
@@ -159,7 +159,7 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(12)]
+    [DynamicTable]
     public class DynamicResource12 : DDictionary, IDDictionary<DynamicResource12, DynamicResource12KeyValuePair>
     {
         public DynamicResource12KeyValuePair NewKeyPair(DynamicResource12 dict, string key, object value = null) =>
@@ -173,7 +173,7 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(13)]
+    [DynamicTable]
     public class DynamicResource13 : DDictionary, IDDictionary<DynamicResource13, DynamicResource13KeyValuePair>
     {
         public DynamicResource13KeyValuePair NewKeyPair(DynamicResource13 dict, string key, object value = null) =>
@@ -187,7 +187,7 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(14)]
+    [DynamicTable]
     public class DynamicResource14 : DDictionary, IDDictionary<DynamicResource14, DynamicResource14KeyValuePair>
     {
         public DynamicResource14KeyValuePair NewKeyPair(DynamicResource14 dict, string key, object value = null) =>
@@ -201,7 +201,7 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(15)]
+    [DynamicTable]
     public class DynamicResource15 : DDictionary, IDDictionary<DynamicResource15, DynamicResource15KeyValuePair>
     {
         public DynamicResource15KeyValuePair NewKeyPair(DynamicResource15 dict, string key, object value = null) =>
@@ -215,7 +215,7 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(16)]
+    [DynamicTable]
     public class DynamicResource16 : DDictionary, IDDictionary<DynamicResource16, DynamicResource16KeyValuePair>
     {
         public DynamicResource16KeyValuePair NewKeyPair(DynamicResource16 dict, string key, object value = null) =>
@@ -229,7 +229,7 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(17)]
+    [DynamicTable]
     public class DynamicResource17 : DDictionary, IDDictionary<DynamicResource17, DynamicResource17KeyValuePair>
     {
         public DynamicResource17KeyValuePair NewKeyPair(DynamicResource17 dict, string key, object value = null) =>
@@ -243,7 +243,7 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(18)]
+    [DynamicTable]
     public class DynamicResource18 : DDictionary, IDDictionary<DynamicResource18, DynamicResource18KeyValuePair>
     {
         public DynamicResource18KeyValuePair NewKeyPair(DynamicResource18 dict, string key, object value = null) =>
@@ -257,7 +257,7 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(19)]
+    [DynamicTable]
     public class DynamicResource19 : DDictionary, IDDictionary<DynamicResource19, DynamicResource19KeyValuePair>
     {
         public DynamicResource19KeyValuePair NewKeyPair(DynamicResource19 dict, string key, object value = null) =>
@@ -271,7 +271,7 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(20)]
+    [DynamicTable]
     public class DynamicResource20 : DDictionary, IDDictionary<DynamicResource20, DynamicResource20KeyValuePair>
     {
         public DynamicResource20KeyValuePair NewKeyPair(DynamicResource20 dict, string key, object value = null) =>
@@ -285,7 +285,7 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(21)]
+    [DynamicTable]
     public class DynamicResource21 : DDictionary, IDDictionary<DynamicResource21, DynamicResource21KeyValuePair>
     {
         public DynamicResource21KeyValuePair NewKeyPair(DynamicResource21 dict, string key, object value = null) =>
@@ -299,7 +299,7 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(22)]
+    [DynamicTable]
     public class DynamicResource22 : DDictionary, IDDictionary<DynamicResource22, DynamicResource22KeyValuePair>
     {
         public DynamicResource22KeyValuePair NewKeyPair(DynamicResource22 dict, string key, object value = null) =>
@@ -313,7 +313,7 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(23)]
+    [DynamicTable]
     public class DynamicResource23 : DDictionary, IDDictionary<DynamicResource23, DynamicResource23KeyValuePair>
     {
         public DynamicResource23KeyValuePair NewKeyPair(DynamicResource23 dict, string key, object value = null) =>
@@ -327,7 +327,7 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(24)]
+    [DynamicTable]
     public class DynamicResource24 : DDictionary, IDDictionary<DynamicResource24, DynamicResource24KeyValuePair>
     {
         public DynamicResource24KeyValuePair NewKeyPair(DynamicResource24 dict, string key, object value = null) =>
@@ -341,7 +341,7 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(25)]
+    [DynamicTable]
     public class DynamicResource25 : DDictionary, IDDictionary<DynamicResource25, DynamicResource25KeyValuePair>
     {
         public DynamicResource25KeyValuePair NewKeyPair(DynamicResource25 dict, string key, object value = null) =>
@@ -355,7 +355,7 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(26)]
+    [DynamicTable]
     public class DynamicResource26 : DDictionary, IDDictionary<DynamicResource26, DynamicResource26KeyValuePair>
     {
         public DynamicResource26KeyValuePair NewKeyPair(DynamicResource26 dict, string key, object value = null) =>
@@ -369,7 +369,7 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(27)]
+    [DynamicTable]
     public class DynamicResource27 : DDictionary, IDDictionary<DynamicResource27, DynamicResource27KeyValuePair>
     {
         public DynamicResource27KeyValuePair NewKeyPair(DynamicResource27 dict, string key, object value = null) =>
@@ -383,7 +383,7 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(28)]
+    [DynamicTable]
     public class DynamicResource28 : DDictionary, IDDictionary<DynamicResource28, DynamicResource28KeyValuePair>
     {
         public DynamicResource28KeyValuePair NewKeyPair(DynamicResource28 dict, string key, object value = null) =>
@@ -397,7 +397,7 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(29)]
+    [DynamicTable]
     public class DynamicResource29 : DDictionary, IDDictionary<DynamicResource29, DynamicResource29KeyValuePair>
     {
         public DynamicResource29KeyValuePair NewKeyPair(DynamicResource29 dict, string key, object value = null) =>
@@ -411,7 +411,7 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(30)]
+    [DynamicTable]
     public class DynamicResource30 : DDictionary, IDDictionary<DynamicResource30, DynamicResource30KeyValuePair>
     {
         public DynamicResource30KeyValuePair NewKeyPair(DynamicResource30 dict, string key, object value = null) =>
@@ -425,7 +425,7 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(31)]
+    [DynamicTable]
     public class DynamicResource31 : DDictionary, IDDictionary<DynamicResource31, DynamicResource31KeyValuePair>
     {
         public DynamicResource31KeyValuePair NewKeyPair(DynamicResource31 dict, string key, object value = null) =>
@@ -439,7 +439,7 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(32)]
+    [DynamicTable]
     public class DynamicResource32 : DDictionary, IDDictionary<DynamicResource32, DynamicResource32KeyValuePair>
     {
         public DynamicResource32KeyValuePair NewKeyPair(DynamicResource32 dict, string key, object value = null) =>
@@ -453,7 +453,7 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(33)]
+    [DynamicTable]
     public class DynamicResource33 : DDictionary, IDDictionary<DynamicResource33, DynamicResource33KeyValuePair>
     {
         public DynamicResource33KeyValuePair NewKeyPair(DynamicResource33 dict, string key, object value = null) =>
@@ -467,7 +467,7 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(34)]
+    [DynamicTable]
     public class DynamicResource34 : DDictionary, IDDictionary<DynamicResource34, DynamicResource34KeyValuePair>
     {
         public DynamicResource34KeyValuePair NewKeyPair(DynamicResource34 dict, string key, object value = null) =>
@@ -481,7 +481,7 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(35)]
+    [DynamicTable]
     public class DynamicResource35 : DDictionary, IDDictionary<DynamicResource35, DynamicResource35KeyValuePair>
     {
         public DynamicResource35KeyValuePair NewKeyPair(DynamicResource35 dict, string key, object value = null) =>
@@ -495,7 +495,7 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(36)]
+    [DynamicTable]
     public class DynamicResource36 : DDictionary, IDDictionary<DynamicResource36, DynamicResource36KeyValuePair>
     {
         public DynamicResource36KeyValuePair NewKeyPair(DynamicResource36 dict, string key, object value = null) =>
@@ -509,7 +509,7 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(37)]
+    [DynamicTable]
     public class DynamicResource37 : DDictionary, IDDictionary<DynamicResource37, DynamicResource37KeyValuePair>
     {
         public DynamicResource37KeyValuePair NewKeyPair(DynamicResource37 dict, string key, object value = null) =>
@@ -523,7 +523,7 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(38)]
+    [DynamicTable]
     public class DynamicResource38 : DDictionary, IDDictionary<DynamicResource38, DynamicResource38KeyValuePair>
     {
         public DynamicResource38KeyValuePair NewKeyPair(DynamicResource38 dict, string key, object value = null) =>
@@ -537,7 +537,7 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(39)]
+    [DynamicTable]
     public class DynamicResource39 : DDictionary, IDDictionary<DynamicResource39, DynamicResource39KeyValuePair>
     {
         public DynamicResource39KeyValuePair NewKeyPair(DynamicResource39 dict, string key, object value = null) =>
@@ -551,7 +551,7 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(40)]
+    [DynamicTable]
     public class DynamicResource40 : DDictionary, IDDictionary<DynamicResource40, DynamicResource40KeyValuePair>
     {
         public DynamicResource40KeyValuePair NewKeyPair(DynamicResource40 dict, string key, object value = null) =>
@@ -565,7 +565,7 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(41)]
+    [DynamicTable]
     public class DynamicResource41 : DDictionary, IDDictionary<DynamicResource41, DynamicResource41KeyValuePair>
     {
         public DynamicResource41KeyValuePair NewKeyPair(DynamicResource41 dict, string key, object value = null) =>
@@ -579,7 +579,7 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(42)]
+    [DynamicTable]
     public class DynamicResource42 : DDictionary, IDDictionary<DynamicResource42, DynamicResource42KeyValuePair>
     {
         public DynamicResource42KeyValuePair NewKeyPair(DynamicResource42 dict, string key, object value = null) =>
@@ -593,7 +593,7 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(43)]
+    [DynamicTable]
     public class DynamicResource43 : DDictionary, IDDictionary<DynamicResource43, DynamicResource43KeyValuePair>
     {
         public DynamicResource43KeyValuePair NewKeyPair(DynamicResource43 dict, string key, object value = null) =>
@@ -607,7 +607,7 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(44)]
+    [DynamicTable]
     public class DynamicResource44 : DDictionary, IDDictionary<DynamicResource44, DynamicResource44KeyValuePair>
     {
         public DynamicResource44KeyValuePair NewKeyPair(DynamicResource44 dict, string key, object value = null) =>
@@ -621,7 +621,7 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(45)]
+    [DynamicTable]
     public class DynamicResource45 : DDictionary, IDDictionary<DynamicResource45, DynamicResource45KeyValuePair>
     {
         public DynamicResource45KeyValuePair NewKeyPair(DynamicResource45 dict, string key, object value = null) =>
@@ -635,7 +635,7 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(46)]
+    [DynamicTable]
     public class DynamicResource46 : DDictionary, IDDictionary<DynamicResource46, DynamicResource46KeyValuePair>
     {
         public DynamicResource46KeyValuePair NewKeyPair(DynamicResource46 dict, string key, object value = null) =>
@@ -649,7 +649,7 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(47)]
+    [DynamicTable]
     public class DynamicResource47 : DDictionary, IDDictionary<DynamicResource47, DynamicResource47KeyValuePair>
     {
         public DynamicResource47KeyValuePair NewKeyPair(DynamicResource47 dict, string key, object value = null) =>
@@ -663,7 +663,7 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(48)]
+    [DynamicTable]
     public class DynamicResource48 : DDictionary, IDDictionary<DynamicResource48, DynamicResource48KeyValuePair>
     {
         public DynamicResource48KeyValuePair NewKeyPair(DynamicResource48 dict, string key, object value = null) =>
@@ -677,7 +677,7 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(49)]
+    [DynamicTable]
     public class DynamicResource49 : DDictionary, IDDictionary<DynamicResource49, DynamicResource49KeyValuePair>
     {
         public DynamicResource49KeyValuePair NewKeyPair(DynamicResource49 dict, string key, object value = null) =>
@@ -691,7 +691,7 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(50)]
+    [DynamicTable]
     public class DynamicResource50 : DDictionary, IDDictionary<DynamicResource50, DynamicResource50KeyValuePair>
     {
         public DynamicResource50KeyValuePair NewKeyPair(DynamicResource50 dict, string key, object value = null) =>
@@ -705,7 +705,7 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(51)]
+    [DynamicTable]
     public class DynamicResource51 : DDictionary, IDDictionary<DynamicResource51, DynamicResource51KeyValuePair>
     {
         public DynamicResource51KeyValuePair NewKeyPair(DynamicResource51 dict, string key, object value = null) =>
@@ -719,7 +719,7 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(52)]
+    [DynamicTable]
     public class DynamicResource52 : DDictionary, IDDictionary<DynamicResource52, DynamicResource52KeyValuePair>
     {
         public DynamicResource52KeyValuePair NewKeyPair(DynamicResource52 dict, string key, object value = null) =>
@@ -733,7 +733,7 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(53)]
+    [DynamicTable]
     public class DynamicResource53 : DDictionary, IDDictionary<DynamicResource53, DynamicResource53KeyValuePair>
     {
         public DynamicResource53KeyValuePair NewKeyPair(DynamicResource53 dict, string key, object value = null) =>
@@ -747,7 +747,7 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(54)]
+    [DynamicTable]
     public class DynamicResource54 : DDictionary, IDDictionary<DynamicResource54, DynamicResource54KeyValuePair>
     {
         public DynamicResource54KeyValuePair NewKeyPair(DynamicResource54 dict, string key, object value = null) =>
@@ -761,7 +761,7 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(55)]
+    [DynamicTable]
     public class DynamicResource55 : DDictionary, IDDictionary<DynamicResource55, DynamicResource55KeyValuePair>
     {
         public DynamicResource55KeyValuePair NewKeyPair(DynamicResource55 dict, string key, object value = null) =>
@@ -775,7 +775,7 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(56)]
+    [DynamicTable]
     public class DynamicResource56 : DDictionary, IDDictionary<DynamicResource56, DynamicResource56KeyValuePair>
     {
         public DynamicResource56KeyValuePair NewKeyPair(DynamicResource56 dict, string key, object value = null) =>
@@ -789,7 +789,7 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(57)]
+    [DynamicTable]
     public class DynamicResource57 : DDictionary, IDDictionary<DynamicResource57, DynamicResource57KeyValuePair>
     {
         public DynamicResource57KeyValuePair NewKeyPair(DynamicResource57 dict, string key, object value = null) =>
@@ -803,7 +803,7 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(58)]
+    [DynamicTable]
     public class DynamicResource58 : DDictionary, IDDictionary<DynamicResource58, DynamicResource58KeyValuePair>
     {
         public DynamicResource58KeyValuePair NewKeyPair(DynamicResource58 dict, string key, object value = null) =>
@@ -817,7 +817,7 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(59)]
+    [DynamicTable]
     public class DynamicResource59 : DDictionary, IDDictionary<DynamicResource59, DynamicResource59KeyValuePair>
     {
         public DynamicResource59KeyValuePair NewKeyPair(DynamicResource59 dict, string key, object value = null) =>
@@ -831,7 +831,7 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(60)]
+    [DynamicTable]
     public class DynamicResource60 : DDictionary, IDDictionary<DynamicResource60, DynamicResource60KeyValuePair>
     {
         public DynamicResource60KeyValuePair NewKeyPair(DynamicResource60 dict, string key, object value = null) =>
@@ -845,7 +845,7 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(61)]
+    [DynamicTable]
     public class DynamicResource61 : DDictionary, IDDictionary<DynamicResource61, DynamicResource61KeyValuePair>
     {
         public DynamicResource61KeyValuePair NewKeyPair(DynamicResource61 dict, string key, object value = null) =>
@@ -859,7 +859,7 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(62)]
+    [DynamicTable]
     public class DynamicResource62 : DDictionary, IDDictionary<DynamicResource62, DynamicResource62KeyValuePair>
     {
         public DynamicResource62KeyValuePair NewKeyPair(DynamicResource62 dict, string key, object value = null) =>
@@ -873,7 +873,7 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(63)]
+    [DynamicTable]
     public class DynamicResource63 : DDictionary, IDDictionary<DynamicResource63, DynamicResource63KeyValuePair>
     {
         public DynamicResource63KeyValuePair NewKeyPair(DynamicResource63 dict, string key, object value = null) =>
@@ -887,7 +887,7 @@ namespace RESTar
         }
     }
 
-    [DynamicTable(64)]
+    [DynamicTable]
     public class DynamicResource64 : DDictionary, IDDictionary<DynamicResource64, DynamicResource64KeyValuePair>
     {
         public DynamicResource64KeyValuePair NewKeyPair(DynamicResource64 dict, string key, object value = null) =>

@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+
 namespace RESTar
 {
     /// <summary>
@@ -31,5 +34,17 @@ namespace RESTar
         /// DELETE, deletes one or more entities from a resource
         /// </summary>
         DELETE
+    }
+
+    internal class MethodComparer : Comparer<RESTarMethods>
+    {
+        internal static MethodComparer Instance = new MethodComparer();
+
+        public override int Compare(RESTarMethods a, RESTarMethods b)
+        {
+            var indexA = Array.IndexOf(RESTarConfig.Methods, a);
+            var indexB = Array.IndexOf(RESTarConfig.Methods, b);
+            return indexA < indexB ? -1 : (indexB < indexA ? 1 : 0);
+        }
     }
 }

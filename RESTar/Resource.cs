@@ -22,7 +22,7 @@ namespace RESTar
         /// <summary>
         /// The methods that have been enabled for this resource
         /// </summary>
-        public IReadOnlyList<RESTarMethods> AvailableMethods { get; set; }
+        public RESTarMethods[] AvailableMethods { get; set; }
 
         /// <summary>
         /// The name of the resource
@@ -37,7 +37,7 @@ namespace RESTar
         /// <summary>
         /// The alias of this resource, if any
         /// </summary>
-        public string Alias { get; private set; }
+        public string Alias { get; set; }
 
         /// <summary>
         /// The type targeted by this resource.
@@ -63,18 +63,17 @@ namespace RESTar
             if (request == null) throw new ArgumentNullException(nameof(request));
             if (request.TryGetCondition(nameof(Name), "=", out var nameCond))
                 nameCond.SetValue(((string) nameCond.Value).FindResource().Name);
-            return Resources
-                .Where(request.Conditions.MakeFor<IResource>())
-                .Select(m => new Resource
-                {
-                    Name = m.Name,
-                    Alias = m.Alias,
-                    AvailableMethods = m.AvailableMethods,
-                    Editable = m.Editable,
-                    Type = m.Type.FullName,
-                    IResource = m,
-                    ResourceType = m.ResourceType
-                }).ToList();
+            var conditions = request.Conditions.Redirect<IResource>(direct: nameof(Type), to: "Type.FullName");
+            return Resources.Where(conditions).Select(m => new Resource
+            {
+                Name = m.Name,
+                Alias = m.Alias,
+                AvailableMethods = m.AvailableMethods.ToArray(),
+                Editable = m.Editable,
+                Type = m.Type.FullName,
+                IResource = m,
+                ResourceType = m.ResourceType
+            }).ToList();
         }
 
         /// <summary>
@@ -88,8 +87,8 @@ namespace RESTar
             {
                 if (string.IsNullOrEmpty(entity.Alias))
                     throw new Exception("No Alias for new resource");
-                if (DB.Exists<ResourceAlias>("Alias", entity.Alias))
-                    throw new Exception($"Invalid Alias: '{entity.Alias}' is used to refer to another resource");
+                if (ResourceAlias.Exists(entity.Alias, out var alias))
+                    throw new AliasAlreadyInUseException(alias);
                 entity.AvailableMethods = Methods;
                 DynamicResource.MakeTable(entity);
                 count += 1;
@@ -106,11 +105,27 @@ namespace RESTar
             var count = 0;
             foreach (var resource in entities)
             {
-                if (!resource.Editable)
-                    throw new Exception($"Resource '{resource.Name}' not editable");
-                var dynamicResource = resource.GetDynamicResource();
-                dynamicResource.AvailableMethods = resource.AvailableMethods;
-                count += 1;
+                var updated = false;
+                var iresource = resource.IResource;
+                if (!string.IsNullOrWhiteSpace(resource.Alias) && resource.Alias != iresource.Alias)
+                {
+                    iresource.Alias = resource.Alias;
+                    updated = true;
+                }
+                if (iresource.Editable)
+                {
+                    var methods = resource.AvailableMethods?.Distinct().ToList();
+                    methods?.Sort(MethodComparer.Instance);
+                    if (methods != null && !iresource.AvailableMethods.SequenceEqual(methods))
+                    {
+                        iresource.AvailableMethods = methods;
+                        var dynamicResource = resource.GetDynamicResource();
+                        if (dynamicResource != null)
+                            dynamicResource.AvailableMethods = methods;
+                        updated = true;
+                    }
+                }
+                if (updated) count += 1;
             }
             return count;
         }
@@ -201,9 +216,7 @@ namespace RESTar
             Register
             (
                 method: methods[0],
-                addMethods: methods.Length > 1
-                    ? methods.Skip(1).ToArray()
-                    : null,
+                addMethods: methods.Length > 1 ? methods.Skip(1).ToArray() : null,
                 selector: selector,
                 inserter: inserter,
                 updater: updater,

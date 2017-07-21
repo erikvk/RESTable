@@ -25,7 +25,6 @@ using static System.Reflection.BindingFlags;
 using static System.StringComparison;
 using static RESTar.RESTarMethods;
 using static RESTar.Internal.ErrorCodes;
-using static RESTar.ResourceAlias;
 using static RESTar.Requests.Responses;
 using static RESTar.RESTarConfig;
 using static Starcounter.DbHelper;
@@ -238,12 +237,12 @@ namespace RESTar
                     .Select(pair => pair.Value)
                     .Union(DB.All<ResourceAlias>()
                         .Where(alias => alias.Alias.StartsWith(commonPart))
-                        .Select(alias => alias.GetResource()))
+                        .Select(alias => alias.IResource))
                     .ToList();
                 if (matches.Any()) return matches;
                 throw new UnknownResourceException(searchString);
             }
-            var resource = ByAlias(searchString);
+            var resource = ResourceAlias.ByAlias(searchString)?.IResource;
             if (resource == null)
                 ResourceByName.TryGetValue(searchString, out resource);
             if (resource != null)
@@ -254,7 +253,7 @@ namespace RESTar
         internal static IResource FindResource(this string searchString)
         {
             searchString = searchString.ToLower();
-            var resource = ByAlias(searchString);
+            var resource = ResourceAlias.ByAlias(searchString)?.IResource;
             if (resource == null)
                 ResourceByName.TryGetValue(searchString, out resource);
             if (resource != null)
@@ -668,6 +667,18 @@ namespace RESTar
         {
             condition = request.Conditions?[key, op];
             return condition != null;
+        }
+
+        /// <summary>
+        /// Returns true if and only if the request contains at least one condition with the given key (case insensitive). 
+        /// If true, the out Conditions parameter will contain all the matching conditions
+        /// </summary>
+        /// <returns></returns>
+        public static bool TryGetConditions<T>(this IRequest<T> request, string key,
+            out IEnumerable<Condition<T>> conditions) where T : class
+        {
+            conditions = request.Conditions?[key];
+            return !conditions.IsNullOrEmpty();
         }
 
         /// <summary>

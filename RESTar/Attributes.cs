@@ -36,6 +36,10 @@ namespace RESTar
         /// <param name="preset">A preset used for setting up available methods for the resource</param>
         public RESTarAttribute(RESTarPresets preset) => AvailableMethods = preset.ToMethods();
 
+        /// <summary>
+        /// Used when creating attributes for dynamic resources
+        /// </summary>
+        /// <param name="methods"></param>
         internal RESTarAttribute(IReadOnlyList<RESTarMethods> methods) => AvailableMethods = methods;
 
         /// <summary>
@@ -43,21 +47,27 @@ namespace RESTar
         /// <param name="preset">A preset used for setting up available methods for the resource</param>
         /// <param name="additionalMethods">Additional methods for this resource, apart from the one defined by
         /// the preset</param>
-        public RESTarAttribute(RESTarPresets preset, params RESTarMethods[] additionalMethods) => AvailableMethods =
-            preset.ToMethods().Union(additionalMethods ?? new RESTarMethods[0]).ToArray();
+        public RESTarAttribute(RESTarPresets preset, params RESTarMethods[] additionalMethods)
+        {
+            var methods = preset.ToMethods().Union(additionalMethods ?? new RESTarMethods[0]).ToList();
+            methods.Sort(MethodComparer.Instance);
+            AvailableMethods = methods;
+        }
 
         /// <summary>
         /// </summary>
         /// <param name="method">A method to make available for the resource</param>
         /// <param name="addMethods">Additional methods to make available for the resource</param>
-        public RESTarAttribute(RESTarMethods method, params RESTarMethods[] addMethods) => AvailableMethods =
-            new[] {method}.Union(addMethods ?? new RESTarMethods[0]).ToArray();
+        public RESTarAttribute(RESTarMethods method, params RESTarMethods[] addMethods)
+        {
+            var methods = new[] {method}.Union(addMethods ?? new RESTarMethods[0]).ToList();
+            methods.Sort(MethodComparer.Instance);
+            AvailableMethods = methods;
+        }
     }
 
     internal class DynamicTableAttribute : Attribute
     {
-        public int Nr;
-        public DynamicTableAttribute(int nr) => Nr = nr;
     }
 
     /// <summary>
