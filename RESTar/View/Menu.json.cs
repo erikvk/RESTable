@@ -7,8 +7,6 @@ using RESTar.Linq;
 
 namespace RESTar.View
 {
-    /// <summary>
-    /// </summary>
     partial class Menu : RESTarView
     {
         internal override void SetMessage(string message, ErrorCodes errorCode, MessageTypes messageType)

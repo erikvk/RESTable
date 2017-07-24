@@ -495,9 +495,14 @@ namespace RESTar
             return dict.Keys.Cast<string>().FirstOrDefault(k => key == k);
         }
 
+        private static IEnumerable<DictionaryEntry> Cast(this IDictionary dict)
+        {
+            foreach (DictionaryEntry item in dict) yield return item;
+        }
+
         internal static string MatchKeyIgnoreCase_IDict(this IDictionary dict, string key)
         {
-            var matches = dict.Cast<DictionaryEntry>().Where(pair => ((string) pair.Key).EqualsNoCase(key)).ToList();
+            var matches = dict.Cast().Where(pair => pair.Key.ToString().EqualsNoCase(key)).ToList();
             return matches.Count > 1 ? dict.MatchKey(key) : (string) matches.FirstOrDefault().Key;
         }
 

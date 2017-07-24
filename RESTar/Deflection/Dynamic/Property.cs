@@ -66,7 +66,7 @@ namespace RESTar.Deflection.Dynamic
         public static Property Parse(string keyString, Type resource, bool dynamic)
         {
             if (dynamic) return DynamicProperty.Parse(keyString);
-            return StaticProperty.Get(resource, keyString);
+            return StaticProperty.Find(resource, keyString);
         }
     }
 }

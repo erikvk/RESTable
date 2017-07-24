@@ -14,7 +14,7 @@ namespace RESTar.Deflection.Dynamic
     /// </summary>
     public class Term
     {
-        private readonly List<Property> Store;
+        private List<Property> Store;
 
         /// <summary>
         /// A string representation of the path to the property, using dot notation
@@ -87,9 +87,9 @@ namespace RESTar.Deflection.Dynamic
                         return DynamicProperty.Parse(str);
                     if (dynamicUnknowns)
                         return Do.Try<Property>(
-                            () => StaticProperty.Get(type, str),
+                            () => StaticProperty.Find(type, str),
                             () => DynamicProperty.Parse(str));
-                    return StaticProperty.Get(type, str);
+                    return StaticProperty.Find(type, str);
                 }
 
                 switch (term.Store.LastOrDefault())
@@ -114,15 +114,16 @@ namespace RESTar.Deflection.Dynamic
         public void MakeDynamic()
         {
             if (IsDynamic) return;
-            var newProperties = Store.Select(prop =>
+            Store = Store.Select(prop =>
+            {
+                switch (prop)
                 {
-                    if (prop is StaticProperty stat && !(stat is SpecialProperty))
-                        return new DynamicProperty(prop.Name);
-                    return prop;
-                })
-                .ToList();
-            Store.Clear();
-            Store.AddRange(newProperties);
+                    case SpecialProperty _:
+                    case DynamicProperty _: return prop;
+                    case StaticProperty _: return new DynamicProperty(prop.Name);
+                    default: throw new ArgumentOutOfRangeException();
+                }
+            }).ToList();
             Key = string.Join(".", Store.Select(p => p.Name));
             DbKey = string.Join(".", Store.Select(p => p.DatabaseQueryName));
         }
@@ -157,6 +158,8 @@ namespace RESTar.Deflection.Dynamic
                 }
                 target = prop.Get(target);
             }
+            if (IsDynamic)
+                Key = string.Join(".", Store.Select(p => p.Name));
             actualKey = Key;
             return target;
         }

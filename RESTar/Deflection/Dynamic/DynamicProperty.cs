@@ -51,7 +51,7 @@ namespace RESTar.Deflection.Dynamic
                         var type = obj.GetType();
                         value = Do.Try(() =>
                         {
-                            var prop = StaticProperty.Get(type, Name);
+                            var prop = StaticProperty.Find(type, Name);
                             actualKey = prop.Name;
                             return prop.Get(obj);
                         }, default(object));
@@ -67,7 +67,7 @@ namespace RESTar.Deflection.Dynamic
                 if (obj is JObject jobj)
                     jobj[Name] = value;
                 var type = obj.GetType();
-                Do.Try(() => StaticProperty.Get(type, Name)?.Set(obj, value));
+                Do.Try(() => StaticProperty.Find(type, Name)?.Set(obj, value));
             };
         }
     }

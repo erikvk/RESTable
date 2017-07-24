@@ -1,10 +1,7 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using Dynamit;
-using Newtonsoft.Json.Linq;
 using RESTar.Deflection.Dynamic;
 
 namespace RESTar.Deflection
@@ -56,19 +53,6 @@ namespace RESTar.Deflection
             {
                 return null;
             }
-        }
-
-        internal static Func<object, string, string> MakeKeyMatcher(this Type type)
-        {
-            if (typeof(JObject).IsAssignableFrom(type))
-                return (t, str) => ((JObject) t).MatchKeyIgnoreCase(str);
-            if (typeof(DDictionary).IsAssignableFrom(type))
-                return (t, str) => ((DDictionary) t).MatchKeyIgnoreCase(str);
-            if (typeof(Dictionary<string, dynamic>).IsAssignableFrom(type))
-                return (t, str) => ((Dictionary<string, dynamic>) t).MatchKeyIgnoreCase(str);
-            if (typeof(IDictionary).IsAssignableFrom(type))
-                return (t, str) => ((IDictionary) t).MatchKeyIgnoreCase_IDict(str);
-            throw new Exception("Unknown dictionary type: " + type.FullName);
         }
 
         /// <summary>
