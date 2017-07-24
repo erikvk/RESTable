@@ -267,11 +267,12 @@ namespace RESTar
                 .Where(pair => pair.Value.IsGlobal && pair.Key.EndsWith($".{searchString}"))
                 .Select(pair => pair.Value)
                 .ToList();
-            if (!matches.Any())
-                throw new UnknownResourceException(searchString);
-            if (matches.MoreThanOne())
-                throw new AmbiguousResourceException(searchString, matches.Select(c => c.Name).ToList());
-            return matches.First();
+            switch (matches.Count)
+            {
+                case 0: throw new UnknownResourceException(searchString);
+                case 1: return matches[0];
+                default: throw new AmbiguousResourceException(searchString, matches.Select(c => c.Name).ToList());
+            }
         }
 
         /// <summary>
@@ -414,8 +415,13 @@ namespace RESTar
         /// </summary>
         public static T SafeGetNoCase<T>(this IDictionary<string, T> dict, string key)
         {
-            var matches = dict.Where(pair => pair.Key.EqualsNoCase(key));
-            return matches.MoreThanOne() ? dict.SafeGet(key) : matches.FirstOrDefault().Value;
+            var matches = dict.Where(pair => pair.Key.EqualsNoCase(key)).ToList();
+            switch (matches.Count)
+            {
+                case 0: return default(T);
+                case 1: return matches[0].Value;
+                default: return dict.SafeGet(key);
+            }
         }
 
         /// <summary>

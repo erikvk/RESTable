@@ -201,7 +201,7 @@ namespace RESTar.Requests
             };
         }
 
-        internal static Response DeleteEntities<T>(int count) where T : class
+        internal static Response DeletedEntities<T>(int count) where T : class
         {
             var alias = ResourceAlias<T>.Get;
             return new Response

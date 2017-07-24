@@ -39,7 +39,7 @@ namespace RESTar.Operations
             }
         }
 
-        public static TResult TransactShort<TResult>(Func<TResult> action)
+        public static TResult ShTransact<TResult>(Func<TResult> action)
         {
             if (typeof(T) == typeof(DatabaseIndex))
                 return action();

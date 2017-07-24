@@ -11,7 +11,7 @@ using Starcounter;
 using static System.Reflection.BindingFlags;
 using static RESTar.RESTarMethods;
 using static RESTar.Internal.RESTarResourceType;
-using static RESTar.Internal.Transactions;
+using static RESTar.Operations.Transact;
 
 namespace RESTar.Internal
 {

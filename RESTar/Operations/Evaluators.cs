@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json.Linq;
-using RESTar.Deflection.Dynamic;
 using RESTar.Linq;
 using RESTar.Requests;
 using Starcounter;
@@ -160,6 +159,22 @@ namespace RESTar.Operations
             {
                 var _results = results;
                 Db.TransactAsync(() => _results?.Where(i => i != null).ForEach(item => Try(item.Delete)));
+                throw new AbortedInserterException<T>(e, request);
+            }
+        }
+
+        private static int INSERT_ONEorTryDelete(IRequest<T> request)
+        {
+            var result = default(T);
+            try
+            {
+                result = request.Body.Deserialize<T>();
+                if (result is IValidatable i) i.RunValidation();
+                return request.Resource.Insert(new[] {result}, request);
+            }
+            catch (Exception e)
+            {
+                Try(() => result?.Delete());
                 throw new AbortedInserterException<T>(e, request);
             }
         }
@@ -335,7 +350,9 @@ namespace RESTar.Operations
 
             private static Response GET(RESTRequest<T> request)
             {
-                return request.MakeResponse(DYNAMIC_SELECT(request)) ?? NoContent;
+                var results = DYNAMIC_SELECT(request);
+                if (results == null) return NoContent;
+                return request.MakeResponse(results) ?? NoContent;
             }
 
             #region Using long running transactions
@@ -350,6 +367,8 @@ namespace RESTar.Operations
             private static Response LrPATCH(RESTRequest<T> request)
             {
                 var source = STATIC_SELECT(request);
+                if (source == null)
+                    return UpdatedEntities<T>(0);
                 if (!request.MetaConditions.Unsafe)
                 {
                     var list = source.ToList();
@@ -362,9 +381,10 @@ namespace RESTar.Operations
 
             private static Response LrPUT(RESTRequest<T> request)
             {
-                var source = STATIC_SELECT(request).ToList();
-                switch (source.Count)
+                var source = STATIC_SELECT(request)?.ToList();
+                switch (source?.Count)
                 {
+                    case null:
                     case 0: return InsertedEntities<T>(Transaction<T>.Transact(() => INSERT_ONE(request)));
                     case 1: return UpdatedEntities<T>(Transaction<T>.Transact(() => UPDATE_ONE(request, source[0])));
                     default: throw new AmbiguousMatchException(request.Resource);
@@ -374,6 +394,8 @@ namespace RESTar.Operations
             private static Response LrDELETE(RESTRequest<T> request)
             {
                 var source = STATIC_SELECT(request);
+                if (source == null)
+                    return DeletedEntities<T>(0);
                 if (!request.MetaConditions.Unsafe)
                 {
                     var list = source.ToList();
@@ -381,15 +403,15 @@ namespace RESTar.Operations
                         throw new AmbiguousMatchException(request.Resource);
                     source = list;
                 }
-                return DeleteEntities<T>(Transaction<T>.Transact(() => OP_DELETE(request, source)));
+                return DeletedEntities<T>(Transaction<T>.Transact(() => OP_DELETE(request, source)));
             }
 
-            private static void GetSafePostTasks(RESTRequest<T> request, out Request<T> innerRequest,
-                out JArray toInsert, out IList<(JObject json, T source)> toUpdate)
+            private static (Request<T> InnerRequest, JArray ToInsert, IList<(JObject json, T source)> ToUpdate)
+                GetSafePostTasks(RESTRequest<T> request)
             {
-                innerRequest = new Request<T>();
-                toInsert = new JArray();
-                toUpdate = new List<(JObject json, T source)>();
+                var innerRequest = new Request<T>();
+                var toInsert = new JArray();
+                var toUpdate = new List<(JObject json, T source)>();
                 try
                 {
                     var terms = request.MetaConditions.SafePost.Split(',').Select(k =>
@@ -410,6 +432,7 @@ namespace RESTar.Operations
                             default: throw new AmbiguousMatchException(request.Resource);
                         }
                     }
+                    return (innerRequest, toInsert, toUpdate);
                 }
                 catch (Exception e)
                 {
@@ -419,7 +442,7 @@ namespace RESTar.Operations
 
             private static Response LrSafePOST(RESTRequest<T> request)
             {
-                GetSafePostTasks(request, out var innerRequest, out var toInsert, out var toUpdate);
+                var (innerRequest, toInsert, toUpdate) = GetSafePostTasks(request);
                 var trans = new Transaction<T>();
                 try
                 {
@@ -443,12 +466,14 @@ namespace RESTar.Operations
             {
                 request.Body = request.Body[0] == '[' ? request.Body : $"[{request.Body}]";
                 if (request.MetaConditions.SafePost != null) return SafePOST(request);
-                return InsertedEntities<T>(Transaction<T>.TransactShort(() => INSERTorTryDelete(request)));
+                return InsertedEntities<T>(Transaction<T>.ShTransact(() => INSERTorTryDelete(request)));
             }
 
             private static Response PATCH(RESTRequest<T> request)
             {
                 var source = STATIC_SELECT(request);
+                if (source == null)
+                    return UpdatedEntities<T>(0);
                 if (!request.MetaConditions.Unsafe)
                 {
                     var list = source.ToList();
@@ -456,74 +481,48 @@ namespace RESTar.Operations
                         throw new AmbiguousMatchException(request.Resource);
                     source = list;
                 }
-                return UpdatedEntities<T>(Transaction<T>.TransactShort(() => UPDATE(request, source)));
+                return UpdatedEntities<T>(Transaction<T>.ShTransact(() => UPDATE(request, source)));
             }
 
             private static Response PUT(RESTRequest<T> request)
             {
-                request.MetaConditions.Unsafe = false;
-                var source = STATIC_SELECT(request);
-                if (source.MoreThanOne())
-                    throw new AmbiguousMatchException(request.Resource);
-                int count;
-                if (source.Any())
+                var source = STATIC_SELECT(request)?.ToList();
+                switch (source?.Count)
                 {
-                    count = typeof(T) == typeof(DatabaseIndex)
-                        ? UPDATE_ONE(request, source.First())
-                        : Trans(() => UPDATE_ONE(request, source.First()));
-                    return UpdatedEntities<T>(count);
+                    case null:
+                    case 0: return InsertedEntities<T>(Transaction<T>.ShTransact(() => INSERT_ONEorTryDelete(request)));
+                    case 1: return UpdatedEntities<T>(Transaction<T>.ShTransact(() => UPDATE_ONE(request, source[0])));
+                    default: throw new AmbiguousMatchException(request.Resource);
                 }
-                count = typeof(T) == typeof(DatabaseIndex)
-                    ? INSERT_ONE(request)
-                    : Trans(() => INSERT_ONE(request));
-                return InsertedEntities<T>(count);
             }
 
             private static Response DELETE(RESTRequest<T> request)
             {
                 var source = STATIC_SELECT(request);
-                if (!request.MetaConditions.Unsafe && source.MoreThanOne())
-                    throw new AmbiguousMatchException(request.Resource);
-                var count = typeof(T) == typeof(DatabaseIndex)
-                    ? OP_DELETE(request, source)
-                    : Trans(() => OP_DELETE(request, source));
-                return DeleteEntities<T>(count);
+                if (source == null)
+                    return DeletedEntities<T>(0);
+                if (!request.MetaConditions.Unsafe)
+                {
+                    var list = source.ToList();
+                    if (list.Count > 1)
+                        throw new AmbiguousMatchException(request.Resource);
+                    source = list;
+                }
+                return DeletedEntities<T>(Transaction<T>.ShTransact(() => OP_DELETE(request, source)));
             }
 
             private static Response SafePOST(RESTRequest<T> request)
             {
-                var insertedCount = 0;
-                var updatedCount = 0;
+                var (insertedCount, updatedCount) = (0, 0);
+                var (innerRequest, toInsert, toUpdate) = GetSafePostTasks(request);
                 try
                 {
-                    request.MetaConditions.Unsafe = false;
-                    var terms = request.MetaConditions.SafePost
-                        .Split(',')
-                        .Select(k => request.Resource.MakeTerm(k, request.Resource.DynamicConditionsAllowed));
-                    var conditions = terms.Select(term => new Condition<T>(term, Operator.EQUALS, null)).ToList();
-                    var innerRequest = new Request<T>();
-                    foreach (var entity in request.Body.Deserialize<IEnumerable<JObject>>())
-                    {
-                        conditions.ForEach(cond => cond.SetValue(cond.Term.Evaluate(entity)));
-                        var results = innerRequest.WithConditions(conditions).GET();
-                        if (!results.Any())
-                        {
-                            innerRequest.Body = entity.Serialize();
-                            insertedCount += typeof(T) == typeof(DatabaseIndex)
-                                ? INSERT_ONE(innerRequest)
-                                : Trans(() => INSERT_ONE(innerRequest));
-                        }
-                        else if (results.MoreThanOne())
-                            throw new AmbiguousMatchException(request.Resource);
-                        else
-                        {
-                            var match = results.First();
-                            innerRequest.Body = entity.Serialize();
-                            updatedCount += typeof(T) == typeof(DatabaseIndex)
-                                ? UPDATE_ONE(innerRequest, match)
-                                : Trans(() => UPDATE_ONE(innerRequest, match));
-                        }
-                    }
+                    insertedCount = toInsert.Any()
+                        ? Transaction<T>.ShTransact(() => INSERT_JARRAYorTryDelete(innerRequest, toInsert))
+                        : 0;
+                    updatedCount = toUpdate.Any()
+                        ? Transaction<T>.ShTransact(() => UPDATE_MANY(innerRequest, toUpdate))
+                        : 0;
                     return SafePostedEntities<T>(insertedCount, updatedCount);
                 }
                 catch (Exception e)
