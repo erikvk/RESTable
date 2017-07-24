@@ -584,7 +584,7 @@ namespace RESTar
             out ICollection<Condition<T>> conditions) where T : class
         {
             conditions = request.Conditions.Get(key).ToList();
-            return !conditions.IsNullOrEmpty();
+            return !conditions.Any() != true;
         }
 
         /// <summary>
@@ -735,7 +735,7 @@ namespace RESTar
             }
         }
 
-        private static void SetCellValue(this DataRow row, string name, dynamic value)
+        private static void SetCellValueOld(this DataRow row, string name, dynamic value)
         {
             if (value == null)
             {
@@ -800,6 +800,52 @@ namespace RESTar
                 case TypeCode.Char:
                     row[name] = value.ToString();
                     return;
+            }
+        }
+
+
+        private static void SetCellValue(this DataRow row, string name, object value)
+        {
+            switch (value)
+            {
+                case null:
+                    row[name] = DBNull.Value;
+                    break;
+                case IEnumerable<object> ienum:
+                    var str = string.Join(", ", ienum.Select(o => o.ToString()));
+                    row[name] = str;
+                    break;
+                case DBNull _:
+                    row[name] = "";
+                    break;
+                case bool _:
+                case decimal _:
+                case long _:
+                case string _:
+                    row[name] = value;
+                    break;
+                case sbyte _:
+                case byte _:
+                case short _:
+                case ushort _:
+                case int _:
+                case uint _:
+                case ulong _:
+                    row[name] = (long) value;
+                    break;
+                case float _:
+                case double _:
+                    row[name] = (decimal) value;
+                    break;
+                case DateTime dt:
+                    row[name] = dt.ToString("O");
+                    break;
+                case char c:
+                    row[name] = c.ToString();
+                    break;
+                default:
+                    row[name] = Do.Try(() => $"$(ObjectID: {value.GetObjectID()})", value.ToString());
+                    break;
             }
         }
 

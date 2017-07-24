@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using Newtonsoft.Json.Linq;
 using static System.UriKind;
 using static RESTar.RESTarMethods;
@@ -19,27 +18,27 @@ namespace RESTar.Operations
         public IEnumerable<Counter> Select(IRequest<Counter> request)
         {
             if (request.Body == null)
-                throw new Exception("Missing data source for operation");
-            var jtoken = JToken.Parse(request.Body);
-            var array = jtoken as JArray;
-            var obj = jtoken as JObject;
-            if (array != null)
-                return new[] {new Counter {["Count"] = array.Count}};
-            if (obj == null)
-                return null;
-            var uriToken = obj.FirstOrDefault<KeyValuePair<string, JToken>>(prop => prop.Key.ToLower() == "uri");
-            if (uriToken.Value?.Type != JTokenType.String)
-                throw new Exception("Invalid source URI");
-            var uri = uriToken.Value.Value<string>();
-            var response = HTTP.InternalRequest(GET, new Uri(uri, Relative), request.AuthToken);
-            if (response?.IsSuccessStatusCode != true)
-                throw new Exception($"Could not get source data from '<self>:{Settings._Port}{Settings._Uri}{uri}'. " +
-                                    $"{response?.StatusCode}: {response?.StatusDescription}. {response?.Headers["ErrorInfo"]}");
-            if (response.StatusCode == 204 || string.IsNullOrEmpty(response.Body))
-                return new[] {new Counter {["Count"] = 0}};
-            IEnumerable<object> items = response.Body.Deserialize<dynamic>();
-            var count = items.Count();
-            return new[] {new Counter {["Count"] = count}};
+                throw new Exception("Missing data source for count operation");
+            switch (JToken.Parse(request.Body))
+            {
+                case JArray array: return new[] {new Counter {["Count"] = array.Count}};
+                case JObject jobj:
+                    var uriToken = jobj.SafeGetNoCase("uri");
+                    if (uriToken?.Type != JTokenType.String)
+                        throw new Exception("Invalid source URI");
+                    var uri = uriToken.Value<string>();
+                    var response = HTTP.InternalRequest(GET, new Uri(uri, Relative), request.AuthToken);
+                    if (response?.IsSuccessStatusCode != true)
+                        throw new Exception(
+                            $"Could not get source data from '<self>:{Settings._Port}{Settings._Uri}{uri}'. " +
+                            $"{response?.StatusCode}: {response?.StatusDescription}. {response?.Headers["ErrorInfo"]}");
+                    if (response.StatusCode == 204 || string.IsNullOrEmpty(response.Body))
+                        return new[] {new Counter {["Count"] = 0}};
+                    var items = response.Body.Deserialize<List<dynamic>>();
+                    var count = items.Count;
+                    return new[] {new Counter {["Count"] = count}};
+                default: return null;
+            }
         }
     }
 }

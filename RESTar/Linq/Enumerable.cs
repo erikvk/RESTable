@@ -15,17 +15,7 @@ namespace RESTar.Linq
         /// </summary>
         public static IEnumerable<T> Where<T>(this IEnumerable<T> entities, IEnumerable<Condition<T>> conditions)
             where T : class => conditions == null ? entities : conditions.Apply(entities);
-
-        /// <summary>
-        /// Returns true if and only if the source IEnumerable is either null or has no elements.
-        /// Equivalent to (for some IEnumerable source) source?.Any() != true;
-        /// Will NOT iterate over all entitites in the source, like Count() would.
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="source"></param>
-        /// <returns></returns>
-        public static bool IsNullOrEmpty<T>(this ICollection<T> source) => source?.Any() != true;
-
+        
         /// <summary>
         /// Generates an IEnumerable of string using the selector function applied to the source IEnumerable, 
         /// and then joins those strings using the separator.

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text.RegularExpressions;
 using Excel;
 using Newtonsoft.Json.Linq;
@@ -19,7 +20,7 @@ namespace RESTar.Requests
     {
         public RESTarMethods Method { get; private set; }
         public IResource<T> Resource { get; }
-        public IEnumerable<Condition<T>> Conditions { get; private set; }
+        public Condition<T>[] Conditions { get; private set; }
         public MetaConditions MetaConditions { get; private set; }
         public string Body { get; set; }
         public string AuthToken { get; internal set; }
@@ -88,7 +89,7 @@ namespace RESTar.Requests
                         : HTTP.ExternalRequest(GET, rqst.URI, headers: rqst.Headers, accept: rqst.Accept);
                     if (response?.IsSuccessStatusCode != true)
                         throw new SourceException(Source, $"{response?.StatusCode}: {response?.StatusDescription}");
-                    if (response.BodyBytes.IsNullOrEmpty()) throw new SourceException(Source, "Response was empty");
+                    if (response.BodyBytes?.Any() != true) throw new SourceException(Source, "Response was empty");
                     BinaryBody = response.BodyBytes;
                     Body = response.Body;
                     break;

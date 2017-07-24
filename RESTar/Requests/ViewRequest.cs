@@ -20,7 +20,7 @@ namespace RESTar.Requests
     internal class ViewRequest<T> : IRequest<T>, IViewRequest where T : class
     {
         public IResource<T> Resource { get; }
-        public IEnumerable<Condition<T>> Conditions { get; private set; }
+        public Condition<T>[] Conditions { get; private set; }
         public MetaConditions MetaConditions { get; private set; }
         public string AuthToken { get; internal set; }
         public IDictionary<string, string> ResponseHeaders { get; }
@@ -43,37 +43,38 @@ namespace RESTar.Requests
             if (MetaConditions.New)
             {
                 IsTemplate = true;
-                View = new Item {Request = this};
+                var itemView = new Item {Request = this};
+                var itemTemplate = Resource.MakeViewModelTemplate().Serialize();
+                itemView.Entity = new Json {Template = CreateFromJson(itemTemplate)};
+                View = itemView;
+                return;
             }
             Entities = Evaluators<T>.STATIC_SELECT(this)?.ToList();
-            switch (Entities?.Count)
+            if (Entities?.Any() != true)
             {
-                case null:
-                case 0:
-                    View.SetMessage("No entities found", NoError, warning);
-                    break;
-                default:
-                    if (Resource.IsSingleton || Entities?.Count == 1 && !Home)
-                    {
-                        Entity = Entities?.First();
-                        var itemView = new Item {Request = this};
-                        var itemTemplate = Resource.MakeViewModelTemplate().Serialize();
-                        itemView.Entity = new Json {Template = CreateFromJson(itemTemplate)};
-                        itemView.Entity.PopulateFromJson(Entity.SerializeToViewModel());
-                        View = itemView;
-                    }
-                    else
-                    {
-                        var listView = new List {Request = this};
-                        CanInsert = Resource.AvailableMethods.Contains(POST);
-                        var listTemplate = Resource.MakeViewModelTemplate();
-                        listView.Entities = new Arr<Json> {Template = CreateFromJson($"[{listTemplate.Serialize()}]")};
-                        Entities.ForEach(e => listView.Entities.Add().PopulateFromJson(e.SerializeToViewModel()));
-                        View = listView;
-                    }
-                    break;
+                View.SetMessage("No entities found", NoError, warning);
+                return;
+            }
+            if (Resource.IsSingleton || Entities?.Count == 1 && !Home)
+            {
+                Entity = Entities?[0];
+                var itemView = new Item {Request = this};
+                var itemTemplate = Resource.MakeViewModelTemplate().Serialize();
+                itemView.Entity = new Json {Template = CreateFromJson(itemTemplate)};
+                itemView.Entity.PopulateFromJson(Entity.SerializeToViewModel());
+                View = itemView;
+            }
+            else
+            {
+                var listView = new List {Request = this};
+                CanInsert = Resource.AvailableMethods.Contains(POST);
+                var listTemplate = Resource.MakeViewModelTemplate();
+                listView.Entities = new Arr<Json> {Template = CreateFromJson($"[{listTemplate.Serialize()}]")};
+                Entities.ForEach(e => listView.Entities.Add().PopulateFromJson(e.SerializeToViewModel()));
+                View = listView;
             }
         }
+
 
         internal ViewRequest(IResource<T> resource, Request scRequest)
         {

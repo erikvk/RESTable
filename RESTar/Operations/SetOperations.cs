@@ -116,7 +116,8 @@ namespace RESTar.Operations
             return results.OfType<JValue>()
                 .Select(v => new JObject(new JProperty("Value", v)))
                 .Union(results.OfType<JObject>())
-                .Select(jobj => new SetOperations(jobj)).ToList();
+                .Select(jobj => new SetOperations(jobj))
+                .ToList();
         }
 
         private static JTokens Distinct(JTokens array) => array?.Distinct(EqualityComparer);

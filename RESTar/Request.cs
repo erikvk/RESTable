@@ -15,9 +15,9 @@ namespace RESTar
     public class Request<T> : IRequest<T> where T : class
     {
         public IResource<T> Resource { get; }
-        private IEnumerable<Condition<T>> _conditions;
+        private Condition<T>[] _conditions;
 
-        public IEnumerable<Condition<T>> Conditions
+        public Condition<T>[] Conditions
         {
             get => _conditions;
             private set
@@ -66,7 +66,7 @@ namespace RESTar
             Resource = Resource<T>.Get;
             ResponseHeaders = new Dictionary<string, string>();
             MetaConditions = new MetaConditions {Unsafe = true};
-            Conditions = conditions.IsNullOrEmpty()
+            Conditions = conditions?.Any() != true
                 ? new Condition<T>[0]
                 : conditions.Select(c => new Condition<T>(
                     term: Resource.MakeTerm(c.key, Resource.DynamicConditionsAllowed),
@@ -101,13 +101,13 @@ namespace RESTar
 
         public Request<T> WithConditions(IEnumerable<Condition<T>> conditions)
         {
-            Conditions = conditions;
+            Conditions = conditions?.ToArray() ?? new Condition<T>[0];
             return this;
         }
 
         public Request<T> WithConditions(params Condition<T>[] conditions)
         {
-            Conditions = conditions;
+            Conditions = conditions ?? new Condition<T>[0];
             return this;
         }
 
@@ -161,12 +161,12 @@ namespace RESTar
             }
         }
 
-        public int PATCH(Func<IEnumerable<T>, IEnumerable<T>> updater)
+        public int PATCH(Func<ICollection<T>, IEnumerable<T>> updater)
         {
             if (ScSql && Conditions.HasChanged()) Prep();
             if (!PATCHAllowed) throw Deny(RESTarMethods.PATCH);
-            var source = Evaluators<T>.RAW_SELECT(this);
-            if (source == null) return 0;
+            var source = Evaluators<T>.RAW_SELECT(this)?.ToList();
+            if (source?.Any() != true) return 0;
             return Evaluators<T>.App.PATCH(updater, source, this);
         }
 

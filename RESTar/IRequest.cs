@@ -55,7 +55,7 @@ namespace RESTar
         /// <summary>
         /// The conditions of the request
         /// </summary>
-        IEnumerable<Condition<T>> Conditions { get; }
+        Condition<T>[] Conditions { get; }
     }
 
     internal interface IViewRequest : IRequest

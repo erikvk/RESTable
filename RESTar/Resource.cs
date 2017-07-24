@@ -80,7 +80,7 @@ namespace RESTar
                 Type = m.Type.FullName,
                 IResource = m,
                 ResourceType = m.ResourceType
-            }).ToList();
+            });
         }
 
         /// <summary>

@@ -201,7 +201,7 @@ namespace RESTar.Operations
 
         #region UPDATE
 
-        private static int UPDATE(IRequest<T> request, IEnumerable<T> source)
+        private static int UPDATE(IRequest<T> request, ICollection<T> source)
         {
             try
             {
@@ -216,15 +216,19 @@ namespace RESTar.Operations
             }
         }
 
-        private static int UPDATE(IRequest<T> request, Func<IEnumerable<T>, IEnumerable<T>> updater,
-            IEnumerable<T> source)
+        private static int UPDATE(IRequest<T> request, Func<ICollection<T>, IEnumerable<T>> updater,
+            ICollection<T> source)
         {
             try
             {
                 var results = updater?.Invoke(source);
                 if (results == null) return 0;
                 if (request.Resource.RequiresValidation)
-                    results.OfType<IValidatable>().ForEach(item => item.RunValidation());
+                {
+                    var resList = results.ToList();
+                    resList.OfType<IValidatable>().ForEach(item => item.RunValidation());
+                    results = resList;
+                }
                 return request.Resource.Update(results, request);
             }
             catch (Exception e)
@@ -264,16 +268,15 @@ namespace RESTar.Operations
             }
         }
 
-        private static int UPDATE_MANY(IRequest<T> request, IEnumerable<(JObject json, T source)> items)
+        private static int UPDATE_MANY(IRequest<T> request, ICollection<(JObject json, T source)> items)
         {
             try
             {
-                var updated = new List<T>();
-                items.ForEach(item =>
+                var updated = items.Select(item =>
                 {
                     Populate(item.json, item.source);
-                    updated.Add(item.source);
-                });
+                    return item.source;
+                }).ToList();
                 if (request.Resource.RequiresValidation)
                     updated.OfType<IValidatable>().ForEach(item => item.RunValidation());
                 return request.Resource.Update(updated, request);
@@ -366,16 +369,10 @@ namespace RESTar.Operations
 
             private static Response LrPATCH(RESTRequest<T> request)
             {
-                var source = STATIC_SELECT(request);
-                if (source == null)
-                    return UpdatedEntities<T>(0);
-                if (!request.MetaConditions.Unsafe)
-                {
-                    var list = source.ToList();
-                    if (list.Count > 1)
-                        throw new AmbiguousMatchException(request.Resource);
-                    source = list;
-                }
+                var source = STATIC_SELECT(request)?.ToList();
+                if (source?.Any() != true) return UpdatedEntities<T>(0);
+                if (!request.MetaConditions.Unsafe && source.Count > 1)
+                    throw new AmbiguousMatchException(request.Resource);
                 return UpdatedEntities<T>(Transaction<T>.Transact(() => UPDATE(request, source)));
             }
 
@@ -414,9 +411,9 @@ namespace RESTar.Operations
                 var toUpdate = new List<(JObject json, T source)>();
                 try
                 {
-                    var terms = request.MetaConditions.SafePost.Split(',').Select(k =>
-                        request.Resource.MakeTerm(k, request.Resource.DynamicConditionsAllowed));
-                    var conditions = terms.Select(term => new Condition<T>(term, Operator.EQUALS, null)).ToList();
+                    var conditions = request.MetaConditions.SafePost.Split(',').Select(k =>
+                            request.Resource.MakeTerm(k, request.Resource.DynamicConditionsAllowed))
+                        .Select(term => new Condition<T>(term, Operator.EQUALS, null)).ToList();
                     foreach (var entity in request.Body.Deserialize<IEnumerable<JObject>>())
                     {
                         conditions.ForEach(cond => cond.SetValue(cond.Term.Evaluate(entity)));
@@ -471,16 +468,10 @@ namespace RESTar.Operations
 
             private static Response PATCH(RESTRequest<T> request)
             {
-                var source = STATIC_SELECT(request);
-                if (source == null)
-                    return UpdatedEntities<T>(0);
-                if (!request.MetaConditions.Unsafe)
-                {
-                    var list = source.ToList();
-                    if (list.Count > 1)
-                        throw new AmbiguousMatchException(request.Resource);
-                    source = list;
-                }
+                var source = STATIC_SELECT(request)?.ToList();
+                if (source?.Any() != true) return UpdatedEntities<T>(0);
+                if (!request.MetaConditions.Unsafe && source.Count > 1)
+                    throw new AmbiguousMatchException(request.Resource);
                 return UpdatedEntities<T>(Transaction<T>.ShTransact(() => UPDATE(request, source)));
             }
 
@@ -572,7 +563,7 @@ namespace RESTar.Operations
                 return Transaction<T>.Transact(() => UPDATE_ONE(request, updater, source));
             }
 
-            internal static int PATCH(Func<IEnumerable<T>, IEnumerable<T>> updater, IEnumerable<T> source,
+            internal static int PATCH(Func<ICollection<T>, IEnumerable<T>> updater, ICollection<T> source,
                 Request<T> request)
             {
                 return Transaction<T>.Transact(() => UPDATE(request, updater, source));

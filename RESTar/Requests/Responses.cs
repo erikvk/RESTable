@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Net;
 using Starcounter;
 
@@ -232,24 +231,12 @@ namespace RESTar.Requests
                 Headers =
                 {
                     ["Access-Control-Allow-Origin"] = RESTarConfig.AllowAllOrigins ? "*" : allowedOrigin,
-                    ["Access-Control-Allow-Methods"] = string.Join(", ", ToExternalMethodsList(allowedMethods)),
+                    ["Access-Control-Allow-Methods"] = string.Join(", ", allowedMethods),
                     ["Access-Control-Max-Age"] = "120",
                     ["Access-Control-Allow-Credentials"] = "true",
                     ["Access-Control-Allow-Headers"] = "origin, content-type, accept, authorization, " +
                                                        "source, destination"
                 }
             };
-
-        private static IEnumerable<RESTarMethods> ToExternalMethodsList(IEnumerable<RESTarMethods> methods)
-        {
-            return methods.Select(i =>
-                {
-                    var str = i.ToString();
-                    if (str.Contains("ADMIN"))
-                        return (RESTarMethods) Enum.Parse(typeof(RESTarMethods), str.Split('_')[1]);
-                    return i;
-                })
-                .Distinct();
-        }
     }
 }

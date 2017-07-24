@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Net;
 using System.Linq;
@@ -142,7 +141,7 @@ namespace RESTar
         /// <summary>
         /// Parses a Conditions object from a conditions section of a REST request URI
         /// </summary>
-        public static IEnumerable<Condition<T>> Parse(string conditionString, IResource<T> resource)
+        public static Condition<T>[] Parse(string conditionString, IResource<T> resource)
         {
             if (string.IsNullOrEmpty(conditionString)) return null;
             return conditionString.Split('&').Select(s =>
@@ -180,7 +179,7 @@ namespace RESTar
                     }
                 }
                 return new Condition<T>(term, op, value);
-            }).ToList();
+            }).ToArray();
         }
     }
 }
