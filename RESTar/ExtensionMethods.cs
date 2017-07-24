@@ -300,8 +300,8 @@ namespace RESTar
                 .Where(p => !(p is SpecialProperty))
                 .ForEach(prop =>
                 {
-                    var val = prop.Get(entity);
-                    jobj[prop.Name] = val == null ? null : JToken.FromObject(val, Serializer.JsonSerializer);
+                    object val = prop.Get(entity);
+                    jobj[prop.Name] = val?.ToJToken();
                 });
             return jobj;
         }
@@ -366,7 +366,6 @@ namespace RESTar
         internal static (string WhereString, object[] Values) MakeWhereClause<T>(this IEnumerable<Condition<T>> conds)
             where T : class
         {
-            if (!conds.Any()) return (null, null);
             var Values = new List<object>();
             var WhereString = string.Join(" AND ", conds.Where(c => !c.Skip).Select(c =>
             {
@@ -376,6 +375,7 @@ namespace RESTar
                 Values.Add(c.Value);
                 return $"t.{key} {c.Operator.SQL}?";
             }));
+            if (WhereString == "") return (null, null);
             return ($"WHERE {WhereString}", Values.ToArray());
         }
 
@@ -581,9 +581,9 @@ namespace RESTar
         /// </summary>
         /// <returns></returns>
         public static bool TryGetConditions<T>(this IRequest<T> request, string key,
-            out IEnumerable<Condition<T>> conditions) where T : class
+            out ICollection<Condition<T>> conditions) where T : class
         {
-            conditions = request.Conditions?.Get(key);
+            conditions = request.Conditions.Get(key).ToList();
             return !conditions.IsNullOrEmpty();
         }
 

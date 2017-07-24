@@ -74,7 +74,7 @@ namespace RESTar.Deflection
         /// <summary>
         /// Gets the members of an enumeration
         /// </summary>
-        public static List<EnumMember> GetEnumMembers(this Type type) => type.IsEnum
+        public static ICollection<EnumMember> GetEnumMembers(this Type type) => type.IsEnum
             ? type.GetFields()
                 .Where(t => t.FieldType.IsEnum)
                 .Select(t => new EnumMember

@@ -12,27 +12,6 @@ using static RESTar.Operators;
 namespace RESTar
 {
     /// <summary>
-    /// A non-generic interface for conditions
-    /// </summary>
-    public interface ICondition
-    {
-        /// <summary>
-        /// The key of the condition, the path to a property of an entity.
-        /// </summary>
-        string Key { get; }
-
-        /// <summary>
-        /// The term describing the property to compare with
-        /// </summary>
-        Term Term { get; }
-
-        /// <summary>
-        /// Converts a condition to a new target type
-        /// </summary>
-        Condition<T> Redirect<T>(string to = null) where T : class;
-    }
-
-    /// <summary>
     /// A condition encodes a predicate that is either true or false of an entity
     /// in a resource. It is used to match entities in resources while selecting 
     /// entities to include in a GET, PUT, PATCH or DELETE request.

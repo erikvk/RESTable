@@ -14,10 +14,7 @@ namespace RESTar.Linq
         /// conditions are true of x.
         /// </summary>
         public static IEnumerable<T> Where<T>(this IEnumerable<T> entities, IEnumerable<Condition<T>> conditions)
-            where T : class
-        {
-            return conditions.IsNullOrEmpty() ? entities : conditions.Apply(entities);
-        }
+            where T : class => conditions == null ? entities : conditions.Apply(entities);
 
         /// <summary>
         /// Returns true if and only if the source IEnumerable is either null or has no elements.
@@ -27,7 +24,7 @@ namespace RESTar.Linq
         /// <typeparam name="T"></typeparam>
         /// <param name="source"></param>
         /// <returns></returns>
-        public static bool IsNullOrEmpty<T>(this IEnumerable<T> source) => source?.Any() != true;
+        public static bool IsNullOrEmpty<T>(this ICollection<T> source) => source?.Any() != true;
 
         /// <summary>
         /// Generates an IEnumerable of string using the selector function applied to the source IEnumerable, 

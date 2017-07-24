@@ -36,8 +36,7 @@ namespace RESTar
         public IEnumerable<ErrorCode> Select(IRequest<ErrorCode> request) => typeof(ErrorCodes)
             .GetEnumMembers()
             .Select(m => new ErrorCode {Name = m.Name, Code = m.Value})
-            .Where(request.Conditions)
-            .ToList();
+            .Where(request.Conditions);
     }
 
     /// <summary>

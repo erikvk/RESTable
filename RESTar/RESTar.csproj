@@ -99,6 +99,7 @@
     <Compile Include="Deflection\Dynamic\TypeCache.cs" />
     <Compile Include="Delegates.cs" />
     <Compile Include="Echo.cs" />
+    <Compile Include="ICondition.cs" />
     <Compile Include="Linq\Conditions.cs" />
     <Compile Include="Linq\Enumerable.cs" />
     <Compile Include="Operations\Transact.cs" />
