@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using Dynamit;
+using RESTar.Linq;
 using RESTar.Operations;
 using Starcounter;
 
@@ -18,24 +19,23 @@ namespace RESTar.Internal
             return Db.SQL<T>(SQL, c.Key, c.Value.GetHashCode());
         }
 
-        private static QueryResultRows<T> AllSQL => Db.SQL<T>($"SELECT t FROM {typeof(T).FullName} t");
+        private static IEnumerable<T> AllSQL => Db.SQL<T>($"SELECT t FROM {typeof(T).FullName} t");
 
         /// <summary>
         /// Selects DDictionary entites
         /// </summary>
         public static Selector<T> Select => r =>
         {
-            var equalityConditions = r.Conditions.Equality;
-            if (equalityConditions?.Any() != true)
+            if (!r.Conditions.HasEquality(out var eqalityConds))
                 return AllSQL.Where(r.Conditions);
             var kvpTable = TableInfo<T>.KvpTable;
             var results = new HashSet<T>();
-            equalityConditions.ForEach((cond, index) =>
+            eqalityConds.ForEach((cond, index) =>
             {
                 if (index == 0) results.UnionWith(EqualitySQL(cond, kvpTable));
                 else results.IntersectWith(EqualitySQL(cond, kvpTable));
             });
-            return results.Where(r.Conditions.Compare).ToList();
+            return r.Conditions.HasCompare(out var compare) ? results.Where(compare) : results;
         };
 
         /// <summary>

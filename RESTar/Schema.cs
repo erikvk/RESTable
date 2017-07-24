@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using RESTar.Deflection;
+using RESTar.Deflection.Dynamic;
+using RESTar.Linq;
 using static RESTar.Operators;
 
 namespace RESTar
@@ -21,7 +22,7 @@ namespace RESTar
         /// </summary>
         public IEnumerable<Schema> Select(IRequest<Schema> request)
         {
-            var validCondition = request.Conditions["resource", EQUALS]?.Value as string;
+            var validCondition = request.Conditions.Get("resource", EQUALS)?.Value as string;
             if (validCondition == null)
                 throw new Exception("Invalid resource argument, format: /schema/resource=my_resource_name");
             var schema = MakeSchema(validCondition);

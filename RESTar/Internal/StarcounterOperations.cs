@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using RESTar.Linq;
 using RESTar.Operations;
 using RESTar.Requests;
 using Starcounter;
@@ -23,15 +24,15 @@ namespace RESTar.Internal
             {
                 case ViewRequest<T> _:
                 case RESTRequest<T> _:
-                    if (!request.Conditions.Any)
+                    if (!request.Conditions.Any())
                         return Db.SQL<T>($"{SELECT}{request.MetaConditions.OrderBy?.SQL}");
-                    var where = request.Conditions.SQL.MakeWhereClause();
+                    var where = request.Conditions.GetSQL().MakeWhereClause();
                     results = Db.SQL<T>($"{SELECT}{where.WhereString} " +
                                         $"{request.MetaConditions.OrderBy?.SQL}", where.Values);
-                    return !request.Conditions.HasPost ? results : results.Where(request.Conditions.PostSQL);
+                    return !request.Conditions.HasPost(out var post) ? results : results.Where(post);
                 case Request<T> appRequest:
                     results = Db.SQL<T>(appRequest.SqlQuery, appRequest.SqlValues);
-                    return !appRequest.Conditions.HasPost ? results : results.Where(appRequest.Conditions.PostSQL);
+                    return !appRequest.Conditions.HasPost(out var _post) ? results : results.Where(_post);
                 default: return null;
             }
         };

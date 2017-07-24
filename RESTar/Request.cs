@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using RESTar.Internal;
+using RESTar.Linq;
 using RESTar.Operations;
 using RESTar.Requests;
 using static RESTar.Internal.RESTarResourceType;
@@ -14,7 +15,18 @@ namespace RESTar
     public class Request<T> : IRequest<T> where T : class
     {
         public IResource<T> Resource { get; }
-        public Conditions<T> Conditions { get; }
+        private IEnumerable<Condition<T>> _conditions;
+
+        public IEnumerable<Condition<T>> Conditions
+        {
+            get => _conditions;
+            private set
+            {
+                _conditions = value;
+                if (ScSql) Prep();
+            }
+        }
+
         public string Body { get; set; }
         public string AuthToken { get; internal set; }
         public IDictionary<string, string> ResponseHeaders { get; }
@@ -34,11 +46,11 @@ namespace RESTar
 
         internal void Prep()
         {
-            if (!Conditions.SQL.Any())
+            if (!Conditions.HasSQL(out var sql))
                 SqlQuery = StarcounterOperations<T>.SELECT;
             else
             {
-                var wh = Conditions.SQL.MakeWhereClause();
+                var wh = sql.MakeWhereClause();
                 SqlQuery = $"{StarcounterOperations<T>.SELECT}{wh.WhereString}";
                 SqlValues = wh.Values;
             }
@@ -53,13 +65,14 @@ namespace RESTar
         {
             Resource = Resource<T>.Get;
             ResponseHeaders = new Dictionary<string, string>();
-            Conditions = new Conditions<T>();
             MetaConditions = new MetaConditions {Unsafe = true};
-            conditions?.Select(c => new Condition<T>(
-                term: Resource.MakeTerm(c.key, Resource.DynamicConditionsAllowed),
-                op: c.op,
-                value: c.value
-            )).ForEach(Conditions.Add);
+            Conditions = conditions.IsNullOrEmpty()
+                ? new Condition<T>[0]
+                : conditions.Select(c => new Condition<T>(
+                    term: Resource.MakeTerm(c.key, Resource.DynamicConditionsAllowed),
+                    op: c.op,
+                    value: c.value
+                )).ToArray();
             this.Authenticate();
             ScSql = Resource.ResourceType == StaticStarcounter;
             Resource.AvailableMethods.ForEach(m =>
@@ -86,16 +99,16 @@ namespace RESTar
             if (ScSql) Prep();
         }
 
-        public void SetConditions(Conditions<T> conditions)
+        public Request<T> WithConditions(IEnumerable<Condition<T>> conditions)
         {
-            Conditions.Clear();
-            Conditions.AddRange(conditions);
+            Conditions = conditions;
+            return this;
         }
 
-        public void SetConditions(params Condition<T>[] conditions)
+        public Request<T> WithConditions(params Condition<T>[] conditions)
         {
-            Conditions.Clear();
-            Conditions.AddRange(conditions);
+            Conditions = conditions;
+            return this;
         }
 
         private static Exception Deny(RESTarMethods method) => new ForbiddenException
@@ -103,21 +116,21 @@ namespace RESTar
 
         public IEnumerable<T> GET()
         {
-            if (ScSql && Conditions.HasChanged) Prep();
+            if (ScSql && Conditions.HasChanged()) Prep();
             if (!GETAllowed) throw Deny(RESTarMethods.GET);
             return Evaluators<T>.RAW_SELECT(this);
         }
 
         public bool ANY()
         {
-            if (ScSql && Conditions.HasChanged) Prep();
+            if (ScSql && Conditions.HasChanged()) Prep();
             if (!GETAllowed) throw Deny(RESTarMethods.GET);
             return Evaluators<T>.RAW_SELECT(this).Any();
         }
 
         public int COUNT()
         {
-            if (ScSql && Conditions.HasChanged) Prep();
+            if (ScSql && Conditions.HasChanged()) Prep();
             if (!GETAllowed) throw Deny(RESTarMethods.GET);
             return Evaluators<T>.RAW_SELECT(this).Count();
         }
@@ -136,7 +149,7 @@ namespace RESTar
 
         public int PATCH(Func<T, T> updater)
         {
-            if (ScSql && Conditions.HasChanged) Prep();
+            if (ScSql && Conditions.HasChanged()) Prep();
             if (!PATCHAllowed) throw Deny(RESTarMethods.PATCH);
             var source = Evaluators<T>.RAW_SELECT(this);
             if (source.IsNullOrEmpty()) return 0;
@@ -147,7 +160,7 @@ namespace RESTar
 
         public int PATCH(Func<IEnumerable<T>, IEnumerable<T>> updater)
         {
-            if (ScSql && Conditions.HasChanged) Prep();
+            if (ScSql && Conditions.HasChanged()) Prep();
             if (!PATCHAllowed) throw Deny(RESTarMethods.PATCH);
             var source = Evaluators<T>.RAW_SELECT(this);
             if (source.IsNullOrEmpty()) return 0;
@@ -156,7 +169,7 @@ namespace RESTar
 
         public int PUT(Func<T> inserter, Func<T, T> updater)
         {
-            if (ScSql && Conditions.HasChanged) Prep();
+            if (ScSql && Conditions.HasChanged()) Prep();
             if (!PUTAllowed) throw Deny(RESTarMethods.PUT);
             var source = Evaluators<T>.RAW_SELECT(this);
             if (source == null) return 0;
@@ -165,7 +178,7 @@ namespace RESTar
 
         public int DELETE(bool @unsafe = false)
         {
-            if (ScSql && Conditions.HasChanged) Prep();
+            if (ScSql && Conditions.HasChanged()) Prep();
             if (!DELETEAllowed) throw Deny(RESTarMethods.DELETE);
             var source = Evaluators<T>.RAW_SELECT(this);
             if (source.IsNullOrEmpty()) return 0;

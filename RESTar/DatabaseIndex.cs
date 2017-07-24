@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using RESTar.Linq;
 using System.Linq;
 using Starcounter;
 using Starcounter.Metadata;
@@ -66,12 +67,15 @@ namespace RESTar
                         Descending = c.Ascending == 0
                     }).ToArray()
                 };
-            });
+            })
+            .ToList();
 
         /// <summary>
         /// RESTar selector (don't use)
         /// </summary>
-        public IEnumerable<DatabaseIndex> Select(IRequest<DatabaseIndex> request) => All.Where(request.Conditions).ToList();
+        public IEnumerable<DatabaseIndex> Select(IRequest<DatabaseIndex> request) => All
+            .Where(request.Conditions)
+            .ToList();
 
         /// <summary>
         /// </summary>

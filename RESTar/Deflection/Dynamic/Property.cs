@@ -1,6 +1,6 @@
 using System;
 
-namespace RESTar.Deflection
+namespace RESTar.Deflection.Dynamic
 {
     /// <summary>
     /// Describes a property of a resource

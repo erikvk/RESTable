@@ -1,26 +1,26 @@
 using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json.Linq;
-using RESTar.Deflection;
+using RESTar.Deflection.Dynamic;
 using RESTar.Internal;
+using RESTar.Linq;
 using static System.StringSplitOptions;
 
 namespace RESTar.Operations
 {
     internal class Rename : Dictionary<Term, string>, IProcessor
     {
-        public static Rename Parse(string input, IResource resource)
+        internal Rename(IResource resource, string key, out IEnumerable<string> dynamicDomain)
         {
-            var opMatcher = input.Contains("->") ? "->" : "-%3E";
-            var rename = new Rename();
-            input.Split(',')
-                .ForEach(str => rename.Add(Term.ParseInternal(resource.Type,
-                    str.Split(new[] { opMatcher }, None)[0].ToLower(), resource.IsDynamic),
-                    str.Split(new[] {opMatcher}, None)[1]));
-            return rename;
+            var opMatcher = key.Contains("->") ? new[] {"->"} : new[] {"-%3E"};
+            key.Split(',').ForEach(str => Add(
+                key: Term.ParseInternal(resource.Type, str.Split(opMatcher, None)[0].ToLower(), resource.IsDynamic),
+                value: str.Split(opMatcher, None)[1])
+            );
+            dynamicDomain = Values;
         }
 
-        private JObject RenameJObject(JObject entity)
+        private JObject Renamed(JObject entity)
         {
             this.ForEach(pair =>
             {
@@ -34,7 +34,7 @@ namespace RESTar.Operations
 
         public IEnumerable<JObject> Apply<T>(IEnumerable<T> entities)
         {
-            return entities.Select(entity => RenameJObject(entity.ToJObject()));
+            return entities.Select(entity => Renamed(entity.ToJObject()));
         }
     }
 }

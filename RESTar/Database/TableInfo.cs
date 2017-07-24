@@ -1,8 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using RESTar.Deflection;
+using System.Collections.Generic;
+using RESTar.Deflection.Dynamic;
 using RESTar.Internal;
+using RESTar.Linq;
 using Starcounter;
 using static RESTar.Operators;
 using static RESTar.RESTarPresets;
@@ -69,7 +70,7 @@ namespace RESTar
         public IEnumerable<TableInfo> Select(IRequest<TableInfo> request)
         {
             IEnumerable<IResource> resources;
-            var input = (string) request.Conditions[nameof(TableName), EQUALS]?.Value;
+            var input = (string) request.Conditions.Get(nameof(TableName), EQUALS)?.Value;
             if (input == null)
                 resources = RESTarConfig.Resources.Where(r => r.IsStarcounterResource);
             else
@@ -90,13 +91,12 @@ namespace RESTar
 
         internal static TableInfo GetTableInfo(IResource resource)
         {
-            var columns = GetColumns(resource.Name).Select(c => c.Name);
+            var columns = GetColumns(resource.Name).Select(c => c.Name).ToList();
             var domainCount = DB.RowCount(resource.Name);
             var properties = resource.GetTableColumns().Where(p => columns.Contains(p.DatabaseQueryName)).ToList();
             IEnumerable<dynamic> extension = Db.SQL($"SELECT t FROM {resource.Name} t");
             var totalBytes = 0L;
             const int addBytes = 16;
-
             if (domainCount <= 1000)
                 extension.ForEach(e =>
                 {

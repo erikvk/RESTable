@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
-using RESTar.Deflection;
 using RESTar.Internal;
 using RESTar.Operations;
 using static System.StringComparison;
@@ -72,7 +71,6 @@ namespace RESTar.Requests
                 return null;
             metaConditionString = WebUtility.UrlDecode(metaConditionString);
             var mc = new MetaConditions {Empty = false};
-
             var mcStrings = metaConditionString.Split('&').ToList();
             var renameIndex = mcStrings.FindIndex(s => s.StartsWith("rename", CurrentCultureIgnoreCase));
             if (renameIndex != -1)
@@ -81,63 +79,52 @@ namespace RESTar.Requests
                 mcStrings.RemoveAt(renameIndex);
                 mcStrings.Insert(0, rename);
             }
-            var dynamicMembers = new List<string>();
-
+            var dynamicDomain = default(IEnumerable<string>);
             foreach (var s in mcStrings)
             {
                 if (s == "")
                     throw new SyntaxException(InvalidMetaConditionSyntaxError, "Invalid meta-condition syntax");
-
                 var containsOneAndOnlyOneEquals = s.Count(c => c == '=') == 1;
                 if (!containsOneAndOnlyOneEquals)
                     throw new SyntaxException(InvalidMetaConditionOperatorError,
                         "Invalid operator for meta-condition. One and only one '=' is allowed");
                 var pair = s.Split('=');
-
                 if (!Enum.TryParse(pair[0], true, out RESTarMetaConditions metaCondition))
                     throw new SyntaxException(InvalidMetaConditionKey,
                         $"Invalid meta-condition '{pair[0]}'. Available meta-conditions: " +
                         $"{string.Join(", ", Enum.GetNames(typeof(RESTarMetaConditions)).Except(new[] {"New", "Delete"}))}. " +
                         $"For more info, see {Settings.Instance.HelpResourcePath}/topic=Meta-conditions");
-
                 var expectedType = metaCondition.ExpectedType();
                 var value = pair[1].GetConditionValue();
                 if (expectedType != value.GetType())
                     throw new SyntaxException(InvalidMetaConditionValueTypeError,
                         $"Invalid data type assigned to meta-condition '{pair[0]}'. " +
                         $"Expected {GetTypeString(expectedType)}.");
-
                 switch (metaCondition)
                 {
                     case RESTarMetaConditions.Limit:
                         mc.Limit = (int) value;
                         break;
                     case RESTarMetaConditions.Order_desc:
-                        mc.OrderBy = new OrderBy(resource, true, (string) value, dynamicMembers);
+                        mc.OrderBy = new OrderBy(resource, true, (string) value, dynamicDomain);
                         break;
                     case RESTarMetaConditions.Order_asc:
-                        mc.OrderBy = new OrderBy(resource, false, (string) value, dynamicMembers);
+                        mc.OrderBy = new OrderBy(resource, false, (string) value, dynamicDomain);
                         break;
                     case RESTarMetaConditions.Unsafe:
                         mc.Unsafe = value;
                         break;
                     case RESTarMetaConditions.Select:
                         if (!processors) break;
-                        mc.Select = ((string) value).Split(',')
-                            .Select(str => Term.ParseInternal(resource.Type, str, resource.IsDynamic,
-                                dynamicMembers))
-                            .ToSelect();
+                        mc.Select = new Select(resource, (string) value, dynamicDomain);
                         break;
                     case RESTarMetaConditions.Add:
                         if (!processors) break;
-                        mc.Add = ((string) value).Split(',')
-                            .Select(str => resource.MakeTerm(str, resource.IsDynamic))
-                            .ToAdd();
+                        mc.Add = new Add(resource, (string) value, dynamicDomain);
                         break;
                     case RESTarMetaConditions.Rename:
                         if (!processors) break;
-                        mc.Rename = Rename.Parse((string) value, resource);
-                        dynamicMembers.AddRange(mc.Rename.Values);
+                        mc.Rename = new Rename(resource, (string) value, out dynamicDomain);
                         break;
                     case RESTarMetaConditions.Dynamic: break;
                     case RESTarMetaConditions.Safepost:
@@ -178,16 +165,7 @@ namespace RESTar.Requests
             }
             return mc;
         }
-
-        internal bool HasProcessors => Select != null || Rename != null || Add != null;
-
-        internal void DeactivateProcessors()
-        {
-            Add = null;
-            Select = null;
-            Rename = null;
-        }
-
+        
         private static string GetTypeString(Type type)
         {
             if (type == typeof(string)) return "string";

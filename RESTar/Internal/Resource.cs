@@ -5,6 +5,7 @@ using System.Linq;
 using System.Runtime.Serialization;
 using Dynamit;
 using Newtonsoft.Json.Linq;
+using RESTar.Linq;
 using RESTar.Operations;
 using Starcounter;
 using static System.Reflection.BindingFlags;
@@ -22,6 +23,8 @@ namespace RESTar.Internal
         public Type Type => typeof(T);
         public bool IsDDictionary { get; }
         public bool IsDynamic { get; }
+        public bool IsInternal { get; }
+        public bool IsGlobal => !IsInternal;
         public bool IsSingleton { get; }
         public bool DynamicConditionsAllowed { get; }
         public string AliasOrName => Alias ?? Name;
@@ -72,6 +75,7 @@ namespace RESTar.Internal
             Editable = attribute.Editable;
             AvailableMethods = attribute.AvailableMethods;
             IsSingleton = attribute.Singleton;
+            IsInternal = attribute is RESTarInternalAttribute;
             DynamicConditionsAllowed = attribute.AllowDynamicConditions;
             RequiresValidation = typeof(IValidatable).IsAssignableFrom(typeof(T));
             IsStarcounterResource = typeof(T).HasAttribute<DatabaseAttribute>();
@@ -142,11 +146,11 @@ namespace RESTar.Internal
                     throw new VirtualResourceMemberException(
                         "A virtual resource cannot include public instance fields, " +
                         $"only properties. Resource: '{type.FullName}' Fields: {string.Join(", ", fields.Select(f => $"'{f.Name}'"))} in resource '{type.FullName}'");
-                var props = type.GetProperties(Public | Instance)
+                if (type.GetProperties(Public | Instance)
                     .Where(p => !p.HasAttribute<IgnoreDataMemberAttribute>())
                     .Where(p => !(p.DeclaringType?.GetInterface("IDictionary`2") != null && p.Name == "Item"))
-                    .Select(p => p.RESTarMemberName().ToLower());
-                if (props.ContainsDuplicates(out string duplicate))
+                    .Select(p => p.RESTarMemberName().ToLower())
+                    .ContainsDuplicates(out string duplicate))
                     throw new VirtualResourceMemberException(
                         $"Invalid properties for resource '{type.FullName}'. Names of public instance properties declared " +
                         $"for a virtual resource must be unique (case insensitive). Two or more property names evaluated to {duplicate}.");

@@ -1,5 +1,6 @@
 ﻿using System.Runtime.Serialization;
 using RESTar.Internal;
+using RESTar.Linq;
 using Starcounter;
 using static RESTar.Internal.Transactions;
 

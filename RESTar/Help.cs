@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using RESTar.Linq;
 using static RESTar.Operators;
 using static RESTar.RESTarMethods;
 
@@ -33,7 +34,7 @@ namespace RESTar
         /// </summary>
         public IEnumerable<Help> Select(IRequest<Help> request)
         {
-            var topic = ((string) request.Conditions["topic", EQUALS]?.Value)?.UriEncode();
+            var topic = ((string) request.Conditions.Get("topic", EQUALS)?.Value)?.UriEncode();
             var uri = new Uri(URL + (topic != null ? $"topic={topic}" : ""));
             var headers = new Dictionary<string, string> {["Authorization"] = "apikey restar"};
             return HTTP.ExternalRequest(method: GET, uri: uri, headers: headers)?.Body?.Deserialize<Help[]>();

@@ -5,6 +5,7 @@ using System.Text.RegularExpressions;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using RESTar.Internal;
+using RESTar.Linq;
 using RESTar.Operations;
 using RESTar.View;
 using Starcounter;
@@ -14,20 +15,17 @@ using static RESTar.Internal.ErrorCodes;
 using static RESTar.View.MessageTypes;
 using IResource = RESTar.Internal.IResource;
 
-// ReSharper disable UnassignedGetOnlyAutoProperty
-#pragma warning disable 1591
-
 namespace RESTar.Requests
 {
     internal class ViewRequest<T> : IRequest<T>, IViewRequest where T : class
     {
         public IResource<T> Resource { get; }
-        public Conditions<T> Conditions { get; private set; }
+        public IEnumerable<Condition<T>> Conditions { get; private set; }
         public MetaConditions MetaConditions { get; private set; }
         public string AuthToken { get; internal set; }
         public IDictionary<string, string> ResponseHeaders { get; }
         public string Body { get; private set; }
-        RESTarMethods IRequest.Method { get; }
+        RESTarMethods IRequest.Method => GET;
         IResource IRequest.Resource => Resource;
         internal Request ScRequest { get; }
         public bool Home => MetaConditions.Empty && Conditions == null;
@@ -71,17 +69,18 @@ namespace RESTar.Requests
 
         internal ViewRequest(IResource<T> resource, Request scRequest)
         {
+            if (resource.IsInternal) throw new ResourceIsInternalException(resource);
             Resource = resource;
             ScRequest = scRequest;
             ResponseHeaders = new Dictionary<string, string>();
             MetaConditions = new MetaConditions();
-            Conditions = new Conditions<T>();
+            Conditions = new Condition<T>[0];
         }
 
         internal void Populate(Args args)
         {
             if (args.HasConditions)
-                Conditions = Conditions<T>.Parse(args.Conditions, Resource) ?? Conditions;
+                Conditions = Condition<T>.Parse(args.Conditions, Resource) ?? Conditions;
             if (args.HasMetaConditions)
                 MetaConditions = MetaConditions.Parse(args.MetaConditions, Resource, false) ?? MetaConditions;
         }
@@ -90,7 +89,7 @@ namespace RESTar.Requests
         {
             Authenticator.CheckUser();
             var list = (List) View;
-            var conditions = Conditions<T>.Parse(id, Resource);
+            var conditions = Condition<T>.Parse(id, Resource);
             var item = Entities.Where(conditions).First();
             CheckMethod(DELETE, $"You are not allowed to delete from the '{Resource}' resource");
             Evaluators<T>.View.DELETE(this, item);

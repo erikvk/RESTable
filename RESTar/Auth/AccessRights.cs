@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using RESTar.Internal;
+using RESTar.Linq;
 
 namespace RESTar.Auth
 {

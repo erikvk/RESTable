@@ -5,6 +5,7 @@ using System.Text.RegularExpressions;
 using Excel;
 using Newtonsoft.Json.Linq;
 using RESTar.Internal;
+using RESTar.Linq;
 using RESTar.Operations;
 using Starcounter;
 using static RESTar.Internal.ErrorCodes;
@@ -18,7 +19,7 @@ namespace RESTar.Requests
     {
         public RESTarMethods Method { get; private set; }
         public IResource<T> Resource { get; }
-        public Conditions<T> Conditions { get; private set; }
+        public IEnumerable<Condition<T>> Conditions { get; private set; }
         public MetaConditions MetaConditions { get; private set; }
         public string Body { get; set; }
         public string AuthToken { get; internal set; }
@@ -39,10 +40,11 @@ namespace RESTar.Requests
 
         internal RESTRequest(IResource<T> resource, Request scRequest)
         {
+            if (resource.IsInternal) throw new ResourceIsInternalException(resource);
             Resource = resource;
             ScRequest = scRequest;
             ResponseHeaders = new Dictionary<string, string>();
-            Conditions = new Conditions<T>();
+            Conditions = new Condition<T>[0];
             MetaConditions = new MetaConditions();
         }
 
@@ -58,7 +60,7 @@ namespace RESTar.Requests
             InputDataConfig = Source != null ? DataConfig.External : DataConfig.Internal;
             OutputDataConfig = Destination != null ? DataConfig.External : DataConfig.Internal;
             if (args.HasConditions)
-                Conditions = Conditions<T>.Parse(args.Conditions, Resource) ?? Conditions;
+                Conditions = Condition<T>.Parse(args.Conditions, Resource) ?? Conditions;
             if (args.HasMetaConditions)
                 MetaConditions = MetaConditions.Parse(args.MetaConditions, Resource) ?? MetaConditions;
         }
@@ -107,9 +109,8 @@ namespace RESTar.Requests
                     using (var stream = new MemoryStream(BinaryBody))
                     {
                         var regex = new Regex(@"(:[\d]+).0([\D])");
-                        var excelReader = ExcelReaderFactory.CreateOpenXmlReader(stream);
-                        excelReader.IsFirstRowAsColumnNames = true;
-                        var result = excelReader.AsDataSet() ?? throw new ExcelInputException();
+                        var reader = ExcelReaderFactory.CreateOpenXmlReader(stream);
+                        var result = reader.AsDataSet() ?? throw new ExcelInputException();
                         if (Method == POST) Body = regex.Replace(result.Tables[0].Serialize(), "$1$2");
                         else
                         {
@@ -123,26 +124,38 @@ namespace RESTar.Requests
             #endregion
         }
 
-        internal void SetResponseData(IEnumerable<dynamic> data, Response response)
+        internal Response MakeResponse(IEnumerable<object> data)
         {
             var fileName = $"{Resource.AliasOrName}_{DateTime.Now:yyyyMMdd_HHmmss}";
             switch (Accept)
             {
                 case RESTarMimeType.Json:
-                    response.Body = data.Serialize();
-                    response.Headers["Content-Disposition"] = $"attachment; filename={fileName}.json";
-                    response.ContentType = MimeTypes.JSON;
-                    return;
+                    var json = data.Serialize();
+                    if (json == "[]") return null;
+                    return new Response
+                    {
+                        ContentType = MimeTypes.JSON,
+                        Body = json,
+                        Headers = {["Content-Disposition"] = $"attachment; filename={fileName}.json"}
+                    };
                 case RESTarMimeType.Excel:
-                    response.BodyBytes = data.ToExcel(Resource).SerializeExcel();
-                    response.Headers["Content-Disposition"] = $"attachment; filename={fileName}.xlsx";
-                    response.ContentType = MimeTypes.Excel;
-                    return;
+                    var excel = data.ToExcel(Resource)?.SerializeExcel();
+                    if (excel == null) return null;
+                    return new Response
+                    {
+                        ContentType = MimeTypes.Excel,
+                        BodyBytes = excel,
+                        Headers = {["Content-Disposition"] = $"attachment; filename={fileName}.xlsx"}
+                    };
                 case RESTarMimeType.XML:
-                    response.Body = data.SerializeXML();
-                    response.Headers["Content-Disposition"] = $"attachment; filename={fileName}.xml";
-                    response.ContentType = MimeTypes.XML;
-                    return;
+                    var xml = data.SerializeXML();
+                    if (xml == null) return null;
+                    return new Response
+                    {
+                        ContentType = MimeTypes.XML,
+                        Body = xml,
+                        Headers = {["Content-Disposition"] = $"attachment; filename={fileName}.xml"}
+                    };
                 default: throw new ArgumentOutOfRangeException(nameof(Accept));
             }
         }

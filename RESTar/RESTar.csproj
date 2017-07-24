@@ -41,21 +41,18 @@
     <DebugSymbols>true</DebugSymbols>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="ClosedXML, Version=0.86.0.0, Culture=neutral, PublicKeyToken=fd1eb21b62ae805b, processorArchitecture=MSIL">
-      <HintPath>..\packages\ClosedXML.0.86.0\lib\net40\ClosedXML.dll</HintPath>
-      <Private>True</Private>
+    <Reference Include="ClosedXML, Version=0.87.0.0, Culture=neutral, PublicKeyToken=fd1eb21b62ae805b, processorArchitecture=MSIL">
+      <HintPath>..\packages\ClosedXML.0.87.1\lib\net40\ClosedXML.dll</HintPath>
     </Reference>
     <Reference Include="DocumentFormat.OpenXml, Version=2.5.5631.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <HintPath>..\packages\DocumentFormat.OpenXml.2.5\lib\DocumentFormat.OpenXml.dll</HintPath>
-      <Private>True</Private>
     </Reference>
-    <Reference Include="Dynamit, Version=1.0.0.0, Culture=neutral, processorArchitecture=AMD64">
+    <Reference Include="Dynamit, Version=0.1.13.0, Culture=neutral, processorArchitecture=AMD64">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\Dynamit\Dynamit\bin\Release\Dynamit.dll</HintPath>
     </Reference>
     <Reference Include="Excel, Version=2.1.2.3, Culture=neutral, PublicKeyToken=93517dbe6a4012fa, processorArchitecture=MSIL">
       <HintPath>..\packages\ExcelDataReader.2.1.2.3\lib\net45\Excel.dll</HintPath>
-      <Private>True</Private>
     </Reference>
     <Reference Include="ICSharpCode.SharpZipLib, Version=0.86.0.518, Culture=neutral, PublicKeyToken=1b03e6acf1164f73, processorArchitecture=MSIL">
       <HintPath>..\packages\SharpZipLib.0.86.0\lib\20\ICSharpCode.SharpZipLib.dll</HintPath>
@@ -97,13 +94,14 @@
     <Compile Include="DatabaseIndex.cs" />
     <Compile Include="Database\TableInfo.cs" />
     <Compile Include="Deflection\ExtensionMethods.cs" />
-    <Compile Include="Deflection\Delegates.cs" />
-    <Compile Include="Deflection\SpecialProperty.cs" />
-    <Compile Include="Deflection\TypeCache.cs" />
+    <Compile Include="Deflection\Dynamic\Delegates.cs" />
+    <Compile Include="Deflection\Dynamic\SpecialProperty.cs" />
+    <Compile Include="Deflection\Dynamic\TypeCache.cs" />
     <Compile Include="Delegates.cs" />
     <Compile Include="Echo.cs" />
+    <Compile Include="Linq\Conditions.cs" />
+    <Compile Include="Linq\Enumerable.cs" />
     <Compile Include="Operations\Transaction.cs" />
-    <Compile Include="Queries\QueryMaker.cs" />
     <Compile Include="Requests\Args.cs" />
     <Compile Include="Requests\DataConfig.cs" />
     <Compile Include="Requests\HandlerActions.cs" />
@@ -118,11 +116,10 @@
     <Compile Include="Operations\Add.cs" />
     <Compile Include="Attributes.cs" />
     <Compile Include="NoCaseComparer.cs" />
-    <Compile Include="Conditions.cs" />
     <Compile Include="Operations\Do.cs" />
     <Compile Include="Operations\OperationsInterfaces.cs" />
     <Compile Include="Interfaces.cs" />
-    <Compile Include="Deflection\DynamicProperty.cs" />
+    <Compile Include="Deflection\Dynamic\DynamicProperty.cs" />
     <Compile Include="Requests\Handlers.cs" />
     <Compile Include="HttpRequest.cs" />
     <Compile Include="IValidatable.cs" />
@@ -135,8 +132,8 @@
     <Compile Include="Internal\DDictionaryOperations.cs" />
     <Compile Include="DynamicTables.cs" />
     <Compile Include="Internal\IResource.cs" />
-    <Compile Include="Deflection\Property.cs" />
-    <Compile Include="Deflection\Term.cs" />
+    <Compile Include="Deflection\Dynamic\Property.cs" />
+    <Compile Include="Deflection\Dynamic\Term.cs" />
     <Compile Include="Operations\OperationsDelegates.cs" />
     <Compile Include="Operations\Rename.cs" />
     <Compile Include="Requests\RESTRequest.cs" />
@@ -159,7 +156,6 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Error.cs" />
     <Compile Include="Schema.cs" />
-    <Compile Include="Queries\Select.cs" />
     <Compile Include="Serialization\ToStringJsonConverter.cs" />
     <Compile Include="Serializer.cs" />
     <Compile Include="Operations\SetOperations.cs" />
@@ -167,7 +163,7 @@
     <Compile Include="Requests\Responses.cs" />
     <Compile Include="Operations\Select.cs" />
     <Compile Include="Settings.cs" />
-    <Compile Include="Deflection\StaticProperty.cs" />
+    <Compile Include="Deflection\Dynamic\StaticProperty.cs" />
     <Compile Include="Operations\WhereClause.cs" />
     <Compile Include="Serialization\ArrayNullToEmptyListProvider.cs" />
     <Compile Include="Serialization\ClassNullToEmptyObjectProvider.cs" />
@@ -220,6 +216,7 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="$(StarcounterBin)\Starcounter.MsBuild.targets" />
   <PropertyGroup>

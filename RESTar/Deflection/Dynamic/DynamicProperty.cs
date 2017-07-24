@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using Newtonsoft.Json.Linq;
 using RESTar.Operations;
 
-namespace RESTar.Deflection
+namespace RESTar.Deflection.Dynamic
 {
     /// <summary>
     /// A dynamic property represents a dynamic property of a class, that is,

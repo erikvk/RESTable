@@ -44,6 +44,7 @@ namespace RESTar.Internal
         AmbiguousResourceError = 102,
         AmbiguousMatchError = 103,
         InvalidResourceEntityError = 104,
+        ResourceIsInternalError = 105,
 
         // 110-119: Property locator errors
         UnknownPropertyError = 110,

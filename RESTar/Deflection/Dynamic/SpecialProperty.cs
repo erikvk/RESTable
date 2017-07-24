@@ -1,8 +1,8 @@
 using Newtonsoft.Json;
+using RESTar.Operations;
 using Starcounter;
-using static RESTar.Operations.Do;
 
-namespace RESTar.Deflection
+namespace RESTar.Deflection.Dynamic
 {
     /// <summary>
     /// Special properties are properties that are not strictly members, but still
@@ -23,7 +23,7 @@ namespace RESTar.Deflection
             Name = "ObjectNo",
             DatabaseQueryName = "ObjectNo",
             Type = typeof(ulong),
-            Getter = t => TryAndThrow(() => t.GetObjectNo(), "Could not get ObjectNo from non-Starcounter resource."),
+            Getter = t => Do.TryAndThrow(() => t.GetObjectNo(), "Could not get ObjectNo from non-Starcounter resource."),
             Attributes = new[] {new JsonPropertyAttribute {Order = int.MaxValue - 1}}
         };
 
@@ -35,7 +35,7 @@ namespace RESTar.Deflection
             Name = "ObjectID",
             DatabaseQueryName = "ObjectID",
             Type = typeof(string),
-            Getter = t => TryAndThrow(() => t.GetObjectID(), "Could not get ObjectID from non-Starcounter resource."),
+            Getter = t => Do.TryAndThrow(() => t.GetObjectID(), "Could not get ObjectID from non-Starcounter resource."),
             Attributes = new[] {new JsonPropertyAttribute {Order = int.MaxValue}}
         };
     }

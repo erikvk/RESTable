@@ -1,6 +1,7 @@
 using System.Linq;
 using Starcounter;
 using RESTar.Internal;
+using RESTar.Linq;
 
 #pragma warning disable 1591
 

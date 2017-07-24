@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.Serialization;
 using RESTar.Internal;
+using RESTar.Linq;
 using RESTar.Operations;
 using Starcounter;
 using static System.Reflection.BindingFlags;
@@ -40,6 +41,11 @@ namespace RESTar
         public string Alias { get; set; }
 
         /// <summary>
+        /// Is this resource internal?
+        /// </summary>
+        public bool IsInternal { get; set; }
+
+        /// <summary>
         /// The type targeted by this resource.
         /// </summary>
         public string Type { get; private set; }
@@ -64,12 +70,13 @@ namespace RESTar
             if (request.TryGetCondition(nameof(Name), "=", out var nameCond))
                 nameCond.SetValue(((string) nameCond.Value).FindResource().Name);
             var conditions = request.Conditions.Redirect<IResource>(direct: nameof(Type), to: "Type.FullName");
-            return Resources.Where(conditions).Select(m => new Resource
+            return Resources.Where(conditions).Where(r => r.IsGlobal).Select(m => new Resource
             {
                 Name = m.Name,
                 Alias = m.Alias,
                 AvailableMethods = m.AvailableMethods.ToArray(),
                 Editable = m.Editable,
+                IsInternal = m.IsInternal,
                 Type = m.Type.FullName,
                 IResource = m,
                 ResourceType = m.ResourceType

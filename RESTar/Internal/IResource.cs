@@ -50,6 +50,16 @@ namespace RESTar.Internal
         bool IsDynamic { get; }
 
         /// <summary>
+        /// Is this resource only available for internal requests?
+        /// </summary>
+        bool IsInternal { get; }
+
+        /// <summary>
+        /// Is this resource available for all requests?
+        /// </summary>
+        bool IsGlobal { get; }
+
+        /// <summary>
         /// Are runtime-defined conditions allowed in requests to this resource?
         /// </summary>
         bool DynamicConditionsAllowed { get; }

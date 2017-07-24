@@ -8,7 +8,7 @@ namespace RESTar
     /// Registers a new RESTar resource and provides permissions.
     /// </summary>
     [AttributeUsage(AttributeTargets.Class, Inherited = false)]
-    public sealed class RESTarAttribute : Attribute
+    public class RESTarAttribute : Attribute
     {
         internal IReadOnlyList<RESTarMethods> AvailableMethods { get; }
 
@@ -63,6 +63,46 @@ namespace RESTar
             var methods = new[] {method}.Union(addMethods ?? new RESTarMethods[0]).ToList();
             methods.Sort(MethodComparer.Instance);
             AvailableMethods = methods;
+        }
+    }
+
+    /// <summary>
+    /// Registers a class as an internal RESTar resource, that can only
+    /// be used in internal requests (using the Request class).
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Class, Inherited = false)]
+    public class RESTarInternalAttribute : RESTarAttribute
+    {
+        /// <summary>
+        /// </summary>
+        /// <param name="preset">A preset used for setting up available methods for the resource</param>
+        public RESTarInternalAttribute(RESTarPresets preset) : base(preset)
+        {
+        }
+
+        /// <summary>
+        /// Used when creating attributes for dynamic resources
+        /// </summary>
+        /// <param name="methods"></param>
+        internal RESTarInternalAttribute(IReadOnlyList<RESTarMethods> methods) : base(methods)
+        {
+        }
+
+        /// <summary>
+        /// </summary>
+        /// <param name="preset">A preset used for setting up available methods for the resource</param>
+        /// <param name="additionalMethods">Additional methods for this resource, apart from the one defined by
+        /// the preset</param>
+        public RESTarInternalAttribute(RESTarPresets preset, params RESTarMethods[] additionalMethods) : base(preset, additionalMethods)
+        {
+        }
+
+        /// <summary>
+        /// </summary>
+        /// <param name="method">A method to make available for the resource</param>
+        /// <param name="addMethods">Additional methods to make available for the resource</param>
+        public RESTarInternalAttribute(RESTarMethods method, params RESTarMethods[] addMethods) : base(method, addMethods)
+        {
         }
     }
 

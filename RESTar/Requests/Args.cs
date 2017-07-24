@@ -20,7 +20,7 @@ namespace RESTar.Requests
         {
             Resource = Conditions = MetaConditions = null;
             HasResource = HasConditions = HasMetaConditions = false;
-            if (query.IsNullOrEmpty() || query == "/") return;
+            if (string.IsNullOrEmpty(query) || query == "/") return;
             if (query.CharCount('/') > 3)
                 throw new SyntaxException(InvalidSeparatorCount,
                     "Invalid argument separator count. A RESTar URI can contain at most 3 " +

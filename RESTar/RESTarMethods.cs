@@ -38,7 +38,7 @@ namespace RESTar
 
     internal class MethodComparer : Comparer<RESTarMethods>
     {
-        internal static MethodComparer Instance = new MethodComparer();
+        internal static readonly MethodComparer Instance = new MethodComparer();
 
         public override int Compare(RESTarMethods a, RESTarMethods b)
         {

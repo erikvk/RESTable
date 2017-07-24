@@ -1,6 +1,9 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics.Contracts;
-using RESTar.Deflection;
+using System.Net;
+using System.Linq;
+using RESTar.Deflection.Dynamic;
 using RESTar.Internal;
 using RESTar.Operations;
 using static System.StringComparison;
@@ -9,11 +12,32 @@ using static RESTar.Operators;
 namespace RESTar
 {
     /// <summary>
+    /// A non-generic interface for conditions
+    /// </summary>
+    public interface ICondition
+    {
+        /// <summary>
+        /// The key of the condition, the path to a property of an entity.
+        /// </summary>
+        string Key { get; }
+
+        /// <summary>
+        /// The term describing the property to compare with
+        /// </summary>
+        Term Term { get; }
+
+        /// <summary>
+        /// Converts a condition to a new target type
+        /// </summary>
+        Condition<T> Redirect<T>(string to = null) where T : class;
+    }
+
+    /// <summary>
     /// A condition encodes a predicate that is either true or false of an entity
     /// in a resource. It is used to match entities in resources while selecting 
     /// entities to include in a GET, PUT, PATCH or DELETE request.
     /// </summary>
-    public class Condition<T> where T : class
+    public class Condition<T> : ICondition where T : class
     {
         /// <summary>
         /// The key of the condition, the path to a property of an entity.
@@ -35,14 +59,18 @@ namespace RESTar
         /// <summary>
         /// The term describing the property to compare with
         /// </summary>
-        internal Term Term { get; }
+        public Term Term { get; }
 
         /// <summary>
         /// </summary>
-        public override int GetHashCode() => Key.GetHashCode() + Operator.GetHashCode();
+        public override int GetHashCode() => typeof(T).GetHashCode() + Key.GetHashCode() + Operator.GetHashCode();
+
+        /// <summary>
+        /// Should this condition be skipped during evaluation?
+        /// </summary>
+        public bool Skip { get; set; }
 
         internal bool HasChanged { get; set; }
-
         internal bool ScQueryable => Term.ScQueryable;
         internal Type Type => Term.IsStatic ? Term.LastAs<StaticProperty>()?.Type : null;
         internal bool IsOfType<T1>() => Type == typeof(T1);
@@ -51,15 +79,16 @@ namespace RESTar
         /// Converts a condition to a new target type
         /// </summary>
         [Pure]
-        public Condition<TResults> Redirect<TResults>(string newKey = null) where TResults : class
-        {
-            if (typeof(TResults) == typeof(T)) return this as Condition<TResults>;
-            var term = string.IsNullOrWhiteSpace(newKey)
-                ? Term.MakeFromPrototype(Term, typeof(TResults))
-                : typeof(TResults).MakeTerm(newKey, Resource<TResults>.AllowDynamicConditions);
-            var newCondition = new Condition<TResults>(term, Operator, Value);
-            return newCondition;
-        }
+        public Condition<T1> Redirect<T1>(string newKey = null) where T1 : class => new Condition<T1>
+        (
+            term: typeof(T1).MakeTerm
+            (
+                key: newKey ?? Key,
+                dynamicUnknowns: Resource<T1>.AllowDynamicConditions
+            ),
+            op: Operator,
+            value: Value
+        );
 
         internal Condition(Term term, Operator op, dynamic value)
         {
@@ -91,6 +120,7 @@ namespace RESTar
 
         internal bool HoldsFor(T subject)
         {
+            if (Skip) return true;
             var subjectValue = Term.Evaluate(subject);
             switch (Operator.OpCode)
             {
@@ -126,6 +156,52 @@ namespace RESTar
                     }, false);
                 default: throw new ArgumentOutOfRangeException();
             }
+        }
+
+        private const string OpMatchChars = "<>=!";
+
+        /// <summary>
+        /// Parses a Conditions object from a conditions section of a REST request URI
+        /// </summary>
+        public static IEnumerable<Condition<T>> Parse(string conditionString, IResource<T> resource)
+        {
+            if (string.IsNullOrEmpty(conditionString)) return null;
+            return conditionString.Split('&').Select(s =>
+            {
+                if (s == "")
+                    throw new SyntaxException(ErrorCodes.InvalidConditionSyntaxError, "Invalid condition syntax");
+                s = s.ReplaceFirst("%3E=", ">=", out bool replaced);
+                if (!replaced) s = s.ReplaceFirst("%3C=", "<=", out replaced);
+                if (!replaced) s = s.ReplaceFirst("%3E", ">", out replaced);
+                if (!replaced) s = s.ReplaceFirst("%3C", "<", out replaced);
+                var matched = new string(s.Where(c => OpMatchChars.Contains(c)).ToArray());
+                if (!Operator.TryParse(matched, out Operator op))
+                    throw new OperatorException(s);
+                var pair = s.Split(new[] {op.Common}, StringSplitOptions.None);
+                var keyString = WebUtility.UrlDecode(pair[0]);
+                var term = resource.MakeTerm(keyString, resource.DynamicConditionsAllowed);
+                if (term.Last is StaticProperty stat &&
+                    stat.GetAttribute<AllowedConditionOperators>()?.Operators?.Contains(op) == false)
+                    throw new ForbiddenOperatorException(s, resource, op, term,
+                        stat.GetAttribute<AllowedConditionOperators>()?.Operators);
+                var valueString = WebUtility.UrlDecode(pair[1]);
+                var value = valueString.GetConditionValue();
+                if (term.IsStatic && term.Last is StaticProperty prop && prop.Type.IsEnum &&
+                    value is string)
+                {
+                    try
+                    {
+                        value = Enum.Parse(prop.Type, value);
+                    }
+                    catch
+                    {
+                        throw new SyntaxException(ErrorCodes.InvalidConditionSyntaxError,
+                            $"Invalid string value for condition '{term.Key}'. The property type for '{prop.Name}' " +
+                            $"has a predefined set of allowed values, not containing '{value}'.");
+                    }
+                }
+                return new Condition<T>(term, op, value);
+            }).ToList();
         }
     }
 }

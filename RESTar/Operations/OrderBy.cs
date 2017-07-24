@@ -1,9 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using Dynamit;
 using Newtonsoft.Json.Linq;
-using RESTar.Deflection;
+using RESTar.Deflection.Dynamic;
 using RESTar.Internal;
 
 namespace RESTar.Operations
@@ -17,20 +16,19 @@ namespace RESTar.Operations
         internal Term Term;
         internal bool IsStarcounterQueryable = true;
 
-        private Func<T1, dynamic> ToSelector<T1>() => item => Do.Try(() => Term.Evaluate(item),
-            default(object));
-
         internal string SQL => IsStarcounterQueryable
             ? $"ORDER BY t.{Term.DbKey.Fnuttify()} {(Descending ? "DESC" : "ASC")}"
             : null;
 
         internal OrderBy(IResource resource) => Resource = resource;
 
-        internal OrderBy(IResource resource, bool descending, string key, List<string> dynamicMembers)
+        internal OrderBy(IResource resource, bool descending, string key, IEnumerable<string> dynamicMembers)
         {
             Resource = resource;
             Descending = descending;
-            Term = Term.ParseInternal(resource.Type, key, resource.IsDynamic, dynamicMembers);
+            Term = dynamicMembers == null
+                ? resource.MakeTerm(key, resource.IsDynamic)
+                : Term.ParseInternal(resource.Type, key, resource.IsDynamic, dynamicMembers);
         }
 
         /// <summary>
@@ -39,13 +37,20 @@ namespace RESTar.Operations
         public IEnumerable<T> Apply<T>(IEnumerable<T> entities)
         {
             if (IsStarcounterQueryable) return entities;
-            var type = typeof(T);
-            if ((entities is IEnumerable<IDictionary<string, dynamic>> || entities is IEnumerable<JObject>) &&
-                !(entities is IEnumerable<DDictionary>))
-                Term.MakeDynamic();
-            else if (type != Resource.Type)
-                Term = Term.MakeFromPrototype(Term, type);
-            return Ascending ? entities.OrderBy(ToSelector<T>()) : entities.OrderByDescending(ToSelector<T>());
+            switch (entities)
+            {
+                case IEnumerable<DDictionary> _: break;
+                case IEnumerable<JObject> _:
+                case IEnumerable<IDictionary<string, dynamic>> _:
+                    Term.MakeDynamic();
+                    break;
+                default:
+                    if (typeof(T) != Resource.Type)
+                        Term = typeof(T).MakeTerm(Term.Key, Resource.IsDynamic);
+                    break;
+            }
+            var selector = Term.ToSelector<T>();
+            return Ascending ? entities.OrderBy(selector) : entities.OrderByDescending(selector);
         }
     }
 }

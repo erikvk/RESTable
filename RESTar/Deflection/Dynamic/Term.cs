@@ -2,10 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json.Linq;
-using static RESTar.Internal.ErrorCodes;
-using static RESTar.Operations.Do;
+using RESTar.Internal;
+using RESTar.Linq;
+using RESTar.Operations;
 
-namespace RESTar.Deflection
+namespace RESTar.Deflection.Dynamic
 {
     /// <summary>
     /// A term denotes a node in a static or dynamic member tree. Contains a chain of properties, 
@@ -23,7 +24,7 @@ namespace RESTar.Deflection
         /// <summary>
         /// The property path for use in SQL queries
         /// </summary>
-        public string DbKey => string.Join(".", Store.Select(p => p.DatabaseQueryName));
+        public string DbKey { get; private set; }
 
         /// <summary>
         /// Can this term be used to reference a property in an SQL statement?
@@ -43,12 +44,12 @@ namespace RESTar.Deflection
         /// <summary>
         /// Gets the first property reference of the term, and safe casts it to T
         /// </summary>
-        public T FirstAs<T>() where T : Property => Store.FirstOrDefault() as T;
+        public T FirstAs<T>() where T : Property => First as T;
 
         /// <summary>
         /// Gets the first property reference of the term, or null of the term is empty
         /// </summary>
-        public Property First => Store.FirstOrDefault();
+        public Property First => Store.Any() ? Store[0] : null;
 
         /// <summary>
         /// Gets the last property reference of the term, and safe casts it to T
@@ -63,18 +64,20 @@ namespace RESTar.Deflection
         private static readonly NoCaseComparer Comparer = new NoCaseComparer();
         private Term() => Store = new List<Property>();
 
+        internal Func<T1, dynamic> ToSelector<T1>() => i => Do.Try(() => Evaluate(i), default(object));
+
         /// <summary>
         /// Parses a term key string and returns a term describing it.
         /// </summary>
         internal static Term ParseInternal(Type resource, string key, bool dynamicUnknowns,
-            List<string> dynamicDomain = null)
+            IEnumerable<string> dynamicDomain = null)
         {
             var term = new Term();
 
             Property propertyMaker(string str)
             {
                 if (string.IsNullOrWhiteSpace(str))
-                    throw new SyntaxException(InvalidConditionSyntaxError, $"Invalid condition '{str}'");
+                    throw new SyntaxException(ErrorCodes.InvalidConditionSyntaxError, $"Invalid condition '{str}'");
                 if (dynamicDomain?.Contains(str, Comparer) == true)
                     return DynamicProperty.Parse(str);
 
@@ -83,7 +86,7 @@ namespace RESTar.Deflection
                     if (type.IsDDictionary())
                         return DynamicProperty.Parse(str);
                     if (dynamicUnknowns)
-                        return Try<Property>(
+                        return Do.Try<Property>(
                             () => StaticProperty.Get(type, str),
                             () => DynamicProperty.Parse(str));
                     return StaticProperty.Get(type, str);
@@ -101,25 +104,8 @@ namespace RESTar.Deflection
             term.ScQueryable = term.Store.All(p => p.ScQueryable);
             term.IsStatic = term.Store.All(p => p is StaticProperty);
             term.Key = string.Join(".", term.Store.Select(p => p.Name));
+            term.DbKey = string.Join(".", term.Store.Select(p => p.DatabaseQueryName));
             return term;
-        }
-
-        /// <summary>
-        /// Creates a new term from a prototype
-        /// </summary>
-        public static Term MakeFromPrototype(Term term, Type type)
-        {
-            var newTerm = new Term();
-            term.Store.ForEach(item =>
-            {
-                var newProp = StaticProperty.Get(type, item.Name);
-                newTerm.Store.Add(newProp);
-                type = newProp.Type;
-            });
-            newTerm.ScQueryable = newTerm.Store.All(p => p.ScQueryable);
-            newTerm.IsStatic = newTerm.Store.All(p => p is StaticProperty);
-            newTerm.Key = string.Join(".", newTerm.Store.Select(p => p.Name));
-            return newTerm;
         }
 
         /// <summary>
@@ -138,6 +124,7 @@ namespace RESTar.Deflection
             Store.Clear();
             Store.AddRange(newProperties);
             Key = string.Join(".", Store.Select(p => p.Name));
+            DbKey = string.Join(".", Store.Select(p => p.DatabaseQueryName));
         }
 
         /// <summary>

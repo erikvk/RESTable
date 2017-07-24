@@ -1,4 +1,4 @@
-﻿namespace RESTar.Deflection
+﻿namespace RESTar.Deflection.Dynamic
 {
     /// <summary>
     /// Represents a getter for a property. This is an open delgate, taking a 

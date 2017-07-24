@@ -69,6 +69,8 @@ namespace RESTar
                 JsonSerializer.Populate(sr, target);
         }
 
+        internal static JToken ToJToken(this object o) => JToken.FromObject(o, JsonSerializer);
+
         internal static dynamic Deserialize(this string json, Type type) => DeserializeObject(json, type);
         internal static JToken Deserialize(this string json) => DeserializeObject<JToken>(json);
         internal static T Deserialize<T>(this string json) => DeserializeObject<T>(json);
@@ -78,6 +80,7 @@ namespace RESTar
         internal static string SerializeXML<T>(this IEnumerable<T> data)
         {
             var json = data.Serialize();
+            if (json == "[]") return null;
             var xml = DeserializeXmlNode($@"{{""row"":{json}}}", "root", true);
             using (var stringWriter = new StringWriter())
             using (var xmlTextWriter = XmlWriter.Create(stringWriter, _PrettyPrint ? XMLIndentSettings : null))

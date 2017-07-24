@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using RESTar.Deflection;
 using RESTar.Internal;
+using RESTar.Linq;
 using RESTar.Requests;
 using Starcounter;
 using static RESTar.Internal.Transactions;

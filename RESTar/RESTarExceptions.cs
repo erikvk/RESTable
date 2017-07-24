@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json;
-using RESTar.Deflection;
+using RESTar.Deflection.Dynamic;
 using RESTar.Internal;
 using Starcounter;
 using static RESTar.Internal.ErrorCodes;
@@ -34,6 +34,15 @@ namespace RESTar
     public class ForbiddenException : RESTarException
     {
         internal ForbiddenException(ErrorCodes code, string message) : base(code, message) => Response = Forbidden;
+    }
+
+    /// <summary>
+    /// Thrown when a client tries to make an external request to an internal resource
+    /// </summary>
+    public class ResourceIsInternalException : RESTarException
+    {
+        internal ResourceIsInternalException(IResource resource) : base(ResourceIsInternalError,
+            $"Cannot make an external request to internal resource '{resource.Name}'") => Response = Forbidden;
     }
 
     /// <summary>

@@ -5,7 +5,7 @@ using System.Reflection;
 using System.Text;
 using Starcounter;
 
-namespace RESTar.Deflection
+namespace RESTar.Deflection.Dynamic
 {
     /// <summary>
     /// A static property represents a compile time known property of a class.

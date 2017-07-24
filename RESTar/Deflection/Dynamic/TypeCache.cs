@@ -5,10 +5,11 @@ using System.Linq;
 using System.Runtime.Serialization;
 using Newtonsoft.Json;
 using RESTar.Internal;
+using RESTar.Linq;
 using static System.Reflection.BindingFlags;
-using static RESTar.Deflection.SpecialProperty;
+using static RESTar.Deflection.Dynamic.SpecialProperty;
 
-namespace RESTar.Deflection
+namespace RESTar.Deflection.Dynamic
 {
     /// <summary>
     /// The type cache keeps track of discovered types and provides
@@ -44,11 +45,10 @@ namespace RESTar.Deflection
                 ? new StaticProperty[] {ObjectNo, ObjectID}.ToDictionary(p => p.Name.ToLower(), p => p)
                 : type.GetProperties(Instance | Public)
                     .Where(p => !p.HasAttribute<IgnoreDataMemberAttribute>())
-                    .Where(p => !(p.DeclaringType?.GetInterface("IDictionary`2") != null && p.Name == "Item"))
+                    .Where(p => !(p.DeclaringType.Implements(typeof(IDictionary<,>)) && p.Name == "Item"))
                     .Select(p => new StaticProperty(p))
-                    .If(type.IsStarcounter, list => list.Union(new[] {ObjectNo, ObjectID}))
+                    .If(type.IsStarcounter, then: list => list.Union(new[] {ObjectNo, ObjectID}))
                     .OrderBy(p => p.GetAttribute<JsonPropertyAttribute>()?.Order)
-                    .ToList()
                     .ToDictionary(p => p.Name.ToLower(), p => p);
         }
 
@@ -63,7 +63,8 @@ namespace RESTar.Deflection
         {
             if (!resource.IsStarcounterResource)
                 throw new Exception($"Cannot get table columns for non-starcounter resource '{resource.Name}'");
-            return resource.Type.GetProperties(Instance | Public).Select(p => new StaticProperty(p));
+            return resource.Type.GetProperties(Instance | Public)
+                .Select(p => new StaticProperty(p)).ToList();
         }
 
         #endregion
