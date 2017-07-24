@@ -2,7 +2,7 @@
 using RESTar.Internal;
 using RESTar.Linq;
 using Starcounter;
-using static RESTar.Internal.Transactions;
+using static RESTar.Operations.Transact;
 
 namespace RESTar
 {
@@ -62,21 +62,18 @@ namespace RESTar
         public int DaysToSaveErrors { get; private set; }
 
         internal static void Init(ushort port, string uri, bool viewEnabled, bool prettyPrint, bool camelCase,
-            int daysToSaveErrors)
+            int daysToSaveErrors) => Trans(() =>
         {
-            Trans(() =>
+            DB.All<Settings>().ForEach(Db.Delete);
+            new Settings
             {
-                DB.All<Settings>().ForEach(Db.Delete);
-                new Settings
-                {
-                    Port = port,
-                    Uri = uri,
-                    ViewEnabled = viewEnabled,
-                    PrettyPrint = prettyPrint,
-                    DaysToSaveErrors = daysToSaveErrors
-                };
-            });
-        }
+                Port = port,
+                Uri = uri,
+                ViewEnabled = viewEnabled,
+                PrettyPrint = prettyPrint,
+                DaysToSaveErrors = daysToSaveErrors
+            };
+        });
 
         /// <summary>
         /// Gets the only instance of the Settings resource

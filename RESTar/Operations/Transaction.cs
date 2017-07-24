@@ -3,6 +3,9 @@ using Starcounter;
 
 namespace RESTar.Operations
 {
+    /// <summary>
+    /// Long running transaction
+    /// </summary>
     internal class Transaction<T> : Transaction where T : class
     {
         /// <summary>
@@ -34,6 +37,15 @@ namespace RESTar.Operations
                 t.Rollback();
                 throw;
             }
+        }
+
+        public static TResult TransactShort<TResult>(Func<TResult> action)
+        {
+            if (typeof(T) == typeof(DatabaseIndex))
+                return action();
+            var results = default(TResult);
+            Db.TransactAsync(() => results = action());
+            return results;
         }
     }
 }

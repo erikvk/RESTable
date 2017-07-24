@@ -118,21 +118,21 @@ namespace RESTar
         {
             if (ScSql && Conditions.HasChanged()) Prep();
             if (!GETAllowed) throw Deny(RESTarMethods.GET);
-            return Evaluators<T>.RAW_SELECT(this);
+            return Evaluators<T>.RAW_SELECT(this) ?? new T[0];
         }
 
         public bool ANY()
         {
             if (ScSql && Conditions.HasChanged()) Prep();
             if (!GETAllowed) throw Deny(RESTarMethods.GET);
-            return Evaluators<T>.RAW_SELECT(this).Any();
+            return Evaluators<T>.RAW_SELECT(this)?.Any() == true;
         }
 
         public int COUNT()
         {
             if (ScSql && Conditions.HasChanged()) Prep();
             if (!GETAllowed) throw Deny(RESTarMethods.GET);
-            return Evaluators<T>.RAW_SELECT(this).Count();
+            return Evaluators<T>.RAW_SELECT(this)?.Count() ?? 0;
         }
 
         public int POST(Func<T> inserter)
@@ -141,7 +141,7 @@ namespace RESTar
             return Evaluators<T>.App.POST(inserter, this);
         }
 
-        public int POST(Func<IEnumerable<T>> inserter)
+        public int POST(Func<ICollection<T>> inserter)
         {
             if (!POSTAllowed) throw Deny(RESTarMethods.POST);
             return Evaluators<T>.App.POST(inserter, this);
@@ -151,11 +151,14 @@ namespace RESTar
         {
             if (ScSql && Conditions.HasChanged()) Prep();
             if (!PATCHAllowed) throw Deny(RESTarMethods.PATCH);
-            var source = Evaluators<T>.RAW_SELECT(this);
-            if (source.IsNullOrEmpty()) return 0;
-            if (source.MoreThanOne())
-                throw new AmbiguousMatchException(Resource);
-            return Evaluators<T>.App.PATCH(updater, source.First(), this);
+            var source = Evaluators<T>.RAW_SELECT(this)?.ToList();
+            switch (source?.Count)
+            {
+                case null:
+                case 0: return 0;
+                case 1: return Evaluators<T>.App.PATCH(updater, source.First(), this);
+                default: throw new AmbiguousMatchException(Resource);
+            }
         }
 
         public int PATCH(Func<IEnumerable<T>, IEnumerable<T>> updater)
@@ -163,7 +166,7 @@ namespace RESTar
             if (ScSql && Conditions.HasChanged()) Prep();
             if (!PATCHAllowed) throw Deny(RESTarMethods.PATCH);
             var source = Evaluators<T>.RAW_SELECT(this);
-            if (source.IsNullOrEmpty()) return 0;
+            if (source == null) return 0;
             return Evaluators<T>.App.PATCH(updater, source, this);
         }
 
@@ -172,7 +175,6 @@ namespace RESTar
             if (ScSql && Conditions.HasChanged()) Prep();
             if (!PUTAllowed) throw Deny(RESTarMethods.PUT);
             var source = Evaluators<T>.RAW_SELECT(this);
-            if (source == null) return 0;
             return Evaluators<T>.App.PUT(inserter, updater, source, this);
         }
 
@@ -181,12 +183,15 @@ namespace RESTar
             if (ScSql && Conditions.HasChanged()) Prep();
             if (!DELETEAllowed) throw Deny(RESTarMethods.DELETE);
             var source = Evaluators<T>.RAW_SELECT(this);
-            if (source.IsNullOrEmpty()) return 0;
-            if (@unsafe)
-                return Evaluators<T>.App.DELETE(source, this);
-            if (source.MoreThanOne())
-                throw new AmbiguousMatchException(Resource);
-            return Evaluators<T>.App.DELETE(source.First(), this);
+            if (source == null) return 0;
+            if (!@unsafe)
+            {
+                var list = source.ToList();
+                if (list.Count > 1)
+                    throw new AmbiguousMatchException(Resource);
+                source = list;
+            }
+            return Evaluators<T>.App.DELETE(source, this);
         }
     }
 }

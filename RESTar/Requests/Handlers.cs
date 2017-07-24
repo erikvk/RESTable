@@ -3,7 +3,7 @@ using RESTar.Internal;
 using RESTar.View;
 using Starcounter;
 using static RESTar.Internal.Authenticator;
-using static RESTar.Internal.Transactions;
+using static RESTar.Operations.Transact;
 using static RESTar.Requests.HandlerActions;
 using static Starcounter.SessionOptions;
 using static RESTar.Settings;

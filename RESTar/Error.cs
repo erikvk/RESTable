@@ -6,7 +6,7 @@ using RESTar.Internal;
 using RESTar.Linq;
 using RESTar.Requests;
 using Starcounter;
-using static RESTar.Internal.Transactions;
+using static RESTar.Operations.Transact;
 using static RESTar.RESTarMethods;
 using static RESTar.RESTarPresets;
 using static RESTar.Settings;

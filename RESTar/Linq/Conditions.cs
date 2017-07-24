@@ -84,8 +84,8 @@ namespace RESTar.Linq
         public static IEnumerable<Condition<T>> Redirect<T>(this IEnumerable<ICondition> conds,
             params (string direct, string to)[] newKeyAssignments) where T : class
         {
-            var props = typeof(T).GetStaticProperties().Values;
-            return conds.Where(cond => props.Any(prop => prop.Name == cond.Term.First?.Name))
+            var props = typeof(T).GetStaticProperties();
+            return conds.Where(cond => cond.Term.IsDynamic || props.ContainsKey(cond.Term.First?.Name.ToLower()))
                 .Select(cond =>
                 {
                     foreach (var keyAssignment in newKeyAssignments)

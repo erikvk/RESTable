@@ -101,6 +101,7 @@
     <Compile Include="Echo.cs" />
     <Compile Include="Linq\Conditions.cs" />
     <Compile Include="Linq\Enumerable.cs" />
+    <Compile Include="Operations\Transact.cs" />
     <Compile Include="Operations\Transaction.cs" />
     <Compile Include="Requests\Args.cs" />
     <Compile Include="Requests\DataConfig.cs" />

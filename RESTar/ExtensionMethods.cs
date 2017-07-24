@@ -52,28 +52,28 @@ namespace RESTar
         {
             if (!type.Implements(typeof(ISelector<>), out var p)) return null;
             if (p[0] != typeof(T)) throw InvalidImplementation("ISelector", type.FullName, p[0]);
-            return (Selector<T>)type.GetMethod("Select", Instance | Public).CreateDelegate(typeof(Selector<T>), null);
+            return (Selector<T>) type.GetMethod("Select", Instance | Public).CreateDelegate(typeof(Selector<T>), null);
         }
 
         internal static Inserter<T> GetInserter<T>(this Type type) where T : class
         {
             if (!type.Implements(typeof(IInserter<>), out var p)) return null;
             if (p[0] != typeof(T)) throw InvalidImplementation("IInserter", type.FullName, p[0]);
-            return (Inserter<T>)type.GetMethod("Insert", Instance | Public).CreateDelegate(typeof(Inserter<T>), null);
+            return (Inserter<T>) type.GetMethod("Insert", Instance | Public).CreateDelegate(typeof(Inserter<T>), null);
         }
 
         internal static Updater<T> GetUpdater<T>(this Type type) where T : class
         {
             if (!type.Implements(typeof(IUpdater<>), out var p)) return null;
             if (p[0] != typeof(T)) throw InvalidImplementation("IUpdater", type.FullName, p[0]);
-            return (Updater<T>)type.GetMethod("Update", Instance | Public).CreateDelegate(typeof(Updater<T>), null);
+            return (Updater<T>) type.GetMethod("Update", Instance | Public).CreateDelegate(typeof(Updater<T>), null);
         }
 
         internal static Deleter<T> GetDeleter<T>(this Type type) where T : class
         {
             if (!type.Implements(typeof(IDeleter<>), out var p)) return null;
             if (p[0] != typeof(T)) throw InvalidImplementation("IDeleter", type.FullName, p[0]);
-            return (Deleter<T>)type.GetMethod("Delete", Instance | Public).CreateDelegate(typeof(Deleter<T>), null);
+            return (Deleter<T>) type.GetMethod("Delete", Instance | Public).CreateDelegate(typeof(Deleter<T>), null);
         }
 
         #endregion
@@ -153,16 +153,16 @@ namespace RESTar
             if (methodsString == null) return null;
             if (methodsString.Trim() == "*")
                 return Methods;
-            return methodsString.Split(',').Select(s => (RESTarMethods)Enum.Parse(typeof(RESTarMethods), s)).ToArray();
+            return methodsString.Split(',').Select(s => (RESTarMethods) Enum.Parse(typeof(RESTarMethods), s)).ToArray();
         }
 
         internal static RESTarMethods[] ToMethods(this RESTarPresets preset)
         {
             switch (preset)
             {
-                case RESTarPresets.ReadOnly: return new[] { GET };
-                case RESTarPresets.WriteOnly: return new[] { POST, DELETE };
-                case RESTarPresets.ReadAndUpdate: return new[] { GET, PATCH };
+                case RESTarPresets.ReadOnly: return new[] {GET};
+                case RESTarPresets.WriteOnly: return new[] {POST, DELETE};
+                case RESTarPresets.ReadAndUpdate: return new[] {GET, PATCH};
                 case RESTarPresets.ReadAndWrite: return Methods;
                 default: throw new ArgumentOutOfRangeException(nameof(preset));
             }
@@ -251,7 +251,7 @@ namespace RESTar
             if (resource == null)
                 ResourceByName.TryGetValue(searchString, out resource);
             if (resource != null)
-                return new[] { resource };
+                return new[] {resource};
             throw new UnknownResourceException(searchString);
         }
 
@@ -265,7 +265,8 @@ namespace RESTar
                 return resource;
             var matches = ResourceByName
                 .Where(pair => pair.Value.IsGlobal && pair.Key.EndsWith($".{searchString}"))
-                .Select(pair => pair.Value);
+                .Select(pair => pair.Value)
+                .ToList();
             if (!matches.Any())
                 throw new UnknownResourceException(searchString);
             if (matches.MoreThanOne())
@@ -423,8 +424,8 @@ namespace RESTar
         /// </summary>
         public static dynamic SafeGetNoCase(this IDictionary dict, string key, out string actualKey)
         {
-            var matches = dict.Keys.Cast<string>().Where(k => k.EqualsNoCase(key));
-            if (matches.MoreThanOne())
+            var matches = dict.Keys.Cast<string>().Where(k => k.EqualsNoCase(key)).ToList();
+            if (matches.Count > 1)
             {
                 var val = dict.SafeGet(key);
                 if (val == null)
@@ -446,8 +447,8 @@ namespace RESTar
         /// </summary>
         public static T SafeGetNoCase<T>(this IDictionary<string, T> dict, string key, out string actualKey)
         {
-            var matches = dict.Where(pair => pair.Key.EqualsNoCase(key));
-            if (matches.MoreThanOne())
+            var matches = dict.Where(pair => pair.Key.EqualsNoCase(key)).ToList();
+            if (matches.Count > 1)
             {
                 var val = dict.SafeGet(key);
                 if (val == null)
@@ -490,20 +491,8 @@ namespace RESTar
 
         internal static string MatchKeyIgnoreCase_IDict(this IDictionary dict, string key)
         {
-            string _actualKey = null;
-            var results = dict.Keys.Cast<string>().Where(k =>
-            {
-                var equals = k.EqualsNoCase(key);
-                if (equals) _actualKey = k;
-                return equals;
-            });
-            var count = results.Count();
-            switch (count)
-            {
-                case 0: return null;
-                case 1: return _actualKey;
-                default: return MatchKey(dict, key);
-            }
+            var matches = dict.Cast<DictionaryEntry>().Where(pair => ((string) pair.Key).EqualsNoCase(key)).ToList();
+            return matches.Count > 1 ? dict.MatchKey(key) : (string) matches.FirstOrDefault().Key;
         }
 
         internal static string MatchKey<T>(this IDictionary<string, T> dict, string key)
@@ -513,20 +502,8 @@ namespace RESTar
 
         internal static string MatchKeyIgnoreCase<T>(this IDictionary<string, T> dict, string key)
         {
-            string _actualKey = null;
-            var results = dict.Keys.Where(k =>
-            {
-                var equals = k.EqualsNoCase(key);
-                if (equals) _actualKey = k;
-                return equals;
-            });
-            var count = results.Count();
-            switch (count)
-            {
-                case 0: return null;
-                case 1: return _actualKey;
-                default: return MatchKey(dict, key);
-            }
+            var matches = dict.Where(pair => pair.Key.EqualsNoCase(key)).ToList();
+            return matches.Count > 1 ? dict.MatchKey(key) : matches.FirstOrDefault().Key;
         }
 
         #endregion
@@ -804,14 +781,14 @@ namespace RESTar
                 case TypeCode.Int32:
                 case TypeCode.UInt32:
                 case TypeCode.UInt64:
-                    row[name] = (long)value;
+                    row[name] = (long) value;
                     return;
                 case TypeCode.Single:
                 case TypeCode.Double:
-                    row[name] = (decimal)value;
+                    row[name] = (decimal) value;
                     return;
                 case TypeCode.DateTime:
-                    var dateTime = (DateTime)value;
+                    var dateTime = (DateTime) value;
                     row[name] = dateTime.ToString("O");
                     return;
                 case TypeCode.Char:
@@ -853,7 +830,7 @@ namespace RESTar
                 if (ienumImplementation != null)
                 {
                     var elementType = ienumImplementation.GenericTypeArguments[0];
-                    return new object[] { DefaultValueRecurser(elementType) };
+                    return new object[] {DefaultValueRecurser(elementType)};
                 }
                 if (propType.IsClass)
                 {
