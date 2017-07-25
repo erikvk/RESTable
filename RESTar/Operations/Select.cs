@@ -18,19 +18,16 @@ namespace RESTar.Operations
                 @else: s => s.Select(_s => Term.ParseInternal(resource.Type, _s, resource.IsDynamic, dynDomain)))
             .ForEach(Add);
 
-        public IEnumerable<JObject> Apply<T>(IEnumerable<T> entities)
+        public IEnumerable<JObject> Apply<T>(IEnumerable<T> entities) => entities.Select(entity =>
         {
-            return entities.Select(entity =>
+            var jobj = new JObject();
+            ForEach(term =>
             {
-                var jobj = new JObject();
-                ForEach(term =>
-                {
-                    if (jobj[term.Key] != null) return;
-                    object val = term.Evaluate(entity, out string actualKey);
-                    jobj[actualKey] = val?.ToJToken();
-                });
-                return jobj;
+                if (jobj[term.Key] != null) return;
+                object val = term.Evaluate(entity, out string actualKey);
+                jobj[actualKey] = val?.ToJToken();
             });
-        }
+            return jobj;
+        });
     }
 }

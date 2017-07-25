@@ -147,7 +147,7 @@ namespace RESTar
             return conditionString.Split('&').Select(s =>
             {
                 if (s == "")
-                    throw new SyntaxException(ErrorCodes.InvalidConditionSyntaxError, "Invalid condition syntax");
+                    throw new SyntaxException(ErrorCodes.InvalidConditionSyntax, "Invalid condition syntax");
                 s = s.ReplaceFirst("%3E=", ">=", out bool replaced);
                 if (!replaced) s = s.ReplaceFirst("%3C=", "<=", out replaced);
                 if (!replaced) s = s.ReplaceFirst("%3E", ">", out replaced);
@@ -173,7 +173,7 @@ namespace RESTar
                     }
                     catch
                     {
-                        throw new SyntaxException(ErrorCodes.InvalidConditionSyntaxError,
+                        throw new SyntaxException(ErrorCodes.InvalidConditionSyntax,
                             $"Invalid string value for condition '{term.Key}'. The property type for '{prop.Name}' " +
                             $"has a predefined set of allowed values, not containing '{value}'.");
                     }

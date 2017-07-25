@@ -84,12 +84,13 @@ namespace RESTar.Operations
             }
         }
 
-        private static int INSERT(IRequest<T> request, Func<ICollection<T>> inserter)
+        private static int INSERT(IRequest<T> request, Func<IEnumerable<T>> inserter)
         {
             try
             {
-                var results = inserter?.Invoke();
-                if (results == null) return 0;
+                var ienum = inserter?.Invoke();
+                var results = ienum as ICollection<T> ?? ienum?.ToList();
+                if (results?.Any() != true) return 0;
                 if (request.Resource.RequiresValidation)
                     results.OfType<IValidatable>().ForEach(item => item.RunValidation());
                 return request.Resource.Insert(results, request);
@@ -216,19 +217,16 @@ namespace RESTar.Operations
             }
         }
 
-        private static int UPDATE(IRequest<T> request, Func<ICollection<T>, IEnumerable<T>> updater,
+        private static int UPDATE(IRequest<T> request, Func<IEnumerable<T>, IEnumerable<T>> updater,
             ICollection<T> source)
         {
             try
             {
-                var results = updater?.Invoke(source);
-                if (results == null) return 0;
+                var ienum = updater?.Invoke(source);
+                var results = ienum as ICollection<T> ?? ienum?.ToList();
+                if (results?.Any() != true) return 0;
                 if (request.Resource.RequiresValidation)
-                {
-                    var resList = results.ToList();
-                    resList.OfType<IValidatable>().ForEach(item => item.RunValidation());
-                    results = resList;
-                }
+                    results.OfType<IValidatable>().ForEach(item => item.RunValidation());
                 return request.Resource.Update(results, request);
             }
             catch (Exception e)
@@ -553,7 +551,7 @@ namespace RESTar.Operations
                 return Transaction<T>.Transact(() => INSERT_ONE(request, inserter));
             }
 
-            internal static int POST(Func<ICollection<T>> inserter, Request<T> request)
+            internal static int POST(Func<IEnumerable<T>> inserter, Request<T> request)
             {
                 return Transaction<T>.Transact(() => INSERT(request, inserter));
             }
@@ -563,7 +561,7 @@ namespace RESTar.Operations
                 return Transaction<T>.Transact(() => UPDATE_ONE(request, updater, source));
             }
 
-            internal static int PATCH(Func<ICollection<T>, IEnumerable<T>> updater, ICollection<T> source,
+            internal static int PATCH(Func<IEnumerable<T>, IEnumerable<T>> updater, ICollection<T> source,
                 Request<T> request)
             {
                 return Transaction<T>.Transact(() => UPDATE(request, updater, source));

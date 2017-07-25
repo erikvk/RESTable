@@ -13,8 +13,8 @@ namespace RESTar
         internal string Accept;
         internal string ContentType;
         internal bool Internal { get; private set; }
-
         private HttpRequest() => Headers = new Dictionary<string, string>();
+        private static readonly Regex regex = new Regex(@"\[(?<header>.+):[\s]*(?<value>.+)\]");
 
         internal static HttpRequest Parse(string uriString)
         {
@@ -28,7 +28,7 @@ namespace RESTar
                         case 0:
                             RESTarMethods method;
                             if (!Enum.TryParse(part, true, out method))
-                                throw new Exception($"Invalid method '{part}'");
+                                throw new Exception("Invalid or missing method");
                             r.Method = method;
                             break;
                         case 1:
@@ -48,8 +48,8 @@ namespace RESTar
                             }
                             break;
                         case 2:
-                            var regex = new Regex(@"\[(?<header>.+):[\s]*(?<value>.+)\]");
                             var matches = regex.Matches(part);
+                            if (matches.Count == 0) throw new Exception("Invalid header syntax");
                             foreach (Match match in matches)
                             {
                                 var header = match.Groups["header"].ToString();

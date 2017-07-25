@@ -55,6 +55,19 @@ namespace RESTar.Operations
             }
         }
 
+        public static T TryCatch<T>(Func<T> @try, Action<Exception> @catch)
+        {
+            try
+            {
+                return @try();
+            }
+            catch (Exception e)
+            {
+                @catch(e);
+                return default(T);
+            }
+        }
+
         public static void TryCatch(Action thingy, Action<Exception> onCatch)
         {
             try

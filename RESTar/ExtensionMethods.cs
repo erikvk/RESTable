@@ -553,7 +553,7 @@ namespace RESTar
         private static string CheckQuery(this string query, Request request)
         {
             if (query.Count(c => c == '/') > 3)
-                throw new SyntaxException(InvalidSeparatorCount,
+                throw new SyntaxException(InvalidSeparator,
                     "Invalid argument separator count. A RESTar URI can contain at most 3 " +
                     $"forward slashes after the base uri. URI scheme: {Settings._ResourcesPath}" +
                     "/[resource]/[conditions]/[meta-conditions]");
@@ -612,10 +612,10 @@ namespace RESTar
             switch (ex)
             {
                 case RESTarException re: return (re.ErrorCode, re.Response);
-                case FormatException _: return (UnsupportedContentType, BadRequest(ex));
-                case JsonReaderException _: return (JsonDeserializationError, JsonError);
+                case FormatException _: return (UnsupportedContent, BadRequest(ex));
+                case JsonReaderException _: return (FailedJsonDeserialization, JsonError);
                 case DbException _: return (DatabaseError, DbError(ex));
-                default: return (UnknownError, InternalError(ex));
+                default: return (Unknown, InternalError(ex));
             }
         }
 

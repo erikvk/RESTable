@@ -93,6 +93,7 @@
     <Compile Include="Auth\AccessRights.cs" />
     <Compile Include="DatabaseIndex.cs" />
     <Compile Include="Database\TableInfo.cs" />
+    <Compile Include="Deflection\EnumMember.cs" />
     <Compile Include="Deflection\ExtensionMethods.cs" />
     <Compile Include="Deflection\Dynamic\Delegates.cs" />
     <Compile Include="Deflection\Dynamic\SpecialProperty.cs" />

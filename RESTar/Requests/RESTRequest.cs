@@ -10,6 +10,7 @@ using RESTar.Linq;
 using RESTar.Operations;
 using Starcounter;
 using static RESTar.Internal.ErrorCodes;
+using static RESTar.Operations.Do;
 using static RESTar.RESTarConfig;
 using static RESTar.RESTarMethods;
 using IResource = RESTar.Internal.IResource;
@@ -58,8 +59,8 @@ namespace RESTar.Requests
             Origin = ScRequest.Headers["Origin"];
             ContentType = MimeTypes.Match(ScRequest.ContentType);
             Accept = MimeTypes.Match(ScRequest.PreferredMimeTypeString);
-            InputDataConfig = Source != null ? DataConfig.External : DataConfig.Internal;
-            OutputDataConfig = Destination != null ? DataConfig.External : DataConfig.Internal;
+            InputDataConfig = Source != null ? DataConfig.External : DataConfig.Client;
+            OutputDataConfig = Destination != null ? DataConfig.External : DataConfig.Client;
             if (args.HasConditions)
                 Conditions = Condition<T>.Parse(args.Conditions, Resource) ?? Conditions;
             if (args.HasMetaConditions)
@@ -72,24 +73,29 @@ namespace RESTar.Requests
 
             switch (InputDataConfig)
             {
-                case DataConfig.Internal:
+                case DataConfig.Client:
                     if (ScRequest.Body == null && (Method == PATCH || Method == POST || Method == PUT))
-                        throw new SyntaxException(NoDataSourceError, "Missing data source for method " + Method);
+                        throw new SyntaxException(NoDataSource, "Missing data source for method " + Method);
                     if (ScRequest.Body == null) return;
                     BinaryBody = ScRequest.BodyBytes;
                     Body = ScRequest.Body;
                     break;
                 case DataConfig.External:
-                    var rqst = HttpRequest.Parse(Source);
+                    var rqst = TryCatch(
+                        @try: () => HttpRequest.Parse(Source),
+                        @catch: e => throw new SyntaxException(InvalidSource, $"{e.Message} in the source header")
+                    );
                     if (rqst.Method != GET)
-                        throw new SyntaxException(InvalidSourceFormatError, "Only GET is allowed in Source headers");
+                        throw new SyntaxException(InvalidSource, "Only GET is allowed in Source headers");
                     rqst.Accept = ContentType.ToMimeString();
                     var response = rqst.Internal
                         ? HTTP.InternalRequest(GET, rqst.URI, AuthToken, headers: rqst.Headers, accept: rqst.Accept)
                         : HTTP.ExternalRequest(GET, rqst.URI, headers: rqst.Headers, accept: rqst.Accept);
-                    if (response?.IsSuccessStatusCode != true)
-                        throw new SourceException(Source, $"{response?.StatusCode}: {response?.StatusDescription}");
-                    if (response.BodyBytes?.Any() != true) throw new SourceException(Source, "Response was empty");
+                    if (response == null) throw new SourceException(rqst.URI, "No response");
+                    if (!response.IsSuccessStatusCode)
+                        throw new SourceException(rqst.URI,
+                            $"Status: {response.StatusCode} - {response.StatusDescription}. {response.Headers["RESTar-info"]}");
+                    if (response.BodyBytes?.Any() != true) throw new SourceException(rqst.URI, "Response was empty");
                     BinaryBody = response.BodyBytes;
                     Body = response.Body;
                     break;
@@ -166,25 +172,31 @@ namespace RESTar.Requests
         {
             ResponseHeaders.ForEach(h => Response.Headers["X-" + h.Key] = h.Value);
             Response.Headers["Access-Control-Allow-Origin"] = AllowAllOrigins ? "*" : (Origin ?? "null");
-            if (OutputDataConfig == DataConfig.Internal)
-                return Response;
-            var rqst = HttpRequest.Parse(Destination);
-            rqst.ContentType = Accept.ToMimeString();
-            var bytes = Response.BodyBytes;
-            var response = rqst.Internal
-                ? HTTP.InternalRequest(rqst.Method, rqst.URI, AuthToken, bytes, rqst.ContentType, headers: rqst.Headers)
-                : HTTP.ExternalRequest(rqst.Method, rqst.URI, bytes, rqst.ContentType, headers: rqst.Headers);
-            if (response == null) throw new Exception($"No response for destination request: '{Destination}'");
-            if (!response.IsSuccessStatusCode)
-                throw new Exception($"Failed upload at destination server at '{rqst.URI}'. " +
-                                    $"Status: {response.StatusCode}, {response.StatusDescription}");
-            response.Headers["Access-Control-Allow-Origin"] = AllowAllOrigins ? "*" : (Origin ?? "null");
-            return response;
+            switch (OutputDataConfig)
+            {
+                case DataConfig.Client: return Response;
+                case DataConfig.External:
+                    var rqst = TryCatch(
+                        @try: () => HttpRequest.Parse(Destination),
+                        @catch: e => throw new SyntaxException(InvalidDestination,
+                            $"{e.Message} in the destination header")
+                    );
+                    rqst.ContentType = Accept.ToMimeString();
+                    var bytes = Response.BodyBytes;
+                    var response = rqst.Internal
+                        ? HTTP.InternalRequest(rqst.Method, rqst.URI, AuthToken, bytes, rqst.ContentType,
+                            headers: rqst.Headers)
+                        : HTTP.ExternalRequest(rqst.Method, rqst.URI, bytes, rqst.ContentType, headers: rqst.Headers);
+                    if (response == null) throw new DestinationException(rqst.URI, "No response");
+                    if (!response.IsSuccessStatusCode)
+                        throw new DestinationException(rqst.URI,
+                            $"Status: {response.StatusCode} - {response.StatusDescription}. {response.Headers["RESTar-info"]}");
+                    response.Headers["Access-Control-Allow-Origin"] = AllowAllOrigins ? "*" : (Origin ?? "null");
+                    return response;
+                default: throw new ArgumentException();
+            }
         }
 
-        public void Dispose()
-        {
-            AuthTokens.TryRemove(AuthToken, out var _);
-        }
+        public void Dispose() => AuthTokens.TryRemove(AuthToken, out var _);
     }
 }

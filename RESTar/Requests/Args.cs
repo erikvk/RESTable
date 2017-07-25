@@ -22,7 +22,7 @@ namespace RESTar.Requests
             HasResource = HasConditions = HasMetaConditions = false;
             if (string.IsNullOrEmpty(query) || query == "/") return;
             if (query.CharCount('/') > 3)
-                throw new SyntaxException(InvalidSeparatorCount,
+                throw new SyntaxException(InvalidSeparator,
                     "Invalid argument separator count. A RESTar URI can contain at most 3 " +
                     $"forward slashes after the base uri. URI scheme: {Settings._ResourcesPath}" +
                     "/[resource]/[conditions]/[meta-conditions]");

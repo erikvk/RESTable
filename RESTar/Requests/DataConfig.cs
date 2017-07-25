@@ -2,7 +2,7 @@ namespace RESTar.Requests
 {
     internal enum DataConfig
     {
-        Internal,
+        Client,
         External
     }
 }

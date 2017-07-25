@@ -159,9 +159,23 @@ namespace RESTar
                 then?.Invoke(_response);
                 return _response;
             }
+            catch (WebException we)
+            {
+                Log.Warn($"!!! HTTPS {method} Error at {uri} : {we.Message}");
+                var response = we.Response as HttpWebResponse;
+                if (response == null) return null;
+                var _response = new Response
+                {
+                    StatusCode = (ushort) response.StatusCode,
+                    StatusDescription = response.StatusDescription
+                };
+                foreach (var header in response.Headers.AllKeys)
+                    _response.Headers[header] = response.Headers[header];
+                return _response;
+            }
             catch (Exception e)
             {
-                Log.Warn($"!!! HTTPS POST Error at {uri} : {e.Message}");
+                Log.Warn($"!!! HTTPS {method} Error at {uri} : {e.Message}");
                 return null;
             }
         }

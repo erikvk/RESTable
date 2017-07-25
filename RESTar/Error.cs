@@ -33,8 +33,8 @@ namespace RESTar
         /// <summary>
         /// RESTar selector (don't use)
         /// </summary>
-        public IEnumerable<ErrorCode> Select(IRequest<ErrorCode> request) => typeof(ErrorCodes)
-            .GetEnumMembers()
+        public IEnumerable<ErrorCode> Select(IRequest<ErrorCode> request) => EnumMember<ErrorCodes>
+            .GetMembers()
             .Select(m => new ErrorCode {Name = m.Name, Code = m.Value})
             .Where(request.Conditions);
     }

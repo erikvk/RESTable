@@ -141,7 +141,7 @@ namespace RESTar
             return Evaluators<T>.App.POST(inserter, this);
         }
 
-        public int POST(Func<ICollection<T>> inserter)
+        public int POST(Func<IEnumerable<T>> inserter)
         {
             if (!POSTAllowed) throw Deny(RESTarMethods.POST);
             return Evaluators<T>.App.POST(inserter, this);
@@ -161,7 +161,7 @@ namespace RESTar
             }
         }
 
-        public int PATCH(Func<ICollection<T>, IEnumerable<T>> updater)
+        public int PATCH(Func<IEnumerable<T>, IEnumerable<T>> updater)
         {
             if (ScSql && Conditions.HasChanged()) Prep();
             if (!PATCHAllowed) throw Deny(RESTarMethods.PATCH);

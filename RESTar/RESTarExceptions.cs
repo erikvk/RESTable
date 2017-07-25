@@ -41,7 +41,7 @@ namespace RESTar
     /// </summary>
     public class ResourceIsInternalException : RESTarException
     {
-        internal ResourceIsInternalException(IResource resource) : base(ResourceIsInternalError,
+        internal ResourceIsInternalException(IResource resource) : base(ResourceIsInternal,
             $"Cannot make an external request to internal resource '{resource.Name}'") => Response = Forbidden;
     }
 
@@ -69,7 +69,7 @@ namespace RESTar
     /// </summary>
     public class OperatorException : SyntaxException
     {
-        internal OperatorException(string c) : base(InvalidConditionOperatorError,
+        internal OperatorException(string c) : base(InvalidConditionOperator,
             $"Invalid or missing operator for condition '{c}'. The pr" +
             "esence of one (and only one) operator is required per co" +
             "ndition. Make sure to URI encode all equals (\'=\' to \'" +
@@ -86,7 +86,7 @@ namespace RESTar
     public class ForbiddenOperatorException : RESTarException
     {
         internal ForbiddenOperatorException(string c, IResource resource, Operator found, Term term,
-            IEnumerable<Operator> allowed) : base(InvalidConditionOperatorError,
+            IEnumerable<Operator> allowed) : base(InvalidConditionOperator,
             $"Invalid operator for condition '{c}'. Operator '{found}' is not allowed when " +
             $"comparing against '{term.Key}' in resource '{resource.Name}'. Allowed operators" +
             $": {string.Join(", ", allowed.Select(a => $"'{a.Common}'"))}") => Response = BadRequest(this);
@@ -98,8 +98,18 @@ namespace RESTar
     /// </summary>
     public class SourceException : RESTarException
     {
-        internal SourceException(string uri, string message) : base(InvalidSourceDataError,
+        internal SourceException(Uri uri, string message) : base(InvalidSourceData,
             $"RESTar could not get entities from source at '{uri}'. {message}") => Response = BadRequest(this);
+    }
+
+    /// <summary>
+    /// Thrown when RESTar encounters an error getting entities from an
+    /// external data source.
+    /// </summary>
+    public class DestinationException : RESTarException
+    {
+        internal DestinationException(Uri uri, string message) : base(InvalidDestination,
+            $"RESTar could not upload entities to destination at '{uri}': {message}") => Response = BadRequest(this);
     }
 
     /// <summary>
@@ -108,7 +118,7 @@ namespace RESTar
     /// </summary>
     public class InvalidInputCountException : RESTarException
     {
-        internal InvalidInputCountException(RESTarMethods method) : base(DataSourceFormatError,
+        internal InvalidInputCountException(RESTarMethods method) : base(DataSourceFormat,
             $"Invalid input count for method {method:G}. Expected object/row, but found array/multiple rows. " +
             "Only POST accepts multiple objects/rows as input.") => Response = BadRequest(this);
     }
@@ -118,7 +128,7 @@ namespace RESTar
     /// </summary>
     public class UnknownResourceException : RESTarException
     {
-        internal UnknownResourceException(string searchString) : base(UnknownResourceError,
+        internal UnknownResourceException(string searchString) : base(UnknownResource,
             $"RESTar could not locate any resource by '{searchString}'. To enumerate available " +
             $"resources, GET: {_ResourcesPath} . ") => Response = NotFound(this);
     }
@@ -128,7 +138,7 @@ namespace RESTar
     /// </summary>
     public class ExcelInputException : RESTarException
     {
-        internal ExcelInputException() : base(ExcelReaderError,
+        internal ExcelInputException() : base(ExcelReader,
             "There was a format error in the excel input. Check that the file is being transmitted properly. In " +
             "curl, make sure the flag '--data-binary' is used and not '--data' or '-d'") => Response = BadRequest(this);
     }
@@ -138,7 +148,7 @@ namespace RESTar
     /// </summary>
     public class ExcelFormatException : RESTarException
     {
-        internal ExcelFormatException() : base(ExcelReaderError,
+        internal ExcelFormatException() : base(ExcelReader,
             "RESTar was unable to write a query response to an Excel table due to a format error. " +
             "This is likely due to the serializer trying to push an array of heterogeneous objects " +
             "onto a single table, or that some object contains an inner object.") => Response = BadRequest(this);
@@ -150,7 +160,7 @@ namespace RESTar
     /// </summary>
     public class UnknownPropertyException : RESTarException
     {
-        internal UnknownPropertyException(Type resource, string str) : base(UnknownPropertyError,
+        internal UnknownPropertyException(Type resource, string str) : base(UnknownProperty,
             $"Could not find any property in type '{resource.Name}' by '{str}'.") => Response = NotFound(this);
     }
 
@@ -171,7 +181,7 @@ namespace RESTar
         public readonly string SearchString;
 
         internal AmbiguousPropertyException(Type resource, string str, IEnumerable<string> cands)
-            : base(AmbiguousPropertyError, $"Could not uniquely identify a property in resource '{resource.Name}' by " +
+            : base(ErrorCodes.AmbiguousProperty, $"Could not uniquely identify a property in resource '{resource.Name}' by " +
                                            $"'{str}'. Candidates: {string.Join(", ", cands)}. ")
         {
             SearchString = str;
@@ -197,7 +207,7 @@ namespace RESTar
         public readonly string SearchString;
 
         internal AmbiguousResourceException(string searchString, IList<string> candidates)
-            : base(AmbiguousResourceError, $"RESTar could not uniquely identify a resource by '{searchString}'. " +
+            : base(ErrorCodes.AmbiguousResource, $"RESTar could not uniquely identify a resource by '{searchString}'. " +
                                            $"Candidates were: {string.Join(", ", candidates)}. ")
         {
             SearchString = searchString;
@@ -267,7 +277,7 @@ namespace RESTar
     /// </summary>
     public class ValidatableException : RESTarException
     {
-        internal ValidatableException(string message) : base(InvalidResourceEntityError, message)
+        internal ValidatableException(string message) : base(InvalidResourceEntity, message)
             => Response = BadRequest(this);
     }
 
@@ -276,7 +286,7 @@ namespace RESTar
     /// </summary>
     public class UnknownResourceForAliasException : RESTarException
     {
-        internal UnknownResourceForAliasException(string searchString, IResource match) : base(UnknownResourceError,
+        internal UnknownResourceForAliasException(string searchString, IResource match) : base(UnknownResource,
             "Resource alias mappings must be provided with fully qualified resource names. No match " +
             $"for '{searchString}'. {(match != null ? $"Did you mean '{match.Name}'? " : "")}")
             => Response = BadRequest(this);
@@ -287,7 +297,7 @@ namespace RESTar
     /// </summary>
     public class AliasAlreadyInUseException : RESTarException
     {
-        internal AliasAlreadyInUseException(ResourceAlias alias) : base(AliasAlreadyInUseError,
+        internal AliasAlreadyInUseException(ResourceAlias alias) : base(AliasAlreadyInUse,
             $"Invalid Alias: '{alias.Alias}' is already in use for resource '{alias.IResource.Name}'") =>
             Response = BadRequest(this);
     }
@@ -298,7 +308,7 @@ namespace RESTar
     /// </summary>
     public class AmbiguousMatchException : RESTarException
     {
-        internal AmbiguousMatchException(IResource resource) : base(AmbiguousMatchError,
+        internal AmbiguousMatchException(IResource resource) : base(AmbiguousMatch,
             $"Expected a uniquely matched entity in resource '{resource.Name}' " +
             "for this request, but matched multiple entities satisfying the given " +
             "conditions. To enable manipulation of multiple matched entities (for " +
@@ -312,7 +322,7 @@ namespace RESTar
     public class VirtualResourceMemberException : RESTarException
     {
         internal VirtualResourceMemberException(string message)
-            : base(VirtualResourceMemberError, message) => Response = BadRequest(this);
+            : base(InvalidVirtualResourceMember, message) => Response = BadRequest(this);
     }
 
     /// <summary>
@@ -321,7 +331,7 @@ namespace RESTar
     public class VirtualResourceDeclarationException : RESTarException
     {
         internal VirtualResourceDeclarationException(string message)
-            : base(VirtualResourceDeclarationError, message) => Response = BadRequest(this);
+            : base(InvalidVirtualResourceDeclaration, message) => Response = BadRequest(this);
     }
 
     /// <summary>
@@ -330,7 +340,7 @@ namespace RESTar
     /// </summary>
     public class NoAvalailableDynamicTableException : RESTarException
     {
-        internal NoAvalailableDynamicTableException() : base(NoAvalailableDynamicTableError,
+        internal NoAvalailableDynamicTableException() : base(NoAvalailableDynamicTable,
             "RESTar have no more unallocated dynamic tables. Remove an existing table and try again.")
             => Response = BadRequest(this);
     }
