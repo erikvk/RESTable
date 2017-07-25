@@ -59,7 +59,7 @@ namespace RESTar.Operations
                         else if (char.IsDigit(first) || first == '/')
                         {
                             var uri = str;
-                            var response = HTTP.InternalRequest(GET, new Uri(uri, Relative),
+                            var response = HTTP.Internal(GET, new Uri(uri, Relative),
                                 request.AuthToken);
                             if (response?.IsSuccessStatusCode != true)
                                 throw new Exception(
@@ -172,7 +172,7 @@ namespace RESTar.Operations
                 if (!skip)
                 {
                     var uri = localMapper.ToString();
-                    var response = HTTP.InternalRequest(GET, new Uri(uri, Relative), request.AuthToken);
+                    var response = HTTP.Internal(GET, new Uri(uri, Relative), request.AuthToken);
                     if (response?.IsSuccessStatusCode != true)
                         throw new Exception($"Could not get source data from '<self>:{_Port}{_Uri}{uri}'");
                     if (response.StatusCode == 204 || string.IsNullOrEmpty(response.Body))

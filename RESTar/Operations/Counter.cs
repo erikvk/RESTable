@@ -27,7 +27,7 @@ namespace RESTar.Operations
                     if (uriToken?.Type != JTokenType.String)
                         throw new Exception("Invalid source URI");
                     var uri = uriToken.Value<string>();
-                    var response = HTTP.InternalRequest(GET, new Uri(uri, Relative), request.AuthToken);
+                    var response = HTTP.Internal(GET, new Uri(uri, Relative), request.AuthToken);
                     if (response?.IsSuccessStatusCode != true)
                         throw new Exception(
                             $"Could not get source data from '<self>:{Settings._Port}{Settings._Uri}{uri}'. " +

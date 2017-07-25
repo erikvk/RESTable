@@ -10,7 +10,6 @@ using RESTar.Linq;
 using RESTar.Operations;
 using Starcounter;
 using static RESTar.Internal.ErrorCodes;
-using static RESTar.Operations.Do;
 using static RESTar.RESTarConfig;
 using static RESTar.RESTarMethods;
 using IResource = RESTar.Internal.IResource;
@@ -81,24 +80,28 @@ namespace RESTar.Requests
                     Body = ScRequest.Body;
                     break;
                 case DataConfig.External:
-                    var rqst = TryCatch(
-                        @try: () => HttpRequest.Parse(Source),
-                        @catch: e => throw new SyntaxException(InvalidSource, $"{e.Message} in the source header")
-                    );
-                    if (rqst.Method != GET)
-                        throw new SyntaxException(InvalidSource, "Only GET is allowed in Source headers");
-                    rqst.Accept = ContentType.ToMimeString();
-                    var response = rqst.Internal
-                        ? HTTP.InternalRequest(GET, rqst.URI, AuthToken, headers: rqst.Headers, accept: rqst.Accept)
-                        : HTTP.ExternalRequest(GET, rqst.URI, headers: rqst.Headers, accept: rqst.Accept);
-                    if (response == null) throw new SourceException(rqst.URI, "No response");
-                    if (!response.IsSuccessStatusCode)
-                        throw new SourceException(rqst.URI,
-                            $"Status: {response.StatusCode} - {response.StatusDescription}. {response.Headers["RESTar-info"]}");
-                    if (response.BodyBytes?.Any() != true) throw new SourceException(rqst.URI, "Response was empty");
-                    BinaryBody = response.BodyBytes;
-                    Body = response.Body;
-                    break;
+                    try
+                    {
+                        var request = new HttpRequest(Source)
+                        {
+                            Accept = ContentType.ToMimeString(),
+                            AuthToken = AuthToken
+                        };
+                        if (request.Method != GET)
+                            throw new SyntaxException(InvalidSource, "Only GET is allowed in Source headers");
+                        var response = request.GetResponse() ?? throw new SourceException(request, "No response");
+                        if (!response.IsSuccessStatusCode)
+                            throw new SourceException(request,
+                                $"Status: {response.StatusCode} - {response.StatusDescription}. {response.Headers["RESTar-info"]}");
+                        if (response.BodyBytes?.Any() != true) throw new SourceException(request, "Response was empty");
+                        BinaryBody = response.BodyBytes;
+                        Body = response.Body;
+                        break;
+                    }
+                    catch (HttpRequestException re)
+                    {
+                        throw new SyntaxException(InvalidSource, $"{re.Message} in the Source header");
+                    }
             }
 
             #endregion
@@ -176,23 +179,25 @@ namespace RESTar.Requests
             {
                 case DataConfig.Client: return Response;
                 case DataConfig.External:
-                    var rqst = TryCatch(
-                        @try: () => HttpRequest.Parse(Destination),
-                        @catch: e => throw new SyntaxException(InvalidDestination,
-                            $"{e.Message} in the destination header")
-                    );
-                    rqst.ContentType = Accept.ToMimeString();
-                    var bytes = Response.BodyBytes;
-                    var response = rqst.Internal
-                        ? HTTP.InternalRequest(rqst.Method, rqst.URI, AuthToken, bytes, rqst.ContentType,
-                            headers: rqst.Headers)
-                        : HTTP.ExternalRequest(rqst.Method, rqst.URI, bytes, rqst.ContentType, headers: rqst.Headers);
-                    if (response == null) throw new DestinationException(rqst.URI, "No response");
-                    if (!response.IsSuccessStatusCode)
-                        throw new DestinationException(rqst.URI,
-                            $"Status: {response.StatusCode} - {response.StatusDescription}. {response.Headers["RESTar-info"]}");
-                    response.Headers["Access-Control-Allow-Origin"] = AllowAllOrigins ? "*" : (Origin ?? "null");
-                    return response;
+                    try
+                    {
+                        var request = new HttpRequest(Destination)
+                        {
+                            ContentType = Accept.ToMimeString(),
+                            AuthToken = AuthToken,
+                            Bytes = Response.BodyBytes
+                        };
+                        var response = request.GetResponse() ?? throw new DestinationException(request, "No response");
+                        if (!response.IsSuccessStatusCode)
+                            throw new DestinationException(request,
+                                $"Status: {response.StatusCode} - {response.StatusDescription}. {response.Headers["RESTar-info"]}");
+                        response.Headers["Access-Control-Allow-Origin"] = AllowAllOrigins ? "*" : (Origin ?? "null");
+                        return response;
+                    }
+                    catch (HttpRequestException re)
+                    {
+                        throw new SyntaxException(InvalidDestination, $"{re.Message} in the Destination header");
+                    }
                 default: throw new ArgumentException();
             }
         }

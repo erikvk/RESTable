@@ -98,8 +98,8 @@ namespace RESTar
     /// </summary>
     public class SourceException : RESTarException
     {
-        internal SourceException(Uri uri, string message) : base(InvalidSourceData,
-            $"RESTar could not get entities from source at '{uri}'. {message}") => Response = BadRequest(this);
+        internal SourceException(HttpRequest request, string message) : base(InvalidSourceData,
+            $"RESTar could not get entities from source at '{request.URI}'. {message}") => Response = BadRequest(this);
     }
 
     /// <summary>
@@ -108,8 +108,8 @@ namespace RESTar
     /// </summary>
     public class DestinationException : RESTarException
     {
-        internal DestinationException(Uri uri, string message) : base(InvalidDestination,
-            $"RESTar could not upload entities to destination at '{uri}': {message}") => Response = BadRequest(this);
+        internal DestinationException(HttpRequest request, string message) : base(InvalidDestination,
+            $"RESTar could not upload entities to destination at '{request.URI}': {message}") => Response = BadRequest(this);
     }
 
     /// <summary>

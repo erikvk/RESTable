@@ -14,11 +14,32 @@ namespace RESTar
     /// </summary>
     public static class HTTP
     {
+        internal static Response Internal(HttpRequest request) => Internal
+        (
+            method: request.Method,
+            relativeUri: request.URI,
+            authToken: request.AuthToken,
+            bodyBytes: request.Bytes,
+            contentType: request.ContentType,
+            accept: request.Accept,
+            headers: request.Headers
+        );
+
+        internal static Response External(HttpRequest request) => External
+        (
+            method: request.Method,
+            uri: request.URI,
+            bodyBytes: request.Bytes,
+            contentType: request.ContentType,
+            accept: request.Accept,
+            headers: request.Headers
+        );
+
         /// <summary>
         /// Makes an internal request. Make sure to include the original Request's
         /// AuthToken if you're sending internal RESTar requests.
         /// </summary>
-        public static Response InternalRequest
+        public static Response Internal
         (
             RESTarMethods method,
             Uri relativeUri,
@@ -62,7 +83,7 @@ namespace RESTar
         /// <summary>
         /// Makes an external HTTP or HTTPS request
         /// </summary>
-        public static Response ExternalRequest
+        public static Response External
         (
             RESTarMethods method,
             Uri uri,
