@@ -49,6 +49,7 @@ namespace RESTar
         public bool Skip { get; set; }
 
         internal bool HasChanged { get; set; }
+        internal bool ValueChanged { get; set; }
         internal bool ScQueryable => Term.ScQueryable;
         internal Type Type => Term.IsStatic ? Term.LastAs<StaticProperty>()?.Type : null;
         internal bool IsOfType<T1>() => Type == typeof(T1);
@@ -92,7 +93,7 @@ namespace RESTar
         public Condition<T> SetValue(dynamic value)
         {
             Value = value;
-            HasChanged = true;
+            ValueChanged = true;
             return this;
         }
 

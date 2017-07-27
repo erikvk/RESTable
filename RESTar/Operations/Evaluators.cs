@@ -46,16 +46,20 @@ namespace RESTar.Operations
             }
         }
 
-        internal static IEnumerable<object> DYNAMIC_SELECT(IRequest<T> request)
+        internal static IEnumerable<dynamic> DYNAMIC_SELECT(IRequest<T> request)
         {
             try
             {
                 if (!request.MetaConditions.Unsafe && request.MetaConditions.Limit == -1)
                     request.MetaConditions.Limit = 1000;
-                return request.Resource.Select(request)?
-                    .Process(request.MetaConditions.Add)
-                    .Process(request.MetaConditions.Rename)
-                    .Process(request.MetaConditions.Select)
+                var results = request.Resource.Select(request);
+                if (results == null) return null;
+                if (!request.MetaConditions.HasProcessors)
+                    return results
+                        .Filter(request.MetaConditions.OrderBy)
+                        .Filter(request.MetaConditions.Limit);
+                return results
+                    .Process(request.MetaConditions.Processors)
                     .Filter(request.MetaConditions.OrderBy)
                     .Filter(request.MetaConditions.Limit);
             }
@@ -80,7 +84,7 @@ namespace RESTar.Operations
             }
             catch (Exception e)
             {
-                throw new AbortedInserterException<T>(e, request);
+                throw new AbortedInserterException<T>(e, request.Method);
             }
         }
 
@@ -97,7 +101,7 @@ namespace RESTar.Operations
             }
             catch (Exception e)
             {
-                throw new AbortedInserterException<T>(e, request);
+                throw new AbortedInserterException<T>(e, request.Method);
             }
         }
 
@@ -111,7 +115,7 @@ namespace RESTar.Operations
             }
             catch (Exception e)
             {
-                throw new AbortedInserterException<T>(e, request);
+                throw new AbortedInserterException<T>(e, request.Method);
             }
         }
 
@@ -127,7 +131,7 @@ namespace RESTar.Operations
             }
             catch (Exception e)
             {
-                throw new AbortedInserterException<T>(e, request);
+                throw new AbortedInserterException<T>(e, request.Method);
             }
         }
 
@@ -142,7 +146,7 @@ namespace RESTar.Operations
             }
             catch (Exception e)
             {
-                throw new AbortedInserterException<T>(e, request);
+                throw new AbortedInserterException<T>(e, request.Method);
             }
         }
 
@@ -160,7 +164,7 @@ namespace RESTar.Operations
             {
                 var _results = results;
                 Db.TransactAsync(() => _results?.Where(i => i != null).ForEach(item => Try(item.Delete)));
-                throw new AbortedInserterException<T>(e, request);
+                throw new AbortedInserterException<T>(e, request.Method);
             }
         }
 
@@ -176,7 +180,7 @@ namespace RESTar.Operations
             catch (Exception e)
             {
                 Try(() => result?.Delete());
-                throw new AbortedInserterException<T>(e, request);
+                throw new AbortedInserterException<T>(e, request.Method);
             }
         }
 
@@ -194,7 +198,7 @@ namespace RESTar.Operations
             {
                 var _results = results;
                 Db.TransactAsync(() => _results?.Where(i => i != null).ForEach(item => Try(item.Delete)));
-                throw new AbortedInserterException<T>(e, request);
+                throw new AbortedInserterException<T>(e, request.Method);
             }
         }
 
@@ -431,7 +435,7 @@ namespace RESTar.Operations
                 }
                 catch (Exception e)
                 {
-                    throw new AbortedInserterException<T>(e, request, e.Message);
+                    throw new AbortedInserterException<T>(e, request.Method, e.Message);
                 }
             }
 
@@ -519,7 +523,7 @@ namespace RESTar.Operations
                     var message = $"Inserted {insertedCount} and updated {updatedCount} in resource " +
                                   $"'{request.Resource.Name}' using SafePOST before encountering the error. " +
                                   "These changes remain in the resource";
-                    throw new AbortedInserterException<T>(e, request, $"{e.Message} : {message}");
+                    throw new AbortedInserterException<T>(e, request.Method, $"{e.Message} : {message}");
                 }
             }
 
@@ -565,6 +569,18 @@ namespace RESTar.Operations
                 Request<T> request)
             {
                 return Transaction<T>.Transact(() => UPDATE(request, updater, source));
+            }
+
+            internal static int PUT(Func<T> inserter, IEnumerable<T> source, Request<T> request)
+            {
+                var list = source?.ToList();
+                switch (list?.Count)
+                {
+                    case null:
+                    case 0: return Transaction<T>.Transact(() => INSERT_ONE(request, inserter));
+                    case 1: return 0;
+                    default: throw new AmbiguousMatchException(request.Resource);
+                }
             }
 
             internal static int PUT(Func<T> inserter, Func<T, T> updater, IEnumerable<T> source,

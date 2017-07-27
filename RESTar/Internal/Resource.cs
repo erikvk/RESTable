@@ -43,10 +43,10 @@ namespace RESTar.Internal
             get => ResourceAlias<T>.Get?.Alias;
             set
             {
-                var existingMapping = ResourceAlias<T>.Get;
+                var existingAssignment = ResourceAlias<T>.Get;
                 if (value == null)
                 {
-                    Trans(() => existingMapping?.Delete());
+                    Trans(() => existingAssignment?.Delete());
                     return;
                 }
                 var usedAliasMapping = ResourceAlias.ByAlias(value);
@@ -59,8 +59,8 @@ namespace RESTar.Internal
 
                 Trans(() =>
                 {
-                    existingMapping = existingMapping ?? new ResourceAlias {Resource = Name};
-                    existingMapping.Alias = value;
+                    existingAssignment = existingAssignment ?? new ResourceAlias {Resource = Name};
+                    existingAssignment.Alias = value;
                 });
             }
         }
@@ -127,37 +127,59 @@ namespace RESTar.Internal
                 updater = updater ?? StarcounterOperations<T>.Update;
                 deleter = deleter ?? StarcounterOperations<T>.Delete;
             }
-            else
-            {
-                var idictionaryImplementation = type
-                    .GetInterfaces()
-                    .FirstOrDefault(i => i.FullName.StartsWith("System.Collections.Generic.IDictionary"));
-                if (idictionaryImplementation != null)
-                {
-                    var firstTypeParameter = idictionaryImplementation.GenericTypeArguments[0];
-                    if (firstTypeParameter != typeof(string))
-                        throw new VirtualResourceDeclarationException(
-                            $"Invalid virtual resource declaration for type '{type.FullName}. All resources implementing " +
-                            "the generic 'System.Collections.Generic.IDictionary`2' interface must have System.String as " +
-                            $"first type parameter. Found {firstTypeParameter.FullName}");
-                }
-                var fields = type.GetFields(Public | Instance);
-                if (fields.Any())
-                    throw new VirtualResourceMemberException(
-                        "A virtual resource cannot include public instance fields, " +
-                        $"only properties. Resource: '{type.FullName}' Fields: {string.Join(", ", fields.Select(f => $"'{f.Name}'"))} in resource '{type.FullName}'");
-                if (type.GetProperties(Public | Instance)
-                    .Where(p => !p.HasAttribute<IgnoreDataMemberAttribute>())
-                    .Where(p => !(p.DeclaringType?.GetInterface("IDictionary`2") != null && p.Name == "Item"))
-                    .Select(p => p.RESTarMemberName().ToLower())
-                    .ContainsDuplicates(out string duplicate))
-                    throw new VirtualResourceMemberException(
-                        $"Invalid properties for resource '{type.FullName}'. Names of public instance properties declared " +
-                        $"for a virtual resource must be unique (case insensitive). Two or more property names evaluated to {duplicate}.");
-            }
-
+            else CheckVirtualResource(type);
             new Resource<T>(attribute, selector, inserter, updater, deleter);
         }
+
+        private static void CheckVirtualResource(Type type)
+        {
+            #region Check for invalid IDictionary implementation
+
+            if (type.Implements(typeof(IDictionary<,>), out var typeParams) && typeParams[0] != typeof(string))
+                throw new VirtualResourceDeclarationException(
+                    $"Invalid virtual resource declaration for type '{type.FullName}'. All resources implementing " +
+                    "the generic 'System.Collections.Generic.IDictionary`2' interface must have System.String as " +
+                    $"first type parameter. Found {typeParams[0].FullName}");
+
+            #endregion
+
+            #region Check for invalid IEnumerable implementation
+
+            if ((type.Implements(typeof(IEnumerable<>)) || type.Implements(typeof(IEnumerable))) &&
+                !type.Implements(typeof(IDictionary<,>)))
+                throw new VirtualResourceDeclarationException(
+                    $"Invalid virtual resource declaration for type '{type.FullName}'. The type has an invalid imple" +
+                    $"mentation of an IEnumerable interface. The resource '{type.FullName}' (or any of its base types) " +
+                    "cannot implement the \'System.Collections.Generic.IEnumerable`1\' or \'System.Collections.IEnume" +
+                    "rable\' interfaces unless it also implements the \'System.Collections.Generic.IDictionary`2\' interface."
+                );
+
+            #endregion
+
+            #region Check for public instance fields
+
+            var fields = type.GetFields(Public | Instance);
+            if (fields.Any())
+                throw new VirtualResourceMemberException(
+                    "A virtual resource cannot include public instance fields, " +
+                    $"only properties. Resource: '{type.FullName}' Fields: {string.Join(", ", fields.Select(f => $"'{f.Name}'"))} in resource '{type.FullName}'");
+
+            #endregion
+
+            #region Check for properties with duplicate case insensitive names
+
+            if (type.GetProperties(Public | Instance)
+                .Where(p => !p.HasAttribute<IgnoreDataMemberAttribute>())
+                .Where(p => !(p.DeclaringType.Implements(typeof(IDictionary<,>)) && p.Name == "Item"))
+                .Select(p => p.RESTarMemberName().ToLower())
+                .ContainsDuplicates(out string duplicate))
+                throw new VirtualResourceMemberException(
+                    $"Invalid properties for resource '{type.FullName}'. Names of public instance properties declared " +
+                    $"for a virtual resource must be unique (case insensitive). Two or more property names evaluated to {duplicate}.");
+
+            #endregion
+        }
+
 
         private static IReadOnlyList<RESTarMethods> GetAvailableMethods(Type resource)
         {

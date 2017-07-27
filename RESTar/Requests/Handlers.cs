@@ -58,7 +58,7 @@ namespace RESTar.Requests
                     case MENU:
                         CheckUser();
                         return new Menu().Populate().MakeCurrentView();
-                    default: return UnknownAction;
+                    default: return UnknownHandlerAction;
                 }
             }
             catch (Exception ex)

@@ -109,7 +109,8 @@ namespace RESTar
     public class DestinationException : RESTarException
     {
         internal DestinationException(HttpRequest request, string message) : base(InvalidDestination,
-            $"RESTar could not upload entities to destination at '{request.URI}': {message}") => Response = BadRequest(this);
+            $"RESTar could not upload entities to destination at '{request.URI}': {message}") => Response =
+            BadRequest(this);
     }
 
     /// <summary>
@@ -148,10 +149,8 @@ namespace RESTar
     /// </summary>
     public class ExcelFormatException : RESTarException
     {
-        internal ExcelFormatException() : base(ExcelReader,
-            "RESTar was unable to write a query response to an Excel table due to a format error. " +
-            "This is likely due to the serializer trying to push an array of heterogeneous objects " +
-            "onto a single table, or that some object contains an inner object.") => Response = BadRequest(this);
+        internal ExcelFormatException(string message, Exception ie) : base(ExcelReader,
+            $"RESTar was unable to write entities to excel. {message}", ie) => Response = BadRequest(this);
     }
 
     /// <summary>
@@ -181,8 +180,9 @@ namespace RESTar
         public readonly string SearchString;
 
         internal AmbiguousPropertyException(Type resource, string str, IEnumerable<string> cands)
-            : base(ErrorCodes.AmbiguousProperty, $"Could not uniquely identify a property in resource '{resource.Name}' by " +
-                                           $"'{str}'. Candidates: {string.Join(", ", cands)}. ")
+            : base(ErrorCodes.AmbiguousProperty,
+                $"Could not uniquely identify a property in resource '{resource.Name}' by " +
+                $"'{str}'. Candidates: {string.Join(", ", cands)}. ")
         {
             SearchString = str;
             Candidates = cands.ToList();
@@ -207,8 +207,9 @@ namespace RESTar
         public readonly string SearchString;
 
         internal AmbiguousResourceException(string searchString, IList<string> candidates)
-            : base(ErrorCodes.AmbiguousResource, $"RESTar could not uniquely identify a resource by '{searchString}'. " +
-                                           $"Candidates were: {string.Join(", ", candidates)}. ")
+            : base(ErrorCodes.AmbiguousResource,
+                $"RESTar could not uniquely identify a resource by '{searchString}'. " +
+                $"Candidates were: {string.Join(", ", candidates)}. ")
         {
             SearchString = searchString;
             Candidates = candidates;
@@ -236,12 +237,15 @@ namespace RESTar
     /// </summary>
     public class AbortedInserterException<T> : RESTarException where T : class
     {
-        internal AbortedInserterException(Exception ie, IRequest request, string message = null)
+        internal AbortedInserterException(RESTarMethods method, string message = null)
+            : base(AbortedInsert, message) => Response = AbortedOperation<T>(this, method);
+
+        internal AbortedInserterException(Exception ie, RESTarMethods method, string message = null)
             : base(AbortedInsert, message ?? (ie.GetType() == typeof(JsonSerializationException) ||
                                               ie.GetType() == typeof(JsonReaderException)
                                       ? "JSON serialization error, check JSON syntax"
                                       : ""
-                                  ), ie) => Response = AbortedOperation<T>(this, request.Method);
+                                  ), ie) => Response = AbortedOperation<T>(this, method);
     }
 
     /// <summary>
@@ -287,7 +291,7 @@ namespace RESTar
     public class UnknownResourceForAliasException : RESTarException
     {
         internal UnknownResourceForAliasException(string searchString, IResource match) : base(UnknownResource,
-            "Resource alias mappings must be provided with fully qualified resource names. No match " +
+            "Resource alias assignments must be provided with fully qualified resource names. No match " +
             $"for '{searchString}'. {(match != null ? $"Did you mean '{match.Name}'? " : "")}")
             => Response = BadRequest(this);
     }

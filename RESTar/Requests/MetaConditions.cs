@@ -63,6 +63,8 @@ namespace RESTar.Requests
         internal bool New { get; set; }
         internal bool Empty = true;
         internal bool Delete { get; set; }
+        internal IProcessor[] Processors { get; private set; }
+        internal bool HasProcessors { get; private set; }
 
         internal static MetaConditions Parse(string metaConditionString, IResource resource,
             bool processors = true)
@@ -139,6 +141,12 @@ namespace RESTar.Requests
                     default: throw new ArgumentOutOfRangeException();
                 }
 
+                if (processors)
+                {
+                    mc.Processors = new IProcessor[] {mc.Add, mc.Rename, mc.Select}.Where(p => p != null).ToArray();
+                    mc.HasProcessors = mc.Processors.Any();
+                }
+
                 if (mc.OrderBy != null)
                 {
                     if (mc.Add?.Any(pc => pc.Key.EqualsNoCase(mc.OrderBy.Key)) == true)
@@ -165,7 +173,7 @@ namespace RESTar.Requests
             }
             return mc;
         }
-        
+
         private static string GetTypeString(Type type)
         {
             if (type == typeof(string)) return "string";

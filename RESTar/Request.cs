@@ -23,7 +23,7 @@ namespace RESTar
             private set
             {
                 _conditions = value;
-                if (ScSql) Prep();
+                Prep();
             }
         }
 
@@ -46,6 +46,16 @@ namespace RESTar
 
         internal void Prep()
         {
+            if (!ScSql) return;
+            var (hasChanged, valueChanged) = Conditions.GetStatus();
+            if (valueChanged) HandleValueChanged();
+            else if (hasChanged) HandleHasChanged();
+            else return;
+            Conditions.ResetStatus();
+        }
+
+        private void HandleHasChanged()
+        {
             if (!Conditions.HasSQL(out var sql))
                 SqlQuery = StarcounterOperations<T>.SELECT;
             else
@@ -54,7 +64,11 @@ namespace RESTar
                 SqlQuery = $"{StarcounterOperations<T>.SELECT}{wh.WhereString}";
                 SqlValues = wh.Values;
             }
-            Conditions.ResetStatus();
+        }
+
+        private void HandleValueChanged()
+        {
+            Conditions.ForEach((cond, index) => SqlValues[index] = cond.Value);
         }
 
         public Request(string key, Operator op, object value) : this((key, op, value))
@@ -111,26 +125,40 @@ namespace RESTar
             return this;
         }
 
+        public Request<T> WithConditions(params (string key, Operator op, object value)[] conditions)
+        {
+            Conditions = conditions?.Any() != true
+                ? new Condition<T>[0]
+                : conditions.Select(c => new Condition<T>(
+                    term: Resource.MakeTerm(c.key, Resource.DynamicConditionsAllowed),
+                    op: c.op,
+                    value: c.value
+                )).ToArray();
+            return this;
+        }
+
+        public Request<T> WithConditions(string key, Operator op, object value) => WithConditions((key, op, value));
+
         private static Exception Deny(RESTarMethods method) => new ForbiddenException
             (ErrorCodes.NotAuthorized, $"{method} is not available for resource '{typeof(T).FullName}'");
 
         public IEnumerable<T> GET()
         {
-            if (ScSql && Conditions.HasChanged()) Prep();
+            Prep();
             if (!GETAllowed) throw Deny(RESTarMethods.GET);
             return Evaluators<T>.RAW_SELECT(this) ?? new T[0];
         }
 
         public bool ANY()
         {
-            if (ScSql && Conditions.HasChanged()) Prep();
+            Prep();
             if (!GETAllowed) throw Deny(RESTarMethods.GET);
             return Evaluators<T>.RAW_SELECT(this)?.Any() == true;
         }
 
         public int COUNT()
         {
-            if (ScSql && Conditions.HasChanged()) Prep();
+            Prep();
             if (!GETAllowed) throw Deny(RESTarMethods.GET);
             return Evaluators<T>.RAW_SELECT(this)?.Count() ?? 0;
         }
@@ -149,7 +177,7 @@ namespace RESTar
 
         public int PATCH(Func<T, T> updater)
         {
-            if (ScSql && Conditions.HasChanged()) Prep();
+            Prep();
             if (!PATCHAllowed) throw Deny(RESTarMethods.PATCH);
             var source = Evaluators<T>.RAW_SELECT(this)?.ToList();
             switch (source?.Count)
@@ -163,16 +191,24 @@ namespace RESTar
 
         public int PATCH(Func<IEnumerable<T>, IEnumerable<T>> updater)
         {
-            if (ScSql && Conditions.HasChanged()) Prep();
+            Prep();
             if (!PATCHAllowed) throw Deny(RESTarMethods.PATCH);
             var source = Evaluators<T>.RAW_SELECT(this)?.ToList();
             if (source?.Any() != true) return 0;
             return Evaluators<T>.App.PATCH(updater, source, this);
         }
 
+        public int PUT(Func<T> inserter)
+        {
+            Prep();
+            if (!PUTAllowed) throw Deny(RESTarMethods.PUT);
+            var source = Evaluators<T>.RAW_SELECT(this);
+            return Evaluators<T>.App.PUT(inserter, source, this);
+        }
+
         public int PUT(Func<T> inserter, Func<T, T> updater)
         {
-            if (ScSql && Conditions.HasChanged()) Prep();
+            Prep();
             if (!PUTAllowed) throw Deny(RESTarMethods.PUT);
             var source = Evaluators<T>.RAW_SELECT(this);
             return Evaluators<T>.App.PUT(inserter, updater, source, this);
@@ -180,7 +216,7 @@ namespace RESTar
 
         public int DELETE(bool @unsafe = false)
         {
-            if (ScSql && Conditions.HasChanged()) Prep();
+            Prep();
             if (!DELETEAllowed) throw Deny(RESTarMethods.DELETE);
             var source = Evaluators<T>.RAW_SELECT(this);
             if (source == null) return 0;

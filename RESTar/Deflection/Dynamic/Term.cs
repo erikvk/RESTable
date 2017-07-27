@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using Newtonsoft.Json.Linq;
 using RESTar.Internal;
 using RESTar.Linq;
@@ -63,6 +64,23 @@ namespace RESTar.Deflection.Dynamic
 
         private static readonly NoCaseComparer Comparer = new NoCaseComparer();
         private Term() => Store = new List<Property>();
+
+        /// <summary>
+        /// Create a new term for a given type, with a key describing the target property
+        /// </summary>
+        public static Term Create<T>(string key) where T : class =>
+            typeof(T).MakeTerm(key, Resource<T>.SafeGet?.IsDynamic == true);
+
+
+        /// <summary>
+        /// Create a new term for a given type, with a key describing the target property
+        /// </summary>
+        public static Term Create(Type type, string key) => type.MakeTerm(key, Resource.Get(type)?.IsDynamic == true);
+
+        /// <summary>
+        /// Create a new term from a given PropertyInfo
+        /// </summary>
+        public static Term Create(PropertyInfo propertyInfo) => propertyInfo.ToTerm();
 
         internal Func<T1, dynamic> ToSelector<T1>() => i => Do.Try(() => Evaluate(i), default(object));
 

@@ -112,5 +112,9 @@ namespace RESTar
         /// Returns true if and only if there is no alias for the given resource
         /// </summary>
         public static bool NotExists(IResource resource) => !Exists(resource, out var _);
+
+        /// <summary>
+        /// </summary>
+        public override string ToString() => Alias;
     }
 }

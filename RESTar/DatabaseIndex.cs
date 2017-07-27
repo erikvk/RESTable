@@ -1,5 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using RESTar.Linq;
+using RESTar.Internal;
 using System.Linq;
 using Starcounter;
 using Starcounter.Metadata;
@@ -21,10 +23,20 @@ namespace RESTar
         /// Is this index descending? (otherwise ascending)
         /// </summary>
         public bool Descending { get; set; }
+
+        /// <summary>
+        /// Creates a new ColumnInfo from a tuple describing a column name and direction
+        /// </summary>
+        /// <param name="column"></param>
+        public static implicit operator ColumnInfo((string Name, bool Descending) column) => new ColumnInfo
+        {
+            Name = column.Name,
+            Descending = column.Descending
+        };
     }
 
     /// <summary>
-    /// A resource for handling database indices for Starcounter resources.
+    /// A resource for handling database indexes for Starcounter resources.
     /// </summary>
     [RESTar(ReadAndWrite)]
     public class DatabaseIndex : ISelector<DatabaseIndex>, IInserter<DatabaseIndex>, IUpdater<DatabaseIndex>,
@@ -49,6 +61,50 @@ namespace RESTar
 
         private const string ColumnSQL = "SELECT t FROM Starcounter.Metadata.IndexedColumn t " +
                                          "WHERE t.\"Index\" =? ORDER BY t.Position";
+
+        /// <summary>
+        /// Creates an ascending database index for the table T with a given name on the given column.
+        /// If an index with the same name already exists, does nothing.
+        /// </summary>
+        public static void Register<T>(string name, string columnName)
+            where T : class => Register<T>(name, (columnName, false));
+
+        /// <summary>
+        /// Creates an ascending database index for the table T with a given name on the given columns.
+        /// If an index with the same name already exists, does nothing.
+        /// </summary>
+        public static void Register<T>(string name, string columnName1, string columnName2)
+            where T : class => Register<T>(name, (columnName1, false), (columnName2, false));
+
+        /// <summary>
+        /// Creates a database index for a table type with a given name on the given column and direction.
+        /// If an index with the same name already exists, does nothing.
+        /// </summary>
+        public static void Register<T>(string name, string columnName, bool descending)
+            where T : class => Register<T>(name, (columnName, descending));
+
+        /// <summary>
+        /// Creates a database index for a table type with a given name on a given list of columns.
+        /// If an index with the same name already exists, does nothing.
+        /// </summary>
+        public static void Register<T>(string name, params ColumnInfo[] columns) where T : class
+        {
+            var resource = Resource<T>.Get;
+            if (resource == null)
+                throw new UnknownResourceException(typeof(T).FullName);
+            if (resource.ResourceType != RESTarResourceType.StaticStarcounter)
+                throw new Exception("Database indexes can only be registered for static Starcounter resources." +
+                                    $"Resource '{resource.AliasOrName}' is of type '{resource.ResourceType}'.");
+            InternalRequest.Conditions[0].SetValue(name);
+            InternalRequest.PUT(() => new DatabaseIndex
+            {
+                Resource = typeof(T).FullName,
+                Name = name,
+                Columns = columns
+            });
+        }
+
+        private static readonly Request<DatabaseIndex> InternalRequest = new Request<DatabaseIndex>("Name", "=", null);
 
         private static IEnumerable<DatabaseIndex> All => Db
             .SQL<Index>(IndexSQL)
@@ -79,10 +135,10 @@ namespace RESTar
 
         /// <summary>
         /// </summary>
-        public int Insert(IEnumerable<DatabaseIndex> indices, IRequest<DatabaseIndex> request)
+        public int Insert(IEnumerable<DatabaseIndex> indexes, IRequest<DatabaseIndex> request)
         {
             var count = 0;
-            foreach (var index in indices)
+            foreach (var index in indexes)
             {
                 Db.SQL($"CREATE INDEX \"{index.Name}\" ON {index.Resource} " +
                        $"({string.Join(", ", index.Columns.Select(c => $"\"{c.Name}\" {(c.Descending ? "DESC" : "")}"))})");
@@ -93,10 +149,10 @@ namespace RESTar
 
         /// <summary>
         /// </summary>
-        public int Update(IEnumerable<DatabaseIndex> indices, IRequest<DatabaseIndex> request)
+        public int Update(IEnumerable<DatabaseIndex> indexes, IRequest<DatabaseIndex> request)
         {
             var count = 0;
-            foreach (var index in indices)
+            foreach (var index in indexes)
             {
                 Db.SQL($"DROP INDEX {index.Name} ON {index.Resource}");
                 Db.SQL($"CREATE INDEX \"{index.Name}\" ON {index.Resource} " +
@@ -108,10 +164,10 @@ namespace RESTar
 
         /// <summary>
         /// </summary>
-        public int Delete(IEnumerable<DatabaseIndex> indices, IRequest<DatabaseIndex> request)
+        public int Delete(IEnumerable<DatabaseIndex> indexes, IRequest<DatabaseIndex> request)
         {
             var count = 0;
-            foreach (var index in indices)
+            foreach (var index in indexes)
             {
                 Db.SQL($"DROP INDEX {index.Name} ON {index.Resource}");
                 count += 1;

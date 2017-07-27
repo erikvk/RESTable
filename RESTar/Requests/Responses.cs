@@ -24,10 +24,7 @@ namespace RESTar.Requests
         {
             StatusCode = (ushort) HttpStatusCode.NotFound,
             StatusDescription = "Not found",
-            Headers =
-            {
-                ["RESTar-info"] = e.Message
-            }
+            Headers = {["RESTar-info"] = e.Message}
         };
 
         internal static Response AmbiguousProperty(AmbiguousPropertyException e) => new Response
@@ -64,30 +61,21 @@ namespace RESTar.Requests
         {
             StatusCode = (ushort) HttpStatusCode.BadRequest,
             StatusDescription = "Bad request",
-            Headers =
-            {
-                ["RESTar-info"] = e.Message
-            }
+            Headers = {["RESTar-info"] = e.Message}
         };
 
-        internal static Response UnknownAction => new Response
+        internal static Response UnknownHandlerAction => new Response
         {
             StatusCode = (ushort) HttpStatusCode.BadRequest,
             StatusDescription = "Bad request",
-            Headers =
-            {
-                ["RESTar-info"] = "Unknown action"
-            }
+            Headers = {["RESTar-info"] = "Unknown RESTar handler action"}
         };
 
         internal static Response JsonError => new Response
         {
             StatusCode = (ushort) HttpStatusCode.BadRequest,
             StatusDescription = "Bad request",
-            Headers =
-            {
-                ["RESTar-info"] = $"Error while deserializing JSON. Check JSON syntax"
-            }
+            Headers = {["RESTar-info"] = "Error while deserializing JSON. Check JSON syntax"}
         };
 
         internal static Response DbError(Exception e)
@@ -149,10 +137,7 @@ namespace RESTar.Requests
         {
             StatusCode = (ushort) HttpStatusCode.NoContent,
             StatusDescription = "No content",
-            Headers =
-            {
-                ["RESTar-info"] = "No entities found matching request"
-            }
+            Headers = {["RESTar-info"] = "No entities found matching request"}
         };
 
         internal static Response InsertedEntities<T>(int count) where T : class

@@ -68,7 +68,7 @@ namespace RESTar
 
     /// <summary>
     /// Registers a class as an internal RESTar resource, that can only
-    /// be used in internal requests (using the Request class).
+    /// be used in internal requests (using the RESTar.Request`1 class).
     /// </summary>
     [AttributeUsage(AttributeTargets.Class, Inherited = false)]
     public class RESTarInternalAttribute : RESTarAttribute
@@ -93,7 +93,8 @@ namespace RESTar
         /// <param name="preset">A preset used for setting up available methods for the resource</param>
         /// <param name="additionalMethods">Additional methods for this resource, apart from the one defined by
         /// the preset</param>
-        public RESTarInternalAttribute(RESTarPresets preset, params RESTarMethods[] additionalMethods) : base(preset, additionalMethods)
+        public RESTarInternalAttribute(RESTarPresets preset, params RESTarMethods[] additionalMethods) : base(preset,
+            additionalMethods)
         {
         }
 
@@ -101,7 +102,8 @@ namespace RESTar
         /// </summary>
         /// <param name="method">A method to make available for the resource</param>
         /// <param name="addMethods">Additional methods to make available for the resource</param>
-        public RESTarInternalAttribute(RESTarMethods method, params RESTarMethods[] addMethods) : base(method, addMethods)
+        public RESTarInternalAttribute(RESTarMethods method, params RESTarMethods[] addMethods) : base(method,
+            addMethods)
         {
         }
     }

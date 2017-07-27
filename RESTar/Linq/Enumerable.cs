@@ -15,7 +15,7 @@ namespace RESTar.Linq
         /// </summary>
         public static IEnumerable<T> Where<T>(this IEnumerable<T> entities, IEnumerable<Condition<T>> conditions)
             where T : class => conditions == null ? entities : conditions.Apply(entities);
-        
+
         /// <summary>
         /// Generates an IEnumerable of string using the selector function applied to the source IEnumerable, 
         /// and then joins those strings using the separator.
@@ -144,10 +144,10 @@ namespace RESTar.Linq
         /// <summary>
         /// Performs an action for each element in an IEnumerable. Exposes the element index.
         /// </summary>
-        public static void ForEach<T>(this IEnumerable<T> source, Action<T, int> action)
+        public static void ForEach<T>(this IEnumerable<T> source, Action<T, long> action)
         {
-            var i = 0;
-            foreach (var e in source) action(e, i++);
+            var i = 0L;
+            foreach (var e in source) action(e, i += 1);
         }
     }
 }

@@ -98,12 +98,14 @@ namespace RESTar
 
         internal static bool Implements(this Type type, Type interfaceType)
         {
-            return type.GetInterface(interfaceType.FullName) != null;
+            return type.GetInterfaces()
+                .Any(i => i.Name == interfaceType.Name && i.Namespace == interfaceType.Namespace);
         }
 
         internal static bool Implements(this Type type, Type interfaceType, out Type[] genericParameters)
         {
-            var @interface = type.GetInterface(interfaceType.FullName);
+            var @interface = type.GetInterfaces()
+                .FirstOrDefault(i => i.Name == interfaceType.Name && i.Namespace == interfaceType.Namespace);
             genericParameters = @interface?.GetGenericArguments();
             return @interface != null;
         }
@@ -355,13 +357,9 @@ namespace RESTar
             return filter?.Apply(entities) ?? entities;
         }
 
-        internal static IEnumerable<object> Process<T>(this IEnumerable<T> entities, IProcessor processor)
-            where T : class
-        {
-            if (processor != null)
-                return processor.Apply(entities);
-            return entities;
-        }
+        internal static IEnumerable<JObject> Process<T>(this IEnumerable<T> entities, IProcessor[] processors)
+            where T : class => processors
+            .Aggregate(default(IEnumerable<JObject>), (e, p) => e != null ? p.Apply(e) : p.Apply(entities));
 
         internal static (string WhereString, object[] Values) MakeWhereClause<T>(this IEnumerable<Condition<T>> conds)
             where T : class
@@ -649,7 +647,9 @@ namespace RESTar
         internal static ClosedXML.Excel.XLWorkbook ToExcel(this IEnumerable<object> entities, IResource resource)
         {
             var dataSet = new DataSet();
-            dataSet.Tables.Add(entities.MakeTable(resource));
+            var table = entities.MakeTable(resource);
+            if (table.Rows.Count == 0) return null;
+            dataSet.Tables.Add(table);
             var workbook = new ClosedXML.Excel.XLWorkbook();
             workbook.AddWorksheet(dataSet);
             return workbook;
@@ -660,10 +660,11 @@ namespace RESTar
         /// </summary>
         public static ClosedXML.Excel.XLWorkbook ToExcel<T>(this IEnumerable<T> entities) where T : class
         {
-            if (!ResourceByType.TryGetValue(typeof(T), out var resource))
-                throw new UnknownResourceException(typeof(T).FullName);
+            var resource = Resource<T>.Get;
             var dataSet = new DataSet();
-            dataSet.Tables.Add(entities.MakeTable(resource));
+            var table = entities.MakeTable(resource);
+            if (table.Rows.Count == 0) return null;
+            dataSet.Tables.Add(table);
             var workbook = new ClosedXML.Excel.XLWorkbook();
             workbook.AddWorksheet(dataSet);
             return workbook;
@@ -692,9 +693,8 @@ namespace RESTar
                         var row = table.NewRow();
                         foreach (var pair in item)
                         {
-                            if (!table.Columns.Contains(pair.Key))
-                                table.Columns.Add(pair.Key);
-                            row.SetCellValue(pair.Key, pair.Value);
+                            if (!table.Columns.Contains(pair.Key)) table.Columns.Add(pair.Key);
+                            row[pair.Key] = GetCellValue(pair.Value);
                         }
                         table.Rows.Add(row);
                     }
@@ -705,9 +705,8 @@ namespace RESTar
                         var row = table.NewRow();
                         foreach (var pair in item)
                         {
-                            if (!table.Columns.Contains(pair.Key))
-                                table.Columns.Add(pair.Key);
-                            row.SetCellValue(pair.Key, pair.Value.ToObject<object>());
+                            if (!table.Columns.Contains(pair.Key)) table.Columns.Add(pair.Key);
+                            row[pair.Key] = GetCellValue(pair.Value.ToObject<object>());
                         }
                         table.Rows.Add(row);
                     }
@@ -727,12 +726,10 @@ namespace RESTar
                         var row = table.NewRow();
                         foreach (var prop in properties)
                         {
-                            var key = prop.Name;
-                            object value;
-                            if (prop.Type.IsEnum || prop.HasAttribute<ExcelFlattenToString>())
-                                value = prop.Get(item)?.ToString();
-                            else value = prop.Get(item);
-                            row.SetCellValue(key, value);
+                            object value = prop.Type.IsEnum || prop.HasAttribute<ExcelFlattenToString>()
+                                ? prop.Get(item)?.ToString()
+                                : prop.Get(item);
+                            row[prop.Name] = GetCellValue(value);
                         }
                         table.Rows.Add(row);
                     }
@@ -740,117 +737,40 @@ namespace RESTar
             }
         }
 
-        private static void SetCellValueOld(this DataRow row, string name, dynamic value)
+        private static object GetCellValue(dynamic value)
         {
-            if (value == null)
+            switch ((object) value)
             {
-                row[name] = DBNull.Value;
-                return;
-            }
-            Type type = value.GetType();
-            switch (Type.GetTypeCode(type))
-            {
-                case TypeCode.Object:
-                    var enumerable = value as IEnumerable<object>;
-                    if (enumerable != null)
-                        value = string.Join(", ", enumerable.Select(o => o.ToString()));
-                    else
-                    {
-                        var array = value as Array;
-                        if (array != null)
-                            value = string.Join(", ", array.Cast<object>().Select(o => o.ToString()));
-                    }
-                    try
-                    {
-                        row[name] = value;
-                    }
-                    catch
-                    {
-                        try
-                        {
-                            row[name] = "$(ObjectID: " + DbHelper.GetObjectID(value) + ")";
-                        }
-                        catch
-                        {
-                            row[name] = value.ToString();
-                        }
-                    }
-                    return;
-                case TypeCode.DBNull:
-                    row[name] = "";
-                    return;
-                case TypeCode.Boolean:
-                case TypeCode.Decimal:
-                case TypeCode.Int64:
-                case TypeCode.String:
-                    row[name] = value;
-                    return;
-                case TypeCode.SByte:
-                case TypeCode.Byte:
-                case TypeCode.Int16:
-                case TypeCode.UInt16:
-                case TypeCode.Int32:
-                case TypeCode.UInt32:
-                case TypeCode.UInt64:
-                    row[name] = (long) value;
-                    return;
-                case TypeCode.Single:
-                case TypeCode.Double:
-                    row[name] = (decimal) value;
-                    return;
-                case TypeCode.DateTime:
-                    var dateTime = (DateTime) value;
-                    row[name] = dateTime.ToString("O");
-                    return;
-                case TypeCode.Char:
-                    row[name] = value.ToString();
-                    return;
-            }
-        }
-
-
-        private static void SetCellValue(this DataRow row, string name, object value)
-        {
-            switch (value)
-            {
-                case null:
-                    row[name] = DBNull.Value;
-                    break;
-                case IEnumerable<object> ienum:
-                    var str = string.Join(", ", ienum.Select(o => o.ToString()));
-                    row[name] = str;
-                    break;
-                case DBNull _:
-                    row[name] = "";
-                    break;
                 case bool _:
                 case decimal _:
                 case long _:
-                case string _:
-                    row[name] = value;
-                    break;
+                case string _: return value;
                 case sbyte _:
                 case byte _:
                 case short _:
                 case ushort _:
                 case int _:
                 case uint _:
-                case ulong _:
-                    row[name] = (long) value;
-                    break;
+                case ulong _: return (long) value;
                 case float _:
-                case double _:
-                    row[name] = (decimal) value;
-                    break;
-                case DateTime dt:
-                    row[name] = dt.ToString("O");
-                    break;
-                case char c:
-                    row[name] = c.ToString();
-                    break;
+                case double _: return (decimal) value;
+                case char c: return c.ToString();
+                case DateTime dt: return dt.ToString("O");
+                case JObject _: return typeof(JObject).FullName;
+                case DDictionary _: return $"$(ObjectID: {DbHelper.GetObjectID(value)})";
+                case IDictionary id: return id.GetType().FullName;
+                case IEnumerable<object> ienum: return string.Join(", ", ienum.Select(o => o.ToString()));
+                case DBNull _: return "";
+                case null: return DBNull.Value;
                 default:
-                    row[name] = Do.Try(() => $"$(ObjectID: {value.GetObjectID()})", value.ToString());
-                    break;
+                    try
+                    {
+                        return $"$(ObjectID: {DbHelper.GetObjectID(value)})";
+                    }
+                    catch
+                    {
+                        return value.ToString();
+                    }
             }
         }
 

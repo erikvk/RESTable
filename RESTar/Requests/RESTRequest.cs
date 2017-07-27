@@ -136,7 +136,7 @@ namespace RESTar.Requests
 
         internal Response MakeResponse(IEnumerable<object> data)
         {
-            var fileName = $"{Resource.AliasOrName}_{DateTime.Now:yyyyMMdd_HHmmss}";
+            var fileName = $"{Resource.AliasOrName}_{DateTime.Now:yyMMddHHmmssfff}";
             switch (Accept)
             {
                 case RESTarMimeType.Json:
@@ -149,14 +149,21 @@ namespace RESTar.Requests
                         Headers = {["Content-Disposition"] = $"attachment; filename={fileName}.json"}
                     };
                 case RESTarMimeType.Excel:
-                    var excel = data.ToExcel(Resource)?.SerializeExcel();
-                    if (excel == null) return null;
-                    return new Response
+                    try
                     {
-                        ContentType = MimeTypes.Excel,
-                        BodyBytes = excel,
-                        Headers = {["Content-Disposition"] = $"attachment; filename={fileName}.xlsx"}
-                    };
+                        var excel = data.ToExcel(Resource)?.SerializeExcel();
+                        if (excel == null) return null;
+                        return new Response
+                        {
+                            ContentType = MimeTypes.Excel,
+                            BodyBytes = excel,
+                            Headers = {["Content-Disposition"] = $"attachment; filename={fileName}.xlsx"}
+                        };
+                    }
+                    catch (Exception e)
+                    {
+                        throw new ExcelFormatException(e.Message, e);
+                    }
                 case RESTarMimeType.XML:
                     var xml = data.SerializeXML();
                     if (xml == null) return null;
