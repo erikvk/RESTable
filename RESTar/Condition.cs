@@ -22,17 +22,44 @@ namespace RESTar
         /// </summary>
         public string Key => Term.Key;
 
+        private Operator _operator;
+
         /// <summary>
         /// The operator of the condition, specifies the operation of the truth
         /// evaluation. Should the condition check for equality, for example?
         /// </summary>
-        public Operator Operator { get; private set; }
+        public Operator Operator
+        {
+            get => _operator;
+            set
+            {
+                if (value == _operator) return;
+                _operator = value;
+                if (!ScQueryable) return;
+                HasChanged = true;
+            }
+        }
+
+        private dynamic _value;
 
         /// <summary>
         /// The second operand for the operation defined by the operator. Defines
         /// the object for comparison.
         /// </summary>
-        public dynamic Value { get; private set; }
+        public dynamic Value
+        {
+            get => _value;
+            set
+            {
+                if (value == _value) return;
+                var oldValue = _value;
+                _value = value;
+                if (!ScQueryable) return;
+                if (value == null || oldValue == null)
+                    HasChanged = true;
+                else ValueChanged = true;
+            }
+        }
 
         /// <summary>
         /// The term describing the property to compare with
@@ -43,14 +70,41 @@ namespace RESTar
         /// </summary>
         public override int GetHashCode() => typeof(T).GetHashCode() + Key.GetHashCode() + Operator.GetHashCode();
 
+        private bool _skip;
+
         /// <summary>
         /// Should this condition be skipped during evaluation?
         /// </summary>
-        public bool Skip { get; set; }
+        public bool Skip
+        {
+            get => _skip;
+            set
+            {
+                if (ScQueryable)
+                {
+                    if (value == _skip) return;
+                    _skip = value;
+                    HasChanged = true;
+                }
+                else _skip = value;
+            }
+        }
 
+        /// <summary>
+        /// If true, this condition needs to be written to new SQL
+        /// </summary>
         internal bool HasChanged { get; set; }
+
+        /// <summary>
+        /// If true, a new value must be obtained from this condition before SQL
+        /// </summary>
         internal bool ValueChanged { get; set; }
+
+        /// <summary>
+        /// Is this condition queryable using Starcounter SQL?
+        /// </summary>
         internal bool ScQueryable => Term.ScQueryable;
+
         internal Type Type => Term.IsStatic ? Term.LastAs<StaticProperty>()?.Type : null;
         internal bool IsOfType<T1>() => Type == typeof(T1);
 
@@ -60,41 +114,28 @@ namespace RESTar
         [Pure]
         public Condition<T1> Redirect<T1>(string newKey = null) where T1 : class => new Condition<T1>
         (
-            term: typeof(T1).MakeTerm
-            (
-                key: newKey ?? Key,
-                dynamicUnknowns: Resource<T1>.AllowDynamicConditions
-            ),
+            term: typeof(T1).MakeTerm(newKey ?? Key, Resource<T1>.AllowDynamicConditions),
             op: Operator,
             value: Value
         );
 
-        internal Condition(Term term, Operator op, dynamic value)
+        /// <summary>
+        /// Creates a new condition for the resource type T using a key, operator and value
+        /// </summary>
+        /// <param name="key">The key of the property of T to target, e.g. "Name", "Name.Length"</param>
+        /// <param name="op">The operator denoting the operation to evaluate for the property</param>
+        /// <param name="value">The value to compare the property referenced by the key with</param>
+        public Condition(string key, Operator op, object value) : this(Term.Create<T>(key), op, value)
+        {
+        }
+
+        internal Condition(Term term, Operator op, object value)
         {
             Term = term;
-            Operator = op;
-            Value = value;
+            _operator = op;
+            _value = value;
+            if (!ScQueryable) return;
             HasChanged = true;
-        }
-
-        /// <summary>
-        /// Sets the condition operator and returns the changed condition
-        /// </summary>
-        public Condition<T> SetOperator(Operator newOperator)
-        {
-            Operator = newOperator;
-            HasChanged = true;
-            return this;
-        }
-
-        /// <summary>
-        /// Sets the condition value and returns the changed condition
-        /// </summary>
-        public Condition<T> SetValue(dynamic value)
-        {
-            Value = value;
-            ValueChanged = true;
-            return this;
         }
 
         internal bool HoldsFor(T subject)

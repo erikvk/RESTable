@@ -67,9 +67,7 @@ namespace RESTar
         public IEnumerable<Resource> Select(IRequest<Resource> request)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
-            if (request.TryGetCondition(nameof(Name), "=", out var nameCond))
-                nameCond.SetValue(((string) nameCond.Value).FindResource().Name);
-            var conditions = request.Conditions.Redirect<IResource>(direct: nameof(Type), to: "Type.FullName");
+            var conditions = request.Conditions.Redirect<IResource>(direct: "Type", to: "Type.FullName");
             return Resources.Where(conditions).Where(r => r.IsGlobal).Select(m => new Resource
             {
                 Name = m.Name,

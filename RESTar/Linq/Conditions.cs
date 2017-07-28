@@ -95,19 +95,6 @@ namespace RESTar.Linq
                 });
         }
 
-
-        internal static (bool HasChanged, bool ValueChanged) GetStatus<T>(this IEnumerable<Condition<T>> conds)
-            where T : class
-        {
-            var ValueChanged = false;
-            foreach (var cond in conds)
-            {
-                if (cond.HasChanged) return (true, false);
-                if (cond.ValueChanged) ValueChanged = true;
-            }
-            return (false, ValueChanged);
-        }
-
         internal static void ResetStatus<T>(this IEnumerable<Condition<T>> conds) where T : class
         {
             conds.ForEach(c => c.HasChanged = c.ValueChanged = false);

@@ -95,8 +95,8 @@ namespace RESTar
             if (resource.ResourceType != RESTarResourceType.StaticStarcounter)
                 throw new Exception("Database indexes can only be registered for static Starcounter resources." +
                                     $"Resource '{resource.AliasOrName}' is of type '{resource.ResourceType}'.");
-            InternalRequest.Conditions[0].SetValue(name);
-            InternalRequest.PUT(() => new DatabaseIndex
+            SelectionCondition.Value = name;
+            SelectionRequest.PUT(() => new DatabaseIndex
             {
                 Resource = typeof(T).FullName,
                 Name = name,
@@ -104,19 +104,29 @@ namespace RESTar
             });
         }
 
-        private static readonly Request<DatabaseIndex> InternalRequest = new Request<DatabaseIndex>("Name", "=", null);
+        private static readonly Condition<DatabaseIndex> SelectionCondition;
+        private static readonly Request<DatabaseIndex> SelectionRequest;
 
-        private static IEnumerable<DatabaseIndex> All => Db
+        static DatabaseIndex()
+        {
+            SelectionCondition = new Condition<DatabaseIndex>(nameof(Name), Operator.EQUALS, null);
+            SelectionRequest = new Request<DatabaseIndex>(SelectionCondition);
+        }
+
+        /// <summary>
+        /// RESTar selector (don't use)
+        /// </summary>
+        public IEnumerable<DatabaseIndex> Select(IRequest<DatabaseIndex> request) => Db
             .SQL<Index>(IndexSQL)
-            .Where(i => !i.Table.FullName.StartsWith("Starcounter."))
-            .Where(i => !i.Name.StartsWith("DYNAMIT_GENERATED_INDEX"))
-            .Select(i =>
+            .Where(index => !index.Table.FullName.StartsWith("Starcounter."))
+            .Where(index => !index.Name.StartsWith("DYNAMIT_GENERATED_INDEX"))
+            .Select(index =>
             {
-                var columns = Db.SQL<IndexedColumn>(ColumnSQL, i);
+                var columns = Db.SQL<IndexedColumn>(ColumnSQL, index);
                 return new DatabaseIndex
                 {
-                    Name = i.Name,
-                    Resource = i.Table.FullName,
+                    Name = index.Name,
+                    Resource = index.Table.FullName,
                     Columns = columns.Select(c => new ColumnInfo
                     {
                         Name = c.Column.Name,
@@ -124,14 +134,7 @@ namespace RESTar
                     }).ToArray()
                 };
             })
-            .ToList();
-
-        /// <summary>
-        /// RESTar selector (don't use)
-        /// </summary>
-        public IEnumerable<DatabaseIndex> Select(IRequest<DatabaseIndex> request) => All
-            .Where(request.Conditions)
-            .ToList();
+            .Where(request.Conditions);
 
         /// <summary>
         /// </summary>

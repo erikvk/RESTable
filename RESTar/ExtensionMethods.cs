@@ -361,6 +361,30 @@ namespace RESTar
             where T : class => processors
             .Aggregate(default(IEnumerable<JObject>), (e, p) => e != null ? p.Apply(e) : p.Apply(entities));
 
+        internal static (string WhereString, object[] Values) MakeWhereClause<T>(this IEnumerable<Condition<T>> conds,
+            out Dictionary<int, int> valuesAssignments)
+            where T : class
+        {
+            var _valuesAssignments = new Dictionary<int, int>();
+            var Values = new List<object>();
+            var WhereString = string.Join(" AND ", conds.Where(c => !c.Skip).Select((c, index) =>
+            {
+                var key = c.Term.DbKey.Fnuttify();
+                if (c.Value == null)
+                    return $"t.{key} {(c.Operator == Operator.NOT_EQUALS ? "IS NOT NULL" : "IS NULL")}";
+                Values.Add(c.Value);
+                _valuesAssignments[index] = Values.Count - 1;
+                return $"t.{key} {c.Operator.SQL}?";
+            }));
+            if (WhereString == "")
+            {
+                valuesAssignments = null;
+                return (null, null);
+            }
+            valuesAssignments = _valuesAssignments;
+            return ($"WHERE {WhereString}", Values.ToArray());
+        }
+
         internal static (string WhereString, object[] Values) MakeWhereClause<T>(this IEnumerable<Condition<T>> conds)
             where T : class
         {

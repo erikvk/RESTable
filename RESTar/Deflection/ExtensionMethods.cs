@@ -57,6 +57,6 @@ namespace RESTar.Deflection
         /// Converts a PropertyInfo to a Term
         /// </summary>
         public static Term ToTerm(this PropertyInfo propertyInfo) => propertyInfo.DeclaringType
-            .MakeTerm(propertyInfo.Name, Resource.Get(propertyInfo.DeclaringType)?.IsDynamic == true);
+            .MakeTerm(propertyInfo.Name, Resource.Get(propertyInfo.DeclaringType)?.DynamicConditionsAllowed == true);
     }
 }

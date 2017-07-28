@@ -20,10 +20,10 @@ namespace RESTar
         public Condition<T>[] Conditions
         {
             get => _conditions;
-            private set
+            set
             {
-                _conditions = value;
-                Prep();
+                _conditions = value ?? new Condition<T>[0];
+                if (ScSql) BuildSQL();
             }
         }
 
@@ -37,6 +37,7 @@ namespace RESTar
         private readonly bool ScSql;
         internal string SqlQuery { get; private set; }
         internal object[] SqlValues { get; private set; }
+        private Dictionary<int, int> ValuesAssignments;
 
         private bool GETAllowed;
         private bool POSTAllowed;
@@ -47,46 +48,45 @@ namespace RESTar
         internal void Prep()
         {
             if (!ScSql) return;
-            var (hasChanged, valueChanged) = Conditions.GetStatus();
-            if (valueChanged) HandleValueChanged();
-            else if (hasChanged) HandleHasChanged();
-            else return;
+            var valueChanged = false;
+            foreach (var cond in Conditions.Where(c => !c.Skip))
+            {
+                if (cond.HasChanged)
+                {
+                    BuildSQL();
+                    Conditions.ResetStatus();
+                    return;
+                }
+                if (cond.ValueChanged) valueChanged = true;
+            }
+            if (!valueChanged) return;
+            Conditions.Where(c => !c.Skip).ForEach((cond, cindex) => SqlValues[ValuesAssignments[cindex]] = cond.Value);
             Conditions.ResetStatus();
         }
 
-        private void HandleHasChanged()
+        private void BuildSQL()
         {
             if (!Conditions.HasSQL(out var sql))
+            {
                 SqlQuery = StarcounterOperations<T>.SELECT;
+                SqlValues = null;
+                ValuesAssignments = null;
+            }
             else
             {
-                var wh = sql.MakeWhereClause();
+                var wh = sql.MakeWhereClause(out var assignments);
                 SqlQuery = $"{StarcounterOperations<T>.SELECT}{wh.WhereString}";
                 SqlValues = wh.Values;
+                ValuesAssignments = assignments;
             }
         }
 
-        private void HandleValueChanged()
-        {
-            Conditions.ForEach((cond, index) => SqlValues[index] = cond.Value);
-        }
-
-        public Request(string key, Operator op, object value) : this((key, op, value))
-        {
-        }
-
-        public Request(params (string key, Operator op, object value)[] conditions)
+        public Request(params Condition<T>[] conditions)
         {
             Resource = Resource<T>.Get;
             ResponseHeaders = new Dictionary<string, string>();
             MetaConditions = new MetaConditions {Unsafe = true};
-            Conditions = conditions?.Any() != true
-                ? new Condition<T>[0]
-                : conditions.Select(c => new Condition<T>(
-                    term: Resource.MakeTerm(c.key, Resource.DynamicConditionsAllowed),
-                    op: c.op,
-                    value: c.value
-                )).ToArray();
+            Conditions = conditions;
             this.Authenticate();
             ScSql = Resource.ResourceType == StaticStarcounter;
             Resource.AvailableMethods.ForEach(m =>
@@ -115,13 +115,15 @@ namespace RESTar
 
         public Request<T> WithConditions(IEnumerable<Condition<T>> conditions)
         {
-            Conditions = conditions?.ToArray() ?? new Condition<T>[0];
+            if (conditions is Condition<T>[] arr)
+                Conditions = arr;
+            else Conditions = conditions?.ToArray();
             return this;
         }
 
         public Request<T> WithConditions(params Condition<T>[] conditions)
         {
-            Conditions = conditions ?? new Condition<T>[0];
+            Conditions = conditions;
             return this;
         }
 

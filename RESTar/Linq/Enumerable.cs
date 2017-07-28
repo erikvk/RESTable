@@ -144,9 +144,9 @@ namespace RESTar.Linq
         /// <summary>
         /// Performs an action for each element in an IEnumerable. Exposes the element index.
         /// </summary>
-        public static void ForEach<T>(this IEnumerable<T> source, Action<T, long> action)
+        public static void ForEach<T>(this IEnumerable<T> source, Action<T, int> action)
         {
-            var i = 0L;
+            var i = 0;
             foreach (var e in source) action(e, i += 1);
         }
     }

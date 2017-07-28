@@ -413,12 +413,13 @@ namespace RESTar.Operations
                 var toUpdate = new List<(JObject json, T source)>();
                 try
                 {
-                    var conditions = request.MetaConditions.SafePost.Split(',').Select(k =>
-                            request.Resource.MakeTerm(k, request.Resource.DynamicConditionsAllowed))
-                        .Select(term => new Condition<T>(term, Operator.EQUALS, null)).ToList();
+                    var conditions = request.MetaConditions.SafePost
+                        .Split(',')
+                        .Select(s => new Condition<T>(s, Operator.EQUALS, null))
+                        .ToArray();
                     foreach (var entity in request.Body.Deserialize<IEnumerable<JObject>>())
                     {
-                        conditions.ForEach(cond => cond.SetValue(cond.Term.Evaluate(entity)));
+                        conditions.ForEach(cond => cond.Value = cond.Term.Evaluate(entity));
                         var results = innerRequest.WithConditions(conditions).GET().ToList();
                         switch (results.Count)
                         {

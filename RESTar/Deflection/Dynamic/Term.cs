@@ -69,13 +69,14 @@ namespace RESTar.Deflection.Dynamic
         /// Create a new term for a given type, with a key describing the target property
         /// </summary>
         public static Term Create<T>(string key) where T : class =>
-            typeof(T).MakeTerm(key, Resource<T>.SafeGet?.IsDynamic == true);
+            typeof(T).MakeTerm(key, Resource<T>.SafeGet?.DynamicConditionsAllowed == true);
 
 
         /// <summary>
         /// Create a new term for a given type, with a key describing the target property
         /// </summary>
-        public static Term Create(Type type, string key) => type.MakeTerm(key, Resource.Get(type)?.IsDynamic == true);
+        public static Term Create(Type type, string key) => type.MakeTerm(key,
+            Resource.Get(type)?.DynamicConditionsAllowed == true);
 
         /// <summary>
         /// Create a new term from a given PropertyInfo
