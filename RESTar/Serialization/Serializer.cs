@@ -4,19 +4,10 @@ using System.Xml;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
-using RESTar.Serialization;
-using static Newtonsoft.Json.DateFormatHandling;
-using static Newtonsoft.Json.DateTimeZoneHandling;
-using static Newtonsoft.Json.Formatting;
-using static Newtonsoft.Json.DateParseHandling;
-using static Newtonsoft.Json.FloatParseHandling;
-using static Newtonsoft.Json.NullValueHandling;
-using static Newtonsoft.Json.JsonConvert;
-using static RESTar.Settings;
 using Type = System.Type;
 using Formatting = Newtonsoft.Json.Formatting;
 
-namespace RESTar
+namespace RESTar.Serialization
 {
     /// <summary>
     /// The serializer for the RESTar instance
@@ -39,18 +30,18 @@ namespace RESTar
             };
             Settings = new JsonSerializerSettings
             {
-                DateParseHandling = DateTime,
-                DateFormatHandling = IsoDateFormat,
-                DateTimeZoneHandling = Utc,
+                DateParseHandling = DateParseHandling.DateTime,
+                DateFormatHandling = DateFormatHandling.IsoDateFormat,
+                DateTimeZoneHandling = DateTimeZoneHandling.Utc,
                 ContractResolver = new DefaultResolver(),
-                NullValueHandling = Include,
-                FloatParseHandling = Decimal
+                NullValueHandling = NullValueHandling.Include,
+                FloatParseHandling = FloatParseHandling.Decimal
             };
             VmSettings = new JsonSerializerSettings
             {
                 ContractResolver = new CreateViewModelResolver(),
-                DateFormatHandling = IsoDateFormat,
-                DateTimeZoneHandling = Utc
+                DateFormatHandling = DateFormatHandling.IsoDateFormat,
+                DateTimeZoneHandling = DateTimeZoneHandling.Utc
             };
             var enumConverter = new StringEnumConverter();
             Settings.Converters.Add(enumConverter);
@@ -60,7 +51,7 @@ namespace RESTar
 
         internal static string Serialize(this object value, Type type = null)
         {
-            return SerializeObject(value, type, _PrettyPrint ? Indented : Formatting.None, Settings);
+            return JsonConvert.SerializeObject(value, type, RESTar.Settings._PrettyPrint ? Formatting.Indented : Formatting.None, Settings);
         }
 
         internal static void Populate(JToken value, object target)
@@ -71,19 +62,19 @@ namespace RESTar
 
         internal static JToken ToJToken(this object o) => JToken.FromObject(o, JsonSerializer);
 
-        internal static dynamic Deserialize(this string json, Type type) => DeserializeObject(json, type);
-        internal static JToken Deserialize(this string json) => DeserializeObject<JToken>(json);
-        internal static T Deserialize<T>(this string json) => DeserializeObject<T>(json);
-        internal static void Populate(string json, object target) => PopulateObject(json, target, Settings);
-        internal static string SerializeToViewModel(this object value) => SerializeObject(value, VmSettings);
+        internal static dynamic Deserialize(this string json, Type type) => JsonConvert.DeserializeObject(json, type);
+        internal static JToken Deserialize(this string json) => JsonConvert.DeserializeObject<JToken>(json);
+        internal static T Deserialize<T>(this string json) => JsonConvert.DeserializeObject<T>(json);
+        internal static void Populate(string json, object target) => JsonConvert.PopulateObject(json, target, Settings);
+        internal static string SerializeToViewModel(this object value) => JsonConvert.SerializeObject(value, VmSettings);
 
         internal static string SerializeXML<T>(this IEnumerable<T> data)
         {
             var json = data.Serialize();
             if (json == "[]") return null;
-            var xml = DeserializeXmlNode($@"{{""row"":{json}}}", "root", true);
+            var xml = JsonConvert.DeserializeXmlNode($@"{{""row"":{json}}}", "root", true);
             using (var stringWriter = new StringWriter())
-            using (var xmlTextWriter = XmlWriter.Create(stringWriter, _PrettyPrint ? XMLIndentSettings : null))
+            using (var xmlTextWriter = XmlWriter.Create(stringWriter, RESTar.Settings._PrettyPrint ? XMLIndentSettings : null))
             {
                 xml.WriteTo(xmlTextWriter);
                 xmlTextWriter.Flush();

@@ -4,6 +4,7 @@ using Newtonsoft.Json.Linq;
 using RESTar.Deflection.Dynamic;
 using RESTar.Internal;
 using RESTar.Linq;
+using RESTar.Serialization;
 
 namespace RESTar.Operations
 {
@@ -24,7 +25,7 @@ namespace RESTar.Operations
             ForEach(term =>
             {
                 if (jobj[term.Key] != null) return;
-                object val = term.Evaluate(entity, out string actualKey);
+                object val = term.Evaluate(entity, out var actualKey);
                 jobj[actualKey] = val?.ToJToken();
             });
             return jobj;

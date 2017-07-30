@@ -91,18 +91,18 @@
   <ItemGroup>
     <Compile Include="Auth\AccessRight.cs" />
     <Compile Include="Auth\AccessRights.cs" />
-    <Compile Include="DatabaseIndex.cs" />
+    <Compile Include="Database\DatabaseIndex.cs" />
     <Compile Include="Database\TableInfo.cs" />
     <Compile Include="Deflection\EnumMember.cs" />
     <Compile Include="Deflection\ExtensionMethods.cs" />
     <Compile Include="Deflection\Dynamic\Delegates.cs" />
     <Compile Include="Deflection\Dynamic\SpecialProperty.cs" />
     <Compile Include="Deflection\Dynamic\TypeCache.cs" />
-    <Compile Include="Delegates.cs" />
     <Compile Include="Echo.cs" />
     <Compile Include="ICondition.cs" />
     <Compile Include="Linq\Conditions.cs" />
     <Compile Include="Linq\Enumerable.cs" />
+    <Compile Include="Operations\IProcessor.cs" />
     <Compile Include="Operations\Transact.cs" />
     <Compile Include="Operations\Transaction.cs" />
     <Compile Include="Requests\Args.cs" />
@@ -120,7 +120,7 @@
     <Compile Include="Attributes.cs" />
     <Compile Include="NoCaseComparer.cs" />
     <Compile Include="Operations\Do.cs" />
-    <Compile Include="Operations\OperationsInterfaces.cs" />
+    <Compile Include="Operations\IFilter.cs" />
     <Compile Include="Interfaces.cs" />
     <Compile Include="Deflection\Dynamic\DynamicProperty.cs" />
     <Compile Include="Requests\Handlers.cs" />
@@ -137,7 +137,7 @@
     <Compile Include="Internal\IResource.cs" />
     <Compile Include="Deflection\Dynamic\Property.cs" />
     <Compile Include="Deflection\Dynamic\Term.cs" />
-    <Compile Include="Operations\OperationsDelegates.cs" />
+    <Compile Include="Operations\Delegates.cs" />
     <Compile Include="Operations\Rename.cs" />
     <Compile Include="Requests\RESTRequest.cs" />
     <Compile Include="Condition.cs" />
@@ -160,7 +160,7 @@
     <Compile Include="Error.cs" />
     <Compile Include="Schema.cs" />
     <Compile Include="Serialization\ToStringJsonConverter.cs" />
-    <Compile Include="Serializer.cs" />
+    <Compile Include="Serialization\Serializer.cs" />
     <Compile Include="Operations\SetOperations.cs" />
     <Compile Include="Internal\StarcounterOperations.cs" />
     <Compile Include="Requests\Responses.cs" />

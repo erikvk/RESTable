@@ -6,6 +6,7 @@ using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
 using Newtonsoft.Json.Linq;
+using RESTar.Serialization;
 using static System.UriKind;
 using static RESTar.RESTarMethods;
 using static RESTar.Settings;

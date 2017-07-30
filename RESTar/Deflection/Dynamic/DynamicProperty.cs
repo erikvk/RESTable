@@ -51,6 +51,7 @@ namespace RESTar.Deflection.Dynamic
                         var type = obj.GetType();
                         value = Do.Try(() =>
                         {
+
                             var prop = StaticProperty.Find(type, Name);
                             actualKey = prop.Name;
                             return prop.Get(obj);

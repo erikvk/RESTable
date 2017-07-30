@@ -172,7 +172,7 @@ namespace RESTar.Internal
                 .Where(p => !p.HasAttribute<IgnoreDataMemberAttribute>())
                 .Where(p => !(p.DeclaringType.Implements(typeof(IDictionary<,>)) && p.Name == "Item"))
                 .Select(p => p.RESTarMemberName().ToLower())
-                .ContainsDuplicates(out string duplicate))
+                .ContainsDuplicates(out var duplicate))
                 throw new VirtualResourceMemberException(
                     $"Invalid properties for resource '{type.FullName}'. Names of public instance properties declared " +
                     $"for a virtual resource must be unique (case insensitive). Two or more property names evaluated to {duplicate}.");

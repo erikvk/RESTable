@@ -39,8 +39,20 @@ namespace RESTar.Deflection.Dynamic
         /// <returns></returns>
         public static StaticProperty Find(Type type, string key)
         {
-            type.GetStaticProperties().TryGetValue(key.ToLower(), out StaticProperty prop);
+            type.GetStaticProperties().TryGetValue(key.ToLower(), out var prop);
             return prop ?? throw new UnknownPropertyException(type, key);
+        }
+
+        /// <summary>
+        /// Parses a static property from a key string and a type
+        /// </summary>
+        /// <param name="type">The type to match the property from</param>
+        /// <param name="key">The string to match a property from</param>
+        /// <param name="staticProperty">The static property found</param>
+        /// <returns></returns>
+        public static bool TryFind(Type type, string key, out StaticProperty staticProperty)
+        {
+            return type.GetStaticProperties().TryGetValue(key.ToLower(), out staticProperty);
         }
 
         internal StaticProperty(PropertyInfo p)

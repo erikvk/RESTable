@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Newtonsoft.Json.Linq;
+using RESTar.Serialization;
 using static System.UriKind;
 using static RESTar.RESTarMethods;
 

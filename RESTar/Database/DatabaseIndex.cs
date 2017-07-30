@@ -1,13 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using RESTar.Linq;
-using RESTar.Internal;
+﻿using System.Collections.Generic;
 using System.Linq;
+using RESTar.Linq;
 using Starcounter;
 using Starcounter.Metadata;
-using static RESTar.RESTarPresets;
 
-namespace RESTar
+namespace RESTar.Database
 {
     /// <summary>
     /// Contains information about a column on which an index is registered.
@@ -38,7 +35,7 @@ namespace RESTar
     /// <summary>
     /// A resource for handling database indexes for Starcounter resources.
     /// </summary>
-    [RESTar(ReadAndWrite)]
+    [RESTar(RESTarPresets.ReadAndWrite)]
     public class DatabaseIndex : ISelector<DatabaseIndex>, IInserter<DatabaseIndex>, IUpdater<DatabaseIndex>,
         IDeleter<DatabaseIndex>
     {
@@ -48,19 +45,14 @@ namespace RESTar
         public string Name { get; set; }
 
         /// <summary>
-        /// The resource (table) for which this index is registered
+        /// The table for which this index is registered
         /// </summary>
-        public string Resource { get; set; }
+        public string Table { get; set; }
 
         /// <summary>
         /// The columns on which this index is registered
         /// </summary>
         public ColumnInfo[] Columns { get; set; }
-
-        private const string IndexSQL = "SELECT t FROM Starcounter.Metadata.\"Index\" t";
-
-        private const string ColumnSQL = "SELECT t FROM Starcounter.Metadata.IndexedColumn t " +
-                                         "WHERE t.\"Index\" =? ORDER BY t.Position";
 
         /// <summary>
         /// Creates an ascending database index for the table T with a given name on the given column.
@@ -89,16 +81,10 @@ namespace RESTar
         /// </summary>
         public static void Register<T>(string name, params ColumnInfo[] columns) where T : class
         {
-            var resource = Resource<T>.Get;
-            if (resource == null)
-                throw new UnknownResourceException(typeof(T).FullName);
-            if (resource.ResourceType != RESTarResourceType.StaticStarcounter)
-                throw new Exception("Database indexes can only be registered for static Starcounter resources." +
-                                    $"Resource '{resource.AliasOrName}' is of type '{resource.ResourceType}'.");
             SelectionCondition.Value = name;
             SelectionRequest.PUT(() => new DatabaseIndex
             {
-                Resource = typeof(T).FullName,
+                Table = typeof(T).FullName,
                 Name = name,
                 Columns = columns
             });
@@ -113,26 +99,25 @@ namespace RESTar
             SelectionRequest = new Request<DatabaseIndex>(SelectionCondition);
         }
 
+        private const string ColumnSql = "SELECT t FROM Starcounter.Metadata.IndexedColumn t " +
+                                         "WHERE t.\"Index\" =? ORDER BY t.Position";
+
         /// <summary>
         /// RESTar selector (don't use)
         /// </summary>
         public IEnumerable<DatabaseIndex> Select(IRequest<DatabaseIndex> request) => Db
-            .SQL<Index>(IndexSQL)
+            .SQL<Index>("SELECT t FROM Starcounter.Metadata.\"Index\" t")
             .Where(index => !index.Table.FullName.StartsWith("Starcounter."))
             .Where(index => !index.Name.StartsWith("DYNAMIT_GENERATED_INDEX"))
-            .Select(index =>
+            .Select(index => new DatabaseIndex
             {
-                var columns = Db.SQL<IndexedColumn>(ColumnSQL, index);
-                return new DatabaseIndex
+                Name = index.Name,
+                Table = index.Table.FullName,
+                Columns = Db.SQL<IndexedColumn>(ColumnSql, index).Select(c => new ColumnInfo
                 {
-                    Name = index.Name,
-                    Resource = index.Table.FullName,
-                    Columns = columns.Select(c => new ColumnInfo
-                    {
-                        Name = c.Column.Name,
-                        Descending = c.Ascending == 0
-                    }).ToArray()
-                };
+                    Name = c.Column.Name,
+                    Descending = c.Ascending == 0
+                }).ToArray()
             })
             .Where(request.Conditions);
 
@@ -143,7 +128,7 @@ namespace RESTar
             var count = 0;
             foreach (var index in indexes)
             {
-                Db.SQL($"CREATE INDEX \"{index.Name}\" ON {index.Resource} " +
+                Db.SQL($"CREATE INDEX \"{index.Name}\" ON {index.Table} " +
                        $"({string.Join(", ", index.Columns.Select(c => $"\"{c.Name}\" {(c.Descending ? "DESC" : "")}"))})");
                 count += 1;
             }
@@ -157,8 +142,8 @@ namespace RESTar
             var count = 0;
             foreach (var index in indexes)
             {
-                Db.SQL($"DROP INDEX {index.Name} ON {index.Resource}");
-                Db.SQL($"CREATE INDEX \"{index.Name}\" ON {index.Resource} " +
+                Db.SQL($"DROP INDEX {index.Name} ON {index.Table}");
+                Db.SQL($"CREATE INDEX \"{index.Name}\" ON {index.Table} " +
                        $"({string.Join(", ", index.Columns.Select(c => $"\"{c.Name}\" {(c.Descending ? "DESC" : "")}"))})");
                 count += 1;
             }
@@ -172,7 +157,7 @@ namespace RESTar
             var count = 0;
             foreach (var index in indexes)
             {
-                Db.SQL($"DROP INDEX {index.Name} ON {index.Resource}");
+                Db.SQL($"DROP INDEX {index.Name} ON {index.Table}");
                 count += 1;
             }
             return count;

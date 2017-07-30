@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using RESTar.Linq;
+using RESTar.Serialization;
 using static RESTar.Operators;
 using static RESTar.RESTarMethods;
 

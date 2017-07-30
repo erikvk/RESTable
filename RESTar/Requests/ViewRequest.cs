@@ -7,6 +7,7 @@ using Newtonsoft.Json.Linq;
 using RESTar.Internal;
 using RESTar.Linq;
 using RESTar.Operations;
+using RESTar.Serialization;
 using RESTar.View;
 using Starcounter;
 using static RESTar.RESTarMethods;
@@ -146,7 +147,7 @@ namespace RESTar.Requests
                     .Replace("$", "")
                     .Split('.')
                     .Aggregate(item.Entity, (json, key) =>
-                        int.TryParse(key, out int index)
+                        int.TryParse(key, out var index)
                             ? (Json) json[index]
                             : (Json) json[key]);
                 array.RemoveAt(elementIndex);
@@ -177,7 +178,7 @@ namespace RESTar.Requests
                     .Replace("$", "")
                     .Split('.')
                     .Aggregate(item.Entity, (json, key) =>
-                        int.TryParse(key, out int index)
+                        int.TryParse(key, out var index)
                             ? (Json) json[index]
                             : (Json) json[key]);
                 if (parts.Length == 1)

@@ -6,13 +6,6 @@ using Starcounter;
 
 namespace RESTar
 {
-    internal class HttpRequestException : Exception
-    {
-        public HttpRequestException(string message) : base(message)
-        {
-        }
-    }
-
     internal class HttpRequest
     {
         internal RESTarMethods Method { get; private set; }
@@ -44,14 +37,14 @@ namespace RESTar
                         if (!part.StartsWith("/"))
                         {
                             IsInternal = false;
-                            if (!Uri.TryCreate(part, UriKind.Absolute, out Uri uri))
+                            if (!Uri.TryCreate(part, UriKind.Absolute, out var uri))
                                 throw new HttpRequestException($"Invalid uri '{part}'");
                             URI = uri;
                         }
                         else
                         {
                             IsInternal = true;
-                            if (!Uri.TryCreate(part, UriKind.Relative, out Uri uri))
+                            if (!Uri.TryCreate(part, UriKind.Relative, out var uri))
                                 throw new HttpRequestException($"Invalid uri '{part}'");
                             URI = uri;
                         }

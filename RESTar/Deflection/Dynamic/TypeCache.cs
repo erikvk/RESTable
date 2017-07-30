@@ -39,7 +39,7 @@ namespace RESTar.Deflection.Dynamic
         /// </summary>
         public static IDictionary<string, StaticProperty> GetStaticProperties(this Type type)
         {
-            if (StaticPropertyCache.TryGetValue(type.FullName, out IDictionary<string, StaticProperty> props))
+            if (StaticPropertyCache.TryGetValue(type.FullName, out var props))
                 return props;
             return StaticPropertyCache[type.FullName] = type.IsDDictionary()
                 ? new StaticProperty[] {ObjectNo, ObjectID}.ToDictionary(p => p.Name.ToLower(), p => p)

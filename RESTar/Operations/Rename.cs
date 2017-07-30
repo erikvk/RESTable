@@ -24,7 +24,7 @@ namespace RESTar.Operations
         {
             this.ForEach(pair =>
             {
-                var value = entity.SafeGetNoCase(pair.Key.Key, out string actualKey);
+                var value = entity.SafeGetNoCase(pair.Key.Key, out var actualKey);
                 if (actualKey != null)
                     entity.Remove(actualKey);
                 entity[pair.Value] = value;

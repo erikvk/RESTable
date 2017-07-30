@@ -110,7 +110,7 @@ namespace RESTar
                         break;
                 }
             });
-            if (ScSql) Prep();
+            if (ScSql) BuildSQL();
         }
 
         public Request<T> WithConditions(IEnumerable<Condition<T>> conditions)

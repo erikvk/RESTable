@@ -8,6 +8,7 @@ using Newtonsoft.Json.Linq;
 using RESTar.Internal;
 using RESTar.Linq;
 using RESTar.Operations;
+using RESTar.Serialization;
 using Starcounter;
 using static RESTar.Internal.ErrorCodes;
 using static RESTar.RESTarConfig;
@@ -28,7 +29,7 @@ namespace RESTar.Requests
         IResource IRequest.Resource => Resource;
         internal Request ScRequest { get; }
         private Response Response { get; set; }
-        private RESTEvaluator<T> Evaluator { get; set; }
+        private Func<RESTRequest<T>, Response> Evaluator { get; set; }
         private byte[] BinaryBody { get; set; }
         private string Source { get; set; }
         private string Destination { get; set; }

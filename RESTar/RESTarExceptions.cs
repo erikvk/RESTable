@@ -358,4 +358,11 @@ namespace RESTar
             "A call has been made to RESTar before RESTarConfig.Init() was called. Always " +
             "initialize the RESTar instance before making calls to it.") => Response = BadRequest(this);
     }
+
+    internal class HttpRequestException : Exception
+    {
+        public HttpRequestException(string message) : base(message)
+        {
+        }
+    }
 }

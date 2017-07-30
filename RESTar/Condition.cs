@@ -190,12 +190,12 @@ namespace RESTar
             {
                 if (s == "")
                     throw new SyntaxException(ErrorCodes.InvalidConditionSyntax, "Invalid condition syntax");
-                s = s.ReplaceFirst("%3E=", ">=", out bool replaced);
+                s = s.ReplaceFirst("%3E=", ">=", out var replaced);
                 if (!replaced) s = s.ReplaceFirst("%3C=", "<=", out replaced);
                 if (!replaced) s = s.ReplaceFirst("%3E", ">", out replaced);
                 if (!replaced) s = s.ReplaceFirst("%3C", "<", out replaced);
                 var matched = new string(s.Where(c => OpMatchChars.Contains(c)).ToArray());
-                if (!Operator.TryParse(matched, out Operator op))
+                if (!Operator.TryParse(matched, out var op))
                     throw new OperatorException(s);
                 var pair = s.Split(new[] {op.Common}, StringSplitOptions.None);
                 var keyString = WebUtility.UrlDecode(pair[0]);

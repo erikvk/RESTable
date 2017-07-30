@@ -7,7 +7,7 @@ using RESTar.Requests;
 using Starcounter;
 using static RESTar.Operations.Do;
 using static RESTar.Requests.Responses;
-using static RESTar.Serializer;
+using static RESTar.Serialization.Serializer;
 using static RESTar.Settings;
 
 namespace RESTar.Operations
@@ -323,7 +323,7 @@ namespace RESTar.Operations
 
         internal static class REST
         {
-            internal static RESTEvaluator<T> GetEvaluator(RESTarMethods method)
+            internal static Func<RESTRequest<T>, Response> GetEvaluator(RESTarMethods method)
             {
                 #region Long running transactions test
 

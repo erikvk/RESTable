@@ -71,7 +71,6 @@ namespace RESTar.Deflection.Dynamic
         public static Term Create<T>(string key) where T : class =>
             typeof(T).MakeTerm(key, Resource<T>.SafeGet?.DynamicConditionsAllowed == true);
 
-
         /// <summary>
         /// Create a new term for a given type, with a key describing the target property
         /// </summary>
@@ -150,7 +149,7 @@ namespace RESTar.Deflection.Dynamic
         /// <summary>
         /// Returns the value that this term denotes for a given target object
         /// </summary>
-        public dynamic Evaluate(object target) => Evaluate(target, out string _);
+        public dynamic Evaluate(object target) => Evaluate(target, out var _);
 
         /// <summary>
         /// Returns the value that this term denotes for a given target object as well as
@@ -160,7 +159,7 @@ namespace RESTar.Deflection.Dynamic
         {
             if (target is JObject jobj)
             {
-                var val = jobj.SafeGetNoCase(Key, out string actual);
+                var val = jobj.SafeGetNoCase(Key, out var actual);
                 if (val != null)
                 {
                     actualKey = actual;

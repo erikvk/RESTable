@@ -2,7 +2,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Data;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -19,8 +18,10 @@ using RESTar.Internal;
 using RESTar.Linq;
 using RESTar.Operations;
 using RESTar.Requests;
+using RESTar.Serialization;
 using RESTar.View;
 using Starcounter;
+using static System.Globalization.DateTimeStyles;
 using static System.Reflection.BindingFlags;
 using static System.StringComparison;
 using static RESTar.RESTarMethods;
@@ -209,7 +210,7 @@ namespace RESTar
         {
             var hash = resource.GetHashCode() + key.ToLower().GetHashCode() +
                        dynamicUnknowns.GetHashCode();
-            if (!TermCache.TryGetValue(hash, out Term term))
+            if (!TermCache.TryGetValue(hash, out var term))
                 term = TermCache[hash] = Term.ParseInternal(resource, key, dynamicUnknowns);
             return term;
         }
@@ -224,7 +225,7 @@ namespace RESTar
 
         internal static void RunValidation(this IValidatable ivalidatable)
         {
-            if (!ivalidatable.Validate(out string reason))
+            if (!ivalidatable.Validate(out var reason))
                 throw new ValidatableException(reason);
         }
 
@@ -554,17 +555,15 @@ namespace RESTar
             if (valueString[0] == '\"' && valueString.Last() == '\"')
                 return valueString.Remove(0, 1).Remove(valueString.Length - 2, 1);
             dynamic obj;
-            if (bool.TryParse(valueString, out bool boo))
+            if (bool.TryParse(valueString, out var boo))
                 obj = boo;
-            else if (int.TryParse(valueString, out int _int))
+            else if (int.TryParse(valueString, out var _int))
                 obj = _int;
-            else if (decimal.TryParse(valueString, out decimal dec))
+            else if (decimal.TryParse(valueString, out var dec))
                 obj = decimal.Round(dec, 6);
-            else if (DateTime.TryParseExact(valueString, "yyyy-MM-dd", null, DateTimeStyles.AssumeUniversal,
-                         out DateTime dat) ||
-                     DateTime.TryParseExact(valueString, "yyyy-MM-ddTHH:mm:ss", null, DateTimeStyles.AssumeUniversal,
-                         out dat) ||
-                     DateTime.TryParseExact(valueString, "O", null, DateTimeStyles.AssumeUniversal, out dat))
+            else if (DateTime.TryParseExact(valueString, "yyyy-MM-dd", null, AssumeUniversal, out var dat) ||
+                     DateTime.TryParseExact(valueString, "yyyy-MM-ddTHH:mm:ss", null, AssumeUniversal, out dat) ||
+                     DateTime.TryParseExact(valueString, "O", null, AssumeUniversal, out dat))
                 obj = dat;
             else obj = valueString;
             return obj;
@@ -717,7 +716,8 @@ namespace RESTar
                         var row = table.NewRow();
                         foreach (var pair in item)
                         {
-                            if (!table.Columns.Contains(pair.Key)) table.Columns.Add(pair.Key);
+                            if (!table.Columns.Contains(pair.Key))
+                                table.Columns.Add(pair.Key);
                             row[pair.Key] = GetCellValue(pair.Value);
                         }
                         table.Rows.Add(row);
@@ -729,7 +729,8 @@ namespace RESTar
                         var row = table.NewRow();
                         foreach (var pair in item)
                         {
-                            if (!table.Columns.Contains(pair.Key)) table.Columns.Add(pair.Key);
+                            if (!table.Columns.Contains(pair.Key))
+                                table.Columns.Add(pair.Key);
                             row[pair.Key] = GetCellValue(pair.Value.ToObject<object>());
                         }
                         table.Rows.Add(row);
