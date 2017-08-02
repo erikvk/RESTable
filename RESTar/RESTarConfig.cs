@@ -74,8 +74,6 @@ namespace RESTar
         /// allowed origins</param>
         /// <param name="prettyPrint">Should JSON output be pretty print formatted as default?
         ///  (can be changed in settings during runtime)</param>
-        /// <param name="camelCase">Should resources be parsed and serialized using camelCase as 
-        /// opposed to default PascalCase?</param>
         /// <param name="daysToSaveErrors">The number of days to save errors in the Error resource</param>
         /// <param name="viewEnabled">Should the view be enabled?</param>
         /// <param name="setupMenu">Shoud a menu be setup automatically in the view?</param>
@@ -91,7 +89,6 @@ namespace RESTar
             bool allowAllOrigins = true,
             string configFilePath = null,
             bool prettyPrint = true,
-            bool camelCase = false,
             ushort daysToSaveErrors = 30)
         {
             uri = uri ?? "/rest";
@@ -102,7 +99,7 @@ namespace RESTar
                 throw new ArgumentException("URI cannot be the same as the application name" +
                                             $" ({appName})", nameof(appName));
             if (uri[0] != '/') uri = $"/{uri}";
-            Settings.Init(port, uri, viewEnabled, prettyPrint, camelCase, daysToSaveErrors);
+            Settings.Init(port, uri, viewEnabled, prettyPrint, daysToSaveErrors);
             typeof(object).GetSubclasses()
                 .Where(t => t.HasAttribute<RESTarAttribute>())
                 .ForEach(t => Do.TryCatch(() => Resource.AutoMakeResource(t), e => throw (e.InnerException ?? e)));

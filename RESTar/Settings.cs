@@ -62,19 +62,19 @@ namespace RESTar
 
         private static readonly string SQL = $"SELECT t FROM {typeof(Settings).FullName} t";
 
-        internal static void Init(ushort port, string uri, bool viewEnabled, bool prettyPrint, bool camelCase,
-            int daysToSaveErrors) => Trans(() =>
-        {
-            Db.SQL<Settings>(SQL).ForEach(Db.Delete);
-            new Settings
+        internal static void Init(ushort port, string uri, bool viewEnabled, bool prettyPrint, int daysToSaveErrors) =>
+            Trans(() =>
             {
-                Port = port,
-                Uri = uri,
-                ViewEnabled = viewEnabled,
-                PrettyPrint = prettyPrint,
-                DaysToSaveErrors = daysToSaveErrors
-            };
-        });
+                Db.SQL<Settings>(SQL).ForEach(Db.Delete);
+                new Settings
+                {
+                    Port = port,
+                    Uri = uri,
+                    ViewEnabled = viewEnabled,
+                    PrettyPrint = prettyPrint,
+                    DaysToSaveErrors = daysToSaveErrors
+                };
+            });
 
         /// <summary>
         /// Gets the only instance of the Settings resource

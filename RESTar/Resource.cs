@@ -61,6 +61,8 @@ namespace RESTar
         /// </summary>
         public RESTarResourceType ResourceType { get; private set; }
 
+        #region RESTar operations
+
         /// <summary>
         /// RESTar selector (don't use)
         /// </summary>
@@ -150,28 +152,9 @@ namespace RESTar
             return count;
         }
 
-        private static readonly MethodInfo AUTO_MAKER = typeof(Resource)
-            .GetMethod(nameof(AUTO_MAKE), NonPublic | Static);
+        #endregion
 
-        private static readonly MethodInfo DYNAMIC_AUTO_MAKER = typeof(Resource)
-            .GetMethod(nameof(DYNAMIC_AUTO_MAKE), NonPublic | Static);
-
-        internal static void AutoMakeDynamicResource(DynamicResource resource) => DYNAMIC_AUTO_MAKER
-            .MakeGenericMethod(resource.Table)
-            .Invoke(null, new object[] {resource.Attribute});
-
-        internal static void AutoMakeResource(Type type) => AUTO_MAKER
-            .MakeGenericMethod(type)
-            .Invoke(null, null);
-
-        private static void AUTO_MAKE<T>() where T : class =>
-            Resource<T>.Make(typeof(T).GetAttribute<RESTarAttribute>());
-
-        private static void DYNAMIC_AUTO_MAKE<T>(RESTarAttribute attribute) where T : class =>
-            Resource<T>.Make(attribute);
-
-        private const string DynamicResourceSQL = "SELECT t FROM RESTar.Internal.DynamicResource t WHERE t.Name =?";
-        internal DynamicResource GetDynamicResource() => Db.SQL<DynamicResource>(DynamicResourceSQL, Name).First;
+        #region Register resources
 
         /// <summary>
         /// Registers a new resource with the RESTar instance
@@ -257,10 +240,15 @@ namespace RESTar
             Resource<T>.Make(attribute, selector, inserter, updater, deleter);
         }
 
+        #endregion
+
+        #region Find and get resources
+
         /// <summary>
-        /// Finds a resource by a search string, can be a partial resource name. If no resource 
+        /// Finds a resource by a search string. The string can be a partial resource name. If no resource 
         /// is found, throws an UnknownResourceException. If more than one resource is found, throws
         /// an AmbiguousResourceException.
+        /// <param name="searchString">The case insensitive string to use for the search</param>
         /// </summary>
         public static IResource Find(string searchString)
         {
@@ -282,33 +270,36 @@ namespace RESTar
             }
         }
 
-        internal static ICollection<IResource> FindMany(string searchString)
+        /// <summary>
+        /// Finds a number of resources based on a search string. To include more than one resource in 
+        /// the search, use the wildcard character (asterisk '*'). To find all resources in a namespace
+        /// 'MyApplication.Utilities', use the search string "myapplication.utilities.*" or any case 
+        /// variant of it.
+        /// </summary>
+        /// <param name="searchString">The case insensitive string to use for the search</param>
+        /// <returns></returns>
+        public static IResource[] FindMany(string searchString)
         {
             searchString = searchString.ToLower();
-            var asterisks = searchString.Count(i => i == '*');
-            if (asterisks > 1)
-                throw new Exception("Invalid resource string syntax");
-            if (asterisks == 1)
+            switch (searchString.Count(i => i == '*'))
             {
-                if (searchString.Last() != '*')
-                    throw new Exception("Invalid resource string syntax");
-                var commonPart = searchString.Split('*')[0];
-                var matches = ResourceByName
-                    .Where(pair => pair.Key.StartsWith(commonPart))
-                    .Select(pair => pair.Value)
-                    .Union(ResourceAlias.All
-                        .Where(alias => alias.Alias.StartsWith(commonPart))
-                        .Select(alias => alias.IResource))
-                    .ToList();
-                if (matches.Any()) return matches;
-                throw new UnknownResourceException(searchString);
+                case 0: return new[] {Find(searchString)};
+                case 1:
+                    if (searchString.Last() != '*')
+                        throw new Exception("Invalid resource string syntax. The asterisk must be the last character");
+                    var commonPart = searchString.TrimEnd('*');
+                    var matches = ResourceByName
+                        .Where(pair => pair.Key.StartsWith(commonPart))
+                        .Select(pair => pair.Value)
+                        .Union(ResourceAlias.All
+                            .Where(alias => alias.Alias.StartsWith(commonPart))
+                            .Select(alias => alias.IResource))
+                        .ToArray();
+                    if (!matches.Any())
+                        throw new UnknownResourceException(searchString);
+                    return matches;
+                default: throw new Exception("Invalid resource string syntax. Can only include one asterisk (*)");
             }
-            var resource = ResourceAlias.ByAlias(searchString)?.IResource;
-            if (resource == null)
-                ResourceByName.TryGetValue(searchString, out resource);
-            if (resource != null)
-                return new[] {resource};
-            throw new UnknownResourceException(searchString);
         }
 
         /// <summary>
@@ -348,5 +339,42 @@ namespace RESTar
         /// resource is found.
         /// </summary>
         public static IResource<T> SafeGet<T>() where T : class => Resource<T>.SafeGet;
+
+        #endregion
+
+        #region Helpers
+
+        private static readonly MethodInfo AUTO_MAKER;
+        private static readonly MethodInfo DYNAMIC_AUTO_MAKER;
+        private const string DynamicResourceSQL = "SELECT t FROM RESTar.Internal.DynamicResource t WHERE t.Name =?";
+        internal DynamicResource GetDynamicResource() => Db.SQL<DynamicResource>(DynamicResourceSQL, Name).First;
+
+        static Resource()
+        {
+            DYNAMIC_AUTO_MAKER = typeof(Resource).GetMethod(nameof(DYNAMIC_AUTO_MAKE), NonPublic | Static);
+            AUTO_MAKER = typeof(Resource).GetMethod(nameof(AUTO_MAKE), NonPublic | Static);
+        }
+
+        internal static void AutoMakeDynamicResource(DynamicResource resource)
+        {
+            DYNAMIC_AUTO_MAKER.MakeGenericMethod(resource.Table).Invoke(null, new object[] {resource.Attribute});
+        }
+
+        internal static void AutoMakeResource(Type type)
+        {
+            AUTO_MAKER.MakeGenericMethod(type).Invoke(null, null);
+        }
+
+        private static void AUTO_MAKE<T>() where T : class
+        {
+            Resource<T>.Make(typeof(T).GetAttribute<RESTarAttribute>());
+        }
+
+        private static void DYNAMIC_AUTO_MAKE<T>(RESTarAttribute attribute) where T : class
+        {
+            Resource<T>.Make(attribute);
+        }
+
+        #endregion
     }
 }
