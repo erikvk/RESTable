@@ -1,20 +1,17 @@
-﻿using RESTar;
-using Starcounter;
+﻿using Starcounter;
+using RESTar;
 
 namespace HelpManager
 {
-    public class HelpManagerApp
+    public static class HelpManagerApp
     {
-        public static void Main()
-        {
-            RESTarConfig.Init
-            (
-                port: 8010,
-                requireApiKey: true,
-                allowAllOrigins: true,
-                configFilePath: "C:\\Mopedo\\HelpManager.config"
-            );
-        }
+        public static void Main() => RESTarConfig.Init
+        (
+            port: 8010,
+            requireApiKey: true,
+            allowAllOrigins: true,
+            configFilePath: @"C:\Mopedo\HelpManager.config"
+        );
     }
 
     [Database, RESTar(RESTarPresets.ReadAndWrite)]

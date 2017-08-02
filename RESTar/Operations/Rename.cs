@@ -14,7 +14,7 @@ namespace RESTar.Operations
         {
             var opMatcher = key.Contains("->") ? new[] {"->"} : new[] {"-%3E"};
             key.Split(',').ForEach(str => Add(
-                key: Term.ParseInternal(resource.Type, str.Split(opMatcher, None)[0].ToLower(), resource.IsDynamic),
+                key: Term.Parse(resource.Type, str.Split(opMatcher, None)[0].ToLower(), resource.IsDynamic),
                 value: str.Split(opMatcher, None)[1])
             );
             dynamicDomain = Values;

@@ -53,6 +53,9 @@ namespace RESTar.Internal
             }
         }
 
+        private static readonly string SQL = $"SELECT t FROM {typeof(DynamicResource).FullName} t";
+        internal static IEnumerable<DynamicResource> All => Db.SQL<DynamicResource>(SQL);
+
         private DynamicResource(Type table, IEnumerable<RESTarMethods> availableMethods)
         {
             Name = table.FullName;

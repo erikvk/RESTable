@@ -1,44 +1,16 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using RESTar.Deflection;
 using RESTar.Internal;
 using RESTar.Linq;
 using RESTar.Requests;
 using Starcounter;
 using static RESTar.Operations.Transact;
 using static RESTar.RESTarMethods;
-using static RESTar.RESTarPresets;
 using static RESTar.Settings;
 using IResource = RESTar.Internal.IResource;
 
 namespace RESTar
 {
-    /// <summary>
-    /// Gets all error codes used by RESTar
-    /// </summary>
-    [RESTar(ReadOnly)]
-    public class ErrorCode : ISelector<ErrorCode>
-    {
-        /// <summary>
-        /// The name of the error
-        /// </summary>
-        public string Name { get; private set; }
-
-        /// <summary>
-        /// The numeric code of the error
-        /// </summary>
-        public int Code { get; private set; }
-
-        /// <summary>
-        /// RESTar selector (don't use)
-        /// </summary>
-        public IEnumerable<ErrorCode> Select(IRequest<ErrorCode> request) => EnumMember<ErrorCodes>
-            .GetMembers()
-            .Select(m => new ErrorCode {Name = m.Name, Code = m.Value})
-            .Where(request.Conditions);
-    }
-
     /// <summary>
     /// The error resource contains instances where an error was encountered while
     /// handling a request. You can control how long entities remain in the resource

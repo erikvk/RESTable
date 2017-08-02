@@ -6,6 +6,10 @@ using IResource = RESTar.Internal.IResource;
 
 namespace RESTar
 {
+    /// <summary>
+    /// An internal helper class to get ResourceAlias entities
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
     internal static class ResourceAlias<T> where T : class
     {
         private const string SQL = "SELECT t FROM RESTar.ResourceAlias t WHERE t.Resource =?";
@@ -47,7 +51,7 @@ namespace RESTar
                 catch (KeyNotFoundException)
                 {
                     this.Delete();
-                    throw new UnknownResourceForAliasException(value, value.FindResource());
+                    throw new UnknownResourceForAliasException(value, RESTar.Resource.Find(value));
                 }
                 catch
                 {
@@ -83,6 +87,9 @@ namespace RESTar
             resourceAlias = ByAlias(alias);
             return resourceAlias != null;
         }
+
+        private static readonly string SQL = $"SELECT t FROM {typeof(ResourceAlias).FullName} t";
+        internal static IEnumerable<ResourceAlias> All => Db.SQL<ResourceAlias>(SQL);
 
         /// <summary>
         /// Returns true if and only if there is no such alias

@@ -99,7 +99,9 @@
     <Compile Include="Deflection\Dynamic\SpecialProperty.cs" />
     <Compile Include="Deflection\Dynamic\TypeCache.cs" />
     <Compile Include="Echo.cs" />
+    <Compile Include="ErrorCode.cs" />
     <Compile Include="ICondition.cs" />
+    <Compile Include="Requests\IViewRequest.cs" />
     <Compile Include="Linq\Conditions.cs" />
     <Compile Include="Linq\Enumerable.cs" />
     <Compile Include="Operations\IProcessor.cs" />
@@ -150,7 +152,6 @@
     <Compile Include="Resource.cs" />
     <Compile Include="ResourceAlias.cs" />
     <Compile Include="RESTarConfig.cs" />
-    <Compile Include="Internal\DB.cs" />
     <Compile Include="Operations\Evaluators.cs" />
     <Compile Include="RESTarPresets.cs" />
     <Compile Include="RESTarExceptions.cs" />
@@ -167,7 +168,6 @@
     <Compile Include="Operations\Select.cs" />
     <Compile Include="Settings.cs" />
     <Compile Include="Deflection\Dynamic\StaticProperty.cs" />
-    <Compile Include="Operations\WhereClause.cs" />
     <Compile Include="Serialization\ArrayNullToEmptyListProvider.cs" />
     <Compile Include="Serialization\ClassNullToEmptyObjectProvider.cs" />
     <Compile Include="Serialization\CreateViewModelResolver.cs" />

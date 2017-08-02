@@ -18,8 +18,8 @@ namespace RESTar
         Term Term { get; }
 
         /// <summary>
-        /// Converts a condition to a new target type
+        /// Converts a condition to a new target type and (optionally) a new key
         /// </summary>
-        Condition<T> Redirect<T>(string to = null) where T : class;
+        Condition<T> Redirect<T>(string newKey = null) where T : class;
     }
 }

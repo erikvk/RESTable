@@ -28,7 +28,7 @@ namespace RESTar.Operations
             Descending = descending;
             Term = dynamicMembers == null
                 ? resource.MakeTerm(key, resource.IsDynamic)
-                : Term.ParseInternal(resource.Type, key, resource.IsDynamic, dynamicMembers);
+                : Term.Parse(resource.Type, key, resource.IsDynamic, dynamicMembers);
         }
 
         /// <summary>

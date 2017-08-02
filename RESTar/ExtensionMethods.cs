@@ -29,7 +29,6 @@ using static RESTar.Internal.ErrorCodes;
 using static RESTar.Requests.Responses;
 using static RESTar.RESTarConfig;
 using static Starcounter.DbHelper;
-using static RESTar.Deflection.Dynamic.TypeCache;
 using IResource = RESTar.Internal.IResource;
 
 namespace RESTar
@@ -39,11 +38,6 @@ namespace RESTar
     /// </summary>
     public static class ExtensionMethods
     {
-        static ExtensionMethods()
-        {
-            DEFAULT_MAKER = typeof(ExtensionMethods).GetMethod(nameof(DEFAULT), NonPublic | Static);
-        }
-
         #region Operation finders
 
         private static Exception InvalidImplementation(string i, string r, Type f) => new Exception(
@@ -175,45 +169,30 @@ namespace RESTar
         {
             if (type == null)
                 throw new ArgumentNullException(nameof(type));
-            return DEFAULT_MAKER.MakeGenericMethod(type).Invoke(null, null);
+            return DEFAULT_METHOD.MakeGenericMethod(type).Invoke(null, null);
         }
 
-        private static readonly MethodInfo DEFAULT_MAKER;
+        private static readonly MethodInfo DEFAULT_METHOD = typeof(ExtensionMethods)
+            .GetMethod(nameof(DEFAULT), NonPublic | Static);
 
         private static object DEFAULT<T>() => default(T);
 
         internal static AccessRights ToAccessRights(this IEnumerable<AccessRight> accessRights)
         {
-            var _accessRights = new AccessRights();
+            var ar = new AccessRights();
             foreach (var right in accessRights)
-            {
-                foreach (var resource in right.Resources)
-                {
-                    _accessRights[resource] = _accessRights.ContainsKey(resource)
-                        ? _accessRights[resource].Union(right.AllowedMethods).ToArray()
-                        : right.AllowedMethods;
-                }
-            }
-            return _accessRights;
+            foreach (var resource in right.Resources)
+                ar[resource] = ar.ContainsKey(resource)
+                    ? ar[resource].Union(right.AllowedMethods).ToArray()
+                    : right.AllowedMethods;
+            return ar;
         }
+
+        internal static string Fnuttify(this string sqlKey) => $"\"{sqlKey.Replace(".", "\".\"")}\"";
 
         #endregion
 
         #region Resource helpers
-
-        internal static Term MakeTerm(this IResource resource, string key, bool dynamicUnknowns)
-        {
-            return resource.Type.MakeTerm(key, dynamicUnknowns);
-        }
-
-        internal static Term MakeTerm(this Type resource, string key, bool dynamicUnknowns)
-        {
-            var hash = resource.GetHashCode() + key.ToLower().GetHashCode() +
-                       dynamicUnknowns.GetHashCode();
-            if (!TermCache.TryGetValue(hash, out var term))
-                term = TermCache[hash] = Term.ParseInternal(resource, key, dynamicUnknowns);
-            return term;
-        }
 
         internal static bool IsDDictionary(this Type type) => type == typeof(DDictionary) ||
                                                               type.IsSubclassOf(typeof(DDictionary));
@@ -227,55 +206,6 @@ namespace RESTar
         {
             if (!ivalidatable.Validate(out var reason))
                 throw new ValidatableException(reason);
-        }
-
-        internal static ICollection<IResource> FindResources(this string searchString)
-        {
-            searchString = searchString.ToLower();
-            var asterisks = searchString.Count(i => i == '*');
-            if (asterisks > 1)
-                throw new Exception("Invalid resource string syntax");
-            if (asterisks == 1)
-            {
-                if (searchString.Last() != '*')
-                    throw new Exception("Invalid resource string syntax");
-                var commonPart = searchString.Split('*')[0];
-                var matches = ResourceByName
-                    .Where(pair => pair.Key.StartsWith(commonPart))
-                    .Select(pair => pair.Value)
-                    .Union(DB.All<ResourceAlias>()
-                        .Where(alias => alias.Alias.StartsWith(commonPart))
-                        .Select(alias => alias.IResource))
-                    .ToList();
-                if (matches.Any()) return matches;
-                throw new UnknownResourceException(searchString);
-            }
-            var resource = ResourceAlias.ByAlias(searchString)?.IResource;
-            if (resource == null)
-                ResourceByName.TryGetValue(searchString, out resource);
-            if (resource != null)
-                return new[] {resource};
-            throw new UnknownResourceException(searchString);
-        }
-
-        internal static IResource FindResource(this string searchString)
-        {
-            searchString = searchString.ToLower();
-            var resource = ResourceAlias.ByAlias(searchString)?.IResource;
-            if (resource == null)
-                ResourceByName.TryGetValue(searchString, out resource);
-            if (resource != null)
-                return resource;
-            var matches = ResourceByName
-                .Where(pair => pair.Value.IsGlobal && pair.Key.EndsWith($".{searchString}"))
-                .Select(pair => pair.Value)
-                .ToList();
-            switch (matches.Count)
-            {
-                case 0: throw new UnknownResourceException(searchString);
-                case 1: return matches[0];
-                default: throw new AmbiguousResourceException(searchString, matches.Select(c => c.Name).ToList());
-            }
         }
 
         /// <summary>
@@ -741,7 +671,7 @@ namespace RESTar
                     foreach (var prop in properties)
                     {
                         var ColType = prop.Type.IsEnum || prop.Type.IsClass && prop.Type != typeof(string) ||
-                                      prop.HasAttribute<ExcelFlattenToString>()
+                                      prop.HasAttribute<ExcelFlattenToStringAttribute>()
                             ? typeof(string)
                             : Nullable.GetUnderlyingType(prop.Type) ?? prop.Type;
                         table.Columns.Add(prop.Name, ColType);
@@ -751,7 +681,7 @@ namespace RESTar
                         var row = table.NewRow();
                         foreach (var prop in properties)
                         {
-                            object value = prop.Type.IsEnum || prop.HasAttribute<ExcelFlattenToString>()
+                            object value = prop.Type.IsEnum || prop.HasAttribute<ExcelFlattenToStringAttribute>()
                                 ? prop.Get(item)?.ToString()
                                 : prop.Get(item);
                             row[prop.Name] = GetCellValue(value);

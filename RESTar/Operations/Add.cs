@@ -16,7 +16,7 @@ namespace RESTar.Operations
             .Distinct()
             .If(dynDomain == null,
                 then: s => s.Select(_s => resource.MakeTerm(_s, resource.IsDynamic)),
-                @else: s => s.Select(_s => Term.ParseInternal(resource.Type, _s, resource.IsDynamic, dynDomain)))
+                @else: s => s.Select(_s => Term.Parse(resource.Type, _s, resource.IsDynamic, dynDomain)))
             .ForEach(Add);
 
         public IEnumerable<JObject> Apply<T>(IEnumerable<T> entities) => entities.Select(entity =>

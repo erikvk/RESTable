@@ -22,20 +22,15 @@ namespace RESTar
         /// </summary>
         public IEnumerable<Schema> Select(IRequest<Schema> request)
         {
-            var validCondition = request.Conditions.Get("resource", EQUALS)?.Value as string;
-            if (validCondition == null)
-                throw new Exception("Invalid resource argument, format: /schema/resource=my_resource_name");
-            var schema = MakeSchema(validCondition);
-            return new[] {schema};
-        }
-
-        internal static Schema MakeSchema(string resourceName)
-        {
-            var res = resourceName.FindResource();
-            if (res.IsDDictionary) return null;
+            var resourceName = request.Conditions.Get("resource", EQUALS)?.Value as string;
+            if (resourceName == null)
+                throw new Exception("Invalid syntax in request to RESTar.Schema. Format: " +
+                                    "/schema/resource=insert_resource_name_here");
+            var res = RESTar.Resource.Find(resourceName);
+            if (res.IsDynamic) return null;
             var schema = new Schema();
             res.GetStaticProperties().Values.ForEach(p => schema[p.Name] = p.Type.FullName);
-            return schema;
+            return new[] {schema};
         }
     }
 }

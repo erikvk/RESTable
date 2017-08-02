@@ -201,9 +201,9 @@ namespace RESTar
                 var keyString = WebUtility.UrlDecode(pair[0]);
                 var term = resource.MakeTerm(keyString, resource.DynamicConditionsAllowed);
                 if (term.Last is StaticProperty stat &&
-                    stat.GetAttribute<AllowedConditionOperators>()?.Operators?.Contains(op) == false)
+                    stat.GetAttribute<AllowedConditionOperatorsAttribute>()?.Operators?.Contains(op) == false)
                     throw new ForbiddenOperatorException(s, resource, op, term,
-                        stat.GetAttribute<AllowedConditionOperators>()?.Operators);
+                        stat.GetAttribute<AllowedConditionOperatorsAttribute>()?.Operators);
                 var valueString = WebUtility.UrlDecode(pair[1]);
                 var value = valueString.GetConditionValue();
                 if (term.IsStatic && term.Last is StaticProperty prop && prop.Type.IsEnum &&

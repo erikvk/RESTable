@@ -23,7 +23,6 @@ namespace RESTar
         public readonly ErrorCodes ErrorCode;
 
         internal Response Response;
-
         internal RESTarException(ErrorCodes code, string message) : base(message) => ErrorCode = code;
         internal RESTarException(ErrorCodes code, string message, Exception ie) : base(message, ie) => ErrorCode = code;
     }
@@ -226,7 +225,7 @@ namespace RESTar
         internal AbortedSelectorException(Exception ie, IRequest request, string message = null)
             : base(AbortedSelect, message ?? (ie.GetType() == typeof(JsonSerializationException) ||
                                               ie.GetType() == typeof(JsonReaderException)
-                                      ? "JSON serialization error, check JSON syntax"
+                                      ? "JSON serialization error, check JSON syntax. "
                                       : ""
                                   ), ie) => Response = AbortedOperation<T>(this, request.Method);
     }
@@ -243,7 +242,7 @@ namespace RESTar
         internal AbortedInserterException(Exception ie, RESTarMethods method, string message = null)
             : base(AbortedInsert, message ?? (ie.GetType() == typeof(JsonSerializationException) ||
                                               ie.GetType() == typeof(JsonReaderException)
-                                      ? "JSON serialization error, check JSON syntax"
+                                      ? "JSON serialization error, check JSON syntax. "
                                       : ""
                                   ), ie) => Response = AbortedOperation<T>(this, method);
     }
@@ -257,7 +256,7 @@ namespace RESTar
         internal AbortedUpdaterException(Exception ie, IRequest request, string message = null)
             : base(AbortedUpdate, message ?? (ie.GetType() == typeof(JsonSerializationException) ||
                                               ie.GetType() == typeof(JsonReaderException)
-                                      ? "JSON serialization error, check JSON syntax"
+                                      ? "JSON serialization error, check JSON syntax. "
                                       : ""
                                   ), ie) => Response = AbortedOperation<T>(this, request.Method);
     }
@@ -271,7 +270,7 @@ namespace RESTar
         internal AbortedDeleterException(Exception ie, IRequest request, string message = null)
             : base(AbortedDelete, message ?? (ie.GetType() == typeof(JsonSerializationException) ||
                                               ie.GetType() == typeof(JsonReaderException)
-                                      ? "JSON serialization error, check JSON syntax"
+                                      ? "JSON serialization error, check JSON syntax. "
                                       : ""
                                   ), ie) => Response = AbortedOperation<T>(this, request.Method);
     }
@@ -355,7 +354,7 @@ namespace RESTar
     public class NotInitializedException : RESTarException
     {
         internal NotInitializedException() : base(NotInitialized,
-            "A call has been made to RESTar before RESTarConfig.Init() was called. Always " +
+            "A RESTar request was created before RESTarConfig.Init() was called. Always " +
             "initialize the RESTar instance before making calls to it.") => Response = BadRequest(this);
     }
 

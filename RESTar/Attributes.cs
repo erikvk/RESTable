@@ -117,7 +117,7 @@ namespace RESTar
     /// allowed operators for use in conditions that reference them.
     /// </summary>
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
-    public class AllowedConditionOperators : Attribute
+    public class AllowedConditionOperatorsAttribute : Attribute
     {
         /// <summary>
         /// Only these operators will be allowed in conditions targeting this property
@@ -129,7 +129,7 @@ namespace RESTar
         /// provided list of strings to parse allowed operators.
         /// </summary>
         /// <param name="allowedOperators"></param>
-        public AllowedConditionOperators(params string[] allowedOperators)
+        public AllowedConditionOperatorsAttribute(params string[] allowedOperators)
         {
             try
             {
@@ -148,7 +148,7 @@ namespace RESTar
     /// the serializer to flatten them using the ToString() method when writing to excel.
     /// </summary>
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
-    public class ExcelFlattenToString : Attribute
+    public class ExcelFlattenToStringAttribute : Attribute
     {
     }
 }

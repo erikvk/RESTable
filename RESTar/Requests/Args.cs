@@ -14,12 +14,13 @@ namespace RESTar.Requests
         internal readonly bool HasResource;
         internal readonly bool HasConditions;
         internal readonly bool HasMetaConditions;
-        internal IResource IResource => HasResource ? Resource.FindResource() : Resource<Resource>.Get;
-       
+        internal IResource IResource => HasResource ? RESTar.Resource.Find(Resource) : Resource<Resource>.Get;
+
         internal Args(string query, Request request)
         {
             Resource = Conditions = MetaConditions = null;
             HasResource = HasConditions = HasMetaConditions = false;
+            query = query.TrimStart('?');
             if (string.IsNullOrEmpty(query) || query == "/") return;
             if (query.CharCount('/') > 3)
                 throw new SyntaxException(InvalidSeparator,
@@ -29,7 +30,7 @@ namespace RESTar.Requests
             if (request.HeadersDictionary.ContainsKey("X-ARR-LOG-ID"))
                 query = query.Replace("%25", "%");
             if (query[0] == '/') query = query.Substring(1);
-            var arr = query.TrimStart('?').Split('/');
+            var arr = query.Split('/');
             for (var i = 0; i < arr.Length; i++)
             {
                 switch (i)

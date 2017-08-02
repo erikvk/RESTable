@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Linq;
 using RESTar.Deflection.Dynamic;
@@ -99,5 +100,10 @@ namespace RESTar.Linq
         {
             conds.ForEach(c => c.HasChanged = c.ValueChanged = false);
         }
+
+        internal static string ToUriString<T>(this IEnumerable<Condition<T>> conds) where T : class =>
+            string.Join("&", conds.Select(c => c.Value is DateTime
+                ? $"{c.Key}{c.Operator.Common}{c.Value:O}"
+                : $"{c.Key}{c.Operator.Common}{c.Value}"));
     }
 }

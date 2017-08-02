@@ -75,7 +75,7 @@ namespace RESTar.Deflection.Dynamic
         /// Create a new term for a given type, with a key describing the target property
         /// </summary>
         public static Term Create(Type type, string key) => type.MakeTerm(key,
-            Resource.Get(type)?.DynamicConditionsAllowed == true);
+            Resource.SafeGet(type)?.DynamicConditionsAllowed == true);
 
         /// <summary>
         /// Create a new term from a given PropertyInfo
@@ -87,7 +87,7 @@ namespace RESTar.Deflection.Dynamic
         /// <summary>
         /// Parses a term key string and returns a term describing it.
         /// </summary>
-        internal static Term ParseInternal(Type resource, string key, bool dynamicUnknowns,
+        internal static Term Parse(Type resource, string key, bool dynamicUnknowns,
             IEnumerable<string> dynamicDomain = null)
         {
             var term = new Term();

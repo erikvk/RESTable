@@ -2,6 +2,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.Serialization;
 using Newtonsoft.Json;
 using RESTar.Internal;
@@ -23,10 +24,38 @@ namespace RESTar.Deflection.Dynamic
             TermCache = new ConcurrentDictionary<int, Term>();
         }
 
-        private static readonly ConcurrentDictionary<string, IDictionary<string, StaticProperty>> StaticPropertyCache;
+        #region Terms
+
         internal static readonly ConcurrentDictionary<int, Term> TermCache;
 
+        /// <summary>
+        /// Converts a PropertyInfo to a Term
+        /// </summary>
+        public static Term ToTerm(this PropertyInfo propertyInfo)
+        {
+            return propertyInfo.DeclaringType.MakeTerm(propertyInfo.Name,
+                Resource.SafeGet(propertyInfo.DeclaringType)?.DynamicConditionsAllowed == true);
+        }
+
+        internal static Term MakeTerm(this IResource resource, string key, bool dynamicUnknowns)
+        {
+            return resource.Type.MakeTerm(key, dynamicUnknowns);
+        }
+
+        internal static Term MakeTerm(this Type resource, string key, bool dynamicUnknowns)
+        {
+            var hash = resource.GetHashCode() + key.ToLower().GetHashCode() +
+                       dynamicUnknowns.GetHashCode();
+            if (!TermCache.TryGetValue(hash, out var term))
+                term = TermCache[hash] = Term.Parse(resource, key, dynamicUnknowns);
+            return term;
+        }
+
+        #endregion
+
         #region Static properties
+
+        private static readonly ConcurrentDictionary<string, IDictionary<string, StaticProperty>> StaticPropertyCache;
 
         /// <summary>
         /// Gets the static properties for a given resource

@@ -1,5 +1,4 @@
 ﻿using System.Runtime.Serialization;
-using RESTar.Internal;
 using RESTar.Linq;
 using Starcounter;
 using static RESTar.Operations.Transact;
@@ -61,10 +60,12 @@ namespace RESTar
         /// </summary>
         public int DaysToSaveErrors { get; private set; }
 
+        private static readonly string SQL = $"SELECT t FROM {typeof(Settings).FullName} t";
+
         internal static void Init(ushort port, string uri, bool viewEnabled, bool prettyPrint, bool camelCase,
             int daysToSaveErrors) => Trans(() =>
         {
-            DB.All<Settings>().ForEach(Db.Delete);
+            Db.SQL<Settings>(SQL).ForEach(Db.Delete);
             new Settings
             {
                 Port = port,
@@ -79,6 +80,6 @@ namespace RESTar
         /// Gets the only instance of the Settings resource
         /// </summary>
         [IgnoreDataMember]
-        public static Settings Instance => DB.First<Settings>();
+        public static Settings Instance => Db.SQL<Settings>(SQL).First;
     }
 }

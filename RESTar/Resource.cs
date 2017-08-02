@@ -258,13 +258,95 @@ namespace RESTar
         }
 
         /// <summary>
-        /// Finds a resource by name (case insensitive)
+        /// Finds a resource by a search string, can be a partial resource name. If no resource 
+        /// is found, throws an UnknownResourceException. If more than one resource is found, throws
+        /// an AmbiguousResourceException.
         /// </summary>
-        public static IResource Find(string name) => ResourceByName.SafeGetNoCase(name);
+        public static IResource Find(string searchString)
+        {
+            searchString = searchString.ToLower();
+            var resource = ResourceAlias.ByAlias(searchString)?.IResource;
+            if (resource == null)
+                ResourceByName.TryGetValue(searchString, out resource);
+            if (resource != null)
+                return resource;
+            var matches = ResourceByName
+                .Where(pair => pair.Value.IsGlobal && pair.Key.EndsWith($".{searchString}"))
+                .Select(pair => pair.Value)
+                .ToList();
+            switch (matches.Count)
+            {
+                case 0: throw new UnknownResourceException(searchString);
+                case 1: return matches[0];
+                default: throw new AmbiguousResourceException(searchString, matches.Select(c => c.Name).ToList());
+            }
+        }
+
+        internal static ICollection<IResource> FindMany(string searchString)
+        {
+            searchString = searchString.ToLower();
+            var asterisks = searchString.Count(i => i == '*');
+            if (asterisks > 1)
+                throw new Exception("Invalid resource string syntax");
+            if (asterisks == 1)
+            {
+                if (searchString.Last() != '*')
+                    throw new Exception("Invalid resource string syntax");
+                var commonPart = searchString.Split('*')[0];
+                var matches = ResourceByName
+                    .Where(pair => pair.Key.StartsWith(commonPart))
+                    .Select(pair => pair.Value)
+                    .Union(ResourceAlias.All
+                        .Where(alias => alias.Alias.StartsWith(commonPart))
+                        .Select(alias => alias.IResource))
+                    .ToList();
+                if (matches.Any()) return matches;
+                throw new UnknownResourceException(searchString);
+            }
+            var resource = ResourceAlias.ByAlias(searchString)?.IResource;
+            if (resource == null)
+                ResourceByName.TryGetValue(searchString, out resource);
+            if (resource != null)
+                return new[] {resource};
+            throw new UnknownResourceException(searchString);
+        }
 
         /// <summary>
-        /// Finds a resource by target type
+        /// Finds a resource by name (case sensitive) and throws an UnknownResourceException
+        /// if no resource is found.
         /// </summary>
-        public static IResource Get(Type type) => ResourceByType.SafeGet(type);
+        public static IResource Get(string name) => ResourceByName.SafeGet(name)
+                                                    ?? throw new UnknownResourceException(name);
+
+        /// <summary>
+        /// Finds a resource by name (case insensitive) and returns null
+        /// if no resource is found
+        /// </summary>
+        public static IResource SafeGet(string name) => ResourceByName.SafeGetNoCase(name);
+
+        /// <summary>
+        /// Finds a resource by target type and throws an UnknownResourceException
+        /// if no resource is found.
+        /// </summary>
+        public static IResource Get(Type type) => ResourceByType.SafeGet(type)
+                                                  ?? throw new UnknownResourceException(type.FullName);
+
+        /// <summary>
+        /// Finds a resource by target type and throws an UnknownResourceException
+        /// if no resource is found.
+        /// </summary>
+        public static IResource SafeGet(Type type) => ResourceByType.SafeGet(type);
+
+        /// <summary>
+        /// Finds a resource by target type and throws an UnknownResourceException
+        /// if no resource is found.
+        /// </summary>
+        public static IResource<T> Get<T>() where T : class => Resource<T>.Get;
+
+        /// <summary>
+        /// Finds a resource by target type, and returns null if no
+        /// resource is found.
+        /// </summary>
+        public static IResource<T> SafeGet<T>() where T : class => Resource<T>.SafeGet;
     }
 }

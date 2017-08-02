@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using RESTar.Deflection.Dynamic;
 using RESTar.Internal;
 using RESTar.Linq;
 using RESTar.Operations;
@@ -83,6 +84,8 @@ namespace RESTar
 
         public Request(params Condition<T>[] conditions)
         {
+            if (!RESTarConfig.Initialized)
+                throw new NotInitializedException();
             Resource = Resource<T>.Get;
             ResponseHeaders = new Dictionary<string, string>();
             MetaConditions = new MetaConditions {Unsafe = true};

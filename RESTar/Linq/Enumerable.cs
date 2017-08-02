@@ -31,20 +31,6 @@ namespace RESTar.Linq
             return string.Join(separator, selector(source));
         }
 
-        ///// <summary>
-        ///// Returns true if and only if the source IEnumerable contains more than one element.
-        ///// Equivalent to (for some IEnumerable source) source?.Skip(1).Any() == true;
-        ///// Will NOT iterate over all entitites in the source, like Count() would.
-        ///// </summary>
-        //public static bool MoreThanOne<T>(this IEnumerable<T> source) => source?.Skip(1).Any() == true;
-
-        ///// <summary>
-        ///// Returns true if and only if the source IEnumerable contains exacly one element.
-        ///// Equivalent to (for some IEnumerable source) source?.Any() == true AND !source.Skip(1).Any();
-        ///// Will NOT iterate over all entitites in the source, like Count() would.
-        ///// </summary>
-        //public static bool ExaclyOne<T>(this IEnumerable<T> source) => source?.Any() == true && !source.Skip(1).Any();
-
         /// <summary>
         /// Returns true if and only if the source IEnumerable contains two or more equal objects.
         /// If a duplicate is found, it is assigned to the out 'duplicate' variable.
@@ -147,7 +133,11 @@ namespace RESTar.Linq
         public static void ForEach<T>(this IEnumerable<T> source, Action<T, int> action)
         {
             var i = 0;
-            foreach (var e in source) action(e, i += 1);
+            foreach (var e in source)
+            {
+                action(e, i);
+                i += 1;
+            }
         }
     }
 }

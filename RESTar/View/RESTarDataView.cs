@@ -1,5 +1,6 @@
 ﻿using System.IO;
 using RESTar.Internal;
+using RESTar.Requests;
 using Starcounter;
 #pragma warning disable 1591
 

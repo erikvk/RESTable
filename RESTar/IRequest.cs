@@ -5,6 +5,23 @@ using RESTar.Requests;
 namespace RESTar
 {
     /// <summary>
+    /// A RESTar request for a resource T. This is a common generic interface for all
+    /// request types.
+    /// </summary>
+    public interface IRequest<T> : IRequest where T : class
+    {
+        /// <summary>
+        /// The resource of the request
+        /// </summary>
+        new IResource<T> Resource { get; }
+
+        /// <summary>
+        /// The conditions of the request
+        /// </summary>
+        Condition<T>[] Conditions { get; }
+    }
+
+    /// <summary>
     /// A non-generic common interface for all request classes used in RESTar
     /// </summary>
     public interface IRequest
@@ -40,30 +57,5 @@ namespace RESTar
         /// name is the key-value pair key.
         /// </summary>
         IDictionary<string, string> ResponseHeaders { get; }
-    }
-
-    /// <summary>
-    /// A common interface for RESTar requests
-    /// </summary>
-    public interface IRequest<T> : IRequest where T : class
-    {
-        /// <summary>
-        /// The resource of the request
-        /// </summary>
-        new IResource<T> Resource { get; }
-
-        /// <summary>
-        /// The conditions of the request
-        /// </summary>
-        Condition<T>[] Conditions { get; }
-    }
-
-    internal interface IViewRequest : IRequest
-    {
-        void DeleteFromList(string id);
-        void SaveItem();
-        void CloseItem();
-        void RemoveElementFromArray(string input);
-        void AddElementToArray(string input);
     }
 }

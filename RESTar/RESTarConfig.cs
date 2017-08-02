@@ -99,13 +99,14 @@ namespace RESTar
             if (uri.Contains("?")) throw new ArgumentException("URI cannot contain '?'", nameof(uri));
             var appName = Starcounter.Application.Current.Name;
             if (uri.EqualsNoCase(appName))
-                throw new ArgumentException($"URI cannot be the same as the application name ({appName})");
+                throw new ArgumentException("URI cannot be the same as the application name" +
+                                            $" ({appName})", nameof(appName));
             if (uri[0] != '/') uri = $"/{uri}";
             Settings.Init(port, uri, viewEnabled, prettyPrint, camelCase, daysToSaveErrors);
             typeof(object).GetSubclasses()
                 .Where(t => t.HasAttribute<RESTarAttribute>())
                 .ForEach(t => Do.TryCatch(() => Resource.AutoMakeResource(t), e => throw (e.InnerException ?? e)));
-            DB.All<DynamicResource>().ForEach(Resource.AutoMakeDynamicResource);
+            DynamicResource.All.ForEach(Resource.AutoMakeDynamicResource);
             RequireApiKey = requireApiKey;
             AllowAllOrigins = allowAllOrigins;
             ConfigFilePath = configFilePath;
@@ -178,7 +179,7 @@ namespace RESTar
                             case JTokenType.Object:
                                 access.Add(new AccessRight
                                 {
-                                    Resources = token["Resource"].Value<string>().FindResources(),
+                                    Resources = Resource.FindMany(token["Resource"].Value<string>()),
                                     AllowedMethods = token["Methods"].Value<string>().ToUpper().ToMethodsArray()
                                 });
                                 break;

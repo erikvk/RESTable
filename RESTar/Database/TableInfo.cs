@@ -1,16 +1,13 @@
 ﻿using System;
-using System.Linq;
 using System.Collections.Generic;
+using System.Linq;
 using RESTar.Deflection.Dynamic;
-using RESTar.Internal;
 using RESTar.Linq;
 using Starcounter;
-using static RESTar.Operators;
-using static RESTar.RESTarPresets;
 using Starcounter.Metadata;
 using IResource = RESTar.Internal.IResource;
 
-namespace RESTar
+namespace RESTar.Database
 {
     /// <summary>
     /// Contains a description of a table size
@@ -41,7 +38,7 @@ namespace RESTar
     /// <summary>
     /// Gets an aggregated info view for a given Starcounter table
     /// </summary>
-    [RESTar(ReadOnly)]
+    [RESTar(RESTarPresets.ReadOnly)]
     public class TableInfo : ISelector<TableInfo>
     {
         /// <summary>
@@ -70,12 +67,12 @@ namespace RESTar
         public IEnumerable<TableInfo> Select(IRequest<TableInfo> request)
         {
             IEnumerable<IResource> resources;
-            var input = (string) request.Conditions.Get(nameof(TableName), EQUALS)?.Value;
+            string input = request.Conditions.Get(nameof(TableName), Operators.EQUALS)?.Value;
             if (input == null)
                 resources = RESTarConfig.Resources.Where(r => r.IsStarcounterResource);
             else
             {
-                var resource = input.FindResource();
+                var resource = Resource.Find(input);
                 if (!resource.IsStarcounterResource)
                     throw new Exception($"'{resource.Name}' is not a Starcounter resource, and has no table info");
                 resources = new[] {resource};
@@ -92,7 +89,7 @@ namespace RESTar
         internal static TableInfo GetTableInfo(IResource resource)
         {
             var columns = GetColumns(resource.Name).Select(c => c.Name).ToList();
-            var domainCount = DB.RowCount(resource.Name);
+            var domainCount = Db.SQL<long>($"SELECT COUNT(t) FROM {resource.Name} t").First;
             var properties = resource.GetTableColumns().Where(p => columns.Contains(p.DatabaseQueryName)).ToList();
             IEnumerable<dynamic> extension = Db.SQL($"SELECT t FROM {resource.Name} t");
             var totalBytes = 0L;
@@ -117,13 +114,13 @@ namespace RESTar
                     sampleBytes += addBytes;
                 });
                 var total = sampleBytes / sampleRate;
-                totalBytes = decimal.ToInt64(total ?? 0M);
+                totalBytes = decimal.ToInt64(total);
             }
 
             return new TableInfo
             {
                 TableName = resource.Name,
-                NumberOfRows = domainCount.GetValueOrDefault(),
+                NumberOfRows = domainCount,
                 NumberOfColumns = properties.Count,
                 ApproximateTableSize = new TableSize
                 {

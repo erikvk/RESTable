@@ -29,7 +29,7 @@ namespace RESTar.Deflection
             return typeof(T).IsEnum
                 ? typeof(T).GetFields()
                     .Where(t => t.FieldType.IsEnum)
-                    .Where(t => exceptionStrings?.Contains(t.Name) == false)
+                    .Where(t => exceptionStrings?.Contains(t.Name) != true)
                     .Select(t => new EnumMember<T>
                     (
                         attributes: t.GetCustomAttributes<Attribute>(),

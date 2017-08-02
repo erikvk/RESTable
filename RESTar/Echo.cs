@@ -23,8 +23,9 @@ namespace RESTar
         /// <summary>
         /// RESTar selector (don't use)
         /// </summary>
-        public IEnumerable<Echo> Select(IRequest<Echo> request) => !request.Conditions.Any()
-            ? new[] {new Echo()}
-            : new[] {new Echo(request.Conditions.Select(c => new JProperty(c.Key, c.Value)))};
+        public IEnumerable<Echo> Select(IRequest<Echo> request) => new[]
+        {
+            new Echo(request.Conditions.Select(c => new JProperty(c.Key, c.Value)))
+        };
     }
 }
