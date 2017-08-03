@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using Dynamit;
 using Newtonsoft.Json.Linq;
 using RESTar.Deflection.Dynamic;
 using RESTar.Internal;
@@ -13,7 +12,7 @@ namespace RESTar.Operations
         internal bool Descending { get; }
         internal bool Ascending => !Descending;
         internal IResource Resource { get; }
-        internal Term Term;
+        internal readonly Term Term;
         internal bool IsStarcounterQueryable = true;
 
         internal string SQL => IsStarcounterQueryable
@@ -37,18 +36,8 @@ namespace RESTar.Operations
         public IEnumerable<T> Apply<T>(IEnumerable<T> entities)
         {
             if (IsStarcounterQueryable) return entities;
-            switch (entities)
-            {
-                case IEnumerable<DDictionary> _: break;
-                case IEnumerable<JObject> _:
-                case IEnumerable<IDictionary<string, dynamic>> _:
-                    Term.MakeDynamic();
-                    break;
-                default:
-                    if (typeof(T) != Resource.Type)
-                        Term = typeof(T).MakeTerm(Term.Key, Resource.IsDynamic);
-                    break;
-            }
+            if (typeof(T) == typeof(JObject))
+                Term.MakeDynamic();
             var selector = Term.ToSelector<T>();
             return Ascending ? entities.OrderBy(selector) : entities.OrderByDescending(selector);
         }

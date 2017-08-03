@@ -7,11 +7,7 @@ namespace RESTar.Serialization
     internal class RESTarMacroWrapperProvider : IValueProvider
     {
         private readonly PropertyInfo Property;
-
-        public RESTarMacroWrapperProvider(PropertyInfo property)
-        {
-            Property = property;
-        }
+        public RESTarMacroWrapperProvider(PropertyInfo property) => Property = property;
 
         public object GetValue(object target)
         {

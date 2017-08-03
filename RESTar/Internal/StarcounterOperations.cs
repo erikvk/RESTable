@@ -1,8 +1,6 @@
-﻿using System.Collections.Generic;
-using System.Linq;
+﻿using System.Linq;
 using RESTar.Linq;
 using RESTar.Operations;
-using RESTar.Requests;
 using Starcounter;
 
 namespace RESTar.Internal
@@ -19,24 +17,18 @@ namespace RESTar.Internal
         /// </summary>
         public static Selector<T> Select => request =>
         {
-            IEnumerable<T> results;
             switch (request)
             {
-                case ViewRequest<T> _:
-                case RESTRequest<T> _:
-                    switch (request.Conditions.Length)
-                    {
-                        case 0: return Db.SQL<T>($"{SELECT}{request.MetaConditions.OrderBy?.SQL}");
-                        default:
-                            var where = request.Conditions.GetSQL().MakeWhereClause();
-                            results = Db.SQL<T>($"{SELECT}{where.WhereString} " +
-                                                $"{request.MetaConditions.OrderBy?.SQL}", where.Values);
-                            return !request.Conditions.HasPost(out var post) ? results : results.Where(post);
-                    }
-                case Request<T> appRequest:
-                    results = Db.SQL<T>(appRequest.SqlQuery, appRequest.SqlValues);
-                    return !appRequest.Conditions.HasPost(out var _post) ? results : results.Where(_post);
-                default: return null;
+                case Request<T> @internal:
+                    var r1 = Db.SQL<T>(@internal.SqlQuery, @internal.SqlValues);
+                    return !@internal.Conditions.HasPost(out var _post) ? r1 : r1.Where(_post);
+                case var external when !external.Conditions.Any():
+                    return Db.SQL<T>($"{SELECT}{external.MetaConditions.OrderBy?.SQL}");
+                case var external:
+                    var where = external.Conditions.GetSQL().MakeWhereClause();
+                    var r2 = Db.SQL<T>($"{SELECT}{where.WhereString} " +
+                                       $"{external.MetaConditions.OrderBy?.SQL}", where.Values);
+                    return !external.Conditions.HasPost(out var post) ? r2 : r2.Where(post);
             }
         };
 
