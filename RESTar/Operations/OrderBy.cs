@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using Newtonsoft.Json.Linq;
 using RESTar.Deflection.Dynamic;
 using RESTar.Internal;
 
@@ -36,9 +35,7 @@ namespace RESTar.Operations
         public IEnumerable<T> Apply<T>(IEnumerable<T> entities)
         {
             if (IsStarcounterQueryable) return entities;
-            if (typeof(T) == typeof(JObject))
-                Term.MakeDynamic();
-            var selector = Term.ToSelector<T>();
+            dynamic selector(T i) => Do.Try(() => Term.Evaluate(i), default(object));
             return Ascending ? entities.OrderBy(selector) : entities.OrderByDescending(selector);
         }
     }

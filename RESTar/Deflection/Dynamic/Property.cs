@@ -40,12 +40,12 @@ namespace RESTar.Deflection.Dynamic
         /// <summary>
         /// Gets the value of this property, for a given target object
         /// </summary>
-        public dynamic Get(object target) => Getter?.Invoke(target);
+        public dynamic GetValue(object target) => Getter?.Invoke(target);
 
         /// <summary>
         /// Sets the value of this property, for a given target object and a given value
         /// </summary>
-        public void Set(object target, dynamic value) => Setter?.Invoke(target, value);
+        public void SetValue(object target, dynamic value) => Setter?.Invoke(target, value);
 
         /// <summary>
         /// </summary>
@@ -58,7 +58,7 @@ namespace RESTar.Deflection.Dynamic
         internal bool Readable => Getter != null;
         internal bool Writable => Setter != null;
         internal bool Readonly => Readable && !Writable;
-
+        
         /// <summary>
         /// Parses an input property name string and returns a Property describing the 
         /// corresponding resource property.

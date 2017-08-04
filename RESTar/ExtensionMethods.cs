@@ -233,7 +233,7 @@ namespace RESTar
                 .Where(p => !(p is SpecialProperty))
                 .ForEach(prop =>
                 {
-                    object val = prop.Get(entity);
+                    object val = prop.GetValue(entity);
                     jobj[prop.Name] = val?.ToJToken();
                 });
             return jobj;
@@ -362,6 +362,7 @@ namespace RESTar
             return dict.First(pair => pair.Key.EqualsNoCase(key)).Value;
         }
 
+
         /// <summary>
         /// Gets the value of a key from an IDictionary, without case sensitivity, or null if the dictionary does 
         /// not contain the key.
@@ -422,6 +423,75 @@ namespace RESTar
             actualKey = match.Key;
             return match.Value;
         }
+
+
+        /// <summary>
+        /// Tries to get the value of a key from an IDictionary, without case sensitivity
+        /// </summary>
+        public static bool TryGetNoCase<T>(this IDictionary<string, T> dict, string key, out T result)
+        {
+            result = default(T);
+            var matches = dict.Where(pair => pair.Key.EqualsNoCase(key)).ToList();
+            switch (matches.Count)
+            {
+                case 0: return false;
+                case 1:
+                    result = matches[0].Value;
+                    return true;
+                default: return dict.TryGetValue(key, out result);
+            }
+        }
+
+
+        /// <summary>
+        /// Tries to get the value of a key from an IDictionary, without case sensitivity, and returns
+        /// the actual key of the key value pair (if found).
+        /// </summary>
+        public static bool TryGetNoCase(this IDictionary dict, string key, out string actualKey, out dynamic result)
+        {
+            result = default(object);
+            actualKey = null;
+            var matches = dict.Keys.Cast<string>().Where(k => k.EqualsNoCase(key)).ToList();
+            switch (matches.Count)
+            {
+                case 0: return false;
+                case 1:
+                    actualKey = matches[0];
+                    result = dict[actualKey];
+                    return true;
+                default:
+                    if (!dict.Contains(key))
+                        return false;
+                    actualKey = key;
+                    result = dict[key];
+                    return true;
+            }
+        }
+
+        /// <summary>
+        /// Gets the value of a key from an IDictionary, without case sensitivity, or null if the dictionary does 
+        /// not contain the key. The actual key is returned in the actualKey out parameter.
+        /// </summary>
+        public static bool TryGetNoCase<T>(this IDictionary<string, T> dict, string key, out string actualKey,
+            out T result)
+        {
+            result = default(T);
+            actualKey = null;
+            var matches = dict.Where(pair => pair.Key.EqualsNoCase(key)).ToList();
+            switch (matches.Count)
+            {
+                case 0: return false;
+                case 1:
+                    actualKey = matches[0].Key;
+                    result = matches[0].Value;
+                    return true;
+                default:
+                    if (!dict.TryGetValue(key, out result)) return false;
+                    actualKey = key;
+                    return true;
+            }
+        }
+
 
         /// <summary>
         /// Converts a DDictionary object to a JSON.net JObject
@@ -682,8 +752,8 @@ namespace RESTar
                         foreach (var prop in properties)
                         {
                             object value = prop.Type.IsEnum || prop.HasAttribute<ExcelFlattenToStringAttribute>()
-                                ? prop.Get(item)?.ToString()
-                                : prop.Get(item);
+                                ? prop.GetValue(item)?.ToString()
+                                : prop.GetValue(item);
                             row[prop.Name] = GetCellValue(value);
                         }
                         table.Rows.Add(row);

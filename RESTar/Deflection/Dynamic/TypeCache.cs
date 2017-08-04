@@ -21,12 +21,12 @@ namespace RESTar.Deflection.Dynamic
         static TypeCache()
         {
             StaticPropertyCache = new ConcurrentDictionary<string, IDictionary<string, StaticProperty>>();
-            TermCache = new ConcurrentDictionary<int, Term>();
+            TermCache = new ConcurrentDictionary<(string, string, bool), Term>();
         }
 
         #region Terms
 
-        internal static readonly ConcurrentDictionary<int, Term> TermCache;
+        internal static readonly ConcurrentDictionary<(string Resource, string Key, bool DynUnknowns), Term> TermCache;
 
         /// <summary>
         /// Converts a PropertyInfo to a Term
@@ -44,18 +44,23 @@ namespace RESTar.Deflection.Dynamic
 
         internal static Term MakeTerm(this Type resource, string key, bool dynamicUnknowns)
         {
-            var hash = resource.GetHashCode() + key.ToLower().GetHashCode() +
-                       dynamicUnknowns.GetHashCode();
-            if (!TermCache.TryGetValue(hash, out var term))
-                term = TermCache[hash] = Term.Parse(resource, key, dynamicUnknowns);
+            var tuple = (resource.FullName, key.ToLower(), dynamicUnknowns);
+            if (!TermCache.TryGetValue(tuple, out var term))
+                term = TermCache[tuple] = Term.Parse(resource, key, dynamicUnknowns);
             return term;
         }
+
+        internal static void ClearTermsFor<T>() => TermCache
+            .Where(pair => pair.Key.Resource == typeof(T).FullName)
+            .Select(pair => pair.Key)
+            .ToList()
+            .ForEach(key => TermCache.TryRemove(key, out var _));
 
         #endregion
 
         #region Static properties
 
-        private static readonly ConcurrentDictionary<string, IDictionary<string, StaticProperty>> StaticPropertyCache;
+        internal static readonly ConcurrentDictionary<string, IDictionary<string, StaticProperty>> StaticPropertyCache;
 
         /// <summary>
         /// Gets the static properties for a given resource

@@ -82,8 +82,6 @@ namespace RESTar.Deflection.Dynamic
         /// </summary>
         public static Term Create(PropertyInfo propertyInfo) => propertyInfo.ToTerm();
 
-        internal Func<T1, dynamic> ToSelector<T1>() => i => Do.Try(() => Evaluate(i), default(object));
-
         /// <summary>
         /// Parses a term key string and returns a term describing it.
         /// </summary>
@@ -129,7 +127,7 @@ namespace RESTar.Deflection.Dynamic
         /// <summary>
         /// Converts all properties in this term to dynamic properties
         /// </summary>
-        public void MakeDynamic()
+        private void MakeDynamic()
         {
             if (IsDynamic) return;
             Store = Store.Select(prop =>
@@ -142,8 +140,9 @@ namespace RESTar.Deflection.Dynamic
                     default: throw new ArgumentOutOfRangeException();
                 }
             }).ToList();
+            ScQueryable = false;
+            IsStatic = false;
             Key = string.Join(".", Store.Select(p => p.Name));
-            DbKey = string.Join(".", Store.Select(p => p.DatabaseQueryName));
         }
 
         /// <summary>
@@ -157,27 +156,35 @@ namespace RESTar.Deflection.Dynamic
         /// </summary>
         public dynamic Evaluate(object target, out string actualKey)
         {
+            // If the target is the result of processing using some IProcessor, the type
+            // will be JObject. In that case, the object may contain the entire term key
+            // as member, even if the term has multiple properties (common result of add 
+            // and select). This code handles those cases.
             if (target is JObject jobj)
             {
-                var val = jobj.SafeGetNoCase(Key, out var actual);
-                if (val != null)
+                if (jobj.TryGetNoCase(Key, out var actual, out var jvalue))
                 {
                     actualKey = actual;
-                    return val.ToObject<dynamic>();
+                    return jvalue.ToObject<dynamic>();
                 }
                 MakeDynamic();
             }
-            foreach (var prop in Store)
+
+            // Walk over the properties in the term, and if null is encountered, simply
+            // keep the null. Else keep evaluating the next property as a property of the
+            // previous property value.
+            Store.ForEach(prop =>
             {
-                if (target == null)
-                {
-                    actualKey = Key;
-                    return null;
-                }
-                target = prop.Get(target);
-            }
+                if (target != null)
+                    target = prop.GetValue(target);
+            });
+
+            // If the term is dynamic, we do not know the actual key beforehand. We instead
+            // set names for dynamic properties when getting their values, and concatenate the
+            // property names here.
             if (IsDynamic)
                 Key = string.Join(".", Store.Select(p => p.Name));
+
             actualKey = Key;
             return target;
         }

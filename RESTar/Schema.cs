@@ -3,13 +3,14 @@ using System.Collections.Generic;
 using RESTar.Deflection.Dynamic;
 using RESTar.Linq;
 using static RESTar.Operators;
+using static RESTar.RESTarPresets;
 
 namespace RESTar
 {
     /// <summary>
     /// Gets a schema for a given resource
     /// </summary>
-    [RESTar(RESTarMethods.GET, Singleton = true)]
+    [RESTar(ReadOnly, Singleton = true)]
     public class Schema : Dictionary<string, string>, ISelector<Schema>
     {
         /// <summary>

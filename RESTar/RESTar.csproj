@@ -98,6 +98,7 @@
     <Compile Include="Deflection\Dynamic\Delegates.cs" />
     <Compile Include="Deflection\Dynamic\SpecialProperty.cs" />
     <Compile Include="Deflection\Dynamic\TypeCache.cs" />
+    <Compile Include="Deflection\TypeCache.cs" />
     <Compile Include="Echo.cs" />
     <Compile Include="ErrorCode.cs" />
     <Compile Include="ICondition.cs" />

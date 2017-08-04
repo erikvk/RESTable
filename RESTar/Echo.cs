@@ -23,9 +23,14 @@ namespace RESTar
         /// <summary>
         /// RESTar selector (don't use)
         /// </summary>
-        public IEnumerable<Echo> Select(IRequest<Echo> request) => new[]
+        public IEnumerable<Echo> Select(IRequest<Echo> request)
         {
-            new Echo(request.Conditions.Select(c => new JProperty(c.Key, c.Value)))
-        };
+            var echo = new[]
+            {
+                new Echo(request.Conditions.Select(c => new JProperty(c.Key, c.Value)))
+            };
+            Deflection.Dynamic.TypeCache.ClearTermsFor<Echo>();
+            return echo;
+        }
     }
 }

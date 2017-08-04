@@ -11,7 +11,6 @@ namespace RESTar.Operations
     internal class Select : List<Term>, ICollection<Term>, IProcessor
     {
         internal Select(IResource resource, string key, IEnumerable<string> dynDomain) => key
-            .ToLower()
             .Split(',')
             .Distinct()
             .If(dynDomain == null,

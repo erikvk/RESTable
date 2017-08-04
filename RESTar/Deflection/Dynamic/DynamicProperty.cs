@@ -24,6 +24,8 @@ namespace RESTar.Deflection.Dynamic
         /// described by the key string</returns>
         public static DynamicProperty Parse(string keyString) => new DynamicProperty(keyString);
 
+        internal void SetName(string name) => Name = name;
+
         internal DynamicProperty(string name)
         {
             Name = DatabaseQueryName = name;
@@ -36,24 +38,27 @@ namespace RESTar.Deflection.Dynamic
                 switch (obj)
                 {
                     case IDictionary<string, dynamic> ddict:
-                        value = ddict.SafeGetNoCase(Name, out actualKey);
-                        Name = actualKey ?? Name;
+                        if (!ddict.TryGetNoCase(Name, out actualKey, out value))
+                            return null;
+                        Name = actualKey;
                         return value;
                     case IDictionary idict:
-                        value = idict.SafeGetNoCase(Name, out actualKey);
-                        Name = actualKey ?? Name;
+                        if (!idict.TryGetNoCase(Name, out actualKey, out value))
+                            return null;
+                        Name = actualKey;
                         return value;
-                    case JObject jobj:
-                        value = jobj.SafeGetNoCase(Name, out actualKey)?.ToObject<dynamic>();
-                        Name = actualKey ?? Name;
-                        return value;
+                    case IDictionary<string, JToken> jobj:
+                        if (!jobj.TryGetNoCase(Name, out actualKey, out var jvalue))
+                            return null;
+                        Name = actualKey;
+                        return jvalue.ToObject<dynamic>();
                     default:
                         var type = obj.GetType();
                         value = Do.Try(() =>
                         {
                             var prop = StaticProperty.Find(type, Name);
                             actualKey = prop.Name;
-                            return prop.Get(obj);
+                            return prop.GetValue(obj);
                         }, default(object));
                         Name = actualKey ?? Name;
                         return value;
@@ -67,7 +72,7 @@ namespace RESTar.Deflection.Dynamic
                 if (obj is JObject jobj)
                     jobj[Name] = value;
                 var type = obj.GetType();
-                Do.Try(() => StaticProperty.Find(type, Name)?.Set(obj, value));
+                Do.Try(() => StaticProperty.Find(type, Name)?.SetValue(obj, value));
             };
         }
     }

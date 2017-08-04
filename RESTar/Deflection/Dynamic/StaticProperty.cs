@@ -72,7 +72,7 @@ namespace RESTar.Deflection.Dynamic
         {
             if (target == null)
                 throw new NullReferenceException(nameof(target));
-            object value = Get(target);
+            object value = GetValue(target);
             switch (value)
             {
                 case null: return 0;
