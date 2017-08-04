@@ -10,6 +10,7 @@ using static RESTar.Settings;
 using static RESTar.Requests.Responses;
 using static RESTar.RESTarConfig;
 using static Starcounter.Session;
+using Error = RESTar.Admin.Error;
 using IResource = RESTar.Internal.IResource;
 
 namespace RESTar.Requests

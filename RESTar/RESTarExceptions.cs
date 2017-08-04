@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json;
+using RESTar.Admin;
 using RESTar.Deflection.Dynamic;
 using RESTar.Internal;
 using Starcounter;
@@ -138,7 +139,7 @@ namespace RESTar
     /// </summary>
     public class ExcelInputException : RESTarException
     {
-        internal ExcelInputException() : base(ExcelReader,
+        internal ExcelInputException() : base(ExcelReaderError,
             "There was a format error in the excel input. Check that the file is being transmitted properly. In " +
             "curl, make sure the flag '--data-binary' is used and not '--data' or '-d'") => Response = BadRequest(this);
     }
@@ -148,7 +149,7 @@ namespace RESTar
     /// </summary>
     public class ExcelFormatException : RESTarException
     {
-        internal ExcelFormatException(string message, Exception ie) : base(ExcelReader,
+        internal ExcelFormatException(string message, Exception ie) : base(ExcelReaderError,
             $"RESTar was unable to write entities to excel. {message}", ie) => Response = BadRequest(this);
     }
 

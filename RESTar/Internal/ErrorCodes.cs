@@ -26,7 +26,7 @@ namespace RESTar.Internal
 
         // 010-019: Data source syntax and format errors
         FailedJsonDeserialization = 010,
-        ExcelReader = 011,
+        ExcelReaderError = 011,
         DataSourceFormat = 012,
         NoDataSource = 013,
         UnsupportedContent = 014,

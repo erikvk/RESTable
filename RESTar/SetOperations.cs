@@ -7,14 +7,11 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Newtonsoft.Json.Linq;
 using RESTar.Serialization;
-using static System.UriKind;
-using static RESTar.RESTarMethods;
-using static RESTar.Settings;
 using JTokens = System.Collections.Generic.IEnumerable<Newtonsoft.Json.Linq.JToken>;
 
 #pragma warning disable 1591
 
-namespace RESTar.Operations
+namespace RESTar
 {
     /// <summary>
     /// The SetOperations resource can perform advanced operations on entities in one
@@ -60,11 +57,11 @@ namespace RESTar.Operations
                         else if (char.IsDigit(first) || first == '/')
                         {
                             var uri = str;
-                            var response = HTTP.Internal(GET, new Uri(uri, Relative),
+                            var response = HTTP.Internal(RESTarMethods.GET, new Uri(uri, UriKind.Relative),
                                 request.AuthToken);
                             if (response?.IsSuccessStatusCode != true)
                                 throw new Exception(
-                                    $"Could not get source data from '<self>:{_Port}{_Uri}{uri}'. " +
+                                    $"Could not get source data from '<self>:{Settings._Port}{Settings._Uri}{uri}'. " +
                                     $"{response?.StatusCode}: {response?.StatusDescription}. {response?.Headers["RESTar-info"]}");
                             if (response.StatusCode == 204 || string.IsNullOrEmpty(response.Body))
                                 json = "[]";
@@ -173,9 +170,9 @@ namespace RESTar.Operations
                 if (!skip)
                 {
                     var uri = localMapper.ToString();
-                    var response = HTTP.Internal(GET, new Uri(uri, Relative), request.AuthToken);
+                    var response = HTTP.Internal(RESTarMethods.GET, new Uri(uri, UriKind.Relative), request.AuthToken);
                     if (response?.IsSuccessStatusCode != true)
-                        throw new Exception($"Could not get source data from '<self>:{_Port}{_Uri}{uri}'");
+                        throw new Exception($"Could not get source data from '<self>:{Settings._Port}{Settings._Uri}{uri}'");
                     if (response.StatusCode == 204 || string.IsNullOrEmpty(response.Body))
                         mapped.Add(new JObject());
                     Serializer.Populate(response.Body, mapped);

@@ -1,12 +1,12 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using RESTar.Linq;
-using static RESTar.RESTarPresets;
+
 #pragma warning disable 1591
 
-namespace RESTar.Deflection
+namespace RESTar.Admin
 {
-    [RESTar(ReadOnly)]
+    [RESTar(RESTarPresets.ReadOnly)]
     public class TypeCache : ISelector<TypeCache>
     {
         public string Resource { get; set; }
@@ -17,11 +17,11 @@ namespace RESTar.Deflection
             .Select(r => new TypeCache
             {
                 Resource = r.Name,
-                StaticProperties = Dynamic.TypeCache.StaticPropertyCache[r.Name]
+                StaticProperties = Deflection.Dynamic.TypeCache.StaticPropertyCache[r.Name]
                     .Values
                     .Select(prop => prop.Name)
                     .ToArray(),
-                Terms = Dynamic.TypeCache.TermCache
+                Terms = Deflection.Dynamic.TypeCache.TermCache
                     .Where(pair => pair.Key.Resource == r.Name)
                     .Select(pair => pair.Value.Key)
                     .ToArray()

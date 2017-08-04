@@ -7,7 +7,7 @@ using Starcounter;
 using Starcounter.Metadata;
 using IResource = RESTar.Internal.IResource;
 
-namespace RESTar.Database
+namespace RESTar.Admin
 {
     /// <summary>
     /// Contains a description of a table size

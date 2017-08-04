@@ -4,7 +4,7 @@ using RESTar.Deflection;
 using RESTar.Internal;
 using RESTar.Linq;
 
-namespace RESTar
+namespace RESTar.Admin
 {
     /// <summary>
     /// Gets all error codes used by RESTar

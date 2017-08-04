@@ -1,5 +1,5 @@
 ﻿using System;
-using RESTar.Database;
+using RESTar.Admin;
 using Starcounter;
 
 namespace RESTar.Operations

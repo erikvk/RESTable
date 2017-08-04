@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Serialization;
+using RESTar.Admin;
 using RESTar.Internal;
 using RESTar.Linq;
 using RESTar.Operations;
@@ -70,17 +71,21 @@ namespace RESTar
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
             var conditions = request.Conditions.Redirect<IResource>(direct: "Type", to: "Type.FullName");
-            return Resources.Where(conditions).Where(r => r.IsGlobal).Select(m => new Resource
-            {
-                Name = m.Name,
-                Alias = m.Alias,
-                AvailableMethods = m.AvailableMethods.ToArray(),
-                Editable = m.Editable,
-                IsInternal = m.IsInternal,
-                Type = m.Type.FullName,
-                IResource = m,
-                ResourceType = m.ResourceType
-            });
+            var accessRights = AuthTokens[request.AuthToken];
+            return accessRights.Keys
+                .Where(conditions)
+                .Where(r => r.IsGlobal)
+                .Select(m => new Resource
+                {
+                    Name = m.Name,
+                    Alias = m.Alias,
+                    AvailableMethods = accessRights[m],
+                    Editable = m.Editable,
+                    IsInternal = m.IsInternal,
+                    Type = m.Type.FullName,
+                    IResource = m,
+                    ResourceType = m.ResourceType
+                });
         }
 
         /// <summary>
@@ -284,16 +289,15 @@ namespace RESTar
             switch (searchString.Count(i => i == '*'))
             {
                 case 0: return new[] {Find(searchString)};
+                case 1 when searchString.Last() != '*':
+                    throw new Exception("Invalid resource string syntax. The asterisk must be the last character");
                 case 1:
-                    if (searchString.Last() != '*')
-                        throw new Exception("Invalid resource string syntax. The asterisk must be the last character");
                     var commonPart = searchString.TrimEnd('*');
+                    var commonPartDots = commonPart.Count(c => c == '.');
                     var matches = ResourceByName
-                        .Where(pair => pair.Key.StartsWith(commonPart))
+                        .Where(pair => pair.Key.StartsWith(commonPart) &&
+                                       pair.Key.Count(c => c == '.') == commonPartDots)
                         .Select(pair => pair.Value)
-                        .Union(ResourceAlias.All
-                            .Where(alias => alias.Alias.StartsWith(commonPart))
-                            .Select(alias => alias.IResource))
                         .ToArray();
                     if (!matches.Any())
                         throw new UnknownResourceException(searchString);

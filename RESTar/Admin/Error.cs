@@ -2,21 +2,19 @@
 using System.Linq;
 using RESTar.Internal;
 using RESTar.Linq;
+using RESTar.Operations;
 using RESTar.Requests;
 using Starcounter;
-using static RESTar.Operations.Transact;
-using static RESTar.RESTarMethods;
-using static RESTar.Settings;
 using IResource = RESTar.Internal.IResource;
 
-namespace RESTar
+namespace RESTar.Admin
 {
     /// <summary>
     /// The error resource contains instances where an error was encountered while
     /// handling a request. You can control how long entities remain in the resource
     /// by setting the daysToSaveErrors parameter in the call to RESTarConfig.Init().
     /// </summary>
-    [Database, RESTar(GET, DELETE)]
+    [Database, RESTar(RESTarMethods.GET, RESTarMethods.DELETE)]
     public class Error
     {
         /// <summary>
@@ -98,8 +96,8 @@ namespace RESTar
         {
             if (Checked >= DateTime.Now.Date) return;
             var matches = Db.SQL<Error>($"SELECT t FROM {typeof(Error).FullName} t WHERE t.\"Time\" <?",
-                DateTime.Now.AddDays(0 - _DaysToSaveErrors));
-            matches.ForEach(match => TransAsync(match.Delete));
+                DateTime.Now.AddDays(0 - Settings._DaysToSaveErrors));
+            matches.ForEach(match => Transact.TransAsync(match.Delete));
             Checked = DateTime.Now.Date;
         }
     }

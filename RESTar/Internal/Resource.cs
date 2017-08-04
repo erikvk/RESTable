@@ -5,6 +5,7 @@ using System.Linq;
 using System.Runtime.Serialization;
 using Dynamit;
 using Newtonsoft.Json.Linq;
+using RESTar.Admin;
 using RESTar.Linq;
 using RESTar.Operations;
 using Starcounter;

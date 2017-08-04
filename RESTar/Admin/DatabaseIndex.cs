@@ -4,7 +4,7 @@ using RESTar.Linq;
 using Starcounter;
 using Starcounter.Metadata;
 
-namespace RESTar.Database
+namespace RESTar.Admin
 {
     /// <summary>
     /// Contains information about a column on which an index is registered.

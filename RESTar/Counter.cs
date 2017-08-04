@@ -2,10 +2,8 @@
 using System.Collections.Generic;
 using Newtonsoft.Json.Linq;
 using RESTar.Serialization;
-using static System.UriKind;
-using static RESTar.RESTarMethods;
 
-namespace RESTar.Operations
+namespace RESTar
 {
     /// <summary>
     /// The counter resource returns the entity count for a given resource
@@ -28,7 +26,7 @@ namespace RESTar.Operations
                     if (uriToken?.Type != JTokenType.String)
                         throw new Exception("Invalid source URI");
                     var uri = uriToken.Value<string>();
-                    var response = HTTP.Internal(GET, new Uri(uri, Relative), request.AuthToken);
+                    var response = HTTP.Internal(RESTarMethods.GET, new Uri(uri, UriKind.Relative), request.AuthToken);
                     if (response?.IsSuccessStatusCode != true)
                         throw new Exception(
                             $"Could not get source data from '<self>:{Settings._Port}{Settings._Uri}{uri}'. " +
