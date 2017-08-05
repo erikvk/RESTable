@@ -4,13 +4,12 @@ using Dynamit;
 using RESTar;
 using Starcounter;
 
-// ReSharper disable RedundantExplicitArrayCreation
 
 #pragma warning disable 1591
 
 namespace RESTarExample
 {
-    public class Program
+    public static class Program
     {
         public static void Main()
         {
@@ -54,7 +53,7 @@ namespace RESTarExample
 
         public IEnumerable<R> Select(IRequest<R> request)
         {
-            return new R[] {new R {S = "Swoo", Ss = new[] {"S", "Sd"}}};
+            return new[] {new R {S = "Swoo", Ss = new[] {"S", "Sd"}}};
         }
 
         public int Update(IEnumerable<R> entities, IRequest<R> request)

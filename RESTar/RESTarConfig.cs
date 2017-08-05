@@ -47,7 +47,11 @@ namespace RESTar
 
         private static void UpdateAuthInfo()
         {
+            if (!Initialized) return;
             if (ConfigFilePath != null) ReadConfig();
+            AccessRights.Root = Resources
+                .ToDictionary(r => r, r => Methods)
+                .CollectDict(dict => new AccessRights(dict));
         }
 
         internal static void AddResource(IResource toAdd)
@@ -107,11 +111,11 @@ namespace RESTar
             RequireApiKey = requireApiKey;
             AllowAllOrigins = allowAllOrigins;
             ConfigFilePath = configFilePath;
-            ReadConfig();
             DynamitConfig.Init(true, true);
             Log.Init();
             Handlers.Register(setupMenu);
             Initialized = true;
+            UpdateAuthInfo();
         }
 
         private static void ReadConfig()
@@ -131,7 +135,7 @@ namespace RESTar
                 }
                 if (config == null) throw new Exception();
                 if (!AllowAllOrigins) SetupOrigins(config.AllowedOrigin);
-                if (RequireApiKey) SetupApiKeys(config.ApiKey);
+                if (RequireApiKey) RecurseApiKeys(config.ApiKey);
             }
             catch (Exception jse)
             {
@@ -158,43 +162,101 @@ namespace RESTar
             }
         }
 
-        private static void SetupApiKeys(JToken keyToken)
+        private static void RecurseApiKeys(JToken apiKeyToken)
         {
-            switch (keyToken.Type)
+            switch (apiKeyToken)
             {
-                case JTokenType.Object:
-                    var keyString = keyToken["Key"].Value<string>();
+                case JObject apiKey:
+                    var keyString = apiKey["Key"].Value<string>();
                     if (string.IsNullOrWhiteSpace(keyString))
                         throw new Exception("An API key was invalid");
                     var key = keyString.SHA256();
-                    var access = new List<AccessRight>();
+                    var accessRights = new List<AccessRight>();
 
-                    void getAccessRight(JToken token)
+                    void recurseAllowAccess(JToken allowAccessToken)
                     {
-                        switch (token.Type)
+                        switch (allowAccessToken)
                         {
-                            case JTokenType.Object:
-                                access.Add(new AccessRight
+                            case JObject allowAccess:
+                                var resourceSet = new HashSet<IResource>();
+
+                                void recurseResources(JToken resourceToken)
                                 {
-                                    Resources = Resource.FindMany(token["Resource"].Value<string>()),
-                                    AllowedMethods = token["Methods"].Value<string>().ToUpper().ToMethodsArray()
+                                    switch (resourceToken)
+                                    {
+                                        case JValue value when value.Value is string resourceString:
+                                            resourceSet.UnionWith(Resource.FindMany(resourceString));
+                                            break;
+                                        case JArray resources:
+                                            resources.ForEach(recurseResources);
+                                            break;
+                                        default: throw new Exception("Invalid API key XML syntax in config file");
+                                    }
+                                }
+
+                                recurseResources(allowAccess["Resource"]);
+                                accessRights.Add(new AccessRight
+                                {
+                                    Resources = resourceSet.OrderBy(r => r.Name).ToList(),
+                                    AllowedMethods = allowAccess["Methods"].Value<string>().ToUpper().ToMethodsArray()
                                 });
                                 break;
-                            case JTokenType.Array:
-                                token.ForEach(getAccessRight);
+
+                            case JArray allowAccesses:
+                                allowAccesses.ForEach(recurseAllowAccess);
                                 break;
                         }
                     }
 
-                    getAccessRight(keyToken["AllowAccess"]);
-                    ApiKeys[key] = access.ToAccessRights();
+                    recurseAllowAccess(apiKeyToken["AllowAccess"]);
+                    ApiKeys[key] = accessRights.ToAccessRights();
                     break;
-                case JTokenType.Array:
-                    keyToken.ForEach(SetupApiKeys);
+
+                case JArray apiKeys:
+                    apiKeys.ForEach(RecurseApiKeys);
                     break;
-                default:
-                    throw new Exception("Invalid API key XML syntax in config file");
+
+                default: throw new Exception("Invalid API key XML syntax in config file");
             }
         }
+
+        //private static void SetupApiKeys(JToken keyToken)
+        //{
+        //    switch (keyToken.Type)
+        //    {
+        //        case JTokenType.Object:
+        //            var keyString = keyToken["Key"].Value<string>();
+        //            if (string.IsNullOrWhiteSpace(keyString))
+        //                throw new Exception("An API key was invalid");
+        //            var key = keyString.SHA256();
+        //            var access = new List<AccessRight>();
+
+        //            void getAccessRight(JToken token)
+        //            {
+        //                switch (token.Type)
+        //                {
+        //                    case JTokenType.Object:
+        //                        access.Add(new AccessRight
+        //                        {
+        //                            Resources = Resource.FindMany(token["Resource"].Value<string>()),
+        //                            AllowedMethods = token["Methods"].Value<string>().ToUpper().ToMethodsArray()
+        //                        });
+        //                        break;
+        //                    case JTokenType.Array:
+        //                        token.ForEach(getAccessRight);
+        //                        break;
+        //                }
+        //            }
+
+        //            getAccessRight(keyToken["AllowAccess"]);
+        //            ApiKeys[key] = access.ToAccessRights();
+        //            break;
+        //        case JTokenType.Array:
+        //            keyToken.ForEach(SetupApiKeys);
+        //            break;
+        //        default:
+        //            throw new Exception("Invalid API key XML syntax in config file");
+        //    }
+        //}
     }
 }

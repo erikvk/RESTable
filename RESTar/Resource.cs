@@ -299,8 +299,6 @@ namespace RESTar
                                        pair.Key.Count(c => c == '.') == commonPartDots)
                         .Select(pair => pair.Value)
                         .ToArray();
-                    if (!matches.Any())
-                        throw new UnknownResourceException(searchString);
                     return matches;
                 default: throw new Exception("Invalid resource string syntax. Can only include one asterisk (*)");
             }

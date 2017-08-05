@@ -34,7 +34,10 @@ namespace RESTar.Internal
         internal static void Authenticate<T>(this RESTRequest<T> request) where T : class
         {
             if (!RequireApiKey)
+            {
                 request.AuthToken = AssignAuthtoken(AccessRights.Root);
+                return;
+            }
             AccessRights accessRights;
             if (!request.ScRequest.IsExternal)
             {
