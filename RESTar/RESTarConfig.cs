@@ -185,7 +185,7 @@ namespace RESTar
                                     switch (resourceToken)
                                     {
                                         case JValue value when value.Value is string resourceString:
-                                            resourceSet.UnionWith(Resource.FindMany(resourceString));
+                                            resourceSet.UnionWith(Resource.SafeFindMany(resourceString));
                                             break;
                                         case JArray resources:
                                             resources.ForEach(recurseResources);

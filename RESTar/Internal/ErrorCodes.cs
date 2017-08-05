@@ -59,6 +59,7 @@ namespace RESTar.Internal
 
         // 130-139: Alias errors
         AliasAlreadyInUse = 124,
+        AliasEqualToResourceName = 125,
 
         // 200-399: Handler errors
         AbortedSelect = 201,

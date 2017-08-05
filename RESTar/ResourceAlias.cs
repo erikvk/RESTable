@@ -1,9 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.Serialization;
 using Starcounter;
 using IResource = RESTar.Internal.IResource;
 
-namespace RESTar.Admin
+namespace RESTar
 {
     /// <summary>
     /// An internal helper class to get ResourceAlias entities
@@ -19,7 +20,7 @@ namespace RESTar.Admin
     /// The ResourceAlias resource is used to assign an alias to a resource, making 
     /// it possible to reference the resource with only the alias. 
     /// </summary>
-    [Database, RESTar(RESTarPresets.ReadAndWrite)]
+    [Database, RESTar(RESTarMethods.GET, RESTarMethods.DELETE)]
     public class ResourceAlias
     {
         /// <summary>
@@ -63,6 +64,7 @@ namespace RESTar.Admin
         /// <summary>
         /// Gets the resource denoted by this alias
         /// </summary>
+        [IgnoreDataMember]
         public IResource IResource => RESTarConfig.ResourceByName[Resource.ToLower()];
 
         private const string AliasSQL = "SELECT t FROM RESTar.Admin.ResourceAlias t WHERE t.Alias =?";
@@ -89,11 +91,6 @@ namespace RESTar.Admin
 
         private static readonly string SQL = $"SELECT t FROM {typeof(ResourceAlias).FullName} t";
         internal static IEnumerable<ResourceAlias> All => Db.SQL<ResourceAlias>(SQL);
-
-        /// <summary>
-        /// Returns true if and only if there is no such alias
-        /// </summary>
-        public static bool NotExists(string alias) => !Exists(alias, out var _);
 
         /// <summary>
         /// Returns true if and only if there is an alias for the given resource type

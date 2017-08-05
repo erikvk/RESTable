@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Serialization;
-using RESTar.Admin;
 using RESTar.Internal;
 using RESTar.Linq;
 using RESTar.Operations;
@@ -70,11 +69,13 @@ namespace RESTar
         public IEnumerable<Resource> Select(IRequest<Resource> request)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
-            var conditions = request.Conditions.Redirect<IResource>(direct: "Type", to: "Type.FullName");
+            //var conditions = request.Conditions.Redirect<IResource>(
+            //    (direct: "Type", to: "Type.FullName"),
+            //    (direct: "AvailableMethods.Length", to: "AvailableMethods.Count")
+            //);
             var accessRights = AuthTokens[request.AuthToken];
             return Resources
                 .Where(r => r.IsGlobal)
-                .Where(conditions)
                 .OrderBy(r => r.Name)
                 .Select(resource => new Resource
                 {
@@ -86,7 +87,8 @@ namespace RESTar
                     Type = resource.Type.FullName,
                     IResource = resource,
                     ResourceType = resource.ResourceType
-                });
+                })
+                .Where(request.Conditions);
         }
 
         /// <summary>
@@ -100,6 +102,8 @@ namespace RESTar
             {
                 if (string.IsNullOrEmpty(entity.Alias))
                     throw new Exception("No Alias for new resource");
+                if (Resources.Any(r => r.Name.EqualsNoCase(entity.Alias)))
+                    throw new AliasEqualToResourceNameException(entity.Alias);
                 if (ResourceAlias.Exists(entity.Alias, out var alias))
                     throw new AliasAlreadyInUseException(alias);
                 entity.AvailableMethods = Methods;
@@ -277,6 +281,31 @@ namespace RESTar
         }
 
         /// <summary>
+        /// Finds a resource by a search string. The string can be a partial resource name. If no resource 
+        /// is found, returns null. If more than one resource is found, throws an AmbiguousResourceException.
+        /// <param name="searchString">The case insensitive string to use for the search</param>
+        /// </summary>
+        public static IResource SafeFind(string searchString)
+        {
+            searchString = searchString.ToLower();
+            var resource = ResourceAlias.ByAlias(searchString)?.IResource;
+            if (resource == null)
+                ResourceByName.TryGetValue(searchString, out resource);
+            if (resource != null)
+                return resource;
+            var matches = ResourceByName
+                .Where(pair => pair.Value.IsGlobal && pair.Key.EndsWith($".{searchString}"))
+                .Select(pair => pair.Value)
+                .ToList();
+            switch (matches.Count)
+            {
+                case 0: return null;
+                case 1: return matches[0];
+                default: throw new AmbiguousResourceException(searchString, matches.Select(c => c.Name).ToList());
+            }
+        }
+
+        /// <summary>
         /// Finds a number of resources based on a search string. To include more than one resource in 
         /// the search, use the wildcard character (asterisk '*'). To find all resources in a namespace
         /// 'MyApplication.Utilities', use the search string "myapplication.utilities.*" or any case 
@@ -284,12 +313,15 @@ namespace RESTar
         /// </summary>
         /// <param name="searchString">The case insensitive string to use for the search</param>
         /// <returns></returns>
-        public static IResource[] FindMany(string searchString)
+        public static IResource[] SafeFindMany(string searchString)
         {
             searchString = searchString.ToLower();
             switch (searchString.Count(i => i == '*'))
             {
-                case 0: return new[] {Find(searchString)};
+                case 0:
+                    var found = SafeFind(searchString);
+                    if (found == null) return new IResource[0];
+                    return new[] {found};
                 case 1 when searchString.Last() != '*':
                     throw new Exception("Invalid resource string syntax. The asterisk must be the last character");
                 case 1:

@@ -76,14 +76,16 @@ namespace RESTar.Deflection.Dynamic
             if (StaticPropertyCache.TryGetValue(type.FullName, out var props))
                 return props;
             return StaticPropertyCache[type.FullName] = type.IsDDictionary()
-                ? new StaticProperty[] {ObjectNo, ObjectID}.ToDictionary(p => p.Name.ToLower(), p => p)
-                : type.GetProperties(Instance | Public)
-                    .Where(p => !p.HasAttribute<IgnoreDataMemberAttribute>())
-                    .Where(p => !(p.DeclaringType.Implements(typeof(IDictionary<,>)) && p.Name == "Item"))
-                    .Select(p => new StaticProperty(p))
-                    .If(type.IsStarcounter, then: list => list.Union(new[] {ObjectNo, ObjectID}))
-                    .OrderBy(p => p.GetAttribute<JsonPropertyAttribute>()?.Order)
-                    .ToDictionary(p => p.Name.ToLower(), p => p);
+                ? new StaticProperty[] {ObjectNo, ObjectID}.ToDictionary(p => p.Name.ToLower())
+                : (type.IsInterface
+                    ? new[] {type}.Concat(type.GetInterfaces()).SelectMany(i => i.GetProperties())
+                    : type.GetProperties(Instance | Public))
+                .Where(p => !p.HasAttribute<IgnoreDataMemberAttribute>())
+                .Where(p => !p.GetIndexParameters().Any())
+                .Select(p => new StaticProperty(p))
+                .If(type.IsStarcounter, then: list => list.Union(new[] {ObjectNo, ObjectID}))
+                .OrderBy(p => p.GetAttribute<JsonPropertyAttribute>()?.Order)
+                .ToDictionary(p => p.Name.ToLower());
         }
 
         #endregion

@@ -5,7 +5,6 @@ using System.Linq;
 using System.Runtime.Serialization;
 using Dynamit;
 using Newtonsoft.Json.Linq;
-using RESTar.Admin;
 using RESTar.Linq;
 using RESTar.Operations;
 using Starcounter;
@@ -57,6 +56,8 @@ namespace RESTar.Internal
                         return;
                     throw new AliasAlreadyInUseException(usedAliasMapping);
                 }
+                if (RESTarConfig.Resources.Any(r => r.Name.EqualsNoCase(value)))
+                    throw new AliasEqualToResourceNameException(value);
 
                 Trans(() =>
                 {

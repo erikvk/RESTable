@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json;
-using RESTar.Admin;
 using RESTar.Deflection.Dynamic;
 using RESTar.Internal;
 using Starcounter;
@@ -304,6 +303,15 @@ namespace RESTar
         internal AliasAlreadyInUseException(ResourceAlias alias) : base(AliasAlreadyInUse,
             $"Invalid Alias: '{alias.Alias}' is already in use for resource '{alias.IResource.Name}'") =>
             Response = BadRequest(this);
+    }
+
+    /// <summary>
+    /// Thrown when an alias cannot be registered for a resource because it is the same as a resource name
+    /// </summary>
+    public class AliasEqualToResourceNameException : RESTarException
+    {
+        internal AliasEqualToResourceNameException(string alias) : base(AliasEqualToResourceName,
+            $"Invalid Alias: '{alias}' is a resource name") => Response = BadRequest(this);
     }
 
     /// <summary>

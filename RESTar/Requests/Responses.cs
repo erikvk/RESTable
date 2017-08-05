@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Net;
-using RESTar.Admin;
 using Starcounter;
 
 namespace RESTar.Requests
