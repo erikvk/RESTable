@@ -22,24 +22,24 @@ namespace RESTar
     public sealed class Resource : ISelector<Resource>, IInserter<Resource>, IUpdater<Resource>, IDeleter<Resource>
     {
         /// <summary>
-        /// The methods that have been enabled for this resource
-        /// </summary>
-        public RESTarMethods[] AvailableMethods { get; set; }
-
-        /// <summary>
         /// The name of the resource
         /// </summary>
         public string Name { get; private set; }
 
         /// <summary>
-        /// Is this resource editable?
-        /// </summary>
-        public bool Editable { get; private set; }
-
-        /// <summary>
         /// The alias of this resource, if any
         /// </summary>
         public string Alias { get; set; }
+
+        /// <summary>
+        /// The methods that have been enabled for this resource
+        /// </summary>
+        public RESTarMethods[] AvailableMethods { get; set; }
+
+        /// <summary>
+        /// Is this resource editable?
+        /// </summary>
+        public bool Editable { get; private set; }
 
         /// <summary>
         /// Is this resource internal?
@@ -72,19 +72,20 @@ namespace RESTar
             if (request == null) throw new ArgumentNullException(nameof(request));
             var conditions = request.Conditions.Redirect<IResource>(direct: "Type", to: "Type.FullName");
             var accessRights = AuthTokens[request.AuthToken];
-            return accessRights.Keys
-                .Where(conditions)
+            return Resources
                 .Where(r => r.IsGlobal)
-                .Select(m => new Resource
+                .Where(conditions)
+                .OrderBy(r => r.Name)
+                .Select(resource => new Resource
                 {
-                    Name = m.Name,
-                    Alias = m.Alias,
-                    AvailableMethods = accessRights[m],
-                    Editable = m.Editable,
-                    IsInternal = m.IsInternal,
-                    Type = m.Type.FullName,
-                    IResource = m,
-                    ResourceType = m.ResourceType
+                    Name = resource.Name,
+                    Alias = resource.Alias,
+                    AvailableMethods = accessRights.SafeGet(resource) ?? new RESTarMethods[0],
+                    Editable = resource.Editable,
+                    IsInternal = resource.IsInternal,
+                    Type = resource.Type.FullName,
+                    IResource = resource,
+                    ResourceType = resource.ResourceType
                 });
         }
 
