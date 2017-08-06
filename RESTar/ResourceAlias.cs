@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Runtime.Serialization;
 using Starcounter;
+using static RESTar.RESTarMethods;
 using IResource = RESTar.Internal.IResource;
 
 namespace RESTar
@@ -12,7 +13,7 @@ namespace RESTar
     /// <typeparam name="T"></typeparam>
     internal static class ResourceAlias<T> where T : class
     {
-        private const string SQL = "SELECT t FROM RESTar.Admin.ResourceAlias t WHERE t.Resource =?";
+        private const string SQL = "SELECT t FROM RESTar.ResourceAlias t WHERE t.Resource =?";
         public static ResourceAlias Get => Db.SQL<ResourceAlias>(SQL, typeof(T).FullName).First;
     }
 
@@ -20,7 +21,7 @@ namespace RESTar
     /// The ResourceAlias resource is used to assign an alias to a resource, making 
     /// it possible to reference the resource with only the alias. 
     /// </summary>
-    [Database, RESTar(RESTarMethods.GET, RESTarMethods.DELETE)]
+    [Database, RESTar(GET, DELETE), OpenResource(GET)]
     public class ResourceAlias
     {
         /// <summary>
@@ -67,8 +68,8 @@ namespace RESTar
         [IgnoreDataMember]
         public IResource IResource => RESTarConfig.ResourceByName[Resource.ToLower()];
 
-        private const string AliasSQL = "SELECT t FROM RESTar.Admin.ResourceAlias t WHERE t.Alias =?";
-        private const string ResourceSQL = "SELECT t FROM RESTar.Admin.ResourceAlias t WHERE t.Resource =?";
+        private const string AliasSQL = "SELECT t FROM RESTar.ResourceAlias t WHERE t.Alias =?";
+        private const string ResourceSQL = "SELECT t FROM RESTar.ResourceAlias t WHERE t.Resource =?";
 
         /// <summary>
         /// Gets a ResourceAlias by its alias

@@ -6,7 +6,9 @@ using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
 using Newtonsoft.Json.Linq;
+using RESTar.Admin;
 using RESTar.Serialization;
+using static RESTar.RESTarMethods;
 using JTokens = System.Collections.Generic.IEnumerable<Newtonsoft.Json.Linq.JToken>;
 
 #pragma warning disable 1591
@@ -17,7 +19,7 @@ namespace RESTar
     /// The SetOperations resource can perform advanced operations on entities in one
     /// or more RESTar resources. See the RESTar Specification for details.
     /// </summary>
-    [RESTar(RESTarPresets.ReadOnly, Singleton = true)]
+    [RESTar(GET, Singleton = true), OpenResource]
     public class SetOperations : JObject, ISelector<SetOperations>
     {
         public SetOperations()
@@ -57,7 +59,7 @@ namespace RESTar
                         else if (char.IsDigit(first) || first == '/')
                         {
                             var uri = str;
-                            var response = HTTP.Internal(RESTarMethods.GET, new Uri(uri, UriKind.Relative),
+                            var response = HTTP.Internal(GET, new Uri(uri, UriKind.Relative),
                                 request.AuthToken);
                             if (response?.IsSuccessStatusCode != true)
                                 throw new Exception(
@@ -170,7 +172,7 @@ namespace RESTar
                 if (!skip)
                 {
                     var uri = localMapper.ToString();
-                    var response = HTTP.Internal(RESTarMethods.GET, new Uri(uri, UriKind.Relative), request.AuthToken);
+                    var response = HTTP.Internal(GET, new Uri(uri, UriKind.Relative), request.AuthToken);
                     if (response?.IsSuccessStatusCode != true)
                         throw new Exception($"Could not get source data from '<self>:{Settings._Port}{Settings._Uri}{uri}'");
                     if (response.StatusCode == 204 || string.IsNullOrEmpty(response.Body))

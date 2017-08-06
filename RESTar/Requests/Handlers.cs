@@ -6,7 +6,7 @@ using static RESTar.Internal.Authenticator;
 using static RESTar.Operations.Transact;
 using static RESTar.Requests.HandlerActions;
 using static Starcounter.SessionOptions;
-using static RESTar.Settings;
+using static RESTar.Admin.Settings;
 using static RESTar.Requests.Responses;
 using static RESTar.RESTarConfig;
 using static Starcounter.Session;

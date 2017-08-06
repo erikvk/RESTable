@@ -2,15 +2,13 @@
 using System.Collections.Generic;
 using RESTar.Deflection.Dynamic;
 using RESTar.Linq;
-using static RESTar.Operators;
-using static RESTar.RESTarPresets;
 
-namespace RESTar
+namespace RESTar.Admin
 {
     /// <summary>
     /// Gets a schema for a given resource
     /// </summary>
-    [RESTar(ReadOnly, Singleton = true)]
+    [RESTar(RESTarMethods.GET, Singleton = true)]
     public class Schema : Dictionary<string, string>, ISelector<Schema>
     {
         /// <summary>
@@ -23,7 +21,7 @@ namespace RESTar
         /// </summary>
         public IEnumerable<Schema> Select(IRequest<Schema> request)
         {
-            var resourceName = request.Conditions.Get("resource", EQUALS)?.Value as string;
+            var resourceName = request.Conditions.Get("resource", Operators.EQUALS)?.Value as string;
             if (resourceName == null)
                 throw new Exception("Invalid syntax in request to RESTar.Schema. Format: " +
                                     "/schema/resource=insert_resource_name_here");

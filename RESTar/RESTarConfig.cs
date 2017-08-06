@@ -7,6 +7,7 @@ using System.Xml;
 using Dynamit;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using RESTar.Admin;
 using RESTar.Auth;
 using RESTar.Deflection.Dynamic;
 using RESTar.Internal;
@@ -134,8 +135,8 @@ namespace RESTar
                     config = JObject.Parse(jsonstring)["config"] as JObject;
                 }
                 if (config == null) throw new Exception();
-                if (!AllowAllOrigins) SetupOrigins(config.AllowedOrigin);
-                if (RequireApiKey) RecurseApiKeys(config.ApiKey);
+                if (!AllowAllOrigins) ReadOrigins(config.AllowedOrigin);
+                if (RequireApiKey) ReadApiKeys(config.ApiKey);
             }
             catch (Exception jse)
             {
@@ -143,7 +144,7 @@ namespace RESTar
             }
         }
 
-        private static void SetupOrigins(JToken originToken)
+        private static void ReadOrigins(JToken originToken)
         {
             if (originToken == null) return;
             switch (originToken.Type)
@@ -155,14 +156,14 @@ namespace RESTar
                     AllowedOrigins.Add(new Uri(value));
                     break;
                 case JTokenType.Array:
-                    originToken.ForEach(SetupOrigins);
+                    originToken.ForEach(ReadOrigins);
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();
             }
         }
 
-        private static void RecurseApiKeys(JToken apiKeyToken)
+        private static void ReadApiKeys(JToken apiKeyToken)
         {
             switch (apiKeyToken)
             {
@@ -171,7 +172,7 @@ namespace RESTar
                     if (string.IsNullOrWhiteSpace(keyString))
                         throw new Exception("An API key was invalid");
                     var key = keyString.SHA256();
-                    var accessRights = new List<AccessRight>();
+                    var accessRightList = new List<AccessRight>();
 
                     void recurseAllowAccess(JToken allowAccessToken)
                     {
@@ -186,77 +187,38 @@ namespace RESTar
                                     {
                                         case JValue value when value.Value is string resourceString:
                                             resourceSet.UnionWith(Resource.SafeFindMany(resourceString));
-                                            break;
+                                            return;
                                         case JArray resources:
                                             resources.ForEach(recurseResources);
-                                            break;
+                                            return;
                                         default: throw new Exception("Invalid API key XML syntax in config file");
                                     }
                                 }
 
                                 recurseResources(allowAccess["Resource"]);
-                                accessRights.Add(new AccessRight
+                                accessRightList.Add(new AccessRight
                                 {
                                     Resources = resourceSet.OrderBy(r => r.Name).ToList(),
                                     AllowedMethods = allowAccess["Methods"].Value<string>().ToUpper().ToMethodsArray()
                                 });
-                                break;
-
+                                return;
                             case JArray allowAccesses:
                                 allowAccesses.ForEach(recurseAllowAccess);
-                                break;
+                                return;
+                            default: throw new Exception("Invalid API key XML syntax in config file");
                         }
                     }
 
                     recurseAllowAccess(apiKeyToken["AllowAccess"]);
-                    ApiKeys[key] = accessRights.ToAccessRights();
+                    var accessRights = accessRightList.ToAccessRights();
+                    accessRights.AddOpenResources();
+                    ApiKeys[key] = accessRights;
                     break;
-
                 case JArray apiKeys:
-                    apiKeys.ForEach(RecurseApiKeys);
+                    apiKeys.ForEach(ReadApiKeys);
                     break;
-
                 default: throw new Exception("Invalid API key XML syntax in config file");
             }
         }
-
-        //private static void SetupApiKeys(JToken keyToken)
-        //{
-        //    switch (keyToken.Type)
-        //    {
-        //        case JTokenType.Object:
-        //            var keyString = keyToken["Key"].Value<string>();
-        //            if (string.IsNullOrWhiteSpace(keyString))
-        //                throw new Exception("An API key was invalid");
-        //            var key = keyString.SHA256();
-        //            var access = new List<AccessRight>();
-
-        //            void getAccessRight(JToken token)
-        //            {
-        //                switch (token.Type)
-        //                {
-        //                    case JTokenType.Object:
-        //                        access.Add(new AccessRight
-        //                        {
-        //                            Resources = Resource.FindMany(token["Resource"].Value<string>()),
-        //                            AllowedMethods = token["Methods"].Value<string>().ToUpper().ToMethodsArray()
-        //                        });
-        //                        break;
-        //                    case JTokenType.Array:
-        //                        token.ForEach(getAccessRight);
-        //                        break;
-        //                }
-        //            }
-
-        //            getAccessRight(keyToken["AllowAccess"]);
-        //            ApiKeys[key] = access.ToAccessRights();
-        //            break;
-        //        case JTokenType.Array:
-        //            keyToken.ForEach(SetupApiKeys);
-        //            break;
-        //        default:
-        //            throw new Exception("Invalid API key XML syntax in config file");
-        //    }
-        //}
     }
 }

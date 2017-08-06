@@ -7,7 +7,7 @@ using RESTar.Internal;
 using Starcounter;
 using static RESTar.Internal.ErrorCodes;
 using static RESTar.Requests.Responses;
-using static RESTar.Settings;
+using static RESTar.Admin.Settings;
 using IResource = RESTar.Internal.IResource;
 
 namespace RESTar

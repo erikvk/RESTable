@@ -25,7 +25,7 @@ namespace RESTarExample
         }
     }
 
-    [Database, RESTar(RESTarPresets.ReadAndWrite)]
+    [Database, RESTar]
     public class MyResource
     {
         public int MyId;
@@ -40,7 +40,7 @@ namespace RESTarExample
         public dynamic Value;
     }
 
-    [RESTar(RESTarPresets.ReadAndWrite)]
+    [RESTar]
     public class R : IInserter<R>, ISelector<R>, IUpdater<R>, IDeleter<R>
     {
         public string S { get; set; }
@@ -74,7 +74,7 @@ namespace RESTarExample
         C
     }
 
-    [Database, RESTar(RESTarPresets.ReadAndWrite)]
+    [Database, RESTar]
     public class MyOther
     {
         public string Str;

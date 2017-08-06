@@ -5,7 +5,7 @@ using Starcounter;
 
 namespace RESTarExample.TestDb
 {
-    [Database, RESTar(RESTarPresets.ReadAndWrite)]
+    [Database, RESTar]
     public abstract class TestBase
     {
         public ulong star_ObjectNo => this.GetObjectNo();

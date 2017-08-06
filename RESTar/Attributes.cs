@@ -32,37 +32,20 @@ namespace RESTar
         public bool Singleton { get; set; }
 
         /// <summary>
-        /// </summary>
-        /// <param name="preset">A preset used for setting up available methods for the resource</param>
-        public RESTarAttribute(RESTarPresets preset) => AvailableMethods = preset.ToMethods();
-
-        /// <summary>
         /// Used when creating attributes for dynamic resources
         /// </summary>
         /// <param name="methods"></param>
         internal RESTarAttribute(IReadOnlyList<RESTarMethods> methods) => AvailableMethods = methods;
 
         /// <summary>
+        /// Registers a class as a RESTar resource. If no methods are provided in the 
+        /// methods list, all methods will be enabled for this resource.
         /// </summary>
-        /// <param name="preset">A preset used for setting up available methods for the resource</param>
-        /// <param name="additionalMethods">Additional methods for this resource, apart from the one defined by
-        /// the preset</param>
-        public RESTarAttribute(RESTarPresets preset, params RESTarMethods[] additionalMethods)
+        public RESTarAttribute(params RESTarMethods[] methods)
         {
-            var methods = preset.ToMethods().Union(additionalMethods ?? new RESTarMethods[0]).ToList();
-            methods.Sort(MethodComparer.Instance);
-            AvailableMethods = methods;
-        }
-
-        /// <summary>
-        /// </summary>
-        /// <param name="method">A method to make available for the resource</param>
-        /// <param name="addMethods">Additional methods to make available for the resource</param>
-        public RESTarAttribute(RESTarMethods method, params RESTarMethods[] addMethods)
-        {
-            var methods = new[] {method}.Union(addMethods ?? new RESTarMethods[0]).ToList();
-            methods.Sort(MethodComparer.Instance);
-            AvailableMethods = methods;
+            if (!methods.Any())
+                methods = RESTarConfig.Methods;
+            AvailableMethods = methods.OrderBy(i => i, MethodComparer.Instance).ToList();
         }
     }
 
@@ -74,13 +57,6 @@ namespace RESTar
     public class RESTarInternalAttribute : RESTarAttribute
     {
         /// <summary>
-        /// </summary>
-        /// <param name="preset">A preset used for setting up available methods for the resource</param>
-        public RESTarInternalAttribute(RESTarPresets preset) : base(preset)
-        {
-        }
-
-        /// <summary>
         /// Used when creating attributes for dynamic resources
         /// </summary>
         /// <param name="methods"></param>
@@ -89,21 +65,10 @@ namespace RESTar
         }
 
         /// <summary>
+        /// Registers a class as a RESTar internal resource. If no methods are provided in the 
+        /// methods list, all methods will be enabled for this resource.
         /// </summary>
-        /// <param name="preset">A preset used for setting up available methods for the resource</param>
-        /// <param name="additionalMethods">Additional methods for this resource, apart from the one defined by
-        /// the preset</param>
-        public RESTarInternalAttribute(RESTarPresets preset, params RESTarMethods[] additionalMethods) : base(preset,
-            additionalMethods)
-        {
-        }
-
-        /// <summary>
-        /// </summary>
-        /// <param name="method">A method to make available for the resource</param>
-        /// <param name="addMethods">Additional methods to make available for the resource</param>
-        public RESTarInternalAttribute(RESTarMethods method, params RESTarMethods[] addMethods) : base(method,
-            addMethods)
+        public RESTarInternalAttribute(params RESTarMethods[] methods) : base(methods)
         {
         }
     }
@@ -150,5 +115,26 @@ namespace RESTar
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
     public class ExcelFlattenToStringAttribute : Attribute
     {
+    }
+
+    /// <summary>
+    /// Resources decorated with the OpenResourceAttribute will be available to all users,
+    /// unless the user's API key explicitly denies access to them. By assigning methods 
+    /// or presets in the constructor, access can be restricted. Open resources are useful 
+    /// when providing basic functionality that should be consumed by all users.
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Class)]
+    public class OpenResourceAttribute : Attribute
+    {
+        internal IReadOnlyList<RESTarMethods> AvailableMethods { get; }
+
+        /// <summary>
+        /// If no methods are provided in the methods list, all methods enabled for the resource 
+        /// will be enabled
+        /// </summary>
+        public OpenResourceAttribute(params RESTarMethods[] methods)
+        {
+            AvailableMethods = methods.Any() ? methods.OrderBy(i => i, MethodComparer.Instance).ToList() : null;
+        }
     }
 }

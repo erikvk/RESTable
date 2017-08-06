@@ -1,14 +1,14 @@
 ﻿using System.Runtime.Serialization;
 using RESTar.Linq;
+using RESTar.Operations;
 using Starcounter;
-using static RESTar.Operations.Transact;
 
-namespace RESTar
+namespace RESTar.Admin
 {
     /// <summary>
     /// The settings resource for the RESTar instance, stores its settings.
     /// </summary>
-    [Database, RESTar(RESTarPresets.ReadAndUpdate, Singleton = true)]
+    [Database, RESTar(RESTarMethods.GET, RESTarMethods.PATCH, Singleton = true)]
     public class Settings
     {
         internal static ushort _Port => Instance.Port;
@@ -63,7 +63,7 @@ namespace RESTar
         private static readonly string SQL = $"SELECT t FROM {typeof(Settings).FullName} t";
 
         internal static void Init(ushort port, string uri, bool viewEnabled, bool prettyPrint, int daysToSaveErrors) =>
-            Trans(() =>
+            Transact.Trans(() =>
             {
                 Db.SQL<Settings>(SQL).ForEach(Db.Delete);
                 new Settings

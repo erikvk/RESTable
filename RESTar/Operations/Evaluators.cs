@@ -8,7 +8,7 @@ using Starcounter;
 using static RESTar.Operations.Do;
 using static RESTar.Requests.Responses;
 using static RESTar.Serialization.Serializer;
-using static RESTar.Settings;
+using static RESTar.Admin.Settings;
 
 namespace RESTar.Operations
 {

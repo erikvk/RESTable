@@ -210,6 +210,10 @@ namespace RESTar.Requests
             }
         }
 
-        public void Dispose() => AuthTokens.TryRemove(AuthToken, out var _);
+        public void Dispose()
+        {
+            if (AuthToken != null)
+                AuthTokens.TryRemove(AuthToken, out var _);
+        }
     }
 }

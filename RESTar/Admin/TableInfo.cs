@@ -5,6 +5,7 @@ using RESTar.Deflection.Dynamic;
 using RESTar.Linq;
 using Starcounter;
 using Starcounter.Metadata;
+using static RESTar.RESTarMethods;
 using IResource = RESTar.Internal.IResource;
 
 namespace RESTar.Admin
@@ -38,7 +39,7 @@ namespace RESTar.Admin
     /// <summary>
     /// Gets an aggregated info view for a given Starcounter table
     /// </summary>
-    [RESTar(RESTarPresets.ReadOnly)]
+    [RESTar(GET)]
     public class TableInfo : ISelector<TableInfo>
     {
         /// <summary>

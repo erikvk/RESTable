@@ -1,10 +1,11 @@
 ﻿using System.Collections.Generic;
 using System.IO;
 using System.Xml;
+using System;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
-using Type = System.Type;
+using static RESTar.Admin.Settings;
 using Formatting = Newtonsoft.Json.Formatting;
 
 namespace RESTar.Serialization
@@ -51,7 +52,7 @@ namespace RESTar.Serialization
 
         internal static string Serialize(this object value, Type type = null)
         {
-            return JsonConvert.SerializeObject(value, type, RESTar.Settings._PrettyPrint ? Formatting.Indented : Formatting.None, Settings);
+            return JsonConvert.SerializeObject(value, type, _PrettyPrint ? Formatting.Indented : Formatting.None, Settings);
         }
 
         internal static void Populate(JToken value, object target)
@@ -74,7 +75,7 @@ namespace RESTar.Serialization
             if (json == "[]") return null;
             var xml = JsonConvert.DeserializeXmlNode($@"{{""row"":{json}}}", "root", true);
             using (var stringWriter = new StringWriter())
-            using (var xmlTextWriter = XmlWriter.Create(stringWriter, RESTar.Settings._PrettyPrint ? XMLIndentSettings : null))
+            using (var xmlTextWriter = XmlWriter.Create(stringWriter, _PrettyPrint ? XMLIndentSettings : null))
             {
                 xml.WriteTo(xmlTextWriter);
                 xmlTextWriter.Flush();

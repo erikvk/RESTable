@@ -12,6 +12,7 @@ using System.Web;
 using Dynamit;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using RESTar.Admin;
 using RESTar.Auth;
 using RESTar.Deflection.Dynamic;
 using RESTar.Internal;
@@ -24,7 +25,6 @@ using Starcounter;
 using static System.Globalization.DateTimeStyles;
 using static System.Reflection.BindingFlags;
 using static System.StringComparison;
-using static RESTar.RESTarMethods;
 using static RESTar.Internal.ErrorCodes;
 using static RESTar.Requests.Responses;
 using static RESTar.RESTarConfig;
@@ -91,6 +91,13 @@ namespace RESTar
         internal static bool HasAttribute<TAttribute>(this MemberInfo type)
             where TAttribute : Attribute => (type?.GetCustomAttributes<TAttribute>().Any()).GetValueOrDefault();
 
+        internal static bool HasAttribute<TAttribute>(this MemberInfo type, out TAttribute attribute)
+            where TAttribute : Attribute
+        {
+            attribute = type?.GetCustomAttributes<TAttribute>().FirstOrDefault();
+            return attribute != null;
+        }
+
         internal static bool Implements(this Type type, Type interfaceType)
         {
             return type.GetInterfaces()
@@ -153,18 +160,6 @@ namespace RESTar
             return methodsString.Split(',').Select(s => (RESTarMethods) Enum.Parse(typeof(RESTarMethods), s)).ToArray();
         }
 
-        internal static RESTarMethods[] ToMethods(this RESTarPresets preset)
-        {
-            switch (preset)
-            {
-                case RESTarPresets.ReadOnly: return new[] {GET};
-                case RESTarPresets.WriteOnly: return new[] {POST, DELETE};
-                case RESTarPresets.ReadAndUpdate: return new[] {GET, PATCH};
-                case RESTarPresets.ReadAndWrite: return Methods;
-                default: throw new ArgumentOutOfRangeException(nameof(preset));
-            }
-        }
-
         internal static object GetDefault(this Type type)
         {
             if (type == null)
@@ -177,7 +172,7 @@ namespace RESTar
 
         private static object DEFAULT<T>() => default(T);
 
-        internal static AccessRights ToAccessRights(this IEnumerable<AccessRight> accessRights)
+        internal static AccessRights ToAccessRights(this List<AccessRight> accessRights)
         {
             var ar = new AccessRights();
             foreach (var right in accessRights)

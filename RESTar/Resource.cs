@@ -9,7 +9,7 @@ using RESTar.Operations;
 using Starcounter;
 using static System.Reflection.BindingFlags;
 using static RESTar.RESTarConfig;
-using static RESTar.RESTarPresets;
+using static RESTar.RESTarMethods;
 using IResource = RESTar.Internal.IResource;
 
 namespace RESTar
@@ -17,7 +17,7 @@ namespace RESTar
     /// <summary>
     /// A resource that lists all available resources in a RESTar instance
     /// </summary>
-    [RESTar(ReadAndWrite)]
+    [RESTar, OpenResource(GET)]
     public sealed class Resource : ISelector<Resource>, IInserter<Resource>, IUpdater<Resource>, IDeleter<Resource>
     {
         /// <summary>
@@ -69,10 +69,6 @@ namespace RESTar
         public IEnumerable<Resource> Select(IRequest<Resource> request)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
-            //var conditions = request.Conditions.Redirect<IResource>(
-            //    (direct: "Type", to: "Type.FullName"),
-            //    (direct: "AvailableMethods.Length", to: "AvailableMethods.Count")
-            //);
             var accessRights = AuthTokens[request.AuthToken];
             return Resources
                 .Where(r => r.IsGlobal)
@@ -81,7 +77,8 @@ namespace RESTar
                 {
                     Name = resource.Name,
                     Alias = resource.Alias,
-                    AvailableMethods = accessRights.SafeGet(resource) ?? new RESTarMethods[0],
+                    AvailableMethods = accessRights.SafeGet(resource)?.Intersect(resource.AvailableMethods).ToArray()
+                                       ?? new RESTarMethods[0],
                     Editable = resource.Editable,
                     IsInternal = resource.IsInternal,
                     Type = resource.Type.FullName,
@@ -167,75 +164,28 @@ namespace RESTar
         #region Register resources
 
         /// <summary>
-        /// Registers a new resource with the RESTar instance
+        /// Registers a class as a RESTar resource. If no methods are provided in the 
+        /// methods list, all methods will be enabled for this resource.
         /// </summary>
-        /// <typeparam name="T">The type to register</typeparam>
-        /// <param name="preset">The preset to configure available methods from</param>
-        /// <param name="addMethods">Additional methods, apart from the ones defined by the preset</param>
-        public static void Register<T>(RESTarPresets preset, params RESTarMethods[] addMethods) where T : class
+        public static void Register<T>(params RESTarMethods[] methods) where T : class
         {
-            var methods = preset.ToMethods().Union(addMethods ?? new RESTarMethods[0]).ToArray();
-            Register<T>(methods[0], methods.Length > 1 ? methods.Skip(1).ToArray() : null);
+            if (!methods.Any()) methods = Methods;
+            Register<T>(methods.OrderBy(i => i, MethodComparer.Instance).ToArray(), null);
         }
 
         /// <summary>
-        /// Registers a new resource with the RESTar instance
+        /// Registers a class as a RESTar resource. If no methods are provided in the 
+        /// methods list, all methods will be enabled for this resource.
         /// </summary>
         /// <typeparam name="T">The type to register</typeparam>
-        /// <param name="method">A method to make available for this resource</param>
-        /// <param name="addMethods">Additional methods to make available</param>
-        public static void Register<T>(RESTarMethods method, params RESTarMethods[] addMethods) where T : class
-        {
-            var methods = new[] {method}.Union(addMethods ?? new RESTarMethods[0]).ToArray();
-            Register<T>(methods[0], methods.Length > 1 ? methods.Skip(1).ToArray() : null, null);
-        }
-
-        /// <summary>
-        /// Registers a new resource with the RESTar instance
-        /// </summary>
-        /// <typeparam name="T">The type to register</typeparam>
-        /// <param name="preset">The preset to configure available methods from</param>
-        /// <param name="addMethods">Additional methods, apart from the ones defined by the preset</param>
+        /// <param name="methods">The methods to make available for this resource</param>
         /// <param name="selector">The selector to use for this resource</param>
         /// <param name="inserter">The inserter to use for this resource</param>
         /// <param name="updater">The updater to use for this resource</param>
         /// <param name="deleter">The deleter to use for this resource</param>
         public static void Register<T>
         (
-            RESTarPresets preset,
-            IEnumerable<RESTarMethods> addMethods = null,
-            Selector<T> selector = null,
-            Inserter<T> inserter = null,
-            Updater<T> updater = null,
-            Deleter<T> deleter = null
-        ) where T : class
-        {
-            var methods = preset.ToMethods().Union(addMethods ?? new RESTarMethods[0]).ToArray();
-            Register
-            (
-                method: methods[0],
-                addMethods: methods.Length > 1 ? methods.Skip(1).ToArray() : null,
-                selector: selector,
-                inserter: inserter,
-                updater: updater,
-                deleter: deleter
-            );
-        }
-
-        /// <summary>
-        /// Registers a new resource with the RESTar instance
-        /// </summary>
-        /// <typeparam name="T">The type to register</typeparam>
-        /// <param name="method">A method to make available for this resource</param>
-        /// <param name="addMethods">Additional methods to make available</param>
-        /// <param name="selector">The selector to use for this resource</param>
-        /// <param name="inserter">The inserter to use for this resource</param>
-        /// <param name="updater">The updater to use for this resource</param>
-        /// <param name="deleter">The deleter to use for this resource</param>
-        public static void Register<T>
-        (
-            RESTarMethods method,
-            IEnumerable<RESTarMethods> addMethods = null,
+            ICollection<RESTarMethods> methods,
             Selector<T> selector = null,
             Inserter<T> inserter = null,
             Updater<T> updater = null,
@@ -246,7 +196,7 @@ namespace RESTar
                 throw new InvalidOperationException("Cannot manually register resources that have a RESTar " +
                                                     "attribute. Resources decorated with a RESTar attribute " +
                                                     "are registered automatically");
-            var attribute = new RESTarAttribute(method, addMethods?.ToArray());
+            var attribute = new RESTarAttribute(methods.ToArray());
             Resource<T>.Make(attribute, selector, inserter, updater, deleter);
         }
 

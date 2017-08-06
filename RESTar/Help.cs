@@ -9,7 +9,7 @@ namespace RESTar
     /// <summary>
     /// Contains help articles for RESTar
     /// </summary>
-    [RESTar(GET)]
+    [RESTar(GET), OpenResource]
     public class Help : ISelector<Help>
     {
         /// <summary>

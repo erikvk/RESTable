@@ -35,7 +35,7 @@ namespace RESTar.Admin
     /// <summary>
     /// A resource for handling database indexes for Starcounter resources.
     /// </summary>
-    [RESTar(RESTarPresets.ReadAndWrite)]
+    [RESTar]
     public class DatabaseIndex : ISelector<DatabaseIndex>, IInserter<DatabaseIndex>, IUpdater<DatabaseIndex>,
         IDeleter<DatabaseIndex>
     {

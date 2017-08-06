@@ -14,7 +14,7 @@ namespace HelpManager
         );
     }
 
-    [Database, RESTar(RESTarPresets.ReadAndWrite)]
+    [Database, RESTar]
     public class HelpArticle
     {
         public string Topic;

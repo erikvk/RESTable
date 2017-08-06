@@ -3,13 +3,14 @@ using System.Linq;
 using RESTar.Deflection;
 using RESTar.Internal;
 using RESTar.Linq;
+using static RESTar.RESTarMethods;
 
 namespace RESTar.Admin
 {
     /// <summary>
     /// Gets all error codes used by RESTar
     /// </summary>
-    [RESTar(RESTarPresets.ReadOnly)]
+    [RESTar(GET)]
     public class ErrorCode : ISelector<ErrorCode>
     {
         /// <summary>

@@ -1,5 +1,7 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using RESTar.Internal;
+using RESTar.Linq;
 
 namespace RESTar.Auth
 {
@@ -7,7 +9,9 @@ namespace RESTar.Auth
     {
         internal static AccessRights Root { get; set; }
 
-        internal AccessRights() { }
+        internal AccessRights()
+        {
+        }
 
         internal AccessRights(IDictionary<IResource, RESTarMethods[]> other) : base(other)
         {
@@ -18,5 +22,11 @@ namespace RESTar.Auth
             get => ContainsKey(resource) ? base[resource] : null;
             set => base[resource] = value;
         }
+
+        internal void AddOpenResources() => RESTarConfig.Resources.ForEach(r =>
+        {
+            if (!r.Type.HasAttribute<OpenResourceAttribute>(out var attribute)) return;
+            if (!ContainsKey(r)) this[r] = attribute.AvailableMethods?.ToArray() ?? r.AvailableMethods.ToArray();
+        });
     }
 }
