@@ -10,7 +10,7 @@ namespace RESTar
     [AttributeUsage(AttributeTargets.Class, Inherited = false)]
     public class RESTarAttribute : Attribute
     {
-        internal IReadOnlyList<RESTarMethods> AvailableMethods { get; }
+        internal IReadOnlyList<Methods> AvailableMethods { get; }
 
         /// <summary>
         /// If true, unknown conditions encountered when handling incoming requests
@@ -35,18 +35,23 @@ namespace RESTar
         /// Used when creating attributes for dynamic resources
         /// </summary>
         /// <param name="methods"></param>
-        internal RESTarAttribute(IReadOnlyList<RESTarMethods> methods) => AvailableMethods = methods;
+        internal RESTarAttribute(IReadOnlyList<Methods> methods) => AvailableMethods = methods;
 
         /// <summary>
         /// Registers a class as a RESTar resource. If no methods are provided in the 
         /// methods list, all methods will be enabled for this resource.
         /// </summary>
-        public RESTarAttribute(params RESTarMethods[] methods)
+        public RESTarAttribute(params Methods[] methods)
         {
             if (!methods.Any())
                 methods = RESTarConfig.Methods;
             AvailableMethods = methods.OrderBy(i => i, MethodComparer.Instance).ToList();
         }
+    }
+
+    internal static class RESTarAttribute<T> where T : class
+    {
+        internal static RESTarAttribute Get => typeof(T).GetAttribute<RESTarAttribute>();
     }
 
     /// <summary>
@@ -60,7 +65,7 @@ namespace RESTar
         /// Used when creating attributes for dynamic resources
         /// </summary>
         /// <param name="methods"></param>
-        internal RESTarInternalAttribute(IReadOnlyList<RESTarMethods> methods) : base(methods)
+        internal RESTarInternalAttribute(IReadOnlyList<Methods> methods) : base(methods)
         {
         }
 
@@ -68,7 +73,7 @@ namespace RESTar
         /// Registers a class as a RESTar internal resource. If no methods are provided in the 
         /// methods list, all methods will be enabled for this resource.
         /// </summary>
-        public RESTarInternalAttribute(params RESTarMethods[] methods) : base(methods)
+        public RESTarInternalAttribute(params Methods[] methods) : base(methods)
         {
         }
     }
@@ -115,26 +120,5 @@ namespace RESTar
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
     public class ExcelFlattenToStringAttribute : Attribute
     {
-    }
-
-    /// <summary>
-    /// Resources decorated with the OpenResourceAttribute will be available to all users,
-    /// unless the user's API key explicitly denies access to them. By assigning methods 
-    /// or presets in the constructor, access can be restricted. Open resources are useful 
-    /// when providing basic functionality that should be consumed by all users.
-    /// </summary>
-    [AttributeUsage(AttributeTargets.Class)]
-    public class OpenResourceAttribute : Attribute
-    {
-        internal IReadOnlyList<RESTarMethods> AvailableMethods { get; }
-
-        /// <summary>
-        /// If no methods are provided in the methods list, all methods enabled for the resource 
-        /// will be enabled
-        /// </summary>
-        public OpenResourceAttribute(params RESTarMethods[] methods)
-        {
-            AvailableMethods = methods.Any() ? methods.OrderBy(i => i, MethodComparer.Instance).ToList() : null;
-        }
     }
 }

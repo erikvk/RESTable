@@ -5,6 +5,7 @@ using RESTar.Linq;
 using RESTar.Operations;
 using RESTar.Requests;
 using Starcounter;
+using static RESTar.Methods;
 using IResource = RESTar.Internal.IResource;
 
 namespace RESTar.Admin
@@ -14,7 +15,7 @@ namespace RESTar.Admin
     /// handling a request. You can control how long entities remain in the resource
     /// by setting the daysToSaveErrors parameter in the call to RESTarConfig.Init().
     /// </summary>
-    [Database, RESTar(RESTarMethods.GET, RESTarMethods.DELETE)]
+    [Database, RESTar(GET, DELETE)]
     public class Error
     {
         /// <summary>

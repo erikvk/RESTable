@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using RESTar.Linq;
-using static RESTar.RESTarMethods;
+using static RESTar.Methods;
 
 #pragma warning disable 1591
 

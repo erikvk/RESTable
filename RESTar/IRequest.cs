@@ -29,7 +29,7 @@ namespace RESTar
         /// <summary>
         /// The method of the request
         /// </summary>
-        RESTarMethods Method { get; }
+        Methods Method { get; }
 
         /// <summary>
         /// The resource of the request

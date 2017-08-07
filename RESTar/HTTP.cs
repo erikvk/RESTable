@@ -42,7 +42,7 @@ namespace RESTar
         /// </summary>
         public static Response Internal
         (
-            RESTarMethods method,
+            Methods method,
             Uri relativeUri,
             string authToken,
             byte[] bodyBytes = null,
@@ -86,7 +86,7 @@ namespace RESTar
         /// </summary>
         public static Response External
         (
-            RESTarMethods method,
+            Methods method,
             Uri uri,
             byte[] bodyBytes = null,
             string contentType = null,

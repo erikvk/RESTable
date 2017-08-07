@@ -6,6 +6,6 @@ namespace RESTar.Auth
     internal class AccessRight
     {
         internal ICollection<IResource> Resources;
-        internal RESTarMethods[] AllowedMethods;
+        internal Methods[] AllowedMethods;
     }
 }

@@ -8,7 +8,7 @@ namespace RESTar.Admin
     /// <summary>
     /// The settings resource for the RESTar instance, stores its settings.
     /// </summary>
-    [Database, RESTar(RESTarMethods.GET, RESTarMethods.PATCH, Singleton = true)]
+    [Database, RESTar(Methods.GET, Methods.PATCH, Singleton = true)]
     public class Settings
     {
         internal static ushort _Port => Instance.Port;

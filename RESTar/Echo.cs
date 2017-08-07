@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json.Linq;
-using static RESTar.RESTarMethods;
+using static RESTar.Methods;
 
 namespace RESTar
 {
@@ -9,7 +9,7 @@ namespace RESTar
     /// The echo resource is a test resource that returns the conditions
     /// inputted as a JSON object.
     /// </summary>
-    [RESTar(GET, AllowDynamicConditions = true), OpenResource]
+    [RESTar(GET, AllowDynamicConditions = true)]
     public class Echo : JObject, ISelector<Echo>
     {
         private Echo()

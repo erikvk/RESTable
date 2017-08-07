@@ -16,7 +16,7 @@ namespace RESTar.Internal
         /// <summary>
         /// The available methods for this resource
         /// </summary>
-        public IReadOnlyList<RESTarMethods> AvailableMethods
+        public IReadOnlyList<Methods> AvailableMethods
         {
             get => AvailableMethodsString.ToMethodsArray();
             set => AvailableMethodsString = value.ToMethodsString();
@@ -38,25 +38,18 @@ namespace RESTar.Internal
         /// </summary>
         public Type Table => DynamitControl.GetByTableName(Name);
 
-        internal RESTarAttribute Attribute
-        {
-            get
+        internal RESTarAttribute Attribute => new RESTarAttribute
+            (AvailableMethods.OrderBy(i => i, MethodComparer.Instance).ToList())
             {
-                var methods = AvailableMethods.ToList();
-                methods.Sort(MethodComparer.Instance);
-                return new RESTarAttribute(methods)
-                {
-                    AllowDynamicConditions = true,
-                    Singleton = false,
-                    Editable = true
-                };
-            }
-        }
+                AllowDynamicConditions = true,
+                Singleton = false,
+                Editable = true
+            };
 
         private static readonly string SQL = $"SELECT t FROM {typeof(DynamicResource).FullName} t";
         internal static IEnumerable<DynamicResource> All => Db.SQL<DynamicResource>(SQL);
 
-        private DynamicResource(Type table, IEnumerable<RESTarMethods> availableMethods)
+        private DynamicResource(Type table, IEnumerable<Methods> availableMethods)
         {
             Name = table.FullName;
             var methods = availableMethods.Distinct().ToList();
@@ -64,7 +57,7 @@ namespace RESTar.Internal
             AvailableMethods = methods;
         }
 
-        internal static void MakeTable(Resource resource)
+        internal static void MakeTable(Admin.Resource resource)
         {
             var dynamicResource = Trans(() =>
             {
@@ -85,9 +78,9 @@ namespace RESTar.Internal
             Resource.AutoMakeDynamicResource(dynamicResource);
         }
 
-        internal static void DeleteTable(Resource resource)
+        internal static void DeleteTable(Admin.Resource resource)
         {
-            var dynamicResource = resource.GetDynamicResource();
+            var dynamicResource = Resource.GetDynamicResource(resource.Name);
             if (dynamicResource == null) return;
             DynamitControl.ClearTable(dynamicResource.Name);
             var alias = ResourceAlias.ByResource(dynamicResource.Table);

@@ -6,7 +6,7 @@ namespace RESTar
     /// <summary>
     /// The REST methods available in RESTar
     /// </summary>
-    public enum RESTarMethods
+    public enum Methods
     {
         /// <summary>
         /// GET, returns entities from a resource
@@ -36,11 +36,11 @@ namespace RESTar
         DELETE
     }
 
-    internal class MethodComparer : Comparer<RESTarMethods>
+    internal class MethodComparer : Comparer<Methods>
     {
         internal static readonly MethodComparer Instance = new MethodComparer();
 
-        public override int Compare(RESTarMethods a, RESTarMethods b)
+        public override int Compare(Methods a, Methods b)
         {
             var indexA = Array.IndexOf(RESTarConfig.Methods, a);
             var indexB = Array.IndexOf(RESTarConfig.Methods, b);

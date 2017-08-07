@@ -2,14 +2,14 @@
 using System.Collections.Generic;
 using RESTar.Linq;
 using RESTar.Serialization;
-using static RESTar.RESTarMethods;
+using static RESTar.Methods;
 
 namespace RESTar
 {
     /// <summary>
     /// Contains help articles for RESTar
     /// </summary>
-    [RESTar(GET), OpenResource]
+    [RESTar(GET)]
     public class Help : ISelector<Help>
     {
         /// <summary>

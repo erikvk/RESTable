@@ -12,14 +12,14 @@ using RESTar.Serialization;
 using Starcounter;
 using static RESTar.Internal.ErrorCodes;
 using static RESTar.RESTarConfig;
-using static RESTar.RESTarMethods;
+using static RESTar.Methods;
 using IResource = RESTar.Internal.IResource;
 
 namespace RESTar.Requests
 {
     internal class RESTRequest<T> : IRequest<T>, IDisposable where T : class
     {
-        public RESTarMethods Method { get; private set; }
+        public Methods Method { get; private set; }
         public IResource<T> Resource { get; }
         public Condition<T>[] Conditions { get; private set; }
         public MetaConditions MetaConditions { get; private set; }
@@ -50,7 +50,7 @@ namespace RESTar.Requests
             MetaConditions = new MetaConditions();
         }
 
-        internal void Populate(Args args, RESTarMethods method)
+        internal void Populate(Args args, Methods method)
         {
             Method = method;
             Evaluator = Evaluators<T>.REST.GetEvaluator(method);
@@ -198,7 +198,7 @@ namespace RESTar.Requests
                         var response = request.GetResponse() ?? throw new DestinationException(request, "No response");
                         if (!response.IsSuccessStatusCode)
                             throw new DestinationException(request,
-                                $"Status: {response.StatusCode} - {response.StatusDescription}. {response.Headers["RESTar-info"]}");
+                                $"Received {response.StatusCode} - {response.StatusDescription}. {response.Headers["RESTar-info"]}");
                         response.Headers["Access-Control-Allow-Origin"] = AllowAllOrigins ? "*" : (Origin ?? "null");
                         return response;
                     }

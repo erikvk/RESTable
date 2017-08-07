@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Runtime.Serialization;
 using Starcounter;
-using static RESTar.RESTarMethods;
+using static RESTar.Methods;
 using IResource = RESTar.Internal.IResource;
 
 namespace RESTar
@@ -21,7 +21,7 @@ namespace RESTar
     /// The ResourceAlias resource is used to assign an alias to a resource, making 
     /// it possible to reference the resource with only the alias. 
     /// </summary>
-    [Database, RESTar(GET, DELETE), OpenResource(GET)]
+    [Database, RESTar(GET, DELETE)]
     public class ResourceAlias
     {
         /// <summary>

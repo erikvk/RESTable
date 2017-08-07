@@ -3,7 +3,7 @@ using System.Linq;
 using RESTar.Deflection;
 using RESTar.Internal;
 using RESTar.Linq;
-using static RESTar.RESTarMethods;
+using static RESTar.Methods;
 
 namespace RESTar.Admin
 {

@@ -323,7 +323,7 @@ namespace RESTar.Operations
 
         internal static class REST
         {
-            internal static Func<RESTRequest<T>, Response> GetEvaluator(RESTarMethods method)
+            internal static Func<RESTRequest<T>, Response> GetEvaluator(Methods method)
             {
                 #region Long running transactions test
 
@@ -331,11 +331,11 @@ namespace RESTar.Operations
                 {
                     switch (method)
                     {
-                        case RESTarMethods.GET: return GET;
-                        case RESTarMethods.POST: return LrPOST;
-                        case RESTarMethods.PATCH: return LrPATCH;
-                        case RESTarMethods.PUT: return LrPUT;
-                        case RESTarMethods.DELETE: return LrDELETE;
+                        case Methods.GET: return GET;
+                        case Methods.POST: return LrPOST;
+                        case Methods.PATCH: return LrPATCH;
+                        case Methods.PUT: return LrPUT;
+                        case Methods.DELETE: return LrDELETE;
                         default: return null;
                     }
                 }
@@ -344,11 +344,11 @@ namespace RESTar.Operations
 
                 switch (method)
                 {
-                    case RESTarMethods.GET: return GET;
-                    case RESTarMethods.POST: return POST;
-                    case RESTarMethods.PATCH: return PATCH;
-                    case RESTarMethods.PUT: return PUT;
-                    case RESTarMethods.DELETE: return DELETE;
+                    case Methods.GET: return GET;
+                    case Methods.POST: return POST;
+                    case Methods.PATCH: return PATCH;
+                    case Methods.PUT: return PUT;
+                    case Methods.DELETE: return DELETE;
                     default: return null;
                 }
             }

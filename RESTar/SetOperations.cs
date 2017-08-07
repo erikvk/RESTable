@@ -8,7 +8,7 @@ using System.Text.RegularExpressions;
 using Newtonsoft.Json.Linq;
 using RESTar.Admin;
 using RESTar.Serialization;
-using static RESTar.RESTarMethods;
+using static RESTar.Methods;
 using JTokens = System.Collections.Generic.IEnumerable<Newtonsoft.Json.Linq.JToken>;
 
 #pragma warning disable 1591
@@ -19,7 +19,7 @@ namespace RESTar
     /// The SetOperations resource can perform advanced operations on entities in one
     /// or more RESTar resources. See the RESTar Specification for details.
     /// </summary>
-    [RESTar(GET, Singleton = true), OpenResource]
+    [RESTar(GET, Singleton = true)]
     public class SetOperations : JObject, ISelector<SetOperations>
     {
         public SetOperations()

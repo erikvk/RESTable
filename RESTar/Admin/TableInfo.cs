@@ -5,7 +5,7 @@ using RESTar.Deflection.Dynamic;
 using RESTar.Linq;
 using Starcounter;
 using Starcounter.Metadata;
-using static RESTar.RESTarMethods;
+using static RESTar.Methods;
 using IResource = RESTar.Internal.IResource;
 
 namespace RESTar.Admin
@@ -73,7 +73,7 @@ namespace RESTar.Admin
                 resources = RESTarConfig.Resources.Where(r => r.IsStarcounterResource);
             else
             {
-                var resource = Resource.Find(input);
+                var resource = RESTar.Resource.Find(input);
                 if (!resource.IsStarcounterResource)
                     throw new Exception($"'{resource.Name}' is not a Starcounter resource, and has no table info");
                 resources = new[] {resource};

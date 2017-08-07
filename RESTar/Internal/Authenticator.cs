@@ -73,7 +73,7 @@ namespace RESTar.Internal
             return token;
         }
 
-        internal static bool MethodCheck(RESTarMethods requestedMethod, IResource resource, string authToken)
+        internal static bool MethodCheck(Methods requestedMethod, IResource resource, string authToken)
         {
             if (!resource.AvailableMethods.Contains(requestedMethod)) return false;
             var accessRights = AuthTokens[authToken];

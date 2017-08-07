@@ -114,7 +114,7 @@ namespace RESTar
         [Pure]
         public Condition<T1> Redirect<T1>(string newKey = null) where T1 : class => new Condition<T1>
         (
-            term: typeof(T1).MakeTerm(newKey ?? Key, Resource<T1>.AllowDynamicConditions),
+            term: typeof(T1).MakeTerm(newKey ?? Key, Resource<T1>.SafeGet?.DynamicConditionsAllowed ?? false),
             op: Operator,
             value: Value
         );

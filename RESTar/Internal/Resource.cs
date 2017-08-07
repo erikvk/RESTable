@@ -9,7 +9,7 @@ using RESTar.Linq;
 using RESTar.Operations;
 using Starcounter;
 using static System.Reflection.BindingFlags;
-using static RESTar.RESTarMethods;
+using static RESTar.Methods;
 using static RESTar.Internal.RESTarResourceType;
 using static RESTar.Operations.Transact;
 
@@ -19,7 +19,9 @@ namespace RESTar.Internal
     {
         public string Name { get; }
         public bool Editable { get; }
-        public IReadOnlyList<RESTarMethods> AvailableMethods { get; set; }
+        // ReSharper disable once MemberCanBePrivate.Global
+        // ReSharper disable once AutoPropertyCanBeMadeGetOnly.Global
+        public IReadOnlyList<Methods> AvailableMethods { get; internal set; }
         public Type Type => typeof(T);
         public bool IsDDictionary { get; }
         public bool IsDynamic { get; }
@@ -102,7 +104,8 @@ namespace RESTar.Internal
         /// <summary>
         /// All custom resource registrations (using attribute as well as Resource.Register) terminate here
         /// </summary>
-        internal static void Make(RESTarAttribute attribute, Selector<T> selector = null, Inserter<T> inserter = null,
+        internal static void Make(RESTarAttribute attribute, Selector<T> selector = null,
+            Inserter<T> inserter = null,
             Updater<T> updater = null, Deleter<T> deleter = null)
         {
             var type = typeof(T);
@@ -183,7 +186,7 @@ namespace RESTar.Internal
         }
 
 
-        private static IReadOnlyList<RESTarMethods> GetAvailableMethods(Type resource)
+        private static IReadOnlyList<Methods> GetAvailableMethods(Type resource)
         {
             if (resource == null)
                 return null;
@@ -192,7 +195,7 @@ namespace RESTar.Internal
             return resource.GetAttribute<RESTarAttribute>()?.AvailableMethods;
         }
 
-        private static RESTarOperations[] NecessaryOpDefs(IEnumerable<RESTarMethods> restMethods)
+        private static RESTarOperations[] NecessaryOpDefs(IEnumerable<Methods> restMethods)
         {
             return restMethods.SelectMany(method =>
                 {
@@ -231,13 +234,6 @@ namespace RESTar.Internal
                     $"resource {Name}. Necessary operations: {string.Join(", ", necessaryOperations.Select(i => i.ToString()))}. " +
                     $"Make sure that the generic resource operation (e.g. ISelector<T>) interfaces have {Name} as type parameter");
         }
-
-        public static IResource<T> Get => RESTarConfig.ResourceByType.SafeGet(typeof(T)) as IResource<T> ??
-                                          throw new UnknownResourceException(typeof(T).FullName);
-
-        public static IResource<T> SafeGet => RESTarConfig.ResourceByType.SafeGet(typeof(T)) as IResource<T>;
-
-        public static bool AllowDynamicConditions => SafeGet?.DynamicConditionsAllowed ?? false;
 
         public bool Equals(IResource x, IResource y) => x.Name == y.Name;
         public int GetHashCode(IResource obj) => obj.Name.GetHashCode();

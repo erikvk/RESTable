@@ -33,7 +33,7 @@ namespace RESTar
         public IDictionary<string, string> ResponseHeaders { get; }
         IResource IRequest.Resource => Resource;
         public MetaConditions MetaConditions { get; }
-        RESTarMethods IRequest.Method => 0;
+        Methods IRequest.Method => 0;
 
         private readonly bool ScSql;
         internal string SqlQuery { get; private set; }
@@ -96,19 +96,19 @@ namespace RESTar
             {
                 switch (m)
                 {
-                    case RESTarMethods.GET:
+                    case Methods.GET:
                         GETAllowed = true;
                         break;
-                    case RESTarMethods.POST:
+                    case Methods.POST:
                         POSTAllowed = true;
                         break;
-                    case RESTarMethods.PATCH:
+                    case Methods.PATCH:
                         PATCHAllowed = true;
                         break;
-                    case RESTarMethods.PUT:
+                    case Methods.PUT:
                         PUTAllowed = true;
                         break;
-                    case RESTarMethods.DELETE:
+                    case Methods.DELETE:
                         DELETEAllowed = true;
                         break;
                 }
@@ -144,46 +144,46 @@ namespace RESTar
 
         public Request<T> WithConditions(string key, Operator op, object value) => WithConditions((key, op, value));
 
-        private static Exception Deny(RESTarMethods method) => new ForbiddenException
+        private static Exception Deny(Methods method) => new ForbiddenException
             (ErrorCodes.NotAuthorized, $"{method} is not available for resource '{typeof(T).FullName}'");
 
         public IEnumerable<T> GET()
         {
             Prep();
-            if (!GETAllowed) throw Deny(RESTarMethods.GET);
+            if (!GETAllowed) throw Deny(Methods.GET);
             return Evaluators<T>.RAW_SELECT(this) ?? new T[0];
         }
 
         public bool ANY()
         {
             Prep();
-            if (!GETAllowed) throw Deny(RESTarMethods.GET);
+            if (!GETAllowed) throw Deny(Methods.GET);
             return Evaluators<T>.RAW_SELECT(this)?.Any() == true;
         }
 
         public int COUNT()
         {
             Prep();
-            if (!GETAllowed) throw Deny(RESTarMethods.GET);
+            if (!GETAllowed) throw Deny(Methods.GET);
             return Evaluators<T>.RAW_SELECT(this)?.Count() ?? 0;
         }
 
         public int POST(Func<T> inserter)
         {
-            if (!POSTAllowed) throw Deny(RESTarMethods.POST);
+            if (!POSTAllowed) throw Deny(Methods.POST);
             return Evaluators<T>.App.POST(inserter, this);
         }
 
         public int POST(Func<IEnumerable<T>> inserter)
         {
-            if (!POSTAllowed) throw Deny(RESTarMethods.POST);
+            if (!POSTAllowed) throw Deny(Methods.POST);
             return Evaluators<T>.App.POST(inserter, this);
         }
 
         public int PATCH(Func<T, T> updater)
         {
             Prep();
-            if (!PATCHAllowed) throw Deny(RESTarMethods.PATCH);
+            if (!PATCHAllowed) throw Deny(Methods.PATCH);
             var source = Evaluators<T>.RAW_SELECT(this)?.ToList();
             switch (source?.Count)
             {
@@ -197,7 +197,7 @@ namespace RESTar
         public int PATCH(Func<IEnumerable<T>, IEnumerable<T>> updater)
         {
             Prep();
-            if (!PATCHAllowed) throw Deny(RESTarMethods.PATCH);
+            if (!PATCHAllowed) throw Deny(Methods.PATCH);
             var source = Evaluators<T>.RAW_SELECT(this)?.ToList();
             if (source?.Any() != true) return 0;
             return Evaluators<T>.App.PATCH(updater, source, this);
@@ -206,7 +206,7 @@ namespace RESTar
         public int PUT(Func<T> inserter)
         {
             Prep();
-            if (!PUTAllowed) throw Deny(RESTarMethods.PUT);
+            if (!PUTAllowed) throw Deny(Methods.PUT);
             var source = Evaluators<T>.RAW_SELECT(this);
             return Evaluators<T>.App.PUT(inserter, source, this);
         }
@@ -214,7 +214,7 @@ namespace RESTar
         public int PUT(Func<T> inserter, Func<T, T> updater)
         {
             Prep();
-            if (!PUTAllowed) throw Deny(RESTarMethods.PUT);
+            if (!PUTAllowed) throw Deny(Methods.PUT);
             var source = Evaluators<T>.RAW_SELECT(this);
             return Evaluators<T>.App.PUT(inserter, updater, source, this);
         }
@@ -222,7 +222,7 @@ namespace RESTar
         public int DELETE(bool @unsafe = false)
         {
             Prep();
-            if (!DELETEAllowed) throw Deny(RESTarMethods.DELETE);
+            if (!DELETEAllowed) throw Deny(Methods.DELETE);
             var source = Evaluators<T>.RAW_SELECT(this);
             if (source == null) return 0;
             if (!@unsafe)

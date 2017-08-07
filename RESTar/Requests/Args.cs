@@ -2,7 +2,6 @@
 using RESTar.Admin;
 using Starcounter;
 using static RESTar.Internal.ErrorCodes;
-using RESTar.Internal;
 using IResource = RESTar.Internal.IResource;
 
 namespace RESTar.Requests
@@ -15,7 +14,7 @@ namespace RESTar.Requests
         internal readonly bool HasResource;
         internal readonly bool HasConditions;
         internal readonly bool HasMetaConditions;
-        internal IResource IResource => HasResource ? RESTar.Resource.Find(Resource) : Resource<Resource>.Get;
+        internal IResource IResource => HasResource ? RESTar.Resource.Find(Resource) : Resource<AvailableResource>.Get;
 
         internal Args(string query, Request request)
         {

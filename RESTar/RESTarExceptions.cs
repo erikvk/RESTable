@@ -118,7 +118,7 @@ namespace RESTar
     /// </summary>
     public class InvalidInputCountException : RESTarException
     {
-        internal InvalidInputCountException(RESTarMethods method) : base(DataSourceFormat,
+        internal InvalidInputCountException(Methods method) : base(DataSourceFormat,
             $"Invalid input count for method {method:G}. Expected object/row, but found array/multiple rows. " +
             "Only POST accepts multiple objects/rows as input.") => Response = BadRequest(this);
     }
@@ -236,10 +236,10 @@ namespace RESTar
     /// </summary>
     public class AbortedInserterException<T> : RESTarException where T : class
     {
-        internal AbortedInserterException(RESTarMethods method, string message = null)
+        internal AbortedInserterException(Methods method, string message = null)
             : base(AbortedInsert, message) => Response = AbortedOperation<T>(this, method);
 
-        internal AbortedInserterException(Exception ie, RESTarMethods method, string message = null)
+        internal AbortedInserterException(Exception ie, Methods method, string message = null)
             : base(AbortedInsert, message ?? (ie.GetType() == typeof(JsonSerializationException) ||
                                               ie.GetType() == typeof(JsonReaderException)
                                       ? "JSON serialization error, check JSON syntax. "

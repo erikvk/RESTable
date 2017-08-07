@@ -27,7 +27,6 @@ using static System.Reflection.BindingFlags;
 using static System.StringComparison;
 using static RESTar.Internal.ErrorCodes;
 using static RESTar.Requests.Responses;
-using static RESTar.RESTarConfig;
 using static Starcounter.DbHelper;
 using IResource = RESTar.Internal.IResource;
 
@@ -134,7 +133,7 @@ namespace RESTar
         public static T GetReference<T>(this ulong objectNo) where T : class => FromID(objectNo) as T;
 
         internal static bool EqualsNoCase(this string s1, string s2) => string.Equals(s1, s2, CurrentCultureIgnoreCase);
-        internal static string ToMethodsString(this IEnumerable<RESTarMethods> ie) => string.Join(", ", ie);
+        internal static string ToMethodsString(this IEnumerable<Methods> ie) => string.Join(", ", ie);
 
         internal static string RemoveTabsAndBreaks(this string input) => input != null
             ? Regex.Replace(input, @"\t|\n|\r", "")
@@ -152,12 +151,15 @@ namespace RESTar
             return $"{text.Substring(0, pos)}{replace}{text.Substring(pos + search.Length)}";
         }
 
-        internal static RESTarMethods[] ToMethodsArray(this string methodsString)
+        internal static Methods[] ToMethodsArray(this string methodsString)
         {
             if (methodsString == null) return null;
             if (methodsString.Trim() == "*")
-                return Methods;
-            return methodsString.Split(',').Select(s => (RESTarMethods) Enum.Parse(typeof(RESTarMethods), s)).ToArray();
+                return RESTarConfig.Methods;
+            return methodsString.Split(',')
+                .Where(s => s != "")
+                .Select(s => (Methods) Enum.Parse(typeof(Methods), s))
+                .ToArray();
         }
 
         internal static object GetDefault(this Type type)

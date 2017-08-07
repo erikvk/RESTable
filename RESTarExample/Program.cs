@@ -4,7 +4,6 @@ using Dynamit;
 using RESTar;
 using Starcounter;
 
-
 #pragma warning disable 1591
 
 namespace RESTarExample
@@ -96,7 +95,7 @@ namespace RESTarExample
         }
     }
 
-    [RESTar(RESTarMethods.GET)]
+    [RESTar(Methods.GET)]
     public class MyDynamicTable : DDictionary, IDDictionary<MyDynamicTable, MyDynamicTableKvp>
     {
         public MyDynamicTableKvp NewKeyPair(MyDynamicTable dict, string key, object value = null) =>

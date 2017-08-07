@@ -49,7 +49,7 @@ namespace RESTar.Requests
                     case POST:
                     case PUT:
                     case PATCH:
-                    case DELETE: return HandleREST((dynamic) resource, request, args, (RESTarMethods) action);
+                    case DELETE: return HandleREST((dynamic) resource, request, args, (Methods) action);
                     case ORIGIN: return HandleOrigin((dynamic) resource, request);
                     case VIEW: return HandleView((dynamic) resource, request, args);
                     case PAGE:
@@ -101,7 +101,7 @@ namespace RESTar.Requests
         }
 
         private static Response HandleREST<T>(IResource<T> resource, Request scRequest, Args? args,
-            RESTarMethods method) where T : class
+            Methods method) where T : class
         {
             using (var request = new RESTRequest<T>(resource, scRequest))
             {

@@ -42,7 +42,7 @@ namespace RESTar.Requests
 
         #region Bad request
 
-        internal static Response AbortedOperation<T>(Exception e, RESTarMethods method) where T : class
+        internal static Response AbortedOperation<T>(Exception e, Methods method) where T : class
         {
             var alias = ResourceAlias<T>.Get;
             return new Response
@@ -208,7 +208,7 @@ namespace RESTar.Requests
             StatusDescription = "Forbidden"
         };
 
-        internal static Response AllowOrigin(string allowedOrigin, IEnumerable<RESTarMethods> allowedMethods) =>
+        internal static Response AllowOrigin(string allowedOrigin, IEnumerable<Methods> allowedMethods) =>
             new Response
             {
                 StatusCode = (ushort) HttpStatusCode.OK,

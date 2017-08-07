@@ -3,14 +3,14 @@ using System.Collections.Generic;
 using Newtonsoft.Json.Linq;
 using RESTar.Admin;
 using RESTar.Serialization;
-using static RESTar.RESTarMethods;
+using static RESTar.Methods;
 
 namespace RESTar
 {
     /// <summary>
     /// The counter resource returns the entity count for a given resource
     /// </summary>
-    [RESTar(GET, Singleton = true), OpenResource]
+    [RESTar(GET, Singleton = true)]
     public class Counter : Dictionary<string, int>, ISelector<Counter>
     {
         /// <summary>

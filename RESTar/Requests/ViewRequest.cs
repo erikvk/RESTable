@@ -10,7 +10,7 @@ using RESTar.Operations;
 using RESTar.Serialization;
 using RESTar.View;
 using Starcounter;
-using static RESTar.RESTarMethods;
+using static RESTar.Methods;
 using static RESTar.Internal.ErrorCodes;
 using static RESTar.View.MessageTypes;
 using static Starcounter.Templates.Template;
@@ -26,7 +26,7 @@ namespace RESTar.Requests
         public string AuthToken { get; internal set; }
         public IDictionary<string, string> ResponseHeaders { get; }
         public string Body { get; private set; }
-        RESTarMethods IRequest.Method => GET;
+        Methods IRequest.Method => GET;
         IResource IRequest.Resource => Resource;
         internal Request ScRequest { get; }
         public bool Home => MetaConditions.Empty && Conditions == null;
@@ -218,7 +218,7 @@ namespace RESTar.Requests
             }
         }
 
-        private void CheckMethod(RESTarMethods method, string errorMessage)
+        private void CheckMethod(Methods method, string errorMessage)
         {
             if (!Authenticator.MethodCheck(method, Resource, AuthToken))
                 throw new RESTarException(NotAuthorized, errorMessage);

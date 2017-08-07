@@ -8,7 +8,7 @@ namespace RESTar
 {
     internal class HttpRequest
     {
-        internal RESTarMethods Method { get; private set; }
+        internal Methods Method { get; private set; }
         internal Uri URI { get; private set; }
         internal Dictionary<string, string> Headers { get; }
         internal string Accept;
@@ -28,7 +28,7 @@ namespace RESTar
                 switch (index)
                 {
                     case 0:
-                        RESTarMethods method;
+                        Methods method;
                         if (!Enum.TryParse(part, true, out method))
                             throw new HttpRequestException("Invalid or missing method");
                         Method = method;

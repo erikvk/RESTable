@@ -14,7 +14,7 @@ using RESTar.Internal;
 using RESTar.Linq;
 using RESTar.Operations;
 using RESTar.Requests;
-using static RESTar.RESTarMethods;
+using static RESTar.Methods;
 
 namespace RESTar
 {
@@ -28,9 +28,9 @@ namespace RESTar
         internal static readonly IDictionary<Type, IResource> ResourceByType;
         internal static readonly IDictionary<string, AccessRights> ApiKeys;
         internal static readonly ConcurrentDictionary<string, AccessRights> AuthTokens;
-        internal static IEnumerable<IResource> Resources => ResourceByName.Values;
+        internal static ICollection<IResource> Resources => ResourceByName.Values;
         internal static readonly List<Uri> AllowedOrigins;
-        internal static readonly RESTarMethods[] Methods = {GET, POST, PATCH, PUT, DELETE};
+        internal static readonly Methods[] Methods = {GET, POST, PATCH, PUT, DELETE};
         internal static bool RequireApiKey { get; private set; }
         internal static bool AllowAllOrigins { get; private set; }
         private static string ConfigFilePath;
@@ -211,7 +211,9 @@ namespace RESTar
 
                     recurseAllowAccess(apiKeyToken["AllowAccess"]);
                     var accessRights = accessRightList.ToAccessRights();
-                    accessRights.AddOpenResources();
+                    var availableResources = Resource<AvailableResource>.Get;
+                    if (!accessRights.ContainsKey(availableResources))
+                        accessRights.Add(availableResources, new[] {GET});
                     ApiKeys[key] = accessRights;
                     break;
                 case JArray apiKeys:

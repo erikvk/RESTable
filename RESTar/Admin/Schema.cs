@@ -2,14 +2,15 @@
 using System.Collections.Generic;
 using RESTar.Deflection.Dynamic;
 using RESTar.Linq;
+using static RESTar.Methods;
 
 namespace RESTar.Admin
 {
     /// <summary>
     /// Gets a schema for a given resource
     /// </summary>
-    [RESTar(RESTarMethods.GET, Singleton = true)]
-    public class Schema : Dictionary<string, string>, ISelector<Schema>
+    [RESTar(GET, Singleton = true)]
+    internal class Schema : Dictionary<string, string>, ISelector<Schema>
     {
         /// <summary>
         /// The name of the resource to get the schema for
