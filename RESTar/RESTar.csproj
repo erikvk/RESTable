@@ -153,7 +153,7 @@
     <Compile Include="Log.cs" />
     <Compile Include="Operator.cs" />
     <Compile Include="Admin\Resource.cs" />
-    <Compile Include="ResourceAlias.cs" />
+    <Compile Include="Admin\ResourceAlias.cs" />
     <Compile Include="RESTarConfig.cs" />
     <Compile Include="Operations\Evaluators.cs" />
     <Compile Include="RESTarExceptions.cs" />
