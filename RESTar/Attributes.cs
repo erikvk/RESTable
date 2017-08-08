@@ -39,13 +39,13 @@ namespace RESTar
 
         /// <summary>
         /// Registers a class as a RESTar resource. If no methods are provided in the 
-        /// methods list, all methods will be enabled for this resource.
+        /// method restritions list, all methods will be enabled for this resource.
         /// </summary>
-        public RESTarAttribute(params Methods[] methods)
+        public RESTarAttribute(params Methods[] methodRestrictions)
         {
-            if (!methods.Any())
-                methods = RESTarConfig.Methods;
-            AvailableMethods = methods.OrderBy(i => i, MethodComparer.Instance).ToList();
+            if (!methodRestrictions.Any())
+                methodRestrictions = RESTarConfig.Methods;
+            AvailableMethods = methodRestrictions.OrderBy(i => i, MethodComparer.Instance).ToList();
         }
     }
 
@@ -71,9 +71,9 @@ namespace RESTar
 
         /// <summary>
         /// Registers a class as a RESTar internal resource. If no methods are provided in the 
-        /// methods list, all methods will be enabled for this resource.
+        /// method restrictions list, all methods will be enabled for this resource.
         /// </summary>
-        public RESTarInternalAttribute(params Methods[] methods) : base(methods)
+        public RESTarInternalAttribute(params Methods[] methodRestrictions) : base(methodRestrictions)
         {
         }
     }
