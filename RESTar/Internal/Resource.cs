@@ -5,7 +5,6 @@ using System.Linq;
 using System.Runtime.Serialization;
 using Dynamit;
 using Newtonsoft.Json.Linq;
-using RESTar.Admin;
 using RESTar.Linq;
 using RESTar.Operations;
 using Starcounter;
@@ -20,9 +19,11 @@ namespace RESTar.Internal
     {
         public string Name { get; }
         public bool Editable { get; }
+
         // ReSharper disable once MemberCanBePrivate.Global
         // ReSharper disable once AutoPropertyCanBeMadeGetOnly.Global
         public IReadOnlyList<Methods> AvailableMethods { get; internal set; }
+
         public Type Type => typeof(T);
         public bool IsDDictionary { get; }
         public bool IsDynamic { get; }
@@ -43,16 +44,18 @@ namespace RESTar.Internal
 
         public string Alias
         {
-            get => ResourceAlias<T>.Get?.Alias;
+            get => Admin.ResourceAlias.ByResource(Name)?.Alias;
             set
             {
-                var existingAssignment = ResourceAlias<T>.Get;
+                var existingAssignment = Admin.ResourceAlias.ByResource(Name);
                 if (value == null)
                 {
                     Trans(() => existingAssignment?.Delete());
                     return;
                 }
-                var usedAliasMapping = ResourceAlias.ByAlias(value);
+                if (value == "" || value.Any(char.IsWhiteSpace))
+                    throw new Exception($"Invalid alias string '{value}'. Cannot be empty or contain whitespace");
+                var usedAliasMapping = Admin.ResourceAlias.ByAlias(value);
                 if (usedAliasMapping != null)
                 {
                     if (usedAliasMapping.Resource == Name)
@@ -61,10 +64,9 @@ namespace RESTar.Internal
                 }
                 if (RESTarConfig.Resources.Any(r => r.Name.EqualsNoCase(value)))
                     throw new AliasEqualToResourceNameException(value);
-
                 Trans(() =>
                 {
-                    existingAssignment = existingAssignment ?? new ResourceAlias {Resource = Name};
+                    existingAssignment = existingAssignment ?? new Admin.ResourceAlias {Resource = Name};
                     existingAssignment.Alias = value;
                 });
             }
@@ -73,10 +75,10 @@ namespace RESTar.Internal
         /// <summary>
         /// All custom resources are constructed here
         /// </summary>
-        private Resource(RESTarAttribute attribute, Selector<T> selector,
-            Inserter<T> inserter, Updater<T> updater, Deleter<T> deleter)
+        private Resource(string name, RESTarAttribute attribute, Selector<T> selector, Inserter<T> inserter,
+            Updater<T> updater, Deleter<T> deleter)
         {
-            Name = typeof(T).FullName;
+            Name = name;
             Editable = attribute.Editable;
             AvailableMethods = attribute.AvailableMethods;
             IsSingleton = attribute.Singleton;
@@ -105,14 +107,13 @@ namespace RESTar.Internal
         /// <summary>
         /// All custom resource registrations (using attribute as well as Resource.Register) terminate here
         /// </summary>
-        internal static void Make(RESTarAttribute attribute, Selector<T> selector = null,
-            Inserter<T> inserter = null,
-            Updater<T> updater = null, Deleter<T> deleter = null)
+        internal static void Make(string name, RESTarAttribute attribute, Selector<T> selector = null,
+            Inserter<T> inserter = null, Updater<T> updater = null, Deleter<T> deleter = null)
         {
             var type = typeof(T);
             if (type.IsDDictionary() && type.Implements(typeof(IDDictionary<,>), out var _))
             {
-                new Resource<T>(attribute,
+                new Resource<T>(name, attribute,
                     type.GetSelector<T>() ?? DDictionaryOperations<T>.Select,
                     type.GetInserter<T>() ?? DDictionaryOperations<T>.Insert,
                     type.GetUpdater<T>() ?? DDictionaryOperations<T>.Update,
@@ -134,7 +135,7 @@ namespace RESTar.Internal
                 deleter = deleter ?? StarcounterOperations<T>.Delete;
             }
             else CheckVirtualResource(type);
-            new Resource<T>(attribute, selector, inserter, updater, deleter);
+            new Resource<T>(name, attribute, selector, inserter, updater, deleter);
         }
 
         private static void CheckVirtualResource(Type type)

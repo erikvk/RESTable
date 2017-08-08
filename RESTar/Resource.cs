@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using RESTar.Admin;
 using RESTar.Internal;
 using RESTar.Operations;
 using Starcounter;
@@ -31,21 +30,13 @@ namespace RESTar
         public static IResource Find(string searchString)
         {
             searchString = searchString.ToLower();
-            var resource = ResourceAlias.ByAlias(searchString)?.IResource;
+            var resource = Admin.ResourceAlias.ByAlias(searchString)?.IResource;
+            if (resource != null) return resource;
+            if (!RESTarConfig.ResourceFinder.TryGetValue(searchString, out resource))
+                throw new UnknownResourceException(searchString);
             if (resource == null)
-                RESTarConfig.ResourceByName.TryGetValue(searchString, out resource);
-            if (resource != null)
-                return resource;
-            var matches = RESTarConfig.ResourceByName
-                .Where(pair => pair.Value.IsGlobal && pair.Key.EndsWith($".{searchString}"))
-                .Select(pair => pair.Value)
-                .ToList();
-            switch (matches.Count)
-            {
-                case 0: throw new UnknownResourceException(searchString);
-                case 1: return matches[0];
-                default: throw new AmbiguousResourceException(searchString, matches.Select(c => c.Name).ToList());
-            }
+                throw new AmbiguousResourceException(searchString);
+            return resource;
         }
 
         /// <summary>
@@ -56,21 +47,13 @@ namespace RESTar
         public static IResource SafeFind(string searchString)
         {
             searchString = searchString.ToLower();
-            var resource = ResourceAlias.ByAlias(searchString)?.IResource;
+            var resource = Admin.ResourceAlias.ByAlias(searchString)?.IResource;
+            if (resource != null) return resource;
+            if (!RESTarConfig.ResourceFinder.TryGetValue(searchString, out resource))
+                return null;
             if (resource == null)
-                RESTarConfig.ResourceByName.TryGetValue(searchString, out resource);
-            if (resource != null)
-                return resource;
-            var matches = RESTarConfig.ResourceByName
-                .Where(pair => pair.Value.IsGlobal && pair.Key.EndsWith($".{searchString}"))
-                .Select(pair => pair.Value)
-                .ToList();
-            switch (matches.Count)
-            {
-                case 0: return null;
-                case 1: return matches[0];
-                default: throw new AmbiguousResourceException(searchString, matches.Select(c => c.Name).ToList());
-            }
+                throw new AmbiguousResourceException(searchString);
+            return resource;
         }
 
         /// <summary>
@@ -149,24 +132,24 @@ namespace RESTar
             AUTO_MAKER = typeof(Resource).GetMethod(nameof(AUTO_MAKE), BindingFlags.NonPublic | BindingFlags.Static);
         }
 
-        internal static void AutoMakeDynamicResource(DynamicResource resource)
+        internal static void RegisterDynamicResource(DynamicResource resource)
         {
-            DYNAMIC_AUTO_MAKER.MakeGenericMethod(resource.Table).Invoke(null, new object[] {resource.Attribute});
+            DYNAMIC_AUTO_MAKER.MakeGenericMethod(resource.Table).Invoke(null, new object[] {resource});
         }
 
-        internal static void AutoMakeResource(Type type)
+        internal static void AutoRegister(Type type)
         {
             AUTO_MAKER.MakeGenericMethod(type).Invoke(null, null);
         }
 
         private static void AUTO_MAKE<T>() where T : class
         {
-            Internal.Resource<T>.Make(RESTarAttribute<T>.Get);
+            Internal.Resource<T>.Make(typeof(T).FullName, RESTarAttribute<T>.Get);
         }
 
-        private static void DYNAMIC_AUTO_MAKE<T>(RESTarAttribute attribute) where T : class
+        private static void DYNAMIC_AUTO_MAKE<T>(DynamicResource resource) where T : class
         {
-            Internal.Resource<T>.Make(attribute);
+            Internal.Resource<T>.Make(resource.Name, resource.Attribute);
         }
 
         #endregion
@@ -174,13 +157,13 @@ namespace RESTar
 
     /// <summary>
     /// A static generic class for manually registering types as RESTar resources
-    /// and finding resources by type
+    /// and finding static resources by type
     /// </summary>
     /// <typeparam name="T">The type to register</typeparam>
     public static class Resource<T> where T : class
     {
         /// <summary>
-        /// Registers a class as a RESTar resource. If no methods are provided in the 
+        /// Registers a class as a static RESTar resource. If no methods are provided in the 
         /// methods list, all methods will be enabled for this resource.
         /// </summary>
         public static void Register(params Methods[] methods)
@@ -214,11 +197,15 @@ namespace RESTar
                 throw new InvalidOperationException("Cannot manually register resources that have a RESTar " +
                                                     "attribute. Resources decorated with a RESTar attribute " +
                                                     "are registered automatically");
+            if (SafeGet != null)
+                throw new InvalidOperationException($"A resource with type '{typeof(T).FullName}' already exists");
+            if (typeof(T).Assembly == typeof(Resource).Assembly)
+                throw new InvalidOperationException("Cannot register a class in the RESTar assembly as resource");
             var attribute = internalResource
                 ? new RESTarInternalAttribute(methods.ToArray())
                 : new RESTarAttribute(methods.ToArray());
             attribute.Singleton = singleton;
-            Internal.Resource<T>.Make(attribute, selector, inserter, updater, deleter);
+            Internal.Resource<T>.Make(typeof(T).FullName, attribute, selector, inserter, updater, deleter);
         }
 
         /// <summary>

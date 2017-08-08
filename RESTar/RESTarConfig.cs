@@ -14,7 +14,9 @@ using RESTar.Internal;
 using RESTar.Linq;
 using RESTar.Operations;
 using RESTar.Requests;
+using Starcounter;
 using static RESTar.Methods;
+using IResource = RESTar.Internal.IResource;
 
 namespace RESTar
 {
@@ -24,6 +26,7 @@ namespace RESTar
     /// </summary>
     public static class RESTarConfig
     {
+        internal static IDictionary<string, IResource> ResourceFinder { get; private set; }
         internal static readonly IDictionary<string, IResource> ResourceByName;
         internal static readonly IDictionary<Type, IResource> ResourceByType;
         internal static readonly IDictionary<string, AccessRights> ApiKeys;
@@ -41,12 +44,13 @@ namespace RESTar
             ApiKeys = new Dictionary<string, AccessRights>();
             ResourceByType = new Dictionary<Type, IResource>();
             ResourceByName = new Dictionary<string, IResource>();
+            ResourceFinder = new ConcurrentDictionary<string, IResource>();
             AuthTokens = new ConcurrentDictionary<string, AccessRights>();
             AllowedOrigins = new List<Uri>();
             AuthTokens.TryAdd(Authenticator.AppToken, AccessRights.Root);
         }
 
-        private static void UpdateAuthInfo()
+        internal static void UpdateAuthInfo()
         {
             if (!Initialized) return;
             if (ConfigFilePath != null) ReadConfig();
@@ -59,6 +63,7 @@ namespace RESTar
         {
             ResourceByName[toAdd.Name.ToLower()] = toAdd;
             ResourceByType[toAdd.Type] = toAdd;
+            AddToResourceFinder(toAdd, ResourceFinder);
             UpdateAuthInfo();
             toAdd.GetStaticProperties();
         }
@@ -67,7 +72,27 @@ namespace RESTar
         {
             ResourceByName.Remove(toRemove.Name.ToLower());
             ResourceByType.Remove(toRemove.Type);
+            ReloadResourceFinder();
             UpdateAuthInfo();
+        }
+
+        internal static void ReloadResourceFinder()
+        {
+            var newFinder = new ConcurrentDictionary<string, IResource>();
+            Resources.ForEach(r => AddToResourceFinder(r, newFinder));
+            ResourceFinder = newFinder;
+        }
+
+        private static void AddToResourceFinder(IResource toAdd, IDictionary<string, IResource> finder)
+        {
+            var parts = toAdd.Name.ToLower().Split('.');
+            parts.ForEach((item, index) =>
+            {
+                var key = string.Join(".", parts.Skip(index));
+                if (finder.ContainsKey(key))
+                    finder[key] = null;
+                else finder[key] = toAdd;
+            });
         }
 
         /// <summary>
@@ -99,7 +124,7 @@ namespace RESTar
             uri = uri ?? "/rest";
             uri = uri.Trim();
             if (uri.Contains("?")) throw new ArgumentException("URI cannot contain '?'", nameof(uri));
-            var appName = Starcounter.Application.Current.Name;
+            var appName = Application.Current.Name;
             if (uri.EqualsNoCase(appName))
                 throw new ArgumentException("URI cannot be the same as the application name" +
                                             $" ({appName})", nameof(appName));
@@ -107,8 +132,47 @@ namespace RESTar
             Settings.Init(port, uri, viewEnabled, prettyPrint, daysToSaveErrors);
             typeof(object).GetSubclasses()
                 .Where(t => t.HasAttribute<RESTarAttribute>())
-                .ForEach(t => Do.TryCatch(() => Resource.AutoMakeResource(t), e => throw (e.InnerException ?? e)));
-            DynamicResource.All.ForEach(Resource.AutoMakeDynamicResource);
+                .ForEach(t => Do.TryCatch(() => Resource.AutoRegister(t), e => throw (e.InnerException ?? e)));
+
+            #region Migrate resource aliases
+
+            foreach (var alias in Db.SQL<ResourceAlias>("SELECT t FROM RESTar.ResourceAlias t").ToList())
+            {
+                Transact.Trans(() =>
+                {
+                    new Admin.ResourceAlias
+                    {
+                        Alias = alias.Alias,
+                        _resource = alias.Resource
+                    };
+                    alias.Delete();
+                });
+            }
+
+            #endregion
+
+            #region Migrate dynamic resource formats
+
+            var unnamedcount = 1;
+            foreach (var resource in DynamicResource.All)
+            {
+                if (resource.TableName == null && resource.Name.Contains("RESTar.DynamicResource"))
+                {
+                    var alias = Admin.ResourceAlias.ByResource(resource.Name);
+                    Transact.Trans(() =>
+                    {
+                        resource.TableName = resource.Name;
+                        resource.Name = "RESTar.Dynamic." + (alias?.Alias ?? "UntitledResource" + unnamedcount);
+                        unnamedcount += 1;
+                        if (alias != null)
+                            alias._resource = resource.Name;
+                    });
+                }
+            }
+
+            #endregion
+
+            DynamicResource.All.ForEach(Resource.RegisterDynamicResource);
             RequireApiKey = requireApiKey;
             AllowAllOrigins = allowAllOrigins;
             ConfigFilePath = configFilePath;

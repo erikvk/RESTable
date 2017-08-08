@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Serialization;
-using RESTar.Admin;
 using Starcounter;
 using static RESTar.Operations.Transact;
 
@@ -26,7 +25,12 @@ namespace RESTar.Internal
         /// <summary>
         /// The name of this resource
         /// </summary>
-        public string Name { get; }
+        public string Name { get; internal set; }
+
+        /// <summary>
+        /// The name of the dynamic table (used internally)
+        /// </summary>
+        public string TableName { get; internal set; }
 
         /// <summary>
         /// A string representation of the available REST methods
@@ -37,7 +41,7 @@ namespace RESTar.Internal
         /// <summary>
         /// The target type for this resource
         /// </summary>
-        public Type Table => DynamitControl.GetByTableName(Name);
+        public Type Table => DynamitControl.GetByTableName(TableName);
 
         internal RESTarAttribute Attribute => new RESTarAttribute
             (AvailableMethods.OrderBy(i => i, MethodComparer.Instance).ToList())
@@ -50,48 +54,44 @@ namespace RESTar.Internal
         private static readonly string SQL = $"SELECT t FROM {typeof(DynamicResource).FullName} t";
         internal static IEnumerable<DynamicResource> All => Db.SQL<DynamicResource>(SQL);
 
-        private DynamicResource(Type table, IEnumerable<Methods> availableMethods)
+        private static bool Exists(string tableName) =>
+            Db.SQL<DynamicResource>($"{SQL} WHERE t.TableName =?", tableName).First != null;
+
+        private DynamicResource(string name, Type table, IEnumerable<Methods> availableMethods)
         {
-            Name = table.FullName;
+            Name = name;
+            TableName = table.FullName;
             var methods = availableMethods.Distinct().ToList();
             methods.Sort(MethodComparer.Instance);
             AvailableMethods = methods;
         }
 
-        internal static void MakeTable(Admin.Resource resource)
+        internal static void MakeTable(Admin.Resource resource) => Resource.RegisterDynamicResource(Trans(() =>
         {
-            var dynamicResource = Trans(() =>
-            {
-                var newTable = DynamitControl.DynamitTypes.FirstOrDefault(ResourceAlias.NotExists);
-                if (newTable == null)
-                    throw new NoAvalailableDynamicTableException();
-                new ResourceAlias
+            var newTable = DynamitControl.DynamitTypes.FirstOrDefault(type => !Exists(type.FullName))
+                           ?? throw new NoAvalailableDynamicTableException();
+            if (!string.IsNullOrWhiteSpace(resource.Alias))
+                new Admin.ResourceAlias
                 {
                     Alias = resource.Alias,
-                    Resource = newTable.FullName
+                    Resource = resource.Name
                 };
-                return new DynamicResource
-                (
-                    newTable,
-                    resource.AvailableMethods
-                );
-            });
-            Resource.AutoMakeDynamicResource(dynamicResource);
-        }
+            return new DynamicResource(resource.Name, newTable, resource.AvailableMethods);
+        }));
 
-        internal static void DeleteTable(Admin.Resource resource)
+        internal static bool DeleteTable(Admin.Resource resource)
         {
             var dynamicResource = Resource.GetDynamicResource(resource.Name);
-            if (dynamicResource == null) return;
-            DynamitControl.ClearTable(dynamicResource.Name);
-            var alias = ResourceAlias.ByResource(dynamicResource.Table);
-
+            if (dynamicResource == null) return false;
+            DynamitControl.ClearTable(dynamicResource.TableName);
+            var alias = Admin.ResourceAlias.ByResource(dynamicResource.Name);
             Trans(() =>
             {
                 alias?.Delete();
                 dynamicResource.Delete();
             });
             RESTarConfig.RemoveResource(resource.IResource);
+            return true;
         }
     }
 }

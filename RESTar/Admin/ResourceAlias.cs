@@ -7,16 +7,6 @@ using IResource = RESTar.Internal.IResource;
 namespace RESTar.Admin
 {
     /// <summary>
-    /// An internal helper class to get ResourceAlias entities
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    internal static class ResourceAlias<T> where T : class
-    {
-        private const string SQL = "SELECT t FROM RESTar.Admin.ResourceAlias t WHERE t.Resource =?";
-        public static ResourceAlias Get => Db.SQL<ResourceAlias>(SQL, typeof(T).FullName).First;
-    }
-
-    /// <summary>
     /// The ResourceAlias resource is used to assign an alias to a resource, making 
     /// it possible to reference the resource with only the alias. 
     /// </summary>
@@ -28,7 +18,7 @@ namespace RESTar.Admin
         /// </summary>
         public string Alias;
 
-        private string _resource;
+        internal string _resource;
 
         /// <summary>
         /// The name of the resource to bind the alias to
@@ -40,11 +30,6 @@ namespace RESTar.Admin
             {
                 try
                 {
-                    if (value.StartsWith("RESTar.DynamicResource"))
-                    {
-                        _resource = DynamitControl.GetByTableNameLower(value.ToLower()).FullName;
-                        return;
-                    }
                     var r = RESTarConfig.ResourceByName[value.ToLower()];
                     _resource = r.Name;
                 }
@@ -74,14 +59,15 @@ namespace RESTar.Admin
         internal static IEnumerable<ResourceAlias> All => Db.SQL<ResourceAlias>(AllSQL);
 
         /// <summary>
-        /// Gets a ResourceAlias by its alias
+        /// Gets a ResourceAlias by its alias (case insensitive)
         /// </summary>
         public static ResourceAlias ByAlias(string alias) => Db.SQL<ResourceAlias>(AliasSQL, alias).First;
-
+        
         /// <summary>
-        /// Gets a ResourceAlias by its resource
+        /// Gets a ResourceAlias by its resource name
         /// </summary>
-        public static ResourceAlias ByResource(Type type) => Db.SQL<ResourceAlias>(ResourceSQL, type?.FullName).First;
+        public static ResourceAlias ByResource(string resourceName) => Db
+            .SQL<ResourceAlias>(ResourceSQL, resourceName).First;
 
         /// <summary>
         /// Returns true if and only if there is an alias with this name
@@ -97,7 +83,7 @@ namespace RESTar.Admin
         /// </summary>
         public static bool Exists(Type type, out ResourceAlias alias)
         {
-            alias = ByResource(type);
+            alias = ByResource(type.FullName);
             return alias != null;
         }
 

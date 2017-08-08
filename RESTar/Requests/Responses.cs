@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Net;
-using RESTar.Admin;
 using Starcounter;
 
 namespace RESTar.Requests
@@ -14,11 +13,7 @@ namespace RESTar.Requests
         {
             StatusCode = (ushort) HttpStatusCode.NotFound,
             StatusDescription = "Not found",
-            Headers =
-            {
-                ["RESTar-info"] = $"{e.Message}Try qualifying the resource name further, e.g. from " +
-                                  $"'{e.SearchString}' to '{e.Candidates[0]}'."
-            }
+            Headers = {["RESTar-info"] = e.Message}
         };
 
         internal static Response NotFound(Exception e) => new Response
@@ -45,15 +40,14 @@ namespace RESTar.Requests
 
         internal static Response AbortedOperation<T>(Exception e, Methods method) where T : class
         {
-            var alias = ResourceAlias<T>.Get;
             return new Response
             {
                 StatusCode = (ushort) HttpStatusCode.BadRequest,
                 StatusDescription = "Bad request",
                 Headers =
                 {
-                    ["RESTar-info"] = $"Aborted {method} on resource '{typeof(T).FullName}'" +
-                                      $"{(alias != null ? $" ('{alias}')" : "")} due to an error: {e.TotalMessage()}"
+                    ["RESTar-info"] = $"Aborted {method} on resource '{typeof(T).FullName}' " +
+                                      $"due to an error: {e.TotalMessage()}"
                 }
             };
         }
@@ -141,65 +135,32 @@ namespace RESTar.Requests
             Headers = {["RESTar-info"] = "No entities found matching request"}
         };
 
-        internal static Response InsertedEntities<T>(int count) where T : class
+        internal static Response InsertedEntities<T>(int count) where T : class => new Response
         {
-            var alias = ResourceAlias<T>.Get;
-            return new Response
-            {
-                StatusCode = (ushort) HttpStatusCode.Created,
-                StatusDescription = "Created",
-                Headers =
-                {
-                    ["RESTar-info"] = $"{count} entities inserted into resource '{typeof(T).FullName}'" +
-                                      $"{(alias != null ? $" ('{alias}')" : "")}"
-                }
-            };
-        }
+            StatusCode = (ushort) HttpStatusCode.Created,
+            StatusDescription = "Created",
+            Headers = {["RESTar-info"] = $"{count} entities inserted into resource '{typeof(T).FullName}'"}
+        };
 
-        internal static Response UpdatedEntities<T>(int count) where T : class
+        internal static Response UpdatedEntities<T>(int count) where T : class => new Response
         {
-            var alias = ResourceAlias<T>.Get;
-            return new Response
-            {
-                StatusCode = (ushort) HttpStatusCode.OK,
-                StatusDescription = "OK",
-                Headers =
-                {
-                    ["RESTar-info"] = $"{count} entities updated in resource '{typeof(T).FullName}'" +
-                                      $"{(alias != null ? $" ('{alias}')" : "")}"
-                }
-            };
-        }
+            StatusCode = (ushort) HttpStatusCode.OK,
+            StatusDescription = "OK",
+            Headers = {["RESTar-info"] = $"{count} entities updated in resource '{typeof(T).FullName}'"}
+        };
 
-        internal static Response SafePostedEntities<T>(int insertedCount, int updatedCount) where T : class
+        internal static Response SafePostedEntities<T>(int ins, int upd) where T : class => new Response
         {
-            var alias = ResourceAlias<T>.Get;
-            return new Response
-            {
-                StatusCode = 200,
-                Headers =
-                {
-                    ["RESTar-info"] = $"Inserted {insertedCount} and updated {updatedCount} entities " +
-                                      $"in resource {typeof(T).FullName}" +
-                                      $"{(alias != null ? $" ('{alias}')" : "")}"
-                }
-            };
-        }
+            StatusCode = 200,
+            Headers = {["RESTar-info"] = $"Inserted {ins} and updated {upd} entities in resource {typeof(T).FullName}"}
+        };
 
-        internal static Response DeletedEntities<T>(int count) where T : class
+        internal static Response DeletedEntities<T>(int count) where T : class => new Response
         {
-            var alias = ResourceAlias<T>.Get;
-            return new Response
-            {
-                StatusCode = (ushort) HttpStatusCode.OK,
-                StatusDescription = "OK",
-                Headers =
-                {
-                    ["RESTar-info"] = $"{count} entities deleted from resource '{typeof(T).FullName}'" +
-                                      $"{(alias != null ? $" ('{alias}')" : "")}"
-                }
-            };
-        }
+            StatusCode = (ushort) HttpStatusCode.OK,
+            StatusDescription = "OK",
+            Headers = {["RESTar-info"] = $"{count} entities deleted from resource '{typeof(T).FullName}'"}
+        };
 
         #endregion
 
@@ -209,20 +170,19 @@ namespace RESTar.Requests
             StatusDescription = "Forbidden"
         };
 
-        internal static Response AllowOrigin(string allowedOrigin, IEnumerable<Methods> allowedMethods) =>
-            new Response
+        internal static Response AllowOrigin(string allowedOrigin, IEnumerable<Methods> allowedMethods) => new Response
+        {
+            StatusCode = (ushort) HttpStatusCode.OK,
+            StatusDescription = "OK",
+            Headers =
             {
-                StatusCode = (ushort) HttpStatusCode.OK,
-                StatusDescription = "OK",
-                Headers =
-                {
-                    ["Access-Control-Allow-Origin"] = RESTarConfig.AllowAllOrigins ? "*" : allowedOrigin,
-                    ["Access-Control-Allow-Methods"] = string.Join(", ", allowedMethods),
-                    ["Access-Control-Max-Age"] = "120",
-                    ["Access-Control-Allow-Credentials"] = "true",
-                    ["Access-Control-Allow-Headers"] = "origin, content-type, accept, authorization, " +
-                                                       "source, destination"
-                }
-            };
+                ["Access-Control-Allow-Origin"] = RESTarConfig.AllowAllOrigins ? "*" : allowedOrigin,
+                ["Access-Control-Allow-Methods"] = string.Join(", ", allowedMethods),
+                ["Access-Control-Max-Age"] = "120",
+                ["Access-Control-Allow-Credentials"] = "true",
+                ["Access-Control-Allow-Headers"] = "origin, content-type, accept, authorization, " +
+                                                   "source, destination"
+            }
+        };
     }
 }

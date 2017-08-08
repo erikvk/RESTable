@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json;
-using RESTar.Admin;
 using RESTar.Deflection.Dynamic;
 using RESTar.Internal;
 using Starcounter;
@@ -197,22 +196,14 @@ namespace RESTar
     public class AmbiguousResourceException : RESTarException
     {
         /// <summary>
-        /// The possible candidates found
-        /// </summary>
-        public readonly IList<string> Candidates;
-
-        /// <summary>
         /// The search string that was used
         /// </summary>
         public readonly string SearchString;
 
-        internal AmbiguousResourceException(string searchString, IList<string> candidates)
-            : base(ErrorCodes.AmbiguousResource,
-                $"RESTar could not uniquely identify a resource by '{searchString}'. " +
-                $"Candidates were: {string.Join(", ", candidates)}. ")
+        internal AmbiguousResourceException(string searchString) : base(ErrorCodes.AmbiguousResource,
+            $"RESTar could not uniquely identify a resource by '{searchString}'. Try qualifying the name further. ")
         {
             SearchString = searchString;
-            Candidates = candidates;
             Response = AmbiguousResource(this);
         }
     }
@@ -301,7 +292,7 @@ namespace RESTar
     /// </summary>
     public class AliasAlreadyInUseException : RESTarException
     {
-        internal AliasAlreadyInUseException(ResourceAlias alias) : base(AliasAlreadyInUse,
+        internal AliasAlreadyInUseException(Admin.ResourceAlias alias) : base(AliasAlreadyInUse,
             $"Invalid Alias: '{alias.Alias}' is already in use for resource '{alias.IResource.Name}'") =>
             Response = BadRequest(this);
     }

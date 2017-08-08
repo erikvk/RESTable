@@ -2,8 +2,11 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Serialization;
+using System.Text.RegularExpressions;
+using Newtonsoft.Json;
 using RESTar.Internal;
 using RESTar.Linq;
+using static RESTar.Internal.RESTarResourceType;
 using IResource = RESTar.Internal.IResource;
 
 namespace RESTar.Admin
@@ -17,7 +20,7 @@ namespace RESTar.Admin
         /// <summary>
         /// The name of the resource
         /// </summary>
-        public string Name { get; private set; }
+        public string Name { get; set; }
 
         /// <summary>
         /// The alias of this resource, if any
@@ -55,6 +58,16 @@ namespace RESTar.Admin
         /// </summary>
         public RESTarResourceType ResourceType { get; private set; }
 
+        [JsonConstructor]
+        public Resource(RESTarResourceType resourceType)
+        {
+            ResourceType = resourceType;
+        }
+
+        public Resource()
+        {
+        }
+
         /// <summary>
         /// RESTar selector (don't use)
         /// </summary>
@@ -87,11 +100,11 @@ namespace RESTar.Admin
             var count = 0;
             foreach (var entity in resources)
             {
-                if (string.IsNullOrEmpty(entity.Alias))
-                    throw new Exception("No Alias for new resource");
-                if (RESTarConfig.Resources.Any(r => r.Name.EqualsNoCase(entity.Alias)))
-                    throw new AliasEqualToResourceNameException(entity.Alias);
-                if (ResourceAlias.Exists(entity.Alias, out var alias))
+                if (string.IsNullOrWhiteSpace(entity.Name))
+                    throw new Exception("Missing or invalid name for new resource");
+                entity.ResourceType = DynamicStarcounter;
+                entity.ResolveDynamicResourceName();
+                if (!string.IsNullOrWhiteSpace(entity.Alias) && ResourceAlias.Exists(entity.Alias, out var alias))
                     throw new AliasAlreadyInUseException(alias);
                 if (entity.AvailableMethods?.Any() != true)
                     entity.AvailableMethods = RESTarConfig.Methods;
@@ -99,6 +112,30 @@ namespace RESTar.Admin
                 count += 1;
             }
             return count;
+        }
+
+        private const string CharacterRegex = @"^[a-zA-Z0-9_\.]+$";
+        private const string OnlyUnderscores = @"^_+$";
+
+        private void ResolveDynamicResourceName()
+        {
+            switch (Name)
+            {
+                case var _ when !Regex.IsMatch(Name, CharacterRegex):
+                    throw new Exception($"Resource name '{Name}' contains invalid characters: Only letters, nu" +
+                                        "mbers and underscores are valid in resource names. Dots can be used " +
+                                        "to organize resources into namespaces. No other characters can be used.");
+                case var _ when Name.StartsWith(".") || Name.Contains("..") || Name.EndsWith("."):
+                    throw new Exception($"'{Name}' is not a valid resource name: Invalid namespace syntax");
+            }
+            if (!Name.StartsWith("RESTar.Dynamic."))
+            {
+                if (Name.ToLower().StartsWith("restar.dynamic."))
+                    Name = $"RESTar.Dynamic.{Name.Split(new[] {'.'}, 3).Last()}";
+                else Name = $"RESTar.Dynamic.{Name}";
+            }
+            if (RESTarConfig.ResourceByName.ContainsKey(Name.ToLower()))
+                throw new Exception($"Invalid resource name '{Name}'. Name already in use.");
         }
 
         /// <summary>
@@ -110,15 +147,22 @@ namespace RESTar.Admin
             var count = 0;
             foreach (var resource in entities)
             {
+                #region Edit alias (available for all resources)
+
                 var updated = false;
                 var iresource = resource.IResource;
-                if (!string.IsNullOrWhiteSpace(resource.Alias) && resource.Alias != iresource.Alias)
+                if (resource.Alias != iresource.Alias)
                 {
                     iresource.Alias = resource.Alias;
                     updated = true;
                 }
+
+                #endregion
+
                 if (iresource.Editable)
                 {
+                    #region Edit available methods (available for all editable resources)
+
                     var methods = resource.AvailableMethods?.Distinct().ToList();
                     methods?.Sort(MethodComparer.Instance);
                     if (methods != null && !iresource.AvailableMethods.SequenceEqual(methods))
@@ -129,6 +173,27 @@ namespace RESTar.Admin
                         if (dynamicResource != null)
                             dynamicResource.AvailableMethods = methods;
                         updated = true;
+                    }
+
+                    #endregion
+
+                    if (resource.ResourceType == DynamicStarcounter)
+                    {
+                        #region Edit resource name (available for all editable dynamic starcounter resources
+
+                        if (resource.Name != iresource.Name)
+                        {
+                            var dynamicResource = RESTar.Resource.GetDynamicResource(iresource.Name);
+                            resource.ResolveDynamicResourceName();
+                            dynamicResource.Name = resource.Name;
+                            var alias = ResourceAlias.ByResource(iresource.Name);
+                            if (alias != null) alias._resource = resource.Name;
+                            RESTarConfig.RemoveResource(iresource);
+                            RESTar.Resource.RegisterDynamicResource(dynamicResource);
+                            updated = true;
+                        }
+
+                        #endregion
                     }
                 }
                 if (updated) count += 1;
@@ -142,14 +207,7 @@ namespace RESTar.Admin
         public int Delete(IEnumerable<Resource> entities, IRequest<Resource> request)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
-            var count = 0;
-            foreach (var resource in entities)
-            {
-                DynamicResource.DeleteTable(resource);
-                count += 1;
-            }
-            return count;
+            return entities.Count(DynamicResource.DeleteTable);
         }
-
     }
 }

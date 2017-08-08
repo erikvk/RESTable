@@ -6,6 +6,11 @@ namespace RESTar.Internal
     public enum RESTarResourceType
     {
         /// <summary>
+        /// No defined resource type
+        /// </summary>
+        undefined,
+
+        /// <summary>
         /// Regular Starcounter resources. Resource created at runtime
         /// </summary>
         StaticStarcounter,

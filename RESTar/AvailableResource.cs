@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using RESTar.Internal;
 using RESTar.Linq;
 
 namespace RESTar
@@ -28,11 +27,6 @@ namespace RESTar
         public Methods[] AvailableMethods { get; set; }
 
         /// <summary>
-        /// The resource type
-        /// </summary>
-        public RESTarResourceType ResourceType { get; private set; }
-
-        /// <summary>
         /// RESTar selector (don't use)
         /// </summary>
         public IEnumerable<AvailableResource> Select(IRequest<AvailableResource> request)
@@ -47,8 +41,7 @@ namespace RESTar
                     Name = resource.Name,
                     Alias = resource.Alias,
                     AvailableMethods = accessRights.SafeGet(resource)?.Intersect(resource.AvailableMethods).ToArray()
-                                       ?? new Methods[0],
-                    ResourceType = resource.ResourceType,
+                                       ?? new Methods[0]
                 })
                 .Where(request.Conditions);
         }
