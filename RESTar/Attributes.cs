@@ -23,7 +23,7 @@ namespace RESTar
         /// <summary>
         /// Should this resource be editable after registration?
         /// </summary>
-        public bool Editable { get; set; }
+        internal bool Editable { get; set; }
 
         /// <summary>
         /// Singleton resources get special treatment in the view. They have no list 

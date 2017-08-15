@@ -14,7 +14,7 @@ namespace HelpManager
         );
     }
 
-    [Database, RESTar(Description = "Provides help and tips for how to use certain RESTar features")]
+    [Database, RESTar(Description = "Provides help and tips for how to use certain RESTar features.")]
     public class HelpArticle
     {
         public string Topic;

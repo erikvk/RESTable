@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
-using Excel;
+using ExcelDataReader;
 using Newtonsoft.Json.Linq;
 using RESTar.Internal;
 using RESTar.Linq;
@@ -78,7 +78,7 @@ namespace RESTar.Requests
                         throw new SyntaxException(NoDataSource, "Missing data source for method " + Method);
                     if (ScRequest.Body == null) return;
                     BinaryBody = ScRequest.BodyBytes;
-                    Body = ScRequest.Body;
+                    Body = ScRequest.Body.Trim();
                     break;
                 case DataConfig.External:
                     try
@@ -96,7 +96,7 @@ namespace RESTar.Requests
                                 $"Status: {response.StatusCode} - {response.StatusDescription}. {response.Headers["RESTar-info"]}");
                         if (response.BodyBytes?.Any() != true) throw new SourceException(request, "Response was empty");
                         BinaryBody = response.BodyBytes;
-                        Body = response.Body;
+                        Body = response.Body.Trim();
                         break;
                     }
                     catch (HttpRequestException re)

@@ -28,6 +28,11 @@ namespace RESTar.Internal
         public string Name { get; internal set; }
 
         /// <summary>
+        /// The description for this resource
+        /// </summary>
+        public string Description { get; internal set; }
+
+        /// <summary>
         /// The name of the dynamic table (used internally)
         /// </summary>
         public string TableName { get; internal set; }
@@ -48,7 +53,8 @@ namespace RESTar.Internal
             {
                 AllowDynamicConditions = true,
                 Singleton = false,
-                Editable = true
+                Editable = true,
+                Description = Description
             };
 
         private static readonly string SQL = $"SELECT t FROM {typeof(DynamicResource).FullName} t";
@@ -57,10 +63,11 @@ namespace RESTar.Internal
         private static bool Exists(string tableName) =>
             Db.SQL<DynamicResource>($"{SQL} WHERE t.TableName =?", tableName).First != null;
 
-        private DynamicResource(string name, Type table, IEnumerable<Methods> availableMethods)
+        private DynamicResource(string name, Type table, IEnumerable<Methods> availableMethods, string description = null)
         {
             Name = name;
             TableName = table.FullName;
+            Description = description;
             var methods = availableMethods.Distinct().ToList();
             methods.Sort(MethodComparer.Instance);
             AvailableMethods = methods;
@@ -76,7 +83,7 @@ namespace RESTar.Internal
                     Alias = resource.Alias,
                     Resource = resource.Name
                 };
-            return new DynamicResource(resource.Name, newTable, resource.EnabledMethods);
+            return new DynamicResource(resource.Name, newTable, resource.EnabledMethods, resource.Description);
         }));
 
         internal static bool DeleteTable(Admin.Resource resource)

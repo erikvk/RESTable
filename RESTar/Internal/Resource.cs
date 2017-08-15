@@ -20,12 +20,17 @@ namespace RESTar.Internal
         public string Name { get; }
         public bool Editable { get; }
 
-        // ReSharper disable once MemberCanBePrivate.Global
-        // ReSharper disable once AutoPropertyCanBeMadeGetOnly.Global
+        // ReSharper disable MemberCanBePrivate.Global
+        // ReSharper disable AutoPropertyCanBeMadeGetOnly.Global
+
         public IReadOnlyList<Methods> AvailableMethods { get; internal set; }
 
+        public string Description { get; internal set; }
+
+        // ReSharper restore AutoPropertyCanBeMadeGetOnly.Global
+        // ReSharper restore MemberCanBePrivate.Global
+
         public Type Type => typeof(T);
-        public string Description { get; }
         public bool IsDDictionary { get; }
         public bool IsDynamic { get; }
         public bool IsInternal { get; }

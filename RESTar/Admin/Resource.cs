@@ -165,40 +165,39 @@ namespace RESTar.Admin
 
                 if (iresource.Editable)
                 {
-                    #region Edit available methods (available for editable resources)
+                    #region Edit other properties (available for dynamic resources)
+
+                    var dynamicResource = RESTar.Resource.GetDynamicResource(iresource.Name);
+                    dynamic diresource = iresource;
+
+                    if (iresource.Description != resource.Description)
+                    {
+                        diresource.Description = resource.Description;
+                        dynamicResource.Description = resource.Description;
+                        updated = true;
+                    }
 
                     var methods = resource.EnabledMethods?.Distinct().ToList();
                     methods?.Sort(MethodComparer.Instance);
                     if (methods != null && !iresource.AvailableMethods.SequenceEqual(methods))
                     {
-                        dynamic r = iresource;
-                        r.AvailableMethods = methods;
-                        var dynamicResource = RESTar.Resource.GetDynamicResource(resource.Name);
-                        if (dynamicResource != null)
-                            dynamicResource.AvailableMethods = methods;
+                        diresource.AvailableMethods = methods;
+                        dynamicResource.AvailableMethods = methods;
+                        updated = true;
+                    }
+
+                    if (resource.Name != iresource.Name)
+                    {
+                        resource.ResolveDynamicResourceName();
+                        dynamicResource.Name = resource.Name;
+                        var alias = ResourceAlias.ByResource(iresource.Name);
+                        if (alias != null) alias._resource = resource.Name;
+                        RESTarConfig.RemoveResource(iresource);
+                        RESTar.Resource.RegisterDynamicResource(dynamicResource);
                         updated = true;
                     }
 
                     #endregion
-
-                    if (resource.ResourceType == DynamicStarcounter)
-                    {
-                        #region Edit resource name (available for editable dynamic starcounter resources
-
-                        if (resource.Name != iresource.Name)
-                        {
-                            var dynamicResource = RESTar.Resource.GetDynamicResource(iresource.Name);
-                            resource.ResolveDynamicResourceName();
-                            dynamicResource.Name = resource.Name;
-                            var alias = ResourceAlias.ByResource(iresource.Name);
-                            if (alias != null) alias._resource = resource.Name;
-                            RESTarConfig.RemoveResource(iresource);
-                            RESTar.Resource.RegisterDynamicResource(dynamicResource);
-                            updated = true;
-                        }
-
-                        #endregion
-                    }
                 }
                 if (updated) count += 1;
             }

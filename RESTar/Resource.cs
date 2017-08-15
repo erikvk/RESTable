@@ -173,6 +173,16 @@ namespace RESTar
         }
 
         /// <summary>
+        /// Registers a class as a static RESTar resource. If no methods are provided in the 
+        /// methods list, all methods will be enabled for this resource.
+        /// </summary>
+        public static void Register(string description, params Methods[] methods)
+        {
+            if (!methods.Any()) methods = RESTarConfig.Methods;
+            Register(methods.OrderBy(i => i, MethodComparer.Instance).ToArray(), description: description);
+        }
+
+        /// <summary>
         /// Registers a class as a RESTar resource. If no methods are provided in the 
         /// methods list, all methods will be enabled for this resource.
         /// </summary>
