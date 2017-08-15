@@ -2,15 +2,19 @@
 using RESTar.Linq;
 using RESTar.Operations;
 using Starcounter;
+using static RESTar.Methods;
 
 namespace RESTar.Admin
 {
     /// <summary>
-    /// The settings resource for the RESTar instance, stores its settings.
+    /// The settings resource contains the current settings for the RESTar instance.
     /// </summary>
-    [Database, RESTar(Methods.GET, Methods.PATCH, Singleton = true)]
+    [Database, RESTar(GET, PATCH, Singleton = true, Description = description)]
     public class Settings
     {
+        private const string description = "The Settings resource contains the current " +
+                                           "settings for the RESTar instance.";
+
         internal static ushort _Port => Instance.Port;
         internal static string _Uri => Instance.Uri;
         internal static bool _ViewEnabled => Instance.ViewEnabled;

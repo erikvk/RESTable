@@ -25,6 +25,11 @@ namespace RESTar.Internal
         IReadOnlyList<Methods> AvailableMethods { get; }
 
         /// <summary>
+        /// Resource descriptions are visible in the AvailableMethods resource
+        /// </summary>
+        string Description { get; }
+
+        /// <summary>
         /// The target type for this resource
         /// </summary>
         Type Type { get; }

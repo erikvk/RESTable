@@ -3,15 +3,19 @@ using System.Collections.Generic;
 using RESTar.Deflection.Dynamic;
 using RESTar.Linq;
 using static RESTar.Methods;
+using static RESTar.Operators;
 
 namespace RESTar.Admin
 {
     /// <summary>
-    /// Gets a schema for a given resource
+    /// The Schema resource provides schemas for non-dynamic RESTar resources
     /// </summary>
-    [RESTar(GET, Singleton = true)]
+    [RESTar(GET, Singleton = true, Description = description)]
     internal class Schema : Dictionary<string, string>, ISelector<Schema>
     {
+        private const string description = "The Schema resource provides schemas for " +
+                                           "non-dynamic RESTar resources.";
+
         /// <summary>
         /// The name of the resource to get the schema for
         /// </summary>
@@ -22,7 +26,7 @@ namespace RESTar.Admin
         /// </summary>
         public IEnumerable<Schema> Select(IRequest<Schema> request)
         {
-            var resourceName = request.Conditions.Get("resource", Operators.EQUALS)?.Value as string;
+            var resourceName = request.Conditions.Get("resource", EQUALS)?.Value as string;
             if (resourceName == null)
                 throw new Exception("Invalid syntax in request to RESTar.Schema. Format: " +
                                     "/schema/resource=insert_resource_name_here");

@@ -32,6 +32,11 @@ namespace RESTar
         public bool Singleton { get; set; }
 
         /// <summary>
+        /// Resource descriptions are visible in the AvailableMethods resource
+        /// </summary>
+        public string Description { get; set; }
+
+        /// <summary>
         /// Used when creating attributes for dynamic resources
         /// </summary>
         /// <param name="methods"></param>

@@ -25,6 +25,7 @@ namespace RESTar.Internal
         public IReadOnlyList<Methods> AvailableMethods { get; internal set; }
 
         public Type Type => typeof(T);
+        public string Description { get; }
         public bool IsDDictionary { get; }
         public bool IsDynamic { get; }
         public bool IsInternal { get; }
@@ -80,6 +81,7 @@ namespace RESTar.Internal
         {
             Name = name;
             Editable = attribute.Editable;
+            Description = attribute.Description;
             AvailableMethods = attribute.AvailableMethods;
             IsSingleton = attribute.Singleton;
             IsInternal = attribute is RESTarInternalAttribute;

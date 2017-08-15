@@ -2,17 +2,22 @@
 using System.Collections.Generic;
 using System.Runtime.Serialization;
 using Starcounter;
+using static RESTar.Methods;
 using IResource = RESTar.Internal.IResource;
 
 namespace RESTar.Admin
 {
     /// <summary>
     /// The ResourceAlias resource is used to assign an alias to a resource, making 
-    /// it possible to reference the resource with only the alias. 
+    /// it possible to reference the resource with only the alias.
     /// </summary>
-    [Database, RESTar(Methods.GET, Methods.DELETE)]
+    [Database, RESTar(GET, DELETE, Description = description)]
     public class ResourceAlias
     {
+        private const string description = "The ResourceAlias resource is used to assign an " +
+                                           "alias to a resource, making it possible to reference " +
+                                           "the resource with only the alias.";
+
         /// <summary>
         /// The alias string
         /// </summary>
@@ -62,7 +67,7 @@ namespace RESTar.Admin
         /// Gets a ResourceAlias by its alias (case insensitive)
         /// </summary>
         public static ResourceAlias ByAlias(string alias) => Db.SQL<ResourceAlias>(AliasSQL, alias).First;
-        
+
         /// <summary>
         /// Gets a ResourceAlias by its resource name
         /// </summary>

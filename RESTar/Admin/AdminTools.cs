@@ -7,9 +7,12 @@ namespace RESTar.Admin
     /// <summary>
     /// Provides access to commmon admin tasks
     /// </summary>
-    [RESTar(GET, PATCH)]
+    [RESTar(GET, PATCH, Description = description)]
     public class AdminTools : ISelector<AdminTools>, IUpdater<AdminTools>
     {
+        private const string description = "The AdminTools resource gives access to commonly used " +
+                                           "tools for administrating a RESTar instance.";
+
         /// <summary>
         /// Should the config file be reloaded?
         /// </summary>

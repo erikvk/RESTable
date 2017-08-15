@@ -2,15 +2,21 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using RESTar.Linq;
+using static RESTar.Methods;
 
 namespace RESTar
 {
     /// <summary>
     /// Gets the available resources for the current user
     /// </summary>
-    [RESTar(Methods.GET)]
+    [RESTar(GET, Description = description)]
     internal sealed class AvailableResource : ISelector<AvailableResource>
     {
+        private const string description = "The AvailableResource resource contains all resources " +
+                                           "available for the current user, as defined by the access " +
+                                           "rights assigned to its API key. It is the default resource " +
+                                           "used when no resource is specified in the request URI.";
+
         /// <summary>
         /// The name of the resource
         /// </summary>
@@ -22,9 +28,14 @@ namespace RESTar
         public string Alias { get; set; }
 
         /// <summary>
+        /// Resource descriptions are visible in the AvailableMethods resource
+        /// </summary>
+        public string Description { get; set; }
+
+        /// <summary>
         /// The methods that have been enabled for this resource
         /// </summary>
-        public Methods[] AvailableMethods { get; set; }
+        public Methods[] Methods { get; set; }
 
         /// <summary>
         /// RESTar selector (don't use)
@@ -40,8 +51,9 @@ namespace RESTar
                 {
                     Name = resource.Name,
                     Alias = resource.Alias,
-                    AvailableMethods = accessRights.SafeGet(resource)?.Intersect(resource.AvailableMethods).ToArray()
-                                       ?? new Methods[0]
+                    Description = resource.Description ?? "No description",
+                    Methods = accessRights.SafeGet(resource)?.Intersect(resource.AvailableMethods).ToArray()
+                              ?? new Methods[0]
                 })
                 .Where(request.Conditions);
         }

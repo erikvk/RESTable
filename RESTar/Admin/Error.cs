@@ -11,13 +11,17 @@ using IResource = RESTar.Internal.IResource;
 namespace RESTar.Admin
 {
     /// <summary>
-    /// The error resource contains instances where an error was encountered while
+    /// The Error resource records instances where an error was encountered while
     /// handling a request. You can control how long entities remain in the resource
     /// by setting the daysToSaveErrors parameter in the call to RESTarConfig.Init().
     /// </summary>
-    [Database, RESTar(GET, DELETE)]
+    [Database, RESTar(GET, DELETE, Description = description)]
+
     public class Error
     {
+        private const string description = "The Error resource records instances where an " +
+                                           "error was encountered while handling a request.";
+
         /// <summary>
         /// A unique ID for this error instance
         /// </summary>
@@ -72,7 +76,8 @@ namespace RESTar.Admin
         {
         }
 
-        internal static Error Create(ErrorCodes errorCode, Exception e, IResource resource, Request scRequest, HandlerActions action) => new Error
+        internal static Error Create(ErrorCodes errorCode, Exception e, IResource resource, Request scRequest,
+            HandlerActions action) => new Error
         {
             Time = DateTime.Now,
             ResourceName = (resource?.Name ?? "<unknown>") +

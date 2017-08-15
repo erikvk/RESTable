@@ -7,11 +7,14 @@ using static RESTar.Methods;
 namespace RESTar
 {
     /// <summary>
-    /// Contains help articles for RESTar
+    /// Contains help articles for RESTar itself
     /// </summary>
-    [RESTar(GET)]
+    [RESTar(GET, Description = description)]
     public class Help : ISelector<Help>
     {
+        private const string description = "The Help resource contains help articles for RESTar itself.";
+        private const string URL = "https://restarhelp.mopedo-drtb.com/rest?/helparticle";
+
         /// <summary>
         /// The topic of the help article
         /// </summary>
@@ -26,8 +29,6 @@ namespace RESTar
         /// The "see also" part of the help article
         /// </summary>
         public string SeeAlso { get; set; }
-
-        private const string URL = "https://restarhelp.mopedo-drtb.com/rest?/helparticle";
 
         /// <summary>
         /// RESTar selector (don't use)

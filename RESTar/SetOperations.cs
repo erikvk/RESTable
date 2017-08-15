@@ -19,9 +19,13 @@ namespace RESTar
     /// The SetOperations resource can perform advanced operations on entities in one
     /// or more RESTar resources. See the RESTar Specification for details.
     /// </summary>
-    [RESTar(GET, Singleton = true)]
+    [RESTar(GET, Singleton = true, Description = description)]
     public class SetOperations : JObject, ISelector<SetOperations>
     {
+        private const string description = "The SetOperations resource can perform advanced operations " +
+                                           "on entities in one or more RESTar resources. See the RESTar " +
+                                           "Specification for details.";
+
         public SetOperations()
         {
         }
@@ -174,7 +178,8 @@ namespace RESTar
                     var uri = localMapper.ToString();
                     var response = HTTP.Internal(GET, new Uri(uri, UriKind.Relative), request.AuthToken);
                     if (response?.IsSuccessStatusCode != true)
-                        throw new Exception($"Could not get source data from '<self>:{Settings._Port}{Settings._Uri}{uri}'");
+                        throw new Exception(
+                            $"Could not get source data from '<self>:{Settings._Port}{Settings._Uri}{uri}'");
                     if (response.StatusCode == 204 || string.IsNullOrEmpty(response.Body))
                         mapped.Add(new JObject());
                     Serializer.Populate(response.Body, mapped);

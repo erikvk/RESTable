@@ -76,7 +76,7 @@ namespace RESTar.Internal
                     Alias = resource.Alias,
                     Resource = resource.Name
                 };
-            return new DynamicResource(resource.Name, newTable, resource.AvailableMethods);
+            return new DynamicResource(resource.Name, newTable, resource.EnabledMethods);
         }));
 
         internal static bool DeleteTable(Admin.Resource resource)

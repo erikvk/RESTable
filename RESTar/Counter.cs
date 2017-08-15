@@ -8,11 +8,17 @@ using static RESTar.Methods;
 namespace RESTar
 {
     /// <summary>
-    /// The counter resource returns the entity count for a given resource
+    /// The Counter resource is an operations resource that calculates the number 
+    /// of entities returned from GET request, the URI of which is included in the 
+    /// request data
     /// </summary>
-    [RESTar(GET, Singleton = true)]
+    [RESTar(GET, Singleton = true, Description = description)]
     public class Counter : Dictionary<string, int>, ISelector<Counter>
     {
+        private const string description = "The Counter resource is an operations resource that calculates " +
+                                           "the number of entities returned from GET request, the URI of which " +
+                                           "is included in the request data.";
+
         /// <summary>
         /// RESTar selector (don't use)
         /// </summary>

@@ -6,12 +6,15 @@ using static RESTar.Methods;
 namespace RESTar
 {
     /// <summary>
-    /// The echo resource is a test resource that returns the conditions
-    /// inputted as a JSON object.
+    /// The Echo resource is a test and utility resource that returns the 
+    /// request conditions as an object.
     /// </summary>
-    [RESTar(GET, AllowDynamicConditions = true)]
+    [RESTar(GET, AllowDynamicConditions = true, Description = description)]
     public class Echo : JObject, ISelector<Echo>
     {
+        private const string description = "The Echo resource is a test and utility resource that " +
+                                           "returns the request conditions as an object.";
+
         private Echo()
         {
         }

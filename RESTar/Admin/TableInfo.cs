@@ -11,37 +11,14 @@ using IResource = RESTar.Internal.IResource;
 namespace RESTar.Admin
 {
     /// <summary>
-    /// Contains a description of a table size
+    /// The TableInfo resource can create an aggregated info view for a given Starcounter table.
     /// </summary>
-    public class TableSize
-    {
-        /// <summary>
-        /// The size in bytes
-        /// </summary>
-        public long Bytes { get; set; }
-
-        /// <summary>
-        /// The size in kilobytes
-        /// </summary>
-        public decimal KB { get; set; }
-
-        /// <summary>
-        /// The size in megabytes
-        /// </summary>
-        public decimal MB { get; set; }
-
-        /// <summary>
-        /// The size in gigabytes
-        /// </summary>
-        public decimal GB { get; set; }
-    }
-
-    /// <summary>
-    /// Gets an aggregated info view for a given Starcounter table
-    /// </summary>
-    [RESTar(GET)]
+    [RESTar(GET, Description = description)]
     public class TableInfo : ISelector<TableInfo>
     {
+        private const string description = "The TableInfo resource can create an aggregated " +
+                                           "info view for a given Starcounter table.";
+
         /// <summary>
         /// The name of the table
         /// </summary>
@@ -131,6 +108,32 @@ namespace RESTar.Admin
                     Bytes = totalBytes
                 }
             };
+        }
+
+        /// <summary>
+        /// Contains a description of a table size
+        /// </summary>
+        public class TableSize
+        {
+            /// <summary>
+            /// The size in bytes
+            /// </summary>
+            public long Bytes { get; set; }
+
+            /// <summary>
+            /// The size in kilobytes
+            /// </summary>
+            public decimal KB { get; set; }
+
+            /// <summary>
+            /// The size in megabytes
+            /// </summary>
+            public decimal MB { get; set; }
+
+            /// <summary>
+            /// The size in gigabytes
+            /// </summary>
+            public decimal GB { get; set; }
         }
     }
 }

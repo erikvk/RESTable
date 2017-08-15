@@ -7,9 +7,16 @@ using static RESTar.Methods;
 
 namespace RESTar.Admin
 {
-    [RESTar(GET, DELETE)]
+    /// <summary>
+    /// The TermCache resource contains all the terms that RESTar has encountered 
+    /// for a given resource, for example in conditions.
+    /// </summary>
+    [RESTar(GET, DELETE, Description = description)]
     public class TermCache : ISelector<TermCache>, IDeleter<TermCache>
     {
+        private const string description = "The TermCache resource contains all the terms that RESTar " +
+                                           "has encountered for a given resource, for example in conditions.";
+
         public string Resource { get; set; }
         public string[] Terms { get; set; }
 

@@ -10,7 +10,7 @@ namespace RESTar.Admin
     /// <summary>
     /// Gets all error codes used by RESTar
     /// </summary>
-    [RESTar(GET)]
+    [RESTar(GET, Description = "The error codes used by RESTar.")]
     public class ErrorCode : ISelector<ErrorCode>
     {
         /// <summary>

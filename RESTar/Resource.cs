@@ -183,6 +183,7 @@ namespace RESTar
         /// <param name="deleter">The deleter to use for this resource</param>
         /// <param name="singleton">Is this a singleton resource?</param>
         /// <param name="internalResource">Is this an internal resource?</param>
+        /// <param name="description">A description for the resource</param>
         public static void Register
         (
             ICollection<Methods> methods,
@@ -191,8 +192,10 @@ namespace RESTar
             Updater<T> updater = null,
             Deleter<T> deleter = null,
             bool singleton = false,
-            bool internalResource = false)
+            bool internalResource = false,
+            string description = null)
         {
+            if (methods?.Any() != true) methods = RESTarConfig.Methods;
             if (typeof(T).HasAttribute<RESTarAttribute>())
                 throw new InvalidOperationException("Cannot manually register resources that have a RESTar " +
                                                     "attribute. Resources decorated with a RESTar attribute " +
@@ -205,6 +208,7 @@ namespace RESTar
                 ? new RESTarInternalAttribute(methods.ToArray())
                 : new RESTarAttribute(methods.ToArray());
             attribute.Singleton = singleton;
+            attribute.Description = description;
             Internal.Resource<T>.Make(typeof(T).FullName, attribute, selector, inserter, updater, deleter);
         }
 

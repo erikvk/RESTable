@@ -7,38 +7,15 @@ using Starcounter.Metadata;
 namespace RESTar.Admin
 {
     /// <summary>
-    /// Contains information about a column on which an index is registered.
+    /// The DatabaseIndex resource lets an administrator set indexes for Starcounter database resources.
     /// </summary>
-    public class ColumnInfo
-    {
-        /// <summary>
-        /// The name of the column (property name)
-        /// </summary>
-        public string Name { get; set; }
-
-        /// <summary>
-        /// Is this index descending? (otherwise ascending)
-        /// </summary>
-        public bool Descending { get; set; }
-
-        /// <summary>
-        /// Creates a new ColumnInfo from a tuple describing a column name and direction
-        /// </summary>
-        /// <param name="column"></param>
-        public static implicit operator ColumnInfo((string Name, bool Descending) column) => new ColumnInfo
-        {
-            Name = column.Name,
-            Descending = column.Descending
-        };
-    }
-
-    /// <summary>
-    /// A resource for handling database indexes for Starcounter resources.
-    /// </summary>
-    [RESTar]
+    [RESTar(Description = description)]
     public class DatabaseIndex : ISelector<DatabaseIndex>, IInserter<DatabaseIndex>, IUpdater<DatabaseIndex>,
         IDeleter<DatabaseIndex>
     {
+        private const string description = "The DatabaseIndex resource lets an administrator set " +
+                                           "indexes for Starcounter database resources.";
+
         /// <summary>
         /// The name of the index
         /// </summary>
@@ -162,5 +139,31 @@ namespace RESTar.Admin
             }
             return count;
         }
+    }
+
+    /// <summary>
+    /// Contains information about a column on which an index is registered.
+    /// </summary>
+    public class ColumnInfo
+    {
+        /// <summary>
+        /// The name of the column (property name)
+        /// </summary>
+        public string Name { get; set; }
+
+        /// <summary>
+        /// Is this index descending? (otherwise ascending)
+        /// </summary>
+        public bool Descending { get; set; }
+
+        /// <summary>
+        /// Creates a new ColumnInfo from a tuple describing a column name and direction
+        /// </summary>
+        /// <param name="column"></param>
+        public static implicit operator ColumnInfo((string Name, bool Descending) column) => new ColumnInfo
+        {
+            Name = column.Name,
+            Descending = column.Descending
+        };
     }
 }

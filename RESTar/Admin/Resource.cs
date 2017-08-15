@@ -12,11 +12,14 @@ using IResource = RESTar.Internal.IResource;
 namespace RESTar.Admin
 {
     /// <summary>
-    /// A resource that provides representations of all resources in a RESTar instance
+    /// A meta-resource that provides representations of all resources in a RESTar instance
     /// </summary>
-    [RESTar]
+    [RESTar(Description = description)]
     internal sealed class Resource : ISelector<Resource>, IInserter<Resource>, IUpdater<Resource>, IDeleter<Resource>
     {
+        private const string description = "A meta-resource that provides representations " +
+                                           "of all resources in a RESTar instance.";
+
         /// <summary>
         /// The name of the resource
         /// </summary>
@@ -28,9 +31,14 @@ namespace RESTar.Admin
         public string Alias { get; set; }
 
         /// <summary>
+        /// Resource descriptions are visible in the AvailableMethods resource
+        /// </summary>
+        public string Description { get; set; }
+
+        /// <summary>
         /// The methods that have been enabled for this resource
         /// </summary>
-        public Methods[] AvailableMethods { get; set; }
+        public Methods[] EnabledMethods { get; set; }
 
         /// <summary>
         /// Is this resource editable?
@@ -59,14 +67,9 @@ namespace RESTar.Admin
         public RESTarResourceType ResourceType { get; private set; }
 
         [JsonConstructor]
-        public Resource(RESTarResourceType resourceType)
-        {
-            ResourceType = resourceType;
-        }
+        public Resource(RESTarResourceType resourceType) => ResourceType = resourceType;
 
-        public Resource()
-        {
-        }
+        private Resource() => ResourceType = undefined;
 
         /// <summary>
         /// RESTar selector (don't use)
@@ -81,7 +84,8 @@ namespace RESTar.Admin
                 {
                     Name = resource.Name,
                     Alias = resource.Alias,
-                    AvailableMethods = resource.AvailableMethods.ToArray(),
+                    Description = resource.Description ?? "No description",
+                    EnabledMethods = resource.AvailableMethods.ToArray(),
                     Editable = resource.Editable,
                     IsInternal = resource.IsInternal,
                     Type = resource.Type.FullName,
@@ -106,22 +110,22 @@ namespace RESTar.Admin
                 entity.ResolveDynamicResourceName();
                 if (!string.IsNullOrWhiteSpace(entity.Alias) && ResourceAlias.Exists(entity.Alias, out var alias))
                     throw new AliasAlreadyInUseException(alias);
-                if (entity.AvailableMethods?.Any() != true)
-                    entity.AvailableMethods = RESTarConfig.Methods;
+                if (entity.EnabledMethods?.Any() != true)
+                    entity.EnabledMethods = RESTarConfig.Methods;
                 DynamicResource.MakeTable(entity);
                 count += 1;
             }
             return count;
         }
 
-        private const string CharacterRegex = @"^[a-zA-Z0-9_\.]+$";
+        private const string AllowedCharacters = @"^[a-zA-Z0-9_\.]+$";
         private const string OnlyUnderscores = @"^_+$";
 
         private void ResolveDynamicResourceName()
         {
             switch (Name)
             {
-                case var _ when !Regex.IsMatch(Name, CharacterRegex):
+                case var _ when !Regex.IsMatch(Name, AllowedCharacters):
                     throw new Exception($"Resource name '{Name}' contains invalid characters: Only letters, nu" +
                                         "mbers and underscores are valid in resource names. Dots can be used " +
                                         "to organize resources into namespaces. No other characters can be used.");
@@ -161,9 +165,9 @@ namespace RESTar.Admin
 
                 if (iresource.Editable)
                 {
-                    #region Edit available methods (available for all editable resources)
+                    #region Edit available methods (available for editable resources)
 
-                    var methods = resource.AvailableMethods?.Distinct().ToList();
+                    var methods = resource.EnabledMethods?.Distinct().ToList();
                     methods?.Sort(MethodComparer.Instance);
                     if (methods != null && !iresource.AvailableMethods.SequenceEqual(methods))
                     {
@@ -179,7 +183,7 @@ namespace RESTar.Admin
 
                     if (resource.ResourceType == DynamicStarcounter)
                     {
-                        #region Edit resource name (available for all editable dynamic starcounter resources
+                        #region Edit resource name (available for editable dynamic starcounter resources
 
                         if (resource.Name != iresource.Name)
                         {
