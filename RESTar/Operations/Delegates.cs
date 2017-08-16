@@ -31,4 +31,10 @@ namespace RESTar.Operations
     /// </summary>
     /// <typeparam name="T">The resource type</typeparam>
     public delegate int Deleter<T>(IEnumerable<T> entities, IRequest<T> request) where T : class;
+
+    /// <summary>
+    /// Counts the entities that satisfy certain conditions provided in the request
+    /// </summary>
+    /// <typeparam name="T">The resource type</typeparam>
+    public delegate int Counter<T>(IRequest<T> request) where T : class;
 }

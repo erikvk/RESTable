@@ -49,4 +49,16 @@ namespace RESTar
         /// </summary>
         int Delete(IEnumerable<T> entities, IRequest<T> request);
     }
+
+    /// <summary>
+    /// Interface used to register a Counter for a given resource type
+    /// </summary>
+    public interface ICounter<T> where T : class
+    {
+        /// <summary>
+        /// The delete method for this IDeleter instance. Defines the Delete
+        /// operation for a given resource.
+        /// </summary>
+        int Count(IRequest<T> request);
+    }
 }
