@@ -85,7 +85,9 @@ namespace RESTar
 
         private static void AddToResourceFinder(IResource toAdd, IDictionary<string, IResource> finder)
         {
-            var parts = toAdd.Name.ToLower().Split('.');
+            var parts = toAdd.IsInternal
+                ? new[] {toAdd.Name}
+                : toAdd.Name.ToLower().Split('.');
             parts.ForEach((item, index) =>
             {
                 var key = string.Join(".", parts.Skip(index));
