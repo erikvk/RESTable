@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Reflection;
 using RESTar.Deflection.Dynamic;
 
@@ -18,6 +19,7 @@ namespace RESTar.Deflection
             {
                 if (p.DeclaringType?.IsValueType == true)
                     return p.GetValue;
+                if (p.GetIndexParameters().Any()) return null;
                 var getterDelegate = p
                     .GetGetMethod()?
                     .CreateDelegate(typeof(Func<,>)
@@ -39,6 +41,7 @@ namespace RESTar.Deflection
             {
                 if (p.DeclaringType?.IsValueType == true)
                     return p.SetValue;
+                if (p.GetIndexParameters().Any()) return null;
                 var setterDelegate = p
                     .GetSetMethod()?
                     .CreateDelegate(typeof(Action<,>)

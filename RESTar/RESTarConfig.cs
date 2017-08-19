@@ -123,13 +123,11 @@ namespace RESTar
             bool prettyPrint = true,
             ushort daysToSaveErrors = 30)
         {
-            uri = uri ?? "/rest";
-            uri = uri.Trim();
+            uri = uri?.Trim() ?? "/rest";
             if (uri.Contains("?")) throw new ArgumentException("URI cannot contain '?'", nameof(uri));
             var appName = Application.Current.Name;
             if (uri.EqualsNoCase(appName))
-                throw new ArgumentException("URI cannot be the same as the application name" +
-                                            $" ({appName})", nameof(appName));
+                throw new ArgumentException($"URI must differ from application name ({appName})", nameof(appName));
             if (uri[0] != '/') uri = $"/{uri}";
             Settings.Init(port, uri, viewEnabled, prettyPrint, daysToSaveErrors);
             typeof(object).GetSubclasses()

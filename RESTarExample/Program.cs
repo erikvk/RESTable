@@ -21,6 +21,8 @@ namespace RESTarExample
                 setupMenu: true
             );
             TestDatabase.Init();
+
+
         }
     }
 

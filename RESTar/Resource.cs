@@ -4,7 +4,6 @@ using System.Linq;
 using System.Reflection;
 using RESTar.Internal;
 using RESTar.Operations;
-using Starcounter;
 using IResource = RESTar.Internal.IResource;
 
 namespace RESTar
@@ -120,11 +119,7 @@ namespace RESTar
 
         private static readonly MethodInfo AUTO_MAKER;
         private static readonly MethodInfo DYNAMIC_AUTO_MAKER;
-        private const string DynamicResourceSQL = "SELECT t FROM RESTar.Internal.DynamicResource t WHERE t.Name =?";
-
-        internal static DynamicResource GetDynamicResource(string name) => Db
-            .SQL<DynamicResource>(DynamicResourceSQL, name).First;
-
+        
         static Resource()
         {
             DYNAMIC_AUTO_MAKER = typeof(Resource).GetMethod(nameof(DYNAMIC_AUTO_MAKE),

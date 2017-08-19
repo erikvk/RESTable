@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using RESTar.Deflection.Dynamic;
+using RESTar.Internal;
 using RESTar.Linq;
 using Starcounter;
 using Starcounter.Metadata;
@@ -57,6 +58,7 @@ namespace RESTar.Admin
             }
             return resources
                 .Select(GetTableInfo)
+                .Where(request.Conditions)
                 .OrderByDescending(t => t.ApproximateTableSize.Bytes)
                 .ToList();
         }
@@ -66,10 +68,13 @@ namespace RESTar.Admin
 
         internal static TableInfo GetTableInfo(IResource resource)
         {
-            var columns = GetColumns(resource.Name).Select(c => c.Name).ToList();
-            var domainCount = Db.SQL<long>($"SELECT COUNT(t) FROM {resource.Name} t").First;
+            var resourceSQLName = resource.Editable
+                ? DynamicResource.Get(resource.Name).TableName
+                : resource.Name;
+            var columns = GetColumns(resourceSQLName).Select(c => c.Name).ToList();
+            var domainCount = Db.SQL<long>($"SELECT COUNT(t) FROM {resourceSQLName} t").First;
             var properties = resource.GetTableColumns().Where(p => columns.Contains(p.DatabaseQueryName)).ToList();
-            IEnumerable<dynamic> extension = Db.SQL($"SELECT t FROM {resource.Name} t");
+            IEnumerable<dynamic> extension = Db.SQL($"SELECT t FROM {resourceSQLName} t");
             var totalBytes = 0L;
             const int addBytes = 16;
             if (domainCount <= 1000)

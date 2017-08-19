@@ -63,7 +63,8 @@ namespace RESTar.Internal
         private static bool Exists(string tableName) =>
             Db.SQL<DynamicResource>($"{SQL} WHERE t.TableName =?", tableName).First != null;
 
-        private DynamicResource(string name, Type table, IEnumerable<Methods> availableMethods, string description = null)
+        private DynamicResource(string name, Type table, IEnumerable<Methods> availableMethods,
+            string description = null)
         {
             Name = name;
             TableName = table.FullName;
@@ -86,9 +87,14 @@ namespace RESTar.Internal
             return new DynamicResource(resource.Name, newTable, resource.EnabledMethods, resource.Description);
         }));
 
+        private const string DynamicResourceSQL = "SELECT t FROM RESTar.Internal.DynamicResource t WHERE t.Name =?";
+
+        internal static DynamicResource Get(string resourceName) => Db
+            .SQL<DynamicResource>(DynamicResourceSQL, resourceName).First;
+
         internal static bool DeleteTable(Admin.Resource resource)
         {
-            var dynamicResource = Resource.GetDynamicResource(resource.Name);
+            var dynamicResource = Get(resource.Name);
             if (dynamicResource == null) return false;
             DynamitControl.ClearTable(dynamicResource.TableName);
             var alias = Admin.ResourceAlias.ByResource(dynamicResource.Name);

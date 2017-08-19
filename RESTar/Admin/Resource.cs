@@ -167,7 +167,7 @@ namespace RESTar.Admin
                 {
                     #region Edit other properties (available for dynamic resources)
 
-                    var dynamicResource = RESTar.Resource.GetDynamicResource(iresource.Name);
+                    var dynamicResource = DynamicResource.Get(iresource.Name);
                     dynamic diresource = iresource;
 
                     if (iresource.Description != resource.Description)
