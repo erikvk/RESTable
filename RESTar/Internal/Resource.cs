@@ -47,6 +47,7 @@ namespace RESTar.Internal
         public Inserter<T> Insert { get; }
         public Updater<T> Update { get; }
         public Deleter<T> Delete { get; }
+        public Counter<T> Count { get; }
 
         public string Alias
         {
@@ -82,7 +83,7 @@ namespace RESTar.Internal
         /// All custom resources are constructed here
         /// </summary>
         private Resource(string name, RESTarAttribute attribute, Selector<T> selector, Inserter<T> inserter,
-            Updater<T> updater, Deleter<T> deleter)
+            Updater<T> updater, Deleter<T> deleter, Counter<T> counter)
         {
             Name = name;
             Editable = attribute.Editable;
@@ -107,6 +108,7 @@ namespace RESTar.Internal
             Insert = inserter;
             Update = updater;
             Delete = deleter;
+            Count = counter;
             CheckOperationsSupport();
             RESTarConfig.AddResource(this);
         }
@@ -115,7 +117,7 @@ namespace RESTar.Internal
         /// All custom resource registrations (using attribute as well as Resource.Register) terminate here
         /// </summary>
         internal static void Make(string name, RESTarAttribute attribute, Selector<T> selector = null,
-            Inserter<T> inserter = null, Updater<T> updater = null, Deleter<T> deleter = null)
+            Inserter<T> inserter = null, Updater<T> updater = null, Deleter<T> deleter = null, Counter<T> counter = null)
         {
             var type = typeof(T);
             if (type.IsDDictionary() && type.Implements(typeof(IDDictionary<,>), out var _))
@@ -124,7 +126,8 @@ namespace RESTar.Internal
                     type.GetSelector<T>() ?? DDictionaryOperations<T>.Select,
                     type.GetInserter<T>() ?? DDictionaryOperations<T>.Insert,
                     type.GetUpdater<T>() ?? DDictionaryOperations<T>.Update,
-                    type.GetDeleter<T>() ?? DDictionaryOperations<T>.Delete
+                    type.GetDeleter<T>() ?? DDictionaryOperations<T>.Delete,
+                    type.GetCounter<T>() ?? DDictionaryOperations<T>.Count
                 );
                 return;
             }
@@ -133,6 +136,7 @@ namespace RESTar.Internal
             inserter = inserter ?? type.GetInserter<T>();
             updater = updater ?? type.GetUpdater<T>();
             deleter = deleter ?? type.GetDeleter<T>();
+            counter = counter ?? type.GetCounter<T>();
 
             if (type.HasAttribute<DatabaseAttribute>())
             {
@@ -140,9 +144,10 @@ namespace RESTar.Internal
                 inserter = inserter ?? StarcounterOperations<T>.Insert;
                 updater = updater ?? StarcounterOperations<T>.Update;
                 deleter = deleter ?? StarcounterOperations<T>.Delete;
+                counter = counter ?? StarcounterOperations<T>.Count;
             }
             else CheckVirtualResource(type);
-            new Resource<T>(name, attribute, selector, inserter, updater, deleter);
+            new Resource<T>(name, attribute, selector, inserter, updater, deleter, counter);
         }
 
         private static void CheckVirtualResource(Type type)

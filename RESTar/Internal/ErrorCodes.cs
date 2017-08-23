@@ -66,6 +66,7 @@ namespace RESTar.Internal
         AbortedInsert = 202,
         AbortedUpdate = 203,
         AbortedDelete = 204,
+        AbortedCount = 205,
         NotSignedIn = 210,
         NotAuthorized = 211,
         NoMatchingHtml = 212,

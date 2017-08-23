@@ -6,6 +6,7 @@ using RESTar.Internal;
 using RESTar.Linq;
 using RESTar.Operations;
 using RESTar.Requests;
+using static RESTar.Internal.ErrorCodes;
 using static RESTar.Internal.RESTarResourceType;
 using IResource = RESTar.Internal.IResource;
 
@@ -36,7 +37,8 @@ namespace RESTar
         Methods IRequest.Method => 0;
 
         private readonly bool ScSql;
-        internal string SqlQuery { get; private set; }
+        internal string SelectQuery { get; private set; }
+        internal string CountQuery { get; private set; }
         internal object[] SqlValues { get; private set; }
         private Dictionary<int, int> ValuesAssignments;
 
@@ -69,14 +71,16 @@ namespace RESTar
         {
             if (!Conditions.HasSQL(out var sql))
             {
-                SqlQuery = StarcounterOperations<T>.SELECT;
+                SelectQuery = StarcounterOperations<T>.SELECT;
+                CountQuery = StarcounterOperations<T>.COUNT;
                 SqlValues = null;
                 ValuesAssignments = null;
             }
             else
             {
                 var wh = sql.MakeWhereClause(out var assignments);
-                SqlQuery = $"{StarcounterOperations<T>.SELECT}{wh.WhereString}";
+                SelectQuery = $"{StarcounterOperations<T>.SELECT}{wh.WhereString}";
+                CountQuery = $"{StarcounterOperations<T>.COUNT}{wh.WhereString}";
                 SqlValues = wh.Values;
                 ValuesAssignments = assignments;
             }
@@ -144,8 +148,8 @@ namespace RESTar
 
         public Request<T> WithConditions(string key, Operator op, object value) => WithConditions((key, op, value));
 
-        private static Exception Deny(Methods method) => new ForbiddenException
-            (ErrorCodes.NotAuthorized, $"{method} is not available for resource '{typeof(T).FullName}'");
+        private static Exception Deny(Methods method) => new ForbiddenException(NotAuthorized,
+            $"{method} is not available for resource '{typeof(T).FullName}'");
 
         public IEnumerable<T> GET()
         {

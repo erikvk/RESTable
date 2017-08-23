@@ -45,7 +45,14 @@ namespace RESTar.Operations
             if (typeof(T) == typeof(DatabaseIndex))
                 return action();
             var results = default(TResult);
-            Db.TransactAsync(() => results = action());
+            try
+            {
+                Db.TransactAsync(() => results = action());
+            }
+            catch (TransactionAbortedException)
+            {
+                Log.Error("!!! Transaction error");
+            }
             return results;
         }
     }

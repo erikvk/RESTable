@@ -268,6 +268,20 @@ namespace RESTar
     }
 
     /// <summary>
+    /// Thrown when RESTar encounters an error selecting entities from 
+    /// a given resource.
+    /// </summary>
+    public class AbortedCounterException<T> : RESTarException where T : class
+    {
+        internal AbortedCounterException(Exception ie, IRequest request, string message = null)
+            : base(AbortedCount, message ?? (ie.GetType() == typeof(JsonSerializationException) ||
+                                              ie.GetType() == typeof(JsonReaderException)
+                                      ? "JSON serialization error, check JSON syntax. "
+                                      : ""
+                                  ), ie) => Response = AbortedOperation<T>(this, request.Method);
+    }
+
+    /// <summary>
     /// Thrown when an entity of a resource declared as IValidatable fails validation
     /// </summary>
     public class ValidatableException : RESTarException

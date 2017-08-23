@@ -70,6 +70,13 @@ namespace RESTar
             return (Deleter<T>) type.GetMethod("Delete", Instance | Public).CreateDelegate(typeof(Deleter<T>), null);
         }
 
+        internal static Counter<T> GetCounter<T>(this Type type) where T : class
+        {
+            if (!type.Implements(typeof(ICounter<>), out var p)) return null;
+            if (p[0] != typeof(T)) throw InvalidImplementation("ICounter", type.FullName, p[0]);
+            return (Counter<T>) type.GetMethod("Count", Instance | Public).CreateDelegate(typeof(Counter<T>), null);
+        }
+
         #endregion
 
         #region Reflection
@@ -667,7 +674,7 @@ namespace RESTar
         internal static ClosedXML.Excel.XLWorkbook ToExcel(this IEnumerable<object> entities, IResource resource)
         {
             var dataSet = new DataSet();
-            var table = entities.MakeTable(resource);
+            var table = entities.MakeDataTable(resource);
             if (table.Rows.Count == 0) return null;
             dataSet.Tables.Add(table);
             var workbook = new ClosedXML.Excel.XLWorkbook();
@@ -682,7 +689,7 @@ namespace RESTar
         {
             var resource = Resource<T>.Get;
             var dataSet = new DataSet();
-            var table = entities.MakeTable(resource);
+            var table = entities.MakeDataTable(resource);
             if (table.Rows.Count == 0) return null;
             dataSet.Tables.Add(table);
             var workbook = new ClosedXML.Excel.XLWorkbook();
@@ -702,7 +709,7 @@ namespace RESTar
             }
         }
 
-        internal static DataTable MakeTable(this IEnumerable<object> entities, IResource resource)
+        internal static DataTable MakeDataTable(this IEnumerable<object> entities, IResource resource)
         {
             var table = new DataTable();
             switch (entities)

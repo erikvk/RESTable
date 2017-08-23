@@ -36,5 +36,5 @@ namespace RESTar.Operations
     /// Counts the entities that satisfy certain conditions provided in the request
     /// </summary>
     /// <typeparam name="T">The resource type</typeparam>
-    public delegate int Counter<T>(IRequest<T> request) where T : class;
+    public delegate long Counter<T>(IRequest<T> request) where T : class;
 }

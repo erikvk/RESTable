@@ -18,6 +18,20 @@ namespace RESTar.Operations
 
         #region SELECT
 
+        internal static long COUNT(IRequest<T> request)
+        {
+            try
+            {
+                if (request.Resource.Count == null)
+                    return request.Resource.Select(request)?.LongCount() ?? 0L;
+                return request.Resource.Count(request);
+            }
+            catch (Exception e)
+            {
+                throw new AbortedSelectorException<T>(e, request);
+            }
+        }
+
         internal static IEnumerable<T> RAW_SELECT(IRequest<T> request)
         {
             try

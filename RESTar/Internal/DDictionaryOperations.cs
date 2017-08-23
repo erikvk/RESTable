@@ -52,5 +52,17 @@ namespace RESTar.Internal
         /// Deleter for DDictionary entites (used by RESTar internally, don't use)
         /// </summary>
         public static Deleter<T> Delete => (e, r) => Do.Run(() => e.ForEach(Db.Delete), e.Count());
+
+        /// <summary>
+        /// Counter for DDictionary entites (used by RESTar internally, don't use)
+        /// </summary>
+        public static Counter<T> Count => r =>
+        {
+            switch (r.Conditions.Length)
+            {
+                case 0: return Db.SQL<long>($"SELECT COUNT(t) FROM {typeof(T).FullName} t").First;
+                default: return Select(r)?.Count() ?? 0;
+            }
+        };
     }
 }

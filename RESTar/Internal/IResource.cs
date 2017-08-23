@@ -114,5 +114,10 @@ namespace RESTar.Internal
         /// RESTar deleter (don't use)
         /// </summary>
         Deleter<T> Delete { get; }
+
+        /// <summary>
+        /// RESTar counter (don't use)
+        /// </summary>
+        Counter<T> Count { get; }
     }
 }

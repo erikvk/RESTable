@@ -11,6 +11,8 @@ namespace RESTar.Linq
     /// </summary>
     public static class Conditions
     {
+        #region Internal
+
         internal static bool HasSQL<T>(this IEnumerable<Condition<T>> conds, out IEnumerable<Condition<T>> sql)
             where T : class
         {
@@ -43,6 +45,18 @@ namespace RESTar.Linq
             compare = conds.Where(c => c.Operator.Compare).ToList();
             return compare.Any();
         }
+
+        internal static void ResetStatus<T>(this IEnumerable<Condition<T>> conds) where T : class
+        {
+            conds.ForEach(c => c.HasChanged = c.ValueChanged = false);
+        }
+
+        internal static string ToUriString<T>(this IEnumerable<Condition<T>> conds) where T : class =>
+            string.Join("&", conds.Select(c => c.Value is DateTime
+                ? $"{c.Key}{c.Operator.Common}{c.Value:O}"
+                : $"{c.Key}{c.Operator.Common}{c.Value}"));
+
+        #endregion
 
         /// <summary>
         /// Access all conditions with a given key (case insensitive)
@@ -95,15 +109,5 @@ namespace RESTar.Linq
                     return cond.Redirect<T>();
                 });
         }
-
-        internal static void ResetStatus<T>(this IEnumerable<Condition<T>> conds) where T : class
-        {
-            conds.ForEach(c => c.HasChanged = c.ValueChanged = false);
-        }
-
-        internal static string ToUriString<T>(this IEnumerable<Condition<T>> conds) where T : class =>
-            string.Join("&", conds.Select(c => c.Value is DateTime
-                ? $"{c.Key}{c.Operator.Common}{c.Value:O}"
-                : $"{c.Key}{c.Operator.Common}{c.Value}"));
     }
 }

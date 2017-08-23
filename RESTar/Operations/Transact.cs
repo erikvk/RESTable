@@ -16,7 +16,14 @@ namespace RESTar.Operations
             if (action == null)
                 throw new ArgumentNullException(nameof(action));
             var result = default(T);
-            Db.TransactAsync(() => result = action());
+            try
+            {
+                Db.TransactAsync(() => result = action());
+            }
+            catch (TransactionAbortedException)
+            {
+                Log.Error("!!! Transaction error");
+            }
             return result;
         }
 
@@ -28,7 +35,14 @@ namespace RESTar.Operations
         {
             if (action == null)
                 throw new ArgumentNullException(nameof(action));
-            Db.TransactAsync(action);
+            try
+            {
+                Db.TransactAsync(action);
+            }
+            catch (TransactionAbortedException)
+            {
+                Log.Error("!!! Transaction error");
+            }
         }
 
         /// <summary>
@@ -39,7 +53,17 @@ namespace RESTar.Operations
         {
             if (action == null)
                 throw new ArgumentNullException(nameof(action));
-            Scheduling.ScheduleTask(() => Db.TransactAsync(action));
+            Scheduling.ScheduleTask(() =>
+            {
+                try
+                {
+                    Db.TransactAsync(action);
+                }
+                catch (TransactionAbortedException)
+                {
+                    Log.Error("!!! Transaction error");
+                }
+            });
         }
 
         #endregion

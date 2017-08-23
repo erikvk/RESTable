@@ -59,6 +59,6 @@ namespace RESTar
         /// The delete method for this IDeleter instance. Defines the Delete
         /// operation for a given resource.
         /// </summary>
-        int Count(IRequest<T> request);
+        long Count(IRequest<T> request);
     }
 }
