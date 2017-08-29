@@ -4,7 +4,7 @@
   "ResourcePath": "",
   "RedirectUrl$": "",
   "Message": "",
-  "ErrorCode": 0,
+  "ErrorCode": -1,
   "MessageType": "",
   "HasMessage": false,
   "Entity": {},

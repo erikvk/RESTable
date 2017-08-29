@@ -1,15 +1,12 @@
 using RESTar.Internal;
-using Starcounter;
+
+#pragma warning disable 1591
 
 namespace RESTar.View
 {
-    /// <summary>
-    /// </summary>
-    partial class MessageWindow : Json, IRESTarView
+    partial class MessageWindow : RESTarView
     {
-        /// <summary>
-        /// </summary>
-        public void SetMessage(string message, ErrorCodes errorCode, MessageType messageType)
+        internal override void SetMessage(string message, ErrorCodes errorCode, MessageTypes messageType)
         {
             Message = message;
             ErrorCode = (long) errorCode;
@@ -17,9 +14,7 @@ namespace RESTar.View
             HasMessage = true;
         }
 
-        /// <summary>
-        /// </summary>
-        public MessageWindow Populate()
+        internal MessageWindow Populate()
         {
             Html = "/message.html";
             return this;

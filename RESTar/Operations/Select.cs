@@ -1,33 +1,33 @@
 using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json.Linq;
-using RESTar.Deflection;
+using RESTar.Deflection.Dynamic;
+using RESTar.Internal;
+using RESTar.Linq;
+using RESTar.Serialization;
 
 namespace RESTar.Operations
 {
-    internal class Select : List<PropertyChain>, ICollection<PropertyChain>, IProcessor
+    internal class Select : List<Term>, ICollection<Term>, IProcessor
     {
-        public IEnumerable<JObject> Apply<T>(IEnumerable<T> entities)
-        {
-            return entities.Select(entity =>
-            {
-                var entityDict = entity as IDictionary<string, dynamic>;
-                var entityJobj = entity as JObject;
-                var jobj = new JObject();
-                ForEach(prop =>
-                {
-                    var dictKey = entityDict?.MatchKeyIgnoreCase(prop.Key) ??
-                                  entityJobj?.MatchKeyIgnoreCase(prop.Key);
-                    if (jobj[prop.Key] == null)
-                    {
-                        var val = prop.Get(entity, out string actualKey);
-                        jobj[dictKey ?? actualKey] = val == null ? null : JToken.FromObject(val, Serializer.JsonSerializer);
-                    }
-                });
-                return jobj;
-            });
-        }
+        internal Select(IResource resource, string key, IEnumerable<string> dynDomain) => key
+            .Split(',')
+            .Distinct()
+            .If(dynDomain == null,
+                then: s => s.Select(_s => resource.MakeTerm(_s, resource.IsDynamic)),
+                @else: s => s.Select(_s => Term.Parse(resource.Type, _s, resource.IsDynamic, dynDomain)))
+            .ForEach(Add);
 
-        private static readonly NoCaseComparer Comparer = new NoCaseComparer();
+        public IEnumerable<JObject> Apply<T>(IEnumerable<T> entities) => entities.Select(entity =>
+        {
+            var jobj = new JObject();
+            ForEach(term =>
+            {
+                if (jobj[term.Key] != null) return;
+                object val = term.Evaluate(entity, out var actualKey);
+                jobj[actualKey] = val?.ToJToken();
+            });
+            return jobj;
+        });
     }
 }

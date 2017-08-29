@@ -7,12 +7,15 @@ using System.Xml;
 using Dynamit;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using RESTar.Admin;
 using RESTar.Auth;
-using RESTar.Deflection;
+using RESTar.Deflection.Dynamic;
 using RESTar.Internal;
+using RESTar.Linq;
 using RESTar.Operations;
 using RESTar.Requests;
-using static RESTar.RESTarMethods;
+using Starcounter;
+using static RESTar.Methods;
 using IResource = RESTar.Internal.IResource;
 
 namespace RESTar
@@ -23,14 +26,14 @@ namespace RESTar
     /// </summary>
     public static class RESTarConfig
     {
+        internal static IDictionary<string, IResource> ResourceFinder { get; private set; }
         internal static readonly IDictionary<string, IResource> ResourceByName;
         internal static readonly IDictionary<Type, IResource> ResourceByType;
-        internal static readonly IDictionary<IResource, Type> IEnumTypes;
         internal static readonly IDictionary<string, AccessRights> ApiKeys;
         internal static readonly ConcurrentDictionary<string, AccessRights> AuthTokens;
-        internal static IEnumerable<IResource> Resources => ResourceByName.Values;
+        internal static ICollection<IResource> Resources => ResourceByName.Values;
         internal static readonly List<Uri> AllowedOrigins;
-        internal static readonly RESTarMethods[] Methods = {GET, POST, PATCH, PUT, DELETE};
+        internal static readonly Methods[] Methods = {GET, POST, PATCH, PUT, DELETE};
         internal static bool RequireApiKey { get; private set; }
         internal static bool AllowAllOrigins { get; private set; }
         private static string ConfigFilePath;
@@ -41,21 +44,26 @@ namespace RESTar
             ApiKeys = new Dictionary<string, AccessRights>();
             ResourceByType = new Dictionary<Type, IResource>();
             ResourceByName = new Dictionary<string, IResource>();
-            IEnumTypes = new Dictionary<IResource, Type>();
+            ResourceFinder = new ConcurrentDictionary<string, IResource>();
             AuthTokens = new ConcurrentDictionary<string, AccessRights>();
             AllowedOrigins = new List<Uri>();
+            AuthTokens.TryAdd(Authenticator.AppToken, AccessRights.Root);
         }
 
-        private static void UpdateAuthInfo()
+        internal static void UpdateAuthInfo()
         {
+            if (!Initialized) return;
             if (ConfigFilePath != null) ReadConfig();
+            AccessRights.Root = Resources
+                .ToDictionary(r => r, r => Methods)
+                .CollectDict(dict => new AccessRights(dict));
         }
 
         internal static void AddResource(IResource toAdd)
         {
             ResourceByName[toAdd.Name.ToLower()] = toAdd;
-            ResourceByType[toAdd.TargetType] = toAdd;
-            IEnumTypes[toAdd] = typeof(IEnumerable<>).MakeGenericType(toAdd.TargetType);
+            ResourceByType[toAdd.Type] = toAdd;
+            AddToResourceFinder(toAdd, ResourceFinder);
             UpdateAuthInfo();
             toAdd.GetStaticProperties();
         }
@@ -63,9 +71,30 @@ namespace RESTar
         internal static void RemoveResource(IResource toRemove)
         {
             ResourceByName.Remove(toRemove.Name.ToLower());
-            ResourceByType.Remove(toRemove.TargetType);
-            IEnumTypes.Remove(toRemove);
+            ResourceByType.Remove(toRemove.Type);
+            ReloadResourceFinder();
             UpdateAuthInfo();
+        }
+
+        internal static void ReloadResourceFinder()
+        {
+            var newFinder = new ConcurrentDictionary<string, IResource>();
+            Resources.ForEach(r => AddToResourceFinder(r, newFinder));
+            ResourceFinder = newFinder;
+        }
+
+        private static void AddToResourceFinder(IResource toAdd, IDictionary<string, IResource> finder)
+        {
+            var parts = toAdd.IsInternal
+                ? new[] {toAdd.Name}
+                : toAdd.Name.ToLower().Split('.');
+            parts.ForEach((item, index) =>
+            {
+                var key = string.Join(".", parts.Skip(index));
+                if (finder.ContainsKey(key))
+                    finder[key] = null;
+                else finder[key] = toAdd;
+            });
         }
 
         /// <summary>
@@ -77,8 +106,6 @@ namespace RESTar
         /// allowed origins</param>
         /// <param name="prettyPrint">Should JSON output be pretty print formatted as default?
         ///  (can be changed in settings during runtime)</param>
-        /// <param name="camelCase">Should resources be parsed and serialized using camelCase as 
-        /// opposed to default PascalCase?</param>
         /// <param name="daysToSaveErrors">The number of days to save errors in the Error resource</param>
         /// <param name="viewEnabled">Should the view be enabled?</param>
         /// <param name="setupMenu">Shoud a menu be setup automatically in the view?</param>
@@ -94,29 +121,66 @@ namespace RESTar
             bool allowAllOrigins = true,
             string configFilePath = null,
             bool prettyPrint = true,
-            bool camelCase = false,
             ushort daysToSaveErrors = 30)
         {
-            uri = uri ?? "/rest";
-            uri = uri.Trim();
+            uri = uri?.Trim() ?? "/rest";
             if (uri.Contains("?")) throw new ArgumentException("URI cannot contain '?'", nameof(uri));
-            var appName = Starcounter.Application.Current.Name;
+            var appName = Application.Current.Name;
             if (uri.EqualsNoCase(appName))
-                throw new ArgumentException($"URI cannot be the same as the application name ({appName})");
-            if (uri.First() != '/') uri = $"/{uri}";
-            Settings.Init(port, uri, viewEnabled, prettyPrint, camelCase, daysToSaveErrors);
+                throw new ArgumentException($"URI must differ from application name ({appName})", nameof(appName));
+            if (uri[0] != '/') uri = $"/{uri}";
+            Settings.Init(port, uri, viewEnabled, prettyPrint, daysToSaveErrors);
             typeof(object).GetSubclasses()
                 .Where(t => t.HasAttribute<RESTarAttribute>())
-                .ForEach(t => Do.TryCatch(() => Resource.AutoMakeResource(t), e => throw (e.InnerException ?? e)));
-            DB.All<DynamicResource>().ForEach(AddResource);
+                .ForEach(t => Do.TryCatch(() => Resource.AutoRegister(t), e => throw (e.InnerException ?? e)));
+
+            #region Migrate resource aliases
+
+            foreach (var alias in Db.SQL<ResourceAlias>("SELECT t FROM RESTar.ResourceAlias t").ToList())
+            {
+                Transact.Trans(() =>
+                {
+                    new Admin.ResourceAlias
+                    {
+                        Alias = alias.Alias,
+                        _resource = alias.Resource
+                    };
+                    alias.Delete();
+                });
+            }
+
+            #endregion
+
+            #region Migrate dynamic resource formats
+
+            var unnamedcount = 1;
+            foreach (var resource in DynamicResource.All)
+            {
+                if (resource.TableName == null && resource.Name.Contains("RESTar.DynamicResource"))
+                {
+                    var alias = Admin.ResourceAlias.ByResource(resource.Name);
+                    Transact.Trans(() =>
+                    {
+                        resource.TableName = resource.Name;
+                        resource.Name = "RESTar.Dynamic." + (alias?.Alias ?? "UntitledResource" + unnamedcount);
+                        unnamedcount += 1;
+                        if (alias != null)
+                            alias._resource = resource.Name;
+                    });
+                }
+            }
+
+            #endregion
+
+            DynamicResource.All.ForEach(Resource.RegisterDynamicResource);
             RequireApiKey = requireApiKey;
             AllowAllOrigins = allowAllOrigins;
             ConfigFilePath = configFilePath;
-            ReadConfig();
             DynamitConfig.Init(true, true);
             Log.Init();
             Handlers.Register(setupMenu);
             Initialized = true;
+            UpdateAuthInfo();
         }
 
         private static void ReadConfig()
@@ -134,12 +198,9 @@ namespace RESTar
                     var jsonstring = JsonConvert.SerializeXmlNode(document);
                     config = JObject.Parse(jsonstring)["config"] as JObject;
                 }
-                if (config == null)
-                    throw new Exception();
-                if (!AllowAllOrigins)
-                    SetupOrigins(config.AllowedOrigin);
-                if (RequireApiKey)
-                    SetupApiKeys(config.ApiKey);
+                if (config == null) throw new Exception();
+                if (!AllowAllOrigins) ReadOrigins(config.AllowedOrigin);
+                if (RequireApiKey) ReadApiKeys(config.ApiKey);
             }
             catch (Exception jse)
             {
@@ -147,7 +208,7 @@ namespace RESTar
             }
         }
 
-        private static void SetupOrigins(JToken originToken)
+        private static void ReadOrigins(JToken originToken)
         {
             if (originToken == null) return;
             switch (originToken.Type)
@@ -159,49 +220,70 @@ namespace RESTar
                     AllowedOrigins.Add(new Uri(value));
                     break;
                 case JTokenType.Array:
-                    originToken.ForEach(SetupOrigins);
+                    originToken.ForEach(ReadOrigins);
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();
             }
         }
 
-        private static void SetupApiKeys(JToken keyToken)
+        private static void ReadApiKeys(JToken apiKeyToken)
         {
-            switch (keyToken.Type)
+            switch (apiKeyToken)
             {
-                case JTokenType.Object:
-                    var keyString = keyToken["Key"].Value<string>();
+                case JObject apiKey:
+                    var keyString = apiKey["Key"].Value<string>();
                     if (string.IsNullOrWhiteSpace(keyString))
                         throw new Exception("An API key was invalid");
                     var key = keyString.SHA256();
-                    var access = new List<AccessRight>();
+                    var accessRightList = new List<AccessRight>();
 
-                    void getAccessRight(JToken token)
+                    void recurseAllowAccess(JToken allowAccessToken)
                     {
-                        switch (token.Type)
+                        switch (allowAccessToken)
                         {
-                            case JTokenType.Object:
-                                access.Add(new AccessRight
+                            case JObject allowAccess:
+                                var resourceSet = new HashSet<IResource>();
+
+                                void recurseResources(JToken resourceToken)
                                 {
-                                    Resources = token["Resource"].Value<string>().FindResources(),
-                                    AllowedMethods = token["Methods"].Value<string>().ToUpper().ToMethodsArray()
+                                    switch (resourceToken)
+                                    {
+                                        case JValue value when value.Value is string resourceString:
+                                            resourceSet.UnionWith(Resource.SafeFindMany(resourceString));
+                                            return;
+                                        case JArray resources:
+                                            resources.ForEach(recurseResources);
+                                            return;
+                                        default: throw new Exception("Invalid API key XML syntax in config file");
+                                    }
+                                }
+
+                                recurseResources(allowAccess["Resource"]);
+                                accessRightList.Add(new AccessRight
+                                {
+                                    Resources = resourceSet.OrderBy(r => r.Name).ToList(),
+                                    AllowedMethods = allowAccess["Methods"].Value<string>().ToUpper().ToMethodsArray()
                                 });
-                                break;
-                            case JTokenType.Array:
-                                token.ForEach(getAccessRight);
-                                break;
+                                return;
+                            case JArray allowAccesses:
+                                allowAccesses.ForEach(recurseAllowAccess);
+                                return;
+                            default: throw new Exception("Invalid API key XML syntax in config file");
                         }
                     }
 
-                    getAccessRight(keyToken["AllowAccess"]);
-                    ApiKeys[key] = access.ToAccessRights();
+                    recurseAllowAccess(apiKeyToken["AllowAccess"]);
+                    var accessRights = accessRightList.ToAccessRights();
+                    var availableResources = Resource<AvailableResource>.Get;
+                    if (!accessRights.ContainsKey(availableResources))
+                        accessRights.Add(availableResources, new[] {GET});
+                    ApiKeys[key] = accessRights;
                     break;
-                case JTokenType.Array:
-                    keyToken.ForEach(SetupApiKeys);
+                case JArray apiKeys:
+                    apiKeys.ForEach(ReadApiKeys);
                     break;
-                default:
-                    throw new Exception("Invalid API key XML syntax in config file");
+                default: throw new Exception("Invalid API key XML syntax in config file");
             }
         }
     }

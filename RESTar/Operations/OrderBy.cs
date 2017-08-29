@@ -1,52 +1,42 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using Dynamit;
-using Newtonsoft.Json.Linq;
-using RESTar.Deflection;
+using RESTar.Deflection.Dynamic;
 using RESTar.Internal;
 
 namespace RESTar.Operations
 {
     internal class OrderBy : IFilter
     {
-        public string Key => PropertyChain.Key;
-
-        internal void SetStaticKey(string key) => PropertyChain = PropertyChain
-            .GetOrMake(Resource, key, Resource.IsDynamic);
-
-        public bool Descending;
-        public bool Ascending => !Descending;
-
-        internal readonly IResource Resource;
-        internal PropertyChain PropertyChain;
-
+        internal string Key => Term.Key;
+        internal bool Descending { get; }
+        internal bool Ascending => !Descending;
+        internal IResource Resource { get; }
+        internal readonly Term Term;
         internal bool IsStarcounterQueryable = true;
-        private Func<T1, dynamic> ToSelector<T1>() => item => Do.Try(() => PropertyChain.Get(item), default(object));
 
         internal string SQL => IsStarcounterQueryable
-            ? $"ORDER BY t.{PropertyChain.DbKey.Fnuttify()} {(Descending ? "DESC" : "ASC")}"
+            ? $"ORDER BY t.{Term.DbKey.Fnuttify()} {(Descending ? "DESC" : "ASC")}"
             : null;
 
         internal OrderBy(IResource resource) => Resource = resource;
 
-        internal OrderBy(IResource resource, bool descending, string key, List<string> dynamicMembers)
+        internal OrderBy(IResource resource, bool descending, string key, IEnumerable<string> dynamicMembers)
         {
             Resource = resource;
             Descending = descending;
-            PropertyChain = PropertyChain.ParseInternal(resource, key, resource.IsDynamic, dynamicMembers);
+            Term = dynamicMembers == null
+                ? resource.MakeTerm(key, resource.IsDynamic)
+                : Term.Parse(resource.Type, key, resource.IsDynamic, dynamicMembers);
         }
 
+        /// <summary>
+        /// Applies the order by operation on an IEnumerable of entities
+        /// </summary>
         public IEnumerable<T> Apply<T>(IEnumerable<T> entities)
         {
             if (IsStarcounterQueryable) return entities;
-            var type = typeof(T);
-            if ((entities is IEnumerable<IDictionary<string, dynamic>> || entities is IEnumerable<JObject>) &&
-                !(entities is IEnumerable<DDictionary>))
-                PropertyChain.MakeDynamic();
-            else if (type != Resource.TargetType)
-                PropertyChain = PropertyChain.MakeFromPrototype(PropertyChain, type);
-            return Ascending ? entities.OrderBy(ToSelector<T>()) : entities.OrderByDescending(ToSelector<T>());
+            dynamic selector(T i) => Do.Try(() => Term.Evaluate(i), default(object));
+            return Ascending ? entities.OrderBy(selector) : entities.OrderByDescending(selector);
         }
     }
 }

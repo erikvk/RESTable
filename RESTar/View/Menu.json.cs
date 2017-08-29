@@ -1,16 +1,16 @@
 using System.Linq;
 using Starcounter;
 using RESTar.Internal;
+using RESTar.Linq;
+using RESTar.Serialization;
+
+#pragma warning disable 1591
 
 namespace RESTar.View
 {
-    /// <summary>
-    /// </summary>
-    partial class Menu : Json, IRESTarView
+    partial class Menu : RESTarView
     {
-        /// <summary>
-        /// </summary>
-        public void SetMessage(string message, ErrorCodes errorCode, MessageType messageType)
+        internal override void SetMessage(string message, ErrorCodes errorCode, MessageTypes messageType)
         {
             Message = message;
             ErrorCode = (long) errorCode;
@@ -18,8 +18,6 @@ namespace RESTar.View
             HasMessage = true;
         }
 
-        /// <summary>
-        /// </summary>
         public Menu Populate()
         {
             Html = "/menu.html";

@@ -2,231 +2,231 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.Serialization;
 using RESTar.Internal;
 using RESTar.Operations;
-using static System.Reflection.BindingFlags;
-using static RESTar.Internal.DynamicResource;
-using static RESTar.RESTarConfig;
-using static RESTar.RESTarPresets;
+using IResource = RESTar.Internal.IResource;
 
 namespace RESTar
 {
     /// <summary>
-    /// A resource that lists all available resources in a RESTar instance
+    /// A static class for finding registered RESTar resources
     /// </summary>
-    [RESTar(ReadAndWrite)]
-    public sealed class Resource : IOperationsProvider<Resource>
+    public static class Resource
+    {
+        #region Find and get resources
+
+        /// <summary>
+        /// Gets all registered RESTar resources
+        /// </summary>
+        public static IEnumerable<IResource> All => RESTarConfig.Resources;
+
+        /// <summary>
+        /// Finds a resource by a search string. The string can be a partial resource name. If no resource 
+        /// is found, throws an UnknownResourceException. If more than one resource is found, throws
+        /// an AmbiguousResourceException.
+        /// <param name="searchString">The case insensitive string to use for the search</param>
+        /// </summary>
+        public static IResource Find(string searchString)
+        {
+            searchString = searchString.ToLower();
+            var resource = Admin.ResourceAlias.ByAlias(searchString)?.IResource;
+            if (resource != null) return resource;
+            if (!RESTarConfig.ResourceFinder.TryGetValue(searchString, out resource))
+                throw new UnknownResourceException(searchString);
+            if (resource == null)
+                throw new AmbiguousResourceException(searchString);
+            return resource;
+        }
+
+        /// <summary>
+        /// Finds a resource by a search string. The string can be a partial resource name. If no resource 
+        /// is found, returns null. If more than one resource is found, throws an AmbiguousResourceException.
+        /// <param name="searchString">The case insensitive string to use for the search</param>
+        /// </summary>
+        public static IResource SafeFind(string searchString)
+        {
+            searchString = searchString.ToLower();
+            var resource = Admin.ResourceAlias.ByAlias(searchString)?.IResource;
+            if (resource != null) return resource;
+            if (!RESTarConfig.ResourceFinder.TryGetValue(searchString, out resource))
+                return null;
+            if (resource == null)
+                throw new AmbiguousResourceException(searchString);
+            return resource;
+        }
+
+        /// <summary>
+        /// Finds a number of resources based on a search string. To include more than one resource in 
+        /// the search, use the wildcard character (asterisk '*'). For example: To find all resources in a namespace
+        /// 'MyApplication.Utilities', use the search string "myapplication.utilities.*" or any case 
+        /// variant of it.
+        /// </summary>
+        /// <param name="searchString">The case insensitive string to use for the search</param>
+        /// <returns></returns>
+        public static IResource[] SafeFindMany(string searchString)
+        {
+            searchString = searchString.ToLower();
+            switch (searchString.Count(i => i == '*'))
+            {
+                case 0:
+                    var found = SafeFind(searchString);
+                    if (found == null) return new IResource[0];
+                    return new[] {found};
+                case 1 when searchString.Last() != '*':
+                    throw new Exception("Invalid resource string syntax. The asterisk must be the last character");
+                case 1:
+                    var commonPart = searchString.TrimEnd('*');
+                    var commonPartDots = commonPart.Count(c => c == '.');
+                    var matches = RESTarConfig.ResourceByName
+                        .Where(pair => pair.Key.StartsWith(commonPart) &&
+                                       pair.Key.Count(c => c == '.') == commonPartDots)
+                        .Select(pair => pair.Value)
+                        .ToArray();
+                    return matches;
+                default: throw new Exception("Invalid resource string syntax. Can only include one asterisk (*)");
+            }
+        }
+
+        /// <summary>
+        /// Finds a resource by name (case sensitive) and throws an UnknownResourceException
+        /// if no resource is found.
+        /// </summary>
+        public static IResource Get(string name) => RESTarConfig.ResourceByName.SafeGet(name)
+                                                    ?? throw new UnknownResourceException(name);
+
+        /// <summary>
+        /// Finds a resource by name (case insensitive) and returns null
+        /// if no resource is found
+        /// </summary>
+        public static IResource SafeGet(string name) => RESTarConfig.ResourceByName.SafeGetNoCase(name);
+
+        /// <summary>
+        /// Finds a resource by target type and throws an UnknownResourceException
+        /// if no resource is found.
+        /// </summary>
+        public static IResource Get(Type type) => RESTarConfig.ResourceByType.SafeGet(type)
+                                                  ?? throw new UnknownResourceException(type.FullName);
+
+        /// <summary>
+        /// Finds a resource by target type and throws an UnknownResourceException
+        /// if no resource is found.
+        /// </summary>
+        public static IResource SafeGet(Type type) => RESTarConfig.ResourceByType.SafeGet(type);
+
+        #endregion
+
+        #region Helpers
+
+        private static readonly MethodInfo AUTO_MAKER;
+        private static readonly MethodInfo DYNAMIC_AUTO_MAKER;
+        
+        static Resource()
+        {
+            DYNAMIC_AUTO_MAKER = typeof(Resource).GetMethod(nameof(DYNAMIC_AUTO_MAKE),
+                BindingFlags.NonPublic | BindingFlags.Static);
+            AUTO_MAKER = typeof(Resource).GetMethod(nameof(AUTO_MAKE), BindingFlags.NonPublic | BindingFlags.Static);
+        }
+
+        internal static void RegisterDynamicResource(DynamicResource resource)
+        {
+            DYNAMIC_AUTO_MAKER.MakeGenericMethod(resource.Table).Invoke(null, new object[] {resource});
+        }
+
+        internal static void AutoRegister(Type type)
+        {
+            AUTO_MAKER.MakeGenericMethod(type).Invoke(null, null);
+        }
+
+        private static void AUTO_MAKE<T>() where T : class
+        {
+            Internal.Resource<T>.Make(typeof(T).FullName, RESTarAttribute<T>.Get);
+        }
+
+        private static void DYNAMIC_AUTO_MAKE<T>(DynamicResource resource) where T : class
+        {
+            Internal.Resource<T>.Make(resource.Name, resource.Attribute);
+        }
+
+        #endregion
+    }
+
+    /// <summary>
+    /// A static generic class for manually registering types as RESTar resources
+    /// and finding static resources by type
+    /// </summary>
+    /// <typeparam name="T">The type to register</typeparam>
+    public static class Resource<T> where T : class
     {
         /// <summary>
-        /// The name of the resource
+        /// Registers a class as a static RESTar resource. If no methods are provided in the 
+        /// methods list, all methods will be enabled for this resource.
         /// </summary>
-        public string Name { get; set; }
-
-        /// <summary>
-        /// Is this resource editable?
-        /// </summary>
-        public bool Editable { get; private set; }
-
-        /// <summary>
-        /// Is this resource visible in the view?
-        /// </summary>
-        public bool Visible { get; set; }
-
-        /// <summary>
-        /// The methods that have been enabled for this resource
-        /// </summary>
-        public RESTarMethods[] AvailableMethods { get; set; }
-
-        /// <summary>
-        /// The alias of this resource, if any
-        /// </summary>
-        public string Alias { get; set; }
-
-        /// <summary>
-        /// The string name of the target type. Is shown as "TargetType"
-        /// in JSON.
-        /// </summary>
-        [DataMember(Name = "TargetType")]
-        public string TargetTypeString => TargetType?.FullName;
-
-        /// <summary>
-        /// The type targeted by this resource.
-        /// </summary>
-        [IgnoreDataMember]
-        public Type TargetType { get; set; }
-
-        /// <summary>
-        /// RESTar selector (don't use)
-        /// </summary>
-        public IEnumerable<Resource> Select(IRequest request)
+        public static void Register(params Methods[] methods)
         {
-            if (request == null) throw new ArgumentNullException(nameof(request));
-            return Resources
-                .Filter(request.Conditions)
-                .Select(m => new Resource
-                {
-                    Name = m.Name,
-                    Alias = m.Alias,
-                    AvailableMethods = m.AvailableMethods,
-                    Editable = m.Editable,
-                    TargetType = m.TargetType,
-                }).ToList();
+            if (!methods.Any()) methods = RESTarConfig.Methods;
+            Register(methods.OrderBy(i => i, MethodComparer.Instance).ToArray(), null);
         }
 
         /// <summary>
+        /// Registers a class as a static RESTar resource. If no methods are provided in the 
+        /// methods list, all methods will be enabled for this resource.
         /// </summary>
-        public int Insert(IEnumerable<Resource> resources, IRequest request)
+        public static void Register(string description, params Methods[] methods)
         {
-            if (request == null) throw new ArgumentNullException(nameof(request));
-            var count = 0;
-            var dynamicTables = resources.ToList();
-            foreach (var entity in dynamicTables)
-            {
-                if (string.IsNullOrEmpty(entity.Alias))
-                    throw new Exception("No Alias for new resource");
-                if (DB.Exists<ResourceAlias>("Alias", entity.Alias))
-                    throw new Exception($"Invalid Alias: '{entity.Alias}' is used to refer to another resource");
-                entity.AvailableMethods = Methods;
-                MakeTable(entity);
-                count += 1;
-            }
-            return count;
+            if (!methods.Any()) methods = RESTarConfig.Methods;
+            Register(methods.OrderBy(i => i, MethodComparer.Instance).ToArray(), description: description);
         }
 
         /// <summary>
+        /// Registers a class as a RESTar resource. If no methods are provided in the 
+        /// methods list, all methods will be enabled for this resource.
         /// </summary>
-        public int Update(IEnumerable<Resource> entities, IRequest request)
-        {
-            if (request == null) throw new ArgumentNullException(nameof(request));
-            var count = 0;
-            foreach (var resource in entities)
-            {
-                DeleteTable(resource);
-                MakeTable(resource);
-                count += 1;
-            }
-            return count;
-        }
-
-        /// <summary>
-        /// </summary>
-        public int Delete(IEnumerable<Resource> entities, IRequest request)
-        {
-            if (request == null) throw new ArgumentNullException(nameof(request));
-            var count = 0;
-            foreach (var resource in entities)
-            {
-                DeleteTable(resource);
-                count += 1;
-            }
-            return count;
-        }
-
-        private static readonly MethodInfo AUTO_MAKER = typeof(Resource)
-            .GetMethod(nameof(AUTO_MAKE), NonPublic | Static);
-
-        internal static void AutoMakeResource(Type type) => AUTO_MAKER
-            .MakeGenericMethod(type)
-            .Invoke(null, null);
-
-        private static void AUTO_MAKE<T>() where T : class =>
-            Resource<T>.Make(typeof(T).GetAttribute<RESTarAttribute>());
-
-        /// <summary>
-        /// Registers a new resource with the RESTar instance
-        /// </summary>
-        /// <typeparam name="T">The type to register</typeparam>
-        /// <param name="preset">The preset to configure available methods from</param>
-        /// <param name="addMethods">Additional methods, apart from the ones defined by the preset</param>
-        public static void Register<T>(RESTarPresets preset, params RESTarMethods[] addMethods) where T : class
-        {
-            var methods = preset.ToMethods().Union(addMethods ?? new RESTarMethods[0]).ToArray();
-            Register<T>(methods.First(), methods.Length > 1 ? methods.Skip(1).ToArray() : null);
-        }
-
-        /// <summary>
-        /// Registers a new resource with the RESTar instance
-        /// </summary>
-        /// <typeparam name="T">The type to register</typeparam>
-        /// <param name="method">A method to make available for this resource</param>
-        /// <param name="addMethods">Additional methods to make available</param>
-        public static void Register<T>(RESTarMethods method, params RESTarMethods[] addMethods) where T : class
-        {
-            var methods = new[] {method}.Union(addMethods ?? new RESTarMethods[0]).ToArray();
-            Register<T>(methods.First(), methods.Length > 1 ? methods.Skip(1).ToArray() : null, null);
-        }
-
-        /// <summary>
-        /// Registers a new resource with the RESTar instance
-        /// </summary>
-        /// <typeparam name="T">The type to register</typeparam>
-        /// <param name="preset">The preset to configure available methods from</param>
-        /// <param name="addMethods">Additional methods, apart from the ones defined by the preset</param>
+        /// <param name="methods">The methods to make available for this resource</param>
         /// <param name="selector">The selector to use for this resource</param>
         /// <param name="inserter">The inserter to use for this resource</param>
         /// <param name="updater">The updater to use for this resource</param>
         /// <param name="deleter">The deleter to use for this resource</param>
-        public static void Register<T>
+        /// <param name="singleton">Is this a singleton resource?</param>
+        /// <param name="internalResource">Is this an internal resource?</param>
+        /// <param name="description">A description for the resource</param>
+        public static void Register
         (
-            RESTarPresets preset,
-            IEnumerable<RESTarMethods> addMethods = null,
+            ICollection<Methods> methods,
             Selector<T> selector = null,
             Inserter<T> inserter = null,
             Updater<T> updater = null,
-            Deleter<T> deleter = null
-        ) where T : class
+            Deleter<T> deleter = null,
+            bool singleton = false,
+            bool internalResource = false,
+            string description = null)
         {
-            var methods = preset.ToMethods().Union(addMethods ?? new RESTarMethods[0]).ToArray();
-            Register
-            (
-                method: methods.First(),
-                addMethods: methods.Length > 1
-                    ? methods.Skip(1).ToArray()
-                    : null,
-                selector: selector,
-                inserter: inserter,
-                updater: updater,
-                deleter: deleter
-            );
-        }
-
-        /// <summary>
-        /// Registers a new resource with the RESTar instance
-        /// </summary>
-        /// <typeparam name="T">The type to register</typeparam>
-        /// <param name="method">A method to make available for this resource</param>
-        /// <param name="addMethods">Additional methods to make available</param>
-        /// <param name="selector">The selector to use for this resource</param>
-        /// <param name="inserter">The inserter to use for this resource</param>
-        /// <param name="updater">The updater to use for this resource</param>
-        /// <param name="deleter">The deleter to use for this resource</param>
-        public static void Register<T>
-        (
-            RESTarMethods method,
-            IEnumerable<RESTarMethods> addMethods = null,
-            Selector<T> selector = null,
-            Inserter<T> inserter = null,
-            Updater<T> updater = null,
-            Deleter<T> deleter = null
-        ) where T : class
-        {
+            if (methods?.Any() != true) methods = RESTarConfig.Methods;
             if (typeof(T).HasAttribute<RESTarAttribute>())
                 throw new InvalidOperationException("Cannot manually register resources that have a RESTar " +
                                                     "attribute. Resources decorated with a RESTar attribute " +
                                                     "are registered automatically");
-            var attribute = new RESTarAttribute(method, addMethods?.ToArray());
-            Resource<T>.Make(attribute, selector, inserter, updater, deleter);
+            if (SafeGet != null)
+                throw new InvalidOperationException($"A resource with type '{typeof(T).FullName}' already exists");
+            if (typeof(T).Assembly == typeof(Resource).Assembly)
+                throw new InvalidOperationException("Cannot register a class in the RESTar assembly as resource");
+            var attribute = internalResource
+                ? new RESTarInternalAttribute(methods.ToArray())
+                : new RESTarAttribute(methods.ToArray());
+            attribute.Singleton = singleton;
+            attribute.Description = description;
+            Internal.Resource<T>.Make(typeof(T).FullName, attribute, selector, inserter, updater, deleter);
         }
 
         /// <summary>
-        /// Finds a resource by name (case insensitive)
+        /// Gets the resource for a given type, or throws an UnknownResourceException 
+        /// if there is no such resource
         /// </summary>
-        public static IResource Find(string name) => ResourceByName.SafeGetNoCase(name);
+        public static IResource<T> Get => RESTarConfig.ResourceByType.SafeGet(typeof(T)) as IResource<T> ??
+                                          throw new UnknownResourceException(typeof(T).FullName);
 
         /// <summary>
-        /// Finds a resource by target type
+        /// Gets the resource for a given type or null if there is no such resource
         /// </summary>
-        public static IResource Find(Type type) => ResourceByType.SafeGet(type);
+        public static IResource<T> SafeGet => RESTarConfig.ResourceByType.SafeGet(typeof(T)) as IResource<T>;
     }
 }

@@ -2,15 +2,13 @@
 using System.Linq;
 using Dynamit;
 using RESTar;
-using RESTar.Internal;
 using Starcounter;
-// ReSharper disable RedundantExplicitArrayCreation
 
 #pragma warning disable 1591
 
 namespace RESTarExample
 {
-    public class Program
+    public static class Program
     {
         public static void Main()
         {
@@ -26,7 +24,7 @@ namespace RESTarExample
         }
     }
 
-    [Database, RESTar(RESTarPresets.ReadAndWrite)]
+    [Database, RESTar]
     public class MyResource
     {
         public int MyId;
@@ -41,28 +39,28 @@ namespace RESTarExample
         public dynamic Value;
     }
 
-    [RESTar(RESTarPresets.ReadAndWrite)]
+    [RESTar]
     public class R : IInserter<R>, ISelector<R>, IUpdater<R>, IDeleter<R>
     {
         public string S { get; set; }
         public string[] Ss { get; set; }
 
-        public int Insert(IEnumerable<R> entities, IRequest request)
+        public int Insert(IEnumerable<R> entities, IRequest<R> request)
         {
             return entities.Count();
         }
 
-        public IEnumerable<R> Select(IRequest request)
+        public IEnumerable<R> Select(IRequest<R> request)
         {
-            return new R[] {new R {S = "Swoo", Ss = new[] {"S", "Sd"}}};
+            return new[] {new R {S = "Swoo", Ss = new[] {"S", "Sd"}}};
         }
 
-        public int Update(IEnumerable<R> entities, IRequest request)
+        public int Update(IEnumerable<R> entities, IRequest<R> request)
         {
             return entities.Count();
         }
 
-        public int Delete(IEnumerable<R> entities, IRequest request)
+        public int Delete(IEnumerable<R> entities, IRequest<R> request)
         {
             return entities.Count();
         }
@@ -75,7 +73,7 @@ namespace RESTarExample
         C
     }
 
-    [Database, RESTar(RESTarPresets.ReadAndWrite)]
+    [Database, RESTar]
     public class MyOther
     {
         public string Str;
@@ -97,36 +95,16 @@ namespace RESTarExample
         }
     }
 
-    [DDictionary(typeof(MyDynamicTableKvp))]
-    public class MyDynamicTable : DDictionary
+    [RESTar(Methods.GET)]
+    public class MyDynamicTable : DDictionary, IDDictionary<MyDynamicTable, MyDynamicTableKvp>
     {
-        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
-        {
-            return new MyDynamicTableKvp(dict, key, value);
-        }
+        public MyDynamicTableKvp NewKeyPair(MyDynamicTable dict, string key, object value = null) =>
+            new MyDynamicTableKvp(dict, key, value);
     }
 
     public class MyDynamicTableKvp : DKeyValuePair
     {
         public MyDynamicTableKvp(DDictionary dict, string key, object value = null) : base(dict, key, value)
-        {
-        }
-    }
-
-    [RESTar(RESTarPresets.ReadAndWrite), DDictionary(typeof(MyDynamicTable2Kvp))]
-    public class MyDynamicTable2 : DDictionary, ISelector<DDictionary>
-    {
-        protected override DKeyValuePair NewKeyPair(DDictionary dict, string key, object value = null)
-        {
-            return new MyDynamicTable2Kvp(dict, key, value);
-        }
-
-        public IEnumerable<DDictionary> Select(IRequest request) => DDictionaryOperations.Select(request);
-    }
-
-    public class MyDynamicTable2Kvp : DKeyValuePair
-    {
-        public MyDynamicTable2Kvp(DDictionary dict, string key, object value = null) : base(dict, key, value)
         {
         }
     }

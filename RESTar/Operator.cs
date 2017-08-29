@@ -76,7 +76,7 @@ namespace RESTar
             }
         }
 
-        public static implicit operator Operator(string op) => TryParse(op, out Operator o) ? o : Operators.nil;
+        public static implicit operator Operator(string op) => TryParse(op, out var o) ? o : Operators.nil;
         public static implicit operator Operator(Operators op) => new Operator(op);
     }
 }

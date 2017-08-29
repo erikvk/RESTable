@@ -6,25 +6,30 @@ namespace RESTar.Internal
     public enum RESTarResourceType
     {
         /// <summary>
-        /// Created by user, non-persistent - should be initialized. Regular
-        /// Starcounter resources.
+        /// No defined resource type
         /// </summary>
-        ScStatic,
+        undefined,
 
         /// <summary>
-        /// Created by user, non-persistent - should not be initialized.
-        /// Resources that inherit from DDictionary.
+        /// Regular Starcounter resources. Resource created at runtime
         /// </summary>
-        ScDynamic,
+        StaticStarcounter,
 
         /// <summary>
-        /// Created by user, non-persistent - no public fields
+        /// Resource that inherit from DDictionary. Resource created at runtime
         /// </summary>
-        Virtual,
+        DynamicStarcounter,
 
         /// <summary>
-        /// Created by RESTar, DynamicResource 01-64. Persistent resources.
+        /// Non-starcounter resource. Members known at compile time. Resource 
+        /// created at runtime
         /// </summary>
-        Dynamic
+        StaticVirtual,
+
+        /// <summary>
+        /// Non-starcounter resource. Members not known at compile time. Resource 
+        /// created at runtime
+        /// </summary>
+        DynamicVirtual
     }
 }

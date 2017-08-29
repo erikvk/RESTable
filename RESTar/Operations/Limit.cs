@@ -23,12 +23,11 @@ namespace RESTar.Operations
         public static bool operator <=(Limit l, int i) => l.Number <= i;
         public static bool operator >=(Limit l, int i) => l.Number >= i;
         private Limit(int nr) => Number = nr;
+        public string SQL => Number > 0 ? $"FETCH {Number}" : null;
 
         /// <summary>
         /// Applies the limiting to an IEnumerable of entities
         /// </summary>
-        public IEnumerable<T> Apply<T>(IEnumerable<T> entities) => Number < 1
-            ? entities
-            : entities.Take(Number);
+        public IEnumerable<T> Apply<T>(IEnumerable<T> entities) => Number > 0 ? entities.Take(Number) : entities;
     }
 }

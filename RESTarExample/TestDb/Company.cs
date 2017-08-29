@@ -7,7 +7,7 @@ using Starcounter;
 
 namespace RESTarExample.TestDb
 {
-    [Database, RESTar(RESTarPresets.ReadAndWrite)]
+    [Database, RESTar]
     public class Company : TestBase
     {
         public string Name;

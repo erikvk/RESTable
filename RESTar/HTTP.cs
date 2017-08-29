@@ -3,15 +3,46 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Text;
+using RESTar.Admin;
+using RESTar.Linq;
 using Starcounter;
 
 namespace RESTar
 {
-    internal static class HTTP
+    /// <summary>
+    /// Provides easy methods for making internal or external HTTP and external
+    /// HTTPS calls.
+    /// </summary>
+    public static class HTTP
     {
-        internal static Response InternalRequest
+        internal static Response Internal(HttpRequest request) => Internal
         (
-            RESTarMethods method,
+            method: request.Method,
+            relativeUri: request.URI,
+            authToken: request.AuthToken,
+            bodyBytes: request.Bytes,
+            contentType: request.ContentType,
+            accept: request.Accept,
+            headers: request.Headers
+        );
+
+        internal static Response External(HttpRequest request) => External
+        (
+            method: request.Method,
+            uri: request.URI,
+            bodyBytes: request.Bytes,
+            contentType: request.ContentType,
+            accept: request.Accept,
+            headers: request.Headers
+        );
+
+        /// <summary>
+        /// Makes an internal request. Make sure to include the original Request's
+        /// AuthToken if you're sending internal RESTar requests.
+        /// </summary>
+        public static Response Internal
+        (
+            Methods method,
             Uri relativeUri,
             string authToken,
             byte[] bodyBytes = null,
@@ -50,9 +81,12 @@ namespace RESTar
             }
         }
 
-        internal static Response ExternalRequest
+        /// <summary>
+        /// Makes an external HTTP or HTTPS request
+        /// </summary>
+        public static Response External
         (
-            RESTarMethods method,
+            Methods method,
             Uri uri,
             byte[] bodyBytes = null,
             string contentType = null,
@@ -111,6 +145,9 @@ namespace RESTar
                 request.ContentLength = bodyBytes?.Length ?? 0;
                 if (contentType != null) request.ContentType = contentType;
                 if (accept != null) request.Accept = accept;
+                if (bodyBytes != null)
+                    using (var stream = request.GetRequestStream())
+                        stream.Write(bodyBytes, 0, bodyBytes.Length);
                 var response = (HttpWebResponse) request.GetResponse();
                 var respLoc = response.Headers["Location"];
                 if (response.StatusCode == HttpStatusCode.MovedPermanently && respLoc != null)
@@ -125,17 +162,42 @@ namespace RESTar
                 }
                 var _response = new Response
                 {
-                    BodyBytes = responseBody,
-                    Body = Encoding.UTF8.GetString(responseBody),
-                    ContentType = response.ContentType,
-                    ContentLength = (int) response.ContentLength
+                    StatusCode = (ushort) response.StatusCode,
+                    StatusDescription = response.StatusDescription,
+                    ContentLength = (int) response.ContentLength,
+                    ContentType = accept ?? MimeTypes.JSON
                 };
+                foreach (var header in response.Headers.AllKeys)
+                    _response.Headers[header] = response.Headers[header];
+                switch (accept)
+                {
+                    case MimeTypes.Excel:
+                        _response.BodyBytes = responseBody;
+                        break;
+                    default:
+                        _response.Body = Encoding.UTF8.GetString(responseBody);
+                        break;
+                }
                 then?.Invoke(_response);
+                return _response;
+            }
+            catch (WebException we)
+            {
+                Log.Warn($"!!! HTTPS {method} Error at {uri} : {we.Message}");
+                var response = we.Response as HttpWebResponse;
+                if (response == null) return null;
+                var _response = new Response
+                {
+                    StatusCode = (ushort) response.StatusCode,
+                    StatusDescription = response.StatusDescription
+                };
+                foreach (var header in response.Headers.AllKeys)
+                    _response.Headers[header] = response.Headers[header];
                 return _response;
             }
             catch (Exception e)
             {
-                Log.Warn($"!!! HTTPS POST Error at {uri} : {e.Message}");
+                Log.Warn($"!!! HTTPS {method} Error at {uri} : {e.Message}");
                 return null;
             }
         }

@@ -5,7 +5,7 @@ using RESTar.Operations;
 namespace RESTar.Internal
 {
     /// <summary>
-    /// The common interface for all resource entities used by RESTar
+    /// The common non-generic interface for all resource entities used by RESTar
     /// </summary>
     public interface IResource : IEqualityComparer<IResource>, IComparable<IResource>
     {
@@ -22,27 +22,22 @@ namespace RESTar.Internal
         /// <summary>
         /// The available methods for this resource
         /// </summary>
-        RESTarMethods[] AvailableMethods { get; }
+        IReadOnlyList<Methods> AvailableMethods { get; }
 
         /// <summary>
-        /// A string representation of the available REST methods
+        /// Resource descriptions are visible in the AvailableMethods resource
         /// </summary>
-        string AvailableMethodsString { get; }
+        string Description { get; }
 
         /// <summary>
         /// The target type for this resource
         /// </summary>
-        Type TargetType { get; }
+        Type Type { get; }
 
         /// <summary>
         /// The alias of this resource (if any)
         /// </summary>
-        string Alias { get; }
-
-        /// <summary>
-        /// The total number of entities in this resource
-        /// </summary>
-        long? NrOfEntities { get; }
+        string Alias { get; set; }
 
         /// <summary>
         /// The RESTar resource type of this resource
@@ -60,7 +55,17 @@ namespace RESTar.Internal
         bool IsDynamic { get; }
 
         /// <summary>
-        /// Are runtime-defined conditions allowed for this resource?
+        /// Is this resource only available for internal requests?
+        /// </summary>
+        bool IsInternal { get; }
+
+        /// <summary>
+        /// Is this resource available for all requests?
+        /// </summary>
+        bool IsGlobal { get; }
+
+        /// <summary>
+        /// Are runtime-defined conditions allowed in requests to this resource?
         /// </summary>
         bool DynamicConditionsAllowed { get; }
 
@@ -83,25 +88,36 @@ namespace RESTar.Internal
         /// Does this resource require validation on insertion and updating?
         /// </summary>
         bool RequiresValidation { get; }
+    }
 
+    /// <summary>
+    /// The common generic interface for all resource entities used by RESTar
+    /// </summary>
+    public interface IResource<T> : IResource where T : class
+    {
         /// <summary>
         /// RESTar selector (don't use)
         /// </summary>
-        Selector<dynamic> Select { get; }
+        Selector<T> Select { get; }
 
         /// <summary>
         /// RESTar inserter (don't use)
         /// </summary>
-        Inserter<dynamic> Insert { get; }
+        Inserter<T> Insert { get; }
 
         /// <summary>
         /// RESTar updater (don't use)
         /// </summary>
-        Updater<dynamic> Update { get; }
+        Updater<T> Update { get; }
 
         /// <summary>
         /// RESTar deleter (don't use)
         /// </summary>
-        Deleter<dynamic> Delete { get; }
+        Deleter<T> Delete { get; }
+
+        /// <summary>
+        /// RESTar counter (don't use)
+        /// </summary>
+        Counter<T> Count { get; }
     }
 }

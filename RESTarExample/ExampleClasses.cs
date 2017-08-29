@@ -43,7 +43,7 @@ namespace RESTarExample
     /// and deserialization to JSON objects, which we need to keep in mind when 
     /// designing our Starcounter data model and decide what should be exposed to RESTar.
     /// </summary>
-    [Database, RESTar(RESTarPresets.ReadAndWrite)]
+    [Database, RESTar]
     public class BetterEmployee
     {
         public string Name;

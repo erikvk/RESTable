@@ -1,17 +1,17 @@
 ﻿using System;
-using Newtonsoft.Json;
 using RESTar.Internal;
-using RESTar.Operations;
 using RESTar.View;
 using Starcounter;
-using static RESTar.Internal.ErrorCodes;
-using static RESTar.RESTarMethods;
+using static RESTar.Internal.Authenticator;
+using static RESTar.Operations.Transact;
+using static RESTar.Requests.HandlerActions;
 using static Starcounter.SessionOptions;
-using static RESTar.Settings;
+using static RESTar.Admin.Settings;
 using static RESTar.Requests.Responses;
 using static RESTar.RESTarConfig;
-using ScRequest = Starcounter.Request;
-using ScHandle = Starcounter.Handle;
+using static Starcounter.Session;
+using Error = RESTar.Admin.Error;
+using IResource = RESTar.Internal.IResource;
 
 namespace RESTar.Requests
 {
@@ -20,126 +20,106 @@ namespace RESTar.Requests
         internal static void Register(bool setupMenu)
         {
             var uri = _Uri + "{?}";
-            ScHandle.GET(_Port, uri, (ScRequest r, string q) => Handle(r, q, RESTEvaluators.GET, GET));
-            ScHandle.POST(_Port, uri, (ScRequest r, string q) => Handle(r, q, RESTEvaluators.POST, POST));
-            ScHandle.PUT(_Port, uri, (ScRequest r, string q) => Handle(r, q, RESTEvaluators.PUT, PUT));
-            ScHandle.PATCH(_Port, uri, (ScRequest r, string q) => Handle(r, q, RESTEvaluators.PATCH, PATCH));
-            ScHandle.DELETE(_Port, uri, (ScRequest r, string q) => Handle(r, q, RESTEvaluators.DELETE, DELETE));
-            ScHandle.OPTIONS(_Port, uri, (ScRequest r, string q) => CheckOrigin(r, q));
-
+            Handle.GET(_Port, uri, (Request request, string query) => Evaluate(GET, request, query));
+            Handle.POST(_Port, uri, (Request request, string query) => Evaluate(POST, request, query));
+            Handle.PUT(_Port, uri, (Request request, string query) => Evaluate(PUT, request, query));
+            Handle.PATCH(_Port, uri, (Request request, string query) => Evaluate(PATCH, request, query));
+            Handle.DELETE(_Port, uri, (Request request, string query) => Evaluate(DELETE, request, query));
+            Handle.OPTIONS(_Port, uri, (Request request, string query) => Evaluate(ORIGIN, request, query));
             if (!_ViewEnabled) return;
-
             Application.Current.Use(new HtmlFromJsonProvider());
             Application.Current.Use(new PartialToStandaloneHtmlProvider());
-
-            ScHandle.GET("/__restar/__page", () =>
-            {
-                if (Session.Current?.Data is View.Page)
-                    return Session.Current.Data;
-                Session.Current = Session.Current ?? new Session(PatchVersioning);
-                return new View.Page {Session = Session.Current};
-            });
-
-            ScHandle.GET($"/{Application.Current.Name}{{?}}", (ScRequest r, string query) =>
-            {
-                try
-                {
-                    Authenticator.UserCheck();
-                    using (var request = new RESTRequest(r))
-                    {
-                        request.Populate(query, GET, RESTEvaluators.VIEW);
-                        request.MetaConditions.DeactivateProcessors();
-                        request.MethodCheck();
-                        request.Evaluate();
-                        var partial = (Json) request.GetResponse();
-                        var master = Self.GET<View.Page>("/__restar/__page");
-                        master.CurrentPage = partial ?? master.CurrentPage;
-                        return master;
-                    }
-                }
-                catch (Exception e)
-                {
-                    return RESTarException.HandleViewException(e);
-                }
-            });
-
+            var appName = Application.Current.Name;
+            Handle.GET($"/{appName}{{?}}", (Request request, string query) => Evaluate(VIEW, request, query));
+            Handle.GET("/__restar/__page", () => Evaluate(PAGE));
             if (!setupMenu) return;
-            ScHandle.GET($"/{Application.Current.Name}", () =>
-            {
-                try
-                {
-                    Authenticator.UserCheck();
-                    var partial = new Menu().Populate();
-                    var master = Self.GET<View.Page>("/__restar/__page");
-                    master.CurrentPage = partial;
-                    return master;
-                }
-                catch (Exception e)
-                {
-                    return RESTarException.HandleViewException(e);
-                }
-            });
+            Handle.GET($"/{appName}", () => Evaluate(MENU));
         }
 
-        private static Response CheckOrigin(ScRequest scRequest, string query)
+        private static Response Evaluate(HandlerActions action, Request request = null, string query = null)
         {
+            IResource resource = null;
             try
             {
-                var request = new RESTRequest(scRequest);
-                request.Populate(query, default(RESTarMethods), null);
-                var origin = request.ScRequest.Headers["Origin"];
-                if (AllowAllOrigins || AllowedOrigins.Contains(new Uri(origin)))
-                    return AllowOrigin(origin, request.Resource.AvailableMethods);
-                return Forbidden();
-            }
-            catch
-            {
-                return Forbidden();
-            }
-        }
-
-        private static Response Handle(ScRequest scRequest, string query, Evaluator evaluator,
-            RESTarMethods method)
-        {
-            RESTRequest request = null;
-            try
-            {
-                using (request = new RESTRequest(scRequest))
+                var args = query?.ToArgs(request);
+                resource = args?.IResource;
+                switch (action)
                 {
-                    request.Authenticate();
-                    request.Populate(query, method, evaluator);
-                    request.MethodCheck();
-                    request.GetRequestData();
-                    request.Evaluate();
-                    return request.GetResponse();
+                    case GET:
+                    case POST:
+                    case PUT:
+                    case PATCH:
+                    case DELETE: return HandleREST((dynamic) resource, request, args, (Methods) action);
+                    case ORIGIN: return HandleOrigin((dynamic) resource, request);
+                    case VIEW: return HandleView((dynamic) resource, request, args);
+                    case PAGE:
+                        if (Current?.Data is View.Page) return Current.Data;
+                        Current = Current ?? new Session(PatchVersioning);
+                        return new View.Page {Session = Current};
+                    case MENU:
+                        CheckUser();
+                        return new Menu().Populate().MakeCurrentView();
+                    default: return UnknownHandlerAction;
                 }
             }
-
-            #region Catch exceptions
-
-            catch (Exception e)
+            catch (Exception ex)
             {
-                (ErrorCodes code, Response response) getError(Exception ex)
-                {
-                    switch (ex)
-                    {
-                        case RESTarException re: return (re.ErrorCode, re.Response);
-                        case FormatException _: return (UnsupportedContentType, BadRequest(ex));
-                        case JsonReaderException _: return (JsonDeserializationError, JsonError(scRequest.Body));
-                        case DbException _: return (DatabaseError, DbError(ex));
-                        default: return (UnknownError, InternalError(ex));
-                    }
-                }
-
-                var errorInfo = getError(e);
-                Error error = null;
+                var errorInfo = ex.GetError();
                 Error.ClearOld();
-                Db.TransactAsync(() => error = new Error(errorInfo.code, e, request));
-                errorInfo.response.Headers["ErrorInfo"] = $"{_Uri}/{typeof(Error).FullName}/id={error.Id}";
-                return errorInfo.response;
+                var error = Trans(() => Error.Create(errorInfo.Code, ex, resource, request, action));
+                switch (action)
+                {
+                    case GET:
+                    case POST:
+                    case PATCH:
+                    case PUT:
+                    case DELETE:
+                        errorInfo.Response.Headers["ErrorInfo"] = $"{_Uri}/{typeof(Error).FullName}/id={error.Id}";
+                        return errorInfo.Response;
+                    case ORIGIN: return Forbidden;
+                    case VIEW:
+                    case PAGE:
+                    case MENU:
+                        var master = Self.GET<View.Page>("/__restar/__page");
+                        var partial = master.CurrentPage as RESTarView ?? new MessageWindow().Populate();
+                        partial.SetMessage(ex.Message, errorInfo.Code, MessageTypes.error);
+                        master.CurrentPage = partial;
+                        return master;
+                    default: return InternalError(ex);
+                }
             }
+        }
 
-            #endregion
+        private static Response HandleView<T>(IResource<T> resource, Request scRequest, Args? args) where T : class
+        {
+            var request = new ViewRequest<T>(resource, scRequest);
+            request.Authenticate();
+            request.Populate(args.GetValueOrDefault());
+            request.MethodCheck();
+            request.Evaluate();
+            return request.GetView();
+        }
+
+        private static Response HandleREST<T>(IResource<T> resource, Request scRequest, Args? args,
+            Methods method) where T : class
+        {
+            using (var request = new RESTRequest<T>(resource, scRequest))
+            {
+                request.Authenticate();
+                request.Populate(args.GetValueOrDefault(), method);
+                request.MethodCheck();
+                request.SetRequestData();
+                request.Evaluate();
+                return request.GetResponse();
+            }
+        }
+
+        private static Response HandleOrigin<T>(IResource<T> resource, Request scRequest) where T : class
+        {
+            var origin = scRequest.Headers["Origin"];
+            if (AllowAllOrigins || AllowedOrigins.Contains(new Uri(origin)))
+                return AllowOrigin(origin, resource.AvailableMethods);
+            return Forbidden;
         }
     }
 }

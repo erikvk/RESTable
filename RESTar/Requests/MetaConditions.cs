@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
-using RESTar.Deflection;
+using RESTar.Admin;
 using RESTar.Internal;
 using RESTar.Operations;
 using static System.StringComparison;
@@ -55,24 +55,25 @@ namespace RESTar.Requests
     public sealed class MetaConditions
     {
         internal Limit Limit { get; set; } = Limit.NoLimit;
-        internal OrderBy OrderBy { get; set; }
         internal bool Unsafe { get; set; }
+        internal OrderBy OrderBy { get; set; }
         internal Select Select { get; set; }
         internal Add Add { get; set; }
         internal Rename Rename { get; set; }
-        internal bool Dynamic { get; set; }
         internal string SafePost { get; set; }
         internal bool New { get; set; }
         internal bool Empty = true;
         internal bool Delete { get; set; }
+        internal IProcessor[] Processors { get; private set; }
+        internal bool HasProcessors { get; private set; }
 
-        internal static MetaConditions Parse(string metaConditionString, IResource resource)
+        internal static MetaConditions Parse(string metaConditionString, IResource resource,
+            bool processors = true)
         {
             if (metaConditionString?.Equals("") != false)
                 return null;
             metaConditionString = WebUtility.UrlDecode(metaConditionString);
             var mc = new MetaConditions {Empty = false};
-
             var mcStrings = metaConditionString.Split('&').ToList();
             var renameIndex = mcStrings.FindIndex(s => s.StartsWith("rename", CurrentCultureIgnoreCase));
             if (renameIndex != -1)
@@ -81,64 +82,54 @@ namespace RESTar.Requests
                 mcStrings.RemoveAt(renameIndex);
                 mcStrings.Insert(0, rename);
             }
-            var dynamicMembers = new List<string>();
-
+            var dynamicDomain = default(IEnumerable<string>);
             foreach (var s in mcStrings)
             {
                 if (s == "")
-                    throw new SyntaxException(InvalidMetaConditionSyntaxError, "Invalid meta-condition syntax");
-
+                    throw new SyntaxException(InvalidMetaConditionSyntax, "Invalid meta-condition syntax");
                 var containsOneAndOnlyOneEquals = s.Count(c => c == '=') == 1;
                 if (!containsOneAndOnlyOneEquals)
-                    throw new SyntaxException(InvalidMetaConditionOperatorError,
+                    throw new SyntaxException(InvalidMetaConditionOperator,
                         "Invalid operator for meta-condition. One and only one '=' is allowed");
                 var pair = s.Split('=');
-
                 if (!Enum.TryParse(pair[0], true, out RESTarMetaConditions metaCondition))
                     throw new SyntaxException(InvalidMetaConditionKey,
                         $"Invalid meta-condition '{pair[0]}'. Available meta-conditions: " +
                         $"{string.Join(", ", Enum.GetNames(typeof(RESTarMetaConditions)).Except(new[] {"New", "Delete"}))}. " +
                         $"For more info, see {Settings.Instance.HelpResourcePath}/topic=Meta-conditions");
-
                 var expectedType = metaCondition.ExpectedType();
-                var value = Conditions.GetValue(pair[1]);
+                var value = pair[1].GetConditionValue();
                 if (expectedType != value.GetType())
-                    throw new SyntaxException(InvalidMetaConditionValueTypeError,
+                    throw new SyntaxException(InvalidMetaConditionValueType,
                         $"Invalid data type assigned to meta-condition '{pair[0]}'. " +
                         $"Expected {GetTypeString(expectedType)}.");
-
                 switch (metaCondition)
                 {
                     case RESTarMetaConditions.Limit:
                         mc.Limit = (int) value;
                         break;
                     case RESTarMetaConditions.Order_desc:
-                        mc.OrderBy = new OrderBy(resource, true, (string) value, dynamicMembers);
+                        mc.OrderBy = new OrderBy(resource, true, (string) value, dynamicDomain);
                         break;
                     case RESTarMetaConditions.Order_asc:
-                        mc.OrderBy = new OrderBy(resource, false, (string) value, dynamicMembers);
+                        mc.OrderBy = new OrderBy(resource, false, (string) value, dynamicDomain);
                         break;
                     case RESTarMetaConditions.Unsafe:
                         mc.Unsafe = value;
                         break;
                     case RESTarMetaConditions.Select:
-                        mc.Select = ((string) value).Split(',')
-                            .Select(str => PropertyChain.ParseInternal(resource, str, resource.IsDynamic,
-                                dynamicMembers))
-                            .ToSelect();
+                        if (!processors) break;
+                        mc.Select = new Select(resource, (string) value, dynamicDomain);
                         break;
                     case RESTarMetaConditions.Add:
-                        mc.Add = ((string) value).Split(',')
-                            .Select(str => PropertyChain.GetOrMake(resource, str, resource.IsDynamic))
-                            .ToAdd();
+                        if (!processors) break;
+                        mc.Add = new Add(resource, (string) value, dynamicDomain);
                         break;
                     case RESTarMetaConditions.Rename:
-                        mc.Rename = Rename.Parse((string) value, resource);
-                        dynamicMembers.AddRange(mc.Rename.Values);
+                        if (!processors) break;
+                        mc.Rename = new Rename(resource, (string) value, out dynamicDomain);
                         break;
-                    case RESTarMetaConditions.Dynamic:
-                        mc.Dynamic = value;
-                        break;
+                    case RESTarMetaConditions.Dynamic: break;
                     case RESTarMetaConditions.Safepost:
                         mc.SafePost = value;
                         break;
@@ -151,6 +142,12 @@ namespace RESTar.Requests
                     default: throw new ArgumentOutOfRangeException();
                 }
 
+                if (processors)
+                {
+                    mc.Processors = new IProcessor[] {mc.Add, mc.Rename, mc.Select}.Where(p => p != null).ToArray();
+                    mc.HasProcessors = mc.Processors.Any();
+                }
+
                 if (mc.OrderBy != null)
                 {
                     if (mc.Add?.Any(pc => pc.Key.EqualsNoCase(mc.OrderBy.Key)) == true)
@@ -159,32 +156,23 @@ namespace RESTar.Requests
                         mc.OrderBy.IsStarcounterQueryable = false;
                     if (mc.Rename?.Any(p => p.Key.Key.EqualsNoCase(mc.OrderBy.Key)) == true
                         && !mc.Rename.Any(p => p.Value.EqualsNoCase(mc.OrderBy.Key)))
-                        throw new SyntaxException(InvalidMetaConditionSyntaxError,
+                        throw new SyntaxException(InvalidMetaConditionSyntax,
                             $"The {(mc.OrderBy.Ascending ? "'Order_asc'" : "'Order_desc'")} " +
                             "meta-condition cannot refer to a property x that is to be renamed " +
                             "unless some other property is renamed to x");
-                    if (mc.OrderBy.PropertyChain.ScQueryable == false)
+                    if (mc.OrderBy.Term.ScQueryable == false)
                         mc.OrderBy.IsStarcounterQueryable = false;
                 }
                 if (mc.Select != null && mc.Rename != null)
                 {
                     if (mc.Select.Any(pc => mc.Rename.Any(p => p.Key.Key.EqualsNoCase(pc.Key)) &&
                                             !mc.Rename.Any(p => p.Value.EqualsNoCase(pc.Key))))
-                        throw new SyntaxException(InvalidMetaConditionSyntaxError,
+                        throw new SyntaxException(InvalidMetaConditionSyntax,
                             "A 'Select' meta-condition cannot refer to a property x that is " +
                             "to be renamed unless some other property is renamed to x");
                 }
             }
             return mc;
-        }
-
-        internal bool HasProcessors => Select != null || Rename != null || Add != null;
-
-        internal void DeactivateProcessors()
-        {
-            Add = null;
-            Select = null;
-            Rename = null;
         }
 
         private static string GetTypeString(Type type)

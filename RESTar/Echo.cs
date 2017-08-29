@@ -1,17 +1,20 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json.Linq;
-using static RESTar.RESTarPresets;
+using static RESTar.Methods;
 
 namespace RESTar
 {
     /// <summary>
-    /// The echo resource is a test resource that returns the conditions
-    /// inputted as a JSON object.
+    /// The Echo resource is a test and utility resource that returns the 
+    /// request conditions as an object.
     /// </summary>
-    [RESTar(ReadOnly, AllowDynamicConditions = true)]
+    [RESTar(GET, AllowDynamicConditions = true, Description = description)]
     public class Echo : JObject, ISelector<Echo>
     {
+        private const string description = "The Echo resource is a test and utility resource that " +
+                                           "returns the request conditions as an object.";
+
         private Echo()
         {
         }
@@ -20,11 +23,15 @@ namespace RESTar
         {
         }
 
-        /// <summary>
-        /// RESTar selector (don't use)
-        /// </summary>
-        public IEnumerable<Echo> Select(IRequest request) => request.Conditions == null
-            ? new[] {new Echo()}
-            : new[] {new Echo(request.Conditions.Select(c => new JProperty(c.Key, c.Value)))};
+        /// <inheritdoc />
+        public IEnumerable<Echo> Select(IRequest<Echo> request)
+        {
+            var echo = new[]
+            {
+                new Echo(request.Conditions.Select(c => new JProperty(c.Key, c.Value)))
+            };
+            Deflection.Dynamic.TypeCache.ClearTermsFor<Echo>();
+            return echo;
+        }
     }
 }

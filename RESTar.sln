@@ -1,13 +1,15 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26430.13
+VisualStudioVersion = 15.0.26730.10
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RESTar", "RESTar\RESTar.csproj", "{3CA9602F-FC6F-4DFE-8749-C6DBDD9A4809}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RESTarExample", "RESTarExample\RESTarExample.csproj", "{3CA79076-25F8-4273-BE99-D144E0606A35}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Help Manager", "Help Manager\Help Manager.csproj", "{EEA917B1-796A-4676-B089-FECFDA6E3D49}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RESTarTester", "RESTarTester\RESTarTester.csproj", "{80959E33-3C2D-48AA-9B19-9FA04AF41873}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -35,8 +37,17 @@ Global
 		{EEA917B1-796A-4676-B089-FECFDA6E3D49}.Release|Any CPU.ActiveCfg = Release|x64
 		{EEA917B1-796A-4676-B089-FECFDA6E3D49}.Release|x64.ActiveCfg = Release|x64
 		{EEA917B1-796A-4676-B089-FECFDA6E3D49}.Release|x64.Build.0 = Release|x64
+		{80959E33-3C2D-48AA-9B19-9FA04AF41873}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{80959E33-3C2D-48AA-9B19-9FA04AF41873}.Debug|x64.ActiveCfg = Debug|x64
+		{80959E33-3C2D-48AA-9B19-9FA04AF41873}.Debug|x64.Build.0 = Debug|x64
+		{80959E33-3C2D-48AA-9B19-9FA04AF41873}.Release|Any CPU.ActiveCfg = Release|x64
+		{80959E33-3C2D-48AA-9B19-9FA04AF41873}.Release|x64.ActiveCfg = Release|x64
+		{80959E33-3C2D-48AA-9B19-9FA04AF41873}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {DBF49364-2813-4731-B949-89E201C362B1}
 	EndGlobalSection
 EndGlobal

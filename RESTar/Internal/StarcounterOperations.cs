@@ -1,4 +1,5 @@
 ﻿using System.Linq;
+using RESTar.Linq;
 using RESTar.Operations;
 using Starcounter;
 
@@ -7,20 +8,29 @@ namespace RESTar.Internal
     /// <summary>
     /// The default operations for static Starcounter database resources
     /// </summary>
-    public static class StarcounterOperations<T> where T : class
+    internal static class StarcounterOperations<T> where T : class
     {
+        internal static readonly string SELECT = $"SELECT t FROM {typeof(T).FullName} t ";
+        internal static readonly string COUNT = $"SELECT COUNT(t) FROM {typeof(T).FullName} t ";
+
         /// <summary>
         /// Selects Starcounter database resource entites
         /// </summary>
-        public static Selector<T> Select => request =>
+        public static Selector<T> Select => r =>
         {
-            if (request.Conditions == null)
-                return Db.SQL<T>($"SELECT t FROM {typeof(T).FullName} t " +
-                                 $"{request.MetaConditions.OrderBy?.SQL}");
-            var where = request.Conditions?.SQL?.MakeWhereClause();
-            var results = Db.SQL<T>($"SELECT t FROM {typeof(T).FullName} t {where?.WhereString} " +
-                                    $"{request.MetaConditions.OrderBy?.SQL}", where?.Values);
-            return !request.Conditions.HasPost ? results : results.Filter(request.Conditions?.PostSQL);
+            switch (r)
+            {
+                case Request<T> @internal:
+                    var r1 = Db.SQL<T>(@internal.SelectQuery, @internal.SqlValues);
+                    return !@internal.Conditions.HasPost(out var _post) ? r1 : r1.Where(_post);
+                case var external when !external.Conditions.Any():
+                    return Db.SQL<T>($"{SELECT}{external.MetaConditions.OrderBy?.SQL}");
+                case var external:
+                    var where = external.Conditions.GetSQL().MakeWhereClause();
+                    var r2 = Db.SQL<T>($"{SELECT}{where.WhereString} " +
+                                       $"{external.MetaConditions.OrderBy?.SQL}", where.Values);
+                    return !external.Conditions.HasPost(out var post) ? r2 : r2.Where(post);
+            }
         };
 
         /// <summary>
@@ -37,5 +47,26 @@ namespace RESTar.Internal
         /// Deleter for static Starcounter database resources (used by RESTar internally, don't use)
         /// </summary>
         public static Deleter<T> Delete => (e, r) => Do.Run(() => e.ForEach(Db.Delete), e.Count());
+
+        /// <summary>
+        /// Counter for static Starcounter database resources (used by RESTar internally, don't use)
+        /// </summary>
+        public static Counter<T> Count => r =>
+        {
+            switch (r)
+            {
+                case Request<T> @internal when @internal.Conditions.HasPost(out var _):
+                    return Select(r)?.LongCount() ?? 0L;
+                case Request<T> @internal:
+                    return Db.SQL<long>(@internal.CountQuery, @internal.SqlValues).First;
+                case var external when !external.Conditions.Any():
+                    return Db.SQL<long>(COUNT).First;
+                case var external when external.Conditions.HasPost(out var _):
+                    return Select(r)?.LongCount() ?? 0L;
+                case var external:
+                    var where = external.Conditions.GetSQL().MakeWhereClause();
+                    return Db.SQL<long>($"{COUNT}{where.WhereString}", where.Values).First;
+            }
+        };
     }
 }

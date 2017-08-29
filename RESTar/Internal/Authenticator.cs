@@ -1,7 +1,8 @@
 ﻿using System;
 using System.Linq;
 using RESTar.Auth;
-using Simplified.Ring3;
+using RESTar.Requests;
+using Starcounter;
 using static RESTar.Internal.ErrorCodes;
 using static RESTar.RESTarConfig;
 
@@ -9,30 +10,53 @@ namespace RESTar.Internal
 {
     internal static class Authenticator
     {
-        internal static bool SignedIn => SystemUser.GetCurrentSystemUser() != null;
+        internal static ForbiddenException NotAuthorizedException => new ForbiddenException(NotAuthorized,
+            "Not authorized");
 
-        internal static void UserCheck()
+        internal static readonly string AppToken = Guid.NewGuid().ToString();
+
+        private static object GetCurrentSystemUser()
         {
-            if (!SignedIn)
+            if (Session.Current == null) return null;
+            return Db.SQL("SELECT t.Token.User FROM Simplified.Ring5.SystemUserSession t " +
+                          "WHERE t.SessionIdString =? " +
+                          "AND t.Token.User IS NOT NULL", Session.Current.SessionId).First;
+        }
+
+        internal static void CheckUser()
+        {
+            if (GetCurrentSystemUser() == null)
                 throw new ForbiddenException(NotSignedIn, "User is not signed in");
         }
 
-        internal static ForbiddenException NotAuthorizedException => new ForbiddenException(NotAuthorized, "Not authorized");
-
-        internal static string Authenticate(Starcounter.Request ScRequest)
+        internal static void Authenticate<T>(this ViewRequest<T> request) where T : class
         {
-            AccessRights accessRights;
-            string authToken;
-            if (!ScRequest.IsExternal)
+            var user = GetCurrentSystemUser() ?? throw new ForbiddenException(NotSignedIn, "User is not signed in");
+            var token = user.GetObjectID().SHA256();
+            if (AuthTokens.ContainsKey(token))
+                request.AuthToken = token;
+            request.AuthToken = AssignAuthtoken(AccessRights.Root, token);
+        }
+
+        internal static void Authenticate<T>(this RESTRequest<T> request) where T : class
+        {
+            if (!RequireApiKey)
             {
-                authToken = ScRequest.Headers["RESTar-AuthToken"];
+                request.AuthToken = AssignAuthtoken(AccessRights.Root);
+                return;
+            }
+            AccessRights accessRights;
+            if (!request.ScRequest.IsExternal)
+            {
+                var authToken = request.ScRequest.Headers["RESTar-AuthToken"];
                 if (string.IsNullOrWhiteSpace(authToken))
                     throw NotAuthorizedException;
                 if (!AuthTokens.TryGetValue(authToken, out accessRights))
                     throw NotAuthorizedException;
-                return authToken;
+                request.AuthToken = authToken;
+                return;
             }
-            var authorizationHeader = ScRequest.Headers["Authorization"];
+            var authorizationHeader = request.ScRequest.Headers["Authorization"];
             if (string.IsNullOrWhiteSpace(authorizationHeader))
                 throw NotAuthorizedException;
             var apikey_key = authorizationHeader.Split(' ');
@@ -41,16 +65,24 @@ namespace RESTar.Internal
             var apiKey = apikey_key[1].SHA256();
             if (!ApiKeys.TryGetValue(apiKey, out accessRights))
                 throw NotAuthorizedException;
-            authToken = Guid.NewGuid().ToString();
-            AuthTokens[authToken] = accessRights;
-            return authToken;
+            request.AuthToken = AssignAuthtoken(accessRights);
         }
 
-        internal static bool MethodCheck(RESTarMethods requestedMethod, IResource resource, string authToken)
+        internal static void Authenticate<T>(this Request<T> request) where T : class
+        {
+            request.AuthToken = AppToken;
+        }
+
+        private static string AssignAuthtoken(AccessRights rights, string token = null)
+        {
+            token = token ?? Guid.NewGuid().ToString();
+            AuthTokens[token] = rights;
+            return token;
+        }
+
+        internal static bool MethodCheck(Methods requestedMethod, IResource resource, string authToken)
         {
             if (!resource.AvailableMethods.Contains(requestedMethod)) return false;
-            if (SignedIn) return true;
-            if (!RequireApiKey) return true;
             var accessRights = AuthTokens[authToken];
             var rights = accessRights?[resource];
             return rights?.Contains(requestedMethod) == true;

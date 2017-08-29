@@ -7,7 +7,7 @@ namespace RESTar
     /// <summary>
     /// Contains the supported mime types used in RESTar
     /// </summary>
-    public struct MimeTypes
+    public static class MimeTypes
     {
         public const string Excel = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
         public const string JSON = "application/json";

@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using Dynamit;
+using RESTar.Linq;
 using RESTar.Operations;
 using Starcounter;
 
@@ -9,50 +10,59 @@ namespace RESTar.Internal
     /// <summary>
     /// The default operations for classes inheriting from DDictionary
     /// </summary>
-    public static class DDictionaryOperations
+    internal static class DDictionaryOperations<T> where T : class
     {
-        private static IEnumerable<DDictionary> EqualitySQL(Condition c, string kvp)
+        private static IEnumerable<T> EqualitySQL(Condition<T> c, string kvp)
         {
-            var SQL = $"SELECT t.Dictionary FROM {kvp} t WHERE t.Key =? AND t.ValueHash {c.Operator.SQL}?";
-            return Db.SQL<DDictionary>(SQL, c.Key, c.Value.GetHashCode());
+            var SQL = $"SELECT CAST(t.Dictionary AS {typeof(T).FullName}) " +
+                      $"FROM {kvp} t WHERE t.Key =? AND t.ValueHash {c.Operator.SQL}?";
+            return Db.SQL<T>(SQL, c.Key, c.Value.GetHashCode());
         }
 
-        private static IEnumerable<DDictionary> AllSQL(string table)
-        {
-            return Db.SQL<DDictionary>($"SELECT t FROM {table} t");
-        }
+        private static IEnumerable<T> AllSQL => Db.SQL<T>($"SELECT t FROM {typeof(T).FullName} t");
 
         /// <summary>
         /// Selects DDictionary entites
         /// </summary>
-        public static Selector<DDictionary> Select => r =>
+        public static Selector<T> Select => r =>
         {
-            var equalityConditions = r.Conditions?.Equality;
-            if (equalityConditions?.Any() != true)
-                return AllSQL(r.Resource.TargetType.FullName).Filter(r.Conditions);
-            var kvpTable = r.Resource.TargetType.GetAttribute<DDictionaryAttribute>().KeyValuePairTable.FullName;
-            var results = new HashSet<DDictionary>();
-            equalityConditions.ForEach((cond, index) =>
+            if (!r.Conditions.HasEquality(out var eqalityConds))
+                return AllSQL.Where(r.Conditions);
+            var kvpTable = TableInfo<T>.KvpTable;
+            var results = new HashSet<T>();
+            eqalityConds.ForEach((cond, index) =>
             {
                 if (index == 0) results.UnionWith(EqualitySQL(cond, kvpTable));
                 else results.IntersectWith(EqualitySQL(cond, kvpTable));
             });
-            return results.Filter(r.Conditions.Compare).ToList();
+            return r.Conditions.HasCompare(out var compare) ? results.Where(compare) : results;
         };
 
         /// <summary>
         /// Inserter for DDictionary entites (used by RESTar internally, don't use)
         /// </summary>
-        public static Inserter<DDictionary> Insert => StarcounterOperations<DDictionary>.Insert;
+        public static Inserter<T> Insert => (e, r) => e.Count();
 
         /// <summary>
         /// Updater for DDictionary entites (used by RESTar internally, don't use)
         /// </summary>
-        public static Updater<DDictionary> Update => StarcounterOperations<DDictionary>.Update;
+        public static Updater<T> Update => (e, r) => e.Count();
 
         /// <summary>
         /// Deleter for DDictionary entites (used by RESTar internally, don't use)
         /// </summary>
-        public static Deleter<DDictionary> Delete => StarcounterOperations<DDictionary>.Delete;
+        public static Deleter<T> Delete => (e, r) => Do.Run(() => e.ForEach(Db.Delete), e.Count());
+
+        /// <summary>
+        /// Counter for DDictionary entites (used by RESTar internally, don't use)
+        /// </summary>
+        public static Counter<T> Count => r =>
+        {
+            switch (r.Conditions.Length)
+            {
+                case 0: return Db.SQL<long>($"SELECT COUNT(t) FROM {typeof(T).FullName} t").First;
+                default: return Select(r)?.Count() ?? 0;
+            }
+        };
     }
 }
