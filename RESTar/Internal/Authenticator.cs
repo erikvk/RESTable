@@ -5,7 +5,6 @@ using RESTar.Requests;
 using Starcounter;
 using static RESTar.Internal.ErrorCodes;
 using static RESTar.RESTarConfig;
-using static Simplified.Ring3.SystemUser;
 
 namespace RESTar.Internal
 {
@@ -15,6 +14,14 @@ namespace RESTar.Internal
             "Not authorized");
 
         internal static readonly string AppToken = Guid.NewGuid().ToString();
+
+        private static object GetCurrentSystemUser()
+        {
+            if (Session.Current == null) return null;
+            return Db.SQL("SELECT t.Token.User FROM Simplified.Ring5.SystemUserSession t " +
+                          "WHERE t.SessionIdString =? " +
+                          "AND t.Token.User IS NOT NULL", Session.Current.SessionId).First;
+        }
 
         internal static void CheckUser()
         {

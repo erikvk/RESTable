@@ -6,7 +6,6 @@ using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
 using Newtonsoft.Json.Linq;
-using RESTar.Admin;
 using RESTar.Serialization;
 using static RESTar.Methods;
 using JTokens = System.Collections.Generic.IEnumerable<Newtonsoft.Json.Linq.JToken>;
@@ -36,9 +35,7 @@ namespace RESTar
 
         static SetOperations() => macroRegex = new Regex(@"\$\([^\$\(\)]+\)");
 
-        /// <summary>
-        /// RESTar selector (don't use)
-        /// </summary>
+        /// <inheritdoc />
         public IEnumerable<SetOperations> Select(IRequest<SetOperations> request)
         {
             if (request.Body == null)
@@ -67,7 +64,7 @@ namespace RESTar
                                 request.AuthToken);
                             if (response?.IsSuccessStatusCode != true)
                                 throw new Exception(
-                                    $"Could not get source data from '<self>:{Settings._Port}{Settings._Uri}{uri}'. " +
+                                    $"Could not get source data from '{uri}'. " +
                                     $"{response?.StatusCode}: {response?.StatusDescription}. {response?.Headers["RESTar-info"]}");
                             if (response.StatusCode == 204 || string.IsNullOrEmpty(response.Body))
                                 json = "[]";
@@ -75,9 +72,8 @@ namespace RESTar
                         }
                         else
                             throw new Exception($"Invalid string '{str}'. Must be a relative REST request URI " +
-                                                $"beginning wmuith '/<resource locator>' or a JSON array.");
+                                                "beginning with '/<resource locator>' or a JSON array.");
                         return json.Deserialize<JArray>();
-
                     case JObject obj:
                         var prop = obj.Properties().FirstOrDefault();
                         if (obj.Count != 1 || prop?.Value?.Type != JTokenType.Array)
@@ -116,39 +112,27 @@ namespace RESTar
                 }
             }
 
-            var results = recursor(jobject);
-            return results.OfType<JValue>()
-                .Select(v => new JObject(new JProperty("Value", v)))
-                .Union(results.OfType<JObject>())
-                .Select(jobj => new SetOperations(jobj))
-                .ToList();
+            return recursor(jobject).Select(token =>
+            {
+                switch (token)
+                {
+                    case JValue value: return new SetOperations(new JObject(new JProperty("Value", value)));
+                    case JObject @object: return new SetOperations(@object);
+                    default: throw new Exception("Invalid entity type in set operation");
+                }
+            });
         }
 
         private static JTokens Distinct(JTokens array) => array?.Distinct(EqualityComparer);
 
-        private static void Check(JTokens[] arrays)
-        {
-            if (arrays == null || arrays.Length < 2 || arrays.Any(a => a == null))
-                throw new ArgumentException(nameof(arrays));
-        }
+        private static JTokens Intersect(params JTokens[] arrays) => Checked(arrays)
+            .Aggregate((x, y) => x.Intersect(y, EqualityComparer));
 
-        private static JTokens Intersect(params JTokens[] arrays)
-        {
-            Check(arrays);
-            return arrays.Aggregate((n1, n2) => n1.Intersect(n2, EqualityComparer));
-        }
+        private static JTokens Union(params JTokens[] arrays) => Checked(arrays)
+            .Aggregate((x, y) => x.Union(y, EqualityComparer));
 
-        private static JTokens Union(params JTokens[] arrays)
-        {
-            Check(arrays);
-            return arrays.Aggregate((n1, n2) => n1.Union(n2, EqualityComparer));
-        }
-
-        private static JTokens Except(params JTokens[] arrays)
-        {
-            Check(arrays);
-            return arrays.Aggregate((n1, n2) => n1.Except(n2, EqualityComparer));
-        }
+        private static JTokens Except(params JTokens[] arrays) => Checked(arrays)
+            .Aggregate((x, y) => x.Except(y, EqualityComparer));
 
         private static readonly Regex macroRegex;
 
@@ -170,7 +154,11 @@ namespace RESTar
                     var matchstring = match.ToString();
                     var key = matchstring.Substring(2, matchstring.Length - 3);
                     if (dict.ContainsKey(key))
-                        localMapper.Replace(matchstring, WebUtility.UrlEncode(dict[key]?.ToString() ?? "null"));
+                    {
+                        var value = dict[key]?.ToString() ?? "null";
+                        if (value == "") value = "\"\"";
+                        localMapper.Replace(matchstring, WebUtility.UrlEncode(value) ?? "null");
+                    }
                     else skip = true;
                 }
                 if (!skip)
@@ -179,13 +167,19 @@ namespace RESTar
                     var response = HTTP.Internal(GET, new Uri(uri, UriKind.Relative), request.AuthToken);
                     if (response?.IsSuccessStatusCode != true)
                         throw new Exception(
-                            $"Could not get source data from '<self>:{Settings._Port}{Settings._Uri}{uri}'");
+                            $"Could not get source data from '{uri}'. " +
+                            $"{response?.StatusCode}: {response?.StatusDescription}. {response?.Headers["RESTar-info"]}");
                     if (response.StatusCode == 204 || string.IsNullOrEmpty(response.Body))
                         mapped.Add(new JObject());
-                    Serializer.Populate(response.Body, mapped);
+                    else Serializer.Populate(response.Body, mapped);
                 }
             }
             return mapped;
         }
+
+        private static JTokens[] Checked(JTokens[] arrays) =>
+            arrays == null || arrays.Length < 2 || arrays.Any(a => a == null)
+                ? throw new ArgumentException(nameof(arrays))
+                : arrays;
     }
 }

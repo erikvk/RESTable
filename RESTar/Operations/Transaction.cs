@@ -4,9 +4,7 @@ using Starcounter;
 
 namespace RESTar.Operations
 {
-    /// <summary>
-    /// Long running transaction
-    /// </summary>
+    /// <inheritdoc />
     internal class Transaction<T> : Transaction where T : class
     {
         /// <summary>
@@ -49,9 +47,9 @@ namespace RESTar.Operations
             {
                 Db.TransactAsync(() => results = action());
             }
-            catch (TransactionAbortedException)
+            catch (DbException e)
             {
-                Log.Error("!!! Transaction error");
+                Log.Error($"!!! Transaction error at {e.StackTrace}");
             }
             return results;
         }

@@ -212,7 +212,7 @@ namespace RESTar.Requests
 
         public void Dispose()
         {
-            if (AuthToken != null)
+            if (ScRequest.IsExternal && AuthToken != null)
                 AuthTokens.TryRemove(AuthToken, out var _);
         }
     }

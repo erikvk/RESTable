@@ -249,7 +249,7 @@ namespace RESTar.Internal
                     $"Make sure that the generic resource operation (e.g. ISelector<T>) interfaces have {Name} as type parameter");
         }
 
-        public bool Equals(IResource x, IResource y) => x.Name == y.Name;
+        public bool Equals(IResource x, IResource y) => x?.Name == y?.Name;
         public int GetHashCode(IResource obj) => obj.Name.GetHashCode();
         public int CompareTo(IResource other) => string.Compare(Name, other.Name, StringComparison.Ordinal);
         public override int GetHashCode() => Name.GetHashCode();

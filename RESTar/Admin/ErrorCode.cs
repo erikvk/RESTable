@@ -23,9 +23,7 @@ namespace RESTar.Admin
         /// </summary>
         public int Code { get; private set; }
 
-        /// <summary>
-        /// RESTar selector (don't use)
-        /// </summary>
+        /// <inheritdoc />
         public IEnumerable<ErrorCode> Select(IRequest<ErrorCode> request) => EnumMember<ErrorCodes>
             .GetMembers()
             .Select(m => new ErrorCode {Name = m.Name, Code = m.Value})

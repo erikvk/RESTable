@@ -71,9 +71,7 @@ namespace RESTar.Admin
 
         private Resource() => ResourceType = undefined;
 
-        /// <summary>
-        /// RESTar selector (don't use)
-        /// </summary>
+        /// <inheritdoc />
         public IEnumerable<Resource> Select(IRequest<Resource> request)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
@@ -95,9 +93,7 @@ namespace RESTar.Admin
                 .Where(request.Conditions);
         }
 
-        /// <summary>
-        /// RESTar inserter (don't use)
-        /// </summary>
+        /// <inheritdoc />
         public int Insert(IEnumerable<Resource> resources, IRequest<Resource> request)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
@@ -142,9 +138,7 @@ namespace RESTar.Admin
                 throw new Exception($"Invalid resource name '{Name}'. Name already in use.");
         }
 
-        /// <summary>
-        /// RESTar updater (don't use)
-        /// </summary>
+        /// <inheritdoc />
         public int Update(IEnumerable<Resource> entities, IRequest<Resource> request)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
@@ -204,9 +198,7 @@ namespace RESTar.Admin
             return count;
         }
 
-        /// <summary>
-        /// RESTar deleter (don't use)
-        /// </summary>
+        /// <inheritdoc />
         public int Delete(IEnumerable<Resource> entities, IRequest<Resource> request)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));

@@ -30,9 +30,7 @@ namespace RESTar
         /// </summary>
         public string SeeAlso { get; set; }
 
-        /// <summary>
-        /// RESTar selector (don't use)
-        /// </summary>
+        /// <inheritdoc />
         public IEnumerable<Help> Select(IRequest<Help> request)
         {
             var uri = new Uri($"{URL}/{request.Conditions.ToUriString()}");

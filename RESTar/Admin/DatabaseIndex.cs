@@ -79,9 +79,7 @@ namespace RESTar.Admin
         private const string ColumnSql = "SELECT t FROM Starcounter.Metadata.IndexedColumn t " +
                                          "WHERE t.\"Index\" =? ORDER BY t.Position";
 
-        /// <summary>
-        /// RESTar selector (don't use)
-        /// </summary>
+        /// <inheritdoc />
         public IEnumerable<DatabaseIndex> Select(IRequest<DatabaseIndex> request) => Db
             .SQL<Index>("SELECT t FROM Starcounter.Metadata.\"Index\" t")
             .Where(index => !index.Table.FullName.StartsWith("Starcounter."))

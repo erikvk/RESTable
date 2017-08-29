@@ -40,9 +40,7 @@ namespace RESTar.Admin
         /// </summary>
         public TableSize ApproximateTableSize { get; set; }
 
-        /// <summary>
-        /// RESTar selector (don't use)
-        /// </summary>
+        /// <inheritdoc />
         public IEnumerable<TableInfo> Select(IRequest<TableInfo> request)
         {
             IEnumerable<IResource> resources;

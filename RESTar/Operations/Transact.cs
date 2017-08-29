@@ -20,9 +20,9 @@ namespace RESTar.Operations
             {
                 Db.TransactAsync(() => result = action());
             }
-            catch (TransactionAbortedException)
+            catch (DbException e)
             {
-                Log.Error("!!! Transaction error");
+                Log.Error($"!!! Transaction error at {e.StackTrace}");
             }
             return result;
         }
@@ -39,9 +39,9 @@ namespace RESTar.Operations
             {
                 Db.TransactAsync(action);
             }
-            catch (TransactionAbortedException)
+            catch (DbException e)
             {
-                Log.Error("!!! Transaction error");
+                Log.Error($"!!! Transaction error at {e.StackTrace}");
             }
         }
 
@@ -59,9 +59,9 @@ namespace RESTar.Operations
                 {
                     Db.TransactAsync(action);
                 }
-                catch (TransactionAbortedException)
+                catch (DbException e)
                 {
-                    Log.Error("!!! Transaction error");
+                    Log.Error($"!!! Transaction error at {e.StackTrace}");
                 }
             });
         }

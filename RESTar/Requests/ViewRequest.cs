@@ -50,7 +50,7 @@ namespace RESTar.Requests
                 View = itemView;
                 return;
             }
-            Entities = Evaluators<T>.STATIC_SELECT(this)?.ToList();
+            Entities = Evaluators<T>.SELECT_FILTER(this)?.ToList();
             if (Entities?.Any() != true)
             {
                 View.SetMessage("No entities found", NoError, warning);

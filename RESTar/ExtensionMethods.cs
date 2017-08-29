@@ -554,6 +554,8 @@ namespace RESTar
 
         internal static dynamic GetConditionValue(this string valueString)
         {
+            if (valueString == "")
+                throw new SyntaxException(InvalidConditionSyntax, "No condition value literal after operator");
             if (valueString == null) return null;
             if (valueString == "null") return null;
             if (valueString[0] == '\"' && valueString.Last() == '\"')
@@ -766,35 +768,35 @@ namespace RESTar
             }
         }
 
-        private static object GetCellValue(dynamic value)
+        private static object GetCellValue(object value)
         {
-            switch ((object) value)
+            switch (value)
             {
                 case bool _:
                 case decimal _:
                 case long _:
                 case string _: return value;
-                case sbyte _:
-                case byte _:
-                case short _:
-                case ushort _:
-                case int _:
-                case uint _:
-                case ulong _: return (long) value;
-                case float _:
-                case double _: return (decimal) value;
-                case char c: return c.ToString();
-                case DateTime dt: return dt.ToString("O");
+                case sbyte other: return (long) other;
+                case byte other: return (long) other;
+                case short other: return (long) other;
+                case ushort other: return (long) other;
+                case int other: return (long) other;
+                case uint other: return (long) other;
+                case ulong other: return (long) other;
+                case float other: return (decimal) other;
+                case double other: return (decimal) other;
+                case char other: return other.ToString();
+                case DateTime other: return other.ToString("O");
                 case JObject _: return typeof(JObject).FullName;
-                case DDictionary _: return $"$(ObjectID: {DbHelper.GetObjectID(value)})";
-                case IDictionary id: return id.GetType().FullName;
-                case IEnumerable<object> ienum: return string.Join(", ", ienum.Select(o => o.ToString()));
-                case DBNull _: return "";
-                case null: return DBNull.Value;
+                case DDictionary _: return $"$(ObjectID: {value.GetObjectID()})";
+                case IDictionary other: return other.GetType().FullName;
+                case IEnumerable<object> other: return string.Join(", ", other.Select(o => o.ToString()));
+                case DBNull _:
+                case null: return "";
                 default:
                     try
                     {
-                        return $"$(ObjectID: {DbHelper.GetObjectID(value)})";
+                        return $"$(ObjectID: {value.GetObjectID()})";
                     }
                     catch
                     {

@@ -206,8 +206,7 @@ namespace RESTar
                         stat.GetAttribute<AllowedConditionOperatorsAttribute>()?.Operators);
                 var valueString = WebUtility.UrlDecode(pair[1]);
                 var value = valueString.GetConditionValue();
-                if (term.IsStatic && term.Last is StaticProperty prop && prop.Type.IsEnum &&
-                    value is string)
+                if (term.IsStatic && term.Last is StaticProperty prop && prop.Type.IsEnum && value is string)
                 {
                     try
                     {

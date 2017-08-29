@@ -23,9 +23,7 @@ namespace RESTar
         {
         }
 
-        /// <summary>
-        /// RESTar selector (don't use)
-        /// </summary>
+        /// <inheritdoc />
         public IEnumerable<Echo> Select(IRequest<Echo> request)
         {
             var echo = new[]

@@ -18,21 +18,7 @@ namespace RESTar.Operations
 
         #region SELECT
 
-        internal static long COUNT(IRequest<T> request)
-        {
-            try
-            {
-                if (request.Resource.Count == null)
-                    return request.Resource.Select(request)?.LongCount() ?? 0L;
-                return request.Resource.Count(request);
-            }
-            catch (Exception e)
-            {
-                throw new AbortedSelectorException<T>(e, request);
-            }
-        }
-
-        internal static IEnumerable<T> RAW_SELECT(IRequest<T> request)
+        internal static IEnumerable<T> SELECT(IRequest<T> request)
         {
             try
             {
@@ -44,7 +30,7 @@ namespace RESTar.Operations
             }
         }
 
-        internal static IEnumerable<T> STATIC_SELECT(IRequest<T> request)
+        internal static IEnumerable<T> SELECT_FILTER(IRequest<T> request)
         {
             try
             {
@@ -60,7 +46,7 @@ namespace RESTar.Operations
             }
         }
 
-        internal static IEnumerable<dynamic> DYNAMIC_SELECT(IRequest<T> request)
+        internal static IEnumerable<dynamic> SELECT_FILTER_PROCESS(IRequest<T> request)
         {
             try
             {
@@ -80,6 +66,21 @@ namespace RESTar.Operations
             catch (Exception e)
             {
                 throw new AbortedSelectorException<T>(e, request);
+            }
+        }
+
+
+        internal static long COUNT(IRequest<T> request)
+        {
+            try
+            {
+                return request.Resource.Count?.Invoke(request)
+                       ?? request.Resource.Select(request)?.LongCount()
+                       ?? 0L;
+            }
+            catch (Exception e)
+            {
+                throw new AbortedCounterException<T>(e, request);
             }
         }
 
@@ -369,7 +370,7 @@ namespace RESTar.Operations
 
             private static Response GET(RESTRequest<T> request)
             {
-                var results = DYNAMIC_SELECT(request);
+                var results = SELECT_FILTER_PROCESS(request);
                 if (results == null) return NoContent;
                 return request.MakeResponse(results) ?? NoContent;
             }
@@ -385,7 +386,7 @@ namespace RESTar.Operations
 
             private static Response LrPATCH(RESTRequest<T> request)
             {
-                var source = STATIC_SELECT(request)?.ToList();
+                var source = SELECT_FILTER(request)?.ToList();
                 if (source?.Any() != true) return UpdatedEntities<T>(0);
                 if (!request.MetaConditions.Unsafe && source.Count > 1)
                     throw new AmbiguousMatchException(request.Resource);
@@ -394,7 +395,7 @@ namespace RESTar.Operations
 
             private static Response LrPUT(RESTRequest<T> request)
             {
-                var source = STATIC_SELECT(request)?.ToList();
+                var source = SELECT_FILTER(request)?.ToList();
                 switch (source?.Count)
                 {
                     case null:
@@ -406,7 +407,7 @@ namespace RESTar.Operations
 
             private static Response LrDELETE(RESTRequest<T> request)
             {
-                var source = STATIC_SELECT(request);
+                var source = SELECT_FILTER(request);
                 if (source == null)
                     return DeletedEntities<T>(0);
                 if (!request.MetaConditions.Unsafe)
@@ -485,7 +486,7 @@ namespace RESTar.Operations
 
             private static Response PATCH(RESTRequest<T> request)
             {
-                var source = STATIC_SELECT(request)?.ToList();
+                var source = SELECT_FILTER(request)?.ToList();
                 if (source?.Any() != true) return UpdatedEntities<T>(0);
                 if (!request.MetaConditions.Unsafe && source.Count > 1)
                     throw new AmbiguousMatchException(request.Resource);
@@ -494,7 +495,7 @@ namespace RESTar.Operations
 
             private static Response PUT(RESTRequest<T> request)
             {
-                var source = STATIC_SELECT(request)?.ToList();
+                var source = SELECT_FILTER(request)?.ToList();
                 switch (source?.Count)
                 {
                     case null:
@@ -506,7 +507,7 @@ namespace RESTar.Operations
 
             private static Response DELETE(RESTRequest<T> request)
             {
-                var source = STATIC_SELECT(request);
+                var source = SELECT_FILTER(request);
                 if (source == null)
                     return DeletedEntities<T>(0);
                 if (!request.MetaConditions.Unsafe)

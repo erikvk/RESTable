@@ -86,9 +86,9 @@ namespace RESTar.Admin
             ErrorCode = errorCode,
             StackTrace = e.StackTrace + e.InnerException?.StackTrace,
             Message = e.TotalMessage(),
-            Body = scRequest.Body,
-            Uri = scRequest.Uri,
-            Headers = scRequest.HeadersDictionary?.StringJoin(" | ", dict => dict.Select(header =>
+            Body = scRequest?.Body,
+            Uri = scRequest?.Uri,
+            Headers = scRequest?.HeadersDictionary?.StringJoin(" | ", dict => dict.Select(header =>
             {
                 if (header.Key?.ToLower() == "authorization")
                     return "Authorization: apikey *******";

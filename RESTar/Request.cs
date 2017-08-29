@@ -155,21 +155,21 @@ namespace RESTar
         {
             Prep();
             if (!GETAllowed) throw Deny(Methods.GET);
-            return Evaluators<T>.RAW_SELECT(this) ?? new T[0];
+            return Evaluators<T>.SELECT(this) ?? new T[0];
         }
 
         public bool ANY()
         {
             Prep();
             if (!GETAllowed) throw Deny(Methods.GET);
-            return Evaluators<T>.RAW_SELECT(this)?.Any() == true;
+            return Evaluators<T>.SELECT(this)?.Any() == true;
         }
 
-        public int COUNT()
+        public long COUNT()
         {
             Prep();
             if (!GETAllowed) throw Deny(Methods.GET);
-            return Evaluators<T>.RAW_SELECT(this)?.Count() ?? 0;
+            return Evaluators<T>.COUNT(this);
         }
 
         public int POST(Func<T> inserter)
@@ -188,7 +188,7 @@ namespace RESTar
         {
             Prep();
             if (!PATCHAllowed) throw Deny(Methods.PATCH);
-            var source = Evaluators<T>.RAW_SELECT(this)?.ToList();
+            var source = Evaluators<T>.SELECT(this)?.ToList();
             switch (source?.Count)
             {
                 case null:
@@ -202,7 +202,7 @@ namespace RESTar
         {
             Prep();
             if (!PATCHAllowed) throw Deny(Methods.PATCH);
-            var source = Evaluators<T>.RAW_SELECT(this)?.ToList();
+            var source = Evaluators<T>.SELECT(this)?.ToList();
             if (source?.Any() != true) return 0;
             return Evaluators<T>.App.PATCH(updater, source, this);
         }
@@ -211,7 +211,7 @@ namespace RESTar
         {
             Prep();
             if (!PUTAllowed) throw Deny(Methods.PUT);
-            var source = Evaluators<T>.RAW_SELECT(this);
+            var source = Evaluators<T>.SELECT(this);
             return Evaluators<T>.App.PUT(inserter, source, this);
         }
 
@@ -219,7 +219,7 @@ namespace RESTar
         {
             Prep();
             if (!PUTAllowed) throw Deny(Methods.PUT);
-            var source = Evaluators<T>.RAW_SELECT(this);
+            var source = Evaluators<T>.SELECT(this);
             return Evaluators<T>.App.PUT(inserter, updater, source, this);
         }
 
@@ -227,7 +227,7 @@ namespace RESTar
         {
             Prep();
             if (!DELETEAllowed) throw Deny(Methods.DELETE);
-            var source = Evaluators<T>.RAW_SELECT(this);
+            var source = Evaluators<T>.SELECT(this);
             if (source == null) return 0;
             if (!@unsafe)
             {

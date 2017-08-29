@@ -84,7 +84,7 @@ namespace RESTar.Linq
             string to) where T : class
         {
             var props = typeof(T).GetStaticProperties();
-            return conds.Where(cond => cond.Term.IsDynamic || props.ContainsKey(cond.Term.First?.Name.ToLower()))
+            return conds.Where(cond => cond.Term.IsDynamic || props.ContainsKey(cond.Term.First?.Name.ToLower() ?? ""))
                 .Select(cond => direct.EqualsNoCase(cond.Key)
                     ? cond.Redirect<T>(to)
                     : cond.Redirect<T>());
@@ -100,7 +100,7 @@ namespace RESTar.Linq
             params (string direct, string to)[] newKeyAssignments) where T : class
         {
             var props = typeof(T).GetStaticProperties();
-            return conds.Where(cond => cond.Term.IsDynamic || props.ContainsKey(cond.Term.First?.Name.ToLower()))
+            return conds.Where(cond => cond.Term.IsDynamic || props.ContainsKey(cond.Term.First?.Name.ToLower() ?? ""))
                 .Select(cond =>
                 {
                     foreach (var keyAssignment in newKeyAssignments)

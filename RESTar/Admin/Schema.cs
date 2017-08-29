@@ -21,9 +21,7 @@ namespace RESTar.Admin
         /// </summary>
         public string Resource { private get; set; }
 
-        /// <summary>
-        /// RESTar selector (don't use)
-        /// </summary>
+        /// <inheritdoc />
         public IEnumerable<Schema> Select(IRequest<Schema> request)
         {
             var resourceName = request.Conditions.Get("resource", EQUALS)?.Value as string;

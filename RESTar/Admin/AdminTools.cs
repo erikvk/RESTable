@@ -24,14 +24,10 @@ namespace RESTar.Admin
         /// </summary>
         public void ReloadConfigFile() => RESTarConfig.UpdateAuthInfo();
 
-        /// <summary>
-        /// RESTar selector (don't use)
-        /// </summary>
+        /// <inheritdoc />
         public IEnumerable<AdminTools> Select(IRequest<AdminTools> request) => new[] {new AdminTools()};
 
-        /// <summary>
-        /// RESTar updater (don't use)
-        /// </summary>
+        /// <inheritdoc />
         public int Update(IEnumerable<AdminTools> entities, IRequest<AdminTools> request)
         {
             var updated = false;
