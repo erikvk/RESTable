@@ -184,8 +184,7 @@ namespace RESTar
             catch (WebException we)
             {
                 Log.Warn($"!!! HTTPS {method} Error at {uri} : {we.Message}");
-                var response = we.Response as HttpWebResponse;
-                if (response == null) return null;
+                if (!(we.Response is HttpWebResponse response)) return null;
                 var _response = new Response
                 {
                     StatusCode = (ushort) response.StatusCode,
