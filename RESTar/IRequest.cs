@@ -42,6 +42,11 @@ namespace RESTar
         MetaConditions MetaConditions { get; }
 
         /// <summary>
+        /// The origin of the request
+        /// </summary>
+        Origin Origin { get; }
+
+        /// <summary>
         /// The body of the request
         /// </summary>
         string Body { get; }

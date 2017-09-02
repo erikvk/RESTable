@@ -34,6 +34,7 @@ namespace RESTar
         public IDictionary<string, string> ResponseHeaders { get; }
         IResource IRequest.Resource => Resource;
         public MetaConditions MetaConditions { get; }
+        public Origin Origin { get; }
         Methods IRequest.Method => 0;
 
         private readonly bool ScSql;
@@ -93,6 +94,7 @@ namespace RESTar
             Resource = Resource<T>.Get;
             ResponseHeaders = new Dictionary<string, string>();
             MetaConditions = new MetaConditions {Unsafe = true};
+            Origin = Origin.Internal;
             Conditions = conditions;
             this.Authenticate();
             ScSql = Resource.ResourceType == StaticStarcounter;

@@ -116,6 +116,7 @@
     <Compile Include="Internal\ErrorCodes.cs" />
     <Compile Include="Operators.cs" />
     <Compile Include="Request.cs" />
+    <Compile Include="Requests\Origin.cs" />
     <Compile Include="Requests\ViewRequest.cs" />
     <Compile Include="Resource.cs" />
     <Compile Include="ResourceAlias.cs" />

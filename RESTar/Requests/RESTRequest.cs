@@ -20,6 +20,7 @@ namespace RESTar.Requests
     internal class RESTRequest<T> : IRequest<T>, IDisposable where T : class
     {
         public Methods Method { get; private set; }
+        public Origin Origin { get; }
         public IResource<T> Resource { get; }
         public Condition<T>[] Conditions { get; private set; }
         public MetaConditions MetaConditions { get; private set; }
@@ -35,7 +36,7 @@ namespace RESTar.Requests
         private string Destination { get; set; }
         private RESTarMimeType ContentType { get; set; }
         private RESTarMimeType Accept { get; set; }
-        private string Origin { get; set; }
+        private string CORSOrigin { get; set; }
         private DataConfig InputDataConfig { get; set; }
         private DataConfig OutputDataConfig { get; set; }
         internal void Evaluate() => Response = Evaluator(this);
@@ -45,6 +46,7 @@ namespace RESTar.Requests
             if (resource.IsInternal) throw new ResourceIsInternalException(resource);
             Resource = resource;
             ScRequest = scRequest;
+            Origin = new Origin(scRequest);
             ResponseHeaders = new Dictionary<string, string>();
             Conditions = new Condition<T>[0];
             MetaConditions = new MetaConditions();
@@ -56,7 +58,7 @@ namespace RESTar.Requests
             Evaluator = Evaluators<T>.REST.GetEvaluator(method);
             Source = ScRequest.Headers["Source"];
             Destination = ScRequest.Headers["Destination"];
-            Origin = ScRequest.Headers["Origin"];
+            CORSOrigin = ScRequest.Headers["Origin"];
             ContentType = MimeTypes.Match(ScRequest.ContentType);
             Accept = MimeTypes.Match(ScRequest.PreferredMimeTypeString);
             InputDataConfig = Source != null ? DataConfig.External : DataConfig.Client;
@@ -182,7 +184,7 @@ namespace RESTar.Requests
         internal Response GetResponse()
         {
             ResponseHeaders.ForEach(h => Response.Headers["X-" + h.Key] = h.Value);
-            Response.Headers["Access-Control-Allow-Origin"] = AllowAllOrigins ? "*" : (Origin ?? "null");
+            Response.Headers["Access-Control-Allow-Origin"] = AllowAllOrigins ? "*" : (CORSOrigin ?? "null");
             switch (OutputDataConfig)
             {
                 case DataConfig.Client: return Response;
@@ -199,7 +201,8 @@ namespace RESTar.Requests
                         if (!response.IsSuccessStatusCode)
                             throw new DestinationException(request,
                                 $"Received {response.StatusCode} - {response.StatusDescription}. {response.Headers["RESTar-info"]}");
-                        response.Headers["Access-Control-Allow-Origin"] = AllowAllOrigins ? "*" : (Origin ?? "null");
+                        response.Headers["Access-Control-Allow-Origin"] =
+                            AllowAllOrigins ? "*" : (CORSOrigin ?? "null");
                         return response;
                     }
                     catch (HttpRequestException re)

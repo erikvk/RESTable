@@ -20,6 +20,7 @@ namespace RESTar.Requests
 {
     internal class ViewRequest<T> : IRequest<T>, IViewRequest where T : class
     {
+        public Origin Origin { get; }
         public IResource<T> Resource { get; }
         public Condition<T>[] Conditions { get; private set; }
         public MetaConditions MetaConditions { get; private set; }
@@ -82,6 +83,7 @@ namespace RESTar.Requests
             if (resource.IsInternal) throw new ResourceIsInternalException(resource);
             Resource = resource;
             ScRequest = scRequest;
+            Origin = new Origin(scRequest);
             ResponseHeaders = new Dictionary<string, string>();
             MetaConditions = new MetaConditions();
             Conditions = new Condition<T>[0];
