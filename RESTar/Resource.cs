@@ -119,7 +119,7 @@ namespace RESTar
 
         private static readonly MethodInfo AUTO_MAKER;
         private static readonly MethodInfo DYNAMIC_AUTO_MAKER;
-        
+
         static Resource()
         {
             DYNAMIC_AUTO_MAKER = typeof(Resource).GetMethod(nameof(DYNAMIC_AUTO_MAKE),

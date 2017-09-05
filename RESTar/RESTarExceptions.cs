@@ -342,7 +342,7 @@ namespace RESTar
         internal VirtualResourceMemberException(string message)
             : base(InvalidVirtualResourceMember, message) => Response = BadRequest(this);
     }
-
+    
     /// <summary>
     /// Thrown when an error was detected in a virtual resource declaration.
     /// </summary>

@@ -56,10 +56,10 @@ namespace RESTar.Internal
         InvalidVirtualResourceMember = 121,
         NoAvalailableDynamicTable = 122,
         InvalidVirtualResourceDeclaration = 123,
-
+        
         // 130-139: Alias errors
-        AliasAlreadyInUse = 124,
-        AliasEqualToResourceName = 125,
+        AliasAlreadyInUse = 130,
+        AliasEqualToResourceName = 131,
 
         // 200-399: Handler errors
         AbortedSelect = 201,

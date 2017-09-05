@@ -33,6 +33,11 @@ namespace RESTar.Requests
         /// The client IP address that made the request (null for internal requests)
         /// </summary>
         public IPAddress IP { get; }
+        
+        /// <summary>
+        /// If the client was forwarded by a proxy, this property contains the proxy's IP address. Otherwise null.
+        /// </summary>
+        public IPAddress Proxy { get; }
 
         /// <summary>
         /// Creates a new origin with a given type and IP
@@ -43,11 +48,21 @@ namespace RESTar.Requests
             {
                 Type = OriginType.Internal;
                 IP = null;
+                Proxy = null;
             }
             else
             {
+                if (request.HeadersDictionary.TryGetValue("X-Forwarded-For", out var ip) && ip != null)
+                {
+                    IP = IPAddress.Parse(ip.Split(':')[0]);
+                    Proxy = request.ClientIpAddress;
+                }
+                else
+                {
+                    IP = request.ClientIpAddress;
+                    Proxy = null;
+                }
                 Type = request.IsExternal ? OriginType.External : OriginType.Internal;
-                IP = request.ClientIpAddress;
             }
         }
 
@@ -55,6 +70,16 @@ namespace RESTar.Requests
         /// The internal location
         /// </summary>
         public static Origin Internal;
+
+        /// <summary>
+        /// Is the origin internal?
+        /// </summary>
+        public bool IsInternal => Type == OriginType.Internal;
+
+        /// <summary>
+        /// Is the origin external?
+        /// </summary>
+        public bool IsExternal => Type == OriginType.External;
 
         static Origin() => Internal = new Origin();
     }

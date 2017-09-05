@@ -32,13 +32,6 @@ namespace RESTarExample
         public string SomeMember;
     }
 
-    public class C
-    {
-        public string Key;
-        public string Operator;
-        public dynamic Value;
-    }
-
     [RESTar]
     public class R : IInserter<R>, ISelector<R>, IUpdater<R>, IDeleter<R>
     {

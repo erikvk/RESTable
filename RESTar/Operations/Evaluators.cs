@@ -93,6 +93,7 @@ namespace RESTar.Operations
             try
             {
                 var results = request.Body.Deserialize<List<T>>();
+                if (results.Count == 0) return 0;
                 if (request.Resource.RequiresValidation)
                     results.OfType<IValidatable>().ForEach(item => item.RunValidation());
                 return request.Resource.Insert(results, request);
