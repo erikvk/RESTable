@@ -119,5 +119,5 @@ namespace RESTar.Internal
         /// RESTar counter (don't use)
         /// </summary>
         Counter<T> Count { get; }
-    }
+     }
 }

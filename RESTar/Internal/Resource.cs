@@ -117,7 +117,8 @@ namespace RESTar.Internal
         /// All custom resource registrations (using attribute as well as Resource.Register) terminate here
         /// </summary>
         internal static void Make(string name, RESTarAttribute attribute, Selector<T> selector = null,
-            Inserter<T> inserter = null, Updater<T> updater = null, Deleter<T> deleter = null, Counter<T> counter = null)
+            Inserter<T> inserter = null, Updater<T> updater = null, Deleter<T> deleter = null,
+            Counter<T> counter = null)
         {
             var type = typeof(T);
             if (type.IsDDictionary() && type.Implements(typeof(IDDictionary<,>), out var _))

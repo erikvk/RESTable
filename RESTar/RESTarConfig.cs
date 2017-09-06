@@ -13,9 +13,9 @@ using RESTar.Deflection.Dynamic;
 using RESTar.Internal;
 using RESTar.Linq;
 using RESTar.Operations;
-using RESTar.Requests;
 using Starcounter;
 using static RESTar.Methods;
+using static RESTar.Requests.Handlers;
 using IResource = RESTar.Internal.IResource;
 
 namespace RESTar
@@ -178,7 +178,7 @@ namespace RESTar
             ConfigFilePath = configFilePath;
             DynamitConfig.Init(true, true);
             Log.Init();
-            Handlers.Register(setupMenu);
+            RegisterRESTHandlers(setupMenu);
             Initialized = true;
             UpdateAuthInfo();
         }

@@ -186,6 +186,7 @@ namespace RESTar
         /// <param name="inserter">The inserter to use for this resource</param>
         /// <param name="updater">The updater to use for this resource</param>
         /// <param name="deleter">The deleter to use for this resource</param>
+        /// <param name="counter">The counter to use for this resource</param>
         /// <param name="singleton">Is this a singleton resource?</param>
         /// <param name="internalResource">Is this an internal resource?</param>
         /// <param name="description">A description for the resource</param>
@@ -196,6 +197,7 @@ namespace RESTar
             Inserter<T> inserter = null,
             Updater<T> updater = null,
             Deleter<T> deleter = null,
+            Counter<T> counter = null,
             bool singleton = false,
             bool internalResource = false,
             string description = null)
@@ -214,7 +216,16 @@ namespace RESTar
                 : new RESTarAttribute(methods.ToArray());
             attribute.Singleton = singleton;
             attribute.Description = description;
-            Internal.Resource<T>.Make(typeof(T).FullName, attribute, selector, inserter, updater, deleter);
+            Internal.Resource<T>.Make
+            (
+                name: typeof(T).FullName,
+                attribute: attribute,
+                selector: selector,
+                inserter: inserter,
+                updater: updater,
+                deleter: deleter,
+                counter: counter
+            );
         }
 
         /// <summary>

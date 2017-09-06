@@ -17,7 +17,7 @@ namespace RESTar.Requests
 {
     internal static class Handlers
     {
-        internal static void Register(bool setupMenu)
+        internal static void RegisterRESTHandlers(bool setupMenu)
         {
             var uri = _Uri + "{?}";
             Handle.GET(_Port, uri, (Request request, string query) => Evaluate(GET, request, query));

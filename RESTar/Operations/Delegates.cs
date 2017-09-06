@@ -37,4 +37,11 @@ namespace RESTar.Operations
     /// </summary>
     /// <typeparam name="T">The resource type</typeparam>
     public delegate long Counter<T>(IRequest<T> request) where T : class;
+
+    /// <inheritdoc />
+    public delegate IEnumerable<object> Function<TResource>(object arg, IRequest<TResource> request)
+        where TResource : class;
+
+    /// <inheritdoc />
+    public delegate IEnumerable<object> Function(object arg, IRequest request);
 }
