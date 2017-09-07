@@ -17,7 +17,7 @@ namespace RESTarExample
                 requireApiKey: true,
                 allowAllOrigins: false,
                 viewEnabled: true,
-                configFilePath: "C:\\Mopedo\\Mopedo.config",
+                configFilePath: $"C:\\Mopedo\\Mopedo.config",
                 setupMenu: true
             );
             TestDatabase.Init();

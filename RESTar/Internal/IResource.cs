@@ -65,6 +65,11 @@ namespace RESTar.Internal
         bool IsGlobal { get; }
 
         /// <summary>
+        /// Is this resource a subresource of some other resource?
+        /// </summary>
+        bool IsSubResource { get; }
+
+        /// <summary>
         /// Are runtime-defined conditions allowed in requests to this resource?
         /// </summary>
         bool DynamicConditionsAllowed { get; }

@@ -39,7 +39,6 @@ namespace RESTar.Admin
                     ReloadConfigFile();
                     updated = true;
                 }
-
                 if (updated) count += 1;
             }
             return count;

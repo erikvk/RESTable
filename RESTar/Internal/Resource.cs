@@ -35,6 +35,7 @@ namespace RESTar.Internal
         public bool IsDynamic { get; }
         public bool IsInternal { get; }
         public bool IsGlobal => !IsInternal;
+        public bool IsSubResource { get; }
         public bool IsSingleton { get; }
         public bool DynamicConditionsAllowed { get; }
         public string AliasOrName => Alias ?? Name;
@@ -97,6 +98,7 @@ namespace RESTar.Internal
             IsDDictionary = typeof(T).IsDDictionary();
             IsDynamic = IsDDictionary || typeof(T).IsSubclassOf(typeof(JObject)) ||
                         typeof(IDictionary).IsAssignableFrom(typeof(T));
+            IsSubResource = name.Contains("+");
             ResourceType = IsStarcounterResource
                 ? IsDDictionary
                     ? DynamicStarcounter
