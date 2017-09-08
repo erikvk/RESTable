@@ -16,7 +16,6 @@ namespace RESTar.Admin
     /// by setting the daysToSaveErrors parameter in the call to RESTarConfig.Init().
     /// </summary>
     [Database, RESTar(GET, DELETE, Description = description)]
-
     public class Error
     {
         private const string description = "The Error resource records instances where an " +
@@ -84,7 +83,7 @@ namespace RESTar.Admin
                            (resource?.Alias != null ? $" ({resource.Alias})" : ""),
             HandlerAction = action,
             ErrorCode = errorCode,
-            StackTrace = e.StackTrace + e.InnerException?.StackTrace,
+            StackTrace = $"{e.StackTrace} §§§ INNER: {e.InnerException?.StackTrace}",
             Message = e.TotalMessage(),
             Body = scRequest?.Body,
             Uri = scRequest?.Uri,

@@ -11,7 +11,7 @@ namespace RESTar.Admin
     /// </summary>
     [RESTar(Description = description)]
     public class DatabaseIndex : ISelector<DatabaseIndex>, IInserter<DatabaseIndex>, IUpdater<DatabaseIndex>,
-        IDeleter<DatabaseIndex>
+        IDeleter<DatabaseIndex>, IValidatable
     {
         private const string description = "The DatabaseIndex resource lets an administrator set " +
                                            "indexes for Starcounter database resources.";
@@ -96,8 +96,7 @@ namespace RESTar.Admin
             })
             .Where(request.Conditions);
 
-        /// <summary>
-        /// </summary>
+        /// <inheritdoc />
         public int Insert(IEnumerable<DatabaseIndex> indexes, IRequest<DatabaseIndex> request)
         {
             var count = 0;
@@ -110,8 +109,7 @@ namespace RESTar.Admin
             return count;
         }
 
-        /// <summary>
-        /// </summary>
+        /// <inheritdoc />
         public int Update(IEnumerable<DatabaseIndex> indexes, IRequest<DatabaseIndex> request)
         {
             var count = 0;
@@ -125,8 +123,7 @@ namespace RESTar.Admin
             return count;
         }
 
-        /// <summary>
-        /// </summary>
+        /// <inheritdoc />
         public int Delete(IEnumerable<DatabaseIndex> indexes, IRequest<DatabaseIndex> request)
         {
             var count = 0;
@@ -136,6 +133,28 @@ namespace RESTar.Admin
                 count += 1;
             }
             return count;
+        }
+
+        /// <inheritdoc />
+        public bool IsValid(out string invalidReason)
+        {
+            if (string.IsNullOrWhiteSpace(Table))
+            {
+                invalidReason = "Index table cannot be null or whitespace";
+                return false;
+            }
+            if (string.IsNullOrWhiteSpace(Name))
+            {
+                invalidReason = "Index name cannot be null or whitespace";
+                return false;
+            }
+            if (Columns?.Any() != true)
+            {
+                invalidReason = "No columns specified for index";
+                return false;
+            }
+            invalidReason = null;
+            return true;
         }
     }
 

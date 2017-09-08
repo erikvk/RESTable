@@ -11,6 +11,6 @@
         /// in the out parameter to inform the user of the validation error. Return true if and
         /// only if the entity is valid.
         /// </summary>
-        bool Validate(out string reason);
+        bool IsValid(out string invalidReason);
     }
 }

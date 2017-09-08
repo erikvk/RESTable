@@ -206,9 +206,9 @@ namespace RESTar
         internal static string RESTarMemberName(this MemberInfo m) => m.GetAttribute<DataMemberAttribute>()?.Name ??
                                                                       m.Name;
 
-        internal static void RunValidation(this IValidatable ivalidatable)
+        internal static void Validate(this IValidatable ivalidatable)
         {
-            if (!ivalidatable.Validate(out var reason))
+            if (!ivalidatable.IsValid(out var reason))
                 throw new ValidatableException(reason);
         }
 

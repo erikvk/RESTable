@@ -95,7 +95,7 @@ namespace RESTar.Operations
                 var results = request.Body.Deserialize<List<T>>();
                 if (results.Count == 0) return 0;
                 if (request.Resource.RequiresValidation)
-                    results.OfType<IValidatable>().ForEach(item => item.RunValidation());
+                    results.OfType<IValidatable>().ForEach(item => item.Validate());
                 return request.Resource.Insert(results, request);
             }
             catch (Exception e)
@@ -112,7 +112,7 @@ namespace RESTar.Operations
                 var results = ienum as ICollection<T> ?? ienum?.ToList();
                 if (results?.Any() != true) return 0;
                 if (request.Resource.RequiresValidation)
-                    results.OfType<IValidatable>().ForEach(item => item.RunValidation());
+                    results.OfType<IValidatable>().ForEach(item => item.Validate());
                 return request.Resource.Insert(results, request);
             }
             catch (Exception e)
@@ -126,7 +126,7 @@ namespace RESTar.Operations
             try
             {
                 var result = request.Body.Deserialize<T>();
-                if (result is IValidatable i) i.RunValidation();
+                if (result is IValidatable i) i.Validate();
                 return request.Resource.Insert(new[] {result}, request);
             }
             catch (Exception e)
@@ -142,7 +142,7 @@ namespace RESTar.Operations
                 var result = inserter?.Invoke();
                 if (result == null) return 0;
                 if (result is IValidatable i)
-                    i.RunValidation();
+                    i.Validate();
                 return request.Resource.Insert(new[] {result}, request);
             }
             catch (Exception e)
@@ -157,7 +157,7 @@ namespace RESTar.Operations
             {
                 var results = json.ToObject<List<T>>();
                 if (request.Resource.RequiresValidation)
-                    results.OfType<IValidatable>().ForEach(item => item.RunValidation());
+                    results.OfType<IValidatable>().ForEach(item => item.Validate());
                 return request.Resource.Insert(results, request);
             }
             catch (Exception e)
@@ -173,7 +173,7 @@ namespace RESTar.Operations
             {
                 results = request.Body.Deserialize<List<T>>();
                 if (request.Resource.RequiresValidation)
-                    results.OfType<IValidatable>().ForEach(item => item.RunValidation());
+                    results.OfType<IValidatable>().ForEach(item => item.Validate());
                 return request.Resource.Insert(results, request);
             }
             catch (Exception e)
@@ -190,7 +190,7 @@ namespace RESTar.Operations
             try
             {
                 result = request.Body.Deserialize<T>();
-                if (result is IValidatable i) i.RunValidation();
+                if (result is IValidatable i) i.Validate();
                 return request.Resource.Insert(new[] {result}, request);
             }
             catch (Exception e)
@@ -207,7 +207,7 @@ namespace RESTar.Operations
             {
                 results = json.ToObject<List<T>>();
                 if (request.Resource.RequiresValidation)
-                    results.OfType<IValidatable>().ForEach(item => item.RunValidation());
+                    results.OfType<IValidatable>().ForEach(item => item.Validate());
                 return request.Resource.Insert(results, request);
             }
             catch (Exception e)
@@ -228,7 +228,7 @@ namespace RESTar.Operations
             {
                 source.ForEach(entity => Populate(request.Body, entity));
                 if (request.Resource.RequiresValidation)
-                    source.OfType<IValidatable>().ForEach(item => item.RunValidation());
+                    source.OfType<IValidatable>().ForEach(item => item.Validate());
                 return request.Resource.Update(source, request);
             }
             catch (Exception e)
@@ -246,7 +246,7 @@ namespace RESTar.Operations
                 var results = ienum as ICollection<T> ?? ienum?.ToList();
                 if (results?.Any() != true) return 0;
                 if (request.Resource.RequiresValidation)
-                    results.OfType<IValidatable>().ForEach(item => item.RunValidation());
+                    results.OfType<IValidatable>().ForEach(item => item.Validate());
                 return request.Resource.Update(results, request);
             }
             catch (Exception e)
@@ -261,7 +261,7 @@ namespace RESTar.Operations
             {
                 Populate(request.Body, source);
                 if (source is IValidatable i)
-                    i.RunValidation();
+                    i.Validate();
                 return request.Resource.Update(new[] {source}, request);
             }
             catch (Exception e)
@@ -277,7 +277,7 @@ namespace RESTar.Operations
                 var result = updater?.Invoke(source);
                 if (result == null) return 0;
                 if (result is IValidatable i)
-                    i.RunValidation();
+                    i.Validate();
                 return request.Resource.Update(new[] {result}, request);
             }
             catch (Exception e)
@@ -296,7 +296,7 @@ namespace RESTar.Operations
                     return item.source;
                 }).ToList();
                 if (request.Resource.RequiresValidation)
-                    updated.OfType<IValidatable>().ForEach(item => item.RunValidation());
+                    updated.OfType<IValidatable>().ForEach(item => item.Validate());
                 return request.Resource.Update(updated, request);
             }
             catch (Exception e)
