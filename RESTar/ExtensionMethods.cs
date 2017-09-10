@@ -503,7 +503,7 @@ namespace RESTar
         public static JObject ToJObject(this DDictionary d)
         {
             var jobj = new JObject();
-            d.KeyValuePairs.ForEach(pair => jobj[pair.Key] = pair.Value);
+            d.KeyValuePairs.ForEach(pair => jobj[pair.Key] = (JToken) pair.Value);
             return jobj;
         }
 
@@ -513,7 +513,7 @@ namespace RESTar
         public static JObject ToJObject(this Dictionary<string, dynamic> d)
         {
             var jobj = new JObject();
-            d.ForEach(pair => jobj[pair.Key] = pair.Value);
+            d.ForEach(pair => jobj[pair.Key] = (JToken) pair.Value);
             return jobj;
         }
 
