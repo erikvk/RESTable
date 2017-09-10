@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json.Linq;
 using RESTar.Internal;
@@ -31,6 +32,7 @@ namespace RESTar
         /// <inheritdoc />
         public IEnumerable<Counter> Select(IRequest<Counter> request)
         {
+            if (request == null) throw new ArgumentNullException(nameof(request));
             var args = new Args(JObject.Parse(request.Body).SafeGetNoCase("uri").Value<string>());
             IRequest innerRequest = MakeRequest((dynamic) args.IResource, args);
             var rights = RESTarConfig.AuthTokens[request.AuthToken];

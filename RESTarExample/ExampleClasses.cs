@@ -148,11 +148,8 @@ namespace RESTarExample
         /// </summary>
         public IEnumerable<BetterEmployee> Subordinates
         {
-            get
-            {
-                return Db.SQL<BetterEmployee>($"SELECT t FROM {typeof(BetterEmployee).FullName} t WHERE t.Boss =?",
-                    this);
-            }
+            get => Db.SQL<BetterEmployee>($"SELECT t FROM {typeof(BetterEmployee).FullName} t WHERE t.Boss =?",
+                this);
             set { }
         }
     }

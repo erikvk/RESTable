@@ -15,7 +15,7 @@ using static RESTar.Operations.Transact;
 
 namespace RESTar.Internal
 {
-    internal class Resource<T> : IResource<T> where T : class
+    internal class Resource<T> : IResource<T>, IResourceInternal where T : class
     {
         public string Name { get; }
         public bool Editable { get; }
@@ -24,7 +24,6 @@ namespace RESTar.Internal
         // ReSharper disable AutoPropertyCanBeMadeGetOnly.Global
 
         public IReadOnlyList<Methods> AvailableMethods { get; internal set; }
-
         public string Description { get; internal set; }
 
         // ReSharper restore AutoPropertyCanBeMadeGetOnly.Global
@@ -35,7 +34,8 @@ namespace RESTar.Internal
         public bool IsDynamic { get; }
         public bool IsInternal { get; }
         public bool IsGlobal => !IsInternal;
-        public bool IsSubResource { get; }
+        public bool IsInnerResource { get; }
+        public string ParentResourceName { get; }
         public bool IsSingleton { get; }
         public bool DynamicConditionsAllowed { get; }
         public string AliasOrName => Alias ?? Name;
@@ -43,6 +43,19 @@ namespace RESTar.Internal
         public bool IsStarcounterResource { get; }
         public bool RequiresValidation { get; }
         public RESTarResourceType ResourceType { get; }
+        public IReadOnlyList<IResource> InnerResources { get; set; }
+
+        string IResourceInternal.Description
+        {
+            get => Description;
+            set => Description = value;
+        }
+
+        IReadOnlyList<Methods> IResourceInternal.AvailableMethods
+        {
+            get => AvailableMethods;
+            set => AvailableMethods = value;
+        }
 
         public Selector<T> Select { get; }
         public Inserter<T> Insert { get; }
@@ -86,7 +99,14 @@ namespace RESTar.Internal
         private Resource(string name, RESTarAttribute attribute, Selector<T> selector, Inserter<T> inserter,
             Updater<T> updater, Deleter<T> deleter, Counter<T> counter)
         {
-            Name = name;
+            if (name.Contains('+'))
+            {
+                IsInnerResource = true;
+                var location = name.LastIndexOf('+');
+                ParentResourceName = name.Substring(0, location).Replace('+', '.');
+                Name = name.Replace('+', '.');
+            }
+            else Name = name;
             Editable = attribute.Editable;
             Description = attribute.Description;
             AvailableMethods = attribute.AvailableMethods;
@@ -98,7 +118,7 @@ namespace RESTar.Internal
             IsDDictionary = typeof(T).IsDDictionary();
             IsDynamic = IsDDictionary || typeof(T).IsSubclassOf(typeof(JObject)) ||
                         typeof(IDictionary).IsAssignableFrom(typeof(T));
-            IsSubResource = name.Contains("+");
+            IsInnerResource = name.Contains("+");
             ResourceType = IsStarcounterResource
                 ? IsDDictionary
                     ? DynamicStarcounter
@@ -122,6 +142,9 @@ namespace RESTar.Internal
             Inserter<T> inserter = null, Updater<T> updater = null, Deleter<T> deleter = null,
             Counter<T> counter = null)
         {
+            if (name.Count(c => c == '+') >= 2)
+                throw new ResourceDeclarationException($"Invalid resource '{name.Replace('+', '.')}'. " +
+                                                       "Inner resources cannot have their own inner resources");
             var type = typeof(T);
             if (type.IsDDictionary() && type.Implements(typeof(IDDictionary<,>), out var _))
             {

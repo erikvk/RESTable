@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json.Linq;
 using static RESTar.Methods;
@@ -26,6 +27,7 @@ namespace RESTar
         /// <inheritdoc />
         public IEnumerable<Echo> Select(IRequest<Echo> request)
         {
+            if (request == null) throw new ArgumentNullException(nameof(request));
             var echo = new[]
             {
                 new Echo(request.Conditions.Select(c => new JProperty(c.Key, c.Value)))

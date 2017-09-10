@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using RESTar.Linq;
 using Starcounter;
@@ -80,25 +81,30 @@ namespace RESTar.Admin
                                          "WHERE t.\"Index\" =? ORDER BY t.Position";
 
         /// <inheritdoc />
-        public IEnumerable<DatabaseIndex> Select(IRequest<DatabaseIndex> request) => Db
-            .SQL<Index>("SELECT t FROM Starcounter.Metadata.\"Index\" t")
-            .Where(index => !index.Table.FullName.StartsWith("Starcounter."))
-            .Where(index => !index.Name.StartsWith("DYNAMIT_GENERATED_INDEX"))
-            .Select(index => new DatabaseIndex
-            {
-                Name = index.Name,
-                Table = index.Table.FullName,
-                Columns = Db.SQL<IndexedColumn>(ColumnSql, index).Select(c => new ColumnInfo
+        public IEnumerable<DatabaseIndex> Select(IRequest<DatabaseIndex> request)
+        {
+            if (request == null) throw new ArgumentNullException(nameof(request));
+            return Db
+                .SQL<Index>("SELECT t FROM Starcounter.Metadata.\"Index\" t")
+                .Where(index => !index.Table.FullName.StartsWith("Starcounter."))
+                .Where(index => !index.Name.StartsWith("DYNAMIT_GENERATED_INDEX"))
+                .Select(index => new DatabaseIndex
                 {
-                    Name = c.Column.Name,
-                    Descending = c.Ascending == 0
-                }).ToArray()
-            })
-            .Where(request.Conditions);
+                    Name = index.Name,
+                    Table = index.Table.FullName,
+                    Columns = Db.SQL<IndexedColumn>(ColumnSql, index).Select(c => new ColumnInfo
+                    {
+                        Name = c.Column.Name,
+                        Descending = c.Ascending == 0
+                    }).ToArray()
+                })
+                .Where(request.Conditions);
+        }
 
         /// <inheritdoc />
         public int Insert(IEnumerable<DatabaseIndex> indexes, IRequest<DatabaseIndex> request)
         {
+            if (request == null) throw new ArgumentNullException(nameof(request));
             var count = 0;
             foreach (var index in indexes)
             {
@@ -112,6 +118,7 @@ namespace RESTar.Admin
         /// <inheritdoc />
         public int Update(IEnumerable<DatabaseIndex> indexes, IRequest<DatabaseIndex> request)
         {
+            if (request == null) throw new ArgumentNullException(nameof(request));
             var count = 0;
             foreach (var index in indexes)
             {
@@ -126,6 +133,7 @@ namespace RESTar.Admin
         /// <inheritdoc />
         public int Delete(IEnumerable<DatabaseIndex> indexes, IRequest<DatabaseIndex> request)
         {
+            if (request == null) throw new ArgumentNullException(nameof(request));
             var count = 0;
             foreach (var index in indexes)
             {

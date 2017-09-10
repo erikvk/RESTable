@@ -353,6 +353,15 @@ namespace RESTar
     }
 
     /// <summary>
+    /// Thrown when an error was detected in a virtual resource declaration.
+    /// </summary>
+    public class ResourceDeclarationException : RESTarException
+    {
+        internal ResourceDeclarationException(string message)
+            : base(InvalidVirtualResourceDeclaration, message) => Response = BadRequest(this);
+    }
+
+    /// <summary>
     /// Thrown when RESTar has run out of dynamic tables for allocation to new 
     /// dynamic resources.
     /// </summary>

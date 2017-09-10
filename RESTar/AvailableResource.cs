@@ -1,7 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Newtonsoft.Json;
+using RESTar.Internal;
 using RESTar.Linq;
+using static Newtonsoft.Json.NullValueHandling;
 using static RESTar.Methods;
 
 namespace RESTar
@@ -23,36 +26,50 @@ namespace RESTar
         public string Name { get; private set; }
 
         /// <summary>
-        /// The alias of this resource, if any
-        /// </summary>
-        public string Alias { get; set; }
-
-        /// <summary>
         /// Resource descriptions are visible in the AvailableMethods resource
         /// </summary>
         public string Description { get; set; }
+
+        /// <summary>
+        /// The alias of this resource, if any
+        /// </summary>
+        [JsonProperty(NullValueHandling = Ignore)]
+        public string Alias { get; set; }
 
         /// <summary>
         /// The methods that have been enabled for this resource
         /// </summary>
         public Methods[] Methods { get; set; }
 
+        /// <summary>
+        /// Inner resources for this resource
+        /// </summary>
+        [JsonProperty(NullValueHandling = Ignore)]
+        public AvailableResource[] InnerResources { get; private set; }
+
         /// <inheritdoc />
         public IEnumerable<AvailableResource> Select(IRequest<AvailableResource> request)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
-            var accessRights = RESTarConfig.AuthTokens[request.AuthToken];
-            return accessRights.Keys
-                .Where(r => r.IsGlobal)
+            var rights = RESTarConfig.AuthTokens[request.AuthToken];
+
+            AvailableResource Make(IResource iresource) => new AvailableResource
+            {
+                Name = iresource.Name,
+                Alias = iresource.Alias,
+                Description = iresource.Description ?? "No description",
+                Methods = rights.SafeGet(iresource)?
+                              .Intersect(iresource.AvailableMethods)
+                              .ToArray() ?? new Methods[0],
+                InnerResources = ((IResourceInternal) iresource).InnerResources?
+                    .Select(Make)
+                    .ToArray()
+            };
+
+            return rights.Keys
+                .Where(r => r.IsGlobal && !r.IsInnerResource)
                 .OrderBy(r => r.Name)
-                .Select(resource => new AvailableResource
-                {
-                    Name = resource.Name,
-                    Alias = resource.Alias,
-                    Description = resource.Description ?? "No description",
-                    Methods = accessRights.SafeGet(resource)?.Intersect(resource.AvailableMethods).ToArray()
-                              ?? new Methods[0]
-                })
+                .Select(Make)
                 .Where(request.Conditions);
         }
     }

@@ -43,6 +43,7 @@ namespace RESTar.Admin
         /// <inheritdoc />
         public IEnumerable<TableInfo> Select(IRequest<TableInfo> request)
         {
+            if (request == null) throw new ArgumentNullException(nameof(request));
             IEnumerable<IResource> resources;
             string input = request.Conditions.Get(nameof(TableName), Operators.EQUALS)?.Value;
             if (input == null)

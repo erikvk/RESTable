@@ -56,7 +56,8 @@ namespace RESTar.Internal
         InvalidVirtualResourceMember = 121,
         NoAvalailableDynamicTable = 122,
         InvalidVirtualResourceDeclaration = 123,
-        
+        InvalidResourceDeclaration = 124,
+
         // 130-139: Alias errors
         AliasAlreadyInUse = 130,
         AliasEqualToResourceName = 131,

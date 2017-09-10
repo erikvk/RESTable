@@ -51,6 +51,11 @@ namespace RESTar.Linq
         }
 
         /// <summary>
+        /// Counts the occurances of the provided character in the given string
+        /// </summary>
+        public static int Count(this string str, char c) => str.Count(x => x == c);
+
+        /// <summary>
         /// Applies an action to each element in the source IEnumerable. Equivalent to how Select works for 
         /// functions, but for actions.
         /// </summary>

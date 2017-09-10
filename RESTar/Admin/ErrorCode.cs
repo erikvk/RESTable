@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using RESTar.Deflection;
@@ -24,9 +25,13 @@ namespace RESTar.Admin
         public int Code { get; private set; }
 
         /// <inheritdoc />
-        public IEnumerable<ErrorCode> Select(IRequest<ErrorCode> request) => EnumMember<ErrorCodes>
-            .GetMembers()
-            .Select(m => new ErrorCode {Name = m.Name, Code = m.Value})
-            .Where(request.Conditions);
+        public IEnumerable<ErrorCode> Select(IRequest<ErrorCode> request)
+        {
+            if (request == null) throw new ArgumentNullException(nameof(request));
+            return EnumMember<ErrorCodes>
+                .GetMembers()
+                .Select(m => new ErrorCode {Name = m.Name, Code = m.Value})
+                .Where(request.Conditions);
+        }
     }
 }

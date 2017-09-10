@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using RESTar.Linq;
 using static RESTar.Methods;
@@ -20,19 +21,24 @@ namespace RESTar.Admin
         public string Resource { get; set; }
         public string[] Terms { get; set; }
 
-        public IEnumerable<TermCache> Select(IRequest<TermCache> request) => RESTarConfig.Resources
-            .Select(r => new TermCache
-            {
-                Resource = r.Name,
-                Terms = Deflection.Dynamic.TypeCache.TermCache
-                    .Where(pair => pair.Key.Resource == r.Name)
-                    .Select(pair => pair.Value.Key)
-                    .ToArray()
-            })
-            .Where(request.Conditions);
+        public IEnumerable<TermCache> Select(IRequest<TermCache> request)
+        {
+            if (request == null) throw new ArgumentNullException(nameof(request));
+            return RESTarConfig.Resources
+                .Select(r => new TermCache
+                {
+                    Resource = r.Name,
+                    Terms = Deflection.Dynamic.TypeCache.TermCache
+                        .Where(pair => pair.Key.Resource == r.Name)
+                        .Select(pair => pair.Value.Key)
+                        .ToArray()
+                })
+                .Where(request.Conditions);
+        }
 
         public int Delete(IEnumerable<TermCache> entities, IRequest<TermCache> request)
         {
+            if (request == null) throw new ArgumentNullException(nameof(request));
             var count = 0;
             entities.ForEach(e =>
             {

@@ -6,6 +6,7 @@ using System.Text.RegularExpressions;
 using Newtonsoft.Json;
 using RESTar.Internal;
 using RESTar.Linq;
+using static Newtonsoft.Json.NullValueHandling;
 using static RESTar.Internal.RESTarResourceType;
 using IResource = RESTar.Internal.IResource;
 
@@ -66,6 +67,12 @@ namespace RESTar.Admin
         /// </summary>
         public RESTarResourceType ResourceType { get; private set; }
 
+        /// <summary>
+        /// Inner resources for this resource
+        /// </summary>
+        [JsonProperty(NullValueHandling = Ignore)]
+        public Resource[] InnerResources { get; private set; }
+
         [JsonConstructor]
         public Resource(RESTarResourceType resourceType) => ResourceType = resourceType;
 
@@ -75,21 +82,27 @@ namespace RESTar.Admin
         public IEnumerable<Resource> Select(IRequest<Resource> request)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
+
+            Resource Make(IResource iresource) => new Resource
+            {
+                Name = iresource.Name,
+                Alias = iresource.Alias,
+                Description = iresource.Description ?? "No description",
+                EnabledMethods = iresource.AvailableMethods.ToArray(),
+                Editable = iresource.Editable,
+                IsInternal = iresource.IsInternal,
+                Type = iresource.Type.FullName,
+                IResource = iresource,
+                ResourceType = iresource.ResourceType,
+                InnerResources = ((IResourceInternal) iresource).InnerResources?
+                    .Select(Make)
+                    .ToArray()
+            };
+
             return RESTarConfig.Resources
                 .Where(r => r.IsGlobal)
                 .OrderBy(r => r.Name)
-                .Select(resource => new Resource
-                {
-                    Name = resource.Name,
-                    Alias = resource.Alias,
-                    Description = resource.Description ?? "No description",
-                    EnabledMethods = resource.AvailableMethods.ToArray(),
-                    Editable = resource.Editable,
-                    IsInternal = resource.IsInternal,
-                    Type = resource.Type.FullName,
-                    IResource = resource,
-                    ResourceType = resource.ResourceType,
-                })
+                .Select(Make)
                 .Where(request.Conditions);
         }
 
@@ -162,7 +175,7 @@ namespace RESTar.Admin
                     #region Edit other properties (available for dynamic resources)
 
                     var dynamicResource = DynamicResource.Get(iresource.Name);
-                    dynamic diresource = iresource;
+                    var diresource = (IResourceInternal) iresource;
 
                     if (iresource.Description != resource.Description)
                     {

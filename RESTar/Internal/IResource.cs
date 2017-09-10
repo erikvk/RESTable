@@ -65,9 +65,14 @@ namespace RESTar.Internal
         bool IsGlobal { get; }
 
         /// <summary>
-        /// Is this resource a subresource of some other resource?
+        /// Is this resource an inner resource of some other resource?
         /// </summary>
-        bool IsSubResource { get; }
+        bool IsInnerResource { get; }
+
+        /// <summary>
+        /// The name of the parent resource, if this is an inner resource
+        /// </summary>
+        string ParentResourceName { get; }
 
         /// <summary>
         /// Are runtime-defined conditions allowed in requests to this resource?
@@ -125,4 +130,11 @@ namespace RESTar.Internal
         /// </summary>
         Counter<T> Count { get; }
      }
+
+    internal interface IResourceInternal
+    {
+        IReadOnlyList<IResource> InnerResources { get; set; }
+        string Description { get; set; }
+        IReadOnlyList<Methods> AvailableMethods { get; set; }
+    }
 }

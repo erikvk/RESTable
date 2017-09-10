@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using Dynamit;
+using Newtonsoft.Json.Linq;
 using RESTar;
 using Starcounter;
 
@@ -17,7 +18,7 @@ namespace RESTarExample
                 requireApiKey: true,
                 allowAllOrigins: false,
                 viewEnabled: true,
-                configFilePath: $"C:\\Mopedo\\Mopedo.config",
+                configFilePath: "C:\\Mopedo\\Mopedo.config",
                 setupMenu: true
             );
             TestDatabase.Init();
@@ -30,6 +31,12 @@ namespace RESTarExample
         public int MyId;
         public string MyMember;
         public string SomeMember;
+
+        [RESTar(Methods.GET, Description = "Returns a fine object")]
+        public class Get : JObject, ISelector<Get>
+        {
+            public IEnumerable<Get> Select(IRequest<Get> request) => new[] {new Get {["Soo"] = 123}};
+        }
     }
 
     [RESTar]

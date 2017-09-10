@@ -85,9 +85,19 @@ namespace RESTar
 
         private static void AddToResourceFinder(IResource toAdd, IDictionary<string, IResource> finder)
         {
-            var parts = toAdd.IsInternal
-                ? new[] {toAdd.Name}
-                : toAdd.Name.ToLower().Split('.');
+            string[] makeparts(IResource resource)
+            {
+                switch (resource)
+                {
+                    case var _ when resource.IsInternal: return new[] {resource.Name};
+                    case var _ when resource.IsInnerResource:
+                        var dots = resource.Name.Count('.');
+                        return resource.Name.ToLower().Split(new[] {'.'}, dots);
+                    default: return resource.Name.ToLower().Split('.');
+                }
+            }
+
+            var parts = makeparts(toAdd);
             parts.ForEach((item, index) =>
             {
                 var key = string.Join(".", parts.Skip(index));
@@ -173,6 +183,11 @@ namespace RESTar
             #endregion
 
             DynamicResource.All.ForEach(Resource.RegisterDynamicResource);
+
+            Resources.GroupBy(r => r.ParentResourceName)
+                .Where(group => group.Key != null)
+                .ForEach(group => ((IResourceInternal) Resource.Get(group.Key)).InnerResources = group.ToList());
+
             RequireApiKey = requireApiKey;
             AllowAllOrigins = allowAllOrigins;
             ConfigFilePath = configFilePath;
@@ -250,7 +265,12 @@ namespace RESTar
                                     switch (resourceToken)
                                     {
                                         case JValue value when value.Value is string resourceString:
-                                            resourceSet.UnionWith(Resource.SafeFindMany(resourceString));
+                                            var iresources = Resource.SafeFindMany(resourceString);
+                                            var includingInner = iresources.Union(iresources
+                                                .Cast<IResourceInternal>()
+                                                .Where(r => r.InnerResources != null)
+                                                .SelectMany(r => r.InnerResources));
+                                            resourceSet.UnionWith(includingInner);
                                             return;
                                         case JArray resources:
                                             resources.ForEach(recurseResources);

@@ -88,10 +88,10 @@ namespace RESTar
         }
 
         /// <summary>
-        /// Finds a resource by name (case sensitive) and throws an UnknownResourceException
+        /// Finds a resource by name (case insensitive) and throws an UnknownResourceException
         /// if no resource is found.
         /// </summary>
-        public static IResource Get(string name) => RESTarConfig.ResourceByName.SafeGet(name)
+        public static IResource Get(string name) => RESTarConfig.ResourceByName.SafeGet(name.ToLower())
                                                     ?? throw new UnknownResourceException(name);
 
         /// <summary>

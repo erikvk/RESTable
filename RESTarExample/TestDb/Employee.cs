@@ -13,30 +13,28 @@ namespace RESTarExample.TestDb
         public string Name;
 
         [DataMember(Name = "Details")] public ulong? DetailsObjectNo;
-
         [DataMember(Name = "Boss")] public ulong? BossObjectNo;
-
         [DataMember(Name = "Company")] public ulong? CompanyObjectNo;
 
         [IgnoreDataMember]
         public EmployeeDetails Details
         {
-            get { return DetailsObjectNo.GetReference<EmployeeDetails>(); }
-            set { DetailsObjectNo = value.GetObjectNo(); }
+            get => DetailsObjectNo.GetReference<EmployeeDetails>();
+            set => DetailsObjectNo = value.GetObjectNo();
         }
 
         [IgnoreDataMember]
         public Employee Boss
         {
-            get { return BossObjectNo.GetReference<Employee>(); }
-            set { BossObjectNo = value.GetObjectNo(); }
+            get => BossObjectNo.GetReference<Employee>();
+            set => BossObjectNo = value.GetObjectNo();
         }
 
         [IgnoreDataMember]
         public Company Company
         {
-            get { return CompanyObjectNo.GetReference<Company>(); }
-            set { CompanyObjectNo = value.GetObjectNo(); }
+            get => CompanyObjectNo.GetReference<Company>();
+            set => CompanyObjectNo = value.GetObjectNo();
         }
 
         [IgnoreDataMember]

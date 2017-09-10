@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Runtime.Serialization;
 using static RESTar.Methods;
 
@@ -25,11 +26,18 @@ namespace RESTar.Admin
         public static void ReloadConfigFile() => RESTarConfig.UpdateAuthInfo();
 
         /// <inheritdoc />
-        public IEnumerable<AdminTools> Select(IRequest<AdminTools> request) => new[] {new AdminTools()};
+        public IEnumerable<AdminTools> Select(IRequest<AdminTools> request)
+        {
+            if (request == null)
+                throw new ArgumentNullException(nameof(request));
+            return new[] {new AdminTools()};
+        }
 
         /// <inheritdoc />
         public int Update(IEnumerable<AdminTools> entities, IRequest<AdminTools> request)
         {
+            if (request == null)
+                throw new ArgumentNullException(nameof(request));
             var updated = false;
             var count = 0;
             foreach (var at in entities)

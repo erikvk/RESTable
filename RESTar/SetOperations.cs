@@ -38,6 +38,7 @@ namespace RESTar
         /// <inheritdoc />
         public IEnumerable<SetOperations> Select(IRequest<SetOperations> request)
         {
+            if (request == null) throw new ArgumentNullException(nameof(request));
             if (request.Body == null)
                 throw new Exception("Missing data source for operation");
             var jobject = Parse(request.Body);
