@@ -1,5 +1,4 @@
 ﻿using RESTar;
-using RESTar.Deflection;
 
 namespace RESTarTester
 {
