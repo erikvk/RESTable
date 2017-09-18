@@ -64,7 +64,7 @@ namespace RESTar.Admin
         /// </summary>
         public int DaysToSaveErrors { get; private set; }
 
-        private static readonly string SQL = $"SELECT t FROM {typeof(Settings).FullName} t";
+        private const string SQL = "SELECT t FROM RESTar.Admin.Settings t";
 
         internal static void Init(ushort port, string uri, bool viewEnabled, bool prettyPrint, int daysToSaveErrors) =>
             Transact.Trans(() =>

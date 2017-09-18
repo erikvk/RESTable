@@ -13,7 +13,7 @@ namespace RESTar
     /// Provides easy methods for making internal or external HTTP and external
     /// HTTPS calls.
     /// </summary>
-    public static class HTTP
+    internal static class HTTP
     {
         internal static Response Internal(HttpRequest request) => Internal
         (
@@ -40,7 +40,7 @@ namespace RESTar
         /// Makes an internal request. Make sure to include the original Request's
         /// AuthToken if you're sending internal RESTar requests.
         /// </summary>
-        public static Response Internal
+        internal static Response Internal
         (
             Methods method,
             Uri relativeUri,
@@ -84,7 +84,7 @@ namespace RESTar
         /// <summary>
         /// Makes an external HTTP or HTTPS request
         /// </summary>
-        public static Response External
+        internal static Response External
         (
             Methods method,
             Uri uri,

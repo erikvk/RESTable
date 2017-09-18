@@ -1,4 +1,5 @@
 ﻿using RESTar;
+using RESTar.Deflection;
 
 namespace RESTarTester
 {
@@ -7,6 +8,14 @@ namespace RESTarTester
         public static void Main()
         {
             RESTarConfig.Init(9000);
+
+            #region Deflection
+
+
+
+            #endregion
+
+
         }
     }
 }
