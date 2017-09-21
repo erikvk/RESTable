@@ -149,10 +149,13 @@ namespace RESTar.Requests
             Headers = {["RESTar-info"] = $"{count} entities updated in resource '{typeof(T).FullName}'"}
         };
 
-        internal static Response SafePostedEntities<T>(int ins, int upd) where T : class => new Response
+        internal static Response SafePostedEntities<T>(int upd, int ins) where T : class => new Response
         {
             StatusCode = 200,
-            Headers = {["RESTar-info"] = $"Inserted {ins} and updated {upd} entities in resource {typeof(T).FullName}"}
+            Headers =
+            {
+                ["RESTar-info"] = $"Updated {upd} and then inserted {ins} entities in resource '{typeof(T).FullName}'"
+            }
         };
 
         internal static Response DeletedEntities<T>(int count) where T : class => new Response

@@ -462,10 +462,10 @@ namespace RESTar.Operations
                 var trans = new Transaction<T>();
                 try
                 {
-                    var insertedCount = toInsert.Any() ? trans.Scope(() => INSERT_JARRAY(innerRequest, toInsert)) : 0;
                     var updatedCount = toUpdate.Any() ? trans.Scope(() => UPDATE_MANY(innerRequest, toUpdate)) : 0;
+                    var insertedCount = toInsert.Any() ? trans.Scope(() => INSERT_JARRAY(innerRequest, toInsert)) : 0;
                     trans.Commit();
-                    return SafePostedEntities<T>(insertedCount, updatedCount);
+                    return SafePostedEntities<T>(updatedCount, insertedCount);
                 }
                 catch
                 {
