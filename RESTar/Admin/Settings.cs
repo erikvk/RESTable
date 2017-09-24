@@ -66,19 +66,19 @@ namespace RESTar.Admin
 
         private const string SQL = "SELECT t FROM RESTar.Admin.Settings t";
 
-        internal static void Init(ushort port, string uri, bool viewEnabled, bool prettyPrint, int daysToSaveErrors) =>
-            Transact.Trans(() =>
+        internal static void Init(ushort port, string uri, bool viewEnabled, bool prettyPrint,
+            int daysToSaveErrors) => Transact.Trans(() =>
+        {
+            Db.SQL<Settings>(SQL).ForEach(Db.Delete);
+            new Settings
             {
-                Db.SQL<Settings>(SQL).ForEach(Db.Delete);
-                new Settings
-                {
-                    Port = port,
-                    Uri = uri,
-                    ViewEnabled = viewEnabled,
-                    PrettyPrint = prettyPrint,
-                    DaysToSaveErrors = daysToSaveErrors
-                };
-            });
+                Port = port,
+                Uri = uri,
+                ViewEnabled = viewEnabled,
+                PrettyPrint = prettyPrint,
+                DaysToSaveErrors = daysToSaveErrors
+            };
+        });
 
         /// <summary>
         /// Gets the only instance of the Settings resource

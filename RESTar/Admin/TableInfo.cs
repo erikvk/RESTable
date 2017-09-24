@@ -17,8 +17,8 @@ namespace RESTar.Admin
     [RESTar(GET, Description = description)]
     public class TableInfo : ISelector<TableInfo>
     {
-        private const string description = "The TableInfo resource can create an aggregated " +
-                                           "info view for a given Starcounter table.";
+        private const string description = "The TableInfo resource can create aggregated " +
+                                           "info views for Starcounter tables.";
 
         /// <summary>
         /// The name of the table

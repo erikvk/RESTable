@@ -151,6 +151,20 @@ namespace RESTar.Operations
             }
         }
 
+        private static int INSERT_ONE_JOBJECT(IRequest<T> request, JObject json)
+        {
+            try
+            {
+                var result = json.ToObject<T>();
+                if (result is IValidatable i) i.Validate();
+                return request.Resource.Insert(new[] {result}, request);
+            }
+            catch (Exception e)
+            {
+                throw new AbortedInserterException<T>(e, request.Method);
+            }
+        }
+
         private static int INSERT_JARRAY(IRequest<T> request, JArray json)
         {
             try
@@ -470,6 +484,57 @@ namespace RESTar.Operations
                 catch
                 {
                     trans.Rollback();
+                    throw;
+                }
+            }
+
+            private static Response LrSafePOST2(RESTRequest<T> request)
+            {
+                var (innerRequest, toInsert, toUpdate) = GetSafePostTasks(request);
+                var outerTrans = new Transaction<T>();
+                try
+                {
+                    int updatedCount = 0, insertedCount = 0;
+                    outerTrans.Scope(() =>
+                    {
+                        if (toUpdate.Any())
+                        {
+                            var updTrans = new Transaction<T>();
+                            try
+                            {
+                                updTrans.Scope(() => updatedCount = UPDATE_MANY(innerRequest, toUpdate));
+                                updTrans.Commit();
+                            }
+                            catch
+                            {
+                                updTrans.Rollback();
+                                throw;
+                            }
+                        }
+
+                        if (toInsert.Any())
+                        {
+                            var insTrans = new Transaction<T>();
+                            try
+                            {
+                                {
+                                    insTrans.Scope(() => insertedCount = INSERT_JARRAY(innerRequest, toInsert));
+                                    insTrans.Commit();
+                                }
+                            }
+                            catch
+                            {
+                                insTrans.Rollback();
+                                throw;
+                            }
+                        }
+                    });
+                    outerTrans.Commit();
+                    return SafePostedEntities<T>(updatedCount, insertedCount);
+                }
+                catch
+                {
+                    outerTrans.Rollback();
                     throw;
                 }
             }
