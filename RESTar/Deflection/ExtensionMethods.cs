@@ -41,6 +41,7 @@ namespace RESTar.Deflection
             {
                 if (p.DeclaringType?.IsValueType == true)
                     return p.SetValue;
+                if (p.HasAttribute<ReadOnlyAttribute>()) return null;
                 if (p.GetIndexParameters().Any()) return null;
                 var setterDelegate = p
                     .GetSetMethod()?

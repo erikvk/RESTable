@@ -12,6 +12,8 @@ namespace RESTar.Serialization
             if (member.HasAttribute<IgnoreDataMemberAttribute>())
                 return null;
             var property = base.CreateProperty(member, memberSerialization);
+            if (member.HasAttribute<ReadOnlyAttribute>())
+                property.Writable = false;
             property.PropertyName = member.RESTarMemberName();
             return property;
         }

@@ -88,6 +88,14 @@ namespace RESTar
     }
 
     /// <summary>
+    /// Makes a resource property with a public setter read only over the REST API
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
+    public class ReadOnlyAttribute : Attribute
+    {
+    }
+
+    /// <summary>
     /// An attribute that can be used to decorate field and property declarations, and assign
     /// allowed operators for use in conditions that reference them.
     /// </summary>

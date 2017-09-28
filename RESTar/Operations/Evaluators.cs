@@ -470,25 +470,25 @@ namespace RESTar.Operations
                 }
             }
 
-            private static Response LrSafePOST(RESTRequest<T> request)
-            {
-                var (innerRequest, toInsert, toUpdate) = GetSafePostTasks(request);
-                var trans = new Transaction<T>();
-                try
-                {
-                    var updatedCount = toUpdate.Any() ? trans.Scope(() => UPDATE_MANY(innerRequest, toUpdate)) : 0;
-                    var insertedCount = toInsert.Any() ? trans.Scope(() => INSERT_JARRAY(innerRequest, toInsert)) : 0;
-                    trans.Commit();
-                    return SafePostedEntities<T>(updatedCount, insertedCount);
-                }
-                catch
-                {
-                    trans.Rollback();
-                    throw;
-                }
-            }
+            //private static Response LrSafePOST(RESTRequest<T> request)
+            //{
+            //    var (innerRequest, toInsert, toUpdate) = GetSafePostTasks(request);
+            //    var trans = new Transaction<T>();
+            //    try
+            //    {
+            //        var updatedCount = toUpdate.Any() ? trans.Scope(() => UPDATE_MANY(innerRequest, toUpdate)) : 0;
+            //        var insertedCount = toInsert.Any() ? trans.Scope(() => INSERT_JARRAY(innerRequest, toInsert)) : 0;
+            //        trans.Commit();
+            //        return SafePostedEntities<T>(updatedCount, insertedCount);
+            //    }
+            //    catch
+            //    {
+            //        trans.Rollback();
+            //        throw;
+            //    }
+            //}
 
-            private static Response LrSafePOST2(RESTRequest<T> request)
+            private static Response LrSafePOST(RESTRequest<T> request)
             {
                 var (innerRequest, toInsert, toUpdate) = GetSafePostTasks(request);
                 var outerTrans = new Transaction<T>();
@@ -598,7 +598,7 @@ namespace RESTar.Operations
                     updatedCount = toUpdate.Any()
                         ? Transaction<T>.ShTransact(() => UPDATE_MANY(innerRequest, toUpdate))
                         : 0;
-                    return SafePostedEntities<T>(insertedCount, updatedCount);
+                    return SafePostedEntities<T>(updatedCount, insertedCount);
                 }
                 catch (Exception e)
                 {

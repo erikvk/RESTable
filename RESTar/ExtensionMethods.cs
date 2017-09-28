@@ -215,7 +215,7 @@ namespace RESTar
         /// <summary>
         /// Converts a resource entitiy to a JSON.net JObject.
         /// </summary>
-        public static JObject ToJObject(this object entity)
+        internal static JObject ToJObject(this object entity)
         {
             switch (entity)
             {

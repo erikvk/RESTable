@@ -178,6 +178,22 @@ namespace RESTar.Internal
 
         private static void CheckVirtualResource(Type type)
         {
+            #region Check general stuff
+
+            if (type.FullName == null)
+                throw new VirtualResourceDeclarationException("Unknown type");
+
+            if (type.FullName.ToLower().StartsWith("restar") && type.Assembly != typeof(Resource).Assembly)
+                throw new VirtualResourceDeclarationException(
+                    $"Invalid namespace for resource type '{type.FullName}'. Cannot begin with \'RESTar\' " +
+                    $"or any case variants of \'RESTar\'");
+
+            if ((!type.IsPublic || !type.IsClass) && type.Assembly != typeof(Resource).Assembly)
+                throw new VirtualResourceDeclarationException($"Invalid type '{type.FullName}'. Resource types must " +
+                                                              "be public classes");
+
+            #endregion
+
             #region Check for invalid IDictionary implementation
 
             if (type.Implements(typeof(IDictionary<,>), out var typeParams) && typeParams[0] != typeof(string))
