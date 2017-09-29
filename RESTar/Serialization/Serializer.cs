@@ -5,8 +5,8 @@ using System;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
+using static Newtonsoft.Json.Formatting;
 using static RESTar.Admin.Settings;
-using Formatting = Newtonsoft.Json.Formatting;
 
 namespace RESTar.Serialization
 {
@@ -52,7 +52,7 @@ namespace RESTar.Serialization
 
         internal static string Serialize(this object value, Type type = null)
         {
-            return JsonConvert.SerializeObject(value, type, _PrettyPrint ? Formatting.Indented : Formatting.None, Settings);
+            return JsonConvert.SerializeObject(value, type, _PrettyPrint ? Indented : None, Settings);
         }
 
         internal static void Populate(JToken value, object target)
@@ -70,6 +70,7 @@ namespace RESTar.Serialization
         internal static JToken Deserialize(this string json) => JsonConvert.DeserializeObject<JToken>(json);
         internal static T Deserialize<T>(this string json) => JsonConvert.DeserializeObject<T>(json);
         internal static void Populate(string json, object target) => JsonConvert.PopulateObject(json, target, Settings);
+
         internal static string SerializeToViewModel(this object value) => JsonConvert.SerializeObject(value, VmSettings);
 
         internal static string SerializeXML<T>(this IEnumerable<T> data)

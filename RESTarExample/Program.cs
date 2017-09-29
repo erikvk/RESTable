@@ -40,6 +40,45 @@ namespace RESTarExample
         }
     }
 
+
+    [Database, RESTar]
+    public class MyClass
+    {
+        public int MyInt;
+        private int prInt;
+
+        public int OtherInt
+        {
+            get => prInt;
+            set => prInt = value;
+        }
+
+        private MyResource _resource;
+
+        public MyResource Resource
+        {
+            get => _resource;
+            set
+            {
+                if (value != null)
+                    _resource = value;
+                else _resource = null;
+            }
+        }
+
+        public int ThirdInt
+        {
+            get => prInt;
+            set
+            {
+                if (value > 10)
+                    prInt = value;
+                else prInt = 0;
+            }
+        }
+
+    }
+
     [RESTar]
     public class R : IInserter<R>, ISelector<R>, IUpdater<R>, IDeleter<R>
     {
