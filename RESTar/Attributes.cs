@@ -4,6 +4,7 @@ using System.Linq;
 
 namespace RESTar
 {
+    /// <inheritdoc />
     /// <summary>
     /// Registers a new RESTar resource and provides permissions.
     /// </summary>
@@ -36,16 +37,10 @@ namespace RESTar
         /// </summary>
         public string Description { get; set; }
 
-        /// <summary>
-        /// Used when creating attributes for dynamic resources
-        /// </summary>
-        /// <param name="methods"></param>
+        /// <inheritdoc />
         internal RESTarAttribute(IReadOnlyList<Methods> methods) => AvailableMethods = methods;
 
-        /// <summary>
-        /// Registers a class as a RESTar resource. If no methods are provided in the 
-        /// method restritions list, all methods will be enabled for this resource.
-        /// </summary>
+        /// <inheritdoc />
         public RESTarAttribute(params Methods[] methodRestrictions)
         {
             if (!methodRestrictions.Any())
@@ -59,6 +54,7 @@ namespace RESTar
         internal static RESTarAttribute Get => typeof(T).GetAttribute<RESTarAttribute>();
     }
 
+    /// <inheritdoc />
     /// <summary>
     /// Registers a class as an internal RESTar resource, that can only
     /// be used in internal requests (using the RESTar.Request`1 class).
@@ -66,18 +62,12 @@ namespace RESTar
     [AttributeUsage(AttributeTargets.Class, Inherited = false)]
     public class RESTarInternalAttribute : RESTarAttribute
     {
-        /// <summary>
-        /// Used when creating attributes for dynamic resources
-        /// </summary>
-        /// <param name="methods"></param>
+        /// <inheritdoc />
         internal RESTarInternalAttribute(IReadOnlyList<Methods> methods) : base(methods)
         {
         }
 
-        /// <summary>
-        /// Registers a class as a RESTar internal resource. If no methods are provided in the 
-        /// method restrictions list, all methods will be enabled for this resource.
-        /// </summary>
+        /// <inheritdoc />
         public RESTarInternalAttribute(params Methods[] methodRestrictions) : base(methodRestrictions)
         {
         }
@@ -91,10 +81,11 @@ namespace RESTar
     /// Makes a resource property with a public setter read only over the REST API
     /// </summary>
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
-    public class ReadOnlyAttribute : Attribute
+    public abstract class ReadOnlyAttribute : Attribute
     {
     }
 
+    /// <inheritdoc />
     /// <summary>
     /// An attribute that can be used to decorate field and property declarations, and assign
     /// allowed operators for use in conditions that reference them.
@@ -105,27 +96,16 @@ namespace RESTar
         /// <summary>
         /// Only these operators will be allowed in conditions targeting this property
         /// </summary>
-        public Operator[] Operators { get; set; }
+        public Operator[] Operators { get; }
 
-        /// <summary>
-        /// Creates a new instance ot the AllowedOperators attribute, using the 
-        /// provided list of strings to parse allowed operators.
-        /// </summary>
-        /// <param name="allowedOperators"></param>
-        public AllowedConditionOperatorsAttribute(params string[] allowedOperators)
+        /// <inheritdoc />
+        public AllowedConditionOperatorsAttribute(params Operator[] allowedOperators)
         {
-            try
-            {
-                Operators = allowedOperators.Select(a => (Operator) a).ToArray();
-            }
-            catch
-            {
-                throw new Exception("Invalid RESTarMemberAttribute declaration. Invalid operator string in " +
-                                    "allowedOperators.");
-            }
+            Operators = allowedOperators;
         }
     }
 
+    /// <inheritdoc />
     /// <summary>
     /// An attribute that can be used to decorate field and property declarations, and tell
     /// the serializer to flatten them using the ToString() method when writing to excel.

@@ -98,7 +98,7 @@ namespace RESTar.Requests
                         $"{string.Join(", ", Enum.GetNames(typeof(RESTarMetaConditions)).Except(new[] {"New", "Delete"}))}. " +
                         $"For more info, see {Settings.Instance.HelpResourcePath}/topic=Meta-conditions");
                 var expectedType = metaCondition.ExpectedType();
-                var value = pair[1].GetConditionValue();
+                var value = pair[1].ParseConditionValue();
                 if (expectedType != value.GetType())
                     throw new SyntaxException(InvalidMetaConditionValueType,
                         $"Invalid data type assigned to meta-condition '{pair[0]}'. " +

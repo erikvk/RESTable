@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Data;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -23,6 +24,7 @@ using RESTar.Serialization;
 using RESTar.View;
 using Starcounter;
 using static System.Globalization.DateTimeStyles;
+using static System.Globalization.NumberStyles;
 using static System.Reflection.BindingFlags;
 using static System.StringComparison;
 using static RESTar.Internal.ErrorCodes;
@@ -552,27 +554,24 @@ namespace RESTar
 
         internal static bool IsExternal<T>(this IRequest<T> request) where T : class => !request.IsInternal();
 
-        internal static dynamic GetConditionValue(this string valueString)
+        private static readonly CultureInfo en_US = new CultureInfo("en-US");
+
+        internal static dynamic ParseConditionValue(this string str)
         {
-            if (valueString == "")
-                throw new SyntaxException(InvalidConditionSyntax, "No condition value literal after operator");
-            if (valueString == null) return null;
-            if (valueString == "null") return null;
-            if (valueString[0] == '\"' && valueString.Last() == '\"')
-                return valueString.Remove(0, 1).Remove(valueString.Length - 2, 1);
-            dynamic obj;
-            if (bool.TryParse(valueString, out var boo))
-                obj = boo;
-            else if (int.TryParse(valueString, out var _int))
-                obj = _int;
-            else if (decimal.TryParse(valueString, out var dec))
-                obj = decimal.Round(dec, 6);
-            else if (DateTime.TryParseExact(valueString, "yyyy-MM-dd", null, AssumeUniversal, out var dat) ||
-                     DateTime.TryParseExact(valueString, "yyyy-MM-ddTHH:mm:ss", null, AssumeUniversal, out dat) ||
-                     DateTime.TryParseExact(valueString, "O", null, AssumeUniversal, out dat))
-                obj = dat;
-            else obj = valueString;
-            return obj;
+            switch (str)
+            {
+                case null: return null;
+                case "null": return null;
+                case "": throw new SyntaxException(InvalidConditionSyntax, "No condition value literal after operator");
+                case var s when s[0] == '\"' && s[s.Length - 1] == '\"': return s.Remove(0, 1).Remove(s.Length - 2, 1);
+                    case var _ when bool.TryParse(str, out var @bool): return @bool;
+                case var _ when int.TryParse(str, out var @int): return @int;
+                case var _ when decimal.TryParse(str, Float, en_US, out var dec): return dec;
+                case var _ when DateTime.TryParseExact(str, "yyyy-MM-dd", null, AssumeUniversal, out var dat) ||
+                                DateTime.TryParseExact(str, "yyyy-MM-ddTHH:mm:ss", null, AssumeUniversal, out dat) ||
+                                DateTime.TryParseExact(str, "O", null, AssumeUniversal, out dat): return dat;
+                default: return str;
+            }
         }
 
         internal static Args ToArgs(this string query, Request request) => new Args(query, request);

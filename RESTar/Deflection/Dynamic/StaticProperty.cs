@@ -7,6 +7,7 @@ using Starcounter;
 
 namespace RESTar.Deflection.Dynamic
 {
+    /// <inheritdoc />
     /// <summary>
     /// A static property represents a compile time known property of a class.
     /// </summary>
@@ -17,9 +18,7 @@ namespace RESTar.Deflection.Dynamic
         /// </summary>
         public Type Type { get; protected set; }
 
-        /// <summary>
-        /// Is this property dynamic?
-        /// </summary>
+        /// <inheritdoc />
         public override bool Dynamic => false;
 
         /// <summary>

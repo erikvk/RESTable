@@ -4,6 +4,7 @@ using Starcounter;
 
 namespace RESTar.Deflection.Dynamic
 {
+    /// <inheritdoc />
     /// <summary>
     /// Special properties are properties that are not strictly members, but still
     /// important parts of class definitions. For example Starcounter ObjectID and 
@@ -23,7 +24,7 @@ namespace RESTar.Deflection.Dynamic
             Name = "ObjectNo",
             DatabaseQueryName = "ObjectNo",
             Type = typeof(ulong),
-            Getter = t => Do.TryAndThrow(() => t.GetObjectNo(), "Could not get ObjectNo from non-Starcounter resource."),
+            Getter = t => Do.TryAndThrow(t.GetObjectNo, "Could not get ObjectNo from non-Starcounter resource."),
             Attributes = new[] {new JsonPropertyAttribute {Order = int.MaxValue - 1}}
         };
 
@@ -35,7 +36,7 @@ namespace RESTar.Deflection.Dynamic
             Name = "ObjectID",
             DatabaseQueryName = "ObjectID",
             Type = typeof(string),
-            Getter = t => Do.TryAndThrow(() => t.GetObjectID(), "Could not get ObjectID from non-Starcounter resource."),
+            Getter = t => Do.TryAndThrow(t.GetObjectID, "Could not get ObjectID from non-Starcounter resource."),
             Attributes = new[] {new JsonPropertyAttribute {Order = int.MaxValue}}
         };
     }

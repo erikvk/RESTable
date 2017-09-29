@@ -13,30 +13,30 @@ namespace RESTar
         public const string JSON = "application/json";
         public const string XML = "application/xml";
 
-        internal static RESTarMimeType Match(string mimeTypeString)
+        internal static MimeType Match(string mimeTypeString)
         {
             switch (mimeTypeString?.ToLower())
             {
-                case XML: return RESTarMimeType.XML;
+                case XML: return MimeType.XML;
                 case "excel":
-                case Excel: return RESTarMimeType.Excel;
-                default: return RESTarMimeType.Json;
+                case Excel: return MimeType.Excel;
+                default: return MimeType.Json;
             }
         }
 
-        internal static string GetString(RESTarMimeType mimeType)
+        internal static string GetString(MimeType mimeType)
         {
             switch (mimeType)
             {
-                case RESTarMimeType.Json: return JSON;
-                case RESTarMimeType.Excel: return Excel;
-                case RESTarMimeType.XML: return XML;
+                case MimeType.Json: return JSON;
+                case MimeType.Excel: return Excel;
+                case MimeType.XML: return XML;
                 default: throw new ArgumentOutOfRangeException(nameof(mimeType));
             }
         }
     }
 
-    internal enum RESTarMimeType : byte
+    internal enum MimeType : byte
     {
         Json,
         Excel,
@@ -45,6 +45,6 @@ namespace RESTar
 
     internal static class MimeTypeExtensions
     {
-        internal static string ToMimeString(this RESTarMimeType mime) => MimeTypes.GetString(mime);
+        internal static string ToMimeString(this MimeType mime) => MimeTypes.GetString(mime);
     }
 }

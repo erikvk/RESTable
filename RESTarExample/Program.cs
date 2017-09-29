@@ -29,6 +29,7 @@ namespace RESTarExample
     public class MyResource
     {
         public int MyId;
+        public decimal MyDecimal;
         public string MyMember;
         public string SomeMember;
 

@@ -8,8 +8,7 @@ using Starcounter;
 
 namespace RESTar.Serialization
 {
-    /// <summary>
-    /// </summary>
+    /// <inheritdoc />
     internal class CreateViewModelResolver : DefaultContractResolver
     {
         protected override JsonProperty CreateProperty(MemberInfo member, MemberSerialization memberSerialization)

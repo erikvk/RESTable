@@ -12,6 +12,7 @@ using IResource = RESTar.Internal.IResource;
 
 namespace RESTar
 {
+    /// <inheritdoc />
     /// <summary>
     /// A super class for all custom RESTar exceptions
     /// </summary>
@@ -27,6 +28,7 @@ namespace RESTar
         internal RESTarException(ErrorCodes code, string message, Exception ie) : base(message, ie) => ErrorCode = code;
     }
 
+    /// <inheritdoc />
     /// <summary>
     /// Thrown when a client does something that is forbidden
     /// </summary>
@@ -35,6 +37,7 @@ namespace RESTar
         internal ForbiddenException(ErrorCodes code, string message) : base(code, message) => Response = Forbidden;
     }
 
+    /// <inheritdoc />
     /// <summary>
     /// Thrown when a client tries to make an external request to an internal resource
     /// </summary>
@@ -44,6 +47,7 @@ namespace RESTar
             $"Cannot make an external request to internal resource '{resource.Name}'") => Response = Forbidden;
     }
 
+    /// <inheritdoc />
     /// <summary>
     /// Thrown when no HTML was found for a resource view.
     /// </summary>
@@ -54,6 +58,7 @@ namespace RESTar
             $"'{matcher}' to the 'wwwroot/resources' directory.") => Response = NotFound(this);
     }
 
+    /// <inheritdoc />
     /// <summary>
     /// Thrown when a syntax error was discovered when parsing a request
     /// </summary>
@@ -63,6 +68,7 @@ namespace RESTar
             "Syntax error while parsing request: " + message) => Response = BadRequest(this);
     }
 
+    /// <inheritdoc />
     /// <summary>
     /// Thrown when a provided operator was invalid
     /// </summary>
@@ -79,6 +85,7 @@ namespace RESTar
         }
     }
 
+    /// <inheritdoc />
     /// <summary>
     /// Thrown when a provided operator was forbidden for the given property
     /// </summary>
@@ -91,6 +98,7 @@ namespace RESTar
             $": {string.Join(", ", allowed.Select(a => $"'{a.Common}'"))}") => Response = BadRequest(this);
     }
 
+    /// <inheritdoc />
     /// <summary>
     /// Thrown when RESTar encounters an error getting entities from an
     /// external data source.
@@ -101,6 +109,7 @@ namespace RESTar
             $"RESTar could not get entities from source at '{request.URI}'. {message}") => Response = BadRequest(this);
     }
 
+    /// <inheritdoc />
     /// <summary>
     /// Thrown when RESTar encounters an error getting entities from an
     /// external data source.
@@ -112,6 +121,7 @@ namespace RESTar
             BadRequest(this);
     }
 
+    /// <inheritdoc />
     /// <summary>
     /// Thrown when an invalid number of data entities was provided for a certain
     /// method.
@@ -123,6 +133,7 @@ namespace RESTar
             "Only POST accepts multiple objects/rows as input.") => Response = BadRequest(this);
     }
 
+    /// <inheritdoc />
     /// <summary>
     /// Thrown when RESTar cannot locate a resource using a given search string
     /// </summary>
@@ -133,6 +144,7 @@ namespace RESTar
             $"resources, GET: {_ResourcesPath} . ") => Response = NotFound(this);
     }
 
+    /// <inheritdoc />
     /// <summary>
     /// Thrown when RESTar encounters an error reading Excel data
     /// </summary>
@@ -143,6 +155,7 @@ namespace RESTar
             "curl, make sure the flag '--data-binary' is used and not '--data' or '-d'") => Response = BadRequest(this);
     }
 
+    /// <inheritdoc />
     /// <summary>
     /// Thrown when RESTar encounters an error writing to the Excel format
     /// </summary>
@@ -152,6 +165,7 @@ namespace RESTar
             $"RESTar was unable to write entities to excel. {message}", ie) => Response = BadRequest(this);
     }
 
+    /// <inheritdoc />
     /// <summary>
     /// Thrown when RESTar cannot find a property/column in a given resource by a 
     /// given property name.
@@ -162,6 +176,7 @@ namespace RESTar
             $"Could not find any property in type '{resource.Name}' by '{str}'.") => Response = NotFound(this);
     }
 
+    /// <inheritdoc />
     /// <summary>
     /// Thrown when RESTar expected a unique match for a property/column in a resource, but
     /// found more than one.
@@ -189,6 +204,7 @@ namespace RESTar
         }
     }
 
+    /// <inheritdoc />
     /// <summary>
     /// Thrown when RESTar expected a unique match for a resource, but
     /// found more than one.
@@ -208,6 +224,7 @@ namespace RESTar
         }
     }
 
+    /// <inheritdoc />
     /// <summary>
     /// Thrown when RESTar encounters an error selecting entities from 
     /// a given resource.
@@ -222,6 +239,7 @@ namespace RESTar
                                   ), ie) => Response = AbortedOperation<T>(this, request.Method);
     }
 
+    /// <inheritdoc />
     /// <summary>
     /// Thrown when RESTar encounters an error inserting entities into
     /// a given resource.
@@ -239,6 +257,7 @@ namespace RESTar
                                   ), ie) => Response = AbortedOperation<T>(this, method);
     }
 
+    /// <inheritdoc />
     /// <summary>
     /// Thrown when RESTar encounters an error updating entities in
     /// a given resource.
@@ -253,6 +272,7 @@ namespace RESTar
                                   ), ie) => Response = AbortedOperation<T>(this, request.Method);
     }
 
+    /// <inheritdoc />
     /// <summary>
     /// Thrown when RESTar encounters an error deleting entities from
     /// a given resource.
@@ -267,6 +287,7 @@ namespace RESTar
                                   ), ie) => Response = AbortedOperation<T>(this, request.Method);
     }
 
+    /// <inheritdoc />
     /// <summary>
     /// Thrown when RESTar encounters an error selecting entities from 
     /// a given resource.
@@ -275,12 +296,13 @@ namespace RESTar
     {
         internal AbortedCounterException(Exception ie, IRequest request, string message = null)
             : base(AbortedCount, message ?? (ie.GetType() == typeof(JsonSerializationException) ||
-                                              ie.GetType() == typeof(JsonReaderException)
-                                      ? "JSON serialization error, check JSON syntax. "
-                                      : ""
-                                  ), ie) => Response = AbortedOperation<T>(this, request.Method);
+                                             ie.GetType() == typeof(JsonReaderException)
+                                     ? "JSON serialization error, check JSON syntax. "
+                                     : ""
+                                 ), ie) => Response = AbortedOperation<T>(this, request.Method);
     }
 
+    /// <inheritdoc />
     /// <summary>
     /// Thrown when an entity of a resource declared as IValidatable fails validation
     /// </summary>
@@ -290,6 +312,7 @@ namespace RESTar
             => Response = BadRequest(this);
     }
 
+    /// <inheritdoc />
     /// <summary>
     /// Thrown when a resource cannot be identified when registering an alias.
     /// </summary>
@@ -301,6 +324,7 @@ namespace RESTar
             => Response = BadRequest(this);
     }
 
+    /// <inheritdoc />
     /// <summary>
     /// Thrown when an alias cannot be registered for a resource because it is already in use
     /// </summary>
@@ -311,6 +335,7 @@ namespace RESTar
             Response = BadRequest(this);
     }
 
+    /// <inheritdoc />
     /// <summary>
     /// Thrown when an alias cannot be registered for a resource because it is the same as a resource name
     /// </summary>
@@ -320,6 +345,7 @@ namespace RESTar
             $"Invalid Alias: '{alias}' is a resource name") => Response = BadRequest(this);
     }
 
+    /// <inheritdoc />
     /// <summary>
     /// Thrown when a uniquely matched entity in a resource was expected for a request,
     /// but multiple was found. 
@@ -334,6 +360,7 @@ namespace RESTar
             "conditions. See help article with topic 'unsafe' for more info.") => Response = BadRequest(this);
     }
 
+    /// <inheritdoc />
     /// <summary>
     /// Thrown when an invalid members was detected in a virtual resource declaration.
     /// </summary>
@@ -342,7 +369,8 @@ namespace RESTar
         internal VirtualResourceMemberException(string message)
             : base(InvalidVirtualResourceMember, message) => Response = BadRequest(this);
     }
-    
+
+    /// <inheritdoc />
     /// <summary>
     /// Thrown when an error was detected in a virtual resource declaration.
     /// </summary>
@@ -352,6 +380,7 @@ namespace RESTar
             : base(InvalidVirtualResourceDeclaration, message) => Response = BadRequest(this);
     }
 
+    /// <inheritdoc />
     /// <summary>
     /// Thrown when an error was detected in a virtual resource declaration.
     /// </summary>
@@ -361,6 +390,7 @@ namespace RESTar
             : base(InvalidVirtualResourceDeclaration, message) => Response = BadRequest(this);
     }
 
+    /// <inheritdoc />
     /// <summary>
     /// Thrown when RESTar has run out of dynamic tables for allocation to new 
     /// dynamic resources.
@@ -372,6 +402,7 @@ namespace RESTar
             => Response = BadRequest(this);
     }
 
+    /// <inheritdoc />
     /// <summary>
     /// Thrown when a call is made to RESTar before RESTarConfig.Init() has been called.
     /// </summary>

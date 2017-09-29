@@ -34,8 +34,8 @@ namespace RESTar.Requests
         private byte[] BinaryBody { get; set; }
         private string Source { get; set; }
         private string Destination { get; set; }
-        private RESTarMimeType ContentType { get; set; }
-        private RESTarMimeType Accept { get; set; }
+        private MimeType ContentType { get; set; }
+        internal MimeType Accept { get; set; }
         private string CORSOrigin { get; set; }
         private DataConfig InputDataConfig { get; set; }
         private DataConfig OutputDataConfig { get; set; }
@@ -113,12 +113,12 @@ namespace RESTar.Requests
 
             switch (ContentType)
             {
-                case RESTarMimeType.Json:
+                case MimeType.Json:
                     if (Body[0] == '[' && Method != POST)
                         throw new InvalidInputCountException(Method);
                     return;
-                case RESTarMimeType.XML: throw new FormatException("XML is only supported as output format");
-                case RESTarMimeType.Excel:
+                case MimeType.XML: throw new FormatException("XML is only supported as output format");
+                case MimeType.Excel:
                     using (var stream = new MemoryStream(BinaryBody))
                     {
                         var regex = new Regex(@"(:[\d]+).0([\D])");
@@ -136,50 +136,6 @@ namespace RESTar.Requests
 
             #endregion
         }
-
-        internal Response MakeResponse(IEnumerable<object> data)
-        {
-            var fileName = $"{Resource.AliasOrName}_{DateTime.Now:yyMMddHHmmssfff}";
-            switch (Accept)
-            {
-                case RESTarMimeType.Json:
-                    var json = data.Serialize();
-                    if (json == "[]") return null;
-                    return new Response
-                    {
-                        ContentType = MimeTypes.JSON,
-                        Body = json,
-                        Headers = {["Content-Disposition"] = $"attachment; filename={fileName}.json"}
-                    };
-                case RESTarMimeType.Excel:
-                    try
-                    {
-                        var excel = data.ToExcel(Resource)?.SerializeExcel();
-                        if (excel == null) return null;
-                        return new Response
-                        {
-                            ContentType = MimeTypes.Excel,
-                            BodyBytes = excel,
-                            Headers = {["Content-Disposition"] = $"attachment; filename={fileName}.xlsx"}
-                        };
-                    }
-                    catch (Exception e)
-                    {
-                        throw new ExcelFormatException(e.Message, e);
-                    }
-                case RESTarMimeType.XML:
-                    var xml = data.SerializeXML();
-                    if (xml == null) return null;
-                    return new Response
-                    {
-                        ContentType = MimeTypes.XML,
-                        Body = xml,
-                        Headers = {["Content-Disposition"] = $"attachment; filename={fileName}.xml"}
-                    };
-                default: throw new ArgumentOutOfRangeException(nameof(Accept));
-            }
-        }
-
 
         internal Response GetResponse()
         {

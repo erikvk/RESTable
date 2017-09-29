@@ -4,6 +4,7 @@ using RESTar.Requests;
 
 namespace RESTar
 {
+    /// <inheritdoc />
     /// <summary>
     /// A RESTar request for a resource T. This is a common generic interface for all
     /// request types.

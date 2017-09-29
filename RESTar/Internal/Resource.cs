@@ -183,12 +183,12 @@ namespace RESTar.Internal
             if (type.FullName == null)
                 throw new VirtualResourceDeclarationException("Unknown type");
 
-            if (type.FullName.ToLower().StartsWith("restar") && type.Assembly != typeof(Resource).Assembly)
+            if (type.FullName.ToLower().StartsWith("restar.") && type.Assembly != typeof(Resource).Assembly)
                 throw new VirtualResourceDeclarationException(
                     $"Invalid namespace for resource type '{type.FullName}'. Cannot begin with \'RESTar\' " +
-                    $"or any case variants of \'RESTar\'");
+                    "or any case variants of \'RESTar\'");
 
-            if ((!type.IsPublic || !type.IsClass) && type.Assembly != typeof(Resource).Assembly)
+            if ((!type.IsClass || !type.IsPublic && !type.IsNestedPublic) && type.Assembly != typeof(Resource).Assembly)
                 throw new VirtualResourceDeclarationException($"Invalid type '{type.FullName}'. Resource types must " +
                                                               "be public classes");
 

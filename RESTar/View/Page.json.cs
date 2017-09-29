@@ -2,8 +2,7 @@ using Starcounter;
 
 namespace RESTar.View
 {
-    /// <summary>
-    /// </summary>
+    /// <inheritdoc />
     partial class Page : Json
     {
     }

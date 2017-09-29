@@ -10,6 +10,7 @@ using static RESTar.Operators;
 
 namespace RESTar
 {
+    /// <inheritdoc />
     /// <summary>
     /// A condition encodes a predicate that is either true or false of an entity
     /// in a resource. It is used to match entities in resources while selecting 
@@ -17,9 +18,7 @@ namespace RESTar
     /// </summary>
     public class Condition<T> : ICondition where T : class
     {
-        /// <summary>
-        /// The key of the condition, the path to a property of an entity.
-        /// </summary>
+        /// <inheritdoc />
         public string Key => Term.Key;
 
         private Operator _operator;
@@ -61,13 +60,10 @@ namespace RESTar
             }
         }
 
-        /// <summary>
-        /// The term describing the property to compare with
-        /// </summary>
+        /// <inheritdoc />
         public Term Term { get; }
 
-        /// <summary>
-        /// </summary>
+        /// <inheritdoc />
         public override int GetHashCode() => typeof(T).GetHashCode() + Key.GetHashCode() + Operator.GetHashCode();
 
         private bool _skip;
@@ -108,9 +104,7 @@ namespace RESTar
         internal Type Type => Term.IsStatic ? Term.LastAs<StaticProperty>()?.Type : null;
         internal bool IsOfType<T1>() => Type == typeof(T1);
 
-        /// <summary>
-        /// Converts a condition to a new target type
-        /// </summary>
+        /// <inheritdoc />
         [Pure]
         public Condition<T1> Redirect<T1>(string newKey = null) where T1 : class => new Condition<T1>
         (
@@ -142,6 +136,7 @@ namespace RESTar
         {
             if (Skip) return true;
             var subjectValue = Term.Evaluate(subject);
+
             switch (Operator.OpCode)
             {
                 case EQUALS: return Do.Try<bool>(() => subjectValue == Value, false);
@@ -149,29 +144,29 @@ namespace RESTar
                 case LESS_THAN:
                     return Do.Try<bool>(() =>
                     {
-                        if (subjectValue is string && Value is string)
-                            return string.Compare((string) subjectValue, (string) Value, Ordinal) < 0;
+                        if (subjectValue is string s1 && Value is string s2)
+                            return string.Compare(s1, s2, Ordinal) < 0;
                         return subjectValue < Value;
                     }, false);
                 case GREATER_THAN:
                     return Do.Try<bool>(() =>
                     {
-                        if (subjectValue is string && Value is string)
-                            return string.Compare((string) subjectValue, (string) Value, Ordinal) > 0;
+                        if (subjectValue is string s1 && Value is string s2)
+                            return string.Compare(s1, s2, Ordinal) > 0;
                         return subjectValue > Value;
                     }, false);
                 case LESS_THAN_OR_EQUALS:
                     return Do.Try<bool>(() =>
                     {
-                        if (subjectValue is string && Value is string)
-                            return string.Compare((string) subjectValue, (string) Value, Ordinal) <= 0;
+                        if (subjectValue is string s1 && Value is string s2)
+                            return string.Compare(s1, s2, Ordinal) <= 0;
                         return subjectValue <= Value;
                     }, false);
                 case GREATER_THAN_OR_EQUALS:
                     return Do.Try<bool>(() =>
                     {
-                        if (subjectValue is string && Value is string)
-                            return string.Compare((string) subjectValue, (string) Value, Ordinal) >= 0;
+                        if (subjectValue is string s1 && Value is string s2)
+                            return string.Compare(s1, s2, Ordinal) >= 0;
                         return subjectValue >= Value;
                     }, false);
                 default: throw new ArgumentOutOfRangeException();
@@ -190,23 +185,25 @@ namespace RESTar
             {
                 if (s == "")
                     throw new SyntaxException(ErrorCodes.InvalidConditionSyntax, "Invalid condition syntax");
+
                 s = s.ReplaceFirst("%3E=", ">=", out var replaced);
                 if (!replaced) s = s.ReplaceFirst("%3C=", "<=", out replaced);
                 if (!replaced) s = s.ReplaceFirst("%3E", ">", out replaced);
                 if (!replaced) s = s.ReplaceFirst("%3C", "<", out replaced);
-                var matched = new string(s.Where(c => OpMatchChars.Contains(c)).ToArray());
-                if (!Operator.TryParse(matched, out var op))
+
+                var operatorCharacters = new string(s.Where(c => OpMatchChars.Contains(c)).ToArray());
+                if (!Operator.TryParse(operatorCharacters, out var op))
                     throw new OperatorException(s);
-                var pair = s.Split(new[] {op.Common}, StringSplitOptions.None);
-                var keyString = WebUtility.UrlDecode(pair[0]);
-                var term = resource.MakeTerm(keyString, resource.DynamicConditionsAllowed);
+                var keyValuePair = s.Split(new[] {op.Common}, StringSplitOptions.None);
+
+                var term = resource.MakeTerm(WebUtility.UrlDecode(keyValuePair[0]), resource.DynamicConditionsAllowed);
                 if (term.Last is StaticProperty stat &&
                     stat.GetAttribute<AllowedConditionOperatorsAttribute>()?.Operators?.Contains(op) == false)
                     throw new ForbiddenOperatorException(s, resource, op, term,
                         stat.GetAttribute<AllowedConditionOperatorsAttribute>()?.Operators);
-                var valueString = WebUtility.UrlDecode(pair[1]);
-                var value = valueString.GetConditionValue();
-                if (term.IsStatic && term.Last is StaticProperty prop && prop.Type.IsEnum && value is string)
+
+                var value = WebUtility.UrlDecode(keyValuePair[1]).ParseConditionValue();
+                if (term.Last is StaticProperty prop && prop.Type.IsEnum && value is string)
                 {
                     try
                     {

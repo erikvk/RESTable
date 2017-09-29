@@ -5,15 +5,14 @@ using RESTar.Operations;
 
 namespace RESTar.Deflection.Dynamic
 {
+    /// <inheritdoc />
     /// <summary>
     /// A dynamic property represents a dynamic property of a class, that is,
     /// a member that is not known at compile time.
     /// </summary>
     public class DynamicProperty : Property
     {
-        /// <summary>
-        /// Is this property dynamic?
-        /// </summary>
+        /// <inheritdoc />
         public override bool Dynamic => true;
 
         /// <summary>

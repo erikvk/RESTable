@@ -3,8 +3,7 @@ using Newtonsoft.Json.Serialization;
 
 namespace RESTar.Serialization
 {
-    /// <summary>
-    /// </summary>
+    /// <inheritdoc />
     internal class ArrayNullToEmptyListProvider : IValueProvider
     {
         private readonly PropertyInfo Property;
@@ -16,12 +15,10 @@ namespace RESTar.Serialization
             Property = property;
         }
 
-        /// <summary>
-        /// </summary>
+        /// <inheritdoc />
         public object GetValue(object target) => Property.GetValue(target) ?? new object[0];
 
-        /// <summary>
-        /// </summary>
+        /// <inheritdoc />
         public void SetValue(object target, object value) => Property.SetValue(target, value);
     }
 }

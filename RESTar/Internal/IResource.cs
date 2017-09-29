@@ -100,6 +100,7 @@ namespace RESTar.Internal
         bool RequiresValidation { get; }
     }
 
+    /// <inheritdoc />
     /// <summary>
     /// The common generic interface for all resource entities used by RESTar
     /// </summary>
