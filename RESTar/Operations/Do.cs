@@ -23,7 +23,7 @@ namespace RESTar.Operations
             try
             {
                 thingy();
-                return default(T);
+                return default;
             }
             catch
             {
@@ -64,7 +64,7 @@ namespace RESTar.Operations
             catch (Exception e)
             {
                 @catch(e);
-                return default(T);
+                return default;
             }
         }
 
@@ -103,7 +103,7 @@ namespace RESTar.Operations
             }
         }
 
-        public static T Run<T>(Action thingy, T @return = default(T))
+        public static T Run<T>(Action thingy, T @return = default)
         {
             thingy();
             return @return;

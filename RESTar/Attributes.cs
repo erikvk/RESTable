@@ -81,7 +81,7 @@ namespace RESTar
     /// Makes a resource property with a public setter read only over the REST API
     /// </summary>
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
-    public abstract class ReadOnlyAttribute : Attribute
+    public class ReadOnlyAttribute : Attribute
     {
     }
 

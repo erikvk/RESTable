@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -69,16 +70,40 @@ namespace RESTar.Deflection.Dynamic
 
         internal long ByteCount(object target)
         {
-            if (target == null)
-                throw new NullReferenceException(nameof(target));
-            object value = GetValue(target);
-            switch (value)
+            if (target == null) throw new NullReferenceException(nameof(target));
+            switch (GetValue(target))
             {
                 case null: return 0;
-                case string s: return Encoding.UTF8.GetByteCount(s);
+                case string str: return Encoding.UTF8.GetByteCount(str);
                 case Binary binary: return binary.ToArray().Length;
                 default: return CountBytes(Type);
             }
+        }
+
+        internal DataColumn MakeColumn()
+        {
+            var (type, nullable) = GetColumnSpec();
+            return new DataColumn(Name, type) {AllowDBNull = nullable};
+        }
+
+        private (Type, bool) GetColumnSpec()
+        {
+            switch (Type)
+            {
+                case var _ when Type.IsEnum:
+                case var _ when HasAttribute<ExcelFlattenToStringAttribute>():
+                case var _ when Type.IsClass: return (typeof(string), true);
+                case var _ when Type.IsNullable(out var baseType): return (baseType, true);
+                default: return (Type, false);
+            }
+        }
+
+        internal void WriteCell(DataRow row, object target)
+        {
+            object baseValue = Type.IsEnum || HasAttribute<ExcelFlattenToStringAttribute>()
+                ? GetValue(target)?.ToString()
+                : GetValue(target);
+            row[Name] = baseValue.MakeDynamicCellValue();
         }
 
         private static long CountBytes(Type type)
@@ -87,8 +112,7 @@ namespace RESTar.Deflection.Dynamic
             switch (Type.GetTypeCode(type))
             {
                 case TypeCode.Object:
-                    if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))
-                        return CountBytes(type.GenericTypeArguments[0]);
+                    if (type.IsNullable(out var baseType)) return CountBytes(baseType);
                     if (type.IsStarcounter()) return 16;
                     throw new Exception($"Unknown type encountered: '{type.FullName}'");
                 case TypeCode.Boolean: return 4;

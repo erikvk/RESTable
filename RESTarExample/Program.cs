@@ -1,9 +1,14 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using Dynamit;
 using Newtonsoft.Json.Linq;
 using RESTar;
 using Starcounter;
+
+// ReSharper disable UnassignedGetOnlyAutoProperty
+
+// ReSharper disable UnusedMember.Global
 
 #pragma warning disable 1591
 
@@ -22,7 +27,32 @@ namespace RESTarExample
                 setupMenu: true
             );
             TestDatabase.Init();
+
+            Db.Transact(() =>
+            {
+                new Table
+                {
+                    STR = "Swoo",
+                    DT = DateTime.Now,
+                    DT2 = DateTime.Now
+                };
+                new Table
+                {
+                    STR = "Swoo",
+                    DT = default,
+                    DT2 = default
+                };
+            });
         }
+    }
+
+
+    [Database, RESTar(Methods.GET)]
+    public class Table
+    {
+        public string STR;
+        public DateTime? DT;
+        public DateTime DT2;
     }
 
     [Database, RESTar]
@@ -53,18 +83,7 @@ namespace RESTarExample
             set => prInt = value;
         }
 
-        private MyResource _resource;
-
-        public MyResource Resource
-        {
-            get => _resource;
-            set
-            {
-                if (value != null)
-                    _resource = value;
-                else _resource = null;
-            }
-        }
+        public MyResource Resource { get; }
 
         public int ThirdInt
         {
@@ -76,7 +95,6 @@ namespace RESTarExample
                 else prInt = 0;
             }
         }
-
     }
 
     [RESTar]

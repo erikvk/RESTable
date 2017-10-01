@@ -71,7 +71,7 @@ namespace RESTar
             }
             catch
             {
-                op = default(Operator);
+                op = default;
                 return false;
             }
         }

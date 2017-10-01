@@ -37,7 +37,7 @@ namespace RESTar.Linq
         /// </summary>
         public static bool ContainsDuplicates<T>(this IEnumerable<T> source, out T duplicate)
         {
-            duplicate = default(T);
+            duplicate = default;
             var d = new HashSet<T>();
             foreach (var t in source)
             {

@@ -196,6 +196,15 @@ namespace RESTar
 
         internal static string Fnuttify(this string sqlKey) => $"\"{sqlKey.Replace(".", "\".\"")}\"";
 
+        internal static bool IsNullable(this Type type, out Type baseType)
+        {
+            baseType = null;
+            if (!type.IsGenericType || type.GetGenericTypeDefinition() != typeof(Nullable<>))
+                return false;
+            baseType = type.GenericTypeArguments[0];
+            return true;
+        }
+
         #endregion
 
         #region Resource helpers
@@ -378,7 +387,7 @@ namespace RESTar
             var matches = dict.Where(pair => pair.Key.EqualsNoCase(key)).ToList();
             switch (matches.Count)
             {
-                case 0: return default(T);
+                case 0: return default;
                 case 1: return matches[0].Value;
                 default: return dict.SafeGet(key);
             }
@@ -420,7 +429,7 @@ namespace RESTar
                 if (val == null)
                 {
                     actualKey = null;
-                    return default(T);
+                    return default;
                 }
                 actualKey = key;
                 return val;
@@ -436,7 +445,7 @@ namespace RESTar
         /// </summary>
         public static bool TryGetNoCase<T>(this IDictionary<string, T> dict, string key, out T result)
         {
-            result = default(T);
+            result = default;
             var matches = dict.Where(pair => pair.Key.EqualsNoCase(key)).ToList();
             switch (matches.Count)
             {
@@ -481,7 +490,7 @@ namespace RESTar
         public static bool TryGetNoCase<T>(this IDictionary<string, T> dict, string key, out string actualKey,
             out T result)
         {
-            result = default(T);
+            result = default;
             actualKey = null;
             var matches = dict.Where(pair => pair.Key.EqualsNoCase(key)).ToList();
             switch (matches.Count)
@@ -564,7 +573,7 @@ namespace RESTar
                 case "null": return null;
                 case "": throw new SyntaxException(InvalidConditionSyntax, "No condition value literal after operator");
                 case var s when s[0] == '\"' && s[s.Length - 1] == '\"': return s.Remove(0, 1).Remove(s.Length - 2, 1);
-                    case var _ when bool.TryParse(str, out var @bool): return @bool;
+                case var _ when bool.TryParse(str, out var @bool): return @bool;
                 case var _ when int.TryParse(str, out var @int): return @int;
                 case var _ when decimal.TryParse(str, Float, en_US, out var dec): return dec;
                 case var _ when DateTime.TryParseExact(str, "yyyy-MM-dd", null, AssumeUniversal, out var dat) ||
@@ -723,7 +732,7 @@ namespace RESTar
                         {
                             if (!table.Columns.Contains(pair.Key))
                                 table.Columns.Add(pair.Key);
-                            row[pair.Key] = GetCellValue(pair.Value);
+                            row[pair.Key] = pair.Value.MakeDynamicCellValue();
                         }
                         table.Rows.Add(row);
                     }
@@ -736,7 +745,7 @@ namespace RESTar
                         {
                             if (!table.Columns.Contains(pair.Key))
                                 table.Columns.Add(pair.Key);
-                            row[pair.Key] = GetCellValue(pair.Value.ToObject<object>());
+                            row[pair.Key] = pair.Value.ToObject<object>().MakeDynamicCellValue();
                         }
                         table.Rows.Add(row);
                     }
@@ -744,30 +753,18 @@ namespace RESTar
                 default:
                     var properties = resource.GetStaticProperties().Values;
                     foreach (var prop in properties)
-                    {
-                        var ColType = prop.Type.IsEnum || prop.Type.IsClass && prop.Type != typeof(string) ||
-                                      prop.HasAttribute<ExcelFlattenToStringAttribute>()
-                            ? typeof(string)
-                            : Nullable.GetUnderlyingType(prop.Type) ?? prop.Type;
-                        table.Columns.Add(prop.Name, ColType);
-                    }
+                        table.Columns.Add(prop.MakeColumn());
                     foreach (var item in entities)
                     {
                         var row = table.NewRow();
-                        foreach (var prop in properties)
-                        {
-                            object value = prop.Type.IsEnum || prop.HasAttribute<ExcelFlattenToStringAttribute>()
-                                ? prop.GetValue(item)?.ToString()
-                                : prop.GetValue(item);
-                            row[prop.Name] = GetCellValue(value);
-                        }
+                        properties.ForEach(prop => prop.WriteCell(row, item));
                         table.Rows.Add(row);
                     }
                     return table;
             }
         }
 
-        private static object GetCellValue(object value)
+        internal static object MakeDynamicCellValue(this object value)
         {
             switch (value)
             {
@@ -791,16 +788,8 @@ namespace RESTar
                 case IDictionary other: return other.GetType().FullName;
                 case IEnumerable<object> other: return string.Join(", ", other.Select(o => o.ToString()));
                 case DBNull _:
-                case null: return "";
-                default:
-                    try
-                    {
-                        return $"$(ObjectID: {value.GetObjectID()})";
-                    }
-                    catch
-                    {
-                        return value.ToString();
-                    }
+                case null: return DBNull.Value;
+                default: return Do.Try(() => $"$(ObjectID: {value.GetObjectID()})", value.ToString);
             }
         }
 

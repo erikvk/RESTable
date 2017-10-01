@@ -186,7 +186,16 @@ namespace RESTar
 
             Resources.GroupBy(r => r.ParentResourceName)
                 .Where(group => group.Key != null)
-                .ForEach(group => ((IResourceInternal) Resource.Get(group.Key)).InnerResources = group.ToList());
+                .ForEach(group =>
+                {
+                    var parentResource = (IResourceInternal) Resource.SafeGet(group.Key);
+                    if (parentResource == null)
+                        throw new ResourceDeclarationException(
+                            $"Resource types {string.Join(", ", group.Select(item => $"'{item.Name}'"))} are declared " +
+                            $"within the scope of another class '{group.Key}', that is not a RESTar resource. Inner " +
+                            "resources must be declared within a resource class.");
+                    parentResource.InnerResources = group.ToList();
+                });
 
             RequireApiKey = requireApiKey;
             AllowAllOrigins = allowAllOrigins;
