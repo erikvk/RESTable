@@ -7,7 +7,6 @@ using RESTar;
 using Starcounter;
 
 // ReSharper disable UnassignedGetOnlyAutoProperty
-
 // ReSharper disable UnusedMember.Global
 
 #pragma warning disable 1591

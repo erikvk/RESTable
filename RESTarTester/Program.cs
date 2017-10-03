@@ -8,6 +8,7 @@ using RESTar.Linq;
 using Starcounter;
 
 #pragma warning disable 219
+// ReSharper disable All
 
 namespace RESTarTester
 {
