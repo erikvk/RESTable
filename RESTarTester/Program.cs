@@ -25,6 +25,8 @@ namespace RESTarTester
             string threesJson = null;
             string foursJson = null;
 
+            #region JSON generation
+
             var transaction = new Transaction();
             transaction.Scope(() =>
             {
@@ -256,6 +258,10 @@ namespace RESTarTester
             });
             transaction.Rollback();
 
+            #endregion
+
+            #region Insertions
+
             var response1 = Http.POST("http://localhost:9000/rest/resource1", onesJson, null);
             var response2 = Http.POST("http://localhost:9000/rest/resource2", twosJson, null);
             var response3 = Http.POST("http://localhost:9000/rest/resource3", threesJson, null);
@@ -265,6 +271,10 @@ namespace RESTarTester
             Debug.Assert(response2?.IsSuccessStatusCode == true);
             Debug.Assert(response3?.IsSuccessStatusCode == true);
             Debug.Assert(response4?.IsSuccessStatusCode == true);
+
+            #endregion
+
+            #region JSON GET
 
             var jsonResponse1 = Http.GET("http://localhost:9000/rest/resource1", null);
             var jsonResponse2 = Http.GET("http://localhost:9000/rest/resource2", null);
@@ -276,6 +286,10 @@ namespace RESTarTester
             Debug.Assert(jsonResponse3?.IsSuccessStatusCode == true);
             Debug.Assert(jsonResponse4?.IsSuccessStatusCode == true);
 
+            #endregion
+
+            #region GET Excel
+
             var headers = new Dictionary<string, string> {["Accept"] = "Excel"};
             var excelResponse1 = Http.GET("http://localhost:9000/rest/resource1", headersDictionary: headers);
             var excelResponse2 = Http.GET("http://localhost:9000/rest/resource2", headersDictionary: headers);
@@ -286,6 +300,22 @@ namespace RESTarTester
             Debug.Assert(excelResponse2?.IsSuccessStatusCode == true);
             Debug.Assert(excelResponse3?.IsSuccessStatusCode == true);
             Debug.Assert(excelResponse4?.IsSuccessStatusCode == true);
+
+            #endregion
+
+            #region With conditions
+
+            var conditionResponse1 = Http.GET("http://localhost:9000/rest/resource1/sbyte>0&byte!=200&datetime>2001-01-01", null);
+            var conditionResponse2 = Http.GET("http://localhost:9000/rest/resource2/sbyte>0&byte!=200&datetime>2001-01-01", null);
+            var conditionResponse3 = Http.GET("http://localhost:9000/rest/resource3/sbyte>0&byte!=200&datetime>2001-01-01", null);
+            var conditionResponse4 = Http.GET("http://localhost:9000/rest/resource4/resource1.string!=aboo&resource2!=null", null);
+
+            Debug.Assert(excelResponse1?.IsSuccessStatusCode == true);
+            Debug.Assert(excelResponse2?.IsSuccessStatusCode == true);
+            Debug.Assert(excelResponse3?.IsSuccessStatusCode == true);
+            Debug.Assert(excelResponse4?.IsSuccessStatusCode == true);
+
+            #endregion
 
             var done = true;
         }
