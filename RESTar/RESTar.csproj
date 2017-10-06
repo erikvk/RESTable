@@ -231,7 +231,9 @@
 net use R: \\mac\builds
 cd "$(ProjectDir)"
 C:/Users/erik/bin/nuget.exe pack -OutputDirectory R:\ -Prop Configuration=Release
-copy "bin\Release\$(ProjectName).dll" "..\..\DRTB\MopedoPackages"</PostBuildEvent>
+copy "bin\Release\$(ProjectName).dll" "..\..\DRTB\MopedoPackages"
+copy "bin\Release\$(ProjectName).pdb" "..\..\DRTB\MopedoPackages"
+copy "bin\Release\$(ProjectName).xml" "..\..\DRTB\MopedoPackages"</PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
