@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data.SQLite;
 using System.Linq;
 using Dynamit;
 using Newtonsoft.Json.Linq;
@@ -15,6 +16,9 @@ namespace RESTarExample
 {
     public static class Program
     {
+        private const string SQLiteDb = "C:\\Mopedo\\test.sqlite";
+        public static string ConnectionString = $"Data Source={SQLiteDb};Version=3;";
+        
         public static void Main()
         {
             RESTarConfig.Init
@@ -26,6 +30,8 @@ namespace RESTarExample
                 setupMenu: true
             );
             TestDatabase.Init();
+
+            SQLiteConnection.CreateFile(SQLiteDb);
 
             Db.Transact(() =>
             {
