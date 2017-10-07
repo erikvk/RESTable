@@ -24,7 +24,7 @@ namespace RESTar.Admin
         /// <summary>
         /// The name of the table
         /// </summary>
-        public string ResourceName { get; set; }
+        public string Resource { get; set; }
 
         /// <summary>
         /// The number of rows in the table
@@ -41,7 +41,7 @@ namespace RESTar.Admin
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
             IEnumerable<IResource> resources;
-            string input = request.Conditions.Get(nameof(ResourceName), Operators.EQUALS)?.Value;
+            string input = request.Conditions.Get(nameof(Resource), Operators.EQUALS)?.Value;
             if (input == null)
                 resources = RESTarConfig.Resources.Where(r => r.IsStarcounterResource);
             else
@@ -93,7 +93,7 @@ namespace RESTar.Admin
             }
             return new ResourceProfile
             {
-                ResourceName = starcounter.FullName,
+                Resource = starcounter.FullName,
                 NumberOfEntities = domainCount,
                 ApproximateSize = new ResourceSize(totalBytes)
             };
@@ -117,7 +117,7 @@ namespace RESTar.Admin
             }
             return new ResourceProfile
             {
-                ResourceName = ddict.FullName,
+                Resource = ddict.FullName,
                 NumberOfEntities = domainCount,
                 ApproximateSize = new ResourceSize(totalBytes)
             };
