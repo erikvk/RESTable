@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json.Linq;
+using RESTar.Admin;
 using RESTar.Linq;
 using RESTar.Requests;
 using Starcounter;

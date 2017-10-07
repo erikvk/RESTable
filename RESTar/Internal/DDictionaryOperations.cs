@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using Dynamit;
+using RESTar.Admin;
 using RESTar.Linq;
 using RESTar.Operations;
 using Starcounter;

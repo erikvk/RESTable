@@ -1,4 +1,5 @@
 ﻿using System.Linq;
+using RESTar.Admin;
 using RESTar.Linq;
 using RESTar.Operations;
 using Starcounter;

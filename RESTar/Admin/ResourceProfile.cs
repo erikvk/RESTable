@@ -1,19 +1,25 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using Dynamit;
 using RESTar.Deflection.Dynamic;
 using RESTar.Linq;
 using Starcounter;
 using Starcounter.Metadata;
+using IResource = RESTar.Internal.IResource;
 
-namespace RESTar
+namespace RESTar.Admin
 {
     /// <summary>
     /// Provides a profile for a given resource
     /// </summary>
-    public class ResourceProfile
+    [RESTar(Methods.GET, Description = description)]
+    public class ResourceProfile : ISelector<ResourceProfile>
     {
-        private const int addBytes = 16;
+        private const int baseObjectBytes = 16;
+
+        private const string description = "The TableInfo resource can create aggregated " +
+                                           "info views for Starcounter tables.";
 
         /// <summary>
         /// The name of the table
@@ -29,6 +35,28 @@ namespace RESTar
         /// An approximation of the table size in memory
         /// </summary>
         public ResourceSize ApproximateSize { get; set; }
+
+        /// <inheritdoc />
+        public IEnumerable<ResourceProfile> Select(IRequest<ResourceProfile> request)
+        {
+            if (request == null) throw new ArgumentNullException(nameof(request));
+            IEnumerable<IResource> resources;
+            string input = request.Conditions.Get(nameof(ResourceName), Operators.EQUALS)?.Value;
+            if (input == null)
+                resources = RESTarConfig.Resources.Where(r => r.IsStarcounterResource);
+            else
+            {
+                var resource = RESTar.Resource.Find(input);
+                if (!resource.IsStarcounterResource)
+                    throw new Exception($"'{resource.Name}' is not a Starcounter resource, and has no table info");
+                resources = new[] {resource};
+            }
+            return resources
+                .Select(r => Make(r.Type))
+                .Where(request.Conditions)
+                .OrderByDescending(t => t.ApproximateSize.Bytes)
+                .ToList();
+        }
 
         internal static ResourceProfile MakeStarcounter(Type starcounter)
         {
@@ -46,7 +74,7 @@ namespace RESTar
                 {
                     foreach (var p in properties)
                         totalBytes += p.ByteCount(e);
-                    totalBytes += addBytes;
+                    totalBytes += baseObjectBytes;
                 });
             else
             {
@@ -58,7 +86,7 @@ namespace RESTar
                 {
                     foreach (var p in properties)
                         sampleBytes += p.ByteCount(e);
-                    sampleBytes += addBytes;
+                    sampleBytes += baseObjectBytes;
                 });
                 var total = sampleBytes / sampleRate;
                 totalBytes = decimal.ToInt64(total);
@@ -77,13 +105,13 @@ namespace RESTar
             var ddictExtension = Db.SQL<DDictionary>($"SELECT t FROM {ddict.FullName} t");
             long totalBytes;
             if (domainCount <= 1000)
-                totalBytes = ddictExtension.Sum(entity => addBytes + entity.KeyValuePairs.Sum(kvp => kvp.ByteCount));
+                totalBytes = ddictExtension.Sum(entity => baseObjectBytes + entity.KeyValuePairs.Sum(kvp => kvp.ByteCount));
             else
             {
                 var step = domainCount / 1000;
                 var sample = ddictExtension.Where((_, i) => i % step == 0).ToList();
                 var sampleRate = (decimal) sample.Count / domainCount;
-                var sampleBytes = ddictExtension.Sum(entity => addBytes + entity.KeyValuePairs.Sum(kvp => kvp.ByteCount));
+                var sampleBytes = ddictExtension.Sum(entity => baseObjectBytes + entity.KeyValuePairs.Sum(kvp => kvp.ByteCount));
                 var total = sampleBytes / sampleRate;
                 totalBytes = decimal.ToInt64(total);
             }
@@ -106,7 +134,7 @@ namespace RESTar
                 case var _ when type.IsDDictionary(): return MakeDDictionary(type);
                 case var _ when type.IsStarcounter(): return MakeStarcounter(type);
                 default:
-                    return Resource.SafeGet(type)?.ResourceProfile
+                    return RESTar.Resource.SafeGet(type)?.ResourceProfile
                            ?? throw new ArgumentException($"Cannot profile '{type.FullName}'. No profiler implemented for type");
             }
         }
