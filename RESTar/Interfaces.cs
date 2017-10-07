@@ -61,4 +61,16 @@ namespace RESTar
         /// </summary>
         long Count(IRequest<T> request);
     }
+
+    /// <summary>
+    /// Interface used to register a Profiler for a given resource type
+    /// </summary>
+    public interface IProfiler
+    {
+        /// <summary>
+        /// The delete method for this IDeleter instance. Defines the Delete
+        /// operation for a given resource.
+        /// </summary>
+        ResourceProfile Profile();
+    }
 }

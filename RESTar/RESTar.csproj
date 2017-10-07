@@ -96,7 +96,7 @@
     <Compile Include="Auth\AccessRight.cs" />
     <Compile Include="Auth\AccessRights.cs" />
     <Compile Include="Admin\DatabaseIndex.cs" />
-    <Compile Include="Admin\TableInfo.cs" />
+    <Compile Include="Admin\ResourceProfiler.cs" />
     <Compile Include="Deflection\EnumMember.cs" />
     <Compile Include="Deflection\ExtensionMethods.cs" />
     <Compile Include="Deflection\Dynamic\Delegates.cs" />
@@ -122,6 +122,7 @@
     <Compile Include="Requests\ViewRequest.cs" />
     <Compile Include="Resource.cs" />
     <Compile Include="ResourceAlias.cs" />
+    <Compile Include="ResourceProfile.cs" />
     <Compile Include="RESTarMethods.cs" />
     <Compile Include="Internal\RESTarOperations.cs" />
     <Compile Include="Internal\RESTarResourceType.cs" />

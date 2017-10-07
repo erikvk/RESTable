@@ -98,6 +98,11 @@ namespace RESTar.Internal
         /// Does this resource require validation on insertion and updating?
         /// </summary>
         bool RequiresValidation { get; }
+
+        /// <summary>
+        /// Gets a ResourceProfile for this resource
+        /// </summary>
+        ResourceProfile ResourceProfile { get; }
     }
 
     /// <inheritdoc />
@@ -130,7 +135,12 @@ namespace RESTar.Internal
         /// RESTar counter (don't use)
         /// </summary>
         Counter<T> Count { get; }
-     }
+
+        /// <summary>
+        /// RESTar profiler (don't use)
+        /// </summary>
+        Profiler Profile { get; }
+    }
 
     internal interface IResourceInternal
     {

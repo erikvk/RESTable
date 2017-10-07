@@ -31,6 +31,7 @@ using static RESTar.Internal.ErrorCodes;
 using static RESTar.Requests.Responses;
 using static Starcounter.DbHelper;
 using IResource = RESTar.Internal.IResource;
+using Profiler = RESTar.Operations.Profiler;
 
 namespace RESTar
 {
@@ -77,6 +78,12 @@ namespace RESTar
             if (!type.Implements(typeof(ICounter<>), out var p)) return null;
             if (p[0] != typeof(T)) throw InvalidImplementation("ICounter", type.FullName, p[0]);
             return (Counter<T>) type.GetMethod("Count", Instance | Public).CreateDelegate(typeof(Counter<T>), null);
+        }
+
+        internal static Profiler GetProfiler(this Type type)
+        {
+            if (!type.Implements(typeof(IProfiler))) return null;
+            return (Profiler)type.GetMethod("Profile", Instance | Public).CreateDelegate(typeof(Profiler), null);
         }
 
         #endregion

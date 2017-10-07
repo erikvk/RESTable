@@ -12,6 +12,7 @@ using static System.Reflection.BindingFlags;
 using static RESTar.Methods;
 using static RESTar.Internal.RESTarResourceType;
 using static RESTar.Operations.Transact;
+using Profiler = RESTar.Operations.Profiler;
 
 namespace RESTar.Internal
 {
@@ -44,6 +45,7 @@ namespace RESTar.Internal
         public bool RequiresValidation { get; }
         public RESTarResourceType ResourceType { get; }
         public IReadOnlyList<IResource> InnerResources { get; set; }
+        public ResourceProfile ResourceProfile => Profile?.Invoke();
 
         string IResourceInternal.Description
         {
@@ -62,6 +64,7 @@ namespace RESTar.Internal
         public Updater<T> Update { get; }
         public Deleter<T> Delete { get; }
         public Counter<T> Count { get; }
+        public Profiler Profile { get; }
 
         public string Alias
         {
@@ -97,7 +100,7 @@ namespace RESTar.Internal
         /// All custom resources are constructed here
         /// </summary>
         private Resource(string name, RESTarAttribute attribute, Selector<T> selector, Inserter<T> inserter,
-            Updater<T> updater, Deleter<T> deleter, Counter<T> counter)
+            Updater<T> updater, Deleter<T> deleter, Counter<T> counter, Profiler profiler)
         {
             if (name.Contains('+'))
             {
@@ -131,6 +134,7 @@ namespace RESTar.Internal
             Update = updater;
             Delete = deleter;
             Count = counter;
+            Profile = profiler;
             CheckOperationsSupport();
             RESTarConfig.AddResource(this);
         }
@@ -140,20 +144,34 @@ namespace RESTar.Internal
         /// </summary>
         internal static void Make(string name, RESTarAttribute attribute, Selector<T> selector = null,
             Inserter<T> inserter = null, Updater<T> updater = null, Deleter<T> deleter = null,
-            Counter<T> counter = null)
+            Counter<T> counter = null, Profiler profiler = null)
         {
-            if (name.Count(c => c == '+') >= 2)
-                throw new ResourceDeclarationException($"Invalid resource '{name.Replace('+', '.')}'. " +
-                                                       "Inner resources cannot have their own inner resources");
             var type = typeof(T);
+
+            void basicResourceCheck()
+            {
+                if (name.Count(c => c == '+') >= 2)
+                    throw new ResourceDeclarationException($"Invalid resource '{name.Replace('+', '.')}'. " +
+                                                           "Inner resources cannot have their own inner resources");
+                if (type.HasAttribute<DatabaseAttribute>() && type.GetProfiler() != null)
+                    throw new ResourceDeclarationException("Invalid IProfiler interface implementation for resource " +
+                                                           $"type '{type.FullName}'. Starcounter resources use their " +
+                                                           "default profilers, and cannot implement IProfiler");
+            }
+
+            basicResourceCheck();
             if (type.IsDDictionary() && type.Implements(typeof(IDDictionary<,>), out var _))
             {
-                new Resource<T>(name, attribute,
-                    type.GetSelector<T>() ?? DDictionaryOperations<T>.Select,
-                    type.GetInserter<T>() ?? DDictionaryOperations<T>.Insert,
-                    type.GetUpdater<T>() ?? DDictionaryOperations<T>.Update,
-                    type.GetDeleter<T>() ?? DDictionaryOperations<T>.Delete,
-                    type.GetCounter<T>() ?? DDictionaryOperations<T>.Count
+                new Resource<T>
+                (
+                    name: name,
+                    attribute: attribute,
+                    selector: type.GetSelector<T>() ?? DDictionaryOperations<T>.Select,
+                    inserter: type.GetInserter<T>() ?? DDictionaryOperations<T>.Insert,
+                    updater: type.GetUpdater<T>() ?? DDictionaryOperations<T>.Update,
+                    deleter: type.GetDeleter<T>() ?? DDictionaryOperations<T>.Delete,
+                    counter: type.GetCounter<T>() ?? DDictionaryOperations<T>.Count,
+                    profiler: DDictionaryOperations<T>.Profile
                 );
                 return;
             }
@@ -171,9 +189,14 @@ namespace RESTar.Internal
                 updater = updater ?? StarcounterOperations<T>.Update;
                 deleter = deleter ?? StarcounterOperations<T>.Delete;
                 counter = counter ?? StarcounterOperations<T>.Count;
+                profiler = StarcounterOperations<T>.Profile;
             }
-            else CheckVirtualResource(type);
-            new Resource<T>(name, attribute, selector, inserter, updater, deleter, counter);
+            else
+            {
+                CheckVirtualResource(type);
+                profiler = profiler ?? type.GetProfiler();
+            }
+            new Resource<T>(name, attribute, selector, inserter, updater, deleter, counter, profiler);
         }
 
         private static void CheckVirtualResource(Type type)
@@ -241,7 +264,6 @@ namespace RESTar.Internal
             #endregion
         }
 
-
         private static IReadOnlyList<Methods> GetAvailableMethods(Type resource)
         {
             if (resource == null)
@@ -251,24 +273,19 @@ namespace RESTar.Internal
             return resource.GetAttribute<RESTarAttribute>()?.AvailableMethods;
         }
 
-        private static RESTarOperations[] NecessaryOpDefs(IEnumerable<Methods> restMethods)
-        {
-            return restMethods.SelectMany(method =>
+        private static RESTarOperations[] NecessaryOpDefs(IEnumerable<Methods> restMethods) => restMethods
+            .SelectMany(method =>
+            {
+                switch (method)
                 {
-                    switch (method)
-                    {
-                        case GET: return new[] {RESTarOperations.Select};
-                        case POST: return new[] {RESTarOperations.Insert};
-                        case PUT:
-                            return new[] {RESTarOperations.Select, RESTarOperations.Insert, RESTarOperations.Update};
-                        case PATCH: return new[] {RESTarOperations.Select, RESTarOperations.Update};
-                        case DELETE: return new[] {RESTarOperations.Select, RESTarOperations.Delete};
-                        default: return null;
-                    }
-                })
-                .Distinct()
-                .ToArray();
-        }
+                    case GET: return new[] {RESTarOperations.Select};
+                    case POST: return new[] {RESTarOperations.Insert};
+                    case PUT: return new[] {RESTarOperations.Select, RESTarOperations.Insert, RESTarOperations.Update};
+                    case PATCH: return new[] {RESTarOperations.Select, RESTarOperations.Update};
+                    case DELETE: return new[] {RESTarOperations.Select, RESTarOperations.Delete};
+                    default: return null;
+                }
+            }).Distinct().ToArray();
 
         private void CheckOperationsSupport()
         {

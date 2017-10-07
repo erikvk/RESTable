@@ -167,8 +167,7 @@ namespace RESTar
 
     /// <inheritdoc />
     /// <summary>
-    /// Thrown when RESTar cannot find a property/column in a given resource by a 
-    /// given property name.
+    /// Thrown when RESTar cannot find a property/column in a given resource by a given property name.
     /// </summary>
     public class UnknownPropertyException : RESTarException
     {
@@ -178,8 +177,7 @@ namespace RESTar
 
     /// <inheritdoc />
     /// <summary>
-    /// Thrown when RESTar expected a unique match for a property/column in a resource, but
-    /// found more than one.
+    /// Thrown when RESTar expected a unique match for a property/column in a resource, but found more than one.
     /// </summary>
     public class AmbiguousPropertyException : RESTarException
     {
@@ -206,8 +204,7 @@ namespace RESTar
 
     /// <inheritdoc />
     /// <summary>
-    /// Thrown when RESTar expected a unique match for a resource, but
-    /// found more than one.
+    /// Thrown when RESTar expected a unique match for a resource, but found more than one.
     /// </summary>
     public class AmbiguousResourceException : RESTarException
     {
@@ -226,8 +223,7 @@ namespace RESTar
 
     /// <inheritdoc />
     /// <summary>
-    /// Thrown when RESTar encounters an error selecting entities from 
-    /// a given resource.
+    /// Thrown when RESTar encounters an error selecting entities from a given resource.
     /// </summary>
     public class AbortedSelectorException<T> : RESTarException where T : class
     {
@@ -241,8 +237,7 @@ namespace RESTar
 
     /// <inheritdoc />
     /// <summary>
-    /// Thrown when RESTar encounters an error inserting entities into
-    /// a given resource.
+    /// Thrown when RESTar encounters an error inserting entities into a given resource.
     /// </summary>
     public class AbortedInserterException<T> : RESTarException where T : class
     {
@@ -259,8 +254,7 @@ namespace RESTar
 
     /// <inheritdoc />
     /// <summary>
-    /// Thrown when RESTar encounters an error updating entities in
-    /// a given resource.
+    /// Thrown when RESTar encounters an error updating entities in a given resource.
     /// </summary>
     public class AbortedUpdaterException<T> : RESTarException where T : class
     {
@@ -274,8 +268,7 @@ namespace RESTar
 
     /// <inheritdoc />
     /// <summary>
-    /// Thrown when RESTar encounters an error deleting entities from
-    /// a given resource.
+    /// Thrown when RESTar encounters an error deleting entities from a given resource.
     /// </summary>
     public class AbortedDeleterException<T> : RESTarException where T : class
     {
@@ -289,12 +282,25 @@ namespace RESTar
 
     /// <inheritdoc />
     /// <summary>
-    /// Thrown when RESTar encounters an error selecting entities from 
-    /// a given resource.
+    /// Thrown when RESTar encounters an error counting entities in a given resource.
     /// </summary>
     public class AbortedCounterException<T> : RESTarException where T : class
     {
         internal AbortedCounterException(Exception ie, IRequest request, string message = null)
+            : base(AbortedCount, message ?? (ie.GetType() == typeof(JsonSerializationException) ||
+                                             ie.GetType() == typeof(JsonReaderException)
+                                     ? "JSON serialization error, check JSON syntax. "
+                                     : ""
+                                 ), ie) => Response = AbortedOperation<T>(this, request.Method);
+    }
+
+    /// <inheritdoc />
+    /// <summary>
+    /// Thrown when RESTar encounters an error profiling a given resource.
+    /// </summary>
+    public class AbortedProfilerException<T> : RESTarException where T : class
+    {
+        internal AbortedProfilerException(Exception ie, IRequest request, string message = null)
             : base(AbortedCount, message ?? (ie.GetType() == typeof(JsonSerializationException) ||
                                              ie.GetType() == typeof(JsonReaderException)
                                      ? "JSON serialization error, check JSON syntax. "

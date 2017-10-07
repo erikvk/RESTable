@@ -16,7 +16,7 @@ namespace RESTar.Operations
     {
         #region Operations
 
-        #region SELECT
+        #region SELECT, COUNT and PROFILE
 
         internal static IEnumerable<T> SELECT(IRequest<T> request)
         {
@@ -80,6 +80,18 @@ namespace RESTar.Operations
             catch (Exception e)
             {
                 throw new AbortedCounterException<T>(e, request);
+            }
+        }
+
+        internal static ResourceProfile PROFILE(IRequest<T> request)
+        {
+            try
+            {
+                return request.Resource.Profile?.Invoke();
+            }
+            catch (Exception e)
+            {
+                throw new AbortedProfilerException<T>(e, request);
             }
         }
 

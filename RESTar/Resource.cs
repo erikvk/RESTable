@@ -187,6 +187,7 @@ namespace RESTar
         /// <param name="updater">The updater to use for this resource</param>
         /// <param name="deleter">The deleter to use for this resource</param>
         /// <param name="counter">The counter to use for this resource</param>
+        /// <param name="profiler">The profiler to use for this resource</param>
         /// <param name="singleton">Is this a singleton resource?</param>
         /// <param name="internalResource">Is this an internal resource?</param>
         /// <param name="description">A description for the resource</param>
@@ -198,6 +199,7 @@ namespace RESTar
             Updater<T> updater = null,
             Deleter<T> deleter = null,
             Counter<T> counter = null,
+            Profiler profiler = null,
             bool singleton = false,
             bool internalResource = false,
             string description = null)
@@ -224,7 +226,8 @@ namespace RESTar
                 inserter: inserter,
                 updater: updater,
                 deleter: deleter,
-                counter: counter
+                counter: counter,
+                profiler: profiler
             );
         }
 

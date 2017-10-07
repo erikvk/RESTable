@@ -4,6 +4,7 @@ using Dynamit;
 using RESTar.Linq;
 using RESTar.Operations;
 using Starcounter;
+using Profiler = RESTar.Operations.Profiler;
 
 namespace RESTar.Internal
 {
@@ -52,6 +53,11 @@ namespace RESTar.Internal
         /// Deleter for DDictionary entites (used by RESTar internally, don't use)
         /// </summary>
         public static Deleter<T> Delete => (e, r) => Do.Run(() => e.ForEach(Db.Delete), e.Count());
+
+        /// <summary>
+        /// Profiler for DDictionary entites (used by RESTar internally, don't use)
+        /// </summary>
+        public static Profiler Profile => () => ResourceProfile.MakeDDictionary(typeof(T));
 
         /// <summary>
         /// Counter for DDictionary entites (used by RESTar internally, don't use)

@@ -2,6 +2,7 @@
 using RESTar.Linq;
 using RESTar.Operations;
 using Starcounter;
+using Profiler = RESTar.Operations.Profiler;
 
 namespace RESTar.Internal
 {
@@ -47,6 +48,11 @@ namespace RESTar.Internal
         /// Deleter for static Starcounter database resources (used by RESTar internally, don't use)
         /// </summary>
         public static Deleter<T> Delete => (e, r) => Do.Run(() => e.ForEach(Db.Delete), e.Count());
+
+        /// <summary>
+        /// Profiler for static Starcounter database resources (used by RESTar internally, don't use)
+        /// </summary>
+        public static Profiler Profile => () => ResourceProfile.MakeStarcounter(typeof(T));
 
         /// <summary>
         /// Counter for static Starcounter database resources (used by RESTar internally, don't use)
