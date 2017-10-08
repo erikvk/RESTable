@@ -162,6 +162,22 @@ namespace RESTar
             return true;
         }
 
+        /// <summary>
+        /// Tries to get the target T2 by executing the selector method on the T1 object. If the selector 
+        /// executes successfully, returns the target T2. Else return the default for T2.
+        /// </summary>
+        internal static T2 SafeGet<T1, T2>(this T1 obj, Func<T1, T2> selector)
+        {
+            try
+            {
+                return selector(obj);
+            }
+            catch
+            {
+                return default;
+            }
+        }
+
         #endregion
 
         #region Resource helpers

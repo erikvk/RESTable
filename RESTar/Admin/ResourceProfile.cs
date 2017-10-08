@@ -22,17 +22,17 @@ namespace RESTar.Admin
                                            "info views for Starcounter tables.";
 
         /// <summary>
-        /// The name of the table
+        /// The name of the resource
         /// </summary>
         public string Resource { get; set; }
 
         /// <summary>
-        /// The number of rows in the table
+        /// The number of entities in the resource
         /// </summary>
         public long NumberOfEntities { get; set; }
 
         /// <summary>
-        /// An approximation of the table size in memory
+        /// An approximation of the resource size in memory
         /// </summary>
         public ResourceSize ApproximateSize { get; set; }
 
@@ -60,34 +60,22 @@ namespace RESTar.Admin
 
         internal static ResourceProfile MakeStarcounter(Type starcounter)
         {
+            const string columnSQL = "SELECT t FROM Starcounter.Metadata.Column t WHERE t.Table.Fullname =?";
             var resourceSQLName = starcounter.FullName;
-            var columns = Db.SQL<Column>($"SELECT t FROM {typeof(Column).FullName} t WHERE t.Table.Fullname =?",
-                    resourceSQLName)
-                .Select(c => c.Name)
-                .ToList();
-            var domainCount = Db.SQL<long>($"SELECT COUNT(t) FROM {resourceSQLName} t").First;
+            var columns = Db.SQL<Column>(columnSQL, resourceSQLName).Select(c => c.Name).ToList();
+            var domainCount = Db.SQL<long>($"SELECT COUNT(t) FROM {resourceSQLName.Fnuttify()} t").First;
             var properties = starcounter.GetTableColumns().Where(p => columns.Contains(p.DatabaseQueryName)).ToList();
-            var scExtension = Db.SQL($"SELECT t FROM {resourceSQLName} t");
+            var scExtension = Db.SQL($"SELECT t FROM {resourceSQLName.Fnuttify()} t");
             var totalBytes = 0L;
             if (domainCount <= 1000)
-                scExtension.ForEach(e =>
-                {
-                    foreach (var p in properties)
-                        totalBytes += p.ByteCount(e);
-                    totalBytes += baseObjectBytes;
-                });
+                scExtension.ForEach(e => totalBytes += properties.Sum(p => p.ByteCount(e)) + baseObjectBytes);
             else
             {
                 var step = domainCount / 1000;
                 var sample = scExtension.Where((_, i) => i % step == 0).ToList();
                 var sampleRate = (decimal) sample.Count / domainCount;
                 var sampleBytes = 0L;
-                sample.ForEach(e =>
-                {
-                    foreach (var p in properties)
-                        sampleBytes += p.ByteCount(e);
-                    sampleBytes += baseObjectBytes;
-                });
+                sample.ForEach(e => sampleBytes += properties.Sum(p => p.ByteCount(e)) + baseObjectBytes);
                 var total = sampleBytes / sampleRate;
                 totalBytes = decimal.ToInt64(total);
             }
@@ -101,17 +89,18 @@ namespace RESTar.Admin
 
         internal static ResourceProfile MakeDDictionary(Type ddict)
         {
-            var domainCount = Db.SQL<long>($"SELECT COUNT(t) FROM {ddict.FullName} t").First;
-            var ddictExtension = Db.SQL<DDictionary>($"SELECT t FROM {ddict.FullName} t");
+            var sqlName = ddict.FullName.Fnuttify();
+            var domainCount = Db.SQL<long>($"SELECT COUNT(t) FROM {sqlName} t").First;
+            var ddictExtension = Db.SQL<DDictionary>($"SELECT t FROM {sqlName} t");
             long totalBytes;
             if (domainCount <= 1000)
-                totalBytes = ddictExtension.Sum(entity => baseObjectBytes + entity.KeyValuePairs.Sum(kvp => kvp.ByteCount));
+                totalBytes = ddictExtension.Sum(entity => entity.KeyValuePairs.Sum(kvp => kvp.ByteCount) + baseObjectBytes);
             else
             {
                 var step = domainCount / 1000;
                 var sample = ddictExtension.Where((_, i) => i % step == 0).ToList();
                 var sampleRate = (decimal) sample.Count / domainCount;
-                var sampleBytes = ddictExtension.Sum(entity => baseObjectBytes + entity.KeyValuePairs.Sum(kvp => kvp.ByteCount));
+                var sampleBytes = ddictExtension.Sum(entity => entity.KeyValuePairs.Sum(kvp => kvp.ByteCount) + baseObjectBytes);
                 var total = sampleBytes / sampleRate;
                 totalBytes = decimal.ToInt64(total);
             }
@@ -141,29 +130,29 @@ namespace RESTar.Admin
     }
 
     /// <summary>
-    /// Contains a description of a table size
+    /// Contains a description of a resource size in memory
     /// </summary>
-    public class ResourceSize
+    public struct ResourceSize
     {
         /// <summary>
         /// The size in bytes
         /// </summary>
-        public long Bytes { get; }
+        public readonly long Bytes;
 
         /// <summary>
         /// The size in kilobytes
         /// </summary>
-        public decimal KB { get; }
+        public readonly decimal KB;
 
         /// <summary>
         /// The size in megabytes
         /// </summary>
-        public decimal MB { get; }
+        public readonly decimal MB;
 
         /// <summary>
         /// The size in gigabytes
         /// </summary>
-        public decimal GB { get; }
+        public readonly decimal GB;
 
         /// <summary>
         /// Creates a new ResourceSize instance, encoding the given bytes
@@ -171,9 +160,10 @@ namespace RESTar.Admin
         public ResourceSize(long bytes)
         {
             Bytes = bytes;
-            GB = decimal.Round((decimal) bytes / 1000000000, 6);
-            MB = decimal.Round((decimal) bytes / 1000000, 6);
-            KB = decimal.Round((decimal) bytes / 1000, 6);
+            var decimalBytes = (decimal) bytes;
+            GB = decimal.Round(decimalBytes / 1_000_000_000, 6);
+            MB = decimal.Round(decimalBytes / 1_000_000, 6);
+            KB = decimal.Round(decimalBytes / 1_000, 6);
         }
     }
 }

@@ -37,24 +37,12 @@ namespace RESTar.Operations
 
         private static dynamic MakeDelegate<T>(this MethodInfo method) => method.CreateDelegate(typeof(T), null);
 
-        private static InterfaceMapping? SafeGetInterfaceMap(this Type resourceType, Type interfaceType)
-        {
-            try
-            {
-                return resourceType.GetInterfaceMap(interfaceType);
-            }
-            catch
-            {
-                return null;
-            }
-        }
-
         /// <summary>
         /// Gets the given operations delegate from a given resource type definition
         /// </summary>
         internal static TDelegate GetDelegate<TDelegate, TResource>() where TResource : class => typeof(TResource)
-            .SafeGetInterfaceMap(MatchingInterface<TDelegate, TResource>())?
-            .TargetMethods
+            .SafeGet(t => t.GetInterfaceMap(MatchingInterface<TDelegate, TResource>()))
+            .TargetMethods?
             .FirstOrDefault()?
             .MakeDelegate<TDelegate>();
     }

@@ -18,6 +18,18 @@ namespace RESTar.Operations
             }
         }
 
+        public static T SafeGet<T>(Func<T> thingy)
+        {
+            try
+            {
+                return thingy();
+            }
+            catch
+            {
+                return default;
+            }
+        }
+
         public static T Try<T>(Action thingy, T onfail)
         {
             try
