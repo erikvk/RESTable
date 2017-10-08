@@ -1,8 +1,64 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 using RESTar.Admin;
+using RESTar.Internal;
 
 namespace RESTar.Operations
 {
+    internal static class DelegateMaker
+    {
+        private static Type MatchingInterface<TDelegate, TResource>() where TResource : class
+        {
+            switch (typeof(TDelegate))
+            {
+                case var d when d == typeof(Selector<TResource>): return typeof(ISelector<TResource>);
+                case var d when d == typeof(Inserter<TResource>): return typeof(IInserter<TResource>);
+                case var d when d == typeof(Updater<TResource>): return typeof(IUpdater<TResource>);
+                case var d when d == typeof(Deleter<TResource>): return typeof(IDeleter<TResource>);
+                case var d when d == typeof(Counter<TResource>): return typeof(ICounter<TResource>);
+                case var d when d == typeof(Profiler): return typeof(IProfiler);
+                default: throw new ArgumentOutOfRangeException();
+            }
+        }
+
+        internal static Type MatchingInterface(RESTarOperations operation)
+        {
+            switch (operation)
+            {
+                case RESTarOperations.Select: return typeof(ISelector<>);
+                case RESTarOperations.Insert: return typeof(IInserter<>);
+                case RESTarOperations.Update: return typeof(IUpdater<>);
+                case RESTarOperations.Delete: return typeof(IDeleter<>);
+                default: throw new ArgumentOutOfRangeException(nameof(operation), operation, null);
+            }
+        }
+
+        private static dynamic MakeDelegate<T>(this MethodInfo method) => method.CreateDelegate(typeof(T), null);
+
+        private static InterfaceMapping? SafeGetInterfaceMap(this Type resourceType, Type interfaceType)
+        {
+            try
+            {
+                return resourceType.GetInterfaceMap(interfaceType);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Gets the given operations delegate from a given resource type definition
+        /// </summary>
+        internal static TDelegate GetDelegate<TDelegate, TResource>() where TResource : class => typeof(TResource)
+            .SafeGetInterfaceMap(MatchingInterface<TDelegate, TResource>())?
+            .TargetMethods
+            .FirstOrDefault()?
+            .MakeDelegate<TDelegate>();
+    }
+
     /// <summary>
     /// Specifies the Select operation used in GET, PATCH, PUT and DELETE. Select gets a set 
     /// of entities from a resource that satisfy certain conditions provided in the request, 

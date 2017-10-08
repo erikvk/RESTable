@@ -12,6 +12,7 @@ using Starcounter;
 using static System.Reflection.BindingFlags;
 using static RESTar.Methods;
 using static RESTar.Internal.RESTarResourceType;
+using static RESTar.Operations.DelegateMaker;
 using static RESTar.Operations.Transact;
 using Profiler = RESTar.Operations.Profiler;
 
@@ -147,41 +148,40 @@ namespace RESTar.Internal
             Inserter<T> inserter = null, Updater<T> updater = null, Deleter<T> deleter = null,
             Counter<T> counter = null, Profiler profiler = null)
         {
-            var type = typeof(T);
-
             void basicResourceCheck()
             {
                 if (name.Count(c => c == '+') >= 2)
                     throw new ResourceDeclarationException($"Invalid resource '{name.Replace('+', '.')}'. " +
                                                            "Inner resources cannot have their own inner resources");
-                if (type.HasAttribute<DatabaseAttribute>() && type.GetProfiler() != null)
+                if (typeof(T).HasAttribute<DatabaseAttribute>() && GetDelegate<Profiler, T>() != null)
                     throw new ResourceDeclarationException("Invalid IProfiler interface implementation for resource " +
-                                                           $"type '{type.FullName}'. Starcounter resources use their " +
+                                                           $"type '{typeof(T).FullName}'. Starcounter resources use their " +
                                                            "default profilers, and cannot implement IProfiler");
             }
 
             basicResourceCheck();
+            var type = typeof(T);
             if (type.IsDDictionary() && type.Implements(typeof(IDDictionary<,>), out var _))
             {
                 new Resource<T>
                 (
                     name: name,
                     attribute: attribute,
-                    selector: type.GetSelector<T>() ?? DDictionaryOperations<T>.Select,
-                    inserter: type.GetInserter<T>() ?? DDictionaryOperations<T>.Insert,
-                    updater: type.GetUpdater<T>() ?? DDictionaryOperations<T>.Update,
-                    deleter: type.GetDeleter<T>() ?? DDictionaryOperations<T>.Delete,
-                    counter: type.GetCounter<T>() ?? DDictionaryOperations<T>.Count,
+                    selector: GetDelegate<Selector<T>, T>() ?? DDictionaryOperations<T>.Select,
+                    inserter: GetDelegate<Inserter<T>, T>() ?? DDictionaryOperations<T>.Insert,
+                    updater: GetDelegate<Updater<T>, T>() ?? DDictionaryOperations<T>.Update,
+                    deleter: GetDelegate<Deleter<T>, T>() ?? DDictionaryOperations<T>.Delete,
+                    counter: GetDelegate<Counter<T>, T>() ?? DDictionaryOperations<T>.Count,
                     profiler: DDictionaryOperations<T>.Profile
                 );
                 return;
             }
 
-            selector = selector ?? type.GetSelector<T>();
-            inserter = inserter ?? type.GetInserter<T>();
-            updater = updater ?? type.GetUpdater<T>();
-            deleter = deleter ?? type.GetDeleter<T>();
-            counter = counter ?? type.GetCounter<T>();
+            selector = selector ?? GetDelegate<Selector<T>, T>();
+            inserter = inserter ?? GetDelegate<Inserter<T>, T>();
+            updater = updater ?? GetDelegate<Updater<T>, T>();
+            deleter = deleter ?? GetDelegate<Deleter<T>, T>();
+            counter = counter ?? GetDelegate<Counter<T>, T>();
 
             if (type.HasAttribute<DatabaseAttribute>())
             {
@@ -195,20 +195,10 @@ namespace RESTar.Internal
             else
             {
                 CheckVirtualResource(type);
-                profiler = profiler ?? type.GetProfiler();
+                profiler = profiler ?? GetDelegate<Profiler, T>();
             }
             new Resource<T>(name, attribute, selector, inserter, updater, deleter, counter, profiler);
         }
-
-        //private static TDelegate GetDelegate<TResource, TDelegate>()
-        //{
-
-
-        // //   if (!type.Implements(typeof(ISelector<>), out var p, false)) return null;
-        // //   if (p[0] != typeof(T)) throw InvalidImplementation("ISelector", type.FullName, p[0]);
-        // //   return type.GetMethod("Select", Instance | Public | DeclaredOnly).MakeDelegate<Selector<T>>();
-
-        //}
 
         private static void CheckVirtualResource(Type type)
         {
@@ -298,25 +288,32 @@ namespace RESTar.Internal
                 }
             }).Distinct().ToArray();
 
+        private Delegate GetOpDelegate(RESTarOperations op)
+        {
+            switch (op)
+            {
+                case RESTarOperations.Select: return Select;
+                case RESTarOperations.Insert: return Insert;
+                case RESTarOperations.Update: return Update;
+                case RESTarOperations.Delete: return Delete;
+                default: throw new ArgumentOutOfRangeException(nameof(op));
+            }
+        }
+
         private void CheckOperationsSupport()
         {
-            var necessaryOperations = NecessaryOpDefs(AvailableMethods);
-            if (necessaryOperations.Select(op =>
+            foreach (var op in NecessaryOpDefs(AvailableMethods))
+            {
+                var del = GetOpDelegate(op);
+                if (del == null)
                 {
-                    switch (op)
-                    {
-                        case RESTarOperations.Select: return Select;
-                        case RESTarOperations.Insert: return Insert;
-                        case RESTarOperations.Update: return Update;
-                        case RESTarOperations.Delete: return Delete;
-                        default: return default(Delegate);
-                    }
-                })
-                .Any(result => result == null))
-                throw new ArgumentException(
-                    $"An operation is missing to support methods {AvailableMethods.ToMethodsString()} for " +
-                    $"resource {Name}. Necessary operations: {string.Join(", ", necessaryOperations.Select(i => i.ToString()))}. " +
-                    $"Make sure that the generic resource operation (e.g. ISelector<T>) interfaces have {Name} as type parameter");
+                    var @interface = MatchingInterface(op);
+                    throw new ResourceDeclarationException(
+                        $"The '{op}' operation is needed to support method(s) {AvailableMethods.ToMethodsString()} for resource '{Name}', but " +
+                        "RESTar found no implementation of the operation interface in the type declaration. Add an implementation of the " +
+                        $"'{@interface.ToString().Replace("`1[T]", $"<{Name}>")}' interface to the resource's type declaration");
+                }
+            }
         }
 
         public bool Equals(IResource x, IResource y) => x?.Name == y?.Name;
