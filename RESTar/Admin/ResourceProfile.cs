@@ -10,6 +10,15 @@ using IResource = RESTar.Internal.IResource;
 
 namespace RESTar.Admin
 {
+    [RESTar(Methods.GET)]
+    public class R2 : ResourceProfile, ISelector<R2>
+    {
+        public IEnumerable<R2> Select(IRequest<R2> request)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
     /// <summary>
     /// Provides a profile for a given resource
     /// </summary>

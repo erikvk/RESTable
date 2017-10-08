@@ -200,6 +200,16 @@ namespace RESTar.Internal
             new Resource<T>(name, attribute, selector, inserter, updater, deleter, counter, profiler);
         }
 
+        //private static TDelegate GetDelegate<TResource, TDelegate>()
+        //{
+
+
+        // //   if (!type.Implements(typeof(ISelector<>), out var p, false)) return null;
+        // //   if (p[0] != typeof(T)) throw InvalidImplementation("ISelector", type.FullName, p[0]);
+        // //   return type.GetMethod("Select", Instance | Public | DeclaredOnly).MakeDelegate<Selector<T>>();
+
+        //}
+
         private static void CheckVirtualResource(Type type)
         {
             #region Check general stuff

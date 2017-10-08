@@ -45,45 +45,47 @@ namespace RESTar
         private static Exception InvalidImplementation(string i, string r, Type f) => new Exception(
             $"Invalid {i} implementation for resource '{r}'. Expected '{i}<{r}>', but found '{i}<{f.FullName}>'");
 
+        private static dynamic MakeDelegate<T>(this MethodInfo method) => method.CreateDelegate(typeof(T), null);
+
         internal static Selector<T> GetSelector<T>(this Type type) where T : class
         {
-            if (!type.Implements(typeof(ISelector<>), out var p)) return null;
+            if (!type.Implements(typeof(ISelector<>), out var p, false)) return null;
             if (p[0] != typeof(T)) throw InvalidImplementation("ISelector", type.FullName, p[0]);
-            return (Selector<T>) type.GetMethod("Select", Instance | Public).CreateDelegate(typeof(Selector<T>), null);
+            return type.GetMethod("Select", Instance | Public | DeclaredOnly).MakeDelegate<Selector<T>>();
         }
 
         internal static Inserter<T> GetInserter<T>(this Type type) where T : class
         {
-            if (!type.Implements(typeof(IInserter<>), out var p)) return null;
+            if (!type.Implements(typeof(IInserter<>), out var p, false)) return null;
             if (p[0] != typeof(T)) throw InvalidImplementation("IInserter", type.FullName, p[0]);
-            return (Inserter<T>) type.GetMethod("Insert", Instance | Public).CreateDelegate(typeof(Inserter<T>), null);
+            return type.GetMethod("Insert", Instance | Public | DeclaredOnly).MakeDelegate<Inserter<T>>();
         }
 
         internal static Updater<T> GetUpdater<T>(this Type type) where T : class
         {
-            if (!type.Implements(typeof(IUpdater<>), out var p)) return null;
+            if (!type.Implements(typeof(IUpdater<>), out var p, false)) return null;
             if (p[0] != typeof(T)) throw InvalidImplementation("IUpdater", type.FullName, p[0]);
-            return (Updater<T>) type.GetMethod("Update", Instance | Public).CreateDelegate(typeof(Updater<T>), null);
+            return type.GetMethod("Update", Instance | Public | DeclaredOnly).MakeDelegate<Updater<T>>();
         }
 
         internal static Deleter<T> GetDeleter<T>(this Type type) where T : class
         {
-            if (!type.Implements(typeof(IDeleter<>), out var p)) return null;
+            if (!type.Implements(typeof(IDeleter<>), out var p, false)) return null;
             if (p[0] != typeof(T)) throw InvalidImplementation("IDeleter", type.FullName, p[0]);
-            return (Deleter<T>) type.GetMethod("Delete", Instance | Public).CreateDelegate(typeof(Deleter<T>), null);
+            return type.GetMethod("Delete", Instance | Public | DeclaredOnly).MakeDelegate<Deleter<T>>();
         }
 
         internal static Counter<T> GetCounter<T>(this Type type) where T : class
         {
-            if (!type.Implements(typeof(ICounter<>), out var p)) return null;
+            if (!type.Implements(typeof(ICounter<>), out var p, false)) return null;
             if (p[0] != typeof(T)) throw InvalidImplementation("ICounter", type.FullName, p[0]);
-            return (Counter<T>) type.GetMethod("Count", Instance | Public).CreateDelegate(typeof(Counter<T>), null);
+            return type.GetMethod("Count", Instance | Public | DeclaredOnly).MakeDelegate<Counter<T>>();
         }
 
         internal static Profiler GetProfiler(this Type type)
         {
             if (!type.Implements(typeof(IProfiler))) return null;
-            return (Profiler)type.GetMethod("Profile", Instance | Public).CreateDelegate(typeof(Profiler), null);
+            return type.GetMethod("Profile", Instance | Public | DeclaredOnly).MakeDelegate<Profiler>();
         }
 
         #endregion
@@ -113,18 +115,28 @@ namespace RESTar
             return attribute != null;
         }
 
-        internal static bool Implements(this Type type, Type interfaceType)
+        internal static bool Implements(this Type type, Type interfaceType, bool includeInherited = true)
         {
-            return type.GetInterfaces()
-                .Any(i => i.Name == interfaceType.Name && i.Namespace == interfaceType.Namespace);
+            var interfaces = includeInherited || type.BaseType == null
+                ? type.GetInterfaces()
+                : type.GetInterfaces().Except(type.BaseType.GetInterfaces());
+            return interfaces.Any(i => i.Name == interfaceType.Name && i.Namespace == interfaceType.Namespace);
         }
 
-        internal static bool Implements(this Type type, Type interfaceType, out Type[] genericParameters)
+        internal static bool Implements(this Type type, Type interfaceType, out Type[] genericParameters,
+            bool includeInherited = true)
         {
-            var @interface = type.GetInterfaces()
-                .FirstOrDefault(i => i.Name == interfaceType.Name && i.Namespace == interfaceType.Namespace);
-            genericParameters = @interface?.GetGenericArguments();
-            return @interface != null;
+            if (type == typeof(R2))
+            {
+                var s = 123;
+            }
+
+            var interfaces = includeInherited || type.BaseType == null
+                ? type.GetInterfaces()
+                : type.GetInterfaces().Except(type.BaseType.GetInterfaces());
+            var match = interfaces.FirstOrDefault(i => i.Name == interfaceType.Name && i.Namespace == interfaceType.Namespace);
+            genericParameters = match?.GetGenericArguments();
+            return match != null;
         }
 
         #endregion
