@@ -12,7 +12,7 @@ using Starcounter;
 
 namespace RESTarTester
 {
-    public class Program
+    public class Tester
     {
         public static void Main()
         {
