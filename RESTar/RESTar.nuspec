@@ -16,7 +16,7 @@
     <projectUrl>https://goo.gl/TIkN7m</projectUrl>
     <iconUrl>https://storage.googleapis.com/mopedo-resources/Mopedo_logo_whitefull.png</iconUrl>
     <dependencies>
-      <dependency id="Dynamit" version="0.1.16" />
+      <dependency id="Dynamit" version="0.1.17" />
     </dependencies>
   </metadata>
 </package>
