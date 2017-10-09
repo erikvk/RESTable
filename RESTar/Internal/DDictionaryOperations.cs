@@ -55,10 +55,14 @@ namespace RESTar.Internal
         /// </summary>
         public static Deleter<T> Delete => (e, r) => Do.Run(() => e.ForEach(Db.Delete), e.Count());
 
+        internal static ByteCounter<T> ByteCounter { get; } = ddicts => ddicts
+            .Cast<DDictionary>()
+            .Sum(ddict => ddict.KeyValuePairs.Sum(kvp => kvp.ByteCount) + 16);
+
         /// <summary>
         /// Profiler for DDictionary entites (used by RESTar internally, don't use)
         /// </summary>
-        public static Profiler Profile => () => ResourceProfile.MakeDDictionary(typeof(T));
+        public static Profiler Profile => () => ResourceProfile.Make(ByteCounter);
 
         /// <summary>
         /// Counter for DDictionary entites (used by RESTar internally, don't use)

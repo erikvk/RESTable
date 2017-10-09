@@ -6,7 +6,6 @@ using System.Reflection;
 using System.Runtime.Serialization;
 using Newtonsoft.Json;
 using RESTar.Linq;
-using Starcounter;
 using static System.Reflection.BindingFlags;
 using static RESTar.Deflection.Dynamic.SpecialProperty;
 using IResource = RESTar.Internal.IResource;
@@ -88,32 +87,6 @@ namespace RESTar.Deflection.Dynamic
                 .If(type.IsStarcounter, then: list => list.Union(new[] {ObjectNo, ObjectID}))
                 .OrderBy(p => p.GetAttribute<JsonPropertyAttribute>()?.Order)
                 .ToDictionary(p => p.Name.ToLower());
-        }
-
-        #endregion
-
-        #region Table columns
-
-        /// <summary>
-        /// Gets the table columns for a Starcounter database resource
-        /// </summary>
-        public static IEnumerable<StaticProperty> GetTableColumns(this IResource resource)
-        {
-            if (!resource.IsStarcounterResource)
-                throw new Exception($"Cannot get table columns for non-starcounter resource '{resource.Name}'");
-            return resource.Type.GetProperties(Instance | Public)
-                .Select(p => new StaticProperty(p)).ToList();
-        }
-
-        /// <summary>
-        /// Gets the table columns for a Starcounter database resource
-        /// </summary>
-        internal static IEnumerable<StaticProperty> GetTableColumns(this Type resource)
-        {
-            if (!resource.HasAttribute<DatabaseAttribute>())
-                throw new Exception($"Cannot get table columns for non-starcounter resource '{resource.Name}'");
-            return resource.GetProperties(Instance | Public)
-                .Select(p => new StaticProperty(p)).ToList();
         }
 
         #endregion

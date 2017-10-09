@@ -1,12 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using Dynamit;
-using RESTar.Deflection.Dynamic;
+using System.Reflection;
+using RESTar.Internal;
 using RESTar.Linq;
+using RESTar.Operations;
 using Starcounter;
-using Starcounter.Metadata;
-using IResource = RESTar.Internal.IResource;
+using static System.Reflection.BindingFlags;
 
 namespace RESTar.Admin
 {
@@ -16,7 +16,7 @@ namespace RESTar.Admin
     [RESTar(Methods.GET, Description = description)]
     public class ResourceProfile : ISelector<ResourceProfile>
     {
-        private const int baseObjectBytes = 16;
+        private const int singleSampleCutoff = 1_000;
 
         private const string description = "The TableInfo resource can create aggregated " +
                                            "info views for Starcounter tables.";
@@ -36,97 +36,90 @@ namespace RESTar.Admin
         /// </summary>
         public ResourceSize ApproximateSize { get; set; }
 
+        /// <summary>
+        /// The size of the sample used to generate the resource size approximation
+        /// </summary>
+        public long SampleSize { get; set; }
+
         /// <inheritdoc />
         public IEnumerable<ResourceProfile> Select(IRequest<ResourceProfile> request)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
-            IEnumerable<IResource> resources;
+            IEnumerable<ResourceProfile> profiles;
             string input = request.Conditions.Get(nameof(Resource), Operators.EQUALS)?.Value;
+            request.Conditions.Get(nameof(Resource)).ForEach(c => c.Skip = true);
             if (input == null)
-                resources = RESTarConfig.Resources.Where(r => r.IsStarcounterResource);
+                profiles = RESTarConfig.Resources.Select(r => r.ResourceProfile).Where(r => r != null);
             else
             {
                 var resource = RESTar.Resource.Find(input);
-                if (!resource.IsStarcounterResource)
-                    throw new Exception($"'{resource.Name}' is not a Starcounter resource, and has no table info");
-                resources = new[] {resource};
+                var profile = resource.ResourceProfile
+                              ?? throw new Exception($"Cannot profile '{resource.Name}'. No profiler implemented for type");
+                profiles = new[] {profile};
             }
-            return resources
-                .Select(r => Make(r.Type))
+            return profiles
                 .Where(request.Conditions)
                 .OrderByDescending(t => t.ApproximateSize.Bytes)
                 .ToList();
         }
 
-        internal static ResourceProfile MakeStarcounter(Type starcounter)
+        /// <summary>
+        /// Makes a ResourceProfile for the given Starcounter or DDictionary type
+        /// </summary>
+        public static ResourceProfile Make(Type type)
         {
-            const string columnSQL = "SELECT t FROM Starcounter.Metadata.Column t WHERE t.Table.Fullname =?";
-            var resourceSQLName = starcounter.FullName;
-            var columns = Db.SQL<Column>(columnSQL, resourceSQLName).Select(c => c.Name).ToList();
-            var domainCount = Db.SQL<long>($"SELECT COUNT(t) FROM {resourceSQLName.Fnuttify()} t").First;
-            var properties = starcounter.GetTableColumns().Where(p => columns.Contains(p.DatabaseQueryName)).ToList();
-            var scExtension = Db.SQL($"SELECT t FROM {resourceSQLName.Fnuttify()} t");
-            var totalBytes = 0L;
-            if (domainCount <= 1000)
-                scExtension.ForEach(e => totalBytes += properties.Sum(p => p.ByteCount(e)) + baseObjectBytes);
-            else
-            {
-                var step = domainCount / 1000;
-                var sample = scExtension.Where((_, i) => i % step == 0).ToList();
-                var sampleRate = (decimal) sample.Count / domainCount;
-                var sampleBytes = 0L;
-                sample.ForEach(e => sampleBytes += properties.Sum(p => p.ByteCount(e)) + baseObjectBytes);
-                var total = sampleBytes / sampleRate;
-                totalBytes = decimal.ToInt64(total);
-            }
-            return new ResourceProfile
-            {
-                Resource = starcounter.FullName,
-                NumberOfEntities = domainCount,
-                ApproximateSize = new ResourceSize(totalBytes)
-            };
-        }
-
-        internal static ResourceProfile MakeDDictionary(Type ddict)
-        {
-            var sqlName = ddict.FullName.Fnuttify();
-            var domainCount = Db.SQL<long>($"SELECT COUNT(t) FROM {sqlName} t").First;
-            var ddictExtension = Db.SQL<DDictionary>($"SELECT t FROM {sqlName} t");
-            long totalBytes;
-            if (domainCount <= 1000)
-                totalBytes = ddictExtension.Sum(entity => entity.KeyValuePairs.Sum(kvp => kvp.ByteCount) + baseObjectBytes);
-            else
-            {
-                var step = domainCount / 1000;
-                var sample = ddictExtension.Where((_, i) => i % step == 0).ToList();
-                var sampleRate = (decimal) sample.Count / domainCount;
-                var sampleBytes = ddictExtension.Sum(entity => entity.KeyValuePairs.Sum(kvp => kvp.ByteCount) + baseObjectBytes);
-                var total = sampleBytes / sampleRate;
-                totalBytes = decimal.ToInt64(total);
-            }
-            return new ResourceProfile
-            {
-                Resource = ddict.FullName,
-                NumberOfEntities = domainCount,
-                ApproximateSize = new ResourceSize(totalBytes)
-            };
+            if (type.IsDDictionary()) return GetDDict(type);
+            if (type.IsStarcounter()) return GetSC(type);
+            throw new Exception($"Cannot profile '{type.FullName}'. No profiler implemented for type");
         }
 
         /// <summary>
-        /// Creates a ResourceProfile for the given type.
+        /// Makes a ResourceProfile for the given Starcounter or DDictionary type
         /// </summary>
-        /// <param name="type">The type to profile</param>
-        public static ResourceProfile Make(Type type)
+        public static ResourceProfile Make<T>() where T : class
         {
-            switch (type)
-            {
-                case var _ when type.IsDDictionary(): return MakeDDictionary(type);
-                case var _ when type.IsStarcounter(): return MakeStarcounter(type);
-                default:
-                    return RESTar.Resource.SafeGet(type)?.ResourceProfile
-                           ?? throw new ArgumentException($"Cannot profile '{type.FullName}'. No profiler implemented for type");
-            }
+            var type = typeof(T);
+            if (type.IsDDictionary()) return DDictProfiler<T>();
+            if (type.IsStarcounter()) return ScProfiler<T>();
+            throw new Exception($"Cannot profile '{type.FullName}'. No profiler implemented for type");
         }
+
+        internal static ResourceProfile Make<T>(ByteCounter<T> byteCounter) where T : class
+        {
+            var sqlName = typeof(T).FullName.Fnuttify();
+            var domain = SELECT<T>(sqlName);
+            var domainCount = COUNT(sqlName);
+            long totalBytes, sampleSize;
+            if (domainCount <= singleSampleCutoff)
+            {
+                sampleSize = domainCount;
+                totalBytes = byteCounter(domain);
+            }
+            else
+            {
+                var step = domainCount / singleSampleCutoff;
+                var sample = domain.Where((item, index) => index % step == 0).ToList();
+                sampleSize = sample.Count;
+                var total = byteCounter(sample) / decimal.Divide(sampleSize, domainCount);
+                totalBytes = decimal.ToInt64(total);
+            }
+            return new ResourceProfile
+            {
+                Resource = typeof(T).FullName,
+                NumberOfEntities = domainCount,
+                ApproximateSize = new ResourceSize(totalBytes),
+                SampleSize = sampleSize
+            };
+        }
+
+        private static dynamic GetSC(Type tyoe) => SCPROFILER.MakeGenericMethod(tyoe).Invoke(null, null);
+        private static dynamic GetDDict(Type type) => DDICTPROFILER.MakeGenericMethod(type).Invoke(null, null);
+        private static readonly MethodInfo SCPROFILER = typeof(ResourceProfile).GetMethod("ScProfiler", NonPublic | Static);
+        private static readonly MethodInfo DDICTPROFILER = typeof(ResourceProfile).GetMethod("DDictProfiler", NonPublic | Static);
+        private static ResourceProfile ScProfiler<T>() where T : class => StarcounterOperations<T>.Profile();
+        private static ResourceProfile DDictProfiler<T>() where T : class => DDictionaryOperations<T>.Profile();
+        private static long COUNT(string name) => Db.SQL<long>($"SELECT COUNT(t) FROM {name} t").First;
+        private static QueryResultRows<T> SELECT<T>(string name) => Db.SQL<T>($"SELECT t FROM {name} t");
     }
 
     /// <summary>

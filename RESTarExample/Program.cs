@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Data.SQLite;
 using System.Linq;
 using Dynamit;
 using Newtonsoft.Json.Linq;
@@ -30,24 +29,6 @@ namespace RESTarExample
                 setupMenu: true
             );
             TestDatabase.Init();
-
-            SQLiteConnection.CreateFile(SQLiteDb);
-
-            Db.Transact(() =>
-            {
-                new Table
-                {
-                    STR = "Swoo",
-                    DT = DateTime.Now,
-                    DT2 = DateTime.Now
-                };
-                new Table
-                {
-                    STR = "Swoo",
-                    DT = default,
-                    DT2 = default
-                };
-            });
         }
     }
 

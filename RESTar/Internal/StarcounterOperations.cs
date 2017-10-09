@@ -3,6 +3,8 @@ using RESTar.Admin;
 using RESTar.Linq;
 using RESTar.Operations;
 using Starcounter;
+using Starcounter.Metadata;
+using static System.Reflection.BindingFlags;
 using Profiler = RESTar.Operations.Profiler;
 
 namespace RESTar.Internal
@@ -50,10 +52,23 @@ namespace RESTar.Internal
         /// </summary>
         public static Deleter<T> Delete => (e, r) => Do.Run(() => e.ForEach(Db.Delete), e.Count());
 
+        internal static ByteCounter<T> ByteCounter { get; } = rows =>
+        {
+            const string columnSQL = "SELECT t FROM Starcounter.Metadata.Column t WHERE t.Table.Fullname =?";
+            var resourceSQLName = typeof(T).FullName;
+            var scColumns = Db.SQL<Column>(columnSQL, resourceSQLName).Select(c => c.Name).ToList();
+            var columns = typeof(T)
+                .GetProperties(Instance | Public)
+                .Where(p => scColumns.Contains(p.Name))
+                .ToList();
+            return rows.Sum(e => columns.Sum(p => p.ByteCount(e)) + 16);
+        };
+
+
         /// <summary>
         /// Profiler for static Starcounter database resources (used by RESTar internally, don't use)
         /// </summary>
-        public static Profiler Profile => () => ResourceProfile.MakeStarcounter(typeof(T));
+        public static Profiler Profile => () => ResourceProfile.Make(ByteCounter);
 
         /// <summary>
         /// Counter for static Starcounter database resources (used by RESTar internally, don't use)

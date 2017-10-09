@@ -76,7 +76,7 @@ namespace RESTar.Deflection.Dynamic
                 case null: return 0;
                 case string str: return Encoding.UTF8.GetByteCount(str);
                 case Binary binary: return binary.ToArray().Length;
-                default: return CountBytes(Type);
+                default: return Type.CountBytes();
             }
         }
 
@@ -104,33 +104,6 @@ namespace RESTar.Deflection.Dynamic
                 ? GetValue(target)?.ToString()
                 : GetValue(target);
             row[Name] = baseValue.MakeDynamicCellValue();
-        }
-
-        private static long CountBytes(Type type)
-        {
-            if (type.IsEnum) return 8;
-            switch (Type.GetTypeCode(type))
-            {
-                case TypeCode.Object:
-                    if (type.IsNullable(out var baseType)) return CountBytes(baseType);
-                    if (type.IsStarcounter()) return 16;
-                    throw new Exception($"Unknown type encountered: '{type.FullName}'");
-                case TypeCode.Boolean: return 4;
-                case TypeCode.Char: return 2;
-                case TypeCode.SByte: return 1;
-                case TypeCode.Byte: return 1;
-                case TypeCode.Int16: return 2;
-                case TypeCode.UInt16: return 2;
-                case TypeCode.Int32: return 4;
-                case TypeCode.UInt32: return 4;
-                case TypeCode.Int64: return 8;
-                case TypeCode.UInt64: return 8;
-                case TypeCode.Single: return 4;
-                case TypeCode.Double: return 8;
-                case TypeCode.Decimal: return 16;
-                case TypeCode.DateTime: return 8;
-                default: throw new ArgumentOutOfRangeException();
-            }
         }
     }
 }
