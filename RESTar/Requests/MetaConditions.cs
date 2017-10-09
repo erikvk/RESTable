@@ -54,7 +54,11 @@ namespace RESTar.Requests
     /// </summary>
     public sealed class MetaConditions
     {
-        internal Limit Limit { get; set; } = Limit.NoLimit;
+        /// <summary>
+        /// The limit by which the request's response body entity count should be restricted to
+        /// </summary>
+        public Limit Limit { get; internal set; } = Limit.NoLimit;
+
         internal bool Unsafe { get; set; }
         internal OrderBy OrderBy { get; set; }
         internal Select Select { get; set; }

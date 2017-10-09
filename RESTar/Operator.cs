@@ -1,4 +1,5 @@
 ﻿using System;
+
 #pragma warning disable 1591
 
 namespace RESTar
@@ -13,10 +14,18 @@ namespace RESTar
         /// </summary>
         public readonly Operators OpCode;
 
-        internal string Common => GetString(OpCode);
+        /// <summary>
+        /// The common string representation of this operator
+        /// </summary>
+        public string Common => GetString(OpCode);
+
+        /// <summary>
+        /// The SQL string representation of this operator
+        /// </summary>
+        public string SQL => OpCode == Operators.NOT_EQUALS ? "<>" : Common;
+
         internal bool Equality => OpCode == Operators.EQUALS || OpCode == Operators.NOT_EQUALS;
         internal bool Compare => !Equality;
-        internal string SQL => OpCode == Operators.NOT_EQUALS ? "<>" : Common;
         public override bool Equals(object obj) => obj is Operator && (Operator) obj == OpCode;
         public bool Equals(Operator other) => OpCode == other.OpCode;
         public override int GetHashCode() => (int) OpCode;
