@@ -77,14 +77,10 @@ namespace RESTar.Internal
         {
             switch (r)
             {
-                case Request<T> @internal when @internal.Conditions.HasPost(out var _):
-                    return Select(r)?.LongCount() ?? 0L;
-                case Request<T> @internal:
-                    return Db.SQL<long>(@internal.CountQuery, @internal.SqlValues).First;
-                case var external when !external.Conditions.Any():
-                    return Db.SQL<long>(COUNT).First;
-                case var external when external.Conditions.HasPost(out var _):
-                    return Select(r)?.LongCount() ?? 0L;
+                case Request<T> @internal when @internal.Conditions.HasPost(out var _): return Select(r)?.LongCount() ?? 0L;
+                case Request<T> @internal: return Db.SQL<long>(@internal.CountQuery, @internal.SqlValues).First;
+                case var external when !external.Conditions.Any(): return Db.SQL<long>(COUNT).First;
+                case var external when external.Conditions.HasPost(out var _): return Select(r)?.LongCount() ?? 0L;
                 case var external:
                     var where = external.Conditions.GetSQL().MakeWhereClause();
                     return Db.SQL<long>($"{COUNT}{where.WhereString}", where.Values).First;

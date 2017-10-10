@@ -10,7 +10,7 @@ namespace RESTar.Operations
 {
     internal class Rename : Dictionary<Term, string>, IProcessor
     {
-        internal Rename(IResource resource, string key, out IEnumerable<string> dynamicDomain)
+        internal Rename(IResource resource, string key, out ICollection<string> dynamicDomain)
         {
             var opMatcher = key.Contains("->") ? new[] {"->"} : new[] {"-%3E"};
             key.Split(',').ForEach(str => Add(

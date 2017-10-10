@@ -36,7 +36,7 @@ namespace RESTar.Operations
             try
             {
                 if (!request.MetaConditions.Unsafe && request.MetaConditions.Limit == -1)
-                    request.MetaConditions.Limit = 1000;
+                    request.MetaConditions.Limit = (Limit) 1000;
                 return request.Resource.Select(request)?
                     .Filter(request.MetaConditions.OrderBy)
                     .Filter(request.MetaConditions.Limit);
@@ -52,7 +52,7 @@ namespace RESTar.Operations
             try
             {
                 if (!request.MetaConditions.Unsafe && request.MetaConditions.Limit == -1)
-                    request.MetaConditions.Limit = 1000;
+                    request.MetaConditions.Limit = (Limit) 1000;
                 var results = request.Resource.Select(request);
                 if (results == null) return null;
                 if (!request.MetaConditions.HasProcessors)

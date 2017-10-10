@@ -86,7 +86,7 @@ namespace RESTar.Requests
                 mcStrings.RemoveAt(renameIndex);
                 mcStrings.Insert(0, rename);
             }
-            var dynamicDomain = default(IEnumerable<string>);
+            ICollection<string> dynamicDomain = default;
             foreach (var s in mcStrings)
             {
                 if (s == "")
@@ -109,8 +109,12 @@ namespace RESTar.Requests
                         $"Expected {GetTypeString(expectedType)}.");
                 switch (metaCondition)
                 {
+                    case RESTarMetaConditions.Rename:
+                        if (!processors) break;
+                        mc.Rename = new Rename(resource, (string) value, out dynamicDomain);
+                        break;
                     case RESTarMetaConditions.Limit:
-                        mc.Limit = (int) value;
+                        mc.Limit = (Limit) (int) value;
                         break;
                     case RESTarMetaConditions.Order_desc:
                         mc.OrderBy = new OrderBy(resource, true, (string) value, dynamicDomain);
@@ -128,10 +132,6 @@ namespace RESTar.Requests
                     case RESTarMetaConditions.Add:
                         if (!processors) break;
                         mc.Add = new Add(resource, (string) value, dynamicDomain);
-                        break;
-                    case RESTarMetaConditions.Rename:
-                        if (!processors) break;
-                        mc.Rename = new Rename(resource, (string) value, out dynamicDomain);
                         break;
                     case RESTarMetaConditions.Dynamic: break;
                     case RESTarMetaConditions.Safepost:

@@ -15,7 +15,7 @@ namespace RESTar.Deflection.Dynamic
     /// <summary>
     /// The type cache keeps track of discovered types and provides
     /// fast access to their static properties.
-    /// </summary>
+    /// </summary>limit
     public static class TypeCache
     {
         static TypeCache()

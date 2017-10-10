@@ -14,8 +14,11 @@ namespace RESTar.Operations
         public bool Equals(Limit other) => Number == other.Number;
         public override bool Equals(object obj) => !ReferenceEquals(null, obj) && obj is Limit && Equals((Limit) obj);
         public override int GetHashCode() => Number;
-        public static Limit NoLimit => -1;
-        public static implicit operator Limit(int nr) => new Limit(nr);
+        public static Limit NoLimit => (Limit) (-1);
+
+        public static explicit operator Limit(int nr) => new Limit(nr);
+        public static explicit operator int(Limit limit) => limit.Number;
+
         public static bool operator ==(Limit l, int i) => l.Number == i;
         public static bool operator !=(Limit l, int i) => l.Number != i;
         public static bool operator <(Limit l, int i) => l.Number < i;
