@@ -4,6 +4,7 @@ using System.Linq;
 using Dynamit;
 using Newtonsoft.Json.Linq;
 using RESTar;
+using RESTar.SQLite;
 using Starcounter;
 
 // ReSharper disable UnassignedGetOnlyAutoProperty
@@ -15,9 +16,6 @@ namespace RESTarExample
 {
     public static class Program
     {
-        private const string SQLiteDb = "C:\\Mopedo\\test.sqlite";
-        public static string ConnectionString = $"Data Source={SQLiteDb};Version=3;";
-        
         public static void Main()
         {
             RESTarConfig.Init
@@ -32,7 +30,13 @@ namespace RESTarExample
         }
     }
 
-
+    [SQLite, RESTar(Methods.GET)]
+    public class SQLTable
+    {
+        public string STR { get; set; }
+        public int INT { get; set; }
+    }
+    
     [Database, RESTar(Methods.GET)]
     public class Table
     {

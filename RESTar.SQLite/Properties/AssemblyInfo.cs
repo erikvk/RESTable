@@ -6,11 +6,11 @@ using Starcounter.Internal;
 // General Information about an assembly is controlled through the following
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("RESTar")]
+[assembly: AssemblyTitle("RESTar.SQLite")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("Mopedo AB")]
-[assembly: AssemblyProduct("RESTar")]
+[assembly: AssemblyCompany("Starcounter")]
+[assembly: AssemblyProduct("RESTar.SQLite")]
 [assembly: AssemblyCopyright("Copyright © Starcounter 2013")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
@@ -33,12 +33,11 @@ using Starcounter.Internal;
 // You can specify all the values or you can default the Build and Revision Numbers
 // by using the '*' as shown below:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion("0.2.21")]
-[assembly: AssemblyFileVersion("0.2.21")]
-[assembly: InternalsVisibleTo("RESTar.SQLite")]
-
+[assembly: AssemblyVersion("1.0.0.0")]
+[assembly: AssemblyFileVersion("1.0.0.0")]
+[assembly: InternalsVisibleTo("RESTar")]
 
 // Assures the current assembly has a reference to the Starcounter
 // assembly. A reference to Starcounter is currently required for
 // Starcounter to detect that an assembly should be hosted.
-[assembly: StarcounterAssembly]
+[assembly: StarcounterAssembly()]

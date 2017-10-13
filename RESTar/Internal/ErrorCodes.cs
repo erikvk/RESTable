@@ -74,5 +74,6 @@ namespace RESTar.Internal
 
         DatabaseError = 300,
         NotInitialized = 400,
+        AddOnError = 401
     }
 }

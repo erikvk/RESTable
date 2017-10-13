@@ -90,6 +90,7 @@
     <Reference Include="System.XML" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AddOnInfo.cs" />
     <Compile Include="Admin\AdminTools.cs" />
     <Compile Include="AvailableResource.cs" />
     <Compile Include="Auth\AccessRight.cs" />
@@ -183,6 +184,7 @@
     <Compile Include="Serialization\ObjectNoProvider.cs" />
     <Compile Include="Serialization\ObjectIDProvider.cs" />
     <Compile Include="Serialization\RESTarMacroWrapperProvider.cs" />
+    <Compile Include="AddOns.cs" />
     <Compile Include="View\Menu.json.cs">
       <DependentUpon>Menu.json</DependentUpon>
     </Compile>

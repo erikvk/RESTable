@@ -30,6 +30,15 @@ namespace RESTar
 
     /// <inheritdoc />
     /// <summary>
+    /// Thrown when a RESTar add-on could not be connected properly
+    /// </summary>
+    public class RESTarAddOnException : RESTarException
+    {
+        internal RESTarAddOnException(string message) : base(AddOnError, message) => Response = BadRequest(this);
+    }
+
+    /// <inheritdoc />
+    /// <summary>
     /// Thrown when a client does something that is forbidden
     /// </summary>
     public class ForbiddenException : RESTarException

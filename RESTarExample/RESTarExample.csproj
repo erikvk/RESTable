@@ -87,6 +87,10 @@
     <Compile Include="TestDb\TestBase.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\RESTar.SQLite\RESTar.SQLite.csproj">
+      <Project>{adab3a82-32d7-421d-84e8-8a1c4708967b}</Project>
+      <Name>RESTar.SQLite</Name>
+    </ProjectReference>
     <ProjectReference Include="..\RESTar\RESTar.csproj">
       <Project>{3ca9602f-fc6f-4dfe-8749-c6dbdd9a4809}</Project>
       <Name>RESTar</Name>

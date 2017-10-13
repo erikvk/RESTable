@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Xml;
 using Dynamit;
 using Newtonsoft.Json;
@@ -121,6 +122,7 @@ namespace RESTar
         /// <param name="setupMenu">Shoud a menu be setup automatically in the view?</param>
         /// <param name="requireApiKey">Should the REST API require an API key?</param>
         /// <param name="allowAllOrigins">Should any origin be allowed to make CORS requests?</param>
+        /// <param name="addOns">The add-ons to enable for this RESTar instance</param>
         public static void Init
         (
             ushort port = 8282,
@@ -131,8 +133,11 @@ namespace RESTar
             bool allowAllOrigins = true,
             string configFilePath = null,
             bool prettyPrint = true,
-            ushort daysToSaveErrors = 30)
+            ushort daysToSaveErrors = 30,
+            AddOnInfo[] addOns = null)
         {
+            #region Fail-fast inits
+
             uri = uri?.Trim() ?? "/rest";
             if (uri.Contains("?")) throw new ArgumentException("URI cannot contain '?'", nameof(uri));
             var appName = Application.Current.Name;
@@ -140,9 +145,26 @@ namespace RESTar
                 throw new ArgumentException($"URI must differ from application name ({appName})", nameof(appName));
             if (uri[0] != '/') uri = $"/{uri}";
             Settings.Init(port, uri, viewEnabled, prettyPrint, daysToSaveErrors);
+
+            #endregion
+
+            #region Independant inits
+
+            Log.Init();
+            DynamitConfig.Init(true, true);
+
+            #endregion
+
+            #region Resource declarations
+
             typeof(object).GetSubclasses()
                 .Where(t => t.HasAttribute<RESTarAttribute>())
-                .ForEach(t => Do.TryCatch(() => Resource.AutoRegister(t), e => throw (e.InnerException ?? e)));
+                .ForEach(t =>
+                {
+                    if (t.GetCustomAttributes().Any(a => a.GetType().FullName == "RESTar.SQLite.SQLiteAttribute"))
+                        return;
+                    Do.TryCatch(() => Resource.AutoRegister(t), e => throw (e.InnerException ?? e));
+                });
 
             #region Migrate resource aliases
 
@@ -183,6 +205,7 @@ namespace RESTar
             #endregion
 
             DynamicResource.All.ForEach(Resource.RegisterDynamicResource);
+            // AddOns.Init(addOns?.GroupBy(a => a.AddOn).Select(g => g.FirstOrDefault()));
 
             Resources.GroupBy(r => r.ParentResourceName)
                 .Where(group => group.Key != null)
@@ -197,14 +220,18 @@ namespace RESTar
                     parentResource.InnerResources = group.ToList();
                 });
 
+            #endregion
+
+            #region Finishing inits
+
             RequireApiKey = requireApiKey;
             AllowAllOrigins = allowAllOrigins;
             ConfigFilePath = configFilePath;
-            DynamitConfig.Init(true, true);
-            Log.Init();
             RegisterRESTHandlers(setupMenu);
             Initialized = true;
             UpdateAuthInfo();
+
+            #endregion
         }
 
         private static void ReadConfig()

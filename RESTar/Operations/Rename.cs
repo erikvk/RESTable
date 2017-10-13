@@ -20,9 +20,9 @@ namespace RESTar.Operations
             dynamicDomain = Values;
         }
 
-        private JObject Renamed(JObject entity)
+        private JObject Renamed(JObject entity) 
         {
-            this.ForEach(pair =>
+            this.Apply(pair =>
             {
                 var value = entity.SafeGetNoCase(pair.Key.Key, out var actualKey);
                 if (actualKey != null)
