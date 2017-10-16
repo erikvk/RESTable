@@ -52,14 +52,11 @@ namespace RESTar.Operations
         /// </summary>
         internal static TDelegate GetDelegate<TDelegate, TWrapper, TWrapped>()
             where TWrapper : ResourceWrapper<TWrapped>
-            where TWrapped : class
-        {
-            return typeof(TWrapper)
-                .SafeGet(t => t.GetInterfaceMap(MatchingInterface<TDelegate, TWrapped>()))
-                .TargetMethods?
-                .FirstOrDefault()?
-                .MakeDelegate<TWrapped>();
-        }
+            where TWrapped : class => typeof(TWrapper)
+            .SafeGet(t => t.GetInterfaceMap(MatchingInterface<TDelegate, TWrapped>()))
+            .TargetMethods?
+            .FirstOrDefault()?
+            .MakeDelegate<TWrapped>();
     }
 
     /// <summary>

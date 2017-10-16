@@ -309,6 +309,10 @@ namespace RESTar
 
         internal static string GetDomain(this ResourceProvider provider) => provider.GetType().FullName;
 
+        internal static Type GetWrappedType(this Type wrapperType) => wrapperType.BaseType?.GetGenericArguments()[0];
+
+        internal static bool IsWrapper(this Type type) => typeof(IResourceWrapper).IsAssignableFrom(type);
+
         #endregion
 
         #region Filter and Process

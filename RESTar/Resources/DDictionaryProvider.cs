@@ -8,8 +8,12 @@ namespace RESTar.Resources
 {
     internal class DDictionaryProvider : ResourceProvider<DDictionary>
     {
-        internal override bool Include(Type type) => type.IsSubclassOf(typeof(DDictionary))
-                                                     && type.HasNoResourceProviderAttributes();
+        internal override bool Include(Type type)
+        {
+            if (type.IsWrapper())
+                return type.GetWrappedType().IsSubclassOf(typeof(DDictionary)) && type.HasNoResourceProviderAttributes();
+            return type.IsSubclassOf(typeof(DDictionary)) && type.HasNoResourceProviderAttributes();
+        }
 
         internal override void Validate()
         {

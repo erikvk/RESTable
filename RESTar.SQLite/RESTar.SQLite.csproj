@@ -74,10 +74,13 @@
   <ItemGroup>
     <Compile Include="ColumnAttribute.cs" />
     <Compile Include="ExtensionMethods.cs" />
+    <Compile Include="ISQLiteTable.cs" />
     <Compile Include="SQLiteDb.cs" />
     <Compile Include="SQLiteAttribute.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SQLiteException.cs" />
+    <Compile Include="SQLiteIndex.cs" />
+    <Compile Include="SQLiteOperations.cs" />
     <Compile Include="SQLiteProvider.cs" />
     <Compile Include="Settings.cs" />
   </ItemGroup>

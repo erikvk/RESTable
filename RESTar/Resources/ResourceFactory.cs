@@ -36,11 +36,13 @@ namespace RESTar.Resources
             if (type.FullName.Count(c => c == '+') >= 2)
                 throw new ResourceDeclarationException($"Invalid resource '{type.FullName.Replace('+', '.')}'. " +
                                                        "Inner resources cannot have their own inner resources");
+            if (type.Namespace == null)
+                throw new ResourceDeclarationException($"Invalid type '{type.FullName}'. Unknown namespace");
 
-            if (type.FullName.ToLower().StartsWith("restar.") && type.Assembly != typeof(Resource).Assembly)
+            if (RESTarConfig.ReservedNamespaces.Contains(type.Namespace.ToLower()) &&
+                type.Assembly != typeof(RESTarConfig).Assembly)
                 throw new ResourceDeclarationException(
-                    $"Invalid namespace for resource type '{type.FullName}'. Cannot begin with \'RESTar\' " +
-                    "or any case variants of \'RESTar\'");
+                    $"Invalid namespace for resource type '{type.FullName}'. Namespace '{type.Namespace}' is reserved by RESTar");
 
             if ((!type.IsClass || !type.IsPublic && !type.IsNestedPublic) && type.Assembly != typeof(Resource).Assembly)
                 throw new ResourceDeclarationException($"Invalid type '{type.FullName}'. Resource types must be public classes");
@@ -75,8 +77,8 @@ namespace RESTar.Resources
             var fields = type.GetFields(Public | Instance);
             if (fields.Any())
                 throw new ResourceMemberException(
-                    "A virtual resource cannot include public instance fields, " +
-                    $"only properties. Resource: '{type.FullName}' Fields: {string.Join(", ", fields.Select(f => $"'{f.Name}'"))} in resource '{type.FullName}'"
+                    $"A RESTar resource cannot have public instance fields, only properties. Resource: '{type.FullName}' had " +
+                    $"fields: {string.Join(", ", fields.Select(f => $"'{f.Name}'"))} in resource '{type.FullName}'"
                 );
 
             #endregion
@@ -99,12 +101,14 @@ namespace RESTar.Resources
         private static void ValidateWrapperDeclaration(Type type)
         {
             ValidateCommon(type);
-            var wrappedType = type.GetGenericArguments()[0];
+            var wrappedType = type.GetWrappedType();
             if (wrappedType.HasAttribute<RESTarAttribute>())
                 throw new ResourceWrapperException("RESTar found a RESTar.ResourceWrapper declaration for type " +
                                                    $"'{wrappedType.FullName}', a type that is already a RESTar " +
-                                                   $"resource type. Only non-resource types can be wrapped.");
-            if (wrappedType.FullName?.StartsWith("RESTar") == true)
+                                                   "resource type. Only non-resource types can be wrapped.");
+            if (type.Namespace == null)
+                throw new ResourceDeclarationException($"Invalid type '{type.FullName}'. Unknown namespace");
+            if (type.Assembly == typeof(RESTarConfig).Assembly)
                 throw new ResourceWrapperException("RESTar found an invalid RESTar.ResourceWrapper declaration for type " +
                                                    $"'{wrappedType.FullName}'. RESTar types cannot be wrapped.");
         }
@@ -162,6 +166,7 @@ namespace RESTar.Resources
             foreach (var provider in ResourceProviders)
             {
                 var claim = provider.GetClaim(wrapperTypes);
+                wrapperTypes = wrapperTypes.Except(claim).ToList();
                 provider.MakeClaimWrapped(claim);
             }
 

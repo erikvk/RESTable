@@ -8,8 +8,12 @@ namespace RESTar.Resources
 {
     internal class StarcounterProvider : ResourceProvider<object>
     {
-        internal override bool Include(Type type) => type.HasAttribute<DatabaseAttribute>()
-                                                     && type.HasNoResourceProviderAttributes();
+        internal override bool Include(Type type)
+        {
+            if (type.IsWrapper())
+                return type.GetWrappedType().HasAttribute<DatabaseAttribute>() && type.HasNoResourceProviderAttributes();
+            return type.HasAttribute<DatabaseAttribute>() && type.HasNoResourceProviderAttributes();
+        }
 
         internal override void Validate()
         {

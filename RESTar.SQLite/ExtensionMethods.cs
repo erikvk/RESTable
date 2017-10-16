@@ -3,30 +3,44 @@ using System.Collections.Generic;
 using System.Linq;
 using RESTar.Deflection.Dynamic;
 using RESTar.Internal;
+using static RESTar.Operators;
 
 namespace RESTar.SQLite
 {
     internal static class ExtensionMethods
     {
-        internal static StaticProperty[] GetColumns(this IResource resource) => resource
+        internal static Dictionary<string, StaticProperty> GetColumns(this IResource resource) => resource
             .GetStaticProperties()
-            .Select(p => p.Value)
-            .Where(p => p.HasAttribute<ColumnAttribute>())
-            .ToArray();
+            .Where(p => p.Value.HasAttribute<ColumnAttribute>() && p.Key != "rowid")
+            .ToDictionary(p => p.Key, p => p.Value);
 
-        internal static string MakeCreateTableQuery(this IResource resource)
-        {
-            var columnProperties = resource
-                .GetStaticProperties()
-                .Select(pair => pair.Value)
-                .Where(prop => prop.HasAttribute<ColumnAttribute>())
-                .Select(prop => $"{prop.Name} {prop.Type.ToSQLType(resource)}");
-            return $"CREATE TABLE IF NOT EXISTS {resource.GetSQLiteTableName()} ({string.Join(" , ", columnProperties)})";
-        }
+        internal static string GetColumnDef(this StaticProperty column) => $"{column.Name.ToLower()} {column.Type.ToSQLType()}";
 
         internal static string GetSQLiteTableName(this IResource resource) => resource.Name.Replace('.', '_');
 
-        internal static string ToSQLType(this Type type, IResource resource)
+        internal static bool IsSQLiteCompatible(this Type type, Type resourceType, out string error)
+        {
+            if (type.ToSQLType() == null)
+            {
+                error = "Could not create SQLite database column for a property " +
+                        $"of type '{type.FullName}' in resource type " +
+                        $"'{resourceType?.FullName}'";
+                return false;
+            }
+            error = null;
+            return true;
+        }
+
+        internal static bool IsNullable(this Type type, out Type baseType)
+        {
+            baseType = null;
+            if (!type.IsGenericType || type.GetGenericTypeDefinition() != typeof(Nullable<>))
+                return false;
+            baseType = type.GenericTypeArguments[0];
+            return true;
+        }
+
+        internal static string ToSQLType(this Type type)
         {
             switch (Type.GetTypeCode(type))
             {
@@ -45,9 +59,9 @@ namespace RESTar.SQLite
                 case TypeCode.String: return "TEXT";
                 case TypeCode.Boolean: return "BOOL";
                 case TypeCode.DateTime: return "DATETIME";
-                default:
-                    throw new SQLiteException("Could not create SQLite database column for a property " +
-                                              $"of type '{type.FullName}' in resource '{resource.Name}'");
+                case var _ when type.IsNullable(out var baseType):
+                    return baseType.ToSQLType();
+                default: return null;
             }
         }
 
@@ -55,6 +69,7 @@ namespace RESTar.SQLite
         {
             switch (o)
             {
+                case null: return null;
                 case DateTime _: return $"\'{o:O}\'";
                 case string _: return $"\'{o}\'";
                 default: return $"{o}";
@@ -63,12 +78,30 @@ namespace RESTar.SQLite
 
         internal static string ToSQLiteWhereClause<T>(this IEnumerable<Condition<T>> dbConditions) where T : class
         {
-            var clause = string.Join(" AND ", dbConditions
-                .Select(s => $"{s.Key} {s.Operator.SQL} {MakeSQLValueLiteral((object) s.Value)}"));
-            return string.IsNullOrWhiteSpace(clause) ? null : "WHERE " + clause;
+            var values = string.Join(" AND ", dbConditions.Select(condition =>
+            {
+                var op = condition.Operator.SQL;
+                var valueLiteral = MakeSQLValueLiteral((object) condition.Value);
+                if (valueLiteral == null)
+                {
+                    valueLiteral = "NULL";
+                    switch (condition.Operator.OpCode)
+                    {
+                        case EQUALS:
+                            op = "IS";
+                            break;
+                        case NOT_EQUALS:
+                            op = "IS NOT";
+                            break;
+                        default: throw new SQLiteException($"Operator '{op}' is not valid for comparison with NULL");
+                    }
+                }
+                return $"{condition.Key} {op} {valueLiteral}";
+            }));
+            return string.IsNullOrWhiteSpace(values) ? null : "WHERE " + values;
         }
 
-        internal static string ToSQLiteInsertInto<T>(this T entity, StaticProperty[] columns) where T : class
+        internal static string ToSQLiteInsertInto<T>(this T entity, IEnumerable<StaticProperty> columns) where T : class
         {
             return string.Join(",", columns.Select(c => MakeSQLValueLiteral((object) c.GetValue(entity))));
         }

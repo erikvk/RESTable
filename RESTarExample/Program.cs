@@ -32,21 +32,27 @@ namespace RESTarExample
         }
     }
 
-    [SQLite, RESTar(Methods.GET, Methods.POST)]
-    public class SQLTable
+    [SQLite, RESTar]
+    public class SQLTable : ISQLiteTable
     {
-        [Column]
-        public string STR { get; set; }
-        [Column]
-        public long INT { get; set; }
+        [Column] public long RowId { get; set; }
+
+        [Column] public string STR { get; set; }
+        [Column] public long INT { get; set; }
+        [Column] public DateTime? DATE { get; set; }
     }
 
-    [Database, RESTar(Methods.GET)]
+    [Database]
     public class Table
     {
         public string STR;
         public DateTime? DT;
         public DateTime DT2;
+    }
+
+    [RESTar]
+    public class MyTable : ResourceWrapper<Table>
+    {
     }
 
     [Database, RESTar]

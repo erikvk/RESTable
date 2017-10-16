@@ -2,8 +2,9 @@
 using System.Collections.Generic;
 using System.Data.SQLite;
 using System.IO;
+using System.Linq;
+using System.Reflection;
 using System.Text.RegularExpressions;
-using RESTar.Deflection.Dynamic;
 using RESTar.Linq;
 using RESTar.Operations;
 using RESTar.Resources;
@@ -13,8 +14,41 @@ using Profiler = RESTar.Operations.Profiler;
 
 namespace RESTar.SQLite
 {
-    public class SQLiteProvider : ResourceProvider<object>
+    public class SQLiteProvider : ResourceProvider<ISQLiteTable>
     {
+        public override bool IsValid(Type type, out string reason)
+        {
+            var columnProperties = type.GetProperties()
+                .Where(p => p.GetCustomAttribute<ColumnAttribute>() != null)
+                .ToList();
+
+            if (!typeof(ISQLiteTable).IsAssignableFrom(type))
+            {
+                reason = $"Resource type '{type.FullName}' does not implement the '{typeof(ISQLiteTable).FullName}' " +
+                         "interface needed for all SQLite resource types.";
+                return false;
+            }
+
+            if (columnProperties.All(column => column.Name.ToLower() != "rowid"))
+            {
+                reason = "The RowId property needs to be decorated with the ColumnAttribute in resource " +
+                         $"type '{type.FullName}'";
+                return false;
+            }
+
+            foreach (var column in columnProperties)
+            {
+                if (!column.PropertyType.IsSQLiteCompatible(type, out var error))
+                {
+                    reason = error;
+                    return false;
+                }
+            }
+
+            reason = null;
+            return true;
+        }
+
         public SQLiteProvider(string databaseDirectory, string databaseName)
         {
             if (!Regex.IsMatch(databaseName, @"^[a-zA-Z0-9_]+$"))
@@ -44,47 +78,11 @@ namespace RESTar.SQLite
         }
 
         public override Type AttributeType => typeof(SQLiteAttribute);
-
-        public override Selector<T> GetDefaultSelector<T>() => request =>
-        {
-            var (dbConditions, postConditions) = request.Conditions.Split(c =>
-                c.Term.Count == 1 &&
-                c.Term.First is StaticProperty stat &&
-                stat.HasAttribute<ColumnAttribute>()
-            );
-
-            var rawQuery = $"SELECT * FROM {request.Resource.GetSQLiteTableName()} " +
-                           dbConditions.ToSQLiteWhereClause();
-
-            var columns = request.Resource.GetColumns();
-            var results = new List<T>();
-
-            SQLiteDb.Select(rawQuery, row =>
-            {
-                var t = Activator.CreateInstance<T>();
-                for (var i = 0; i < columns.Length; i += 1)
-                    columns[i].SetValue(t, row.GetValue(i));
-                results.Add(t);
-            });
-
-            return results.Where(postConditions);
-        };
-
-        public override Inserter<T> GetDefaultInserter<T>() => (entities, request) =>
-        {
-            var columns = request.Resource.GetColumns();
-            var count = 0;
-            var sqlStub = $"INSERT INTO {request.Resource.GetSQLiteTableName()} VALUES (";
-            foreach (var entity in entities)
-                SQLiteDb.Query($"{sqlStub}{entity.ToSQLiteInsertInto(columns)})", c => count += c.ExecuteNonQuery());
-            return count;
-        };
-
-        public override Updater<T> GetDefaultUpdater<T>() => null;
-
-        public override Deleter<T> GetDefaultDeleter<T>() => null;
-
-        public override Counter<T> GetDefaultCounter<T>() => null;
+        public override Selector<T> GetDefaultSelector<T>() => SQLiteOperations<T>.Select;
+        public override Inserter<T> GetDefaultInserter<T>() => SQLiteOperations<T>.Insert;
+        public override Updater<T> GetDefaultUpdater<T>() => SQLiteOperations<T>.Update;
+        public override Deleter<T> GetDefaultDeleter<T>() => SQLiteOperations<T>.Delete;
+        public override Counter<T> GetDefaultCounter<T>() => SQLiteOperations<T>.Count;
         public override Profiler GetProfiler<T>() => null;
     }
 }

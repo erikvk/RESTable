@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using RESTar.Internal;
-using RESTar.Operations;
 using RESTar.Resources;
 using IResource = RESTar.Internal.IResource;
 
@@ -138,79 +137,83 @@ namespace RESTar
     /// <typeparam name="T">The type to register</typeparam>
     public static class Resource<T> where T : class
     {
-        /// <summary>
-        /// Registers a class as a static RESTar resource. If no methods are provided in the 
-        /// methods list, all methods will be enabled for this resource.
-        /// </summary>
-        public static void Register(params Methods[] methods)
-        {
-            if (!methods.Any()) methods = RESTarConfig.Methods;
-            Register(methods.OrderBy(i => i, MethodComparer.Instance).ToArray(), null);
-        }
+        #region Old registers
 
-        /// <summary>
-        /// Registers a class as a static RESTar resource. If no methods are provided in the 
-        /// methods list, all methods will be enabled for this resource.
-        /// </summary>
-        public static void Register(string description, params Methods[] methods)
-        {
-            if (!methods.Any()) methods = RESTarConfig.Methods;
-            Register(methods.OrderBy(i => i, MethodComparer.Instance).ToArray(), description: description);
-        }
+        ///// <summary>
+        ///// Registers a class as a static RESTar resource. If no methods are provided in the 
+        ///// methods list, all methods will be enabled for this resource.
+        ///// </summary>
+        //public static void Register(params Methods[] methods)
+        //{
+        //    if (!methods.Any()) methods = RESTarConfig.Methods;
+        //    Register(methods.OrderBy(i => i, MethodComparer.Instance).ToArray(), null);
+        //}
 
-        /// <summary>
-        /// Registers a class as a RESTar resource. If no methods are provided in the 
-        /// methods list, all methods will be enabled for this resource.
-        /// </summary>
-        /// <param name="methods">The methods to make available for this resource</param>
-        /// <param name="selector">The selector to use for this resource</param>
-        /// <param name="inserter">The inserter to use for this resource</param>
-        /// <param name="updater">The updater to use for this resource</param>
-        /// <param name="deleter">The deleter to use for this resource</param>
-        /// <param name="counter">The counter to use for this resource</param>
-        /// <param name="profiler">The profiler to use for this resource</param>
-        /// <param name="singleton">Is this a singleton resource?</param>
-        /// <param name="internalResource">Is this an internal resource?</param>
-        /// <param name="description">A description for the resource</param>
-        public static void Register
-        (
-            ICollection<Methods> methods,
-            Selector<T> selector = null,
-            Inserter<T> inserter = null,
-            Updater<T> updater = null,
-            Deleter<T> deleter = null,
-            Counter<T> counter = null,
-            Profiler profiler = null,
-            bool singleton = false,
-            bool internalResource = false,
-            string description = null)
-        {
-            if (methods?.Any() != true) methods = RESTarConfig.Methods;
-            if (typeof(T).HasAttribute<RESTarAttribute>())
-                throw new InvalidOperationException("Cannot manually register resources that have a RESTar " +
-                                                    "attribute. Resources decorated with a RESTar attribute " +
-                                                    "are registered automatically");
-            if (SafeGet != null)
-                throw new InvalidOperationException($"A resource with type '{typeof(T).FullName}' already exists");
-            if (typeof(T).Assembly == typeof(Resource).Assembly)
-                throw new InvalidOperationException("Cannot register a class in the RESTar assembly as resource");
-            var attribute = internalResource
-                ? new RESTarInternalAttribute(methods.ToArray())
-                : new RESTarAttribute(methods.ToArray());
-            attribute.Singleton = singleton;
-            attribute.Description = description;
-            //Internal.Resource<T>.Make
-            //(
-            //    name: typeof(T).FullName,
-            //    attribute: attribute,
-            //    selector: selector,
-            //    inserter: inserter,
-            //    updater: updater,
-            //    deleter: deleter,
-            //    counter: counter,
-            //    profiler: profiler
-            //);
-        }
+        ///// <summary>
+        ///// Registers a class as a static RESTar resource. If no methods are provided in the 
+        ///// methods list, all methods will be enabled for this resource.
+        ///// </summary>
+        //public static void Register(string description, params Methods[] methods)
+        //{
+        //    if (!methods.Any()) methods = RESTarConfig.Methods;
+        //    Register(methods.OrderBy(i => i, MethodComparer.Instance).ToArray(), description: description);
+        //}
+
+        ///// <summary>
+        ///// Registers a class as a RESTar resource. If no methods are provided in the 
+        ///// methods list, all methods will be enabled for this resource.
+        ///// </summary>
+        ///// <param name="methods">The methods to make available for this resource</param>
+        ///// <param name="selector">The selector to use for this resource</param>
+        ///// <param name="inserter">The inserter to use for this resource</param>
+        ///// <param name="updater">The updater to use for this resource</param>
+        ///// <param name="deleter">The deleter to use for this resource</param>
+        ///// <param name="counter">The counter to use for this resource</param>
+        ///// <param name="profiler">The profiler to use for this resource</param>
+        ///// <param name="singleton">Is this a singleton resource?</param>
+        ///// <param name="internalResource">Is this an internal resource?</param>
+        ///// <param name="description">A description for the resource</param>
+        //public static void Register
+        //(
+        //    ICollection<Methods> methods,
+        //    Selector<T> selector = null,
+        //    Inserter<T> inserter = null,
+        //    Updater<T> updater = null,
+        //    Deleter<T> deleter = null,
+        //    Counter<T> counter = null,
+        //    Profiler profiler = null,
+        //    bool singleton = false,
+        //    bool internalResource = false,
+        //    string description = null)
+        //{
+        //    if (methods?.Any() != true) methods = RESTarConfig.Methods;
+        //    if (typeof(T).HasAttribute<RESTarAttribute>())
+        //        throw new InvalidOperationException("Cannot manually register resources that have a RESTar " +
+        //                                            "attribute. Resources decorated with a RESTar attribute " +
+        //                                            "are registered automatically");
+        //    if (SafeGet != null)
+        //        throw new InvalidOperationException($"A resource with type '{typeof(T).FullName}' already exists");
+        //    if (typeof(T).Assembly == typeof(Resource).Assembly)
+        //        throw new InvalidOperationException("Cannot register a class in the RESTar assembly as resource");
+        //    var attribute = internalResource
+        //        ? new RESTarInternalAttribute(methods.ToArray())
+        //        : new RESTarAttribute(methods.ToArray());
+        //    attribute.Singleton = singleton;
+        //    attribute.Description = description;
+        //    //Internal.Resource<T>.Make
+        //    //(
+        //    //    name: typeof(T).FullName,
+        //    //    attribute: attribute,
+        //    //    selector: selector,
+        //    //    inserter: inserter,
+        //    //    updater: updater,
+        //    //    deleter: deleter,
+        //    //    counter: counter,
+        //    //    profiler: profiler
+        //    //);
+        //}
+
+        #endregion
 
         /// <summary>
         /// Gets the resource for a given type, or throws an UnknownResourceException 

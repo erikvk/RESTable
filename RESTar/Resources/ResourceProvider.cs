@@ -113,6 +113,7 @@ namespace RESTar.Resources
         #region Internals
 
         internal override bool Include(Type type) => type.HasAttribute(AttributeType);
+
         internal static MethodInfo BuildRegularMethod { get; }
         internal static MethodInfo BuildWrapperMethod { get; }
 
@@ -133,13 +134,13 @@ namespace RESTar.Resources
             });
 
         internal override void MakeClaimWrapped(IEnumerable<Type> types) => types
-            .Where(t => typeof(TBase).IsAssignableFrom(t.GetGenericArguments()[0]))
+            .Where(t => typeof(TBase).IsAssignableFrom(t.GetWrappedType()))
             .ForEach(type =>
             {
                 if (!IsValid(type, out var reason))
                     throw new ResourceDeclarationException("An error was found in the declaration for wrapper resource " +
                                                            $"type '{type.FullName}': " + reason);
-                BuildWrapperMethod.MakeGenericMethod(type, type.GetGenericArguments()[0]).Invoke(this, null);
+                BuildWrapperMethod.MakeGenericMethod(type, type.GetWrappedType()).Invoke(this, null);
             });
 
         private void BuildRegularResource<TResource>() where TResource : class, TBase => new Internal.Resource<TResource>
@@ -161,11 +162,11 @@ namespace RESTar.Resources
         (
             name: typeof(TWrapper).FullName,
             attribute: typeof(TWrapper).GetAttribute<RESTarAttribute>(),
-            selector: DelegateMaker.GetDelegate<Selector<TWrapped>, TWrapper>() ?? GetDefaultSelector<TWrapped>(),
-            inserter: DelegateMaker.GetDelegate<Inserter<TWrapped>, TWrapper>() ?? GetDefaultInserter<TWrapped>(),
-            updater: DelegateMaker.GetDelegate<Updater<TWrapped>, TWrapper>() ?? GetDefaultUpdater<TWrapped>(),
-            deleter: DelegateMaker.GetDelegate<Deleter<TWrapped>, TWrapper>() ?? GetDefaultDeleter<TWrapped>(),
-            counter: DelegateMaker.GetDelegate<Counter<TWrapped>, TWrapper>() ?? GetDefaultCounter<TWrapped>(),
+            selector: DelegateMaker.GetDelegate<Selector<TWrapped>, TWrapper, TWrapped>() ?? GetDefaultSelector<TWrapped>(),
+            inserter: DelegateMaker.GetDelegate<Inserter<TWrapped>, TWrapper, TWrapped>() ?? GetDefaultInserter<TWrapped>(),
+            updater: DelegateMaker.GetDelegate<Updater<TWrapped>, TWrapper, TWrapped>() ?? GetDefaultUpdater<TWrapped>(),
+            deleter: DelegateMaker.GetDelegate<Deleter<TWrapped>, TWrapper, TWrapped>() ?? GetDefaultDeleter<TWrapped>(),
+            counter: DelegateMaker.GetDelegate<Counter<TWrapped>, TWrapper, TWrapped>() ?? GetDefaultCounter<TWrapped>(),
             profiler: GetProfiler<TWrapped>(),
             provider: this
         );

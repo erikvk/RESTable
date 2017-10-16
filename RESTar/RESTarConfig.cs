@@ -34,6 +34,7 @@ namespace RESTar
         internal static ICollection<IResource> Resources => ResourceByName.Values;
         internal static readonly List<Uri> AllowedOrigins;
         internal static readonly Methods[] Methods = {GET, POST, PATCH, PUT, DELETE};
+        internal static readonly string[] ReservedNamespaces;
         internal static bool RequireApiKey { get; private set; }
         internal static bool AllowAllOrigins { get; private set; }
         private static string ConfigFilePath;
@@ -48,6 +49,11 @@ namespace RESTar
             AuthTokens = new ConcurrentDictionary<string, AccessRights>();
             AllowedOrigins = new List<Uri>();
             AuthTokens.TryAdd(Authenticator.AppToken, AccessRights.Root);
+            ReservedNamespaces = typeof(RESTarConfig).Assembly.GetTypes()
+                .Select(type => type.Namespace?.ToLower())
+                .Where(ns => ns != null)
+                .Distinct()
+                .ToArray();
         }
 
         internal static void UpdateAuthInfo()
