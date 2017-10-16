@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using Dynamit;
 using RESTar.Internal;
 using RESTar.Linq;
 using RESTar.Operations;
@@ -76,13 +77,7 @@ namespace RESTar.Admin
         /// <summary>
         /// Makes a ResourceProfile for the given Starcounter or DDictionary type
         /// </summary>
-        public static ResourceProfile Make<T>() where T : class
-        {
-            var type = typeof(T);
-            if (type.IsDDictionary()) return DDictProfiler<T>();
-            if (type.IsStarcounter()) return ScProfiler<T>();
-            throw new Exception($"Cannot profile '{type.FullName}'. No profiler implemented for type");
-        }
+        public static ResourceProfile Make<T>() where T : class => Make(typeof(T));
 
         internal static ResourceProfile Make<T>(ByteCounter<T> byteCounter) where T : class
         {
@@ -117,7 +112,7 @@ namespace RESTar.Admin
         private static readonly MethodInfo SCPROFILER = typeof(ResourceProfile).GetMethod("ScProfiler", NonPublic | Static);
         private static readonly MethodInfo DDICTPROFILER = typeof(ResourceProfile).GetMethod("DDictProfiler", NonPublic | Static);
         private static ResourceProfile ScProfiler<T>() where T : class => StarcounterOperations<T>.Profile();
-        private static ResourceProfile DDictProfiler<T>() where T : class => DDictionaryOperations<T>.Profile();
+        private static ResourceProfile DDictProfiler<T>() where T : DDictionary => DDictionaryOperations<T>.Profile();
         private static long COUNT(string name) => Db.SQL<long>($"SELECT COUNT(t) FROM {name} t").First;
         private static QueryResultRows<T> SELECT<T>(string name) => Db.SQL<T>($"SELECT t FROM {name} t");
     }

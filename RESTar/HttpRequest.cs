@@ -28,8 +28,7 @@ namespace RESTar
                 switch (index)
                 {
                     case 0:
-                        Methods method;
-                        if (!Enum.TryParse(part, true, out method))
+                        if (!Enum.TryParse(part, true, out Methods method))
                             throw new HttpRequestException("Invalid or missing method");
                         Method = method;
                         break;

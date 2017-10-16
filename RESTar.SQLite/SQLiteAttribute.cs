@@ -1,12 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace RESTar.SQLite
+﻿namespace RESTar.SQLite
 {
-    public class SQLiteAttribute : Attribute
+    public sealed class SQLiteAttribute : ResourceProviderAttribute
     {
     }
 }

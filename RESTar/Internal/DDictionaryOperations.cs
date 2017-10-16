@@ -12,7 +12,7 @@ namespace RESTar.Internal
     /// <summary>
     /// The default operations for classes inheriting from DDictionary
     /// </summary>
-    internal static class DDictionaryOperations<T> where T : class
+    internal static class DDictionaryOperations<T> where T : DDictionary
     {
         private static IEnumerable<T> EqualitySQL(Condition<T> c, string kvp)
         {
@@ -55,9 +55,8 @@ namespace RESTar.Internal
         /// </summary>
         public static Deleter<T> Delete => (e, r) => Do.Run(() => e.ForEach(Db.Delete), e.Count());
 
-        internal static ByteCounter<T> ByteCounter { get; } = ddicts => ddicts
-            .Cast<DDictionary>()
-            .Sum(ddict => ddict.KeyValuePairs.Sum(kvp => kvp.ByteCount) + 16);
+        internal static ByteCounter<T> ByteCounter { get; } = ddicts => ddicts.Sum(ddict =>
+            ddict.KeyValuePairs.Sum(kvp => kvp.ByteCount) + 16);
 
         /// <summary>
         /// Profiler for DDictionary entites (used by RESTar internally, don't use)

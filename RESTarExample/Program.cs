@@ -4,6 +4,7 @@ using System.Linq;
 using Dynamit;
 using Newtonsoft.Json.Linq;
 using RESTar;
+using RESTar.Resources;
 using RESTar.SQLite;
 using Starcounter;
 
@@ -18,25 +19,28 @@ namespace RESTarExample
     {
         public static void Main()
         {
+            var sqlite = new SQLiteProvider(@"C:\RESTarTEst", "RESTarTest");
             RESTarConfig.Init
             (
                 requireApiKey: true,
                 allowAllOrigins: false,
                 viewEnabled: true,
                 configFilePath: "C:\\Mopedo\\Mopedo.config",
-                setupMenu: true
+                resourceProviders: new ResourceProvider[] {sqlite}
             );
             TestDatabase.Init();
         }
     }
 
-    [SQLite, RESTar(Methods.GET)]
+    [SQLite, RESTar(Methods.GET, Methods.POST)]
     public class SQLTable
     {
+        [Column]
         public string STR { get; set; }
-        public int INT { get; set; }
+        [Column]
+        public long INT { get; set; }
     }
-    
+
     [Database, RESTar(Methods.GET)]
     public class Table
     {

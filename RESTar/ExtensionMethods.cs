@@ -20,6 +20,7 @@ using RESTar.Internal;
 using RESTar.Linq;
 using RESTar.Operations;
 using RESTar.Requests;
+using RESTar.Resources;
 using RESTar.Serialization;
 using RESTar.View;
 using Starcounter;
@@ -53,6 +54,16 @@ namespace RESTar
 
         internal static TAttribute GetAttribute<TAttribute>(this MemberInfo type) where TAttribute : Attribute =>
             type?.GetCustomAttributes<TAttribute>().FirstOrDefault();
+
+        internal static bool HasAttribute(this MemberInfo type, Type attributeType) =>
+            (type?.GetCustomAttributes(attributeType).Any()).GetValueOrDefault();
+
+        internal static bool HasNoResourceProviderAttributes(this Type resource) =>
+            !resource.GetCustomAttributes().OfType<ResourceProviderAttribute>().Any();
+
+        internal static bool IsBoundWithResourceProviderAttribute(this Type resource, Type attribute) =>
+            resource.HasAttribute(attribute) &&
+            resource.GetCustomAttributes().OfType<ResourceProviderAttribute>().All(a => a.GetType() == attribute);
 
         internal static bool HasAttribute<TAttribute>(this MemberInfo type)
             where TAttribute : Attribute => (type?.GetCustomAttributes<TAttribute>().Any()).GetValueOrDefault();
@@ -295,6 +306,8 @@ namespace RESTar
             if (type == typeof(Binary)) return true;
             return false;
         }
+
+        internal static string GetDomain(this ResourceProvider provider) => provider.GetType().FullName;
 
         #endregion
 
@@ -644,9 +657,9 @@ namespace RESTar
         /// </summary>
         public static (string SQL, object[] Values) GetSQL<T>(this IRequest<T> request) where T : class
         {
-            if (request.Resource.ResourceType != RESTarResourceType.StaticStarcounter)
+            if (request.Resource.Domain != Domain<StarcounterProvider>.Get)
                 throw new ArgumentException("Can only get SQL for static Starcounter resources. Resource " +
-                                            $"'{request.Resource.Name}' is of type {request.Resource.ResourceType}");
+                                            $"'{request.Resource.Name}' is of type {request.Resource.Domain}");
             var whereClause = request.Conditions.MakeWhereClause();
             return ($"SELECT t FROM {typeof(T).FullName} t " +
                     $"{whereClause.WhereString} " +

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Serialization;
+using RESTar.Resources;
 using Starcounter;
 using static RESTar.Operations.Transact;
 
@@ -35,7 +36,7 @@ namespace RESTar.Internal
         /// <summary>
         /// The name of the dynamic table (used internally)
         /// </summary>
-        public string TableName { get; internal set; }
+        public string TableName { get; }
 
         /// <summary>
         /// A string representation of the available REST methods
@@ -74,7 +75,7 @@ namespace RESTar.Internal
             AvailableMethods = methods;
         }
 
-        internal static void MakeTable(Admin.Resource resource) => Resource.RegisterDynamicResource(Trans(() =>
+        internal static void MakeTable(Admin.Resource resource) => ResourceFactory.MakeDynamicResource(Trans(() =>
         {
             var newTable = DynamitControl.DynamitTypes.FirstOrDefault(type => !Exists(type.FullName))
                            ?? throw new NoAvalailableDynamicTableException();

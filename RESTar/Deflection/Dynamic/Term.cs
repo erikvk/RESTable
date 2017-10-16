@@ -62,6 +62,11 @@ namespace RESTar.Deflection.Dynamic
         /// </summary>
         public Property Last => Store.LastOrDefault();
 
+        /// <summary>
+        /// Counts the properties of the Term
+        /// </summary>
+        public int Count => Store.Count;
+
         private static readonly NoCaseComparer Comparer = new NoCaseComparer();
         private Term() => Store = new List<Property>();
 

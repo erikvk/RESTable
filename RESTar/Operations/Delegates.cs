@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reflection;
 using RESTar.Admin;
 using RESTar.Internal;
+using RESTar.Resources;
 
 namespace RESTar.Operations
 {
@@ -45,6 +46,20 @@ namespace RESTar.Operations
             .TargetMethods?
             .FirstOrDefault()?
             .MakeDelegate<TDelegate>();
+
+        /// <summary>
+        /// Gets the given operations delegate from a given resource wrapper definition
+        /// </summary>
+        internal static TDelegate GetDelegate<TDelegate, TWrapper, TWrapped>()
+            where TWrapper : ResourceWrapper<TWrapped>
+            where TWrapped : class
+        {
+            return typeof(TWrapper)
+                .SafeGet(t => t.GetInterfaceMap(MatchingInterface<TDelegate, TWrapped>()))
+                .TargetMethods?
+                .FirstOrDefault()?
+                .MakeDelegate<TWrapped>();
+        }
     }
 
     /// <summary>

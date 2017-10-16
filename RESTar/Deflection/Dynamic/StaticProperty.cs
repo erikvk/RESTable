@@ -27,8 +27,18 @@ namespace RESTar.Deflection.Dynamic
         /// </summary>  
         public ICollection<Attribute> Attributes { get; protected set; }
 
-        internal T GetAttribute<T>() where T : Attribute => Attributes?.OfType<T>().FirstOrDefault();
-        internal bool HasAttribute<TAttribute>() where TAttribute : Attribute => GetAttribute<TAttribute>() != null;
+        /// <summary>
+        /// Gets the first instance of a given attribute type that this resource property 
+        /// has been decorated with.
+        /// </summary>
+        public T GetAttribute<T>() where T : Attribute => Attributes?.OfType<T>().FirstOrDefault();
+
+        /// <summary>
+        /// Returns true if and only if this resource property has been decorated with the given 
+        /// attribute type.
+        /// </summary>
+        public bool HasAttribute<TAttribute>() where TAttribute : Attribute => GetAttribute<TAttribute>() != null;
+
         internal StaticProperty(bool scQueryable) => ScQueryable = scQueryable;
 
         /// <summary>

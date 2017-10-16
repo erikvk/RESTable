@@ -1,4 +1,3 @@
-
 #pragma warning disable 1591
 namespace RESTar.Internal
 {
@@ -53,7 +52,7 @@ namespace RESTar.Internal
 
         // 120-129: Resource registration errors
         VirtualResourceMissingInterfaceImplementation = 120,
-        InvalidVirtualResourceMember = 121,
+        InvalidResourceMember = 121,
         NoAvalailableDynamicTable = 122,
         InvalidVirtualResourceDeclaration = 123,
         InvalidResourceDeclaration = 124,
@@ -74,6 +73,8 @@ namespace RESTar.Internal
 
         DatabaseError = 300,
         NotInitialized = 400,
-        AddOnError = 401
+        AddOnError = 401,
+        ResourceProviderError = 402,
+        ResourceWrapperError = 403
     }
 }

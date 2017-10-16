@@ -6,8 +6,8 @@ using RESTar.Internal;
 using RESTar.Linq;
 using RESTar.Operations;
 using RESTar.Requests;
+using RESTar.Resources;
 using static RESTar.Internal.ErrorCodes;
-using static RESTar.Internal.RESTarResourceType;
 using IResource = RESTar.Internal.IResource;
 
 #pragma warning disable 1591
@@ -97,7 +97,7 @@ namespace RESTar
             Origin = Origin.Internal;
             Conditions = conditions;
             this.Authenticate();
-            ScSql = Resource.ResourceType == StaticStarcounter;
+            ScSql = Resource.Domain == Domain<StarcounterProvider>.Get;
             Resource.AvailableMethods.ForEach(m =>
             {
                 switch (m)

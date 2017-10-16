@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using RESTar.Internal;
 using RESTar.Operations;
+using RESTar.Resources;
 using IResource = RESTar.Internal.IResource;
 
 namespace RESTar
@@ -19,6 +19,21 @@ namespace RESTar
         /// Gets all registered RESTar resources
         /// </summary>
         public static IEnumerable<IResource> All => RESTarConfig.Resources;
+
+        /// <summary>
+        /// Gets all registered RESTar resources that were claimed by the given 
+        /// ResourceProvider type.
+        /// </summary>
+        public static IEnumerable<IResource> ClaimedBy<T>() where T : ResourceProvider => All
+            .Where(r => r.ClaimedBy<T>());
+
+        /// <summary>
+        /// Gets all registered RESTar resources that were claimed by the given 
+        /// ResourceProvider type.
+        /// </summary>
+        public static ICollection<IResource> ClaimedBy(ResourceProvider provider) => All
+            .Where(r => r.Domain == provider.GetDomain())
+            .ToList();
 
         /// <summary>
         /// Finds a resource by a search string. The string can be a partial resource name. If no resource 
@@ -114,40 +129,6 @@ namespace RESTar
         public static IResource SafeGet(Type type) => RESTarConfig.ResourceByType.SafeGet(type);
 
         #endregion
-
-        #region Helpers
-
-        private static readonly MethodInfo AUTO_MAKER;
-        private static readonly MethodInfo DYNAMIC_AUTO_MAKER;
-
-        static Resource()
-        {
-            DYNAMIC_AUTO_MAKER = typeof(Resource).GetMethod(nameof(DYNAMIC_AUTO_MAKE),
-                BindingFlags.NonPublic | BindingFlags.Static);
-            AUTO_MAKER = typeof(Resource).GetMethod(nameof(AUTO_MAKE), BindingFlags.NonPublic | BindingFlags.Static);
-        }
-
-        internal static void RegisterDynamicResource(DynamicResource resource)
-        {
-            DYNAMIC_AUTO_MAKER.MakeGenericMethod(resource.Table).Invoke(null, new object[] {resource});
-        }
-
-        internal static void AutoRegister(Type type)
-        {
-            AUTO_MAKER.MakeGenericMethod(type).Invoke(null, null);
-        }
-
-        private static void AUTO_MAKE<T>() where T : class
-        {
-            Internal.Resource<T>.Make(typeof(T).FullName, RESTarAttribute<T>.Get);
-        }
-
-        private static void DYNAMIC_AUTO_MAKE<T>(DynamicResource resource) where T : class
-        {
-            Internal.Resource<T>.Make(resource.Name, resource.Attribute);
-        }
-
-        #endregion
     }
 
     /// <summary>
@@ -218,17 +199,17 @@ namespace RESTar
                 : new RESTarAttribute(methods.ToArray());
             attribute.Singleton = singleton;
             attribute.Description = description;
-            Internal.Resource<T>.Make
-            (
-                name: typeof(T).FullName,
-                attribute: attribute,
-                selector: selector,
-                inserter: inserter,
-                updater: updater,
-                deleter: deleter,
-                counter: counter,
-                profiler: profiler
-            );
+            //Internal.Resource<T>.Make
+            //(
+            //    name: typeof(T).FullName,
+            //    attribute: attribute,
+            //    selector: selector,
+            //    inserter: inserter,
+            //    updater: updater,
+            //    deleter: deleter,
+            //    counter: counter,
+            //    profiler: profiler
+            //);
         }
 
         /// <summary>

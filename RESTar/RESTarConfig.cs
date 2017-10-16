@@ -3,7 +3,6 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Xml;
 using Dynamit;
 using Newtonsoft.Json;
@@ -13,7 +12,7 @@ using RESTar.Auth;
 using RESTar.Deflection.Dynamic;
 using RESTar.Internal;
 using RESTar.Linq;
-using RESTar.Operations;
+using RESTar.Resources;
 using Starcounter;
 using static RESTar.Methods;
 using static RESTar.Requests.Handlers;
@@ -122,7 +121,7 @@ namespace RESTar
         /// <param name="setupMenu">Shoud a menu be setup automatically in the view?</param>
         /// <param name="requireApiKey">Should the REST API require an API key?</param>
         /// <param name="allowAllOrigins">Should any origin be allowed to make CORS requests?</param>
-        /// <param name="addOns">The add-ons to enable for this RESTar instance</param>
+        /// <param name="resourceProviders">External resource providers for the RESTar instance</param>
         public static void Init
         (
             ushort port = 8282,
@@ -134,104 +133,30 @@ namespace RESTar
             string configFilePath = null,
             bool prettyPrint = true,
             ushort daysToSaveErrors = 30,
-            AddOnInfo[] addOns = null)
+            ResourceProvider[] resourceProviders = null)
         {
-            #region Fail-fast inits
-
-            uri = uri?.Trim() ?? "/rest";
-            if (uri.Contains("?")) throw new ArgumentException("URI cannot contain '?'", nameof(uri));
-            var appName = Application.Current.Name;
-            if (uri.EqualsNoCase(appName))
-                throw new ArgumentException($"URI must differ from application name ({appName})", nameof(appName));
-            if (uri[0] != '/') uri = $"/{uri}";
+            uri = ProcessUri(uri);
             Settings.Init(port, uri, viewEnabled, prettyPrint, daysToSaveErrors);
-
-            #endregion
-
-            #region Independant inits
-
             Log.Init();
             DynamitConfig.Init(true, true);
-
-            #endregion
-
-            #region Resource declarations
-
-            typeof(object).GetSubclasses()
-                .Where(t => t.HasAttribute<RESTarAttribute>())
-                .ForEach(t =>
-                {
-                    if (t.GetCustomAttributes().Any(a => a.GetType().FullName == "RESTar.SQLite.SQLiteAttribute"))
-                        return;
-                    Do.TryCatch(() => Resource.AutoRegister(t), e => throw (e.InnerException ?? e));
-                });
-
-            #region Migrate resource aliases
-
-            foreach (var alias in Db.SQL<ResourceAlias>("SELECT t FROM RESTar.ResourceAlias t").ToList())
-            {
-                Transact.Trans(() =>
-                {
-                    new Admin.ResourceAlias
-                    {
-                        Alias = alias.Alias,
-                        _resource = alias.Resource
-                    };
-                    alias.Delete();
-                });
-            }
-
-            #endregion
-
-            #region Migrate dynamic resource formats
-
-            var unnamedcount = 1;
-            foreach (var resource in DynamicResource.All)
-            {
-                if (resource.TableName == null && resource.Name.Contains("RESTar.DynamicResource"))
-                {
-                    var alias = Admin.ResourceAlias.ByResource(resource.Name);
-                    Transact.Trans(() =>
-                    {
-                        resource.TableName = resource.Name;
-                        resource.Name = "RESTar.Dynamic." + (alias?.Alias ?? "UntitledResource" + unnamedcount);
-                        unnamedcount += 1;
-                        if (alias != null)
-                            alias._resource = resource.Name;
-                    });
-                }
-            }
-
-            #endregion
-
-            DynamicResource.All.ForEach(Resource.RegisterDynamicResource);
-            // AddOns.Init(addOns?.GroupBy(a => a.AddOn).Select(g => g.FirstOrDefault()));
-
-            Resources.GroupBy(r => r.ParentResourceName)
-                .Where(group => group.Key != null)
-                .ForEach(group =>
-                {
-                    var parentResource = (IResourceInternal) Resource.SafeGet(group.Key);
-                    if (parentResource == null)
-                        throw new ResourceDeclarationException(
-                            $"Resource types {string.Join(", ", group.Select(item => $"'{item.Name}'"))} are declared " +
-                            $"within the scope of another class '{group.Key}', that is not a RESTar resource. Inner " +
-                            "resources must be declared within a resource class.");
-                    parentResource.InnerResources = group.ToList();
-                });
-
-            #endregion
-
-            #region Finishing inits
-
+            ResourceFactory.MakeResources(resourceProviders);
             RequireApiKey = requireApiKey;
             AllowAllOrigins = allowAllOrigins;
             ConfigFilePath = configFilePath;
             RegisterRESTHandlers(setupMenu);
             Initialized = true;
             UpdateAuthInfo();
+        }
 
-            #endregion
+        private static string ProcessUri(string uri)
+        {
+            uri = uri?.Trim() ?? "/rest";
+            if (uri.Contains("?")) throw new ArgumentException("URI cannot contain '?'", nameof(uri));
+            var appName = Application.Current.Name;
+            if (uri.EqualsNoCase(appName))
+                throw new ArgumentException($"URI must differ from application name ({appName})", nameof(appName));
+            if (uri[0] != '/') uri = $"/{uri}";
+            return uri;
         }
 
         private static void ReadConfig()

@@ -73,7 +73,7 @@ namespace RESTar
         }
     }
 
-    internal class DynamicTableAttribute : Attribute
+    internal class DynamicTableAttribute : ResourceProviderAttribute
     {
     }
 
@@ -125,6 +125,13 @@ namespace RESTar
     /// </summary>
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
     public class ExcelFlattenToStringAttribute : Attribute
+    {
+    }
+
+    /// <summary>
+    /// Make a subclass for this type when implementing custom resource providers
+    /// </summary>
+    public abstract class ResourceProviderAttribute : Attribute
     {
     }
 }

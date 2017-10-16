@@ -39,6 +39,29 @@ namespace RESTar
 
     /// <inheritdoc />
     /// <summary>
+    /// Thrown when a RESTar resource provider was found invalid
+    /// </summary>
+    public class ExternalResourceProviderException : RESTarException
+    {
+        internal ExternalResourceProviderException(string message) : base(ResourceProviderError,
+            "An error was found in an external ResourceProvider: " + message)
+        {
+        }
+    }
+
+    /// <inheritdoc />
+    /// <summary>
+    /// Thrown when a RESTar resource wrapper was invalid
+    /// </summary>
+    public class ResourceWrapperException : RESTarException
+    {
+        internal ResourceWrapperException(string message) : base(ResourceWrapperError, message)
+        {
+        }
+    }
+
+    /// <inheritdoc />
+    /// <summary>
     /// Thrown when a client does something that is forbidden
     /// </summary>
     public class ForbiddenException : RESTarException
@@ -372,17 +395,17 @@ namespace RESTar
             "for this request, but matched multiple entities satisfying the given " +
             "conditions. To enable manipulation of multiple matched entities (for " +
             "methods that support this), add 'unsafe=true' to the request's meta-" +
-            "conditions. See help article with topic 'unsafe' for more info.") => Response = BadRequest(this);
+            "conditions.") => Response = BadRequest(this);
     }
 
     /// <inheritdoc />
     /// <summary>
-    /// Thrown when an invalid members was detected in a virtual resource declaration.
+    /// Thrown when an invalid members was detected in a resource declaration.
     /// </summary>
-    public class VirtualResourceMemberException : RESTarException
+    public class ResourceMemberException : RESTarException
     {
-        internal VirtualResourceMemberException(string message)
-            : base(InvalidVirtualResourceMember, message) => Response = BadRequest(this);
+        internal ResourceMemberException(string message)
+            : base(InvalidResourceMember, message) => Response = BadRequest(this);
     }
 
     /// <inheritdoc />

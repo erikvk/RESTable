@@ -51,6 +51,27 @@ namespace RESTar.Linq
         }
 
         /// <summary>
+        /// Returns true if and only if the source IEnumerable contains two or more equal objects by
+        /// comparing the images of a selector function. If a duplicate is found, it is assigned to 
+        /// the out 'duplicate' variable.
+        /// </summary>
+        public static bool ContainsDuplicates<T1, T2>(this IEnumerable<T1> source, Func<T1, T2> selector, out T2 duplicate)
+        {
+            duplicate = default;
+            var d = new HashSet<T2>();
+            foreach (var t1 in source)
+            {
+                var t2 = selector(t1);
+                if (!d.Add(t2))
+                {
+                    duplicate = t2;
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
         /// Counts the occurances of the provided character in the given string
         /// </summary>
         public static int Count(this string str, char c) => str.Count(x => x == c);
@@ -143,6 +164,23 @@ namespace RESTar.Linq
                 action(e, i);
                 i += 1;
             }
+        }
+
+        /// <summary>
+        /// Splits an input IEnumerable into two lists, one for which the given predicate is true, and one
+        /// for which the given predicate is false
+        /// </summary>
+        public static (List<T> trues, List<T> falses) Split<T>(this IEnumerable<T> source, Predicate<T> splitCondition)
+        {
+            var trues = new List<T>();
+            var falses = new List<T>();
+            foreach (var item in source)
+            {
+                if (splitCondition(item))
+                    trues.Add(item);
+                else falses.Add(item);
+            }
+            return (trues, falses);
         }
     }
 }

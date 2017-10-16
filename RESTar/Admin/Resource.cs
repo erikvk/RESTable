@@ -6,8 +6,8 @@ using System.Text.RegularExpressions;
 using Newtonsoft.Json;
 using RESTar.Internal;
 using RESTar.Linq;
+using RESTar.Resources;
 using static Newtonsoft.Json.NullValueHandling;
-using static RESTar.Internal.RESTarResourceType;
 using IResource = RESTar.Internal.IResource;
 
 namespace RESTar.Admin
@@ -59,24 +59,22 @@ namespace RESTar.Admin
         /// <summary>
         /// The IResource of this resource
         /// </summary>
-        [IgnoreDataMember]
-        public IResource IResource { get; private set; }
+        [IgnoreDataMember] public IResource IResource { get; private set; }
 
         /// <summary>
         /// The resource type
         /// </summary>
-        public RESTarResourceType ResourceType { get; private set; }
+        public string Domain { get; private set; }
 
         /// <summary>
         /// Inner resources for this resource
         /// </summary>
-        [JsonProperty(NullValueHandling = Ignore)]
-        public Resource[] InnerResources { get; private set; }
+        [JsonProperty(NullValueHandling = Ignore)] public Resource[] InnerResources { get; private set; }
 
         [JsonConstructor]
-        public Resource(RESTarResourceType resourceType) => ResourceType = resourceType;
+        public Resource(string domain) => Domain = domain;
 
-        private Resource() => ResourceType = undefined;
+        private Resource() => Domain = "undefined";
 
         /// <inheritdoc />
         public IEnumerable<Resource> Select(IRequest<Resource> request)
@@ -93,7 +91,7 @@ namespace RESTar.Admin
                 IsInternal = iresource.IsInternal,
                 Type = iresource.Type.FullName,
                 IResource = iresource,
-                ResourceType = iresource.ResourceType,
+                Domain = iresource.Domain,
                 InnerResources = ((IResourceInternal) iresource).InnerResources?
                     .Select(Make)
                     .ToArray()
@@ -115,7 +113,7 @@ namespace RESTar.Admin
             {
                 if (string.IsNullOrWhiteSpace(entity.Name))
                     throw new Exception("Missing or invalid name for new resource");
-                entity.ResourceType = DynamicStarcounter;
+                entity.Domain = "DynamicResource";
                 entity.ResolveDynamicResourceName();
                 if (!string.IsNullOrWhiteSpace(entity.Alias) && ResourceAlias.Exists(entity.Alias, out var alias))
                     throw new AliasAlreadyInUseException(alias);
@@ -200,7 +198,7 @@ namespace RESTar.Admin
                         var alias = ResourceAlias.ByResource(iresource.Name);
                         if (alias != null) alias._resource = resource.Name;
                         RESTarConfig.RemoveResource(iresource);
-                        RESTar.Resource.RegisterDynamicResource(dynamicResource);
+                        ResourceFactory.MakeDynamicResource(dynamicResource);
                         updated = true;
                     }
 

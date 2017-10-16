@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using RESTar.Admin;
 using RESTar.Operations;
+using RESTar.Resources;
 
 namespace RESTar.Internal
 {
@@ -41,9 +42,15 @@ namespace RESTar.Internal
         string Alias { get; set; }
 
         /// <summary>
-        /// The RESTar resource type of this resource
+        /// The original domain for this resource
         /// </summary>
-        RESTarResourceType ResourceType { get; }
+        string Domain { get; }
+
+        /// <summary>
+        /// Returns true if and only if this resource was claimed by the given 
+        /// ResourceProvider type
+        /// </summary>
+        bool ClaimedBy<T>() where T : ResourceProvider;
 
         /// <summary>
         /// Is this a DDictionary resource?
