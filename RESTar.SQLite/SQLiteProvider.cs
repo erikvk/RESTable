@@ -14,7 +14,7 @@ using Profiler = RESTar.Operations.Profiler;
 
 namespace RESTar.SQLite
 {
-    public class SQLiteProvider : ResourceProvider<ISQLiteTable>
+    public class SQLiteProvider : ResourceProvider<SQLiteTable>
     {
         public override bool IsValid(Type type, out string reason)
         {
@@ -22,23 +22,16 @@ namespace RESTar.SQLite
                 .Where(p => p.GetCustomAttribute<ColumnAttribute>() != null)
                 .ToList();
 
-            if (!typeof(ISQLiteTable).IsAssignableFrom(type))
+            if (!typeof(SQLiteTable).IsAssignableFrom(type))
             {
-                reason = $"Resource type '{type.FullName}' does not implement the '{typeof(ISQLiteTable).FullName}' " +
-                         "interface needed for all SQLite resource types.";
-                return false;
-            }
-
-            if (columnProperties.All(column => column.Name.ToLower() != "rowid"))
-            {
-                reason = "The RowId property needs to be decorated with the ColumnAttribute in resource " +
-                         $"type '{type.FullName}'";
+                reason = $"Resource type '{type.FullName}' does not subclass the '{typeof(SQLiteTable).FullName}' " +
+                         "abstract class needed for all SQLite resource types.";
                 return false;
             }
 
             foreach (var column in columnProperties)
             {
-                if (!column.PropertyType.IsSQLiteCompatible(type, out var error))
+                if (!column.PropertyType.IsSQLiteCompatibleValueType(type, out var error))
                 {
                     reason = error;
                     return false;
@@ -70,6 +63,7 @@ namespace RESTar.SQLite
                     DatabaseConnectionString = $"Data Source={databasePath};Version=3;"
                 };
             });
+            DatabaseIndexer = new SQLiteIndexer();
         }
 
         public override void ReceiveClaimed(ICollection<IResource> claimedResources)

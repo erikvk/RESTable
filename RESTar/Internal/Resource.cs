@@ -41,10 +41,10 @@ namespace RESTar.Internal
         public override string ToString() => AliasOrName;
         public bool IsStarcounterResource { get; }
         public bool RequiresValidation { get; }
-        public string Domain { get; }
+        public string Provider { get; }
         public IReadOnlyList<IResource> InnerResources { get; set; }
         public ResourceProfile ResourceProfile => Profile?.Invoke();
-        public bool ClaimedBy<T1>() where T1 : ResourceProvider => Domain == Domain<T1>.Get;
+        public bool ClaimedBy<T1>() where T1 : ResourceProvider => Provider == Provider<T1>.Get;
 
         string IResourceInternal.Description
         {
@@ -120,7 +120,7 @@ namespace RESTar.Internal
             IsDDictionary = typeof(T).IsDDictionary();
             IsDynamic = IsDDictionary || typeof(T).IsSubclassOf(typeof(JObject)) ||
                         typeof(IDictionary).IsAssignableFrom(typeof(T));
-            Domain = provider.GetDomain();
+            Provider = provider.GetProviderId();
             Select = selector;
             Insert = inserter;
             Update = updater;

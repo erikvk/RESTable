@@ -31,7 +31,7 @@ namespace RESTar
         /// ResourceProvider type.
         /// </summary>
         public static ICollection<IResource> ClaimedBy(ResourceProvider provider) => All
-            .Where(r => r.Domain == provider.GetDomain())
+            .Where(r => r.Provider == provider.GetProviderId())
             .ToList();
 
         /// <summary>
@@ -42,6 +42,8 @@ namespace RESTar
         /// </summary>
         public static IResource Find(string searchString)
         {
+            if (searchString == null)
+                throw new UnknownResourceException("null");
             searchString = searchString.ToLower();
             var resource = Admin.ResourceAlias.ByAlias(searchString)?.IResource;
             if (resource != null) return resource;

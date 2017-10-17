@@ -91,6 +91,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Admin\AdminTools.cs" />
+    <Compile Include="Resources\StarcounterIndexer.cs" />
     <Compile Include="AvailableResource.cs" />
     <Compile Include="Auth\AccessRight.cs" />
     <Compile Include="Auth\AccessRights.cs" />
@@ -104,6 +105,7 @@
     <Compile Include="Echo.cs" />
     <Compile Include="Admin\ErrorCode.cs" />
     <Compile Include="ICondition.cs" />
+    <Compile Include="IDatabaseIndexer.cs" />
     <Compile Include="Requests\IViewRequest.cs" />
     <Compile Include="Linq\Conditions.cs" />
     <Compile Include="Linq\Enumerable.cs" />
@@ -121,7 +123,7 @@
     <Compile Include="Resource.cs" />
     <Compile Include="ResourceAlias.cs" />
     <Compile Include="Admin\ResourceProfile.cs" />
-    <Compile Include="Resources\Domain.cs" />
+    <Compile Include="Resources\Provider.cs" />
     <Compile Include="Resources\DynamicResourceProvider.cs" />
     <Compile Include="Resources\IResourceWrapper.cs" />
     <Compile Include="Resources\ResourceFactory.cs" />

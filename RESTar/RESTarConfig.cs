@@ -139,18 +139,20 @@ namespace RESTar
             string configFilePath = null,
             bool prettyPrint = true,
             ushort daysToSaveErrors = 30,
-            ResourceProvider[] resourceProviders = null)
+            IEnumerable<ResourceProvider> resourceProviders = null)
         {
             uri = ProcessUri(uri);
             Settings.Init(port, uri, viewEnabled, prettyPrint, daysToSaveErrors);
             Log.Init();
             DynamitConfig.Init(true, true);
-            ResourceFactory.MakeResources(resourceProviders);
+            var externalProviders = resourceProviders?.Where(r => r != null).ToList();
+            ResourceFactory.MakeResources(externalProviders);
             RequireApiKey = requireApiKey;
             AllowAllOrigins = allowAllOrigins;
             ConfigFilePath = configFilePath;
             RegisterRESTHandlers(setupMenu);
             Initialized = true;
+            DatabaseIndex.Init();
             UpdateAuthInfo();
         }
 

@@ -20,6 +20,12 @@ namespace RESTar.Resources
         internal abstract void Validate();
 
         /// <summary>
+        /// IndexProviders are plugins for the DatabaseIndex resource, that allow resources 
+        /// created by this provider to have database indexes managed by that resource.
+        /// </summary>
+        public IDatabaseIndexer DatabaseIndexer { get; set; }
+
+        /// <summary>
         /// The ReceiveClaimed method is called by RESTar once the resources provided
         /// by this ResourceProvider have been added.
         /// </summary>

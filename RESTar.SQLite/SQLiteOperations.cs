@@ -7,7 +7,7 @@ using RESTar.Operations;
 
 namespace RESTar.SQLite
 {
-    internal static class SQLiteOperations<T> where T : class, ISQLiteTable
+    internal static class SQLiteOperations<T> where T : SQLiteTable
     {
         internal static Selector<T> Select => request =>
         {
@@ -22,7 +22,7 @@ namespace RESTar.SQLite
             var columns = request.Resource.GetColumns();
             var results = new List<T>();
 
-            SQLiteDb.Select(rawQuery, row =>
+            SQLiteDb.Query(rawQuery, row =>
             {
                 var entity = Activator.CreateInstance<T>();
                 entity.RowId = row.GetInt64(0);
@@ -75,7 +75,7 @@ namespace RESTar.SQLite
             if (postConditions.Any())
                 return Select(request).Count();
             var count = 0L;
-            SQLiteDb.Select($"SELECT COUNT(*) FROM {request.Resource.GetSQLiteTableName()} " +
+            SQLiteDb.Query($"SELECT COUNT(*) FROM {request.Resource.GetSQLiteTableName()} " +
                             dbConditions.ToSQLiteWhereClause(), row => count = row.GetInt64(0));
             return count;
         };

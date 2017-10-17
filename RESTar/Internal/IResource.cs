@@ -42,9 +42,9 @@ namespace RESTar.Internal
         string Alias { get; set; }
 
         /// <summary>
-        /// The original domain for this resource
+        /// The resource provider that generated this resource
         /// </summary>
-        string Domain { get; }
+        string Provider { get; }
 
         /// <summary>
         /// Returns true if and only if this resource was claimed by the given 

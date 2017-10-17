@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using RESTar.Linq;
 using System.Runtime.Serialization;
+using RESTar.Admin;
 using RESTar.Internal;
 using static System.Reflection.BindingFlags;
 
@@ -132,11 +133,11 @@ namespace RESTar.Resources
                 parentResource.InnerResources = group.ToList();
             });
 
-        internal static void MakeResources(ResourceProvider[] externalProviders)
+        internal static void MakeResources(ICollection<ResourceProvider> externalProviders)
         {
             if (externalProviders != null)
             {
-                externalProviders.ForEach(e => e.Validate());
+                externalProviders.ForEach(p => p.Validate());
                 if (externalProviders.ContainsDuplicates(p => p.GetType().FullName, out var dupe))
                     throw new ExternalResourceProviderException("Two or more external ResourceProviders with the same " +
                                                                 $"type '{dupe}' was found. Include only one in the call " +
@@ -171,7 +172,11 @@ namespace RESTar.Resources
             }
 
             foreach (var provider in ResourceProviders)
+            {
+                if (provider.DatabaseIndexer != null)
+                    DatabaseIndex.Indexers[provider.DatabaseIndexer.GetIndexerId()] = provider.DatabaseIndexer;
                 provider.ReceiveClaimed(Resource.ClaimedBy(provider));
+            }
 
             DynamicResource.All.ForEach(MakeDynamicResource);
         }

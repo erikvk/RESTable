@@ -62,9 +62,9 @@ namespace RESTar.Admin
         [IgnoreDataMember] public IResource IResource { get; private set; }
 
         /// <summary>
-        /// The resource type
+        /// The resource provider that generated this resource
         /// </summary>
-        public string Domain { get; private set; }
+        public string Provider { get; private set; }
 
         /// <summary>
         /// Inner resources for this resource
@@ -72,9 +72,9 @@ namespace RESTar.Admin
         [JsonProperty(NullValueHandling = Ignore)] public Resource[] InnerResources { get; private set; }
 
         [JsonConstructor]
-        public Resource(string domain) => Domain = domain;
+        public Resource(string domain) => Provider = domain;
 
-        private Resource() => Domain = "undefined";
+        private Resource() => Provider = "undefined";
 
         /// <inheritdoc />
         public IEnumerable<Resource> Select(IRequest<Resource> request)
@@ -91,7 +91,7 @@ namespace RESTar.Admin
                 IsInternal = iresource.IsInternal,
                 Type = iresource.Type.FullName,
                 IResource = iresource,
-                Domain = iresource.Domain,
+                Provider = iresource.Provider,
                 InnerResources = ((IResourceInternal) iresource).InnerResources?
                     .Select(Make)
                     .ToArray()
@@ -113,7 +113,7 @@ namespace RESTar.Admin
             {
                 if (string.IsNullOrWhiteSpace(entity.Name))
                     throw new Exception("Missing or invalid name for new resource");
-                entity.Domain = "DynamicResource";
+                entity.Provider = "DynamicResource";
                 entity.ResolveDynamicResourceName();
                 if (!string.IsNullOrWhiteSpace(entity.Alias) && ResourceAlias.Exists(entity.Alias, out var alias))
                     throw new AliasAlreadyInUseException(alias);

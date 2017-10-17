@@ -44,7 +44,7 @@ namespace RESTar.Operations
                 return action();
             var results = default(TResult);
             try
-            {
+            { 
                 Db.TransactAsync(() => results = action());
             }
             catch (DbException e)

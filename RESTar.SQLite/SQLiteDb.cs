@@ -29,7 +29,7 @@ namespace RESTar.SQLite
         {
             var uncheckedColumns = resource.GetColumns();
 
-            Select($"PRAGMA table_info({resource.GetSQLiteTableName()})", row =>
+            Query($"PRAGMA table_info({resource.GetSQLiteTableName()})", row =>
             {
                 var columnName = row.GetString(1);
                 var columnType = row.GetString(2);
@@ -63,7 +63,7 @@ namespace RESTar.SQLite
             }
         }
 
-        internal static void Select(string sql, Action<SQLiteDataReader> rowAction)
+        internal static void Query(string sql, Action<SQLiteDataReader> rowAction)
         {
             using (var connection = new SQLiteConnection(Settings.Instance.DatabaseConnectionString))
             {

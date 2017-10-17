@@ -33,10 +33,8 @@ namespace RESTarExample
     }
 
     [SQLite, RESTar]
-    public class SQLTable : ISQLiteTable
+    public class SQLTable : SQLiteTable
     {
-        [Column] public long RowId { get; set; }
-
         [Column] public string STR { get; set; }
         [Column] public long INT { get; set; }
         [Column] public DateTime? DATE { get; set; }

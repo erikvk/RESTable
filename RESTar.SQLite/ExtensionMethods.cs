@@ -11,14 +11,17 @@ namespace RESTar.SQLite
     {
         internal static Dictionary<string, StaticProperty> GetColumns(this IResource resource) => resource
             .GetStaticProperties()
-            .Where(p => p.Value.HasAttribute<ColumnAttribute>() && p.Key != "rowid")
+            .Where(p => p.Value.HasAttribute<ColumnAttribute>())
             .ToDictionary(p => p.Key, p => p.Value);
 
         internal static string GetColumnDef(this StaticProperty column) => $"{column.Name.ToLower()} {column.Type.ToSQLType()}";
 
         internal static string GetSQLiteTableName(this IResource resource) => resource.Name.Replace('.', '_');
 
-        internal static bool IsSQLiteCompatible(this Type type, Type resourceType, out string error)
+        internal static string GetResourceName(this string sqliteTableName) =>
+            Resource.SafeGet(sqliteTableName.Replace('_', '.')).Name;
+
+        internal static bool IsSQLiteCompatibleValueType(this Type type, Type resourceType, out string error)
         {
             if (type.ToSQLType() == null)
             {
@@ -38,6 +41,13 @@ namespace RESTar.SQLite
                 return false;
             baseType = type.GenericTypeArguments[0];
             return true;
+        }
+
+        internal static (string, string) TSplit(this string str, char splitCharacter)
+        {
+            var split = str.Split(splitCharacter);
+
+            return (split[0], split.ElementAtOrDefault(1));
         }
 
         internal static string ToSQLType(this Type type)
@@ -69,7 +79,7 @@ namespace RESTar.SQLite
         {
             switch (o)
             {
-                case null: return null;
+                case null: return "NULL";
                 case DateTime _: return $"\'{o:O}\'";
                 case string _: return $"\'{o}\'";
                 default: return $"{o}";
@@ -82,9 +92,8 @@ namespace RESTar.SQLite
             {
                 var op = condition.Operator.SQL;
                 var valueLiteral = MakeSQLValueLiteral((object) condition.Value);
-                if (valueLiteral == null)
+                if (valueLiteral == "NULL")
                 {
-                    valueLiteral = "NULL";
                     switch (condition.Operator.OpCode)
                     {
                         case EQUALS:

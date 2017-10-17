@@ -228,6 +228,12 @@ namespace RESTar
             }
         }
 
+        internal static (string, string) TSplit(this string str, char splitCharacter)
+        {
+            var split = str.Split(splitCharacter);
+            return (split[0], split[1]);
+        }
+
         #endregion
 
         #region Resource helpers
@@ -307,7 +313,9 @@ namespace RESTar
             return false;
         }
 
-        internal static string GetDomain(this ResourceProvider provider) => provider.GetType().FullName;
+        internal static string GetProviderId(this ResourceProvider provider) => provider.GetType().FullName;
+
+        internal static string GetIndexerId(this IDatabaseIndexer indexer) => indexer.GetType().FullName;
 
         internal static Type GetWrappedType(this Type wrapperType) => wrapperType.BaseType?.GetGenericArguments()[0];
 
@@ -661,9 +669,9 @@ namespace RESTar
         /// </summary>
         public static (string SQL, object[] Values) GetSQL<T>(this IRequest<T> request) where T : class
         {
-            if (request.Resource.Domain != Domain<StarcounterProvider>.Get)
+            if (request.Resource.Provider != Provider<StarcounterProvider>.Get)
                 throw new ArgumentException("Can only get SQL for static Starcounter resources. Resource " +
-                                            $"'{request.Resource.Name}' is of type {request.Resource.Domain}");
+                                            $"'{request.Resource.Name}' is of type {request.Resource.Provider}");
             var whereClause = request.Conditions.MakeWhereClause();
             return ($"SELECT t FROM {typeof(T).FullName} t " +
                     $"{whereClause.WhereString} " +

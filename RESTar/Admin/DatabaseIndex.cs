@@ -1,14 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.Serialization;
+using System.Text.RegularExpressions;
+using RESTar.Internal;
 using RESTar.Linq;
-using Starcounter;
-using Starcounter.Metadata;
 
 namespace RESTar.Admin
 {
     /// <summary>
-    /// The DatabaseIndex resource lets an administrator set indexes for Starcounter database resources.
+    /// The DatabaseIndex resource lets an administrator set indexes for database resources.
     /// </summary>
     [RESTar(Description = description)]
     public class DatabaseIndex : ISelector<DatabaseIndex>, IInserter<DatabaseIndex>, IUpdater<DatabaseIndex>,
@@ -17,20 +18,62 @@ namespace RESTar.Admin
         private const string description = "The DatabaseIndex resource lets an administrator set " +
                                            "indexes for Starcounter database resources.";
 
+        private string _name;
+
         /// <summary>
         /// The name of the index
         /// </summary>
-        public string Name { get; set; }
+        public string Name
+        {
+            get => _name;
+            set
+            {
+                if (value == null)
+                    throw new ArgumentNullException(nameof(Name));
+                if (!Regex.IsMatch(value, @"^\w+$"))
+                    throw new FormatException("Index name contained invalid characters. Can only contain " +
+                                              "letters, numbers and underscores");
+                _name = value;
+            }
+        }
 
         /// <summary>
-        /// The table for which this index is registered
+        /// The database-specific name for the table on which this index is registered
         /// </summary>
-        public string Table { get; set; }
+        [ReadOnly] public string DatabaseTable { get; set; }
+
+        private string _resource;
+
+        /// <summary>
+        /// The name of the RESTar resource corresponding with the database table on which 
+        /// this index is registered
+        /// </summary>
+        public string Resource
+        {
+            get => _resource;
+            set
+            {
+                IResource = RESTar.Resource.Find(value);
+                _resource = IResource.Name;
+            }
+        }
+
+        /// <summary>
+        /// The RESTar resource corresponding to the table on which this index is registered
+        /// </summary>
+        [IgnoreDataMember] public IResource IResource { get; private set; }
 
         /// <summary>
         /// The columns on which this index is registered
         /// </summary>
         public ColumnInfo[] Columns { get; set; }
+
+        /// <summary>
+        /// The database indexer that generated this index
+        /// </summary>
+        public string Indexer { get; internal set; }
+
+        #region Public helpers
 
         /// <summary>
         /// Creates an ascending database index for the table T with a given name on the given column.
@@ -62,93 +105,31 @@ namespace RESTar.Admin
             SelectionCondition.Value = name;
             SelectionRequest.PUT(() => new DatabaseIndex
             {
-                Table = typeof(T).FullName,
+                Resource = typeof(T).FullName,
                 Name = name,
                 Columns = columns
             });
         }
 
-        private static readonly Condition<DatabaseIndex> SelectionCondition;
-        private static readonly Request<DatabaseIndex> SelectionRequest;
+        #endregion
 
-        static DatabaseIndex()
+        private static Condition<DatabaseIndex> SelectionCondition { get; set; }
+        private static Request<DatabaseIndex> SelectionRequest { get; set; }
+        internal static readonly Dictionary<string, IDatabaseIndexer> Indexers;
+        static DatabaseIndex() => Indexers = new Dictionary<string, IDatabaseIndexer>();
+
+        internal static void Init()
         {
             SelectionCondition = new Condition<DatabaseIndex>(nameof(Name), Operator.EQUALS, null);
             SelectionRequest = new Request<DatabaseIndex>(SelectionCondition);
         }
 
-        private const string ColumnSql = "SELECT t FROM Starcounter.Metadata.IndexedColumn t " +
-                                         "WHERE t.\"Index\" =? ORDER BY t.Position";
-
-        /// <inheritdoc />
-        public IEnumerable<DatabaseIndex> Select(IRequest<DatabaseIndex> request)
-        {
-            if (request == null) throw new ArgumentNullException(nameof(request));
-            return Db
-                .SQL<Index>("SELECT t FROM Starcounter.Metadata.\"Index\" t")
-                .Where(index => !index.Table.FullName.StartsWith("Starcounter."))
-                .Where(index => !index.Name.StartsWith("DYNAMIT_GENERATED_INDEX"))
-                .Select(index => new DatabaseIndex
-                {
-                    Name = index.Name,
-                    Table = index.Table.FullName,
-                    Columns = Db.SQL<IndexedColumn>(ColumnSql, index).Select(c => new ColumnInfo
-                    {
-                        Name = c.Column.Name,
-                        Descending = c.Ascending == 0
-                    }).ToArray()
-                })
-                .Where(request.Conditions);
-        }
-
-        /// <inheritdoc />
-        public int Insert(IEnumerable<DatabaseIndex> indexes, IRequest<DatabaseIndex> request)
-        {
-            if (request == null) throw new ArgumentNullException(nameof(request));
-            var count = 0;
-            foreach (var index in indexes)
-            {
-                Db.SQL($"CREATE INDEX \"{index.Name}\" ON {index.Table} " +
-                       $"({string.Join(", ", index.Columns.Select(c => $"\"{c.Name}\" {(c.Descending ? "DESC" : "")}"))})");
-                count += 1;
-            }
-            return count;
-        }
-
-        /// <inheritdoc />
-        public int Update(IEnumerable<DatabaseIndex> indexes, IRequest<DatabaseIndex> request)
-        {
-            if (request == null) throw new ArgumentNullException(nameof(request));
-            var count = 0;
-            foreach (var index in indexes)
-            {
-                Db.SQL($"DROP INDEX {index.Name} ON {index.Table}");
-                Db.SQL($"CREATE INDEX \"{index.Name}\" ON {index.Table} " +
-                       $"({string.Join(", ", index.Columns.Select(c => $"\"{c.Name}\" {(c.Descending ? "DESC" : "")}"))})");
-                count += 1;
-            }
-            return count;
-        }
-
-        /// <inheritdoc />
-        public int Delete(IEnumerable<DatabaseIndex> indexes, IRequest<DatabaseIndex> request)
-        {
-            if (request == null) throw new ArgumentNullException(nameof(request));
-            var count = 0;
-            foreach (var index in indexes)
-            {
-                Db.SQL($"DROP INDEX {index.Name} ON {index.Table}");
-                count += 1;
-            }
-            return count;
-        }
-
         /// <inheritdoc />
         public bool IsValid(out string invalidReason)
         {
-            if (string.IsNullOrWhiteSpace(Table))
+            if (string.IsNullOrWhiteSpace(Resource))
             {
-                invalidReason = "Index table cannot be null or whitespace";
+                invalidReason = "Index resource name cannot be null or whitespace";
                 return false;
             }
             if (string.IsNullOrWhiteSpace(Name))
@@ -164,6 +145,28 @@ namespace RESTar.Admin
             invalidReason = null;
             return true;
         }
+
+        /// <inheritdoc />
+        public IEnumerable<DatabaseIndex> Select(IRequest<DatabaseIndex> request) => Indexers.Values
+            .SelectMany(indexer => indexer
+                .Select(request)
+                .Where(index => index != null)
+                .Apply(i => i.Indexer = indexer.GetType().FullName));
+
+        /// <inheritdoc />
+        public int Insert(IEnumerable<DatabaseIndex> entities, IRequest<DatabaseIndex> request) => entities
+            .GroupBy(index => index.Indexer)
+            .Sum(group => Indexers[group.Key].Insert(group, request));
+
+        /// <inheritdoc />
+        public int Update(IEnumerable<DatabaseIndex> entities, IRequest<DatabaseIndex> request) => entities
+            .GroupBy(index => index.Indexer)
+            .Sum(group => Indexers[group.Key].Update(group, request));
+
+        /// <inheritdoc />
+        public int Delete(IEnumerable<DatabaseIndex> entities, IRequest<DatabaseIndex> request) => entities
+            .GroupBy(index => index.Indexer)
+            .Sum(group => Indexers[group.Key].Delete(group, request));
     }
 
     /// <summary>
