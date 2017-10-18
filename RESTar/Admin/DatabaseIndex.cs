@@ -5,7 +5,6 @@ using System.Runtime.Serialization;
 using System.Text.RegularExpressions;
 using Newtonsoft.Json;
 using RESTar.Internal;
-using RESTar.Linq;
 
 namespace RESTar.Admin
 {
@@ -38,11 +37,6 @@ namespace RESTar.Admin
             }
         }
 
-        /// <summary>
-        /// The database-specific name for the table on which this index is registered
-        /// </summary>
-        [ReadOnly] public string DatabaseTable { get; set; }
-
         private string _resource;
 
         /// <summary>
@@ -68,11 +62,6 @@ namespace RESTar.Admin
         /// The columns on which this index is registered
         /// </summary>
         public ColumnInfo[] Columns { get; set; }
-
-        /// <summary>
-        /// The database indexer that generated this index
-        /// </summary>
-        public string Indexer { get; internal set; }
 
         /// <inheritdoc />
         [JsonConstructor]
@@ -156,30 +145,28 @@ namespace RESTar.Admin
         }
 
         /// <inheritdoc />
-        public IEnumerable<DatabaseIndex> Select(IRequest<DatabaseIndex> request) => Indexers.Values
-            .SelectMany(indexer => indexer
-                .Select(request)
-                .Where(index => index != null)
-                .Apply(i => i.Indexer = indexer.GetType().FullName));
+        public IEnumerable<DatabaseIndex> Select(IRequest<DatabaseIndex> request) =>
+            Indexers.Values.SelectMany(indexer => indexer.Select(request));
 
         /// <inheritdoc />
         public int Insert(IEnumerable<DatabaseIndex> entities, IRequest<DatabaseIndex> request) => entities
-            .GroupBy(index =>
+            .GroupBy(index => index.IResource.Provider)
+            .Sum(group =>
             {
-                if (index.IResource == null)
-                    throw new Exception($"Unknown resource '{index.Resource}'");
-                return index.Indexer;
-            })
-            .Sum(group => Indexers[group.Key].Insert(group, request));
+                if (!Indexers.TryGetValue(group.Key, out var indexer))
+                    throw new Exception($"Unable to register index. Resource '{group.First().IResource.Name}' " +
+                                        "is not a database resource.");
+                return indexer.Insert(group, request);
+            });
 
         /// <inheritdoc />
         public int Update(IEnumerable<DatabaseIndex> entities, IRequest<DatabaseIndex> request) => entities
-            .GroupBy(index => index.Indexer)
+            .GroupBy(index => index.IResource.Provider)
             .Sum(group => Indexers[group.Key].Update(group, request));
 
         /// <inheritdoc />
         public int Delete(IEnumerable<DatabaseIndex> entities, IRequest<DatabaseIndex> request) => entities
-            .GroupBy(index => index.Indexer)
+            .GroupBy(index => index.IResource.Provider)
             .Sum(group => Indexers[group.Key].Delete(group, request));
     }
 

@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using RESTar.Linq;
 using System.Runtime.Serialization;
 using RESTar.Admin;
@@ -99,19 +100,32 @@ namespace RESTar.Resources
             #endregion        }
         }
 
-        private static void ValidateWrapperDeclaration(Type type)
+        private static void ValidateWrapperDeclaration(List<Type> wrappers)
         {
-            ValidateCommon(type);
-            var wrappedType = type.GetWrappedType();
-            if (wrappedType.HasAttribute<RESTarAttribute>())
-                throw new ResourceWrapperException("RESTar found a RESTar.ResourceWrapper declaration for type " +
-                                                   $"'{wrappedType.FullName}', a type that is already a RESTar " +
-                                                   "resource type. Only non-resource types can be wrapped.");
-            if (type.Namespace == null)
-                throw new ResourceDeclarationException($"Invalid type '{type.FullName}'. Unknown namespace");
-            if (type.Assembly == typeof(RESTarConfig).Assembly)
-                throw new ResourceWrapperException("RESTar found an invalid RESTar.ResourceWrapper declaration for type " +
-                                                   $"'{wrappedType.FullName}'. RESTar types cannot be wrapped.");
+            if (wrappers.Select(w => w.GetWrappedType()).ContainsDuplicates(out var dupe))
+                throw new ResourceWrapperException("RESTar found multiple RESTar.ResourceWrapper declarations for " +
+                                                   $"type '{dupe.FullName}'. A type can only be wrapped once.");
+            foreach (var wrapper in wrappers)
+            {
+                var members = wrapper.GetMembers(Public | Instance);
+                if (members.OfType<PropertyInfo>().Any() || members.OfType<FieldInfo>().Any())
+                    throw new ResourceWrapperException($"Invalid RESTar.ResourceWrapper '{wrapper.FullName}'. ResourceWrapper " +
+                                                       "classes cannot contain public instance properties or fields");
+                ValidateCommon(wrapper);
+                var wrapped = wrapper.GetWrappedType();
+                if (wrapped.FullName?.Contains("+") == true)
+                    throw new ResourceWrapperException($"Invalid RESTar.ResourceWrapper '{wrapper.FullName}'. Cannot " +
+                                                       "wrap types that are declared within the scope of some other class.");
+                if (wrapped.HasAttribute<RESTarAttribute>())
+                    throw new ResourceWrapperException("RESTar found a RESTar.ResourceWrapper declaration for type " +
+                                                       $"'{wrapped.FullName}', a type that is already a RESTar " +
+                                                       "resource type. Only non-resource types can be wrapped.");
+                if (wrapper.Namespace == null)
+                    throw new ResourceDeclarationException($"Invalid type '{wrapper.FullName}'. Unknown namespace");
+                if (wrapper.Assembly == typeof(RESTarConfig).Assembly)
+                    throw new ResourceWrapperException("RESTar found an invalid RESTar.ResourceWrapper declaration for " +
+                                                       $"type '{wrapped.FullName}'. RESTar types cannot be wrapped.");
+            }
         }
 
         private static void ValidateResourceDeclaration(Type type)
@@ -155,7 +169,7 @@ namespace RESTar.Resources
                 .Where(t => t.HasAttribute<RESTarAttribute>())
                 .Where(t => typeof(IResourceWrapper).IsAssignableFrom(t))
                 .ToList();
-            wrapperTypes.ForEach(ValidateWrapperDeclaration);
+            ValidateWrapperDeclaration(wrapperTypes);
 
             foreach (var provider in ResourceProviders)
             {
@@ -174,7 +188,7 @@ namespace RESTar.Resources
             foreach (var provider in ResourceProviders)
             {
                 if (provider.DatabaseIndexer != null)
-                    DatabaseIndex.Indexers[provider.DatabaseIndexer.GetIndexerId()] = provider.DatabaseIndexer;
+                    DatabaseIndex.Indexers[provider.GetProviderId()] = provider.DatabaseIndexer;
                 provider.ReceiveClaimed(Resource.ClaimedBy(provider));
             }
 

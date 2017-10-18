@@ -120,8 +120,8 @@ namespace RESTar.Resources
 
         internal override bool Include(Type type) => type.HasAttribute(AttributeType);
 
-        internal static MethodInfo BuildRegularMethod { get; }
-        internal static MethodInfo BuildWrapperMethod { get; }
+        internal static readonly MethodInfo BuildRegularMethod;
+        internal static readonly MethodInfo BuildWrapperMethod;
 
         static ResourceProvider()
         {

@@ -17,9 +17,9 @@ namespace RESTar.SQLite
         internal static string GetColumnDef(this StaticProperty column) =>
             $"{column.Name.ToLower().Fnuttify()} {column.Type.ToSQLType()}";
 
-        internal static string GetSQLiteTableName(this IResource resource) => resource.Type.FullName?.Replace('.', '_');
+        internal static string GetSQLiteTableName(this IResource resource) => resource.Type.FullName?.Replace('.', '$');
 
-        internal static string GetResourceName(this string tableName) => Resource.ByTypeName(tableName.Replace('_', '.')).Name;
+        internal static string GetResourceName(this string tableName) => Resource.ByTypeName(tableName.Replace('$', '.')).Name;
 
         internal static string Fnuttify(this string sqlKey) => $"\"{sqlKey.Replace(".", "\".\"")}\"";
 

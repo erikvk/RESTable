@@ -23,7 +23,6 @@ namespace RESTar.Resources
                 .Select(index => new DatabaseIndex(Resource.ByTypeName(index.Table.FullName)?.Name)
                 {
                     Name = index.Name,
-                    DatabaseTable = index.Table.FullName,
                     Columns = Db.SQL<IndexedColumn>(ColumnSql, index).Select(c => new ColumnInfo
                     {
                         Name = c.Column.Name,
@@ -56,8 +55,8 @@ namespace RESTar.Resources
             var count = 0;
             foreach (var index in indexes)
             {
-                Db.SQL($"DROP INDEX {index.Name.Fnuttify()} ON {index.DatabaseTable.Fnuttify()}");
-                Db.SQL($"CREATE INDEX {index.Name.Fnuttify()} ON {index.DatabaseTable.Fnuttify()} " +
+                Db.SQL($"DROP INDEX {index.Name.Fnuttify()} ON {index.IResource.Type.FullName.Fnuttify()}");
+                Db.SQL($"CREATE INDEX {index.Name.Fnuttify()} ON {index.IResource.Type.FullName.Fnuttify()} " +
                        $"({string.Join(", ", index.Columns.Select(c => $"{c.Name.Fnuttify()} {(c.Descending ? "DESC" : "")}"))})");
                 count += 1;
             }
@@ -71,7 +70,7 @@ namespace RESTar.Resources
             var count = 0;
             foreach (var index in indexes)
             {
-                Db.SQL($"DROP INDEX {index.Name.Fnuttify()} ON {index.DatabaseTable.Fnuttify()}");
+                Db.SQL($"DROP INDEX {index.Name.Fnuttify()} ON {index.IResource.Type.FullName.Fnuttify()}");
                 count += 1;
             }
             return count;

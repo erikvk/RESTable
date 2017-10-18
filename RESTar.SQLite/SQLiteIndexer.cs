@@ -8,7 +8,8 @@ namespace RESTar.SQLite
 {
     internal class SQLiteIndexer : IDatabaseIndexer
     {
-        private const string syntax = @"CREATE INDEX (?<name>\w+) ON (?<table>\w+) \((?<columns>\w+ \w+)\)";
+        private const string syntax =
+            @"CREATE +INDEX +""*(?<name>\w+)""* +ON +""*(?<table>[\w\$]+)""* +\((?:(?<columns>""*\w+""* *[""*\w+""*]*) *,* *)+\)";
 
         public IEnumerable<DatabaseIndex> Select(IRequest<DatabaseIndex> request)
         {
@@ -20,14 +21,13 @@ namespace RESTar.SQLite
                 return new DatabaseIndex(groups["table"].Value.GetResourceName())
                 {
                     Name = groups["name"].Value,
-                    DatabaseTable = groups["table"].Value,
-                    Columns = groups["columns"].Value.Split(',').Select(column =>
+                    Columns = groups["columns"].Captures.Cast<Capture>().Select(column =>
                     {
-                        var (name, order) = column.TSplit(' ');
+                        var (name, direction) = column.ToString().TSplit(' ');
                         return new ColumnInfo
                         {
-                            Name = name,
-                            Descending = order == "DESC"
+                            Name = name.Replace("\"", ""),
+                            Descending = direction.ToLower().Contains("desc")
                         };
                     }).ToArray()
                 };
@@ -43,7 +43,7 @@ namespace RESTar.SQLite
                 if (index.IResource == null)
                     throw new Exception("Found no resource to register index on");
                 var sql = $"CREATE INDEX {index.Name.Fnuttify()} ON {index.IResource.GetSQLiteTableName().Fnuttify()} " +
-                          $"({string.Join(", ", index.Columns.Select(c => $"{c.Name.Fnuttify()} {(c.Descending ? "DESC" : "")}"))})";
+                          $"({string.Join(", ", index.Columns.Select(c => $"{c.Name.Fnuttify()} {(c.Descending ? "DESC" : "ASC")}"))})";
                 count += SQLiteDb.Query(sql);
             }
             return count;
@@ -55,8 +55,9 @@ namespace RESTar.SQLite
             var count = 0;
             foreach (var index in indexes)
             {
-                SQLiteDb.Query($"DROP INDEX {index.Name.Fnuttify()} ON {index.DatabaseTable.Fnuttify()}");
-                count += SQLiteDb.Query($"CREATE INDEX {index.Name.Fnuttify()} ON {index.DatabaseTable.Fnuttify()} " +
+                SQLiteDb.Query($"DROP INDEX {index.Name.Fnuttify()} ON {index.IResource.GetSQLiteTableName().Fnuttify()}");
+                count += SQLiteDb.Query($"CREATE INDEX {index.Name.Fnuttify()} ON " +
+                                        $"{index.IResource.GetSQLiteTableName().Fnuttify()} " +
                                         $"({string.Join(", ", index.Columns.Select(c => $"{c.Name.Fnuttify()} {(c.Descending ? "DESC" : "")}"))})");
             }
             return count;
@@ -65,7 +66,8 @@ namespace RESTar.SQLite
         public int Delete(IEnumerable<DatabaseIndex> indexes, IRequest<DatabaseIndex> request)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
-            return indexes.Sum(i => SQLiteDb.Query($"DROP INDEX {i.Name.Fnuttify()} ON {i.DatabaseTable.Fnuttify()}"));
+            return indexes.Sum(index => SQLiteDb.Query($"DROP INDEX {index.Name.Fnuttify()} ON " +
+                                                       $"{index.IResource.GetSQLiteTableName().Fnuttify()}"));
         }
     }
 }
