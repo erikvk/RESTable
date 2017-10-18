@@ -26,21 +26,16 @@ namespace RESTar.Deflection.Dynamic
 
         #region Terms
 
-        internal static readonly ConcurrentDictionary<(string Resource, string Key, bool DynUnknowns), Term> TermCache;
+        internal static readonly ConcurrentDictionary<(string Type, string Key, bool DynUnknowns), Term> TermCache;
 
         /// <summary>
         /// Converts a PropertyInfo to a Term
         /// </summary>
-        public static Term ToTerm(this PropertyInfo propertyInfo)
-        {
-            return propertyInfo.DeclaringType.MakeTerm(propertyInfo.Name,
-                Resource.SafeGet(propertyInfo.DeclaringType)?.DynamicConditionsAllowed == true);
-        }
+        public static Term ToTerm(this PropertyInfo propertyInfo) => propertyInfo.DeclaringType
+            .MakeTerm(propertyInfo.Name, Resource.SafeGet(propertyInfo.DeclaringType)?.DynamicConditionsAllowed == true);
 
-        internal static Term MakeTerm(this IResource resource, string key, bool dynamicUnknowns)
-        {
-            return resource.Type.MakeTerm(key, dynamicUnknowns);
-        }
+        internal static Term MakeTerm(this IResource resource, string key, bool dynamicUnknowns) => resource.Type
+            .MakeTerm(key, dynamicUnknowns);
 
         internal static Term MakeTerm(this Type resource, string key, bool dynamicUnknowns)
         {
@@ -51,7 +46,7 @@ namespace RESTar.Deflection.Dynamic
         }
 
         internal static void ClearTermsFor<T>() => TermCache
-            .Where(pair => pair.Key.Resource == typeof(T).FullName)
+            .Where(pair => pair.Key.Type == typeof(T).FullName)
             .Select(pair => pair.Key)
             .ToList()
             .ForEach(key => TermCache.TryRemove(key, out var _));

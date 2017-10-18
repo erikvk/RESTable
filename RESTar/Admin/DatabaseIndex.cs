@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Serialization;
 using System.Text.RegularExpressions;
+using Newtonsoft.Json;
 using RESTar.Internal;
 using RESTar.Linq;
 
@@ -73,6 +74,15 @@ namespace RESTar.Admin
         /// </summary>
         public string Indexer { get; internal set; }
 
+        /// <inheritdoc />
+        [JsonConstructor]
+        public DatabaseIndex(string resource)
+        {
+            if (string.IsNullOrWhiteSpace(resource))
+                throw new Exception("Found no resource to register index on. Resource was null or empty");
+            Resource = resource;
+        }
+
         #region Public helpers
 
         /// <summary>
@@ -103,9 +113,8 @@ namespace RESTar.Admin
         public static void Register<T>(string name, params ColumnInfo[] columns) where T : class
         {
             SelectionCondition.Value = name;
-            SelectionRequest.PUT(() => new DatabaseIndex
+            SelectionRequest.PUT(() => new DatabaseIndex(typeof(T).FullName)
             {
-                Resource = typeof(T).FullName,
                 Name = name,
                 Columns = columns
             });
@@ -155,7 +164,12 @@ namespace RESTar.Admin
 
         /// <inheritdoc />
         public int Insert(IEnumerable<DatabaseIndex> entities, IRequest<DatabaseIndex> request) => entities
-            .GroupBy(index => index.Indexer)
+            .GroupBy(index =>
+            {
+                if (index.IResource == null)
+                    throw new Exception($"Unknown resource '{index.Resource}'");
+                return index.Indexer;
+            })
             .Sum(group => Indexers[group.Key].Insert(group, request));
 
         /// <inheritdoc />

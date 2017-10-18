@@ -39,7 +39,8 @@ namespace RESTar.SQLite
                 if (foundType != columnType)
                 {
                     throw new SQLiteException($"The underlying database schema for SQLite resource '{resource.Name}' has " +
-                                              $"changed. Cannot convert column of SQLite type '{columnType}' to '{foundType}'.");
+                                              $"changed. Cannot convert column of SQLite type '{columnType}' to '{foundType}' " +
+                                              $"in SQLite database table '{resource.GetSQLiteTableName()}'.");
                 }
                 uncheckedColumns.Remove(columnName);
             });
@@ -54,7 +55,14 @@ namespace RESTar.SQLite
             UpdateTableSchema(resource);
         });
 
-        internal static void Query(string sql, Action<SQLiteCommand> action)
+        internal static int Query(string sql)
+        {
+            var res = 0;
+            Query(sql, command => res = command.ExecuteNonQuery());
+            return res;
+        }
+
+        private static void Query(string sql, Action<SQLiteCommand> action)
         {
             using (var connection = new SQLiteConnection(Settings.Instance.DatabaseConnectionString))
             {

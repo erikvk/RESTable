@@ -17,11 +17,10 @@ namespace RESTar.SQLite
             return sqls.Select(sql =>
             {
                 var groups = Regex.Match(sql, syntax, RegexOptions.IgnoreCase).Groups;
-                return new DatabaseIndex
+                return new DatabaseIndex(groups["table"].Value.GetResourceName())
                 {
                     Name = groups["name"].Value,
                     DatabaseTable = groups["table"].Value,
-                    Resource = groups["table"].Value.GetResourceName(),
                     Columns = groups["columns"].Value.Split(',').Select(column =>
                     {
                         var (name, order) = column.TSplit(' ');
@@ -35,19 +34,38 @@ namespace RESTar.SQLite
             });
         }
 
-        public int Insert(IEnumerable<DatabaseIndex> entities, IRequest<DatabaseIndex> request)
+        public int Insert(IEnumerable<DatabaseIndex> indexes, IRequest<DatabaseIndex> request)
         {
-            throw new NotImplementedException();
+            if (request == null) throw new ArgumentNullException(nameof(request));
+            var count = 0;
+            foreach (var index in indexes)
+            {
+                if (index.IResource == null)
+                    throw new Exception("Found no resource to register index on");
+                var sql = $"CREATE INDEX {index.Name.Fnuttify()} ON {index.IResource.GetSQLiteTableName().Fnuttify()} " +
+                          $"({string.Join(", ", index.Columns.Select(c => $"{c.Name.Fnuttify()} {(c.Descending ? "DESC" : "")}"))})";
+                count += SQLiteDb.Query(sql);
+            }
+            return count;
         }
 
-        public int Update(IEnumerable<DatabaseIndex> entities, IRequest<DatabaseIndex> request)
+        public int Update(IEnumerable<DatabaseIndex> indexes, IRequest<DatabaseIndex> request)
         {
-            throw new NotImplementedException();
+            if (request == null) throw new ArgumentNullException(nameof(request));
+            var count = 0;
+            foreach (var index in indexes)
+            {
+                SQLiteDb.Query($"DROP INDEX {index.Name.Fnuttify()} ON {index.DatabaseTable.Fnuttify()}");
+                count += SQLiteDb.Query($"CREATE INDEX {index.Name.Fnuttify()} ON {index.DatabaseTable.Fnuttify()} " +
+                                        $"({string.Join(", ", index.Columns.Select(c => $"{c.Name.Fnuttify()} {(c.Descending ? "DESC" : "")}"))})");
+            }
+            return count;
         }
 
-        public int Delete(IEnumerable<DatabaseIndex> entities, IRequest<DatabaseIndex> request)
+        public int Delete(IEnumerable<DatabaseIndex> indexes, IRequest<DatabaseIndex> request)
         {
-            throw new NotImplementedException();
+            if (request == null) throw new ArgumentNullException(nameof(request));
+            return indexes.Sum(i => SQLiteDb.Query($"DROP INDEX {i.Name.Fnuttify()} ON {i.DatabaseTable.Fnuttify()}"));
         }
     }
 }

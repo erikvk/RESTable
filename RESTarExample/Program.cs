@@ -33,11 +33,28 @@ namespace RESTarExample
     }
 
     [SQLite, RESTar]
+    public class BidRequestArchive : SQLiteTable
+    {
+        [Column] public string A1 { get; set; }
+        [Column] public string A2 { get; set; }
+        [Column] public string A3 { get; set; }
+        [Column] public string A4 { get; set; }
+        [Column] public string A5 { get; set; }
+    }
+
+    [SQLite, RESTar]
     public class SQLTable : SQLiteTable
     {
         [Column] public string STR { get; set; }
         [Column] public long INT { get; set; }
         [Column] public DateTime? DATE { get; set; }
+        [Column] public int INT2 { get; set; }
+        [Column] public bool BOOL { get; set; }
+        [Column] public double DOU { get; set; }
+        [Column] public float SING { get; set; }
+        [Column] public decimal DEC { get; set; }
+        [Column] public short SHORT { get; set; }
+        [Column] public byte BYTE { get; set; }
     }
 
     [Database]

@@ -20,11 +20,10 @@ namespace RESTar.Resources
             return Db.SQL<Index>("SELECT t FROM Starcounter.Metadata.\"Index\" t")
                 .Where(index => !index.Table.FullName.StartsWith("Starcounter."))
                 .Where(index => !index.Name.StartsWith("DYNAMIT_GENERATED_INDEX"))
-                .Select(index => new DatabaseIndex
+                .Select(index => new DatabaseIndex(Resource.ByTypeName(index.Table.FullName)?.Name)
                 {
                     Name = index.Name,
                     DatabaseTable = index.Table.FullName,
-                    Resource = Resource.All.FirstOrDefault(r => r.Type.FullName == index.Table.FullName)?.Name,
                     Columns = Db.SQL<IndexedColumn>(ColumnSql, index).Select(c => new ColumnInfo
                     {
                         Name = c.Column.Name,
@@ -43,8 +42,8 @@ namespace RESTar.Resources
             {
                 if (index.IResource == null)
                     throw new Exception("Found no resource to register index on");
-                Db.SQL($"CREATE INDEX \"{index.Name}\" ON {index.IResource.Type.FullName} " +
-                       $"({string.Join(", ", index.Columns.Select(c => $"\"{c.Name}\" {(c.Descending ? "DESC" : "")}"))})");
+                Db.SQL($"CREATE INDEX {index.Name.Fnuttify()} ON {index.IResource.Type.FullName.Fnuttify()} " +
+                       $"({string.Join(", ", index.Columns.Select(c => $"{c.Name.Fnuttify()} {(c.Descending ? "DESC" : "")}"))})");
                 count += 1;
             }
             return count;
@@ -57,9 +56,9 @@ namespace RESTar.Resources
             var count = 0;
             foreach (var index in indexes)
             {
-                Db.SQL($"DROP INDEX {index.Name} ON {index.DatabaseTable}");
-                Db.SQL($"CREATE INDEX \"{index.Name}\" ON {index.DatabaseTable} " +
-                       $"({string.Join(", ", index.Columns.Select(c => $"\"{c.Name}\" {(c.Descending ? "DESC" : "")}"))})");
+                Db.SQL($"DROP INDEX {index.Name.Fnuttify()} ON {index.DatabaseTable.Fnuttify()}");
+                Db.SQL($"CREATE INDEX {index.Name.Fnuttify()} ON {index.DatabaseTable.Fnuttify()} " +
+                       $"({string.Join(", ", index.Columns.Select(c => $"{c.Name.Fnuttify()} {(c.Descending ? "DESC" : "")}"))})");
                 count += 1;
             }
             return count;
@@ -72,7 +71,7 @@ namespace RESTar.Resources
             var count = 0;
             foreach (var index in indexes)
             {
-                Db.SQL($"DROP INDEX {index.Name} ON {index.DatabaseTable}");
+                Db.SQL($"DROP INDEX {index.Name.Fnuttify()} ON {index.DatabaseTable.Fnuttify()}");
                 count += 1;
             }
             return count;

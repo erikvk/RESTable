@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using RESTar.Internal;
 using RESTar.Resources;
+using static System.StringComparison;
 using IResource = RESTar.Internal.IResource;
 
 namespace RESTar
@@ -33,6 +34,13 @@ namespace RESTar
         public static ICollection<IResource> ClaimedBy(ResourceProvider provider) => All
             .Where(r => r.Provider == provider.GetProviderId())
             .ToList();
+
+        /// <summary>
+        /// </summary>
+        public static IResource ByTypeName(string typeName)
+        {
+            return All.FirstOrDefault(r => string.Equals(r.Type.FullName, typeName, CurrentCultureIgnoreCase));
+        }
 
         /// <summary>
         /// Finds a resource by a search string. The string can be a partial resource name. If no resource 

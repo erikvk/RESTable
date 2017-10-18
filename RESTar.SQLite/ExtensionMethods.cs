@@ -14,20 +14,21 @@ namespace RESTar.SQLite
             .Where(p => p.Value.HasAttribute<ColumnAttribute>())
             .ToDictionary(p => p.Key, p => p.Value);
 
-        internal static string GetColumnDef(this StaticProperty column) => $"{column.Name.ToLower()} {column.Type.ToSQLType()}";
+        internal static string GetColumnDef(this StaticProperty column) =>
+            $"{column.Name.ToLower().Fnuttify()} {column.Type.ToSQLType()}";
 
-        internal static string GetSQLiteTableName(this IResource resource) => resource.Name.Replace('.', '_');
+        internal static string GetSQLiteTableName(this IResource resource) => resource.Type.FullName?.Replace('.', '_');
 
-        internal static string GetResourceName(this string sqliteTableName) =>
-            Resource.SafeGet(sqliteTableName.Replace('_', '.')).Name;
+        internal static string GetResourceName(this string tableName) => Resource.ByTypeName(tableName.Replace('_', '.')).Name;
+
+        internal static string Fnuttify(this string sqlKey) => $"\"{sqlKey.Replace(".", "\".\"")}\"";
 
         internal static bool IsSQLiteCompatibleValueType(this Type type, Type resourceType, out string error)
         {
             if (type.ToSQLType() == null)
             {
-                error = "Could not create SQLite database column for a property " +
-                        $"of type '{type.FullName}' in resource type " +
-                        $"'{resourceType?.FullName}'";
+                error = $"Could not create SQLite database column for a property of type '{type.FullName}' in resource type " +
+                        $"'{resourceType?.FullName}'. Unsupported type";
                 return false;
             }
             error = null;
@@ -54,23 +55,17 @@ namespace RESTar.SQLite
         {
             switch (Type.GetTypeCode(type))
             {
-                case TypeCode.SByte:
-                case TypeCode.Byte:
-                case TypeCode.Int16:
-                case TypeCode.UInt16:
-                case TypeCode.Int32:
-                case TypeCode.UInt32:
-                case TypeCode.Int64:
-                case TypeCode.UInt64: return "INTEGER";
-                case TypeCode.Single:
-                case TypeCode.Double:
-                case TypeCode.Decimal: return "REAL";
-                case TypeCode.Char:
+                case TypeCode.Int16: return "SMALLINT";
+                case TypeCode.Int32: return "INT";
+                case TypeCode.Int64: return "BIGINT";
+                case TypeCode.Single: return "SINGLE";
+                case TypeCode.Double: return "DOUBLE";
+                case TypeCode.Decimal: return "DECIMAL";
+                case TypeCode.Byte: return "TINYINT";
                 case TypeCode.String: return "TEXT";
                 case TypeCode.Boolean: return "BOOL";
                 case TypeCode.DateTime: return "DATETIME";
-                case var _ when type.IsNullable(out var baseType):
-                    return baseType.ToSQLType();
+                case var _ when type.IsNullable(out var t): return t.ToSQLType();
                 default: return null;
             }
         }
@@ -81,6 +76,8 @@ namespace RESTar.SQLite
             {
                 case null: return "NULL";
                 case DateTime _: return $"\'{o:O}\'";
+                case char _:
+                case bool _:
                 case string _: return $"\'{o}\'";
                 default: return $"{o}";
             }

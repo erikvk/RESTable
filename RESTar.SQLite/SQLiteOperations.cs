@@ -26,17 +26,12 @@ namespace RESTar.SQLite
             {
                 var entity = Activator.CreateInstance<T>();
                 entity.RowId = row.GetInt64(0);
-                foreach (var column in columns)
+                columns.ForEach(column =>
                 {
                     var value = row[column.Key];
-                    if (value != DBNull.Value)
-                    {
-                        var targetType = column.Value.Type;
-                        if (targetType.IsNullable(out var baseType))
-                            targetType = baseType;
-                        column.Value.SetValue(entity, Convert.ChangeType(value, targetType));
-                    }
-                }
+                    if (value is DBNull) return;
+                    column.Value.SetValue(entity, value);
+                });
                 results.Add(entity);
             });
 
@@ -45,23 +40,17 @@ namespace RESTar.SQLite
 
         public static Inserter<T> Insert => (entities, request) =>
         {
-            var columns = request.Resource.GetColumns();
-            var count = 0;
+            var columns = request.Resource.GetColumns().Values;
             var sqlStub = $"INSERT INTO {request.Resource.GetSQLiteTableName()} VALUES (";
-            foreach (var entity in entities)
-                SQLiteDb.Query($"{sqlStub}{entity.ToSQLiteInsertInto(columns.Values)})", c => count += c.ExecuteNonQuery());
-            return count;
+            return entities.Sum(entity => SQLiteDb.Query($"{sqlStub}{entity.ToSQLiteInsertInto(columns)})"));
         };
 
         public static Updater<T> Update => (e, r) => e.Count();
 
         public static Deleter<T> Delete => (entities, request) =>
         {
-            var count = 0;
             var sqlstub = $"DELETE FROM {request.Resource.GetSQLiteTableName()} WHERE RowId=";
-            foreach (var entity in entities)
-                SQLiteDb.Query(sqlstub + entity.RowId, command => count += command.ExecuteNonQuery());
-            return count;
+            return entities.Sum(entity => SQLiteDb.Query(sqlstub + entity.RowId));
         };
 
         public static Counter<T> Count => request =>
@@ -76,7 +65,7 @@ namespace RESTar.SQLite
                 return Select(request).Count();
             var count = 0L;
             SQLiteDb.Query($"SELECT COUNT(*) FROM {request.Resource.GetSQLiteTableName()} " +
-                            dbConditions.ToSQLiteWhereClause(), row => count = row.GetInt64(0));
+                           dbConditions.ToSQLiteWhereClause(), row => count = row.GetInt64(0));
             return count;
         };
     }
