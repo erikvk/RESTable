@@ -26,6 +26,7 @@ namespace RESTarExample
                 allowAllOrigins: false,
                 viewEnabled: true,
                 configFilePath: "C:\\Mopedo\\Mopedo.config",
+                lineEndings: LineEndings.Linux,
                 resourceProviders: new ResourceProvider[] {sqlite}
             );
             TestDatabase.Init();

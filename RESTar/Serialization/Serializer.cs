@@ -50,6 +50,18 @@ namespace RESTar.Serialization
             JsonSerializer = JsonSerializer.Create(Settings);
         }
 
+        internal static bool GetJsonStream(this object data, out Stream stream)
+        {
+            JsonSerializer.Formatting = _PrettyPrint ? Indented : None;
+            stream = new MemoryStream();
+            var streamWriter = new StreamWriter(stream);
+            var jsonWriter = new RESTarJsonWriter(streamWriter);
+            JsonSerializer.Serialize(jsonWriter, data);
+            if (stream.Position == 0) return false;
+            stream.Seek(0, SeekOrigin.Begin);
+            return true;
+        }
+
         internal static string Serialize(this object value, Type type = null)
         {
             return JsonConvert.SerializeObject(value, type, _PrettyPrint ? Indented : None, Settings);
@@ -73,18 +85,18 @@ namespace RESTar.Serialization
 
         internal static string SerializeToViewModel(this object value) => JsonConvert.SerializeObject(value, VmSettings);
 
-        internal static string SerializeXML<T>(this IEnumerable<T> data)
+        internal static bool GetXmlStream<T>(this IEnumerable<T> data, out Stream stream)
         {
+            stream = null;
             var json = data.Serialize();
-            if (json == "[]") return null;
+            if (json == "[]") return false;
+            stream = new MemoryStream();
             var xml = JsonConvert.DeserializeXmlNode($@"{{""row"":{json}}}", "root", true);
-            using (var stringWriter = new StringWriter())
-            using (var xmlTextWriter = XmlWriter.Create(stringWriter, _PrettyPrint ? XMLIndentSettings : null))
-            {
-                xml.WriteTo(xmlTextWriter);
-                xmlTextWriter.Flush();
-                return stringWriter.GetStringBuilder().ToString();
-            }
+            var stringWriter = new StreamWriter(stream);
+            var xmlTextWriter = XmlWriter.Create(stringWriter, _PrettyPrint ? XMLIndentSettings : null);
+            xml.WriteTo(xmlTextWriter);
+            xmlTextWriter.Flush();
+            return true;
         }
     }
 }

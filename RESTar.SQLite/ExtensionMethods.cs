@@ -102,7 +102,7 @@ namespace RESTar.SQLite
                         default: throw new SQLiteException($"Operator '{op}' is not valid for comparison with NULL");
                     }
                 }
-                return $"{condition.Key} {op} {valueLiteral}";
+                return $"{condition.Key.Fnuttify()} {op} {valueLiteral}";
             }));
             return string.IsNullOrWhiteSpace(values) ? null : "WHERE " + values;
         }

@@ -745,14 +745,23 @@ namespace RESTar
         }
 
         /// <summary>
-        /// Serializes an Excel workbook to a byte array
+        /// Serializes an Excel workbook to a stream
         /// </summary>
-        public static byte[] SerializeExcel(this ClosedXML.Excel.XLWorkbook excel)
+        public static bool GetExcelStream(this IEnumerable<object> data, IResource resource, out Stream stream)
         {
-            using (var memstream = new MemoryStream())
+            try
             {
-                excel.SaveAs(memstream);
-                return memstream.ToArray();
+                stream = null;
+                var excel = data.ToExcel(resource);
+                if (excel == null) return false;
+                stream = new MemoryStream();
+                excel.SaveAs(stream);
+                stream.Seek(0, SeekOrigin.Begin);
+                return true;
+            }
+            catch (Exception e)
+            {
+                throw new ExcelFormatException(e.Message, e);
             }
         }
 

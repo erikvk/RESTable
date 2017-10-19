@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Linq;
 using RESTar.Deflection.Dynamic;
 using RESTar.Linq;
 using RESTar.Operations;
@@ -16,26 +14,10 @@ namespace RESTar.SQLite
                 c.Term.First is StaticProperty stat &&
                 stat.HasAttribute<ColumnAttribute>()
             );
-
-            var rawQuery = $"SELECT RowId,* FROM {request.Resource.GetSQLiteTableName()} " +
-                           dbConditions.ToSQLiteWhereClause();
-            var columns = request.Resource.GetColumns();
-            var results = new List<T>();
-
-            SQLiteDb.Query(rawQuery, row =>
-            {
-                var entity = Activator.CreateInstance<T>();
-                entity.RowId = row.GetInt64(0);
-                columns.ForEach(column =>
-                {
-                    var value = row[column.Key];
-                    if (value is DBNull) return;
-                    column.Value.SetValue(entity, value);
-                });
-                results.Add(entity);
-            });
-
-            return results.Where(postConditions);
+            return SQLiteDb.Query<T>(
+                $"SELECT RowId,* FROM {request.Resource.GetSQLiteTableName()} {dbConditions.ToSQLiteWhereClause()}",
+                request.Resource.GetColumns()
+            ).Where(postConditions);
         };
 
         public static Inserter<T> Insert => (entities, request) =>

@@ -127,6 +127,7 @@ namespace RESTar
         /// <param name="setupMenu">Shoud a menu be setup automatically in the view?</param>
         /// <param name="requireApiKey">Should the REST API require an API key?</param>
         /// <param name="allowAllOrigins">Should any origin be allowed to make CORS requests?</param>
+        /// <param name="lineEndings">The line endings to use when writing JSON</param>
         /// <param name="resourceProviders">External resource providers for the RESTar instance</param>
         public static void Init
         (
@@ -139,10 +140,11 @@ namespace RESTar
             string configFilePath = null,
             bool prettyPrint = true,
             ushort daysToSaveErrors = 30,
+            LineEndings lineEndings = LineEndings.Windows,
             IEnumerable<ResourceProvider> resourceProviders = null)
         {
             uri = ProcessUri(uri);
-            Settings.Init(port, uri, viewEnabled, prettyPrint, daysToSaveErrors);
+            Settings.Init(port, uri, viewEnabled, prettyPrint, daysToSaveErrors, lineEndings);
             Log.Init();
             DynamitConfig.Init(true, true);
             var externalProviders = resourceProviders?.Where(r => r != null).ToList();

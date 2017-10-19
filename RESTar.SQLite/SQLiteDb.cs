@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Collections.Generic;
+using System.Data;
 using System.Data.SQLite;
 using RESTar.Deflection.Dynamic;
 using RESTar.Internal;
@@ -79,6 +80,29 @@ namespace RESTar.SQLite
                 using (var reader = new SQLiteCommand(sql, connection).ExecuteReader())
                     while (reader.Read()) rowAction(reader);
             }
+        }
+
+        internal static IEnumerable<T> Query<T>(string sql, IDictionary<string, StaticProperty> columns) where T : SQLiteTable
+        {
+            using (var connection = new SQLiteConnection(Settings.Instance.DatabaseConnectionString))
+            {
+                connection.Open();
+                using (var reader = new SQLiteCommand(sql, connection).ExecuteReader())
+                    while (reader.Read()) yield return MakeEntity<T>(reader, columns);
+            }
+        }
+
+        private static T MakeEntity<T>(IDataRecord reader, IDictionary<string, StaticProperty> columns) where T : SQLiteTable
+        {
+            var entity = Activator.CreateInstance<T>();
+            entity.RowId = reader.GetInt64(0);
+            foreach (var column in columns)
+            {
+                var value = reader[column.Key];
+                if (!(value is DBNull))
+                    column.Value.SetValue(entity, value);
+            }
+            return entity;
         }
     }
 }

@@ -23,6 +23,7 @@ namespace RESTar.Admin
         internal static string _ResourcesPath => Instance.ResourcesPath;
         internal static string _HelpResourcePath => Instance.HelpResourcePath;
         internal static bool _DontUseLRT => Instance.DontUseLRT;
+        internal static LineEndings _LineEndings => Instance.LineEndings;
 
         /// <summary>
         /// The port of the RESTar REST API
@@ -50,6 +51,11 @@ namespace RESTar.Admin
         public bool DontUseLRT { get; set; }
 
         /// <summary>
+        /// The line endings to use when writing JSON
+        /// </summary>
+        public LineEndings LineEndings { get; private set; }
+
+        /// <summary>
         /// The path where resources are available
         /// </summary>
         public string ResourcesPath => $"http://[IP address]:{Port}{Uri}";
@@ -67,7 +73,7 @@ namespace RESTar.Admin
         private const string SQL = "SELECT t FROM RESTar.Admin.Settings t";
 
         internal static void Init(ushort port, string uri, bool viewEnabled, bool prettyPrint,
-            int daysToSaveErrors) => Transact.Trans(() =>
+            int daysToSaveErrors, LineEndings lineEndings) => Transact.Trans(() =>
         {
             Db.SQL<Settings>(SQL).ForEach(Db.Delete);
             new Settings
@@ -76,14 +82,14 @@ namespace RESTar.Admin
                 Uri = uri,
                 ViewEnabled = viewEnabled,
                 PrettyPrint = prettyPrint,
-                DaysToSaveErrors = daysToSaveErrors
+                DaysToSaveErrors = daysToSaveErrors,
+                LineEndings = lineEndings
             };
         });
 
         /// <summary>
         /// Gets the only instance of the Settings resource
         /// </summary>
-        [IgnoreDataMember]
-        public static Settings Instance => Db.SQL<Settings>(SQL).First;
+        [IgnoreDataMember] public static Settings Instance => Db.SQL<Settings>(SQL).First;
     }
 }

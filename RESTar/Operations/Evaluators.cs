@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using Newtonsoft.Json.Linq;
 using RESTar.Admin;
 using RESTar.Linq;
 using RESTar.Requests;
+using RESTar.Serialization;
 using Starcounter;
 using static RESTar.Operations.Do;
 using static RESTar.Requests.Responses;
@@ -400,57 +402,42 @@ namespace RESTar.Operations
                 var results = SELECT_FILTER_PROCESS(request);
                 if (results == null) return NoContent;
 
-                Response MakeGETResponse(RESTRequest<T> restRequest, IEnumerable<object> data)
-                {
-                    var fileName = $"{restRequest.Resource.AliasOrName}_{DateTime.Now:yyMMddHHmmssfff}";
-                    switch (restRequest.Accept)
-                    {
-                        case MimeType.Json:
-                            var json = data.Serialize();
-                            if (json == "[]") return null;
-                            return new Response
-                            {
-                                ContentType = MimeTypes.JSON,
-                                Body = json,
-                                Headers = {["Content-Disposition"] = $"attachment; filename={fileName}.json"}
-                            };
-                        case MimeType.Excel:
-                            try
-                            {
-                                var excel = data.ToExcel(restRequest.Resource)?.SerializeExcel();
-                                if (excel == null) return null;
-                                return new Response
-                                {
-                                    ContentType = MimeTypes.Excel,
-                                    BodyBytes = excel,
-                                    Headers = {["Content-Disposition"] = $"attachment; filename={fileName}.xlsx"}
-                                };
-                            }
-                            catch (Exception e)
-                            {
-                                throw new ExcelFormatException(e.Message, e);
-                            }
-                        case MimeType.XML:
-                            var xml = data.SerializeXML();
-                            if (xml == null) return null;
-                            return new Response
-                            {
-                                ContentType = MimeTypes.XML,
-                                Body = xml,
-                                Headers = {["Content-Disposition"] = $"attachment; filename={fileName}.xml"}
-                            };
-                        default: throw new ArgumentOutOfRangeException(nameof(restRequest.Accept));
-                    }
-                }
-
                 try
                 {
-                    return MakeGETResponse(request, results) ?? NoContent;
+                    return MakeGetResponse(request, results) ?? NoContent;
                 }
                 catch (Exception e)
                 {
                     throw new AbortedSelectorException<T>(e, request);
                 }
+            }
+
+            private static Response MakeGetResponse(RESTRequest<T> restRequest, IEnumerable<object> data)
+            {
+                var (stream, empty, mimeType, extension) = default((Stream, bool, string, string));
+                switch (restRequest.Accept)
+                {
+                    case MimeType.Json:
+                        empty = data.GetJsonStream(out stream);
+                        (mimeType, extension) = (MimeTypes.JSON, ".json");
+                        break;
+                    case MimeType.Excel:
+                        empty = data.GetExcelStream(restRequest.Resource, out stream);
+                        (mimeType, extension) = (MimeTypes.Excel, ".xlsx");
+                        break;
+                    case MimeType.XML:
+                        empty = data.GetXmlStream(out stream);
+                        (mimeType, extension) = (MimeTypes.XML, ".xml");
+                        break;
+                }
+                if (empty) return null;
+                var fileName = $"{restRequest.Resource.AliasOrName}_{DateTime.Now:yyMMddHHmmssfff}{extension}";
+                return new Response
+                {
+                    StreamedBody = stream,
+                    ContentType = mimeType,
+                    Headers = {["Content-Disposition"] = $"attachment; filename={fileName}"}
+                };
             }
 
             #region Using long running transactions
