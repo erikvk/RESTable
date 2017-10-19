@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Xml;
 using Dynamit;
 using Newtonsoft.Json;
@@ -27,20 +28,21 @@ namespace RESTar
     public static class RESTarConfig
     {
         internal static IDictionary<string, IResource> ResourceFinder { get; private set; }
-        internal static readonly IDictionary<string, IResource> ResourceByName;
-        internal static readonly IDictionary<Type, IResource> ResourceByType;
-        internal static readonly IDictionary<string, AccessRights> ApiKeys;
-        internal static readonly ConcurrentDictionary<string, AccessRights> AuthTokens;
+        internal static IDictionary<string, IResource> ResourceByName { get; private set; }
+        internal static IDictionary<Type, IResource> ResourceByType { get; private set; }
+        internal static IDictionary<string, AccessRights> ApiKeys { get; private set; }
+        internal static ConcurrentDictionary<string, AccessRights> AuthTokens { get; private set; }
         internal static ICollection<IResource> Resources => ResourceByName.Values;
-        internal static readonly List<Uri> AllowedOrigins;
-        internal static readonly Methods[] Methods = {GET, POST, PATCH, PUT, DELETE};
-        internal static readonly string[] ReservedNamespaces;
+        internal static List<Uri> AllowedOrigins { get; private set; }
+        internal static string[] ReservedNamespaces { get; private set; }
         internal static bool RequireApiKey { get; private set; }
         internal static bool AllowAllOrigins { get; private set; }
-        private static string ConfigFilePath;
+        private static string ConfigFilePath { get; set; }
         internal static bool Initialized { get; private set; }
+        internal static readonly Methods[] Methods = {GET, POST, PATCH, PUT, DELETE};
+        static RESTarConfig() => NewState();
 
-        static RESTarConfig()
+        private static void NewState()
         {
             ApiKeys = new Dictionary<string, AccessRights>();
             ResourceByType = new Dictionary<Type, IResource>();
@@ -49,7 +51,8 @@ namespace RESTar
             AuthTokens = new ConcurrentDictionary<string, AccessRights>();
             AllowedOrigins = new List<Uri>();
             AuthTokens.TryAdd(Authenticator.AppToken, AccessRights.Root);
-            ReservedNamespaces = typeof(RESTarConfig).Assembly.GetTypes()
+            ReservedNamespaces = typeof(RESTarConfig).Assembly
+                .GetTypes()
                 .Select(type => type.Namespace?.ToLower())
                 .Where(ns => ns != null)
                 .Distinct()
@@ -143,25 +146,41 @@ namespace RESTar
             LineEndings lineEndings = LineEndings.Windows,
             IEnumerable<ResourceProvider> resourceProviders = null)
         {
-            uri = ProcessUri(uri);
-            Settings.Init(port, uri, viewEnabled, prettyPrint, daysToSaveErrors, lineEndings);
-            Log.Init();
-            DynamitConfig.Init(true, true);
-            var externalProviders = resourceProviders?.Where(r => r != null).ToList();
-            ResourceFactory.MakeResources(externalProviders);
-            RequireApiKey = requireApiKey;
-            AllowAllOrigins = allowAllOrigins;
-            ConfigFilePath = configFilePath;
-            RegisterRESTHandlers(setupMenu);
-            Initialized = true;
-            DatabaseIndex.Init();
-            UpdateAuthInfo();
+            try
+            {
+                uri = ProcessUri(uri);
+                Settings.Init(port, uri, viewEnabled, prettyPrint, daysToSaveErrors, lineEndings);
+                Log.Init();
+                DynamitConfig.Init(true, true);
+                var externalProviders = resourceProviders?.Where(r => r != null).ToList();
+                ResourceFactory.MakeResources(externalProviders);
+                RequireApiKey = requireApiKey;
+                AllowAllOrigins = allowAllOrigins;
+                ConfigFilePath = configFilePath;
+                RegisterRESTHandlers(setupMenu);
+                Initialized = true;
+                DatabaseIndex.Init();
+                UpdateAuthInfo();
+            }
+            catch
+            {
+                Initialized = false;
+                RequireApiKey = default;
+                AllowAllOrigins = default;
+                ConfigFilePath = default;
+                UnRegisterRESTHandlers();
+                Settings.Clear();
+                NewState();
+                throw;
+            }
         }
 
         private static string ProcessUri(string uri)
         {
             uri = uri?.Trim() ?? "/rest";
-            if (uri.Contains("?")) throw new ArgumentException("URI cannot contain '?'", nameof(uri));
+            if (!Regex.IsMatch(uri, @"^/?\w+$"))
+                throw new FormatException("URI contained invalid characters. Can only contain " +
+                                          "letters, numbers and underscores");
             var appName = Application.Current.Name;
             if (uri.EqualsNoCase(appName))
                 throw new ArgumentException($"URI must differ from application name ({appName})", nameof(appName));

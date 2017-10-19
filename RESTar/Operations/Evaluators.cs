@@ -401,43 +401,37 @@ namespace RESTar.Operations
             {
                 var results = SELECT_FILTER_PROCESS(request);
                 if (results == null) return NoContent;
-
                 try
                 {
-                    return MakeGetResponse(request, results) ?? NoContent;
+                    var (stream, hasContent, mimeType, extension) = default((Stream, bool, string, string));
+                    switch (request.Accept)
+                    {
+                        case MimeType.Json:
+                            hasContent = results.GetJsonStream(out stream);
+                            (mimeType, extension) = (MimeTypes.JSON, ".json");
+                            break;
+                        case MimeType.Excel:
+                            hasContent = results.GetExcelStream(request.Resource, out stream);
+                            (mimeType, extension) = (MimeTypes.Excel, ".xlsx");
+                            break;
+                        case MimeType.XML:
+                            hasContent = results.GetXmlStream(out stream);
+                            (mimeType, extension) = (MimeTypes.XML, ".xml");
+                            break;
+                    }
+                    if (!hasContent) return NoContent;
+                    var fileName = $"{request.Resource.AliasOrName}_{DateTime.Now:yyMMddHHmmssfff}{extension}";
+                    return new Response
+                    {
+                        StreamedBody = stream,
+                        ContentType = mimeType,
+                        Headers = {["Content-Disposition"] = $"attachment; filename={fileName}"}
+                    };
                 }
                 catch (Exception e)
                 {
                     throw new AbortedSelectorException<T>(e, request);
                 }
-            }
-
-            private static Response MakeGetResponse(RESTRequest<T> restRequest, IEnumerable<object> data)
-            {
-                var (stream, empty, mimeType, extension) = default((Stream, bool, string, string));
-                switch (restRequest.Accept)
-                {
-                    case MimeType.Json:
-                        empty = data.GetJsonStream(out stream);
-                        (mimeType, extension) = (MimeTypes.JSON, ".json");
-                        break;
-                    case MimeType.Excel:
-                        empty = data.GetExcelStream(restRequest.Resource, out stream);
-                        (mimeType, extension) = (MimeTypes.Excel, ".xlsx");
-                        break;
-                    case MimeType.XML:
-                        empty = data.GetXmlStream(out stream);
-                        (mimeType, extension) = (MimeTypes.XML, ".xml");
-                        break;
-                }
-                if (empty) return null;
-                var fileName = $"{restRequest.Resource.AliasOrName}_{DateTime.Now:yyMMddHHmmssfff}{extension}";
-                return new Response
-                {
-                    StreamedBody = stream,
-                    ContentType = mimeType,
-                    Headers = {["Content-Disposition"] = $"attachment; filename={fileName}"}
-                };
             }
 
             #region Using long running transactions

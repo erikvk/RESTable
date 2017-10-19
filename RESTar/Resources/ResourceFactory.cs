@@ -152,10 +152,14 @@ namespace RESTar.Resources
             if (externalProviders != null)
             {
                 externalProviders.ForEach(p => p.Validate());
-                if (externalProviders.ContainsDuplicates(p => p.GetType().FullName, out var dupe))
+                if (externalProviders.ContainsDuplicates(p => p.GetType().FullName, out var typeDupe))
                     throw new ExternalResourceProviderException("Two or more external ResourceProviders with the same " +
-                                                                $"type '{dupe}' was found. Include only one in the call " +
+                                                                $"type '{typeDupe}' was found. Include only one in the call " +
                                                                 "to RESTarConfig.Init()");
+                if (externalProviders.Select(p => p.GetProviderId().ToLower()).ContainsDuplicates(out var idDupe))
+                    throw new ExternalResourceProviderException("Two or more external ResourceProviders had simliar type " +
+                                                                "names, which would lead to confusion. Only one provider " +
+                                                                $"should be associated with '{idDupe}'");
                 ResourceProviders.AddRange(externalProviders);
             }
 

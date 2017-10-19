@@ -313,9 +313,14 @@ namespace RESTar
             return false;
         }
 
-        internal static string GetProviderId(this ResourceProvider provider) => provider.GetType().FullName;
-
-        internal static string GetIndexerId(this IDatabaseIndexer indexer) => indexer.GetType().FullName;
+        internal static string GetProviderId(this ResourceProvider provider)
+        {
+            var typeName = provider.GetType().Name;
+            if (typeName == null) throw new ArgumentNullException();
+            if (typeName.EndsWith("provider", InvariantCultureIgnoreCase))
+                typeName = typeName.Substring(0, typeName.Length - 8);
+            return typeName;
+        }
 
         internal static Type GetWrappedType(this Type wrapperType) => wrapperType.BaseType?.GetGenericArguments()[0];
 

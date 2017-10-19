@@ -1,5 +1,6 @@
 ﻿using System;
 using RESTar.Internal;
+using RESTar.Operations;
 using RESTar.View;
 using Starcounter;
 using static RESTar.Internal.Authenticator;
@@ -120,6 +121,21 @@ namespace RESTar.Requests
             if (AllowAllOrigins || AllowedOrigins.Contains(new Uri(origin)))
                 return AllowOrigin(origin, resource.AvailableMethods);
             return Forbidden;
+        }
+
+        internal static void UnRegisterRESTHandlers()
+        {
+            var uri = _Uri + "{?}";
+            Do.Try(() => Handle.UnregisterHttpHandler(_Port, "GET", uri));
+            Do.Try(() => Handle.UnregisterHttpHandler(_Port, "POST", uri));
+            Do.Try(() => Handle.UnregisterHttpHandler(_Port, "PUT", uri));
+            Do.Try(() => Handle.UnregisterHttpHandler(_Port, "PATCH", uri));
+            Do.Try(() => Handle.UnregisterHttpHandler(_Port, "DELETE", uri));
+            Do.Try(() => Handle.UnregisterHttpHandler(_Port, "OPTIONS", uri));
+            var appName = Application.Current.Name;
+            Do.Try(() => Handle.UnregisterHttpHandler(_Port, "GET", $"/{appName}{{?}}"));
+            Do.Try(() => Handle.UnregisterHttpHandler(_Port, "GET", "/__restar/__page"));
+            Do.Try(() => Handle.UnregisterHttpHandler(_Port, "GET", $"/{appName}"));
         }
     }
 }

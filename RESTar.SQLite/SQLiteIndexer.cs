@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using RESTar.Admin;
+using RESTar.Linq;
 
 namespace RESTar.SQLite
 {
@@ -31,7 +32,7 @@ namespace RESTar.SQLite
                         };
                     }).ToArray()
                 };
-            });
+            }).Where(request.Conditions);
         }
 
         public int Insert(IEnumerable<DatabaseIndex> indexes, IRequest<DatabaseIndex> request)

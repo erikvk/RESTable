@@ -33,6 +33,7 @@ namespace RESTar.Admin
                 if (!Regex.IsMatch(value, @"^\w+$"))
                     throw new FormatException("Index name contained invalid characters. Can only contain " +
                                               "letters, numbers and underscores");
+
                 _name = value;
             }
         }
@@ -50,8 +51,14 @@ namespace RESTar.Admin
             {
                 IResource = RESTar.Resource.Find(value);
                 _resource = IResource.Name;
+                Provider = IResource.Provider;
             }
         }
+
+        /// <summary>
+        /// The resource provider that generated this index
+        /// </summary>
+        public string Provider { get; private set; }
 
         /// <summary>
         /// The RESTar resource corresponding to the table on which this index is registered
@@ -140,13 +147,14 @@ namespace RESTar.Admin
                 invalidReason = "No columns specified for index";
                 return false;
             }
+
             invalidReason = null;
             return true;
         }
 
         /// <inheritdoc />
-        public IEnumerable<DatabaseIndex> Select(IRequest<DatabaseIndex> request) =>
-            Indexers.Values.SelectMany(indexer => indexer.Select(request));
+        public IEnumerable<DatabaseIndex> Select(IRequest<DatabaseIndex> request) => Indexers.Values
+            .SelectMany(indexer => indexer.Select(request));
 
         /// <inheritdoc />
         public int Insert(IEnumerable<DatabaseIndex> entities, IRequest<DatabaseIndex> request) => entities

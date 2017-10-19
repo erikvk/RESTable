@@ -75,7 +75,7 @@ namespace RESTar.Admin
         internal static void Init(ushort port, string uri, bool viewEnabled, bool prettyPrint,
             int daysToSaveErrors, LineEndings lineEndings) => Transact.Trans(() =>
         {
-            Db.SQL<Settings>(SQL).ForEach(Db.Delete);
+            Clear();
             new Settings
             {
                 Port = port,
@@ -86,6 +86,8 @@ namespace RESTar.Admin
                 LineEndings = lineEndings
             };
         });
+
+        internal static void Clear() => Transact.Trans(() => Db.SQL<Settings>(SQL).ForEach(Db.Delete));
 
         /// <summary>
         /// Gets the only instance of the Settings resource

@@ -57,6 +57,8 @@ namespace RESTar.Serialization
             var streamWriter = new StreamWriter(stream);
             var jsonWriter = new RESTarJsonWriter(streamWriter);
             JsonSerializer.Serialize(jsonWriter, data);
+            jsonWriter.Flush();
+            streamWriter.Flush();
             if (stream.Position == 0) return false;
             stream.Seek(0, SeekOrigin.Begin);
             return true;
