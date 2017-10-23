@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.27004.2002
+VisualStudioVersion = 15.0.27004.2005
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RESTar", "RESTar\RESTar.csproj", "{3CA9602F-FC6F-4DFE-8749-C6DBDD9A4809}"
 EndProject
@@ -12,6 +12,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RESTarTester", "RESTarTester\RESTarTester.csproj", "{80959E33-3C2D-48AA-9B19-9FA04AF41873}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RESTar.SQLite", "RESTar.SQLite\RESTar.SQLite.csproj", "{ADAB3A82-32D7-421D-84E8-8A1C4708967B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestProject", "TestProject\TestProject.csproj", "{83B376F6-73DF-484B-9CEA-6F1722681838}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -51,6 +53,12 @@ Global
 		{ADAB3A82-32D7-421D-84E8-8A1C4708967B}.Release|Any CPU.ActiveCfg = Release|x64
 		{ADAB3A82-32D7-421D-84E8-8A1C4708967B}.Release|x64.ActiveCfg = Release|x64
 		{ADAB3A82-32D7-421D-84E8-8A1C4708967B}.Release|x64.Build.0 = Release|x64
+		{83B376F6-73DF-484B-9CEA-6F1722681838}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{83B376F6-73DF-484B-9CEA-6F1722681838}.Debug|x64.ActiveCfg = Debug|x64
+		{83B376F6-73DF-484B-9CEA-6F1722681838}.Debug|x64.Build.0 = Debug|x64
+		{83B376F6-73DF-484B-9CEA-6F1722681838}.Release|Any CPU.ActiveCfg = Release|x64
+		{83B376F6-73DF-484B-9CEA-6F1722681838}.Release|x64.ActiveCfg = Release|x64
+		{83B376F6-73DF-484B-9CEA-6F1722681838}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

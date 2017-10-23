@@ -107,6 +107,7 @@ namespace RESTar.SQLite
             return string.IsNullOrWhiteSpace(values) ? null : "WHERE " + values;
         }
 
+
         internal static string ToSQLiteInsertInto<T>(this T entity, IEnumerable<StaticProperty> columns) where T : class
         {
             return string.Join(",", columns.Select(c => MakeSQLValueLiteral((object) c.GetValue(entity))));

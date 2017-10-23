@@ -1,7 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
+using System.Net;
 using System.Runtime.Serialization;
+using System.Text;
 using Newtonsoft.Json;
 using RESTar;
 using RESTar.Linq;
@@ -276,10 +279,22 @@ namespace RESTarTester
 
             #region JSON GET
 
-            var jsonResponse1 = Http.GET("http://localhost:9000/rest/resource1", null);
-            var jsonResponse2 = Http.GET("http://localhost:9000/rest/resource2", null);
-            var jsonResponse3 = Http.GET("http://localhost:9000/rest/resource3", null);
-            var jsonResponse4 = Http.GET("http://localhost:9000/rest/resource4", null);
+            var selfresponse = Self.GET(9000, "/rest/resource1");
+            var selfdata = Encoding.UTF8.GetString(selfresponse.BodyBytes);
+            Debug.Assert(!string.IsNullOrWhiteSpace(selfdata));
+
+            var request = (HttpWebRequest) WebRequest.Create("http://localhost:9000/rest/resource1");
+            request.Method = "GET";
+            var response = (HttpWebResponse) request.GetResponse();
+            var rstream = response.GetResponseStream();
+            var streamreader = new StreamReader(rstream);
+            var data = streamreader.ReadToEnd();
+            Debug.Assert(!string.IsNullOrWhiteSpace(data));
+
+            var jsonResponse1 = Http.GET("http://localhost:9000/rest/resource1");
+            var jsonResponse2 = Http.GET("http://localhost:9000/rest/resource2");
+            var jsonResponse3 = Http.GET("http://localhost:9000/rest/resource3");
+            var jsonResponse4 = Http.GET("http://localhost:9000/rest/resource4");
 
             Debug.Assert(jsonResponse1?.IsSuccessStatusCode == true);
             Debug.Assert(jsonResponse2?.IsSuccessStatusCode == true);
@@ -305,10 +320,11 @@ namespace RESTarTester
 
             #region With conditions
 
-            var conditionResponse1 = Http.GET("http://localhost:9000/rest/resource1/sbyte>0&byte!=200&datetime>2001-01-01", null);
-            var conditionResponse2 = Http.GET("http://localhost:9000/rest/resource2/sbyte>0&byte!=200&datetime>2001-01-01", null);
-            var conditionResponse3 = Http.GET("http://localhost:9000/rest/resource3/sbyte>0&byte!=200&datetime>2001-01-01", null);
-            var conditionResponse4 = Http.GET("http://localhost:9000/rest/resource4/resource1.string!=aboo&resource2!=null", null);
+            var conditionResponse1 = Http.GET("http://localhost:9000/rest/resource1/sbyte>0&byte!=200&datetime>2001-01-01");
+            var conditionResponse2 = Http.GET("http://localhost:9000/rest/resource2/sbyte>0&byte!=200&datetime>2001-01-01");
+            var conditionResponse3 = Http.GET("http://localhost:9000/rest/resource3/sbyte>0&byte!=200&datetime>2001-01-01");
+            var conditionResponse4 =
+                Http.GET("http://localhost:9000/rest/resource4/resource1.string!=aboo&resource2!=null", null);
 
             Debug.Assert(excelResponse1?.IsSuccessStatusCode == true);
             Debug.Assert(excelResponse2?.IsSuccessStatusCode == true);

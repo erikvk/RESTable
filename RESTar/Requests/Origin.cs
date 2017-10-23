@@ -33,7 +33,7 @@ namespace RESTar.Requests
         /// The client IP address that made the request (null for internal requests)
         /// </summary>
         public IPAddress IP { get; }
-        
+
         /// <summary>
         /// If the client was forwarded by a proxy, this property contains the proxy's IP address. Otherwise null.
         /// </summary>
@@ -52,7 +52,8 @@ namespace RESTar.Requests
             }
             else
             {
-                if (request.HeadersDictionary.TryGetValue("X-Forwarded-For", out var ip) && ip != null)
+                string ip = null;
+                if (request.HeadersDictionary?.TryGetValue("X-Forwarded-For", out ip) == true && ip != null)
                 {
                     IP = IPAddress.Parse(ip.Split(':')[0]);
                     Proxy = request.ClientIpAddress;

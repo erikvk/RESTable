@@ -50,7 +50,7 @@ namespace RESTar.Serialization
             JsonSerializer = JsonSerializer.Create(Settings);
         }
 
-        internal static bool GetJsonStream(this object data, out Stream stream)
+        internal static bool GetJsonStream(this object data, out MemoryStream stream)
         {
             JsonSerializer.Formatting = _PrettyPrint ? Indented : None;
             stream = new MemoryStream();
@@ -59,9 +59,7 @@ namespace RESTar.Serialization
             JsonSerializer.Serialize(jsonWriter, data);
             jsonWriter.Flush();
             streamWriter.Flush();
-            if (stream.Position == 0) return false;
-            stream.Seek(0, SeekOrigin.Begin);
-            return true;
+            return stream.Position > 2;
         }
 
         internal static string Serialize(this object value, Type type = null)
@@ -87,7 +85,7 @@ namespace RESTar.Serialization
 
         internal static string SerializeToViewModel(this object value) => JsonConvert.SerializeObject(value, VmSettings);
 
-        internal static bool GetXmlStream<T>(this IEnumerable<T> data, out Stream stream)
+        internal static bool GetXmlStream<T>(this IEnumerable<T> data, out MemoryStream stream)
         {
             stream = null;
             var json = data.Serialize();

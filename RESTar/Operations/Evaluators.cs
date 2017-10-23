@@ -403,7 +403,7 @@ namespace RESTar.Operations
                 if (results == null) return NoContent;
                 try
                 {
-                    var (stream, hasContent, mimeType, extension) = default((Stream, bool, string, string));
+                    var (stream, hasContent, mimeType, extension) = default((MemoryStream, bool, string, string));
                     switch (request.Accept)
                     {
                         case MimeType.Json:
@@ -421,9 +421,10 @@ namespace RESTar.Operations
                     }
                     if (!hasContent) return NoContent;
                     var fileName = $"{request.Resource.AliasOrName}_{DateTime.Now:yyMMddHHmmssfff}{extension}";
+                    stream.Seek(0, SeekOrigin.Begin);
                     return new Response
                     {
-                        StreamedBody = stream,
+                        BodyBytes = stream.ToArray(),
                         ContentType = mimeType,
                         Headers = {["Content-Disposition"] = $"attachment; filename={fileName}"}
                     };

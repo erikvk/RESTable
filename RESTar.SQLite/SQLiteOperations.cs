@@ -1,4 +1,5 @@
 ﻿using System.Linq;
+using System.Text;
 using RESTar.Deflection.Dynamic;
 using RESTar.Linq;
 using RESTar.Operations;
@@ -23,8 +24,16 @@ namespace RESTar.SQLite
         public static Inserter<T> Insert => (entities, request) =>
         {
             var columns = request.Resource.GetColumns().Values;
-            var sqlStub = $"INSERT INTO {request.Resource.GetSQLiteTableName()} VALUES (";
-            return entities.Sum(entity => SQLiteDb.Query($"{sqlStub}{entity.ToSQLiteInsertInto(columns)})"));
+            var sqlStub = $"INSERT INTO {request.Resource.GetSQLiteTableName()} VALUES ";
+            var stringBuilder = new StringBuilder(sqlStub);
+            foreach (var entity in entities)
+            {
+                stringBuilder.Append("(");
+                stringBuilder.Append(entity.ToSQLiteInsertInto(columns));
+                stringBuilder.Append("),");
+            }
+            var sql = stringBuilder.ToString().TrimEnd(',');
+            return SQLiteDb.Query(sql);
         };
 
         public static Updater<T> Update => (e, r) => e.Count();

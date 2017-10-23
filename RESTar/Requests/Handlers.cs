@@ -54,9 +54,11 @@ namespace RESTar.Requests
                     case ORIGIN: return HandleOrigin((dynamic) resource, request);
                     case VIEW: return HandleView((dynamic) resource, request, args);
                     case PAGE:
+#pragma warning disable 618
                         if (Current?.Data is View.Page) return Current.Data;
                         Current = Current ?? new Session(PatchVersioning);
                         return new View.Page {Session = Current};
+#pragma warning restore 618
                     case MENU:
                         CheckUser();
                         return new Menu().Populate().MakeCurrentView();

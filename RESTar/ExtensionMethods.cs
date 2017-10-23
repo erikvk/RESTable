@@ -634,7 +634,7 @@ namespace RESTar
                     "Invalid argument separator count. A RESTar URI can contain at most 3 " +
                     $"forward slashes after the base uri. URI scheme: {Settings._ResourcesPath}" +
                     "/[resource]/[conditions]/[meta-conditions]");
-            if (request.HeadersDictionary.ContainsKey("X-ARR-LOG-ID"))
+            if (request.HeadersDictionary?.ContainsKey("X-ARR-LOG-ID") == true)
                 return query.Replace("%25", "%");
             return query;
         }
@@ -752,7 +752,7 @@ namespace RESTar
         /// <summary>
         /// Serializes an Excel workbook to a stream
         /// </summary>
-        public static bool GetExcelStream(this IEnumerable<object> data, IResource resource, out Stream stream)
+        public static bool GetExcelStream(this IEnumerable<object> data, IResource resource, out MemoryStream stream)
         {
             try
             {
@@ -761,7 +761,6 @@ namespace RESTar
                 if (excel == null) return false;
                 stream = new MemoryStream();
                 excel.SaveAs(stream);
-                stream.Seek(0, SeekOrigin.Begin);
                 return true;
             }
             catch (Exception e)

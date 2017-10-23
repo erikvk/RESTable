@@ -75,7 +75,7 @@ namespace RESTar.Requests
                     "Invalid argument separator count. A RESTar URI can contain at most 3 " +
                     $"forward slashes after the base uri. URI scheme: {Settings._ResourcesPath}" +
                     "/[resource]/[conditions]/[meta-conditions]");
-            if (request.HeadersDictionary.ContainsKey("X-ARR-LOG-ID"))
+            if (request.HeadersDictionary?.ContainsKey("X-ARR-LOG-ID") == true)
                 query = query.Replace("%25", "%");
             if (query[0] == '/') query = query.Substring(1);
             var arr = query.Split('/');

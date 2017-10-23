@@ -19,7 +19,6 @@ namespace RESTarExample
     {
         public static void Main()
         {
-            var sqlite = new SQLiteProvider(@"C:\RESTarTEst", "RESTarTest");
             RESTarConfig.Init
             (
                 requireApiKey: true,
@@ -27,7 +26,7 @@ namespace RESTarExample
                 viewEnabled: true,
                 configFilePath: "C:\\Mopedo\\Mopedo.config",
                 lineEndings: LineEndings.Linux,
-                resourceProviders: new ResourceProvider[] {sqlite}
+                resourceProviders: new[] {new SQLiteProvider(@"C:\RESTarTEst", "RESTarTest")}
             );
             TestDatabase.Init();
         }
@@ -36,11 +35,12 @@ namespace RESTarExample
     [SQLite, RESTar]
     public class BidRequestArchive : SQLiteTable
     {
-        [Column] public string A1 { get; set; }
-        [Column] public string A2 { get; set; }
-        [Column] public string A3 { get; set; }
-        [Column] public string A4 { get; set; }
-        [Column] public string A5 { get; set; }
+        [Column] public string BidRequestId { get; set; }
+        [Column] public string UserId { get; set; }
+        [Column] public string IP { get; set; }
+        [Column] public string SiteDomain { get; set; }
+        [Column] public string AppDomain { get; set; }
+        [Column] public DateTime Time { get; set; }
     }
 
     [RESTar(Methods.GET)]
