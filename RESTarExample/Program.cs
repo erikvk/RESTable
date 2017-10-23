@@ -43,6 +43,11 @@ namespace RESTarExample
         [Column] public string A5 { get; set; }
     }
 
+    [RESTar(Methods.GET)]
+    public class MyThing : ResourceWrapper<Table>
+    {
+    }
+
     [SQLite, RESTar]
     public class SQLTable : SQLiteTable
     {
@@ -64,11 +69,6 @@ namespace RESTarExample
         public string STR;
         public DateTime? DT;
         public DateTime DT2;
-    }
-
-    [RESTar]
-    public class MyTable : ResourceWrapper<Table>
-    {
     }
 
     [Database, RESTar]

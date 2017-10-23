@@ -113,6 +113,17 @@ namespace RESTar.Resources
                                                        "classes cannot contain public instance properties or fields");
                 ValidateCommon(wrapper);
                 var wrapped = wrapper.GetWrappedType();
+                if (wrapped.HasResourceProviderAttribute())
+                    throw new ResourceWrapperException($"Invalid RESTar.ResourceWrapper '{wrapper.FullName}' for wrapped " +
+                                                       $"type '{wrapped.FullName}'. Type decorated with a resource provider's " +
+                                                       "attribute cannot be wrapped. Resource provider attributes should be " +
+                                                       "placed on the wrapper type.");
+                if (wrapper.GetInterfaces()
+                    .Where(i => typeof(IOperationsInterface).IsAssignableFrom(i))
+                    .Any(i => i.IsGenericType && i.GenericTypeArguments[0] != wrapped))
+                    throw new ResourceWrapperException($"Invalid RESTar.ResourceWrapper '{wrapper.FullName}'. This wrapper " +
+                                                       "cannot implement operations interfaces for types other than " +
+                                                       $"'{wrapped.FullName}'.");
                 if (wrapped.FullName?.Contains("+") == true)
                     throw new ResourceWrapperException($"Invalid RESTar.ResourceWrapper '{wrapper.FullName}'. Cannot " +
                                                        "wrap types that are declared within the scope of some other class.");

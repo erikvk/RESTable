@@ -56,7 +56,7 @@ namespace RESTar.Operations
             .SafeGet(t => t.GetInterfaceMap(MatchingInterface<TDelegate, TWrapped>()))
             .TargetMethods?
             .FirstOrDefault()?
-            .MakeDelegate<TWrapped>();
+            .MakeDelegate<TDelegate>();
     }
 
     /// <summary>

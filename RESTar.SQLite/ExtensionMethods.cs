@@ -83,15 +83,15 @@ namespace RESTar.SQLite
             }
         }
 
-        internal static string ToSQLiteWhereClause<T>(this IEnumerable<Condition<T>> dbConditions) where T : class
+        internal static string ToSQLiteWhereClause<T>(this IEnumerable<Condition<T>> conditions) where T : class
         {
-            var values = string.Join(" AND ", dbConditions.Select(condition =>
+            var values = string.Join(" AND ", conditions.Where(c => !c.Skip).Select(c =>
             {
-                var op = condition.Operator.SQL;
-                var valueLiteral = MakeSQLValueLiteral((object) condition.Value);
+                var op = c.Operator.SQL;
+                var valueLiteral = MakeSQLValueLiteral((object) c.Value);
                 if (valueLiteral == "NULL")
                 {
-                    switch (condition.Operator.OpCode)
+                    switch (c.Operator.OpCode)
                     {
                         case EQUALS:
                             op = "IS";
@@ -102,7 +102,7 @@ namespace RESTar.SQLite
                         default: throw new SQLiteException($"Operator '{op}' is not valid for comparison with NULL");
                     }
                 }
-                return $"{condition.Key.Fnuttify()} {op} {valueLiteral}";
+                return $"{c.Key.Fnuttify()} {op} {valueLiteral}";
             }));
             return string.IsNullOrWhiteSpace(values) ? null : "WHERE " + values;
         }

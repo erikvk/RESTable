@@ -11,8 +11,8 @@ namespace RESTar.Resources
         internal override bool Include(Type type)
         {
             if (type.IsWrapper())
-                return type.GetWrappedType().IsSubclassOf(typeof(DDictionary)) && type.HasNoResourceProviderAttributes();
-            return type.IsSubclassOf(typeof(DDictionary)) && type.HasNoResourceProviderAttributes();
+                return type.GetWrappedType().IsSubclassOf(typeof(DDictionary)) && !type.HasResourceProviderAttribute();
+            return type.IsSubclassOf(typeof(DDictionary)) && type.HasResourceProviderAttribute();
         }
 
         internal override void Validate()

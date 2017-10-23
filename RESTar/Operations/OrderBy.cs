@@ -12,10 +12,10 @@ namespace RESTar.Operations
         internal bool Ascending => !Descending;
         internal IResource Resource { get; }
         internal readonly Term Term;
-        internal bool IsStarcounterQueryable = true;
+        internal bool IsSqlQueryable = true;
 
-        internal string SQL => IsStarcounterQueryable
-            ? $"ORDER BY t.{Term.DbKey.Fnuttify()} {(Descending ? "DESC" : "ASC")}"
+        internal string SQL => IsSqlQueryable
+            ? $"ORDER BY {Term.DbKey.Fnuttify()} {(Descending ? "DESC" : "ASC")}"
             : null;
 
         internal OrderBy(IResource resource) => Resource = resource;
@@ -34,7 +34,7 @@ namespace RESTar.Operations
         /// </summary>
         public IEnumerable<T> Apply<T>(IEnumerable<T> entities)
         {
-            if (IsStarcounterQueryable) return entities;
+            if (IsSqlQueryable) return entities;
             dynamic selector(T i) => Do.Try(() => Term.Evaluate(i), default(object));
             return Ascending ? entities.OrderBy(selector) : entities.OrderByDescending(selector);
         }

@@ -5,7 +5,7 @@ namespace RESTar.Resources
 {
     internal class VirtualResourceProvider : ResourceProvider<object>
     {
-        internal override bool Include(Type type) => type.HasNoResourceProviderAttributes();
+        internal override bool Include(Type type) => !type.HasResourceProviderAttribute();
 
         internal override void Validate()
         {

@@ -11,8 +11,8 @@ namespace RESTar.Resources
         internal override bool Include(Type type)
         {
             if (type.IsWrapper())
-                return type.GetWrappedType().HasAttribute<DatabaseAttribute>() && type.HasNoResourceProviderAttributes();
-            return type.HasAttribute<DatabaseAttribute>() && type.HasNoResourceProviderAttributes();
+                return type.GetWrappedType().HasAttribute<DatabaseAttribute>() && !type.HasResourceProviderAttribute();
+            return type.HasAttribute<DatabaseAttribute>() && !type.HasResourceProviderAttribute();
         }
 
         internal override void Validate()

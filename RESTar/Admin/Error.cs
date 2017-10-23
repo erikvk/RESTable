@@ -97,12 +97,11 @@ namespace RESTar.Admin
 
         private static DateTime Checked;
 
-        private const string SQL = "SELECT t FROM RESTar.Admin.Error t WHERE t.\"Time\" <?";
-
         internal static void ClearOld()
         {
             if (Checked >= DateTime.Now.Date) return;
-            var matches = Db.SQL<Error>(SQL,DateTime.Now.AddDays(0 - Settings._DaysToSaveErrors));
+            const string SQL = "SELECT t FROM RESTar.Admin.Error t WHERE t.\"Time\" <?";
+            var matches = Db.SQL<Error>(SQL, DateTime.Now.AddDays(0 - Settings._DaysToSaveErrors));
             matches.ForEach(match => Transact.TransAsync(match.Delete));
             Checked = DateTime.Now.Date;
         }

@@ -58,8 +58,8 @@ namespace RESTar
         internal static bool HasAttribute(this MemberInfo type, Type attributeType) =>
             (type?.GetCustomAttributes(attributeType).Any()).GetValueOrDefault();
 
-        internal static bool HasNoResourceProviderAttributes(this Type resource) =>
-            !resource.GetCustomAttributes().OfType<ResourceProviderAttribute>().Any();
+        internal static bool HasResourceProviderAttribute(this Type resource) =>
+            resource.GetCustomAttributes().OfType<ResourceProviderAttribute>().Any();
 
         internal static bool IsBoundWithResourceProviderAttribute(this Type resource, Type attribute) =>
             resource.HasAttribute(attribute) &&
@@ -376,17 +376,17 @@ namespace RESTar
         internal static (string WhereString, object[] Values) MakeWhereClause<T>(this IEnumerable<Condition<T>> conds)
             where T : class
         {
-            var Values = new List<object>();
-            var WhereString = string.Join(" AND ", conds.Where(c => !c.Skip).Select(c =>
+            var literals = new List<object>();
+            var clause = string.Join(" AND ", conds.Where(c => !c.Skip).Select(c =>
             {
                 var key = c.Term.DbKey.Fnuttify();
                 if (c.Value == null)
                     return $"t.{key} {(c.Operator == Operator.NOT_EQUALS ? "IS NOT NULL" : "IS NULL")}";
-                Values.Add(c.Value);
+                literals.Add(c.Value);
                 return $"t.{key} {c.Operator.SQL}?";
             }));
-            if (WhereString == "") return (null, null);
-            return ($"WHERE {WhereString}", Values.ToArray());
+            if (clause == "") return (null, null);
+            return ($"WHERE {clause}", literals.ToArray());
         }
 
         #endregion
