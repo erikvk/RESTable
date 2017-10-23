@@ -2,9 +2,10 @@
 
 namespace RESTar.SQLite
 {
+    /// <inheritdoc />
     public class SQLiteException : Exception
     {
-        public SQLiteException(string message) : base(message)
+        internal SQLiteException(string message) : base(message)
         {
         }
     }
