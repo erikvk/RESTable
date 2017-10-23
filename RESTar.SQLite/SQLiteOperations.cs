@@ -15,9 +15,10 @@ namespace RESTar.SQLite
                 c.Term.First is StaticProperty stat &&
                 stat.HasAttribute<ColumnAttribute>()
             );
+            var where = dbConditions.ToSQLiteWhereClause();
             return SQLiteDb.Query<T>(
-                $"SELECT RowId,* FROM {request.Resource.GetSQLiteTableName()} {dbConditions.ToSQLiteWhereClause()}",
-                request.Resource.GetColumns()
+                sql: $"SELECT RowId,* FROM {request.Resource.GetSQLiteTableName()} {where}",
+                columns: request.Resource.GetColumns()
             ).Where(postConditions);
         };
 
@@ -26,22 +27,62 @@ namespace RESTar.SQLite
             var columns = request.Resource.GetColumns().Values;
             var sqlStub = $"INSERT INTO {request.Resource.GetSQLiteTableName()} VALUES ";
             var stringBuilder = new StringBuilder(sqlStub);
+            var iterations = 0;
             foreach (var entity in entities)
             {
-                stringBuilder.Append("(");
+                if (iterations > 0)
+                    stringBuilder.Append(',');
+                stringBuilder.Append('(');
                 stringBuilder.Append(entity.ToSQLiteInsertInto(columns));
-                stringBuilder.Append("),");
+                stringBuilder.Append(')');
+                iterations += 1;
             }
-            var sql = stringBuilder.ToString().TrimEnd(',');
-            return SQLiteDb.Query(sql);
+            if (iterations == 0) return 0;
+            return SQLiteDb.Query(stringBuilder.ToString());
         };
 
-        public static Updater<T> Update => (e, r) => e.Count();
+        public static Updater<T> Update => (entities, request) =>
+        {
+            var columns = request.Resource.GetColumns().Values;
+            var updateTable = $"UPDATE {request.Resource.GetSQLiteTableName()} SET ";
+            var stringBuilder = new StringBuilder();
+            var iterations = 0;
+            foreach (var entity in entities)
+            {
+                stringBuilder.Append(updateTable);
+                var index = 0;
+                foreach (var column in columns)
+                {
+                    if (index > 0) stringBuilder.Append(',');
+                    stringBuilder.Append(column.Name);
+                    stringBuilder.Append('=');
+                    var valueLiteral = ((object) column.GetValue(entity)).MakeSQLValueLiteral();
+                    stringBuilder.Append(valueLiteral);
+                    index += 1;
+                }
+                stringBuilder.Append("WHERE RowId=");
+                stringBuilder.Append(entity.RowId);
+                stringBuilder.Append(';');
+                iterations += 1;
+            }
+            if (iterations == 0) return 0;
+            return SQLiteDb.Query(stringBuilder.ToString());
+        };
 
         public static Deleter<T> Delete => (entities, request) =>
         {
             var sqlstub = $"DELETE FROM {request.Resource.GetSQLiteTableName()} WHERE RowId=";
-            return entities.Sum(entity => SQLiteDb.Query(sqlstub + entity.RowId));
+            var stringBuilder = new StringBuilder(sqlstub);
+            var iterations = 0;
+            foreach (var entity in entities)
+            {
+                if (iterations > 0)
+                    stringBuilder.Append(" OR RowId=");
+                stringBuilder.Append(entity.RowId);
+                iterations += 1;
+            }
+            if (iterations == 0) return 0;
+            return SQLiteDb.Query(stringBuilder.ToString());
         };
 
         public static Counter<T> Count => request =>
@@ -51,12 +92,14 @@ namespace RESTar.SQLite
                 c.Term.First is StaticProperty stat &&
                 stat.HasAttribute<ColumnAttribute>()
             );
-
             if (postConditions.Any())
                 return Select(request).Count();
+            var where = dbConditions.ToSQLiteWhereClause();
             var count = 0L;
-            SQLiteDb.Query($"SELECT COUNT(*) FROM {request.Resource.GetSQLiteTableName()} " +
-                           dbConditions.ToSQLiteWhereClause(), row => count = row.GetInt64(0));
+            SQLiteDb.Query(
+                sql: $"SELECT COUNT(*) FROM {request.Resource.GetSQLiteTableName()} {where}",
+                rowAction: row => count = row.GetInt64(0)
+            );
             return count;
         };
     }

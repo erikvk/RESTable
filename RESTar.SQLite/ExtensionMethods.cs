@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using RESTar.Deflection.Dynamic;
 using RESTar.Internal;
 using static RESTar.Operators;
@@ -70,7 +71,7 @@ namespace RESTar.SQLite
             }
         }
 
-        private static string MakeSQLValueLiteral(this object o)
+        internal static string MakeSQLValueLiteral(this object o)
         {
             switch (o)
             {
@@ -107,10 +108,16 @@ namespace RESTar.SQLite
             return string.IsNullOrWhiteSpace(values) ? null : "WHERE " + values;
         }
 
-
         internal static string ToSQLiteInsertInto<T>(this T entity, IEnumerable<StaticProperty> columns) where T : class
         {
             return string.Join(",", columns.Select(c => MakeSQLValueLiteral((object) c.GetValue(entity))));
+        }
+
+        internal static bool HasAttribute<TAttribute>(this MemberInfo type, out TAttribute attribute)
+            where TAttribute : Attribute
+        {
+            attribute = type?.GetCustomAttributes<TAttribute>().FirstOrDefault();
+            return attribute != null;
         }
     }
 }

@@ -9,6 +9,7 @@ using RESTar.Linq;
 using RESTar.Operations;
 using RESTar.Resources;
 using Starcounter;
+using static RESTar.Methods;
 using IResource = RESTar.Internal.IResource;
 using Profiler = RESTar.Operations.Profiler;
 
@@ -38,6 +39,10 @@ namespace RESTar.SQLite
                          "abstract class needed for all SQLite resource types.";
                 return false;
             }
+
+            var attribute = type.GetCustomAttribute<RESTarAttribute>();
+            if (attribute.AvailableMethods.Contains(POST) && type.GetConstructor(Type.EmptyTypes) == null)
+                reason = $"Expected parameterless constructor for type '{type.FullName}' to support POST";
 
             foreach (var column in columnProperties)
             {

@@ -11,7 +11,10 @@ namespace RESTar
     [AttributeUsage(AttributeTargets.Class, Inherited = false)]
     public class RESTarAttribute : Attribute
     {
-        internal IReadOnlyList<Methods> AvailableMethods { get; }
+        /// <summary>
+        /// The methods declared as available for this RESTar resource
+        /// </summary>
+        public IReadOnlyList<Methods> AvailableMethods { get; }
 
         /// <summary>
         /// If true, unknown conditions encountered when handling incoming requests
