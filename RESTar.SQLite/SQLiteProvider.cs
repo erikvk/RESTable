@@ -17,9 +17,11 @@ namespace RESTar.SQLite
     /// <inheritdoc />
     /// <summary>
     /// A resource provider for the SQLite database system. To use, include an instance of this class 
-    /// in the call to RESTarConfig.Init(). To register SQLite resources, decorate resource types with 
-    /// the SQLiteAttribute together with the RESTarAttribute. Public instance properties can be mapped 
-    /// to columns in SQLite by decorating the with the ColumnAttribute. O/RM mapping is done by RESTar.
+    /// in the call to RESTarConfig.Init(). To register SQLite resources, create subclasses of SQLiteTable
+    /// and decorate them with the SQLiteAttribute together with the RESTarAttribute. Public instance 
+    /// properties can be mapped to columns in SQLite by decorating the with the ColumnAttribute. All O/RM 
+    /// mapping and query building is done by RESTar. Use the DatabaseIndex resource to register indexes 
+    /// for SQLite resources (just like you would for Starcounter resources).
     /// </summary>
     public class SQLiteProvider : ResourceProvider<SQLiteTable>
     {
