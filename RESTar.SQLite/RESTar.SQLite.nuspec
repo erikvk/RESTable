@@ -2,14 +2,14 @@
 
 <package>
   <metadata>
-    <id>RESTar</id>
-    <version>0.2.22</version>
-    <title>RESTar</title>
+    <id>RESTar.SQLite</id>
+    <version>0.1.0</version>
+    <title>RESTar.SQLite</title>
     <authors>Erik von Krusenstierna</authors>
     <owners>Mopedo AB</owners>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
-    <description>Create powerful RESTful web services with Starcounter. Spec: https://goo.gl/TIkN7m</description>
-    <releaseNotes>Support for external resource providers, see RESTar.SQLite for a SQLite provider</releaseNotes>
+    <description>A SQLite resource provider for RESTar. To use, include an instance of SQLiteProvider in the call to RESTarConfig.Init()</description>
+    <releaseNotes>First release</releaseNotes>
     <copyright>Copyright 2017 Mopedo AB. All rights reserved.</copyright>
     <tags>mopedo starcounter REST RESTful web services dynamit</tags>
     <licenseUrl>https://goo.gl/eJS8o9</licenseUrl>

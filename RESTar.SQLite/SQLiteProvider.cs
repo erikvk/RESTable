@@ -14,8 +14,16 @@ using Profiler = RESTar.Operations.Profiler;
 
 namespace RESTar.SQLite
 {
+    /// <inheritdoc />
+    /// <summary>
+    /// A resource provider for the SQLite database system. To use, include an instance of this class 
+    /// in the call to RESTarConfig.Init(). To register SQLite resources, decorate resource types with 
+    /// the SQLiteAttribute together with the RESTarAttribute. Public instance properties can be mapped 
+    /// to columns in SQLite by decorating the with the ColumnAttribute. O/RM mapping is done by RESTar.
+    /// </summary>
     public class SQLiteProvider : ResourceProvider<SQLiteTable>
     {
+        /// <inheritdoc />
         public override bool IsValid(Type type, out string reason)
         {
             var columnProperties = type.GetProperties()
@@ -42,6 +50,7 @@ namespace RESTar.SQLite
             return true;
         }
 
+        /// <inheritdoc />
         public SQLiteProvider(string databaseDirectory, string databaseName)
         {
             if (!Regex.IsMatch(databaseName, @"^[a-zA-Z0-9_]+$"))
@@ -66,17 +75,31 @@ namespace RESTar.SQLite
             DatabaseIndexer = new SQLiteIndexer();
         }
 
+        /// <inheritdoc />
         public override void ReceiveClaimed(ICollection<IResource> claimedResources)
         {
             SQLiteDb.SetupTables(claimedResources);
         }
 
+        /// <inheritdoc />
         public override Type AttributeType => typeof(SQLiteAttribute);
+
+        /// <inheritdoc />
         public override Selector<T> GetDefaultSelector<T>() => SQLiteOperations<T>.Select;
+
+        /// <inheritdoc />
         public override Inserter<T> GetDefaultInserter<T>() => SQLiteOperations<T>.Insert;
+
+        /// <inheritdoc />
         public override Updater<T> GetDefaultUpdater<T>() => SQLiteOperations<T>.Update;
+
+        /// <inheritdoc />
         public override Deleter<T> GetDefaultDeleter<T>() => SQLiteOperations<T>.Delete;
+
+        /// <inheritdoc />
         public override Counter<T> GetDefaultCounter<T>() => SQLiteOperations<T>.Count;
+
+        /// <inheritdoc />
         public override Profiler GetProfiler<T>() => null;
     }
 }
