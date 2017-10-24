@@ -5,7 +5,6 @@ using Dynamit;
 using Newtonsoft.Json.Linq;
 using RESTar;
 using RESTar.Resources;
-using RESTar.SQLite;
 using Starcounter;
 
 // ReSharper disable UnassignedGetOnlyAutoProperty
@@ -25,42 +24,15 @@ namespace RESTarExample
                 allowAllOrigins: false,
                 viewEnabled: true,
                 configFilePath: "C:\\Mopedo\\Mopedo.config",
-                lineEndings: LineEndings.Linux,
-                resourceProviders: new[] {new SQLiteProvider(@"C:\RESTarTEst", "RESTarTest")}
+                lineEndings: LineEndings.Linux
             );
             TestDatabase.Init();
         }
     }
 
-    [SQLite, RESTar]
-    public class BidRequestArchive : SQLiteTable
-    {
-        [Column] public string BidRequestId { get; set; }
-        [Column] public string UserId { get; set; }
-        [Column] public string IP { get; set; }
-        [Column] public string SiteDomain { get; set; }
-        [Column] public string AppDomain { get; set; }
-        [Column] public DateTime Time { get; set; }
-    }
-
     [RESTar(Methods.GET)]
     public class MyThing : ResourceWrapper<Table>
     {
-    }
-
-    [SQLite, RESTar]
-    public class SQLTable : SQLiteTable
-    {
-        [Column] public string STR { get; set; }
-        [Column] public long INT { get; set; }
-        [Column] public DateTime? DATE { get; set; }
-        [Column] public int INT2 { get; set; }
-        [Column] public bool BOOL { get; set; }
-        [Column] public double DOU { get; set; }
-        [Column] public float SING { get; set; }
-        [Column] public decimal DEC { get; set; }
-        [Column] public short SHORT { get; set; }
-        [Column] public byte BYTE { get; set; }
     }
 
     [Database]
