@@ -4,6 +4,7 @@ using System.Linq;
 using Dynamit;
 using Newtonsoft.Json.Linq;
 using RESTar;
+using RESTar.Admin;
 using RESTar.Resources;
 using Starcounter;
 
@@ -26,6 +27,7 @@ namespace RESTarExample
                 configFilePath: "C:\\Mopedo\\Mopedo.config",
                 lineEndings: LineEndings.Linux
             );
+            DatabaseIndex.Register<MyResource>("MyIndeeex", "MyId");
             TestDatabase.Init();
         }
     }

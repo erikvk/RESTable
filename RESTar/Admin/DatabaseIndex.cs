@@ -38,19 +38,19 @@ namespace RESTar.Admin
             }
         }
 
-        private string _resource;
+        private string _table;
 
         /// <summary>
         /// The name of the RESTar resource corresponding with the database table on which 
         /// this index is registered
         /// </summary>
-        public string Resource
+        public string Table
         {
-            get => _resource;
+            get => _table;
             set
             {
-                IResource = RESTar.Resource.Find(value);
-                _resource = IResource.Name;
+                IResource = RESTar.Resource.Get(value);
+                _table = IResource.Name;
                 Provider = IResource.Provider;
             }
         }
@@ -72,11 +72,11 @@ namespace RESTar.Admin
 
         /// <inheritdoc />
         [JsonConstructor]
-        public DatabaseIndex(string resource)
+        public DatabaseIndex(string table)
         {
-            if (string.IsNullOrWhiteSpace(resource))
+            if (string.IsNullOrWhiteSpace(table))
                 throw new Exception("Found no resource to register index on. Resource was null or empty");
-            Resource = resource;
+            Table = table;
         }
 
         #region Public helpers
@@ -132,7 +132,7 @@ namespace RESTar.Admin
         /// <inheritdoc />
         public bool IsValid(out string invalidReason)
         {
-            if (string.IsNullOrWhiteSpace(Resource))
+            if (string.IsNullOrWhiteSpace(Table))
             {
                 invalidReason = "Index resource name cannot be null or whitespace";
                 return false;

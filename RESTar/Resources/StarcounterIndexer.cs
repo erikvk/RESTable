@@ -20,10 +20,12 @@ namespace RESTar.Resources
             return Db.SQL<Index>("SELECT t FROM Starcounter.Metadata.\"Index\" t")
                 .Where(index => !index.Table.FullName.StartsWith("Starcounter."))
                 .Where(index => !index.Name.StartsWith("DYNAMIT_GENERATED_INDEX"))
-                .Select(index => new DatabaseIndex(Resource.ByTypeName(index.Table.FullName)?.Name)
+                .Select(index => (resource: Resource.ByTypeName(index.Table.FullName), index))
+                .Where(pair => pair.resource != null)
+                .Select(pair => new DatabaseIndex(pair.resource.Name)
                 {
-                    Name = index.Name,
-                    Columns = Db.SQL<IndexedColumn>(ColumnSql, index).Select(c => new ColumnInfo
+                    Name = pair.index.Name,
+                    Columns = Db.SQL<IndexedColumn>(ColumnSql, pair.index).Select(c => new ColumnInfo
                     {
                         Name = c.Column.Name,
                         Descending = c.Ascending == 0

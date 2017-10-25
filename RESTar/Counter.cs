@@ -12,6 +12,7 @@ using static RESTar.Methods;
 
 namespace RESTar
 {
+    /// <inheritdoc />
     /// <summary>
     /// The Counter resource is an operations resource that calculates the number 
     /// of entities returned from GET request, the URI of which is included in the 
