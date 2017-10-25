@@ -14,11 +14,9 @@ namespace TestProject
         public static void Main()
         {
             var dataArray = Encoding.UTF8.GetBytes(data);
-            var arrayResponse = new Response {BodyBytes = dataArray};
-            var streamResponse = new Response {StreamedBody = new MemoryStream(dataArray)};
 
-            Handle.GET(8003, "/withstream", () => streamResponse);
-            Handle.GET(8003, "/witharray", () => arrayResponse);
+            Handle.GET(8003, "/withstream", () => new Response {StreamedBody = new MemoryStream(dataArray)});
+            Handle.GET(8003, "/witharray", () => new Response {BodyBytes = dataArray});
 
             var arrayData = Http.GET("http://localhost:8003/witharray").BodyBytes;
             var streamData = Http.GET("http://localhost:8003/withstream").BodyBytes;
