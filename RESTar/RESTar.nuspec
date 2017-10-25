@@ -9,7 +9,7 @@
     <owners>Mopedo AB</owners>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>Create powerful RESTful web services with Starcounter. Spec: https://goo.gl/TIkN7m</description>
-    <releaseNotes>Support for external resource providers, see RESTar.SQLite for a SQLite provider</releaseNotes>
+    <releaseNotes>Support for external resource providers, see RESTar.SQLite for an SQLite provider</releaseNotes>
     <copyright>Copyright 2017 Mopedo AB. All rights reserved.</copyright>
     <tags>mopedo starcounter REST RESTful web services dynamit</tags>
     <licenseUrl>https://goo.gl/eJS8o9</licenseUrl>
