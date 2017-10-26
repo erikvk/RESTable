@@ -118,7 +118,15 @@ namespace RESTar.Resources
 
         #region Internals
 
-        internal override bool Include(Type type) => type.HasAttribute(AttributeType);
+        internal override bool Include(Type type)
+        {
+            if (!typeof(TBase).IsAssignableFrom(type))
+                throw new ResourceDeclarationException(
+                    $"Invalid resource declaration for type '{type.FullName}'. Expected type to " +
+                    $"inherit from base type '{typeof(TBase).FullName}' as required by resource " +
+                    $"provider of type '{GetType().FullName}'.");
+            return type.HasAttribute(AttributeType);
+        }
 
         internal static readonly MethodInfo BuildRegularMethod;
         internal static readonly MethodInfo BuildWrapperMethod;
@@ -129,25 +137,21 @@ namespace RESTar.Resources
             BuildWrapperMethod = typeof(ResourceProvider<TBase>).GetMethod(nameof(BuildWrapperResource), Instance | NonPublic);
         }
 
-        internal override void MakeClaimRegular(IEnumerable<Type> types) => types
-            .Where(typeof(TBase).IsAssignableFrom)
-            .ForEach(type =>
-            {
-                if (!IsValid(type, out var reason))
-                    throw new ResourceDeclarationException("An error was found in the declaration for resource " +
-                                                           $"type '{type.FullName}': " + reason);
-                BuildRegularMethod.MakeGenericMethod(type).Invoke(this, null);
-            });
+        internal override void MakeClaimRegular(IEnumerable<Type> types) => types.ForEach(type =>
+        {
+            if (!IsValid(type, out var reason))
+                throw new ResourceDeclarationException("An error was found in the declaration for resource " +
+                                                       $"type '{type.FullName}': " + reason);
+            BuildRegularMethod.MakeGenericMethod(type).Invoke(this, null);
+        });
 
-        internal override void MakeClaimWrapped(IEnumerable<Type> types) => types
-            .Where(t => typeof(TBase).IsAssignableFrom(t.GetWrappedType()))
-            .ForEach(type =>
-            {
-                if (!IsValid(type, out var reason))
-                    throw new ResourceDeclarationException("An error was found in the declaration for wrapper resource " +
-                                                           $"type '{type.FullName}': " + reason);
-                BuildWrapperMethod.MakeGenericMethod(type, type.GetWrappedType()).Invoke(this, null);
-            });
+        internal override void MakeClaimWrapped(IEnumerable<Type> types) => types.ForEach(type =>
+        {
+            if (!IsValid(type, out var reason))
+                throw new ResourceDeclarationException("An error was found in the declaration for wrapper resource " +
+                                                       $"type '{type.FullName}': " + reason);
+            BuildWrapperMethod.MakeGenericMethod(type, type.GetWrappedType()).Invoke(this, null);
+        });
 
         private void BuildRegularResource<TResource>() where TResource : class, TBase => new Internal.Resource<TResource>
         (

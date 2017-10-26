@@ -5,7 +5,6 @@ using System.Reflection;
 using Dynamit;
 using RESTar.Internal;
 using RESTar.Linq;
-using RESTar.Operations;
 using Starcounter;
 using static System.Reflection.BindingFlags;
 
@@ -79,7 +78,7 @@ namespace RESTar.Admin
         /// </summary>
         public static ResourceProfile Make<T>() where T : class => Make(typeof(T));
 
-        internal static ResourceProfile Make<T>(ByteCounter<T> byteCounter) where T : class
+        internal static ResourceProfile Make<T>(Func<IEnumerable<T>, long> byteCounter) where T : class
         {
             var sqlName = typeof(T).FullName.Fnuttify();
             var domain = SELECT<T>(sqlName);

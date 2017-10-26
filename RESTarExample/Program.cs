@@ -24,7 +24,7 @@ namespace RESTarExample
                 requireApiKey: true,
                 allowAllOrigins: false,
                 viewEnabled: true,
-                configFilePath: "C:\\Mopedo\\Mopedo.config",
+                configFilePath: @"C:\Mopedo\mopedo3\Mopedo.config",
                 lineEndings: LineEndings.Linux
             );
             DatabaseIndex.Register<MyResource>("MyIndeeex", "MyId");

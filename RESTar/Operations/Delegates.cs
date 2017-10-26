@@ -99,6 +99,4 @@ namespace RESTar.Operations
     /// Generates a profile for a given resource
     /// </summary>
     public delegate ResourceProfile Profiler();
-
-    internal delegate long ByteCounter<in T>(IEnumerable<T> objects);
 }
