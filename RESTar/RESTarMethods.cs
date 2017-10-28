@@ -33,7 +33,14 @@ namespace RESTar
         /// <summary>
         /// DELETE, deletes one or more entities from a resource
         /// </summary>
-        DELETE
+        DELETE,
+
+        /// <summary>
+        /// COUNT, returns the number of entities contained in a GET 
+        /// response from a resource. Enabling GET for a resource automatically 
+        /// enables COUNT for that resource.
+        /// </summary>
+        COUNT
     }
 
     internal class MethodComparer : Comparer<Methods>

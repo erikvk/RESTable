@@ -57,7 +57,7 @@ namespace RESTar.Resources
             throw new NotImplementedException();
         }
 
-        public override Profiler GetProfiler<T>()
+        public override Profiler<T> GetProfiler<T>()
         {
             throw new NotImplementedException();
         }

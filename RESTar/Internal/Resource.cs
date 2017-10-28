@@ -10,7 +10,6 @@ using Starcounter;
 using static RESTar.Methods;
 using static RESTar.Operations.DelegateMaker;
 using static RESTar.Operations.Transact;
-using Profiler = RESTar.Operations.Profiler;
 
 namespace RESTar.Internal
 {
@@ -43,7 +42,7 @@ namespace RESTar.Internal
         public bool RequiresValidation { get; }
         public string Provider { get; }
         public IReadOnlyList<IResource> InnerResources { get; set; }
-        public ResourceProfile ResourceProfile => Profile?.Invoke();
+        public ResourceProfile ResourceProfile => Profile?.Invoke(this);
         public bool ClaimedBy<T1>() where T1 : ResourceProvider => Provider == Provider<T1>.Get;
 
         string IResourceInternal.Description
@@ -63,7 +62,7 @@ namespace RESTar.Internal
         public Updater<T> Update { get; }
         public Deleter<T> Delete { get; }
         public Counter<T> Count { get; }
-        public Profiler Profile { get; }
+        public Profiler<T> Profile { get; }
 
         public string Alias
         {
@@ -99,7 +98,7 @@ namespace RESTar.Internal
         /// All custom resources are constructed here
         /// </summary>
         internal Resource(string name, RESTarAttribute attribute, Selector<T> selector, Inserter<T> inserter,
-            Updater<T> updater, Deleter<T> deleter, Counter<T> counter, Profiler profiler, ResourceProvider provider)
+            Updater<T> updater, Deleter<T> deleter, Counter<T> counter, Profiler<T> profiler, ResourceProvider provider)
         {
             if (name.Contains('+'))
             {

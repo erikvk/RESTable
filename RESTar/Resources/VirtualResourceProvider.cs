@@ -19,6 +19,6 @@ namespace RESTar.Resources
         public override Updater<T> GetDefaultUpdater<T>() => null;
         public override Deleter<T> GetDefaultDeleter<T>() => null;
         public override Counter<T> GetDefaultCounter<T>() => null;
-        public override Profiler GetProfiler<T>() => DelegateMaker.GetDelegate<Profiler, T>();
+        public override Profiler<T> GetProfiler<T>() => DelegateMaker.GetDelegate<Profiler<T>, T>();
     }
 }

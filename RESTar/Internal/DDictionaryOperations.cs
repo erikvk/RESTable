@@ -5,7 +5,6 @@ using RESTar.Admin;
 using RESTar.Linq;
 using RESTar.Operations;
 using Starcounter;
-using Profiler = RESTar.Operations.Profiler;
 
 namespace RESTar.Internal
 {
@@ -24,7 +23,7 @@ namespace RESTar.Internal
         internal static readonly Inserter<T> Insert;
         internal static readonly Updater<T> Update;
         internal static readonly Deleter<T> Delete;
-        internal static readonly Profiler Profile;
+        internal static readonly Profiler<T> Profile;
         internal static readonly Counter<T> Count;
 
         static DDictionaryOperations()
@@ -53,7 +52,7 @@ namespace RESTar.Internal
                     default: return Select(r)?.Count() ?? 0;
                 }
             };
-            Profile = () => ResourceProfile.Make<T>(rows => rows.Sum(row => row.KeyValuePairs.Sum(kvp => kvp.ByteCount) + 16));
+            Profile = r => ResourceProfile.Make(r, rows => rows.Sum(row => row.KeyValuePairs.Sum(kvp => kvp.ByteCount) + 16));
         }
     }
 }

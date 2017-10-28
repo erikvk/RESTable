@@ -259,12 +259,12 @@ namespace RESTar
     /// </summary>
     public class AbortedSelectorException<T> : RESTarException where T : class
     {
-        internal AbortedSelectorException(Exception ie, IRequest request, string message = null)
+        internal AbortedSelectorException(Exception ie, IRequest<T> request, string message = null)
             : base(AbortedSelect, message ?? (ie.GetType() == typeof(JsonSerializationException) ||
                                               ie.GetType() == typeof(JsonReaderException)
                                       ? "JSON serialization error, check JSON syntax. "
                                       : ""
-                                  ), ie) => Response = AbortedOperation<T>(this, request.Method);
+                                  ), ie) => Response = AbortedOperation(this, request);
     }
 
     /// <inheritdoc />
@@ -273,15 +273,12 @@ namespace RESTar
     /// </summary>
     public class AbortedInserterException<T> : RESTarException where T : class
     {
-        internal AbortedInserterException(Methods method, string message = null)
-            : base(AbortedInsert, message) => Response = AbortedOperation<T>(this, method);
-
-        internal AbortedInserterException(Exception ie, Methods method, string message = null)
+        internal AbortedInserterException(Exception ie, IRequest<T> request, string message = null)
             : base(AbortedInsert, message ?? (ie.GetType() == typeof(JsonSerializationException) ||
                                               ie.GetType() == typeof(JsonReaderException)
                                       ? "JSON serialization error, check JSON syntax. "
                                       : ""
-                                  ), ie) => Response = AbortedOperation<T>(this, method);
+                                  ), ie) => Response = AbortedOperation(this, request);
     }
 
     /// <inheritdoc />
@@ -290,12 +287,12 @@ namespace RESTar
     /// </summary>
     public class AbortedUpdaterException<T> : RESTarException where T : class
     {
-        internal AbortedUpdaterException(Exception ie, IRequest request, string message = null)
+        internal AbortedUpdaterException(Exception ie, IRequest<T> request, string message = null)
             : base(AbortedUpdate, message ?? (ie.GetType() == typeof(JsonSerializationException) ||
                                               ie.GetType() == typeof(JsonReaderException)
                                       ? "JSON serialization error, check JSON syntax. "
                                       : ""
-                                  ), ie) => Response = AbortedOperation<T>(this, request.Method);
+                                  ), ie) => Response = AbortedOperation(this, request);
     }
 
     /// <inheritdoc />
@@ -304,12 +301,12 @@ namespace RESTar
     /// </summary>
     public class AbortedDeleterException<T> : RESTarException where T : class
     {
-        internal AbortedDeleterException(Exception ie, IRequest request, string message = null)
+        internal AbortedDeleterException(Exception ie, IRequest<T> request, string message = null)
             : base(AbortedDelete, message ?? (ie.GetType() == typeof(JsonSerializationException) ||
                                               ie.GetType() == typeof(JsonReaderException)
                                       ? "JSON serialization error, check JSON syntax. "
                                       : ""
-                                  ), ie) => Response = AbortedOperation<T>(this, request.Method);
+                                  ), ie) => Response = AbortedOperation(this, request);
     }
 
     /// <inheritdoc />
@@ -318,12 +315,12 @@ namespace RESTar
     /// </summary>
     public class AbortedCounterException<T> : RESTarException where T : class
     {
-        internal AbortedCounterException(Exception ie, IRequest request, string message = null)
+        internal AbortedCounterException(Exception ie, IRequest<T> request, string message = null)
             : base(AbortedCount, message ?? (ie.GetType() == typeof(JsonSerializationException) ||
                                              ie.GetType() == typeof(JsonReaderException)
                                      ? "JSON serialization error, check JSON syntax. "
                                      : ""
-                                 ), ie) => Response = AbortedOperation<T>(this, request.Method);
+                                 ), ie) => Response = AbortedOperation<T>(this, request);
     }
 
     /// <inheritdoc />
@@ -332,12 +329,12 @@ namespace RESTar
     /// </summary>
     public class AbortedProfilerException<T> : RESTarException where T : class
     {
-        internal AbortedProfilerException(Exception ie, IRequest request, string message = null)
+        internal AbortedProfilerException(Exception ie, IRequest<T> request, string message = null)
             : base(AbortedCount, message ?? (ie.GetType() == typeof(JsonSerializationException) ||
                                              ie.GetType() == typeof(JsonReaderException)
                                      ? "JSON serialization error, check JSON syntax. "
                                      : ""
-                                 ), ie) => Response = AbortedOperation<T>(this, request.Method);
+                                 ), ie) => Response = AbortedOperation(this, request);
     }
 
     /// <inheritdoc />

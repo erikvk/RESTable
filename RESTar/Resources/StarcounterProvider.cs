@@ -2,7 +2,6 @@ using System;
 using RESTar.Internal;
 using RESTar.Operations;
 using Starcounter;
-using Profiler = RESTar.Operations.Profiler;
 
 namespace RESTar.Resources
 {
@@ -29,11 +28,11 @@ namespace RESTar.Resources
         public override Updater<T> GetDefaultUpdater<T>() => StarcounterOperations<T>.Update;
         public override Deleter<T> GetDefaultDeleter<T>() => StarcounterOperations<T>.Delete;
         public override Counter<T> GetDefaultCounter<T>() => StarcounterOperations<T>.Count;
-        public override Profiler GetProfiler<T>() => StarcounterOperations<T>.Profile;
+        public override Profiler<T> GetProfiler<T>() => StarcounterOperations<T>.Profile;
 
         public override bool IsValid(Type type, out string reason)
         {
-            if (type.Implements(typeof(IProfiler)))
+            if (type.Implements(typeof(IProfiler<>)))
             {
                 reason = $"Invalid IProfiler interface implementation for resource type '{type.FullName}'. " +
                          "DDictionary resources use their default profilers, and cannot implement IProfiler";

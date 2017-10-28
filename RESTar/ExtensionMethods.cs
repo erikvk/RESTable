@@ -326,6 +326,18 @@ namespace RESTar
 
         internal static bool IsWrapper(this Type type) => typeof(IResourceWrapper).IsAssignableFrom(type);
 
+        /// <summary>
+        /// If the type is represented by some RESTar resource in the current instance,
+        /// returns this resource. Else null.
+        /// </summary>
+        public static IResource GetResource(this Type type) => Resource.ByTypeName(type.FullName);
+
+        /// <summary>
+        /// If the type is represented by some RESTar resource in the current instance,
+        /// returns the name of this resource. Else null.
+        /// </summary>
+        public static string GetResourceName(this Type type) => type.GetResource()?.Name;
+
         #endregion
 
         #region Filter and Process
@@ -667,21 +679,6 @@ namespace RESTar
         {
             conditions = request.Conditions.Get(key).ToList();
             return !conditions.Any() != true;
-        }
-
-        /// <summary>
-        /// If the resource is a static Starcounter resource, returns an SQL query for the request.
-        /// </summary>
-        public static (string SQL, object[] Values) GetSQL<T>(this IRequest<T> request) where T : class
-        {
-            if (request.Resource.Provider != Provider<StarcounterProvider>.Get)
-                throw new ArgumentException("Can only get SQL for static Starcounter resources. Resource " +
-                                            $"'{request.Resource.Name}' is of type {request.Resource.Provider}");
-            var whereClause = request.Conditions.MakeWhereClause();
-            return ($"SELECT t FROM {typeof(T).FullName} t " +
-                    $"{whereClause.WhereString} " +
-                    $"{request.MetaConditions.OrderBy?.SQL} " +
-                    $"{request.MetaConditions.Limit.SQL}", whereClause.Values);
         }
 
         internal static (ErrorCodes Code, Response Response) GetError(this Exception ex)

@@ -78,7 +78,7 @@ namespace RESTar.Admin
         /// </summary>
         public static ResourceProfile Make<T>() where T : class => Make(typeof(T));
 
-        internal static ResourceProfile Make<T>(Func<IEnumerable<T>, long> byteCounter) where T : class
+        internal static ResourceProfile Make<T>(IResource<T> resource, Func<IEnumerable<T>, long> byteCounter) where T : class
         {
             var sqlName = typeof(T).FullName.Fnuttify();
             var domain = SELECT<T>(sqlName);
@@ -99,7 +99,7 @@ namespace RESTar.Admin
             }
             return new ResourceProfile
             {
-                Resource = typeof(T).FullName,
+                Resource = resource.Name,
                 NumberOfEntities = domainCount,
                 ApproximateSize = new ResourceSize(totalBytes),
                 SampleSize = sampleSize
@@ -110,8 +110,8 @@ namespace RESTar.Admin
         private static dynamic GetDDict(Type type) => DDICTPROFILER.MakeGenericMethod(type).Invoke(null, null);
         private static readonly MethodInfo SCPROFILER = typeof(ResourceProfile).GetMethod("ScProfiler", NonPublic | Static);
         private static readonly MethodInfo DDICTPROFILER = typeof(ResourceProfile).GetMethod("DDictProfiler", NonPublic | Static);
-        private static ResourceProfile ScProfiler<T>() where T : class => StarcounterOperations<T>.Profile();
-        private static ResourceProfile DDictProfiler<T>() where T : DDictionary => DDictionaryOperations<T>.Profile();
+        private static ResourceProfile ScProfiler<T>(IResource<T> r) where T : class => StarcounterOperations<T>.Profile(r);
+        private static ResourceProfile DDProfiler<T>(IResource<T> r) where T : DDictionary => DDictionaryOperations<T>.Profile(r);
         private static long COUNT(string name) => Db.SQL<long>($"SELECT COUNT(t) FROM {name} t").First;
         private static QueryResultRows<T> SELECT<T>(string name) => Db.SQL<T>($"SELECT t FROM {name} t");
     }

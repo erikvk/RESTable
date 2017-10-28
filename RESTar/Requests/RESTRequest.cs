@@ -10,6 +10,7 @@ using RESTar.Linq;
 using RESTar.Operations;
 using RESTar.Serialization;
 using Starcounter;
+using static System.Net.HttpStatusCode;
 using static RESTar.Internal.ErrorCodes;
 using static RESTar.RESTarConfig;
 using static RESTar.Methods;
@@ -168,6 +169,45 @@ namespace RESTar.Requests
                 default: throw new ArgumentException();
             }
         }
+
+        internal Response InsertedEntities(int count) => new Response
+        {
+            StatusCode = (ushort) Created,
+            StatusDescription = "Created",
+            Headers = {["RESTar-info"] = $"{count} entities inserted into resource '{Resource.Name}'"}
+        };
+
+        internal Response UpdatedEntities(int count) => new Response
+        {
+            StatusCode = (ushort) OK,
+            StatusDescription = "OK",
+            Headers = {["RESTar-info"] = $"{count} entities updated in resource '{Resource.Name}'"}
+        };
+
+        internal Response SafePostedEntities(int upd, int ins) => new Response
+        {
+            StatusCode = 200,
+            StatusDescription = "OK",
+            Headers =
+            {
+                ["RESTar-info"] = $"Updated {upd} and then inserted {ins} entities in resource '{Resource.Name}'"
+            }
+        };
+
+        internal Response DeletedEntities(int count) => new Response
+        {
+            StatusCode = (ushort) OK,
+            StatusDescription = "OK",
+            Headers = {["RESTar-info"] = $"{count} entities deleted from resource '{Resource.Name}'"}
+        };
+
+        internal Response EntityCount(long Count) => new Response
+        {
+            StatusCode = (ushort) OK,
+            StatusDescription = "OK",
+            Headers = {["RESTar-info"] = $"Resource '{Resource.Name}'"},
+            Body = new {Count}.Serialize()
+        };
 
         public void Dispose()
         {

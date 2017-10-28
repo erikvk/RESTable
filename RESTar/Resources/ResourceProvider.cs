@@ -98,7 +98,7 @@ namespace RESTar.Resources
         /// The default Profiler to use for resources claimed by this ResourceProvider
         /// </summary>
         /// <typeparam name="T">The resource type</typeparam>
-        public abstract Profiler GetProfiler<T>() where T : class, TBase;
+        public abstract Profiler<T> GetProfiler<T>() where T : class, TBase;
 
         /// <summary>
         /// Override this method to add a validation step to the resource claim process. 

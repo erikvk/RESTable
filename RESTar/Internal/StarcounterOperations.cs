@@ -5,7 +5,6 @@ using RESTar.Operations;
 using Starcounter;
 using Starcounter.Metadata;
 using static System.Reflection.BindingFlags;
-using Profiler = RESTar.Operations.Profiler;
 
 namespace RESTar.Internal
 {
@@ -20,7 +19,7 @@ namespace RESTar.Internal
         internal static readonly Inserter<T> Insert;
         internal static readonly Updater<T> Update;
         internal static readonly Deleter<T> Delete;
-        internal static readonly Profiler Profile;
+        internal static readonly Profiler<T> Profile;
         internal static readonly Counter<T> Count;
 
         static StarcounterOperations()
@@ -57,7 +56,7 @@ namespace RESTar.Internal
                         return Db.SQL<long>($"{COUNT}{@where.WhereString}", @where.Values).First;
                 }
             };
-            Profile = () => ResourceProfile.Make<T>(rows =>
+            Profile = r => ResourceProfile.Make(r, rows =>
             {
                 const string columnSQL = "SELECT t FROM Starcounter.Metadata.Column t WHERE t.Table.Fullname =?";
                 var resourceSQLName = typeof(T).FullName;

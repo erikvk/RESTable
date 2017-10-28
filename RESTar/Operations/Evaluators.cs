@@ -72,7 +72,7 @@ namespace RESTar.Operations
             }
         }
 
-        internal static long COUNT(IRequest<T> request)
+        internal static long OP_COUNT(IRequest<T> request)
         {
             try
             {
@@ -90,7 +90,7 @@ namespace RESTar.Operations
         {
             try
             {
-                return request.Resource.Profile?.Invoke();
+                return request.Resource.Profile?.Invoke(request.Resource);
             }
             catch (Exception e)
             {
@@ -114,7 +114,7 @@ namespace RESTar.Operations
             }
             catch (Exception e)
             {
-                throw new AbortedInserterException<T>(e, request.Method);
+                throw new AbortedInserterException<T>(e, request);
             }
         }
 
@@ -131,7 +131,7 @@ namespace RESTar.Operations
             }
             catch (Exception e)
             {
-                throw new AbortedInserterException<T>(e, request.Method);
+                throw new AbortedInserterException<T>(e, request);
             }
         }
 
@@ -145,7 +145,7 @@ namespace RESTar.Operations
             }
             catch (Exception e)
             {
-                throw new AbortedInserterException<T>(e, request.Method);
+                throw new AbortedInserterException<T>(e, request);
             }
         }
 
@@ -161,7 +161,7 @@ namespace RESTar.Operations
             }
             catch (Exception e)
             {
-                throw new AbortedInserterException<T>(e, request.Method);
+                throw new AbortedInserterException<T>(e, request);
             }
         }
 
@@ -175,7 +175,7 @@ namespace RESTar.Operations
             }
             catch (Exception e)
             {
-                throw new AbortedInserterException<T>(e, request.Method);
+                throw new AbortedInserterException<T>(e, request);
             }
         }
 
@@ -190,7 +190,7 @@ namespace RESTar.Operations
             }
             catch (Exception e)
             {
-                throw new AbortedInserterException<T>(e, request.Method);
+                throw new AbortedInserterException<T>(e, request);
             }
         }
 
@@ -208,7 +208,7 @@ namespace RESTar.Operations
             {
                 var _results = results;
                 Db.TransactAsync(() => _results?.Where(i => i != null).ForEach(item => Try(item.Delete)));
-                throw new AbortedInserterException<T>(e, request.Method);
+                throw new AbortedInserterException<T>(e, request);
             }
         }
 
@@ -224,7 +224,7 @@ namespace RESTar.Operations
             catch (Exception e)
             {
                 Try(() => result?.Delete());
-                throw new AbortedInserterException<T>(e, request.Method);
+                throw new AbortedInserterException<T>(e, request);
             }
         }
 
@@ -242,7 +242,7 @@ namespace RESTar.Operations
             {
                 var _results = results;
                 Db.TransactAsync(() => _results?.Where(i => i != null).ForEach(item => Try(item.Delete)));
-                throw new AbortedInserterException<T>(e, request.Method);
+                throw new AbortedInserterException<T>(e, request);
             }
         }
 
@@ -380,6 +380,7 @@ namespace RESTar.Operations
                         case Methods.PATCH: return LrPATCH;
                         case Methods.PUT: return LrPUT;
                         case Methods.DELETE: return LrDELETE;
+                        case Methods.COUNT: return COUNT;
                         default: return null;
                     }
                 }
@@ -393,6 +394,7 @@ namespace RESTar.Operations
                     case Methods.PATCH: return PATCH;
                     case Methods.PUT: return PUT;
                     case Methods.DELETE: return DELETE;
+                    case Methods.COUNT: return COUNT;
                     default: return null;
                 }
             }
@@ -435,22 +437,28 @@ namespace RESTar.Operations
                 }
             }
 
+            private static Response COUNT(RESTRequest<T> request)
+            {
+                var count = OP_COUNT(request);
+                return request.EntityCount(count);
+            }
+
             #region Using long running transactions
 
             private static Response LrPOST(RESTRequest<T> request)
             {
                 request.Body = request.Body[0] == '[' ? request.Body : $"[{request.Body}]";
                 if (request.MetaConditions.SafePost != null) return LrSafePOST(request);
-                return InsertedEntities<T>(Transaction<T>.Transact(() => INSERT(request)));
+                return request.InsertedEntities(Transaction<T>.Transact(() => INSERT(request)));
             }
 
             private static Response LrPATCH(RESTRequest<T> request)
             {
                 var source = SELECT_FILTER(request)?.ToList();
-                if (source?.Any() != true) return UpdatedEntities<T>(0);
+                if (source?.Any() != true) return request.UpdatedEntities(0);
                 if (!request.MetaConditions.Unsafe && source.Count > 1)
                     throw new AmbiguousMatchException(request.Resource);
-                return UpdatedEntities<T>(Transaction<T>.Transact(() => UPDATE(request, source)));
+                return request.UpdatedEntities(Transaction<T>.Transact(() => UPDATE(request, source)));
             }
 
             private static Response LrPUT(RESTRequest<T> request)
@@ -459,8 +467,8 @@ namespace RESTar.Operations
                 switch (source?.Count)
                 {
                     case null:
-                    case 0: return InsertedEntities<T>(Transaction<T>.Transact(() => INSERT_ONE(request)));
-                    case 1: return UpdatedEntities<T>(Transaction<T>.Transact(() => UPDATE_ONE(request, source[0])));
+                    case 0: return request.InsertedEntities(Transaction<T>.Transact(() => INSERT_ONE(request)));
+                    case 1: return request.UpdatedEntities(Transaction<T>.Transact(() => UPDATE_ONE(request, source[0])));
                     default: throw new AmbiguousMatchException(request.Resource);
                 }
             }
@@ -468,8 +476,7 @@ namespace RESTar.Operations
             private static Response LrDELETE(RESTRequest<T> request)
             {
                 var source = SELECT_FILTER(request);
-                if (source == null)
-                    return DeletedEntities<T>(0);
+                if (source == null) return request.DeletedEntities(0);
                 if (!request.MetaConditions.Unsafe)
                 {
                     var list = source.ToList();
@@ -477,7 +484,7 @@ namespace RESTar.Operations
                         throw new AmbiguousMatchException(request.Resource);
                     source = list;
                 }
-                return DeletedEntities<T>(Transaction<T>.Transact(() => OP_DELETE(request, source)));
+                return request.DeletedEntities(Transaction<T>.Transact(() => OP_DELETE(request, source)));
             }
 
             private static (Request<T> InnerRequest, JArray ToInsert, IList<(JObject json, T source)> ToUpdate)
@@ -511,27 +518,9 @@ namespace RESTar.Operations
                 }
                 catch (Exception e)
                 {
-                    throw new AbortedInserterException<T>(e, request.Method, e.Message);
+                    throw new AbortedInserterException<T>(e, request, e.Message);
                 }
             }
-
-            //private static Response LrSafePOST(RESTRequest<T> request)
-            //{
-            //    var (innerRequest, toInsert, toUpdate) = GetSafePostTasks(request);
-            //    var trans = new Transaction<T>();
-            //    try
-            //    {
-            //        var updatedCount = toUpdate.Any() ? trans.Scope(() => UPDATE_MANY(innerRequest, toUpdate)) : 0;
-            //        var insertedCount = toInsert.Any() ? trans.Scope(() => INSERT_JARRAY(innerRequest, toInsert)) : 0;
-            //        trans.Commit();
-            //        return SafePostedEntities<T>(updatedCount, insertedCount);
-            //    }
-            //    catch
-            //    {
-            //        trans.Rollback();
-            //        throw;
-            //    }
-            //}
 
             private static Response LrSafePOST(RESTRequest<T> request)
             {
@@ -575,7 +564,7 @@ namespace RESTar.Operations
                         }
                     });
                     outerTrans.Commit();
-                    return SafePostedEntities<T>(updatedCount, insertedCount);
+                    return request.SafePostedEntities(updatedCount, insertedCount);
                 }
                 catch
                 {
@@ -592,16 +581,16 @@ namespace RESTar.Operations
             {
                 request.Body = request.Body[0] == '[' ? request.Body : $"[{request.Body}]";
                 if (request.MetaConditions.SafePost != null) return SafePOST(request);
-                return InsertedEntities<T>(Transaction<T>.ShTransact(() => INSERTorTryDelete(request)));
+                return request.InsertedEntities(Transaction<T>.ShTransact(() => INSERTorTryDelete(request)));
             }
 
             private static Response PATCH(RESTRequest<T> request)
             {
                 var source = SELECT_FILTER(request)?.ToList();
-                if (source?.Any() != true) return UpdatedEntities<T>(0);
+                if (source?.Any() != true) return request.UpdatedEntities(0);
                 if (!request.MetaConditions.Unsafe && source.Count > 1)
                     throw new AmbiguousMatchException(request.Resource);
-                return UpdatedEntities<T>(Transaction<T>.ShTransact(() => UPDATE(request, source)));
+                return request.UpdatedEntities(Transaction<T>.ShTransact(() => UPDATE(request, source)));
             }
 
             private static Response PUT(RESTRequest<T> request)
@@ -610,8 +599,8 @@ namespace RESTar.Operations
                 switch (source?.Count)
                 {
                     case null:
-                    case 0: return InsertedEntities<T>(Transaction<T>.ShTransact(() => INSERT_ONEorTryDelete(request)));
-                    case 1: return UpdatedEntities<T>(Transaction<T>.ShTransact(() => UPDATE_ONE(request, source[0])));
+                    case 0: return request.InsertedEntities(Transaction<T>.ShTransact(() => INSERT_ONEorTryDelete(request)));
+                    case 1: return request.UpdatedEntities(Transaction<T>.ShTransact(() => UPDATE_ONE(request, source[0])));
                     default: throw new AmbiguousMatchException(request.Resource);
                 }
             }
@@ -619,8 +608,7 @@ namespace RESTar.Operations
             private static Response DELETE(RESTRequest<T> request)
             {
                 var source = SELECT_FILTER(request);
-                if (source == null)
-                    return DeletedEntities<T>(0);
+                if (source == null) return request.DeletedEntities(0);
                 if (!request.MetaConditions.Unsafe)
                 {
                     var list = source.ToList();
@@ -628,7 +616,7 @@ namespace RESTar.Operations
                         throw new AmbiguousMatchException(request.Resource);
                     source = list;
                 }
-                return DeletedEntities<T>(Transaction<T>.ShTransact(() => OP_DELETE(request, source)));
+                return request.DeletedEntities(Transaction<T>.ShTransact(() => OP_DELETE(request, source)));
             }
 
             private static Response SafePOST(RESTRequest<T> request)
@@ -643,14 +631,14 @@ namespace RESTar.Operations
                     updatedCount = toUpdate.Any()
                         ? Transaction<T>.ShTransact(() => UPDATE_MANY(innerRequest, toUpdate))
                         : 0;
-                    return SafePostedEntities<T>(updatedCount, insertedCount);
+                    return request.SafePostedEntities(updatedCount, insertedCount);
                 }
                 catch (Exception e)
                 {
                     var message = $"Inserted {insertedCount} and updated {updatedCount} in resource " +
                                   $"'{request.Resource.Name}' using SafePOST before encountering the error. " +
                                   "These changes remain in the resource";
-                    throw new AbortedInserterException<T>(e, request.Method, $"{e.Message} : {message}");
+                    throw new AbortedInserterException<T>(e, request, $"{e.Message} : {message}");
                 }
             }
 

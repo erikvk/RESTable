@@ -323,8 +323,7 @@ namespace RESTarTester
             var conditionResponse1 = Http.GET("http://localhost:9000/rest/resource1/sbyte>0&byte!=200&datetime>2001-01-01");
             var conditionResponse2 = Http.GET("http://localhost:9000/rest/resource2/sbyte>0&byte!=200&datetime>2001-01-01");
             var conditionResponse3 = Http.GET("http://localhost:9000/rest/resource3/sbyte>0&byte!=200&datetime>2001-01-01");
-            var conditionResponse4 =
-                Http.GET("http://localhost:9000/rest/resource4/resource1.string!=aboo&resource2!=null", null);
+            var conditionResponse4 = Http.GET("http://localhost:9000/rest/resource4/resource1.string!=aboo&resource2!=null");
 
             Debug.Assert(excelResponse1?.IsSuccessStatusCode == true);
             Debug.Assert(excelResponse2?.IsSuccessStatusCode == true);

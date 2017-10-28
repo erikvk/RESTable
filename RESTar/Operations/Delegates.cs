@@ -19,7 +19,7 @@ namespace RESTar.Operations
                 case var d when d == typeof(Updater<TResource>): return typeof(IUpdater<TResource>);
                 case var d when d == typeof(Deleter<TResource>): return typeof(IDeleter<TResource>);
                 case var d when d == typeof(Counter<TResource>): return typeof(ICounter<TResource>);
-                case var d when d == typeof(Profiler): return typeof(IProfiler);
+                case var d when d == typeof(Profiler<TResource>): return typeof(IProfiler<TResource>);
                 default: throw new ArgumentOutOfRangeException();
             }
         }
@@ -98,5 +98,5 @@ namespace RESTar.Operations
     /// <summary>
     /// Generates a profile for a given resource
     /// </summary>
-    public delegate ResourceProfile Profiler();
+    public delegate ResourceProfile Profiler<T>(IResource<T> resource) where T : class;
 }

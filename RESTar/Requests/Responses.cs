@@ -7,7 +7,19 @@ namespace RESTar.Requests
 {
     internal static class Responses
     {
-        #region Not found
+        internal static Response AbortedOperation<T>(Exception e, IRequest<T> request) where T : class
+        {
+            return new Response
+            {
+                StatusCode = (ushort) HttpStatusCode.BadRequest,
+                StatusDescription = "Bad request",
+                Headers =
+                {
+                    ["RESTar-info"] = $"Aborted {request.Method} on resource '{request.Resource}' " +
+                                      $"due to an error: {e.TotalMessage()}"
+                }
+            };
+        }
 
         internal static Response AmbiguousResource(AmbiguousResourceException e) => new Response
         {
@@ -33,24 +45,6 @@ namespace RESTar.Requests
                                   $"'{e.SearchString}' to '{e.Candidates[0]}'."
             }
         };
-
-        #endregion
-
-        #region Bad request
-
-        internal static Response AbortedOperation<T>(Exception e, Methods method) where T : class
-        {
-            return new Response
-            {
-                StatusCode = (ushort) HttpStatusCode.BadRequest,
-                StatusDescription = "Bad request",
-                Headers =
-                {
-                    ["RESTar-info"] = $"Aborted {method} on resource '{typeof(T).FullName}' " +
-                                      $"due to an error: {e.TotalMessage()}"
-                }
-            };
-        }
 
         internal static Response BadRequest(Exception e) => new Response
         {
@@ -98,10 +92,6 @@ namespace RESTar.Requests
             };
         }
 
-        #endregion
-
-        #region Internal
-
         internal static Response InternalError(Exception e) => new Response
         {
             StatusCode = (ushort) HttpStatusCode.InternalServerError,
@@ -124,9 +114,6 @@ namespace RESTar.Requests
             }
         };
 
-        #endregion
-
-        #region Success responses
 
         internal static Response NoContent => new Response
         {
@@ -134,38 +121,6 @@ namespace RESTar.Requests
             StatusDescription = "No content",
             Headers = {["RESTar-info"] = "No entities found matching request"}
         };
-
-        internal static Response InsertedEntities<T>(int count) where T : class => new Response
-        {
-            StatusCode = (ushort) HttpStatusCode.Created,
-            StatusDescription = "Created",
-            Headers = {["RESTar-info"] = $"{count} entities inserted into resource '{typeof(T).FullName}'"}
-        };
-
-        internal static Response UpdatedEntities<T>(int count) where T : class => new Response
-        {
-            StatusCode = (ushort) HttpStatusCode.OK,
-            StatusDescription = "OK",
-            Headers = {["RESTar-info"] = $"{count} entities updated in resource '{typeof(T).FullName}'"}
-        };
-
-        internal static Response SafePostedEntities<T>(int upd, int ins) where T : class => new Response
-        {
-            StatusCode = 200,
-            Headers =
-            {
-                ["RESTar-info"] = $"Updated {upd} and then inserted {ins} entities in resource '{typeof(T).FullName}'"
-            }
-        };
-
-        internal static Response DeletedEntities<T>(int count) where T : class => new Response
-        {
-            StatusCode = (ushort) HttpStatusCode.OK,
-            StatusDescription = "OK",
-            Headers = {["RESTar-info"] = $"{count} entities deleted from resource '{typeof(T).FullName}'"}
-        };
-
-        #endregion
 
         internal static Response Forbidden => new Response
         {

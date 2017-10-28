@@ -150,8 +150,9 @@ namespace RESTar
 
         public Request<T> WithConditions(string key, Operator op, object value) => WithConditions((key, op, value));
 
-        private static Exception Deny(Methods method) => new ForbiddenException(NotAuthorized,
-            $"{method} is not available for resource '{typeof(T).FullName}'");
+
+        private Exception Deny(Methods method) => new ForbiddenException(
+            NotAuthorized, $"{method} is not available for resource '{Resource.Name}'");
 
         public IEnumerable<T> GET()
         {
@@ -171,7 +172,7 @@ namespace RESTar
         {
             Prep();
             if (!GETAllowed) throw Deny(Methods.GET);
-            return Evaluators<T>.COUNT(this);
+            return Evaluators<T>.OP_COUNT(this);
         }
 
         public int POST(Func<T> inserter)

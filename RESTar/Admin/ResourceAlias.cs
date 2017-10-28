@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Runtime.Serialization;
 using Starcounter;
 using static RESTar.Methods;
@@ -54,8 +53,7 @@ namespace RESTar.Admin
         /// <summary>
         /// Gets the resource denoted by this alias
         /// </summary>
-        [IgnoreDataMember]
-        public IResource IResource => RESTarConfig.ResourceByName[Resource.ToLower()];
+        [IgnoreDataMember] public IResource IResource => RESTarConfig.ResourceByName[Resource.ToLower()];
 
         private const string AliasSQL = "SELECT t FROM RESTar.Admin.ResourceAlias t WHERE t.Alias =?";
         private const string ResourceSQL = "SELECT t FROM RESTar.Admin.ResourceAlias t WHERE t.Resource =?";
@@ -71,8 +69,7 @@ namespace RESTar.Admin
         /// <summary>
         /// Gets a ResourceAlias by its resource name
         /// </summary>
-        public static ResourceAlias ByResource(string resourceName) => Db
-            .SQL<ResourceAlias>(ResourceSQL, resourceName).First;
+        public static ResourceAlias ByResource(string resourceName) => Db.SQL<ResourceAlias>(ResourceSQL, resourceName).First;
 
         /// <summary>
         /// Returns true if and only if there is an alias with this name
@@ -82,30 +79,6 @@ namespace RESTar.Admin
             resourceAlias = ByAlias(alias);
             return resourceAlias != null;
         }
-
-        /// <summary>
-        /// Returns true if and only if there is an alias for the given resource type
-        /// </summary>
-        public static bool Exists(Type type, out ResourceAlias alias)
-        {
-            alias = ByResource(type.FullName);
-            return alias != null;
-        }
-
-        /// <summary>
-        /// Returns true if and only if there is no alias for the given resource type
-        /// </summary>
-        public static bool NotExists(Type resource) => !Exists(resource, out var _);
-
-        /// <summary>
-        /// Returns true if and only if there is an alias for the given resource
-        /// </summary>
-        public static bool Exists(IResource resource, out ResourceAlias alias) => Exists(resource.Type, out alias);
-
-        /// <summary>
-        /// Returns true if and only if there is no alias for the given resource
-        /// </summary>
-        public static bool NotExists(IResource resource) => !Exists(resource, out var _);
 
         /// <summary>
         /// </summary>

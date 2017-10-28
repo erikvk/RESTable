@@ -26,6 +26,7 @@ namespace RESTar.Requests
             Handle.PUT(_Port, uri, (Request request, string query) => Evaluate(PUT, request, query));
             Handle.PATCH(_Port, uri, (Request request, string query) => Evaluate(PATCH, request, query));
             Handle.DELETE(_Port, uri, (Request request, string query) => Evaluate(DELETE, request, query));
+            Handle.CUSTOM(_Port, "COUNT " + uri, (Request request, string query) => Evaluate(COUNT, request, query));
             Handle.OPTIONS(_Port, uri, (Request request, string query) => Evaluate(ORIGIN, request, query));
             if (!_ViewEnabled) return;
             Application.Current.Use(new HtmlFromJsonProvider());
@@ -50,7 +51,8 @@ namespace RESTar.Requests
                     case POST:
                     case PUT:
                     case PATCH:
-                    case DELETE: return HandleREST((dynamic) resource, request, args, (Methods) action);
+                    case DELETE:
+                    case COUNT: return HandleREST((dynamic) resource, request, args, action);
                     case ORIGIN: return HandleOrigin((dynamic) resource, request);
                     case VIEW: return HandleView((dynamic) resource, request, args);
                     case PAGE:
@@ -77,6 +79,7 @@ namespace RESTar.Requests
                     case PATCH:
                     case PUT:
                     case DELETE:
+                    case COUNT:
                         errorInfo.Response.Headers["ErrorInfo"] = $"{_Uri}/{typeof(Error).FullName}/id={error.Id}";
                         return errorInfo.Response;
                     case ORIGIN: return Forbidden;
@@ -104,12 +107,12 @@ namespace RESTar.Requests
         }
 
         private static Response HandleREST<T>(IResource<T> resource, Request scRequest, Args? args,
-            Methods method) where T : class
+            HandlerActions action) where T : class
         {
             using (var request = new RESTRequest<T>(resource, scRequest))
             {
                 request.Authenticate();
-                request.Populate(args.GetValueOrDefault(), method);
+                request.Populate(args.GetValueOrDefault(), (Methods) action);
                 request.MethodCheck();
                 request.SetRequestData();
                 request.Evaluate();

@@ -147,7 +147,7 @@ namespace RESTar.Internal
         /// <summary>
         /// RESTar profiler (don't use)
         /// </summary>
-        Profiler Profile { get; }
+        Profiler<T> Profile { get; }
     }
 
     internal interface IResourceInternal
