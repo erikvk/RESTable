@@ -32,7 +32,6 @@ namespace RESTarExample
         }
     }
 
-
     [Database, RESTar(Methods.GET)]
     public class Table
     {

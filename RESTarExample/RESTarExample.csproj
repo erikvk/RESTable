@@ -52,9 +52,8 @@
     <StartupObject>RESTarExample.Program</StartupObject>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Dynamit, Version=0.1.16.0, Culture=neutral, processorArchitecture=AMD64">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\Dynamit\Dynamit\bin\Release\Dynamit.dll</HintPath>
+    <Reference Include="Dynamit, Version=0.1.18.0, Culture=neutral, processorArchitecture=AMD64">
+      <HintPath>..\packages\Dynamit.0.1.18\lib\net45\Dynamit.dll</HintPath>
     </Reference>
     <Reference Include="EntityFramework, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
       <HintPath>..\packages\EntityFramework.6.0.0\lib\net45\EntityFramework.dll</HintPath>

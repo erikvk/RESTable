@@ -49,9 +49,8 @@
     <Reference Include="DocumentFormat.OpenXml, Version=2.5.5631.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <HintPath>..\packages\DocumentFormat.OpenXml.2.5\lib\DocumentFormat.OpenXml.dll</HintPath>
     </Reference>
-    <Reference Include="Dynamit, Version=0.1.16.0, Culture=neutral, processorArchitecture=AMD64">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\Dynamit\Dynamit\bin\Release\Dynamit.dll</HintPath>
+    <Reference Include="Dynamit, Version=0.1.18.0, Culture=neutral, processorArchitecture=AMD64">
+      <HintPath>..\packages\Dynamit.0.1.18\lib\net45\Dynamit.dll</HintPath>
     </Reference>
     <Reference Include="ExcelDataReader, Version=3.1.0.0, Culture=neutral, PublicKeyToken=93517dbe6a4012fa, processorArchitecture=MSIL">
       <HintPath>..\packages\ExcelDataReader.3.1.0\lib\net45\ExcelDataReader.dll</HintPath>
