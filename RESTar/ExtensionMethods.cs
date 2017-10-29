@@ -313,14 +313,16 @@ namespace RESTar
             return false;
         }
 
-        internal static string GetProviderId(this ResourceProvider provider)
+        internal static string GetProviderId(this Type providerType)
         {
-            var typeName = provider.GetType().Name;
+            var typeName = providerType.Name;
             if (typeName == null) throw new ArgumentNullException();
             if (typeName.EndsWith("provider", InvariantCultureIgnoreCase))
                 typeName = typeName.Substring(0, typeName.Length - 8);
             return typeName;
         }
+
+        internal static string GetProviderId(this ResourceProvider provider) => GetProviderId(provider.GetType());
 
         internal static Type GetWrappedType(this Type wrapperType) => wrapperType.BaseType?.GetGenericArguments()[0];
 

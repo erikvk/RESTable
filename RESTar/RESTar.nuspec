@@ -3,13 +3,13 @@
 <package>
   <metadata>
     <id>RESTar</id>
-    <version>0.2.25</version>
+    <version>0.2.26</version>
     <title>RESTar</title>
     <authors>Erik von Krusenstierna</authors>
     <owners>Mopedo AB</owners>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>Create powerful RESTful web services with Starcounter. Spec: https://goo.gl/TIkN7m</description>
-    <releaseNotes>Support for external resource providers, see RESTar.SQLite for an SQLite provider</releaseNotes>
+    <releaseNotes></releaseNotes>
     <copyright>Copyright 2017 Mopedo AB. All rights reserved.</copyright>
     <tags>mopedo starcounter REST RESTful web services dynamit</tags>
     <licenseUrl>https://goo.gl/eJS8o9</licenseUrl>

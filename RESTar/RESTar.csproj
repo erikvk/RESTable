@@ -124,7 +124,6 @@
     <Compile Include="Resource.cs" />
     <Compile Include="ResourceAlias.cs" />
     <Compile Include="Admin\ResourceProfile.cs" />
-    <Compile Include="Resources\Provider.cs" />
     <Compile Include="Resources\DynamicResourceProvider.cs" />
     <Compile Include="Resources\IResourceWrapper.cs" />
     <Compile Include="Resources\ResourceFactory.cs" />

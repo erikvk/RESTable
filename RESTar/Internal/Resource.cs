@@ -43,7 +43,7 @@ namespace RESTar.Internal
         public string Provider { get; }
         public IReadOnlyList<IResource> InnerResources { get; set; }
         public ResourceProfile ResourceProfile => Profile?.Invoke(this);
-        public bool ClaimedBy<T1>() where T1 : ResourceProvider => Provider == Provider<T1>.Get;
+        public bool ClaimedBy<T1>() where T1 : ResourceProvider => Provider == typeof(T1).GetProviderId();
 
         string IResourceInternal.Description
         {
@@ -144,6 +144,7 @@ namespace RESTar.Internal
             {
                 switch (method)
                 {
+                    case COUNT:
                     case GET: return new[] {RESTarOperations.Select};
                     case POST: return new[] {RESTarOperations.Insert};
                     case PUT: return new[] {RESTarOperations.Select, RESTarOperations.Insert, RESTarOperations.Update};

@@ -97,7 +97,7 @@ namespace RESTar
             Origin = Origin.Internal;
             Conditions = conditions;
             this.Authenticate();
-            ScSql = Resource.Provider == Provider<StarcounterProvider>.Get;
+            ScSql = Resource.Provider == typeof(StarcounterProvider).GetProviderId();
             Resource.AvailableMethods.ForEach(m =>
             {
                 switch (m)

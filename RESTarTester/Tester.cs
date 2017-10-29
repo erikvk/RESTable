@@ -332,6 +332,20 @@ namespace RESTarTester
 
             #endregion
 
+            #region Internal requests
+
+            var r1 = new Request<Resource1>(new Condition<Resource1>(nameof(Resource1.Sbyte), Operator.GREATER_THAN, 1));
+            var r2 = new Request<Resource2>();
+            var r3 = new Request<Resource3>();
+            var r4 = new Request<Resource4>();
+
+            var res1 = r1.GET();
+            var res2 = r2.GET();
+            var res3 = r3.GET();
+            var res4 = r4.GET();
+
+            #endregion
+
             var done = true;
         }
     }
