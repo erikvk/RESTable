@@ -426,7 +426,7 @@ namespace RESTar.Operations
                     stream.Seek(0, SeekOrigin.Begin);
                     return new Response
                     {
-                        BodyBytes = stream.ToArray(),
+                        StreamedBody = stream,
                         ContentType = mimeType,
                         Headers = {["Content-Disposition"] = $"attachment; filename={fileName}"}
                     };

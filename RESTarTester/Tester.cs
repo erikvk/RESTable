@@ -4,7 +4,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Runtime.Serialization;
-using System.Text;
 using Newtonsoft.Json;
 using RESTar;
 using RESTar.Linq;
@@ -278,10 +277,6 @@ namespace RESTarTester
             #endregion
 
             #region JSON GET
-
-            var selfresponse = Self.GET(9000, "/rest/resource1");
-            var selfdata = Encoding.UTF8.GetString(selfresponse.BodyBytes);
-            Debug.Assert(!string.IsNullOrWhiteSpace(selfdata));
 
             var request = (HttpWebRequest) WebRequest.Create("http://localhost:9000/rest/resource1");
             request.Method = "GET";
