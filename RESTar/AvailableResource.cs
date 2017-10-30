@@ -66,7 +66,7 @@ namespace RESTar
                     .ToArray()
             };
 
-            return rights.Keys
+            return rights?.Keys
                 .Where(r => r.IsGlobal && !r.IsInnerResource)
                 .OrderBy(r => r.Name)
                 .Select(Make)

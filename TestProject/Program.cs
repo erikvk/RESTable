@@ -1,6 +1,4 @@
-﻿using System.IO;
-using System.Net;
-using Starcounter;
+﻿using Starcounter;
 
 // ReSharper disable All
 
@@ -10,21 +8,21 @@ namespace TestProject
     {
         public static void Main()
         {
-            Handle.CUSTOM(8003, "FOO /getfoo", () => new Response {Body = "Foo body"});
-            var request = (HttpWebRequest) WebRequest.Create("http://127.0.0.1:8003/getfoo");
-            request.Timeout = 5000;
-            request.Method = "FOO";
-            try
-            {
-                var response = (HttpWebResponse) request.GetResponse();
-                var reader = new StreamReader(response.GetResponseStream());
-                var data = reader.ReadToEnd();
-            }
-            catch (WebException we)
-            {
-                var error = we.Message;
-                // The operation has timed out
-            }
+            Handle.CUSTOM(8003, "REPORT /getfoo", () => new Response {Body = "Foo body"});
+            var response = Http.CustomRESTRequest
+            (
+                method: "REPORT",
+                uri: "http://127.0.0.1:8003/getfoo",
+                body: default(string),
+                headersDictionary: null,
+                receiveTimeoutSeconds: 10
+            );
+            var data = response.Body;
+            // System.IO.IOException: Remote host closed the connection.\r\n   
+            // at Starcounter.NodeTask.PerformSyncRequest() 
+            // in C:\\TeamCity\\BuildAgent\\work\\sc-10022\\Level1\\src\\Starcounter.Internal\\Rest\\NodeTask.cs:line 514
+
+            var s = "";
         }
     }
 }

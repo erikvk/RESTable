@@ -23,7 +23,7 @@ namespace RESTar.Serialization
                 default: return;
             }
         }
-
+        
         protected override void WriteIndent()
         {
             if (Formatting != Formatting.Indented) return;

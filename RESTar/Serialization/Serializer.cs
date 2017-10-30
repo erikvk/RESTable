@@ -73,16 +73,11 @@ namespace RESTar.Serialization
                 JsonSerializer.Populate(sr, target);
         }
 
-        internal static JToken ToJToken(this object o)
-        {
-            return JToken.FromObject(o, JsonSerializer);
-        }
-
+        internal static JToken ToJToken(this object o) => JToken.FromObject(o, JsonSerializer);
         internal static dynamic Deserialize(this string json, Type type) => JsonConvert.DeserializeObject(json, type);
         internal static JToken Deserialize(this string json) => JsonConvert.DeserializeObject<JToken>(json);
         internal static T Deserialize<T>(this string json) => JsonConvert.DeserializeObject<T>(json);
         internal static void Populate(string json, object target) => JsonConvert.PopulateObject(json, target, Settings);
-
         internal static string SerializeToViewModel(this object value) => JsonConvert.SerializeObject(value, VmSettings);
 
         internal static bool GetXmlStream<T>(this IEnumerable<T> data, out MemoryStream stream)
