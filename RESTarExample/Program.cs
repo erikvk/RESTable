@@ -32,10 +32,86 @@ namespace RESTarExample
         }
     }
 
-    [RESTar(Methods.GET)]
-    public class MyThing : ResourceWrapper<Table>
+    [Database, RESTar]
+    public class Static
     {
+        public string Str { get; set; }
+        public int Int { get; set; }
     }
+
+    [RESTar(Methods.GET)]
+    public class SemiDynamic : JObject, ISelector<SemiDynamic>
+    {
+        public string InputStr { get; set; } = "Goo";
+        public int Int { get; set; } = 100;
+        
+        public IEnumerable<SemiDynamic> Select(IRequest<SemiDynamic> request)
+        {
+            return new[]
+            {
+                new SemiDynamic
+                {
+                    ["Str"] = "123",
+                    ["Int"] = 0,
+                    ["Count"]= -1230
+                },
+                new SemiDynamic
+                {
+                    ["Str"] = "ad123",
+                    ["Int"] = 14
+                },
+                new SemiDynamic
+                {
+                    ["Str"] = "123",
+                },
+                new SemiDynamic
+                {
+                    ["Str"] = "1ds23",
+                    ["Int"] = 200
+                }
+            };
+        }
+    }
+
+    [RESTar(Methods.GET, AllowDynamicConditions = true)]
+    public class AllDynamic : JObject, ISelector<AllDynamic>
+    {
+        public string Str { get; set; }
+        public int Int { get; set; }
+
+        public IEnumerable<AllDynamic> Select(IRequest<AllDynamic> request)
+        {
+            return new[]
+            {
+                new AllDynamic {["Str"] = "123", ["Int"] = 120},
+                new AllDynamic {["Str"] = 232, ["Int"] = 13},
+                new AllDynamic {["Str"] = 232, ["Int"] = -123},
+                new AllDynamic {["AStr"] = "ASD", ["Int"] = 5}
+            };
+        }
+    }
+
+    [RESTar]
+    public class DDictThing : DDictionary, IDDictionary<DDictThing, DDictKeyValuePair>
+    {
+        public string Str { get; set; }
+        public int Int { get; set; }
+
+        public DDictKeyValuePair NewKeyPair(DDictThing dict, string key, object value = null)
+        {
+            return new DDictKeyValuePair(dict, key, value);
+        }
+    }
+
+    public class DDictKeyValuePair : DKeyValuePair
+    {
+        public DDictKeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value) { }
+    }
+
+    #region Random resources
+
+    [RESTar(Methods.GET)]
+    public class MyThing : ResourceWrapper<Table> { }
 
     [Database]
     public class Table
@@ -43,6 +119,43 @@ namespace RESTarExample
         public string STR;
         public DateTime? DT;
         public DateTime DT2;
+    }
+
+    [RESTar(Methods.GET, Singleton = true)]
+    public class MyTestResource : Dictionary<string, dynamic>, ISelector<MyTestResource>
+    {
+        public IEnumerable<MyTestResource> Select(IRequest<MyTestResource> request)
+        {
+            return new[]
+            {
+                new MyTestResource
+                {
+                    ["T"] = 1,
+                    ["G"] = "asd",
+                    ["Goo"] = 10
+                },
+                new MyTestResource
+                {
+                    ["T"] = 5,
+                    ["G"] = "asd",
+                },
+                new MyTestResource
+                {
+                    ["T"] = -1,
+                    ["G"] = "asd",
+                    ["Boo"] = -10,
+                    ["ASD"] = 123312
+                },
+                new MyTestResource
+                {
+                    ["T"] = 10,
+                    ["G"] = "asd",
+                    ["Boo"] = -10,
+                    ["ASD"] = 123312,
+                    ["Count"] = 30
+                }
+            };
+        }
     }
 
     [Database, RESTar]
@@ -138,9 +251,7 @@ namespace RESTarExample
 
     public class MyElement : DElement
     {
-        public MyElement(DList list, int index, object value = null) : base(list, index, value)
-        {
-        }
+        public MyElement(DList list, int index, object value = null) : base(list, index, value) { }
     }
 
     [RESTar(Methods.GET)]
@@ -152,8 +263,8 @@ namespace RESTarExample
 
     public class MyDynamicTableKvp : DKeyValuePair
     {
-        public MyDynamicTableKvp(DDictionary dict, string key, object value = null) : base(dict, key, value)
-        {
-        }
+        public MyDynamicTableKvp(DDictionary dict, string key, object value = null) : base(dict, key, value) { }
     }
+
+    #endregion
 }

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using RESTar.Admin;
+using RESTar.Deflection;
 using RESTar.Operations;
 using RESTar.Resources;
 
@@ -86,6 +87,23 @@ namespace RESTar.Internal
         /// Are runtime-defined conditions allowed in requests to this resource?
         /// </summary>
         bool DynamicConditionsAllowed { get; }
+
+        /// <summary>
+        /// The binding rule to use when binding condition terms for this resource
+        /// </summary>
+        TermBindingRules ConditionBindingRule { get; }
+
+        /// <summary>
+        /// The binding rule to use when binding output terms for this resource
+        /// </summary>
+        TermBindingRules OutputBindingRule { get; }
+
+        /// <summary>
+        /// Are the public instance properties defined in this resource's type 
+        /// flagged (preceded by $) in the REST API to avoid capture against 
+        /// dynamic properties?
+        /// </summary>
+        bool StaticPropertiesFlagged { get; }
 
         /// <summary>
         /// Is this a Starcounter resource?

@@ -21,27 +21,34 @@ namespace RESTar.Deflection.Dynamic
         static TypeCache()
         {
             StaticPropertyCache = new ConcurrentDictionary<string, IDictionary<string, StaticProperty>>();
-            TermCache = new ConcurrentDictionary<(string, string, bool), Term>();
+            TermCache = new ConcurrentDictionary<(string, string, TermBindingRules), Term>();
         }
 
         #region Terms
 
-        internal static readonly ConcurrentDictionary<(string Type, string Key, bool DynUnknowns), Term> TermCache;
+        internal static readonly ConcurrentDictionary<(string Type, string Key, TermBindingRules BindingRule), Term> TermCache;
 
         /// <summary>
-        /// Converts a PropertyInfo to a Term
+        /// Condition terms are terms that refer to properties in resources, or  for
+        /// use in conditions.
         /// </summary>
-        public static Term ToTerm(this PropertyInfo propertyInfo) => propertyInfo.DeclaringType
-            .MakeTerm(propertyInfo.Name, Resource.SafeGet(propertyInfo.DeclaringType)?.DynamicConditionsAllowed == true);
+        internal static Term MakeConditionTerm(this IResource resource, string key) =>
+            resource.Type.MakeOrGetCachedTerm(key, resource.ConditionBindingRule);
 
-        internal static Term MakeTerm(this IResource resource, string key, bool dynamicUnknowns) => resource.Type
-            .MakeTerm(key, dynamicUnknowns);
+        /// <summary>
+        /// Output terms are terms that refer to properties in RESTar output. If they refer to
+        /// a property in the dynamic domain, they are not cached. 
+        /// </summary>
+        internal static Term MakeOutputTerm(this IResource resource, string key, ICollection<string> dynamicDomain) =>
+            dynamicDomain == null
+                ? MakeOrGetCachedTerm(resource.Type, key, resource.OutputBindingRule)
+                : Term.Parse(resource.Type, key, resource.OutputBindingRule, dynamicDomain);
 
-        internal static Term MakeTerm(this Type resource, string key, bool dynamicUnknowns)
+        internal static Term MakeOrGetCachedTerm(this Type resource, string key, TermBindingRules bindingRule)
         {
-            var tuple = (resource.FullName, key.ToLower(), dynamicUnknowns);
+            var tuple = (resource.FullName, key.ToLower(), bindingRule);
             if (!TermCache.TryGetValue(tuple, out var term))
-                term = TermCache[tuple] = Term.Parse(resource, key, dynamicUnknowns);
+                term = TermCache[tuple] = Term.Parse(resource, key, bindingRule, null);
             return term;
         }
 
@@ -55,33 +62,46 @@ namespace RESTar.Deflection.Dynamic
 
         #region Static properties
 
-        internal static readonly ConcurrentDictionary<string, IDictionary<string, StaticProperty>> StaticPropertyCache;
+        private static readonly ConcurrentDictionary<string, IDictionary<string, StaticProperty>> StaticPropertyCache;
 
-        /// <summary>
-        /// Gets the static properties for a given resource
-        /// </summary>
-        public static IDictionary<string, StaticProperty> GetStaticProperties(this IResource resource) =>
-            GetStaticProperties(resource.Type);
+        private static IEnumerable<StaticProperty> ParseStaticProperties(this IEnumerable<PropertyInfo> props, bool flag) => props
+            .Where(p => !p.HasAttribute<IgnoreDataMemberAttribute>())
+            .Where(p => !p.GetIndexParameters().Any())
+            .Select(p => new StaticProperty(p, flag))
+            .OrderBy(p => p.GetAttribute<JsonPropertyAttribute>()?.Order);
 
         /// <summary>
         /// Gets the static properties for a given type
         /// </summary>
         public static IDictionary<string, StaticProperty> GetStaticProperties(this Type type)
         {
-            if (type.FullName == null) return null;
-            if (StaticPropertyCache.TryGetValue(type.FullName, out var props))
-                return props;
-            return StaticPropertyCache[type.FullName] = type.IsDDictionary()
-                ? new StaticProperty[] {ObjectNo, ObjectID}.ToDictionary(p => p.Name.ToLower())
-                : (type.IsInterface
-                    ? new[] {type}.Concat(type.GetInterfaces()).SelectMany(i => i.GetProperties())
-                    : type.GetProperties(Instance | Public))
-                .Where(p => !p.HasAttribute<IgnoreDataMemberAttribute>())
-                .Where(p => !p.GetIndexParameters().Any())
-                .Select(p => new StaticProperty(p))
-                .If(type.IsStarcounter, then: list => list.Union(new[] {ObjectNo, ObjectID}))
-                .OrderBy(p => p.GetAttribute<JsonPropertyAttribute>()?.Order)
-                .ToDictionary(p => p.Name.ToLower());
+            IEnumerable<StaticProperty> make()
+            {
+                switch (type)
+                {
+                    case var _ when type.IsDDictionary():
+                        return type.GetProperties(Instance | Public)
+                            .ParseStaticProperties(true)
+                            .Union(GetObjectIDAndObjectNo(true));
+                    case var _ when type.IsDynamic() && Resource.SafeGet(type)?.DynamicConditionsAllowed == true:
+                        return type.GetProperties(Instance | Public)
+                            .ParseStaticProperties(true);
+                    case var _ when type.IsInterface:
+                        return new[] {type}
+                            .Concat(type.GetInterfaces())
+                            .SelectMany(i => i.GetProperties(Instance | Public))
+                            .ParseStaticProperties(false);
+                    default:
+                        return type.GetProperties(Instance | Public)
+                            .ParseStaticProperties(false)
+                            .If(type.IsStarcounter, ps => ps.Union(GetObjectIDAndObjectNo(false)));
+                }
+            }
+
+            if (type?.FullName == null) return null;
+            if (!StaticPropertyCache.TryGetValue(type.FullName, out var props))
+                props = StaticPropertyCache[type.FullName] = make().ToDictionary(p => p.Name.ToLower());
+            return props;
         }
 
         #endregion

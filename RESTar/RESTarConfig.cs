@@ -74,7 +74,7 @@ namespace RESTar
             ResourceByType[toAdd.Type] = toAdd;
             AddToResourceFinder(toAdd, ResourceFinder);
             UpdateAuthInfo();
-            toAdd.GetStaticProperties();
+            toAdd.Type.GetStaticProperties();
         }
 
         internal static void RemoveResource(IResource toRemove)

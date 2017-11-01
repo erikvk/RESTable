@@ -91,6 +91,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Admin\AdminTools.cs" />
+    <Compile Include="Deflection\TermBindingRules.cs" />
     <Compile Include="LineEndings.cs" />
     <Compile Include="Resources\StarcounterIndexer.cs" />
     <Compile Include="AvailableResource.cs" />

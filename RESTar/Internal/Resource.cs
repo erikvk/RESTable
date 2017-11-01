@@ -4,10 +4,12 @@ using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json.Linq;
 using RESTar.Admin;
+using RESTar.Deflection;
 using RESTar.Operations;
 using RESTar.Resources;
 using Starcounter;
 using static RESTar.Methods;
+using static RESTar.Deflection.TermBindingRules;
 using static RESTar.Operations.DelegateMaker;
 using static RESTar.Operations.Transact;
 
@@ -36,6 +38,16 @@ namespace RESTar.Internal
         public string ParentResourceName { get; }
         public bool IsSingleton { get; }
         public bool DynamicConditionsAllowed { get; }
+
+        public TermBindingRules ConditionBindingRule { get; }
+        public TermBindingRules OutputBindingRule { get; }
+
+        /// <inheritdoc />
+        /// <summary>
+        /// True for DDictionary resources and dynamic resources with DynamicConditionsAllowed
+        /// </summary>
+        public bool StaticPropertiesFlagged { get; }
+
         public string AliasOrName => Alias ?? Name;
         public override string ToString() => AliasOrName;
         public bool IsStarcounterResource { get; }
@@ -113,7 +125,14 @@ namespace RESTar.Internal
             AvailableMethods = attribute.AvailableMethods;
             IsSingleton = attribute.Singleton;
             IsInternal = attribute is RESTarInternalAttribute;
-            DynamicConditionsAllowed = attribute.AllowDynamicConditions;
+            DynamicConditionsAllowed = typeof(T).IsDDictionary() || attribute.AllowDynamicConditions;
+            StaticPropertiesFlagged = typeof(T).IsDDictionary() || typeof(T).IsDynamic() && attribute.AllowDynamicConditions;
+            ConditionBindingRule = DynamicConditionsAllowed ? StaticWithDynamicFallback : OnlyStatic;
+            if (StaticPropertiesFlagged)
+                OutputBindingRule = StaticWithDynamicFallback;
+            else if (typeof(T).IsDynamic() && !attribute.AllowDynamicConditions)
+                OutputBindingRule = DynamicWithStaticFallback;
+            else OutputBindingRule = OnlyStatic;
             RequiresValidation = typeof(IValidatable).IsAssignableFrom(typeof(T));
             IsStarcounterResource = typeof(T).HasAttribute<DatabaseAttribute>();
             IsDDictionary = typeof(T).IsDDictionary();

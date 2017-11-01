@@ -10,13 +10,11 @@ namespace RESTar.Operations
 {
     internal class Add : List<Term>, IProcessor
     {
-        internal Add(IResource resource, string key, IEnumerable<string> dynDomain) => key
+        internal Add(IResource resource, string keys, ICollection<string> dynDomain) => keys
             .ToLower()
             .Split(',')
             .Distinct()
-            .If(dynDomain == null,
-                then: s => s.Select(_s => resource.MakeTerm(_s, resource.IsDynamic)),
-                @else: s => s.Select(_s => Term.Parse(resource.Type, _s, resource.IsDynamic, dynDomain)))
+            .Select(key => resource.MakeOutputTerm(key, dynDomain))
             .ForEach(Add);
 
         public IEnumerable<JObject> Apply<T>(IEnumerable<T> entities) => entities.Select(entity =>

@@ -20,7 +20,10 @@ namespace RESTar
         /// If true, unknown conditions encountered when handling incoming requests
         /// will be passed through as dynamic. This allows for a dynamic handling of
         /// members, both for condition matching and for entities returned from the 
-        /// resource selector.
+        /// resource selector. IMPORTANT: If the resource class has dynamic members, 
+        /// that is, if it is a subclass of Dictionary or JObject, this will place a 
+        /// dollar sign ($) before all statically defined properties in the REST API, 
+        /// to avoid capture with the dynamic members.
         /// </summary>
         public bool AllowDynamicConditions { get; set; }
 

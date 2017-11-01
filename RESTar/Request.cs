@@ -141,7 +141,7 @@ namespace RESTar
             Conditions = conditions?.Any() != true
                 ? new Condition<T>[0]
                 : conditions.Select(c => new Condition<T>(
-                    term: Resource.MakeTerm(c.key, Resource.DynamicConditionsAllowed),
+                    term: Resource.MakeConditionTerm(c.key),
                     op: c.op,
                     value: c.value
                 )).ToArray();

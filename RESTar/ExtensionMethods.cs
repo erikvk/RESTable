@@ -228,15 +228,23 @@ namespace RESTar
             }
         }
 
-        internal static (string, string) TSplit(this string str, char splitCharacter)
+        internal static (string, string) TSplit(this string str, char separator)
         {
-            var split = str.Split(splitCharacter);
+            var split = str.Split(separator);
+            return (split[0], split[1]);
+        }
+
+        internal static (string, string) TSplit(this string str, string separator)
+        {
+            var split = str.Split(new[] {separator}, StringSplitOptions.None);
             return (split[0], split[1]);
         }
 
         #endregion
 
         #region Resource helpers
+
+        internal static bool IsDynamic(this Type type) => type.Implements(typeof(IDictionary<,>));
 
         internal static bool IsDDictionary(this Type type) => type == typeof(DDictionary) ||
                                                               type.IsSubclassOf(typeof(DDictionary));
@@ -800,7 +808,7 @@ namespace RESTar
                     }
                     return table;
                 default:
-                    var properties = resource.GetStaticProperties().Values;
+                    var properties = resource.Type.GetStaticProperties().Values;
                     foreach (var prop in properties)
                         table.Columns.Add(prop.MakeColumn());
                     foreach (var item in entities)
@@ -857,7 +865,7 @@ namespace RESTar
         {
             if (resource.IsDDictionary)
                 return new Dictionary<string, dynamic>();
-            var properties = resource.GetStaticProperties().Values;
+            var properties = resource.Type.GetStaticProperties().Values;
             return properties.ToDictionary(
                 p => p.ViewModelName,
                 p => p.Type.MakeViewModelDefault(p)

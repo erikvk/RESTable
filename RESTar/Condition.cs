@@ -2,6 +2,7 @@
 using System.Diagnostics.Contracts;
 using System.Net;
 using System.Linq;
+using RESTar.Deflection;
 using RESTar.Deflection.Dynamic;
 using RESTar.Internal;
 using RESTar.Operations;
@@ -106,12 +107,16 @@ namespace RESTar
 
         /// <inheritdoc />
         [Pure]
-        public Condition<T1> Redirect<T1>(string newKey = null) where T1 : class => new Condition<T1>
-        (
-            term: typeof(T1).MakeTerm(newKey ?? Key, Resource<T1>.SafeGet?.DynamicConditionsAllowed ?? false),
-            op: Operator,
-            value: Value
-        );
+        public Condition<T1> Redirect<T1>(string newKey = null) where T1 : class
+        {
+            return new Condition<T1>
+            (
+                term: Resource<T1>.SafeGet?.MakeConditionTerm(newKey ?? Key)
+                      ?? typeof(T1).MakeOrGetCachedTerm(newKey ?? Key, TermBindingRules.StaticWithDynamicFallback),
+                op: Operator,
+                value: Value
+            );
+        }
 
         /// <summary>
         /// Creates a new condition for the resource type T using a key, operator and value
@@ -119,9 +124,12 @@ namespace RESTar
         /// <param name="key">The key of the property of T to target, e.g. "Name", "Name.Length"</param>
         /// <param name="op">The operator denoting the operation to evaluate for the property</param>
         /// <param name="value">The value to compare the property referenced by the key with</param>
-        public Condition(string key, Operator op, object value) : this(Term.Create<T>(key), op, value)
-        {
-        }
+        public Condition(string key, Operator op, object value) : this(
+            term: Resource<T>.SafeGet?.MakeConditionTerm(key)
+                  ?? typeof(T).MakeOrGetCachedTerm(key, TermBindingRules.StaticWithDynamicFallback),
+            op: op,
+            value: value
+        ) { }
 
         internal Condition(Term term, Operator op, object value)
         {
@@ -195,8 +203,7 @@ namespace RESTar
                 if (!Operator.TryParse(operatorCharacters, out var op))
                     throw new OperatorException(s);
                 var keyValuePair = s.Split(new[] {op.Common}, StringSplitOptions.None);
-
-                var term = resource.MakeTerm(WebUtility.UrlDecode(keyValuePair[0]), resource.DynamicConditionsAllowed);
+                var term = resource.MakeConditionTerm(WebUtility.UrlDecode(keyValuePair[0]));
                 if (term.Last is StaticProperty stat &&
                     stat.GetAttribute<AllowedConditionOperatorsAttribute>()?.Operators?.Contains(op) == false)
                     throw new ForbiddenOperatorException(s, resource, op, term,

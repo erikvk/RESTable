@@ -31,7 +31,7 @@ namespace RESTar.Admin
             var res = RESTar.Resource.Find(resourceName);
             if (res.IsDynamic) return null;
             var schema = new Schema();
-            res.GetStaticProperties().Values.ForEach(p => schema[p.Name] = p.Type.FullName);
+            res.Type.GetStaticProperties().Values.ForEach(p => schema[p.Name] = p.Type.FullName);
             return new[] {schema};
         }
     }

@@ -41,22 +41,20 @@ namespace RESTar.Internal
         /// <summary>
         /// A string representation of the available REST methods
         /// </summary>
-        [IgnoreDataMember]
-        public string AvailableMethodsString { get; private set; }
+        [IgnoreDataMember] public string AvailableMethodsString { get; private set; }
 
         /// <summary>
         /// The target type for this resource
         /// </summary>
         public Type Table => DynamitControl.GetByTableName(TableName);
 
-        internal RESTarAttribute Attribute => new RESTarAttribute
-            (AvailableMethods.OrderBy(i => i, MethodComparer.Instance).ToList())
-            {
-                AllowDynamicConditions = true,
-                Singleton = false,
-                Editable = true,
-                Description = Description
-            };
+        internal RESTarAttribute Attribute => new RESTarAttribute(
+            AvailableMethods.OrderBy(i => i, MethodComparer.Instance).ToList())
+        {
+            Singleton = false,
+            Editable = true,
+            Description = Description
+        };
 
         private static readonly string SQL = $"SELECT t FROM {typeof(DynamicResource).FullName} t";
         internal static IEnumerable<DynamicResource> All => Db.SQL<DynamicResource>(SQL);

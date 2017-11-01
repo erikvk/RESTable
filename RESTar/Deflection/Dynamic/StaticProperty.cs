@@ -65,10 +65,11 @@ namespace RESTar.Deflection.Dynamic
             return type.GetStaticProperties().TryGetValue(key.ToLower(), out staticProperty);
         }
 
-        internal StaticProperty(PropertyInfo p)
+        internal StaticProperty(PropertyInfo p, bool flagName = false)
         {
             if (p == null) return;
             Name = p.RESTarMemberName();
+            if (flagName) Name = "$" + Name;
             DatabaseQueryName = p.Name;
             Type = p.PropertyType;
             ScQueryable = p.DeclaringType?.HasAttribute<DatabaseAttribute>() == true &&

@@ -5,7 +5,7 @@ using System.Reflection;
 using Newtonsoft.Json.Linq;
 using RESTar.Internal;
 using RESTar.Linq;
-using RESTar.Operations;
+using static RESTar.Deflection.TermBindingRules;
 
 namespace RESTar.Deflection.Dynamic
 {
@@ -68,30 +68,35 @@ namespace RESTar.Deflection.Dynamic
         public int Count => Store.Count;
 
         private static readonly NoCaseComparer Comparer = new NoCaseComparer();
+
         private Term() => Store = new List<Property>();
 
-        /// <summary>
-        /// Create a new term for a given type, with a key describing the target property
-        /// </summary>
-        public static Term Create<T>(string key) where T : class =>
-            typeof(T).MakeTerm(key, Resource<T>.SafeGet?.DynamicConditionsAllowed == true);
+        #region Public create methods, not used internally
 
         /// <summary>
         /// Create a new term for a given type, with a key describing the target property
         /// </summary>
-        public static Term Create(Type type, string key) => type.MakeTerm(key,
-            Resource.SafeGet(type)?.DynamicConditionsAllowed == true);
+        public static Term Create<T>(string key) where T : class => Create(typeof(T), key);
+
+        /// <summary>
+        /// Create a new term for a given type, with a key describing the target property
+        /// </summary>
+        public static Term Create(Type type, string key) => type.MakeOrGetCachedTerm(key, StaticWithDynamicFallback);
 
         /// <summary>
         /// Create a new term from a given PropertyInfo
         /// </summary>
-        public static Term Create(PropertyInfo propertyInfo) => propertyInfo.ToTerm();
+        public static Term Create(PropertyInfo propertyInfo) => propertyInfo.DeclaringType
+            .MakeOrGetCachedTerm(propertyInfo.Name, StaticWithDynamicFallback);
+
+        #endregion
 
         /// <summary>
-        /// Parses a term key string and returns a term describing it.
+        /// Parses a term key string and returns a term describing it. All terms are created here.
+        /// The main caller is TypeCache.MakeTerm, but it's also called from places that use a 
+        /// dynamic domain (processors).
         /// </summary>
-        internal static Term Parse(Type resource, string key, bool dynamicUnknowns,
-            IEnumerable<string> dynamicDomain = null)
+        internal static Term Parse(Type resource, string key, TermBindingRules bindingRule, ICollection<string> dynDomain)
         {
             var term = new Term();
 
@@ -99,18 +104,26 @@ namespace RESTar.Deflection.Dynamic
             {
                 if (string.IsNullOrWhiteSpace(str))
                     throw new SyntaxException(ErrorCodes.InvalidConditionSyntax, $"Invalid condition '{str}'");
-                if (dynamicDomain?.Contains(str, Comparer) == true)
+                if (dynDomain?.Contains(str, Comparer) == true)
                     return DynamicProperty.Parse(str);
 
                 Property make(Type type)
                 {
-                    if (type.IsDDictionary())
-                        return DynamicProperty.Parse(str);
-                    if (dynamicUnknowns)
-                        return Do.Try<Property>(
-                            () => StaticProperty.Find(type, str),
-                            () => DynamicProperty.Parse(str));
-                    return StaticProperty.Find(type, str);
+                    switch (bindingRule)
+                    {
+                        case DynamicWithStaticFallback: return DynamicProperty.Parse(str, true);
+                        case OnlyStatic: return StaticProperty.Find(type, str);
+                        case StaticWithDynamicFallback:
+                            try
+                            {
+                                return StaticProperty.Find(type, str);
+                            }
+                            catch
+                            {
+                                return DynamicProperty.Parse(str);
+                            }
+                        default: throw new Exception();
+                    }
                 }
 
                 switch (term.Store.LastOrDefault())
@@ -141,7 +154,7 @@ namespace RESTar.Deflection.Dynamic
                 {
                     case SpecialProperty _:
                     case DynamicProperty _: return prop;
-                    case StaticProperty _: return new DynamicProperty(prop.Name);
+                    case StaticProperty _: return DynamicProperty.Parse(prop.Name);
                     default: throw new ArgumentOutOfRangeException();
                 }
             }).ToList();

@@ -4,31 +4,30 @@ using Newtonsoft.Json.Linq;
 using RESTar.Deflection.Dynamic;
 using RESTar.Internal;
 using RESTar.Linq;
-using static System.StringSplitOptions;
 
 namespace RESTar.Operations
 {
     internal class Rename : Dictionary<Term, string>, IProcessor
     {
-        internal Rename(IResource resource, string key, out ICollection<string> dynamicDomain)
+        internal Rename(IResource resource, string keys, out ICollection<string> dynamicDomain)
         {
-            var opMatcher = key.Contains("->") ? new[] {"->"} : new[] {"-%3E"};
-            key.Split(',').ForEach(str => Add(
-                key: Term.Parse(resource.Type, str.Split(opMatcher, None)[0].ToLower(), resource.IsDynamic),
-                value: str.Split(opMatcher, None)[1])
-            );
+            keys.Split(',').ForEach(keyString =>
+            {
+                var (termKey, newName) = keyString.TSplit(keys.Contains("->") ? "->" : "-%3E");
+                Add(resource.MakeOutputTerm(termKey.ToLower(), null), newName);
+            });
             dynamicDomain = Values;
         }
 
-        private JObject Renamed(JObject entity) 
+        private JObject Renamed(JObject entity)
         {
-            this.Apply(pair =>
+            foreach (var pair in this)
             {
                 var value = entity.SafeGetNoCase(pair.Key.Key, out var actualKey);
                 if (actualKey != null)
                     entity.Remove(actualKey);
                 entity[pair.Value] = value;
-            });
+            }
             return entity;
         }
 

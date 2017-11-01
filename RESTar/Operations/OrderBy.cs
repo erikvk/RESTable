@@ -20,13 +20,11 @@ namespace RESTar.Operations
 
         internal OrderBy(IResource resource) => Resource = resource;
 
-        internal OrderBy(IResource resource, bool descending, string key, IEnumerable<string> dynamicMembers)
+        internal OrderBy(IResource resource, bool descending, string key, ICollection<string> dynamicMembers)
         {
             Resource = resource;
             Descending = descending;
-            Term = dynamicMembers == null
-                ? resource.MakeTerm(key, resource.IsDynamic)
-                : Term.Parse(resource.Type, key, resource.IsDynamic, dynamicMembers);
+            Term = resource.MakeOutputTerm(key, dynamicMembers);
         }
 
         /// <summary>
