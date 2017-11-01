@@ -578,7 +578,7 @@ namespace RESTar
         public static JObject ToJObject(this DDictionary d)
         {
             var jobj = new JObject();
-            d.KeyValuePairs.ForEach(pair => jobj[pair.Key] = (JToken) pair.Value);
+            d.KeyValuePairs.ForEach(pair => jobj[pair.Key] = MakeJToken(pair.Value));
             return jobj;
         }
 
@@ -588,8 +588,27 @@ namespace RESTar
         public static JObject ToJObject(this Dictionary<string, dynamic> d)
         {
             var jobj = new JObject();
-            d.ForEach(pair => jobj[pair.Key] = (JToken) pair.Value);
+            d.ForEach(pair => jobj[pair.Key] = MakeJToken(pair.Value));
             return jobj;
+        }
+
+        private static JToken MakeJToken(dynamic value)
+        {
+            try
+            {
+                return (JToken) value;
+            }
+            catch
+            {
+                try
+                {
+                    return new JArray(value);
+                }
+                catch
+                {
+                    return JToken.FromObject(value);
+                }
+            }
         }
 
         internal static string MatchKey(this IDictionary dict, string key)
@@ -597,10 +616,7 @@ namespace RESTar
             return dict.Keys.Cast<string>().FirstOrDefault(k => key == k);
         }
 
-        private static IEnumerable<DictionaryEntry> Cast(this IDictionary dict)
-        {
-            foreach (DictionaryEntry item in dict) yield return item;
-        }
+        private static IEnumerable<DictionaryEntry> Cast(this IDictionary dict) => dict.Cast<DictionaryEntry>();
 
         internal static string MatchKeyIgnoreCase_IDict(this IDictionary dict, string key)
         {

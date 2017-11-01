@@ -44,7 +44,7 @@ namespace RESTarExample
     {
         public string InputStr { get; set; } = "Goo";
         public int Int { get; set; } = 100;
-        
+
         public IEnumerable<SemiDynamic> Select(IRequest<SemiDynamic> request)
         {
             return new[]
@@ -53,7 +53,7 @@ namespace RESTarExample
                 {
                     ["Str"] = "123",
                     ["Int"] = 0,
-                    ["Count"]= -1230
+                    ["Count"] = -1230
                 },
                 new SemiDynamic
                 {
@@ -65,6 +65,31 @@ namespace RESTarExample
                     ["Str"] = "123",
                 },
                 new SemiDynamic
+                {
+                    ["Str"] = "1ds23",
+                    ["Int"] = 200
+                }
+            };
+        }
+    }
+
+    [RESTar(Methods.GET)]
+    public class SemiDynamic2 : Dictionary<string, object>, ISelector<SemiDynamic2>
+    {
+        public IEnumerable<SemiDynamic2> Select(IRequest<SemiDynamic2> request)
+        {
+            return new[]
+            {
+                new SemiDynamic2
+                {
+                    ["Str"] = "ad123",
+                    ["Int"] = 14
+                },
+                new SemiDynamic2
+                {
+                    ["Str"] = "123",
+                },
+                new SemiDynamic2
                 {
                     ["Str"] = "1ds23",
                     ["Int"] = 200
