@@ -20,6 +20,8 @@ namespace RESTarTester
         {
             RESTarConfig.Init(9000);
 
+           var das = Db.SQL<Base>("SELECT t FROM RESTarTester.Base t LIMIT ? OFFSET ? ", 10, 1);
+
             Db.SQL<Base>("SELECT t FROM RESTarTester.Base t").ForEach(b => Db.TransactAsync(b.Delete));
 
             string onesJson = null;

@@ -35,8 +35,8 @@ namespace RESTar.Internal
                         return Db.SQL<T>($"{SELECT}{external.MetaConditions.OrderBy?.SQL}");
                     case var external:
                         var where = external.Conditions.GetSQL().MakeWhereClause();
-                        var r2 = Db.SQL<T>($"{SELECT}{@where.WhereString} " +
-                                           $"{external.MetaConditions.OrderBy?.SQL}", @where.Values);
+                        var r2 = Db.SQL<T>($"{SELECT}{where.WhereString} " +
+                                           $"{external.MetaConditions.OrderBy?.SQL}", where.Values);
                         return !external.Conditions.HasPost(out var post) ? r2 : r2.Where(post);
                 }
             };
@@ -53,7 +53,7 @@ namespace RESTar.Internal
                     case var external when external.Conditions.HasPost(out var _): return Select(r)?.LongCount() ?? 0L;
                     case var external:
                         var where = external.Conditions.GetSQL().MakeWhereClause();
-                        return Db.SQL<long>($"{COUNT}{@where.WhereString}", @where.Values).First;
+                        return Db.SQL<long>($"{COUNT}{where.WhereString}", where.Values).First;
                 }
             };
             Profile = r => ResourceProfile.Make(r, rows =>

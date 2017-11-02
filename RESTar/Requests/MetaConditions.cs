@@ -24,7 +24,8 @@ namespace RESTar.Requests
         [Obsolete] Dynamic,
         Safepost,
         New,
-        Delete
+        Delete,
+        Offset
     }
 
     internal static class MetaConditionsExtensions
@@ -44,6 +45,7 @@ namespace RESTar.Requests
                 case RESTarMetaConditions.Safepost: return typeof(string);
                 case RESTarMetaConditions.New: return typeof(bool);
                 case RESTarMetaConditions.Delete: return typeof(bool);
+                case RESTarMetaConditions.Offset: return typeof(int);
                 default: throw new ArgumentOutOfRangeException(nameof(condition), condition, null);
             }
         }
@@ -58,6 +60,12 @@ namespace RESTar.Requests
         /// The limit by which the request's response body entity count should be restricted to
         /// </summary>
         public Limit Limit { get; internal set; } = Limit.NoLimit;
+
+        /// <summary>
+        /// An offset in the request's entities, on which enumeration will start when creating the 
+        /// response
+        /// </summary>
+        public Offset Offset { get; internal set; } = Offset.NoOffset;
 
         internal bool Unsafe { get; set; }
         internal OrderBy OrderBy { get; set; }
@@ -142,6 +150,9 @@ namespace RESTar.Requests
                         break;
                     case RESTarMetaConditions.Delete:
                         mc.Delete = value;
+                        break;
+                    case RESTarMetaConditions.Offset:
+                        mc.Offset = (Offset) (int) value;
                         break;
                     default: throw new ArgumentOutOfRangeException();
                 }

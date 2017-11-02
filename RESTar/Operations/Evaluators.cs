@@ -41,6 +41,7 @@ namespace RESTar.Operations
                     request.MetaConditions.Limit = (Limit) 1000;
                 return request.Resource.Select(request)?
                     .Filter(request.MetaConditions.OrderBy)
+                    .Filter(request.MetaConditions.Offset)
                     .Filter(request.MetaConditions.Limit);
             }
             catch (Exception e)
@@ -60,10 +61,12 @@ namespace RESTar.Operations
                 if (!request.MetaConditions.HasProcessors)
                     return results
                         .Filter(request.MetaConditions.OrderBy)
+                        .Filter(request.MetaConditions.Offset)
                         .Filter(request.MetaConditions.Limit);
                 return results
                     .Process(request.MetaConditions.Processors)
                     .Filter(request.MetaConditions.OrderBy)
+                    .Filter(request.MetaConditions.Offset)
                     .Filter(request.MetaConditions.Limit);
             }
             catch (Exception e)
