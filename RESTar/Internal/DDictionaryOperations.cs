@@ -39,7 +39,7 @@ namespace RESTar.Internal
                     if (index == 0) results.UnionWith(EqualitySQL(cond, kvpTable));
                     else results.IntersectWith(EqualitySQL(cond, kvpTable));
                 });
-                return r.Conditions.HasCompare(out var compare) ? results.Where(compare) : results;
+                return r.Conditions.HasCompare(out var compare) ? results.Where(compare).ToList() : results.ToList();
             };
             Insert = (e, r) => e.Count();
             Update = (e, r) => e.Count();

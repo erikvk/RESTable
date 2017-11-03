@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Runtime.Serialization;
 using Dynamit;
@@ -18,6 +19,16 @@ namespace RESTarTester
 {
     public class Tester
     {
+        private static decimal Time(Action action)
+        {
+            var s = Stopwatch.StartNew();
+            for (var i = 1; i < 20000; i++)
+                action();
+            s.Stop();
+            return s.ElapsedMilliseconds;
+        }
+
+
         public static void Main()
         {
             RESTarConfig.Init(9000);
@@ -316,10 +327,9 @@ namespace RESTarTester
             var edestinationresponse2 = Http.GET
             (
                 uri: "http://localhost:9000/rest/mydict",
-                headersDictionary: new Dictionary<string, string> { ["Destination"] = "POST http://localhost:9000/rest/resource1" }
+                headersDictionary: new Dictionary<string, string> {["Destination"] = "POST http://localhost:9000/rest/resource1"}
             );
             Debug.Assert(edestinationresponse2?.IsSuccessStatusCode == true);
-
 
             #endregion
 
@@ -387,6 +397,17 @@ namespace RESTarTester
             var res4 = r4.GET();
 
             #endregion
+
+
+            var req = new Request<MyDict>();
+            var res = req.GET();
+            var cond = new Condition<MyDict>("Sbyte", Operator.EQUALS, 0);
+            req.Conditions = new []{cond};
+
+            var t = Time(() =>
+            {
+                var r = req.GET().ToList();
+            });
 
             var done = true;
         }

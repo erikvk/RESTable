@@ -11,7 +11,7 @@ namespace RESTar.Resources
         {
             if (type.IsWrapper())
                 return type.GetWrappedType().IsSubclassOf(typeof(DDictionary)) && !type.HasResourceProviderAttribute();
-            return type.IsSubclassOf(typeof(DDictionary)) && type.HasResourceProviderAttribute();
+            return type.IsSubclassOf(typeof(DDictionary)) && !type.HasResourceProviderAttribute();
         }
 
         internal override void Validate()

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using Newtonsoft.Json.Linq;
@@ -513,7 +514,7 @@ namespace RESTar.Operations
                                 toInsert.Add(entity);
                                 break;
                             case 1:
-                                toUpdate.Add((entity, results.First()));
+                                toUpdate.Add((entity, results[0]));
                                 break;
                             default: throw new AmbiguousMatchException(request.Resource);
                         }
