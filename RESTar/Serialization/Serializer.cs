@@ -92,6 +92,15 @@ namespace RESTar.Serialization
                 return reader.ReadToEnd();
         }
 
+        internal static string GetJsonUpdateString(this Stream stream)
+        {
+            string json;
+            using (var reader = new StreamReader(stream))
+                json = reader.ReadToEnd();
+            if (json[0] == '[') throw new InvalidInputCountException();
+            return json;
+        }
+
         internal static string Serialize(this object value, Type type = null)
         {
             return JsonConvert.SerializeObject(value, type, _PrettyPrint ? Indented : None, Settings);

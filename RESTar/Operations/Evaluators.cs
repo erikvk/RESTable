@@ -257,7 +257,7 @@ namespace RESTar.Operations
         {
             try
             {
-                var updatedSource = source.Populate(request.Body.GetString());
+                var updatedSource = source.Populate(request.Body.GetJsonUpdateString());
                 if (request.Resource.RequiresValidation)
                     source.OfType<IValidatable>().ForEach(item => item.Validate());
                 return request.Resource.Update(updatedSource, request);
@@ -290,7 +290,7 @@ namespace RESTar.Operations
         {
             try
             {
-                Populate(request.Body.GetString(), source);
+                Populate(request.Body.GetJsonUpdateString(), source);
                 if (source is IValidatable i)
                     i.Validate();
                 return request.Resource.Update(new[] {source}, request);
