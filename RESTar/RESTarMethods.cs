@@ -40,7 +40,7 @@ namespace RESTar
         /// response from a resource. Enabling GET for a resource automatically 
         /// enables COUNT for that resource.
         /// </summary>
-        COUNT
+        REPORT
     }
 
     internal class MethodComparer : Comparer<Methods>

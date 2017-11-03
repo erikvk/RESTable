@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using Newtonsoft.Json.Linq;
@@ -384,7 +383,7 @@ namespace RESTar.Operations
                         case Methods.PATCH: return LrPATCH;
                         case Methods.PUT: return LrPUT;
                         case Methods.DELETE: return LrDELETE;
-                        case Methods.COUNT: return COUNT;
+                        case Methods.REPORT: return REPORT;
                         default: return null;
                     }
                 }
@@ -398,7 +397,7 @@ namespace RESTar.Operations
                     case Methods.PATCH: return PATCH;
                     case Methods.PUT: return PUT;
                     case Methods.DELETE: return DELETE;
-                    case Methods.COUNT: return COUNT;
+                    case Methods.REPORT: return REPORT;
                     default: return null;
                 }
             }
@@ -427,7 +426,6 @@ namespace RESTar.Operations
                     }
                     if (!hasContent) return NoContent;
                     var fileName = $"{request.Resource.AliasOrName}_{DateTime.Now:yyMMddHHmmssfff}{extension}";
-                    stream.Seek(0, SeekOrigin.Begin);
                     return new Response
                     {
                         StreamedBody = stream,
@@ -442,17 +440,15 @@ namespace RESTar.Operations
                 }
             }
 
-            private static Response COUNT(RESTRequest<T> request)
+            private static Response REPORT(RESTRequest<T> request) => request.Report(new Report
             {
-                var count = OP_COUNT(request);
-                return request.EntityCount(count);
-            }
+                Count = OP_COUNT(request)
+            });
 
             #region Using long running transactions
 
             private static Response LrPOST(RESTRequest<T> request)
             {
-                //request.Body = request.Body[0] == '[' ? request.Body : $"[{request.Body}]";
                 if (request.MetaConditions.SafePost != null) return LrSafePOST(request);
                 return request.InsertedEntities(Transaction<T>.Transact(() => INSERT(request)));
             }

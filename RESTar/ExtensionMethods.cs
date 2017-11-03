@@ -796,6 +796,7 @@ namespace RESTar
                 if (excel == null) return false;
                 stream = new MemoryStream();
                 excel.SaveAs(stream);
+                stream.Seek(0, SeekOrigin.Begin);
                 return true;
             }
             catch (Exception e)

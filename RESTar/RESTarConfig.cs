@@ -39,7 +39,7 @@ namespace RESTar
         internal static bool AllowAllOrigins { get; private set; }
         private static string ConfigFilePath { get; set; }
         internal static bool Initialized { get; private set; }
-        internal static readonly Methods[] Methods = {GET, POST, PATCH, PUT, DELETE, COUNT};
+        internal static readonly Methods[] Methods = {GET, POST, PATCH, PUT, DELETE, REPORT};
         static RESTarConfig() => NewState();
 
         private static void NewState()

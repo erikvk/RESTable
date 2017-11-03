@@ -44,14 +44,22 @@ namespace RESTar
         public string Description { get; set; }
 
         /// <inheritdoc />
-        internal RESTarAttribute(IReadOnlyList<Methods> methods) => AvailableMethods = methods;
+        internal RESTarAttribute(IReadOnlyList<Methods> methods)
+        {
+            if (methods.Contains(Methods.GET))
+                AvailableMethods = methods.Union(new[] {Methods.REPORT}).ToList();
+            else AvailableMethods = methods;
+        }
 
         /// <inheritdoc />
         public RESTarAttribute(params Methods[] methodRestrictions)
         {
             if (!methodRestrictions.Any())
                 methodRestrictions = RESTarConfig.Methods;
-            AvailableMethods = methodRestrictions.OrderBy(i => i, MethodComparer.Instance).ToList();
+            var restrictions = methodRestrictions.OrderBy(i => i, MethodComparer.Instance).ToList();
+            if (methodRestrictions.Contains(Methods.GET))
+                restrictions.Add(Methods.REPORT);
+            AvailableMethods = restrictions;
         }
     }
 
@@ -69,27 +77,19 @@ namespace RESTar
     public class RESTarInternalAttribute : RESTarAttribute
     {
         /// <inheritdoc />
-        internal RESTarInternalAttribute(IReadOnlyList<Methods> methods) : base(methods)
-        {
-        }
+        internal RESTarInternalAttribute(IReadOnlyList<Methods> methods) : base(methods) { }
 
         /// <inheritdoc />
-        public RESTarInternalAttribute(params Methods[] methodRestrictions) : base(methodRestrictions)
-        {
-        }
+        public RESTarInternalAttribute(params Methods[] methodRestrictions) : base(methodRestrictions) { }
     }
 
-    internal class DynamicTableAttribute : ResourceProviderAttribute
-    {
-    }
+    internal class DynamicTableAttribute : ResourceProviderAttribute { }
 
     /// <summary>
     /// Makes a resource property with a public setter read only over the REST API
     /// </summary>
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
-    public class ReadOnlyAttribute : Attribute
-    {
-    }
+    public class ReadOnlyAttribute : Attribute { }
 
     /// <summary>
     /// An attribute that can be used to decorate field and property declarations, and assign
@@ -130,14 +130,10 @@ namespace RESTar
     /// the serializer to flatten them using the ToString() method when writing to excel.
     /// </summary>
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
-    public class ExcelFlattenToStringAttribute : Attribute
-    {
-    }
+    public class ExcelFlattenToStringAttribute : Attribute { }
 
     /// <summary>
     /// Make a subclass for this type when implementing custom resource providers
     /// </summary>
-    public abstract class ResourceProviderAttribute : Attribute
-    {
-    }
+    public abstract class ResourceProviderAttribute : Attribute { }
 }

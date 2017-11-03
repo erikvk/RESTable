@@ -26,7 +26,7 @@ namespace RESTar.Requests
             Handle.PUT(_Port, uri, (Request request, string query) => Evaluate(PUT, request, query));
             Handle.PATCH(_Port, uri, (Request request, string query) => Evaluate(PATCH, request, query));
             Handle.DELETE(_Port, uri, (Request request, string query) => Evaluate(DELETE, request, query));
-            //Handle.CUSTOM(_Port, "COUNT " + uri, (Request request, string query) => Evaluate(COUNT, request, query));
+            Handle.CUSTOM(_Port, "REPORT " + uri, (Request request, string query) => Evaluate(COUNT, request, query));
             Handle.OPTIONS(_Port, uri, (Request request, string query) => Evaluate(ORIGIN, request, query));
             if (!_ViewEnabled) return;
             Application.Current.Use(new HtmlFromJsonProvider());

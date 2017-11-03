@@ -164,8 +164,7 @@ namespace RESTar
                         throw new Exception(
                             $"Could not get source data from '{uri}'. " +
                             $"{response?.StatusCode}: {response?.StatusDescription}. {response?.Headers["RESTar-info"]}");
-                    if (response.StatusCode == 204 || string.IsNullOrEmpty(response.Body))
-                        mapped.Add(new JObject());
+                    if (response.StatusCode == 204) mapped.Add(new JObject());
                     else Serializer.Populate(response.StreamedBody.GetString(), mapped);
                 }
             }

@@ -61,7 +61,9 @@ namespace RESTar.Serialization
             JsonSerializer.Serialize(jsonWriter, data);
             jsonWriter.Flush();
             streamWriter.Flush();
-            return stream.Position > 2;
+            if (stream.Position <= 2) return false;
+            stream.Seek(0, SeekOrigin.Begin);
+            return true;
         }
 
         private static readonly ExcelDataSetConfiguration excelDataSetConfig = new ExcelDataSetConfiguration
@@ -164,6 +166,7 @@ namespace RESTar.Serialization
             var xmlTextWriter = XmlWriter.Create(stringWriter, _PrettyPrint ? XMLIndentSettings : null);
             xml.WriteTo(xmlTextWriter);
             xmlTextWriter.Flush();
+            stream.Seek(0, SeekOrigin.Begin);
             return true;
         }
     }

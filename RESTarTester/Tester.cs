@@ -31,7 +31,7 @@ namespace RESTarTester
 
         public static void Main()
         {
-            RESTarConfig.Init(9000);
+            RESTarConfig.Init(9000, lineEndings:LineEndings.Linux);
 
             Db.SQL<Base>("SELECT t FROM RESTarTester.Base t").ForEach(b => Db.TransactAsync(b.Delete));
             Db.SQL<MyDict>("SELECT t FROM RESTarTester.MyDict t").ForEach(b => Db.TransactAsync(b.Delete));

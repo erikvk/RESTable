@@ -163,7 +163,7 @@ namespace RESTar.Internal
             {
                 switch (method)
                 {
-                    case COUNT:
+                    case REPORT:
                     case GET: return new[] {RESTarOperations.Select};
                     case POST: return new[] {RESTarOperations.Insert};
                     case PUT: return new[] {RESTarOperations.Select, RESTarOperations.Insert, RESTarOperations.Update};

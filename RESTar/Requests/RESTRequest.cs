@@ -32,7 +32,7 @@ namespace RESTar.Requests
         private string Source { get; set; }
         private string Destination { get; set; }
         private MimeType ContentType { get; set; }
-        internal MimeType Accept { get; set; }
+        internal MimeType Accept { get; private set; }
         private string CORSOrigin { get; set; }
         private DataConfig InputDataConfig { get; set; }
         private DataConfig OutputDataConfig { get; set; }
@@ -195,13 +195,18 @@ namespace RESTar.Requests
             Headers = {["RESTar-info"] = $"{count} entities deleted from resource '{Resource.Name}'"}
         };
 
-        internal Response EntityCount(long Count) => new Response
+        internal Response Report(Report report)
         {
-            StatusCode = (ushort) OK,
-            StatusDescription = "OK",
-            Headers = {["RESTar-info"] = $"Resource '{Resource.Name}'"},
-            Body = new {Count}.Serialize()
-        };
+            if (!report.GetJsonStream(out var stream))
+                return NoContent;
+            return new Response
+            {
+                StatusCode = (ushort) OK,
+                StatusDescription = "OK",
+                Headers = {["RESTar-info"] = $"Resource '{Resource.Name}'"},
+                StreamedBody = stream
+            };
+        }
 
         public void Dispose()
         {
