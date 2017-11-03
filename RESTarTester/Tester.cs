@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Net;
 using System.Runtime.Serialization;
 using Dynamit;
@@ -27,7 +26,6 @@ namespace RESTarTester
             s.Stop();
             return s.ElapsedMilliseconds;
         }
-
 
         public static void Main()
         {
@@ -390,24 +388,17 @@ namespace RESTarTester
             var r2 = new Request<Resource2>();
             var r3 = new Request<Resource3>();
             var r4 = new Request<Resource4>();
+            var r5 = new Request<MyDict>();
+            var cond = new Condition<MyDict>("Sbyte", Operator.EQUALS, 0);
+            r5.Conditions = new[] {cond};
 
             var res1 = r1.GET();
             var res2 = r2.GET();
             var res3 = r3.GET();
             var res4 = r4.GET();
+            var res5 = r5.GET();
 
             #endregion
-
-
-            var req = new Request<MyDict>();
-            var res = req.GET();
-            var cond = new Condition<MyDict>("Sbyte", Operator.EQUALS, 0);
-            req.Conditions = new[] {cond};
-
-            var t = Time(() =>
-            {
-                var r = req.GET().ToList();
-            });
 
             var done = true;
         }
