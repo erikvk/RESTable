@@ -31,7 +31,7 @@ namespace RESTarTester
 
         public static void Main()
         {
-            RESTarConfig.Init(9000, lineEndings:LineEndings.Linux);
+            RESTarConfig.Init(9000, lineEndings: LineEndings.Linux);
 
             Db.SQL<Base>("SELECT t FROM RESTarTester.Base t").ForEach(b => Db.TransactAsync(b.Delete));
             Db.SQL<MyDict>("SELECT t FROM RESTarTester.MyDict t").ForEach(b => Db.TransactAsync(b.Delete));
@@ -402,7 +402,7 @@ namespace RESTarTester
             var req = new Request<MyDict>();
             var res = req.GET();
             var cond = new Condition<MyDict>("Sbyte", Operator.EQUALS, 0);
-            req.Conditions = new []{cond};
+            req.Conditions = new[] {cond};
 
             var t = Time(() =>
             {

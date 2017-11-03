@@ -13,8 +13,8 @@ namespace RESTar.Internal
     /// </summary>
     internal static class StarcounterOperations<T> where T : class
     {
-        internal static readonly string SELECT = $"SELECT t FROM {typeof(T).FullName} t ";
-        internal static readonly string COUNT = $"SELECT COUNT(t) FROM {typeof(T).FullName} t ";
+        internal static readonly string SELECT = $"SELECT t FROM {typeof(T).FullName.Fnuttify()} t ";
+        internal static readonly string COUNT = $"SELECT COUNT(t) FROM {typeof(T).FullName.Fnuttify()} t ";
         internal static readonly Selector<T> Select;
         internal static readonly Inserter<T> Insert;
         internal static readonly Updater<T> Update;

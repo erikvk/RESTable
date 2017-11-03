@@ -18,6 +18,8 @@ namespace RESTar.Resources
         internal abstract void MakeClaimRegular(IEnumerable<Type> types);
         internal abstract void MakeClaimWrapped(IEnumerable<Type> types);
         internal abstract void Validate();
+        internal ResourceProvider() { }
+        internal ICollection<Type> GetClaim(IEnumerable<Type> types) => types.Where(Include).ToList();
 
         /// <summary>
         /// IndexProviders are plugins for the DatabaseIndex resource, that allow resources 
@@ -29,15 +31,7 @@ namespace RESTar.Resources
         /// The ReceiveClaimed method is called by RESTar once the resources provided
         /// by this ResourceProvider have been added.
         /// </summary>
-        public virtual void ReceiveClaimed(ICollection<IResource> claimedResources)
-        {
-        }
-
-        internal ResourceProvider()
-        {
-        }
-
-        internal ICollection<Type> GetClaim(IEnumerable<Type> types) => types.Where(Include).ToList();
+        public virtual void ReceiveClaimed(ICollection<IResource> claimedResources) { }
     }
 
     /// <inheritdoc />
@@ -60,9 +54,7 @@ namespace RESTar.Resources
         public abstract Type AttributeType { get; }
 
         /// <inheritdoc />
-        public ResourceProvider()
-        {
-        }
+        public ResourceProvider() { }
 
         /// <summary>
         /// The default Selector to use for resources claimed by this ResourceProvider

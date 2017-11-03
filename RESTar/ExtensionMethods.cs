@@ -29,6 +29,7 @@ using static System.Globalization.NumberStyles;
 using static System.Reflection.BindingFlags;
 using static System.StringComparison;
 using static RESTar.Internal.ErrorCodes;
+using static RESTar.Operators;
 using static RESTar.Requests.Responses;
 using static Starcounter.DbHelper;
 using IResource = RESTar.Internal.IResource;
@@ -376,23 +377,36 @@ namespace RESTar
             where T : class
         {
             var _valuesAssignments = new Dictionary<int, int>();
-            var Values = new List<object>();
-            var WhereString = string.Join(" AND ", conds.Where(c => !c.Skip).Select((c, index) =>
+            var literals = new List<object>();
+            var clause = string.Join(" AND ", conds.Where(c => !c.Skip).Select((c, index) =>
             {
-                var key = c.Term.DbKey.Fnuttify();
-                if (c.Value == null)
-                    return $"t.{key} {(c.Operator == Operator.NOT_EQUALS ? "IS NOT NULL" : "IS NULL")}";
-                Values.Add(c.Value);
-                _valuesAssignments[index] = Values.Count - 1;
-                return $"t.{key} {c.Operator.SQL}?";
+                var (key, op, value) = (c.Term.DbKey.Fnuttify(), c.Operator.SQL, (object) c.Value);
+                if (value == null)
+                {
+                    switch (c.Operator.OpCode)
+                    {
+                        case EQUALS:
+                            op = "IS NULL";
+                            break;
+                        case NOT_EQUALS:
+                            op = "IS NOT NULL";
+                            break;
+                        default: throw new Exception($"Operator '{op}' is not valid for comparison with NULL");
+                    }
+                    return $"t.{key} {op}";
+                }
+
+                literals.Add(c.Value);
+                _valuesAssignments[index] = literals.Count - 1;
+                return $"t.{key} {c.Operator.SQL} ? ";
             }));
-            if (WhereString == "")
+            if (clause.Length == 0)
             {
                 valuesAssignments = null;
                 return (null, null);
             }
             valuesAssignments = _valuesAssignments;
-            return ($"WHERE {WhereString}", Values.ToArray());
+            return ($"WHERE {clause}", literals.ToArray());
         }
 
         internal static (string WhereString, object[] Values) MakeWhereClause<T>(this IEnumerable<Condition<T>> conds)
@@ -401,14 +415,25 @@ namespace RESTar
             var literals = new List<object>();
             var clause = string.Join(" AND ", conds.Where(c => !c.Skip).Select(c =>
             {
-                var key = c.Term.DbKey.Fnuttify();
-                if (c.Value == null)
-                    return $"t.{key} {(c.Operator == Operator.NOT_EQUALS ? "IS NOT NULL" : "IS NULL")}";
+                var (key, op, value) = (c.Term.DbKey.Fnuttify(), c.Operator.SQL, (object) c.Value);
+                if (value == null)
+                {
+                    switch (c.Operator.OpCode)
+                    {
+                        case EQUALS:
+                            op = "IS NULL";
+                            break;
+                        case NOT_EQUALS:
+                            op = "IS NOT NULL";
+                            break;
+                        default: throw new Exception($"Operator '{op}' is not valid for comparison with NULL");
+                    }
+                    return $"t.{key} {op}";
+                }
                 literals.Add(c.Value);
-                return $"t.{key} {c.Operator.SQL}?";
+                return $"t.{key} {c.Operator.SQL} ? ";
             }));
-            if (clause == "") return (null, null);
-            return ($"WHERE {clause}", literals.ToArray());
+            return clause.Length > 0 ? ($"WHERE {clause}", literals.ToArray()) : (null, null);
         }
 
         #endregion
