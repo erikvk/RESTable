@@ -746,6 +746,18 @@ namespace RESTar
             return message.ToString();
         }
 
+        internal static byte[] ToByteArray(this Stream stream)
+        {
+            MemoryStream ms;
+            if (stream is MemoryStream _ms) ms = _ms;
+            else
+            {
+                ms = new MemoryStream();
+                using (stream) stream.CopyTo(ms);
+            }
+            return ms.ToArray();
+        }
+
         internal static ClosedXML.Excel.XLWorkbook ToExcel(this IEnumerable<object> entities, IResource resource)
         {
             var dataSet = new DataSet();

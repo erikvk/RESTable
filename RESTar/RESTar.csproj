@@ -172,11 +172,11 @@
     <Compile Include="RESTarConfig.cs" />
     <Compile Include="Operations\Evaluators.cs" />
     <Compile Include="RESTarExceptions.cs" />
-    <Compile Include="HTTP.cs" />
     <Compile Include="Operations\OrderBy.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Admin\Error.cs" />
     <Compile Include="Admin\Schema.cs" />
+    <Compile Include="Serialization\RESTarFromExcelJsonWriter.cs" />
     <Compile Include="Serialization\RESTarJsonWriter.cs" />
     <Compile Include="Serialization\ToStringJsonConverter.cs" />
     <Compile Include="Serialization\Serializer.cs" />

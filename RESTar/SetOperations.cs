@@ -25,14 +25,8 @@ namespace RESTar
                                            "on entities in one or more RESTar resources. See the RESTar " +
                                            "Specification for details.";
 
-        public SetOperations()
-        {
-        }
-
-        private SetOperations(JObject other) : base(other)
-        {
-        }
-
+        public SetOperations() { }
+        private SetOperations(JObject other) : base(other) { }
         static SetOperations() => macroRegex = new Regex(@"\$\([^\$\(\)]+\)");
 
         /// <inheritdoc />
@@ -41,7 +35,7 @@ namespace RESTar
             if (request == null) throw new ArgumentNullException(nameof(request));
             if (request.Body == null)
                 throw new Exception("Missing data source for operation");
-            var jobject = Parse(request.Body);
+            var jobject = request.Body.Deserialize<JObject>();
 
             JTokens recursor(JToken token)
             {
@@ -61,15 +55,15 @@ namespace RESTar
                         else if (char.IsDigit(first) || first == '/')
                         {
                             var uri = str;
-                            var response = HTTP.Internal(GET, new Uri(uri, UriKind.Relative),
+                            var response = HttpRequest.Internal(GET, new Uri(uri, UriKind.Relative),
                                 request.AuthToken);
                             if (response?.IsSuccessStatusCode != true)
                                 throw new Exception(
                                     $"Could not get source data from '{uri}'. " +
                                     $"{response?.StatusCode}: {response?.StatusDescription}. {response?.Headers["RESTar-info"]}");
-                            if (response.StatusCode == 204 || string.IsNullOrEmpty(response.Body))
+                            if (response.StatusCode == 204 || !(response.StreamedBody?.Length > 2))
                                 json = "[]";
-                            else json = response.Body;
+                            else json = response.StreamedBody.GetString();
                         }
                         else
                             throw new Exception($"Invalid string '{str}'. Must be a relative REST request URI " +
@@ -165,14 +159,14 @@ namespace RESTar
                 if (!skip)
                 {
                     var uri = localMapper.ToString();
-                    var response = HTTP.Internal(GET, new Uri(uri, UriKind.Relative), request.AuthToken);
+                    var response = HttpRequest.Internal(GET, new Uri(uri, UriKind.Relative), request.AuthToken);
                     if (response?.IsSuccessStatusCode != true)
                         throw new Exception(
                             $"Could not get source data from '{uri}'. " +
                             $"{response?.StatusCode}: {response?.StatusDescription}. {response?.Headers["RESTar-info"]}");
                     if (response.StatusCode == 204 || string.IsNullOrEmpty(response.Body))
                         mapped.Add(new JObject());
-                    else Serializer.Populate(response.Body, mapped);
+                    else Serializer.Populate(response.StreamedBody.GetString(), mapped);
                 }
             }
             return mapped;

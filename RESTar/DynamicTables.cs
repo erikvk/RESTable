@@ -14,9 +14,7 @@ namespace RESTar
 
     public class DynamicResource1KeyValuePair : DKeyValuePair
     {
-        public DynamicResource1KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
-        {
-        }
+        public DynamicResource1KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value) { }
     }
 
     [DynamicTable]
@@ -28,9 +26,7 @@ namespace RESTar
 
     public class DynamicResource2KeyValuePair : DKeyValuePair
     {
-        public DynamicResource2KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
-        {
-        }
+        public DynamicResource2KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value) { }
     }
 
     [DynamicTable]
@@ -42,9 +38,7 @@ namespace RESTar
 
     public class DynamicResource3KeyValuePair : DKeyValuePair
     {
-        public DynamicResource3KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
-        {
-        }
+        public DynamicResource3KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value) { }
     }
 
     [DynamicTable]
@@ -56,9 +50,7 @@ namespace RESTar
 
     public class DynamicResource4KeyValuePair : DKeyValuePair
     {
-        public DynamicResource4KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
-        {
-        }
+        public DynamicResource4KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value) { }
     }
 
     [DynamicTable]
@@ -70,9 +62,7 @@ namespace RESTar
 
     public class DynamicResource5KeyValuePair : DKeyValuePair
     {
-        public DynamicResource5KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
-        {
-        }
+        public DynamicResource5KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value) { }
     }
 
     [DynamicTable]
@@ -84,9 +74,7 @@ namespace RESTar
 
     public class DynamicResource6KeyValuePair : DKeyValuePair
     {
-        public DynamicResource6KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
-        {
-        }
+        public DynamicResource6KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value) { }
     }
 
     [DynamicTable]
@@ -98,9 +86,7 @@ namespace RESTar
 
     public class DynamicResource7KeyValuePair : DKeyValuePair
     {
-        public DynamicResource7KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
-        {
-        }
+        public DynamicResource7KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value) { }
     }
 
     [DynamicTable]
@@ -112,9 +98,7 @@ namespace RESTar
 
     public class DynamicResource8KeyValuePair : DKeyValuePair
     {
-        public DynamicResource8KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
-        {
-        }
+        public DynamicResource8KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value) { }
     }
 
     [DynamicTable]
@@ -126,9 +110,7 @@ namespace RESTar
 
     public class DynamicResource9KeyValuePair : DKeyValuePair
     {
-        public DynamicResource9KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
-        {
-        }
+        public DynamicResource9KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value) { }
     }
 
     [DynamicTable]
@@ -140,9 +122,7 @@ namespace RESTar
 
     public class DynamicResource10KeyValuePair : DKeyValuePair
     {
-        public DynamicResource10KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
-        {
-        }
+        public DynamicResource10KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value) { }
     }
 
     [DynamicTable]
@@ -154,9 +134,7 @@ namespace RESTar
 
     public class DynamicResource11KeyValuePair : DKeyValuePair
     {
-        public DynamicResource11KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
-        {
-        }
+        public DynamicResource11KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value) { }
     }
 
     [DynamicTable]
@@ -168,9 +146,7 @@ namespace RESTar
 
     public class DynamicResource12KeyValuePair : DKeyValuePair
     {
-        public DynamicResource12KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
-        {
-        }
+        public DynamicResource12KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value) { }
     }
 
     [DynamicTable]
@@ -182,9 +158,7 @@ namespace RESTar
 
     public class DynamicResource13KeyValuePair : DKeyValuePair
     {
-        public DynamicResource13KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
-        {
-        }
+        public DynamicResource13KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value) { }
     }
 
     [DynamicTable]
@@ -196,9 +170,7 @@ namespace RESTar
 
     public class DynamicResource14KeyValuePair : DKeyValuePair
     {
-        public DynamicResource14KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
-        {
-        }
+        public DynamicResource14KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value) { }
     }
 
     [DynamicTable]
@@ -210,9 +182,7 @@ namespace RESTar
 
     public class DynamicResource15KeyValuePair : DKeyValuePair
     {
-        public DynamicResource15KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
-        {
-        }
+        public DynamicResource15KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value) { }
     }
 
     [DynamicTable]
@@ -224,9 +194,7 @@ namespace RESTar
 
     public class DynamicResource16KeyValuePair : DKeyValuePair
     {
-        public DynamicResource16KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
-        {
-        }
+        public DynamicResource16KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value) { }
     }
 
     [DynamicTable]
@@ -238,9 +206,7 @@ namespace RESTar
 
     public class DynamicResource17KeyValuePair : DKeyValuePair
     {
-        public DynamicResource17KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
-        {
-        }
+        public DynamicResource17KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value) { }
     }
 
     [DynamicTable]
@@ -252,9 +218,7 @@ namespace RESTar
 
     public class DynamicResource18KeyValuePair : DKeyValuePair
     {
-        public DynamicResource18KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
-        {
-        }
+        public DynamicResource18KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value) { }
     }
 
     [DynamicTable]
@@ -266,9 +230,7 @@ namespace RESTar
 
     public class DynamicResource19KeyValuePair : DKeyValuePair
     {
-        public DynamicResource19KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
-        {
-        }
+        public DynamicResource19KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value) { }
     }
 
     [DynamicTable]
@@ -280,9 +242,7 @@ namespace RESTar
 
     public class DynamicResource20KeyValuePair : DKeyValuePair
     {
-        public DynamicResource20KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
-        {
-        }
+        public DynamicResource20KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value) { }
     }
 
     [DynamicTable]
@@ -294,9 +254,7 @@ namespace RESTar
 
     public class DynamicResource21KeyValuePair : DKeyValuePair
     {
-        public DynamicResource21KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
-        {
-        }
+        public DynamicResource21KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value) { }
     }
 
     [DynamicTable]
@@ -308,9 +266,7 @@ namespace RESTar
 
     public class DynamicResource22KeyValuePair : DKeyValuePair
     {
-        public DynamicResource22KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
-        {
-        }
+        public DynamicResource22KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value) { }
     }
 
     [DynamicTable]
@@ -322,9 +278,7 @@ namespace RESTar
 
     public class DynamicResource23KeyValuePair : DKeyValuePair
     {
-        public DynamicResource23KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
-        {
-        }
+        public DynamicResource23KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value) { }
     }
 
     [DynamicTable]
@@ -336,9 +290,7 @@ namespace RESTar
 
     public class DynamicResource24KeyValuePair : DKeyValuePair
     {
-        public DynamicResource24KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
-        {
-        }
+        public DynamicResource24KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value) { }
     }
 
     [DynamicTable]
@@ -350,9 +302,7 @@ namespace RESTar
 
     public class DynamicResource25KeyValuePair : DKeyValuePair
     {
-        public DynamicResource25KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
-        {
-        }
+        public DynamicResource25KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value) { }
     }
 
     [DynamicTable]
@@ -364,9 +314,7 @@ namespace RESTar
 
     public class DynamicResource26KeyValuePair : DKeyValuePair
     {
-        public DynamicResource26KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
-        {
-        }
+        public DynamicResource26KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value) { }
     }
 
     [DynamicTable]
@@ -378,9 +326,7 @@ namespace RESTar
 
     public class DynamicResource27KeyValuePair : DKeyValuePair
     {
-        public DynamicResource27KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
-        {
-        }
+        public DynamicResource27KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value) { }
     }
 
     [DynamicTable]
@@ -392,9 +338,7 @@ namespace RESTar
 
     public class DynamicResource28KeyValuePair : DKeyValuePair
     {
-        public DynamicResource28KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
-        {
-        }
+        public DynamicResource28KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value) { }
     }
 
     [DynamicTable]
@@ -406,9 +350,7 @@ namespace RESTar
 
     public class DynamicResource29KeyValuePair : DKeyValuePair
     {
-        public DynamicResource29KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
-        {
-        }
+        public DynamicResource29KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value) { }
     }
 
     [DynamicTable]
@@ -420,9 +362,7 @@ namespace RESTar
 
     public class DynamicResource30KeyValuePair : DKeyValuePair
     {
-        public DynamicResource30KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
-        {
-        }
+        public DynamicResource30KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value) { }
     }
 
     [DynamicTable]
@@ -434,9 +374,7 @@ namespace RESTar
 
     public class DynamicResource31KeyValuePair : DKeyValuePair
     {
-        public DynamicResource31KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
-        {
-        }
+        public DynamicResource31KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value) { }
     }
 
     [DynamicTable]
@@ -448,9 +386,7 @@ namespace RESTar
 
     public class DynamicResource32KeyValuePair : DKeyValuePair
     {
-        public DynamicResource32KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
-        {
-        }
+        public DynamicResource32KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value) { }
     }
 
     [DynamicTable]
@@ -462,9 +398,7 @@ namespace RESTar
 
     public class DynamicResource33KeyValuePair : DKeyValuePair
     {
-        public DynamicResource33KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
-        {
-        }
+        public DynamicResource33KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value) { }
     }
 
     [DynamicTable]
@@ -476,9 +410,7 @@ namespace RESTar
 
     public class DynamicResource34KeyValuePair : DKeyValuePair
     {
-        public DynamicResource34KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
-        {
-        }
+        public DynamicResource34KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value) { }
     }
 
     [DynamicTable]
@@ -490,9 +422,7 @@ namespace RESTar
 
     public class DynamicResource35KeyValuePair : DKeyValuePair
     {
-        public DynamicResource35KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
-        {
-        }
+        public DynamicResource35KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value) { }
     }
 
     [DynamicTable]
@@ -504,9 +434,7 @@ namespace RESTar
 
     public class DynamicResource36KeyValuePair : DKeyValuePair
     {
-        public DynamicResource36KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
-        {
-        }
+        public DynamicResource36KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value) { }
     }
 
     [DynamicTable]
@@ -518,9 +446,7 @@ namespace RESTar
 
     public class DynamicResource37KeyValuePair : DKeyValuePair
     {
-        public DynamicResource37KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
-        {
-        }
+        public DynamicResource37KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value) { }
     }
 
     [DynamicTable]
@@ -532,9 +458,7 @@ namespace RESTar
 
     public class DynamicResource38KeyValuePair : DKeyValuePair
     {
-        public DynamicResource38KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
-        {
-        }
+        public DynamicResource38KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value) { }
     }
 
     [DynamicTable]
@@ -546,9 +470,7 @@ namespace RESTar
 
     public class DynamicResource39KeyValuePair : DKeyValuePair
     {
-        public DynamicResource39KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
-        {
-        }
+        public DynamicResource39KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value) { }
     }
 
     [DynamicTable]
@@ -560,9 +482,7 @@ namespace RESTar
 
     public class DynamicResource40KeyValuePair : DKeyValuePair
     {
-        public DynamicResource40KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
-        {
-        }
+        public DynamicResource40KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value) { }
     }
 
     [DynamicTable]
@@ -574,9 +494,7 @@ namespace RESTar
 
     public class DynamicResource41KeyValuePair : DKeyValuePair
     {
-        public DynamicResource41KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
-        {
-        }
+        public DynamicResource41KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value) { }
     }
 
     [DynamicTable]
@@ -588,9 +506,7 @@ namespace RESTar
 
     public class DynamicResource42KeyValuePair : DKeyValuePair
     {
-        public DynamicResource42KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
-        {
-        }
+        public DynamicResource42KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value) { }
     }
 
     [DynamicTable]
@@ -602,9 +518,7 @@ namespace RESTar
 
     public class DynamicResource43KeyValuePair : DKeyValuePair
     {
-        public DynamicResource43KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
-        {
-        }
+        public DynamicResource43KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value) { }
     }
 
     [DynamicTable]
@@ -616,9 +530,7 @@ namespace RESTar
 
     public class DynamicResource44KeyValuePair : DKeyValuePair
     {
-        public DynamicResource44KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
-        {
-        }
+        public DynamicResource44KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value) { }
     }
 
     [DynamicTable]
@@ -630,9 +542,7 @@ namespace RESTar
 
     public class DynamicResource45KeyValuePair : DKeyValuePair
     {
-        public DynamicResource45KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
-        {
-        }
+        public DynamicResource45KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value) { }
     }
 
     [DynamicTable]
@@ -644,9 +554,7 @@ namespace RESTar
 
     public class DynamicResource46KeyValuePair : DKeyValuePair
     {
-        public DynamicResource46KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
-        {
-        }
+        public DynamicResource46KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value) { }
     }
 
     [DynamicTable]
@@ -658,9 +566,7 @@ namespace RESTar
 
     public class DynamicResource47KeyValuePair : DKeyValuePair
     {
-        public DynamicResource47KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
-        {
-        }
+        public DynamicResource47KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value) { }
     }
 
     [DynamicTable]
@@ -672,9 +578,7 @@ namespace RESTar
 
     public class DynamicResource48KeyValuePair : DKeyValuePair
     {
-        public DynamicResource48KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
-        {
-        }
+        public DynamicResource48KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value) { }
     }
 
     [DynamicTable]
@@ -686,9 +590,7 @@ namespace RESTar
 
     public class DynamicResource49KeyValuePair : DKeyValuePair
     {
-        public DynamicResource49KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
-        {
-        }
+        public DynamicResource49KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value) { }
     }
 
     [DynamicTable]
@@ -700,9 +602,7 @@ namespace RESTar
 
     public class DynamicResource50KeyValuePair : DKeyValuePair
     {
-        public DynamicResource50KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
-        {
-        }
+        public DynamicResource50KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value) { }
     }
 
     [DynamicTable]
@@ -714,9 +614,7 @@ namespace RESTar
 
     public class DynamicResource51KeyValuePair : DKeyValuePair
     {
-        public DynamicResource51KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
-        {
-        }
+        public DynamicResource51KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value) { }
     }
 
     [DynamicTable]
@@ -728,9 +626,7 @@ namespace RESTar
 
     public class DynamicResource52KeyValuePair : DKeyValuePair
     {
-        public DynamicResource52KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
-        {
-        }
+        public DynamicResource52KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value) { }
     }
 
     [DynamicTable]
@@ -742,9 +638,7 @@ namespace RESTar
 
     public class DynamicResource53KeyValuePair : DKeyValuePair
     {
-        public DynamicResource53KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
-        {
-        }
+        public DynamicResource53KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value) { }
     }
 
     [DynamicTable]
@@ -756,9 +650,7 @@ namespace RESTar
 
     public class DynamicResource54KeyValuePair : DKeyValuePair
     {
-        public DynamicResource54KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
-        {
-        }
+        public DynamicResource54KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value) { }
     }
 
     [DynamicTable]
@@ -770,9 +662,7 @@ namespace RESTar
 
     public class DynamicResource55KeyValuePair : DKeyValuePair
     {
-        public DynamicResource55KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
-        {
-        }
+        public DynamicResource55KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value) { }
     }
 
     [DynamicTable]
@@ -784,9 +674,7 @@ namespace RESTar
 
     public class DynamicResource56KeyValuePair : DKeyValuePair
     {
-        public DynamicResource56KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
-        {
-        }
+        public DynamicResource56KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value) { }
     }
 
     [DynamicTable]
@@ -798,9 +686,7 @@ namespace RESTar
 
     public class DynamicResource57KeyValuePair : DKeyValuePair
     {
-        public DynamicResource57KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
-        {
-        }
+        public DynamicResource57KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value) { }
     }
 
     [DynamicTable]
@@ -812,9 +698,7 @@ namespace RESTar
 
     public class DynamicResource58KeyValuePair : DKeyValuePair
     {
-        public DynamicResource58KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
-        {
-        }
+        public DynamicResource58KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value) { }
     }
 
     [DynamicTable]
@@ -826,9 +710,7 @@ namespace RESTar
 
     public class DynamicResource59KeyValuePair : DKeyValuePair
     {
-        public DynamicResource59KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
-        {
-        }
+        public DynamicResource59KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value) { }
     }
 
     [DynamicTable]
@@ -840,9 +722,7 @@ namespace RESTar
 
     public class DynamicResource60KeyValuePair : DKeyValuePair
     {
-        public DynamicResource60KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
-        {
-        }
+        public DynamicResource60KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value) { }
     }
 
     [DynamicTable]
@@ -854,9 +734,7 @@ namespace RESTar
 
     public class DynamicResource61KeyValuePair : DKeyValuePair
     {
-        public DynamicResource61KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
-        {
-        }
+        public DynamicResource61KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value) { }
     }
 
     [DynamicTable]
@@ -868,9 +746,7 @@ namespace RESTar
 
     public class DynamicResource62KeyValuePair : DKeyValuePair
     {
-        public DynamicResource62KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
-        {
-        }
+        public DynamicResource62KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value) { }
     }
 
     [DynamicTable]
@@ -882,9 +758,7 @@ namespace RESTar
 
     public class DynamicResource63KeyValuePair : DKeyValuePair
     {
-        public DynamicResource63KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
-        {
-        }
+        public DynamicResource63KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value) { }
     }
 
     [DynamicTable]
@@ -896,8 +770,6 @@ namespace RESTar
 
     public class DynamicResource64KeyValuePair : DKeyValuePair
     {
-        public DynamicResource64KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value)
-        {
-        }
+        public DynamicResource64KeyValuePair(DDictionary dict, string key, object value = null) : base(dict, key, value) { }
     }
 }

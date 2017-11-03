@@ -4,10 +4,12 @@ using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Runtime.Serialization;
+using Dynamit;
 using Newtonsoft.Json;
 using RESTar;
 using RESTar.Linq;
 using Starcounter;
+using Operator = RESTar.Operator;
 
 #pragma warning disable 219
 // ReSharper disable All
@@ -20,9 +22,8 @@ namespace RESTarTester
         {
             RESTarConfig.Init(9000);
 
-           var das = Db.SQL<Base>("SELECT t FROM RESTarTester.Base t LIMIT ? OFFSET ? ", 10, 1);
-
             Db.SQL<Base>("SELECT t FROM RESTarTester.Base t").ForEach(b => Db.TransactAsync(b.Delete));
+            Db.SQL<MyDict>("SELECT t FROM RESTarTester.MyDict t").ForEach(b => Db.TransactAsync(b.Delete));
 
             string onesJson = null;
             string twosJson = null;
@@ -278,6 +279,50 @@ namespace RESTarTester
 
             #endregion
 
+            #region External source/destination inserts
+
+            var resource1Url = "https://storage.googleapis.com/mopedo-web/resource1.json";
+            var esourceresponse1 = Http.POST
+            (
+                uri: "http://localhost:9000/rest/resource1",
+                body: null,
+                headersDictionary: new Dictionary<string, string> {["Source"] = "GET " + resource1Url}
+            );
+            Debug.Assert(esourceresponse1?.IsSuccessStatusCode == true);
+
+            var esourceresponse2 = Http.POST
+            (
+                uri: "http://localhost:9000/rest/MyDict",
+                body: null,
+                headersDictionary: new Dictionary<string, string> {["Source"] = "GET " + resource1Url}
+            );
+            Debug.Assert(esourceresponse2?.IsSuccessStatusCode == true);
+
+            var esourceresponse3 = Http.POST
+            (
+                uri: "http://localhost:9000/rest/MyDict",
+                body: null,
+                headersDictionary: new Dictionary<string, string> {["Source"] = "GET /resource1"}
+            );
+            Debug.Assert(esourceresponse3?.IsSuccessStatusCode == true);
+
+            var edestinationresponse1 = Http.GET
+            (
+                uri: "http://localhost:9000/rest/resource1",
+                headersDictionary: new Dictionary<string, string> {["Destination"] = "POST /mydict"}
+            );
+            Debug.Assert(edestinationresponse1?.IsSuccessStatusCode == true);
+
+            var edestinationresponse2 = Http.GET
+            (
+                uri: "http://localhost:9000/rest/mydict",
+                headersDictionary: new Dictionary<string, string> { ["Destination"] = "POST http://localhost:9000/rest/resource1" }
+            );
+            Debug.Assert(edestinationresponse2?.IsSuccessStatusCode == true);
+
+
+            #endregion
+
             #region JSON GET
 
             var request = (HttpWebRequest) WebRequest.Create("http://localhost:9000/rest/resource1");
@@ -347,10 +392,22 @@ namespace RESTarTester
         }
     }
 
-    [Database]
-    public abstract class Base
+    [RESTar]
+    public class MyDict : DDictionary, IDDictionary<MyDict, MyDictKvp>
     {
+        public MyDictKvp NewKeyPair(MyDict dict, string key, object value = null)
+        {
+            return new MyDictKvp(dict, key, value);
+        }
     }
+
+    public class MyDictKvp : DKeyValuePair
+    {
+        public MyDictKvp(DDictionary dict, string key, object value = null) : base(dict, key, value) { }
+    }
+
+    [Database]
+    public abstract class Base { }
 
     [Database, RESTar]
     public class Resource1 : Base

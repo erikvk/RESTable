@@ -32,7 +32,7 @@ namespace RESTar.Operations
     }
 
     /// <summary>
-    /// Encodes a numeric offset used in requests. Can be implicitly converted from int.
+    /// Encodes a numeric offset used in requests. Can be implicitly converted from int.    
     /// </summary>
     public struct Offset : IFilter
     {

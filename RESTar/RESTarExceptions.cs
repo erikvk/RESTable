@@ -44,9 +44,7 @@ namespace RESTar
     public class ExternalResourceProviderException : RESTarException
     {
         internal ExternalResourceProviderException(string message) : base(ResourceProviderError,
-            "An error was found in an external ResourceProvider: " + message)
-        {
-        }
+            "An error was found in an external ResourceProvider: " + message) { }
     }
 
     /// <inheritdoc />
@@ -55,9 +53,7 @@ namespace RESTar
     /// </summary>
     public class ResourceWrapperException : RESTarException
     {
-        internal ResourceWrapperException(string message) : base(ResourceWrapperError, message)
-        {
-        }
+        internal ResourceWrapperException(string message) : base(ResourceWrapperError, message) { }
     }
 
     /// <inheritdoc />
@@ -112,9 +108,7 @@ namespace RESTar
             "ndition. Make sure to URI encode all equals (\'=\' to \'" +
             "%3D\') and exclamation marks (\'!\' to \'%21\') in reque" +
             "st URI value literals, to avoid capture. Accepted operat" +
-            "ors: " + string.Join(", ", Operator.AvailableOperators))
-        {
-        }
+            "ors: " + string.Join(", ", Operator.AvailableOperators)) { }
     }
 
     /// <inheritdoc />
@@ -160,8 +154,8 @@ namespace RESTar
     /// </summary>
     public class InvalidInputCountException : RESTarException
     {
-        internal InvalidInputCountException(Methods method) : base(DataSourceFormat,
-            $"Invalid input count for method {method:G}. Expected object/row, but found array/multiple rows. " +
+        internal InvalidInputCountException() : base(DataSourceFormat,
+            "Invalid input count. Expected object/row, but found array/multiple rows. " +
             "Only POST accepts multiple objects/rows as input.") => Response = BadRequest(this);
     }
 
@@ -450,8 +444,6 @@ namespace RESTar
 
     internal class HttpRequestException : Exception
     {
-        public HttpRequestException(string message) : base(message)
-        {
-        }
+        public HttpRequestException(string message) : base(message) { }
     }
 }

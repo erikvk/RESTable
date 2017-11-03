@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using RESTar.Deflection.Dynamic;
 using RESTar.Internal;
@@ -29,7 +30,7 @@ namespace RESTar
             }
         }
 
-        public string Body { get; set; }
+        public Stream Body { get; set; }
         public string AuthToken { get; internal set; }
         public IDictionary<string, string> ResponseHeaders { get; }
         IResource IRequest.Resource => Resource;

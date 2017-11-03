@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using Newtonsoft.Json;
@@ -26,7 +27,7 @@ namespace RESTar.Requests
         public MetaConditions MetaConditions { get; private set; }
         public string AuthToken { get; internal set; }
         public IDictionary<string, string> ResponseHeaders { get; }
-        public string Body { get; private set; }
+        public Stream Body { get; private set; }
         Methods IRequest.Method => GET;
         IResource IRequest.Resource => Resource;
         internal Request ScRequest { get; }
@@ -113,8 +114,8 @@ namespace RESTar.Requests
         {
             Authenticator.CheckUser();
             var item = (Item) View;
-            var entityJson = item.Entity.ToJson().Replace(@"$"":", @""":");
-            Body = Regex.Replace(entityJson, MacroRegex, "${content}");
+            //var entityJson = item.Entity.ToJson().Replace(@"$"":", @""":");
+            //Body = Regex.Replace(entityJson, MacroRegex, "${content}");
             if (IsTemplate)
             {
                 CheckMethod(POST, $"You are not allowed to insert into the '{Resource}' resource");

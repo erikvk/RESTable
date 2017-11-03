@@ -109,7 +109,7 @@ namespace RESTar.Operations
         {
             try
             {
-                var results = request.Body.Deserialize<List<T>>();
+                var results = request.Body.DeserializeList<T>();
                 if (results.Count == 0) return 0;
                 if (request.Resource.RequiresValidation)
                     results.OfType<IValidatable>().ForEach(item => item.Validate());
@@ -202,7 +202,7 @@ namespace RESTar.Operations
             List<T> results = null;
             try
             {
-                results = request.Body.Deserialize<List<T>>();
+                results = request.Body.DeserializeList<T>();
                 if (request.Resource.RequiresValidation)
                     results.OfType<IValidatable>().ForEach(item => item.Validate());
                 return request.Resource.Insert(results, request);
@@ -257,10 +257,10 @@ namespace RESTar.Operations
         {
             try
             {
-                source.ForEach(entity => Populate(request.Body, entity));
+                var updatedSource = source.Populate(request.Body.GetString());
                 if (request.Resource.RequiresValidation)
                     source.OfType<IValidatable>().ForEach(item => item.Validate());
-                return request.Resource.Update(source, request);
+                return request.Resource.Update(updatedSource, request);
             }
             catch (Exception e)
             {
@@ -290,7 +290,7 @@ namespace RESTar.Operations
         {
             try
             {
-                Populate(request.Body, source);
+                Populate(request.Body.GetString(), source);
                 if (source is IValidatable i)
                     i.Validate();
                 return request.Resource.Update(new[] {source}, request);
@@ -431,6 +431,7 @@ namespace RESTar.Operations
                     {
                         StreamedBody = stream,
                         ContentType = mimeType,
+                        ContentLength = (int) stream.Length,
                         Headers = {["Content-Disposition"] = $"attachment; filename={fileName}"}
                     };
                 }
@@ -450,7 +451,7 @@ namespace RESTar.Operations
 
             private static Response LrPOST(RESTRequest<T> request)
             {
-                request.Body = request.Body[0] == '[' ? request.Body : $"[{request.Body}]";
+                //request.Body = request.Body[0] == '[' ? request.Body : $"[{request.Body}]";
                 if (request.MetaConditions.SafePost != null) return LrSafePOST(request);
                 return request.InsertedEntities(Transaction<T>.Transact(() => INSERT(request)));
             }
@@ -502,7 +503,7 @@ namespace RESTar.Operations
                         .Split(',')
                         .Select(s => new Condition<T>(s, Operator.EQUALS, null))
                         .ToArray();
-                    foreach (var entity in request.Body.Deserialize<IEnumerable<JObject>>())
+                    foreach (var entity in request.Body.DeserializeList<JObject>())
                     {
                         conditions.ForEach(cond => cond.Value = cond.Term.Evaluate(entity));
                         var results = innerRequest.WithConditions(conditions).GET().ToList();
@@ -582,7 +583,7 @@ namespace RESTar.Operations
 
             private static Response POST(RESTRequest<T> request)
             {
-                request.Body = request.Body[0] == '[' ? request.Body : $"[{request.Body}]";
+                //request.Body = request.Body[0] == '[' ? request.Body : $"[{request.Body}]";
                 if (request.MetaConditions.SafePost != null) return SafePOST(request);
                 return request.InsertedEntities(Transaction<T>.ShTransact(() => INSERTorTryDelete(request)));
             }

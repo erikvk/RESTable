@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.IO;
 using RESTar.Internal;
 using RESTar.Requests;
 
@@ -50,7 +51,7 @@ namespace RESTar
         /// <summary>
         /// The body of the request
         /// </summary>
-        string Body { get; }
+        Stream Body { get; }
 
         /// <summary>
         /// The auth token assigned to this request

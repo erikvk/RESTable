@@ -1,10 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text.RegularExpressions;
 using ExcelDataReader;
-using Newtonsoft.Json.Linq;
 using RESTar.Internal;
 using RESTar.Linq;
 using RESTar.Operations;
@@ -25,14 +22,13 @@ namespace RESTar.Requests
         public IResource<T> Resource { get; }
         public Condition<T>[] Conditions { get; private set; }
         public MetaConditions MetaConditions { get; private set; }
-        public string Body { get; set; }
+        public Stream Body { get; private set; }
         public string AuthToken { get; internal set; }
         public IDictionary<string, string> ResponseHeaders { get; }
         IResource IRequest.Resource => Resource;
         internal Request ScRequest { get; }
         private Response Response { get; set; }
         private Func<RESTRequest<T>, Response> Evaluator { get; set; }
-        private byte[] BinaryBody { get; set; }
         private string Source { get; set; }
         private string Destination { get; set; }
         private MimeType ContentType { get; set; }
@@ -80,8 +76,7 @@ namespace RESTar.Requests
                     if (ScRequest.Body == null && (Method == PATCH || Method == POST || Method == PUT))
                         throw new SyntaxException(NoDataSource, "Missing data source for method " + Method);
                     if (ScRequest.Body == null) return;
-                    BinaryBody = ScRequest.BodyBytes;
-                    Body = ScRequest.Body.Trim();
+                    Body = new MemoryStream(ScRequest.BodyBytes);
                     break;
                 case DataConfig.External:
                     try
@@ -97,9 +92,9 @@ namespace RESTar.Requests
                         if (!response.IsSuccessStatusCode)
                             throw new SourceException(request,
                                 $"Status: {response.StatusCode} - {response.StatusDescription}. {response.Headers["RESTar-info"]}");
-                        if (response.BodyBytes?.Any() != true) throw new SourceException(request, "Response was empty");
-                        BinaryBody = response.BodyBytes;
-                        Body = response.Body.Trim();
+                        if (response.StreamedBody.CanSeek && response.StreamedBody.Length == 0)
+                            throw new SourceException(request, "Response was empty");
+                        Body = response.StreamedBody;
                         break;
                     }
                     catch (HttpRequestException re)
@@ -114,24 +109,18 @@ namespace RESTar.Requests
 
             switch (ContentType)
             {
-                case MimeType.Json:
-                    if (Body[0] == '[' && Method != POST)
-                        throw new InvalidInputCountException(Method);
-                    return;
                 case MimeType.XML: throw new FormatException("XML is only supported as output format");
                 case MimeType.Excel:
-                    using (var stream = new MemoryStream(BinaryBody))
+                    MemoryStream jsonStream;
+                    using (var stream = Body)
                     {
-                        var regex = new Regex(@"(:[\d]+).0([\D])");
-                        var reader = ExcelReaderFactory.CreateOpenXmlReader(stream);
-                        var result = reader.AsDataSet() ?? throw new ExcelInputException();
-                        if (Method == POST) Body = regex.Replace(result.Tables[0].Serialize(), "$1$2");
-                        else
-                        {
-                            if (result.Tables[0].Rows.Count > 1) throw new InvalidInputCountException(Method);
-                            Body = JArray.FromObject(result.Tables[0])[0].Serialize();
-                        }
+                        var dataTable = ExcelReaderFactory.CreateOpenXmlReader(stream).GetDataSet().Tables[0];
+                        if (Method != POST && dataTable.Rows.Count > 1)
+                            throw new InvalidInputCountException();
+                        dataTable.GetJsonStreamFromExcel(out jsonStream);
                     }
+                    jsonStream.Seek(0, SeekOrigin.Begin);
+                    Body = jsonStream;
                     return;
             }
 
@@ -152,7 +141,7 @@ namespace RESTar.Requests
                         {
                             ContentType = Accept.ToMimeString(),
                             AuthToken = AuthToken,
-                            Bytes = Response.BodyBytes
+                            Body = Response.StreamedBody
                         };
                         var response = request.GetResponse() ?? throw new DestinationException(request, "No response");
                         if (!response.IsSuccessStatusCode)
@@ -160,6 +149,11 @@ namespace RESTar.Requests
                                 $"Received {response.StatusCode} - {response.StatusDescription}. {response.Headers["RESTar-info"]}");
                         response.Headers["Access-Control-Allow-Origin"] =
                             AllowAllOrigins ? "*" : (CORSOrigin ?? "null");
+                        if (response.StreamedBody?.CanSeek == false)
+                        {
+                            response.BodyBytes = response.StreamedBody.ToByteArray();
+                            response.StreamedBody = null;
+                        }
                         return response;
                     }
                     catch (HttpRequestException re)

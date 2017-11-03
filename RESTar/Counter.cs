@@ -5,6 +5,7 @@ using Newtonsoft.Json.Linq;
 using RESTar.Internal;
 using RESTar.Operations;
 using RESTar.Requests;
+using RESTar.Serialization;
 using static RESTar.Internal.ErrorCodes;
 using static RESTar.Methods;
 
@@ -34,7 +35,7 @@ namespace RESTar
         public IEnumerable<Counter> Select(IRequest<Counter> request)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
-            var args = new Args(JObject.Parse(request.Body).SafeGetNoCase("uri").Value<string>());
+            var args = new Args(request.Body.Deserialize<JObject>().SafeGetNoCase("uri").Value<string>());
             IRequest innerRequest = MakeRequest((dynamic) args.IResource, args);
             var rights = RESTarConfig.AuthTokens[request.AuthToken];
             if (rights.SafeGet(innerRequest.Resource)?.Contains(GET) != true)
