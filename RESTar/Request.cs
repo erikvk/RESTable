@@ -157,7 +157,8 @@ namespace RESTar
             NotAuthorized, $"{method} is not available for resource '{Resource.Name}'");
 
         /// <summary>
-        /// Makes a GET request and serializes the output to an Excel workbook file
+        /// Makes a GET request and serializes the output to an Excel workbook file. Returns a tuple with 
+        /// the excel file as Stream and the number of non-header rows in the excel workbook.
         /// </summary>
         /// <returns></returns>
         public (Stream excel, long nrOfRows) GETExcel()

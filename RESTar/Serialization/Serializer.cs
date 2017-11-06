@@ -3,6 +3,7 @@ using System.IO;
 using System.Xml;
 using System;
 using System.Data;
+using System.Linq;
 using System.Text;
 using ExcelDataReader;
 using Newtonsoft.Json;
@@ -78,7 +79,7 @@ namespace RESTar.Serialization
             {
                 stream = null;
                 var excel = data.ToExcel(resource);
-                count = excel?.Worksheet(1)?.RowCount() ?? 0L;
+                count = excel?.Worksheet(1)?.RowsUsed().Count() - 1 ?? 0L;
                 if (excel == null) return false;
                 stream = new MemoryStream();
                 excel.SaveAs(stream);

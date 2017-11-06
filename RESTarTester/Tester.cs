@@ -30,7 +30,6 @@ namespace RESTarTester
         public static void Main()
         {
             RESTarConfig.Init(9000, lineEndings: LineEndings.Linux);
-
             Db.SQL<Base>("SELECT t FROM RESTarTester.Base t").ForEach(b => Db.TransactAsync(b.Delete));
             Db.SQL<MyDict>("SELECT t FROM RESTarTester.MyDict t").ForEach(b => Db.TransactAsync(b.Delete));
 
@@ -393,12 +392,29 @@ namespace RESTarTester
 
             #region Internal requests
 
+            var g = new Request<MyDict>().POST(() =>
+            {
+                dynamic d = new MyDict();
+                d.Hej = "123";
+                d.Foo = 3213M;
+                d.Goo = true;
+                dynamic v = new MyDict();
+                v.Hej = "123";
+                v.Foo = 3213M;
+                v.Goo = false;
+                dynamic x = new MyDict();
+                x.Hej = "123";
+                x.Foo = 3213M;
+                x.Goo = false;
+                return new MyDict[] {d, v, x};
+            });
+
             var r1 = new Request<Resource1>(new Condition<Resource1>(nameof(Resource1.Sbyte), Operator.GREATER_THAN, 1));
             var r2 = new Request<Resource2>();
             var r3 = new Request<Resource3>();
             var r4 = new Request<Resource4>();
             var r5 = new Request<MyDict>();
-            var cond = new Condition<MyDict>("Sbyte", Operator.EQUALS, 0);
+            var cond = new Condition<MyDict>("Goo", Operator.EQUALS, false);
             r5.Conditions = new[] {cond};
 
             var res1 = r1.GET();
@@ -406,6 +422,7 @@ namespace RESTarTester
             var res3 = r3.GET();
             var res4 = r4.GET();
             var res5 = r5.GET();
+            var res6 = r5.GETExcel();
 
             #endregion
 
