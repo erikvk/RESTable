@@ -368,6 +368,15 @@ namespace RESTarTester
 
             #endregion
 
+            #region POST Excel
+
+            var headers2 = new Dictionary<string, string> {["Content-Type"] = "Excel"};
+            var excelPostResponse1 = Http.POST("http://localhost:9000/rest/resource1", bodyBytes: excelResponse1.BodyBytes,
+                headersDictionary: headers2);
+            Debug.Assert(excelPostResponse1?.IsSuccessStatusCode == true);
+
+            #endregion
+
             #region With conditions
 
             var conditionResponse1 = Http.GET("http://localhost:9000/rest/resource1/sbyte>0&byte!=200&datetime>2001-01-01");
