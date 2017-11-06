@@ -10,25 +10,29 @@ namespace RESTar.Operations
     /// </summary>
     public struct Limit : IFilter
     {
-        public readonly int Number;
+        public readonly long Number;
         public bool Equals(Limit other) => Number == other.Number;
         public override bool Equals(object obj) => !ReferenceEquals(null, obj) && obj is Limit && Equals((Limit) obj);
-        public override int GetHashCode() => Number;
+        public override int GetHashCode() => Number.GetHashCode();
+        public override string ToString() => Number.ToString();
         public static Limit NoLimit => (Limit) (-1);
-        public static explicit operator Limit(int nr) => new Limit(nr);
-        public static explicit operator int(Limit limit) => limit.Number;
-        public static bool operator ==(Limit l, int i) => l.Number == i;
-        public static bool operator !=(Limit l, int i) => l.Number != i;
-        public static bool operator <(Limit l, int i) => l.Number < i;
-        public static bool operator >(Limit l, int i) => l.Number > i;
-        public static bool operator <=(Limit l, int i) => l.Number <= i;
-        public static bool operator >=(Limit l, int i) => l.Number >= i;
-        private Limit(int nr) => Number = nr;
+        public static explicit operator Limit(long nr) => new Limit(nr);
+        public static explicit operator long(Limit limit) => limit.Number;
+        public static bool operator ==(Limit l, long i) => l.Number == i;
+        public static bool operator !=(Limit l, long i) => l.Number != i;
+        public static bool operator ==(long i, Limit l) => l.Number == i;
+        public static bool operator !=(long i, Limit l) => l.Number != i;
+        public static bool operator <(Limit l, long i) => l.Number < i;
+        public static bool operator >(Limit l, long i) => l.Number > i;
+        public static bool operator <=(Limit l, long i) => l.Number <= i;
+        public static bool operator >=(Limit l, long i) => l.Number >= i;
+
+        private Limit(long nr) => Number = nr;
 
         /// <summary>
         /// Applies the limiting to an IEnumerable of entities
         /// </summary>
-        public IEnumerable<T> Apply<T>(IEnumerable<T> entities) => Number > 0 ? entities.Take(Number) : entities;
+        public IEnumerable<T> Apply<T>(IEnumerable<T> entities) => Number > 0 ? entities.Take((int) Number) : entities;
     }
 
     /// <summary>
@@ -36,24 +40,27 @@ namespace RESTar.Operations
     /// </summary>
     public struct Offset : IFilter
     {
-        public readonly int Number;
+        public readonly long Number;
         public bool Equals(Offset other) => Number == other.Number;
         public override bool Equals(object obj) => !ReferenceEquals(null, obj) && obj is Offset && Equals((Offset) obj);
-        public override int GetHashCode() => Number;
-        public static Offset NoOffset => (Offset) (-1);
+        public override int GetHashCode() => Number.GetHashCode();
+        public override string ToString() => Number.ToString();
+        public static Offset NoOffset => (Offset) 0;
         public static explicit operator Offset(int nr) => new Offset(nr);
-        public static explicit operator int(Offset limit) => limit.Number;
-        public static bool operator ==(Offset l, int i) => l.Number == i;
-        public static bool operator !=(Offset l, int i) => l.Number != i;
-        public static bool operator <(Offset l, int i) => l.Number < i;
-        public static bool operator >(Offset l, int i) => l.Number > i;
-        public static bool operator <=(Offset l, int i) => l.Number <= i;
-        public static bool operator >=(Offset l, int i) => l.Number >= i;
-        private Offset(int nr) => Number = nr;
+        public static explicit operator long(Offset limit) => limit.Number;
+        public static bool operator ==(Offset o, long i) => o.Number == i;
+        public static bool operator !=(Offset o, long i) => o.Number != i;
+        public static bool operator <(Offset o, long i) => o.Number < i;
+        public static bool operator >(Offset o, long i) => o.Number > i;
+        public static bool operator <=(Offset o, long i) => o.Number <= i;
+        public static bool operator >=(Offset o, long i) => o.Number >= i;
+        public static Offset operator +(Offset o, long i) => new Offset(o.Number + i);
+
+        private Offset(long nr) => Number = nr;
 
         /// <summary>
         /// Applies the offset to an IEnumerable of entities
         /// </summary>
-        public IEnumerable<T> Apply<T>(IEnumerable<T> entities) => Number > 0 ? entities.Skip(Number) : entities;
+        public IEnumerable<T> Apply<T>(IEnumerable<T> entities) => Number > 0 ? entities.Skip((int) Number) : entities;
     }
 }

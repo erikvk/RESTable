@@ -8,7 +8,6 @@ namespace RESTar.Serialization
 {
     public class RESTarFromExcelJsonWriter : JsonTextWriter
     {
-
         public RESTarFromExcelJsonWriter(TextWriter textWriter) : base(textWriter) { }
 
         public override void WriteValue(double value)

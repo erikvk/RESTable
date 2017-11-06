@@ -8,6 +8,7 @@ using RESTar.Linq;
 using RESTar.Operations;
 using RESTar.Requests;
 using RESTar.Resources;
+using RESTar.Serialization;
 using static RESTar.Internal.ErrorCodes;
 using IResource = RESTar.Internal.IResource;
 
@@ -154,6 +155,16 @@ namespace RESTar
 
         private Exception Deny(Methods method) => new ForbiddenException(
             NotAuthorized, $"{method} is not available for resource '{Resource.Name}'");
+
+        /// <summary>
+        /// Makes a GET request and serializes the output to an Excel workbook file
+        /// </summary>
+        /// <returns></returns>
+        public (Stream excel, long nrOfRows) GETExcel()
+        {
+            GET().GetExcelStream(Resource, out var excel, out var nrOfRows);
+            return (excel, nrOfRows);
+        }
 
         public IEnumerable<T> GET()
         {

@@ -109,7 +109,6 @@ namespace RESTar.Requests
 
             switch (ContentType)
             {
-                case MimeType.XML: throw new FormatException("XML is only supported as output format");
                 case MimeType.Excel:
                     MemoryStream jsonStream;
                     using (var stream = Body)
@@ -119,7 +118,6 @@ namespace RESTar.Requests
                             throw new InvalidInputCountException();
                         dataTable.GetJsonStreamFromExcel(out jsonStream);
                     }
-                    jsonStream.Seek(0, SeekOrigin.Begin);
                     Body = jsonStream;
                     return;
             }
@@ -197,7 +195,7 @@ namespace RESTar.Requests
 
         internal Response Report(Report report)
         {
-            if (!report.GetJsonStream(out var stream))
+            if (!report.GetJsonStream(out var stream, out var _))
                 return NoContent;
             return new Response
             {

@@ -17,7 +17,6 @@ namespace RESTar
         {
             switch (mimeTypeString?.ToLower())
             {
-                case XML: return MimeType.XML;
                 case "excel":
                 case Excel: return MimeType.Excel;
                 default: return MimeType.Json;
@@ -30,7 +29,6 @@ namespace RESTar
             {
                 case MimeType.Json: return JSON;
                 case MimeType.Excel: return Excel;
-                case MimeType.XML: return XML;
                 default: throw new ArgumentOutOfRangeException(nameof(mimeType));
             }
         }
@@ -39,8 +37,7 @@ namespace RESTar
     internal enum MimeType : byte
     {
         Json,
-        Excel,
-        XML
+        Excel
     }
 
     internal static class MimeTypeExtensions

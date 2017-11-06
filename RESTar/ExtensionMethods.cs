@@ -809,27 +809,6 @@ namespace RESTar
             return workbook;
         }
 
-        /// <summary>
-        /// Serializes an Excel workbook to a stream
-        /// </summary>
-        public static bool GetExcelStream(this IEnumerable<object> data, IResource resource, out MemoryStream stream)
-        {
-            try
-            {
-                stream = null;
-                var excel = data.ToExcel(resource);
-                if (excel == null) return false;
-                stream = new MemoryStream();
-                excel.SaveAs(stream);
-                stream.Seek(0, SeekOrigin.Begin);
-                return true;
-            }
-            catch (Exception e)
-            {
-                throw new ExcelFormatException(e.Message, e);
-            }
-        }
-
         internal static DataTable MakeDataTable(this IEnumerable<object> entities, IResource resource)
         {
             var table = new DataTable();

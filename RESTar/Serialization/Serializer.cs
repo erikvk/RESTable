@@ -3,10 +3,12 @@ using System.IO;
 using System.Xml;
 using System;
 using System.Data;
+using System.Text;
 using ExcelDataReader;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
+using RESTar.Internal;
 using static Newtonsoft.Json.Formatting;
 using static RESTar.Admin.Settings;
 
@@ -52,18 +54,41 @@ namespace RESTar.Serialization
             JsonSerializer = JsonSerializer.Create(Settings);
         }
 
-        internal static bool GetJsonStream(this object data, out MemoryStream stream)
+        internal static bool GetJsonStream(this object data, out MemoryStream stream, out long count)
         {
             JsonSerializer.Formatting = _PrettyPrint ? Indented : None;
             stream = new MemoryStream();
-            var streamWriter = new StreamWriter(stream);
-            var jsonWriter = new RESTarJsonWriter(streamWriter);
-            JsonSerializer.Serialize(jsonWriter, data);
-            jsonWriter.Flush();
-            streamWriter.Flush();
-            if (stream.Position <= 2) return false;
+            using (var swr = new StreamWriter(stream, Encoding.UTF8, 1024, true))
+            using (var jwr = new RESTarJsonWriter(swr))
+            {
+                JsonSerializer.Serialize(jwr, data);
+                jwr.Flush();
+                swr.Flush();
+                count = jwr.ObjectsWritten;
+            }
+            if (count == 0) return false;
             stream.Seek(0, SeekOrigin.Begin);
             return true;
+        }
+
+        internal static bool GetExcelStream(this IEnumerable<object> data, IResource resource, out MemoryStream stream,
+            out long count)
+        {
+            try
+            {
+                stream = null;
+                var excel = data.ToExcel(resource);
+                count = excel?.Worksheet(0)?.RowCount() ?? 0L;
+                if (excel == null) return false;
+                stream = new MemoryStream();
+                excel.SaveAs(stream);
+                stream.Seek(0, SeekOrigin.Begin);
+                return true;
+            }
+            catch (Exception e)
+            {
+                throw new ExcelFormatException(e.Message, e);
+            }
         }
 
         private static readonly ExcelDataSetConfiguration excelDataSetConfig = new ExcelDataSetConfiguration
@@ -77,15 +102,17 @@ namespace RESTar.Serialization
             return reader.AsDataSet(excelDataSetConfig) ?? throw new ExcelInputException();
         }
 
-        internal static bool GetJsonStreamFromExcel(this DataTable table, out MemoryStream stream)
+        internal static void GetJsonStreamFromExcel(this DataTable table, out MemoryStream stream)
         {
             stream = new MemoryStream();
-            var streamWriter = new StreamWriter(stream);
-            var jsonWriter = new RESTarFromExcelJsonWriter(streamWriter);
-            JsonSerializer.Serialize(jsonWriter, table);
-            jsonWriter.Flush();
-            streamWriter.Flush();
-            return stream.Position > 2;
+            using (var streamWriter = new StreamWriter(stream, Encoding.UTF8, 1024, true))
+            using (var jsonWriter = new RESTarFromExcelJsonWriter(streamWriter))
+            {
+                JsonSerializer.Serialize(jsonWriter, table);
+                jsonWriter.Flush();
+                streamWriter.Flush();
+            }
+            stream.Seek(0, SeekOrigin.Begin);
         }
 
         internal static string GetString(this Stream stream)
@@ -154,20 +181,5 @@ namespace RESTar.Serialization
         }
 
         internal static string SerializeToViewModel(this object value) => JsonConvert.SerializeObject(value, VmSettings);
-
-        internal static bool GetXmlStream<T>(this IEnumerable<T> data, out MemoryStream stream)
-        {
-            stream = null;
-            var json = data.Serialize();
-            if (json == "[]") return false;
-            stream = new MemoryStream();
-            var xml = JsonConvert.DeserializeXmlNode($@"{{""row"":{json}}}", "root", true);
-            var stringWriter = new StreamWriter(stream);
-            var xmlTextWriter = XmlWriter.Create(stringWriter, _PrettyPrint ? XMLIndentSettings : null);
-            xml.WriteTo(xmlTextWriter);
-            xmlTextWriter.Flush();
-            stream.Seek(0, SeekOrigin.Begin);
-            return true;
-        }
     }
 }

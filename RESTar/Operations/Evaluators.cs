@@ -408,31 +408,36 @@ namespace RESTar.Operations
                 if (results == null) return NoContent;
                 try
                 {
-                    var (stream, hasContent, mimeType, extension) = default((MemoryStream, bool, string, string));
+                    var (stream, count, hasContent, mimeType, extension) = default((MemoryStream, long, bool, string, string));
                     switch (request.Accept)
                     {
                         case MimeType.Json:
-                            hasContent = results.GetJsonStream(out stream);
+                            hasContent = results.GetJsonStream(out stream, out count);
                             (mimeType, extension) = (MimeTypes.JSON, ".json");
                             break;
                         case MimeType.Excel:
-                            hasContent = results.GetExcelStream(request.Resource, out stream);
+                            hasContent = results.GetExcelStream(request.Resource, out stream, out count);
                             (mimeType, extension) = (MimeTypes.Excel, ".xlsx");
-                            break;
-                        case MimeType.XML:
-                            hasContent = results.GetXmlStream(out stream);
-                            (mimeType, extension) = (MimeTypes.XML, ".xml");
                             break;
                     }
                     if (!hasContent) return NoContent;
-                    var fileName = $"{request.Resource.AliasOrName}_{DateTime.Now:yyMMddHHmmssfff}{extension}";
-                    return new Response
+                    var response = new Response
                     {
                         StreamedBody = stream,
                         ContentType = mimeType,
                         ContentLength = (int) stream.Length,
-                        Headers = {["Content-Disposition"] = $"attachment; filename={fileName}"}
+                        Headers =
+                        {
+                            ["RESTar-count"] = count.ToString(),
+                            ["Content-Disposition"] = $"attachment; filename={request.Resource.Name}_" +
+                                                      $"{DateTime.Now:yyMMddHHmmssfff}{extension}",
+                        }
                     };
+
+                    if (count == request.MetaConditions.Limit)
+                        response.Headers["RESTar-pager"] = $"limit={request.MetaConditions.Limit}&" +
+                                                           $"offset={request.MetaConditions.Offset + count}";
+                    return response;
                 }
                 catch (Exception e)
                 {
