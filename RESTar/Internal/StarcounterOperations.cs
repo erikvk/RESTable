@@ -42,7 +42,16 @@ namespace RESTar.Internal
             };
             Insert = (e, r) => e.Count();
             Update = (e, r) => e.Count();
-            Delete = (e, r) => Do.Run(() => e.ForEach(Db.Delete), e.Count());
+            Delete = (e, r) =>
+            {
+                var count = 0;
+                foreach (var _e in e)
+                {
+                    _e.Delete();
+                    count += 1;
+                }
+                return count;
+            };
             Count = r =>
             {
                 switch (r)

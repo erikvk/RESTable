@@ -8,6 +8,7 @@ using Dynamit;
 using Newtonsoft.Json;
 using RESTar;
 using RESTar.Linq;
+using RESTar.Operations;
 using Starcounter;
 using Operator = RESTar.Operator;
 
@@ -423,6 +424,12 @@ namespace RESTarTester
             var res4 = r4.GET();
             var res5 = r5.GET();
             var res6 = r5.GETExcel();
+
+            Do.Schedule(() => Db.TransactAsync(() =>
+            {
+                new MyDict() {["Aaa"] = "Wook"};
+            }), TimeSpan.FromSeconds(10));
+
 
             #endregion
 
