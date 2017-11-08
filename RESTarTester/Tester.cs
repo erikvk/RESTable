@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Runtime.Serialization;
+using System.Threading.Tasks;
 using Dynamit;
 using Newtonsoft.Json;
 using RESTar;
@@ -425,11 +426,21 @@ namespace RESTarTester
             var res5 = r5.GET();
             var res6 = r5.GETExcel();
 
-            Do.Schedule(() => Db.TransactAsync(() =>
+            Db.TransactAsync(() =>
             {
-                new MyDict() {["Aaa"] = "Wook"};
-            }), TimeSpan.FromSeconds(10));
+                var x = new MyDict
+                {
+                    ["Hej"] = "123",
+                    ["Foo"] = 3213M,
+                    ["Goo"] = false
+                };
+                foreach (Resource1 asd in Db.SQL<Resource1>("SELECT t FROM RESTarTester.Resource1 t"))
+                {
+                    asd.MyDict = x;
+                }
+            });
 
+            Do.Schedule(() => Db.TransactAsync(() => { new MyDict() {["Aaa"] = "Wook"}; }), TimeSpan.FromSeconds(10));
 
             #endregion
 
@@ -443,6 +454,23 @@ namespace RESTarTester
         public MyDictKvp NewKeyPair(MyDict dict, string key, object value = null)
         {
             return new MyDictKvp(dict, key, value);
+        }
+    }
+
+    [RESTar(Methods.GET)]
+    public class AsyncTest : ISelector<AsyncTest>
+    {
+        public bool Hej { get; set; }
+
+        public IEnumerable<AsyncTest> Select(IRequest<AsyncTest> request)
+        {
+            async Task<AsyncTest> get()
+            {
+                await Task.Delay(3000);
+                return new AsyncTest {Hej = true};
+            }
+
+            return new[] {get().Result};
         }
     }
 
@@ -471,6 +499,7 @@ namespace RESTarTester
         public string String;
         public bool Bool;
         public DateTime DateTime;
+        public MyDict MyDict;
     }
 
     [Database, RESTar]

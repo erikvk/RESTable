@@ -111,6 +111,7 @@ namespace RESTar.Deflection.Dynamic
                 {
                     switch (bindingRule)
                     {
+                        case var _ when type.IsDDictionary(): return DynamicProperty.Parse(str);
                         case DynamicWithStaticFallback: return DynamicProperty.Parse(str, true);
                         case OnlyStatic: return StaticProperty.Find(type, str);
                         case StaticWithDynamicFallback:
