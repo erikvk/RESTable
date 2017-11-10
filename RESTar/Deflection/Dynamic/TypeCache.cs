@@ -81,11 +81,11 @@ namespace RESTar.Deflection.Dynamic
                 {
                     case var _ when type.IsDDictionary():
                         return type.GetProperties(Instance | Public)
-                            .ParseStaticProperties(true)
-                            .Union(GetObjectIDAndObjectNo(true));
-                    case var _ when type.IsDynamic() && Resource.SafeGet(type)?.DynamicConditionsAllowed == true:
+                            .ParseStaticProperties(flag: true)
+                            .Union(GetObjectIDAndObjectNo(flag: true));
+                    case var _ when Resource.SafeGet(type)?.StaticPropertiesFlagged == true:
                         return type.GetProperties(Instance | Public)
-                            .ParseStaticProperties(true);
+                            .ParseStaticProperties(flag: true);
                     case var _ when type.IsInterface:
                         return new[] {type}
                             .Concat(type.GetInterfaces())

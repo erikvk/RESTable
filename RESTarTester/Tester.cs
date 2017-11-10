@@ -448,6 +448,26 @@ namespace RESTarTester
         }
     }
 
+    public enum Things
+    {
+        a,
+        b,
+        c
+    }
+
+    [RESTar(Methods.GET, AllowDynamicConditions = true, FlagStaticMembers = true)]
+    public class MyRes : Dictionary<string,object>, ISelector<MyRes>
+    {
+        public Things T { get; set; }
+
+        public IEnumerable<MyRes> Select(IRequest<MyRes> request)
+        {
+            Things thing = request.Conditions.Get("$T", Operator.EQUALS).Value;
+            var other = request.Conditions.Get("V", Operator.EQUALS).Value;
+            return new[] {new MyRes {["T"] = thing, ["V"] = other}};
+        }
+    }
+
     [RESTar]
     public class MyDict : DDictionary, IDDictionary<MyDict, MyDictKvp>
     {

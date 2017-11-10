@@ -15,8 +15,8 @@ namespace RESTar.Deflection.Dynamic
     {
         private SpecialProperty(bool scQueryable) : base(scQueryable) { }
 
-        internal static IEnumerable<SpecialProperty> GetObjectIDAndObjectNo(bool flagged) =>
-            flagged ? new[] {FlaggedObjectID, FlaggedObjectNo} : new[] {ObjectID, ObjectNo};
+        internal static IEnumerable<SpecialProperty> GetObjectIDAndObjectNo(bool flag) =>
+            flag ? new[] {FlaggedObjectID, FlaggedObjectNo} : new[] {ObjectID, ObjectNo};
 
         /// <summary>
         /// A property describing the ObjectNo of a class

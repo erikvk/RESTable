@@ -126,11 +126,11 @@ namespace RESTar.Internal
             IsSingleton = attribute.Singleton;
             IsInternal = attribute is RESTarInternalAttribute;
             DynamicConditionsAllowed = typeof(T).IsDDictionary() || attribute.AllowDynamicConditions;
-            StaticPropertiesFlagged = typeof(T).IsDDictionary() || typeof(T).IsDynamic() && attribute.AllowDynamicConditions;
+            StaticPropertiesFlagged = typeof(T).IsDDictionary() || attribute.FlagStaticMembers;
             ConditionBindingRule = DynamicConditionsAllowed ? StaticWithDynamicFallback : OnlyStatic;
             if (StaticPropertiesFlagged)
                 OutputBindingRule = StaticWithDynamicFallback;
-            else if (typeof(T).IsDynamic() && !attribute.AllowDynamicConditions)
+            else if (typeof(T).IsDynamic() && !StaticPropertiesFlagged)
                 OutputBindingRule = DynamicWithStaticFallback;
             else OutputBindingRule = OnlyStatic;
             RequiresValidation = typeof(IValidatable).IsAssignableFrom(typeof(T));
