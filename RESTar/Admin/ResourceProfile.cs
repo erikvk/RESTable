@@ -112,8 +112,8 @@ namespace RESTar.Admin
         private static readonly MethodInfo DDICTPROFILER = typeof(ResourceProfile).GetMethod("DDictProfiler", NonPublic | Static);
         private static ResourceProfile ScProfiler<T>(IResource<T> r) where T : class => StarcounterOperations<T>.Profile(r);
         private static ResourceProfile DDProfiler<T>(IResource<T> r) where T : DDictionary => DDictionaryOperations<T>.Profile(r);
-        private static long COUNT(string name) => Db.SQL<long>($"SELECT COUNT(t) FROM {name} t").First;
-        private static QueryResultRows<T> SELECT<T>(string name) => Db.SQL<T>($"SELECT t FROM {name} t");
+        private static long COUNT(string name) => Db.SQL<long>($"SELECT COUNT(t) FROM {name} t").FirstOrDefault();
+        private static IEnumerable<T> SELECT<T>(string name) => Db.SQL<T>($"SELECT t FROM {name} t");
     }
 
     /// <summary>

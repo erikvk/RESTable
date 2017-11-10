@@ -20,7 +20,7 @@ namespace RESTar.Internal
             if (Session.Current == null) return null;
             return Db.SQL("SELECT t.Token.User FROM Simplified.Ring5.SystemUserSession t " +
                           "WHERE t.SessionIdString =? " +
-                          "AND t.Token.User IS NOT NULL", Session.Current.SessionId).First;
+                          "AND t.Token.User IS NOT NULL", Session.Current.SessionId).FirstOrDefault();
         }
 
         internal static void CheckUser()

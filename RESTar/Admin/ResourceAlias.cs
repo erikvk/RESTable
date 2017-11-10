@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.Serialization;
 using Starcounter;
 using static RESTar.Methods;
@@ -64,12 +65,16 @@ namespace RESTar.Admin
         /// <summary>
         /// Gets a ResourceAlias by its alias (case insensitive)
         /// </summary>
-        public static ResourceAlias ByAlias(string alias) => Db.SQL<ResourceAlias>(AliasSQL, alias).First;
+        public static ResourceAlias ByAlias(string alias) => Db
+            .SQL<ResourceAlias>(AliasSQL, alias)
+            .FirstOrDefault();
 
         /// <summary>
         /// Gets a ResourceAlias by its resource name
         /// </summary>
-        public static ResourceAlias ByResource(string resourceName) => Db.SQL<ResourceAlias>(ResourceSQL, resourceName).First;
+        public static ResourceAlias ByResource(string resourceName) => Db
+            .SQL<ResourceAlias>(ResourceSQL, resourceName)
+            .FirstOrDefault();
 
         /// <summary>
         /// Returns true if and only if there is an alias with this name

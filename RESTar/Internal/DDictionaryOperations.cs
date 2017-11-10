@@ -57,7 +57,7 @@ namespace RESTar.Internal
             {
                 switch (r.Conditions.Length)
                 {
-                    case 0: return Db.SQL<long>($"SELECT COUNT(t) FROM {typeof(T).FullName} t").First;
+                    case 0: return Db.SQL<long>($"SELECT COUNT(t) FROM {typeof(T).FullName} t").FirstOrDefault();
                     default: return Select(r)?.Count() ?? 0;
                 }
             };

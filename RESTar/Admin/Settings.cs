@@ -1,4 +1,5 @@
-﻿using System.Runtime.Serialization;
+﻿using System.Linq;
+using System.Runtime.Serialization;
 using RESTar.Linq;
 using RESTar.Operations;
 using Starcounter;
@@ -92,6 +93,6 @@ namespace RESTar.Admin
         /// <summary>
         /// Gets the only instance of the Settings resource
         /// </summary>
-        [IgnoreDataMember] public static Settings Instance => Db.SQL<Settings>(SQL).First;
+        [IgnoreDataMember] public static Settings Instance => Db.SQL<Settings>(SQL).FirstOrDefault();
     }
 }
