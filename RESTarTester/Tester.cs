@@ -442,7 +442,7 @@ namespace RESTarTester
                 }
             });
 
-            Do.Schedule(() => Db.TransactAsync(() => { new MyDict() {["Aaa"] = "Wook"}; }), TimeSpan.FromSeconds(10));
+            Do.Schedule(() => Db.TransactAsync(() => new MyDict() {["Aaa"] = "Wook"}), TimeSpan.FromSeconds(10));
 
             DatabaseIndex.Register<MyDict2>("MyFineIdex", "R");
 

@@ -43,9 +43,18 @@ namespace RESTar.Resources
             {
                 if (index.IResource == null)
                     throw new Exception("Found no resource to register index on");
-                Db.SQL($"CREATE INDEX {index.Name.Fnuttify()} ON {index.IResource.Type.FullName.Fnuttify()} " +
-                       $"({string.Join(", ", index.Columns.Select(c => $"{c.Name.Fnuttify()} {(c.Descending ? "DESC" : "")}"))})");
-                count += 1;
+                try
+                {
+                    Db.SQL($"CREATE INDEX {index.Name.Fnuttify()} ON {index.IResource.Type.FullName.Fnuttify()} " +
+                           $"({string.Join(", ", index.Columns.Select(c => $"{c.Name.Fnuttify()} {(c.Descending ? "DESC" : "")}"))})");
+                    count += 1;
+                }
+                catch (SqlException e)
+                {
+                    throw new Exception($"Could not create index '{index.Name}' on Starcounter database resource " +
+                                        $"'{index.IResource.Name}'. Indexes must point to statically defined instance " +
+                                        "properties of Starcounter database classes.", e);
+                }
             }
             return count;
         }
@@ -58,9 +67,18 @@ namespace RESTar.Resources
             foreach (var index in indexes)
             {
                 Db.SQL($"DROP INDEX {index.Name.Fnuttify()} ON {index.IResource.Type.FullName.Fnuttify()}");
-                Db.SQL($"CREATE INDEX {index.Name.Fnuttify()} ON {index.IResource.Type.FullName.Fnuttify()} " +
-                       $"({string.Join(", ", index.Columns.Select(c => $"{c.Name.Fnuttify()} {(c.Descending ? "DESC" : "")}"))})");
-                count += 1;
+                try
+                {
+                    Db.SQL($"CREATE INDEX {index.Name.Fnuttify()} ON {index.IResource.Type.FullName.Fnuttify()} " +
+                           $"({string.Join(", ", index.Columns.Select(c => $"{c.Name.Fnuttify()} {(c.Descending ? "DESC" : "")}"))})");
+                    count += 1;
+                }
+                catch (SqlException e)
+                {
+                    throw new Exception($"Could not update index '{index.Name}' on Starcounter database resource " +
+                                        $"'{index.IResource.Name}'. Indexes must point to statically defined instance " +
+                                        "properties of Starcounter database classes.", e);
+                }
             }
             return count;
         }
