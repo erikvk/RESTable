@@ -23,17 +23,9 @@ namespace RESTar.Serialization
         private static readonly JsonSerializerSettings VmSettings;
         internal static readonly JsonSerializerSettings Settings;
         internal static readonly JsonSerializer JsonSerializer;
-        internal static readonly XmlWriterSettings XMLIndentSettings;
 
         static Serializer()
         {
-            XMLIndentSettings = new XmlWriterSettings
-            {
-                Indent = true,
-                IndentChars = "  ",
-                NewLineChars = "\r\n",
-                NewLineHandling = NewLineHandling.Replace
-            };
             Settings = new JsonSerializerSettings
             {
                 DateParseHandling = DateParseHandling.DateTime,
@@ -49,6 +41,7 @@ namespace RESTar.Serialization
                 DateFormatHandling = DateFormatHandling.IsoDateFormat,
                 DateTimeZoneHandling = DateTimeZoneHandling.Utc
             };
+
             var enumConverter = new StringEnumConverter();
             Settings.Converters.Add(enumConverter);
             VmSettings.Converters.Add(enumConverter);

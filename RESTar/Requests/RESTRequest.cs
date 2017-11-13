@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using ExcelDataReader;
+using RESTar.Http;
 using RESTar.Internal;
 using RESTar.Linq;
 using RESTar.Operations;
@@ -92,9 +93,9 @@ namespace RESTar.Requests
                         if (!response.IsSuccessStatusCode)
                             throw new SourceException(request,
                                 $"Status: {response.StatusCode} - {response.StatusDescription}. {response.Headers["RESTar-info"]}");
-                        if (response.StreamedBody.CanSeek && response.StreamedBody.Length == 0)
+                        if (response.Body.CanSeek && response.Body.Length == 0)
                             throw new SourceException(request, "Response was empty");
-                        Body = response.StreamedBody;
+                        Body = response.Body;
                         break;
                     }
                     catch (HttpRequestException re)
@@ -147,12 +148,7 @@ namespace RESTar.Requests
                                 $"Received {response.StatusCode} - {response.StatusDescription}. {response.Headers["RESTar-info"]}");
                         response.Headers["Access-Control-Allow-Origin"] =
                             AllowAllOrigins ? "*" : (CORSOrigin ?? "null");
-                        if (response.StreamedBody?.CanSeek == false)
-                        {
-                            response.BodyBytes = response.StreamedBody.ToByteArray();
-                            response.StreamedBody = null;
-                        }
-                        return response;
+                        return (Response) response;
                     }
                     catch (HttpRequestException re)
                     {

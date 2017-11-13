@@ -43,6 +43,9 @@
     <PlatformTarget>x64</PlatformTarget>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Dynamit">
+      <HintPath>..\..\DRTB\packages\Dynamit.0.1.19\lib\net45\Dynamit.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core">
       <RequiredTargetFramework>4.0</RequiredTargetFramework>

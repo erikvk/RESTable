@@ -8,7 +8,7 @@ using RESTar.Linq;
 using RESTar.Operations;
 using Starcounter;
 
-namespace RESTar
+namespace RESTar.Http
 {
     internal class HttpRequest
     {
@@ -22,7 +22,7 @@ namespace RESTar
         internal Stream Body;
         internal string AuthToken;
 
-        internal Response GetResponse() => IsInternal ? Internal(this) : External(this);
+        internal HttpResponse GetResponse() => IsInternal ? Internal(this) : External(this);
 
         internal HttpRequest(string uriString)
         {
@@ -76,7 +76,7 @@ namespace RESTar
             });
         }
 
-        private static Response Internal(HttpRequest request) => Internal
+        private static HttpResponse Internal(HttpRequest request) => Internal
         (
             method: request.Method,
             relativeUri: request.URI,
@@ -87,7 +87,7 @@ namespace RESTar
             headers: request.Headers
         );
 
-        private static Response External(HttpRequest request) => External
+        private static HttpResponse External(HttpRequest request) => External
         (
             method: request.Method,
             uri: request.URI,
@@ -101,7 +101,7 @@ namespace RESTar
         /// Makes an internal request. Make sure to include the original Request's
         /// AuthToken if you're sending internal RESTar requests.
         /// </summary>
-        internal static Response Internal
+        internal static HttpResponse Internal
         (
             Methods method,
             Uri relativeUri,
@@ -132,7 +132,7 @@ namespace RESTar
                     headersDictionary: headers,
                     port: Settings._Port
                 );
-                return response;
+                return (HttpResponse) response;
             }
             catch
             {
@@ -143,13 +143,13 @@ namespace RESTar
         /// <summary>
         /// Makes an external HTTP or HTTPS request
         /// </summary>
-        internal static Response External(Methods method, Uri uri, Stream body = null, string contentType = null,
+        internal static HttpResponse External(Methods method, Uri uri, Stream body = null, string contentType = null,
             string accept = null, Dictionary<string, string> headers = null)
         {
             return Do.SafeGet(() => Request(method.ToString(), uri, body, contentType, accept, headers));
         }
 
-        private static Response Request(string method, Uri uri, Stream body = null,
+        private static HttpResponse Request(string method, Uri uri, Stream body = null,
             string contentType = null, string accept = null, IDictionary<string, string> headers = null)
         {
             try
@@ -170,26 +170,15 @@ namespace RESTar
                 var respLoc = webResponse.Headers["Location"];
                 if (webResponse.StatusCode == HttpStatusCode.MovedPermanently && respLoc != null)
                     return Request(method, new Uri(respLoc), body, contentType, accept, headers);
-                var response = new Response
-                {
-                    StatusCode = (ushort) webResponse.StatusCode,
-                    StatusDescription = webResponse.StatusDescription,
-                    ContentLength = (int) webResponse.ContentLength,
-                    ContentType = accept ?? MimeTypes.JSON,
-                    StreamedBody = webResponse.GetResponseStream()
-                                   ?? throw new NullReferenceException("ResponseStream was null")
-                };
-                foreach (var header in webResponse.Headers.AllKeys)
-                    response.Headers[header] = webResponse.Headers[header];
-                return response;
+                return (HttpResponse) webResponse;
             }
             catch (WebException we)
             {
                 Log.Warn($"!!! HTTP {method} Error at {uri} : {we.Message}");
                 if (!(we.Response is HttpWebResponse response)) return null;
-                var _response = new Response
+                var _response = new HttpResponse
                 {
-                    StatusCode = (ushort) response.StatusCode,
+                    StatusCode = response.StatusCode,
                     StatusDescription = response.StatusDescription
                 };
                 foreach (var header in response.Headers.AllKeys)

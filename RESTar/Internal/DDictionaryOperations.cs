@@ -26,20 +26,25 @@ namespace RESTar.Internal
         internal static readonly Profiler<T> Profile;
         internal static readonly Counter<T> Count;
 
+        private static (string, Dynamit.Operator, dynamic)? ToFinderCond(Condition<T> c)
+        {
+            return (c.Key, (Dynamit.Operator) c.Operator.OpCode, c.Value);
+        }
+
         static DDictionaryOperations()
         {
             Select = r =>
             {
-                if (!r.Conditions.HasEquality(out var eqalityConds))
-                    return AllSQL.Where(r.Conditions);
-                var kvpTable = TableInfo<T>.KvpTable;
-                var results = new HashSet<T>();
-                eqalityConds.ForEach((cond, index) =>
+                var finderConditions = new List<(string, Dynamit.Operator, dynamic)?>();
+                var otherConditions = new HashSet<Condition<T>>();
+                foreach (var cond in r.Conditions)
                 {
-                    if (index == 0) results.UnionWith(EqualitySQL(cond, kvpTable));
-                    else results.IntersectWith(EqualitySQL(cond, kvpTable));
-                });
-                return r.Conditions.HasCompare(out var compare) ? results.Where(compare).ToList() : results.ToList();
+                    if (cond.Operator.Equality && cond.Term.Count == 1 && cond.Term.IsDynamic)
+                        finderConditions.Add(ToFinderCond(cond));
+                    else otherConditions.Add(cond);
+                }
+                var results = Finder<T>.Where(finderConditions.ToArray());
+                return otherConditions.Any() ? results.Where(otherConditions) : results;
             };
             Insert = (e, r) => e.Count();
             Update = (e, r) => e.Count();

@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Dynamit;
 using Newtonsoft.Json;
 using RESTar;
+using RESTar.Admin;
 using RESTar.Linq;
 using RESTar.Operations;
 using Starcounter;
@@ -34,6 +35,7 @@ namespace RESTarTester
             RESTarConfig.Init(9000, lineEndings: LineEndings.Linux);
             Db.SQL<Base>("SELECT t FROM RESTarTester.Base t").ForEach(b => Db.TransactAsync(b.Delete));
             Db.SQL<MyDict>("SELECT t FROM RESTarTester.MyDict t").ForEach(b => Db.TransactAsync(b.Delete));
+            Db.SQL<MyDict2>("SELECT t FROM RESTarTester.MyDict2 t").ForEach(b => Db.TransactAsync(b.Delete));
 
             string onesJson = null;
             string twosJson = null;
@@ -442,6 +444,21 @@ namespace RESTarTester
 
             Do.Schedule(() => Db.TransactAsync(() => { new MyDict() {["Aaa"] = "Wook"}; }), TimeSpan.FromSeconds(10));
 
+            DatabaseIndex.Register<MyDict2>("MyFineIdex", "R");
+
+            Db.TransactAsync(() =>
+            {
+                new MyDict2
+                {
+                    ["Snoo"] = 123,
+                    R = new Resource1
+                    {
+                        Byte = 123,
+                        String = "Googfoo"
+                    }
+                };
+            });
+
             #endregion
 
             var done = true;
@@ -456,7 +473,7 @@ namespace RESTarTester
     }
 
     [RESTar(Methods.GET, AllowDynamicConditions = true, FlagStaticMembers = true)]
-    public class MyRes : Dictionary<string,object>, ISelector<MyRes>
+    public class MyRes : Dictionary<string, object>, ISelector<MyRes>
     {
         public Things T { get; set; }
 
@@ -477,6 +494,27 @@ namespace RESTarTester
         }
     }
 
+    public class MyDictKvp : DKeyValuePair
+    {
+        public MyDictKvp(DDictionary dict, string key, object value = null) : base(dict, key, value) { }
+    }
+
+    [RESTar]
+    public class MyDict2 : DDictionary, IDDictionary<MyDict2, MyDict2Kvp>
+    {
+        public Resource1 R;
+
+        public MyDict2Kvp NewKeyPair(MyDict2 dict, string key, object value = null)
+        {
+            return new MyDict2Kvp(dict, key, value);
+        }
+    }
+
+    public class MyDict2Kvp : DKeyValuePair
+    {
+        public MyDict2Kvp(DDictionary dict, string key, object value = null) : base(dict, key, value) { }
+    }
+
     [RESTar(Methods.GET)]
     public class AsyncTest : ISelector<AsyncTest>
     {
@@ -492,11 +530,6 @@ namespace RESTarTester
 
             return new[] {get().Result};
         }
-    }
-
-    public class MyDictKvp : DKeyValuePair
-    {
-        public MyDictKvp(DDictionary dict, string key, object value = null) : base(dict, key, value) { }
     }
 
     [Database]

@@ -423,6 +423,8 @@ namespace RESTar.Operations
                     if (!hasContent) return NoContent;
                     var response = new Response
                     {
+                        StatusCode = 200,
+                        StatusDescription = "OK",
                         StreamedBody = stream,
                         ContentType = mimeType,
                         ContentLength = (int) stream.Length,

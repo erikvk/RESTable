@@ -6,7 +6,9 @@ using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
 using Newtonsoft.Json.Linq;
+using RESTar.Http;
 using RESTar.Serialization;
+using static System.Net.HttpStatusCode;
 using static RESTar.Methods;
 using JTokens = System.Collections.Generic.IEnumerable<Newtonsoft.Json.Linq.JToken>;
 
@@ -61,9 +63,9 @@ namespace RESTar
                                 throw new Exception(
                                     $"Could not get source data from '{uri}'. " +
                                     $"{response?.StatusCode}: {response?.StatusDescription}. {response?.Headers["RESTar-info"]}");
-                            if (response.StatusCode == 204 || !(response.StreamedBody?.Length > 2))
+                            if (response.StatusCode == NoContent || !(response.Body?.Length > 2))
                                 json = "[]";
-                            else json = response.StreamedBody.GetString();
+                            else json = response.Body.GetString();
                         }
                         else
                             throw new Exception($"Invalid string '{str}'. Must be a relative REST request URI " +
@@ -164,8 +166,8 @@ namespace RESTar
                         throw new Exception(
                             $"Could not get source data from '{uri}'. " +
                             $"{response?.StatusCode}: {response?.StatusDescription}. {response?.Headers["RESTar-info"]}");
-                    if (response.StatusCode == 204) mapped.Add(new JObject());
-                    else Serializer.Populate(response.StreamedBody.GetString(), mapped);
+                    if (response.StatusCode == NoContent) mapped.Add(new JObject());
+                    else Serializer.Populate(response.Body.GetString(), mapped);
                 }
             }
             return mapped;

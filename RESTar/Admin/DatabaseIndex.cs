@@ -153,7 +153,9 @@ namespace RESTar.Admin
         }
 
         /// <inheritdoc />
-        public IEnumerable<DatabaseIndex> Select(IRequest<DatabaseIndex> request) => Indexers.Values
+        public IEnumerable<DatabaseIndex> Select(IRequest<DatabaseIndex> request) => Indexers
+            .Values
+            .Distinct()
             .SelectMany(indexer => indexer.Select(request));
 
         /// <inheritdoc />

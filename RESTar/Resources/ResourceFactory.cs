@@ -21,8 +21,8 @@ namespace RESTar.Resources
 
         static ResourceFactory()
         {
-            DDictProvider = new DDictionaryProvider();
             ScProvider = new StarcounterProvider();
+            DDictProvider = new DDictionaryProvider {DatabaseIndexer = ScProvider.DatabaseIndexer};
             VrProvider = new VirtualResourceProvider();
             DynProvider = new DynamicResourceProvider();
             ResourceProviders = new List<ResourceProvider> {DDictProvider, ScProvider, VrProvider};

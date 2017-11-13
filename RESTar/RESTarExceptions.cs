@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json;
 using RESTar.Deflection.Dynamic;
+using RESTar.Http;
 using RESTar.Internal;
 using Starcounter;
 using static RESTar.Internal.ErrorCodes;
