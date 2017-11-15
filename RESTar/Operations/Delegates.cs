@@ -4,7 +4,6 @@ using System.Linq;
 using System.Reflection;
 using RESTar.Admin;
 using RESTar.Internal;
-using RESTar.Resources;
 
 namespace RESTar.Operations
 {
