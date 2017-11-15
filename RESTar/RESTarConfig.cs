@@ -18,6 +18,7 @@ using Starcounter;
 using static RESTar.Methods;
 using static RESTar.Requests.Handlers;
 using IResource = RESTar.Internal.IResource;
+using ResourceFinder = System.Collections.Concurrent.ConcurrentDictionary<string, RESTar.Internal.IResource>;
 
 namespace RESTar
 {
@@ -27,8 +28,9 @@ namespace RESTar
     /// </summary>
     public static class RESTarConfig
     {
-        internal static IDictionary<string, IResource> ResourceFinder { get; private set; }
+        internal static ResourceFinder ResourceFinder { get; private set; }
         internal static IDictionary<string, IResource> ResourceByName { get; private set; }
+
         internal static IDictionary<Type, IResource> ResourceByType { get; private set; }
         internal static IDictionary<string, AccessRights> ApiKeys { get; private set; }
         internal static ConcurrentDictionary<string, AccessRights> AuthTokens { get; private set; }
@@ -47,7 +49,7 @@ namespace RESTar
             ApiKeys = new Dictionary<string, AccessRights>();
             ResourceByType = new Dictionary<Type, IResource>();
             ResourceByName = new Dictionary<string, IResource>();
-            ResourceFinder = new ConcurrentDictionary<string, IResource>();
+            ResourceFinder = new ResourceFinder();
             AuthTokens = new ConcurrentDictionary<string, AccessRights>();
             AllowedOrigins = new List<Uri>();
             AuthTokens.TryAdd(Authenticator.AppToken, AccessRights.Root);
@@ -87,14 +89,14 @@ namespace RESTar
 
         internal static void ReloadResourceFinder()
         {
-            var newFinder = new ConcurrentDictionary<string, IResource>();
+            var newFinder = new ResourceFinder();
             Resources.ForEach(r => AddToResourceFinder(r, newFinder));
             ResourceFinder = newFinder;
         }
 
-        private static void AddToResourceFinder(IResource toAdd, IDictionary<string, IResource> finder)
+        private static void AddToResourceFinder(IResource toAdd, ResourceFinder finder)
         {
-            string[] makeparts(IResource resource)
+            string[] makeResourceParts(IResource resource)
             {
                 switch (resource)
                 {
@@ -106,7 +108,7 @@ namespace RESTar
                 }
             }
 
-            var parts = makeparts(toAdd);
+            var parts = makeResourceParts(toAdd);
             parts.ForEach((item, index) =>
             {
                 var key = string.Join(".", parts.Skip(index));

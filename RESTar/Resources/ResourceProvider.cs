@@ -6,6 +6,7 @@ using RESTar.Internal;
 using RESTar.Linq;
 using RESTar.Operations;
 using static System.Reflection.BindingFlags;
+using static RESTar.Operations.DelegateMaker;
 
 namespace RESTar.Resources
 {
@@ -145,16 +146,18 @@ namespace RESTar.Resources
             BuildWrapperMethod.MakeGenericMethod(type, type.GetWrappedType()).Invoke(this, null);
         });
 
-        private void BuildRegularResource<TResource>() where TResource : class, TBase => new Internal.Resource<TResource>
+        private void BuildRegularResource<TResource>()
+            where TResource : class, TBase => new Internal.Resource<TResource>
         (
             name: typeof(TResource).FullName,
             attribute: typeof(TResource).GetAttribute<RESTarAttribute>(),
-            selector: DelegateMaker.GetDelegate<Selector<TResource>, TResource>() ?? GetDefaultSelector<TResource>(),
-            inserter: DelegateMaker.GetDelegate<Inserter<TResource>, TResource>() ?? GetDefaultInserter<TResource>(),
-            updater: DelegateMaker.GetDelegate<Updater<TResource>, TResource>() ?? GetDefaultUpdater<TResource>(),
-            deleter: DelegateMaker.GetDelegate<Deleter<TResource>, TResource>() ?? GetDefaultDeleter<TResource>(),
-            counter: DelegateMaker.GetDelegate<Counter<TResource>, TResource>() ?? GetDefaultCounter<TResource>(),
+            selector: GetDelegate<Selector<TResource>>(typeof(TResource)) ?? GetDefaultSelector<TResource>(),
+            inserter: GetDelegate<Inserter<TResource>>(typeof(TResource)) ?? GetDefaultInserter<TResource>(),
+            updater: GetDelegate<Updater<TResource>>(typeof(TResource)) ?? GetDefaultUpdater<TResource>(),
+            deleter: GetDelegate<Deleter<TResource>>(typeof(TResource)) ?? GetDefaultDeleter<TResource>(),
+            counter: GetDelegate<Counter<TResource>>(typeof(TResource)) ?? GetDefaultCounter<TResource>(),
             profiler: GetProfiler<TResource>(),
+            views: GetViews<TResource>(),
             provider: this
         );
 
@@ -164,12 +167,13 @@ namespace RESTar.Resources
         (
             name: typeof(TWrapper).FullName,
             attribute: typeof(TWrapper).GetAttribute<RESTarAttribute>(),
-            selector: DelegateMaker.GetDelegate<Selector<TWrapped>, TWrapper, TWrapped>() ?? GetDefaultSelector<TWrapped>(),
-            inserter: DelegateMaker.GetDelegate<Inserter<TWrapped>, TWrapper, TWrapped>() ?? GetDefaultInserter<TWrapped>(),
-            updater: DelegateMaker.GetDelegate<Updater<TWrapped>, TWrapper, TWrapped>() ?? GetDefaultUpdater<TWrapped>(),
-            deleter: DelegateMaker.GetDelegate<Deleter<TWrapped>, TWrapper, TWrapped>() ?? GetDefaultDeleter<TWrapped>(),
-            counter: DelegateMaker.GetDelegate<Counter<TWrapped>, TWrapper, TWrapped>() ?? GetDefaultCounter<TWrapped>(),
+            selector: GetDelegate<Selector<TWrapped>>(typeof(TWrapper), typeof(TWrapped)) ?? GetDefaultSelector<TWrapped>(),
+            inserter: GetDelegate<Inserter<TWrapped>>(typeof(TWrapper), typeof(TWrapped)) ?? GetDefaultInserter<TWrapped>(),
+            updater: GetDelegate<Updater<TWrapped>>(typeof(TWrapper), typeof(TWrapped)) ?? GetDefaultUpdater<TWrapped>(),
+            deleter: GetDelegate<Deleter<TWrapped>>(typeof(TWrapper), typeof(TWrapped)) ?? GetDefaultDeleter<TWrapped>(),
+            counter: GetDelegate<Counter<TWrapped>>(typeof(TWrapper), typeof(TWrapped)) ?? GetDefaultCounter<TWrapped>(),
             profiler: GetProfiler<TWrapped>(),
+            views: GetWrappedViews<TWrapper, TWrapped>(),
             provider: this
         );
 
@@ -183,6 +187,20 @@ namespace RESTar.Resources
                 throw new ExternalResourceProviderException($"Provided AttributeType '{AttributeType.FullName}' " +
                                                             $"does not inherit from RESTar.ResourceProviderAttribute");
         }
+
+        private static View<TResource>[] GetViews<TResource>() where TResource : class, TBase => typeof(TResource)
+            .GetNestedTypes()
+            .Where(nested => nested.HasAttribute<RESTarViewAttribute>())
+            .Select(view => new View<TResource>(view))
+            .ToArray();
+
+        private static View<TWrapped>[] GetWrappedViews<TWrapper, TWrapped>() where TWrapper : ResourceWrapper<TWrapped>
+            where TWrapped : class, TBase
+            => typeof(TWrapper)
+                .GetNestedTypes()
+                .Where(nested => nested.HasAttribute<RESTarViewAttribute>())
+                .Select(view => new View<TWrapped>(view))
+                .ToArray();
 
         #endregion
     }

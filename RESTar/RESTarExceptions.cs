@@ -99,6 +99,19 @@ namespace RESTar
 
     /// <inheritdoc />
     /// <summary>
+    /// Thrown when a syntax error was discovered when parsing a request
+    /// </summary>
+    public class InvalidSeparatorException : RESTarException
+    {
+        internal InvalidSeparatorException() : base(InvalidSeparator,
+            "Syntax error while parsing request: Invalid argument separator count. A RESTar URI can contain at most 3 " +
+            $"forward slashes after the base uri. URI scheme: {_ResourcesPath}/[resource]/[conditions]/[meta-conditions]") =>
+            Response = BadRequest(this);
+    }
+
+
+    /// <inheritdoc />
+    /// <summary>
     /// Thrown when a provided operator was invalid
     /// </summary>
     public class OperatorException : SyntaxException
@@ -396,8 +409,7 @@ namespace RESTar
     /// </summary>
     public class ResourceMemberException : RESTarException
     {
-        internal ResourceMemberException(string message)
-            : base(InvalidResourceMember, message) => Response = BadRequest(this);
+        internal ResourceMemberException(string message) : base(InvalidResourceMember, message) => Response = BadRequest(this);
     }
 
     /// <inheritdoc />
@@ -406,8 +418,8 @@ namespace RESTar
     /// </summary>
     public class VirtualResourceDeclarationException : RESTarException
     {
-        internal VirtualResourceDeclarationException(string message)
-            : base(InvalidVirtualResourceDeclaration, message) => Response = BadRequest(this);
+        internal VirtualResourceDeclarationException(string message) : base(InvalidVirtualResourceDeclaration, message) =>
+            Response = BadRequest(this);
     }
 
     /// <inheritdoc />
@@ -416,8 +428,19 @@ namespace RESTar
     /// </summary>
     public class ResourceDeclarationException : RESTarException
     {
-        internal ResourceDeclarationException(string message)
-            : base(InvalidVirtualResourceDeclaration, message) => Response = BadRequest(this);
+        internal ResourceDeclarationException(string message) : base(InvalidResourceDeclaration, message) =>
+            Response = BadRequest(this);
+    }
+
+    /// <inheritdoc />
+    /// <summary>
+    /// Thrown when an error was detected in a resource view declaration.
+    /// </summary>
+    public class ResourceViewDeclarationException : RESTarException
+    {
+        internal ResourceViewDeclarationException(Type view, string message) : base(InvalidResourceViewDeclaration,
+            $"Invalid resource view declaration for view '{view.Name}' in Resource '{view.DeclaringType.FullName}'. {message}") =>
+            Response = BadRequest(this);
     }
 
     /// <inheritdoc />
@@ -428,8 +451,8 @@ namespace RESTar
     public class NoAvalailableDynamicTableException : RESTarException
     {
         internal NoAvalailableDynamicTableException() : base(NoAvalailableDynamicTable,
-            "RESTar have no more unallocated dynamic tables. Remove an existing table and try again.")
-            => Response = BadRequest(this);
+            "RESTar have no more unallocated dynamic tables. Remove an existing table and try again.") =>
+            Response = BadRequest(this);
     }
 
     /// <inheritdoc />

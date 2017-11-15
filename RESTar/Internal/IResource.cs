@@ -166,6 +166,11 @@ namespace RESTar.Internal
         /// RESTar profiler (don't use)
         /// </summary>
         Profiler<T> Profile { get; }
+
+        /// <summary>
+        /// The Views registered for this resource
+        /// </summary>
+        IDictionary<string, View<T>> Views { get; }
     }
 
     internal interface IResourceInternal

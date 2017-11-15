@@ -38,6 +38,7 @@ namespace RESTar.Internal
         public string ParentResourceName { get; }
         public bool IsSingleton { get; }
         public bool DynamicConditionsAllowed { get; }
+        public IDictionary<string, View<T>> Views { get; }
 
         public TermBindingRules ConditionBindingRule { get; }
         public TermBindingRules OutputBindingRule { get; }
@@ -110,7 +111,8 @@ namespace RESTar.Internal
         /// All custom resources are constructed here
         /// </summary>
         internal Resource(string name, RESTarAttribute attribute, Selector<T> selector, Inserter<T> inserter,
-            Updater<T> updater, Deleter<T> deleter, Counter<T> counter, Profiler<T> profiler, ResourceProvider provider)
+            Updater<T> updater, Deleter<T> deleter, Counter<T> counter, Profiler<T> profiler, ResourceProvider provider,
+            View<T>[] views)
         {
             if (name.Contains('+'))
             {
@@ -145,6 +147,7 @@ namespace RESTar.Internal
             Delete = deleter;
             Count = counter;
             Profile = profiler;
+            Views = views.ToDictionary(v => v.Name.ToLower(), v => v);
             CheckOperationsSupport();
             RESTarConfig.AddResource(this);
         }

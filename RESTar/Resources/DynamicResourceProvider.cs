@@ -85,6 +85,7 @@ namespace RESTar.Resources
             deleter: DDictionaryOperations<T>.Delete,
             counter: DDictionaryOperations<T>.Count,
             profiler: DDictionaryOperations<T>.Profile,
+            views: null,
             provider: this
         );
     }

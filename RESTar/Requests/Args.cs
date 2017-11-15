@@ -1,7 +1,5 @@
-﻿using ClosedXML.Excel;
-using RESTar.Admin;
-using Starcounter;
-using static RESTar.Internal.ErrorCodes;
+﻿using System.Text.RegularExpressions;
+using ClosedXML.Excel;
 using IResource = RESTar.Internal.IResource;
 
 namespace RESTar.Requests
@@ -9,104 +7,33 @@ namespace RESTar.Requests
     internal struct Args
     {
         internal readonly string Resource;
+        internal readonly string View;
         internal readonly string Conditions;
         internal readonly string MetaConditions;
         internal readonly bool HasResource;
+        internal readonly bool HasView;
         internal readonly bool HasConditions;
         internal readonly bool HasMetaConditions;
         internal IResource IResource => HasResource ? RESTar.Resource.Find(Resource) : Resource<AvailableResource>.Get;
-        
+        private const string regex = @"\?*(?<resource>/\w*)?(?<view>-\w*)?(?<conditions>/[^/]*)?(?<metaconditions>/[^/]*)?";
 
-        /// <summary>
-        /// Main constructor
-        /// </summary>
-        internal Args(string query)
+        internal Args(string query, bool escapePercentSigns = false)
         {
-            Resource = Conditions = MetaConditions = null;
-            HasResource = HasConditions = HasMetaConditions = false;
-            query = query.TrimStart('?');
-            if (string.IsNullOrEmpty(query) || query == "/") return;
-            if (query.CharCount('/') > 3)
-                throw new SyntaxException(InvalidSeparator,
-                    "Invalid argument separator count. A RESTar URI can contain at most 3 " +
-                    $"forward slashes after the base uri. URI scheme: {Settings._ResourcesPath}" +
-                    "/[resource]/[conditions]/[meta-conditions]");
-            if (query[0] == '/') query = query.Substring(1);
-            var arr = query.Split('/');
-            for (var i = 0; i < arr.Length; i++)
-            {
-                switch (i)
-                {
-                    case 0:
-                        if (arr[i] != "")
-                        {
-                            Resource = arr[i];
-                            HasResource = true;
-                        }
-                        break;
-                    case 1:
-                        if (arr[i] != "")
-                        {
-                            Conditions = arr[i];
-                            HasConditions = true;
-                        }
-                        break;
-                    case 2:
-                        if (arr[i] != "")
-                        {
-                            MetaConditions = arr[i];
-                            HasMetaConditions = true;
-                        }
-                        break;
-                }
-            }
-        }
-
-        /// <summary>
-        /// Used for internal requests
-        /// </summary>
-        internal Args(string query, Request request)
-        {
-            Resource = Conditions = MetaConditions = null;
-            HasResource = HasConditions = HasMetaConditions = false;
-            query = query.TrimStart('?');
-            if (string.IsNullOrEmpty(query) || query == "/") return;
-            if (query.CharCount('/') > 3)
-                throw new SyntaxException(InvalidSeparator,
-                    "Invalid argument separator count. A RESTar URI can contain at most 3 " +
-                    $"forward slashes after the base uri. URI scheme: {Settings._ResourcesPath}" +
-                    "/[resource]/[conditions]/[meta-conditions]");
-            if (request.HeadersDictionary?.ContainsKey("X-ARR-LOG-ID") == true)
-                query = query.Replace("%25", "%");
-            if (query[0] == '/') query = query.Substring(1);
-            var arr = query.Split('/');
-            for (var i = 0; i < arr.Length; i++)
-            {
-                switch (i)
-                {
-                    case 0:
-                        if (arr[i] != "")
-                        {
-                            Resource = arr[i];
-                            HasResource = true;
-                        }
-                        break;
-                    case 1:
-                        if (arr[i] != "")
-                        {
-                            Conditions = arr[i];
-                            HasConditions = true;
-                        }
-                        break;
-                    case 2:
-                        if (arr[i] != "")
-                        {
-                            MetaConditions = arr[i];
-                            HasMetaConditions = true;
-                        }
-                        break;
-                }
-            }
+            if (query.CharCount('/') > 3) throw new InvalidSeparatorException();
+            if (escapePercentSigns) query = query.Replace("%25", "%");
+            var groups = Regex.Match(query, regex).Groups;
+            var resource = groups["resource"].Value.TrimStart('/');
+            var view = groups["view"].Value.TrimStart('-');
+            var conditions = groups["conditions"].Value.TrimStart('/');
+            var metaConditions = groups["metaconditions"].Value.TrimStart('/');
+            HasResource = resource != "";
+            HasView = view != "";
+            HasConditions = conditions != "";
+            HasMetaConditions = metaConditions != "";
+            Resource = HasResource ? resource : null;
+            View = HasView ? view : null;
+            Conditions = HasConditions ? conditions : null;
+            MetaConditions = HasMetaConditions ? metaConditions : null;
         }
     }
 }

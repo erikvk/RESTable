@@ -6,10 +6,7 @@ namespace RESTar.Resources
     internal class VirtualResourceProvider : ResourceProvider<object>
     {
         internal override bool Include(Type type) => !type.HasResourceProviderAttribute();
-
-        internal override void Validate()
-        {
-        }
+        internal override void Validate() { }
 
         // ReSharper disable once UnassignedGetOnlyAutoProperty
         public override Type AttributeType { get; }
@@ -19,6 +16,6 @@ namespace RESTar.Resources
         public override Updater<T> GetDefaultUpdater<T>() => null;
         public override Deleter<T> GetDefaultDeleter<T>() => null;
         public override Counter<T> GetDefaultCounter<T>() => null;
-        public override Profiler<T> GetProfiler<T>() => DelegateMaker.GetDelegate<Profiler<T>, T>();
+        public override Profiler<T> GetProfiler<T>() => DelegateMaker.GetDelegate<Profiler<T>>(typeof(T));
     }
 }

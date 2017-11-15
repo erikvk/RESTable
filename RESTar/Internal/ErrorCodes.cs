@@ -21,6 +21,7 @@ namespace RESTar.Internal
         InvalidMetaConditionKey = 005,
         InvalidConditionSyntax = 006,
         InvalidConditionOperator = 007,
+        InvalidResourceSpecifier = 008,
         InvalidSeparator = 009,
 
         // 010-019: Data source syntax and format errors
@@ -56,6 +57,7 @@ namespace RESTar.Internal
         NoAvalailableDynamicTable = 122,
         InvalidVirtualResourceDeclaration = 123,
         InvalidResourceDeclaration = 124,
+        InvalidResourceViewDeclaration = 125,
 
         // 130-139: Alias errors
         AliasAlreadyInUse = 130,

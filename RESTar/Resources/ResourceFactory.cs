@@ -38,6 +38,10 @@ namespace RESTar.Resources
             if (type.FullName.Count(c => c == '+') >= 2)
                 throw new ResourceDeclarationException($"Invalid resource '{type.FullName.Replace('+', '.')}'. " +
                                                        "Inner resources cannot have their own inner resources");
+
+            if (type.HasAttribute<RESTarViewAttribute>())
+                throw new ResourceDeclarationException($"Invalid resource type '{type.FullName}'. Resource types cannot be " +
+                                                       "decorated with the 'RESTarViewAttribute'");
             if (type.Namespace == null)
                 throw new ResourceDeclarationException($"Invalid type '{type.FullName}'. Unknown namespace");
 

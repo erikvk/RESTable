@@ -10,16 +10,16 @@ namespace RESTar.Operations
 {
     internal static class DelegateMaker
     {
-        private static Type MatchingInterface<TDelegate, TResource>() where TResource : class
+        private static Type MatchingInterface<TDelegate>(Type type)
         {
             switch (typeof(TDelegate))
             {
-                case var d when d == typeof(Selector<TResource>): return typeof(ISelector<TResource>);
-                case var d when d == typeof(Inserter<TResource>): return typeof(IInserter<TResource>);
-                case var d when d == typeof(Updater<TResource>): return typeof(IUpdater<TResource>);
-                case var d when d == typeof(Deleter<TResource>): return typeof(IDeleter<TResource>);
-                case var d when d == typeof(Counter<TResource>): return typeof(ICounter<TResource>);
-                case var d when d == typeof(Profiler<TResource>): return typeof(IProfiler<TResource>);
+                case var d when d == typeof(Selector<>).MakeGenericType(type): return typeof(ISelector<>).MakeGenericType(type);
+                case var d when d == typeof(Inserter<>).MakeGenericType(type): return typeof(IInserter<>).MakeGenericType(type);
+                case var d when d == typeof(Updater<>).MakeGenericType(type): return typeof(IUpdater<>).MakeGenericType(type);
+                case var d when d == typeof(Deleter<>).MakeGenericType(type): return typeof(IDeleter<>).MakeGenericType(type);
+                case var d when d == typeof(Counter<>).MakeGenericType(type): return typeof(ICounter<>).MakeGenericType(type);
+                case var d when d == typeof(Profiler<>).MakeGenericType(type): return typeof(IProfiler<>).MakeGenericType(type);
                 default: throw new ArgumentOutOfRangeException();
             }
         }
@@ -41,22 +41,29 @@ namespace RESTar.Operations
         /// <summary>
         /// Gets the given operations delegate from a given resource type definition
         /// </summary>
-        internal static TDelegate GetDelegate<TDelegate, TResource>() where TResource : class => typeof(TResource)
-            .SafeGet(t => t.GetInterfaceMap(MatchingInterface<TDelegate, TResource>()))
-            .TargetMethods?
-            .FirstOrDefault()?
-            .MakeDelegate<TDelegate>();
+        internal static TDelegate GetDelegate<TDelegate>(Type target) => target
+            .SafeGet(t => t.GetInterfaceMap(MatchingInterface<TDelegate>(target))
+                .TargetMethods?
+                .FirstOrDefault()?
+                .MakeDelegate<TDelegate>());
+
+        internal static Selector<TResource> GetViewSelector<TResource>(Type view) where TResource : class
+        {
+            var selector = GetDelegate<Selector<TResource>>(view);
+            if (selector == null)
+                throw new ResourceViewDeclarationException(view,
+                    $"Expected type to implement ISelector<{typeof(TResource).FullName}>");
+            return selector;
+        }
 
         /// <summary>
         /// Gets the given operations delegate from a given resource wrapper definition
         /// </summary>
-        internal static TDelegate GetDelegate<TDelegate, TWrapper, TWrapped>()
-            where TWrapper : ResourceWrapper<TWrapped>
-            where TWrapped : class => typeof(TWrapper)
-            .SafeGet(t => t.GetInterfaceMap(MatchingInterface<TDelegate, TWrapped>()))
-            .TargetMethods?
-            .FirstOrDefault()?
-            .MakeDelegate<TDelegate>();
+        internal static TDelegate GetDelegate<TDelegate>(Type wrapper, Type wrapped) => wrapper
+            .SafeGet(t => t.GetInterfaceMap(MatchingInterface<TDelegate>(wrapped))
+                .TargetMethods?
+                .FirstOrDefault()?
+                .MakeDelegate<TDelegate>());
     }
 
     /// <summary>
