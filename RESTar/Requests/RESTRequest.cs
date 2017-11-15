@@ -27,6 +27,7 @@ namespace RESTar.Requests
         public string AuthToken { get; internal set; }
         public IDictionary<string, string> ResponseHeaders { get; }
         IResource IRequest.Resource => Resource;
+        public Selector<T> View { get; }
         internal Request ScRequest { get; }
         private Response Response { get; set; }
         private Func<RESTRequest<T>, Response> Evaluator { get; set; }
@@ -43,6 +44,7 @@ namespace RESTar.Requests
         {
             if (resource.IsInternal) throw new ResourceIsInternalException(resource);
             Resource = resource;
+            View = resource.Select;
             ScRequest = scRequest;
             Origin = new Origin(scRequest);
             ResponseHeaders = new Dictionary<string, string>();

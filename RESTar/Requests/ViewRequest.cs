@@ -30,15 +30,15 @@ namespace RESTar.Requests
         public Stream Body { get; private set; }
         Methods IRequest.Method => GET;
         IResource IRequest.Resource => Resource;
+        public Selector<T> View { get; }
         internal Request ScRequest { get; }
         public bool Home => MetaConditions.Empty && Conditions == null;
         internal bool IsTemplate { get; set; }
         internal bool CanInsert { get; set; }
-
-        internal RESTarDataView View { get; set; }
+        internal RESTarDataView DataView { get; set; }
         internal IList<T> Entities { get; set; }
         internal T Entity { get; set; }
-        internal Json GetView() => View.MakeCurrentView();
+        internal Json GetView() => DataView.MakeCurrentView();
         private const string MacroRegex = @"\@RESTar\((?<content>[^\(\)]*)\)";
 
         internal void Evaluate()
@@ -49,13 +49,13 @@ namespace RESTar.Requests
                 var itemView = new Item {Request = this};
                 var itemTemplate = Resource.MakeViewModelTemplate().Serialize();
                 itemView.Entity = new Json {Template = CreateFromJson(itemTemplate)};
-                View = itemView;
+                DataView = itemView;
                 return;
             }
             Entities = Evaluators<T>.SELECT_FILTER(this)?.ToList();
             if (Entities?.Any() != true)
             {
-                View.SetMessage("No entities found", NoError, warning);
+                DataView.SetMessage("No entities found", NoError, warning);
                 return;
             }
             if (Resource.IsSingleton || Entities?.Count == 1 && !Home)
@@ -65,7 +65,7 @@ namespace RESTar.Requests
                 var itemTemplate = Resource.MakeViewModelTemplate().Serialize();
                 itemView.Entity = new Json {Template = CreateFromJson(itemTemplate)};
                 itemView.Entity.PopulateFromJson(Entity.SerializeToViewModel());
-                View = itemView;
+                DataView = itemView;
             }
             else
             {
@@ -74,7 +74,7 @@ namespace RESTar.Requests
                 var listTemplate = Resource.MakeViewModelTemplate();
                 listView.Entities = new Arr<Json> {Template = CreateFromJson($"[{listTemplate.Serialize()}]")};
                 Entities.ForEach(e => listView.Entities.Add().PopulateFromJson(e.SerializeToViewModel()));
-                View = listView;
+                DataView = listView;
             }
         }
 
@@ -83,6 +83,7 @@ namespace RESTar.Requests
         {
             if (resource.IsInternal) throw new ResourceIsInternalException(resource);
             Resource = resource;
+            View = resource.Select;
             ScRequest = scRequest;
             Origin = new Origin(scRequest);
             ResponseHeaders = new Dictionary<string, string>();
@@ -101,7 +102,7 @@ namespace RESTar.Requests
         public void DeleteFromList(string id)
         {
             Authenticator.CheckUser();
-            var list = (List) View;
+            var list = (List) DataView;
             var conditions = Condition<T>.Parse(id, Resource);
             var item = Entities.Where(conditions).First();
             CheckMethod(DELETE, $"You are not allowed to delete from the '{Resource}' resource");
@@ -113,7 +114,7 @@ namespace RESTar.Requests
         public void SaveItem()
         {
             Authenticator.CheckUser();
-            var item = (Item) View;
+            var item = (Item) DataView;
             //var entityJson = item.Entity.ToJson().Replace(@"$"":", @""":");
             //Body = Regex.Replace(entityJson, MacroRegex, "${content}");
             if (IsTemplate)
@@ -129,7 +130,7 @@ namespace RESTar.Requests
 
         public void CloseItem()
         {
-            var item = (Item) View;
+            var item = (Item) DataView;
             item.RedirectUrl = !string.IsNullOrWhiteSpace(item.RedirectUrl)
                 ? item.RedirectUrl
                 : Resource.IsSingleton
@@ -142,7 +143,7 @@ namespace RESTar.Requests
             Authenticator.CheckUser();
             try
             {
-                var item = (Item) View;
+                var item = (Item) DataView;
                 var parts = input.Split(',');
                 var path = parts[0];
                 var elementIndex = int.Parse(parts[1]);
@@ -174,7 +175,7 @@ namespace RESTar.Requests
             Authenticator.CheckUser();
             try
             {
-                var item = (Item) View;
+                var item = (Item) DataView;
                 var parts = input.Split(',');
                 var path = parts[0];
                 var array = (Arr<Json>) path

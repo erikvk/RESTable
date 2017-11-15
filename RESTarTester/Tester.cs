@@ -538,6 +538,15 @@ namespace RESTarTester
     [Database, RESTar]
     public class Resource1 : Base
     {
+        
+        public class MyView : ISelector<Resource1>
+        {
+            public IEnumerable<Resource1> Select(IRequest<Resource1> request)
+            {
+                throw new NotImplementedException();
+            }
+        }
+
         public sbyte Sbyte;
         public byte Byte;
         public short Short;

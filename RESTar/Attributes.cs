@@ -87,14 +87,23 @@ namespace RESTar
         public RESTarInternalAttribute(params Methods[] methodRestrictions) : base(methodRestrictions) { }
     }
 
+    /// <inheritdoc />
+    /// <summary>
+    /// Registers an inner class as a RESTar view for the outer Resource type
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Class, Inherited = false)]
+    public class RESTarViewAttribute : Attribute { }
+
     internal class DynamicTableAttribute : ResourceProviderAttribute { }
 
+    /// <inheritdoc />
     /// <summary>
     /// Makes a resource property with a public setter read only over the REST API
     /// </summary>
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
     public class ReadOnlyAttribute : Attribute { }
 
+    /// <inheritdoc />
     /// <summary>
     /// An attribute that can be used to decorate field and property declarations, and assign
     /// allowed operators for use in conditions that reference them.

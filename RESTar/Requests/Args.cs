@@ -15,6 +15,7 @@ namespace RESTar.Requests
         internal readonly bool HasConditions;
         internal readonly bool HasMetaConditions;
         internal IResource IResource => HasResource ? RESTar.Resource.Find(Resource) : Resource<AvailableResource>.Get;
+        
 
         /// <summary>
         /// Main constructor

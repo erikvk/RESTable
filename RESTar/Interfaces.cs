@@ -6,9 +6,7 @@ namespace RESTar
     /// <summary>
     /// A common interface for all operation interfaces
     /// </summary>
-    public interface IOperationsInterface
-    {
-    }
+    public interface IOperationsInterface { }
 
     /// <inheritdoc />
     /// <summary>
@@ -79,7 +77,7 @@ namespace RESTar
     /// <summary>
     /// Interface used to register a Profiler for a given resource type
     /// </summary>
-    public interface IProfiler<T> : IOperationsInterface where T: class
+    public interface IProfiler<T> : IOperationsInterface where T : class
     {
         /// <summary>
         /// The delete method for this IDeleter instance. Defines the Delete

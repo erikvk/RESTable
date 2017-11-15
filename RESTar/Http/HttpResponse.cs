@@ -71,7 +71,6 @@ namespace RESTar.Http
                 var name_value = header.Split(':');
                 response.Headers[name_value[0]] = name_value.SafeGet(v => v[1].Trim());
             }
-
             return response;
         }
     }
