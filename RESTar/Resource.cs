@@ -48,7 +48,7 @@ namespace RESTar
         /// an AmbiguousResourceException.
         /// <param name="searchString">The case insensitive string to use for the search</param>
         /// </summary>
-        internal static IResource Find(string searchString)
+        public static IResource Find(string searchString)
         {
             if (searchString == null)
                 throw new UnknownResourceException("null");
