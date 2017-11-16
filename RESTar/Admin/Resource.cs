@@ -57,6 +57,11 @@ namespace RESTar.Admin
         public string Type { get; private set; }
 
         /// <summary>
+        /// The views for this resource
+        /// </summary>
+        [JsonProperty(NullValueHandling = Ignore)] public object Views { get; private set; }
+
+        /// <summary>
         /// The IResource of this resource
         /// </summary>
         [IgnoreDataMember] public IResource IResource { get; private set; }
@@ -72,9 +77,7 @@ namespace RESTar.Admin
         [JsonProperty(NullValueHandling = Ignore)] public Resource[] InnerResources { get; private set; }
 
         [JsonConstructor]
-        public Resource(string domain) => Provider = domain;
-
-        private Resource() => Provider = "undefined";
+        public Resource() => Provider = "undefined";
 
         /// <inheritdoc />
         public IEnumerable<Resource> Select(IRequest<Resource> request)
@@ -90,6 +93,12 @@ namespace RESTar.Admin
                 Editable = iresource.Editable,
                 IsInternal = iresource.IsInternal,
                 Type = iresource.Type.FullName,
+                Views = iresource.Views?.Select(v => new
+                {
+                    v.Name,
+                    Description = v.Description ?? "No description",
+                    v.ViewType
+                }).ToArray(),
                 IResource = iresource,
                 Provider = iresource.Provider,
                 InnerResources = ((IResourceInternal) iresource).InnerResources?

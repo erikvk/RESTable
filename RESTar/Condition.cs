@@ -186,7 +186,7 @@ namespace RESTar
         /// <summary>
         /// Parses a Conditions object from a conditions section of a REST request URI
         /// </summary>
-        public static Condition<T>[] Parse(string conditionString, IResource<T> resource)
+        public static Condition<T>[] Parse(string conditionString, ITarget<T> target)
         {
             if (string.IsNullOrEmpty(conditionString)) return null;
             return conditionString.Split('&').Select(s =>
@@ -203,10 +203,10 @@ namespace RESTar
                 if (!Operator.TryParse(operatorCharacters, out var op))
                     throw new OperatorException(s);
                 var keyValuePair = s.Split(new[] {op.Common}, StringSplitOptions.None);
-                var term = resource.MakeConditionTerm(WebUtility.UrlDecode(keyValuePair[0]));
+                var term = target.MakeConditionTerm(WebUtility.UrlDecode(keyValuePair[0]));
                 if (term.Last is StaticProperty stat &&
                     stat.GetAttribute<AllowedConditionOperatorsAttribute>()?.Operators?.Contains(op) == false)
-                    throw new ForbiddenOperatorException(s, resource, op, term,
+                    throw new ForbiddenOperatorException(s, target, op, term,
                         stat.GetAttribute<AllowedConditionOperatorsAttribute>()?.Operators);
 
                 var value = WebUtility.UrlDecode(keyValuePair[1]).ParseConditionValue();

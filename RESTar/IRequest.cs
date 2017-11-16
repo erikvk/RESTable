@@ -2,7 +2,6 @@
 using System.IO;
 using RESTar.Internal;
 using RESTar.Requests;
-using RESTar.Operations;
 
 namespace RESTar
 {
@@ -24,9 +23,9 @@ namespace RESTar
         Condition<T>[] Conditions { get; }
 
         /// <summary>
-        /// The view to use when selecting entities for this request
+        /// The target to use when binding conditions and selecting entities for this request
         /// </summary>
-        Selector<T> View { get; }
+        ITarget<T> Target { get; }
     }
 
     /// <summary>

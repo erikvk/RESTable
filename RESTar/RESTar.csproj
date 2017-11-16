@@ -91,8 +91,11 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Admin\AdminTools.cs" />
+    <Compile Include="Admin\DynamicView.cs" />
     <Compile Include="Deflection\TermBindingRules.cs" />
     <Compile Include="Http\HttpResponse.cs" />
+    <Compile Include="Internal\IResourceInternal.cs" />
+    <Compile Include="Internal\ITarget.cs" />
     <Compile Include="Internal\View.cs" />
     <Compile Include="LineEndings.cs" />
     <Compile Include="Report.cs" />

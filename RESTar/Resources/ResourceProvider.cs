@@ -167,11 +167,11 @@ namespace RESTar.Resources
         (
             name: typeof(TWrapper).FullName,
             attribute: typeof(TWrapper).GetAttribute<RESTarAttribute>(),
-            selector: GetDelegate<Selector<TWrapped>>(typeof(TWrapper), typeof(TWrapped)) ?? GetDefaultSelector<TWrapped>(),
-            inserter: GetDelegate<Inserter<TWrapped>>(typeof(TWrapper), typeof(TWrapped)) ?? GetDefaultInserter<TWrapped>(),
-            updater: GetDelegate<Updater<TWrapped>>(typeof(TWrapper), typeof(TWrapped)) ?? GetDefaultUpdater<TWrapped>(),
-            deleter: GetDelegate<Deleter<TWrapped>>(typeof(TWrapper), typeof(TWrapped)) ?? GetDefaultDeleter<TWrapped>(),
-            counter: GetDelegate<Counter<TWrapped>>(typeof(TWrapper), typeof(TWrapped)) ?? GetDefaultCounter<TWrapped>(),
+            selector: GetDelegate<Selector<TWrapped>>(typeof(TWrapper)) ?? GetDefaultSelector<TWrapped>(),
+            inserter: GetDelegate<Inserter<TWrapped>>(typeof(TWrapper)) ?? GetDefaultInserter<TWrapped>(),
+            updater: GetDelegate<Updater<TWrapped>>(typeof(TWrapper)) ?? GetDefaultUpdater<TWrapped>(),
+            deleter: GetDelegate<Deleter<TWrapped>>(typeof(TWrapper)) ?? GetDefaultDeleter<TWrapped>(),
+            counter: GetDelegate<Counter<TWrapped>>(typeof(TWrapper)) ?? GetDefaultCounter<TWrapped>(),
             profiler: GetProfiler<TWrapped>(),
             views: GetWrappedViews<TWrapper, TWrapped>(),
             provider: this

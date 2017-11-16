@@ -33,8 +33,7 @@ namespace RESTar
         /// <summary>
         /// The alias of this resource, if any
         /// </summary>
-        [JsonProperty(NullValueHandling = Ignore)]
-        public string Alias { get; set; }
+        [JsonProperty(NullValueHandling = Ignore)] public string Alias { get; set; }
 
         /// <summary>
         /// The methods that have been enabled for this resource
@@ -42,10 +41,14 @@ namespace RESTar
         public Methods[] Methods { get; set; }
 
         /// <summary>
+        /// The views for this resource
+        /// </summary>
+        [JsonProperty(NullValueHandling = Ignore)] public object Views { get; private set; }
+
+        /// <summary>
         /// Inner resources for this resource
         /// </summary>
-        [JsonProperty(NullValueHandling = Ignore)]
-        public AvailableResource[] InnerResources { get; private set; }
+        [JsonProperty(NullValueHandling = Ignore)] public AvailableResource[] InnerResources { get; private set; }
 
         /// <inheritdoc />
         public IEnumerable<AvailableResource> Select(IRequest<AvailableResource> request)
@@ -61,6 +64,12 @@ namespace RESTar
                 Methods = rights.SafeGet(iresource)?
                               .Intersect(iresource.AvailableMethods)
                               .ToArray() ?? new Methods[0],
+                Views = iresource.Views?.Select(v => new
+                {
+                    v.Name,
+                    Description = v.Description ?? "No description",
+                    v.ViewType
+                }).ToArray(),
                 InnerResources = ((IResourceInternal) iresource).InnerResources?
                     .Select(Make)
                     .ToArray()

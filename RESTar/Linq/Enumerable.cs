@@ -55,7 +55,7 @@ namespace RESTar.Linq
         /// comparing the images of a selector function. If a duplicate is found, it is assigned to 
         /// the out 'duplicate' variable.
         /// </summary>
-        public static bool ContainsDuplicates<T1, T2>(this IEnumerable<T1> source, Func<T1, T2> selector, out T2 duplicate)
+        public static bool ContainsDuplicates<T1, T2>(this IEnumerable<T1> source, Func<T1, T2> selector, out T1 duplicate)
         {
             duplicate = default;
             var d = new HashSet<T2>();
@@ -64,7 +64,7 @@ namespace RESTar.Linq
                 var t2 = selector(t1);
                 if (!d.Add(t2))
                 {
-                    duplicate = t2;
+                    duplicate = t1;
                     return true;
                 }
             }

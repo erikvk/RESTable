@@ -38,7 +38,7 @@ namespace RESTar
         public MetaConditions MetaConditions { get; }
         public Origin Origin { get; }
         Methods IRequest.Method => 0;
-        public Selector<T> View { get; set; } 
+        public ITarget<T> Target { get; set; }
 
         private readonly bool ScSql;
         internal string SelectQuery { get; private set; }
@@ -95,7 +95,7 @@ namespace RESTar
             if (!RESTarConfig.Initialized)
                 throw new NotInitializedException();
             Resource = Resource<T>.Get;
-            View = Resource.Select;
+            Target = Resource;
             ResponseHeaders = new Dictionary<string, string>();
             MetaConditions = new MetaConditions {Unsafe = true};
             Origin = Origin.Internal;

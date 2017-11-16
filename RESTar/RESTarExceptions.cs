@@ -131,7 +131,7 @@ namespace RESTar
     /// </summary>
     public class ForbiddenOperatorException : RESTarException
     {
-        internal ForbiddenOperatorException(string c, IResource resource, Operator found, Term term,
+        internal ForbiddenOperatorException(string c, ITarget resource, Operator found, Term term,
             IEnumerable<Operator> allowed) : base(InvalidConditionOperator,
             $"Invalid operator for condition '{c}'. Operator '{found}' is not allowed when " +
             $"comparing against '{term.Key}' in resource '{resource.Name}'. Allowed operators" +
@@ -182,6 +182,17 @@ namespace RESTar
         internal UnknownResourceException(string searchString) : base(UnknownResource,
             $"RESTar could not locate any resource by '{searchString}'. To enumerate available " +
             $"resources, GET: {_ResourcesPath} . ") => Response = NotFound(this);
+    }
+
+    /// <inheritdoc />
+    /// <summary>
+    /// Thrown when RESTar cannot locate a resource view using a given search string
+    /// </summary>
+    public class UnknownViewException : RESTarException
+    {
+        internal UnknownViewException(string searchString, ITarget resource) : base(UnknownResourceView,
+            $"RESTar could not locate any resource view in '{resource.Name}' by '{searchString}'. To enumerate available " +
+            $"views for this resource, GET: {_ResourcesPath}/name={resource.Name}/select=views . ") => Response = NotFound(this);
     }
 
     /// <inheritdoc />
@@ -439,7 +450,7 @@ namespace RESTar
     public class ResourceViewDeclarationException : RESTarException
     {
         internal ResourceViewDeclarationException(Type view, string message) : base(InvalidResourceViewDeclaration,
-            $"Invalid resource view declaration for view '{view.Name}' in Resource '{view.DeclaringType.FullName}'. {message}") =>
+            $"Invalid resource view declaration for view '{view.Name}' in Resource '{view.DeclaringType?.FullName}'. {message}") =>
             Response = BadRequest(this);
     }
 

@@ -7,16 +7,12 @@ using RESTar.Resources;
 
 namespace RESTar.Internal
 {
+    /// <inheritdoc cref="ITarget" />
     /// <summary>
     /// The common non-generic interface for all resource entities used by RESTar
     /// </summary>
-    public interface IResource : IEqualityComparer<IResource>, IComparable<IResource>
+    public interface IResource : ITarget, IEqualityComparer<IResource>, IComparable<IResource>
     {
-        /// <summary>
-        /// The name of this resource
-        /// </summary>
-        string Name { get; }
-
         /// <summary>
         /// Is this resource editable?
         /// </summary>
@@ -26,16 +22,6 @@ namespace RESTar.Internal
         /// The available methods for this resource
         /// </summary>
         IReadOnlyList<Methods> AvailableMethods { get; }
-
-        /// <summary>
-        /// Resource descriptions are visible in the AvailableMethods resource
-        /// </summary>
-        string Description { get; }
-
-        /// <summary>
-        /// The target type for this resource
-        /// </summary>
-        Type Type { get; }
 
         /// <summary>
         /// The alias of this resource (if any)
@@ -89,21 +75,16 @@ namespace RESTar.Internal
         bool DynamicConditionsAllowed { get; }
 
         /// <summary>
-        /// The binding rule to use when binding condition terms for this resource
-        /// </summary>
-        TermBindingRules ConditionBindingRule { get; }
-
-        /// <summary>
-        /// The binding rule to use when binding output terms for this resource
-        /// </summary>
-        TermBindingRules OutputBindingRule { get; }
-
-        /// <summary>
         /// Are the public instance properties defined in this resource's type 
         /// flagged (preceded by $) in the REST API to avoid capture against 
         /// dynamic properties?
         /// </summary>
         bool StaticPropertiesFlagged { get; }
+
+        /// <summary>
+        /// The binding rule to use when binding output terms for this resource
+        /// </summary>
+        TermBindingRules OutputBindingRule { get; }
 
         /// <summary>
         /// Is this a Starcounter resource?
@@ -129,19 +110,19 @@ namespace RESTar.Internal
         /// Gets a ResourceProfile for this resource
         /// </summary>
         ResourceProfile ResourceProfile { get; }
+
+        /// <summary>
+        /// The views for this resource
+        /// </summary>
+        IEnumerable<IView> Views { get; }
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc cref="ITarget{T}" />
     /// <summary>
     /// The common generic interface for all resource entities used by RESTar
     /// </summary>
-    public interface IResource<T> : IResource where T : class
+    public interface IResource<T> : ITarget<T>, IResource where T : class
     {
-        /// <summary>
-        /// RESTar selector (don't use)
-        /// </summary>
-        Selector<T> Select { get; }
-
         /// <summary>
         /// RESTar inserter (don't use)
         /// </summary>
@@ -170,13 +151,6 @@ namespace RESTar.Internal
         /// <summary>
         /// The Views registered for this resource
         /// </summary>
-        IDictionary<string, View<T>> Views { get; }
-    }
-
-    internal interface IResourceInternal
-    {
-        IReadOnlyList<IResource> InnerResources { get; set; }
-        string Description { get; set; }
-        IReadOnlyList<Methods> AvailableMethods { get; set; }
+        IReadOnlyDictionary<string, View<T>> ViewDictionary { get; }
     }
 }

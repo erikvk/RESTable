@@ -30,7 +30,7 @@ namespace RESTar.Requests
         public Stream Body { get; private set; }
         Methods IRequest.Method => GET;
         IResource IRequest.Resource => Resource;
-        public Selector<T> View { get; }
+        public ITarget<T> Target { get; }
         internal Request ScRequest { get; }
         public bool Home => MetaConditions.Empty && Conditions == null;
         internal bool IsTemplate { get; set; }
@@ -83,7 +83,7 @@ namespace RESTar.Requests
         {
             if (resource.IsInternal) throw new ResourceIsInternalException(resource);
             Resource = resource;
-            View = resource.Select;
+            Target = resource;
             ScRequest = scRequest;
             Origin = new Origin(scRequest);
             ResponseHeaders = new Dictionary<string, string>();

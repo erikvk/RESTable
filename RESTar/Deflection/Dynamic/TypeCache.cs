@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.Serialization;
 using Newtonsoft.Json;
+using RESTar.Internal;
 using RESTar.Linq;
 using static System.Reflection.BindingFlags;
 using static RESTar.Deflection.Dynamic.SpecialProperty;
@@ -32,17 +33,17 @@ namespace RESTar.Deflection.Dynamic
         /// Condition terms are terms that refer to properties in resources, or  for
         /// use in conditions.
         /// </summary>
-        internal static Term MakeConditionTerm(this IResource resource, string key) =>
-            resource.Type.MakeOrGetCachedTerm(key, resource.ConditionBindingRule);
+        internal static Term MakeConditionTerm(this ITarget target, string key) =>
+            target.Type.MakeOrGetCachedTerm(key, target.ConditionBindingRule);
 
         /// <summary>
         /// Output terms are terms that refer to properties in RESTar output. If they refer to
         /// a property in the dynamic domain, they are not cached. 
         /// </summary>
-        internal static Term MakeOutputTerm(this IResource resource, string key, ICollection<string> dynamicDomain) =>
+        internal static Term MakeOutputTerm(this IResource target, string key, ICollection<string> dynamicDomain) =>
             dynamicDomain == null
-                ? MakeOrGetCachedTerm(resource.Type, key, resource.OutputBindingRule)
-                : Term.Parse(resource.Type, key, resource.OutputBindingRule, dynamicDomain);
+                ? MakeOrGetCachedTerm(target.Type, key, target.OutputBindingRule)
+                : Term.Parse(target.Type, key, target.OutputBindingRule, dynamicDomain);
 
         internal static Term MakeOrGetCachedTerm(this Type resource, string key, TermBindingRules bindingRule)
         {

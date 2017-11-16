@@ -25,7 +25,7 @@ namespace RESTar.Operations
         {
             try
             {
-                return request.Resource.Select(request);
+                return request.Target.Select(request);
             }
             catch (Exception e)
             {
@@ -39,7 +39,7 @@ namespace RESTar.Operations
             {
                 if (!request.MetaConditions.Unsafe && request.MetaConditions.Limit == -1)
                     request.MetaConditions.Limit = (Limit) 1000;
-                return request.Resource.Select(request)?
+                return request.Target.Select(request)?
                     .Filter(request.MetaConditions.OrderBy)
                     .Filter(request.MetaConditions.Offset)
                     .Filter(request.MetaConditions.Limit);
@@ -56,7 +56,7 @@ namespace RESTar.Operations
             {
                 if (!request.MetaConditions.Unsafe && request.MetaConditions.Limit == -1)
                     request.MetaConditions.Limit = (Limit) 1000;
-                var results = request.Resource.Select(request);
+                var results = request.Target.Select(request);
                 if (results == null) return null;
                 if (!request.MetaConditions.HasProcessors)
                     return results
@@ -80,7 +80,7 @@ namespace RESTar.Operations
             try
             {
                 return request.Resource.Count?.Invoke(request)
-                       ?? request.Resource.Select(request)?.LongCount()
+                       ?? request.Target.Select(request)?.LongCount()
                        ?? 0L;
             }
             catch (Exception e)

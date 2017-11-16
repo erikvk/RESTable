@@ -38,7 +38,9 @@ namespace RESTar.Internal
         public string ParentResourceName { get; }
         public bool IsSingleton { get; }
         public bool DynamicConditionsAllowed { get; }
-        public IDictionary<string, View<T>> Views { get; }
+        public IReadOnlyDictionary<string, View<T>> ViewDictionary => ViewDictionaryInternal;
+        internal Dictionary<string, View<T>> ViewDictionaryInternal { get; }
+        public IEnumerable<IView> Views => ViewDictionaryInternal?.Values;
 
         public TermBindingRules ConditionBindingRule { get; }
         public TermBindingRules OutputBindingRule { get; }
@@ -147,7 +149,8 @@ namespace RESTar.Internal
             Delete = deleter;
             Count = counter;
             Profile = profiler;
-            Views = views.ToDictionary(v => v.Name.ToLower(), v => v);
+            if (views.Any())
+                ViewDictionaryInternal = views.ToDictionary(v => v.Name.ToLower(), v => v);
             CheckOperationsSupport();
             RESTarConfig.AddResource(this);
         }

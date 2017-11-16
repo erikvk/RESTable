@@ -11,6 +11,7 @@ using RESTar;
 using RESTar.Admin;
 using RESTar.Linq;
 using RESTar.Operations;
+using RESTar.Resources;
 using Starcounter;
 using Operator = RESTar.Operator;
 
@@ -345,11 +346,13 @@ namespace RESTarTester
             Debug.Assert(!string.IsNullOrWhiteSpace(data));
 
             var jsonResponse1 = Http.GET("http://localhost:9000/rest/resource1");
+            var jsonResponse1view = Http.GET("http://localhost:9000/rest/resource1-myview/active=true");
             var jsonResponse2 = Http.GET("http://localhost:9000/rest/resource2");
             var jsonResponse3 = Http.GET("http://localhost:9000/rest/resource3");
             var jsonResponse4 = Http.GET("http://localhost:9000/rest/resource4");
 
             Debug.Assert(jsonResponse1?.IsSuccessStatusCode == true);
+            Debug.Assert(jsonResponse1view?.IsSuccessStatusCode == true);
             Debug.Assert(jsonResponse2?.IsSuccessStatusCode == true);
             Debug.Assert(jsonResponse3?.IsSuccessStatusCode == true);
             Debug.Assert(jsonResponse4?.IsSuccessStatusCode == true);
@@ -532,18 +535,32 @@ namespace RESTarTester
         }
     }
 
+    [RESTar]
+    public class Wrapper : ResourceWrapper<Base>, ISelector<Base>
+    {
+        public IEnumerable<Base> Select(IRequest<Base> request)
+        {
+            return Db.SQL<Resource1>("SELECT t FROM RESTarTester.Resource1 t");
+        }
+    }
+
+
     [Database]
     public abstract class Base { }
 
     [Database, RESTar]
     public class Resource1 : Base
     {
-        
+        [RESTarView(AllowDynamicConditions = true)]
         public class MyView : ISelector<Resource1>
         {
+            public bool Active { get; set; }
+
             public IEnumerable<Resource1> Select(IRequest<Resource1> request)
             {
-                throw new NotImplementedException();
+                if (request.Conditions.Get("Active", Operator.EQUALS)?.Value == true)
+                    return Db.SQL<Resource1>("SELECT t FROM RESTarTester.Resource1 t");
+                return null;
             }
         }
 

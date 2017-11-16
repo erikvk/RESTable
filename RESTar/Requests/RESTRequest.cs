@@ -27,7 +27,7 @@ namespace RESTar.Requests
         public string AuthToken { get; internal set; }
         public IDictionary<string, string> ResponseHeaders { get; }
         IResource IRequest.Resource => Resource;
-        public Selector<T> View { get; }
+        public ITarget<T> Target { get; private set; }
         internal Request ScRequest { get; }
         private Response Response { get; set; }
         private Func<RESTRequest<T>, Response> Evaluator { get; set; }
@@ -44,7 +44,7 @@ namespace RESTar.Requests
         {
             if (resource.IsInternal) throw new ResourceIsInternalException(resource);
             Resource = resource;
-            View = resource.Select;
+            Target = resource;
             ScRequest = scRequest;
             Origin = new Origin(scRequest);
             ResponseHeaders = new Dictionary<string, string>();
@@ -54,6 +54,12 @@ namespace RESTar.Requests
 
         internal void Populate(Args args, Methods method)
         {
+            if (args.HasView)
+            {
+                if (!Resource.ViewDictionary.TryGetValue(args.View, out var view))
+                    throw new UnknownViewException(args.View, Resource);
+                Target = view;
+            }
             Method = method;
             Evaluator = Evaluators<T>.REST.GetEvaluator(method);
             Source = ScRequest.Headers["Source"];
@@ -64,7 +70,7 @@ namespace RESTar.Requests
             InputDataConfig = Source != null ? DataConfig.External : DataConfig.Client;
             OutputDataConfig = Destination != null ? DataConfig.External : DataConfig.Client;
             if (args.HasConditions)
-                Conditions = Condition<T>.Parse(args.Conditions, Resource) ?? Conditions;
+                Conditions = Condition<T>.Parse(args.Conditions, Target) ?? Conditions;
             if (args.HasMetaConditions)
                 MetaConditions = MetaConditions.Parse(args.MetaConditions, Resource) ?? MetaConditions;
         }
