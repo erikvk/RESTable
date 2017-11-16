@@ -149,7 +149,7 @@ namespace RESTar.Internal
             Delete = deleter;
             Count = counter;
             Profile = profiler;
-            if (views.Any())
+            if (views?.Any() == true)
                 ViewDictionaryInternal = views.ToDictionary(v => v.Name.ToLower(), v => v);
             CheckOperationsSupport();
             RESTarConfig.AddResource(this);
