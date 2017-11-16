@@ -43,6 +43,11 @@ namespace RESTar.Deflection.Dynamic
         public bool IsDynamic => !IsStatic;
 
         /// <summary>
+        /// Automatically sets the Skip property of conditions matched against this term to true
+        /// </summary>
+        public bool ConditionSkip { get; private set; }
+
+        /// <summary>
         /// Gets the first property reference of the term, and safe casts it to T
         /// </summary>
         public T FirstAs<T>() where T : Property => First as T;
@@ -138,6 +143,7 @@ namespace RESTar.Deflection.Dynamic
             key.Split('.').ForEach(s => term.Store.Add(propertyMaker(s)));
             term.ScQueryable = term.Store.All(p => p.ScQueryable);
             term.IsStatic = term.Store.All(p => p is StaticProperty);
+            term.ConditionSkip = term.Store.Any(p => p is StaticProperty s && s.ConditionSkip);
             term.Key = string.Join(".", term.Store.Select(p => p.Name));
             term.DbKey = string.Join(".", term.Store.Select(p => p.DatabaseQueryName));
             return term;

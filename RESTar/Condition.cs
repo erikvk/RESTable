@@ -136,6 +136,7 @@ namespace RESTar
             Term = term;
             _operator = op;
             _value = value;
+            _skip = term.ConditionSkip;
             if (!ScQueryable) return;
             HasChanged = true;
         }
@@ -208,7 +209,6 @@ namespace RESTar
                     stat.GetAttribute<AllowedConditionOperatorsAttribute>()?.Operators?.Contains(op) == false)
                     throw new ForbiddenOperatorException(s, target, op, term,
                         stat.GetAttribute<AllowedConditionOperatorsAttribute>()?.Operators);
-
                 var value = WebUtility.UrlDecode(keyValuePair[1]).ParseConditionValue();
                 if (term.Last is StaticProperty prop && prop.Type.IsEnum && value is string)
                 {

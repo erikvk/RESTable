@@ -346,7 +346,7 @@ namespace RESTarTester
             Debug.Assert(!string.IsNullOrWhiteSpace(data));
 
             var jsonResponse1 = Http.GET("http://localhost:9000/rest/resource1");
-            var jsonResponse1view = Http.GET("http://localhost:9000/rest/resource1-myview/active=true");
+            var jsonResponse1view = Http.GET("http://localhost:9000/rest/resource1-myview");
             var jsonResponse2 = Http.GET("http://localhost:9000/rest/resource2");
             var jsonResponse3 = Http.GET("http://localhost:9000/rest/resource3");
             var jsonResponse4 = Http.GET("http://localhost:9000/rest/resource4");
@@ -551,7 +551,7 @@ namespace RESTarTester
     [Database, RESTar]
     public class Resource1 : Base
     {
-        [RESTarView(AllowDynamicConditions = true)]
+        [RESTarView]
         public class MyView : ISelector<Resource1>
         {
             public bool Active { get; set; }
@@ -559,7 +559,8 @@ namespace RESTarTester
             public IEnumerable<Resource1> Select(IRequest<Resource1> request)
             {
                 if (request.Conditions.Get("Active", Operator.EQUALS)?.Value == true)
-                    return Db.SQL<Resource1>("SELECT t FROM RESTarTester.Resource1 t");
+                    return Db.SQL<Resource1>("SELECT t FROM RESTarTester.Resource1 t")
+                        .Where(request.Conditions);
                 return null;
             }
         }

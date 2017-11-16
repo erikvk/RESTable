@@ -202,10 +202,10 @@ namespace RESTar.Resources
 
             void ValidateViewTypes(List<Type> types)
             {
-                if (types.ContainsDuplicates(t => t.FullName?.ToLower() ?? "unknown", out var dupe))
-                    throw new ResourceViewDeclarationException(dupe,
+                if (types.ContainsDuplicates(t => t.FullName?.ToLower() ?? "unknown", out var typeDupe))
+                    throw new ResourceViewDeclarationException(typeDupe,
                         "RESTar resources must have unique case insensitive names. Found " +
-                        $"multiple resource declarations for types with case insensitive name '{dupe.FullName}'.");
+                        $"multiple resource declarations for types with case insensitive name '{typeDupe.FullName}'.");
                 foreach (var type in types)
                 {
                     var resource = type.DeclaringType;
@@ -213,10 +213,17 @@ namespace RESTar.Resources
                         throw new ResourceViewDeclarationException(type,
                             "Resource view types must be declared as public classes nested within the the " +
                             "resource type they are views for");
-
+                    if (type.IsSubclassOf(type))
+                        throw new ResourceViewDeclarationException(type, "Views cannot inherit from their resource types");
                     if (!type.Implements(typeof(ISelector<>), out var param) || param[0] != resource)
                         throw new ResourceViewDeclarationException(type,
                             $"Expected view type to implement ISelector<{resource.FullName}>");
+                    var propertyUnion = resource.GetProperties(Public | Instance).Union(type.GetProperties(Public | Instance));
+                    if (propertyUnion.ContainsDuplicates(p => p.Name.ToLower(), out var propDupe))
+                        throw new ResourceViewDeclarationException(type,
+                            $"Invalid property '{propDupe.Name}'. Resource view types must not contain any public instance " +
+                            "properties with the same name (case insensitive) as a property of the corresponding resource. " +
+                            "All properties in the resource are automatically inherited for use in conditions with the view.");
                 }
             }
 

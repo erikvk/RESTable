@@ -119,6 +119,13 @@ namespace RESTar
 
     /// <inheritdoc />
     /// <summary>
+    /// Automatically sets the Skip property of conditions matched against this property to true
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
+    public class ConditionSkipAttribute : Attribute { }
+
+    /// <inheritdoc />
+    /// <summary>
     /// An attribute that can be used to decorate field and property declarations, and assign
     /// allowed operators for use in conditions that reference them.
     /// </summary>

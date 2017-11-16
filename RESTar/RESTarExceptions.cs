@@ -222,8 +222,9 @@ namespace RESTar
     /// </summary>
     public class UnknownPropertyException : RESTarException
     {
-        internal UnknownPropertyException(Type resource, string str) : base(UnknownProperty,
-            $"Could not find any property in type '{resource.Name}' by '{str}'.") => Response = NotFound(this);
+        internal UnknownPropertyException(Type type, string str) : base(UnknownProperty,
+            $"Could not find any property in {(type.HasAttribute<RESTarViewAttribute>() ? $"view '{type.Name}' or resource '{Resource.Get(type.DeclaringType)?.Name}'" : $"resource '{type.Name}'")} by '{str}'.") =>
+            Response = NotFound(this);
     }
 
     /// <inheritdoc />

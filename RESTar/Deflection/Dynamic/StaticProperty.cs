@@ -23,6 +23,11 @@ namespace RESTar.Deflection.Dynamic
         public override bool Dynamic => false;
 
         /// <summary>
+        /// Automatically sets the Skip property of conditions matched against this property to true
+        /// </summary>
+        public bool ConditionSkip { get; }
+
+        /// <summary>
         /// The attributes that this property has been decorated with
         /// </summary>  
         public ICollection<Attribute> Attributes { get; protected set; }
@@ -39,7 +44,29 @@ namespace RESTar.Deflection.Dynamic
         /// </summary>
         public bool HasAttribute<TAttribute>() where TAttribute : Attribute => GetAttribute<TAttribute>() != null;
 
+        /// <summary>
+        /// Used in SpecialProperty constructor
+        /// </summary>
+        /// <param name="scQueryable"></param>
         internal StaticProperty(bool scQueryable) => ScQueryable = scQueryable;
+
+        /// <summary>
+        /// The regular constructor
+        /// </summary>
+        internal StaticProperty(PropertyInfo p, bool flagName = false)
+        {
+            if (p == null) return;
+            Name = p.RESTarMemberName();
+            if (flagName) Name = "$" + Name;
+            DatabaseQueryName = p.Name;
+            Type = p.PropertyType;
+            ScQueryable = p.DeclaringType?.HasAttribute<DatabaseAttribute>() == true &&
+                          p.PropertyType.IsStarcounterCompatible();
+            Attributes = p.GetCustomAttributes().ToList();
+            ConditionSkip = HasAttribute<ConditionSkipAttribute>() || p.DeclaringType.HasAttribute<RESTarViewAttribute>();
+            Getter = p.MakeDynamicGetter();
+            Setter = p.MakeDynamicSetter();
+        }
 
         /// <summary>
         /// Parses a static property from a key string and a type
@@ -63,20 +90,6 @@ namespace RESTar.Deflection.Dynamic
         public static bool TryFind(Type type, string key, out StaticProperty staticProperty)
         {
             return type.GetStaticProperties().TryGetValue(key.ToLower(), out staticProperty);
-        }
-
-        internal StaticProperty(PropertyInfo p, bool flagName = false)
-        {
-            if (p == null) return;
-            Name = p.RESTarMemberName();
-            if (flagName) Name = "$" + Name;
-            DatabaseQueryName = p.Name;
-            Type = p.PropertyType;
-            ScQueryable = p.DeclaringType?.HasAttribute<DatabaseAttribute>() == true &&
-                          p.PropertyType.IsStarcounterCompatible();
-            Attributes = p.GetCustomAttributes().ToList();
-            Getter = p.MakeDynamicGetter();
-            Setter = p.MakeDynamicSetter();
         }
 
         internal long ByteCount(object target)

@@ -5,6 +5,8 @@ using System.Linq;
 using Newtonsoft.Json.Linq;
 using RESTar.Admin;
 using RESTar.Deflection;
+using RESTar.Deflection.Dynamic;
+using RESTar.Linq;
 using RESTar.Operations;
 using RESTar.Resources;
 using Starcounter;
@@ -150,7 +152,10 @@ namespace RESTar.Internal
             Count = counter;
             Profile = profiler;
             if (views?.Any() == true)
+            {
                 ViewDictionaryInternal = views.ToDictionary(v => v.Name.ToLower(), v => v);
+                views.ForEach(view => view.Type.GetStaticProperties());
+            }
             CheckOperationsSupport();
             RESTarConfig.AddResource(this);
         }

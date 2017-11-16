@@ -76,32 +76,37 @@ namespace RESTar.Deflection.Dynamic
         /// </summary>
         public static IDictionary<string, StaticProperty> GetStaticProperties(this Type type)
         {
-            IEnumerable<StaticProperty> make()
+            IEnumerable<StaticProperty> make(Type _type)
             {
-                switch (type)
+                switch (_type)
                 {
-                    case var _ when type.IsDDictionary():
-                        return type.GetProperties(Instance | Public)
+                    case null: return new StaticProperty[0];
+                    case var _ when _type.HasAttribute<RESTarViewAttribute>():
+                        return _type.GetProperties(Instance | Public)
+                            .ParseStaticProperties(false)
+                            .Union(make(_type.DeclaringType));
+                    case var _ when _type.IsDDictionary():
+                        return _type.GetProperties(Instance | Public)
                             .ParseStaticProperties(flag: true)
                             .Union(GetObjectIDAndObjectNo(flag: true));
-                    case var _ when Resource.SafeGet(type)?.StaticPropertiesFlagged == true:
-                        return type.GetProperties(Instance | Public)
+                    case var _ when Resource.SafeGet(_type)?.StaticPropertiesFlagged == true:
+                        return _type.GetProperties(Instance | Public)
                             .ParseStaticProperties(flag: true);
-                    case var _ when type.IsInterface:
-                        return new[] {type}
-                            .Concat(type.GetInterfaces())
+                    case var _ when _type.IsInterface:
+                        return new[] {_type}
+                            .Concat(_type.GetInterfaces())
                             .SelectMany(i => i.GetProperties(Instance | Public))
                             .ParseStaticProperties(false);
                     default:
-                        return type.GetProperties(Instance | Public)
+                        return _type.GetProperties(Instance | Public)
                             .ParseStaticProperties(false)
-                            .If(type.IsStarcounter, ps => ps.Union(GetObjectIDAndObjectNo(false)));
+                            .If(_type.IsStarcounter, ps => ps.Union(GetObjectIDAndObjectNo(false)));
                 }
             }
 
             if (type?.FullName == null) return null;
             if (!StaticPropertyCache.TryGetValue(type.FullName, out var props))
-                props = StaticPropertyCache[type.FullName] = make().ToDictionary(p => p.Name.ToLower());
+                props = StaticPropertyCache[type.FullName] = make(type).ToDictionary(p => p.Name.ToLower());
             return props;
         }
 
