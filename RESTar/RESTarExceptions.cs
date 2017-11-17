@@ -105,7 +105,7 @@ namespace RESTar
     {
         internal InvalidSeparatorException() : base(InvalidSeparator,
             "Syntax error while parsing request: Invalid argument separator count. A RESTar URI can contain at most 3 " +
-            $"forward slashes after the base uri. URI scheme: {_ResourcesPath}/[resource]/[conditions]/[meta-conditions]") =>
+            $"forward slashes after the base uri. URI scheme: {_ResourcesPath}/[resource][-view]/[conditions]/[meta-conditions]") =>
             Response = BadRequest(this);
     }
 
@@ -131,10 +131,10 @@ namespace RESTar
     /// </summary>
     public class ForbiddenOperatorException : RESTarException
     {
-        internal ForbiddenOperatorException(string c, ITarget resource, Operator found, Term term,
+        internal ForbiddenOperatorException(string c, ITarget target, Operator found, Term term,
             IEnumerable<Operator> allowed) : base(InvalidConditionOperator,
             $"Invalid operator for condition '{c}'. Operator '{found}' is not allowed when " +
-            $"comparing against '{term.Key}' in resource '{resource.Name}'. Allowed operators" +
+            $"comparing against '{term.Key}' in type '{target.Name}'. Allowed operators" +
             $": {string.Join(", ", allowed.Select(a => $"'{a.Common}'"))}") => Response = BadRequest(this);
     }
 
@@ -243,9 +243,9 @@ namespace RESTar
         /// </summary>
         public readonly string SearchString;
 
-        internal AmbiguousPropertyException(Type resource, string str, IEnumerable<string> cands)
+        internal AmbiguousPropertyException(Type type, string str, IEnumerable<string> cands)
             : base(ErrorCodes.AmbiguousProperty,
-                $"Could not uniquely identify a property in resource '{resource.Name}' by " +
+                $"Could not uniquely identify a property in type '{type.Name}' by " +
                 $"'{str}'. Candidates: {string.Join(", ", cands)}. ")
         {
             SearchString = str;
