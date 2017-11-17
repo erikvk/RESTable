@@ -5,7 +5,10 @@ using RESTar.Internal;
 
 namespace RESTar.Operations
 {
-    internal class OrderBy : IFilter
+    /// <summary>
+    /// Orders the entities in an IEnumerable based on the values for some property
+    /// </summary>
+    public class OrderBy : IFilter
     {
         internal string Key => Term.Key;
         internal bool Descending { get; }

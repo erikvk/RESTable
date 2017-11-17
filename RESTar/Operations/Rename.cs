@@ -7,7 +7,10 @@ using RESTar.Linq;
 
 namespace RESTar.Operations
 {
-    internal class Rename : Dictionary<Term, string>, IProcessor
+    /// <summary>
+    /// Renames properties in an IEnumerable
+    /// </summary>
+    public class Rename : Dictionary<Term, string>, IProcessor
     {
         internal Rename(IResource resource, string keys, out ICollection<string> dynamicDomain)
         {
@@ -31,6 +34,9 @@ namespace RESTar.Operations
             return entity;
         }
 
+        /// <summary>
+        /// Renames properties in an IEnumerable
+        /// </summary>
         public IEnumerable<JObject> Apply<T>(IEnumerable<T> entities) => entities?
             .Select(entity => Renamed(entity.ToJObject()));
     }

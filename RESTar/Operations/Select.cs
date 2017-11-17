@@ -8,7 +8,10 @@ using RESTar.Serialization;
 
 namespace RESTar.Operations
 {
-    internal class Select : List<Term>, ICollection<Term>, IProcessor
+    /// <summary>
+    /// Selects a set of properties from an IEnumerable of entities
+    /// </summary>
+    public class Select : List<Term>, ICollection<Term>, IProcessor
     {
         internal Select(IResource resource, string keys, ICollection<string> dynDomain) => keys
             .Split(',')
@@ -16,6 +19,9 @@ namespace RESTar.Operations
             .Select(key => resource.MakeOutputTerm(key, dynDomain))
             .ForEach(Add);
 
+        /// <summary>
+        /// Selects a set of properties from an IEnumerable of entities
+        /// </summary>
         public IEnumerable<JObject> Apply<T>(IEnumerable<T> entities) => entities?.Select(entity =>
         {
             var jobj = new JObject();

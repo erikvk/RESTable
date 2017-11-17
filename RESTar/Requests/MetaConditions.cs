@@ -69,12 +69,36 @@ namespace RESTar.Requests
         /// </summary>
         public Offset Offset { get; internal set; } = Offset.NoOffset;
 
-        internal bool Unsafe { get; set; }
-        internal OrderBy OrderBy { get; set; }
-        internal Select Select { get; set; }
-        internal Add Add { get; set; }
-        internal Rename Rename { get; set; }
-        internal Distinct Distinct { get; set; }
+        /// <summary>
+        /// Is this request unsafe?
+        /// </summary>
+        public bool Unsafe { get; set; }
+
+        /// <summary>
+        /// The OrderBy filter to apply to the output from this request
+        /// </summary>
+        public OrderBy OrderBy { get; set; }
+
+        /// <summary>
+        /// The Select processor to apply to the output from this request
+        /// </summary>
+        public Select Select { get; set; }
+
+        /// <summary>
+        /// The Add processor to apply to the output from this request
+        /// </summary>
+        public Add Add { get; set; }
+
+        /// <summary>
+        /// The Renam processor to apply to the output from this request
+        /// </summary>
+        public Rename Rename { get; set; }
+
+        /// <summary>
+        /// The Distinct processor to apply to the output from this request
+        /// </summary>
+        public Distinct Distinct { get; set; }
+
         internal string SafePost { get; set; }
         internal bool New { get; set; }
         internal bool Empty = true;

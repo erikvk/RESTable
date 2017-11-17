@@ -8,7 +8,10 @@ using RESTar.Serialization;
 
 namespace RESTar.Operations
 {
-    internal class Add : List<Term>, IProcessor
+    /// <summary>
+    /// Adds properties to entities in an IEnumerable
+    /// </summary>
+    public class Add : List<Term>, IProcessor
     {
         internal Add(IResource resource, string keys, ICollection<string> dynDomain) => keys
             .ToLower()
@@ -17,6 +20,9 @@ namespace RESTar.Operations
             .Select(key => resource.MakeOutputTerm(key, dynDomain))
             .ForEach(Add);
 
+        /// <summary>
+        /// Adds properties to entities in an IEnumerable
+        /// </summary>
         public IEnumerable<JObject> Apply<T>(IEnumerable<T> entities) => entities?.Select(entity =>
         {
             var jobj = entity.ToJObject();
