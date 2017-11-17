@@ -60,10 +60,12 @@ namespace RESTar.Internal
             };
             Count = r =>
             {
+                if (r.MetaConditions.Distinct != null)
+                    return r.MetaConditions.Distinct.Apply(Select(r))?.LongCount() ?? 0L;
                 switch (r.Conditions.Length)
                 {
                     case 0: return Db.SQL<long>($"SELECT COUNT(t) FROM {typeof(T).FullName} t").FirstOrDefault();
-                    default: return Select(r)?.Count() ?? 0;
+                    default: return Select(r)?.LongCount() ?? 0;
                 }
             };
             Profile = r => ResourceProfile.Make(r, rows => rows.Sum(row => row.KeyValuePairs.Sum(kvp => kvp.ByteCount) + 16));

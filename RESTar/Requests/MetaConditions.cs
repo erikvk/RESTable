@@ -25,7 +25,8 @@ namespace RESTar.Requests
         Safepost,
         New,
         Delete,
-        Offset
+        Offset,
+        Distinct
     }
 
     internal static class MetaConditionsExtensions
@@ -46,6 +47,7 @@ namespace RESTar.Requests
                 case RESTarMetaConditions.New: return typeof(bool);
                 case RESTarMetaConditions.Delete: return typeof(bool);
                 case RESTarMetaConditions.Offset: return typeof(int);
+                case RESTarMetaConditions.Distinct: return typeof(bool);
                 default: throw new ArgumentOutOfRangeException(nameof(condition), condition, null);
             }
         }
@@ -72,6 +74,7 @@ namespace RESTar.Requests
         internal Select Select { get; set; }
         internal Add Add { get; set; }
         internal Rename Rename { get; set; }
+        internal Distinct Distinct { get; set; }
         internal string SafePost { get; set; }
         internal bool New { get; set; }
         internal bool Empty = true;
@@ -137,6 +140,11 @@ namespace RESTar.Requests
                         if (!processors) break;
                         mc.Select = new Select(resource, (string) value, dynamicDomain);
                         break;
+                    case RESTarMetaConditions.Distinct:
+                        if (!processors) break;
+                        if ((bool) value)
+                            mc.Distinct = new Distinct();
+                        break;
                     case RESTarMetaConditions.Add:
                         if (!processors) break;
                         mc.Add = new Add(resource, (string) value, dynamicDomain);
@@ -159,7 +167,7 @@ namespace RESTar.Requests
 
                 if (processors)
                 {
-                    mc.Processors = new IProcessor[] {mc.Add, mc.Rename, mc.Select}.Where(p => p != null).ToArray();
+                    mc.Processors = new IProcessor[] {mc.Add, mc.Rename, mc.Select, mc.Distinct}.Where(p => p != null).ToArray();
                     mc.HasProcessors = mc.Processors.Any();
                 }
 

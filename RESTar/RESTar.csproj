@@ -98,6 +98,7 @@
     <Compile Include="Internal\ITarget.cs" />
     <Compile Include="Internal\View.cs" />
     <Compile Include="LineEndings.cs" />
+    <Compile Include="Operations\Distinct.cs" />
     <Compile Include="Report.cs" />
     <Compile Include="Resources\StarcounterIndexer.cs" />
     <Compile Include="AvailableResource.cs" />
