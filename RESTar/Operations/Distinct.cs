@@ -12,7 +12,7 @@ namespace RESTar.Operations
         /// <summary>
         /// Applies the distinct filtering
         /// </summary>
-        public IEnumerable<JObject> Apply<T>(IEnumerable<T> entities) => entities
+        public IEnumerable<JObject> Apply<T>(IEnumerable<T> entities) => entities?
             .Select(entity => entity.ToJObject())
             .Distinct(JToken.EqualityComparer)
             .Cast<JObject>();

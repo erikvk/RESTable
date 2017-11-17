@@ -17,7 +17,7 @@ namespace RESTar.Operations
             .Select(key => resource.MakeOutputTerm(key, dynDomain))
             .ForEach(Add);
 
-        public IEnumerable<JObject> Apply<T>(IEnumerable<T> entities) => entities.Select(entity =>
+        public IEnumerable<JObject> Apply<T>(IEnumerable<T> entities) => entities?.Select(entity =>
         {
             var jobj = entity.ToJObject();
             ForEach(term =>
