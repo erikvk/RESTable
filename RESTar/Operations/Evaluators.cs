@@ -408,7 +408,8 @@ namespace RESTar.Operations
                 if (results == null) return NoContent;
                 try
                 {
-                    var (stream, count, hasContent, mimeType, extension) = default((MemoryStream, long, bool, string, string));
+                    var (stream, count, hasContent, mimeType, extension) =
+                        default((MemoryStream, long, bool, string, string));
                     switch (request.Accept)
                     {
                         case MimeType.Json:
@@ -426,6 +427,7 @@ namespace RESTar.Operations
                         StatusCode = 200,
                         StatusDescription = "OK",
                         ContentType = mimeType,
+                        StreamedBody = stream,
                         Headers =
                         {
                             ["RESTar-count"] = count.ToString(),
@@ -433,9 +435,6 @@ namespace RESTar.Operations
                                                       $"{DateTime.Now:yyMMddHHmmssfff}{extension}",
                         }
                     };
-                    if (_SerializeToArray)
-                        using (stream) response.BodyBytes = stream.ToArray();
-                    else response.StreamedBody = stream;
 
                     if (count == request.MetaConditions.Limit)
                         response.Headers["RESTar-pager"] = $"limit={request.MetaConditions.Limit}&" +

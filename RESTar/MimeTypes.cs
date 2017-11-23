@@ -10,8 +10,7 @@ namespace RESTar
     public static class MimeTypes
     {
         public const string Excel = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-        public const string JSON = "application/json";
-        public const string XML = "application/xml";
+        public const string JSON = "application/json; charset=utf-8";
 
         internal static MimeType Match(string mimeTypeString)
         {
