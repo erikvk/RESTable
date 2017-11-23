@@ -8,6 +8,7 @@ namespace RESTar
     /// </summary>
     public interface IOperationsInterface { }
 
+    /// <inheritdoc />
     /// <summary>
     /// Interface used to register a Selector for a given resource type
     /// </summary>

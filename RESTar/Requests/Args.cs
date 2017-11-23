@@ -15,7 +15,7 @@ namespace RESTar.Requests
         internal readonly bool HasConditions;
         internal readonly bool HasMetaConditions;
         internal IResource IResource => HasResource ? RESTar.Resource.Find(Resource) : Resource<AvailableResource>.Get;
-        private const string regex = @"\?*(?<resource>/\w*)?(?<view>-\w*)?(?<conditions>/[^/]*)?(?<metaconditions>/[^/]*)?";
+        private const string regex = @"\?*(?<resource>/[^/-]*)?(?<view>-\w*)?(?<conditions>/[^/]*)?(?<metaconditions>/[^/]*)?";
 
         internal Args(string query, bool escapePercentSigns = false)
         {

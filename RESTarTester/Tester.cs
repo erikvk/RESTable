@@ -345,13 +345,15 @@ namespace RESTarTester
             var data = streamreader.ReadToEnd();
             Debug.Assert(!string.IsNullOrWhiteSpace(data));
 
-            var jsonResponse1 = Http.GET("http://localhost:9000/rest/resource1");
+            var jsonResponse1 = Http.GET("http://localhost:9000/rest/restartester.resource1");
             var jsonResponse1view = Http.GET("http://localhost:9000/rest/resource1-myview");
             var jsonResponse2 = Http.GET("http://localhost:9000/rest/resource2");
             var jsonResponse3 = Http.GET("http://localhost:9000/rest/resource3");
             var jsonResponse4 = Http.GET("http://localhost:9000/rest/resource4");
             var jsonResponse4distinct = Http.GET("http://localhost:9000/rest/resource4//select=string&distinct=true");
-            var jsonResponse4extreme = Http.GET("http://localhost:9000/rest/resource4//add=datetime.value.day&select=datetime.value.day,datetime.value.month,string,string.length&order_desc=string.length&distinct=true");
+            var jsonResponse4extreme =
+                Http.GET(
+                    "http://localhost:9000/rest/resource4//add=datetime.value.day&select=datetime.value.day,datetime.value.month,string,string.length&order_desc=string.length&distinct=true");
 
             Debug.Assert(jsonResponse1?.IsSuccessStatusCode == true);
             Debug.Assert(jsonResponse1view?.IsSuccessStatusCode == true);

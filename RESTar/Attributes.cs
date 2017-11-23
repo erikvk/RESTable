@@ -6,7 +6,8 @@ namespace RESTar
 {
     /// <inheritdoc />
     /// <summary>
-    /// Registers a new RESTar resource and provides permissions.
+    /// Registers a new RESTar resource and provides permissions. If no methods are 
+    /// provided in the constructor, all methods are made available for this resource.
     /// </summary>
     [AttributeUsage(AttributeTargets.Class, Inherited = false)]
     public class RESTarAttribute : Attribute
@@ -56,6 +57,10 @@ namespace RESTar
         }
 
         /// <inheritdoc />
+        /// <summary>
+        /// Registers a new RESTar resource and provides permissions. If no methods are 
+        /// provided in the constructor, all methods are made available for this resource.
+        /// </summary>
         public RESTarAttribute(params Methods[] methodRestrictions)
         {
             if (!methodRestrictions.Any())
@@ -74,8 +79,9 @@ namespace RESTar
 
     /// <inheritdoc />
     /// <summary>
-    /// Registers a class as an internal RESTar resource, that can only
-    /// be used in internal requests (using the RESTar.Request`1 class).
+    /// Registers a class as an internal RESTar resource, that can only be used in internal 
+    /// requests (using the RESTar.Request`1 class). If no methods are provided in the 
+    /// constructor, all methods are made available for this resource.
     /// </summary>
     [AttributeUsage(AttributeTargets.Class, Inherited = false)]
     public class RESTarInternalAttribute : RESTarAttribute

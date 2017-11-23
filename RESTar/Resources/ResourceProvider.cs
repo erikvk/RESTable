@@ -66,6 +66,7 @@ namespace RESTar.Resources
         /// <summary>
         /// The default Inserter to use for resources claimed by this ResourceProvider
         /// </summary>
+        /// 
         /// <typeparam name="T">The resource type</typeparam>
         public abstract Inserter<T> GetDefaultInserter<T>() where T : class, TBase;
 

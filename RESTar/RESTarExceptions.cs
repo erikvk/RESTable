@@ -407,7 +407,7 @@ namespace RESTar
     /// </summary>
     public class AmbiguousMatchException : RESTarException
     {
-        internal AmbiguousMatchException(IResource resource) : base(AmbiguousMatch,
+        internal AmbiguousMatchException(ITarget resource) : base(AmbiguousMatch,
             $"Expected a uniquely matched entity in resource '{resource.Name}' " +
             "for this request, but matched multiple entities satisfying the given " +
             "conditions. To enable manipulation of multiple matched entities (for " +

@@ -9,7 +9,7 @@ using RESTar.Internal;
 namespace RESTar.Admin
 {
     /// <summary>
-    /// The DatabaseIndex resource lets an administrator set indexes for database resources.
+    /// The DatabaseIndex resource lets an administrator set indexes for RESTar database resources.
     /// </summary>
     [RESTar(Description = description)]
     public class DatabaseIndex : ISelector<DatabaseIndex>, IInserter<DatabaseIndex>, IUpdater<DatabaseIndex>,
@@ -82,36 +82,33 @@ namespace RESTar.Admin
         #region Public helpers
 
         /// <summary>
-        /// Creates an ascending database index for the table T with a given name on the given column.
+        /// Creates an ascending database index for the table T with a given name on the given column(s).
         /// If an index with the same name already exists, does nothing.
         /// </summary>
-        public static void Register<T>(string name, string columnName)
-            where T : class => Register<T>(name, (columnName, false));
+        public static void Register<T>(string indexName, params string[] columnNames) where T : class
+        {
+            Register<T>(indexName, columnNames.Select(columnName => (ColumnInfo) (columnName, false)).ToArray());
+        }
 
         /// <summary>
-        /// Creates an ascending database index for the table T with a given name on the given columns.
+        /// Creates a database index for the table T with a given name on the given column(s).
         /// If an index with the same name already exists, does nothing.
         /// </summary>
-        public static void Register<T>(string name, string columnName1, string columnName2)
-            where T : class => Register<T>(name, (columnName1, false), (columnName2, false));
-
-        /// <summary>
-        /// Creates a database index for a table type with a given name on the given column and direction.
-        /// If an index with the same name already exists, does nothing.
-        /// </summary>
-        public static void Register<T>(string name, string columnName, bool descending)
-            where T : class => Register<T>(name, (columnName, descending));
+        public static void Register<T>(string indexName, params (string columnName, bool descending)[] columns) where T : class
+        {
+            Register<T>(indexName, columns.Select(column => (ColumnInfo) column).ToArray());
+        }
 
         /// <summary>
         /// Creates a database index for a table type with a given name on a given list of columns.
         /// If an index with the same name already exists, does nothing.
         /// </summary>
-        public static void Register<T>(string name, params ColumnInfo[] columns) where T : class
+        private static void Register<T>(string indexName, params ColumnInfo[] columns) where T : class
         {
-            SelectionCondition.Value = name;
+            SelectionCondition.Value = indexName;
             SelectionRequest.PUT(() => new DatabaseIndex(typeof(T).FullName)
             {
-                Name = name,
+                Name = indexName,
                 Columns = columns
             });
         }

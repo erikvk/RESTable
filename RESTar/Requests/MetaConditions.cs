@@ -14,19 +14,18 @@ namespace RESTar.Requests
 {
     internal enum RESTarMetaConditions
     {
+        Unsafe,
         Limit,
+        Offset,
         Order_desc,
         Order_asc,
-        Unsafe,
         Select,
         Add,
         Rename,
-        [Obsolete] Dynamic,
+        Distinct,
         Safepost,
         New,
-        Delete,
-        Offset,
-        Distinct
+        Delete
     }
 
     internal static class MetaConditionsExtensions
@@ -42,7 +41,6 @@ namespace RESTar.Requests
                 case RESTarMetaConditions.Select: return typeof(string);
                 case RESTarMetaConditions.Add: return typeof(string);
                 case RESTarMetaConditions.Rename: return typeof(string);
-                case RESTarMetaConditions.Dynamic: return typeof(bool);
                 case RESTarMetaConditions.Safepost: return typeof(string);
                 case RESTarMetaConditions.New: return typeof(bool);
                 case RESTarMetaConditions.Delete: return typeof(bool);
@@ -173,7 +171,6 @@ namespace RESTar.Requests
                         if (!processors) break;
                         mc.Add = new Add(resource, (string) value, dynamicDomain);
                         break;
-                    case RESTarMetaConditions.Dynamic: break;
                     case RESTarMetaConditions.Safepost:
                         mc.SafePost = value;
                         break;

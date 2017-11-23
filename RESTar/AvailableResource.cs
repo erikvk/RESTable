@@ -68,8 +68,7 @@ namespace RESTar
                 {
                     v.Name,
                     Description = v.Description ?? "No description",
-                    v.ViewType
-                }).ToArray(),
+                }).ToArray() ?? new object[0],
                 InnerResources = ((IResourceInternal) iresource).InnerResources?
                     .Select(Make)
                     .ToArray()
