@@ -14,10 +14,10 @@ namespace RESTar.Http
     {
         internal Methods Method { get; private set; }
         internal Uri URI { get; private set; }
-        internal Dictionary<string, string> Headers { get; }
+        private Dictionary<string, string> Headers { get; }
         internal string Accept;
         internal string ContentType;
-        internal bool IsInternal { get; private set; }
+        private bool IsInternal { get; set; }
         private static readonly Regex regex = new Regex(@"\[(?<header>.+):[\s]*(?<value>.+)\]");
         internal Stream Body;
         internal string AuthToken;

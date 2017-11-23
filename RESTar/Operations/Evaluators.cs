@@ -425,9 +425,7 @@ namespace RESTar.Operations
                     {
                         StatusCode = 200,
                         StatusDescription = "OK",
-                        StreamedBody = stream,
                         ContentType = mimeType,
-                        ContentLength = (int) stream.Length,
                         Headers =
                         {
                             ["RESTar-count"] = count.ToString(),
@@ -435,6 +433,9 @@ namespace RESTar.Operations
                                                       $"{DateTime.Now:yyMMddHHmmssfff}{extension}",
                         }
                     };
+                    if (_SerializeToArray)
+                        using (stream) response.BodyBytes = stream.ToArray();
+                    else response.StreamedBody = stream;
 
                     if (count == request.MetaConditions.Limit)
                         response.Headers["RESTar-pager"] = $"limit={request.MetaConditions.Limit}&" +

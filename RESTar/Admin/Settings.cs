@@ -25,6 +25,7 @@ namespace RESTar.Admin
         internal static string _HelpResourcePath => Instance.HelpResourcePath;
         internal static bool _DontUseLRT => Instance.DontUseLRT;
         internal static LineEndings _LineEndings => Instance.LineEndings;
+        internal static bool _SerializeToArray => Instance.SerializeToArray;
 
         /// <summary>
         /// The port of the RESTar REST API
@@ -50,6 +51,11 @@ namespace RESTar.Admin
         /// Use long running transactions instead of regular transact calls
         /// </summary>
         public bool DontUseLRT { get; set; }
+
+        /// <summary>
+        /// Serialize responses to arrays instead of streams
+        /// </summary>
+        public bool SerializeToArray { get; set; }
 
         /// <summary>
         /// The line endings to use when writing JSON
