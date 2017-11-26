@@ -17,13 +17,14 @@ namespace RESTar.Requests
         Unsafe,
         Limit,
         Offset,
-        Order_desc,
         Order_asc,
+        Order_desc,
         Select,
         Add,
         Rename,
         Distinct,
         Safepost,
+        Format,
         New,
         Delete
     }
@@ -34,18 +35,19 @@ namespace RESTar.Requests
         {
             switch (condition)
             {
-                case RESTarMetaConditions.Limit: return typeof(int);
-                case RESTarMetaConditions.Order_desc: return typeof(string);
-                case RESTarMetaConditions.Order_asc: return typeof(string);
                 case RESTarMetaConditions.Unsafe: return typeof(bool);
+                case RESTarMetaConditions.Limit: return typeof(int);
+                case RESTarMetaConditions.Offset: return typeof(int);
+                case RESTarMetaConditions.Order_asc: return typeof(string);
+                case RESTarMetaConditions.Order_desc: return typeof(string);
                 case RESTarMetaConditions.Select: return typeof(string);
                 case RESTarMetaConditions.Add: return typeof(string);
                 case RESTarMetaConditions.Rename: return typeof(string);
+                case RESTarMetaConditions.Distinct: return typeof(bool);
                 case RESTarMetaConditions.Safepost: return typeof(string);
+                case RESTarMetaConditions.Format: return typeof(string);
                 case RESTarMetaConditions.New: return typeof(bool);
                 case RESTarMetaConditions.Delete: return typeof(bool);
-                case RESTarMetaConditions.Offset: return typeof(int);
-                case RESTarMetaConditions.Distinct: return typeof(bool);
                 default: throw new ArgumentOutOfRangeException(nameof(condition), condition, null);
             }
         }
@@ -57,6 +59,11 @@ namespace RESTar.Requests
     public sealed class MetaConditions
     {
         /// <summary>
+        /// Is this request unsafe?
+        /// </summary>
+        public bool Unsafe { get; set; }
+
+        /// <summary>
         /// The limit by which the request's response body entity count should be restricted to
         /// </summary>
         public Limit Limit { get; internal set; } = Limit.NoLimit;
@@ -66,11 +73,6 @@ namespace RESTar.Requests
         /// response
         /// </summary>
         public Offset Offset { get; internal set; } = Offset.NoOffset;
-
-        /// <summary>
-        /// Is this request unsafe?
-        /// </summary>
-        public bool Unsafe { get; set; }
 
         /// <summary>
         /// The OrderBy filter to apply to the output from this request
@@ -97,10 +99,20 @@ namespace RESTar.Requests
         /// </summary>
         public Distinct Distinct { get; set; }
 
+        /// <summary>
+        /// The term to use for safepost
+        /// </summary>
         internal string SafePost { get; set; }
+
+        /// <summary>
+        /// The format to use when serializing JSON
+        /// </summary>
+        internal Formatter Formatter { get; private set; } = DbOutputFormat.Default;
+
         internal bool New { get; set; }
         internal bool Empty = true;
         internal bool Delete { get; set; }
+
         internal IProcessor[] Processors { get; private set; }
         internal bool HasProcessors { get; private set; }
 
@@ -122,8 +134,11 @@ namespace RESTar.Requests
             ICollection<string> dynamicDomain = default;
             foreach (var s in mcStrings)
             {
+                #region Initial checks
+
                 if (s == "")
-                    throw new SyntaxException(InvalidMetaConditionSyntax, "Invalid meta-condition syntax");
+                    throw new SyntaxException(InvalidMetaConditionSyntax,
+                        "Invalid meta-condition syntax. Check use of '&' in URI.");
                 var containsOneAndOnlyOneEquals = s.Count(c => c == '=') == 1;
                 if (!containsOneAndOnlyOneEquals)
                     throw new SyntaxException(InvalidMetaConditionOperator,
@@ -140,48 +155,58 @@ namespace RESTar.Requests
                     throw new SyntaxException(InvalidMetaConditionValueType,
                         $"Invalid data type assigned to meta-condition '{pair[0]}'. " +
                         $"Expected {GetTypeString(expectedType)}.");
+
+                #endregion
+
                 switch (metaCondition)
                 {
-                    case RESTarMetaConditions.Rename:
-                        if (!processors) break;
-                        mc.Rename = new Rename(resource, (string) value, out dynamicDomain);
+                    case RESTarMetaConditions.Unsafe:
+                        mc.Unsafe = value;
                         break;
                     case RESTarMetaConditions.Limit:
                         mc.Limit = (Limit) (int) value;
                         break;
-                    case RESTarMetaConditions.Order_desc:
-                        mc.OrderBy = new OrderBy(resource, true, (string) value, dynamicDomain);
+                    case RESTarMetaConditions.Offset:
+                        mc.Offset = (Offset) (int) value;
                         break;
                     case RESTarMetaConditions.Order_asc:
                         mc.OrderBy = new OrderBy(resource, false, (string) value, dynamicDomain);
                         break;
-                    case RESTarMetaConditions.Unsafe:
-                        mc.Unsafe = value;
+                    case RESTarMetaConditions.Order_desc:
+                        mc.OrderBy = new OrderBy(resource, true, (string) value, dynamicDomain);
                         break;
                     case RESTarMetaConditions.Select:
                         if (!processors) break;
                         mc.Select = new Select(resource, (string) value, dynamicDomain);
+                        break;
+                    case RESTarMetaConditions.Add:
+                        if (!processors) break;
+                        mc.Add = new Add(resource, (string) value, dynamicDomain);
+                        break;
+                    case RESTarMetaConditions.Rename:
+                        if (!processors) break;
+                        mc.Rename = new Rename(resource, (string) value, out dynamicDomain);
                         break;
                     case RESTarMetaConditions.Distinct:
                         if (!processors) break;
                         if ((bool) value)
                             mc.Distinct = new Distinct();
                         break;
-                    case RESTarMetaConditions.Add:
-                        if (!processors) break;
-                        mc.Add = new Add(resource, (string) value, dynamicDomain);
-                        break;
                     case RESTarMetaConditions.Safepost:
                         mc.SafePost = value;
+                        break;
+                    case RESTarMetaConditions.Format:
+                        var formatName = (string) value;
+                        var format = DbOutputFormat.Get(formatName) ?? throw new SyntaxException(UnknownFormatter,
+                                         $"Could not find any output format by '{formatName}'. See RESTar.Admin.OutputFormat " +
+                                         "for available output formats");
+                        mc.Formatter = format.Format;
                         break;
                     case RESTarMetaConditions.New:
                         mc.New = value;
                         break;
                     case RESTarMetaConditions.Delete:
                         mc.Delete = value;
-                        break;
-                    case RESTarMetaConditions.Offset:
-                        mc.Offset = (Offset) (int) value;
                         break;
                     default: throw new ArgumentOutOfRangeException();
                 }

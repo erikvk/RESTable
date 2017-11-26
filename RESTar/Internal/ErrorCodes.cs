@@ -23,13 +23,14 @@ namespace RESTar.Internal
         InvalidConditionOperator = 007,
         InvalidResourceSpecifier = 008,
         InvalidSeparator = 009,
-
+        
         // 010-019: Data source syntax and format errors
         FailedJsonDeserialization = 010,
         ExcelReaderError = 011,
         DataSourceFormat = 012,
         NoDataSource = 013,
         UnsupportedContent = 014,
+        UnknownFormatter = 015,
 
         // 020-029: Headers error
         InvalidSourceData = 020,

@@ -47,21 +47,52 @@ namespace RESTar.Serialization
             JsonSerializer = JsonSerializer.Create(Settings);
         }
 
-        internal static bool GetJsonStream(this object data, out MemoryStream stream, out long count)
+        internal static bool GetJsonStream(this IEnumerable<object> data, Formatter formatter,
+            out MemoryStream stream, out long count)
         {
-            JsonSerializer.Formatting = _PrettyPrint ? Indented : None;
             stream = new MemoryStream();
             using (var swr = new StreamWriter(stream, Encoding.UTF8, 1024, true))
-            using (var jwr = new RESTarJsonWriter(swr))
+            using (var jwr = new RESTarJsonWriter(swr, formatter.StartIndent))
             {
+                JsonSerializer.Formatting = _PrettyPrint ? Indented : None;
+                swr.Write(formatter.Pre);
                 JsonSerializer.Serialize(jwr, data);
                 jwr.Flush();
+                swr.Write(formatter.Post);
                 swr.Flush();
                 count = jwr.ObjectsWritten;
             }
             if (count == 0) return false;
             stream.Seek(0, SeekOrigin.Begin);
             return true;
+        }
+
+        internal static bool GetReportJsonStream(this Report data, out MemoryStream stream)
+        {
+            JsonSerializer.Formatting = _PrettyPrint ? Indented : None;
+            stream = new MemoryStream();
+            using (var swr = new StreamWriter(stream, Encoding.UTF8, 1024, true))
+            using (var jwr = new RESTarJsonWriter(swr, 0))
+            {
+                JsonSerializer.Serialize(jwr, data);
+                jwr.Flush();
+                swr.Flush();
+            }
+            stream.Seek(0, SeekOrigin.Begin);
+            return true;
+        }
+
+        internal static string SerializeFormatter(this JToken formatterToken, out int indents)
+        {
+            using (var sw = new StringWriter())
+            using (var jwr = new FormatWriter(sw))
+            {
+                JsonSerializer.Formatting = Indented;
+                JsonSerializer.Serialize(jwr, formatterToken);
+                jwr.Flush();
+                indents = jwr.Depth;
+                return sw.ToString();
+            }
         }
 
         internal static bool GetExcelStream(this IEnumerable<object> data, IResource resource, out MemoryStream stream,
@@ -167,7 +198,10 @@ namespace RESTar.Serialization
             }
         }
 
-        internal static T Deserialize<T>(this Stream jsonStream)
+        /// <summary>
+        /// Deserializes the content of a stream to a given .NET object type
+        /// </summary>
+        public static T Deserialize<T>(this Stream jsonStream)
         {
             using (var jsonReader = new JsonTextReader(new StreamReader(jsonStream)))
                 return JsonSerializer.Deserialize<T>(jsonReader);

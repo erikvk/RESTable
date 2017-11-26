@@ -688,10 +688,11 @@ namespace RESTar
             }
         }
 
-        internal static Args ToArgs(this string query, Request request)
-        {
-            return new Args(query, request.HeadersDictionary?.ContainsKey("X-ARR-LOG-ID") == true);
-        }
+        /// <summary>
+        /// Helper method for sleek Args creation in Handlers
+        /// </summary>
+        internal static Args ToArgs(this string query, Request request) =>
+            new Args(query, request.HeadersDictionary?.ContainsKey("X-ARR-LOG-ID") == true);
 
         private static string CheckQuery(this string query, Request request)
         {

@@ -1,8 +1,11 @@
 ﻿using System;
 using System.Linq;
+using System.Net;
+using System.Text.RegularExpressions;
 using RESTar.Auth;
 using RESTar.Requests;
 using Starcounter;
+using static System.Text.RegularExpressions.RegexOptions;
 using static RESTar.Internal.ErrorCodes;
 using static RESTar.RESTarConfig;
 
@@ -38,7 +41,7 @@ namespace RESTar.Internal
             request.AuthToken = AssignAuthtoken(AccessRights.Root, token);
         }
 
-        internal static void Authenticate<T>(this RESTRequest<T> request) where T : class
+        internal static void Authenticate<T>(this RESTRequest<T> request, ref Args args) where T : class
         {
             if (!RequireApiKey)
             {
@@ -58,7 +61,16 @@ namespace RESTar.Internal
             }
             var authorizationHeader = request.ScRequest.Headers["Authorization"];
             if (string.IsNullOrWhiteSpace(authorizationHeader))
-                throw NotAuthorizedException;
+            {
+                if (!args.HasMetaConditions) throw NotAuthorizedException;
+                var match = Regex.Match(args.MetaConditions, @"&key=(?<key>[^/&]+)|key=(?<key>[^/&]+)&?", IgnoreCase);
+                if (!match.Success) throw NotAuthorizedException;
+                var conds = args.MetaConditions.Replace(match.Groups[0].Value, "");
+
+
+                args.MetaConditions = conds;
+                authorizationHeader = $"apikey {WebUtility.UrlDecode(match.Groups["key"].ToString())}";
+            }
             var apikey_key = authorizationHeader.Split(' ');
             if (apikey_key[0].ToLower() != "apikey" || apikey_key.Length != 2)
                 throw NotAuthorizedException;

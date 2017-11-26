@@ -354,7 +354,10 @@ namespace RESTarTester
             var jsonResponse4extreme =
                 Http.GET(
                     "http://localhost:9000/rest/resource4//add=datetime.value.day&select=datetime.value.day,datetime.value.month,string,string.length&order_desc=string.length&distinct=true");
-
+            var jsonResponse5format =
+                Http.GET(
+                    "http://localhost:9000/rest/resource4//add=datetime.value.day&select=datetime.value.day,datetime.value.month,string,string.length&order_desc=string.length&format=jsend&distinct=true");
+            
             Debug.Assert(jsonResponse1?.IsSuccessStatusCode == true);
             Debug.Assert(jsonResponse1view?.IsSuccessStatusCode == true);
             Debug.Assert(jsonResponse2?.IsSuccessStatusCode == true);
@@ -362,6 +365,7 @@ namespace RESTarTester
             Debug.Assert(jsonResponse4?.IsSuccessStatusCode == true);
             Debug.Assert(jsonResponse4distinct?.IsSuccessStatusCode == true);
             Debug.Assert(jsonResponse4extreme?.IsSuccessStatusCode == true);
+            Debug.Assert(jsonResponse5format?.IsSuccessStatusCode == true);
 
             #endregion
 

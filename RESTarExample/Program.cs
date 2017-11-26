@@ -4,7 +4,6 @@ using System.Linq;
 using Dynamit;
 using Newtonsoft.Json.Linq;
 using RESTar;
-using RESTar.Admin;
 using RESTar.Resources;
 using Starcounter;
 
@@ -27,10 +26,10 @@ namespace RESTarExample
                 configFilePath: @"C:\Mopedo\mopedo\Mopedo.config",
                 lineEndings: LineEndings.Linux
             );
-            DatabaseIndex.Register<MyResource>("MyIndeeex", "MyId");
-            TestDatabase.Init();
         }
     }
+
+    #region Stuff
 
     [Database, RESTar]
     public class Static
@@ -290,6 +289,8 @@ namespace RESTarExample
     {
         public MyDynamicTableKvp(DDictionary dict, string key, object value = null) : base(dict, key, value) { }
     }
+
+    #endregion
 
     #endregion
 }

@@ -40,6 +40,7 @@ namespace RESTar.Requests
         internal T Entity { get; set; }
         internal Json GetView() => DataView.MakeCurrentView();
         private const string MacroRegex = @"\@RESTar\((?<content>[^\(\)]*)\)";
+        public T1 BodyObject<T1>() where T1 : class => Body?.Deserialize<T1>();
 
         internal void Evaluate()
         {

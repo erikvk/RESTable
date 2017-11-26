@@ -38,15 +38,16 @@ namespace RESTar
         public MetaConditions MetaConditions { get; }
         public Origin Origin { get; }
         Methods IRequest.Method => 0;
-        public ITarget<T> Target { get; set; }
-
+        public ITarget<T> Target { get; }
+        public T1 BodyObject<T1>() where T1 : class => Body?.Deserialize<T1>();
+        
         private readonly bool ScSql;
         internal string SelectQuery { get; private set; }
         internal string CountQuery { get; private set; }
         internal object[] SqlValues { get; private set; }
         private Dictionary<int, int> ValuesAssignments;
 
-        private bool GETAllowed;
+        private bool GETAllowed;    
         private bool POSTAllowed;
         private bool PATCHAllowed;
         private bool PUTAllowed;

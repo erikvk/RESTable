@@ -9,7 +9,7 @@ namespace RESTar.Requests
         internal readonly string Resource;
         internal readonly string View;
         internal readonly string Conditions;
-        internal readonly string MetaConditions;
+        internal string MetaConditions;
         internal readonly bool HasResource;
         internal readonly bool HasView;
         internal readonly bool HasConditions;

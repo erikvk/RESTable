@@ -8,34 +8,35 @@ namespace RESTar.Serialization
 {
     public class RESTarJsonWriter : JsonTextWriter
     {
-        private readonly string newLine;
-
-        private int currentDepth;
+        private readonly string NewLine;
+        private int BaseIndentation;
+        private int CurrentDepth;
         public long ObjectsWritten { get; private set; }
 
         public override void WriteStartObject()
         {
-            if (currentDepth == 0)
+            if (CurrentDepth == 0)
                 ObjectsWritten += 1;
-            currentDepth += 1;
+            CurrentDepth += 1;
             base.WriteStartObject();
         }
 
         public override void WriteEndObject()
         {
-            currentDepth -= 1;
+            CurrentDepth -= 1;
             base.WriteEndObject();
         }
 
-        public RESTarJsonWriter(TextWriter textWriter) : base(textWriter)
+        public RESTarJsonWriter(TextWriter textWriter, int baseIndentation) : base(textWriter)
         {
+            BaseIndentation = baseIndentation;
             switch (_LineEndings)
             {
                 case LineEndings.Windows:
-                    newLine = "\r\n";
+                    NewLine = "\r\n";
                     break;
                 case LineEndings.Linux:
-                    newLine = "\n";
+                    NewLine = "\n";
                     break;
                 default: return;
             }
@@ -44,16 +45,17 @@ namespace RESTar.Serialization
         protected override void WriteIndent()
         {
             if (Formatting != Formatting.Indented) return;
-            WriteWhitespace(newLine);
-            var currentIndentCount = Top * Indentation;
+            WriteWhitespace(NewLine);
+            var currentIndentCount = Top * Indentation + BaseIndentation;
             for (var i = 0; i < currentIndentCount; i++)
                 WriteIndentSpace();
         }
 
         protected override void Dispose(bool disposing)
         {
-            currentDepth = 0;
+            CurrentDepth = 0;
             ObjectsWritten = 0;
+            BaseIndentation = 0;
             base.Dispose(disposing);
         }
     }

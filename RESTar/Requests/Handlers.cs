@@ -109,10 +109,11 @@ namespace RESTar.Requests
         private static Response HandleREST<T>(IResource<T> resource, Request scRequest, Args? args,
             HandlerActions action) where T : class
         {
+            var arguments = args.GetValueOrDefault();
             using (var request = new RESTRequest<T>(resource, scRequest))
             {
-                request.Authenticate();
-                request.Populate(args.GetValueOrDefault(), (Methods) action);
+                request.Authenticate(ref arguments);
+                request.Populate(arguments, (Methods) action);
                 request.MethodCheck();
                 request.SetRequestData();
                 request.Evaluate();

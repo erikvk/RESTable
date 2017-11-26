@@ -37,7 +37,7 @@ namespace RESTar
             if (request == null) throw new ArgumentNullException(nameof(request));
             if (request.Body == null)
                 throw new Exception("Missing data source for operation");
-            var jobject = request.Body.Deserialize<JObject>();
+            var jobject = request.BodyObject<JObject>();
 
             JTokens recursor(JToken token)
             {

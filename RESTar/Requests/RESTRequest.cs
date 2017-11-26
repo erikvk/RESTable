@@ -39,6 +39,7 @@ namespace RESTar.Requests
         private DataConfig InputDataConfig { get; set; }
         private DataConfig OutputDataConfig { get; set; }
         internal void Evaluate() => Response = Evaluator(this);
+        public T1 BodyObject<T1>() where T1 : class => Body?.Deserialize<T1>();
 
         internal RESTRequest(IResource<T> resource, Request scRequest)
         {
@@ -73,6 +74,7 @@ namespace RESTar.Requests
                 Conditions = Condition<T>.Parse(args.Conditions, Target) ?? Conditions;
             if (args.HasMetaConditions)
                 MetaConditions = MetaConditions.Parse(args.MetaConditions, Resource) ?? MetaConditions;
+
         }
 
         internal void SetRequestData()
@@ -137,7 +139,10 @@ namespace RESTar.Requests
         internal Response GetResponse()
         {
             ResponseHeaders.ForEach(h => Response.Headers["X-" + h.Key] = h.Value);
-            Response.Headers["Access-Control-Allow-Origin"] = AllowAllOrigins ? "*" : (CORSOrigin ?? "null");
+            if (AllowAllOrigins)
+                Response.Headers["Access-Control-Allow-Origin"] = "*";
+            else if (CORSOrigin != null)
+                Response.Headers["Access-Control-Allow-Origin"] = CORSOrigin;
             switch (OutputDataConfig)
             {
                 case DataConfig.Client: return Response;
@@ -154,8 +159,10 @@ namespace RESTar.Requests
                         if (!response.IsSuccessStatusCode)
                             throw new DestinationException(request,
                                 $"Received {response.StatusCode} - {response.StatusDescription}. {response.Headers["RESTar-info"]}");
-                        response.Headers["Access-Control-Allow-Origin"] =
-                            AllowAllOrigins ? "*" : (CORSOrigin ?? "null");
+                        if (AllowAllOrigins)
+                            Response.Headers["Access-Control-Allow-Origin"] = "*";
+                        else if (CORSOrigin != null)
+                            Response.Headers["Access-Control-Allow-Origin"] = CORSOrigin;
                         return (Response) response;
                     }
                     catch (HttpRequestException re)
@@ -199,8 +206,7 @@ namespace RESTar.Requests
 
         internal Response Report(Report report)
         {
-            if (!report.GetJsonStream(out var stream, out var _))
-                return NoContent;
+            if (!report.GetReportJsonStream(out var stream)) return NoContent;
             return new Response
             {
                 StatusCode = (ushort) OK,
