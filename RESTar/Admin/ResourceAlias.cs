@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Serialization;
 using Starcounter;
@@ -18,10 +19,21 @@ namespace RESTar.Admin
                                            "alias to a resource, making it possible to reference " +
                                            "the resource with only the alias.";
 
+        private string alias;
+
         /// <summary>
         /// The alias string
         /// </summary>
-        public string Alias;
+        public string Alias
+        {
+            get => alias;
+            set
+            {
+                if (value[0] == '$')
+                    throw new Exception($"Invalid Alias '{value}'. Aliases cannot begin with '$'");
+                alias = value;
+            }
+        }
 
         internal string _resource;
 

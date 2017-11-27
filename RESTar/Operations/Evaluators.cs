@@ -591,7 +591,6 @@ namespace RESTar.Operations
 
             private static Response POST(RESTRequest<T> request)
             {
-                //request.Body = request.Body[0] == '[' ? request.Body : $"[{request.Body}]";
                 if (request.MetaConditions.SafePost != null) return SafePOST(request);
                 return request.InsertedEntities(Transaction<T>.ShTransact(() => INSERTorTryDelete(request)));
             }

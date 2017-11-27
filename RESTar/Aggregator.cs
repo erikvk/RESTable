@@ -22,8 +22,18 @@ namespace RESTar
         /// <inheritdoc />
         public IEnumerable<Aggregator> Select(IRequest<Aggregator> request)
         {
-            var template = request.BodyObject<JObject>();
-            if (template == null) return null;
+            JObject template;
+            switch (request.BodyObject<JToken>())
+            {
+                case null: return null;
+                case JObject obj:
+                    template = obj;
+                    break;
+                case JArray arr when arr.Count == 1 && arr[0] is JObject obj:
+                    template = obj;
+                    break;
+                default: throw new Exception("Invalid Aggregator template. Expected a single object");
+            }
 
             void recursor(JToken token)
             {
@@ -63,8 +73,9 @@ namespace RESTar
 
                         var response = HttpRequest.Internal(method, new Uri(uriString, UriKind.Relative), request.AuthToken);
                         if (response?.IsSuccessStatusCode != true)
-                            throw new Exception($"Could not get source data from '{uriString}'. {response?.StatusCode.ToCode()}: " +
-                                                $"{response?.StatusDescription}. {response?.Headers?.SafeGet("RESTar-info")}");
+                            throw new Exception(
+                                $"Could not get source data from '{uriString}'. {response?.StatusCode.ToCode()}: " +
+                                $"{response?.StatusDescription}. {response?.Headers?.SafeGet("RESTar-info")}");
                         switch (method)
                         {
                             case Methods.GET:

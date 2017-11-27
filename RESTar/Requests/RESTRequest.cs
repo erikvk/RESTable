@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using ExcelDataReader;
 using RESTar.Http;
 using RESTar.Internal;
 using RESTar.Linq;
@@ -40,7 +39,7 @@ namespace RESTar.Requests
         private DataConfig OutputDataConfig { get; set; }
         internal void Evaluate() => Response = Evaluator(this);
         public T1 BodyObject<T1>() where T1 : class => Body?.Deserialize<T1>();
-    
+
         internal RESTRequest(IResource<T> resource, Request scRequest)
         {
             if (resource.IsInternal) throw new ResourceIsInternalException(resource);
@@ -55,12 +54,6 @@ namespace RESTar.Requests
 
         internal void Populate(Args args, Methods method)
         {
-            if (args.Macro != null)
-            {
-              //  if (ParentMacroCall != null && ParentMacroCall == args.Macro.Name)
-              //      throw new InfiniteLoopException($"Recursive macro call to '{ParentMacroCall}'");
-              //  ParentMacroCall = args.Macro.Name;
-            }
             if (args.HasView)
             {
                 if (!Resource.ViewDictionary.TryGetValue(args.View, out var view))
@@ -84,8 +77,6 @@ namespace RESTar.Requests
 
         internal void SetRequestData()
         {
-            #region Resolve data source
-
             switch (InputDataConfig)
             {
                 case DataConfig.Client:
@@ -97,11 +88,7 @@ namespace RESTar.Requests
                 case DataConfig.External:
                     try
                     {
-                        var request = new HttpRequest(Source)
-                        {
-                            Accept = ContentType.ToMimeString(),
-                            AuthToken = AuthToken
-                        };
+                        var request = new HttpRequest(Source) {Accept = ContentType.ToMimeString(), AuthToken = AuthToken};
                         if (request.Method != GET)
                             throw new SyntaxException(InvalidSource, "Only GET is allowed in Source headers");
                         var response = request.GetResponse() ?? throw new SourceException(request, "No response");
@@ -119,26 +106,11 @@ namespace RESTar.Requests
                     }
             }
 
-            #endregion
-
-            #region Check data format
-
-            switch (ContentType)
+            if (ContentType == MimeType.Excel)
             {
-                case MimeType.Excel:
-                    MemoryStream jsonStream;
-                    using (var stream = Body)
-                    {
-                        var dataTable = ExcelReaderFactory.CreateOpenXmlReader(stream).GetDataSet().Tables[0];
-                        if (Method != POST && dataTable.Rows.Count > 1)
-                            throw new InvalidInputCountException();
-                        dataTable.GetJsonStreamFromExcel(out jsonStream);
-                    }
-                    Body = jsonStream;
-                    return;
+                Body.GetJsonStreamFromExcelStream(Method, out var jsonStream);
+                Body = jsonStream;
             }
-
-            #endregion
         }
 
         internal Response GetResponse()

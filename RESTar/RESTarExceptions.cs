@@ -216,9 +216,9 @@ namespace RESTar
     /// </summary>
     public class ExcelInputException : RESTarException
     {
-        internal ExcelInputException() : base(ExcelReaderError,
+        internal ExcelInputException(string message) : base(ExcelReaderError,
             "There was a format error in the excel input. Check that the file is being transmitted properly. In " +
-            "curl, make sure the flag '--data-binary' is used and not '--data' or '-d'") => Response = BadRequest(this);
+            "curl, make sure the flag '--data-binary' is used and not '--data' or '-d'. Message: " + message) => Response = BadRequest(this);
     }
 
     /// <inheritdoc />
