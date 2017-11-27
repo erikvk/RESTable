@@ -23,7 +23,8 @@ namespace RESTar.Admin
 
         private string _regularPattern;
 
-        internal const string placeholder = "\"__RESTar__\"";
+        private const string placeholder = "\"__RESTar__\"";
+        private const string macro = "$data";
 
         /// <summary>
         /// The serialization pattern when prettyprint is set to false
@@ -34,19 +35,14 @@ namespace RESTar.Admin
             internal set
             {
                 _regularPattern = value;
-                (RegularPre, RegularPost) = value.TSplit("$data");
-                PrettyPrintPattern = JToken
+                (RegularPre, RegularPost) = value.TSplit(macro);
+                var prettyPrintPattern = JToken
                     .Parse(RegularPre + placeholder + RegularPost)
                     .SerializeFormatter(out var indents);
-                (PrettyPrintPre, PrettyPrintPost) = PrettyPrintPattern.TSplit(placeholder);
+                (PrettyPrintPre, PrettyPrintPost) = prettyPrintPattern.TSplit(placeholder);
                 StartIndent = indents;
             }
         }
-
-        /// <summary>
-        /// The serialization pattern when prettyprint is set to true
-        /// </summary>
-        public string PrettyPrintPattern { get; private set; }
 
         private bool _isDefault;
 
@@ -96,7 +92,7 @@ namespace RESTar.Admin
 
         internal DbOutputFormat() { }
 
-        private const string RawPattern = "$data";
+        private const string RawPattern = macro;
         private const string SimplePattern = "{\"data\":$data}";
         private const string JSendPattern = "{\"status\":\"success\",\"data\":{\"posts\":$data}}";
         private const string DefSQL = "SELECT t FROM RESTar.Admin.DbOutputFormat t WHERE t.IsDefault =?";
@@ -136,6 +132,12 @@ namespace RESTar.Admin
     {
         private const string description = "Contains all available output formats for this RESTar instance";
 
+        private static readonly JArray ExampleArray = new JArray
+        {
+            new JObject {["Property1"] = "Value1", ["Property2"] = "Value2"},
+            new JObject {["Property1"] = "Value3", ["Property2"] = "Value4"}
+        };
+
         /// <summary>
         /// The name of the output format
         /// </summary>
@@ -150,6 +152,11 @@ namespace RESTar.Admin
         /// Is this the default pattern?
         /// </summary>
         public bool IsDefault { get; set; }
+
+        /// <summary>
+        /// Example object
+        /// </summary>
+        public JToken Example { get; private set; }
 
         /// <summary>
         /// Validates a output format
@@ -197,7 +204,8 @@ namespace RESTar.Admin
                 {
                     Name = f.Name,
                     Pattern = f.RegularPattern,
-                    IsDefault = f.IsDefault
+                    IsDefault = f.IsDefault,
+                    Example = JToken.Parse(f.RegularPattern.Replace("$data", ExampleArray.ToString()))
                 })
                 .Where(request.Conditions);
         }
