@@ -417,11 +417,11 @@ namespace RESTar.Operations
                     switch (request.Accept)
                     {
                         case MimeType.Json:
-                            hasContent = results.GetJsonStream(request.MetaConditions.Formatter, out stream, out count);
+                            hasContent = results.SerializeOutputJson(request.MetaConditions.Formatter, out stream, out count);
                             (mimeType, extension) = (MimeTypes.JSON, ".json");
                             break;
                         case MimeType.Excel:
-                            hasContent = results.GetExcelStream(request.Resource, out stream, out count);
+                            hasContent = results.SerializeOutputExcel(request.Resource, out stream, out count);
                             (mimeType, extension) = (MimeTypes.Excel, ".xlsx");
                             break;
                     }

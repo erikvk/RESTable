@@ -8,8 +8,10 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
 using RESTar.Internal;
+using static System.Linq.Enumerable;
 using static Newtonsoft.Json.Formatting;
 using static RESTar.Admin.Settings;
+using static RESTar.Methods;
 
 namespace RESTar.Serialization
 {
@@ -46,8 +48,15 @@ namespace RESTar.Serialization
             JsonSerializer = JsonSerializer.Create(Settings);
         }
 
-        internal static bool GetJsonStream(this IEnumerable<object> data, Formatter formatter,
-            out MemoryStream stream, out long count)
+        #region Main serializers
+
+        internal static bool SerializeOutputJson
+        (
+            this IEnumerable<object> data,
+            Formatter formatter,
+            out MemoryStream stream,
+            out long count
+        )
         {
             stream = new MemoryStream();
             using (var swr = new StreamWriter(stream, Encoding.UTF8, 1024, true))
@@ -56,26 +65,22 @@ namespace RESTar.Serialization
                 JsonSerializer.Formatting = _PrettyPrint ? Indented : None;
                 swr.Write(formatter.Pre);
                 JsonSerializer.Serialize(jwr, data);
-                jwr.Flush();
-                swr.Write(formatter.Post);
-                swr.Flush();
                 count = jwr.ObjectsWritten;
+                swr.Write(formatter.Post);
             }
             if (count == 0) return false;
             stream.Seek(0, SeekOrigin.Begin);
             return true;
         }
 
-        internal static bool GetReportJsonStream(this Report data, out MemoryStream stream)
+        internal static bool SerializeReportJson(this Report data, out MemoryStream stream)
         {
-            JsonSerializer.Formatting = _PrettyPrint ? Indented : None;
             stream = new MemoryStream();
             using (var swr = new StreamWriter(stream, Encoding.UTF8, 1024, true))
             using (var jwr = new RESTarJsonWriter(swr, 0))
             {
+                JsonSerializer.Formatting = _PrettyPrint ? Indented : None;
                 JsonSerializer.Serialize(jwr, data);
-                jwr.Flush();
-                swr.Flush();
             }
             stream.Seek(0, SeekOrigin.Begin);
             return true;
@@ -88,14 +93,18 @@ namespace RESTar.Serialization
             {
                 JsonSerializer.Formatting = Indented;
                 JsonSerializer.Serialize(jwr, formatterToken);
-                jwr.Flush();
                 indents = jwr.Depth;
                 return sw.ToString();
             }
         }
 
-        internal static bool GetExcelStream(this IEnumerable<object> data, IResource resource, out MemoryStream stream,
-            out long count)
+        internal static bool SerializeOutputExcel
+        (
+            this IEnumerable<object> data,
+            IResource resource,
+            out MemoryStream stream,
+            out long count
+        )
         {
             try
             {
@@ -114,7 +123,7 @@ namespace RESTar.Serialization
             }
         }
 
-        internal static bool GetJsonStreamFromExcelStream(this Stream excelStream, Methods method, out MemoryStream jsonStream)
+        internal static bool SerializeInputExcel(this Stream excelStream, Methods method, out MemoryStream jsonStream)
         {
             try
             {
@@ -124,36 +133,28 @@ namespace RESTar.Serialization
                 using (var jwr = new RESTarFromExcelJsonWriter(swr))
                 using (var reader = ExcelReaderFactory.CreateOpenXmlReader(excelStream))
                 {
-                    var count = 0;
-                    var names = new List<string>();
                     jwr.WriteStartArray();
+                    reader.Read();
+                    var names = Range(0, reader.FieldCount)
+                        .Select(i => reader[i].ToString())
+                        .ToArray();
+                    var objectCount = 0;
                     while (reader.Read())
                     {
-                        if (count == 0)
+                        jwr.WriteStartObject();
+                        foreach (var i in Range(0, reader.FieldCount))
                         {
-                            for (var i = 0; i < reader.FieldCount; i++)
-                                names.Add(reader[i].ToString());
+                            jwr.WritePropertyName(names[i]);
+                            jwr.WriteValue(reader[i]);
                         }
-                        else
-                        {
-                            jwr.WriteStartObject();
-                            for (var i = 0; i < reader.FieldCount; i++)
-                            {
-                                jwr.WritePropertyName(names[i]);
-                                var value = reader[i];
-                                jwr.WriteValue(value);
-                            }
-                            jwr.WriteEndObject();
-                        }
-                        count += 1;
+                        jwr.WriteEndObject();
+                        objectCount += 1;
                     }
-                    if ((method == Methods.PATCH || method == Methods.PUT) && count > 2)
+                    if ((method == PATCH || method == PUT) && objectCount > 1)
                         throw new InvalidInputCountException();
                     jwr.WriteEndArray();
-                    jwr.Flush();
-                    swr.Flush();
-                    jsonStream.Seek(0, SeekOrigin.Begin);
                 }
+                jsonStream.Seek(0, SeekOrigin.Begin);
                 return true;
             }
             catch (Exception e)
@@ -162,11 +163,7 @@ namespace RESTar.Serialization
             }
         }
 
-        private static readonly ExcelDataSetConfiguration excelDataSetConfig = new ExcelDataSetConfiguration
-        {
-            ConfigureDataTable = s => new ExcelDataTableConfiguration {UseHeaderRow = true},
-            UseColumnDataType = true
-        };
+        #endregion
 
         internal static string GetString(this Stream stream)
         {

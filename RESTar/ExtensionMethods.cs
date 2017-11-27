@@ -875,18 +875,11 @@ namespace RESTar
                 case IEnumerable<object> other: return string.Join(", ", other.Select(o => o.ToString()));
                 case DBNull _:
                 case null: return DBNull.Value;
+                case var enumArr when value.GetType().Implements(typeof(IEnumerable<>), out var p) && p.Any() && p[0].IsEnum:
+                    IEnumerable<object> objects = System.Linq.Enumerable.Cast<object>((dynamic) enumArr);
+                    return string.Join(", ", objects.Select(o => o.ToString()));
                 default: return Do.Try(() => $"$(ObjectID: {value.GetObjectID()})", value.ToString);
             }
-        }
-
-        /// <summary>
-        /// Converts an HTTP status code to the underlying numeric code
-        /// </summary>
-        internal static ushort? ToCode(this HttpStatusCode? statusCode)
-        {
-            if (statusCode.HasValue)
-                return (ushort) statusCode.Value;
-            return null;
         }
 
         /// <summary>

@@ -108,7 +108,7 @@ namespace RESTar.Requests
 
             if (ContentType == MimeType.Excel)
             {
-                Body.GetJsonStreamFromExcelStream(Method, out var jsonStream);
+                Body.SerializeInputExcel(Method, out var jsonStream);
                 Body = jsonStream;
             }
         }
@@ -183,7 +183,7 @@ namespace RESTar.Requests
 
         internal Response Report(Report report)
         {
-            if (!report.GetReportJsonStream(out var stream)) return NoContent;
+            if (!report.SerializeReportJson(out var stream)) return NoContent;
             return new Response
             {
                 StatusCode = (ushort) OK,

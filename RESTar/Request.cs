@@ -166,7 +166,7 @@ namespace RESTar
         /// <returns></returns>
         public (Stream excel, long nrOfRows) GETExcel()
         {
-            GET().GetExcelStream(Resource, out var excel, out var nrOfRows);
+            GET().SerializeOutputExcel(Resource, out var excel, out var nrOfRows);
             return (excel, nrOfRows);
         }
 
