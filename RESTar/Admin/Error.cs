@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Linq;
+using System.Text.RegularExpressions;
 using RESTar.Internal;
 using RESTar.Linq;
 using RESTar.Operations;
 using RESTar.Requests;
 using Starcounter;
+using static System.Text.RegularExpressions.RegexOptions;
 using static RESTar.Methods;
 using IResource = RESTar.Internal.IResource;
 
@@ -71,29 +73,45 @@ namespace RESTar.Admin
         /// </summary>
         public string Body;
 
-        private Error()
-        {
-        }
+        private Error() { }
+
+        private const int MaxStringLength = 10000;
 
         internal static Error Create(ErrorCodes errorCode, Exception e, IResource resource, Request scRequest,
-            HandlerActions action) => new Error
+            HandlerActions action)
         {
-            Time = DateTime.Now,
-            ResourceName = (resource?.Name ?? "<unknown>") +
-                           (resource?.Alias != null ? $" ({resource.Alias})" : ""),
-            HandlerAction = action,
-            ErrorCode = errorCode,
-            StackTrace = $"{e.StackTrace} §§§ INNER: {e.InnerException?.StackTrace}",
-            Message = e.TotalMessage(),
-            Body = scRequest?.Body,
-            Uri = scRequest?.Uri,
-            Headers = scRequest?.HeadersDictionary?.StringJoin(" | ", dict => dict.Select(header =>
+            string uri = null;
+            if (scRequest?.Uri?.ToLower().Contains("key=") == true)
             {
-                if (header.Key?.ToLower() == "authorization")
-                    return "Authorization: apikey *******";
-                return $"{header.Key}: {header.Value}";
-            }))
-        };
+                var args = scRequest.Uri.Substring(Settings._Uri.Length).ToArgs(scRequest);
+                if (args.HasMetaConditions && args.MetaConditions.ToLower().Contains("key="))
+                {
+                    args.MetaConditions = Regex.Replace(args.MetaConditions, RegEx.KeyMetaCondition, "key=*******", IgnoreCase);
+                    uri = $"{Settings._Uri}{args}";
+                }
+            }
+            uri = uri ?? scRequest?.Uri;
+            var stackTrace = $"{e.StackTrace} §§§ INNER: {e.InnerException?.StackTrace}";
+            var totalMessage = e.TotalMessage();
+            return new Error
+            {
+                Time = DateTime.Now,
+                ResourceName = (resource?.Name ?? "<unknown>") +
+                               (resource?.Alias != null ? $" ({resource.Alias})" : ""),
+                HandlerAction = action,
+                ErrorCode = errorCode,
+                StackTrace = stackTrace.Length > MaxStringLength ? stackTrace.Substring(0, MaxStringLength) : stackTrace,
+                Message = totalMessage.Length > MaxStringLength ? totalMessage.Substring(0, MaxStringLength) : totalMessage,
+                Body = scRequest?.Body,
+                Uri = uri,
+                Headers = scRequest?.HeadersDictionary?.StringJoin(" | ", dict => dict.Select(header =>
+                {
+                    if (header.Key?.ToLower() == "authorization")
+                        return "Authorization: apikey *******";
+                    return $"{header.Key}: {header.Value}";
+                }))
+            };
+        }
 
         private static DateTime Checked;
 

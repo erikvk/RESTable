@@ -18,7 +18,7 @@ namespace RESTar.Http
         internal string Accept;
         internal string ContentType;
         private bool IsInternal { get; set; }
-        private static readonly Regex regex = new Regex(@"\[(?<header>.+):[\s]*(?<value>.+)\]");
+        private static readonly Regex HeaderRegex = new Regex(RegEx.RequestHeader);
         internal Stream Body;
         internal string AuthToken;
 
@@ -53,7 +53,7 @@ namespace RESTar.Http
                         }
                         break;
                     case 2:
-                        var matches = regex.Matches(part);
+                        var matches = HeaderRegex.Matches(part);
                         if (matches.Count == 0) throw new HttpRequestException("Invalid header syntax");
                         foreach (Match match in matches)
                         {
@@ -112,32 +112,27 @@ namespace RESTar.Http
             Dictionary<string, string> headers = null
         )
         {
-            try
+            headers = headers ?? new Dictionary<string, string>();
+            if (contentType != null || accept != null)
             {
-                headers = headers ?? new Dictionary<string, string>();
-                if (contentType != null || accept != null)
-                {
-                    if (contentType != null)
-                        headers["Content-Type"] = contentType;
-                    if (accept != null)
-                        headers["Accept"] = accept;
-                }
-                headers["RESTar-AuthToken"] = authToken;
-                var response = Self.CustomRESTRequest
-                (
-                    method: method.ToString(),
-                    uri: Settings._Uri + relativeUri,
-                    body: null,
-                    bodyBytes: body?.ToByteArray(),
-                    headersDictionary: headers,
-                    port: Settings._Port
-                );
-                return (HttpResponse) response;
+                if (contentType != null)
+                    headers["Content-Type"] = contentType;
+                if (accept != null)
+                    headers["Accept"] = accept;
             }
-            catch
-            {
-                return null;
-            }
+            headers["RESTar-AuthToken"] = authToken;
+            var response = Self.CustomRESTRequest
+            (
+                method: method.ToString(),
+                uri: Settings._Uri + relativeUri,
+                body: null,
+                bodyBytes: body?.ToByteArray(),
+                headersDictionary: headers,
+                port: Settings._Port
+            );
+            if (response.StatusCode == 508)
+                throw new InfiniteLoopException(response.Headers["RESTar-Info"]);
+            return (HttpResponse) response;
         }
 
         /// <summary>

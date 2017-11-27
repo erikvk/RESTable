@@ -69,6 +69,10 @@ namespace RESTar.Operations
                     .Filter(request.MetaConditions.Offset)
                     .Filter(request.MetaConditions.Limit);
             }
+            catch (InfiniteLoopException)
+            {
+                throw;
+            }
             catch (Exception e)
             {
                 throw new AbortedSelectorException<T>(e, request);

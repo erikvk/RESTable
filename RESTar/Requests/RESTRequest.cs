@@ -40,7 +40,7 @@ namespace RESTar.Requests
         private DataConfig OutputDataConfig { get; set; }
         internal void Evaluate() => Response = Evaluator(this);
         public T1 BodyObject<T1>() where T1 : class => Body?.Deserialize<T1>();
-
+    
         internal RESTRequest(IResource<T> resource, Request scRequest)
         {
             if (resource.IsInternal) throw new ResourceIsInternalException(resource);
@@ -55,6 +55,12 @@ namespace RESTar.Requests
 
         internal void Populate(Args args, Methods method)
         {
+            if (args.Macro != null)
+            {
+              //  if (ParentMacroCall != null && ParentMacroCall == args.Macro.Name)
+              //      throw new InfiniteLoopException($"Recursive macro call to '{ParentMacroCall}'");
+              //  ParentMacroCall = args.Macro.Name;
+            }
             if (args.HasView)
             {
                 if (!Resource.ViewDictionary.TryGetValue(args.View, out var view))
@@ -74,7 +80,6 @@ namespace RESTar.Requests
                 Conditions = Condition<T>.Parse(args.Conditions, Target) ?? Conditions;
             if (args.HasMetaConditions)
                 MetaConditions = MetaConditions.Parse(args.MetaConditions, Resource) ?? MetaConditions;
-
         }
 
         internal void SetRequestData()
@@ -84,9 +89,9 @@ namespace RESTar.Requests
             switch (InputDataConfig)
             {
                 case DataConfig.Client:
-                    if (ScRequest.Body == null && (Method == PATCH || Method == POST || Method == PUT))
+                    if (ScRequest.BodyBytes == null && (Method == PATCH || Method == POST || Method == PUT))
                         throw new SyntaxException(NoDataSource, "Missing data source for method " + Method);
-                    if (ScRequest.Body == null) return;
+                    if (ScRequest.BodyBytes == null) return;
                     Body = new MemoryStream(ScRequest.BodyBytes);
                     break;
                 case DataConfig.External:
@@ -102,7 +107,7 @@ namespace RESTar.Requests
                         var response = request.GetResponse() ?? throw new SourceException(request, "No response");
                         if (!response.IsSuccessStatusCode)
                             throw new SourceException(request,
-                                $"Status: {response.StatusCode} - {response.StatusDescription}. {response.Headers["RESTar-info"]}");
+                                $"Status: {response.StatusCode.ToCode()} - {response.StatusDescription}. {response.Headers.SafeGet("RESTar-info")}");
                         if (response.Body.CanSeek && response.Body.Length == 0)
                             throw new SourceException(request, "Response was empty");
                         Body = response.Body;
@@ -158,7 +163,7 @@ namespace RESTar.Requests
                         var response = request.GetResponse() ?? throw new DestinationException(request, "No response");
                         if (!response.IsSuccessStatusCode)
                             throw new DestinationException(request,
-                                $"Received {response.StatusCode} - {response.StatusDescription}. {response.Headers["RESTar-info"]}");
+                                $"Received {response.StatusCode.ToCode()} - {response.StatusDescription}. {response.Headers.SafeGet("RESTar-info")}");
                         if (AllowAllOrigins)
                             Response.Headers["Access-Control-Allow-Origin"] = "*";
                         else if (CORSOrigin != null)

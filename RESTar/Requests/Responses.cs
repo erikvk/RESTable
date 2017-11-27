@@ -64,7 +64,7 @@ namespace RESTar.Requests
         {
             StatusCode = (ushort) HttpStatusCode.BadRequest,
             StatusDescription = "Bad request",
-            Headers = {["RESTar-info"] = "Error while deserializing JSON. Check JSON syntax"}
+            Headers = {["RESTar-info"] = "Error while deserializing JSON. Check JSON syntax."}
         };
 
         internal static Response DbError(Exception e)
@@ -96,12 +96,14 @@ namespace RESTar.Requests
         {
             StatusCode = (ushort) HttpStatusCode.InternalServerError,
             StatusDescription = "Internal server error",
-            Headers =
-            {
-                ["RESTar-info"] = $"Internal error: {e.Message} " +
-                                  $"{e.InnerException?.Message} " +
-                                  $"{e.InnerException?.InnerException?.Message}"
-            }
+            Headers = {["RESTar-info"] = e.Message}
+        };
+
+        internal static Response InfiniteLoop(Exception e) => new Response
+        {
+            StatusCode = 508,
+            StatusDescription = "Infinite loop detected",
+            Headers = {["RESTar-info"] = e.Message}
         };
 
         internal static Response RESTarInternalError(Exception e) => new Response
@@ -110,7 +112,7 @@ namespace RESTar.Requests
             StatusDescription = "Internal server error",
             Headers =
             {
-                ["RESTar-info"] = $"Internal RESTar error: {e.Message}"
+                ["RESTar-info"] = $"Internal RESTar error: {e.Message}."
             }
         };
 
@@ -119,13 +121,14 @@ namespace RESTar.Requests
         {
             StatusCode = (ushort) HttpStatusCode.NoContent,
             StatusDescription = "No content",
-            Headers = {["RESTar-info"] = "No entities found matching request"}
+            Headers = {["RESTar-info"] = "No entities found matching request."}
         };
 
         internal static Response Forbidden => new Response
         {
             StatusCode = (ushort) HttpStatusCode.Forbidden,
-            StatusDescription = "Forbidden"
+            StatusDescription = "Forbidden",
+            Headers = {["RESTar-info"] = "This operation is unavailable or not allowed given the current API key."}
         };
 
         internal static Response AllowOrigin(string allowedOrigin, IEnumerable<Methods> allowedMethods) => new Response

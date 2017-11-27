@@ -134,14 +134,11 @@ namespace RESTar.Admin
             return count;
         }
 
-        private const string AllowedCharacters = @"^[a-zA-Z0-9_\.]+$";
-        private const string OnlyUnderscores = @"^_+$";
-
         private void ResolveDynamicResourceName()
         {
             switch (Name)
             {
-                case var _ when !Regex.IsMatch(Name, AllowedCharacters):
+                case var _ when !Regex.IsMatch(Name, RegEx.DynamicResourceName):
                     throw new Exception($"Resource name '{Name}' contains invalid characters: Only letters, nu" +
                                         "mbers and underscores are valid in resource names. Dots can be used " +
                                         "to organize resources into namespaces. No other characters can be used.");

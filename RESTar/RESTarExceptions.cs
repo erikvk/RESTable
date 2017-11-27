@@ -59,6 +59,16 @@ namespace RESTar
 
     /// <inheritdoc />
     /// <summary>
+    /// Thrown when a RESTar encounters an infinite loop when evaluating a request
+    /// </summary>
+    public class InfiniteLoopException : RESTarException
+    {
+        internal InfiniteLoopException(string message) : base(InfiniteLoopDetected, message) => Response = InfiniteLoop(this);
+    }
+
+
+    /// <inheritdoc />
+    /// <summary>
     /// Thrown when a client does something that is forbidden
     /// </summary>
     public class ForbiddenException : RESTarException
@@ -117,12 +127,8 @@ namespace RESTar
     public class OperatorException : SyntaxException
     {
         internal OperatorException(string c) : base(InvalidConditionOperator,
-            $"Invalid or missing operator for condition '{c}'. The pr" +
-            "esence of one (and only one) operator is required per co" +
-            "ndition. Make sure to URI encode all equals (\'=\' to \'" +
-            "%3D\') and exclamation marks (\'!\' to \'%21\') in reque" +
-            "st URI value literals, to avoid capture. Accepted operat" +
-            "ors: " + string.Join(", ", Operator.AvailableOperators)) { }
+            $"Invalid or missing operator or separator ('&') for condition '{c}'. Always URI encode all equals ('=' -> '%3D') " +
+            "and exclamation marks ('!' -> '%21') in condition literals to avoid capture with reserved characters.") { }
     }
 
     /// <inheritdoc />
@@ -180,9 +186,19 @@ namespace RESTar
     public class UnknownResourceException : RESTarException
     {
         internal UnknownResourceException(string searchString) : base(UnknownResource,
-            $"RESTar could not locate any resource by '{searchString}'. To enumerate available " +
-            $"resources, GET: {_ResourcesPath} . ") => Response = NotFound(this);
+            $"RESTar could not locate any resource by '{searchString}'.") => Response = NotFound(this);
     }
+
+    /// <inheritdoc />
+    /// <summary>
+    /// Thrown when RESTar cannot locate a macro using a given search string
+    /// </summary>
+    public class UnknownMacroException : RESTarException
+    {
+        internal UnknownMacroException(string searchString) : base(UnknownMacro,
+            $"RESTar could not locate any macro by '{searchString}'.") => Response = NotFound(this);
+    }
+
 
     /// <inheritdoc />
     /// <summary>
@@ -191,8 +207,7 @@ namespace RESTar
     public class UnknownViewException : RESTarException
     {
         internal UnknownViewException(string searchString, ITarget resource) : base(UnknownResourceView,
-            $"RESTar could not locate any resource view in '{resource.Name}' by '{searchString}'. To enumerate available " +
-            $"views for this resource, GET: {_ResourcesPath}/name={resource.Name}/select=views . ") => Response = NotFound(this);
+            $"RESTar could not locate any resource view in '{resource.Name}' by '{searchString}'.") => Response = NotFound(this);
     }
 
     /// <inheritdoc />
@@ -408,11 +423,9 @@ namespace RESTar
     public class AmbiguousMatchException : RESTarException
     {
         internal AmbiguousMatchException(ITarget resource) : base(AmbiguousMatch,
-            $"Expected a uniquely matched entity in resource '{resource.Name}' " +
-            "for this request, but matched multiple entities satisfying the given " +
-            "conditions. To enable manipulation of multiple matched entities (for " +
-            "methods that support this), add 'unsafe=true' to the request's meta-" +
-            "conditions.") => Response = BadRequest(this);
+            $"Expected a uniquely matched entity in resource '{resource.Name}', but found multiple. " +
+            "Manipulating multiple entities is either unsupported or unsafe. Specify additional " +
+            "conditions or use the 'unsafe' meta-condition") => Response = BadRequest(this);
     }
 
     /// <inheritdoc />

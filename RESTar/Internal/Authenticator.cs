@@ -63,11 +63,9 @@ namespace RESTar.Internal
             if (string.IsNullOrWhiteSpace(authorizationHeader))
             {
                 if (!args.HasMetaConditions) throw NotAuthorizedException;
-                var match = Regex.Match(args.MetaConditions, @"&key=(?<key>[^/&]+)|key=(?<key>[^/&]+)&?", IgnoreCase);
+                var match = Regex.Match(args.MetaConditions, RegEx.KeyMetaCondition, IgnoreCase);
                 if (!match.Success) throw NotAuthorizedException;
                 var conds = args.MetaConditions.Replace(match.Groups[0].Value, "");
-
-
                 args.MetaConditions = conds;
                 authorizationHeader = $"apikey {WebUtility.UrlDecode(match.Groups["key"].ToString())}";
             }

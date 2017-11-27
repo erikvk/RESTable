@@ -47,6 +47,7 @@ namespace RESTar.Internal
         InvalidResourceEntity = 104,
         ResourceIsInternal = 105,
         UnknownResourceView = 106,
+        UnknownMacro = 107,
 
         // 110-119: Property locator errors
         UnknownProperty = 110,
@@ -79,6 +80,7 @@ namespace RESTar.Internal
         NotInitialized = 400,
         AddOnError = 401,
         ResourceProviderError = 402,
-        ResourceWrapperError = 403
+        ResourceWrapperError = 403,
+        InfiniteLoopDetected = 404
     }
 }

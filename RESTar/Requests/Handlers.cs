@@ -38,12 +38,17 @@ namespace RESTar.Requests
             Handle.GET($"/{appName}", () => Evaluate(MENU));
         }
 
+        private static int StackSize;
+
         private static Response Evaluate(HandlerActions action, Request request = null, string query = null)
         {
+            if (StackSize++ > 300)
+                throw new InfiniteLoopException("Encountered an infinite loop of recursive internal calls.");
             IResource resource = null;
             try
             {
                 var args = query?.ToArgs(request);
+                args?.Macro?.Populate(request);
                 resource = args?.IResource;
                 switch (action)
                 {
@@ -93,6 +98,10 @@ namespace RESTar.Requests
                         return master;
                     default: return InternalError(ex);
                 }
+            }
+            finally
+            {
+                StackSize--;
             }
         }
 

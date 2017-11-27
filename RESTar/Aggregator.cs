@@ -59,11 +59,12 @@ namespace RESTar
                             }
                         }
                         else uriString = method_uri[0];
+                        if (uriString[0] != '/') break;
 
                         var response = HttpRequest.Internal(method, new Uri(uriString, UriKind.Relative), request.AuthToken);
                         if (response?.IsSuccessStatusCode != true)
-                            throw new Exception($"Could not get source data from '{uriString}'. {response?.StatusCode}: " +
-                                                $"{response?.StatusDescription}. {response?.Headers["RESTar-info"]}");
+                            throw new Exception($"Could not get source data from '{uriString}'. {response?.StatusCode.ToCode()}: " +
+                                                $"{response?.StatusDescription}. {response?.Headers?.SafeGet("RESTar-info")}");
                         switch (method)
                         {
                             case Methods.GET:

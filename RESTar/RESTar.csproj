@@ -92,6 +92,7 @@
   <ItemGroup>
     <Compile Include="Admin\AdminTools.cs" />
     <Compile Include="Admin\DynamicView.cs" />
+    <Compile Include="Admin\DbMacro.cs" />
     <Compile Include="Aggregator.cs" />
     <Compile Include="Deflection\TermBindingRules.cs" />
     <Compile Include="Admin\DbOutputFormat.cs" />
@@ -103,6 +104,7 @@
     <Compile Include="Internal\View.cs" />
     <Compile Include="LineEndings.cs" />
     <Compile Include="Operations\Distinct.cs" />
+    <Compile Include="RegEx.cs" />
     <Compile Include="Report.cs" />
     <Compile Include="Resources\StarcounterIndexer.cs" />
     <Compile Include="AvailableResource.cs" />

@@ -5,11 +5,10 @@ using System.Data;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Reflection;
 using System.Runtime.Serialization;
 using System.Text;
-using System.Text.RegularExpressions;
-using System.Web;
 using Dynamit;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -132,9 +131,6 @@ namespace RESTar
 
         #region Other
 
-        internal static string UriDecode(this string str) => HttpUtility.UrlDecode(str);
-        internal static string UriEncode(this string str) => HttpUtility.UrlEncode(str);
-
         /// <summary>
         /// Gets the object for a Starcounter object number
         /// </summary>
@@ -151,10 +147,6 @@ namespace RESTar
 
         internal static bool EqualsNoCase(this string s1, string s2) => string.Equals(s1, s2, CurrentCultureIgnoreCase);
         internal static string ToMethodsString(this IEnumerable<Methods> ie) => string.Join(", ", ie);
-
-        internal static string RemoveTabsAndBreaks(this string input) => input != null
-            ? Regex.Replace(input, @"\t|\n|\r", "")
-            : null;
 
         internal static string ReplaceFirst(this string text, string search, string replace, out bool replaced)
         {
@@ -452,7 +444,7 @@ namespace RESTar
         /// <summary>
         /// Gets the value of a key from an IDictionary, or null if the dictionary does not contain the key.
         /// </summary>
-        public static dynamic SafeGet(this IDictionary dict, string key)
+        private static dynamic SafeGet(this IDictionary dict, string key)
         {
             return dict.Contains(key) ? dict[key] : null;
         }
@@ -886,6 +878,21 @@ namespace RESTar
                 default: return Do.Try(() => $"$(ObjectID: {value.GetObjectID()})", value.ToString);
             }
         }
+
+        /// <summary>
+        /// Converts an HTTP status code to the underlying numeric code
+        /// </summary>
+        internal static ushort? ToCode(this HttpStatusCode? statusCode)
+        {
+            if (statusCode.HasValue)
+                return (ushort) statusCode.Value;
+            return null;
+        }
+
+        /// <summary>
+        /// Converts an HTTP status code to the underlying numeric code
+        /// </summary>
+        internal static ushort? ToCode(this HttpStatusCode statusCode) => (ushort) statusCode;
 
         #endregion
 

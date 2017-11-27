@@ -130,10 +130,12 @@ namespace RESTar.Admin
     /// <summary>
     /// A resource for all available output formats for this RESTar instance.
     /// </summary>
-    [RESTar]
+    [RESTar(Description = description)]
     public class OutputFormat : ISelector<OutputFormat>, IInserter<OutputFormat>, IUpdater<OutputFormat>, IDeleter<OutputFormat>,
         IValidatable
     {
+        private const string description = "Contains all available output formats for this RESTar instance";
+
         /// <summary>
         /// The name of the output format
         /// </summary>
@@ -227,7 +229,6 @@ namespace RESTar.Admin
                     count += 1;
                     dbEntity.IsDefault = entity.IsDefault;
                     if (entity.IsBuiltIn) return;
-                    dbEntity.Name = entity.Name;
                     dbEntity.RegularPattern = entity.Pattern;
                 });
             });
@@ -242,10 +243,7 @@ namespace RESTar.Admin
             entities.ForEach(entity =>
             {
                 if (entity.IsBuiltIn) return;
-                Db.TransactAsync(() => Db
-                    .SQL<DbOutputFormat>("SELECT t FROM RESTar.Admin.DbOutputFormat t WHERE t.Name =?", entity.Name)
-                    .FirstOrDefault()
-                    .Delete());
+                Db.TransactAsync(DbOutputFormat.Get(entity.Name).Delete);
                 count += 1;
             });
             return count;

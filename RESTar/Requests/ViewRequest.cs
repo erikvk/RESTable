@@ -39,7 +39,6 @@ namespace RESTar.Requests
         internal IList<T> Entities { get; set; }
         internal T Entity { get; set; }
         internal Json GetView() => DataView.MakeCurrentView();
-        private const string MacroRegex = @"\@RESTar\((?<content>[^\(\)]*)\)";
         public T1 BodyObject<T1>() where T1 : class => Body?.Deserialize<T1>();
 
         internal void Evaluate()
@@ -190,7 +189,7 @@ namespace RESTar.Requests
                     array.Add();
                 else
                 {
-                    var value = JToken.Parse(Regex.Replace(parts[1], MacroRegex, "${content}"));
+                    var value = JToken.Parse(Regex.Replace(parts[1], RegEx.ViewMacro, "${content}"));
                     switch (value.Type)
                     {
                         case JTokenType.Integer:

@@ -181,7 +181,7 @@ namespace RESTar
         private static string ProcessUri(string uri)
         {
             uri = uri?.Trim() ?? "/rest";
-            if (!Regex.IsMatch(uri, @"^/?\w+$"))
+            if (!Regex.IsMatch(uri, RegEx.BaseUri))
                 throw new FormatException("URI contained invalid characters. Can only contain " +
                                           "letters, numbers and underscores");
             var appName = Application.Current.Name;

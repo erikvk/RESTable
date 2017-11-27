@@ -30,7 +30,7 @@ namespace RESTar.Admin
             {
                 if (value == null)
                     throw new ArgumentNullException(nameof(Name));
-                if (!Regex.IsMatch(value, @"^\w+$"))
+                if (!Regex.IsMatch(value, RegEx.LettersNumsAndUs))
                     throw new FormatException("Index name contained invalid characters. Can only contain " +
                                               "letters, numbers and underscores");
 
