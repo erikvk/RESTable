@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Net;
 using Newtonsoft.Json.Linq;
 using RESTar.Http;
 using RESTar.Linq;
 using RESTar.Serialization;
+using static System.Net.HttpStatusCode;
 
 namespace RESTar
 {
@@ -79,12 +79,12 @@ namespace RESTar
                         switch (method)
                         {
                             case Methods.GET:
-                                if (response.StatusCode == HttpStatusCode.NoContent || !(response.Body?.Length > 2))
-                                    property.Value = new JArray();
-                                else property.Value = response.Body.Deserialize<JArray>();
+                                if (response.StatusCode == NoContent || !(response.Body?.Length > 2))
+                                    property.Value = null;
+                                else property.Value = response.Body.Deserialize<JToken>();
                                 break;
                             case Methods.REPORT:
-                                if (response.StatusCode == HttpStatusCode.NoContent || !(response.Body?.Length > 2))
+                                if (response.StatusCode == NoContent || !(response.Body?.Length > 2))
                                     property.Value = 0;
                                 else property.Value = response.Body.Deserialize<JObject>()["Count"];
                                 break;

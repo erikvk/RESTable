@@ -107,7 +107,7 @@ namespace RESTar.Requests
         /// <summary>
         /// The format to use when serializing JSON
         /// </summary>
-        internal Formatter Formatter { get; private set; } = DbOutputFormat.Default;
+        internal Formatter Formatter { get; set; } = DbOutputFormat.Default;
 
         internal bool New { get; set; }
         internal bool Empty = true;
