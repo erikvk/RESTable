@@ -42,8 +42,7 @@ namespace RESTar.Requests
 
         private static Response Evaluate(HandlerActions action, Request request = null, string query = null)
         {
-            if (StackSize++ > 300)
-                throw new InfiniteLoopException("Encountered an infinite loop of recursive internal calls.");
+            if (StackSize++ > 300) throw new InfiniteLoopException();
             IResource resource = null;
             try
             {
@@ -87,7 +86,7 @@ namespace RESTar.Requests
                     case COUNT:
                         errorInfo.Response.Headers["ErrorInfo"] = $"{_Uri}/{typeof(Error).FullName}/id={error.Id}";
                         return errorInfo.Response;
-                    case ORIGIN: return Forbidden;
+                    case ORIGIN: return Forbidden("Invalid or unauthorized origin");
                     case VIEW:
                     case PAGE:
                     case MENU:
@@ -135,7 +134,7 @@ namespace RESTar.Requests
             var origin = scRequest.Headers["Origin"];
             if (AllowAllOrigins || AllowedOrigins.Contains(new Uri(origin)))
                 return AllowOrigin(origin, resource.AvailableMethods);
-            return Forbidden;
+            return Forbidden("Invalid or unauthorized origin");
         }
 
         internal static void UnRegisterRESTHandlers()

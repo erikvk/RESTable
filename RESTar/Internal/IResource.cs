@@ -149,8 +149,19 @@ namespace RESTar.Internal
         Profiler<T> Profile { get; }
 
         /// <summary>
+        /// RESTar authenticate (don't use)
+        /// </summary>
+        Authenticator<T> Authenticate { get; }
+
+        /// <summary>
         /// The Views registered for this resource
         /// </summary>
         IReadOnlyDictionary<string, View<T>> ViewDictionary { get; }
+        
+        /// <summary>
+        /// Does this resource have a separate authentication
+        /// for REST requests?
+        /// </summary>
+        bool RequiresAuthentication { get; }
     }
 }

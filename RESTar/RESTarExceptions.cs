@@ -63,6 +63,9 @@ namespace RESTar
     /// </summary>
     public class InfiniteLoopException : RESTarException
     {
+        internal InfiniteLoopException() : base(InfiniteLoopDetected,
+            "RESTar encountered a potentially infinite loop of recursive internal calls.") => Response = InfiniteLoop(this);
+
         internal InfiniteLoopException(string message) : base(InfiniteLoopDetected, message) => Response = InfiniteLoop(this);
     }
 
@@ -73,7 +76,7 @@ namespace RESTar
     /// </summary>
     public class ForbiddenException : RESTarException
     {
-        internal ForbiddenException(ErrorCodes code, string message) : base(code, message) => Response = Forbidden;
+        internal ForbiddenException(ErrorCodes code, string message) : base(code, message) => Response = Forbidden(message);
     }
 
     /// <inheritdoc />
@@ -83,7 +86,8 @@ namespace RESTar
     public class ResourceIsInternalException : RESTarException
     {
         internal ResourceIsInternalException(IResource resource) : base(ResourceIsInternal,
-            $"Cannot make an external request to internal resource '{resource.Name}'") => Response = Forbidden;
+            $"Cannot make an external request to internal resource '{resource.Name}'") =>
+            Response = Forbidden("Resource unavailable");
     }
 
     /// <inheritdoc />
@@ -218,7 +222,8 @@ namespace RESTar
     {
         internal ExcelInputException(string message) : base(ExcelReaderError,
             "There was a format error in the excel input. Check that the file is being transmitted properly. In " +
-            "curl, make sure the flag '--data-binary' is used and not '--data' or '-d'. Message: " + message) => Response = BadRequest(this);
+            "curl, make sure the flag '--data-binary' is used and not '--data' or '-d'. Message: " + message) =>
+            Response = BadRequest(this);
     }
 
     /// <inheritdoc />

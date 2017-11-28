@@ -51,7 +51,8 @@ namespace RESTar
             get => _value;
             set
             {
-                if (value == _value) return;
+                if (Do.Try<bool>(() => value == _value, false))
+                    return;
                 var oldValue = _value;
                 _value = value;
                 if (!ScQueryable) return;

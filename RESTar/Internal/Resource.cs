@@ -21,16 +21,8 @@ namespace RESTar.Internal
     {
         public string Name { get; }
         public bool Editable { get; }
-
-        // ReSharper disable MemberCanBePrivate.Global
-        // ReSharper disable AutoPropertyCanBeMadeGetOnly.Global
-
         public IReadOnlyList<Methods> AvailableMethods { get; internal set; }
         public string Description { get; internal set; }
-
-        // ReSharper restore AutoPropertyCanBeMadeGetOnly.Global
-        // ReSharper restore MemberCanBePrivate.Global
-
         public Type Type => typeof(T);
         public bool IsDDictionary { get; }
         public bool IsDynamic { get; }
@@ -43,9 +35,9 @@ namespace RESTar.Internal
         public IReadOnlyDictionary<string, View<T>> ViewDictionary => ViewDictionaryInternal;
         internal Dictionary<string, View<T>> ViewDictionaryInternal { get; }
         public IEnumerable<IView> Views => ViewDictionaryInternal?.Values;
-
         public TermBindingRules ConditionBindingRule { get; }
         public TermBindingRules OutputBindingRule { get; }
+        public bool RequiresAuthentication => Authenticate != null;
 
         /// <inheritdoc />
         /// <summary>
@@ -80,6 +72,7 @@ namespace RESTar.Internal
         public Deleter<T> Delete { get; }
         public Counter<T> Count { get; }
         public Profiler<T> Profile { get; }
+        public Authenticator<T> Authenticate { get; }
 
         public string Alias
         {
@@ -112,11 +105,11 @@ namespace RESTar.Internal
         }
 
         /// <summary>
-        /// All custom resources are constructed here
+        /// All resources are constructed here
         /// </summary>
         internal Resource(string name, RESTarAttribute attribute, Selector<T> selector, Inserter<T> inserter,
-            Updater<T> updater, Deleter<T> deleter, Counter<T> counter, Profiler<T> profiler, ResourceProvider provider,
-            View<T>[] views)
+            Updater<T> updater, Deleter<T> deleter, Counter<T> counter, Profiler<T> profiler, Authenticator<T> authenticator,
+            ResourceProvider provider, View<T>[] views)
         {
             if (name.Contains('+'))
             {
@@ -151,6 +144,7 @@ namespace RESTar.Internal
             Delete = deleter;
             Count = counter;
             Profile = profiler;
+            Authenticate = authenticator;
             if (views?.Any() == true)
             {
                 ViewDictionaryInternal = views.ToDictionary(v => v.Name.ToLower(), v => v);

@@ -23,6 +23,8 @@ namespace RESTar.Requests
             var total = "/";
             if (HasResource)
                 total += Resource;
+            else if (Macro != null)
+                total += "$" + Macro.Name;
             else total += "RESTar.AvailableResource";
             total += "/";
             if (HasConditions)
@@ -32,6 +34,7 @@ namespace RESTar.Requests
                 total += MetaConditions;
             return total.TrimEnd('/');
         }
+
 
         internal Args(string query, bool escapePercentSigns = false)
         {
@@ -45,23 +48,32 @@ namespace RESTar.Requests
             HasView = view != "";
             HasConditions = conditions != "";
             HasMetaConditions = metaConditions != "";
-            if (resourceOrMacro != "")
+            var hasResourceOrMacro = resourceOrMacro != "";
+            if (hasResourceOrMacro)
             {
-                if (resourceOrMacro[0] == '$')
+                var hasMacro = resourceOrMacro[0] == '$';
+                if (hasMacro)
                 {
                     var macroString = resourceOrMacro.Substring(1);
-                    Macro = DbMacro.Get(macroString);
-                    if (Macro == null) throw new UnknownMacroException(macroString);
-                    var innerArgs = new Args(Macro.Uri);
-                    HasResource = innerArgs.HasResource;
-                    Resource = innerArgs.Resource;
-                    View = HasView ? view : innerArgs.View;
-                    Conditions = innerArgs.HasConditions
-                        ? (HasConditions ? $"{innerArgs.Conditions}&{conditions}" : innerArgs.Conditions)
+                    Macro = DbMacro.Get(macroString) ?? throw new UnknownMacroException(macroString);
+                    var macroArgs = new Args(Macro.Uri);
+
+                    // Use macro's resource
+                    (HasResource, Resource) = (macroArgs.HasResource, macroArgs.Resource);
+
+                    // Use macro's view if no is included in caller
+                    View = HasView ? view : macroArgs.View;
+
+                    // Concatenate caller conditions with the macro's
+                    Conditions = macroArgs.HasConditions
+                        ? (HasConditions ? $"{macroArgs.Conditions}&{conditions}" : macroArgs.Conditions)
                         : (HasConditions ? conditions : null);
-                    MetaConditions = innerArgs.HasMetaConditions
-                        ? (HasMetaConditions ? $"{innerArgs.MetaConditions}&{metaConditions}" : innerArgs.MetaConditions)
+
+                    // Concatenate caller meta-conditions with the macro's
+                    MetaConditions = macroArgs.HasMetaConditions
+                        ? (HasMetaConditions ? $"{macroArgs.MetaConditions}&{metaConditions}" : macroArgs.MetaConditions)
                         : (HasMetaConditions ? metaConditions : null);
+
                     HasConditions = Conditions != null;
                     HasMetaConditions = MetaConditions != null;
                 }

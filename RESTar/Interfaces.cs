@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using RESTar.Admin;
+using RESTar.Operations;
 
 namespace RESTar
 {
@@ -84,5 +85,18 @@ namespace RESTar
         /// operation for a given resource.
         /// </summary>
         ResourceProfile Profile(IRequest<T> request);
+    }
+
+    /// <inheritdoc />
+    /// <summary>
+    /// Interface used to register a Profiler for a given resource type
+    /// </summary>
+    public interface IAuthenticatable<T> : IOperationsInterface where T : class
+    {
+        /// <summary>
+        /// The delete method for this IDeleter instance. Defines the Delete
+        /// operation for a given resource.
+        /// </summary>
+        AuthResults Authenticate(IRequest<T> request);
     }
 }

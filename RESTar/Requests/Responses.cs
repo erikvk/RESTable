@@ -124,11 +124,11 @@ namespace RESTar.Requests
             Headers = {["RESTar-info"] = "No entities found matching request."}
         };
 
-        internal static Response Forbidden => new Response
+        internal static Response Forbidden(string message) => new Response
         {
             StatusCode = (ushort) HttpStatusCode.Forbidden,
             StatusDescription = "Forbidden",
-            Headers = {["RESTar-info"] = "This operation is unavailable or not allowed given the current API key."}
+            Headers = {["RESTar-info"] = message}
         };
 
         internal static Response AllowOrigin(string allowedOrigin, IEnumerable<Methods> allowedMethods) => new Response

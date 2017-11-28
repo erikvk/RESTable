@@ -660,6 +660,21 @@ namespace RESTar
 
         internal static bool IsExternal<T>(this IRequest<T> request) where T : class => !request.IsInternal();
 
+        internal static void RunAuthentication<T>(this RESTRequest<T> request) where T : class
+        {
+            if (!request.Resource.RequiresAuthentication) return;
+            var authResults = request.Resource.Authenticate(request);
+            if (!authResults.Success)
+                throw new ForbiddenException(FailedResourceAuthentication, authResults.Reason);
+            request.Conditions.ForEach(condition =>
+            {
+                if (!(condition.Term.Last is StaticProperty stat) || !stat.HasAttribute<AuthDataAttribute>())
+                    return;
+                condition.Value = stat.Type.GetDefault();
+                condition.Skip = true;
+            });
+        }
+
         private static readonly CultureInfo en_US = new CultureInfo("en-US");
 
         internal static dynamic ParseConditionValue(this string str)

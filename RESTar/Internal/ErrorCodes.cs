@@ -75,6 +75,7 @@ namespace RESTar.Internal
         NotSignedIn = 210,
         NotAuthorized = 211,
         NoMatchingHtml = 212,
+        FailedResourceAuthentication = 213,
 
         DatabaseError = 300,
         NotInitialized = 400,

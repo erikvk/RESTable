@@ -103,6 +103,7 @@
     <Compile Include="Internal\ITarget.cs" />
     <Compile Include="Internal\View.cs" />
     <Compile Include="LineEndings.cs" />
+    <Compile Include="Operations\AuthResults.cs" />
     <Compile Include="Operations\Distinct.cs" />
     <Compile Include="RegEx.cs" />
     <Compile Include="Report.cs" />

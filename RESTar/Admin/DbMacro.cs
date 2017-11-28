@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using Newtonsoft.Json.Linq;
 using RESTar.Linq;
+using RESTar.Operations;
 using RESTar.Requests;
 using Starcounter;
 using ScRequest = Starcounter.Request;
@@ -50,14 +51,12 @@ namespace RESTar.Admin
         internal void Populate(ScRequest scRequest)
         {
             scRequest.BodyBytes = scRequest.BodyBytes ?? BodyBinary.ToArray();
-            if (Headers != null)
+            if (Headers == null) return;
+            foreach (var pair in JObject.Parse(Headers))
             {
-                foreach (var pair in JObject.Parse(Headers))
-                {
-                    var currentValue = scRequest.Headers[pair.Key];
-                    if (currentValue == null || currentValue == "*/*")
-                        scRequest.Headers[pair.Key] = pair.Value.Value<string>();
-                }
+                var currentValue = scRequest.Headers[pair.Key];
+                if (string.IsNullOrWhiteSpace(currentValue) || currentValue == "*/*")
+                    scRequest.Headers[pair.Key] = pair.Value.Value<string>();
             }
         }
     }
@@ -68,7 +67,7 @@ namespace RESTar.Admin
     [RESTar(Description = description)]
     public class Macro : ISelector<Macro>, IInserter<Macro>, IUpdater<Macro>, IDeleter<Macro>, IValidatable
     {
-        private const string description = "Contains all available output formats for this RESTar instance";
+        private const string description = "Contains all available macros for this RESTar instance";
 
         /// <summary>
         /// The name of the macro
@@ -83,7 +82,7 @@ namespace RESTar.Admin
         /// <summary>
         /// The body of the macro
         /// </summary>
-        public JObject Body { get; set; }
+        public JToken Body { get; set; }
 
         /// <summary>
         /// The headers of the macro
@@ -126,7 +125,6 @@ namespace RESTar.Admin
                 invalidReason = $"Invalid format for URI '{Uri}'.";
                 return false;
             }
-
             if (Headers != null)
             {
                 foreach (var prop in Headers)
@@ -144,7 +142,6 @@ namespace RESTar.Admin
                     }
                 }
             }
-
             invalidReason = null;
             return true;
         }
@@ -155,7 +152,7 @@ namespace RESTar.Admin
             {
                 Name = m.Name,
                 Uri = m.Uri,
-                Body = m.BodyBinary != default ? JObject.Parse(m.BodyUTF8) : null,
+                Body = m.BodyBinary != default ? JToken.Parse(m.BodyUTF8) : null,
                 Headers = m.Headers != null ? JObject.Parse(m.Headers) : null
             })
             .Where(request.Conditions);
@@ -168,7 +165,7 @@ namespace RESTar.Admin
             {
                 if (DbMacro.Get(entity.Name) != null)
                     throw new Exception($"Invalid name. '{entity.Name}' is already in use.");
-                Db.TransactAsync(() => new DbMacro
+                Transact.Trans(() => new DbMacro
                 {
                     Name = entity.Name,
                     Uri = entity.Uri,
@@ -188,7 +185,7 @@ namespace RESTar.Admin
             {
                 var dbEntity = DbMacro.Get(entity.Name);
                 if (dbEntity == null) return;
-                Db.TransactAsync(() =>
+                Transact.Trans(() =>
                 {
                     dbEntity.Uri = entity.Uri;
                     dbEntity.BodyBinary =
@@ -206,7 +203,7 @@ namespace RESTar.Admin
             var count = 0;
             entities.ForEach(entity =>
             {
-                Db.TransactAsync(DbMacro.Get(entity.Name).Delete);
+                Transact.Trans(DbMacro.Get(entity.Name).Delete);
                 count += 1;
             });
             return count;

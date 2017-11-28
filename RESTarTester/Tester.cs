@@ -557,7 +557,7 @@ namespace RESTarTester
     public abstract class Base { }
 
     [Database, RESTar]
-    public class Resource1 : Base
+    public class Resource1 : Base, IAuthenticatable<Resource1>
     {
         [RESTarView]
         public class MyView : ISelector<Resource1>
@@ -572,6 +572,16 @@ namespace RESTarTester
                 return null;
             }
         }
+
+        public AuthResults Authenticate(IRequest<Resource1> request)
+        {
+            if (request.Conditions.Get("Bananas", Operator.EQUALS)?.Value == false)
+                return new AuthResults(false, "Bananas!!!");
+            return new AuthResults(true);
+        }
+
+        [AuthData]
+        public bool Bananas;
 
         public sbyte Sbyte;
         public byte Byte;

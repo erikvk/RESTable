@@ -158,6 +158,7 @@ namespace RESTar.Resources
             deleter: GetDelegate<Deleter<TResource>>(typeof(TResource)) ?? GetDefaultDeleter<TResource>(),
             counter: GetDelegate<Counter<TResource>>(typeof(TResource)) ?? GetDefaultCounter<TResource>(),
             profiler: GetProfiler<TResource>(),
+            authenticator: GetDelegate<Authenticator<TResource>>(typeof(TResource)),
             views: GetViews<TResource>(),
             provider: this
         );
@@ -174,6 +175,7 @@ namespace RESTar.Resources
             deleter: GetDelegate<Deleter<TWrapped>>(typeof(TWrapper)) ?? GetDefaultDeleter<TWrapped>(),
             counter: GetDelegate<Counter<TWrapped>>(typeof(TWrapper)) ?? GetDefaultCounter<TWrapped>(),
             profiler: GetProfiler<TWrapped>(),
+            authenticator: GetDelegate<Authenticator<TWrapped>>(typeof(TWrapper)),
             views: GetWrappedViews<TWrapper, TWrapped>(),
             provider: this
         );

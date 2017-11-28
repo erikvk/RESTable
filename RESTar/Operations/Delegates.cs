@@ -20,6 +20,8 @@ namespace RESTar.Operations
                 case var d when d == typeof(Deleter<>).MakeGenericType(type): return typeof(IDeleter<>).MakeGenericType(type);
                 case var d when d == typeof(Counter<>).MakeGenericType(type): return typeof(ICounter<>).MakeGenericType(type);
                 case var d when d == typeof(Profiler<>).MakeGenericType(type): return typeof(IProfiler<>).MakeGenericType(type);
+                case var d when d == typeof(Authenticator<>).MakeGenericType(type):
+                    return typeof(IAuthenticatable<>).MakeGenericType(type);
                 default: throw new ArgumentOutOfRangeException();
             }
         }
@@ -88,4 +90,9 @@ namespace RESTar.Operations
     /// Generates a profile for a given resource
     /// </summary>
     public delegate ResourceProfile Profiler<T>(IResource<T> resource) where T : class;
+
+    /// <summary>
+    /// Authenticates a request
+    /// </summary>
+    public delegate AuthResults Authenticator<T>(IRequest<T> request) where T : class;
 }
