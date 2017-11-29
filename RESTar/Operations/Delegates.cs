@@ -11,17 +11,16 @@ namespace RESTar.Operations
     {
         private static Type MatchingInterface<TDelegate>()
         {
-            var type = typeof(TDelegate).GetGenericArguments()[0];
+            var t = typeof(TDelegate).GetGenericArguments()[0];
             switch (typeof(TDelegate))
             {
-                case var d when d == typeof(Selector<>).MakeGenericType(type): return typeof(ISelector<>).MakeGenericType(type);
-                case var d when d == typeof(Inserter<>).MakeGenericType(type): return typeof(IInserter<>).MakeGenericType(type);
-                case var d when d == typeof(Updater<>).MakeGenericType(type): return typeof(IUpdater<>).MakeGenericType(type);
-                case var d when d == typeof(Deleter<>).MakeGenericType(type): return typeof(IDeleter<>).MakeGenericType(type);
-                case var d when d == typeof(Counter<>).MakeGenericType(type): return typeof(ICounter<>).MakeGenericType(type);
-                case var d when d == typeof(Profiler<>).MakeGenericType(type): return typeof(IProfiler<>).MakeGenericType(type);
-                case var d when d == typeof(Authenticator<>).MakeGenericType(type):
-                    return typeof(IAuthenticatable<>).MakeGenericType(type);
+                case var d when d == typeof(Selector<>).MakeGenericType(t): return typeof(ISelector<>).MakeGenericType(t);
+                case var d when d == typeof(Inserter<>).MakeGenericType(t): return typeof(IInserter<>).MakeGenericType(t);
+                case var d when d == typeof(Updater<>).MakeGenericType(t): return typeof(IUpdater<>).MakeGenericType(t);
+                case var d when d == typeof(Deleter<>).MakeGenericType(t): return typeof(IDeleter<>).MakeGenericType(t);
+                case var d when d == typeof(Counter<>).MakeGenericType(t): return typeof(ICounter<>).MakeGenericType(t);
+                case var d when d == typeof(Profiler<>).MakeGenericType(t): return typeof(IProfiler<>).MakeGenericType(t);
+                case var d when d == typeof(Authenticator<>).MakeGenericType(t): return typeof(IAuthenticatable<>).MakeGenericType(t);
                 default: throw new ArgumentOutOfRangeException();
             }
         }

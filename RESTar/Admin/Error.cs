@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Text;
 using System.Text.RegularExpressions;
 using RESTar.Internal;
 using RESTar.Linq;
@@ -77,20 +78,12 @@ namespace RESTar.Admin
 
         private const int MaxStringLength = 10000;
 
-        internal static Error Create(ErrorCodes errorCode, Exception e, IResource resource, Request scRequest,
+        internal static Error Create(ErrorCodes errorCode, Exception e, IResource resource, Args args,
             HandlerActions action)
         {
-            string uri = null;
-            if (scRequest?.Uri?.ToLower().Contains("key=") == true)
-            {
-                var args = scRequest.Uri.Substring(Settings._Uri.Length).ToArgs(scRequest);
-                if (args.HasMetaConditions && args.MetaConditions.ToLower().Contains("key="))
-                {
-                    args.MetaConditions = Regex.Replace(args.MetaConditions, RegEx.KeyMetaCondition, "key=*******", IgnoreCase);
-                    uri = $"{Settings._Uri}{args}";
-                }
-            }
-            uri = uri ?? scRequest?.Uri;
+            if (args.HasMetaConditions && args.MetaConditions.ToLower().Contains("key="))
+                args.MetaConditions = Regex.Replace(args.MetaConditions, RegEx.KeyMetaCondition, "key=*******", IgnoreCase);
+            var uri = args.UriString;
             var stackTrace = $"{e.StackTrace} §§§ INNER: {e.InnerException?.StackTrace}";
             var totalMessage = e.TotalMessage();
             return new Error
@@ -100,16 +93,18 @@ namespace RESTar.Admin
                                (resource?.Alias != null ? $" ({resource.Alias})" : ""),
                 HandlerAction = action,
                 ErrorCode = errorCode,
+                Body = args.BodyBytes != null ? Encoding.UTF8.GetString(args.BodyBytes.Take(5000).ToArray()) : null,
                 StackTrace = stackTrace.Length > MaxStringLength ? stackTrace.Substring(0, MaxStringLength) : stackTrace,
                 Message = totalMessage.Length > MaxStringLength ? totalMessage.Substring(0, MaxStringLength) : totalMessage,
-                Body = scRequest?.Body,
                 Uri = uri,
-                Headers = scRequest?.HeadersDictionary?.StringJoin(" | ", dict => dict.Select(header =>
-                {
-                    if (header.Key?.ToLower() == "authorization")
-                        return "Authorization: apikey *******";
-                    return $"{header.Key}: {header.Value}";
-                }))
+                Headers = resource?.RequiresAuthentication == false
+                    ? args.Headers.StringJoin(" | ", dict => dict.Select(header =>
+                    {
+                        if (header.Key?.ToLower() == "authorization")
+                            return "Authorization: apikey *******";
+                        return $"{header.Key}: {header.Value}";
+                    }))
+                    : null
             };
         }
 

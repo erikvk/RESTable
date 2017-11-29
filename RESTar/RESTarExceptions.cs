@@ -79,6 +79,16 @@ namespace RESTar
         internal ForbiddenException(ErrorCodes code, string message) : base(code, message) => Response = Forbidden(message);
     }
 
+    /// <summary>
+    /// Thrown when a resoure is declared to allow an invalid header in requests
+    /// </summary>
+    public class InvalidRequestHeaderException : RESTarException
+    {
+        internal InvalidRequestHeaderException(string headerName, string resourceName) : base(InvalidAllowedRequestHeaders,
+            $"Header name '{headerName}' in AllowedRequestHeaders for resource '{resourceName}' is invalid or refers to an inaccessible header")
+            => Response = BadRequest(this);
+    }
+
     /// <inheritdoc />
     /// <summary>
     /// Thrown when a client tries to make an external request to an internal resource

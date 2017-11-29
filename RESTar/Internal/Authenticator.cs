@@ -41,6 +41,14 @@ namespace RESTar.Internal
             request.AuthToken = AssignAuthtoken(AccessRights.Root, token);
         }
 
+        internal static void RunResourceAuthentication<T>(this IRequest<T> request) where T : class
+        {
+            if (!request.Resource.RequiresAuthentication) return;
+            var authResults = request.Resource.Authenticate(request);
+            if (!authResults.Success)
+                throw new ForbiddenException(FailedResourceAuthentication, authResults.Reason);
+        }
+
         internal static void Authenticate<T>(this RESTRequest<T> request, ref Args args) where T : class
         {
             if (!RequireApiKey)
@@ -49,9 +57,9 @@ namespace RESTar.Internal
                 return;
             }
             AccessRights accessRights;
-            if (!request.ScRequest.IsExternal)
+            if (!request.Origin.IsExternal)
             {
-                var authToken = request.ScRequest.Headers["RESTar-AuthToken"];
+                var authToken = args.Headers.SafeGet("RESTar-AuthToken");
                 if (string.IsNullOrWhiteSpace(authToken))
                     throw NotAuthorizedException;
                 if (!AuthTokens.TryGetValue(authToken, out accessRights))
@@ -59,7 +67,7 @@ namespace RESTar.Internal
                 request.AuthToken = authToken;
                 return;
             }
-            var authorizationHeader = request.ScRequest.Headers["Authorization"];
+            var authorizationHeader = args.Headers.SafeGet("Authorization");
             if (string.IsNullOrWhiteSpace(authorizationHeader))
             {
                 if (!args.HasMetaConditions) throw NotAuthorizedException;

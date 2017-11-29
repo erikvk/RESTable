@@ -9,8 +9,7 @@ namespace RESTar.Serialization
     {
         protected override JsonProperty CreateProperty(MemberInfo member, MemberSerialization memberSerialization)
         {
-            if (member.HasAttribute<IgnoreDataMemberAttribute>() || member.HasAttribute<AuthDataAttribute>())
-                return null;
+            if (member.HasAttribute<IgnoreDataMemberAttribute>()) return null;
             var property = base.CreateProperty(member, memberSerialization);
             if (member.HasAttribute<ReadOnlyAttribute>())
                 property.Writable = false;

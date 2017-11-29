@@ -376,8 +376,6 @@ namespace RESTar.Operations
         {
             internal static Func<RESTRequest<T>, Response> GetEvaluator(Methods method)
             {
-                #region Long running transactions test
-
                 if (!_DontUseLRT)
                 {
                     switch (method)
@@ -391,8 +389,6 @@ namespace RESTar.Operations
                         default: return null;
                     }
                 }
-
-                #endregion
 
                 switch (method)
                 {
@@ -408,7 +404,6 @@ namespace RESTar.Operations
 
             private static Response GET(RESTRequest<T> request)
             {
-                request.RunAuthentication();
                 var results = SELECT_FILTER_PROCESS(request);
                 if (results == null) return NoContent;
                 try
@@ -454,7 +449,6 @@ namespace RESTar.Operations
 
             private static Response REPORT(RESTRequest<T> request)
             {
-                request.RunAuthentication();
                 return request.Report(new Report {Count = OP_COUNT(request)});
             }
 
@@ -462,14 +456,12 @@ namespace RESTar.Operations
 
             private static Response LrPOST(RESTRequest<T> request)
             {
-                request.RunAuthentication();
                 if (request.MetaConditions.SafePost != null) return LrSafePOST(request);
                 return request.InsertedEntities(Transaction<T>.Transact(() => INSERT(request)));
             }
 
             private static Response LrPATCH(RESTRequest<T> request)
             {
-                request.RunAuthentication();
                 var source = SELECT_FILTER(request)?.ToList();
                 if (source?.Any() != true) return request.UpdatedEntities(0);
                 if (!request.MetaConditions.Unsafe && source.Count > 1)
@@ -479,7 +471,6 @@ namespace RESTar.Operations
 
             private static Response LrPUT(RESTRequest<T> request)
             {
-                request.RunAuthentication();
                 var source = SELECT_FILTER(request)?.ToList();
                 switch (source?.Count)
                 {
@@ -492,7 +483,6 @@ namespace RESTar.Operations
 
             private static Response LrDELETE(RESTRequest<T> request)
             {
-                request.RunAuthentication();
                 var source = SELECT_FILTER(request);
                 if (source == null) return request.DeletedEntities(0);
                 if (!request.MetaConditions.Unsafe)
@@ -508,7 +498,6 @@ namespace RESTar.Operations
             private static (Request<T> InnerRequest, JArray ToInsert, IList<(JObject json, T source)> ToUpdate)
                 GetSafePostTasks(RESTRequest<T> request)
             {
-                request.RunAuthentication();
                 var innerRequest = new Request<T>();
                 var toInsert = new JArray();
                 var toUpdate = new List<(JObject json, T source)>();
@@ -543,7 +532,6 @@ namespace RESTar.Operations
 
             private static Response LrSafePOST(RESTRequest<T> request)
             {
-                request.RunAuthentication();
                 var (innerRequest, toInsert, toUpdate) = GetSafePostTasks(request);
                 var outerTrans = new Transaction<T>();
                 try
@@ -599,14 +587,12 @@ namespace RESTar.Operations
 
             private static Response POST(RESTRequest<T> request)
             {
-                request.RunAuthentication();
                 if (request.MetaConditions.SafePost != null) return SafePOST(request);
                 return request.InsertedEntities(Transaction<T>.ShTransact(() => INSERTorTryDelete(request)));
             }
 
             private static Response PATCH(RESTRequest<T> request)
             {
-                request.RunAuthentication();
                 var source = SELECT_FILTER(request)?.ToList();
                 if (source?.Any() != true) return request.UpdatedEntities(0);
                 if (!request.MetaConditions.Unsafe && source.Count > 1)
@@ -616,7 +602,6 @@ namespace RESTar.Operations
 
             private static Response PUT(RESTRequest<T> request)
             {
-                request.RunAuthentication();
                 var source = SELECT_FILTER(request)?.ToList();
                 switch (source?.Count)
                 {
@@ -629,7 +614,6 @@ namespace RESTar.Operations
 
             private static Response DELETE(RESTRequest<T> request)
             {
-                request.RunAuthentication();
                 var source = SELECT_FILTER(request);
                 if (source == null) return request.DeletedEntities(0);
                 if (!request.MetaConditions.Unsafe)
@@ -644,7 +628,6 @@ namespace RESTar.Operations
 
             private static Response SafePOST(RESTRequest<T> request)
             {
-                request.RunAuthentication();
                 var (insertedCount, updatedCount) = (0, 0);
                 var (innerRequest, toInsert, toUpdate) = GetSafePostTasks(request);
                 try

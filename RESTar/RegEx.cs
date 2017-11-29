@@ -22,6 +22,11 @@
         internal const string KeyMetaCondition = @"&key=(?<key>[^/&]+)|key=(?<key>[^/&]+)&?";
 
         /// <summary>
+        /// A regex used to find protected authentication data in condition strings
+        /// </summary>
+        internal static string AuthDataCondition(string name) => $@"&{name}=(?<value>[^/&]+)|{name}=(?<value>[^/&]+)&?";
+
+        /// <summary>
         /// Matches only letters, numbers and underscores
         /// </summary>
         internal const string LettersNumsAndUs = @"^\w+$";
@@ -45,5 +50,10 @@
         /// Used in setoperations when mapping object data to function parameters
         /// </summary>
         internal const string MapMacro = @"\$\([^\$\(\)]+\)";
+
+        /// <summary>
+        /// Matches all header names reserved by RESTar
+        /// </summary>
+        internal const string ReservedHeaders = @"^(source|destination|authorization|restar-authtoken)$";
     }
 }

@@ -1,11 +1,14 @@
-﻿using System.Text.RegularExpressions;
+﻿using System.Collections.Generic;
+using System.Linq;
+using System.Text.RegularExpressions;
 using ClosedXML.Excel;
 using RESTar.Admin;
+using static System.Text.RegularExpressions.RegexOptions;
 using IResource = RESTar.Internal.IResource;
 
 namespace RESTar.Requests
 {
-    internal struct Args
+    internal class Args
     {
         internal readonly string Resource;
         internal readonly string View;
@@ -17,30 +20,44 @@ namespace RESTar.Requests
         internal readonly bool HasMetaConditions;
         internal IResource IResource => HasResource ? RESTar.Resource.Find(Resource) : Resource<AvailableResource>.Get;
         internal DbMacro Macro { get; }
+        internal Origin Origin { get; set; }
+        internal byte[] BodyBytes { get; set; }
+        internal IDictionary<string, string> Headers { get; set; }
+        internal string ContentType { get; set; }
+        internal string Accept { get; set; }
 
-        public override string ToString()
+        internal IEnumerable<KeyValuePair<string, string>> NonReservedHeaders =>
+            Headers.Where(h => !Regex.IsMatch(h.Key, RegEx.ReservedHeaders, IgnoreCase));
+
+        internal string UriString
         {
-            var total = "/";
-            if (HasResource)
-                total += Resource;
-            else if (Macro != null)
-                total += "$" + Macro.Name;
-            else total += "RESTar.AvailableResource";
-            total += "/";
-            if (HasConditions)
-                total += Conditions;
-            total += "/";
-            if (HasMetaConditions)
-                total += MetaConditions;
-            return total.TrimEnd('/');
+            get
+            {
+                var total = "/";
+                if (HasResource)
+                    total += Resource;
+                else if (Macro != null)
+                    total += "$" + Macro.Name;
+                else total += "RESTar.AvailableResource";
+                total += "/";
+                if (HasConditions)
+                    total += Conditions;
+                total += "/";
+                if (HasMetaConditions)
+                    total += MetaConditions;
+                return total.TrimEnd('/');
+            }
         }
 
-
-        internal Args(string query, bool escapePercentSigns = false)
+        /// <summary>
+        /// Creates a new Args from a URI string, beginning after the base URI, for example /resource
+        /// </summary>
+        internal Args(string uriString, bool escapePercentSigns = false)
         {
-            if (query.CharCount('/') > 3) throw new InvalidSeparatorException();
-            if (escapePercentSigns) query = query.Replace("%25", "%");
-            var uriGroups = Regex.Match(query, RegEx.RequestUri).Groups;
+            Headers = new Dictionary<string, string>();
+            if (uriString.CharCount('/') > 3) throw new InvalidSeparatorException();
+            if (escapePercentSigns) uriString = uriString.Replace("%25", "%");
+            var uriGroups = Regex.Match(uriString, RegEx.RequestUri).Groups;
             var resourceOrMacro = uriGroups["resource_or_macro"].Value.TrimStart('/');
             var view = uriGroups["view"].Value.TrimStart('-');
             var conditions = uriGroups["conditions"].Value.TrimStart('/');
@@ -57,29 +74,19 @@ namespace RESTar.Requests
                     var macroString = resourceOrMacro.Substring(1);
                     Macro = DbMacro.Get(macroString) ?? throw new UnknownMacroException(macroString);
                     var macroArgs = new Args(Macro.Uri);
-
-                    // Use macro's resource
                     (HasResource, Resource) = (macroArgs.HasResource, macroArgs.Resource);
-
-                    // Use macro's view if no is included in caller
                     View = HasView ? view : macroArgs.View;
-
-                    // Concatenate caller conditions with the macro's
                     Conditions = macroArgs.HasConditions
                         ? (HasConditions ? $"{macroArgs.Conditions}&{conditions}" : macroArgs.Conditions)
                         : (HasConditions ? conditions : null);
-
-                    // Concatenate caller meta-conditions with the macro's
                     MetaConditions = macroArgs.HasMetaConditions
                         ? (HasMetaConditions ? $"{macroArgs.MetaConditions}&{metaConditions}" : macroArgs.MetaConditions)
                         : (HasMetaConditions ? metaConditions : null);
-
                     HasConditions = Conditions != null;
                     HasMetaConditions = MetaConditions != null;
                 }
                 else
                 {
-                    Macro = null;
                     HasResource = true;
                     Resource = resourceOrMacro;
                     View = HasView ? view : null;
@@ -89,9 +96,6 @@ namespace RESTar.Requests
             }
             else
             {
-                Macro = null;
-                HasResource = false;
-                Resource = null;
                 View = HasView ? view : null;
                 Conditions = HasConditions ? conditions : null;
                 MetaConditions = HasMetaConditions ? metaConditions : null;

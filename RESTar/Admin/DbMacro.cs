@@ -7,7 +7,6 @@ using RESTar.Linq;
 using RESTar.Operations;
 using RESTar.Requests;
 using Starcounter;
-using ScRequest = Starcounter.Request;
 
 namespace RESTar.Admin
 {
@@ -47,18 +46,6 @@ namespace RESTar.Admin
         private const string AllSQL = "SELECT t FROM RESTar.Admin.DbMacro t";
         internal static IEnumerable<DbMacro> All => Db.SQL<DbMacro>(AllSQL);
         internal static DbMacro Get(string macroName) => Db.SQL<DbMacro>(NameSQL, macroName).FirstOrDefault();
-
-        internal void Populate(ScRequest scRequest)
-        {
-            scRequest.BodyBytes = scRequest.BodyBytes ?? BodyBinary.ToArray();
-            if (Headers == null) return;
-            foreach (var pair in JObject.Parse(Headers))
-            {
-                var currentValue = scRequest.Headers[pair.Key];
-                if (string.IsNullOrWhiteSpace(currentValue) || currentValue == "*/*")
-                    scRequest.Headers[pair.Key] = pair.Value.Value<string>();
-            }
-        }
     }
 
     /// <summary>

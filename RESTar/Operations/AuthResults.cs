@@ -17,5 +17,14 @@
             Success = success;
             Reason = reason;
         }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="input"></param>
+        public static implicit operator AuthResults((bool success, string reason) input)
+        {
+            return new AuthResults(input.success,input.reason);
+        }
     }
 }

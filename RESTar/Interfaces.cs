@@ -89,7 +89,8 @@ namespace RESTar
 
     /// <inheritdoc />
     /// <summary>
-    /// Interface used to register a Profiler for a given resource type
+    /// Interface used to register an authenticator for a given resource type.
+    /// Authenticators are executed once for each REST request to this resource.
     /// </summary>
     public interface IAuthenticatable<T> : IOperationsInterface where T : class
     {

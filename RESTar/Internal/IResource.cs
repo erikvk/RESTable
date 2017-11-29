@@ -115,6 +115,12 @@ namespace RESTar.Internal
         /// The views for this resource
         /// </summary>
         IEnumerable<IView> Views { get; }
+
+        /// <summary>
+        /// Does this resource have a separate authentication
+        /// for REST requests?
+        /// </summary>
+        bool RequiresAuthentication { get; }
     }
 
     /// <inheritdoc cref="ITarget{T}" />
@@ -157,11 +163,5 @@ namespace RESTar.Internal
         /// The Views registered for this resource
         /// </summary>
         IReadOnlyDictionary<string, View<T>> ViewDictionary { get; }
-        
-        /// <summary>
-        /// Does this resource have a separate authentication
-        /// for REST requests?
-        /// </summary>
-        bool RequiresAuthentication { get; }
     }
 }

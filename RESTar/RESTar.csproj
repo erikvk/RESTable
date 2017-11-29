@@ -107,6 +107,8 @@
     <Compile Include="Operations\Distinct.cs" />
     <Compile Include="RegEx.cs" />
     <Compile Include="Report.cs" />
+    <Compile Include="Requests\Evaluator.cs" />
+    <Compile Include="Requests\Headers.cs" />
     <Compile Include="Resources\StarcounterIndexer.cs" />
     <Compile Include="AvailableResource.cs" />
     <Compile Include="Auth\AccessRight.cs" />
@@ -157,7 +159,7 @@
     <Compile Include="Operations\IFilter.cs" />
     <Compile Include="Interfaces.cs" />
     <Compile Include="Deflection\Dynamic\DynamicProperty.cs" />
-    <Compile Include="Requests\Handlers.cs" />
+    <Compile Include="Requests\StarcounterHandlers.cs" />
     <Compile Include="Http\HttpRequest.cs" />
     <Compile Include="IValidatable.cs" />
     <Compile Include="Operations\Limit.cs" />

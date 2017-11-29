@@ -12,13 +12,11 @@ using System.Text;
 using Dynamit;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using RESTar.Admin;
 using RESTar.Auth;
 using RESTar.Deflection.Dynamic;
 using RESTar.Internal;
 using RESTar.Linq;
 using RESTar.Operations;
-using RESTar.Requests;
 using RESTar.Resources;
 using RESTar.Serialization;
 using RESTar.View;
@@ -345,24 +343,16 @@ namespace RESTar
 
         #region Filter and Process
 
-        /// <summary>
-        /// Applies this list of conditions to an IEnumerable of entities and returns
-        /// the entities for which all the conditions hold.
-        /// </summary>
-        internal static IEnumerable<T> Apply<T>(this IEnumerable<Condition<T>> conditions, IEnumerable<T> entities)
-            where T : class
-        {
-            return entities.Where(entity => conditions.All(condition => condition.HoldsFor(entity)));
-        }
-
         internal static IEnumerable<T> Filter<T>(this IEnumerable<T> entities, IFilter filter) where T : class
         {
             return filter?.Apply(entities) ?? entities;
         }
 
         internal static IEnumerable<JObject> Process<T>(this IEnumerable<T> entities, IProcessor[] processors)
-            where T : class => processors
-            .Aggregate(default(IEnumerable<JObject>), (e, p) => e != null ? p.Apply(e) : p.Apply(entities));
+            where T : class
+        {
+            return processors.Aggregate(default(IEnumerable<JObject>), (e, p) => e != null ? p.Apply(e) : p.Apply(entities));
+        }
 
         internal static (string WhereString, object[] Values) MakeWhereClause<T>(this IEnumerable<Condition<T>> conds,
             out Dictionary<int, int> valuesAssignments)
@@ -656,25 +646,6 @@ namespace RESTar
 
         #region Requests
 
-        internal static bool IsInternal<T>(this IRequest<T> request) where T : class => request is Request<T>;
-
-        internal static bool IsExternal<T>(this IRequest<T> request) where T : class => !request.IsInternal();
-
-        internal static void RunAuthentication<T>(this RESTRequest<T> request) where T : class
-        {
-            if (!request.Resource.RequiresAuthentication) return;
-            var authResults = request.Resource.Authenticate(request);
-            if (!authResults.Success)
-                throw new ForbiddenException(FailedResourceAuthentication, authResults.Reason);
-            request.Conditions.ForEach(condition =>
-            {
-                if (!(condition.Term.Last is StaticProperty stat) || !stat.HasAttribute<AuthDataAttribute>())
-                    return;
-                condition.Value = stat.Type.GetDefault();
-                condition.Skip = true;
-            });
-        }
-
         private static readonly CultureInfo en_US = new CultureInfo("en-US");
 
         internal static dynamic ParseConditionValue(this string str)
@@ -693,24 +664,6 @@ namespace RESTar
                                 DateTime.TryParseExact(str, "O", null, AssumeUniversal, out dat): return dat;
                 default: return str;
             }
-        }
-
-        /// <summary>
-        /// Helper method for sleek Args creation in Handlers
-        /// </summary>
-        internal static Args ToArgs(this string query, Request request) =>
-            new Args(query, request.HeadersDictionary?.ContainsKey("X-ARR-LOG-ID") == true);
-
-        private static string CheckQuery(this string query, Request request)
-        {
-            if (query.Count(c => c == '/') > 3)
-                throw new SyntaxException(InvalidSeparator,
-                    "Invalid argument separator count. A RESTar URI can contain at most 3 " +
-                    $"forward slashes after the base uri. URI scheme: {Settings._ResourcesPath}" +
-                    "/[resource]/[conditions]/[meta-conditions]");
-            if (request.HeadersDictionary?.ContainsKey("X-ARR-LOG-ID") == true)
-                return query.Replace("%25", "%");
-            return query;
         }
 
         internal static void MethodCheck(this IRequest request)

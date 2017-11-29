@@ -69,9 +69,16 @@ namespace RESTar
         string AuthToken { get; }
 
         /// <summary>
+        /// The headers included in the request. Headers reserved by RESTar,
+        /// for example the Source header, will not be included here.
+        /// </summary>
+        Headers Headers { get; }
+
+        /// <summary>
         /// To include additional HTTP headers in the response, add them to 
-        /// this dictionary. Header names will be renamed to "X-[name]" where
-        /// name is the key-value pair key.
+        /// this dictionary. Headers inserted here with names not already 
+        /// beginning with "X-" will be renamed to "X-[name]" where name 
+        /// is the key-value pair key.
         /// </summary>
         IDictionary<string, string> ResponseHeaders { get; }
     }

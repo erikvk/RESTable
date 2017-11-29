@@ -21,7 +21,7 @@ namespace RESTar.Requests
 {
     internal class ViewRequest<T> : IRequest<T>, IViewRequest where T : class
     {
-        public Origin Origin { get; }
+        public Origin Origin { get; private set; }
         public IResource<T> Resource { get; }
         public Condition<T>[] Conditions { get; private set; }
         public MetaConditions MetaConditions { get; private set; }
@@ -31,7 +31,6 @@ namespace RESTar.Requests
         Methods IRequest.Method => GET;
         IResource IRequest.Resource => Resource;
         public ITarget<T> Target { get; }
-        internal Request ScRequest { get; }
         public bool Home => MetaConditions.Empty && Conditions == null;
         internal bool IsTemplate { get; set; }
         internal bool CanInsert { get; set; }
@@ -40,6 +39,7 @@ namespace RESTar.Requests
         internal T Entity { get; set; }
         internal Json GetView() => DataView.MakeCurrentView();
         public T1 BodyObject<T1>() where T1 : class => Body?.Deserialize<T1>();
+        public Headers Headers { get; private set; }
 
         internal void Evaluate()
         {
@@ -79,13 +79,11 @@ namespace RESTar.Requests
         }
 
 
-        internal ViewRequest(IResource<T> resource, Request scRequest)
+        internal ViewRequest(IResource<T> resource)
         {
             if (resource.IsInternal) throw new ResourceIsInternalException(resource);
             Resource = resource;
             Target = resource;
-            ScRequest = scRequest;
-            Origin = new Origin(scRequest);
             ResponseHeaders = new Dictionary<string, string>();
             MetaConditions = new MetaConditions();
             Conditions = new Condition<T>[0];
@@ -93,6 +91,8 @@ namespace RESTar.Requests
 
         internal void Populate(Args args)
         {
+            Origin = args.Origin;
+            args.NonReservedHeaders.ForEach(Headers.Add);
             if (args.HasConditions)
                 Conditions = Condition<T>.Parse(args.Conditions, Resource) ?? Conditions;
             if (args.HasMetaConditions)

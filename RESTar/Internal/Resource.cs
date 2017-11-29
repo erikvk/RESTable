@@ -38,7 +38,7 @@ namespace RESTar.Internal
         public TermBindingRules ConditionBindingRule { get; }
         public TermBindingRules OutputBindingRule { get; }
         public bool RequiresAuthentication => Authenticate != null;
-
+        
         /// <inheritdoc />
         /// <summary>
         /// True for DDictionary resources and dynamic resources with DynamicConditionsAllowed
@@ -145,6 +145,7 @@ namespace RESTar.Internal
             Count = counter;
             Profile = profiler;
             Authenticate = authenticator;
+
             if (views?.Any() == true)
             {
                 ViewDictionaryInternal = views.ToDictionary(v => v.Name.ToLower(), v => v);

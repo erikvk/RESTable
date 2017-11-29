@@ -208,8 +208,10 @@ namespace RESTar
                 var term = target.MakeConditionTerm(WebUtility.UrlDecode(keyValuePair[0]));
                 if (term.Last is StaticProperty stat &&
                     stat.GetAttribute<AllowedConditionOperatorsAttribute>()?.Operators?.Contains(op) == false)
+                {
                     throw new ForbiddenOperatorException(s, target, op, term,
                         stat.GetAttribute<AllowedConditionOperatorsAttribute>()?.Operators);
+                }
                 var value = WebUtility.UrlDecode(keyValuePair[1]).ParseConditionValue();
                 if (term.Last is StaticProperty prop && prop.Type.IsEnum && value is string)
                 {

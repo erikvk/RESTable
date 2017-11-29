@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Runtime.Serialization;
 using System.Threading.Tasks;
@@ -13,6 +14,7 @@ using RESTar.Linq;
 using RESTar.Operations;
 using RESTar.Resources;
 using Starcounter;
+using static RESTar.Methods;
 using Operator = RESTar.Operator;
 
 #pragma warning disable 219
@@ -483,7 +485,7 @@ namespace RESTarTester
         c
     }
 
-    [RESTar(Methods.GET, AllowDynamicConditions = true, FlagStaticMembers = true)]
+    [RESTar(GET, AllowDynamicConditions = true, FlagStaticMembers = true)]
     public class MyRes : Dictionary<string, object>, ISelector<MyRes>
     {
         public Things T { get; set; }
@@ -526,7 +528,7 @@ namespace RESTarTester
         public MyDict2Kvp(DDictionary dict, string key, object value = null) : base(dict, key, value) { }
     }
 
-    [RESTar(Methods.GET)]
+    [RESTar(GET)]
     public class AsyncTest : ISelector<AsyncTest>
     {
         public bool Hej { get; set; }
@@ -552,12 +554,54 @@ namespace RESTarTester
         }
     }
 
+    [RESTar(GET, POST, DELETE)]
+    public class AuthResource : ISelector<AuthResource>, IInserter<AuthResource>, IDeleter<AuthResource>,
+        IAuthenticatable<AuthResource>, IValidatable
+    {
+        #region Schema
+
+        public int Id { get; set; }
+        public string Str { get; set; }
+
+        #endregion
+
+        private static List<AuthResource> Items = new List<AuthResource>();
+
+        public IEnumerable<AuthResource> Select(IRequest<AuthResource> request) => Items.Where(request.Conditions);
+
+        public int Insert(IEnumerable<AuthResource> entities, IRequest<AuthResource> request) => entities
+            .Aggregate(0, (count, entity) =>
+            {
+                Items.Add(entity);
+                return count += 1;
+            });
+
+        public int Delete(IEnumerable<AuthResource> entities, IRequest<AuthResource> request) => entities
+            .Aggregate(0, (count, entity) => count += Items.RemoveAll(i => i.Id == entity.Id));
+
+        public AuthResults Authenticate(IRequest<AuthResource> request)
+        {
+            var password = request.Headers["password"];
+            return (password == "the password", "Invalid password!");
+        }
+
+        public bool IsValid(out string invalidReason)
+        {
+            if (Items.Any(c => c.Id == Id))
+            {
+                invalidReason = "No no";
+                return false;
+            }
+            invalidReason = null;
+            return true;
+        }
+    }
 
     [Database]
     public abstract class Base { }
 
     [Database, RESTar]
-    public class Resource1 : Base, IAuthenticatable<Resource1>
+    public class Resource1 : Base
     {
         [RESTarView]
         public class MyView : ISelector<Resource1>
@@ -572,16 +616,6 @@ namespace RESTarTester
                 return null;
             }
         }
-
-        public AuthResults Authenticate(IRequest<Resource1> request)
-        {
-            if (request.Conditions.Get("Bananas", Operator.EQUALS)?.Value == false)
-                return new AuthResults(false, "Bananas!!!");
-            return new AuthResults(true);
-        }
-
-        [AuthData]
-        public bool Bananas;
 
         public sbyte Sbyte;
         public byte Byte;

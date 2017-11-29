@@ -16,7 +16,7 @@ using RESTar.Linq;
 using RESTar.Resources;
 using Starcounter;
 using static RESTar.Methods;
-using static RESTar.Requests.Handlers;
+using static RESTar.Requests.StarcounterHandlers;
 using IResource = RESTar.Internal.IResource;
 using ResourceFinder = System.Collections.Concurrent.ConcurrentDictionary<string, RESTar.Internal.IResource>;
 
@@ -42,6 +42,7 @@ namespace RESTar
         private static string ConfigFilePath { get; set; }
         internal static bool Initialized { get; private set; }
         internal static readonly Methods[] Methods = {GET, POST, PATCH, PUT, DELETE, REPORT};
+
         static RESTarConfig() => NewState();
 
         private static void NewState()

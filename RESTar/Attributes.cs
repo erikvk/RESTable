@@ -16,7 +16,7 @@ namespace RESTar
         /// The methods declared as available for this RESTar resource
         /// </summary>
         public IReadOnlyList<Methods> AvailableMethods { get; }
-
+        
         /// <summary>
         /// If true, unknown conditions encountered when handling incoming requests
         /// will be passed through as dynamic. This allows for a dynamic handling of
@@ -176,11 +176,4 @@ namespace RESTar
     /// Make a subclass for this type when implementing custom resource providers
     /// </summary>
     public abstract class ResourceProviderAttribute : Attribute { }
-
-    /// <summary>
-    /// When assigned to a property or field, instructs RESTar to erase the content of all 
-    /// conditions referring to this property after authorization.
-    /// </summary>
-    [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
-    public class AuthDataAttribute : Attribute { }
 }

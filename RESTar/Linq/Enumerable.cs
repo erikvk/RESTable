@@ -14,7 +14,11 @@ namespace RESTar.Linq
         /// conditions are true of x.
         /// </summary>
         public static IEnumerable<T> Where<T>(this IEnumerable<T> entities, IEnumerable<Condition<T>> conditions)
-            where T : class => conditions == null ? entities : conditions.Apply(entities);
+            where T : class
+        {
+            if (conditions == null) return entities;
+            return entities?.Where(entity => conditions.All(condition => condition.HoldsFor(entity)));
+        }
 
         /// <summary>
         /// Generates an IEnumerable of string using the selector function applied to the source IEnumerable, 

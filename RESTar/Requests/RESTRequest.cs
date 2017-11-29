@@ -19,7 +19,7 @@ namespace RESTar.Requests
     internal class RESTRequest<T> : IRequest<T>, IDisposable where T : class
     {
         public Methods Method { get; private set; }
-        public Origin Origin { get; }
+        public Origin Origin { get; private set; }
         public IResource<T> Resource { get; }
         public Condition<T>[] Conditions { get; private set; }
         public MetaConditions MetaConditions { get; private set; }
@@ -28,7 +28,6 @@ namespace RESTar.Requests
         public IDictionary<string, string> ResponseHeaders { get; }
         IResource IRequest.Resource => Resource;
         public ITarget<T> Target { get; private set; }
-        internal Request ScRequest { get; }
         private Response Response { get; set; }
         private Func<RESTRequest<T>, Response> Evaluator { get; set; }
         private string Source { get; set; }
@@ -40,14 +39,14 @@ namespace RESTar.Requests
         private DataConfig OutputDataConfig { get; set; }
         internal void Evaluate() => Response = Evaluator(this);
         public T1 BodyObject<T1>() where T1 : class => Body?.Deserialize<T1>();
+        public Headers Headers { get; }
 
-        internal RESTRequest(IResource<T> resource, Request scRequest)
+        internal RESTRequest(IResource<T> resource)
         {
             if (resource.IsInternal) throw new ResourceIsInternalException(resource);
             Resource = resource;
             Target = resource;
-            ScRequest = scRequest;
-            Origin = new Origin(scRequest);
+            Headers = new Headers();
             ResponseHeaders = new Dictionary<string, string>();
             Conditions = new Condition<T>[0];
             MetaConditions = new MetaConditions();
@@ -61,15 +60,17 @@ namespace RESTar.Requests
                     throw new UnknownViewException(args.View, Resource);
                 Target = view;
             }
+            Origin = args.Origin;
             Method = method;
             Evaluator = Evaluators<T>.REST.GetEvaluator(method);
-            Source = ScRequest.Headers["Source"];
-            Destination = ScRequest.Headers["Destination"];
-            CORSOrigin = ScRequest.Headers["Origin"];
-            ContentType = MimeTypes.Match(ScRequest.ContentType);
-            Accept = MimeTypes.Match(ScRequest.PreferredMimeTypeString);
+            Source = args.Headers.SafeGet("Source");
+            Destination = args.Headers.SafeGet("Destination");
+            CORSOrigin = args.Headers.SafeGet("Origin");
+            ContentType = MimeTypes.Match(args.ContentType);
+            Accept = MimeTypes.Match(args.Accept);
             InputDataConfig = Source != null ? DataConfig.External : DataConfig.Client;
             OutputDataConfig = Destination != null ? DataConfig.External : DataConfig.Client;
+            args.NonReservedHeaders.ForEach(Headers.Add);
             if (args.HasConditions)
                 Conditions = Condition<T>.Parse(args.Conditions, Target) ?? Conditions;
             if (args.HasMetaConditions)
@@ -77,15 +78,15 @@ namespace RESTar.Requests
             if (Origin.IsInternal) MetaConditions.Formatter = DbOutputFormat.Raw;
         }
 
-        internal void SetRequestData()
+        internal void SetRequestData(byte[] bodyBytes)
         {
             switch (InputDataConfig)
             {
                 case DataConfig.Client:
-                    if (ScRequest.BodyBytes == null && (Method == PATCH || Method == POST || Method == PUT))
+                    if (bodyBytes == null && (Method == PATCH || Method == POST || Method == PUT))
                         throw new SyntaxException(NoDataSource, "Missing data source for method " + Method);
-                    if (ScRequest.BodyBytes == null) return;
-                    Body = new MemoryStream(ScRequest.BodyBytes);
+                    if (bodyBytes == null) return;
+                    Body = new MemoryStream(bodyBytes);
                     break;
                 case DataConfig.External:
                     try
@@ -117,7 +118,12 @@ namespace RESTar.Requests
 
         internal Response GetResponse()
         {
-            ResponseHeaders.ForEach(h => Response.Headers["X-" + h.Key] = h.Value);
+            ResponseHeaders.ForEach(h =>
+            {
+                if (h.Key.StartsWith("X-"))
+                    Response.Headers[h.Key] = h.Value;
+                else Response.Headers["X-" + h.Key] = h.Value;
+            });
             if (AllowAllOrigins)
                 Response.Headers["Access-Control-Allow-Origin"] = "*";
             else if (CORSOrigin != null)
@@ -197,7 +203,7 @@ namespace RESTar.Requests
 
         public void Dispose()
         {
-            if (ScRequest.IsExternal && AuthToken != null)
+            if (Origin.IsExternal && AuthToken != null)
                 AuthTokens.TryRemove(AuthToken, out var _);
         }
     }
