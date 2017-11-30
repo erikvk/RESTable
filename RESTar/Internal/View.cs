@@ -1,5 +1,4 @@
 ﻿using System;
-using RESTar.Admin;
 using RESTar.Deflection;
 using RESTar.Operations;
 using static RESTar.Deflection.TermBindingRules;
@@ -10,13 +9,7 @@ namespace RESTar.Internal
     /// <summary>
     /// A non-generic interface for RESTar resource views
     /// </summary>
-    public interface IView : ITarget
-    {
-        /// <summary>
-        /// The type of the view, static or dynamic
-        /// </summary>
-        ViewType ViewType { get; }
-    }
+    public interface IView : ITarget { }
 
     /// <inheritdoc cref="IView" />
     /// <summary>
@@ -40,9 +33,6 @@ namespace RESTar.Internal
         public Type Type { get; }
 
         /// <inheritdoc />
-        public ViewType ViewType { get; }
-
-        /// <inheritdoc />
         public Selector<T> Select { get; }
 
         internal View(Type type)
@@ -54,7 +44,6 @@ namespace RESTar.Internal
             Name = type.Name;
             Description = attribute.Description;
             Type = type;
-            ViewType = ViewType.Static;
             Select = DelegateMaker.GetDelegate<Selector<T>>(type);
         }
     }

@@ -20,12 +20,7 @@
         /// A regex used to isolate the key meta-condition in meta-condition strings
         /// </summary>
         internal const string KeyMetaCondition = @"&key=(?<key>[^/&]+)|key=(?<key>[^/&]+)&?";
-
-        /// <summary>
-        /// A regex used to find protected authentication data in condition strings
-        /// </summary>
-        internal static string AuthDataCondition(string name) => $@"&{name}=(?<value>[^/&]+)|{name}=(?<value>[^/&]+)&?";
-
+        
         /// <summary>
         /// Matches only letters, numbers and underscores
         /// </summary>

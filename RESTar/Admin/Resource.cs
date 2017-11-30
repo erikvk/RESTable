@@ -97,7 +97,6 @@ namespace RESTar.Admin
                 {
                     v.Name,
                     Description = v.Description ?? "No description",
-                    v.ViewType
                 }).ToArray() ?? new object[0],
                 IResource = iresource,
                 Provider = iresource.Provider,
