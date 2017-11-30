@@ -57,7 +57,7 @@ namespace RESTar.Internal
                 return;
             }
             AccessRights accessRights;
-            if (!request.Origin.IsExternal)
+            if (!args.Origin.IsExternal)
             {
                 var authToken = args.Headers.SafeGet("RESTar-AuthToken");
                 if (string.IsNullOrWhiteSpace(authToken))
