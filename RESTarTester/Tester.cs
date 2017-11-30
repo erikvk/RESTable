@@ -286,11 +286,17 @@ namespace RESTarTester
             var response2 = Http.POST("http://localhost:9000/rest/resource2", twosJson, null);
             var response3 = Http.POST("http://localhost:9000/rest/resource3", threesJson, null);
             var response4 = Http.POST("http://localhost:9000/rest/resource4", foursJson, null);
+            var response5 = Http.POST("http://localhost:9000/rest/authresource", @"{""Id"": 1, ""Str"": ""Foogoo""}",
+                new Dictionary<string, string>() {["password"] = "the password"});
+            var response5fail = Http.POST("http://localhost:9000/rest/authresource", @"{""Id"": 2, ""Str"": ""Foogoo""}",
+                new Dictionary<string, string>() {["password"] = "not the password"});
 
             Debug.Assert(response1?.IsSuccessStatusCode == true);
             Debug.Assert(response2?.IsSuccessStatusCode == true);
             Debug.Assert(response3?.IsSuccessStatusCode == true);
             Debug.Assert(response4?.IsSuccessStatusCode == true);
+            Debug.Assert(response5?.IsSuccessStatusCode == true);
+            Debug.Assert(response5fail?.StatusCode == 403);
 
             #endregion
 
@@ -357,7 +363,7 @@ namespace RESTarTester
                 ("http://localhost:9000/rest/resource4//add=datetime.value.day&select=datetime.value.day,datetime.value.month,string,string.length&order_desc=string.length&distinct=true");
             var jsonResponse5format = Http.GET
                 ("http://localhost:9000/rest/resource4//add=datetime.value.day&select=datetime.value.day,datetime.value.month,string,string.length&order_desc=string.length&format=jsend&distinct=true");
-
+            
             Debug.Assert(jsonResponse1?.IsSuccessStatusCode == true);
             Debug.Assert(jsonResponse1view?.IsSuccessStatusCode == true);
             Debug.Assert(jsonResponse2?.IsSuccessStatusCode == true);
