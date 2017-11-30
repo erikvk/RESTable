@@ -22,12 +22,14 @@ namespace RESTar.Requests
     {
         private static int StackSize;
 
-        internal static Response Evaluate(HandlerActions action, Args args = null)
+        internal static Response Evaluate(HandlerActions action, Func<Args> argsMaker = null)
         {
             if (StackSize++ > 300) throw new InfiniteLoopException();
             IResource resource = null;
+            Args args = null;
             try
             {
+                args = argsMaker?.Invoke();
                 resource = args?.IResource;
                 switch (action)
                 {

@@ -13,18 +13,18 @@ namespace RESTar.Requests
         internal static void RegisterRESTHandlers(bool setupMenu)
         {
             var uri = _Uri + "{?}";
-            Handle.GET(_Port, uri, (Request request, string query) => Evaluate(GET, MakeArgs(request, query)));
-            Handle.POST(_Port, uri, (Request request, string query) => Evaluate(POST, MakeArgs(request, query)));
-            Handle.PUT(_Port, uri, (Request request, string query) => Evaluate(PUT, MakeArgs(request, query)));
-            Handle.PATCH(_Port, uri, (Request request, string query) => Evaluate(PATCH, MakeArgs(request, query)));
-            Handle.DELETE(_Port, uri, (Request request, string query) => Evaluate(DELETE, MakeArgs(request, query)));
-            Handle.CUSTOM(_Port, "REPORT " + uri, (Request request, string query) => Evaluate(COUNT, MakeArgs(request, query)));
-            Handle.OPTIONS(_Port, uri, (Request request, string query) => Evaluate(ORIGIN, MakeArgs(request, query)));
+            Handle.GET(_Port, uri, (Request request, string query) => Evaluate(GET, () => MakeArgs(request, query)));
+            Handle.POST(_Port, uri, (Request request, string query) => Evaluate(POST, () => MakeArgs(request, query)));
+            Handle.PUT(_Port, uri, (Request request, string query) => Evaluate(PUT, () => MakeArgs(request, query)));
+            Handle.PATCH(_Port, uri, (Request request, string query) => Evaluate(PATCH, () => MakeArgs(request, query)));
+            Handle.DELETE(_Port, uri, (Request request, string query) => Evaluate(DELETE, () => MakeArgs(request, query)));
+            Handle.CUSTOM(_Port, "REPORT " + uri, (Request request, string query) => Evaluate(COUNT, () => MakeArgs(request, query)));
+            Handle.OPTIONS(_Port, uri, (Request request, string query) => Evaluate(ORIGIN, () => MakeArgs(request, query)));
             if (!_ViewEnabled) return;
             Application.Current.Use(new HtmlFromJsonProvider());
             Application.Current.Use(new PartialToStandaloneHtmlProvider());
             var appName = Application.Current.Name;
-            Handle.GET($"/{appName}{{?}}", (Request request, string query) => Evaluate(VIEW, MakeArgs(request, query)));
+            Handle.GET($"/{appName}{{?}}", (Request request, string query) => Evaluate(VIEW, () => MakeArgs(request, query)));
             Handle.GET("/__restar/__page", () => Evaluate(PAGE));
             if (!setupMenu) return;
             Handle.GET($"/{appName}", () => Evaluate(MENU));

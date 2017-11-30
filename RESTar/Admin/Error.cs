@@ -81,9 +81,9 @@ namespace RESTar.Admin
         internal static Error Create(ErrorCodes errorCode, Exception e, IResource resource, Args args,
             HandlerActions action)
         {
-            if (args.HasMetaConditions && args.MetaConditions.ToLower().Contains("key="))
+            if (args?.HasMetaConditions == true && args.MetaConditions.ToLower().Contains("key="))
                 args.MetaConditions = Regex.Replace(args.MetaConditions, RegEx.KeyMetaCondition, "key=*******", IgnoreCase);
-            var uri = args.UriString;
+            var uri = args?.UriString;
             var stackTrace = $"{e.StackTrace} §§§ INNER: {e.InnerException?.StackTrace}";
             var totalMessage = e.TotalMessage();
             return new Error
@@ -93,12 +93,12 @@ namespace RESTar.Admin
                                (resource?.Alias != null ? $" ({resource.Alias})" : ""),
                 HandlerAction = action,
                 ErrorCode = errorCode,
-                Body = args.BodyBytes != null ? Encoding.UTF8.GetString(args.BodyBytes.Take(5000).ToArray()) : null,
+                Body = args?.BodyBytes != null ? Encoding.UTF8.GetString(args.BodyBytes.Take(5000).ToArray()) : null,
                 StackTrace = stackTrace.Length > MaxStringLength ? stackTrace.Substring(0, MaxStringLength) : stackTrace,
                 Message = totalMessage.Length > MaxStringLength ? totalMessage.Substring(0, MaxStringLength) : totalMessage,
                 Uri = uri,
                 Headers = resource?.RequiresAuthentication == false
-                    ? args.Headers.StringJoin(" | ", dict => dict.Select(header =>
+                    ? args?.Headers.StringJoin(" | ", dict => dict.Select(header =>
                     {
                         switch (header.Key.ToLower())
                         {
