@@ -79,7 +79,7 @@ namespace RESTar.Requests
         }
 
 
-        internal ViewRequest(IResource<T> resource)
+        internal ViewRequest(IResource<T> resource, Origin origin)
         {
             if (resource.IsInternal) throw new ResourceIsInternalException(resource);
             Resource = resource;
@@ -87,11 +87,11 @@ namespace RESTar.Requests
             ResponseHeaders = new Dictionary<string, string>();
             MetaConditions = new MetaConditions();
             Conditions = new Condition<T>[0];
+            Origin = origin;
         }
 
         internal void Populate(Args args)
         {
-            Origin = args.Origin;
             args.NonReservedHeaders.ForEach(Headers.Add);
             if (args.HasConditions)
                 Conditions = Condition<T>.Parse(args.Conditions, Resource) ?? Conditions;

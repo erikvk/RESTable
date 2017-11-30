@@ -86,7 +86,7 @@ namespace RESTar.Requests
 
         private static Response HandleView<T>(IResource<T> resource, Args args) where T : class
         {
-            var request = new ViewRequest<T>(resource);
+            var request = new ViewRequest<T>(resource, args.Origin);
             request.Authenticate();
             request.Populate(args);
             request.MethodCheck();
@@ -97,7 +97,7 @@ namespace RESTar.Requests
         private static Response HandleREST<T>(IResource<T> resource, Args args,
             HandlerActions action) where T : class
         {
-            using (var request = new RESTRequest<T>(resource))
+            using (var request = new RESTRequest<T>(resource, args.Origin))
             {
                 request.Authenticate(ref args);
                 request.Populate(args, (Methods) action);

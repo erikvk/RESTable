@@ -100,9 +100,12 @@ namespace RESTar.Admin
                 Headers = resource?.RequiresAuthentication == false
                     ? args.Headers.StringJoin(" | ", dict => dict.Select(header =>
                     {
-                        if (header.Key?.ToLower() == "authorization")
-                            return "Authorization: apikey *******";
-                        return $"{header.Key}: {header.Value}";
+                        switch (header.Key.ToLower())
+                        {
+                            case "authorization": return "Authorization: apikey *******";
+                            case "x-original-url" when header.Value.Contains("key="): return "*******";
+                            default: return $"{header.Key}: {header.Value}";
+                        }
                     }))
                     : null
             };

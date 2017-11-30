@@ -41,7 +41,7 @@ namespace RESTar.Requests
         public T1 BodyObject<T1>() where T1 : class => Body?.Deserialize<T1>();
         public Headers Headers { get; }
 
-        internal RESTRequest(IResource<T> resource)
+        internal RESTRequest(IResource<T> resource, Origin origin)
         {
             if (resource.IsInternal) throw new ResourceIsInternalException(resource);
             Resource = resource;
@@ -50,6 +50,7 @@ namespace RESTar.Requests
             ResponseHeaders = new Dictionary<string, string>();
             Conditions = new Condition<T>[0];
             MetaConditions = new MetaConditions();
+            Origin = origin;
         }
 
         internal void Populate(Args args, Methods method)
@@ -60,7 +61,6 @@ namespace RESTar.Requests
                     throw new UnknownViewException(args.View, Resource);
                 Target = view;
             }
-            Origin = args.Origin;
             Method = method;
             Evaluator = Evaluators<T>.REST.GetEvaluator(method);
             Source = args.Headers.SafeGet("Source");
