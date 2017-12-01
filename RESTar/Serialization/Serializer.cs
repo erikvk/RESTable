@@ -23,6 +23,7 @@ namespace RESTar.Serialization
         private static readonly JsonSerializerSettings VmSettings;
         internal static readonly JsonSerializerSettings Settings;
         internal static readonly JsonSerializer JsonSerializer;
+        internal static readonly Encoding UTF8;
 
         static Serializer()
         {
@@ -46,6 +47,7 @@ namespace RESTar.Serialization
             Settings.Converters.Add(enumConverter);
             VmSettings.Converters.Add(enumConverter);
             JsonSerializer = JsonSerializer.Create(Settings);
+            UTF8 = new UTF8Encoding(false);
         }
 
         #region Main serializers
@@ -59,7 +61,7 @@ namespace RESTar.Serialization
         )
         {
             stream = new MemoryStream();
-            using (var swr = new StreamWriter(stream, Encoding.Default, 1024, true))
+            using (var swr = new StreamWriter(stream, UTF8, 1024, true))
             using (var jwr = new RESTarJsonWriter(swr, formatter.StartIndent))
             {
                 JsonSerializer.Formatting = _PrettyPrint ? Indented : None;
@@ -76,7 +78,7 @@ namespace RESTar.Serialization
         internal static bool SerializeReportJson(this Report data, out MemoryStream stream)
         {
             stream = new MemoryStream();
-            using (var swr = new StreamWriter(stream, Encoding.UTF8, 1024, true))
+            using (var swr = new StreamWriter(stream, UTF8, 1024, true))
             using (var jwr = new RESTarJsonWriter(swr, 0))
             {
                 JsonSerializer.Formatting = _PrettyPrint ? Indented : None;
@@ -129,7 +131,7 @@ namespace RESTar.Serialization
             {
                 jsonStream = new MemoryStream();
                 using (excelStream)
-                using (var swr = new StreamWriter(jsonStream, Encoding.UTF8, 1024, true))
+                using (var swr = new StreamWriter(jsonStream, UTF8, 1024, true))
                 using (var jwr = new RESTarFromExcelJsonWriter(swr))
                 using (var reader = ExcelReaderFactory.CreateOpenXmlReader(excelStream))
                 {
