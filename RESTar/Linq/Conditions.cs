@@ -59,6 +59,26 @@ namespace RESTar.Linq
         #endregion
 
         /// <summary>
+        /// Filters an IEnumerable of resource entities and returns all entities x such that all the 
+        /// conditions are true of x.
+        /// </summary>
+        public static IEnumerable<T> Where<T>(this IEnumerable<T> entities, IEnumerable<Condition<T>> conditions)
+            where T : class
+        {
+            if (conditions == null) return entities;
+            return entities?.Where(entity => conditions.All(condition => condition.HoldsFor(entity)));
+        }
+
+        /// <summary>
+        /// Returns true if and only if all the given conditions hold for the given subject
+        /// </summary>
+        public static bool AllHoldFor<T>(this IEnumerable<Condition<T>> conditions, T subject) where T : class
+        {
+            if (conditions == null) return true;
+            return conditions.All(condition => condition.HoldsFor(subject));
+        }
+
+        /// <summary>
         /// Access all conditions with a given key (case insensitive)
         /// </summary>
         public static IEnumerable<Condition<T>> Get<T>(this IEnumerable<Condition<T>> conds, string key) where T : class

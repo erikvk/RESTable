@@ -10,17 +10,6 @@ namespace RESTar.Linq
     public static class Enumerable
     {
         /// <summary>
-        /// Filters an IEnumerable of resource entities and returns all entities x such that all the 
-        /// conditions are true of x.
-        /// </summary>
-        public static IEnumerable<T> Where<T>(this IEnumerable<T> entities, IEnumerable<Condition<T>> conditions)
-            where T : class
-        {
-            if (conditions == null) return entities;
-            return entities?.Where(entity => conditions.All(condition => condition.HoldsFor(entity)));
-        }
-
-        /// <summary>
         /// Generates an IEnumerable of string using the selector function applied to the source IEnumerable, 
         /// and then joins those strings using the separator.
         /// </summary>

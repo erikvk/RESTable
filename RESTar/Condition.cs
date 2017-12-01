@@ -142,7 +142,10 @@ namespace RESTar
             HasChanged = true;
         }
 
-        internal bool HoldsFor(T subject)
+        /// <summary>
+        /// Returns true if and only if the condition holds for the given subject
+        /// </summary>
+        public bool HoldsFor(T subject)
         {
             if (Skip) return true;
             var subjectValue = Term.Evaluate(subject);
