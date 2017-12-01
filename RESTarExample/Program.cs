@@ -61,7 +61,7 @@ namespace RESTarExample
                 },
                 new SemiDynamic
                 {
-                    ["Str"] = "123",
+                    ["Str"] = "123"
                 },
                 new SemiDynamic
                 {
@@ -86,7 +86,7 @@ namespace RESTarExample
                 },
                 new SemiDynamic2
                 {
-                    ["Str"] = "123",
+                    ["Str"] = "123"
                 },
                 new SemiDynamic2
                 {
@@ -161,7 +161,7 @@ namespace RESTarExample
                 new MyTestResource
                 {
                     ["T"] = 5,
-                    ["G"] = "asd",
+                    ["G"] = "asd"
                 },
                 new MyTestResource
                 {

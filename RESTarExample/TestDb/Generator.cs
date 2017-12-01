@@ -733,7 +733,7 @@ namespace RESTarExample.TestDb
                 "Moreno",
                 "Bowman",
                 "Medina",
-                "Fowler",
+                "Fowler"
             };
 
             #endregion

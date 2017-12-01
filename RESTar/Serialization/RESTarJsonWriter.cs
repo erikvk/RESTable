@@ -12,7 +12,7 @@ namespace RESTar.Serialization
         private int BaseIndentation;
         private int CurrentDepth;
         public long ObjectsWritten { get; private set; }
-
+        
         public override void WriteStartObject()
         {
             if (CurrentDepth == 0)

@@ -59,7 +59,7 @@ namespace RESTar.Serialization
         )
         {
             stream = new MemoryStream();
-            using (var swr = new StreamWriter(stream, Encoding.UTF8, 1024, true))
+            using (var swr = new StreamWriter(stream, Encoding.Default, 1024, true))
             using (var jwr = new RESTarJsonWriter(swr, formatter.StartIndent))
             {
                 JsonSerializer.Formatting = _PrettyPrint ? Indented : None;

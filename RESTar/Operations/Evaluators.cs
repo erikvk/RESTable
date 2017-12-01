@@ -432,7 +432,7 @@ namespace RESTar.Operations
                         {
                             ["RESTar-count"] = count.ToString(),
                             ["Content-Disposition"] = $"attachment; filename={request.Resource.Name}_" +
-                                                      $"{DateTime.Now:yyMMddHHmmssfff}{extension}",
+                                                      $"{DateTime.Now:yyMMddHHmmssfff}{extension}"
                         }
                     };
 

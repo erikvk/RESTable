@@ -96,7 +96,7 @@ namespace RESTar.Admin
                 Views = iresource.Views?.Select(v => new
                 {
                     v.Name,
-                    Description = v.Description ?? "No description",
+                    Description = v.Description ?? "No description"
                 }).ToArray() ?? new object[0],
                 IResource = iresource,
                 Provider = iresource.Provider,
