@@ -35,7 +35,7 @@ namespace RESTarTester
 
         public static void Main()
         {
-            RESTarConfig.Init(9000, lineEndings: LineEndings.Windows, prettyPrint:false);
+            RESTarConfig.Init(9000, lineEndings: LineEndings.Windows, prettyPrint: false);
             Db.SQL<Base>("SELECT t FROM RESTarTester.Base t").ForEach(b => Db.TransactAsync(b.Delete));
             Db.SQL<MyDict>("SELECT t FROM RESTarTester.MyDict t").ForEach(b => Db.TransactAsync(b.Delete));
             Db.SQL<MyDict2>("SELECT t FROM RESTarTester.MyDict2 t").ForEach(b => Db.TransactAsync(b.Delete));
@@ -363,7 +363,7 @@ namespace RESTarTester
                 ("http://localhost:9000/rest/resource4//add=datetime.value.day&select=datetime.value.day,datetime.value.month,string,string.length&order_desc=string.length&distinct=true");
             var jsonResponse5format = Http.GET
                 ("http://localhost:9000/rest/resource4//add=datetime.value.day&select=datetime.value.day,datetime.value.month,string,string.length&order_desc=string.length&format=jsend&distinct=true");
-            
+
             Debug.Assert(jsonResponse1?.IsSuccessStatusCode == true);
             Debug.Assert(jsonResponse1view?.IsSuccessStatusCode == true);
             Debug.Assert(jsonResponse2?.IsSuccessStatusCode == true);
@@ -470,7 +470,7 @@ namespace RESTarTester
                 new MyDict2
                 {
                     ["Snoo"] = 123,
-                    R = new Resource1
+                     R = new Resource1
                     {
                         Byte = 123,
                         String = "Googfoo"

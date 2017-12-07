@@ -718,7 +718,7 @@ namespace RESTar
                 return Convert.ToBase64String(hasher.ComputeHash(Encoding.UTF8.GetBytes(input)));
         }
 
-        internal static byte[] ToBytes(this string json) => Encoding.UTF8.GetBytes(json);
+        internal static byte[] ToBytes(this string str) => Encoding.UTF8.GetBytes(str);
 
         internal static string TotalMessage(this Exception e)
         {

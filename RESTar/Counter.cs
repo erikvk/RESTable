@@ -51,6 +51,6 @@ namespace RESTar
             return request;
         }
 
-        private static long Evaluate<T>(IRequest<T> request) where T : class => Evaluators<T>.OP_COUNT(request);
+        private static long Evaluate<T>(IRequest<T> request) where T : class => Operations<T>.OP_COUNT(request);
     }
 }

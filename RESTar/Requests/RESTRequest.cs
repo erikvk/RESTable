@@ -62,7 +62,7 @@ namespace RESTar.Requests
                 Target = view;
             }
             Method = method;
-            Evaluator = Evaluators<T>.REST.GetEvaluator(method);
+            Evaluator = Operations<T>.REST.GetEvaluator(method);
             Source = args.Headers.SafeGet("Source");
             Destination = args.Headers.SafeGet("Destination");
             CORSOrigin = args.Headers.SafeGet("Origin");

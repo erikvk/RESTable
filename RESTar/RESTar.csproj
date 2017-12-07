@@ -185,7 +185,7 @@
     <Compile Include="Admin\Resource.cs" />
     <Compile Include="Admin\ResourceAlias.cs" />
     <Compile Include="RESTarConfig.cs" />
-    <Compile Include="Operations\Evaluators.cs" />
+    <Compile Include="Operations\Operations.cs" />
     <Compile Include="RESTarExceptions.cs" />
     <Compile Include="Operations\OrderBy.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

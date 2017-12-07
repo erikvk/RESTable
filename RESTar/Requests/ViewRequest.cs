@@ -21,7 +21,7 @@ namespace RESTar.Requests
 {
     internal class ViewRequest<T> : IRequest<T>, IViewRequest where T : class
     {
-        public Origin Origin { get; private set; }
+        public Origin Origin { get; }
         public IResource<T> Resource { get; }
         public Condition<T>[] Conditions { get; private set; }
         public MetaConditions MetaConditions { get; private set; }
@@ -30,7 +30,7 @@ namespace RESTar.Requests
         public Stream Body { get; private set; }
         Methods IRequest.Method => GET;
         IResource IRequest.Resource => Resource;
-        public ITarget<T> Target { get; }
+        public ITarget<T> Target { get; private set; }
         public bool Home => MetaConditions.Empty && Conditions == null;
         internal bool IsTemplate { get; set; }
         internal bool CanInsert { get; set; }
@@ -40,6 +40,33 @@ namespace RESTar.Requests
         internal Json GetView() => DataView.MakeCurrentView();
         public T1 BodyObject<T1>() where T1 : class => Body?.Deserialize<T1>();
         public Headers Headers { get; private set; }
+
+        internal ViewRequest(IResource<T> resource, Origin origin)
+        {
+            if (resource.IsInternal) throw new ResourceIsInternalException(resource);
+            Resource = resource;
+            Target = resource;
+            Headers = new Headers();
+            ResponseHeaders = new Dictionary<string, string>();
+            MetaConditions = new MetaConditions();
+            Conditions = new Condition<T>[0];
+            Origin = origin;
+        }
+
+        internal void Populate(Args args)
+        {
+            if (args.HasView)
+            {
+                if (!Resource.ViewDictionary.TryGetValue(args.View, out var view))
+                    throw new UnknownViewException(args.View, Resource);
+                Target = view;
+            }
+            args.NonReservedHeaders.ForEach(Headers.Add);
+            if (args.HasConditions)
+                Conditions = Condition<T>.Parse(args.Conditions, Resource) ?? Conditions;
+            if (args.HasMetaConditions)
+                MetaConditions = MetaConditions.Parse(args.MetaConditions, Resource, false) ?? MetaConditions;
+        }
 
         internal void Evaluate()
         {
@@ -52,7 +79,7 @@ namespace RESTar.Requests
                 DataView = itemView;
                 return;
             }
-            Entities = Evaluators<T>.SELECT_FILTER(this)?.ToList();
+            Entities = Operations<T>.SELECT_FILTER(this)?.ToList();
             if (Entities?.Any() != true)
             {
                 DataView.SetMessage("No entities found", NoError, warning);
@@ -78,27 +105,6 @@ namespace RESTar.Requests
             }
         }
 
-
-        internal ViewRequest(IResource<T> resource, Origin origin)
-        {
-            if (resource.IsInternal) throw new ResourceIsInternalException(resource);
-            Resource = resource;
-            Target = resource;
-            ResponseHeaders = new Dictionary<string, string>();
-            MetaConditions = new MetaConditions();
-            Conditions = new Condition<T>[0];
-            Origin = origin;
-        }
-
-        internal void Populate(Args args)
-        {
-            args.NonReservedHeaders.ForEach(Headers.Add);
-            if (args.HasConditions)
-                Conditions = Condition<T>.Parse(args.Conditions, Resource) ?? Conditions;
-            if (args.HasMetaConditions)
-                MetaConditions = MetaConditions.Parse(args.MetaConditions, Resource, false) ?? MetaConditions;
-        }
-
         public void DeleteFromList(string id)
         {
             Authenticator.CheckUser();
@@ -106,7 +112,7 @@ namespace RESTar.Requests
             var conditions = Condition<T>.Parse(id, Resource);
             var item = Entities.Where(conditions).First();
             CheckMethod(DELETE, $"You are not allowed to delete from the '{Resource}' resource");
-            Evaluators<T>.View.DELETE(this, item);
+            Operations<T>.View.DELETE(this, item);
             if (string.IsNullOrWhiteSpace(list.RedirectUrl))
                 list.RedirectUrl = list.ResourcePath;
         }
@@ -115,17 +121,17 @@ namespace RESTar.Requests
         {
             Authenticator.CheckUser();
             var item = (Item) DataView;
-            //var entityJson = item.Entity.ToJson().Replace(@"$"":", @""":");
-            //Body = Regex.Replace(entityJson, MacroRegex, "${content}");
+            var entityJson = item.Entity.ToJson().Replace(@"$"":", @""":");
+            Body = new MemoryStream(Regex.Replace(entityJson, RegEx.ViewMacro, "${content}").ToBytes());
             if (IsTemplate)
             {
                 CheckMethod(POST, $"You are not allowed to insert into the '{Resource}' resource");
-                Evaluators<T>.View.POST(this);
+                Operations<T>.View.POST(this);
                 if (string.IsNullOrWhiteSpace(item.RedirectUrl))
                     item.RedirectUrl = item.ResourcePath;
             }
             CheckMethod(PATCH, $"You are not allowed to update the '{Resource}' resource");
-            Evaluators<T>.View.PATCH(this, Entity);
+            Operations<T>.View.PATCH(this, Entity);
         }
 
         public void CloseItem()

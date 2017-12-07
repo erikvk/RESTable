@@ -15,7 +15,7 @@ using static RESTar.Admin.Settings;
 
 namespace RESTar.Operations
 {
-    internal static class Evaluators<T> where T : class
+    internal static class Operations<T> where T : class
     {
         #region Operations
 

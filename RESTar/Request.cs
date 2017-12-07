@@ -176,45 +176,45 @@ namespace RESTar
         {
             Prep();
             if (!GETAllowed) throw Deny(Methods.GET);
-            return Evaluators<T>.SELECT(this) ?? new T[0];
+            return Operations<T>.SELECT(this) ?? new T[0];
         }
 
         public bool ANY()
         {
             Prep();
             if (!GETAllowed) throw Deny(Methods.GET);
-            return Evaluators<T>.SELECT(this)?.Any() == true;
+            return Operations<T>.SELECT(this)?.Any() == true;
         }
 
         public long COUNT()
         {
             Prep();
             if (!GETAllowed) throw Deny(Methods.GET);
-            return Evaluators<T>.OP_COUNT(this);
+            return Operations<T>.OP_COUNT(this);
         }
 
         public int POST(Func<T> inserter)
         {
             if (!POSTAllowed) throw Deny(Methods.POST);
-            return Evaluators<T>.App.POST(inserter, this);
+            return Operations<T>.App.POST(inserter, this);
         }
 
         public int POST(Func<IEnumerable<T>> inserter)
         {
             if (!POSTAllowed) throw Deny(Methods.POST);
-            return Evaluators<T>.App.POST(inserter, this);
+            return Operations<T>.App.POST(inserter, this);
         }
 
         public int PATCH(Func<T, T> updater)
         {
             Prep();
             if (!PATCHAllowed) throw Deny(Methods.PATCH);
-            var source = Evaluators<T>.SELECT(this)?.ToList();
+            var source = Operations<T>.SELECT(this)?.ToList();
             switch (source?.Count)
             {
                 case null:
                 case 0: return 0;
-                case 1: return Evaluators<T>.App.PATCH(updater, source.First(), this);
+                case 1: return Operations<T>.App.PATCH(updater, source.First(), this);
                 default: throw new AmbiguousMatchException(Resource);
             }
         }
@@ -223,32 +223,32 @@ namespace RESTar
         {
             Prep();
             if (!PATCHAllowed) throw Deny(Methods.PATCH);
-            var source = Evaluators<T>.SELECT(this)?.ToList();
+            var source = Operations<T>.SELECT(this)?.ToList();
             if (source?.Any() != true) return 0;
-            return Evaluators<T>.App.PATCH(updater, source, this);
+            return Operations<T>.App.PATCH(updater, source, this);
         }
 
         public int PUT(Func<T> inserter)
         {
             Prep();
             if (!PUTAllowed) throw Deny(Methods.PUT);
-            var source = Evaluators<T>.SELECT(this);
-            return Evaluators<T>.App.PUT(inserter, source, this);
+            var source = Operations<T>.SELECT(this);
+            return Operations<T>.App.PUT(inserter, source, this);
         }
 
         public int PUT(Func<T> inserter, Func<T, T> updater)
         {
             Prep();
             if (!PUTAllowed) throw Deny(Methods.PUT);
-            var source = Evaluators<T>.SELECT(this);
-            return Evaluators<T>.App.PUT(inserter, updater, source, this);
+            var source = Operations<T>.SELECT(this);
+            return Operations<T>.App.PUT(inserter, updater, source, this);
         }
 
         public int DELETE(bool @unsafe = false)
         {
             Prep();
             if (!DELETEAllowed) throw Deny(Methods.DELETE);
-            var source = Evaluators<T>.SELECT(this);
+            var source = Operations<T>.SELECT(this);
             if (source == null) return 0;
             if (!@unsafe)
             {
@@ -257,7 +257,7 @@ namespace RESTar
                     throw new AmbiguousMatchException(Resource);
                 source = list;
             }
-            return Evaluators<T>.App.DELETE(source, this);
+            return Operations<T>.App.DELETE(source, this);
         }
     }
 }

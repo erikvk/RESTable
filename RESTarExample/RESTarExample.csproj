@@ -104,7 +104,7 @@
     <None Include="wwwroot\message.html" />
     <Content Include="wwwroot\resources\RESTarExample.R-list.html" />
     <Content Include="wwwroot\resources\RESTarExample.R-item.html" />
-    <Content Include="wwwroot\resources\RESTar.Settings-item.html" />
+    <Content Include="wwwroot\resources\RESTar.Admin.Settings-item.html" />
     <Content Include="wwwroot\default.css" />
   </ItemGroup>
   <ItemGroup>
