@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using RESTar.Operations;
 using Starcounter;
@@ -12,7 +13,9 @@ namespace RESTar.Deflection.Dynamic
     /// </summary>
     public class SpecialProperty : StaticProperty
     {
-        private SpecialProperty(bool scQueryable) : base(scQueryable) { }
+        private SpecialProperty(string name, string databaseQueryName, Type type, int? order, bool scQueryable,
+            bool hidden, Getter getter) : base(name, databaseQueryName, type, order, scQueryable, null, false, hidden, getter,
+            null) { }
 
         internal static IEnumerable<SpecialProperty> GetObjectIDAndObjectNo(bool flag) =>
             flag ? new[] {FlaggedObjectID, FlaggedObjectNo} : new[] {ObjectID, ObjectNo};
@@ -20,53 +23,58 @@ namespace RESTar.Deflection.Dynamic
         /// <summary>
         /// A property describing the ObjectNo of a class
         /// </summary>
-        public static SpecialProperty FlaggedObjectNo => new SpecialProperty(true)
-        {
-            Name = "$ObjectNo",
-            DatabaseQueryName = "ObjectNo",
-            Type = typeof(ulong),
-            Getter = t => Do.TryAndThrow(t.GetObjectNo, "Could not get ObjectNo from non-Starcounter resource."),
-            Hidden = true,
-            Order = int.MaxValue - 1
-        };
+        private static readonly SpecialProperty FlaggedObjectNo = new SpecialProperty
+        (
+            name: "$ObjectNo",
+            databaseQueryName: "ObjectNo",
+            type: typeof(ulong),
+            order: int.MaxValue - 1,
+            scQueryable: true,
+            hidden: true,
+            getter: t => Do.TryAndThrow(t.GetObjectNo, "Could not get ObjectNo from non-Starcounter resource.")
+        );
 
         /// <summary>
         /// A property describing the ObjectNo of a class
         /// </summary>
-        public static SpecialProperty FlaggedObjectID => new SpecialProperty(true)
-        {
-            Name = "$ObjectID",
-            DatabaseQueryName = "ObjectID",
-            Type = typeof(string),
-            Getter = t => Do.TryAndThrow(t.GetObjectID, "Could not get ObjectID from non-Starcounter resource."),
-            Hidden = true,
-            Order = int.MaxValue
-        };
+        private static readonly SpecialProperty FlaggedObjectID = new SpecialProperty
+        (
+            name: "$ObjectID",
+            databaseQueryName: "ObjectID",
+            type: typeof(string),
+            order: int.MaxValue,
+            scQueryable: true,
+            hidden: true,
+            getter: t => Do.TryAndThrow(t.GetObjectID, "Could not get ObjectID from non-Starcounter resource.")
+        );
 
         /// <summary>
         /// A property describing the ObjectNo of a class
         /// </summary>
-        public static SpecialProperty ObjectNo => new SpecialProperty(true)
-        {
-            Name = "ObjectNo",
-            DatabaseQueryName = "ObjectNo",
-            Type = typeof(ulong),
-            Getter = t => Do.TryAndThrow(t.GetObjectNo, "Could not get ObjectNo from non-Starcounter resource."),
-            Hidden = true,
-            Order = int.MaxValue - 1
-        };
+        private static readonly SpecialProperty ObjectNo = new SpecialProperty
+        (
+            name: "ObjectNo",
+            databaseQueryName: "ObjectNo",
+            type: typeof(ulong),
+            order: int.MaxValue - 1,
+            scQueryable: true,
+            hidden: true,
+            getter: t => Do.TryAndThrow(t.GetObjectNo, "Could not get ObjectNo from non-Starcounter resource.")
+        );
+
 
         /// <summary>
         /// A property describing the ObjectNo of a class
         /// </summary>
-        public static SpecialProperty ObjectID => new SpecialProperty(true)
-        {
-            Name = "ObjectID",
-            DatabaseQueryName = "ObjectID",
-            Type = typeof(string),
-            Getter = t => Do.TryAndThrow(t.GetObjectID, "Could not get ObjectID from non-Starcounter resource."),
-            Hidden = true,
-            Order = int.MaxValue
-        };
+        private static readonly SpecialProperty ObjectID = new SpecialProperty
+        (
+            name: "ObjectID",
+            databaseQueryName: "ObjectID",
+            type: typeof(string),
+            order: int.MaxValue,
+            scQueryable: true,
+            hidden: true,
+            getter: t => Do.TryAndThrow(t.GetObjectID, "Could not get ObjectID from non-Starcounter resource.")
+        );
     }
 }

@@ -17,7 +17,7 @@ namespace RESTar.Deflection.Dynamic
         /// <summary>
         /// The property type for this property
         /// </summary>
-        public Type Type { get; internal set; }
+        public Type Type { get; }
 
         /// <inheritdoc />
         public override bool Dynamic => false;
@@ -25,22 +25,22 @@ namespace RESTar.Deflection.Dynamic
         /// <summary>
         /// Automatically sets the Skip property of conditions matched against this property to true
         /// </summary>
-        public bool ConditionSkip { get; internal set; }
+        public bool ConditionSkip { get; }
 
         /// <summary>
         /// Hidden properties are not included in regular output, but can be added and queried on.
         /// </summary>
-        public bool Hidden { get; internal set; }
+        public bool Hidden { get; }
 
         /// <summary>
         /// The order at which this property appears when all properties are enumerated
         /// </summary>
-        public int? Order { get; internal set; }
+        public int? Order { get; }
 
         /// <summary>
         /// The attributes that this property has been decorated with
         /// </summary>  
-        public ICollection<Attribute> Attributes { get; internal set; }
+        public ICollection<Attribute> Attributes { get; }
 
         /// <summary>
         /// Gets the first instance of a given attribute type that this resource property 
@@ -62,10 +62,22 @@ namespace RESTar.Deflection.Dynamic
             (attribute = GetAttribute<TAttribute>()) != null;
 
         /// <summary>
-        /// Used in SpecialProperties construction
+        /// Used in SpecialProperty
         /// </summary>
-        /// <param name="scQueryable"></param>
-        internal StaticProperty(bool scQueryable) => ScQueryable = scQueryable;
+        protected StaticProperty(string name, string databaseQueryName, Type type, int? order, bool scQueryable,
+            ICollection<Attribute> attributes, bool conditionSkip, bool hidden, Getter getter, Setter setter)
+        {
+            Name = name;
+            DatabaseQueryName = databaseQueryName;
+            Type = type;
+            Order = order;
+            ScQueryable = scQueryable;
+            Attributes = attributes;
+            ConditionSkip = conditionSkip;
+            Hidden = hidden;
+            Getter = getter;
+            Setter = setter;
+        }
 
         /// <summary>
         /// The regular constructor
