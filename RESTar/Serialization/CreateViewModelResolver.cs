@@ -13,7 +13,9 @@ namespace RESTar.Serialization
     {
         protected override JsonProperty CreateProperty(MemberInfo member, MemberSerialization memberSerialization)
         {
+            if (member.ShouldBeIgnored() || member.ShouldBeHidden()) return null;
             var property = base.CreateProperty(member, memberSerialization);
+            if (member.ShouldBeReadOnly()) property.Writable = false;
             if (property.Writable)
                 property.PropertyName = member.RESTarMemberName() + "$";
             else property.PropertyName = member.RESTarMemberName();
@@ -27,19 +29,19 @@ namespace RESTar.Serialization
             {
                 results.Add(new JsonProperty
                 {
-                    PropertyType = typeof(string),
-                    PropertyName = "ObjectID",
-                    Readable = true,
-                    Writable = false,
-                    ValueProvider = new ObjectIDProvider()
-                });
-                results.Add(new JsonProperty
-                {
                     PropertyType = typeof(ulong),
                     PropertyName = "ObjectNo",
                     Readable = true,
                     Writable = false,
                     ValueProvider = new ObjectNoProvider()
+                });
+                results.Add(new JsonProperty
+                {
+                    PropertyType = typeof(string),
+                    PropertyName = "ObjectID",
+                    Readable = true,
+                    Writable = false,
+                    ValueProvider = new ObjectIDProvider()
                 });
             }
             return results;

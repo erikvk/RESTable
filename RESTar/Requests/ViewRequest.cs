@@ -79,13 +79,15 @@ namespace RESTar.Requests
                 DataView = itemView;
                 return;
             }
-            Entities = Operations<T>.SELECT_FILTER(this)?.ToList();
-            if (Entities?.Any() != true)
+            var domain = Operations<T>.SELECT_VIEW(this)?.ToList();
+            Entities = domain?.Filter(MetaConditions.Offset).Filter(MetaConditions.Limit).ToList();
+            if (Entities?.Any() != true || domain == null)
             {
-                DataView.SetMessage("No entities found", NoError, warning);
+                DataView?.SetMessage("No entities found", NoError, warning);
                 return;
             }
-            if (Resource.IsSingleton || Entities?.Count == 1 && !Home)
+
+            if (Resource.IsSingleton || Entities.Count == 1 && !Home)
             {
                 Entity = Entities?[0];
                 var itemView = new Item {Request = this};
@@ -103,6 +105,7 @@ namespace RESTar.Requests
                 Entities.ForEach(e => listView.Entities.Add().PopulateFromJson(e.SerializeToViewModel()));
                 DataView = listView;
             }
+            // TODO: Add pager here
         }
 
         public void DeleteFromList(string id)

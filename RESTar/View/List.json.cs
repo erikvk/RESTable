@@ -10,7 +10,9 @@ namespace RESTar.View
         protected override void SetHtml(string html) => Html = html;
         protected override void SetResourceName(string resourceName) => ResourceName = resourceName;
         protected override void SetResourcePath(string resourcePath) => ResourcePath = resourcePath;
-        
+        protected override void SetPager(string nextPagePath) => NextPagePath = nextPagePath;
+        protected override void SetNrOfPages(int nrOfPages) => NrOfPages = nrOfPages;
+
         internal override void SetMessage(string message, ErrorCodes errorCode, MessageTypes messageType)
         {
             Message = message;

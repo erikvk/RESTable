@@ -10,12 +10,12 @@ namespace RESTar.Deflection.Dynamic
         /// <summary>
         /// The name of the property
         /// </summary>
-        public string Name { get; protected set; }
+        public string Name { get; internal set; }
 
         /// <summary>
         /// The database query name to use in Starcounter SQL queries
         /// </summary>
-        public string DatabaseQueryName { get; protected set; }
+        public string DatabaseQueryName { get; internal set; }
 
         /// <summary>
         /// The name to use in Starcounter view models
@@ -35,7 +35,7 @@ namespace RESTar.Deflection.Dynamic
         /// <summary>
         /// Can this property be referred to in a Starcounter SQL query?
         /// </summary>
-        public bool ScQueryable { get; protected set; }
+        public bool ScQueryable { get; internal set; }
 
         /// <summary>
         /// Gets the value of this property, for a given target object
@@ -49,11 +49,11 @@ namespace RESTar.Deflection.Dynamic
 
         /// <summary>
         /// </summary>
-        protected Setter Setter { get; set; }
+        internal Setter Setter { get; set; }
 
         /// <summary>
         /// </summary>
-        protected Getter Getter { get; set; }
+        internal Getter Getter { get; set; }
 
         internal bool Readable => Getter != null;
         internal bool Writable => Setter != null;

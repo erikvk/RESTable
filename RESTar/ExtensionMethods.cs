@@ -25,11 +25,13 @@ using static System.Globalization.DateTimeStyles;
 using static System.Globalization.NumberStyles;
 using static System.Reflection.BindingFlags;
 using static System.StringComparison;
+using static Newtonsoft.Json.NullValueHandling;
 using static RESTar.Internal.ErrorCodes;
 using static RESTar.Operators;
 using static RESTar.Requests.Responses;
 using static Starcounter.DbHelper;
 using IResource = RESTar.Internal.IResource;
+
 
 namespace RESTar
 {
@@ -38,7 +40,83 @@ namespace RESTar
     /// </summary>
     public static class ExtensionMethods
     {
-        #region Reflection
+        #region Member reflection
+
+#pragma warning disable 618
+
+        internal static string RESTarMemberName(this MemberInfo m)
+        {
+            return m.GetAttribute<RESTarMemberAttribute>()?.Name ??
+                   m.GetAttribute<DataMemberAttribute>()?.Name ??
+                   m.GetAttribute<JsonPropertyAttribute>()?.PropertyName ??
+                   m.Name;
+        }
+
+        internal static bool ShouldBeIgnored(this MemberInfo m)
+        {
+            return m.HasAttribute<RESTarMemberAttribute>(out var a) && a.Ignored ||
+                   m.HasAttribute<IgnoreDataMemberAttribute>();
+        }
+
+        internal static int? GetOrder(this MemberInfo m)
+        {
+            return m.GetAttribute<RESTarMemberAttribute>()?.Order ??
+                   m.GetAttribute<JsonPropertyAttribute>()?.Order;
+        }
+
+        internal static bool ShouldBeHidden(this MemberInfo m)
+        {
+            return m.HasAttribute<RESTarMemberAttribute>(out var a) && a.Hidden;
+        }
+
+        internal static bool ShouldBeHiddenIfNull(this MemberInfo m)
+        {
+            return m.HasAttribute<RESTarMemberAttribute>(out var a) && a.HiddenIfNull ||
+                   m.HasAttribute<JsonPropertyAttribute>(out var ja) && ja.NullValueHandling == Ignore;
+        }
+
+        internal static bool ShouldBeReadOnly(this MemberInfo m)
+        {
+            return m.HasAttribute<RESTarMemberAttribute>(out var a) && a.ReadOnly ||
+                   m.HasAttribute<ReadOnlyAttribute>();
+        }
+
+        internal static bool ShouldSkipConditions(this MemberInfo m)
+        {
+            return m.HasAttribute<RESTarMemberAttribute>(out var a) && a.SkipConditions ||
+                   m.HasAttribute<ConditionSkipAttribute>();
+        }
+
+        internal static bool ShouldFlattenExcelToString(this StaticProperty p)
+        {
+            return p.HasAttribute<RESTarMemberAttribute>(out var a) && a.ExcelFlattenToString ||
+                   p.HasAttribute<ExcelFlattenToStringAttribute>();
+        }
+
+        internal static bool ConditionOperatorIsForbidden(this StaticProperty p, Operator op)
+        {
+            return p.HasAttribute<RESTarMemberAttribute>(out var a) && !a.AllowedOperators.HasFlag(op.OpCode) ||
+                   p.GetAttribute<AllowedConditionOperatorsAttribute>()?.Operators?.Contains(op) == false;
+        }
+
+        internal static IEnumerable<Operator> GetAllowedOperators(this StaticProperty p)
+        {
+            return p.GetAttribute<RESTarMemberAttribute>()?.AllowedOperators.ToOperators() ??
+                   p.GetAttribute<AllowedConditionOperatorsAttribute>()?.Operators;
+        }
+
+#pragma warning restore 618
+
+        #endregion
+
+        #region Type reflection
+
+        internal static bool IsDynamic(this Type type) => type.Implements(typeof(IDictionary<,>));
+
+        internal static bool IsDDictionary(this Type type) => type == typeof(DDictionary) ||
+                                                              type.IsSubclassOf(typeof(DDictionary));
+
+        internal static bool IsStarcounter(this Type type) => type.HasAttribute<DatabaseAttribute>();
 
         internal static IList<Type> GetConcreteSubclasses(this Type baseType) => baseType.GetSubclasses()
             .Where(type => !type.IsAbstract)
@@ -58,10 +136,6 @@ namespace RESTar
 
         internal static bool HasResourceProviderAttribute(this Type resource) =>
             resource.GetCustomAttributes().OfType<ResourceProviderAttribute>().Any();
-
-        internal static bool IsBoundWithResourceProviderAttribute(this Type resource, Type attribute) =>
-            resource.HasAttribute(attribute) &&
-            resource.GetCustomAttributes().OfType<ResourceProviderAttribute>().All(a => a.GetType() == attribute);
 
         internal static bool HasAttribute<TAttribute>(this MemberInfo type)
             where TAttribute : Attribute => (type?.GetCustomAttributes<TAttribute>().Any()).GetValueOrDefault();
@@ -235,20 +309,22 @@ namespace RESTar
 
         #region Resource helpers
 
-        internal static bool IsDynamic(this Type type) => type.Implements(typeof(IDictionary<,>));
-
-        internal static bool IsDDictionary(this Type type) => type == typeof(DDictionary) ||
-                                                              type.IsSubclassOf(typeof(DDictionary));
-
-        internal static bool IsStarcounter(this Type type) => type.HasAttribute<DatabaseAttribute>();
-
-        internal static string RESTarMemberName(this MemberInfo m) => m.GetAttribute<DataMemberAttribute>()?.Name ??
-                                                                      m.Name;
-
         internal static void Validate(this IValidatable ivalidatable)
         {
             if (!ivalidatable.IsValid(out var reason))
                 throw new ValidatableException(reason);
+        }
+
+        internal static IEnumerable<Operator> ToOperators(this Operators operators)
+        {
+            var opList = new List<Operator>();
+            if (operators.HasFlag(EQUALS)) opList.Add(EQUALS);
+            if (operators.HasFlag(NOT_EQUALS)) opList.Add(NOT_EQUALS);
+            if (operators.HasFlag(LESS_THAN)) opList.Add(LESS_THAN);
+            if (operators.HasFlag(GREATER_THAN)) opList.Add(GREATER_THAN);
+            if (operators.HasFlag(LESS_THAN_OR_EQUALS)) opList.Add(LESS_THAN_OR_EQUALS);
+            if (operators.HasFlag(GREATER_THAN_OR_EQUALS)) opList.Add(GREATER_THAN_OR_EQUALS);
+            return opList;
         }
 
         /// <summary>
@@ -273,7 +349,7 @@ namespace RESTar
             entity.GetType()
                 .GetStaticProperties()
                 .Values
-                .Where(p => !(p is SpecialProperty))
+                .Where(p => !p.Hidden)
                 .ForEach(prop =>
                 {
                     object val = prop.GetValue(entity);
@@ -655,7 +731,8 @@ namespace RESTar
                 case null: return null;
                 case "null": return null;
                 case "": throw new SyntaxException(InvalidConditionSyntax, "No condition value literal after operator");
-                case var s when s[0] == '\"' && s[s.Length - 1] == '\"': return s.Remove(0, 1).Remove(s.Length - 2, 1);
+                case var escaped when escaped[0] == '\"' && escaped[escaped.Length - 1] == '\"':
+                    return escaped.Remove(0, 1).Remove(escaped.Length - 2, 1);
                 case var _ when bool.TryParse(str, out var @bool): return @bool;
                 case var _ when int.TryParse(str, out var @int): return @int;
                 case var _ when decimal.TryParse(str, Float, en_US, out var dec): return dec;
@@ -805,15 +882,16 @@ namespace RESTar
                     }
                     return table;
                 default:
-                    var properties = resource.Type.GetStaticProperties().Values;
-                    foreach (var prop in properties)
-                        table.Columns.Add(prop.MakeColumn());
-                    foreach (var item in entities)
+                    var properties = resource.Type.GetStaticProperties().Values
+                        .Where(p => !p.Hidden)
+                        .ToList();
+                    properties.ForEach(prop => table.Columns.Add(prop.MakeColumn()));
+                    entities.ForEach(item =>
                     {
                         var row = table.NewRow();
                         properties.ForEach(prop => prop.WriteCell(row, item));
                         table.Rows.Add(row);
-                    }
+                    });
                     return table;
             }
         }
@@ -868,13 +946,10 @@ namespace RESTar
 
         internal static Dictionary<string, dynamic> MakeViewModelTemplate(this IResource resource)
         {
-            if (resource.IsDDictionary)
-                return new Dictionary<string, dynamic>();
-            var properties = resource.Type.GetStaticProperties().Values;
-            return properties.ToDictionary(
-                p => p.ViewModelName,
-                p => p.Type.MakeViewModelDefault(p)
-            );
+            if (resource.IsDDictionary) return new Dictionary<string, dynamic>();
+            return resource.Type.GetStaticProperties().Values
+                .Where(p => !p.Hidden || p is SpecialProperty)
+                .ToDictionary(p => p.ViewModelName, p => p.Type.MakeViewModelDefault(p));
         }
 
         internal static dynamic MakeViewModelDefault(this Type type, StaticProperty property = null)

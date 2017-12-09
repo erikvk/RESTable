@@ -17,7 +17,7 @@ namespace RESTar.Admin
         /// <summary>
         /// Should the config file be reloaded?
         /// </summary>
-        [DataMember(Name = "ReloadConfigFile")]
+        [DataMember(Name = "ReloadConfigFile")] [IgnoreDataMember]
         public bool _ReloadConfigFile { get; set; }
 
         /// <summary>

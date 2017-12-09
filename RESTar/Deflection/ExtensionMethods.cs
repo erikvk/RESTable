@@ -17,13 +17,14 @@ namespace RESTar.Deflection
         {
             try
             {
-                if (p.DeclaringType?.IsValueType == true)
-                    return p.GetValue;
-                if (p.GetIndexParameters().Any()) return null;
-                var getterDelegate = p
-                    .GetGetMethod()?
-                    .CreateDelegate(typeof(Func<,>)
-                        .MakeGenericType(p.DeclaringType, p.PropertyType));
+                switch (p)
+                {
+                    case var _ when p.DeclaringType?.IsValueType == true: return p.GetValue;
+                    case var _ when p.GetIndexParameters().Any(): return null;
+                }
+
+                var getterDelegate = p.GetGetMethod()?.CreateDelegate(typeof(Func<,>)
+                    .MakeGenericType(p.DeclaringType, p.PropertyType));
                 return getterDelegate != null ? obj => ((dynamic) getterDelegate)((dynamic) obj) : default(Getter);
             }
             catch
@@ -39,17 +40,16 @@ namespace RESTar.Deflection
         {
             try
             {
-                if (p.DeclaringType?.IsValueType == true)
-                    return p.SetValue;
-                if (p.HasAttribute<ReadOnlyAttribute>()) return null;
-                if (p.GetIndexParameters().Any()) return null;
-                var setterDelegate = p
-                    .GetSetMethod()?
-                    .CreateDelegate(typeof(Action<,>)
-                        .MakeGenericType(p.DeclaringType, p.PropertyType));
-                return setterDelegate != null
-                    ? (obj, value) => ((dynamic) setterDelegate)((dynamic) obj, value)
-                    : default(Setter);
+                switch (p)
+                {
+                    case var _ when p.DeclaringType?.IsValueType == true: return p.SetValue;
+                    case var _ when p.ShouldBeReadOnly(): return null;
+                    case var _ when p.GetIndexParameters().Any(): return null;
+                }
+
+                var setterDelegate = p.GetSetMethod()?.CreateDelegate(typeof(Action<,>)
+                    .MakeGenericType(p.DeclaringType, p.PropertyType));
+                return setterDelegate != null ? (obj, value) => ((dynamic) setterDelegate)((dynamic) obj, value) : default(Setter);
             }
             catch
             {

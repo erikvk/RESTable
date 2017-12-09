@@ -17,7 +17,7 @@ namespace RESTar.Deflection.Dynamic
         /// <summary>
         /// The property type for this property
         /// </summary>
-        public Type Type { get; protected set; }
+        public Type Type { get; internal set; }
 
         /// <inheritdoc />
         public override bool Dynamic => false;
@@ -25,12 +25,22 @@ namespace RESTar.Deflection.Dynamic
         /// <summary>
         /// Automatically sets the Skip property of conditions matched against this property to true
         /// </summary>
-        public bool ConditionSkip { get; }
+        public bool ConditionSkip { get; internal set; }
+
+        /// <summary>
+        /// Hidden properties are not included in regular output, but can be added and queried on.
+        /// </summary>
+        public bool Hidden { get; internal set; }
+
+        /// <summary>
+        /// The order at which this property appears when all properties are enumerated
+        /// </summary>
+        public int? Order { get; internal set; }
 
         /// <summary>
         /// The attributes that this property has been decorated with
         /// </summary>  
-        public ICollection<Attribute> Attributes { get; protected set; }
+        public ICollection<Attribute> Attributes { get; internal set; }
 
         /// <summary>
         /// Gets the first instance of a given attribute type that this resource property 
@@ -45,7 +55,14 @@ namespace RESTar.Deflection.Dynamic
         public bool HasAttribute<TAttribute>() where TAttribute : Attribute => GetAttribute<TAttribute>() != null;
 
         /// <summary>
-        /// Used in SpecialProperty constructor
+        /// Returns true if and only if this resource property has been decorated with the given 
+        /// attribute type.
+        /// </summary>
+        public bool HasAttribute<TAttribute>(out TAttribute attribute) where TAttribute : Attribute =>
+            (attribute = GetAttribute<TAttribute>()) != null;
+
+        /// <summary>
+        /// Used in SpecialProperties construction
         /// </summary>
         /// <param name="scQueryable"></param>
         internal StaticProperty(bool scQueryable) => ScQueryable = scQueryable;
@@ -60,10 +77,13 @@ namespace RESTar.Deflection.Dynamic
             if (flagName) Name = "$" + Name;
             DatabaseQueryName = p.Name;
             Type = p.PropertyType;
+            Order = p.GetOrder();
             ScQueryable = p.DeclaringType?.HasAttribute<DatabaseAttribute>() == true &&
                           p.PropertyType.IsStarcounterCompatible();
             Attributes = p.GetCustomAttributes().ToList();
-            ConditionSkip = HasAttribute<ConditionSkipAttribute>() || p.DeclaringType.HasAttribute<RESTarViewAttribute>();
+            ConditionSkip = p.ShouldSkipConditions() ||
+                            p.DeclaringType.HasAttribute<RESTarViewAttribute>();
+            Hidden = p.ShouldBeHidden();
             Getter = p.MakeDynamicGetter();
             Setter = p.MakeDynamicSetter();
         }
@@ -115,7 +135,7 @@ namespace RESTar.Deflection.Dynamic
             switch (Type)
             {
                 case var _ when Type.IsEnum:
-                case var _ when HasAttribute<ExcelFlattenToStringAttribute>():
+                case var _ when this.ShouldFlattenExcelToString():
                 case var _ when Type.IsClass: return (typeof(string), true);
                 case var _ when Type.IsNullable(out var baseType): return (baseType, true);
                 default: return (Type, false);
@@ -124,7 +144,7 @@ namespace RESTar.Deflection.Dynamic
 
         internal void WriteCell(DataRow row, object target)
         {
-            object baseValue = Type.IsEnum || HasAttribute<ExcelFlattenToStringAttribute>()
+            object baseValue = Type.IsEnum || this.ShouldFlattenExcelToString()
                 ? GetValue(target)?.ToString()
                 : GetValue(target);
             row[Name] = baseValue.MakeDynamicCellValue();

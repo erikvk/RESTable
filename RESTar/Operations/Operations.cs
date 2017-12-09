@@ -33,6 +33,21 @@ namespace RESTar.Operations
             }
         }
 
+        internal static IEnumerable<T> SELECT_VIEW(ViewRequest<T> request)
+        {
+            try
+            {
+                if (!request.MetaConditions.Unsafe && request.MetaConditions.Limit == -1)
+                    request.MetaConditions.Limit = (Limit) 100;
+                return request.Target.Select(request)?.Filter(request.MetaConditions.OrderBy);
+            }
+            catch (Exception e)
+            {
+                throw new AbortedSelectorException<T>(e, request);
+            }
+        }
+
+
         internal static IEnumerable<T> SELECT_FILTER(IRequest<T> request)
         {
             try

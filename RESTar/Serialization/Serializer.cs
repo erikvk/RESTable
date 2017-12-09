@@ -211,8 +211,6 @@ namespace RESTar.Serialization
         }
 
         internal static JToken ToJToken(this object o) => JToken.FromObject(o, JsonSerializer);
-        internal static dynamic Deserialize(this string json, Type type) => JsonConvert.DeserializeObject(json, type);
-        internal static JToken Deserialize(this string json) => JsonConvert.DeserializeObject<JToken>(json);
         internal static T Deserialize<T>(this string json) => JsonConvert.DeserializeObject<T>(json);
 
         internal static List<T> DeserializeList<T>(this Stream jsonStream)

@@ -3,8 +3,6 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.Serialization;
-using Newtonsoft.Json;
 using RESTar.Internal;
 using RESTar.Linq;
 using static System.Reflection.BindingFlags;
@@ -66,10 +64,10 @@ namespace RESTar.Deflection.Dynamic
         private static readonly ConcurrentDictionary<string, IDictionary<string, StaticProperty>> StaticPropertyCache;
 
         private static IEnumerable<StaticProperty> ParseStaticProperties(this IEnumerable<PropertyInfo> props, bool flag) => props
-            .Where(p => !p.HasAttribute<IgnoreDataMemberAttribute>())
+            .Where(p => !p.ShouldBeIgnored())
             .Where(p => !p.GetIndexParameters().Any())
             .Select(p => new StaticProperty(p, flag))
-            .OrderBy(p => p.GetAttribute<JsonPropertyAttribute>()?.Order);
+            .OrderBy(p => p.Order);
 
         /// <summary>
         /// Gets the static properties for a given type

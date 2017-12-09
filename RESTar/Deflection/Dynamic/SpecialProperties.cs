@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using Newtonsoft.Json;
 using RESTar.Operations;
 using Starcounter;
 
@@ -27,7 +26,8 @@ namespace RESTar.Deflection.Dynamic
             DatabaseQueryName = "ObjectNo",
             Type = typeof(ulong),
             Getter = t => Do.TryAndThrow(t.GetObjectNo, "Could not get ObjectNo from non-Starcounter resource."),
-            Attributes = new[] {new JsonPropertyAttribute {Order = int.MaxValue - 1}}
+            Hidden = true,
+            Order = int.MaxValue - 1
         };
 
         /// <summary>
@@ -39,7 +39,8 @@ namespace RESTar.Deflection.Dynamic
             DatabaseQueryName = "ObjectID",
             Type = typeof(string),
             Getter = t => Do.TryAndThrow(t.GetObjectID, "Could not get ObjectID from non-Starcounter resource."),
-            Attributes = new[] {new JsonPropertyAttribute {Order = int.MaxValue}}
+            Hidden = true,
+            Order = int.MaxValue
         };
 
         /// <summary>
@@ -51,7 +52,8 @@ namespace RESTar.Deflection.Dynamic
             DatabaseQueryName = "ObjectNo",
             Type = typeof(ulong),
             Getter = t => Do.TryAndThrow(t.GetObjectNo, "Could not get ObjectNo from non-Starcounter resource."),
-            Attributes = new[] {new JsonPropertyAttribute {Order = int.MaxValue - 1}}
+            Hidden = true,
+            Order = int.MaxValue - 1
         };
 
         /// <summary>
@@ -63,7 +65,8 @@ namespace RESTar.Deflection.Dynamic
             DatabaseQueryName = "ObjectID",
             Type = typeof(string),
             Getter = t => Do.TryAndThrow(t.GetObjectID, "Could not get ObjectID from non-Starcounter resource."),
-            Attributes = new[] {new JsonPropertyAttribute {Order = int.MaxValue}}
+            Hidden = true,
+            Order = int.MaxValue
         };
     }
 }

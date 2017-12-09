@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using RESTar.Linq;
-using System.Runtime.Serialization;
 using RESTar.Admin;
 using RESTar.Internal;
 using static System.Reflection.BindingFlags;
@@ -133,7 +132,7 @@ namespace RESTar.Resources
                     #region Check for properties with duplicate case insensitive names
 
                     if (type.GetProperties(Public | Instance)
-                        .Where(p => !p.HasAttribute<IgnoreDataMemberAttribute>())
+                        .Where(p => !p.ShouldBeIgnored())
                         .Where(p => !(p.DeclaringType.Implements(typeof(IDictionary<,>)) && p.Name == "Item"))
                         .Select(p => p.RESTarMemberName().ToLower())
                         .ContainsDuplicates(out var duplicate))

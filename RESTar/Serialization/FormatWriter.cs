@@ -7,7 +7,6 @@ namespace RESTar.Serialization
     internal class FormatWriter : JsonTextWriter
     {
         internal int Depth { get; private set; }
-
         public FormatWriter(TextWriter textWriter) : base(textWriter) { }
 
         protected override void WriteIndent()
