@@ -15,7 +15,7 @@ using RESTar.Operations;
 using RESTar.Resources;
 using Starcounter;
 using static RESTar.Methods;
-using Operator = RESTar.Operator;
+using static RESTar.Operators;
 
 #pragma warning disable 219
 // ReSharper disable All
@@ -432,12 +432,12 @@ namespace RESTarTester
                 return new MyDict[] {d, v, x};
             });
 
-            var r1 = new Request<Resource1>(new Condition<Resource1>(nameof(Resource1.Sbyte), Operator.GREATER_THAN, 1));
+            var r1 = new Request<Resource1>(new Condition<Resource1>(nameof(Resource1.Sbyte), GREATER_THAN, 1));
             var r2 = new Request<Resource2>();
             var r3 = new Request<Resource3>();
             var r4 = new Request<Resource4>();
             var r5 = new Request<MyDict>();
-            var cond = new Condition<MyDict>("Goo", Operator.EQUALS, false);
+            var cond = new Condition<MyDict>("Goo", EQUALS, false);
             r5.Conditions = new[] {cond};
 
             var res1 = r1.GET();
@@ -470,7 +470,7 @@ namespace RESTarTester
                 new MyDict2
                 {
                     ["Snoo"] = 123,
-                     R = new Resource1
+                    R = new Resource1
                     {
                         Byte = 123,
                         String = "Googfoo"
@@ -491,6 +491,41 @@ namespace RESTarTester
         c
     }
 
+    [Database, RESTar]
+    public class MyTestClass
+    {
+        [RESTarMember(
+            order: 5
+        )] public string STR;
+
+        [RESTarMember(
+            order: 4,
+            readOnly: true
+        )] public int INT;
+
+        [RESTarMember(
+            name: "BLOO",
+            allowedOperators: EQUALS | GREATER_THAN
+        )] public bool BOOL;
+
+        [RESTarMember(
+            order: 1
+        )] public Binary BINARY;
+
+        [RESTarMember(
+            hide: true
+        )] public int HENGTH => STR.Length;
+
+        [RESTarMember(
+            hideIfNull: true,
+            skipConditions: true
+        )] public string FOO;
+
+        [RESTarMember(
+            ignore: true
+        )] public int LENGTH => STR.Length;
+    }
+
     [RESTar(GET, AllowDynamicConditions = true, FlagStaticMembers = true)]
     public class MyRes : Dictionary<string, object>, ISelector<MyRes>
     {
@@ -498,8 +533,8 @@ namespace RESTarTester
 
         public IEnumerable<MyRes> Select(IRequest<MyRes> request)
         {
-            Things thing = request.Conditions.Get("$T", Operator.EQUALS).Value;
-            var other = request.Conditions.Get("V", Operator.EQUALS).Value;
+            Things thing = request.Conditions.Get("$T", EQUALS).Value;
+            var other = request.Conditions.Get("V", EQUALS).Value;
             return new[] {new MyRes {["T"] = thing, ["V"] = other}};
         }
     }
@@ -616,7 +651,7 @@ namespace RESTarTester
 
             public IEnumerable<Resource1> Select(IRequest<Resource1> request)
             {
-                if (request.Conditions.Get("Active", Operator.EQUALS)?.Value == true)
+                if (request.Conditions.Get("Active", EQUALS)?.Value == true)
                     return Db.SQL<Resource1>("SELECT t FROM RESTarTester.Resource1 t")
                         .Where(request.Conditions);
                 return null;
@@ -691,9 +726,9 @@ namespace RESTarTester
         [DataMember(Name = "RENAMED_Uint")] public uint? Uint;
         [DataMember(Name = "RENAMED_Long")] public long? Long;
         [DataMember(Name = "RENAMED_Ulong")] public ulong? Ulong;
-        [ReadOnly] public float? Float;
-        [ReadOnly] public double? Double;
-        [ReadOnly] public decimal? Decimal;
+        public float? Float;
+        public double? Double;
+        public decimal? Decimal;
         public string String;
         public bool? Bool;
         public DateTime? DateTime;

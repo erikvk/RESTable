@@ -520,7 +520,7 @@ namespace RESTar.Operations
                 {
                     var conditions = request.MetaConditions.SafePost
                         .Split(',')
-                        .Select(s => new Condition<T>(s, Operator.EQUALS, null))
+                        .Select(s => new Condition<T>(s, Operators.EQUALS, null))
                         .ToArray();
                     foreach (var entity in request.Body.DeserializeList<JObject>())
                     {

@@ -10,12 +10,13 @@ namespace RESTar
     [Flags]
     public enum Operators
     {
-        nil = 0,
+        None = 0,
         EQUALS = 1 << 0,
         NOT_EQUALS = 1 << 1,
         LESS_THAN = 1 << 2,
         GREATER_THAN = 1 << 3,
         LESS_THAN_OR_EQUALS = 1 << 4,
-        GREATER_THAN_OR_EQUALS = 1 << 5
+        GREATER_THAN_OR_EQUALS = 1 << 5,
+        All = ~None
     }
 }

@@ -143,7 +143,7 @@ namespace RESTar
             return this;
         }
 
-        public Request<T> WithConditions(params (string key, Operator op, object value)[] conditions)
+        public Request<T> WithConditions(params (string key, Operators op, object value)[] conditions)
         {
             Conditions = conditions?.Any() != true
                 ? new Condition<T>[0]
@@ -155,11 +155,10 @@ namespace RESTar
             return this;
         }
 
-        public Request<T> WithConditions(string key, Operator op, object value) => WithConditions((key, op, value));
+        public Request<T> WithConditions(string key, Operators op, object value) => WithConditions((key, op, value));
 
-
-        private Exception Deny(Methods method) => new ForbiddenException(
-            NotAuthorized, $"{method} is not available for resource '{Resource.Name}'");
+        private Exception Deny(Methods method) =>
+            new ForbiddenException(NotAuthorized, $"{method} is not available for resource '{Resource.Name}'");
 
         /// <summary>
         /// Makes a GET request and serializes the output to an Excel workbook file. Returns a tuple with 

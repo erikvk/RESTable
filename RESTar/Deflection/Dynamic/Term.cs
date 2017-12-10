@@ -143,7 +143,7 @@ namespace RESTar.Deflection.Dynamic
             key.Split('.').ForEach(s => term.Store.Add(propertyMaker(s)));
             term.ScQueryable = term.Store.All(p => p.ScQueryable);
             term.IsStatic = term.Store.All(p => p is StaticProperty);
-            term.ConditionSkip = term.Store.Any(p => p is StaticProperty s && s.ConditionSkip);
+            term.ConditionSkip = term.Store.Any(p => p is StaticProperty s && s.SkipConditions);
             term.Key = string.Join(".", term.Store.Select(p => p.Name));
             term.DbKey = string.Join(".", term.Store.Select(p => p.DatabaseQueryName));
             return term;

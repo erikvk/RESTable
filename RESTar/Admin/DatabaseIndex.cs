@@ -122,7 +122,7 @@ namespace RESTar.Admin
 
         internal static void Init()
         {
-            SelectionCondition = new Condition<DatabaseIndex>(nameof(Name), Operator.EQUALS, null);
+            SelectionCondition = new Condition<DatabaseIndex>(nameof(Name), Operators.EQUALS, null);
             SelectionRequest = new Request<DatabaseIndex>(SelectionCondition);
         }
 

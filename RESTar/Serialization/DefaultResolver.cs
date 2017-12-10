@@ -1,6 +1,8 @@
 using System.Reflection;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
+using RESTar.Deflection.Dynamic;
+using static Newtonsoft.Json.NullValueHandling;
 
 namespace RESTar.Serialization
 {
@@ -8,12 +10,14 @@ namespace RESTar.Serialization
     {
         protected override JsonProperty CreateProperty(MemberInfo member, MemberSerialization memberSerialization)
         {
-            if (member.ShouldBeIgnored() || member.ShouldBeHidden()) return null;
-            var property = base.CreateProperty(member, memberSerialization);
-            if (member.ShouldBeReadOnly()) property.Writable = false;
-            if (member.ShouldBeHiddenIfNull()) property.NullValueHandling = NullValueHandling.Ignore;
-            property.PropertyName = member.RESTarMemberName();
-            return property;
+            var property = member.GetStaticProperty();
+            if (property?.Hidden != false) return null;
+            var p = base.CreateProperty(member, memberSerialization);
+            p.Writable = property.Writable;
+            p.NullValueHandling = property.HiddenIfNull ? Ignore : Include;
+            p.PropertyName = property.Name;
+            p.Order = property.Order;
+            return p;
         }
     }
 }

@@ -22,23 +22,30 @@ namespace RESTar
         /// <inheritdoc />
         public string Key => Term.Key;
 
-        private Operator _operator;
+        private Operators _operator;
 
         /// <summary>
         /// The operator of the condition, specifies the operation of the truth
         /// evaluation. Should the condition check for equality, for example?
         /// </summary>
-        public Operator Operator
+        public Operators Operator
         {
             get => _operator;
             set
             {
                 if (value == _operator) return;
+                switch (value)
+                {
+                    case All:
+                    case None: throw new ArgumentException($"Invalid condition operator '{value}'");
+                }
                 _operator = value;
                 if (!ScQueryable) return;
                 HasChanged = true;
             }
         }
+
+        internal Operator InternalOperator => Operator;
 
         private dynamic _value;
 
@@ -125,14 +132,14 @@ namespace RESTar
         /// <param name="key">The key of the property of T to target, e.g. "Name", "Name.Length"</param>
         /// <param name="op">The operator denoting the operation to evaluate for the property</param>
         /// <param name="value">The value to compare the property referenced by the key with</param>
-        public Condition(string key, Operator op, object value) : this(
+        public Condition(string key, Operators op, object value) : this(
             term: Resource<T>.SafeGet?.MakeConditionTerm(key)
                   ?? typeof(T).MakeOrGetCachedTerm(key, TermBindingRules.StaticWithDynamicFallback),
             op: op,
             value: value
         ) { }
 
-        internal Condition(Term term, Operator op, object value)
+        internal Condition(Term term, Operators op, object value)
         {
             Term = term;
             _operator = op;
@@ -150,7 +157,7 @@ namespace RESTar
             if (Skip) return true;
             var subjectValue = Term.Evaluate(subject);
 
-            switch (Operator.OpCode)
+            switch (Operator)
             {
                 case EQUALS: return Do.Try<bool>(() => subjectValue == Value, false);
                 case NOT_EQUALS: return Do.Try<bool>(() => subjectValue != Value, true);
@@ -205,12 +212,12 @@ namespace RESTar
                 if (!replaced) s = s.ReplaceFirst("%3C", "<", out replaced);
 
                 var operatorCharacters = new string(s.Where(c => OpMatchChars.Contains(c)).ToArray());
-                if (!Operator.TryParse(operatorCharacters, out var op))
+                if (!RESTar.Operator.TryParse(operatorCharacters, out var op))
                     throw new OperatorException(s);
                 var keyValuePair = s.Split(new[] {op.Common}, StringSplitOptions.None);
                 var term = target.MakeConditionTerm(WebUtility.UrlDecode(keyValuePair[0]));
-                if (term.Last is StaticProperty stat && stat.ConditionOperatorIsForbidden(op))
-                    throw new ForbiddenOperatorException(s, target, op, term, stat.GetAllowedOperators());
+                if (!term.Last.AllowedConditionOperators.HasFlag(op.OpCode))
+                    throw new ForbiddenOperatorException(s, target, op, term, term.Last.AllowedConditionOperators.ToOperators());
                 var value = WebUtility.UrlDecode(keyValuePair[1]).ParseConditionValue();
                 if (term.Last is StaticProperty prop && prop.Type.IsEnum && value is string)
                 {
@@ -225,7 +232,7 @@ namespace RESTar
                             $"has a predefined set of allowed values, not containing '{value}'.");
                     }
                 }
-                return new Condition<T>(term, op, value);
+                return new Condition<T>(term, op.OpCode, value);
             }).ToArray();
         }
     }

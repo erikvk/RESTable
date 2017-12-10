@@ -1,14 +1,14 @@
 ﻿using System;
 using static System.AttributeTargets;
-using static RESTar.Operators;
 
 namespace RESTar
 {
+    /// <inheritdoc />
     /// <summary>
-    /// 
+    /// Adds a configuration to this RESTar resource type member
     /// </summary>
     [AttributeUsage(Property | Field)]
-    public class RESTarMemberAttribute : Attribute
+    public sealed class RESTarMemberAttribute : Attribute
     {
         /// <summary>
         /// Should this property be completely ignored by RESTar? Equivalent to using the .NET standard IgnoreDataMemberAttribute 
@@ -61,7 +61,7 @@ namespace RESTar
         /// Creates a new RESTar property configuration for a property
         /// </summary>
         /// <param name="ignore">Should this property be completely ignored by RESTar?</param>
-        /// <param name="name">A new name for this property, used by RESTar. Equivalent to using the .NET standard DataMemberAttribute attribute</param>
+        /// <param name="name">A new name for this property</param>
         /// <param name="order">The order at which this property appears when all properties are enumerated</param>
         /// <param name="hide">Should this property be hidden in serialized output by default? It can still be added and queried against.</param>
         /// <param name="hideIfNull">Should this property be hidden in output if the value is null? Only applies to JSON output.</param>
@@ -71,7 +71,7 @@ namespace RESTar
         /// <param name="allowedOperators">These operators will be allowed in conditions targeting this property.</param>
         public RESTarMemberAttribute(bool ignore = false, string name = null, int order = 0, bool hide = false,
             bool hideIfNull = false, bool readOnly = false, bool excelFlattenToString = false, bool skipConditions = false,
-            Operators allowedOperators = EQUALS | NOT_EQUALS | LESS_THAN | LESS_THAN_OR_EQUALS | GREATER_THAN | GREATER_THAN_OR_EQUALS)
+            Operators allowedOperators = Operators.All)
         {
             Ignored = ignore;
             Name = name;

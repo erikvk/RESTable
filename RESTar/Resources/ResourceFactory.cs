@@ -132,7 +132,7 @@ namespace RESTar.Resources
                     #region Check for properties with duplicate case insensitive names
 
                     if (type.GetProperties(Public | Instance)
-                        .Where(p => !p.ShouldBeIgnored())
+                        .Where(p => !p.RESTarIgnored())
                         .Where(p => !(p.DeclaringType.Implements(typeof(IDictionary<,>)) && p.Name == "Item"))
                         .Select(p => p.RESTarMemberName().ToLower())
                         .ContainsDuplicates(out var duplicate))

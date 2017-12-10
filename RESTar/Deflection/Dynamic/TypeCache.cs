@@ -64,7 +64,7 @@ namespace RESTar.Deflection.Dynamic
         private static readonly ConcurrentDictionary<string, IDictionary<string, StaticProperty>> StaticPropertyCache;
 
         private static IEnumerable<StaticProperty> ParseStaticProperties(this IEnumerable<PropertyInfo> props, bool flag) => props
-            .Where(p => !p.ShouldBeIgnored())
+            .Where(p => !p.RESTarIgnored())
             .Where(p => !p.GetIndexParameters().Any())
             .Select(p => new StaticProperty(p, flag))
             .OrderBy(p => p.Order);
@@ -106,6 +106,19 @@ namespace RESTar.Deflection.Dynamic
             if (!StaticPropertyCache.TryGetValue(type.FullName, out var props))
                 props = StaticPropertyCache[type.FullName] = make(type).ToDictionary(p => p.Name.ToLower());
             return props;
+        }
+
+        /// <summary>
+        /// Gets the StaticProperty for a given MemberInfo
+        /// </summary>
+        public static StaticProperty GetStaticProperty(this MemberInfo member)
+        {
+            var declaringType = member.DeclaringType?.FullName ??
+                                throw new Exception($"Cannot get static property for member '{member}' of unknown type");
+            if (StaticPropertyCache.TryGetValue(declaringType, out var properties) &&
+                properties.TryGetValue(member.RESTarMemberName().ToLower(), out var property))
+                return property;
+            return null;
         }
 
         #endregion

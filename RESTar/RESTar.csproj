@@ -93,12 +93,9 @@
     <Compile Include="Admin\AdminTools.cs" />
     <Compile Include="Admin\DbMacro.cs" />
     <Compile Include="Aggregator.cs" />
-    <Compile Include="AllowedConditionOperatorsAttribute.cs" />
-    <Compile Include="ConditionSkipAttribute.cs" />
     <Compile Include="Deflection\TermBindingRules.cs" />
     <Compile Include="Admin\DbOutputFormat.cs" />
     <Compile Include="DynamicTableAttribute.cs" />
-    <Compile Include="ExcelFlattenToStringAttribute.cs" />
     <Compile Include="Formatter.cs" />
     <Compile Include="Grouper.cs" />
     <Compile Include="Http\HttpResponse.cs" />
@@ -108,7 +105,6 @@
     <Compile Include="LineEndings.cs" />
     <Compile Include="Operations\AuthResults.cs" />
     <Compile Include="Operations\Distinct.cs" />
-    <Compile Include="ReadOnlyAttribute.cs" />
     <Compile Include="RegEx.cs" />
     <Compile Include="Report.cs" />
     <Compile Include="Requests\Evaluator.cs" />

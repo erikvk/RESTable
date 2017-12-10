@@ -25,7 +25,6 @@ using static System.Globalization.DateTimeStyles;
 using static System.Globalization.NumberStyles;
 using static System.Reflection.BindingFlags;
 using static System.StringComparison;
-using static Newtonsoft.Json.NullValueHandling;
 using static RESTar.Internal.ErrorCodes;
 using static RESTar.Operators;
 using static RESTar.Requests.Responses;
@@ -44,66 +43,13 @@ namespace RESTar
 
 #pragma warning disable 618
 
-        internal static string RESTarMemberName(this MemberInfo m)
-        {
-            return m.GetAttribute<RESTarMemberAttribute>()?.Name ??
-                   m.GetAttribute<DataMemberAttribute>()?.Name ??
-                   m.GetAttribute<JsonPropertyAttribute>()?.PropertyName ??
-                   m.Name;
-        }
+        internal static string RESTarMemberName(this MemberInfo m) => m.GetAttribute<RESTarMemberAttribute>()?.Name ??
+                                                                      m.GetAttribute<DataMemberAttribute>()?.Name ??
+                                                                      m.GetAttribute<JsonPropertyAttribute>()?.PropertyName ??
+                                                                      m.Name;
 
-        internal static bool ShouldBeIgnored(this MemberInfo m)
-        {
-            return m.HasAttribute<RESTarMemberAttribute>(out var a) && a.Ignored ||
-                   m.HasAttribute<IgnoreDataMemberAttribute>();
-        }
-
-        internal static int? GetOrder(this MemberInfo m)
-        {
-            return m.GetAttribute<RESTarMemberAttribute>()?.Order ??
-                   m.GetAttribute<JsonPropertyAttribute>()?.Order;
-        }
-
-        internal static bool ShouldBeHidden(this MemberInfo m)
-        {
-            return m.HasAttribute<RESTarMemberAttribute>(out var a) && a.Hidden;
-        }
-
-        internal static bool ShouldBeHiddenIfNull(this MemberInfo m)
-        {
-            return m.HasAttribute<RESTarMemberAttribute>(out var a) && a.HiddenIfNull ||
-                   m.HasAttribute<JsonPropertyAttribute>(out var ja) && ja.NullValueHandling == Ignore;
-        }
-
-        internal static bool ShouldBeReadOnly(this MemberInfo m)
-        {
-            return m.HasAttribute<RESTarMemberAttribute>(out var a) && a.ReadOnly ||
-                   m.HasAttribute<ReadOnlyAttribute>();
-        }
-
-        internal static bool ShouldSkipConditions(this MemberInfo m)
-        {
-            return m.HasAttribute<RESTarMemberAttribute>(out var a) && a.SkipConditions ||
-                   m.HasAttribute<ConditionSkipAttribute>();
-        }
-
-        internal static bool ShouldFlattenExcelToString(this StaticProperty p)
-        {
-            return p.HasAttribute<RESTarMemberAttribute>(out var a) && a.ExcelFlattenToString ||
-                   p.HasAttribute<ExcelFlattenToStringAttribute>();
-        }
-
-        internal static bool ConditionOperatorIsForbidden(this StaticProperty p, Operator op)
-        {
-            return p.HasAttribute<RESTarMemberAttribute>(out var a) && !a.AllowedOperators.HasFlag(op.OpCode) ||
-                   p.GetAttribute<AllowedConditionOperatorsAttribute>()?.Operators?.Contains(op) == false;
-        }
-
-        internal static IEnumerable<Operator> GetAllowedOperators(this StaticProperty p)
-        {
-            return p.GetAttribute<RESTarMemberAttribute>()?.AllowedOperators.ToOperators() ??
-                   p.GetAttribute<AllowedConditionOperatorsAttribute>()?.Operators;
-        }
+        internal static bool RESTarIgnored(this MemberInfo m) => m.GetAttribute<RESTarMemberAttribute>()?.Ignored == true ||
+                                                                 m.HasAttribute<IgnoreDataMemberAttribute>();
 
 #pragma warning restore 618
 
@@ -438,10 +384,10 @@ namespace RESTar
             var literals = new List<object>();
             var clause = string.Join(" AND ", conds.Where(c => !c.Skip).Select((c, index) =>
             {
-                var (key, op, value) = (c.Term.DbKey.Fnuttify(), c.Operator.SQL, (object) c.Value);
+                var (key, op, value) = (c.Term.DbKey.Fnuttify(), c.InternalOperator.SQL, (object) c.Value);
                 if (value == null)
                 {
-                    switch (c.Operator.OpCode)
+                    switch (c.Operator)
                     {
                         case EQUALS:
                             op = "IS NULL";
@@ -456,7 +402,7 @@ namespace RESTar
 
                 literals.Add(c.Value);
                 _valuesAssignments[index] = literals.Count - 1;
-                return $"t.{key} {c.Operator.SQL} ? ";
+                return $"t.{key} {c.InternalOperator.SQL} ? ";
             }));
             if (clause.Length == 0)
             {
@@ -473,10 +419,10 @@ namespace RESTar
             var literals = new List<object>();
             var clause = string.Join(" AND ", conds.Where(c => !c.Skip).Select(c =>
             {
-                var (key, op, value) = (c.Term.DbKey.Fnuttify(), c.Operator.SQL, (object) c.Value);
+                var (key, op, value) = (c.Term.DbKey.Fnuttify(), c.InternalOperator.SQL, (object) c.Value);
                 if (value == null)
                 {
-                    switch (c.Operator.OpCode)
+                    switch (c.Operator)
                     {
                         case EQUALS:
                             op = "IS NULL";
@@ -489,7 +435,7 @@ namespace RESTar
                     return $"t.{key} {op}";
                 }
                 literals.Add(c.Value);
-                return $"t.{key} {c.Operator.SQL} ? ";
+                return $"t.{key} {c.InternalOperator.SQL} ? ";
             }));
             return clause.Length > 0 ? ($"WHERE {clause}", literals.ToArray()) : (null, null);
         }
@@ -754,7 +700,7 @@ namespace RESTar
         /// operator (case insensitive). If true, the out Condition parameter will contain a reference to the found
         /// condition.
         /// </summary>
-        public static bool TryGetCondition<T>(this IRequest<T> request, string key, Operator op,
+        public static bool TryGetCondition<T>(this IRequest<T> request, string key, Operators op,
             out Condition<T> condition) where T : class
         {
             condition = request.Conditions?.Get(key, op);

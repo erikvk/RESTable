@@ -35,14 +35,14 @@ namespace RESTar.Linq
         internal static bool HasEquality<T>(this IEnumerable<Condition<T>> conds,
             out IEnumerable<Condition<T>> equality) where T : class
         {
-            equality = conds.Where(c => c.Operator.Equality).ToList();
+            equality = conds.Where(c => c.InternalOperator.Equality).ToList();
             return equality.Any();
         }
 
         internal static bool HasCompare<T>(this IEnumerable<Condition<T>> conds, out IEnumerable<Condition<T>> compare)
             where T : class
         {
-            compare = conds.Where(c => c.Operator.Compare).ToList();
+            compare = conds.Where(c => c.InternalOperator.Compare).ToList();
             return compare.Any();
         }
 
@@ -53,8 +53,8 @@ namespace RESTar.Linq
 
         internal static string ToUriString<T>(this IEnumerable<Condition<T>> conds) where T : class =>
             string.Join("&", conds.Select(c => c.Value is DateTime
-                ? $"{c.Key}{c.Operator.Common}{c.Value:O}"
-                : $"{c.Key}{c.Operator.Common}{c.Value}"));
+                ? $"{c.Key}{c.InternalOperator.Common}{c.Value:O}"
+                : $"{c.Key}{c.InternalOperator.Common}{c.Value}"));
 
         #endregion
 
@@ -89,7 +89,7 @@ namespace RESTar.Linq
         /// <summary>
         /// Access a condition by its key (case insensitive) and operator
         /// </summary>
-        public static Condition<T> Get<T>(this IEnumerable<Condition<T>> conds, string key, Operator op) where T : class
+        public static Condition<T> Get<T>(this IEnumerable<Condition<T>> conds, string key, Operators op) where T : class
         {
             return conds.FirstOrDefault(c => c.Operator == op && c.Key.EqualsNoCase(key));
         }

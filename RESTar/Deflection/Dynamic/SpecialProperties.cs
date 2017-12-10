@@ -14,8 +14,8 @@ namespace RESTar.Deflection.Dynamic
     public class SpecialProperty : StaticProperty
     {
         private SpecialProperty(string name, string databaseQueryName, Type type, int? order, bool scQueryable,
-            bool hidden, Getter getter) : base(name, databaseQueryName, type, order, scQueryable, null, false, hidden, getter,
-            null) { }
+            bool hidden, bool hiddenIfNull, Getter getter) : base(name, databaseQueryName, type, order, scQueryable, null, false,
+            hidden, hiddenIfNull, false, Operators.All, getter, null) { }
 
         internal static IEnumerable<SpecialProperty> GetObjectIDAndObjectNo(bool flag) =>
             flag ? new[] {FlaggedObjectID, FlaggedObjectNo} : new[] {ObjectID, ObjectNo};
@@ -31,6 +31,7 @@ namespace RESTar.Deflection.Dynamic
             order: int.MaxValue - 1,
             scQueryable: true,
             hidden: true,
+            hiddenIfNull: false,
             getter: t => Do.TryAndThrow(t.GetObjectNo, "Could not get ObjectNo from non-Starcounter resource.")
         );
 
@@ -45,6 +46,7 @@ namespace RESTar.Deflection.Dynamic
             order: int.MaxValue,
             scQueryable: true,
             hidden: true,
+            hiddenIfNull: false,
             getter: t => Do.TryAndThrow(t.GetObjectID, "Could not get ObjectID from non-Starcounter resource.")
         );
 
@@ -59,6 +61,7 @@ namespace RESTar.Deflection.Dynamic
             order: int.MaxValue - 1,
             scQueryable: true,
             hidden: true,
+            hiddenIfNull: false,
             getter: t => Do.TryAndThrow(t.GetObjectNo, "Could not get ObjectNo from non-Starcounter resource.")
         );
 
@@ -74,6 +77,7 @@ namespace RESTar.Deflection.Dynamic
             order: int.MaxValue,
             scQueryable: true,
             hidden: true,
+            hiddenIfNull: false,
             getter: t => Do.TryAndThrow(t.GetObjectID, "Could not get ObjectID from non-Starcounter resource.")
         );
     }

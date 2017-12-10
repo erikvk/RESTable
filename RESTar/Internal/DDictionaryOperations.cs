@@ -15,7 +15,7 @@ namespace RESTar.Internal
     {
         private static IEnumerable<T> EqualitySQL(Condition<T> c, string kvp) => Db.SQL<T>(
             $"SELECT CAST(t.Dictionary AS {typeof(T).FullName}) FROM {kvp} t WHERE t.Key =? " +
-            $"AND t.ValueHash {c.Operator.SQL}?", c.Key, c.Value.GetHashCode()
+            $"AND t.ValueHash {c.InternalOperator.SQL}?", c.Key, c.Value.GetHashCode()
         );
 
         private static IEnumerable<T> AllSQL => Db.SQL<T>($"SELECT t FROM {typeof(T).FullName} t");
@@ -28,7 +28,7 @@ namespace RESTar.Internal
 
         private static (string, Dynamit.Operator, dynamic)? ToFinderCond(Condition<T> c)
         {
-            return (c.Key, (Dynamit.Operator) c.Operator.OpCode, c.Value);
+            return (c.Key, (Dynamit.Operator) c.Operator, c.Value);
         }
 
         static DDictionaryOperations()
@@ -39,7 +39,7 @@ namespace RESTar.Internal
                 var otherConditions = new HashSet<Condition<T>>();
                 foreach (var cond in r.Conditions)
                 {
-                    if (cond.Operator.Equality && cond.Term.Count == 1 && cond.Term.IsDynamic)
+                    if (cond.InternalOperator.Equality && cond.Term.Count == 1 && cond.Term.IsDynamic)
                         finderConditions.Add(ToFinderCond(cond));
                     else otherConditions.Add(cond);
                 }

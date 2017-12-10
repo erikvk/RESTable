@@ -5,6 +5,7 @@ using System.Reflection;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using Starcounter;
+using RESTar.Deflection.Dynamic;
 
 namespace RESTar.Serialization
 {
@@ -13,13 +14,18 @@ namespace RESTar.Serialization
     {
         protected override JsonProperty CreateProperty(MemberInfo member, MemberSerialization memberSerialization)
         {
-            if (member.ShouldBeIgnored() || member.ShouldBeHidden()) return null;
-            var property = base.CreateProperty(member, memberSerialization);
-            if (member.ShouldBeReadOnly()) property.Writable = false;
+            var property = member.GetStaticProperty();
+            if (property?.Hidden != false) return null;
+            var p = base.CreateProperty(member, memberSerialization);
+            p.PropertyName = property.Name;
+            p.Order = property.Order;
             if (property.Writable)
-                property.PropertyName = member.RESTarMemberName() + "$";
-            else property.PropertyName = member.RESTarMemberName();
-            return property;
+            {
+                p.PropertyName += "$";
+                p.Writable = true;
+            }
+            else p.Writable = false;
+            return p;
         }
 
         protected override IList<JsonProperty> CreateProperties(Type type, MemberSerialization memberSerialization)

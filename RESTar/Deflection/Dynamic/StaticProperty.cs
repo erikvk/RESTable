@@ -4,7 +4,9 @@ using System.Data;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using Newtonsoft.Json;
 using Starcounter;
+using static Newtonsoft.Json.NullValueHandling;
 
 namespace RESTar.Deflection.Dynamic
 {
@@ -23,9 +25,9 @@ namespace RESTar.Deflection.Dynamic
         public override bool Dynamic => false;
 
         /// <summary>
-        /// Automatically sets the Skip property of conditions matched against this property to true
+        /// The order at which this property appears when all properties are enumerated
         /// </summary>
-        public bool ConditionSkip { get; }
+        public int? Order { get; }
 
         /// <summary>
         /// Hidden properties are not included in regular output, but can be added and queried on.
@@ -33,14 +35,24 @@ namespace RESTar.Deflection.Dynamic
         public bool Hidden { get; }
 
         /// <summary>
-        /// The order at which this property appears when all properties are enumerated
+        /// Should this property be hidden in output if the value is null? Only applies to JSON output.
         /// </summary>
-        public int? Order { get; }
+        public bool HiddenIfNull { get; }
+
+        /// <summary>
+        /// Automatically sets the Skip property of conditions matched against this property to true
+        /// </summary>
+        public bool SkipConditions { get; }
+
+        /// <summary>
+        /// Should the serializer flatten this property using the ToString() method when writing to excel?
+        /// </summary>
+        public bool ExcelFlattenToString { get; }
 
         /// <summary>
         /// The attributes that this property has been decorated with
         /// </summary>  
-        public ICollection<Attribute> Attributes { get; }
+        private ICollection<Attribute> Attributes { get; }
 
         /// <summary>
         /// Gets the first instance of a given attribute type that this resource property 
@@ -65,7 +77,8 @@ namespace RESTar.Deflection.Dynamic
         /// Used in SpecialProperty
         /// </summary>
         protected StaticProperty(string name, string databaseQueryName, Type type, int? order, bool scQueryable,
-            ICollection<Attribute> attributes, bool conditionSkip, bool hidden, Getter getter, Setter setter)
+            ICollection<Attribute> attributes, bool skipConditions, bool hidden, bool hiddenIfNull, bool excelFlattenToString,
+            Operators allowedConditionOperators, Getter getter, Setter setter)
         {
             Name = name;
             DatabaseQueryName = databaseQueryName;
@@ -73,8 +86,11 @@ namespace RESTar.Deflection.Dynamic
             Order = order;
             ScQueryable = scQueryable;
             Attributes = attributes;
-            ConditionSkip = conditionSkip;
+            SkipConditions = skipConditions;
             Hidden = hidden;
+            HiddenIfNull = hiddenIfNull;
+            ExcelFlattenToString = excelFlattenToString;
+            AllowedConditionOperators = allowedConditionOperators;
             Getter = getter;
             Setter = setter;
         }
@@ -89,15 +105,22 @@ namespace RESTar.Deflection.Dynamic
             if (flagName) Name = "$" + Name;
             DatabaseQueryName = p.Name;
             Type = p.PropertyType;
-            Order = p.GetOrder();
+            Attributes = p.GetCustomAttributes().ToList();
+
+            var attribute = GetAttribute<RESTarMemberAttribute>();
+            Order = attribute?.Order ?? GetAttribute<JsonPropertyAttribute>()?.Order;
             ScQueryable = p.DeclaringType?.HasAttribute<DatabaseAttribute>() == true &&
                           p.PropertyType.IsStarcounterCompatible();
-            Attributes = p.GetCustomAttributes().ToList();
-            ConditionSkip = p.ShouldSkipConditions() ||
-                            p.DeclaringType.HasAttribute<RESTarViewAttribute>();
-            Hidden = p.ShouldBeHidden();
+            SkipConditions = attribute?.SkipConditions == true ||
+                             p.DeclaringType.HasAttribute<RESTarViewAttribute>();
+            Hidden = attribute?.Hidden == true;
+            HiddenIfNull = attribute?.HiddenIfNull == true || GetAttribute<JsonPropertyAttribute>()?.NullValueHandling == Ignore;
+            ExcelFlattenToString = attribute?.ExcelFlattenToString == true;
+            AllowedConditionOperators = attribute?.AllowedOperators ?? Operators.All;
+
             Getter = p.MakeDynamicGetter();
-            Setter = p.MakeDynamicSetter();
+            if (attribute?.ReadOnly != true)
+                Setter = p.MakeDynamicSetter();
         }
 
         /// <summary>
@@ -147,7 +170,7 @@ namespace RESTar.Deflection.Dynamic
             switch (Type)
             {
                 case var _ when Type.IsEnum:
-                case var _ when this.ShouldFlattenExcelToString():
+                case var _ when ExcelFlattenToString:
                 case var _ when Type.IsClass: return (typeof(string), true);
                 case var _ when Type.IsNullable(out var baseType): return (baseType, true);
                 default: return (Type, false);
@@ -156,7 +179,7 @@ namespace RESTar.Deflection.Dynamic
 
         internal void WriteCell(DataRow row, object target)
         {
-            object baseValue = Type.IsEnum || this.ShouldFlattenExcelToString()
+            object baseValue = Type.IsEnum || ExcelFlattenToString
                 ? GetValue(target)?.ToString()
                 : GetValue(target);
             row[Name] = baseValue.MakeDynamicCellValue();

@@ -33,6 +33,11 @@ namespace RESTar.Deflection.Dynamic
         public bool Static => !Dynamic;
 
         /// <summary>
+        /// The allowed condition operators for this property
+        /// </summary>
+        public Operators AllowedConditionOperators { get; protected set; } = Operators.All;
+
+        /// <summary>
         /// Can this property be referred to in a Starcounter SQL query?
         /// </summary>
         public bool ScQueryable { get; internal set; }
@@ -57,8 +62,8 @@ namespace RESTar.Deflection.Dynamic
 
         internal bool Readable => Getter != null;
         internal bool Writable => Setter != null;
-        internal bool Readonly => Readable && !Writable;
-        
+        internal bool ReadOnly => Readable && !Writable;
+
         /// <summary>
         /// Parses an input property name string and returns a Property describing the 
         /// corresponding resource property.
