@@ -76,7 +76,7 @@ namespace RESTar.Deflection.Dynamic
         /// <summary>
         /// Used in SpecialProperty
         /// </summary>
-        protected StaticProperty(string name, string databaseQueryName, Type type, int? order, bool scQueryable,
+        internal StaticProperty(string name, string databaseQueryName, Type type, int? order, bool scQueryable,
             ICollection<Attribute> attributes, bool skipConditions, bool hidden, bool hiddenIfNull, bool excelFlattenToString,
             Operators allowedConditionOperators, Getter getter, Setter setter)
         {
@@ -96,7 +96,7 @@ namespace RESTar.Deflection.Dynamic
         }
 
         /// <summary>
-        /// The regular constructor
+        /// The regular constructor, called by the type cache when creating static properties
         /// </summary>
         internal StaticProperty(PropertyInfo p, bool flagName = false)
         {
@@ -107,19 +107,19 @@ namespace RESTar.Deflection.Dynamic
             Type = p.PropertyType;
             Attributes = p.GetCustomAttributes().ToList();
 
-            var attribute = GetAttribute<RESTarMemberAttribute>();
-            Order = attribute?.Order ?? GetAttribute<JsonPropertyAttribute>()?.Order;
-            ScQueryable = p.DeclaringType?.HasAttribute<DatabaseAttribute>() == true &&
-                          p.PropertyType.IsStarcounterCompatible();
-            SkipConditions = attribute?.SkipConditions == true ||
-                             p.DeclaringType.HasAttribute<RESTarViewAttribute>();
-            Hidden = attribute?.Hidden == true;
-            HiddenIfNull = attribute?.HiddenIfNull == true || GetAttribute<JsonPropertyAttribute>()?.NullValueHandling == Ignore;
-            ExcelFlattenToString = attribute?.ExcelFlattenToString == true;
-            AllowedConditionOperators = attribute?.AllowedOperators ?? Operators.All;
+            var memberAttribute = GetAttribute<RESTarMemberAttribute>();
+            var jsonAttribute = GetAttribute<JsonPropertyAttribute>();
+
+            Order = memberAttribute?.Order ?? jsonAttribute?.Order;
+            ScQueryable = p.DeclaringType?.HasAttribute<DatabaseAttribute>() == true && p.PropertyType.IsStarcounterCompatible();
+            SkipConditions = memberAttribute?.SkipConditions == true || p.DeclaringType.HasAttribute<RESTarViewAttribute>();
+            Hidden = memberAttribute?.Hidden == true;
+            HiddenIfNull = memberAttribute?.HiddenIfNull == true || jsonAttribute?.NullValueHandling == Ignore;
+            ExcelFlattenToString = memberAttribute?.ExcelFlattenToString == true;
+            AllowedConditionOperators = memberAttribute?.AllowedOperators ?? Operators.All;
 
             Getter = p.MakeDynamicGetter();
-            if (attribute?.ReadOnly != true)
+            if (memberAttribute?.ReadOnly != true)
                 Setter = p.MakeDynamicSetter();
         }
 

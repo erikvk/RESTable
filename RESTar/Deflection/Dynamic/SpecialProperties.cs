@@ -11,7 +11,7 @@ namespace RESTar.Deflection.Dynamic
     /// important parts of class definitions. For example Starcounter ObjectID and 
     /// ObjectNo.
     /// </summary>
-    public class SpecialProperty : StaticProperty
+    internal class SpecialProperty : StaticProperty
     {
         private SpecialProperty(string name, string databaseQueryName, Type type, int? order, bool scQueryable,
             bool hidden, bool hiddenIfNull, Getter getter) : base(name, databaseQueryName, type, order, scQueryable, null, false,
