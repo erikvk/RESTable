@@ -134,7 +134,7 @@ namespace RESTar.Deflection.Dynamic
             catch
             {
                 throw new Exception($"Invalid or unknown excel reduce function '{methodName}' for property '{p.Name}' in type '" +
-                                    $"{p.DeclaringType.FullName}'. Must be convertible to Func<string>");
+                                    $"{p.DeclaringType.FullName}'. Must be public instance method with signature 'public string <name>()'");
             }
         }
 

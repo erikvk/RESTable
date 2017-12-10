@@ -513,7 +513,7 @@ namespace RESTarTester
             excelReducer: nameof(BinaryToString)
         )] public Binary BINARY;
 
-        public string BinaryToString() => "Afoo";
+        public string BinaryToString() => "This is a binary with length " + (BINARY.IsNull ? "<null>" : BINARY.Length.ToString());
 
         [RESTarMember(
         )] public object Goo => new FooGoo { };
