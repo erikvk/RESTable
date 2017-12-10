@@ -113,10 +113,12 @@ namespace RESTar.Deflection.Dynamic
         /// </summary>
         public static StaticProperty GetStaticProperty(this MemberInfo member)
         {
-            var declaringType = member.DeclaringType?.FullName ??
-                                throw new Exception($"Cannot get static property for member '{member}' of unknown type");
-            if (StaticPropertyCache.TryGetValue(declaringType, out var properties) &&
-                properties.TryGetValue(member.RESTarMemberName().ToLower(), out var property))
+            var declaringType = member.DeclaringType;
+            if (declaringType?.FullName == null)
+                throw new Exception($"Cannot get static property for member '{member}' of unknown type");
+            var flagged = Resource.SafeGet(declaringType)?.StaticPropertiesFlagged == true;
+            if (StaticPropertyCache.TryGetValue(declaringType.FullName, out var properties) &&
+                properties.TryGetValue(member.RESTarMemberName(flagged).ToLower(), out var property))
                 return property;
             return null;
         }

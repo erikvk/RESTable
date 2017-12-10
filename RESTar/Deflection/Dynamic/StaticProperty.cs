@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Text;
 using Newtonsoft.Json;
 using Starcounter;
+using static System.Reflection.BindingFlags;
 using static Newtonsoft.Json.NullValueHandling;
 
 namespace RESTar.Deflection.Dynamic
@@ -45,9 +46,9 @@ namespace RESTar.Deflection.Dynamic
         public bool SkipConditions { get; }
 
         /// <summary>
-        /// Should the serializer flatten this property using the ToString() method when writing to excel?
+        /// The function to use when reduding this property to an Excel-compatible string
         /// </summary>
-        public bool ExcelFlattenToString { get; }
+        public dynamic ExcelReducer { get; }
 
         /// <summary>
         /// The attributes that this property has been decorated with
@@ -77,7 +78,7 @@ namespace RESTar.Deflection.Dynamic
         /// Used in SpecialProperty
         /// </summary>
         internal StaticProperty(string name, string databaseQueryName, Type type, int? order, bool scQueryable,
-            ICollection<Attribute> attributes, bool skipConditions, bool hidden, bool hiddenIfNull, bool excelFlattenToString,
+            ICollection<Attribute> attributes, bool skipConditions, bool hidden, bool hiddenIfNull,
             Operators allowedConditionOperators, Getter getter, Setter setter)
         {
             Name = name;
@@ -89,7 +90,6 @@ namespace RESTar.Deflection.Dynamic
             SkipConditions = skipConditions;
             Hidden = hidden;
             HiddenIfNull = hiddenIfNull;
-            ExcelFlattenToString = excelFlattenToString;
             AllowedConditionOperators = allowedConditionOperators;
             Getter = getter;
             Setter = setter;
@@ -101,8 +101,7 @@ namespace RESTar.Deflection.Dynamic
         internal StaticProperty(PropertyInfo p, bool flagName = false)
         {
             if (p == null) return;
-            Name = p.RESTarMemberName();
-            if (flagName) Name = "$" + Name;
+            Name = p.RESTarMemberName(flagName);
             DatabaseQueryName = p.Name;
             Type = p.PropertyType;
             Attributes = p.GetCustomAttributes().ToList();
@@ -115,12 +114,28 @@ namespace RESTar.Deflection.Dynamic
             SkipConditions = memberAttribute?.SkipConditions == true || p.DeclaringType.HasAttribute<RESTarViewAttribute>();
             Hidden = memberAttribute?.Hidden == true;
             HiddenIfNull = memberAttribute?.HiddenIfNull == true || jsonAttribute?.NullValueHandling == Ignore;
-            ExcelFlattenToString = memberAttribute?.ExcelFlattenToString == true;
             AllowedConditionOperators = memberAttribute?.AllowedOperators ?? Operators.All;
+            if (memberAttribute?.ExcelReducerName != null)
+                ExcelReducer = MakeExcelReducer(memberAttribute.ExcelReducerName, p);
 
             Getter = p.MakeDynamicGetter();
             if (memberAttribute?.ReadOnly != true)
                 Setter = p.MakeDynamicSetter();
+        }
+
+        private static dynamic MakeExcelReducer(string methodName, PropertyInfo p)
+        {
+            if (p.DeclaringType == null) throw new Exception("Type error, cannot cache property " + p);
+            try
+            {
+                var method = p.DeclaringType.GetMethod(methodName, Public | Instance) ?? throw new Exception();
+                return method.CreateDelegate(typeof(Func<,>).MakeGenericType(p.DeclaringType, typeof(string)));
+            }
+            catch
+            {
+                throw new Exception($"Invalid or unknown excel reduce function '{methodName}' for property '{p.Name}' in type '" +
+                                    $"{p.DeclaringType.FullName}'. Must be convertible to Func<string>");
+            }
         }
 
         /// <summary>
@@ -170,7 +185,7 @@ namespace RESTar.Deflection.Dynamic
             switch (Type)
             {
                 case var _ when Type.IsEnum:
-                case var _ when ExcelFlattenToString:
+                case var _ when ExcelReducer != null:
                 case var _ when Type.IsClass: return (typeof(string), true);
                 case var _ when Type.IsNullable(out var baseType): return (baseType, true);
                 default: return (Type, false);
@@ -179,10 +194,17 @@ namespace RESTar.Deflection.Dynamic
 
         internal void WriteCell(DataRow row, object target)
         {
-            object baseValue = Type.IsEnum || ExcelFlattenToString
-                ? GetValue(target)?.ToString()
-                : GetValue(target);
-            row[Name] = baseValue.MakeDynamicCellValue();
+            object getBaseValue()
+            {
+                switch (this)
+                {
+                    case var _ when ExcelReducer != null: return ExcelReducer((dynamic) target);
+                    case var _ when Type.IsEnum: return GetValue(target)?.ToString();
+                    default: return GetValue(target);
+                }
+            }
+
+            row[Name] = getBaseValue().MakeDynamicCellValue();
         }
     }
 }

@@ -14,8 +14,21 @@ namespace RESTar.Deflection.Dynamic
     internal class SpecialProperty : StaticProperty
     {
         private SpecialProperty(string name, string databaseQueryName, Type type, int? order, bool scQueryable,
-            bool hidden, bool hiddenIfNull, Getter getter) : base(name, databaseQueryName, type, order, scQueryable, null, false,
-            hidden, hiddenIfNull, false, Operators.All, getter, null) { }
+            bool hidden, bool hiddenIfNull, Getter getter) : base
+            (
+                name: name,
+                databaseQueryName: databaseQueryName,
+                type: type,
+                order: order,
+                scQueryable: scQueryable,
+                attributes: null,
+                skipConditions: false,
+                hidden: hidden,
+                hiddenIfNull: hiddenIfNull,
+                allowedConditionOperators: Operators.All,
+                getter: getter,
+                setter: null
+            ) { }
 
         internal static IEnumerable<SpecialProperty> GetObjectIDAndObjectNo(bool flag) =>
             flag ? new[] {FlaggedObjectID, FlaggedObjectNo} : new[] {ObjectID, ObjectNo};

@@ -233,7 +233,7 @@ namespace RESTar
     public class ExcelFormatException : RESTarException
     {
         internal ExcelFormatException(string message, Exception ie) : base(ExcelReaderError,
-            $"RESTar was unable to write entities to excel. {message}", ie) => Response = BadRequest(this);
+            $"RESTar was unable to write entities to excel. {message}. ", ie) => Response = BadRequest(this);
     }
 
     /// <inheritdoc />

@@ -42,11 +42,6 @@ namespace RESTar
         public bool ReadOnly { get; }
 
         /// <summary>
-        /// Should the serializer flatten this property using the ToString() method when writing to excel?
-        /// </summary>
-        public bool ExcelFlattenToString { get; }
-
-        /// <summary>
         /// Sets the Skip property of all conditions matched against this property to true by default.
         /// </summary>
         public bool SkipConditions { get; }
@@ -55,6 +50,11 @@ namespace RESTar
         /// These operators will be allowed in conditions targeting this property.
         /// </summary>
         public Operators AllowedOperators { get; }
+
+        /// <summary>
+        /// The name of the excel reducer, passed as argument in the constructor
+        /// </summary>
+        public string ExcelReducerName { get; }
 
         /// <inheritdoc />
         /// <summary>
@@ -66,12 +66,13 @@ namespace RESTar
         /// <param name="hide">Should this property be hidden in serialized output by default? It can still be added and queried against.</param>
         /// <param name="hideIfNull">Should this property be hidden in output if the value is null? Only applies to JSON output.</param>
         /// <param name="readOnly">Makes this property read-only over the REST API, even if it has a public setter.</param>
-        /// <param name="excelFlattenToString">Should the serializer flatten this property using the ToString() method when writing to excel?</param>
         /// <param name="skipConditions">Sets the Skip property of all conditions matched against this property to true by default.</param>
         /// <param name="allowedOperators">These operators will be allowed in conditions targeting this property.</param>
+        /// <param name="excelReducer">The name of an optional public ToString-like method, declared in the same scope as the property, that reduces the 
+        /// property to an excel-compatible string</param>
         public RESTarMemberAttribute(bool ignore = false, string name = null, int order = 0, bool hide = false,
-            bool hideIfNull = false, bool readOnly = false, bool excelFlattenToString = false, bool skipConditions = false,
-            Operators allowedOperators = Operators.All)
+            bool hideIfNull = false, bool readOnly = false, bool skipConditions = false, Operators allowedOperators = Operators.All,
+            string excelReducer = null)
         {
             Ignored = ignore;
             Name = name;
@@ -79,9 +80,9 @@ namespace RESTar
             Hidden = hide;
             HiddenIfNull = hideIfNull;
             ReadOnly = readOnly;
-            ExcelFlattenToString = excelFlattenToString;
             SkipConditions = skipConditions;
             AllowedOperators = allowedOperators;
+            ExcelReducerName = excelReducer;
         }
     }
 }

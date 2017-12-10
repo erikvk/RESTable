@@ -43,10 +43,14 @@ namespace RESTar
 
 #pragma warning disable 618
 
-        internal static string RESTarMemberName(this MemberInfo m) => m.GetAttribute<RESTarMemberAttribute>()?.Name ??
-                                                                      m.GetAttribute<DataMemberAttribute>()?.Name ??
-                                                                      m.GetAttribute<JsonPropertyAttribute>()?.PropertyName ??
-                                                                      m.Name;
+        internal static string RESTarMemberName(this MemberInfo m, bool flagged = false)
+        {
+            var name = m.GetAttribute<RESTarMemberAttribute>()?.Name ??
+                       m.GetAttribute<DataMemberAttribute>()?.Name ??
+                       m.GetAttribute<JsonPropertyAttribute>()?.PropertyName ??
+                       m.Name;
+            return flagged ? "$" + name : name;
+        }
 
         internal static bool RESTarIgnored(this MemberInfo m) => m.GetAttribute<RESTarMemberAttribute>()?.Ignored == true ||
                                                                  m.HasAttribute<IgnoreDataMemberAttribute>();
