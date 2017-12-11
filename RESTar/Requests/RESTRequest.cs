@@ -19,7 +19,7 @@ namespace RESTar.Requests
     internal class RESTRequest<T> : IRequest<T>, IDisposable where T : class
     {
         public Methods Method { get; private set; }
-        public Origin Origin { get; private set; }
+        public Origin Origin { get; }
         public IResource<T> Resource { get; }
         public Condition<T>[] Conditions { get; private set; }
         public MetaConditions MetaConditions { get; private set; }
@@ -128,6 +128,9 @@ namespace RESTar.Requests
                 Response.Headers["Access-Control-Allow-Origin"] = "*";
             else if (CORSOrigin != null)
                 Response.Headers["Access-Control-Allow-Origin"] = CORSOrigin;
+
+            Response.Headers["DataServiceVersion"] = "1.0";
+
             switch (OutputDataConfig)
             {
                 case DataConfig.Client: return Response;

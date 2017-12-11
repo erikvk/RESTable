@@ -55,9 +55,9 @@ namespace RESTar.Requests
             }
             catch (Exception ex)
             {
-                var errorInfo = ex.GetError();
+                var (code, response) = ex.GetError();
                 Error.ClearOld();
-                var error = Trans(() => Error.Create(errorInfo.Code, ex, resource, args, action));
+                var error = Trans(() => Error.Create(code, ex, resource, args, action));
                 switch (action)
                 {
                     case GET:
@@ -66,15 +66,15 @@ namespace RESTar.Requests
                     case PUT:
                     case DELETE:
                     case COUNT:
-                        errorInfo.Response.Headers["ErrorInfo"] = $"{_Uri}/{typeof(Error).FullName}/id={error.Id}";
-                        return errorInfo.Response;
+                        response.Headers["ErrorInfo"] = $"{_Uri}/{typeof(Error).FullName}/id={error.Id}";
+                        return response;
                     case ORIGIN: return Forbidden("Invalid or unauthorized origin");
                     case VIEW:
                     case PAGE:
                     case MENU:
                         var master = Self.GET<View.Page>("/__restar/__page");
                         var partial = master.CurrentPage as RESTarView ?? new MessageWindow().Populate();
-                        partial.SetMessage(ex.Message, errorInfo.Code, MessageTypes.error);
+                        partial.SetMessage(ex.Message, code, MessageTypes.error);
                         master.CurrentPage = partial;
                         return master;
                     default: return InternalError(ex);

@@ -73,11 +73,14 @@ namespace RESTar.Linq
         /// Applies an action to each element in the source IEnumerable. Equivalent to how Select works for 
         /// functions, but for actions.
         /// </summary>
-        public static IEnumerable<T> Apply<T>(this IEnumerable<T> source, Action<T> action) => source.Select(e =>
+        public static IEnumerable<T> Apply<T>(this IEnumerable<T> source, Action<T> action) where T : class
         {
-            action(e);
-            return e;
-        });
+            foreach (var e in source)
+            {
+                action(e);
+                yield return e;
+            }
+        }
 
         /// <summary>
         /// Collects the elements in the source IEnumerable and applies the given function to the
