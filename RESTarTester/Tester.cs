@@ -491,7 +491,7 @@ namespace RESTarTester
         c
     }
 
-    [Database, RESTar(FlagStaticMembers = true)]
+    [Database, RESTar]
     public class MyTestClass
     {
         [RESTarMember(
@@ -508,12 +508,7 @@ namespace RESTarTester
             allowedOperators: EQUALS | GREATER_THAN
         )] public bool BOOL;
 
-        [RESTarMember(
-            order: 1,
-            excelReducer: nameof(BinaryToString)
-        )] public Binary BINARY;
-
-        public string BinaryToString() => "This is a binary with length " + (BINARY.IsNull ? "<null>" : BINARY.Length.ToString());
+        public Hoo Hoo => new Hoo {Goo = "Swoo", Ioo = 321};
 
         [RESTarMember(
         )] public object Goo => new FooGoo { };
@@ -538,6 +533,12 @@ namespace RESTarTester
     public class FooGoo
     {
         public override string ToString() => "It's wooooorkiiing";
+    }
+
+    public class Hoo
+    {
+        public string Goo { get; set; }
+        public int Ioo { get; set; }
     }
 
     [RESTar(GET, AllowDynamicConditions = true, FlagStaticMembers = true)]

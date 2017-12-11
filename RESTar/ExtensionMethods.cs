@@ -756,7 +756,7 @@ namespace RESTar
                 if (!string.IsNullOrWhiteSpace(ie.Message))
                     message.Append(ie.Message);
                 if (ie.InnerException != null)
-                    message.Append(" : ");
+                    message.Append(" | ");
                 ie = ie.InnerException;
             }
             return message.ToString();
