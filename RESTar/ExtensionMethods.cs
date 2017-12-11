@@ -759,7 +759,7 @@ namespace RESTar
                     message.Append(" | ");
                 ie = ie.InnerException;
             }
-            return message.ToString();
+            return message.ToString().Replace("\r\n", " | ");
         }
 
         internal static byte[] ToByteArray(this Stream stream)

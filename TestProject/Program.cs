@@ -1,5 +1,4 @@
-﻿using System.Threading.Tasks;
-using Starcounter;
+﻿using Starcounter;
 
 // ReSharper disable All
 
@@ -9,17 +8,15 @@ namespace TestProject
     {
         public static void Main()
         {
-            Task<int> run() => Task.Run(() => "asd".Length);
-
-            var s = run().Result;
-
+            Handle.GET(8100, "/test", () => new Response
+            {
+                StatusCode = 200,
+                StatusDescription = "OK",
+                Headers = {["X-MySingleHeader"] = "Some value\r\nFoo: other value\r\nThird value"}
+            });
+            var response = Http.GET("http://localhost:8100/test");
+            var fooHeader = response.Headers["Foo"];
+            // other value
         }
-    }
-
-    [Database]
-    public class TestClass
-    {
-        public string NonTransient { get; set; }
-        public string Transient { get; set; }
     }
 }
