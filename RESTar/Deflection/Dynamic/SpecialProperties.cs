@@ -13,11 +13,11 @@ namespace RESTar.Deflection.Dynamic
     /// </summary>
     internal class SpecialProperty : StaticProperty
     {
-        private SpecialProperty(string name, string databaseQueryName, Type type, int? order, bool scQueryable,
+        private SpecialProperty(string name, string actualName, Type type, int? order, bool scQueryable,
             bool hidden, bool hiddenIfNull, Getter getter) : base
             (
                 name: name,
-                databaseQueryName: databaseQueryName,
+                actualName: actualName,
                 type: type,
                 order: order,
                 scQueryable: scQueryable,
@@ -39,7 +39,7 @@ namespace RESTar.Deflection.Dynamic
         private static readonly SpecialProperty FlaggedObjectNo = new SpecialProperty
         (
             name: "$ObjectNo",
-            databaseQueryName: "ObjectNo",
+            actualName: "ObjectNo",
             type: typeof(ulong),
             order: int.MaxValue - 1,
             scQueryable: true,
@@ -54,7 +54,7 @@ namespace RESTar.Deflection.Dynamic
         private static readonly SpecialProperty FlaggedObjectID = new SpecialProperty
         (
             name: "$ObjectID",
-            databaseQueryName: "ObjectID",
+            actualName: "ObjectID",
             type: typeof(string),
             order: int.MaxValue,
             scQueryable: true,
@@ -69,7 +69,7 @@ namespace RESTar.Deflection.Dynamic
         private static readonly SpecialProperty ObjectNo = new SpecialProperty
         (
             name: "ObjectNo",
-            databaseQueryName: "ObjectNo",
+            actualName: "ObjectNo",
             type: typeof(ulong),
             order: int.MaxValue - 1,
             scQueryable: true,
@@ -85,7 +85,7 @@ namespace RESTar.Deflection.Dynamic
         private static readonly SpecialProperty ObjectID = new SpecialProperty
         (
             name: "ObjectID",
-            databaseQueryName: "ObjectID",
+            actualName: "ObjectID",
             type: typeof(string),
             order: int.MaxValue,
             scQueryable: true,

@@ -36,7 +36,7 @@ namespace RESTar.Deflection.Dynamic
 
         private DynamicProperty(string name, bool staticFallback)
         {
-            Name = DatabaseQueryName = name;
+            Name = ActualName = name;
             ScQueryable = false;
             StaticFallback = staticFallback;
 

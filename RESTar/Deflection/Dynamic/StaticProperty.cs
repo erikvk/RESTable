@@ -77,12 +77,12 @@ namespace RESTar.Deflection.Dynamic
         /// <summary>
         /// Used in SpecialProperty
         /// </summary>
-        internal StaticProperty(string name, string databaseQueryName, Type type, int? order, bool scQueryable,
+        internal StaticProperty(string name, string actualName, Type type, int? order, bool scQueryable,
             ICollection<Attribute> attributes, bool skipConditions, bool hidden, bool hiddenIfNull,
             Operators allowedConditionOperators, Getter getter, Setter setter)
         {
             Name = name;
-            DatabaseQueryName = databaseQueryName;
+            ActualName = actualName;
             Type = type;
             Order = order;
             ScQueryable = scQueryable;
@@ -102,7 +102,7 @@ namespace RESTar.Deflection.Dynamic
         {
             if (p == null) return;
             Name = p.RESTarMemberName(flagName);
-            DatabaseQueryName = p.Name;
+            ActualName = p.Name;
             Type = p.PropertyType;
             Attributes = p.GetCustomAttributes().ToList();
 

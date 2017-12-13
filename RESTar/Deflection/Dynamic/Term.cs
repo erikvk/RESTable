@@ -145,7 +145,7 @@ namespace RESTar.Deflection.Dynamic
             term.IsStatic = term.Store.All(p => p is StaticProperty);
             term.ConditionSkip = term.Store.Any(p => p is StaticProperty s && s.SkipConditions);
             term.Key = string.Join(".", term.Store.Select(p => p.Name));
-            term.DbKey = string.Join(".", term.Store.Select(p => p.DatabaseQueryName));
+            term.DbKey = string.Join(".", term.Store.Select(p => p.ActualName));
             return term;
         }
 

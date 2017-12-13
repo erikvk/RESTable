@@ -13,9 +13,9 @@ namespace RESTar.Deflection.Dynamic
         public string Name { get; internal set; }
 
         /// <summary>
-        /// The database query name to use in Starcounter SQL queries
+        /// The name of the property, as defined in the type declaration
         /// </summary>
-        public string DatabaseQueryName { get; internal set; }
+        public string ActualName { get; internal set; }
 
         /// <summary>
         /// The name to use in Starcounter view models
