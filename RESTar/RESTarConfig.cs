@@ -30,7 +30,6 @@ namespace RESTar
     {
         internal static ResourceFinder ResourceFinder { get; private set; }
         internal static IDictionary<string, IResource> ResourceByName { get; private set; }
-
         internal static IDictionary<Type, IResource> ResourceByType { get; private set; }
         internal static IDictionary<string, AccessRights> ApiKeys { get; private set; }
         internal static ConcurrentDictionary<string, AccessRights> AuthTokens { get; private set; }

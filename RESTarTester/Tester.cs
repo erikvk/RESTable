@@ -496,17 +496,17 @@ namespace RESTarTester
     {
         [RESTarMember(
             order: 5
-        )] public string STR;
+        )] public string STR { get; set; }
 
         [RESTarMember(
             order: 4,
             readOnly: true
-        )] public int INT;
+        )] public int INT { get; set; }
 
         [RESTarMember(
             name: "BLOO",
             allowedOperators: EQUALS | GREATER_THAN
-        )] public bool BOOL;
+        )] public bool BOOL { get; set; }
 
         public Hoo Hoo => new Hoo {Goo = "Swoo", Ioo = 321};
 
@@ -523,7 +523,7 @@ namespace RESTarTester
         [RESTarMember(
             hideIfNull: true,
             skipConditions: true
-        )] public string FOO;
+        )] public string FOO { get; set; }
 
         [RESTarMember(
             ignore: true
@@ -537,7 +537,7 @@ namespace RESTarTester
 
     public class Hoo
     {
-        public string Goo { get; set; }
+        public string Goo;
         public int Ioo { get; set; }
     }
 

@@ -14,6 +14,9 @@ namespace RESTar.Internal
     [Database]
     public class DynamicResource
     {
+        internal const string All = "SELECT t FROM RESTar.Internal.DynamicResource t";
+        internal const string ByTableName = All + " WHERE t.TableName =?";
+
         /// <summary>
         /// The available methods for this resource
         /// </summary>
@@ -56,11 +59,8 @@ namespace RESTar.Internal
             Description = Description
         };
 
-        private static readonly string SQL = $"SELECT t FROM {typeof(DynamicResource).FullName} t";
-        internal static IEnumerable<DynamicResource> All => Db.SQL<DynamicResource>(SQL);
-
-        private static bool Exists(string tableName) =>
-            Db.SQL<DynamicResource>($"{SQL} WHERE t.TableName =?", tableName).FirstOrDefault() != null;
+        internal static IEnumerable<DynamicResource> GetAll() => Db.SQL<DynamicResource>(All);
+        private static bool Exists(string tableName) => Db.SQL<DynamicResource>(ByTableName, tableName).FirstOrDefault() != null;
 
         private DynamicResource(string name, Type table, IEnumerable<Methods> availableMethods,
             string description = null)

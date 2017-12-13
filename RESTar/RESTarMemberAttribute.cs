@@ -7,7 +7,7 @@ namespace RESTar
     /// <summary>
     /// Adds a configuration to this RESTar resource type member
     /// </summary>
-    [AttributeUsage(Property | Field)]
+    [AttributeUsage(Property)]
     public sealed class RESTarMemberAttribute : Attribute
     {
         /// <summary>

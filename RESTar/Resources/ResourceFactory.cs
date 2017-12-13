@@ -268,7 +268,7 @@ namespace RESTar.Resources
                     DatabaseIndex.Indexers[provider.GetProviderId()] = provider.DatabaseIndexer;
                 provider.ReceiveClaimed(Resource.ClaimedBy(provider));
             }
-            DynamicResource.All.ForEach(MakeDynamicResource);
+            DynamicResource.GetAll().ForEach(MakeDynamicResource);
         }
 
         internal static void MakeDynamicResource(DynamicResource resource) => DynProvider.BuildDynamicResource(resource);

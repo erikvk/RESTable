@@ -14,18 +14,29 @@ namespace RESTar.Serialization
     {
         protected override JsonProperty CreateProperty(MemberInfo member, MemberSerialization memberSerialization)
         {
-            var property = member.GetStaticProperty();
-            if (property?.Hidden != false) return null;
-            var p = base.CreateProperty(member, memberSerialization);
-            p.PropertyName = property.Name;
-            p.Order = property.Order;
-            if (property.Writable)
+            switch (member.MemberType)
             {
-                p.PropertyName += "$";
-                p.Writable = true;
+                case MemberTypes.Property:
+                    var property = member.GetStaticProperty();
+                    if (property?.Hidden != false) return null;
+                    var p = base.CreateProperty(member, memberSerialization);
+                    p.PropertyName = property.Name;
+                    p.Order = property.Order;
+                    if (property.Writable)
+                    {
+                        p.PropertyName += "$";
+                        p.Writable = true;
+                    }
+                    else p.Writable = false;
+                    return p;
+                case MemberTypes.Field:
+                    if (member.RESTarIgnored()) return null;
+                    var f = base.CreateProperty(member, memberSerialization);
+                    f.PropertyName = member.RESTarMemberName();
+                    if (f.Writable) f.PropertyName += "$";
+                    return f;
+                default: return null;
             }
-            else p.Writable = false;
-            return p;
         }
 
         protected override IList<JsonProperty> CreateProperties(Type type, MemberSerialization memberSerialization)
