@@ -53,7 +53,7 @@ namespace RESTar
             if (searchString == null)
                 throw new UnknownResourceException("null");
             searchString = searchString.ToLower();
-            var resource = Admin.ResourceAlias.ByAlias(searchString)?.IResource;
+            var resource = Admin.ResourceAlias.GetByAlias(searchString)?.IResource;
             if (resource != null) return resource;
             if (!RESTarConfig.ResourceFinder.TryGetValue(searchString, out resource))
                 throw new UnknownResourceException(searchString);
@@ -70,7 +70,7 @@ namespace RESTar
         public static IResource SafeFind(string searchString)
         {
             searchString = searchString.ToLower();
-            var resource = Admin.ResourceAlias.ByAlias(searchString)?.IResource;
+            var resource = Admin.ResourceAlias.GetByAlias(searchString)?.IResource;
             if (resource != null) return resource;
             if (!RESTarConfig.ResourceFinder.TryGetValue(searchString, out resource))
                 return null;

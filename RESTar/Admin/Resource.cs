@@ -200,7 +200,7 @@ namespace RESTar.Admin
                     {
                         resource.ResolveDynamicResourceName();
                         dynamicResource.Name = resource.Name;
-                        var alias = ResourceAlias.ByResource(iresource.Name);
+                        var alias = ResourceAlias.GetByResource(iresource.Name);
                         if (alias != null) alias._resource = resource.Name;
                         RESTarConfig.RemoveResource(iresource);
                         ResourceFactory.MakeDynamicResource(dynamicResource);

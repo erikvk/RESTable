@@ -16,6 +16,9 @@ namespace RESTar.Admin
     [Database]
     public class DbMacro
     {
+        internal const string All = "SELECT t FROM RESTar.Admin.DbMacro t";
+        internal const string ByName = All + " WHERE t.Name =?";
+
         #region Schema
 
         /// <summary>
@@ -42,10 +45,8 @@ namespace RESTar.Admin
 
         #endregion
 
-        private const string NameSQL = "SELECT t FROM RESTar.Admin.DbMacro t WHERE t.Name =?";
-        private const string AllSQL = "SELECT t FROM RESTar.Admin.DbMacro t";
-        internal static IEnumerable<DbMacro> All => Db.SQL<DbMacro>(AllSQL);
-        internal static DbMacro Get(string macroName) => Db.SQL<DbMacro>(NameSQL, macroName).FirstOrDefault();
+        internal static IEnumerable<DbMacro> GetAll() => Db.SQL<DbMacro>(All);
+        internal static DbMacro Get(string macroName) => Db.SQL<DbMacro>(ByName, macroName).FirstOrDefault();
     }
 
     /// <summary>
@@ -134,7 +135,7 @@ namespace RESTar.Admin
         }
 
         /// <inheritdoc />
-        public IEnumerable<Macro> Select(IRequest<Macro> request) => DbMacro.All
+        public IEnumerable<Macro> Select(IRequest<Macro> request) => DbMacro.GetAll()
             .Select(m => new Macro
             {
                 Name = m.Name,

@@ -197,7 +197,7 @@ namespace RESTar.Requests
                         break;
                     case RESTarMetaConditions.Format:
                         var formatName = (string) value;
-                        var format = DbOutputFormat.Get(formatName) ?? throw new SyntaxException(UnknownFormatter,
+                        var format = DbOutputFormat.GetByName(formatName) ?? throw new SyntaxException(UnknownFormatter,
                                          $"Could not find any output format by '{formatName}'. See RESTar.Admin.OutputFormat " +
                                          "for available output formats");
                         mc.Formatter = format.Format;

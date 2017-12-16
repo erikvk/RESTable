@@ -13,6 +13,9 @@ namespace RESTar.Internal
 {
     internal static class Authenticator
     {
+        internal const string CurrentUser = "SELECT t.Token.User FROM Simplified.Ring5.SystemUserSession t " +
+                                            "WHERE t.SessionIdString =? AND t.Token.User IS NOT NULL";
+
         internal static ForbiddenException NotAuthorizedException => new ForbiddenException(NotAuthorized,
             "Not authorized");
 
@@ -21,9 +24,7 @@ namespace RESTar.Internal
         private static object GetCurrentSystemUser()
         {
             if (Session.Current == null) return null;
-            return Db.SQL("SELECT t.Token.User FROM Simplified.Ring5.SystemUserSession t " +
-                          "WHERE t.SessionIdString =? " +
-                          "AND t.Token.User IS NOT NULL", Session.Current.SessionId).FirstOrDefault();
+            return Db.SQL(CurrentUser, Session.Current.SessionId).FirstOrDefault();
         }
 
         internal static void CheckUser()

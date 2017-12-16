@@ -10,14 +10,16 @@ namespace RESTar.Resources
 {
     internal class StarcounterIndexer : IDatabaseIndexer
     {
-        private const string ColumnSql = "SELECT t FROM Starcounter.Metadata.IndexedColumn t " +
-                                         "WHERE t.\"Index\" =? ORDER BY t.Position";
+        private const string AllIndexes = "SELECT t FROM Starcounter.Metadata.\"Index\" t";
+
+        private const string ColumnByIndex = "SELECT t FROM Starcounter.Metadata.IndexedColumn t " +
+                                             "WHERE t.\"Index\" =? ORDER BY t.Position";
 
         /// <inheritdoc />
         public IEnumerable<DatabaseIndex> Select(IRequest<DatabaseIndex> request)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
-            return Db.SQL<Index>("SELECT t FROM Starcounter.Metadata.\"Index\" t")
+            return Db.SQL<Index>(AllIndexes)
                 .Where(index => !index.Table.FullName.StartsWith("Starcounter."))
                 .Where(index => !index.Name.StartsWith("DYNAMIT_GENERATED_INDEX"))
                 .Select(index => (resource: Resource.ByTypeName(index.Table.FullName), index))
@@ -25,7 +27,7 @@ namespace RESTar.Resources
                 .Select(pair => new DatabaseIndex(pair.resource.Name)
                 {
                     Name = pair.index.Name,
-                    Columns = Db.SQL<IndexedColumn>(ColumnSql, pair.index).Select(c => new ColumnInfo
+                    Columns = Db.SQL<IndexedColumn>(ColumnByIndex, pair.index).Select(c => new ColumnInfo
                     {
                         Name = c.Column.Name,
                         Descending = c.Ascending == 0

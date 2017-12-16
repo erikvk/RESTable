@@ -22,20 +22,18 @@ namespace RESTar
         /// <inheritdoc />
         public IEnumerable<Aggregator> Select(IRequest<Aggregator> request)
         {
-            JObject template;
-            switch (request.BodyObject<JToken>())
+            JObject getTemplate(JToken token)
             {
-                case null: return null;
-                case JObject obj:
-                    template = obj;
-                    break;
-                case JArray arr when arr.Count == 1 && arr[0] is JObject obj:
-                    template = obj;
-                    break;
-                default: throw new Exception("Invalid Aggregator template. Expected a single object");
+                switch (token)
+                {
+                    case null: return null;
+                    case JObject obj: return obj;
+                    case JArray arr when arr.Count == 1: return getTemplate(arr[0]);
+                    default: throw new Exception("Invalid Aggregator template. Expected a single object");
+                }
             }
 
-            void recursor(JToken token)
+            void populator(JToken token)
             {
                 switch (token)
                 {
@@ -43,7 +41,7 @@ namespace RESTar
                         var jvalue = property.Value;
                         if (jvalue.Type == JTokenType.Object)
                         {
-                            recursor(jvalue);
+                            populator(jvalue);
                             break;
                         }
                         if (jvalue.Type != JTokenType.String) break;
@@ -91,13 +89,14 @@ namespace RESTar
                         }
                         break;
                     case JObject obj:
-                        obj.Properties().ForEach(recursor);
+                        obj.Properties().ForEach(populator);
                         break;
                 }
             }
 
-            recursor(template);
-            return new[] {new Aggregator(template)}.Where(request.Conditions);
+            var tree = getTemplate(request.BodyObject<JToken>());
+            populator(tree);
+            return new[] {new Aggregator(tree)}.Where(request.Conditions);
         }
     }
 }

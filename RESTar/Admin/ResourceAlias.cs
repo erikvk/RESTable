@@ -19,6 +19,10 @@ namespace RESTar.Admin
                                            "alias to a resource, making it possible to reference " +
                                            "the resource with only the alias.";
 
+        internal const string All = "SELECT t FROM RESTar.Admin.ResourceAlias t";
+        internal const string ByAlias = All + " WHERE t.Alias =?";
+        internal const string ByResource = All + " WHERE t.Resource =?";
+
         private string alias;
 
         /// <summary>
@@ -68,32 +72,24 @@ namespace RESTar.Admin
         /// </summary>
         [IgnoreDataMember] public IResource IResource => RESTarConfig.ResourceByName[Resource.ToLower()];
 
-        private const string AliasSQL = "SELECT t FROM RESTar.Admin.ResourceAlias t WHERE t.Alias =?";
-        private const string ResourceSQL = "SELECT t FROM RESTar.Admin.ResourceAlias t WHERE t.Resource =?";
-        private const string AllSQL = "SELECT t FROM RESTar.Admin.ResourceAlias t";
-
-        internal static IEnumerable<ResourceAlias> All => Db.SQL<ResourceAlias>(AllSQL);
-
         /// <summary>
         /// Gets a ResourceAlias by its alias (case insensitive)
         /// </summary>
-        public static ResourceAlias ByAlias(string alias) => Db
-            .SQL<ResourceAlias>(AliasSQL, alias)
-            .FirstOrDefault();
+        public static ResourceAlias GetByAlias(string alias) => Db
+            .SQL<ResourceAlias>(ByAlias, alias).FirstOrDefault();
 
         /// <summary>
         /// Gets a ResourceAlias by its resource name
         /// </summary>
-        public static ResourceAlias ByResource(string resourceName) => Db
-            .SQL<ResourceAlias>(ResourceSQL, resourceName)
-            .FirstOrDefault();
+        public static ResourceAlias GetByResource(string resourceName) => Db
+            .SQL<ResourceAlias>(ByResource, resourceName).FirstOrDefault();
 
         /// <summary>
         /// Returns true if and only if there is an alias with this name
         /// </summary>
         public static bool Exists(string alias, out ResourceAlias resourceAlias)
         {
-            resourceAlias = ByAlias(alias);
+            resourceAlias = GetByAlias(alias);
             return resourceAlias != null;
         }
 

@@ -8,6 +8,7 @@ using RESTar.Operations;
 using RESTar.Requests;
 using Starcounter;
 using static System.Text.RegularExpressions.RegexOptions;
+using static RESTar.Admin.Settings;
 using static RESTar.Methods;
 using IResource = RESTar.Internal.IResource;
 
@@ -23,6 +24,9 @@ namespace RESTar.Admin
     {
         private const string description = "The Error resource records instances where an " +
                                            "error was encountered while handling a request.";
+
+        internal const string All = "SELECT t FROM RESTar.Admin.Error t";
+        internal const string ByTimeLessThan = All + " WHERE t.\"Time\" <?";
 
         /// <summary>
         /// A unique ID for this error instance
@@ -116,8 +120,7 @@ namespace RESTar.Admin
         internal static void ClearOld()
         {
             if (Checked >= DateTime.Now.Date) return;
-            const string SQL = "SELECT t FROM RESTar.Admin.Error t WHERE t.\"Time\" <?";
-            var matches = Db.SQL<Error>(SQL, DateTime.Now.AddDays(0 - Settings._DaysToSaveErrors));
+            var matches = Db.SQL<Error>(ByTimeLessThan, DateTime.Now.AddDays(0 - _DaysToSaveErrors));
             matches.ForEach(match => Transact.TransAsync(match.Delete));
             Checked = DateTime.Now.Date;
         }

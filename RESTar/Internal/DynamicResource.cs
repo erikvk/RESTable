@@ -16,6 +16,7 @@ namespace RESTar.Internal
     {
         internal const string All = "SELECT t FROM RESTar.Internal.DynamicResource t";
         internal const string ByTableName = All + " WHERE t.TableName =?";
+        internal const string ByName = All + " WHERE t.Name =?";
 
         /// <summary>
         /// The available methods for this resource
@@ -86,17 +87,15 @@ namespace RESTar.Internal
             return new DynamicResource(resource.Name, newTable, resource.EnabledMethods, resource.Description);
         }));
 
-        private const string DynamicResourceSQL = "SELECT t FROM RESTar.Internal.DynamicResource t WHERE t.Name =?";
-
         internal static DynamicResource Get(string resourceName) => Db
-            .SQL<DynamicResource>(DynamicResourceSQL, resourceName).FirstOrDefault();
+            .SQL<DynamicResource>(ByName, resourceName).FirstOrDefault();
 
         internal static bool DeleteTable(Admin.Resource resource)
         {
             var dynamicResource = Get(resource.Name);
             if (dynamicResource == null) return false;
             DynamitControl.ClearTable(dynamicResource.TableName);
-            var alias = Admin.ResourceAlias.ByResource(dynamicResource.Name);
+            var alias = Admin.ResourceAlias.GetByResource(dynamicResource.Name);
             Trans(() =>
             {
                 alias?.Delete();

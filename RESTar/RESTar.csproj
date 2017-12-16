@@ -97,7 +97,6 @@
     <Compile Include="Admin\DbOutputFormat.cs" />
     <Compile Include="DynamicTableAttribute.cs" />
     <Compile Include="Formatter.cs" />
-    <Compile Include="Grouper.cs" />
     <Compile Include="Http\HttpResponse.cs" />
     <Compile Include="Internal\IResourceInternal.cs" />
     <Compile Include="Internal\ITarget.cs" />

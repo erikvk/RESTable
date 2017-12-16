@@ -13,8 +13,10 @@ namespace RESTar.Internal
     /// </summary>
     internal static class StarcounterOperations<T> where T : class
     {
+        internal const string ColumnByTable = "SELECT t FROM Starcounter.Metadata.Column t WHERE t.Table.Fullname =?";
         internal static readonly string SELECT = $"SELECT t FROM {typeof(T).FullName.Fnuttify()} t ";
         internal static readonly string COUNT = $"SELECT COUNT(t) FROM {typeof(T).FullName.Fnuttify()} t ";
+
         internal static readonly Selector<T> Select;
         internal static readonly Inserter<T> Insert;
         internal static readonly Updater<T> Update;
@@ -34,24 +36,18 @@ namespace RESTar.Internal
                     case var external when !external.Conditions.Any():
                         return Db.SQL<T>($"{SELECT}{external.MetaConditions.OrderBy?.SQL}");
                     case var external:
-                        var where = external.Conditions.GetSQL().MakeWhereClause();
-                        var r2 = Db.SQL<T>($"{SELECT}{where.WhereString} " +
-                                           $"{external.MetaConditions.OrderBy?.SQL}", where.Values);
+                        var (whereString, values) = external.Conditions.GetSQL().MakeWhereClause();
+                        var r2 = Db.SQL<T>($"{SELECT}{whereString} {external.MetaConditions.OrderBy?.SQL}", values);
                         return !external.Conditions.HasPost(out var post) ? r2 : r2.Where(post);
                 }
             };
             Insert = (e, r) => e.Count();
             Update = (e, r) => e.Count();
-            Delete = (e, r) =>
+            Delete = (e, r) => e.Sum(_e =>
             {
-                var count = 0;
-                foreach (var _e in e)
-                {
-                    _e.Delete();
-                    count += 1;
-                }
-                return count;
-            };
+                _e.Delete();
+                return 1;
+            });
             Count = r =>
             {
                 switch (r)
@@ -63,18 +59,15 @@ namespace RESTar.Internal
                     case var external when !external.Conditions.Any(): return Db.SQL<long>(COUNT).FirstOrDefault();
                     case var external when external.Conditions.HasPost(out var _): return Select(r)?.LongCount() ?? 0L;
                     case var external:
-                        var where = external.Conditions.GetSQL().MakeWhereClause();
-                        return Db.SQL<long>($"{COUNT}{where.WhereString}", where.Values).FirstOrDefault();
+                        var (whereString, values) = external.Conditions.GetSQL().MakeWhereClause();
+                        return Db.SQL<long>($"{COUNT}{whereString}", values).FirstOrDefault();
                 }
             };
             Profile = r => ResourceProfile.Make(r, rows =>
             {
-                const string columnSQL = "SELECT t FROM Starcounter.Metadata.Column t WHERE t.Table.Fullname =?";
                 var resourceSQLName = typeof(T).FullName;
-                var scColumns = Db.SQL<Column>(columnSQL, resourceSQLName).Select(c => c.Name).ToList();
-                var columns = typeof(T).GetProperties(Instance | Public)
-                    .Where(p => scColumns.Contains(p.Name))
-                    .ToList();
+                var scColumns = Db.SQL<Column>(ColumnByTable, resourceSQLName).Select(c => c.Name).ToList();
+                var columns = typeof(T).GetProperties(Instance | Public).Where(p => scColumns.Contains(p.Name)).ToList();
                 return rows.Sum(e => columns.Sum(p => p.ByteCount(e)) + 16);
             });
         }

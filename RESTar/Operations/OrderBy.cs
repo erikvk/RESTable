@@ -16,11 +16,7 @@ namespace RESTar.Operations
         internal IResource Resource { get; }
         internal readonly Term Term;
         internal bool IsSqlQueryable = true;
-
-        internal string SQL => IsSqlQueryable
-            ? $"ORDER BY {Term.DbKey.Fnuttify()} {(Descending ? "DESC" : "ASC")}"
-            : null;
-
+        internal string SQL => !IsSqlQueryable ? null : $"ORDER BY {Term.DbKey.Fnuttify()} {(Descending ? "DESC" : "ASC")}";
         internal OrderBy(IResource resource) => Resource = resource;
 
         internal OrderBy(IResource resource, bool descending, string key, ICollection<string> dynamicMembers)

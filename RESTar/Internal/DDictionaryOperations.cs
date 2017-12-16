@@ -13,12 +13,6 @@ namespace RESTar.Internal
     /// </summary>
     internal static class DDictionaryOperations<T> where T : DDictionary
     {
-        private static IEnumerable<T> EqualitySQL(Condition<T> c, string kvp) => Db.SQL<T>(
-            $"SELECT CAST(t.Dictionary AS {typeof(T).FullName}) FROM {kvp} t WHERE t.Key =? " +
-            $"AND t.ValueHash {c.InternalOperator.SQL}?", c.Key, c.Value.GetHashCode()
-        );
-
-        private static IEnumerable<T> AllSQL => Db.SQL<T>($"SELECT t FROM {typeof(T).FullName} t");
         internal static readonly Selector<T> Select;
         internal static readonly Inserter<T> Insert;
         internal static readonly Updater<T> Update;
@@ -26,21 +20,17 @@ namespace RESTar.Internal
         internal static readonly Profiler<T> Profile;
         internal static readonly Counter<T> Count;
 
-        private static (string, Dynamit.Operator, dynamic)? ToFinderCond(Condition<T> c)
-        {
-            return (c.Key, (Dynamit.Operator) c.Operator, c.Value);
-        }
-
         static DDictionaryOperations()
         {
             Select = r =>
             {
+                (string, Dynamit.Operator, dynamic)? finderCond(Condition<T> c) => (c.Key, (Dynamit.Operator) c.Operator, c.Value);
                 var finderConditions = new List<(string, Dynamit.Operator, dynamic)?>();
                 var otherConditions = new HashSet<Condition<T>>();
                 foreach (var cond in r.Conditions)
                 {
                     if (cond.InternalOperator.Equality && cond.Term.Count == 1 && cond.Term.IsDynamic)
-                        finderConditions.Add(ToFinderCond(cond));
+                        finderConditions.Add(finderCond(cond));
                     else otherConditions.Add(cond);
                 }
                 var results = Finder<T>.Where(finderConditions.ToArray());
@@ -48,16 +38,11 @@ namespace RESTar.Internal
             };
             Insert = (e, r) => e.Count();
             Update = (e, r) => e.Count();
-            Delete = (e, r) =>
+            Delete = (e, r) => e.Sum(_e =>
             {
-                var count = 0;
-                foreach (var _e in e)
-                {
-                    _e.Delete();
-                    count += 1;
-                }
-                return count;
-            };
+                _e.Delete();
+                return 1;
+            });
             Count = r =>
             {
                 if (r.MetaConditions.Distinct != null)

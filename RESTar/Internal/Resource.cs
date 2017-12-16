@@ -76,10 +76,10 @@ namespace RESTar.Internal
 
         public string Alias
         {
-            get => Admin.ResourceAlias.ByResource(Name)?.Alias;
+            get => Admin.ResourceAlias.GetByResource(Name)?.Alias;
             set
             {
-                var existingAssignment = Admin.ResourceAlias.ByResource(Name);
+                var existingAssignment = Admin.ResourceAlias.GetByResource(Name);
                 if (value == null)
                 {
                     Trans(() => existingAssignment?.Delete());
@@ -87,7 +87,7 @@ namespace RESTar.Internal
                 }
                 if (value == "" || value.Any(char.IsWhiteSpace))
                     throw new Exception($"Invalid alias string '{value}'. Cannot be empty or contain whitespace");
-                var usedAliasMapping = Admin.ResourceAlias.ByAlias(value);
+                var usedAliasMapping = Admin.ResourceAlias.GetByAlias(value);
                 if (usedAliasMapping != null)
                 {
                     if (usedAliasMapping.Resource == Name)

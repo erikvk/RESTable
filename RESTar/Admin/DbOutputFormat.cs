@@ -57,7 +57,7 @@ namespace RESTar.Admin
             {
                 if (value)
                 {
-                    All.ForEach(f => f._isDefault = false);
+                    GetAll().ForEach(f => f._isDefault = false);
                     _isDefault = true;
                 }
                 else _isDefault = false;
@@ -96,30 +96,30 @@ namespace RESTar.Admin
         private const string RawPattern = macro;
         private const string SimplePattern = "{\"data\":$data}";
         private const string JSendPattern = "{\"status\":\"success\",\"data\":{\"posts\":$data}}";
-        private const string DefSQL = "SELECT t FROM RESTar.Admin.DbOutputFormat t WHERE t.IsDefault =?";
-        private const string NameSQL = "SELECT t FROM RESTar.Admin.DbOutputFormat t WHERE t.Name =?";
-        private const string AllSQL = "SELECT t FROM RESTar.Admin.DbOutputFormat t";
+        private const string All = "SELECT t FROM RESTar.Admin.DbOutputFormat t";
+        private const string ByDefault = All + " WHERE t.IsDefault =?";
+        private const string ByName = All + " WHERE t.Name =?";
 
         internal Formatter Format => _PrettyPrint
             ? new Formatter(PrettyPrintPre, PrettyPrintPost, StartIndent)
             : new Formatter(RegularPre, RegularPost, StartIndent);
 
-        internal static Formatter Default => Db.SQL<DbOutputFormat>(DefSQL, true).FirstOrDefault()?.Format ?? default;
+        internal static Formatter Default => Db.SQL<DbOutputFormat>(ByDefault, true).FirstOrDefault()?.Format ?? default;
         internal static Formatter Raw => default;
-        internal static IEnumerable<DbOutputFormat> All => Db.SQL<DbOutputFormat>(AllSQL);
-        internal static DbOutputFormat Get(string formatName) => Db.SQL<DbOutputFormat>(NameSQL, formatName).FirstOrDefault();
+        internal static IEnumerable<DbOutputFormat> GetAll() => Db.SQL<DbOutputFormat>(All);
+        internal static DbOutputFormat GetByName(string formatName) => Db.SQL<DbOutputFormat>(ByName, formatName).FirstOrDefault();
 
         internal static void Init()
         {
-            if (All.All(format => format.Name != "Raw"))
+            if (GetAll().All(format => format.Name != "Raw"))
                 Transact.Trans(() => new DbOutputFormat {Name = "Raw", RegularPattern = RawPattern});
-            if (All.All(format => format.Name != "Simple"))
+            if (GetAll().All(format => format.Name != "Simple"))
                 Transact.Trans(() => new DbOutputFormat {Name = "Simple", RegularPattern = SimplePattern});
-            if (All.All(format => format.Name != "JSend"))
+            if (GetAll().All(format => format.Name != "JSend"))
                 Transact.Trans(() => new DbOutputFormat {Name = "JSend", RegularPattern = JSendPattern});
-            if (All.All(format => !format.IsDefault))
+            if (GetAll().All(format => !format.IsDefault))
             {
-                var raw = Db.SQL<DbOutputFormat>(NameSQL, "Raw").First();
+                var raw = Db.SQL<DbOutputFormat>(ByName, "Raw").First();
                 Transact.Trans(() => raw._isDefault = true);
             }
         }
@@ -201,7 +201,7 @@ namespace RESTar.Admin
         public IEnumerable<OutputFormat> Select(IRequest<OutputFormat> request)
         {
             DbOutputFormat.Init();
-            return DbOutputFormat.All
+            return DbOutputFormat.GetAll()
                 .Select(f => new OutputFormat
                 {
                     Name = f.Name,
@@ -218,7 +218,7 @@ namespace RESTar.Admin
             var count = 0;
             foreach (var entity in entities)
             {
-                if (DbOutputFormat.Get(entity.Name) != null)
+                if (DbOutputFormat.GetByName(entity.Name) != null)
                     throw new Exception($"Invalid name. '{entity.Name}' is already in use.");
                 Transact.Trans(() => new DbOutputFormat {Name = entity.Name, RegularPattern = entity.Pattern});
                 count += 1;
@@ -232,7 +232,7 @@ namespace RESTar.Admin
             var count = 1;
             entities.ForEach(entity =>
             {
-                var dbEntity = DbOutputFormat.Get(entity.Name);
+                var dbEntity = DbOutputFormat.GetByName(entity.Name);
                 if (dbEntity == null) return;
                 Transact.Trans(() =>
                 {
@@ -253,7 +253,7 @@ namespace RESTar.Admin
             entities.ForEach(entity =>
             {
                 if (entity.IsBuiltIn) return;
-                Transact.Trans(DbOutputFormat.Get(entity.Name).Delete);
+                Transact.Trans(DbOutputFormat.GetByName(entity.Name).Delete);
                 count += 1;
             });
             return count;
