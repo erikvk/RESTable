@@ -41,8 +41,6 @@ namespace RESTar
     {
         #region Member reflection
 
-#pragma warning disable 618
-
         internal static string RESTarMemberName(this MemberInfo m, bool flagged = false)
         {
             var name = m.GetAttribute<RESTarMemberAttribute>()?.Name ??
@@ -54,8 +52,6 @@ namespace RESTar
 
         internal static bool RESTarIgnored(this MemberInfo m) => m.GetAttribute<RESTarMemberAttribute>()?.Ignored == true ||
                                                                  m.HasAttribute<IgnoreDataMemberAttribute>();
-
-#pragma warning restore 618
 
         #endregion
 
