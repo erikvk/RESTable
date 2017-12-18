@@ -34,8 +34,8 @@ namespace RESTarExample
     [Database, RESTar]
     public class Static
     {
-        [RESTarMember(ignore: true)] public int Swoo { get; set; }
-        [RESTarMember(name: "Swoo")] public string Str { get; set; }
+        public int Swoo { get; set; }
+        public string Str { get; set; }
         public int Int { get; set; }
     }
 
