@@ -55,17 +55,15 @@ namespace RESTar.Requests
 
         internal void Populate(RequestArguments requestArguments)
         {
-            if (requestArguments.HasView)
+            if (requestArguments.ViewName != null)
             {
                 if (!Resource.ViewDictionary.TryGetValue(requestArguments.ViewName, out var view))
                     throw new UnknownViewException(requestArguments.ViewName, Resource);
                 Target = view;
             }
             requestArguments.NonReservedHeaders.ForEach(Headers.Add);
-            if (requestArguments.HasConditions)
-                Conditions = Condition<T>.Parse(requestArguments.UriConditions, Resource) ?? Conditions;
-            if (requestArguments.HasMetaConditions)
-                MetaConditions = MetaConditions.Parse(requestArguments.UriMetaConditions, Resource, false) ?? MetaConditions;
+            Conditions = Condition<T>.Parse(requestArguments.UriConditions, Resource) ?? Conditions;
+            MetaConditions = MetaConditions.Parse(requestArguments.UriMetaConditions, Resource, false) ?? MetaConditions;
         }
 
         internal void Evaluate()

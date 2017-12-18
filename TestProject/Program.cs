@@ -8,14 +8,19 @@ namespace TestProject
     {
         public static void Main()
         {
-            Handle.GET(8100, "/test", () => new Response
-            {
-                StatusCode = 200,
-                StatusDescription = "OK",
-                Headers = {["X-MySingleHeader"] = "Some value\r\nFoo: other value\r\nThird value"}
-            });
-            var response = Http.GET("http://localhost:8100/test");
-            var fooHeader = response.Headers["Foo"];
+            //Handle.GET(8100, "/test", () => new Response
+            //{
+            //    StatusCode = 200,
+            //    StatusDescription = "OK",
+            //    Headers = {["X-MySingleHeader"] = "Some value\r\nFoo: other value\r\nThird value"}
+            //});
+            //var response = Http.GET("http://localhost:8100/test");
+            //var fooHeader = response.Headers["Foo"];
+
+            var request = new Request();
+
+            var s = "";
+
             // other value
         }
     }

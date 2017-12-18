@@ -8,18 +8,13 @@
         /// <summary>
         /// The main URI regex, used when parsing requests
         /// </summary>
-        internal const string RequestUri =
+        internal const string RESTarRequestUri =
             @"\?*(?<resource_or_macro>/[^/-]*)?(?<view>-\w*)?(?<conditions>/[^/]*)?(?<metaconditions>/[^/]*)?";
 
         /// <summary>
         /// The base URI regex, used when validating base uris in RESTarConfig.Init
         /// </summary>
         internal const string BaseUri = @"^/?[\/\w]+$";
-
-        /// <summary>
-        /// A regex used to isolate the key meta-condition in meta-condition strings
-        /// </summary>
-        internal const string KeyMetaCondition = @"&key=(?<key>[^/&]+)|key=(?<key>[^/&]+)&?";
 
         /// <summary>
         /// Matches only letters, numbers and underscores

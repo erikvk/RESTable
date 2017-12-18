@@ -1,11 +1,9 @@
 ﻿using System;
 using System.Linq;
 using System.Net;
-using System.Text.RegularExpressions;
 using RESTar.Auth;
 using RESTar.Requests;
 using Starcounter;
-using static System.Text.RegularExpressions.RegexOptions;
 using static RESTar.Internal.ErrorCodes;
 using static RESTar.RESTarConfig;
 
@@ -50,7 +48,7 @@ namespace RESTar.Internal
                 throw new ForbiddenException(FailedResourceAuthentication, authResults.Reason);
         }
 
-        internal static void Authenticate<T>(this RESTRequest<T> request, ref RequestArguments requestArguments) where T : class
+        internal static void Authenticate<T>(this RESTRequest<T> request, RequestArguments requestArguments) where T : class
         {
             if (!RequireApiKey)
             {
@@ -71,12 +69,11 @@ namespace RESTar.Internal
             var authorizationHeader = requestArguments.Headers.SafeGet("Authorization");
             if (string.IsNullOrWhiteSpace(authorizationHeader))
             {
-                if (!requestArguments.HasMetaConditions) throw NotAuthorizedException;
-                var match = Regex.Match(requestArguments.UriMetaConditions, RegEx.KeyMetaCondition, IgnoreCase);
-                if (!match.Success) throw NotAuthorizedException;
-                var conds = requestArguments.UriMetaConditions.Replace(match.Groups[0].Value, "");
-                requestArguments.UriMetaConditions = conds;
-                authorizationHeader = $"apikey {WebUtility.UrlDecode(match.Groups["key"].ToString())}";
+                if (!requestArguments.UriMetaConditions.Any()) throw NotAuthorizedException;
+                var keyMetaCondition = requestArguments.UriMetaConditions.FirstOrDefault(c => c.Key.EqualsNoCase("key"));
+                if (keyMetaCondition.ValueLiteral == null) throw NotAuthorizedException;
+                requestArguments.UriMetaConditions.Remove(keyMetaCondition);
+                authorizationHeader = $"apikey {WebUtility.UrlDecode(keyMetaCondition.ValueLiteral)}";
             }
             var apikey_key = authorizationHeader.Split(' ');
             if (apikey_key[0].ToLower() != "apikey" || apikey_key.Length != 2)

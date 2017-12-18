@@ -1,11 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics.Contracts;
-using System.Net;
 using System.Linq;
 using RESTar.Deflection;
 using RESTar.Deflection.Dynamic;
 using RESTar.Internal;
 using RESTar.Operations;
+using RESTar.Requests;
 using static System.StringComparison;
 using static RESTar.Operators;
 
@@ -193,47 +194,33 @@ namespace RESTar
             }
         }
 
-        private const string OpMatchChars = "<>=!";
+        internal static Condition<T>[] Parse(string conditionsString, ITarget<T> target) =>
+            Parse(UriCondition.ParseMany(conditionsString), target);
 
         /// <summary>
-        /// Parses a Conditions object from a conditions section of a REST request URI
+        /// Parses and checks the semantics of Conditions object from a conditions of a REST request URI
         /// </summary>
-        public static Condition<T>[] Parse(string conditionString, ITarget<T> target)
+        public static Condition<T>[] Parse(IEnumerable<UriCondition> uriConditions, ITarget<T> target) => uriConditions.Select(c =>
         {
-            if (string.IsNullOrEmpty(conditionString)) return null;
-            return conditionString.Split('&').Select(s =>
+            var (key, op, valueLiteral) = (c.Key, c.Operator, c.ValueLiteral);
+            var term = target.MakeConditionTerm(key);
+            if (!term.Last.AllowedConditionOperators.HasFlag(op.OpCode))
+                throw new ForbiddenOperatorException(key, target, op, term, term.Last.AllowedConditionOperators.ToOperators());
+            var value = valueLiteral.ParseConditionValue();
+            if (term.Last is StaticProperty prop && prop.Type.IsEnum && value is string)
             {
-                if (s == "")
-                    throw new SyntaxException(ErrorCodes.InvalidConditionSyntax, "Invalid condition syntax");
-
-                s = s.ReplaceFirst("%3E=", ">=", out var replaced);
-                if (!replaced) s = s.ReplaceFirst("%3C=", "<=", out replaced);
-                if (!replaced) s = s.ReplaceFirst("%3E", ">", out replaced);
-                if (!replaced) s = s.ReplaceFirst("%3C", "<", out replaced);
-
-                var operatorCharacters = new string(s.Where(c => OpMatchChars.Contains(c)).ToArray());
-                if (!RESTar.Operator.TryParse(operatorCharacters, out var op))
-                    throw new OperatorException(s);
-                var keyValuePair = s.Split(new[] {op.Common}, StringSplitOptions.None);
-                var term = target.MakeConditionTerm(WebUtility.UrlDecode(keyValuePair[0]));
-                if (!term.Last.AllowedConditionOperators.HasFlag(op.OpCode))
-                    throw new ForbiddenOperatorException(s, target, op, term, term.Last.AllowedConditionOperators.ToOperators());
-                var value = WebUtility.UrlDecode(keyValuePair[1]).ParseConditionValue();
-                if (term.Last is StaticProperty prop && prop.Type.IsEnum && value is string)
+                try
                 {
-                    try
-                    {
-                        value = Enum.Parse(prop.Type, value);
-                    }
-                    catch
-                    {
-                        throw new SyntaxException(ErrorCodes.InvalidConditionSyntax,
-                            $"Invalid string value for condition '{term.Key}'. The property type for '{prop.Name}' " +
-                            $"has a predefined set of allowed values, not containing '{value}'.");
-                    }
+                    value = Enum.Parse(prop.Type, value);
                 }
-                return new Condition<T>(term, op.OpCode, value);
-            }).ToArray();
-        }
+                catch
+                {
+                    throw new SyntaxException(ErrorCodes.InvalidConditionSyntax,
+                        $"Invalid string value for condition '{term.Key}'. The property type for '{prop.Name}' " +
+                        $"has a predefined set of allowed values, not containing '{value}'.");
+                }
+            }
+            return new Condition<T>(term, op.OpCode, value);
+        }).ToArray();
     }
 }

@@ -1,36 +1,20 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
-using ClosedXML.Excel;
 using RESTar.Admin;
 using static System.Text.RegularExpressions.RegexOptions;
 using IResource = RESTar.Internal.IResource;
 
 namespace RESTar.Requests
 {
-    internal struct UriCondition
-    {
-        internal string Key { get; }
-        internal Operator Operator { get; }
-        internal string ValueLiteral { get; }
-        public override string ToString() => $"{Key}{Operator.Common}{ValueLiteral}";
-        public UriCondition(string key, Operator op, string literal) => (Key, Operator, ValueLiteral) = (key, op, literal);
-    }
-
     internal class RequestArguments
     {
-        internal string ResourceSpecifier { get; }
-        internal string ViewName { get; }
+        internal string ResourceSpecifier { get; set; }
+        internal string ViewName { get; set; }
         internal List<UriCondition> UriConditions { get; }
         internal List<UriCondition> UriMetaConditions { get; set; }
-
-        internal bool HasResource { get; }
-        internal bool HasView { get; }
-        internal bool HasConditions { get; }
-        internal bool HasMetaConditions { get; }
-
-        internal IResource IResource => HasResource ? Resource.Find(ResourceSpecifier) : Resource<AvailableResource>.Get;
-        internal DbMacro Macro { get; }
+        internal IResource IResource => Resource.Find(ResourceSpecifier);
+        internal DbMacro Macro { get; set; }
         internal Origin Origin { get; set; }
         internal byte[] BodyBytes { get; set; }
         internal IDictionary<string, string> Headers { get; set; }
@@ -40,77 +24,68 @@ namespace RESTar.Requests
         internal IEnumerable<KeyValuePair<string, string>> NonReservedHeaders =>
             Headers.Where(h => !Regex.IsMatch(h.Key, RegEx.ReservedHeaders, IgnoreCase));
 
+        private static readonly string DefaultResourceSpecifier = typeof(AvailableResource).FullName;
+
         internal string UriString
         {
             get
             {
                 var total = "/";
-                if (HasResource)
-                    total += ResourceSpecifier;
-                else if (Macro != null)
-                    total += "$" + Macro.Name;
-                else total += "RESTar.AvailableResource";
+                total += Macro != null ? "$" + Macro.Name : ResourceSpecifier;
                 total += "/";
-                if (HasConditions)
-                    total += string.Join("$", UriConditions);
+                total += UriConditions != null ? string.Join("$", UriConditions) : null;
                 total += "/";
-                if (HasMetaConditions)
-                    total += string.Join("$", UriMetaConditions);
+                total += UriMetaConditions != null ? string.Join("$", UriMetaConditions) : null;
                 return total.TrimEnd('/');
             }
         }
 
+        internal RequestArguments()
+        {
+            UriConditions = new List<UriCondition>();
+            UriMetaConditions = new List<UriCondition>();
+            ResourceSpecifier = DefaultResourceSpecifier;
+        }
+
         /// <summary>
-        /// Creates a new Args from a URI string, beginning after the base URI, for example /resource
+        /// Creates a new Args from a standard RESTar URI string, beginning after the base 
+        /// URI, for example /resource
         /// </summary>
-        internal RequestArguments(string uriString, bool escapePercentSigns = false)
+        internal RequestArguments(string uriString, bool escapePercentSigns = false) : this()
         {
             Headers = new Dictionary<string, string>();
-            if (uriString.CharCount('/') > 3) throw new InvalidSeparatorException();
+            if (uriString.Count(c => c == '/') > 3) throw new InvalidSeparatorException();
             if (escapePercentSigns) uriString = uriString.Replace("%25", "%");
-            var uriGroups = Regex.Match(uriString, RegEx.RequestUri).Groups;
+            var uriGroups = Regex.Match(uriString, RegEx.RESTarRequestUri).Groups;
             var resourceOrMacro = uriGroups["resource_or_macro"].Value.TrimStart('/');
             var view = uriGroups["view"].Value.TrimStart('-');
             var conditions = uriGroups["conditions"].Value.TrimStart('/');
             var metaConditions = uriGroups["metaconditions"].Value.TrimStart('/');
-            HasView = view != "";
-            HasConditions = conditions != "";
-            HasMetaConditions = metaConditions != "";
-            var hasResourceOrMacro = resourceOrMacro != "";
-            if (hasResourceOrMacro)
+            if (conditions.Any())
+                UriConditions.AddRange(UriCondition.ParseMany(conditions, true));
+            if (metaConditions.Any())
+                UriMetaConditions.AddRange(UriCondition.ParseMany(metaConditions, true));
+            if (view.Any())
+                ViewName = view;
+            if (resourceOrMacro != "")
             {
-                var hasMacro = resourceOrMacro[0] == '$';
-                if (hasMacro)
+                if (resourceOrMacro[0] != '$')
+                    ResourceSpecifier = resourceOrMacro;
+                else
                 {
                     var macroString = resourceOrMacro.Substring(1);
                     Macro = DbMacro.Get(macroString) ?? throw new UnknownMacroException(macroString);
-                    var macroArgs = new RequestArguments(Macro.Uri);
-                    (HasResource, ResourceSpecifier) = (macroArgs.HasResource, macroArgs.ResourceSpecifier);
-                    ViewName = HasView ? view : macroArgs.ViewName;
-                    UriConditions = macroArgs.HasConditions
-                        ? (HasConditions ? $"{macroArgs.UriConditions}&{conditions}" : macroArgs.UriConditions)
-                        : (HasConditions ? conditions : null);
-                    UriMetaConditions = macroArgs.HasMetaConditions
-                        ? (HasMetaConditions ? $"{macroArgs.UriMetaConditions}&{metaConditions}" : macroArgs.UriMetaConditions)
-                        : (HasMetaConditions ? metaConditions : null);
-                    HasConditions = UriConditions != null;
-                    HasMetaConditions = UriMetaConditions != null;
+                    ResourceSpecifier = Macro.ResourceSpecifier;
+                    ViewName = ViewName ?? Macro.ViewName;
+                    var macroConditions = Macro.UriConditions;
+                    if (macroConditions != null)
+                        UriConditions.AddRange(macroConditions);
+                    var macroMetaConditions = Macro.UriMetaConditions;
+                    if (macroMetaConditions != null)
+                        UriMetaConditions.AddRange(macroMetaConditions);
                 }
-                else
-                {
-                    HasResource = true;
-                    ResourceSpecifier = resourceOrMacro;
-                    ViewName = HasView ? view : null;
-                    UriConditions = HasConditions ? conditions : null;
-                    UriMetaConditions = HasMetaConditions ? metaConditions : null;
-                }
-            }
-            else
-            {
-                ViewName = HasView ? view : null;
-                UriConditions = HasConditions ? conditions : null;
-                UriMetaConditions = HasMetaConditions ? metaConditions : null;
             }
         }
     }
 }
+

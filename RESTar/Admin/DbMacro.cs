@@ -27,6 +27,26 @@ namespace RESTar.Admin
         public string Name { get; set; }
 
         /// <summary>
+        /// The resource locator to use in requests
+        /// </summary>
+        public string ResourceSpecifier { get; set; }
+
+        /// <summary>
+        /// The view, if any, to use in requests
+        /// </summary>
+        public string ViewName { get; set; }
+
+        /// <summary>
+        /// The uri conditions to append to requests
+        /// </summary>
+        public string UriConditionsString { get; set; }
+
+        /// <summary>
+        /// The uri meta-conditions to append to requests
+        /// </summary>
+        public string UriMetaConditionsString { get; set; }
+
+        /// <summary>
         /// The URI of the macro
         /// </summary>
         public string Uri { get; set; }
@@ -44,6 +64,9 @@ namespace RESTar.Admin
         public string Headers { get; set; }
 
         #endregion
+
+        internal IEnumerable<UriCondition> UriConditions => UriConditionsString?.Split('&').Select(c => new UriCondition(c));
+        internal IEnumerable<UriCondition> UriMetaConditions => UriMetaConditionsString?.Split('&').Select(c => new UriCondition(c));
 
         internal static IEnumerable<DbMacro> GetAll() => Db.SQL<DbMacro>(All);
         internal static DbMacro Get(string macroName) => Db.SQL<DbMacro>(ByName, macroName).FirstOrDefault();
@@ -101,7 +124,7 @@ namespace RESTar.Admin
             try
             {
                 var args = new RequestArguments(Uri);
-                if (args.HasMetaConditions && args.UriMetaConditions.ToLower().Contains("key="))
+                if (args.UriMetaConditions.Any(c => c.Key.EqualsNoCase("key")))
                 {
                     invalidReason = "Macro URIs cannot contain the 'Key' meta-condition. If API keys are " +
                                     "required, they are expected in each call to the macro.";

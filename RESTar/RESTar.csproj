@@ -109,6 +109,8 @@
     <Compile Include="Report.cs" />
     <Compile Include="Requests\Evaluator.cs" />
     <Compile Include="Requests\Headers.cs" />
+    <Compile Include="Requests\Protocols.cs" />
+    <Compile Include="Requests\UriCondition.cs" />
     <Compile Include="ResourceProviderAttribute.cs" />
     <Compile Include="Resources\StarcounterIndexer.cs" />
     <Compile Include="AvailableResource.cs" />
@@ -249,6 +251,7 @@
     </TypedJSON>
     <None Include="weaver.ignore" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="$(StarcounterBin)\Starcounter.MsBuild.targets" />
   <PropertyGroup>

@@ -1,5 +1,5 @@
-﻿using System.Net;
-using Newtonsoft.Json.Linq;
+﻿using System.Collections.Generic;
+using System.Net;
 using RESTar.Operations;
 using Starcounter;
 using static RESTar.Requests.HandlerActions;
@@ -30,28 +30,15 @@ namespace RESTar.Requests
             Handle.GET($"/{appName}", () => Evaluate(MENU));
         }
 
-        private static RequestArguments MakeArgs(Request request, string uri)
-        {
-            var arrProxy = request.HeadersDictionary?.ContainsKey("X-ARR-LOG-ID") == true;
-            var args = new RequestArguments(uri, arrProxy)
-            {
-                Origin = MakeOrigin(request),
-                BodyBytes = request.BodyBytes,
-                Headers = request.HeadersDictionary,
-                ContentType = request.ContentType,
-                Accept = request.PreferredMimeTypeString
-            };
-            if (args.Macro == null) return args;
-            request.BodyBytes = request.BodyBytes ?? args.Macro.BodyBinary.ToArray();
-            if (args.Macro.Headers == null) return args;
-            foreach (var pair in JObject.Parse(args.Macro.Headers))
-            {
-                var currentValue = request.Headers[pair.Key];
-                if (string.IsNullOrWhiteSpace(currentValue) || currentValue == "*/*")
-                    request.Headers[pair.Key] = pair.Value.Value<string>();
-            }
-            return args;
-        }
+        private static RequestArguments MakeArgs(Request request, string uri) => Protocol.MakeArguments
+        (
+            uri: uri,
+            body: request.BodyBytes,
+            headers: request.HeadersDictionary ?? new Dictionary<string, string>(),
+            contentType: request.ContentType,
+            accept: request.PreferredMimeTypeString,
+            origin: MakeOrigin(request)
+        );
 
         private static Origin MakeOrigin(Request request)
         {

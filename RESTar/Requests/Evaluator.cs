@@ -101,7 +101,7 @@ namespace RESTar.Requests
         {
             using (var request = new RESTRequest<T>(resource, requestArguments.Origin))
             {
-                request.Authenticate(ref requestArguments);
+                request.Authenticate(requestArguments);
                 request.Populate(requestArguments, (Methods) action);
                 request.MethodCheck();
                 request.SetRequestData(requestArguments.BodyBytes);

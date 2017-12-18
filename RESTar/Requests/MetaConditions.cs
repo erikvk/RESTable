@@ -1,11 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
 using RESTar.Admin;
 using RESTar.Internal;
+using RESTar.Linq;
 using RESTar.Operations;
-using static System.StringComparison;
 using static RESTar.Internal.ErrorCodes;
 
 #pragma warning disable 612
@@ -31,7 +30,7 @@ namespace RESTar.Requests
 
     internal static class MetaConditionsExtensions
     {
-        internal static Type ExpectedType(this RESTarMetaConditions condition)
+        internal static Type GetExpectedType(this RESTarMetaConditions condition)
         {
             switch (condition)
             {
@@ -116,48 +115,32 @@ namespace RESTar.Requests
         internal IProcessor[] Processors { get; private set; }
         internal bool HasProcessors { get; private set; }
 
-        internal static MetaConditions Parse(string metaConditionString, IResource resource,
+        private static string AllMetaConditions =>
+            $"{string.Join(", ", Enum.GetNames(typeof(RESTarMetaConditions)).Except(new[] {"New", "Delete"}))}";
+
+        internal static MetaConditions Parse(List<UriCondition> uriMetaConditions, IResource resource,
             bool processors = true)
         {
-            if (metaConditionString?.Equals("") != false)
-                return null;
-            metaConditionString = WebUtility.UrlDecode(metaConditionString);
+            if (!uriMetaConditions.Any()) return null;
+            var renames = uriMetaConditions.Where(c => c.Key.EqualsNoCase("rename"));
+            var regular = uriMetaConditions.Where(c => !c.Key.EqualsNoCase("rename"));
             var mc = new MetaConditions {Empty = false};
-            var mcStrings = metaConditionString.Split('&').ToList();
-            var renameIndex = mcStrings.FindIndex(s => s.StartsWith("rename", CurrentCultureIgnoreCase));
-            if (renameIndex != -1)
-            {
-                var rename = mcStrings[renameIndex];
-                mcStrings.RemoveAt(renameIndex);
-                mcStrings.Insert(0, rename);
-            }
             ICollection<string> dynamicDomain = default;
-            foreach (var s in mcStrings)
-            {
-                #region Initial checks
 
-                if (s == "")
-                    throw new SyntaxException(InvalidMetaConditionSyntax,
-                        "Invalid meta-condition syntax. Check use of '&' in URI.");
-                var containsOneAndOnlyOneEquals = s.Count(c => c == '=') == 1;
-                if (!containsOneAndOnlyOneEquals)
+            void make(IEnumerable<UriCondition> conds) => conds.ForEach(cond =>
+            {
+                var (key, op, valueLiteral) = (cond.Key, cond.Operator, cond.ValueLiteral);
+                if (op.OpCode != Operators.EQUALS)
                     throw new SyntaxException(InvalidMetaConditionOperator,
                         "Invalid operator for meta-condition. One and only one '=' is allowed");
-                var pair = s.Split('=');
-                if (!Enum.TryParse(pair[0], true, out RESTarMetaConditions metaCondition))
+                if (!Enum.TryParse(key, true, out RESTarMetaConditions metaCondition))
                     throw new SyntaxException(InvalidMetaConditionKey,
-                        $"Invalid meta-condition '{pair[0]}'. Available meta-conditions: " +
-                        $"{string.Join(", ", Enum.GetNames(typeof(RESTarMetaConditions)).Except(new[] {"New", "Delete"}))}. " +
-                        $"For more info, see {Settings.Instance.HelpResourcePath}/topic=Meta-conditions");
-                var expectedType = metaCondition.ExpectedType();
-                var value = pair[1].ParseConditionValue();
+                        $"Invalid meta-condition '{key}'. Available meta-conditions: {AllMetaConditions}");
+                var expectedType = metaCondition.GetExpectedType();
+                var value = valueLiteral.ParseConditionValue();
                 if (expectedType != value.GetType())
                     throw new SyntaxException(InvalidMetaConditionValueType,
-                        $"Invalid data type assigned to meta-condition '{pair[0]}'. " +
-                        $"Expected {GetTypeString(expectedType)}.");
-
-                #endregion
-
+                        $"Invalid data type assigned to meta-condition '{key}'. Expected {GetTypeString(expectedType)}.");
                 switch (metaCondition)
                 {
                     case RESTarMetaConditions.Unsafe:
@@ -210,37 +193,41 @@ namespace RESTar.Requests
                         break;
                     default: throw new ArgumentOutOfRangeException();
                 }
+            });
 
-                if (processors)
-                {
-                    mc.Processors = new IProcessor[] {mc.Add, mc.Rename, mc.Select, mc.Distinct}.Where(p => p != null).ToArray();
-                    mc.HasProcessors = mc.Processors.Any();
-                }
+            make(renames);
+            make(regular);
 
-                if (mc.OrderBy != null)
-                {
-                    if (mc.Add?.Any(pc => pc.Key.EqualsNoCase(mc.OrderBy.Key)) == true)
-                        mc.OrderBy.IsSqlQueryable = false;
-                    if (mc.Rename?.Any(pc => pc.Value.EqualsNoCase(mc.OrderBy.Key)) == true)
-                        mc.OrderBy.IsSqlQueryable = false;
-                    if (mc.Rename?.Any(p => p.Key.Key.EqualsNoCase(mc.OrderBy.Key)) == true
-                        && !mc.Rename.Any(p => p.Value.EqualsNoCase(mc.OrderBy.Key)))
-                        throw new SyntaxException(InvalidMetaConditionSyntax,
-                            $"The {(mc.OrderBy.Ascending ? "'Order_asc'" : "'Order_desc'")} " +
-                            "meta-condition cannot refer to a property x that is to be renamed " +
-                            "unless some other property is renamed to x");
-                    if (mc.OrderBy.Term.ScQueryable == false)
-                        mc.OrderBy.IsSqlQueryable = false;
-                }
-                if (mc.Select != null && mc.Rename != null)
-                {
-                    if (mc.Select.Any(pc => mc.Rename.Any(p => p.Key.Key.EqualsNoCase(pc.Key)) &&
-                                            !mc.Rename.Any(p => p.Value.EqualsNoCase(pc.Key))))
-                        throw new SyntaxException(InvalidMetaConditionSyntax,
-                            "A 'Select' meta-condition cannot refer to a property x that is " +
-                            "to be renamed unless some other property is renamed to x");
-                }
+            if (processors)
+            {
+                mc.Processors = new IProcessor[] {mc.Add, mc.Rename, mc.Select, mc.Distinct}.Where(p => p != null).ToArray();
+                mc.HasProcessors = mc.Processors.Any();
             }
+
+            if (mc.OrderBy != null)
+            {
+                if (mc.Add?.Any(pc => pc.Key.EqualsNoCase(mc.OrderBy.Key)) == true)
+                    mc.OrderBy.IsSqlQueryable = false;
+                if (mc.Rename?.Any(pc => pc.Value.EqualsNoCase(mc.OrderBy.Key)) == true)
+                    mc.OrderBy.IsSqlQueryable = false;
+                if (mc.Rename?.Any(p => p.Key.Key.EqualsNoCase(mc.OrderBy.Key)) == true
+                    && !mc.Rename.Any(p => p.Value.EqualsNoCase(mc.OrderBy.Key)))
+                    throw new SyntaxException(InvalidMetaConditionSyntax,
+                        $"The {(mc.OrderBy.Ascending ? "'Order_asc'" : "'Order_desc'")} " +
+                        "meta-condition cannot refer to a property x that is to be renamed " +
+                        "unless some other property is renamed to x");
+                if (mc.OrderBy.Term.ScQueryable == false)
+                    mc.OrderBy.IsSqlQueryable = false;
+            }
+            if (mc.Select != null && mc.Rename != null)
+            {
+                if (mc.Select.Any(pc => mc.Rename.Any(p => p.Key.Key.EqualsNoCase(pc.Key)) &&
+                                        !mc.Rename.Any(p => p.Value.EqualsNoCase(pc.Key))))
+                    throw new SyntaxException(InvalidMetaConditionSyntax,
+                        "A 'Select' meta-condition cannot refer to a property x that is " +
+                        "to be renamed unless some other property is renamed to x");
+            }
+
             return mc;
         }
 

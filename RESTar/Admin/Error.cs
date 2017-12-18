@@ -1,13 +1,11 @@
 ﻿using System;
 using System.Linq;
 using System.Text;
-using System.Text.RegularExpressions;
 using RESTar.Internal;
 using RESTar.Linq;
 using RESTar.Operations;
 using RESTar.Requests;
 using Starcounter;
-using static System.Text.RegularExpressions.RegexOptions;
 using static RESTar.Admin.Settings;
 using static RESTar.Methods;
 using IResource = RESTar.Internal.IResource;
@@ -85,8 +83,9 @@ namespace RESTar.Admin
         internal static Error Create(ErrorCodes errorCode, Exception e, IResource resource, RequestArguments requestArguments,
             HandlerActions action)
         {
-            if (requestArguments?.HasMetaConditions == true && requestArguments.UriMetaConditions.ToLower().Contains("key="))
-                requestArguments.UriMetaConditions = Regex.Replace(requestArguments.UriMetaConditions, RegEx.KeyMetaCondition, "key=*******", IgnoreCase);
+            requestArguments?.UriMetaConditions
+                .Where(c => c.Key.EqualsNoCase("key"))
+                .ForEach(cond => cond.ValueLiteral = "*******");
             var uri = requestArguments?.UriString;
             var stackTrace = $"{e.StackTrace} §§§ INNER: {e.InnerException?.StackTrace}";
             var totalMessage = e.TotalMessage();
@@ -97,7 +96,9 @@ namespace RESTar.Admin
                                (resource?.Alias != null ? $" ({resource.Alias})" : ""),
                 HandlerAction = action,
                 ErrorCode = errorCode,
-                Body = requestArguments?.BodyBytes != null ? Encoding.UTF8.GetString(requestArguments.BodyBytes.Take(5000).ToArray()) : null,
+                Body = requestArguments?.BodyBytes != null
+                    ? Encoding.UTF8.GetString(requestArguments.BodyBytes.Take(5000).ToArray())
+                    : null,
                 StackTrace = stackTrace.Length > MaxStringLength ? stackTrace.Substring(0, MaxStringLength) : stackTrace,
                 Message = totalMessage.Length > MaxStringLength ? totalMessage.Substring(0, MaxStringLength) : totalMessage,
                 Uri = uri,

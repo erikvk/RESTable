@@ -55,7 +55,7 @@ namespace RESTar.Requests
 
         internal void Populate(RequestArguments requestArguments, Methods method)
         {
-            if (requestArguments.HasView)
+            if (requestArguments.ViewName != null)
             {
                 if (!Resource.ViewDictionary.TryGetValue(requestArguments.ViewName, out var view))
                     throw new UnknownViewException(requestArguments.ViewName, Resource);
@@ -71,10 +71,8 @@ namespace RESTar.Requests
             InputDataConfig = Source != null ? DataConfig.External : DataConfig.Client;
             OutputDataConfig = Destination != null ? DataConfig.External : DataConfig.Client;
             requestArguments.NonReservedHeaders.ForEach(Headers.Add);
-            if (requestArguments.HasConditions)
-                Conditions = Condition<T>.Parse(requestArguments.UriConditions, Target) ?? Conditions;
-            if (requestArguments.HasMetaConditions)
-                MetaConditions = MetaConditions.Parse(requestArguments.UriMetaConditions, Resource) ?? MetaConditions;
+            Conditions = Condition<T>.Parse(requestArguments.UriConditions, Target) ?? Conditions;
+            MetaConditions = MetaConditions.Parse(requestArguments.UriMetaConditions, Resource) ?? MetaConditions;
             if (Origin.IsInternal) MetaConditions.Formatter = DbOutputFormat.Raw;
         }
 
