@@ -183,12 +183,12 @@ namespace RESTar
             uri = uri?.Trim() ?? "/rest";
             if (!Regex.IsMatch(uri, RegEx.BaseUri))
                 throw new FormatException("URI contained invalid characters. Can only contain " +
-                                          "letters, numbers and underscores");
+                                          "letters, numbers, forward slashes and underscores");
             var appName = Application.Current.Name;
             if (uri.EqualsNoCase(appName))
                 throw new ArgumentException($"URI must differ from application name ({appName})", nameof(appName));
             if (uri[0] != '/') uri = $"/{uri}";
-            return uri;
+            return uri.TrimEnd('/');
         }
 
         private static void ReadConfig()

@@ -20,6 +20,7 @@ namespace RESTarExample
         {
             RESTarConfig.Init
             (
+                uri: "/rest/",
                 requireApiKey: true,
                 allowAllOrigins: false,
                 viewEnabled: true,
@@ -135,7 +136,7 @@ namespace RESTarExample
 
     #region Random resources
 
-    [RESTar(Methods.GET)]
+    [RESTar]
     public class MyThing : ResourceWrapper<Table> { }
 
     [Database]

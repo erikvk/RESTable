@@ -9,6 +9,7 @@ using System.Net;
 using System.Reflection;
 using System.Runtime.Serialization;
 using System.Text;
+using System.Text.RegularExpressions;
 using Dynamit;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -677,8 +678,8 @@ namespace RESTar
                 case null: return null;
                 case "null": return null;
                 case "": throw new SyntaxException(InvalidConditionSyntax, "No condition value literal after operator");
-                case var escaped when escaped[0] == '\"' && escaped[escaped.Length - 1] == '\"':
-                    return escaped.Remove(0, 1).Remove(escaped.Length - 2, 1);
+                case var _ when Regex.Match(str, RegEx.DoubleQuoteRegex) is Match m && m.Success: return m.Groups["content"].Value;
+                case var _ when Regex.Match(str, RegEx.SingleQuoteRegex) is Match m && m.Success: return m.Groups["content"].Value;
                 case var _ when bool.TryParse(str, out var @bool): return @bool;
                 case var _ when int.TryParse(str, out var @int): return @int;
                 case var _ when decimal.TryParse(str, Float, en_US, out var dec): return dec;

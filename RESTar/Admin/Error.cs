@@ -82,12 +82,12 @@ namespace RESTar.Admin
 
         private const int MaxStringLength = 10000;
 
-        internal static Error Create(ErrorCodes errorCode, Exception e, IResource resource, Args args,
+        internal static Error Create(ErrorCodes errorCode, Exception e, IResource resource, RequestArguments requestArguments,
             HandlerActions action)
         {
-            if (args?.HasMetaConditions == true && args.MetaConditions.ToLower().Contains("key="))
-                args.MetaConditions = Regex.Replace(args.MetaConditions, RegEx.KeyMetaCondition, "key=*******", IgnoreCase);
-            var uri = args?.UriString;
+            if (requestArguments?.HasMetaConditions == true && requestArguments.UriMetaConditions.ToLower().Contains("key="))
+                requestArguments.UriMetaConditions = Regex.Replace(requestArguments.UriMetaConditions, RegEx.KeyMetaCondition, "key=*******", IgnoreCase);
+            var uri = requestArguments?.UriString;
             var stackTrace = $"{e.StackTrace} §§§ INNER: {e.InnerException?.StackTrace}";
             var totalMessage = e.TotalMessage();
             return new Error
@@ -97,12 +97,12 @@ namespace RESTar.Admin
                                (resource?.Alias != null ? $" ({resource.Alias})" : ""),
                 HandlerAction = action,
                 ErrorCode = errorCode,
-                Body = args?.BodyBytes != null ? Encoding.UTF8.GetString(args.BodyBytes.Take(5000).ToArray()) : null,
+                Body = requestArguments?.BodyBytes != null ? Encoding.UTF8.GetString(requestArguments.BodyBytes.Take(5000).ToArray()) : null,
                 StackTrace = stackTrace.Length > MaxStringLength ? stackTrace.Substring(0, MaxStringLength) : stackTrace,
                 Message = totalMessage.Length > MaxStringLength ? totalMessage.Substring(0, MaxStringLength) : totalMessage,
                 Uri = uri,
                 Headers = resource?.RequiresAuthentication == false
-                    ? args?.Headers.StringJoin(" | ", dict => dict.Select(header =>
+                    ? requestArguments?.Headers.StringJoin(" | ", dict => dict.Select(header =>
                     {
                         switch (header.Key.ToLower())
                         {

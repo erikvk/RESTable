@@ -22,15 +22,15 @@ namespace RESTar.Requests
     {
         private static int StackSize;
 
-        internal static Response Evaluate(HandlerActions action, Func<Args> argsMaker = null)
+        internal static Response Evaluate(HandlerActions action, Func<RequestArguments> argsMaker = null)
         {
             if (StackSize++ > 300) throw new InfiniteLoopException();
             IResource resource = null;
-            Args args = null;
+            RequestArguments requestArguments = null;
             try
             {
-                args = argsMaker?.Invoke();
-                resource = args?.IResource;
+                requestArguments = argsMaker?.Invoke();
+                resource = requestArguments?.IResource;
                 switch (action)
                 {
                     case GET:
@@ -38,9 +38,9 @@ namespace RESTar.Requests
                     case PUT:
                     case PATCH:
                     case DELETE:
-                    case COUNT: return HandleREST((dynamic) resource, args, action);
-                    case ORIGIN: return HandleOrigin((dynamic) resource, args);
-                    case VIEW: return HandleView((dynamic) resource, args);
+                    case COUNT: return HandleREST((dynamic) resource, requestArguments, action);
+                    case ORIGIN: return HandleOrigin((dynamic) resource, requestArguments);
+                    case VIEW: return HandleView((dynamic) resource, requestArguments);
                     case PAGE:
 #pragma warning disable 618
                         if (Current?.Data is View.Page) return Current.Data;
@@ -57,7 +57,7 @@ namespace RESTar.Requests
             {
                 var (code, response) = ex.GetError();
                 Error.ClearOld();
-                var error = Trans(() => Error.Create(code, ex, resource, args, action));
+                var error = Trans(() => Error.Create(code, ex, resource, requestArguments, action));
                 switch (action)
                 {
                     case GET:
@@ -86,34 +86,34 @@ namespace RESTar.Requests
             }
         }
 
-        private static Response HandleView<T>(IResource<T> resource, Args args) where T : class
+        private static Response HandleView<T>(IResource<T> resource, RequestArguments requestArguments) where T : class
         {
-            var request = new ViewRequest<T>(resource, args.Origin);
+            var request = new ViewRequest<T>(resource, requestArguments.Origin);
             request.Authenticate();
-            request.Populate(args);
+            request.Populate(requestArguments);
             request.MethodCheck();
             request.Evaluate();
             return request.GetView();
         }
 
-        private static Response HandleREST<T>(IResource<T> resource, Args args,
+        private static Response HandleREST<T>(IResource<T> resource, RequestArguments requestArguments,
             HandlerActions action) where T : class
         {
-            using (var request = new RESTRequest<T>(resource, args.Origin))
+            using (var request = new RESTRequest<T>(resource, requestArguments.Origin))
             {
-                request.Authenticate(ref args);
-                request.Populate(args, (Methods) action);
+                request.Authenticate(ref requestArguments);
+                request.Populate(requestArguments, (Methods) action);
                 request.MethodCheck();
-                request.SetRequestData(args.BodyBytes);
+                request.SetRequestData(requestArguments.BodyBytes);
                 request.RunResourceAuthentication();
                 request.Evaluate();
                 return request.GetResponse();
             }
         }
 
-        private static Response HandleOrigin<T>(IResource<T> resource, Args args) where T : class
+        private static Response HandleOrigin<T>(IResource<T> resource, RequestArguments requestArguments) where T : class
         {
-            var origin = args.Headers.SafeGet("Origin");
+            var origin = requestArguments.Headers.SafeGet("Origin");
             if (origin != null && (AllowAllOrigins || AllowedOrigins.Contains(new Uri(origin))))
                 return AllowOrigin(origin, resource.AvailableMethods);
             return Forbidden("Invalid or unauthorized origin");

@@ -35,7 +35,7 @@ namespace RESTar
         public IEnumerable<Counter> Select(IRequest<Counter> request)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
-            var args = new Args(request.Body.Deserialize<JObject>().SafeGetNoCase("uri").Value<string>());
+            var args = new RequestArguments(request.Body.Deserialize<JObject>().SafeGetNoCase("uri").Value<string>());
             IRequest innerRequest = MakeRequest((dynamic) args.IResource, args);
             var rights = RESTarConfig.AuthTokens[request.AuthToken];
             if (rights.SafeGet(innerRequest.Resource)?.Contains(GET) != true)
@@ -43,10 +43,10 @@ namespace RESTar
             return new[] {new Counter {Count = Evaluate((dynamic) innerRequest)}};
         }
 
-        private static Request<T> MakeRequest<T>(IResource<T> _, Args args) where T : class
+        private static Request<T> MakeRequest<T>(IResource<T> _, RequestArguments requestArguments) where T : class
         {
             var request = new Request<T>();
-            var conditions = Condition<T>.Parse(args.Conditions, request.Resource);
+            var conditions = Condition<T>.Parse(requestArguments.UriConditions, request.Resource);
             request.Conditions = conditions;
             return request;
         }

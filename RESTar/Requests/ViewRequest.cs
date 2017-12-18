@@ -53,19 +53,19 @@ namespace RESTar.Requests
             Origin = origin;
         }
 
-        internal void Populate(Args args)
+        internal void Populate(RequestArguments requestArguments)
         {
-            if (args.HasView)
+            if (requestArguments.HasView)
             {
-                if (!Resource.ViewDictionary.TryGetValue(args.View, out var view))
-                    throw new UnknownViewException(args.View, Resource);
+                if (!Resource.ViewDictionary.TryGetValue(requestArguments.ViewName, out var view))
+                    throw new UnknownViewException(requestArguments.ViewName, Resource);
                 Target = view;
             }
-            args.NonReservedHeaders.ForEach(Headers.Add);
-            if (args.HasConditions)
-                Conditions = Condition<T>.Parse(args.Conditions, Resource) ?? Conditions;
-            if (args.HasMetaConditions)
-                MetaConditions = MetaConditions.Parse(args.MetaConditions, Resource, false) ?? MetaConditions;
+            requestArguments.NonReservedHeaders.ForEach(Headers.Add);
+            if (requestArguments.HasConditions)
+                Conditions = Condition<T>.Parse(requestArguments.UriConditions, Resource) ?? Conditions;
+            if (requestArguments.HasMetaConditions)
+                MetaConditions = MetaConditions.Parse(requestArguments.UriMetaConditions, Resource, false) ?? MetaConditions;
         }
 
         internal void Evaluate()

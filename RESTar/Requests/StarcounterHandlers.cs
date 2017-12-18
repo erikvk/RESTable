@@ -30,10 +30,10 @@ namespace RESTar.Requests
             Handle.GET($"/{appName}", () => Evaluate(MENU));
         }
 
-        private static Args MakeArgs(Request request, string uri)
+        private static RequestArguments MakeArgs(Request request, string uri)
         {
             var arrProxy = request.HeadersDictionary?.ContainsKey("X-ARR-LOG-ID") == true;
-            var args = new Args(uri, arrProxy)
+            var args = new RequestArguments(uri, arrProxy)
             {
                 Origin = MakeOrigin(request),
                 BodyBytes = request.BodyBytes,

@@ -53,28 +53,28 @@ namespace RESTar.Requests
             Origin = origin;
         }
 
-        internal void Populate(Args args, Methods method)
+        internal void Populate(RequestArguments requestArguments, Methods method)
         {
-            if (args.HasView)
+            if (requestArguments.HasView)
             {
-                if (!Resource.ViewDictionary.TryGetValue(args.View, out var view))
-                    throw new UnknownViewException(args.View, Resource);
+                if (!Resource.ViewDictionary.TryGetValue(requestArguments.ViewName, out var view))
+                    throw new UnknownViewException(requestArguments.ViewName, Resource);
                 Target = view;
             }
             Method = method;
             Evaluator = Operations<T>.REST.GetEvaluator(method);
-            Source = args.Headers.SafeGet("Source");
-            Destination = args.Headers.SafeGet("Destination");
-            CORSOrigin = args.Headers.SafeGet("Origin");
-            ContentType = MimeTypes.Match(args.ContentType);
-            Accept = MimeTypes.Match(args.Accept);
+            Source = requestArguments.Headers.SafeGet("Source");
+            Destination = requestArguments.Headers.SafeGet("Destination");
+            CORSOrigin = requestArguments.Headers.SafeGet("Origin");
+            ContentType = MimeTypes.Match(requestArguments.ContentType);
+            Accept = MimeTypes.Match(requestArguments.Accept);
             InputDataConfig = Source != null ? DataConfig.External : DataConfig.Client;
             OutputDataConfig = Destination != null ? DataConfig.External : DataConfig.Client;
-            args.NonReservedHeaders.ForEach(Headers.Add);
-            if (args.HasConditions)
-                Conditions = Condition<T>.Parse(args.Conditions, Target) ?? Conditions;
-            if (args.HasMetaConditions)
-                MetaConditions = MetaConditions.Parse(args.MetaConditions, Resource) ?? MetaConditions;
+            requestArguments.NonReservedHeaders.ForEach(Headers.Add);
+            if (requestArguments.HasConditions)
+                Conditions = Condition<T>.Parse(requestArguments.UriConditions, Target) ?? Conditions;
+            if (requestArguments.HasMetaConditions)
+                MetaConditions = MetaConditions.Parse(requestArguments.UriMetaConditions, Resource) ?? MetaConditions;
             if (Origin.IsInternal) MetaConditions.Formatter = DbOutputFormat.Raw;
         }
 
@@ -128,9 +128,6 @@ namespace RESTar.Requests
                 Response.Headers["Access-Control-Allow-Origin"] = "*";
             else if (CORSOrigin != null)
                 Response.Headers["Access-Control-Allow-Origin"] = CORSOrigin;
-
-            Response.Headers["DataServiceVersion"] = "1.0";
-
             switch (OutputDataConfig)
             {
                 case DataConfig.Client: return Response;

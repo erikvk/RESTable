@@ -102,6 +102,7 @@
     <Compile Include="Internal\ITarget.cs" />
     <Compile Include="Internal\View.cs" />
     <Compile Include="LineEndings.cs" />
+    <Compile Include="OData\ServiceDocument.cs" />
     <Compile Include="Operations\AuthResults.cs" />
     <Compile Include="Operations\Distinct.cs" />
     <Compile Include="RegEx.cs" />
@@ -130,7 +131,7 @@
     <Compile Include="Operations\IProcessor.cs" />
     <Compile Include="Operations\Transact.cs" />
     <Compile Include="Operations\Transaction.cs" />
-    <Compile Include="Requests\Args.cs" />
+    <Compile Include="Requests\RequestArguments.cs" />
     <Compile Include="Requests\DataConfig.cs" />
     <Compile Include="Requests\HandlerActions.cs" />
     <Compile Include="Internal\ErrorCodes.cs" />

@@ -100,8 +100,8 @@ namespace RESTar.Admin
             }
             try
             {
-                var args = new Args(Uri);
-                if (args.HasMetaConditions && args.MetaConditions.ToLower().Contains("key="))
+                var args = new RequestArguments(Uri);
+                if (args.HasMetaConditions && args.UriMetaConditions.ToLower().Contains("key="))
                 {
                     invalidReason = "Macro URIs cannot contain the 'Key' meta-condition. If API keys are " +
                                     "required, they are expected in each call to the macro.";

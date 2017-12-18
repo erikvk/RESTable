@@ -50,7 +50,7 @@ namespace RESTar.Internal
                 throw new ForbiddenException(FailedResourceAuthentication, authResults.Reason);
         }
 
-        internal static void Authenticate<T>(this RESTRequest<T> request, ref Args args) where T : class
+        internal static void Authenticate<T>(this RESTRequest<T> request, ref RequestArguments requestArguments) where T : class
         {
             if (!RequireApiKey)
             {
@@ -58,9 +58,9 @@ namespace RESTar.Internal
                 return;
             }
             AccessRights accessRights;
-            if (!args.Origin.IsExternal)
+            if (!requestArguments.Origin.IsExternal)
             {
-                var authToken = args.Headers.SafeGet("RESTar-AuthToken");
+                var authToken = requestArguments.Headers.SafeGet("RESTar-AuthToken");
                 if (string.IsNullOrWhiteSpace(authToken))
                     throw NotAuthorizedException;
                 if (!AuthTokens.TryGetValue(authToken, out accessRights))
@@ -68,14 +68,14 @@ namespace RESTar.Internal
                 request.AuthToken = authToken;
                 return;
             }
-            var authorizationHeader = args.Headers.SafeGet("Authorization");
+            var authorizationHeader = requestArguments.Headers.SafeGet("Authorization");
             if (string.IsNullOrWhiteSpace(authorizationHeader))
             {
-                if (!args.HasMetaConditions) throw NotAuthorizedException;
-                var match = Regex.Match(args.MetaConditions, RegEx.KeyMetaCondition, IgnoreCase);
+                if (!requestArguments.HasMetaConditions) throw NotAuthorizedException;
+                var match = Regex.Match(requestArguments.UriMetaConditions, RegEx.KeyMetaCondition, IgnoreCase);
                 if (!match.Success) throw NotAuthorizedException;
-                var conds = args.MetaConditions.Replace(match.Groups[0].Value, "");
-                args.MetaConditions = conds;
+                var conds = requestArguments.UriMetaConditions.Replace(match.Groups[0].Value, "");
+                requestArguments.UriMetaConditions = conds;
                 authorizationHeader = $"apikey {WebUtility.UrlDecode(match.Groups["key"].ToString())}";
             }
             var apikey_key = authorizationHeader.Split(' ');

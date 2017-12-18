@@ -8,17 +8,28 @@ using IResource = RESTar.Internal.IResource;
 
 namespace RESTar.Requests
 {
-    internal class Args
+    internal struct UriCondition
     {
-        internal readonly string Resource;
-        internal readonly string View;
-        internal readonly string Conditions;
-        internal string MetaConditions;
-        internal readonly bool HasResource;
-        internal readonly bool HasView;
-        internal readonly bool HasConditions;
-        internal readonly bool HasMetaConditions;
-        internal IResource IResource => HasResource ? RESTar.Resource.Find(Resource) : Resource<AvailableResource>.Get;
+        internal string Key { get; }
+        internal Operator Operator { get; }
+        internal string ValueLiteral { get; }
+        public override string ToString() => $"{Key}{Operator.Common}{ValueLiteral}";
+        public UriCondition(string key, Operator op, string literal) => (Key, Operator, ValueLiteral) = (key, op, literal);
+    }
+
+    internal class RequestArguments
+    {
+        internal string ResourceSpecifier { get; }
+        internal string ViewName { get; }
+        internal List<UriCondition> UriConditions { get; }
+        internal List<UriCondition> UriMetaConditions { get; set; }
+
+        internal bool HasResource { get; }
+        internal bool HasView { get; }
+        internal bool HasConditions { get; }
+        internal bool HasMetaConditions { get; }
+
+        internal IResource IResource => HasResource ? Resource.Find(ResourceSpecifier) : Resource<AvailableResource>.Get;
         internal DbMacro Macro { get; }
         internal Origin Origin { get; set; }
         internal byte[] BodyBytes { get; set; }
@@ -35,16 +46,16 @@ namespace RESTar.Requests
             {
                 var total = "/";
                 if (HasResource)
-                    total += Resource;
+                    total += ResourceSpecifier;
                 else if (Macro != null)
                     total += "$" + Macro.Name;
                 else total += "RESTar.AvailableResource";
                 total += "/";
                 if (HasConditions)
-                    total += Conditions;
+                    total += string.Join("$", UriConditions);
                 total += "/";
                 if (HasMetaConditions)
-                    total += MetaConditions;
+                    total += string.Join("$", UriMetaConditions);
                 return total.TrimEnd('/');
             }
         }
@@ -52,7 +63,7 @@ namespace RESTar.Requests
         /// <summary>
         /// Creates a new Args from a URI string, beginning after the base URI, for example /resource
         /// </summary>
-        internal Args(string uriString, bool escapePercentSigns = false)
+        internal RequestArguments(string uriString, bool escapePercentSigns = false)
         {
             Headers = new Dictionary<string, string>();
             if (uriString.CharCount('/') > 3) throw new InvalidSeparatorException();
@@ -73,32 +84,32 @@ namespace RESTar.Requests
                 {
                     var macroString = resourceOrMacro.Substring(1);
                     Macro = DbMacro.Get(macroString) ?? throw new UnknownMacroException(macroString);
-                    var macroArgs = new Args(Macro.Uri);
-                    (HasResource, Resource) = (macroArgs.HasResource, macroArgs.Resource);
-                    View = HasView ? view : macroArgs.View;
-                    Conditions = macroArgs.HasConditions
-                        ? (HasConditions ? $"{macroArgs.Conditions}&{conditions}" : macroArgs.Conditions)
+                    var macroArgs = new RequestArguments(Macro.Uri);
+                    (HasResource, ResourceSpecifier) = (macroArgs.HasResource, macroArgs.ResourceSpecifier);
+                    ViewName = HasView ? view : macroArgs.ViewName;
+                    UriConditions = macroArgs.HasConditions
+                        ? (HasConditions ? $"{macroArgs.UriConditions}&{conditions}" : macroArgs.UriConditions)
                         : (HasConditions ? conditions : null);
-                    MetaConditions = macroArgs.HasMetaConditions
-                        ? (HasMetaConditions ? $"{macroArgs.MetaConditions}&{metaConditions}" : macroArgs.MetaConditions)
+                    UriMetaConditions = macroArgs.HasMetaConditions
+                        ? (HasMetaConditions ? $"{macroArgs.UriMetaConditions}&{metaConditions}" : macroArgs.UriMetaConditions)
                         : (HasMetaConditions ? metaConditions : null);
-                    HasConditions = Conditions != null;
-                    HasMetaConditions = MetaConditions != null;
+                    HasConditions = UriConditions != null;
+                    HasMetaConditions = UriMetaConditions != null;
                 }
                 else
                 {
                     HasResource = true;
-                    Resource = resourceOrMacro;
-                    View = HasView ? view : null;
-                    Conditions = HasConditions ? conditions : null;
-                    MetaConditions = HasMetaConditions ? metaConditions : null;
+                    ResourceSpecifier = resourceOrMacro;
+                    ViewName = HasView ? view : null;
+                    UriConditions = HasConditions ? conditions : null;
+                    UriMetaConditions = HasMetaConditions ? metaConditions : null;
                 }
             }
             else
             {
-                View = HasView ? view : null;
-                Conditions = HasConditions ? conditions : null;
-                MetaConditions = HasMetaConditions ? metaConditions : null;
+                ViewName = HasView ? view : null;
+                UriConditions = HasConditions ? conditions : null;
+                UriMetaConditions = HasMetaConditions ? metaConditions : null;
             }
         }
     }

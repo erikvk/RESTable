@@ -14,13 +14,13 @@
         /// <summary>
         /// The base URI regex, used when validating base uris in RESTarConfig.Init
         /// </summary>
-        internal const string BaseUri = @"^/?\w+$";
+        internal const string BaseUri = @"^/?[\/\w]+$";
 
         /// <summary>
         /// A regex used to isolate the key meta-condition in meta-condition strings
         /// </summary>
         internal const string KeyMetaCondition = @"&key=(?<key>[^/&]+)|key=(?<key>[^/&]+)&?";
-        
+
         /// <summary>
         /// Matches only letters, numbers and underscores
         /// </summary>
@@ -50,5 +50,15 @@
         /// Matches all header names reserved by RESTar
         /// </summary>
         internal const string ReservedHeaders = @"^(source|destination|authorization|restar-authtoken)$";
+
+        /// <summary>
+        /// Matches condition literals sorrounded with double quotes
+        /// </summary>
+        internal const string DoubleQuoteRegex = "^\"(?<content>[^\"]*)\"$";
+
+        /// <summary>
+        /// Matches condition literals sorrounded with single quotes
+        /// </summary>
+        internal const string SingleQuoteRegex = "^\'(?<content>[^\']*)\'$";
     }
 }
