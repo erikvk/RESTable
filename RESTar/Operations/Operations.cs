@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using Newtonsoft.Json.Linq;
 using RESTar.Admin;
@@ -9,9 +8,7 @@ using RESTar.Requests;
 using RESTar.Serialization;
 using Starcounter;
 using static RESTar.Operations.Do;
-using static RESTar.Requests.Responses;
 using static RESTar.Serialization.Serializer;
-using static RESTar.Admin.Settings;
 
 namespace RESTar.Operations
 {
@@ -389,22 +386,8 @@ namespace RESTar.Operations
 
         internal static class REST
         {
-            internal static Func<RESTRequest<T>, Response> GetEvaluator(Methods method)
+            internal static Func<RESTRequest<T>, Result> GetEvaluator(Methods method)
             {
-                if (!_DontUseLRT)
-                {
-                    switch (method)
-                    {
-                        case Methods.GET: return GET;
-                        case Methods.POST: return LrPOST;
-                        case Methods.PATCH: return LrPATCH;
-                        case Methods.PUT: return LrPUT;
-                        case Methods.DELETE: return LrDELETE;
-                        case Methods.REPORT: return REPORT;
-                        default: return null;
-                    }
-                }
-
                 switch (method)
                 {
                     case Methods.GET: return GET;
@@ -417,65 +400,23 @@ namespace RESTar.Operations
                 }
             }
 
-            private static Response GET(RESTRequest<T> request)
+            private static Result GET(RESTRequest<T> request)
             {
-                var results = SELECT_FILTER_PROCESS(request);
-                if (results == null) return NoContent;
-                try
-                {
-                    var (stream, count, hasContent, mimeType, extension) =
-                        default((MemoryStream, long, bool, string, string));
-                    switch (request.Accept)
-                    {
-                        case MimeType.Json:
-                            hasContent = results.SerializeOutputJson(request.MetaConditions.Formatter, out stream, out count);
-                            (mimeType, extension) = (MimeTypes.JSON, ".json");
-                            break;
-                        case MimeType.Excel:
-                            hasContent = results.SerializeOutputExcel(request.Resource, out stream, out count);
-                            (mimeType, extension) = (MimeTypes.Excel, ".xlsx");
-                            break;
-                    }
-                    if (!hasContent) return NoContent;
-                    var response = new Response
-                    {
-                        StatusCode = 200,
-                        StatusDescription = "OK",
-                        ContentType = mimeType,
-                        StreamedBody = stream,
-                        Headers =
-                        {
-                            ["RESTar-count"] = count.ToString(),
-                            ["Content-Disposition"] = $"attachment; filename={request.Resource.Name}_" +
-                                                      $"{DateTime.Now:yyMMddHHmmssfff}{extension}"
-                        }
-                    };
-
-                    if (count == request.MetaConditions.Limit)
-                        response.Headers["RESTar-pager"] = $"limit={request.MetaConditions.Limit}&" +
-                                                           $"offset={request.MetaConditions.Offset + count}";
-                    return response;
-                }
-                catch (Exception e)
-                {
-                    throw new AbortedSelectorException<T>(e, request);
-                }
+                return request.Entities(SELECT_FILTER_PROCESS(request));
             }
 
-            private static Response REPORT(RESTRequest<T> request)
+            private static Result REPORT(RESTRequest<T> request)
             {
                 return request.Report(new Report {Count = OP_COUNT(request)});
             }
 
-            #region Using long running transactions
-
-            private static Response LrPOST(RESTRequest<T> request)
+            private static Result POST(RESTRequest<T> request)
             {
-                if (request.MetaConditions.SafePost != null) return LrSafePOST(request);
+                if (request.MetaConditions.SafePost != null) return SafePOST(request);
                 return request.InsertedEntities(Transaction<T>.Transact(() => INSERT(request)));
             }
 
-            private static Response LrPATCH(RESTRequest<T> request)
+            private static Result PATCH(RESTRequest<T> request)
             {
                 var source = SELECT_FILTER(request)?.ToList();
                 if (source?.Any() != true) return request.UpdatedEntities(0);
@@ -484,7 +425,7 @@ namespace RESTar.Operations
                 return request.UpdatedEntities(Transaction<T>.Transact(() => UPDATE(request, source)));
             }
 
-            private static Response LrPUT(RESTRequest<T> request)
+            private static Result PUT(RESTRequest<T> request)
             {
                 var source = SELECT_FILTER(request)?.ToList();
                 switch (source?.Count)
@@ -496,7 +437,7 @@ namespace RESTar.Operations
                 }
             }
 
-            private static Response LrDELETE(RESTRequest<T> request)
+            private static Result DELETE(RESTRequest<T> request)
             {
                 var source = SELECT_FILTER(request);
                 if (source == null) return request.DeletedEntities(0);
@@ -545,7 +486,7 @@ namespace RESTar.Operations
                 }
             }
 
-            private static Response LrSafePOST(RESTRequest<T> request)
+            private static Result SafePOST(RESTRequest<T> request)
             {
                 var (innerRequest, toInsert, toUpdate) = GetSafePostTasks(request);
                 var outerTrans = new Transaction<T>();
@@ -595,76 +536,6 @@ namespace RESTar.Operations
                     throw;
                 }
             }
-
-            #endregion
-
-            #region Using Transactions.Trans()
-
-            private static Response POST(RESTRequest<T> request)
-            {
-                if (request.MetaConditions.SafePost != null) return SafePOST(request);
-                return request.InsertedEntities(Transaction<T>.ShTransact(() => INSERTorTryDelete(request)));
-            }
-
-            private static Response PATCH(RESTRequest<T> request)
-            {
-                var source = SELECT_FILTER(request)?.ToList();
-                if (source?.Any() != true) return request.UpdatedEntities(0);
-                if (!request.MetaConditions.Unsafe && source.Count > 1)
-                    throw new AmbiguousMatchException(request.Resource);
-                return request.UpdatedEntities(Transaction<T>.ShTransact(() => UPDATE(request, source)));
-            }
-
-            private static Response PUT(RESTRequest<T> request)
-            {
-                var source = SELECT_FILTER(request)?.ToList();
-                switch (source?.Count)
-                {
-                    case null:
-                    case 0: return request.InsertedEntities(Transaction<T>.ShTransact(() => INSERT_ONEorTryDelete(request)));
-                    case 1: return request.UpdatedEntities(Transaction<T>.ShTransact(() => UPDATE_ONE(request, source[0])));
-                    default: throw new AmbiguousMatchException(request.Resource);
-                }
-            }
-
-            private static Response DELETE(RESTRequest<T> request)
-            {
-                var source = SELECT_FILTER(request);
-                if (source == null) return request.DeletedEntities(0);
-                if (!request.MetaConditions.Unsafe)
-                {
-                    var list = source.ToList();
-                    if (list.Count > 1)
-                        throw new AmbiguousMatchException(request.Resource);
-                    source = list;
-                }
-                return request.DeletedEntities(Transaction<T>.ShTransact(() => OP_DELETE(request, source)));
-            }
-
-            private static Response SafePOST(RESTRequest<T> request)
-            {
-                var (insertedCount, updatedCount) = (0, 0);
-                var (innerRequest, toInsert, toUpdate) = GetSafePostTasks(request);
-                try
-                {
-                    insertedCount = toInsert.Any()
-                        ? Transaction<T>.ShTransact(() => INSERT_JARRAYorTryDelete(innerRequest, toInsert))
-                        : 0;
-                    updatedCount = toUpdate.Any()
-                        ? Transaction<T>.ShTransact(() => UPDATE_MANY(innerRequest, toUpdate))
-                        : 0;
-                    return request.SafePostedEntities(updatedCount, insertedCount);
-                }
-                catch (Exception e)
-                {
-                    var message = $"Inserted {insertedCount} and updated {updatedCount} in resource " +
-                                  $"'{request.Resource.Name}' using SafePOST before encountering the error. " +
-                                  "These changes remain in the resource";
-                    throw new AbortedInserterException<T>(e, request, $"{e.Message} : {message}");
-                }
-            }
-
-            #endregion
         }
 
         internal static class View

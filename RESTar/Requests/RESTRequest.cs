@@ -6,8 +6,8 @@ using RESTar.Http;
 using RESTar.Internal;
 using RESTar.Linq;
 using RESTar.Operations;
+using RESTar.Protocol;
 using RESTar.Serialization;
-using Starcounter;
 using static System.Net.HttpStatusCode;
 using static RESTar.Internal.ErrorCodes;
 using static RESTar.RESTarConfig;
@@ -28,16 +28,34 @@ namespace RESTar.Requests
         public IDictionary<string, string> ResponseHeaders { get; }
         IResource IRequest.Resource => Resource;
         public ITarget<T> Target { get; private set; }
-        private Response Response { get; set; }
-        private Func<RESTRequest<T>, Response> Evaluator { get; set; }
+        internal Result Result { get; set; }
+        private Func<RESTRequest<T>, Result> Evaluator { get; set; }
         private string Source { get; set; }
         private string Destination { get; set; }
         private MimeType ContentType { get; set; }
-        internal MimeType Accept { get; private set; }
+        public MimeType Accept { get; private set; }
         private string CORSOrigin { get; set; }
         private DataConfig InputDataConfig { get; set; }
         private DataConfig OutputDataConfig { get; set; }
-        internal void Evaluate() => Response = Evaluator(this);
+        private ResultFinalizer ResultFinalizer { get; set; }
+
+        internal void Evaluate()
+        {
+            Result = Evaluator(this);
+            Result.ExternalDestination = Destination;
+            Result.ContentType = MimeTypes.GetString(Accept);
+            ResponseHeaders.ForEach(h =>
+            {
+                if (h.Key.StartsWith("X-"))
+                    Result.Headers[h.Key] = h.Value;
+                else Result.Headers["X-" + h.Key] = h.Value;
+            });
+            if (AllowAllOrigins)
+                Result.Headers["Access-Control-Allow-Origin"] = "*";
+            else if (CORSOrigin != null)
+                Result.Headers["Access-Control-Allow-Origin"] = CORSOrigin;
+        }
+
         public T1 BodyObject<T1>() where T1 : class => Body?.Deserialize<T1>();
         public Headers Headers { get; }
 
@@ -53,30 +71,31 @@ namespace RESTar.Requests
             Origin = origin;
         }
 
-        internal void Populate(RequestArguments requestArguments, Methods method)
+        internal virtual void Populate(Arguments arguments, Methods method)
         {
-            if (requestArguments.ViewName != null)
+            if (arguments.ViewName != null)
             {
-                if (!Resource.ViewDictionary.TryGetValue(requestArguments.ViewName, out var view))
-                    throw new UnknownViewException(requestArguments.ViewName, Resource);
+                if (!Resource.ViewDictionary.TryGetValue(arguments.ViewName, out var view))
+                    throw new UnknownViewException(arguments.ViewName, Resource);
                 Target = view;
             }
             Method = method;
             Evaluator = Operations<T>.REST.GetEvaluator(method);
-            Source = requestArguments.Headers.SafeGet("Source");
-            Destination = requestArguments.Headers.SafeGet("Destination");
-            CORSOrigin = requestArguments.Headers.SafeGet("Origin");
-            ContentType = MimeTypes.Match(requestArguments.ContentType);
-            Accept = MimeTypes.Match(requestArguments.Accept);
+            Source = arguments.Headers.SafeGet("Source");
+            Destination = arguments.Headers.SafeGet("Destination");
+            CORSOrigin = arguments.Headers.SafeGet("Origin");
+            ContentType = MimeTypes.Match(arguments.ContentType);
+            Accept = MimeTypes.Match(arguments.Accept);
             InputDataConfig = Source != null ? DataConfig.External : DataConfig.Client;
             OutputDataConfig = Destination != null ? DataConfig.External : DataConfig.Client;
-            requestArguments.NonReservedHeaders.ForEach(Headers.Add);
-            Conditions = Condition<T>.Parse(requestArguments.UriConditions, Target) ?? Conditions;
-            MetaConditions = MetaConditions.Parse(requestArguments.UriMetaConditions, Resource) ?? MetaConditions;
+            arguments.CustomHeaders.ForEach(Headers.Add);
+            Conditions = Condition<T>.Parse(arguments.UriConditions, Target) ?? Conditions;
+            MetaConditions = MetaConditions.Parse(arguments.UriMetaConditions, Resource) ?? MetaConditions;
+            ResultFinalizer = arguments.ResultFinalizer;
             if (Origin.IsInternal) MetaConditions.Formatter = DbOutputFormat.Raw;
         }
 
-        internal void SetRequestData(byte[] bodyBytes)
+        internal virtual void SetRequestData(byte[] bodyBytes)
         {
             switch (InputDataConfig)
             {
@@ -114,90 +133,64 @@ namespace RESTar.Requests
             }
         }
 
-        internal Response GetResponse()
+        internal IFinalizedResult GetFinalizedResult()
         {
-            ResponseHeaders.ForEach(h =>
+            try
             {
-                if (h.Key.StartsWith("X-"))
-                    Response.Headers[h.Key] = h.Value;
-                else Response.Headers["X-" + h.Key] = h.Value;
-            });
-            if (AllowAllOrigins)
-                Response.Headers["Access-Control-Allow-Origin"] = "*";
-            else if (CORSOrigin != null)
-                Response.Headers["Access-Control-Allow-Origin"] = CORSOrigin;
-            switch (OutputDataConfig)
+                return ResultFinalizer(Result);
+            }
+            catch (Exception e)
             {
-                case DataConfig.Client: return Response;
-                case DataConfig.External:
-                    try
-                    {
-                        var request = new HttpRequest(Destination)
-                        {
-                            ContentType = Accept.ToMimeString(),
-                            AuthToken = AuthToken,
-                            Body = Response.StreamedBody
-                        };
-                        var response = request.GetResponse() ?? throw new DestinationException(request, "No response");
-                        if (!response.IsSuccessStatusCode)
-                            throw new DestinationException(request,
-                                $"Received {response.StatusCode.ToCode()} - {response.StatusDescription}. {response.Headers.SafeGet("RESTar-info")}");
-                        if (AllowAllOrigins)
-                            Response.Headers["Access-Control-Allow-Origin"] = "*";
-                        else if (CORSOrigin != null)
-                            Response.Headers["Access-Control-Allow-Origin"] = CORSOrigin;
-                        return (Response) response;
-                    }
-                    catch (HttpRequestException re)
-                    {
-                        throw new SyntaxException(InvalidDestination, $"{re.Message} in the Destination header");
-                    }
-                default: throw new ArgumentException();
+                throw new AbortedSelectorException<T>(e, this);
             }
         }
 
-        internal Response InsertedEntities(int count) => new Response
+        internal Result Entities(IEnumerable<dynamic> entities) => new Result(this)
         {
-            StatusCode = (ushort) Created,
+            StatusCode = OK,
+            StatusDescription = "OK",
+            Entities = entities
+        };
+
+        internal Result Report(Report report)
+        {
+            if (!report.SerializeReportJson(out var stream)) return Results.NoContent;
+            return new Result(this)
+            {
+                StatusCode = OK,
+                StatusDescription = "OK",
+                Headers = {["RESTar-info"] = $"Resource '{Resource.Name}'"},
+                Body = stream
+            };
+        }
+
+        internal Result InsertedEntities(int count) => new Result(this)
+        {
+            StatusCode = Created,
             StatusDescription = "Created",
             Headers = {["RESTar-info"] = $"{count} entities inserted into resource '{Resource.Name}'"}
         };
 
-        internal Response UpdatedEntities(int count) => new Response
+        internal Result UpdatedEntities(int count) => new Result(this)
         {
-            StatusCode = (ushort) OK,
+            StatusCode = OK,
             StatusDescription = "OK",
             Headers = {["RESTar-info"] = $"{count} entities updated in resource '{Resource.Name}'"}
         };
 
-        internal Response SafePostedEntities(int upd, int ins) => new Response
+        internal Result SafePostedEntities(int upd, int ins) => new Result(this)
         {
-            StatusCode = 200,
+            StatusCode = OK,
             StatusDescription = "OK",
-            Headers =
-            {
-                ["RESTar-info"] = $"Updated {upd} and then inserted {ins} entities in resource '{Resource.Name}'"
-            }
+            Headers = {["RESTar-info"] = $"Updated {upd} and then inserted {ins} entities in resource '{Resource.Name}'"}
         };
 
-        internal Response DeletedEntities(int count) => new Response
+        internal Result DeletedEntities(int count) => new Result(this)
         {
-            StatusCode = (ushort) OK,
+            StatusCode = OK,
             StatusDescription = "OK",
             Headers = {["RESTar-info"] = $"{count} entities deleted from resource '{Resource.Name}'"}
         };
-
-        internal Response Report(Report report)
-        {
-            if (!report.SerializeReportJson(out var stream)) return NoContent;
-            return new Response
-            {
-                StatusCode = (ushort) OK,
-                StatusDescription = "OK",
-                Headers = {["RESTar-info"] = $"Resource '{Resource.Name}'"},
-                StreamedBody = stream
-            };
-        }
 
         public void Dispose()
         {

@@ -1,43 +1,40 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Net;
-using Starcounter;
+using RESTar.Operations;
 
 namespace RESTar.Requests
 {
-    internal static class Responses
+    internal static class Results
     {
-        internal static Response AbortedOperation<T>(Exception e, IRequest<T> request) where T : class
+        internal static Result AbortedOperation<T>(Exception e, IRequest<T> request) where T : class => new Result(request)
         {
-            return new Response
+            StatusCode = HttpStatusCode.BadRequest,
+            StatusDescription = "Bad request",
+            Headers =
             {
-                StatusCode = (ushort) HttpStatusCode.BadRequest,
-                StatusDescription = "Bad request",
-                Headers =
-                {
-                    ["RESTar-info"] = $"Aborted {request.Method} on resource '{request.Resource}' " +
-                                      $"due to an error: {e.TotalMessage()}"
-                }
-            };
-        }
+                ["RESTar-info"] = $"Aborted {request.Method} on resource '{request.Resource}' " +
+                                  $"due to an error: {e.TotalMessage()}"
+            }
+        };
 
-        internal static Response AmbiguousResource(AmbiguousResourceException e) => new Response
+        internal static Result AmbiguousResource(AmbiguousResourceException e) => new Result(null)
         {
-            StatusCode = (ushort) HttpStatusCode.NotFound,
+            StatusCode = HttpStatusCode.NotFound,
             StatusDescription = "Not found",
             Headers = {["RESTar-info"] = e.Message}
         };
 
-        internal static Response NotFound(Exception e) => new Response
+        internal static Result NotFound(Exception e) => new Result(null)
         {
-            StatusCode = (ushort) HttpStatusCode.NotFound,
+            StatusCode = HttpStatusCode.NotFound,
             StatusDescription = "Not found",
             Headers = {["RESTar-info"] = e.Message}
         };
 
-        internal static Response AmbiguousProperty(AmbiguousPropertyException e) => new Response
+        internal static Result AmbiguousProperty(AmbiguousPropertyException e) => new Result(null)
         {
-            StatusCode = (ushort) HttpStatusCode.NotFound,
+            StatusCode = HttpStatusCode.NotFound,
             StatusDescription = "Not found",
             Headers =
             {
@@ -46,33 +43,33 @@ namespace RESTar.Requests
             }
         };
 
-        internal static Response BadRequest(Exception e) => new Response
+        internal static Result BadRequest(Exception e) => new Result(null)
         {
-            StatusCode = (ushort) HttpStatusCode.BadRequest,
+            StatusCode = HttpStatusCode.BadRequest,
             StatusDescription = "Bad request",
             Headers = {["RESTar-info"] = e.Message}
         };
 
-        internal static Response UnknownHandlerAction => new Response
+        internal static Result UnknownHandlerAction => new Result(null)
         {
-            StatusCode = (ushort) HttpStatusCode.BadRequest,
+            StatusCode = HttpStatusCode.BadRequest,
             StatusDescription = "Bad request",
             Headers = {["RESTar-info"] = "Unknown RESTar handler action"}
         };
 
-        internal static Response JsonError => new Response
+        internal static Result JsonError => new Result(null)
         {
-            StatusCode = (ushort) HttpStatusCode.BadRequest,
+            StatusCode = HttpStatusCode.BadRequest,
             StatusDescription = "Bad request",
             Headers = {["RESTar-info"] = "Error while deserializing JSON. Check JSON syntax."}
         };
 
-        internal static Response DbError(Exception e)
+        internal static Result DbError(Exception e)
         {
             if (e.Message.Contains("SCERR4034"))
-                return new Response
+                return new Result(null)
                 {
-                    StatusCode = (ushort) HttpStatusCode.Forbidden,
+                    StatusCode = HttpStatusCode.Forbidden,
                     StatusDescription = "Forbidden",
                     Headers =
                     {
@@ -80,9 +77,9 @@ namespace RESTar.Requests
                                           (e.InnerException?.Message ?? e.Message)
                     }
                 };
-            return new Response
+            return new Result(null)
             {
-                StatusCode = (ushort) HttpStatusCode.InternalServerError,
+                StatusCode = HttpStatusCode.InternalServerError,
                 StatusDescription = "Internal server error",
                 Headers =
                 {
@@ -92,48 +89,45 @@ namespace RESTar.Requests
             };
         }
 
-        internal static Response InternalError(Exception e) => new Response
+        internal static Result InternalError(Exception e) => new Result(null)
         {
-            StatusCode = (ushort) HttpStatusCode.InternalServerError,
+            StatusCode = HttpStatusCode.InternalServerError,
             StatusDescription = "Internal server error",
             Headers = {["RESTar-info"] = e.Message}
         };
 
-        internal static Response InfiniteLoop(Exception e) => new Response
+        internal static Result InfiniteLoop(Exception e) => new Result(null)
         {
-            StatusCode = 508,
+            StatusCode = (HttpStatusCode) 508,
             StatusDescription = "Infinite loop detected",
             Headers = {["RESTar-info"] = e.Message}
         };
 
-        internal static Response RESTarInternalError(Exception e) => new Response
+        internal static Result RESTarInternalError(Exception e) => new Result(null)
         {
-            StatusCode = (ushort) HttpStatusCode.InternalServerError,
+            StatusCode = HttpStatusCode.InternalServerError,
             StatusDescription = "Internal server error",
-            Headers =
-            {
-                ["RESTar-info"] = $"Internal RESTar error: {e.Message}."
-            }
+            Headers = {["RESTar-info"] = $"Internal RESTar error: {e.Message}."}
         };
 
 
-        internal static Response NoContent => new Response
+        internal static Result NoContent => new Result(null)
         {
-            StatusCode = (ushort) HttpStatusCode.NoContent,
+            StatusCode = HttpStatusCode.NoContent,
             StatusDescription = "No content",
             Headers = {["RESTar-info"] = "No entities found matching request."}
         };
 
-        internal static Response Forbidden(string message) => new Response
+        internal static Result Forbidden(string message) => new Result(null)
         {
-            StatusCode = (ushort) HttpStatusCode.Forbidden,
+            StatusCode = HttpStatusCode.Forbidden,
             StatusDescription = "Forbidden",
             Headers = {["RESTar-info"] = message}
         };
 
-        internal static Response AllowOrigin(string allowedOrigin, IEnumerable<Methods> allowedMethods) => new Response
+        internal static Result AllowOrigin(string allowedOrigin, IEnumerable<Methods> allowedMethods) => new Result(null)
         {
-            StatusCode = (ushort) HttpStatusCode.OK,
+            StatusCode = HttpStatusCode.OK,
             StatusDescription = "OK",
             Headers =
             {

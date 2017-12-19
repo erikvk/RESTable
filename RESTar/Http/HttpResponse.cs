@@ -2,12 +2,13 @@
 using System.IO;
 using System.Net;
 using System;
+using RESTar.Operations;
 using Starcounter;
 using static System.StringSplitOptions;
 
 namespace RESTar.Http
 {
-    internal class HttpResponse
+    internal class HttpResponse : IFinalizedResult
     {
         public HttpStatusCode StatusCode { get; set; }
         public string StatusDescription { get; set; }

@@ -42,6 +42,7 @@ namespace RESTar
         public T1 BodyObject<T1>() where T1 : class => Body?.Deserialize<T1>();
         public Dictionary<string, string> RequestHeaders { get; set; }
         Headers IRequest.Headers => new Headers(RequestHeaders);
+        MimeType IRequest.Accept => MimeType.Json;
 
         private readonly bool ScSql;
         internal string SelectQuery { get; private set; }

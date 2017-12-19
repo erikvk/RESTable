@@ -30,6 +30,7 @@ namespace RESTar.Requests
         public Stream Body { get; private set; }
         Methods IRequest.Method => GET;
         IResource IRequest.Resource => Resource;
+        MimeType IRequest.Accept => MimeType.Json;
         public ITarget<T> Target { get; private set; }
         public bool Home => MetaConditions.Empty && Conditions == null;
         internal bool IsTemplate { get; set; }
@@ -39,7 +40,7 @@ namespace RESTar.Requests
         internal T Entity { get; set; }
         internal Json GetView() => DataView.MakeCurrentView();
         public T1 BodyObject<T1>() where T1 : class => Body?.Deserialize<T1>();
-        public Headers Headers { get; private set; }
+        public Headers Headers { get; }
 
         internal ViewRequest(IResource<T> resource, Origin origin)
         {
@@ -53,17 +54,17 @@ namespace RESTar.Requests
             Origin = origin;
         }
 
-        internal void Populate(RequestArguments requestArguments)
+        internal void Populate(Arguments arguments)
         {
-            if (requestArguments.ViewName != null)
+            if (arguments.ViewName != null)
             {
-                if (!Resource.ViewDictionary.TryGetValue(requestArguments.ViewName, out var view))
-                    throw new UnknownViewException(requestArguments.ViewName, Resource);
+                if (!Resource.ViewDictionary.TryGetValue(arguments.ViewName, out var view))
+                    throw new UnknownViewException(arguments.ViewName, Resource);
                 Target = view;
             }
-            requestArguments.NonReservedHeaders.ForEach(Headers.Add);
-            Conditions = Condition<T>.Parse(requestArguments.UriConditions, Resource) ?? Conditions;
-            MetaConditions = MetaConditions.Parse(requestArguments.UriMetaConditions, Resource, false) ?? MetaConditions;
+            arguments.CustomHeaders.ForEach(Headers.Add);
+            Conditions = Condition<T>.Parse(arguments.UriConditions, Resource) ?? Conditions;
+            MetaConditions = MetaConditions.Parse(arguments.UriMetaConditions, Resource, false) ?? MetaConditions;
         }
 
         internal void Evaluate()

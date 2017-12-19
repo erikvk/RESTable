@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.IO;
 using System.Net;
 using RESTar.Operations;
 using Starcounter;
@@ -13,26 +14,53 @@ namespace RESTar.Requests
         internal static void RegisterRESTHandlers(bool setupMenu)
         {
             var uri = _Uri + "{?}";
-            Handle.GET(_Port, uri, (Request request, string query) => Evaluate(GET, () => MakeArgs(request, query)));
-            Handle.POST(_Port, uri, (Request request, string query) => Evaluate(POST, () => MakeArgs(request, query)));
-            Handle.PUT(_Port, uri, (Request request, string query) => Evaluate(PUT, () => MakeArgs(request, query)));
-            Handle.PATCH(_Port, uri, (Request request, string query) => Evaluate(PATCH, () => MakeArgs(request, query)));
-            Handle.DELETE(_Port, uri, (Request request, string query) => Evaluate(DELETE, () => MakeArgs(request, query)));
-            Handle.CUSTOM(_Port, "REPORT " + uri, (Request request, string query) => Evaluate(COUNT, () => MakeArgs(request, query)));
-            Handle.OPTIONS(_Port, uri, (Request request, string query) => Evaluate(ORIGIN, () => MakeArgs(request, query)));
-            if (!_ViewEnabled) return;
-            Application.Current.Use(new HtmlFromJsonProvider());
-            Application.Current.Use(new PartialToStandaloneHtmlProvider());
-            var appName = Application.Current.Name;
-            Handle.GET($"/{appName}{{?}}", (Request request, string query) => Evaluate(VIEW, () => MakeArgs(request, query)));
-            Handle.GET("/__restar/__page", () => Evaluate(PAGE));
-            if (!setupMenu) return;
-            Handle.GET($"/{appName}", () => Evaluate(MENU));
+            Handle.GET(_Port, uri, (Request request, string _) => Evaluate(GET, request.ToArgs).ToResponse());
+            Handle.POST(_Port, uri, (Request request, string _) => Evaluate(POST, request.ToArgs).ToResponse());
+            Handle.PUT(_Port, uri, (Request request, string _) => Evaluate(PUT, request.ToArgs).ToResponse());
+            Handle.PATCH(_Port, uri, (Request request, string _) => Evaluate(PATCH, request.ToArgs).ToResponse());
+            Handle.DELETE(_Port, uri, (Request request, string _) => Evaluate(DELETE, request.ToArgs).ToResponse());
+            Handle.CUSTOM(_Port, $"REPORT {uri}", (Request request, string _) => Evaluate(COUNT, request.ToArgs).ToResponse());
+            Handle.OPTIONS(_Port, uri, (Request request, string _) => Evaluate(ORIGIN, request.ToArgs).ToResponse());
+            // if (!_ViewEnabled) return;
+            // Application.Current.Use(new HtmlFromJsonProvider());
+            // Application.Current.Use(new PartialToStandaloneHtmlProvider());
+            // var appName = Application.Current.Name;
+            // Handle.GET($"/{appName}{{?}}", (Request request, string query) => Evaluate(VIEW, () => MakeArgs(request, query)).ToResponse());
+            // Handle.GET("/__restar/__page", () => Evaluate(PAGE).ToResponse());
+            // if (!setupMenu) return;
+            // Handle.GET($"/{appName}", () => Evaluate(MENU).ToResponse());
         }
 
-        private static RequestArguments MakeArgs(Request request, string uri) => Protocol.MakeArguments
+        private static Response ToResponse(this IFinalizedResult result)
+        {
+            var response = new Response
+            {
+                StatusCode = (ushort) result.StatusCode,
+                StatusDescription = result.StatusDescription,
+                ContentType = result.ContentType ?? MimeTypes.JSON
+            };
+            if (result.Body != null)
+            {
+                if (result.Body.CanSeek && result.Body.Length > 0)
+                    response.StreamedBody = result.Body;
+                else
+                {
+                    var stream = new MemoryStream();
+                    result.Body.CopyTo(stream);
+                    if (stream.Position > 0)
+                    {
+                        stream.Seek(0, SeekOrigin.Begin);
+                        response.StreamedBody = stream;
+                    }
+                }
+            }
+            response.SetHeadersDictionary(result.Headers);
+            return response;
+        }
+
+        private static Arguments ToArgs(this Request request) => Protocol.Protocol.MakeRequestArguments
         (
-            uri: uri,
+            uri: request.Uri,
             body: request.BodyBytes,
             headers: request.HeadersDictionary ?? new Dictionary<string, string>(),
             contentType: request.ContentType,

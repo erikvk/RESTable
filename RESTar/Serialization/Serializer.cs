@@ -52,7 +52,7 @@ namespace RESTar.Serialization
 
         #region Main serializers
 
-        internal static bool SerializeOutputJson
+        internal static bool SerializeOutputJsonRESTar
         (
             this IEnumerable<object> data,
             Formatter formatter,

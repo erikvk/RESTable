@@ -28,7 +28,7 @@ using static System.Reflection.BindingFlags;
 using static System.StringComparison;
 using static RESTar.Internal.ErrorCodes;
 using static RESTar.Operators;
-using static RESTar.Requests.Responses;
+using static RESTar.Requests.Results;
 using static Starcounter.DbHelper;
 using IResource = RESTar.Internal.IResource;
 
@@ -720,11 +720,11 @@ namespace RESTar
             return !conditions.Any() != true;
         }
 
-        internal static (ErrorCodes Code, Response Response) GetError(this Exception ex)
+        internal static (ErrorCodes Code, Result Result) GetError(this Exception ex)
         {
             switch (ex)
             {
-                case RESTarException re: return (re.ErrorCode, re.Response);
+                case RESTarException re: return (re.ErrorCode, re.Result);
                 case FormatException _: return (UnsupportedContent, BadRequest(ex));
                 case JsonReaderException _: return (FailedJsonDeserialization, JsonError);
                 case DbException _: return (DatabaseError, DbError(ex));

@@ -39,6 +39,11 @@ namespace RESTar
         Methods Method { get; }
 
         /// <summary>
+        /// The media type accepted by the client
+        /// </summary>
+        MimeType Accept { get; }
+
+        /// <summary>
         /// The resource of the request
         /// </summary>
         IResource Resource { get; }

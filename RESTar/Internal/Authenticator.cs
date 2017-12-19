@@ -48,7 +48,7 @@ namespace RESTar.Internal
                 throw new ForbiddenException(FailedResourceAuthentication, authResults.Reason);
         }
 
-        internal static void Authenticate<T>(this RESTRequest<T> request, RequestArguments requestArguments) where T : class
+        internal static void Authenticate<T>(this RESTRequest<T> request, Arguments arguments) where T : class
         {
             if (!RequireApiKey)
             {
@@ -56,9 +56,9 @@ namespace RESTar.Internal
                 return;
             }
             AccessRights accessRights;
-            if (!requestArguments.Origin.IsExternal)
+            if (!arguments.Origin.IsExternal)
             {
-                var authToken = requestArguments.Headers.SafeGet("RESTar-AuthToken");
+                var authToken = arguments.Headers.SafeGet("RESTar-AuthToken");
                 if (string.IsNullOrWhiteSpace(authToken))
                     throw NotAuthorizedException;
                 if (!AuthTokens.TryGetValue(authToken, out accessRights))
@@ -66,13 +66,13 @@ namespace RESTar.Internal
                 request.AuthToken = authToken;
                 return;
             }
-            var authorizationHeader = requestArguments.Headers.SafeGet("Authorization");
+            var authorizationHeader = arguments.Headers.SafeGet("Authorization");
             if (string.IsNullOrWhiteSpace(authorizationHeader))
             {
-                if (!requestArguments.UriMetaConditions.Any()) throw NotAuthorizedException;
-                var keyMetaCondition = requestArguments.UriMetaConditions.FirstOrDefault(c => c.Key.EqualsNoCase("key"));
+                if (!arguments.UriMetaConditions.Any()) throw NotAuthorizedException;
+                var keyMetaCondition = arguments.UriMetaConditions.FirstOrDefault(c => c.Key.EqualsNoCase("key"));
                 if (keyMetaCondition.ValueLiteral == null) throw NotAuthorizedException;
-                requestArguments.UriMetaConditions.Remove(keyMetaCondition);
+                arguments.UriMetaConditions.Remove(keyMetaCondition);
                 authorizationHeader = $"apikey {WebUtility.UrlDecode(keyMetaCondition.ValueLiteral)}";
             }
             var apikey_key = authorizationHeader.Split(' ');

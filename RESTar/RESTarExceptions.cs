@@ -5,9 +5,9 @@ using Newtonsoft.Json;
 using RESTar.Deflection.Dynamic;
 using RESTar.Http;
 using RESTar.Internal;
-using Starcounter;
+using RESTar.Operations;
 using static RESTar.Internal.ErrorCodes;
-using static RESTar.Requests.Responses;
+using static RESTar.Requests.Results;
 using static RESTar.Admin.Settings;
 using IResource = RESTar.Internal.IResource;
 
@@ -24,7 +24,7 @@ namespace RESTar
         /// </summary>
         public readonly ErrorCodes ErrorCode;
 
-        internal Response Response;
+        internal Result Result;
         internal RESTarException(ErrorCodes code, string message) : base(message) => ErrorCode = code;
         internal RESTarException(ErrorCodes code, string message, Exception ie) : base(message, ie) => ErrorCode = code;
     }
@@ -35,7 +35,7 @@ namespace RESTar
     /// </summary>
     public class RESTarAddOnException : RESTarException
     {
-        internal RESTarAddOnException(string message) : base(AddOnError, message) => Response = BadRequest(this);
+        internal RESTarAddOnException(string message) : base(AddOnError, message) => Result = BadRequest(this);
     }
 
     /// <inheritdoc />
@@ -64,9 +64,9 @@ namespace RESTar
     public class InfiniteLoopException : RESTarException
     {
         internal InfiniteLoopException() : base(InfiniteLoopDetected,
-            "RESTar encountered a potentially infinite loop of recursive internal calls.") => Response = InfiniteLoop(this);
+            "RESTar encountered a potentially infinite loop of recursive internal calls.") => Result = InfiniteLoop(this);
 
-        internal InfiniteLoopException(string message) : base(InfiniteLoopDetected, message) => Response = InfiniteLoop(this);
+        internal InfiniteLoopException(string message) : base(InfiniteLoopDetected, message) => Result = InfiniteLoop(this);
     }
 
 
@@ -76,7 +76,7 @@ namespace RESTar
     /// </summary>
     public class ForbiddenException : RESTarException
     {
-        internal ForbiddenException(ErrorCodes code, string message) : base(code, message) => Response = Forbidden(message);
+        internal ForbiddenException(ErrorCodes code, string message) : base(code, message) => Result = Forbidden(message);
     }
 
     /// <inheritdoc />
@@ -87,7 +87,7 @@ namespace RESTar
     {
         internal ResourceIsInternalException(IResource resource) : base(ResourceIsInternal,
             $"Cannot make an external request to internal resource '{resource.Name}'") =>
-            Response = Forbidden("Resource unavailable");
+            Result = Forbidden("Resource unavailable");
     }
 
     /// <inheritdoc />
@@ -98,7 +98,7 @@ namespace RESTar
     {
         internal NoHtmlException(IResource resource, string matcher) : base(NoMatchingHtml,
             $"No matching HTML file found for resource '{resource.Name}'. Add a HTML file " +
-            $"'{matcher}' to the 'wwwroot/resources' directory.") => Response = NotFound(this);
+            $"'{matcher}' to the 'wwwroot/resources' directory.") => Result = NotFound(this);
     }
 
     /// <inheritdoc />
@@ -108,7 +108,7 @@ namespace RESTar
     public class SyntaxException : RESTarException
     {
         internal SyntaxException(ErrorCodes errorCode, string message) : base(errorCode,
-            "Syntax error while parsing request: " + message) => Response = BadRequest(this);
+            "Syntax error while parsing request: " + message) => Result = BadRequest(this);
     }
 
     /// <inheritdoc />
@@ -120,7 +120,7 @@ namespace RESTar
         internal InvalidSeparatorException() : base(InvalidSeparator,
             "Syntax error while parsing request: Invalid argument separator count. A RESTar URI can contain at most 3 " +
             $"forward slashes after the base uri. URI scheme: {_ResourcesPath}/[resource][-view]/[conditions]/[meta-conditions]") =>
-            Response = BadRequest(this);
+            Result = BadRequest(this);
     }
 
 
@@ -145,7 +145,7 @@ namespace RESTar
             IEnumerable<Operator> allowed) : base(InvalidConditionOperator,
             $"Invalid operator for condition '{c}'. Operator '{found}' is not allowed when " +
             $"comparing against '{term.Key}' in type '{target.Name}'. Allowed operators" +
-            $": {string.Join(", ", allowed.Select(a => $"'{a.Common}'"))}") => Response = BadRequest(this);
+            $": {string.Join(", ", allowed.Select(a => $"'{a.Common}'"))}") => Result = BadRequest(this);
     }
 
     /// <inheritdoc />
@@ -156,7 +156,7 @@ namespace RESTar
     public class SourceException : RESTarException
     {
         internal SourceException(HttpRequest request, string message) : base(InvalidSourceData,
-            $"RESTar could not get entities from source at '{request.URI}'. {message}") => Response = BadRequest(this);
+            $"RESTar could not get entities from source at '{request.URI}'. {message}") => Result = BadRequest(this);
     }
 
     /// <inheritdoc />
@@ -167,7 +167,7 @@ namespace RESTar
     public class DestinationException : RESTarException
     {
         internal DestinationException(HttpRequest request, string message) : base(InvalidDestination,
-            $"RESTar could not upload entities to destination at '{request.URI}': {message}") => Response =
+            $"RESTar could not upload entities to destination at '{request.URI}': {message}") => Result =
             BadRequest(this);
     }
 
@@ -180,7 +180,7 @@ namespace RESTar
     {
         internal InvalidInputCountException() : base(DataSourceFormat,
             "Invalid input count. Expected object/row, but found array/multiple rows. " +
-            "Only POST accepts multiple objects/rows as input.") => Response = BadRequest(this);
+            "Only POST accepts multiple objects/rows as input.") => Result = BadRequest(this);
     }
 
     /// <inheritdoc />
@@ -190,7 +190,7 @@ namespace RESTar
     public class UnknownResourceException : RESTarException
     {
         internal UnknownResourceException(string searchString) : base(UnknownResource,
-            $"RESTar could not locate any resource by '{searchString}'.") => Response = NotFound(this);
+            $"RESTar could not locate any resource by '{searchString}'.") => Result = NotFound(this);
     }
 
     /// <inheritdoc />
@@ -200,7 +200,7 @@ namespace RESTar
     public class UnknownMacroException : RESTarException
     {
         internal UnknownMacroException(string searchString) : base(UnknownMacro,
-            $"RESTar could not locate any macro by '{searchString}'.") => Response = NotFound(this);
+            $"RESTar could not locate any macro by '{searchString}'.") => Result = NotFound(this);
     }
 
 
@@ -211,7 +211,7 @@ namespace RESTar
     public class UnknownViewException : RESTarException
     {
         internal UnknownViewException(string searchString, ITarget resource) : base(UnknownResourceView,
-            $"RESTar could not locate any resource view in '{resource.Name}' by '{searchString}'.") => Response = NotFound(this);
+            $"RESTar could not locate any resource view in '{resource.Name}' by '{searchString}'.") => Result = NotFound(this);
     }
 
     /// <inheritdoc />
@@ -223,7 +223,7 @@ namespace RESTar
         internal ExcelInputException(string message) : base(ExcelReaderError,
             "There was a format error in the excel input. Check that the file is being transmitted properly. In " +
             "curl, make sure the flag '--data-binary' is used and not '--data' or '-d'. Message: " + message) =>
-            Response = BadRequest(this);
+            Result = BadRequest(this);
     }
 
     /// <inheritdoc />
@@ -233,7 +233,7 @@ namespace RESTar
     public class ExcelFormatException : RESTarException
     {
         internal ExcelFormatException(string message, Exception ie) : base(ExcelReaderError,
-            $"RESTar was unable to write entities to excel. {message}. ", ie) => Response = BadRequest(this);
+            $"RESTar was unable to write entities to excel. {message}. ", ie) => Result = BadRequest(this);
     }
 
     /// <inheritdoc />
@@ -244,7 +244,7 @@ namespace RESTar
     {
         internal UnknownPropertyException(Type type, string str) : base(UnknownProperty,
             $"Could not find any property in {(type.HasAttribute<RESTarViewAttribute>() ? $"view '{type.Name}' or resource '{Resource.Get(type.DeclaringType)?.Name}'" : $"resource '{type.Name}'")} by '{str}'.") =>
-            Response = NotFound(this);
+            Result = NotFound(this);
     }
 
     /// <inheritdoc />
@@ -270,7 +270,7 @@ namespace RESTar
         {
             SearchString = str;
             Candidates = cands.ToList();
-            Response = AmbiguousProperty(this);
+            Result = AmbiguousProperty(this);
         }
     }
 
@@ -289,7 +289,7 @@ namespace RESTar
             $"RESTar could not uniquely identify a resource by '{searchString}'. Try qualifying the name further. ")
         {
             SearchString = searchString;
-            Response = AmbiguousResource(this);
+            Result = AmbiguousResource(this);
         }
     }
 
@@ -304,7 +304,7 @@ namespace RESTar
                                               ie.GetType() == typeof(JsonReaderException)
                                       ? "JSON serialization error, check JSON syntax. "
                                       : ""
-                                  ), ie) => Response = AbortedOperation(this, request);
+                                  ), ie) => Result = AbortedOperation(this, request);
     }
 
     /// <inheritdoc />
@@ -318,7 +318,7 @@ namespace RESTar
                                               ie.GetType() == typeof(JsonReaderException)
                                       ? "JSON serialization error, check JSON syntax. "
                                       : ""
-                                  ), ie) => Response = AbortedOperation(this, request);
+                                  ), ie) => Result = AbortedOperation(this, request);
     }
 
     /// <inheritdoc />
@@ -332,7 +332,7 @@ namespace RESTar
                                               ie.GetType() == typeof(JsonReaderException)
                                       ? "JSON serialization error, check JSON syntax. "
                                       : ""
-                                  ), ie) => Response = AbortedOperation(this, request);
+                                  ), ie) => Result = AbortedOperation(this, request);
     }
 
     /// <inheritdoc />
@@ -346,7 +346,7 @@ namespace RESTar
                                               ie.GetType() == typeof(JsonReaderException)
                                       ? "JSON serialization error, check JSON syntax. "
                                       : ""
-                                  ), ie) => Response = AbortedOperation(this, request);
+                                  ), ie) => Result = AbortedOperation(this, request);
     }
 
     /// <inheritdoc />
@@ -360,7 +360,7 @@ namespace RESTar
                                              ie.GetType() == typeof(JsonReaderException)
                                      ? "JSON serialization error, check JSON syntax. "
                                      : ""
-                                 ), ie) => Response = AbortedOperation<T>(this, request);
+                                 ), ie) => Result = AbortedOperation<T>(this, request);
     }
 
     /// <inheritdoc />
@@ -374,7 +374,7 @@ namespace RESTar
                                              ie.GetType() == typeof(JsonReaderException)
                                      ? "JSON serialization error, check JSON syntax. "
                                      : ""
-                                 ), ie) => Response = AbortedOperation(this, request);
+                                 ), ie) => Result = AbortedOperation(this, request);
     }
 
     /// <inheritdoc />
@@ -384,7 +384,7 @@ namespace RESTar
     public class ValidatableException : RESTarException
     {
         internal ValidatableException(string message) : base(InvalidResourceEntity, message)
-            => Response = BadRequest(this);
+            => Result = BadRequest(this);
     }
 
     /// <inheritdoc />
@@ -396,7 +396,7 @@ namespace RESTar
         internal UnknownResourceForAliasException(string searchString, IResource match) : base(UnknownResource,
             "Resource alias assignments must be provided with fully qualified resource names. No match " +
             $"for '{searchString}'. {(match != null ? $"Did you mean '{match.Name}'? " : "")}")
-            => Response = BadRequest(this);
+            => Result = BadRequest(this);
     }
 
     /// <inheritdoc />
@@ -407,7 +407,7 @@ namespace RESTar
     {
         internal AliasAlreadyInUseException(Admin.ResourceAlias alias) : base(AliasAlreadyInUse,
             $"Invalid Alias: '{alias.Alias}' is already in use for resource '{alias.IResource.Name}'") =>
-            Response = BadRequest(this);
+            Result = BadRequest(this);
     }
 
     /// <inheritdoc />
@@ -417,7 +417,7 @@ namespace RESTar
     public class AliasEqualToResourceNameException : RESTarException
     {
         internal AliasEqualToResourceNameException(string alias) : base(AliasEqualToResourceName,
-            $"Invalid Alias: '{alias}' is a resource name") => Response = BadRequest(this);
+            $"Invalid Alias: '{alias}' is a resource name") => Result = BadRequest(this);
     }
 
     /// <inheritdoc />
@@ -430,7 +430,7 @@ namespace RESTar
         internal AmbiguousMatchException(ITarget resource) : base(AmbiguousMatch,
             $"Expected a uniquely matched entity in resource '{resource.Name}', but found multiple. " +
             "Manipulating multiple entities is either unsupported or unsafe. Specify additional " +
-            "conditions or use the 'unsafe' meta-condition") => Response = BadRequest(this);
+            "conditions or use the 'unsafe' meta-condition") => Result = BadRequest(this);
     }
 
     /// <inheritdoc />
@@ -439,7 +439,7 @@ namespace RESTar
     /// </summary>
     public class ResourceMemberException : RESTarException
     {
-        internal ResourceMemberException(string message) : base(InvalidResourceMember, message) => Response = BadRequest(this);
+        internal ResourceMemberException(string message) : base(InvalidResourceMember, message) => Result = BadRequest(this);
     }
 
     /// <inheritdoc />
@@ -449,7 +449,7 @@ namespace RESTar
     public class VirtualResourceDeclarationException : RESTarException
     {
         internal VirtualResourceDeclarationException(string message) : base(InvalidVirtualResourceDeclaration, message) =>
-            Response = BadRequest(this);
+            Result = BadRequest(this);
     }
 
     /// <inheritdoc />
@@ -459,7 +459,7 @@ namespace RESTar
     public class ResourceDeclarationException : RESTarException
     {
         internal ResourceDeclarationException(string message) : base(InvalidResourceDeclaration, message) =>
-            Response = BadRequest(this);
+            Result = BadRequest(this);
     }
 
     /// <inheritdoc />
@@ -470,7 +470,7 @@ namespace RESTar
     {
         internal ResourceViewDeclarationException(Type view, string message) : base(InvalidResourceViewDeclaration,
             $"Invalid resource view declaration for view '{view.Name}' in Resource '{view.DeclaringType?.FullName}'. {message}") =>
-            Response = BadRequest(this);
+            Result = BadRequest(this);
     }
 
     /// <inheritdoc />
@@ -482,7 +482,7 @@ namespace RESTar
     {
         internal NoAvalailableDynamicTableException() : base(NoAvalailableDynamicTable,
             "RESTar have no more unallocated dynamic tables. Remove an existing table and try again.") =>
-            Response = BadRequest(this);
+            Result = BadRequest(this);
     }
 
     /// <inheritdoc />
@@ -493,7 +493,7 @@ namespace RESTar
     {
         internal NotInitializedException() : base(NotInitialized,
             "A RESTar request was created before RESTarConfig.Init() was called. Always " +
-            "initialize the RESTar instance before making calls to it.") => Response = BadRequest(this);
+            "initialize the RESTar instance before making calls to it.") => Result = BadRequest(this);
     }
 
     internal class HttpRequestException : Exception

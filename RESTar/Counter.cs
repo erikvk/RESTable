@@ -1,56 +1,35 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using Newtonsoft.Json.Linq;
-using RESTar.Internal;
-using RESTar.Operations;
-using RESTar.Requests;
-using RESTar.Serialization;
-using static RESTar.Internal.ErrorCodes;
-using static RESTar.Methods;
+﻿//[RESTar(GET, Singleton = true, Description = description)]
+//public class Counter : ISelector<Counter>
+//{
+//    private const string description = "The Counter resource is an operations resource that calculates " +
+//                                       "the number of entities returned from GET request, the URI of which " +
+//                                       "is included in the request data.";
 
-// ReSharper disable UnusedParameter.Local
+//    /// <summary>
+//    /// The result of the count operation 
+//    /// </summary>
+//    public long Count { get; private set; }
 
-namespace RESTar
-{
-    /// <inheritdoc />
-    /// <summary>
-    /// The Counter resource is an operations resource that calculates the number 
-    /// of entities returned from GET request, the URI of which is included in the 
-    /// request data.
-    /// </summary>
-    [RESTar(GET, Singleton = true, Description = description)]
-    public class Counter : ISelector<Counter>
-    {
-        private const string description = "The Counter resource is an operations resource that calculates " +
-                                           "the number of entities returned from GET request, the URI of which " +
-                                           "is included in the request data.";
+//    /// <inheritdoc />
+//    public IEnumerable<Counter> Select(IRequest<Counter> request)
+//    {
+//        if (request == null) throw new ArgumentNullException(nameof(request));
+//        var args = Protocol.RESTar.MakeRequestArguments(request.Body.Deserialize<JObject>().SafeGetNoCase("uri").Value<string>());
+//        IRequest innerRequest = MakeRequest((dynamic) args.IResource, args);
+//        var rights = RESTarConfig.AuthTokens[request.AuthToken];
+//        if (rights.SafeGet(innerRequest.Resource)?.Contains(GET) != true)
+//            throw new ForbiddenException(AbortedCount, $"Access denied to resource '{innerRequest.Resource.Name}'");
+//        return new[] {new Counter {Count = Evaluate((dynamic) innerRequest)}};
+//    }
 
-        /// <summary>
-        /// The result of the count operation 
-        /// </summary>
-        public long Count { get; private set; }
+//    private static Request<T> MakeRequest<T>(IResource<T> _, RequestParameters requestParameters) where T : class
+//    {
+//        var request = new Request<T>();
+//        var conditions = Condition<T>.Parse(requestParameters.UriConditions, request.Resource);
+//        request.Conditions = conditions;
+//        return request;
+//    }
 
-        /// <inheritdoc />
-        public IEnumerable<Counter> Select(IRequest<Counter> request)
-        {
-            if (request == null) throw new ArgumentNullException(nameof(request));
-            var args = new RequestArguments(request.Body.Deserialize<JObject>().SafeGetNoCase("uri").Value<string>());
-            IRequest innerRequest = MakeRequest((dynamic) args.IResource, args);
-            var rights = RESTarConfig.AuthTokens[request.AuthToken];
-            if (rights.SafeGet(innerRequest.Resource)?.Contains(GET) != true)
-                throw new ForbiddenException(AbortedCount, $"Access denied to resource '{innerRequest.Resource.Name}'");
-            return new[] {new Counter {Count = Evaluate((dynamic) innerRequest)}};
-        }
+//    private static long Evaluate<T>(IRequest<T> request) where T : class => Operations<T>.OP_COUNT(request);
+//}
 
-        private static Request<T> MakeRequest<T>(IResource<T> _, RequestArguments requestArguments) where T : class
-        {
-            var request = new Request<T>();
-            var conditions = Condition<T>.Parse(requestArguments.UriConditions, request.Resource);
-            request.Conditions = conditions;
-            return request;
-        }
-
-        private static long Evaluate<T>(IRequest<T> request) where T : class => Operations<T>.OP_COUNT(request);
-    }
-}

@@ -33,7 +33,7 @@ namespace RESTar
         }
     }
 
-    internal enum MimeType : byte
+    public enum MimeType : byte
     {
         Json,
         Excel

@@ -123,7 +123,7 @@ namespace RESTar.Admin
             }
             try
             {
-                var args = new RequestArguments(Uri);
+                var args = Protocol.Protocol.RESTar.MakeRequestArguments(Uri);
                 if (args.UriMetaConditions.Any(c => c.Key.EqualsNoCase("key")))
                 {
                     invalidReason = "Macro URIs cannot contain the 'Key' meta-condition. If API keys are " +
