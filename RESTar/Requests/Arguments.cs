@@ -42,9 +42,9 @@ namespace RESTar.Requests
                     writer.Write('/');
                     writer.Write(Macro != null ? '$' + Macro.Name : ResourceSpecifier);
                     writer.Write('/');
-                    writer.Write(UriConditions != null ? string.Join("$", UriConditions) : null);
+                    writer.Write(UriConditions != null ? string.Join("&", UriConditions) : null);
                     writer.Write('/');
-                    writer.Write(UriMetaConditions != null ? string.Join("$", UriMetaConditions) : null);
+                    writer.Write(UriMetaConditions != null ? string.Join("&", UriMetaConditions) : null);
                     return writer.ToString().TrimEnd('/');
                 }
             }

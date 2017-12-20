@@ -50,6 +50,13 @@ namespace RESTar.Requests
             Headers = {["RESTar-info"] = e.Message}
         };
 
+        internal static Result FeatureNotImplemented(Exception e) => new Result(null)
+        {
+            StatusCode = HttpStatusCode.NotImplemented,
+            StatusDescription = "Not implemented",
+            Headers = {["RESTar-info"] = e.Message}
+        };
+
         internal static Result UnknownHandlerAction => new Result(null)
         {
             StatusCode = HttpStatusCode.BadRequest,

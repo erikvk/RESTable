@@ -24,7 +24,17 @@ namespace RESTar.Requests
         public override string ToString() => $"{Key}{Operator.Common}{ValueLiteral}";
 
         /// <summary>
-        /// Creates a new UriCondition from a condition string
+        /// Creates a new custom UriCondition
+        /// </summary>
+        public UriCondition(string key, Operators op, string valueLiteral)
+        {
+            Key = key;
+            Operator = op;
+            ValueLiteral = valueLiteral;
+        }
+
+        /// <summary>
+        /// Creates a new UriCondition from a RESTar condition string
         /// </summary>
         public UriCondition(string conditionString, bool check = false)
         {
@@ -37,6 +47,7 @@ namespace RESTar.Requests
                 if (!replaced) conditionString = conditionString.ReplaceFirst("%3E", ">", out replaced);
                 if (!replaced) conditionString = conditionString.ReplaceFirst("%3C", "<", out replaced);
             }
+
             var operatorCharacters = new string(conditionString.Where(c => OpMatchChars.Contains(c)).ToArray());
             if (!Operator.TryParse(operatorCharacters, out var op))
                 throw new OperatorException(conditionString);

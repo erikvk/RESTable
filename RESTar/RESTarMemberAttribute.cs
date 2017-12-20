@@ -56,6 +56,12 @@ namespace RESTar
         /// </summary>
         public string ExcelReducerName { get; }
 
+        /// <summary>
+        /// Should this object be replaced with a new instance on update, or reused? Applicable for types 
+        /// such as Dictionaries and Lists.
+        /// </summary>
+        public bool ReplaceOnUpdate { get; }
+
         /// <inheritdoc />
         /// <summary>
         /// Creates a new RESTar property configuration for a property
@@ -70,9 +76,11 @@ namespace RESTar
         /// <param name="allowedOperators">These operators will be allowed in conditions targeting this property.</param>
         /// <param name="excelReducer">The name of an optional public ToString-like method, declared in the same scope as the property, that reduces the 
         /// property to an excel-compatible string</param>
+        /// <param name="replaceOnUpdate">Should this object be replaced with a new instance on update, or reused? Applicable for types such as 
+        /// Dictionaries and Lists.</param>
         public RESTarMemberAttribute(bool ignore = false, string name = null, int order = 0, bool hide = false,
             bool hideIfNull = false, bool readOnly = false, bool skipConditions = false, Operators allowedOperators = Operators.All,
-            string excelReducer = null)
+            string excelReducer = null, bool replaceOnUpdate = false)
         {
             Ignored = ignore;
             Name = name;
@@ -83,6 +91,7 @@ namespace RESTar
             SkipConditions = skipConditions;
             AllowedOperators = allowedOperators;
             ExcelReducerName = excelReducer;
+            ReplaceOnUpdate = replaceOnUpdate;
         }
     }
 }

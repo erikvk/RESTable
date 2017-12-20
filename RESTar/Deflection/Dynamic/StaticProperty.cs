@@ -51,6 +51,12 @@ namespace RESTar.Deflection.Dynamic
         public dynamic ExcelReducer { get; }
 
         /// <summary>
+        /// Should this object be replaced with a new instance on update, or reused? Applicable for types 
+        /// such as Dictionaries and Lists.
+        /// </summary>
+        public bool ReplaceOnUpdate { get; }
+
+        /// <summary>
         /// The attributes that this property has been decorated with
         /// </summary>  
         private ICollection<Attribute> Attributes { get; }
@@ -117,10 +123,10 @@ namespace RESTar.Deflection.Dynamic
             AllowedConditionOperators = memberAttribute?.AllowedOperators ?? Operators.All;
             if (memberAttribute?.ExcelReducerName != null)
                 ExcelReducer = MakeExcelReducer(memberAttribute.ExcelReducerName, p);
-
             Getter = p.MakeDynamicGetter();
             if (memberAttribute?.ReadOnly != true)
                 Setter = p.MakeDynamicSetter();
+            ReplaceOnUpdate = memberAttribute?.ReplaceOnUpdate == true;
         }
 
         private static dynamic MakeExcelReducer(string methodName, PropertyInfo p)

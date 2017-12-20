@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
-using Newtonsoft.Json.Linq;
 using RESTar.Admin;
 using RESTar.Http;
 using RESTar.Linq;
@@ -69,7 +68,7 @@ namespace RESTar.Protocols
                     if (args.Macro.Headers == null) break;
                     args.Macro.HeadersDictionary.ForEach(pair =>
                     {
-                        var currentValue = args.Headers[pair.Key];
+                        var currentValue = args.Headers.SafeGet(pair.Key);
                         if (string.IsNullOrWhiteSpace(currentValue) || currentValue == "*/*")
                             args.Headers[pair.Key] = pair.Value;
                     });

@@ -111,6 +111,15 @@ namespace RESTar
             "Syntax error while parsing request: " + message) => Result = BadRequest(this);
     }
 
+    /// <summary>
+    /// Thrown when RESTar encounters an unknown or not implemented feature
+    /// </summary>
+    public class FeatureNotImplementedException : RESTarException
+    {
+        internal FeatureNotImplementedException(string message) : base(NotImplemented, message) =>
+            Result = FeatureNotImplemented(this);
+    }
+
     /// <inheritdoc />
     /// <summary>
     /// Thrown when a syntax error was discovered when parsing a request

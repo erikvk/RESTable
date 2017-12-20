@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using Newtonsoft.Json;
@@ -51,7 +52,22 @@ namespace RESTar.Admin
         /// <summary>
         /// The URI of the macro
         /// </summary>
-        [Obsolete] public string Uri { get; set; }
+        public string Uri
+        {
+            get
+            {
+                using (var writer = new StringWriter())
+                {
+                    writer.Write('/');
+                    writer.Write(ResourceSpecifier);
+                    writer.Write('/');
+                    writer.Write(UriConditions != null ? string.Join("&", UriConditions) : null);
+                    writer.Write('/');
+                    writer.Write(UriMetaConditions != null ? string.Join("&", UriMetaConditions) : null);
+                    return writer.ToString().TrimEnd('/');
+                }
+            }
+        }
 
         /// <summary>
         /// The body of the macro
@@ -100,12 +116,12 @@ namespace RESTar.Admin
         /// <summary>
         /// The body of the macro
         /// </summary>
-        public JToken Body { get; set; }
+        [RESTarMember(replaceOnUpdate: true)] public JToken Body { get; set; }
 
         /// <summary>
         /// The headers of the macro
         /// </summary>
-        public Dictionary<string, string> Headers { get; set; }
+        [RESTarMember(replaceOnUpdate: true)] public Dictionary<string, string> Headers { get; set; }
 
         /// <inheritdoc />
         /// <summary>
@@ -141,9 +157,9 @@ namespace RESTar.Admin
                     return false;
                 }
             }
-            catch
+            catch (Exception e)
             {
-                invalidReason = $"Invalid format for URI '{Uri}'.";
+                invalidReason = $"Invalid format for URI '{Uri}'. " + e.Message;
                 return false;
             }
 
@@ -189,11 +205,10 @@ namespace RESTar.Admin
                     Name = entity.Name,
                     ResourceSpecifier = args.ResourceSpecifier,
                     ViewName = args.ViewName,
-                    UriConditionsString = args.UriConditions.
-
-                    Uri = entity.Uri,
+                    UriConditionsString = args.UriConditions.Any() ? string.Join("&", args.UriConditions) : null,
+                    UriMetaConditionsString = args.UriMetaConditions.Any() ? string.Join("&", args.UriMetaConditions) : null,
                     BodyBinary = entity.Body != null ? new Binary(Encoding.UTF8.GetBytes(entity.Body?.ToString())) : default,
-                    Headers = entity.Headers?.ToString()
+                    Headers = entity.Headers != null ? JsonConvert.SerializeObject(entity.Headers) : null
                 });
                 count += 1;
             }
@@ -209,12 +224,15 @@ namespace RESTar.Admin
             {
                 var dbEntity = DbMacro.Get(entity.Name);
                 if (dbEntity == null) return;
+                var args = Protocol.MakeArguments(entity.Uri);
                 Transact.Trans(() =>
                 {
-                    dbEntity.Uri = entity.Uri;
-                    dbEntity.BodyBinary =
-                        entity.Body != null ? new Binary(Encoding.UTF8.GetBytes(entity.Body?.ToString())) : default;
-                    dbEntity.Headers = entity.Headers?.ToString();
+                    dbEntity.ResourceSpecifier = args.ResourceSpecifier;
+                    dbEntity.ViewName = args.ViewName;
+                    dbEntity.UriConditionsString = args.UriConditions.Any() ? string.Join("&", args.UriConditions) : null;
+                    dbEntity.UriMetaConditionsString = args.UriMetaConditions.Any() ? string.Join("&", args.UriMetaConditions) : null;
+                    dbEntity.BodyBinary = entity.Body != null ? new Binary(Encoding.UTF8.GetBytes(entity.Body?.ToString())) : default;
+                    dbEntity.Headers = entity.Headers != null ? JsonConvert.SerializeObject(entity.Headers) : null;
                     count += 1;
                 });
             });

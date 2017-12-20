@@ -23,7 +23,7 @@ namespace RESTar.Internal
         InvalidConditionOperator = 007,
         InvalidResourceSpecifier = 008,
         InvalidSeparator = 009,
-        
+
         // 010-019: Data source syntax and format errors
         FailedJsonDeserialization = 010,
         ExcelReaderError = 011,
@@ -83,6 +83,7 @@ namespace RESTar.Internal
         AddOnError = 401,
         ResourceProviderError = 402,
         ResourceWrapperError = 403,
-        InfiniteLoopDetected = 404
+        InfiniteLoopDetected = 404,
+        NotImplemented = 405
     }
 }

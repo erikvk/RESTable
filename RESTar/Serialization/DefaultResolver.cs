@@ -3,6 +3,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using RESTar.Deflection.Dynamic;
 using static Newtonsoft.Json.NullValueHandling;
+using static Newtonsoft.Json.ObjectCreationHandling;
 
 namespace RESTar.Serialization
 {
@@ -18,6 +19,7 @@ namespace RESTar.Serialization
                     var p = base.CreateProperty(member, memberSerialization);
                     p.Writable = property.Writable;
                     p.NullValueHandling = property.HiddenIfNull ? Ignore : Include;
+                    p.ObjectCreationHandling = property.ReplaceOnUpdate ? Replace : Auto;
                     p.PropertyName = property.Name;
                     p.Order = property.Order;
                     return p;

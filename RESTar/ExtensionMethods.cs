@@ -175,6 +175,7 @@ namespace RESTar
                 replaced = false;
                 return text;
             }
+
             replaced = true;
             return $"{text.Substring(0, pos)}{replace}{text.Substring(pos + search.Length)}";
         }
@@ -240,6 +241,11 @@ namespace RESTar
             }
         }
 
+        internal static string[] Split(this string str, string separator)
+        {
+            return str.Split(new[] {separator}, StringSplitOptions.None);
+        }
+
         internal static (string, string) TSplit(this string str, char separator)
         {
             var split = str.Split(separator);
@@ -292,6 +298,7 @@ namespace RESTar
                             : JToken.FromObject(pair.Value, Serializer.JsonSerializer);
                     return _jobj;
             }
+
             var jobj = new JObject();
             entity.GetType()
                 .GetStaticProperties()
@@ -331,6 +338,7 @@ namespace RESTar
                 case TypeCode.DateTime:
                 case TypeCode.String: return true;
             }
+
             if (type == typeof(Binary)) return true;
             return false;
         }
@@ -398,6 +406,7 @@ namespace RESTar
                             break;
                         default: throw new Exception($"Operator '{op}' is not valid for comparison with NULL");
                     }
+
                     return $"t.{key} {op}";
                 }
 
@@ -410,6 +419,7 @@ namespace RESTar
                 valuesAssignments = null;
                 return (null, null);
             }
+
             valuesAssignments = _valuesAssignments;
             return ($"WHERE {clause}", literals.ToArray());
         }
@@ -433,8 +443,10 @@ namespace RESTar
                             break;
                         default: throw new Exception($"Operator '{op}' is not valid for comparison with NULL");
                     }
+
                     return $"t.{key} {op}";
                 }
+
                 literals.Add(c.Value);
                 return $"t.{key} {c.InternalOperator.SQL} ? ";
             }));
@@ -502,9 +514,11 @@ namespace RESTar
                     actualKey = null;
                     return null;
                 }
+
                 actualKey = key;
                 return val;
             }
+
             var match = matches.FirstOrDefault();
             actualKey = match;
             return match == null ? null : dict[match];
@@ -525,9 +539,11 @@ namespace RESTar
                     actualKey = null;
                     return default;
                 }
+
                 actualKey = key;
                 return val;
             }
+
             var match = matches.FirstOrDefault();
             actualKey = match.Key;
             return match.Value;
@@ -756,6 +772,7 @@ namespace RESTar
                     message.Append(" | ");
                 ie = ie.InnerException;
             }
+
             return message.ToString().Replace("\r\n", " | ");
         }
 
@@ -768,6 +785,7 @@ namespace RESTar
                 ms = new MemoryStream();
                 using (stream) stream.CopyTo(ms);
             }
+
             return ms.ToArray();
         }
 
@@ -812,8 +830,10 @@ namespace RESTar
                                 table.Columns.Add(pair.Key);
                             row[pair.Key] = pair.Value.MakeDynamicCellValue();
                         }
+
                         table.Rows.Add(row);
                     }
+
                     return table;
                 case IEnumerable<JObject> jobjects:
                     foreach (var item in jobjects)
@@ -825,8 +845,10 @@ namespace RESTar
                                 table.Columns.Add(pair.Key);
                             row[pair.Key] = pair.Value.ToObject<object>().MakeDynamicCellValue();
                         }
+
                         table.Rows.Add(row);
                     }
+
                     return table;
                 default:
                     var properties = resource.Type.GetStaticProperties().Values
@@ -912,6 +934,7 @@ namespace RESTar
                     var elementType = ienumImplementation.GenericTypeArguments[0];
                     return new object[] {DefaultValueRecurser(elementType)};
                 }
+
                 if (propType.IsClass)
                 {
                     if (propType == typeof(object))
@@ -921,12 +944,14 @@ namespace RESTar
                         p => p.ViewModelName,
                         p => DefaultValueRecurser(p.Type));
                 }
+
                 if (propType.IsValueType)
                 {
                     if (propType.IsGenericType && propType.GetGenericTypeDefinition() == typeof(Nullable<>))
                         return propType.GetGenericArguments()[0].GetDefault();
                     return propType.GetDefault();
                 }
+
                 throw new ArgumentOutOfRangeException();
             }
 

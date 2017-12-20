@@ -6,6 +6,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using Starcounter;
 using RESTar.Deflection.Dynamic;
+using static Newtonsoft.Json.ObjectCreationHandling;
 
 namespace RESTar.Serialization
 {
@@ -21,6 +22,7 @@ namespace RESTar.Serialization
                     if (property?.Hidden != false) return null;
                     var p = base.CreateProperty(member, memberSerialization);
                     p.PropertyName = property.Name;
+                    p.ObjectCreationHandling = property.ReplaceOnUpdate ? Replace : Auto;
                     p.Order = property.Order;
                     if (property.Writable)
                     {
@@ -61,6 +63,7 @@ namespace RESTar.Serialization
                     ValueProvider = new ObjectIDProvider()
                 });
             }
+
             return results;
         }
 
@@ -80,6 +83,7 @@ namespace RESTar.Serialization
                 if (pi.PropertyType.IsClass)
                     return new ClassNullToEmptyObjectProvider(pi);
             }
+
             return base.CreateMemberValueProvider(member);
         }
     }

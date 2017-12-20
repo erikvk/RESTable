@@ -14,7 +14,7 @@
         /// <summary>
         /// The main URI regex, used when parsing requests
         /// </summary>
-        internal const string ODataRequestUri = @"(?<entityset>/[^/\?]*)?\??(?<options>/[^/]*)?";
+        internal const string ODataRequestUri = @"(?<entityset>/[^/\?]*)?(?<options>\?[^/]*)?";
 
         /// <summary>
         /// The base URI regex, used when validating base uris in RESTarConfig.Init
@@ -50,6 +50,11 @@
         /// Matches all header names reserved by RESTar
         /// </summary>
         internal const string ReservedHeaders = @"^(source|destination|authorization|restar-authtoken)$";
+
+        /// <summary>
+        /// Matches unsupported OData operators in URIs
+        /// </summary>
+        internal const string UnsupportedODataOperatorRegex = @"(/| has | not | cast\(.*\)| mul | div | mod | add | sub | isof | or )";
 
         /// <summary>
         /// Matches condition literals sorrounded with double quotes
