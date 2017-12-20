@@ -37,25 +37,20 @@ namespace RESTar.Protocols
             args.ResourceSpecifier = entitySet;
             foreach (var (oKey, oValue) in options.Split('&').Select(option => option.TSplit('=')))
             {
+                if (string.IsNullOrWhiteSpace(oKey))
+                    throw new SyntaxException(InvalidConditionSyntax, "An OData query option key was invalid");
+                if (string.IsNullOrWhiteSpace(oValue))
+                    throw new SyntaxException(InvalidConditionSyntax, $"The OData query option value for {oKey} was invalid");
                 switch (oKey)
                 {
-                    case null:
-                    case "": throw new SyntaxException(InvalidConditionSyntax, "An OData query option key was invalid");
                     case var system when oKey[0] == '$':
                         if (!Enum.TryParse(system.Substring(1), out QueryOptions option) || option == none)
                             throw new FeatureNotImplementedException($"Unknown or not implemented query option '{system}'");
                         switch (option)
                         {
                             case filter:
-                                switch (oValue)
-                                {
-                                    case null:
-                                    case "":
-                                        throw new SyntaxException(InvalidConditionSyntax, "An OData query option value was invalid");
-                                    case var _ when Regex.Match(oValue, RegEx.UnsupportedODataOperatorRegex) is Match m && m.Success:
-                                        throw new FeatureNotImplementedException($"Not implemented operator '{m.Value}' in $filter");
-                                }
-
+                                if (Regex.Match(oValue, RegEx.UnsupportedODataOperatorRegex) is Match m && m.Success)
+                                    throw new FeatureNotImplementedException($"Not implemented operator '{m.Value}' in $filter");
                                 oValue.Replace("(", "").Replace(")", "").Split(" and ").Select(c =>
                                 {
                                     var parts = c.Split(' ');
@@ -63,25 +58,43 @@ namespace RESTar.Protocols
                                         throw new SyntaxException(InvalidConditionSyntax, "Invalid syntax in $filter query option");
                                     return new UriCondition(parts[0], GetOperator(parts[1]), parts[2]);
                                 }).ForEach(args.UriConditions.Add);
-                                break;
-                            case orderby:
-                                switch (oValue)
-                                {
-                                    case var _ when oValue.Contains(","):
-                                        throw new FeatureNotImplementedException("Multiple expressions not implemented for $orderby");
 
+                                break;
+
+                            case orderby:
+                                if (oValue.Contains(","))
+                                    throw new FeatureNotImplementedException("Multiple expressions not implemented for $orderby");
+                                var (term, order) = oValue.TSplit(' ');
+                                switch (order)
+                                {
+                                    case null:
+                                    case "":
+                                    case "asc":
+                                        args.UriMetaConditions.Add(new UriCondition("order_asc", Operators.EQUALS, term));
+                                        break;
+                                    case "desc":
+                                        args.UriMetaConditions.Add(new UriCondition("order_desc", Operators.EQUALS, term));
+                                        break;
+                                    default:
+                                        throw new SyntaxException(InvalidConditionSyntax,
+                                            "The OData query option value for $orderby was invalid");
                                 }
 
+                                break;
 
-                                break;
                             case select:
+                                args.UriMetaConditions.Add(new UriCondition("select", Operators.EQUALS, oValue));
                                 break;
+
                             case skip:
+                                args.UriMetaConditions.Add(new UriCondition("offset", Operators.EQUALS, oValue));
                                 break;
+
                             case top:
+                                args.UriMetaConditions.Add(new UriCondition("limit", Operators.EQUALS, oValue));
                                 break;
-                            default:
-                                throw new ArgumentOutOfRangeException();
+
+                            default: throw new ArgumentOutOfRangeException();
                         }
 
                         break;
