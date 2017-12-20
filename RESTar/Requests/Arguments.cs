@@ -3,7 +3,7 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using RESTar.Admin;
-using RESTar.Protocol;
+using RESTar.Protocols;
 using static System.Text.RegularExpressions.RegexOptions;
 using IResource = RESTar.Internal.IResource;
 
@@ -28,7 +28,6 @@ namespace RESTar.Requests
         internal string ContentType { get; set; }
         internal string Accept { get; set; }
         internal ResultFinalizer ResultFinalizer { get; set; }
-        internal bool PercentCharsEscaped => Headers.ContainsKey("X-ARR-LOG-ID");
         private static readonly string DefaultResourceSpecifier = typeof(AvailableResource).FullName;
 
         internal IEnumerable<KeyValuePair<string, string>> CustomHeaders => Headers.Where(h =>

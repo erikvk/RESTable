@@ -12,6 +12,11 @@
             @"\?*(?<resource_or_macro>/[^/-]*)?(?<view>-\w*)?(?<conditions>/[^/]*)?(?<metaconditions>/[^/]*)?";
 
         /// <summary>
+        /// The main URI regex, used when parsing requests
+        /// </summary>
+        internal const string ODataRequestUri = @"(?<entityset>/[^/\?]*)?\??(?<options>/[^/]*)?";
+
+        /// <summary>
         /// The base URI regex, used when validating base uris in RESTarConfig.Init
         /// </summary>
         internal const string BaseUri = @"^/?[\/\w]+$";

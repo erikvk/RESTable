@@ -14,7 +14,7 @@ namespace RESTar.Internal
         // - - - - - - - - - 
         // 001-099: Request errors
         // 000-009: URI errors
-        UnknownMetaCondition = 001,
+        InvalidUriSyntax = 001,
         InvalidMetaConditionValueType = 002,
         InvalidMetaConditionOperator = 003,
         InvalidMetaConditionSyntax = 004,

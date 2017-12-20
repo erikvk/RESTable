@@ -2,9 +2,11 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using RESTar.Linq;
 using RESTar.Operations;
+using RESTar.Protocols;
 using RESTar.Requests;
 using Starcounter;
 
@@ -49,7 +51,7 @@ namespace RESTar.Admin
         /// <summary>
         /// The URI of the macro
         /// </summary>
-        public string Uri { get; set; }
+        [Obsolete] public string Uri { get; set; }
 
         /// <summary>
         /// The body of the macro
@@ -62,6 +64,11 @@ namespace RESTar.Admin
         /// The headers of the macro
         /// </summary>
         public string Headers { get; set; }
+
+        /// <summary>
+        /// A dictionary representation of the headers for this macro
+        /// </summary>
+        internal Dictionary<string, string> HeadersDictionary => JsonConvert.DeserializeObject<Dictionary<string, string>>(Headers);
 
         #endregion
 
@@ -98,7 +105,7 @@ namespace RESTar.Admin
         /// <summary>
         /// The headers of the macro
         /// </summary>
-        public JObject Headers { get; set; }
+        public Dictionary<string, string> Headers { get; set; }
 
         /// <inheritdoc />
         /// <summary>
@@ -111,19 +118,22 @@ namespace RESTar.Admin
                 invalidReason = "Invalid or missing name";
                 return false;
             }
+
             if (string.IsNullOrWhiteSpace(Uri))
             {
                 invalidReason = "Invalid or missing URI";
                 return false;
             }
+
             if (Uri.ToLower().Contains($"${Name.ToLower()}"))
             {
                 invalidReason = "Macro URIs cannot contain self-references";
                 return false;
             }
+
             try
             {
-                var args = Protocol.Protocol.RESTar.MakeRequestArguments(Uri);
+                var args = Protocol.MakeArguments(Uri);
                 if (args.UriMetaConditions.Any(c => c.Key.EqualsNoCase("key")))
                 {
                     invalidReason = "Macro URIs cannot contain the 'Key' meta-condition. If API keys are " +
@@ -136,15 +146,11 @@ namespace RESTar.Admin
                 invalidReason = $"Invalid format for URI '{Uri}'.";
                 return false;
             }
+
             if (Headers != null)
             {
                 foreach (var prop in Headers)
                 {
-                    if (prop.Value.Type != JTokenType.String)
-                    {
-                        invalidReason = $"Invalid value for header '{prop.Key}'. Value must be string";
-                        return false;
-                    }
                     if (prop.Key.ToLower() == "authorization")
                     {
                         invalidReason = "Macro headers cannot contain the Authorization header. If API keys are " +
@@ -153,6 +159,7 @@ namespace RESTar.Admin
                     }
                 }
             }
+
             invalidReason = null;
             return true;
         }
@@ -164,7 +171,7 @@ namespace RESTar.Admin
                 Name = m.Name,
                 Uri = m.Uri,
                 Body = m.BodyBinary != default ? JToken.Parse(m.BodyUTF8) : null,
-                Headers = m.Headers != null ? JObject.Parse(m.Headers) : null
+                Headers = m.Headers != null ? m.HeadersDictionary : null
             })
             .Where(request.Conditions);
 
@@ -176,15 +183,21 @@ namespace RESTar.Admin
             {
                 if (DbMacro.Get(entity.Name) != null)
                     throw new Exception($"Invalid name. '{entity.Name}' is already in use.");
+                var args = Protocol.MakeArguments(entity.Uri);
                 Transact.Trans(() => new DbMacro
                 {
                     Name = entity.Name,
+                    ResourceSpecifier = args.ResourceSpecifier,
+                    ViewName = args.ViewName,
+                    UriConditionsString = args.UriConditions.
+
                     Uri = entity.Uri,
                     BodyBinary = entity.Body != null ? new Binary(Encoding.UTF8.GetBytes(entity.Body?.ToString())) : default,
                     Headers = entity.Headers?.ToString()
                 });
                 count += 1;
             }
+
             return count;
         }
 

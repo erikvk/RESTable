@@ -2,6 +2,7 @@
 using System.Runtime.Serialization;
 using RESTar.Linq;
 using RESTar.Operations;
+using RESTar.Protocols;
 using Starcounter;
 using static RESTar.Methods;
 
@@ -86,6 +87,7 @@ namespace RESTar.Admin
                 DaysToSaveErrors = daysToSaveErrors,
                 LineEndings = lineEndings
             };
+            Protocol.UriLength = uri.Length;
         });
 
         internal static void Clear() => Transact.Trans(() => Db.SQL<Settings>(All).ForEach(Db.Delete));

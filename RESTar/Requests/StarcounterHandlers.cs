@@ -1,26 +1,27 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Net;
+using RESTar.Admin;
+using RESTar.Linq;
 using RESTar.Operations;
 using Starcounter;
-using static RESTar.Requests.HandlerActions;
-using static RESTar.Admin.Settings;
-using static RESTar.Requests.Evaluator;
 
 namespace RESTar.Requests
 {
     internal static class StarcounterHandlers
     {
+        private static void Register(Methods method, Func<HandlerActions, Func<Arguments>, IFinalizedResult> func) => Handle.CUSTOM
+        (
+            port: Settings._Port,
+            methodSpaceUri: $"{method} {Settings._Uri}{{?}}",
+            handler: (Request request, string query) => func((HandlerActions) method, () => ToArgs(request, query)).ToResponse()
+        );
+
         internal static void RegisterRESTHandlers(bool setupMenu)
         {
-            var uri = _Uri + "{?}";
-            Handle.GET(_Port, uri, (Request request, string _) => Evaluate(GET, request.ToArgs).ToResponse());
-            Handle.POST(_Port, uri, (Request request, string _) => Evaluate(POST, request.ToArgs).ToResponse());
-            Handle.PUT(_Port, uri, (Request request, string _) => Evaluate(PUT, request.ToArgs).ToResponse());
-            Handle.PATCH(_Port, uri, (Request request, string _) => Evaluate(PATCH, request.ToArgs).ToResponse());
-            Handle.DELETE(_Port, uri, (Request request, string _) => Evaluate(DELETE, request.ToArgs).ToResponse());
-            Handle.CUSTOM(_Port, $"REPORT {uri}", (Request request, string _) => Evaluate(COUNT, request.ToArgs).ToResponse());
-            Handle.OPTIONS(_Port, uri, (Request request, string _) => Evaluate(ORIGIN, request.ToArgs).ToResponse());
+            RESTarConfig.Methods.ForEach(method => Register(method, Evaluator.Evaluate));
+
             // if (!_ViewEnabled) return;
             // Application.Current.Use(new HtmlFromJsonProvider());
             // Application.Current.Use(new PartialToStandaloneHtmlProvider());
@@ -54,13 +55,14 @@ namespace RESTar.Requests
                     }
                 }
             }
+
             response.SetHeadersDictionary(result.Headers);
             return response;
         }
 
-        private static Arguments ToArgs(this Request request) => Protocol.Protocol.MakeRequestArguments
+        private static Arguments ToArgs(Request request, string query) => Protocols.Protocol.MakeArguments
         (
-            uri: request.Uri,
+            uri: query,
             body: request.BodyBytes,
             headers: request.HeadersDictionary ?? new Dictionary<string, string>(),
             contentType: request.ContentType,
@@ -90,24 +92,27 @@ namespace RESTar.Requests
                     origin.IP = request.ClientIpAddress;
                     origin.Proxy = null;
                 }
+
                 origin.Type = request.IsExternal ? OriginType.External : OriginType.Internal;
             }
+
             return origin;
         }
 
         internal static void UnRegisterRESTHandlers()
         {
-            var uri = _Uri + "{?}";
-            Do.Try(() => Handle.UnregisterHttpHandler(_Port, "GET", uri));
-            Do.Try(() => Handle.UnregisterHttpHandler(_Port, "POST", uri));
-            Do.Try(() => Handle.UnregisterHttpHandler(_Port, "PUT", uri));
-            Do.Try(() => Handle.UnregisterHttpHandler(_Port, "PATCH", uri));
-            Do.Try(() => Handle.UnregisterHttpHandler(_Port, "DELETE", uri));
-            Do.Try(() => Handle.UnregisterHttpHandler(_Port, "OPTIONS", uri));
+            var uri = Settings._Uri + "{?}";
+            Do.Try(() => Handle.UnregisterHttpHandler(Settings._Port, "GET", uri));
+            Do.Try(() => Handle.UnregisterHttpHandler(Settings._Port, "POST", uri));
+            Do.Try(() => Handle.UnregisterHttpHandler(Settings._Port, "PUT", uri));
+            Do.Try(() => Handle.UnregisterHttpHandler(Settings._Port, "PATCH", uri));
+            Do.Try(() => Handle.UnregisterHttpHandler(Settings._Port, "DELETE", uri));
+            Do.Try(() => Handle.UnregisterHttpHandler(Settings._Port, "OPTIONS", uri));
+            Do.Try(() => Handle.UnregisterHttpHandler(Settings._Port, "REPORT", uri));
             var appName = Application.Current.Name;
-            Do.Try(() => Handle.UnregisterHttpHandler(_Port, "GET", $"/{appName}{{?}}"));
-            Do.Try(() => Handle.UnregisterHttpHandler(_Port, "GET", "/__restar/__page"));
-            Do.Try(() => Handle.UnregisterHttpHandler(_Port, "GET", $"/{appName}"));
+            Do.Try(() => Handle.UnregisterHttpHandler(Settings._Port, "GET", $"/{appName}{{?}}"));
+            Do.Try(() => Handle.UnregisterHttpHandler(Settings._Port, "GET", "/__restar/__page"));
+            Do.Try(() => Handle.UnregisterHttpHandler(Settings._Port, "GET", $"/{appName}"));
         }
     }
 }

@@ -6,7 +6,7 @@ using RESTar.Http;
 using RESTar.Internal;
 using RESTar.Linq;
 using RESTar.Operations;
-using RESTar.Protocol;
+using RESTar.Protocols;
 using RESTar.Serialization;
 using static System.Net.HttpStatusCode;
 using static RESTar.Internal.ErrorCodes;
