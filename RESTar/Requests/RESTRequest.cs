@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using RESTar.Admin;
 using RESTar.Http;
 using RESTar.Internal;
@@ -26,11 +27,18 @@ namespace RESTar.Requests
         public Stream Body { get; private set; }
         public string AuthToken { get; internal set; }
         public IDictionary<string, string> ResponseHeaders { get; }
+        public IUriParameters UriParameters { get; private set; }
 
-        public string GetNextPageUrl(RESTProtocols protocol)
-        {
-            throw new NotImplementedException();
-        }
+        // public IUriParameters GetNextPage()
+        // {
+        //     var uriParams = new UriParameters
+        //     {
+        //         ResourceSpecifier = Resource.Name,
+        //         ViewName = Target is View<T> view ? view.Name : null,
+        //     };
+        //     Conditions.ForEach(c => uriParams.UriConditions.Add(new UriCondition(c.Key, c.Operator, c.Value)));
+        //     MetaConditions.ForEach(c => uriParams.UriConditions.Add(new UriCondition(c.Key, c.Operator, c.Value)));
+        // }
 
         IResource IRequest.Resource => Resource;
         public ITarget<T> Target { get; private set; }
@@ -86,6 +94,7 @@ namespace RESTar.Requests
                 Target = view;
             }
 
+            UriParameters = arguments;
             Method = method;
             Evaluator = Operations<T>.REST.GetEvaluator(method);
             Source = arguments.Headers.SafeGet("Source");
@@ -165,7 +174,7 @@ namespace RESTar.Requests
 
         internal Result Report(Report report)
         {
-            if (!report.SerializeReportJson(out var stream)) return Results.NoContent;
+            if (!report.TryGetReportJsonStream(out var stream)) return Results.NoContent;
             return new Result(this)
             {
                 StatusCode = OK,

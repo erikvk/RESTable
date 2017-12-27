@@ -52,57 +52,7 @@ namespace RESTar.Serialization
 
         #region Main serializers
 
-        internal static bool SerializeOutputJsonRESTar
-        (
-            this IEnumerable<object> data,
-            Formatter formatter,
-            out MemoryStream stream,
-            out long count
-        )
-        {
-            stream = new MemoryStream();
-            using (var swr = new StreamWriter(stream, UTF8, 1024, true))
-            using (var jwr = new RESTarJsonWriter(swr, formatter.StartIndent))
-            {
-                JsonSerializer.Formatting = _PrettyPrint ? Indented : None;
-                swr.Write(formatter.Pre);
-                JsonSerializer.Serialize(jwr, data);
-                count = jwr.ObjectsWritten;
-                swr.Write(formatter.Post);
-            }
-
-            if (count == 0) return false;
-            stream.Seek(0, SeekOrigin.Begin);
-            return true;
-        }
-
-
-        internal static bool SerializeOutputJsonOData
-        (
-            this IEnumerable<object> data,
-            out MemoryStream stream,
-            out long count
-        )
-        {
-            stream = new MemoryStream();
-            using (var swr = new StreamWriter(stream, UTF8, 1024, true))
-            using (var jwr = new ODataJsonWriter(swr))
-            {
-                JsonSerializer.Formatting = Indented;
-                jwr.WritePre();
-                JsonSerializer.Serialize(jwr, data);
-                count = jwr.ObjectsWritten;
-                jwr.WritePropertyName("@odata.count");
-                jwr.WriteValue(count);
-                jwr.WriteEndObject();
-            }
-
-            if (count == 0) return false;
-            stream.Seek(0, SeekOrigin.Begin);
-            return true;
-        }
-
-        internal static bool SerializeReportJson(this Report data, out MemoryStream stream)
+        internal static bool TryGetReportJsonStream(this Report data, out MemoryStream stream)
         {
             stream = new MemoryStream();
             using (var swr = new StreamWriter(stream, UTF8, 1024, true))

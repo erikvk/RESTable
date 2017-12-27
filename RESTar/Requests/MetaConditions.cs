@@ -6,6 +6,7 @@ using RESTar.Internal;
 using RESTar.Linq;
 using RESTar.Operations;
 using static RESTar.Internal.ErrorCodes;
+using static RESTar.Operators;
 
 #pragma warning disable 612
 
@@ -124,13 +125,16 @@ namespace RESTar.Requests
             if (!uriMetaConditions.Any()) return null;
             var renames = uriMetaConditions.Where(c => c.Key.EqualsNoCase("rename"));
             var regular = uriMetaConditions.Where(c => !c.Key.EqualsNoCase("rename"));
-            var mc = new MetaConditions {Empty = false};
+            var mc = new MetaConditions
+            {
+                Empty = false
+            };
             ICollection<string> dynamicDomain = default;
 
             void make(IEnumerable<UriCondition> conds) => conds.ForEach(cond =>
             {
                 var (key, op, valueLiteral) = (cond.Key, cond.Operator, cond.ValueLiteral);
-                if (op.OpCode != Operators.EQUALS)
+                if (op.OpCode != EQUALS)
                     throw new SyntaxException(InvalidMetaConditionOperator,
                         "Invalid operator for meta-condition. One and only one '=' is allowed");
                 if (!Enum.TryParse(key, true, out RESTarMetaConditions metaCondition))
@@ -219,6 +223,7 @@ namespace RESTar.Requests
                 if (mc.OrderBy.Term.ScQueryable == false)
                     mc.OrderBy.IsSqlQueryable = false;
             }
+
             if (mc.Select != null && mc.Rename != null)
             {
                 if (mc.Select.Any(pc => mc.Rename.Any(p => p.Key.Key.EqualsNoCase(pc.Key)) &&
@@ -230,7 +235,7 @@ namespace RESTar.Requests
 
             return mc;
         }
-
+        
         private static string GetTypeString(Type type)
         {
             if (type == typeof(string)) return "string";

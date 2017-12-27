@@ -12,7 +12,7 @@ namespace RESTar.Operations
     {
         public readonly long Number;
         public bool Equals(Limit other) => Number == other.Number;
-        public override bool Equals(object obj) => !ReferenceEquals(null, obj) && obj is Limit && Equals((Limit) obj);
+        public override bool Equals(object obj) => obj is Limit limit && Equals(limit);
         public override int GetHashCode() => Number.GetHashCode();
         public override string ToString() => Number.ToString();
         public static Limit NoLimit => (Limit) (-1);
@@ -32,7 +32,7 @@ namespace RESTar.Operations
         /// <summary>
         /// Applies the limiting to an IEnumerable of entities
         /// </summary>
-        public IEnumerable<T> Apply<T>(IEnumerable<T> entities) => Number > 0 ? entities.Take((int) Number) : entities;
+        public IEnumerable<T> Apply<T>(IEnumerable<T> entities) => Number > -1 ? entities.Take((int) Number) : entities;
     }
 
     /// <summary>
@@ -42,7 +42,7 @@ namespace RESTar.Operations
     {
         public readonly long Number;
         public bool Equals(Offset other) => Number == other.Number;
-        public override bool Equals(object obj) => !ReferenceEquals(null, obj) && obj is Offset && Equals((Offset) obj);
+        public override bool Equals(object obj) => obj is Offset offset && Equals(offset);
         public override int GetHashCode() => Number.GetHashCode();
         public override string ToString() => Number.ToString();
         public static Offset NoOffset => (Offset) 0;

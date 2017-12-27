@@ -16,7 +16,7 @@ namespace RESTar.Serialization
 
         public override void WriteStartObject()
         {
-            if (CurrentDepth == 0)
+            if (CurrentDepth == BaseIndentation)
                 ObjectsWritten += 1;
             CurrentDepth += 1;
             base.WriteStartObject();
@@ -35,10 +35,23 @@ namespace RESTar.Serialization
             WritePropertyName("value");
         }
 
-        public void WriteMetadata(MetaDataLevel metaDataLevel)
+        public void WritePost()
         {
+            WriteWhitespace(NewLine);
+            WriteEndObject();
+        }
 
+        public void WriteIndentation()
+        {
+            WriteIndent();
+        }
 
+        public void WriteMetadata(string propertyName, long valueNr)
+        {
+            WriteIndent();
+            WritePropertyName(propertyName);
+            WriteWhitespace(" ");
+            WriteValue(valueNr);
         }
 
         public ODataJsonWriter(TextWriter textWriter) : base(textWriter)

@@ -187,22 +187,16 @@ namespace RESTar.Deflection.Dynamic
             // and select). This code handles those cases.
             if (target is JObject jobj)
             {
-                if (jobj.TryGetNoCase(Key, out var actual, out var jvalue))
-                {
-                    actualKey = actual;
+                if (jobj.TryGetNoCase(Key, out actualKey, out var jvalue))
                     return jvalue.ToObject<dynamic>();
-                }
                 MakeDynamic();
             }
 
             // Walk over the properties in the term, and if null is encountered, simply
-            // keep the null. Else keep evaluating the next property as a property of the
+            // keep the null. Else continue evaluating the next property as a property of the
             // previous property value.
-            Store.ForEach(prop =>
-            {
-                if (target != null)
-                    target = prop.GetValue(target);
-            });
+            for (var i = 0; target != null && i < Store.Count; i++)
+                target = Store[i].GetValue(target);
 
             // If the term is dynamic, we do not know the actual key beforehand. We instead
             // set names for dynamic properties when getting their values, and concatenate the
@@ -213,5 +207,11 @@ namespace RESTar.Deflection.Dynamic
             actualKey = Key;
             return target;
         }
+
+        /// <summary>
+        /// Gets a string representation of the given term
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString() => Key;
     }
 }

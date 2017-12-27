@@ -10,5 +10,7 @@ namespace RESTar.Protocols
             string contentType = null, string accept = null);
 
         IFinalizedResult FinalizeResult(Result result);
+
+        string MakeRelativeUri(IUriParameters parameters);
     }
 }

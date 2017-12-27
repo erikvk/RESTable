@@ -4,6 +4,7 @@ using System.Net;
 using System;
 using RESTar.Operations;
 using Starcounter;
+using static System.Net.HttpStatusCode;
 using static System.StringSplitOptions;
 
 namespace RESTar.Http
@@ -16,6 +17,9 @@ namespace RESTar.Http
         public string ContentType { get; set; }
         public Stream Body { get; set; }
         public Dictionary<string, string> Headers { get; set; }
+        public long EntityCount => throw new InvalidOperationException();
+        public bool HasContent => StatusCode < MultipleChoices && StatusCode != NoContent;
+        public bool IsPaged => false;
 
         internal bool IsSuccessStatusCode => StatusCode >= (HttpStatusCode) 200 &&
                                              StatusCode < (HttpStatusCode) 300;
@@ -36,6 +40,7 @@ namespace RESTar.Http
                     scResponse.BodyBytes = response.Body.ToByteArray();
                 else scResponse.StreamedBody = response.Body;
             }
+
             return scResponse;
         }
 
@@ -72,6 +77,7 @@ namespace RESTar.Http
                 var name_value = header.Split(':');
                 response.Headers[name_value[0]] = name_value.SafeGet(v => v[1].Trim());
             }
+
             return response;
         }
     }

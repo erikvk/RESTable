@@ -11,6 +11,8 @@ using RESTar.Requests;
 using RESTar.Serialization;
 using static RESTar.Internal.ErrorCodes;
 using static RESTar.OData.QueryOptions;
+using static Newtonsoft.Json.Formatting;
+using static RESTar.Serialization.Serializer;
 
 namespace RESTar.Protocols
 {
@@ -20,6 +22,47 @@ namespace RESTar.Protocols
         {
             return headers != null && (headers.TryGetNoCase("odata-version", out var v) ||
                                        headers.TryGetNoCase("odata-maxversion", out v)) && v == "4.0";
+        }
+
+        public string MakeRelativeUri(IUriParameters parameters)
+        {
+            var hasFilter = parameters.UriConditions.Count > 0;
+            var hasOther = parameters.UriMetaConditions.Count > 0;
+
+            using (var b = new StringWriter())
+            {
+                b.Write(parameters.ResourceSpecifier);
+                if (hasFilter || hasOther)
+                {
+                    b.Write('?');
+                    if (hasFilter)
+                    {
+                        b.Write("$filter=");
+                        var conds = parameters.UriConditions.Select(c => $"{c.Key} {GetOperatorString(c.Operator.OpCode)} {c.ValueLiteral}");
+                        b.Write(string.Join(" and ", conds));
+                    }
+
+                    if (hasOther)
+                    {
+                        if (hasFilter) b.Write("&");
+                        var conds = parameters.UriMetaConditions.Select(c =>
+                        {
+                            switch (c.Key)
+                            {
+                                case "order_asc": return $"$orderby={c.ValueLiteral} asc";
+                                case "order_desc": return $"$orderby={c.ValueLiteral} desc";
+                                case "select": return $"$select={c.ValueLiteral}";
+                                case "offset": return $"$skip={c.ValueLiteral}";
+                                case "limit": return $"$top={c.ValueLiteral}";
+                                default: throw new Exception();
+                            }
+                        });
+                        b.Write(string.Join("&", conds));
+                    }
+                }
+
+                return b.ToString();
+            }
         }
 
         private static void PopulateFromUri(Arguments args, string uri)
@@ -34,7 +77,7 @@ namespace RESTar.Protocols
                 PopulateFromOptions(args, options);
         }
 
-        private static void PopulateFromOptions(Arguments args, string options)
+        private static void PopulateFromOptions(IUriParameters args, string options)
         {
             foreach (var (optionKey, optionValue) in options.Split('&').Select(option => option.TSplit('=')))
             {
@@ -104,6 +147,20 @@ namespace RESTar.Protocols
             }
         }
 
+        private static string GetOperatorString(Operators op)
+        {
+            switch (op)
+            {
+                case Operators.EQUALS: return "eq";
+                case Operators.NOT_EQUALS: return "ne";
+                case Operators.LESS_THAN: return "lt";
+                case Operators.GREATER_THAN: return "gt";
+                case Operators.LESS_THAN_OR_EQUALS: return "le";
+                case Operators.GREATER_THAN_OR_EQUALS: return "ge";
+                default: throw new FeatureNotImplementedException($"Unknown or not implemented operator '{op}' in $filter");
+            }
+        }
+
         private static Operators GetOperator(string op)
         {
             switch (op)
@@ -125,28 +182,30 @@ namespace RESTar.Protocols
 
             if (result.Entities != null)
             {
-                var (stream, count, hasContent, extension) = default((MemoryStream, long, bool, string));
-                switch (result.ContentType)
+                var stream = new MemoryStream();
+                using (var swr = new StreamWriter(stream, UTF8, 1024, true))
+                using (var jwr = new ODataJsonWriter(swr))
                 {
-                    case MimeTypes.JSON:
-                        hasContent = result.Entities.SerializeOutputJsonOData(out stream, out count);
-                        extension = ".json";
-                        break;
-                    case MimeTypes.Excel:
-                        hasContent = result.Entities.SerializeOutputExcel(result.Request.Resource, out stream, out count);
-                        extension = ".xlsx";
-                        break;
+                    JsonSerializer.Formatting = Indented;
+                    jwr.WritePre();
+                    JsonSerializer.Serialize(jwr, result.Entities);
+                    result.EntityCount = jwr.ObjectsWritten;
+                    jwr.WriteRaw(",");
+                    jwr.WriteIndentation();
+                    jwr.WriteRaw($"\"@odata.count\": {result.EntityCount}");
+                    if (result.IsPaged)
+                    {
+                        jwr.WriteRaw(",");
+                        jwr.WriteIndentation();
+                        jwr.WriteRaw($"\"@odata.nextLink\": {result.EntityCount}");
+                    }
+                    jwr.WritePost();
                 }
 
-                if (hasContent)
+                if (result.HasContent)
                 {
+                    stream.Seek(0, SeekOrigin.Begin);
                     result.Body = stream;
-                    result.Headers["RESTar-count"] = count.ToString();
-                    result.Headers["Content-Disposition"] = $"attachment; filename={result.Request.Resource.Name}_" +
-                                                            $"{DateTime.Now:yyMMddHHmmssfff}{extension}";
-                    if (count == result.Request.MetaConditions.Limit)
-                        result.Headers["RESTar-pager"] = $"limit={result.Request.MetaConditions.Limit}&" +
-                                                         $"offset={result.Request.MetaConditions.Offset + count}";
                 }
             }
 

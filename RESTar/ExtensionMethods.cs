@@ -18,6 +18,7 @@ using RESTar.Deflection.Dynamic;
 using RESTar.Internal;
 using RESTar.Linq;
 using RESTar.Operations;
+using RESTar.Requests;
 using RESTar.Resources;
 using RESTar.Serialization;
 using RESTar.View;

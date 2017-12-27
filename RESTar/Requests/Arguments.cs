@@ -10,24 +10,35 @@ using IResource = RESTar.Internal.IResource;
 namespace RESTar.Requests
 {
     /// <summary>
+    /// Contains parameters for a RESTar URI
+    /// </summary>
+    public interface IUriParameters
+    {
+        string ResourceSpecifier { get; }
+        string ViewName { get; }
+        List<UriCondition> UriConditions { get; }
+        List<UriCondition> UriMetaConditions { get; }
+    }
+
+    /// <summary>
     /// A RESTar class that defines the arguments that are used when creating a RESTar request to evaluate 
     /// an incoming call. Arguments is a unified way to talk about the input to request evaluation, 
     /// regardless of protocol and web technologies.
     /// </summary>
-    internal class Arguments
+    internal class Arguments : IUriParameters
     {
-        internal string ResourceSpecifier { get; set; }
-        internal string ViewName { get; set; }
-        internal List<UriCondition> UriConditions { get; }
-        internal List<UriCondition> UriMetaConditions { get; }
-        internal IResource IResource => Resource.Find(ResourceSpecifier);
-        internal DbMacro Macro { get; set; }
-        internal Origin Origin { get; set; }
-        internal byte[] BodyBytes { get; set; }
-        internal IDictionary<string, string> Headers { get; set; }
-        internal string ContentType { get; set; }
-        internal string Accept { get; set; }
-        internal ResultFinalizer ResultFinalizer { get; set; }
+        public string ResourceSpecifier { get; set; }
+        public string ViewName { get; set; }
+        public List<UriCondition> UriConditions { get; }
+        public List<UriCondition> UriMetaConditions { get; }
+        public IResource IResource => Resource.Find(ResourceSpecifier);
+        public DbMacro Macro { get; set; }
+        public Origin Origin { get; set; }
+        public byte[] BodyBytes { get; set; }
+        public IDictionary<string, string> Headers { get; set; }
+        public string ContentType { get; set; }
+        public string Accept { get; set; }
+        public ResultFinalizer ResultFinalizer { get; set; }
         private static readonly string DefaultResourceSpecifier = typeof(AvailableResource).FullName;
 
         internal IEnumerable<KeyValuePair<string, string>> CustomHeaders => Headers.Where(h =>
@@ -52,9 +63,9 @@ namespace RESTar.Requests
 
         internal Arguments()
         {
+            ResourceSpecifier = DefaultResourceSpecifier;
             UriConditions = new List<UriCondition>();
             UriMetaConditions = new List<UriCondition>();
-            ResourceSpecifier = DefaultResourceSpecifier;
         }
     }
 }

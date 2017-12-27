@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Text.RegularExpressions;
 using RESTar.Admin;
 using RESTar.Http;
@@ -10,6 +11,9 @@ using RESTar.Operations;
 using RESTar.Requests;
 using RESTar.Serialization;
 using static RESTar.Internal.ErrorCodes;
+using static Newtonsoft.Json.Formatting;
+using static RESTar.Serialization.Serializer;
+using static RESTar.Admin.Settings;
 
 namespace RESTar.Protocols
 {
@@ -69,40 +73,69 @@ namespace RESTar.Protocols
                     args.Macro.HeadersDictionary.ForEach(pair =>
                     {
                         var currentValue = args.Headers.SafeGet(pair.Key);
-                        if (string.IsNullOrWhiteSpace(currentValue) || currentValue == "*/*")
+                        if (String.IsNullOrWhiteSpace(currentValue) || currentValue == "*/*")
                             args.Headers[pair.Key] = pair.Value;
                     });
                     break;
             }
         }
 
+        private static string JoinConditions(ICollection<UriCondition> toJoin)
+        {
+            return toJoin.Count > 0 ? string.Join("$", toJoin) : null;
+        }
+
+        public string MakeRelativeUri(IUriParameters parameters) => $"/{parameters.ResourceSpecifier}" +
+                                                                    $"/{JoinConditions(parameters.UriConditions) ?? "_"}" +
+                                                                    $"/{JoinConditions(parameters.UriMetaConditions) ?? "_"}";
+
         public IFinalizedResult FinalizeResult(Result result)
         {
             if (result.Entities != null)
             {
-                var (stream, count, hasContent, extension) = default((MemoryStream, long, bool, string));
                 switch (result.ContentType)
                 {
                     case MimeTypes.JSON:
+                        var stream = new MemoryStream();
                         var formatter = result.Request.MetaConditions.Formatter;
-                        hasContent = result.Entities.SerializeOutputJsonRESTar(formatter, out stream, out count);
-                        extension = ".json";
+                        using (var swr = new StreamWriter(stream, UTF8, 1024, true))
+                        using (var jwr = new RESTarJsonWriter(swr, formatter.StartIndent))
+                        {
+                            JsonSerializer.Formatting = _PrettyPrint ? Indented : None;
+                            swr.Write(formatter.Pre);
+                            JsonSerializer.Serialize(jwr, result.Entities);
+                            result.EntityCount = jwr.ObjectsWritten;
+                            swr.Write(formatter.Post);
+                        }
+
+                        if (result.HasContent)
+                        {
+                            result.Body = stream;
+                            result.SetContentDisposition(".json");
+                        }
+
                         break;
+
                     case MimeTypes.Excel:
-                        hasContent = result.Entities.SerializeOutputExcel(result.Request.Resource, out stream, out count);
-                        extension = ".xlsx";
+                        result.Body = null;
+                        var excel = result.Entities.ToExcel(result.Request.Resource);
+                        if (excel != null)
+                        {
+                            result.EntityCount = excel.Worksheet(1).RowsUsed().Count() - 1;
+                            result.Body = new MemoryStream();
+                            excel.SaveAs(result.Body);
+                            result.SetContentDisposition(".xlsx");
+                        }
+
                         break;
                 }
 
-                if (hasContent)
+                result.Body?.Seek(0, SeekOrigin.Begin);
+                result.Headers["RESTar-count"] = result.EntityCount.ToString();
+                if (result.IsPaged)
                 {
-                    result.Body = stream;
-                    result.Headers["RESTar-count"] = count.ToString();
-                    result.Headers["Content-Disposition"] = $"attachment; filename={result.Request.Resource.Name}_" +
-                                                            $"{DateTime.Now:yyMMddHHmmssfff}{extension}";
-                    if (count == result.Request.MetaConditions.Limit)
-                        result.Headers["RESTar-pager"] = $"limit={result.Request.MetaConditions.Limit}&" +
-                                                         $"offset={result.Request.MetaConditions.Offset + count}";
+                    var pager = result.GetNextPageLink();
+                    result.Headers["RESTar-pager"] = MakeRelativeUri(pager);
                 }
             }
 

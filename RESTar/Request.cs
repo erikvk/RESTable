@@ -35,7 +35,7 @@ namespace RESTar
         public Stream Body { get; set; }
         public string AuthToken { get; internal set; }
         public IDictionary<string, string> ResponseHeaders { get; }
-        public string GetNextPageUrl(RESTProtocols protocol) => null;
+        public IUriParameters UriParameters => throw new InvalidOperationException();
         IResource IRequest.Resource => Resource;
         public MetaConditions MetaConditions { get; }
         public Origin Origin { get; }

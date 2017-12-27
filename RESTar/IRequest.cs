@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using RESTar.Internal;
 using RESTar.Protocols;
@@ -89,8 +90,8 @@ namespace RESTar
         IDictionary<string, string> ResponseHeaders { get; }
 
         /// <summary>
-        /// Gets a link to the next page of entities, if such a page exists
+        /// The URI parameters that was used to construct this request
         /// </summary>
-        string GetNextPageUrl(RESTProtocols protocol);
+        IUriParameters UriParameters { get; }
     }
 }

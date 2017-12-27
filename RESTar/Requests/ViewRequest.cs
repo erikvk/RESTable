@@ -28,12 +28,7 @@ namespace RESTar.Requests
         public MetaConditions MetaConditions { get; private set; }
         public string AuthToken { get; internal set; }
         public IDictionary<string, string> ResponseHeaders { get; }
-
-        public string GetNextPageUrl(RESTProtocols protocol)
-        {
-            throw new NotImplementedException();
-        }
-
+        public IUriParameters UriParameters { get; private set; }
         public Stream Body { get; private set; }
         Methods IRequest.Method => GET;
         IResource IRequest.Resource => Resource;
@@ -70,6 +65,7 @@ namespace RESTar.Requests
                 Target = view;
             }
 
+            UriParameters = arguments;
             arguments.CustomHeaders.ForEach(Headers.Add);
             Conditions = Condition<T>.Parse(arguments.UriConditions, Resource) ?? Conditions;
             MetaConditions = MetaConditions.Parse(arguments.UriMetaConditions, Resource, false) ?? MetaConditions;
@@ -80,15 +76,9 @@ namespace RESTar.Requests
             if (MetaConditions.New)
             {
                 IsTemplate = true;
-                var itemView = new Item
-                {
-                    Request = this
-                };
+                var itemView = new Item {Request = this};
                 var itemTemplate = Resource.MakeViewModelTemplate().Serialize();
-                itemView.Entity = new Json
-                {
-                    Template = CreateFromJson(itemTemplate)
-                };
+                itemView.Entity = new Json {Template = CreateFromJson(itemTemplate)};
                 DataView = itemView;
                 return;
             }
@@ -104,30 +94,18 @@ namespace RESTar.Requests
             if (Resource.IsSingleton || Entities.Count == 1 && !Home)
             {
                 Entity = Entities?[0];
-                var itemView = new Item
-                {
-                    Request = this
-                };
+                var itemView = new Item {Request = this};
                 var itemTemplate = Resource.MakeViewModelTemplate().Serialize();
-                itemView.Entity = new Json
-                {
-                    Template = CreateFromJson(itemTemplate)
-                };
+                itemView.Entity = new Json {Template = CreateFromJson(itemTemplate)};
                 itemView.Entity.PopulateFromJson(Entity.SerializeToViewModel());
                 DataView = itemView;
             }
             else
             {
-                var listView = new List
-                {
-                    Request = this
-                };
+                var listView = new List {Request = this};
                 CanInsert = Resource.AvailableMethods.Contains(POST);
                 var listTemplate = Resource.MakeViewModelTemplate();
-                listView.Entities = new Arr<Json>
-                {
-                    Template = CreateFromJson($"[{listTemplate.Serialize()}]")
-                };
+                listView.Entities = new Arr<Json> {Template = CreateFromJson($"[{listTemplate.Serialize()}]")};
                 Entities.ForEach(e => listView.Entities.Add().PopulateFromJson(e.SerializeToViewModel()));
                 DataView = listView;
             }
