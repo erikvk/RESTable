@@ -1,18 +1,19 @@
 ﻿using System.IO;
 using Newtonsoft.Json;
+using RESTar.OData;
 using static RESTar.Admin.Settings;
 
 #pragma warning disable 1591
 
 namespace RESTar.Serialization
 {
-    public class RESTarJsonWriter : JsonTextWriter
+    public class ODataJsonWriter : JsonTextWriter
     {
-        private readonly string NewLine;
+        internal readonly string NewLine;
         private int BaseIndentation;
         private int CurrentDepth;
         public long ObjectsWritten { get; private set; }
-        
+
         public override void WriteStartObject()
         {
             if (CurrentDepth == 0)
@@ -27,9 +28,22 @@ namespace RESTar.Serialization
             base.WriteEndObject();
         }
 
-        public RESTarJsonWriter(TextWriter textWriter, int baseIndentation) : base(textWriter)
+        public void WritePre()
         {
-            BaseIndentation = baseIndentation;
+            WriteStartObject();
+            WriteIndent();
+            WritePropertyName("value");
+        }
+
+        public void WriteMetadata(MetaDataLevel metaDataLevel)
+        {
+
+
+        }
+
+        public ODataJsonWriter(TextWriter textWriter) : base(textWriter)
+        {
+            BaseIndentation = 1;
             switch (_LineEndings)
             {
                 case LineEndings.Windows:
@@ -44,7 +58,6 @@ namespace RESTar.Serialization
 
         protected override void WriteIndent()
         {
-            // if (Formatting != Formatting.Indented) return;
             WriteWhitespace(NewLine);
             var currentIndentCount = Top * Indentation + BaseIndentation;
             for (var i = 0; i < currentIndentCount; i++)

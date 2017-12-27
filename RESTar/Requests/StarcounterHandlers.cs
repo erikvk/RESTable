@@ -1,26 +1,29 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Net;
-using RESTar.Admin;
 using RESTar.Linq;
 using RESTar.Operations;
 using Starcounter;
+using static RESTar.Admin.Settings;
+using static RESTar.Requests.HandlerActions;
+using static RESTar.Requests.RequestEvaluator;
 
 namespace RESTar.Requests
 {
     internal static class StarcounterHandlers
     {
-        private static void Register(Methods method, Func<HandlerActions, Func<Arguments>, IFinalizedResult> func) => Handle.CUSTOM
-        (
-            port: Settings._Port,
-            methodSpaceUri: $"{method} {Settings._Uri}{{?}}",
-            handler: (Request request, string query) => func((HandlerActions) method, () => ToArgs(request, query)).ToResponse()
-        );
+        private static readonly HandlerActions[] Actions = {GET, POST, PATCH, PUT, DELETE, REPORT, OPTIONS};
 
         internal static void RegisterRESTHandlers(bool setupMenu)
         {
-            RESTarConfig.Methods.ForEach(method => Register(method, Evaluator.Evaluate));
+            Actions.ForEach(action => Handle.CUSTOM
+            (
+                port: _Port,
+                methodSpaceUri: $"{action} {_Uri}{{?}}",
+                handler: (Request r, string q) => Evaluate(action, () => ToArgs(r, q)).ToResponse()
+            ));
+
+            #region View
 
             // if (!_ViewEnabled) return;
             // Application.Current.Use(new HtmlFromJsonProvider());
@@ -30,6 +33,8 @@ namespace RESTar.Requests
             // Handle.GET("/__restar/__page", () => Evaluate(PAGE).ToResponse());
             // if (!setupMenu) return;
             // Handle.GET($"/{appName}", () => Evaluate(MENU).ToResponse());
+
+            #endregion
         }
 
         private static Response ToResponse(this IFinalizedResult result)
@@ -81,8 +86,7 @@ namespace RESTar.Requests
             }
             else
             {
-                string ip = null;
-                if (request.HeadersDictionary?.TryGetValue("X-Forwarded-For", out ip) == true && ip != null)
+                if (request.HeadersDictionary?.SafeGet("X-Forwarded-For") is string ip)
                 {
                     origin.IP = IPAddress.Parse(ip.Split(':')[0]);
                     origin.Proxy = request.ClientIpAddress;
@@ -99,20 +103,14 @@ namespace RESTar.Requests
             return origin;
         }
 
-        internal static void UnRegisterRESTHandlers()
+        internal static void UnregisterRESTHandlers()
         {
-            var uri = Settings._Uri + "{?}";
-            Do.Try(() => Handle.UnregisterHttpHandler(Settings._Port, "GET", uri));
-            Do.Try(() => Handle.UnregisterHttpHandler(Settings._Port, "POST", uri));
-            Do.Try(() => Handle.UnregisterHttpHandler(Settings._Port, "PUT", uri));
-            Do.Try(() => Handle.UnregisterHttpHandler(Settings._Port, "PATCH", uri));
-            Do.Try(() => Handle.UnregisterHttpHandler(Settings._Port, "DELETE", uri));
-            Do.Try(() => Handle.UnregisterHttpHandler(Settings._Port, "OPTIONS", uri));
-            Do.Try(() => Handle.UnregisterHttpHandler(Settings._Port, "REPORT", uri));
+            void UnregisterREST(HandlerActions action) => Handle.UnregisterHttpHandler(_Port, $"{action}", $"{_Uri}{{?}}");
+            Actions.ForEach(action => Do.Try(() => UnregisterREST(action)));
             var appName = Application.Current.Name;
-            Do.Try(() => Handle.UnregisterHttpHandler(Settings._Port, "GET", $"/{appName}{{?}}"));
-            Do.Try(() => Handle.UnregisterHttpHandler(Settings._Port, "GET", "/__restar/__page"));
-            Do.Try(() => Handle.UnregisterHttpHandler(Settings._Port, "GET", $"/{appName}"));
+            Do.Try(() => Handle.UnregisterHttpHandler(_Port, "GET", $"/{appName}{{?}}"));
+            Do.Try(() => Handle.UnregisterHttpHandler(_Port, "GET", "/__restar/__page"));
+            Do.Try(() => Handle.UnregisterHttpHandler(_Port, "GET", $"/{appName}"));
         }
     }
 }

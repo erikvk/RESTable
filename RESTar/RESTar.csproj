@@ -102,6 +102,10 @@
     <Compile Include="Internal\ITarget.cs" />
     <Compile Include="Internal\View.cs" />
     <Compile Include="LineEndings.cs" />
+    <Compile Include="Methods.cs" />
+    <Compile Include="OData\MetadataKeys.cs" />
+    <Compile Include="OData\QueryOptions.cs" />
+    <Compile Include="OData\MetaDataLevel.cs" />
     <Compile Include="OData\ServiceDocument.cs" />
     <Compile Include="Operations\AuthResults.cs" />
     <Compile Include="Operations\Distinct.cs" />
@@ -113,7 +117,7 @@
     <Compile Include="Protocols\Protocol.cs" />
     <Compile Include="RegEx.cs" />
     <Compile Include="Report.cs" />
-    <Compile Include="Requests\Evaluator.cs" />
+    <Compile Include="Requests\RequestEvaluator.cs" />
     <Compile Include="Requests\Headers.cs" />
     <Compile Include="Protocols\RESTProtocols.cs" />
     <Compile Include="Requests\UriCondition.cs" />
@@ -160,7 +164,7 @@
     <Compile Include="Resources\ResourceWrapper.cs" />
     <Compile Include="RESTarAttribute.cs" />
     <Compile Include="RESTarInternalAttribute.cs" />
-    <Compile Include="RESTarMethods.cs" />
+    <Compile Include="MethodComparer.cs" />
     <Compile Include="Internal\RESTarOperations.cs" />
     <Compile Include="Internal\Authenticator.cs" />
     <Compile Include="Operations\Add.cs" />
@@ -205,6 +209,7 @@
     <Compile Include="RESTarMemberAttribute.cs" />
     <Compile Include="RESTarViewAttribute.cs" />
     <Compile Include="Serialization\FormatWriter.cs" />
+    <Compile Include="Serialization\ODataJsonWriter.cs" />
     <Compile Include="Serialization\RESTarFromExcelJsonWriter.cs" />
     <Compile Include="Serialization\RESTarJsonWriter.cs" />
     <Compile Include="Serialization\Serializer.cs" />

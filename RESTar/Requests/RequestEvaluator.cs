@@ -12,16 +12,18 @@ using Response = RESTar.Http.HttpResponse;
 
 namespace RESTar.Requests
 {
+    internal delegate IFinalizedResult Evaluator(HandlerActions action, Func<Arguments> argsMaker);
+
     /// <summary>
     /// Evaluates requests
     /// </summary>
-    internal static class Evaluator
+    internal static class RequestEvaluator
     {
-        private static int StackSize;
+        private static int StackDepth;
 
-        internal static IFinalizedResult Evaluate(HandlerActions action, Func<Arguments> argsMaker = null)
+        internal static readonly Evaluator Evaluate = (action, argsMaker) =>
         {
-            if (StackSize++ > 300) throw new InfiniteLoopException();
+            if (StackDepth++ > 300) throw new InfiniteLoopException();
             IResource resource = null;
             Arguments arguments = null;
             try
@@ -35,8 +37,8 @@ namespace RESTar.Requests
                     case PUT:
                     case PATCH:
                     case DELETE:
-                    case COUNT: return HandleREST((dynamic) resource, arguments, action);
-                    case ORIGIN: return HandleOrigin((dynamic) resource, arguments);
+                    case REPORT: return HandleREST((dynamic) resource, arguments, action);
+                    case OPTIONS: return HandleOrigin((dynamic) resource, arguments);
                     case VIEW: return HandleView((dynamic) resource, arguments);
                     // case PAGE:
                     // #pragma warning disable 618
@@ -62,10 +64,10 @@ namespace RESTar.Requests
                     case PATCH:
                     case PUT:
                     case DELETE:
-                    case COUNT:
+                    case REPORT:
                         response.Headers["ErrorInfo"] = $"{_Uri}/{typeof(Error).FullName}/id={error.Id}";
                         return response;
-                    case ORIGIN: return Forbidden("Invalid or unauthorized origin");
+                    case OPTIONS: return Forbidden("Invalid or unauthorized origin");
                     //case VIEW:
                     //case PAGE:
                     //case MENU:
@@ -79,9 +81,9 @@ namespace RESTar.Requests
             }
             finally
             {
-                StackSize--;
+                StackDepth--;
             }
-        }
+        };
 
         private static Response HandleView<T>(IResource<T> resource, Arguments arguments) where T : class
         {

@@ -70,6 +70,33 @@ namespace RESTar.Serialization
                 count = jwr.ObjectsWritten;
                 swr.Write(formatter.Post);
             }
+
+            if (count == 0) return false;
+            stream.Seek(0, SeekOrigin.Begin);
+            return true;
+        }
+
+
+        internal static bool SerializeOutputJsonOData
+        (
+            this IEnumerable<object> data,
+            out MemoryStream stream,
+            out long count
+        )
+        {
+            stream = new MemoryStream();
+            using (var swr = new StreamWriter(stream, UTF8, 1024, true))
+            using (var jwr = new ODataJsonWriter(swr))
+            {
+                JsonSerializer.Formatting = Indented;
+                jwr.WritePre();
+                JsonSerializer.Serialize(jwr, data);
+                count = jwr.ObjectsWritten;
+                jwr.WritePropertyName("@odata.count");
+                jwr.WriteValue(count);
+                jwr.WriteEndObject();
+            }
+
             if (count == 0) return false;
             stream.Seek(0, SeekOrigin.Begin);
             return true;
@@ -84,6 +111,7 @@ namespace RESTar.Serialization
                 JsonSerializer.Formatting = _PrettyPrint ? Indented : None;
                 JsonSerializer.Serialize(jwr, data);
             }
+
             stream.Seek(0, SeekOrigin.Begin);
             return true;
         }
@@ -149,13 +177,16 @@ namespace RESTar.Serialization
                             jwr.WritePropertyName(names[i]);
                             jwr.WriteValue(reader[i]);
                         }
+
                         jwr.WriteEndObject();
                         objectCount += 1;
                     }
+
                     if ((method == PATCH || method == PUT) && objectCount > 1)
                         throw new InvalidInputCountException();
                     jwr.WriteEndArray();
                 }
+
                 jsonStream.Seek(0, SeekOrigin.Begin);
                 return true;
             }
@@ -219,7 +250,10 @@ namespace RESTar.Serialization
             {
                 jsonReader.Read();
                 if (jsonReader.TokenType == JsonToken.StartObject)
-                    return new List<T> {JsonSerializer.Deserialize<T>(jsonReader)};
+                    return new List<T>
+                    {
+                        JsonSerializer.Deserialize<T>(jsonReader)
+                    };
                 return JsonSerializer.Deserialize<List<T>>(jsonReader);
             }
         }

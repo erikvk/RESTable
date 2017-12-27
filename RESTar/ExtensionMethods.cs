@@ -248,14 +248,24 @@ namespace RESTar
 
         internal static (string, string) TSplit(this string str, char separator)
         {
-            var split = str.Split(separator);
-            return (split[0], split[1]);
+            var split = str.Split(new[] {separator}, 2);
+            switch (split.Length)
+            {
+                case 1: return (split[0], null);
+                case 2: return (split[0], split[1]);
+                default: return (null, null);
+            }
         }
 
         internal static (string, string) TSplit(this string str, string separator)
         {
-            var split = str.Split(new[] {separator}, StringSplitOptions.None);
-            return (split[0], split[1]);
+            var split = str.Split(new[] {separator}, 2, StringSplitOptions.None);
+            switch (split.Length)
+            {
+                case 1: return (split[0], null);
+                case 2: return (split[0], split[1]);
+                default: return (null, null);
+            }
         }
 
         #endregion

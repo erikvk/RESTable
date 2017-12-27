@@ -171,7 +171,7 @@ namespace RESTar
                 RequireApiKey = default;
                 AllowAllOrigins = default;
                 ConfigFilePath = default;
-                UnRegisterRESTHandlers();
+                UnregisterRESTHandlers();
                 Settings.Clear();
                 NewState();
                 throw;

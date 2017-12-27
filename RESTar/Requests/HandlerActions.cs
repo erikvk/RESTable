@@ -10,8 +10,8 @@ namespace RESTar.Requests
         PATCH,
         PUT,
         DELETE,
-        COUNT,
-        ORIGIN,
+        REPORT,
+        OPTIONS,
         VIEW,
         PAGE,
         MENU

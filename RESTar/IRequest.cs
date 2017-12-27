@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.IO;
 using RESTar.Internal;
+using RESTar.Protocols;
 using RESTar.Requests;
 
 namespace RESTar
@@ -86,5 +87,10 @@ namespace RESTar
         /// is the key-value pair key.
         /// </summary>
         IDictionary<string, string> ResponseHeaders { get; }
+
+        /// <summary>
+        /// Gets a link to the next page of entities, if such a page exists
+        /// </summary>
+        string GetNextPageUrl(RESTProtocols protocol);
     }
 }

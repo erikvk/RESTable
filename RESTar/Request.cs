@@ -6,6 +6,7 @@ using RESTar.Deflection.Dynamic;
 using RESTar.Internal;
 using RESTar.Linq;
 using RESTar.Operations;
+using RESTar.Protocols;
 using RESTar.Requests;
 using RESTar.Resources;
 using RESTar.Serialization;
@@ -34,6 +35,7 @@ namespace RESTar
         public Stream Body { get; set; }
         public string AuthToken { get; internal set; }
         public IDictionary<string, string> ResponseHeaders { get; }
+        public string GetNextPageUrl(RESTProtocols protocol) => null;
         IResource IRequest.Resource => Resource;
         public MetaConditions MetaConditions { get; }
         public Origin Origin { get; }
@@ -68,8 +70,10 @@ namespace RESTar
                     Conditions.ResetStatus();
                     return;
                 }
+
                 if (cond.ValueChanged) valueChanged = true;
             }
+
             if (!valueChanged) return;
             Conditions.Where(c => !c.Skip).ForEach((cond, cindex) => SqlValues[ValuesAssignments[cindex]] = cond.Value);
             Conditions.ResetStatus();
@@ -101,7 +105,10 @@ namespace RESTar
             Resource = Resource<T>.Get;
             Target = Resource;
             ResponseHeaders = new Dictionary<string, string>();
-            MetaConditions = new MetaConditions {Unsafe = true};
+            MetaConditions = new MetaConditions
+            {
+                Unsafe = true
+            };
             Origin = Origin.Internal;
             Conditions = conditions;
             this.Authenticate();
@@ -257,6 +264,7 @@ namespace RESTar
                     throw new AmbiguousMatchException(Resource);
                 source = list;
             }
+
             return Operations<T>.App.DELETE(source, this);
         }
     }

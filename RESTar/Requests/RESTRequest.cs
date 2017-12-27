@@ -26,6 +26,12 @@ namespace RESTar.Requests
         public Stream Body { get; private set; }
         public string AuthToken { get; internal set; }
         public IDictionary<string, string> ResponseHeaders { get; }
+
+        public string GetNextPageUrl(RESTProtocols protocol)
+        {
+            throw new NotImplementedException();
+        }
+
         IResource IRequest.Resource => Resource;
         public ITarget<T> Target { get; private set; }
         internal Result Result { get; set; }
@@ -71,7 +77,7 @@ namespace RESTar.Requests
             Origin = origin;
         }
 
-        internal virtual void Populate(Arguments arguments, Methods method)
+        internal void Populate(Arguments arguments, Methods method)
         {
             if (arguments.ViewName != null)
             {
@@ -79,6 +85,7 @@ namespace RESTar.Requests
                     throw new UnknownViewException(arguments.ViewName, Resource);
                 Target = view;
             }
+
             Method = method;
             Evaluator = Operations<T>.REST.GetEvaluator(method);
             Source = arguments.Headers.SafeGet("Source");
@@ -95,7 +102,7 @@ namespace RESTar.Requests
             if (Origin.IsInternal) MetaConditions.Formatter = DbOutputFormat.Raw;
         }
 
-        internal virtual void SetRequestData(byte[] bodyBytes)
+        internal void SetRequestData(byte[] bodyBytes)
         {
             switch (InputDataConfig)
             {
@@ -108,7 +115,11 @@ namespace RESTar.Requests
                 case DataConfig.External:
                     try
                     {
-                        var request = new HttpRequest(Source) {Accept = ContentType.ToMimeString(), AuthToken = AuthToken};
+                        var request = new HttpRequest(Source)
+                        {
+                            Accept = ContentType.ToMimeString(),
+                            AuthToken = AuthToken
+                        };
                         if (request.Method != GET)
                             throw new SyntaxException(InvalidSource, "Only GET is allowed in Source headers");
                         var response = request.GetResponse() ?? throw new SourceException(request, "No response");
@@ -159,7 +170,10 @@ namespace RESTar.Requests
             {
                 StatusCode = OK,
                 StatusDescription = "OK",
-                Headers = {["RESTar-info"] = $"Resource '{Resource.Name}'"},
+                Headers =
+                {
+                    ["RESTar-info"] = $"Resource '{Resource.Name}'"
+                },
                 Body = stream
             };
         }
@@ -168,28 +182,40 @@ namespace RESTar.Requests
         {
             StatusCode = Created,
             StatusDescription = "Created",
-            Headers = {["RESTar-info"] = $"{count} entities inserted into resource '{Resource.Name}'"}
+            Headers =
+            {
+                ["RESTar-info"] = $"{count} entities inserted into resource '{Resource.Name}'"
+            }
         };
 
         internal Result UpdatedEntities(int count) => new Result(this)
         {
             StatusCode = OK,
             StatusDescription = "OK",
-            Headers = {["RESTar-info"] = $"{count} entities updated in resource '{Resource.Name}'"}
+            Headers =
+            {
+                ["RESTar-info"] = $"{count} entities updated in resource '{Resource.Name}'"
+            }
         };
 
         internal Result SafePostedEntities(int upd, int ins) => new Result(this)
         {
             StatusCode = OK,
             StatusDescription = "OK",
-            Headers = {["RESTar-info"] = $"Updated {upd} and then inserted {ins} entities in resource '{Resource.Name}'"}
+            Headers =
+            {
+                ["RESTar-info"] = $"Updated {upd} and then inserted {ins} entities in resource '{Resource.Name}'"
+            }
         };
 
         internal Result DeletedEntities(int count) => new Result(this)
         {
             StatusCode = OK,
             StatusDescription = "OK",
-            Headers = {["RESTar-info"] = $"{count} entities deleted from resource '{Resource.Name}'"}
+            Headers =
+            {
+                ["RESTar-info"] = $"{count} entities deleted from resource '{Resource.Name}'"
+            }
         };
 
         public void Dispose()
