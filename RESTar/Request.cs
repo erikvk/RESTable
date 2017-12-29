@@ -6,7 +6,6 @@ using RESTar.Deflection.Dynamic;
 using RESTar.Internal;
 using RESTar.Linq;
 using RESTar.Operations;
-using RESTar.Protocols;
 using RESTar.Requests;
 using RESTar.Resources;
 using RESTar.Serialization;
@@ -44,7 +43,7 @@ namespace RESTar
         public T1 BodyObject<T1>() where T1 : class => Body?.Deserialize<T1>();
         public Dictionary<string, string> RequestHeaders { get; set; }
         Headers IRequest.Headers => new Headers(RequestHeaders);
-        MimeType IRequest.Accept => MimeType.Json;
+        MimeTypeCode IRequest.Accept => MimeTypeCode.Json;
 
         private readonly bool ScSql;
         internal string SelectQuery { get; private set; }
@@ -166,7 +165,7 @@ namespace RESTar
         public Request<T> WithConditions(string key, Operators op, object value) => WithConditions((key, op, value));
 
         private Exception Deny(Methods method) =>
-            new ForbiddenException(NotAuthorized, $"{method} is not available for resource '{Resource.Name}'");
+            new Forbidden(NotAuthorized, $"{method} is not available for resource '{Resource.Name}'");
 
         /// <summary>
         /// Makes a GET request and serializes the output to an Excel workbook file. Returns a tuple with 

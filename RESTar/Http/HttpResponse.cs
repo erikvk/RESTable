@@ -4,7 +4,6 @@ using System.Net;
 using System;
 using RESTar.Operations;
 using Starcounter;
-using static System.Net.HttpStatusCode;
 using static System.StringSplitOptions;
 
 namespace RESTar.Http
@@ -17,32 +16,8 @@ namespace RESTar.Http
         public string ContentType { get; set; }
         public Stream Body { get; set; }
         public Dictionary<string, string> Headers { get; set; }
-        public long EntityCount => throw new InvalidOperationException();
-        public bool HasContent => StatusCode < MultipleChoices && StatusCode != NoContent;
-        public bool IsPaged => false;
-
-        internal bool IsSuccessStatusCode => StatusCode >= (HttpStatusCode) 200 &&
-                                             StatusCode < (HttpStatusCode) 300;
-
-        public static explicit operator Response(HttpResponse response)
-        {
-            var scResponse = new Response
-            {
-                StatusCode = (ushort) response.StatusCode,
-                StatusDescription = response.StatusDescription
-            };
-            if (response.ContentType != null)
-                scResponse.ContentType = response.ContentType;
-            scResponse.SetHeadersDictionary(response.Headers);
-            if (response.Body != null)
-            {
-                if (!response.Body.CanSeek)
-                    scResponse.BodyBytes = response.Body.ToByteArray();
-                else scResponse.StreamedBody = response.Body;
-            }
-
-            return scResponse;
-        }
+        public bool HasContent => ContentLength > 0;
+        internal bool IsSuccessStatusCode => StatusCode >= (HttpStatusCode) 200 && StatusCode < (HttpStatusCode) 300;
 
         public static explicit operator HttpResponse(HttpWebResponse webResponse)
         {
@@ -52,8 +27,7 @@ namespace RESTar.Http
                 StatusDescription = webResponse.StatusDescription,
                 ContentLength = webResponse.ContentLength,
                 ContentType = webResponse.ContentType,
-                Body = webResponse.GetResponseStream()
-                       ?? throw new NullReferenceException("ResponseStream was null"),
+                Body = webResponse.GetResponseStream() ?? throw new NullReferenceException("ResponseStream was null"),
                 Headers = new Dictionary<string, string>()
             };
             foreach (var header in webResponse.Headers.AllKeys)

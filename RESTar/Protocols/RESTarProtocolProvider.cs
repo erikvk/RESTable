@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Text.RegularExpressions;
 using RESTar.Admin;
 using RESTar.Http;
@@ -21,9 +20,9 @@ namespace RESTar.Protocols
     {
         private static void PopulateFromUri(Arguments args, string uri)
         {
-            if (uri.Count(c => c == '/') > 3) throw new InvalidSeparatorException();
+            if (uri.Count(c => c == '/') > 3) throw new InvalidSeparator();
             var match = Regex.Match(uri, RegEx.RESTarRequestUri);
-            if (!match.Success) throw new SyntaxException(InvalidUriSyntax, "Check URI syntax");
+            if (!match.Success) throw new InvalidSyntax(InvalidUriSyntax, "Check URI syntax");
             var resourceOrMacro = match.Groups["resource_or_macro"].Value.TrimStart('/');
             var view = match.Groups["view"].Value.TrimStart('-');
             var conditions = match.Groups["conditions"].Value.TrimStart('/');
@@ -59,7 +58,7 @@ namespace RESTar.Protocols
                     break;
                 case var macro:
                     var macroName = macro.Substring(1);
-                    args.Macro = DbMacro.Get(macroName) ?? throw new UnknownMacroException(macroName);
+                    args.Macro = DbMacro.Get(macroName) ?? throw new UnknownMacro(macroName);
                     args.ResourceSpecifier = args.Macro.ResourceSpecifier;
                     args.ViewName = args.ViewName ?? args.Macro.ViewName;
                     var macroConditions = args.Macro.UriConditions;
@@ -80,10 +79,7 @@ namespace RESTar.Protocols
             }
         }
 
-        private static string JoinConditions(ICollection<UriCondition> toJoin)
-        {
-            return toJoin.Count > 0 ? string.Join("$", toJoin) : null;
-        }
+        private static string JoinConditions(ICollection<UriCondition> toJoin) => toJoin.Count > 0 ? string.Join("&", toJoin) : null;
 
         public string MakeRelativeUri(IUriParameters parameters) => $"/{parameters.ResourceSpecifier}" +
                                                                     $"/{JoinConditions(parameters.UriConditions) ?? "_"}" +
@@ -91,7 +87,7 @@ namespace RESTar.Protocols
 
         public IFinalizedResult FinalizeResult(Result result)
         {
-            if (result.Entities != null)
+            if (result.HasEntities)
             {
                 switch (result.ContentType)
                 {
@@ -108,7 +104,7 @@ namespace RESTar.Protocols
                             swr.Write(formatter.Post);
                         }
 
-                        if (result.HasContent)
+                        if (result.HasEntities)
                         {
                             result.Body = stream;
                             result.SetContentDisposition(".json");
@@ -149,9 +145,9 @@ namespace RESTar.Protocols
                         AuthToken = result.Request.AuthToken,
                         Body = result.Body
                     };
-                    var response = request.GetResponse() ?? throw new DestinationException(request, "No response");
+                    var response = request.GetResponse() ?? throw new InvalidExternalDestination(request, "No response");
                     if (!response.IsSuccessStatusCode)
-                        throw new DestinationException(request,
+                        throw new InvalidExternalDestination(request,
                             $"Received {response.StatusCode.ToCode()} - {response.StatusDescription}. {response.Headers.SafeGet("RESTar-info")}");
                     if (result.Headers.TryGetValue("Access-Control-Allow-Origin", out var h))
                         response.Headers["Access-Control-Allow-Origin"] = h;
@@ -159,7 +155,7 @@ namespace RESTar.Protocols
                 }
                 catch (HttpRequestException re)
                 {
-                    throw new SyntaxException(InvalidDestination, $"{re.Message} in the Destination header");
+                    throw new InvalidSyntax(InvalidDestination, $"{re.Message} in the Destination header");
                 }
             }
 
@@ -167,14 +163,16 @@ namespace RESTar.Protocols
         }
 
         public Arguments MakeRequestArguments(string uri, byte[] body = null, IDictionary<string, string> headers = null,
-            string contentType = null, string accept = null)
+            MimeType contentType = null, MimeType[] accept = null, Origin origin = null)
         {
             var args = new Arguments
             {
                 BodyBytes = body,
                 Headers = headers ?? new Dictionary<string, string>(),
-                ContentType = contentType ?? MimeTypes.JSON,
-                Accept = accept ?? MimeTypes.JSON,
+                ContentType = contentType,
+                Accept = accept,
+                ResultFinalizer = FinalizeResult,
+                Origin = origin ?? Origin.Internal
             };
             PopulateFromUri(args, uri);
             return args;

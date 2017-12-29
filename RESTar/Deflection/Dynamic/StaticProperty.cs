@@ -153,7 +153,7 @@ namespace RESTar.Deflection.Dynamic
         public static StaticProperty Find(Type type, string key)
         {
             type.GetStaticProperties().TryGetValue(key.ToLower(), out var prop);
-            return prop ?? throw new UnknownPropertyException(type, key);
+            return prop ?? throw new UnknownProperty(type, key);
         }
 
         /// <summary>

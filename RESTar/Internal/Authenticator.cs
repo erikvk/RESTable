@@ -14,7 +14,7 @@ namespace RESTar.Internal
         internal const string CurrentUser = "SELECT t.Token.User FROM Simplified.Ring5.SystemUserSession t " +
                                             "WHERE t.SessionIdString =? AND t.Token.User IS NOT NULL";
 
-        internal static ForbiddenException NotAuthorizedException => new ForbiddenException(NotAuthorized,
+        internal static Forbidden NotAuthorizedException => new Forbidden(NotAuthorized,
             "Not authorized");
 
         internal static readonly string AppToken = Guid.NewGuid().ToString();
@@ -28,12 +28,12 @@ namespace RESTar.Internal
         internal static void CheckUser()
         {
             if (GetCurrentSystemUser() == null)
-                throw new ForbiddenException(NotSignedIn, "User is not signed in");
+                throw new Forbidden(NotSignedIn, "User is not signed in");
         }
 
         internal static void Authenticate<T>(this ViewRequest<T> request) where T : class
         {
-            var user = GetCurrentSystemUser() ?? throw new ForbiddenException(NotSignedIn, "User is not signed in");
+            var user = GetCurrentSystemUser() ?? throw new Forbidden(NotSignedIn, "User is not signed in");
             var token = user.GetObjectID().SHA256();
             if (AuthTokens.ContainsKey(token))
                 request.AuthToken = token;
@@ -45,7 +45,7 @@ namespace RESTar.Internal
             if (!request.Resource.RequiresAuthentication) return;
             var authResults = request.Resource.Authenticate(request);
             if (!authResults.Success)
-                throw new ForbiddenException(FailedResourceAuthentication, authResults.Reason);
+                throw new Forbidden(FailedResourceAuthentication, authResults.Reason);
         }
 
         internal static void Authenticate<T>(this RESTRequest<T> request, Arguments arguments) where T : class

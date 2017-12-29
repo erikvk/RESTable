@@ -205,7 +205,7 @@ namespace RESTar
             var (key, op, valueLiteral) = (c.Key, c.Operator, c.ValueLiteral);
             var term = target.MakeConditionTerm(key);
             if (!term.Last.AllowedConditionOperators.HasFlag(op.OpCode))
-                throw new ForbiddenOperatorException(key, target, op, term, term.Last.AllowedConditionOperators.ToOperators());
+                throw new ForbiddenConditionOperator(key, target, op, term, term.Last.AllowedConditionOperators.ToOperators());
             var value = valueLiteral.ParseConditionValue();
             if (term.Last is StaticProperty prop && prop.Type.IsEnum && value is string)
             {
@@ -215,7 +215,7 @@ namespace RESTar
                 }
                 catch
                 {
-                    throw new SyntaxException(ErrorCodes.InvalidConditionSyntax,
+                    throw new InvalidSyntax(ErrorCodes.InvalidConditionSyntax,
                         $"Invalid string value for condition '{term.Key}'. The property type for '{prop.Name}' " +
                         $"has a predefined set of allowed values, not containing '{value}'.");
                 }

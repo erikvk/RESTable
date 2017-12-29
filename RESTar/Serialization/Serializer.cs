@@ -99,7 +99,7 @@ namespace RESTar.Serialization
             }
             catch (Exception e)
             {
-                throw new ExcelFormatException(e.Message, e);
+                throw new ExcelFormatError(e.Message, e);
             }
         }
 
@@ -133,7 +133,7 @@ namespace RESTar.Serialization
                     }
 
                     if ((method == PATCH || method == PUT) && objectCount > 1)
-                        throw new InvalidInputCountException();
+                        throw new InvalidInputCount();
                     jwr.WriteEndArray();
                 }
 
@@ -142,7 +142,7 @@ namespace RESTar.Serialization
             }
             catch (Exception e)
             {
-                throw new ExcelInputException(e.Message);
+                throw new ExcelInputError(e.Message);
             }
         }
 
@@ -159,7 +159,7 @@ namespace RESTar.Serialization
             string json;
             using (var reader = new StreamReader(stream))
                 json = reader.ReadToEnd();
-            if (json[0] == '[') throw new InvalidInputCountException();
+            if (json[0] == '[') throw new InvalidInputCount();
             return json;
         }
 

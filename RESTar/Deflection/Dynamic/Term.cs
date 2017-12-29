@@ -108,7 +108,7 @@ namespace RESTar.Deflection.Dynamic
             Property propertyMaker(string str)
             {
                 if (string.IsNullOrWhiteSpace(str))
-                    throw new SyntaxException(ErrorCodes.InvalidConditionSyntax, $"Invalid condition '{str}'");
+                    throw new InvalidSyntax(ErrorCodes.InvalidConditionSyntax, $"Invalid condition '{str}'");
                 if (dynDomain?.Contains(str, Comparer) == true)
                     return DynamicProperty.Parse(str);
 

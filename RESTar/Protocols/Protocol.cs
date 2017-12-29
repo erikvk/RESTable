@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
+using RESTar.Internal;
 using RESTar.Requests;
 
 namespace RESTar.Protocols
@@ -21,17 +23,19 @@ namespace RESTar.Protocols
         }
 
         internal static Arguments MakeArguments(string uri, byte[] body = null, Dictionary<string, string> headers = null,
-            string contentType = null, string accept = null, Origin origin = null)
+            MimeType contentType = null, MimeType[] accept = null, Origin origin = null)
         {
-            IProtocolProvider provider;
-            if (ODataProtocolProvider.HasODataHeader(headers))
-                provider = ODataProvider;
-            else provider = RESTarProvider;
+            var groups = Regex.Match(uri, RegEx.Protocol).Groups;
+            uri = groups["tail"].Value;
             if (PercentCharsEscaped(headers)) uri = uri.Replace("%25", "%");
-            var args = provider.MakeRequestArguments(uri, body, headers, contentType, accept);
-            args.ResultFinalizer = provider.FinalizeResult;
-            args.Origin = origin ?? Origin.Internal;
-            return args;
+            switch (groups["protocol"].Value)
+            {
+                case "":
+                case null:
+                case "-restar": return RESTarProvider.MakeRequestArguments(uri, body, headers, contentType, accept, origin);
+                case "-odata": return ODataProvider.MakeRequestArguments(uri, body, headers, contentType, accept, origin);
+                case var unknown: throw new InvalidSyntax(ErrorCodes.InvalidUriSyntax, $"Unknown protocol '{unknown}'");
+            }
         }
     }
 }

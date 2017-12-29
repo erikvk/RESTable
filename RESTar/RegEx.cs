@@ -6,10 +6,14 @@
     internal struct RegEx
     {
         /// <summary>
+        /// Regex used when determining the protocol for an incoming request
+        /// </summary>
+        internal const string Protocol = @"(?<protocol>-\w+)?(?<tail>/.*)";
+
+        /// <summary>
         /// The main URI regex, used when parsing requests
         /// </summary>
-        internal const string RESTarRequestUri =
-            @"\?*(?<resource_or_macro>/[^/-]*)?(?<view>-\w*)?(?<conditions>/[^/]*)?(?<metaconditions>/[^/]*)?";
+        internal const string RESTarRequestUri = @"\?*(?<resource_or_macro>/[^/-]*)?(?<view>-\w*)?(?<conditions>/[^/]*)?(?<metaconditions>/[^/]*)?";
 
         /// <summary>
         /// The main URI regex, used when parsing requests

@@ -1,8 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using RESTar.Internal;
-using RESTar.Protocols;
 using RESTar.Requests;
 
 namespace RESTar
@@ -43,7 +41,7 @@ namespace RESTar
         /// <summary>
         /// The media type accepted by the client
         /// </summary>
-        MimeType Accept { get; }
+        MimeTypeCode Accept { get; }
 
         /// <summary>
         /// The resource of the request

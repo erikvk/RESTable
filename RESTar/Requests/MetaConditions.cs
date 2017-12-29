@@ -125,25 +125,22 @@ namespace RESTar.Requests
             if (!uriMetaConditions.Any()) return null;
             var renames = uriMetaConditions.Where(c => c.Key.EqualsNoCase("rename"));
             var regular = uriMetaConditions.Where(c => !c.Key.EqualsNoCase("rename"));
-            var mc = new MetaConditions
-            {
-                Empty = false
-            };
+            var mc = new MetaConditions {Empty = false};
             ICollection<string> dynamicDomain = default;
 
             void make(IEnumerable<UriCondition> conds) => conds.ForEach(cond =>
             {
                 var (key, op, valueLiteral) = (cond.Key, cond.Operator, cond.ValueLiteral);
                 if (op.OpCode != EQUALS)
-                    throw new SyntaxException(InvalidMetaConditionOperator,
+                    throw new InvalidSyntax(InvalidMetaConditionOperator,
                         "Invalid operator for meta-condition. One and only one '=' is allowed");
                 if (!Enum.TryParse(key, true, out RESTarMetaConditions metaCondition))
-                    throw new SyntaxException(InvalidMetaConditionKey,
+                    throw new InvalidSyntax(InvalidMetaConditionKey,
                         $"Invalid meta-condition '{key}'. Available meta-conditions: {AllMetaConditions}");
                 var expectedType = metaCondition.GetExpectedType();
                 var value = valueLiteral.ParseConditionValue();
                 if (expectedType != value.GetType())
-                    throw new SyntaxException(InvalidMetaConditionValueType,
+                    throw new InvalidSyntax(InvalidMetaConditionValueType,
                         $"Invalid data type assigned to meta-condition '{key}'. Expected {GetTypeString(expectedType)}.");
                 switch (metaCondition)
                 {
@@ -184,7 +181,7 @@ namespace RESTar.Requests
                         break;
                     case RESTarMetaConditions.Format:
                         var formatName = (string) value;
-                        var format = DbOutputFormat.GetByName(formatName) ?? throw new SyntaxException(UnknownFormatter,
+                        var format = DbOutputFormat.GetByName(formatName) ?? throw new InvalidSyntax(UnknownFormatter,
                                          $"Could not find any output format by '{formatName}'. See RESTar.Admin.OutputFormat " +
                                          "for available output formats");
                         mc.Formatter = format.Format;
@@ -216,7 +213,7 @@ namespace RESTar.Requests
                     mc.OrderBy.IsSqlQueryable = false;
                 if (mc.Rename?.Any(p => p.Key.Key.EqualsNoCase(mc.OrderBy.Key)) == true
                     && !mc.Rename.Any(p => p.Value.EqualsNoCase(mc.OrderBy.Key)))
-                    throw new SyntaxException(InvalidMetaConditionSyntax,
+                    throw new InvalidSyntax(InvalidMetaConditionSyntax,
                         $"The {(mc.OrderBy.Ascending ? "'Order_asc'" : "'Order_desc'")} " +
                         "meta-condition cannot refer to a property x that is to be renamed " +
                         "unless some other property is renamed to x");
@@ -228,14 +225,14 @@ namespace RESTar.Requests
             {
                 if (mc.Select.Any(pc => mc.Rename.Any(p => p.Key.Key.EqualsNoCase(pc.Key)) &&
                                         !mc.Rename.Any(p => p.Value.EqualsNoCase(pc.Key))))
-                    throw new SyntaxException(InvalidMetaConditionSyntax,
+                    throw new InvalidSyntax(InvalidMetaConditionSyntax,
                         "A 'Select' meta-condition cannot refer to a property x that is " +
                         "to be renamed unless some other property is renamed to x");
             }
 
             return mc;
         }
-        
+
         private static string GetTypeString(Type type)
         {
             if (type == typeof(string)) return "string";

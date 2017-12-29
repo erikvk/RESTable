@@ -50,7 +50,7 @@ namespace RESTar.View
                 var html = $"{value.Resource.Name}{HtmlSuffix}";
                 var exists = File.Exists($"{wd}/wwwroot/resources/{html}");
                 if (!exists) exists = File.Exists($"{wd}/../wwwroot/resources/{html}");
-                if (!exists) throw new NoHtmlException(value.Resource, html);
+                if (!exists) throw new NoHtml(value.Resource, html);
                 SetHtml($"/resources/{html}");
                 _request = value;
             }

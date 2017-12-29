@@ -1,10 +1,10 @@
 ﻿using System;
+using System.Net;
 using RESTar.Internal;
 using RESTar.Operations;
 using static RESTar.Operations.Transact;
 using static RESTar.Requests.HandlerActions;
-using static RESTar.Admin.Settings;
-using static RESTar.Requests.Results;
+using static RESTar.Internal.ErrorCodes;
 using static RESTar.RESTarConfig;
 using Error = RESTar.Admin.Error;
 using IResource = RESTar.Internal.IResource;
@@ -23,7 +23,7 @@ namespace RESTar.Requests
 
         internal static readonly Evaluator Evaluate = (action, argsMaker) =>
         {
-            if (StackDepth++ > 300) throw new InfiniteLoopException();
+            if (StackDepth++ > 300) throw new InfiniteLoop();
             IResource resource = null;
             Arguments arguments = null;
             try
@@ -38,7 +38,7 @@ namespace RESTar.Requests
                     case PATCH:
                     case DELETE:
                     case REPORT: return HandleREST((dynamic) resource, arguments, action);
-                    case OPTIONS: return HandleOrigin((dynamic) resource, arguments);
+                    case OPTIONS: return HandleOptions(resource, arguments);
                     case VIEW: return HandleView((dynamic) resource, arguments);
                     // case PAGE:
                     // #pragma warning disable 618
@@ -49,12 +49,12 @@ namespace RESTar.Requests
                     // case MENU:
                     //     CheckUser();
                     //     return new Menu().Populate().MakeCurrentView();
-                    default: return UnknownHandlerAction;
+                    default: throw new Exception();
                 }
             }
             catch (Exception ex)
             {
-                var (code, response) = ex.GetError();
+                var (code, result) = ex.GetError();
                 Error.ClearOld();
                 var error = Trans(() => Error.Create(code, ex, resource, arguments, action));
                 switch (action)
@@ -65,9 +65,9 @@ namespace RESTar.Requests
                     case PUT:
                     case DELETE:
                     case REPORT:
-                        response.Headers["ErrorInfo"] = $"{_Uri}/{typeof(Error).FullName}/id={error.Id}";
-                        return response;
-                    case OPTIONS: return Forbidden("Invalid or unauthorized origin");
+                        result.Headers["ErrorInfo"] = $"/{typeof(Error).FullName}/id={error.Id}";
+                        return result;
+                    case OPTIONS: return new Forbidden(NotAuthorized, "Invalid or unauthorized origin");
                     //case VIEW:
                     //case PAGE:
                     //case MENU:
@@ -76,7 +76,7 @@ namespace RESTar.Requests
                     //    partial.SetMessage(ex.Message, code, MessageTypes.error);
                     //    master.CurrentPage = partial;
                     //    return master;
-                    default: return InternalError(ex);
+                    default: throw new Exception();
                 }
             }
             finally
@@ -110,13 +110,24 @@ namespace RESTar.Requests
             }
         }
 
-        private static Result HandleOrigin<T>(IResource<T> resource, Arguments arguments) where T : class
-
+        private static IFinalizedResult HandleOptions(IResource resource, Arguments arguments)
         {
-            var origin = arguments.Headers.SafeGet("Origin");
+            var origin = arguments.Headers.SafeGetNoCase("origin");
             if (origin != null && (AllowAllOrigins || AllowedOrigins.Contains(new Uri(origin))))
-                return AllowOrigin(origin, resource.AvailableMethods);
-            return Forbidden("Invalid or unauthorized origin");
+                return new Result
+                {
+                    StatusCode = HttpStatusCode.OK,
+                    StatusDescription = "OK",
+                    Headers =
+                    {
+                        ["Access-Control-Allow-Origin"] = AllowAllOrigins ? "*" : origin,
+                        ["Access-Control-Allow-Methods"] = string.Join(", ", resource.AvailableMethods),
+                        ["Access-Control-Max-Age"] = "120",
+                        ["Access-Control-Allow-Credentials"] = "true",
+                        ["Access-Control-Allow-Headers"] = "origin, content-type, accept, authorization, source, destination"
+                    }
+                };
+            return new Forbidden(NotAuthorized, "Invalid or unauthorized origin");
         }
     }
 }

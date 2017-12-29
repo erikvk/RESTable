@@ -70,8 +70,8 @@ namespace RESTar.Requests
             uri: query,
             body: request.BodyBytes,
             headers: request.HeadersDictionary ?? new Dictionary<string, string>(),
-            contentType: request.ContentType,
-            accept: request.PreferredMimeTypeString,
+            contentType: MimeType.Parse(request.ContentType),
+            accept: MimeType.ParseMany(request.Headers["Accept"]),
             origin: MakeOrigin(request)
         );
 

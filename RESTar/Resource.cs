@@ -51,12 +51,12 @@ namespace RESTar
         public static IResource Find(string searchString)
         {
             if (searchString == null)
-                throw new UnknownResourceException("null");
+                throw new UnknownResource("null");
             searchString = searchString.ToLower();
             var resource = Admin.ResourceAlias.GetByAlias(searchString)?.IResource;
             if (resource != null) return resource;
             if (!RESTarConfig.ResourceFinder.TryGetValue(searchString, out resource))
-                throw new UnknownResourceException(searchString);
+                throw new UnknownResource(searchString);
             if (resource == null)
                 throw new AmbiguousResourceException(searchString);
             return resource;
@@ -116,7 +116,7 @@ namespace RESTar
         /// if no resource is found.
         /// </summary>
         public static IResource Get(string name) => RESTarConfig.ResourceByName.SafeGet(name.ToLower())
-                                                    ?? throw new UnknownResourceException(name);
+                                                    ?? throw new UnknownResource(name);
 
         /// <summary>
         /// Finds a resource by name (case insensitive) and returns null
@@ -129,7 +129,7 @@ namespace RESTar
         /// if no resource is found.
         /// </summary>
         public static IResource Get(Type type) => RESTarConfig.ResourceByType.SafeGet(type)
-                                                  ?? throw new UnknownResourceException(type.FullName);
+                                                  ?? throw new UnknownResource(type.FullName);
 
         /// <summary>
         /// Finds a resource by target type and throws an UnknownResourceException
@@ -152,7 +152,7 @@ namespace RESTar
         /// if there is no such resource
         /// </summary>
         public static IResource<T> Get => RESTarConfig.ResourceByType.SafeGet(typeof(T)) as IResource<T> ??
-                                          throw new UnknownResourceException(typeof(T).FullName);
+                                          throw new UnknownResource(typeof(T).FullName);
 
         /// <summary>
         /// Gets the resource for a given type or null if there is no such resource

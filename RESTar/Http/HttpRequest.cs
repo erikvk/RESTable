@@ -131,7 +131,7 @@ namespace RESTar.Http
                 port: Settings._Port
             );
             if (response.StatusCode == 508)
-                throw new InfiniteLoopException(response.Headers["RESTar-Info"]);
+                throw new InfiniteLoop(response.Headers["RESTar-Info"]);
             return (HttpResponse) response;
         }
 

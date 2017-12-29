@@ -215,7 +215,6 @@
     <Compile Include="Serialization\Serializer.cs" />
     <Compile Include="SetOperations.cs" />
     <Compile Include="Internal\StarcounterOperations.cs" />
-    <Compile Include="Requests\Results.cs" />
     <Compile Include="Operations\Select.cs" />
     <Compile Include="Admin\Settings.cs" />
     <Compile Include="Deflection\Dynamic\StaticProperty.cs" />

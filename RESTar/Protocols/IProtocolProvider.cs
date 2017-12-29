@@ -7,7 +7,7 @@ namespace RESTar.Protocols
     internal interface IProtocolProvider
     {
         Arguments MakeRequestArguments(string uri, byte[] body = null, IDictionary<string, string> headers = null,
-            string contentType = null, string accept = null);
+            MimeType contentType = null, MimeType[] accept = null, Origin origin = null);
 
         IFinalizedResult FinalizeResult(Result result);
 

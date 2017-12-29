@@ -8,7 +8,6 @@ using Newtonsoft.Json.Linq;
 using RESTar.Internal;
 using RESTar.Linq;
 using RESTar.Operations;
-using RESTar.Protocols;
 using RESTar.Serialization;
 using RESTar.View;
 using Starcounter;
@@ -32,7 +31,7 @@ namespace RESTar.Requests
         public Stream Body { get; private set; }
         Methods IRequest.Method => GET;
         IResource IRequest.Resource => Resource;
-        MimeType IRequest.Accept => MimeType.Json;
+        MimeTypeCode IRequest.Accept => MimeTypeCode.Json;
         public ITarget<T> Target { get; private set; }
         public bool Home => MetaConditions.Empty && Conditions == null;
         internal bool IsTemplate { get; set; }
@@ -46,7 +45,7 @@ namespace RESTar.Requests
 
         internal ViewRequest(IResource<T> resource, Origin origin)
         {
-            if (resource.IsInternal) throw new ResourceIsInternalException(resource);
+            if (resource.IsInternal) throw new ResourceIsInternal(resource);
             Resource = resource;
             Target = resource;
             Headers = new Headers();
@@ -61,7 +60,7 @@ namespace RESTar.Requests
             if (arguments.ViewName != null)
             {
                 if (!Resource.ViewDictionary.TryGetValue(arguments.ViewName, out var view))
-                    throw new UnknownViewException(arguments.ViewName, Resource);
+                    throw new UnknownView(arguments.ViewName, Resource);
                 Target = view;
             }
 
@@ -240,7 +239,7 @@ namespace RESTar.Requests
         private void CheckMethod(Methods method, string errorMessage)
         {
             if (!Authenticator.MethodCheck(method, Resource, AuthToken))
-                throw new RESTarException(NotAuthorized, errorMessage);
+                throw new NotAllowedViewAction(NotAuthorized, errorMessage);
         }
     }
 }

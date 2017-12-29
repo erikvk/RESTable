@@ -1,6 +1,5 @@
 ﻿using System.IO;
 using Newtonsoft.Json;
-using RESTar.OData;
 using static RESTar.Admin.Settings;
 
 #pragma warning disable 1591

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
+using System.Net;
 using RESTar.Admin;
 using RESTar.Http;
 using RESTar.Internal;
@@ -28,26 +28,14 @@ namespace RESTar.Requests
         public string AuthToken { get; internal set; }
         public IDictionary<string, string> ResponseHeaders { get; }
         public IUriParameters UriParameters { get; private set; }
-
-        // public IUriParameters GetNextPage()
-        // {
-        //     var uriParams = new UriParameters
-        //     {
-        //         ResourceSpecifier = Resource.Name,
-        //         ViewName = Target is View<T> view ? view.Name : null,
-        //     };
-        //     Conditions.ForEach(c => uriParams.UriConditions.Add(new UriCondition(c.Key, c.Operator, c.Value)));
-        //     MetaConditions.ForEach(c => uriParams.UriConditions.Add(new UriCondition(c.Key, c.Operator, c.Value)));
-        // }
-
         IResource IRequest.Resource => Resource;
         public ITarget<T> Target { get; private set; }
         internal Result Result { get; set; }
         private Func<RESTRequest<T>, Result> Evaluator { get; set; }
         private string Source { get; set; }
         private string Destination { get; set; }
-        private MimeType ContentType { get; set; }
-        public MimeType Accept { get; private set; }
+        private MimeTypeCode ContentType { get; set; }
+        public MimeTypeCode Accept { get; private set; }
         private string CORSOrigin { get; set; }
         private DataConfig InputDataConfig { get; set; }
         private DataConfig OutputDataConfig { get; set; }
@@ -75,7 +63,7 @@ namespace RESTar.Requests
 
         internal RESTRequest(IResource<T> resource, Origin origin)
         {
-            if (resource.IsInternal) throw new ResourceIsInternalException(resource);
+            if (resource.IsInternal) throw new ResourceIsInternal(resource);
             Resource = resource;
             Target = resource;
             Headers = new Headers();
@@ -90,7 +78,7 @@ namespace RESTar.Requests
             if (arguments.ViewName != null)
             {
                 if (!Resource.ViewDictionary.TryGetValue(arguments.ViewName, out var view))
-                    throw new UnknownViewException(arguments.ViewName, Resource);
+                    throw new UnknownView(arguments.ViewName, Resource);
                 Target = view;
             }
 
@@ -100,8 +88,8 @@ namespace RESTar.Requests
             Source = arguments.Headers.SafeGet("Source");
             Destination = arguments.Headers.SafeGet("Destination");
             CORSOrigin = arguments.Headers.SafeGet("Origin");
-            ContentType = MimeTypes.Match(arguments.ContentType);
-            Accept = MimeTypes.Match(arguments.Accept);
+            ContentType = arguments.ContentType.TypeCode;
+            Accept = arguments.Accept[0].TypeCode;
             InputDataConfig = Source != null ? DataConfig.External : DataConfig.Client;
             OutputDataConfig = Destination != null ? DataConfig.External : DataConfig.Client;
             arguments.CustomHeaders.ForEach(Headers.Add);
@@ -117,7 +105,7 @@ namespace RESTar.Requests
             {
                 case DataConfig.Client:
                     if (bodyBytes == null && (Method == PATCH || Method == POST || Method == PUT))
-                        throw new SyntaxException(NoDataSource, "Missing data source for method " + Method);
+                        throw new InvalidSyntax(NoDataSource, "Missing data source for method " + Method);
                     if (bodyBytes == null) return;
                     Body = new MemoryStream(bodyBytes);
                     break;
@@ -130,26 +118,31 @@ namespace RESTar.Requests
                             AuthToken = AuthToken
                         };
                         if (request.Method != GET)
-                            throw new SyntaxException(InvalidSource, "Only GET is allowed in Source headers");
-                        var response = request.GetResponse() ?? throw new SourceException(request, "No response");
+                            throw new InvalidSyntax(InvalidSource, "Only GET is allowed in Source headers");
+                        var response = request.GetResponse() ?? throw new InvalidExternalSource(request, "No response");
                         if (!response.IsSuccessStatusCode)
-                            throw new SourceException(request,
+                            throw new InvalidExternalSource(request,
                                 $"Status: {response.StatusCode.ToCode()} - {response.StatusDescription}. {response.Headers.SafeGet("RESTar-info")}");
                         if (response.Body.CanSeek && response.Body.Length == 0)
-                            throw new SourceException(request, "Response was empty");
+                            throw new InvalidExternalSource(request, "Response was empty");
                         Body = response.Body;
                         break;
                     }
                     catch (HttpRequestException re)
                     {
-                        throw new SyntaxException(InvalidSource, $"{re.Message} in the Source header");
+                        throw new InvalidSyntax(InvalidSource, $"{re.Message} in the Source header");
                     }
             }
 
-            if (ContentType == MimeType.Excel)
+            switch (ContentType)
             {
-                Body.SerializeInputExcel(Method, out var jsonStream);
-                Body = jsonStream;
+                case MimeTypeCode.Json: break;
+                case MimeTypeCode.Excel:
+                    Body.SerializeInputExcel(Method, out var json);
+                    Body = json;
+                    break;
+                case MimeTypeCode.Unsupported:
+                    break;
             }
         }
 
@@ -157,13 +150,32 @@ namespace RESTar.Requests
         {
             try
             {
-                return ResultFinalizer(Result);
+                var finalizedResult = ResultFinalizer(Result);
+                if (Method == GET && !finalizedResult.HasContent)
+                    return NoContent;
+                return finalizedResult;
             }
             catch (Exception e)
             {
                 throw new AbortedSelectorException<T>(e, this);
             }
         }
+
+        public void Dispose()
+        {
+            if (Origin.IsExternal && AuthToken != null)
+                AuthTokens.TryRemove(AuthToken, out var _);
+        }
+
+
+        #region Success responses
+
+        internal Result NoContent => new Result(this)
+        {
+            StatusCode = HttpStatusCode.NoContent,
+            StatusDescription = "No content",
+            Headers = {["RESTar-info"] = "No entities found matching request."}
+        };
 
         internal Result Entities(IEnumerable<dynamic> entities) => new Result(this)
         {
@@ -174,15 +186,12 @@ namespace RESTar.Requests
 
         internal Result Report(Report report)
         {
-            if (!report.TryGetReportJsonStream(out var stream)) return Results.NoContent;
+            if (!report.TryGetReportJsonStream(out var stream)) return NoContent;
             return new Result(this)
             {
                 StatusCode = OK,
                 StatusDescription = "OK",
-                Headers =
-                {
-                    ["RESTar-info"] = $"Resource '{Resource.Name}'"
-                },
+                Headers = {["RESTar-info"] = $"Resource '{Resource.Name}'"},
                 Body = stream
             };
         }
@@ -191,46 +200,30 @@ namespace RESTar.Requests
         {
             StatusCode = Created,
             StatusDescription = "Created",
-            Headers =
-            {
-                ["RESTar-info"] = $"{count} entities inserted into resource '{Resource.Name}'"
-            }
+            Headers = {["RESTar-info"] = $"{count} entities inserted into resource '{Resource.Name}'"}
         };
 
         internal Result UpdatedEntities(int count) => new Result(this)
         {
             StatusCode = OK,
             StatusDescription = "OK",
-            Headers =
-            {
-                ["RESTar-info"] = $"{count} entities updated in resource '{Resource.Name}'"
-            }
+            Headers = {["RESTar-info"] = $"{count} entities updated in resource '{Resource.Name}'"}
         };
 
         internal Result SafePostedEntities(int upd, int ins) => new Result(this)
         {
             StatusCode = OK,
             StatusDescription = "OK",
-            Headers =
-            {
-                ["RESTar-info"] = $"Updated {upd} and then inserted {ins} entities in resource '{Resource.Name}'"
-            }
+            Headers = {["RESTar-info"] = $"Updated {upd} and then inserted {ins} entities in resource '{Resource.Name}'"}
         };
 
         internal Result DeletedEntities(int count) => new Result(this)
         {
             StatusCode = OK,
             StatusDescription = "OK",
-            Headers =
-            {
-                ["RESTar-info"] = $"{count} entities deleted from resource '{Resource.Name}'"
-            }
+            Headers = {["RESTar-info"] = $"{count} entities deleted from resource '{Resource.Name}'"}
         };
 
-        public void Dispose()
-        {
-            if (Origin.IsExternal && AuthToken != null)
-                AuthTokens.TryRemove(AuthToken, out var _);
-        }
+        #endregion
     }
 }

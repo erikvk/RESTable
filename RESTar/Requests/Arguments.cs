@@ -14,9 +14,24 @@ namespace RESTar.Requests
     /// </summary>
     public interface IUriParameters
     {
+        /// <summary>
+        /// Specifies the resource for the request
+        /// </summary>
         string ResourceSpecifier { get; }
+
+        /// <summary>
+        /// Specifies the view for the request
+        /// </summary>
         string ViewName { get; }
+
+        /// <summary>
+        /// Specifies the conditions for the request
+        /// </summary>
         List<UriCondition> UriConditions { get; }
+
+        /// <summary>
+        /// Specifies the meta-conditions for the request
+        /// </summary>
         List<UriCondition> UriMetaConditions { get; }
     }
 
@@ -36,8 +51,8 @@ namespace RESTar.Requests
         public Origin Origin { get; set; }
         public byte[] BodyBytes { get; set; }
         public IDictionary<string, string> Headers { get; set; }
-        public string ContentType { get; set; }
-        public string Accept { get; set; }
+        public MimeType ContentType { get; set; }
+        public MimeType[] Accept { get; set; }
         public ResultFinalizer ResultFinalizer { get; set; }
         private static readonly string DefaultResourceSpecifier = typeof(AvailableResource).FullName;
 

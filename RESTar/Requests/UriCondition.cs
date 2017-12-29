@@ -40,8 +40,8 @@ namespace RESTar.Requests
         {
             if (check)
             {
-                if (conditionString == "")
-                    throw new SyntaxException(ErrorCodes.InvalidConditionSyntax, "Invalid condition syntax");
+                if (string.IsNullOrEmpty(conditionString))
+                    throw new InvalidSyntax(ErrorCodes.InvalidConditionSyntax, "Invalid condition syntax");
                 conditionString = conditionString.ReplaceFirst("%3E=", ">=", out var replaced);
                 if (!replaced) conditionString = conditionString.ReplaceFirst("%3C=", "<=", out replaced);
                 if (!replaced) conditionString = conditionString.ReplaceFirst("%3E", ">", out replaced);

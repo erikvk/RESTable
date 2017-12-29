@@ -18,7 +18,6 @@ using RESTar.Deflection.Dynamic;
 using RESTar.Internal;
 using RESTar.Linq;
 using RESTar.Operations;
-using RESTar.Requests;
 using RESTar.Resources;
 using RESTar.Serialization;
 using RESTar.View;
@@ -29,7 +28,6 @@ using static System.Reflection.BindingFlags;
 using static System.StringComparison;
 using static RESTar.Internal.ErrorCodes;
 using static RESTar.Operators;
-using static RESTar.Requests.Results;
 using static Starcounter.DbHelper;
 using IResource = RESTar.Internal.IResource;
 
@@ -478,6 +476,22 @@ namespace RESTar
         }
 
         /// <summary>
+        /// Adds the tuple to the IDictionary
+        /// </summary>
+        public static void TAdd<TKey, TValue>(this IDictionary<TKey, TValue> dict, (TKey key, TValue value) pair)
+        {
+            dict.Add(pair.key, pair.value);
+        }
+
+        /// <summary>
+        /// Puts the tuple into the IDictionary
+        /// </summary>
+        public static void TPut<TKey, TValue>(this IDictionary<TKey, TValue> dict, (TKey key, TValue value) pair)
+        {
+            dict[pair.key] = pair.value;
+        }
+
+        /// <summary>
         /// Gets the value of a key from an IDictionary, or null if the dictionary does not contain the key.
         /// </summary>
         private static dynamic SafeGet(this IDictionary dict, string key)
@@ -704,7 +718,7 @@ namespace RESTar
             {
                 case null: return null;
                 case "null": return null;
-                case "": throw new SyntaxException(InvalidConditionSyntax, "No condition value literal after operator");
+                case "": throw new InvalidSyntax(InvalidConditionSyntax, "No condition value literal after operator");
                 case var _ when Regex.Match(str, RegEx.DoubleQuoteRegex) is Match m && m.Success: return m.Groups["content"].Value;
                 case var _ when Regex.Match(str, RegEx.SingleQuoteRegex) is Match m && m.Success: return m.Groups["content"].Value;
                 case var _ when bool.TryParse(str, out var @bool): return @bool;
@@ -747,15 +761,48 @@ namespace RESTar
             return !conditions.Any() != true;
         }
 
-        internal static (ErrorCodes Code, Result Result) GetError(this Exception ex)
+        internal static (ErrorCodes Code, IFinalizedResult Result) GetError(this Exception e)
         {
-            switch (ex)
+            switch (e)
             {
-                case RESTarException re: return (re.ErrorCode, re.Result);
-                case FormatException _: return (UnsupportedContent, BadRequest(ex));
-                case JsonReaderException _: return (FailedJsonDeserialization, JsonError);
-                case DbException _: return (DatabaseError, DbError(ex));
-                default: return (Unknown, InternalError(ex));
+                case RESTarException re: return (re.ErrorCode, re);
+                case FormatException _:
+                    return (UnsupportedContent, new Result
+                    {
+                        StatusCode = HttpStatusCode.BadRequest,
+                        StatusDescription = "Bad request",
+                        Headers = {["RESTar-info"] = e.Message}
+                    });
+                case JsonReaderException _:
+                    return (FailedJsonDeserialization, new Result
+                    {
+                        StatusCode = HttpStatusCode.BadRequest,
+                        StatusDescription = "Bad request",
+                        Headers = {["RESTar-info"] = "Error while deserializing JSON. Check JSON syntax."}
+                    });
+                case DbException _:
+                    var result = e.Message.Contains("SCERR4034")
+                        ? new Result
+                        {
+                            StatusCode = HttpStatusCode.Forbidden,
+                            StatusDescription = "Forbidden",
+                            Headers = {["RESTar-info"] = "The operation was aborted by a commit hook. " + (e.InnerException?.Message ?? e.Message)}
+                        }
+                        : new Result
+                        {
+                            StatusCode = HttpStatusCode.InternalServerError,
+                            StatusDescription = "Internal server error",
+                            Headers = {["RESTar-info"] = "The Starcounter database encountered an error: " + (e.InnerException?.Message ?? e.Message)}
+                        };
+                    return (DatabaseError, result);
+
+                default:
+                    return (Unknown, new Result
+                    {
+                        StatusCode = HttpStatusCode.InternalServerError,
+                        StatusDescription = "Internal server error",
+                        Headers = {["RESTar-info"] = e.Message}
+                    });
             }
         }
 
