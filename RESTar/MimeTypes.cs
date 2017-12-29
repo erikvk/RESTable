@@ -26,7 +26,11 @@ namespace RESTar
         internal static MimeType[] ParseMany(string headerValue)
         {
             if (string.IsNullOrEmpty(headerValue)) return DefaultArray;
-            return headerValue.Split(',').Select(Parse).OrderByDescending(m => m.Q).ToArray();
+            return headerValue.Split(',')
+                .Select(Parse)
+                .Where(m => m.TypeCode != Unsupported)
+                .OrderByDescending(m => m.Q)
+                .ToArray();
         }
 
         private MimeType(MimeTypeCode code) => TypeCode = code;

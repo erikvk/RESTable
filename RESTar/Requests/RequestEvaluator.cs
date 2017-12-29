@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Net;
 using RESTar.Internal;
 using RESTar.Operations;
+using RESTar.Protocols;
 using static RESTar.Operations.Transact;
 using static RESTar.Requests.HandlerActions;
 using static RESTar.Internal.ErrorCodes;
@@ -12,8 +14,6 @@ using Response = RESTar.Http.HttpResponse;
 
 namespace RESTar.Requests
 {
-    internal delegate IFinalizedResult Evaluator(HandlerActions action, Func<Arguments> argsMaker);
-
     /// <summary>
     /// Evaluates requests
     /// </summary>
@@ -21,14 +21,21 @@ namespace RESTar.Requests
     {
         private static int StackDepth;
 
-        internal static readonly Evaluator Evaluate = (action, argsMaker) =>
+        internal static IFinalizedResult Evaluate
+        (
+            HandlerActions action,
+            string uri,
+            byte[] body,
+            Dictionary<string, string> headers,
+            Origin origin
+        )
         {
             if (StackDepth++ > 300) throw new InfiniteLoop();
             IResource resource = null;
             Arguments arguments = null;
             try
             {
-                arguments = argsMaker?.Invoke();
+                arguments = Protocol.MakeArguments(uri, body, headers, origin);
                 resource = arguments?.IResource;
                 switch (action)
                 {
@@ -65,6 +72,10 @@ namespace RESTar.Requests
                     case PUT:
                     case DELETE:
                     case REPORT:
+                        if (arguments == null)
+
+                            if (arguments?.PassedAuth != true) { }
+
                         result.Headers["ErrorInfo"] = $"/{typeof(Error).FullName}/id={error.Id}";
                         return result;
                     case OPTIONS: return new Forbidden(NotAuthorized, "Invalid or unauthorized origin");
@@ -83,7 +94,7 @@ namespace RESTar.Requests
             {
                 StackDepth--;
             }
-        };
+        }
 
         private static Response HandleView<T>(IResource<T> resource, Arguments arguments) where T : class
         {

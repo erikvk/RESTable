@@ -46,6 +46,7 @@ namespace RESTar.Requests
         public string ViewName { get; set; }
         public List<UriCondition> UriConditions { get; }
         public List<UriCondition> UriMetaConditions { get; }
+
         public IResource IResource => Resource.Find(ResourceSpecifier);
         public DbMacro Macro { get; set; }
         public Origin Origin { get; set; }
@@ -54,8 +55,9 @@ namespace RESTar.Requests
         public MimeType ContentType { get; set; }
         public MimeType[] Accept { get; set; }
         public ResultFinalizer ResultFinalizer { get; set; }
+        internal bool PassedAuth { get; set; }
         private static readonly string DefaultResourceSpecifier = typeof(AvailableResource).FullName;
-
+        
         internal IEnumerable<KeyValuePair<string, string>> CustomHeaders => Headers.Where(h =>
             !Regex.IsMatch(h.Key, RegEx.ReservedHeaders, IgnoreCase));
 

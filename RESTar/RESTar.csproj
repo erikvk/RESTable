@@ -117,6 +117,7 @@
     <Compile Include="Protocols\Protocol.cs" />
     <Compile Include="RegEx.cs" />
     <Compile Include="Report.cs" />
+    <Compile Include="Requests\ArgumentsRaw.cs" />
     <Compile Include="Requests\RequestEvaluator.cs" />
     <Compile Include="Requests\Headers.cs" />
     <Compile Include="Protocols\RESTProtocols.cs" />

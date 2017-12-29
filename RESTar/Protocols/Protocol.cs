@@ -22,12 +22,13 @@ namespace RESTar.Protocols
             return headers?.ContainsKey("X-ARR-LOG-ID") == true;
         }
 
-        internal static Arguments MakeArguments(string uri, byte[] body = null, Dictionary<string, string> headers = null,
-            MimeType contentType = null, MimeType[] accept = null, Origin origin = null)
+        internal static Arguments MakeArguments(string uri, byte[] body = null, Dictionary<string, string> headers = null, Origin origin = null)
         {
             var groups = Regex.Match(uri, RegEx.Protocol).Groups;
             uri = groups["tail"].Value;
             if (PercentCharsEscaped(headers)) uri = uri.Replace("%25", "%");
+            var contentType = MimeType.Parse(headers?.SafeGet("Content-Type"));
+            var accept = MimeType.ParseMany(headers?.SafeGet("Accept"));
             switch (groups["protocol"].Value)
             {
                 case "":

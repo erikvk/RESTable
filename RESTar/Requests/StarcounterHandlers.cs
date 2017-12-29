@@ -12,15 +12,22 @@ namespace RESTar.Requests
 {
     internal static class StarcounterHandlers
     {
-        private static readonly HandlerActions[] Actions = {GET, POST, PATCH, PUT, DELETE, REPORT, OPTIONS};
+        private static readonly HandlerActions[] Verbs = {GET, POST, PATCH, PUT, DELETE, REPORT, OPTIONS};
 
         internal static void RegisterRESTHandlers(bool setupMenu)
         {
-            Actions.ForEach(action => Handle.CUSTOM
+            Verbs.ForEach(verb => Handle.CUSTOM
             (
                 port: _Port,
-                methodSpaceUri: $"{action} {_Uri}{{?}}",
-                handler: (Request r, string q) => Evaluate(action, () => ToArgs(r, q)).ToResponse()
+                methodSpaceUri: $"{verb} {_Uri}{{?}}",
+                handler: (Request request, string query) => Evaluate
+                (
+                    action: verb,
+                    uri: query,
+                    body: request.BodyBytes,
+                    headers: request.HeadersDictionary,
+                    origin: MakeOrigin(request)
+                ).ToResponse()
             ));
 
             #region View
@@ -65,15 +72,15 @@ namespace RESTar.Requests
             return response;
         }
 
-        private static Arguments ToArgs(Request request, string query) => Protocols.Protocol.MakeArguments
-        (
-            uri: query,
-            body: request.BodyBytes,
-            headers: request.HeadersDictionary ?? new Dictionary<string, string>(),
-            contentType: MimeType.Parse(request.ContentType),
-            accept: MimeType.ParseMany(request.Headers["Accept"]),
-            origin: MakeOrigin(request)
-        );
+        private static ArgumentsRaw ToArgs(Request request, string query) => new ArgumentsRaw
+        {
+            Uri = query,
+            Body = request.BodyBytes,
+            Headers = request.HeadersDictionary ?? new Dictionary<string, string>(),
+            ContentType = MimeType.Parse(request.ContentType),
+            Accept = MimeType.ParseMany(request.Headers["Accept"]),
+            Origin = MakeOrigin(request)
+        };
 
         private static Origin MakeOrigin(Request request)
         {
@@ -106,7 +113,7 @@ namespace RESTar.Requests
         internal static void UnregisterRESTHandlers()
         {
             void UnregisterREST(HandlerActions action) => Handle.UnregisterHttpHandler(_Port, $"{action}", $"{_Uri}{{?}}");
-            Actions.ForEach(action => Do.Try(() => UnregisterREST(action)));
+            Verbs.ForEach(action => Do.Try(() => UnregisterREST(action)));
             var appName = Application.Current.Name;
             Do.Try(() => Handle.UnregisterHttpHandler(_Port, "GET", $"/{appName}{{?}}"));
             Do.Try(() => Handle.UnregisterHttpHandler(_Port, "GET", "/__restar/__page"));
