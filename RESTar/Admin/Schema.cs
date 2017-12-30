@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Newtonsoft.Json.Linq;
 using RESTar.Deflection.Dynamic;
 using RESTar.Linq;
 using static RESTar.Methods;
@@ -11,7 +12,7 @@ namespace RESTar.Admin
     /// The Schema resource provides schemas for non-dynamic RESTar resources
     /// </summary>
     [RESTar(GET, Singleton = true, Description = description)]
-    internal class Schema : Dictionary<string, string>, ISelector<Schema>
+    internal class Schema : JObject, ISelector<Schema>
     {
         private const string description = "The Schema resource provides schemas for " +
                                            "non-dynamic RESTar resources.";

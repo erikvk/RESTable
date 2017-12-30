@@ -97,11 +97,13 @@ namespace RESTar.Resources
 
                     #region Check for invalid IDictionary implementation
 
-                    if (type.Implements(typeof(IDictionary<,>), out var typeParams) && typeParams[0] != typeof(string))
+                    var validTypes = new[] {typeof(string), typeof(object)};
+                    if (type.Implements(typeof(IDictionary<,>), out var typeParams) && !typeParams.SequenceEqual(validTypes))
                         throw new ResourceDeclarationException(
                             $"Invalid resource declaration for type '{type.FullName}'. All resources implementing " +
                             "the generic 'System.Collections.Generic.IDictionary`2' interface must have System.String as " +
-                            $"first type parameter. Found {typeParams[0].FullName}");
+                            $"first type parameter and System.Object as second type parameter. Found {typeParams[0].FullName} " +
+                            $"and {typeParams[1].FullName}");
 
                     #endregion
 
@@ -255,12 +257,14 @@ namespace RESTar.Resources
                 regularResources = regularResources.Except(claim).ToList();
                 provider.MakeClaimRegular(claim);
             }
+
             foreach (var provider in ResourceProviders)
             {
                 var claim = provider.GetClaim(resourceWrappers);
                 resourceWrappers = resourceWrappers.Except(claim).ToList();
                 provider.MakeClaimWrapped(claim);
             }
+
             ValidateInnerResources();
             foreach (var provider in ResourceProviders)
             {
@@ -268,6 +272,7 @@ namespace RESTar.Resources
                     DatabaseIndex.Indexers[provider.GetProviderId()] = provider.DatabaseIndexer;
                 provider.ReceiveClaimed(Resource.ClaimedBy(provider));
             }
+
             DynamicResource.GetAll().ForEach(MakeDynamicResource);
         }
 

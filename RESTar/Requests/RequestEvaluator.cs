@@ -72,10 +72,6 @@ namespace RESTar.Requests
                     case PUT:
                     case DELETE:
                     case REPORT:
-                        if (arguments == null)
-
-                            if (arguments?.PassedAuth != true) { }
-
                         result.Headers["ErrorInfo"] = $"/{typeof(Error).FullName}/id={error.Id}";
                         return result;
                     case OPTIONS: return new Forbidden(NotAuthorized, "Invalid or unauthorized origin");
@@ -112,6 +108,7 @@ namespace RESTar.Requests
             using (var request = new RESTRequest<T>(resource, arguments.Origin))
             {
                 request.Authenticate(arguments);
+                arguments.PassedAuth = true;
                 request.Populate(arguments, (Methods) action);
                 request.MethodCheck();
                 request.SetRequestData(arguments.BodyBytes);
@@ -123,7 +120,7 @@ namespace RESTar.Requests
 
         private static IFinalizedResult HandleOptions(IResource resource, Arguments arguments)
         {
-            var origin = arguments.Headers.SafeGetNoCase("origin");
+            var origin = arguments.Headers.SafeGet("Origin");
             if (origin != null && (AllowAllOrigins || AllowedOrigins.Contains(new Uri(origin))))
                 return new Result
                 {

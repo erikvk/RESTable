@@ -14,8 +14,7 @@ namespace RESTar.Internal
         internal const string CurrentUser = "SELECT t.Token.User FROM Simplified.Ring5.SystemUserSession t " +
                                             "WHERE t.SessionIdString =? AND t.Token.User IS NOT NULL";
 
-        internal static Forbidden NotAuthorizedException => new Forbidden(NotAuthorized,
-            "Not authorized");
+        internal static Forbidden NotAuthorizedException => new Forbidden(NotAuthorized, "Not authorized");
 
         internal static readonly string AppToken = Guid.NewGuid().ToString();
 
@@ -55,8 +54,9 @@ namespace RESTar.Internal
                 request.AuthToken = AssignAuthtoken(AccessRights.Root);
                 return;
             }
+
             AccessRights accessRights;
-            if (!arguments.Origin.IsExternal)
+            if (arguments.Origin.IsInternal)
             {
                 var authToken = arguments.Headers.SafeGet("RESTar-AuthToken");
                 if (string.IsNullOrWhiteSpace(authToken))
@@ -66,6 +66,7 @@ namespace RESTar.Internal
                 request.AuthToken = authToken;
                 return;
             }
+
             var authorizationHeader = arguments.Headers.SafeGet("Authorization");
             if (string.IsNullOrWhiteSpace(authorizationHeader))
             {
@@ -75,6 +76,7 @@ namespace RESTar.Internal
                 arguments.UriMetaConditions.Remove(keyMetaCondition);
                 authorizationHeader = $"apikey {WebUtility.UrlDecode(keyMetaCondition.ValueLiteral)}";
             }
+
             var apikey_key = authorizationHeader.Split(' ');
             if (apikey_key[0].ToLower() != "apikey" || apikey_key.Length != 2)
                 throw NotAuthorizedException;
@@ -83,6 +85,7 @@ namespace RESTar.Internal
                 throw NotAuthorizedException;
             request.AuthToken = AssignAuthtoken(accessRights);
         }
+
 
         internal static void Authenticate<T>(this Request<T> request) where T : class
         {

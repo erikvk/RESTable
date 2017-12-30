@@ -48,7 +48,7 @@ namespace RESTar
         {
             ApiKeys = new Dictionary<string, AccessRights>();
             ResourceByType = new Dictionary<Type, IResource>();
-            ResourceByName = new Dictionary<string, IResource>();
+            ResourceByName = new Dictionary<string, IResource>(StringComparer.OrdinalIgnoreCase);
             ResourceFinder = new ResourceFinder();
             AuthTokens = new ConcurrentDictionary<string, AccessRights>();
             AllowedOrigins = new List<Uri>();
@@ -72,7 +72,7 @@ namespace RESTar
 
         internal static void AddResource(IResource toAdd)
         {
-            ResourceByName[toAdd.Name.ToLower()] = toAdd;
+            ResourceByName[toAdd.Name] = toAdd;
             ResourceByType[toAdd.Type] = toAdd;
             AddToResourceFinder(toAdd, ResourceFinder);
             UpdateAuthInfo();
@@ -81,7 +81,7 @@ namespace RESTar
 
         internal static void RemoveResource(IResource toRemove)
         {
-            ResourceByName.Remove(toRemove.Name.ToLower());
+            ResourceByName.Remove(toRemove.Name);
             ResourceByType.Remove(toRemove.Type);
             ReloadResourceFinder();
             UpdateAuthInfo();

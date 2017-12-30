@@ -122,7 +122,7 @@ namespace RESTar
         /// Finds a resource by name (case insensitive) and returns null
         /// if no resource is found
         /// </summary>
-        public static IResource SafeGet(string name) => RESTarConfig.ResourceByName.SafeGetNoCase(name);
+        public static IResource SafeGet(string name) => RESTarConfig.ResourceByName.SafeGet(name);
 
         /// <summary>
         /// Finds a resource by target type and throws an UnknownResourceException

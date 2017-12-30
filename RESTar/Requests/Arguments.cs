@@ -55,9 +55,9 @@ namespace RESTar.Requests
         public MimeType ContentType { get; set; }
         public MimeType[] Accept { get; set; }
         public ResultFinalizer ResultFinalizer { get; set; }
-        internal bool PassedAuth { get; set; }
         private static readonly string DefaultResourceSpecifier = typeof(AvailableResource).FullName;
-        
+        internal bool PassedAuth { get; set; }
+
         internal IEnumerable<KeyValuePair<string, string>> CustomHeaders => Headers.Where(h =>
             !Regex.IsMatch(h.Key, RegEx.ReservedHeaders, IgnoreCase));
 

@@ -6,6 +6,7 @@ using Newtonsoft.Json.Linq;
 using RESTar.Internal;
 using RESTar.Linq;
 using static RESTar.Deflection.TermBindingRules;
+using static System.StringComparison;
 
 namespace RESTar.Deflection.Dynamic
 {
@@ -187,8 +188,12 @@ namespace RESTar.Deflection.Dynamic
             // and select). This code handles those cases.
             if (target is JObject jobj)
             {
-                if (jobj.TryGetNoCase(Key, out actualKey, out var jvalue))
-                    return jvalue.ToObject<dynamic>();
+                if (jobj.GetValue(Key, OrdinalIgnoreCase)?.Parent is JProperty property)
+                {
+                    actualKey = property.Name;
+                    return property.Value.ToObject<dynamic>();
+                }
+
                 MakeDynamic();
             }
 

@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using System.IO;
+﻿using System.IO;
 using System.Net;
 using RESTar.Linq;
 using RESTar.Operations;
@@ -71,16 +70,6 @@ namespace RESTar.Requests
             response.SetHeadersDictionary(result.Headers);
             return response;
         }
-
-        private static ArgumentsRaw ToArgs(Request request, string query) => new ArgumentsRaw
-        {
-            Uri = query,
-            Body = request.BodyBytes,
-            Headers = request.HeadersDictionary ?? new Dictionary<string, string>(),
-            ContentType = MimeType.Parse(request.ContentType),
-            Accept = MimeType.ParseMany(request.Headers["Accept"]),
-            Origin = MakeOrigin(request)
-        };
 
         private static Origin MakeOrigin(Request request)
         {

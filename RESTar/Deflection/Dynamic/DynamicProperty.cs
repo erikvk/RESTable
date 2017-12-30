@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using Newtonsoft.Json.Linq;
 using RESTar.Operations;
+using static System.StringComparison;
 
 namespace RESTar.Deflection.Dynamic
 {
@@ -42,8 +43,9 @@ namespace RESTar.Deflection.Dynamic
 
             Getter = obj =>
             {
-                dynamic value;
+                object value;
                 string actualKey = null;
+                string capitalized;
 
                 dynamic getFromStatic()
                 {
@@ -60,21 +62,29 @@ namespace RESTar.Deflection.Dynamic
 
                 switch (obj)
                 {
-                    case IDictionary<string, dynamic> ddict:
-                        if (!ddict.TryGetNoCase(Name, out actualKey, out value))
+                    case IDictionary<string, object> dict:
+                        capitalized = Name.Capitalize();
+                        if (dict.TryGetValue(capitalized, out value))
+                        {
+                            Name = capitalized;
+                            return value;
+                        }
+
+                        if (dict.TryFindInDictionary(Name, out actualKey, out value))
+                        {
+                            Name = actualKey;
+                            return value;
+                        }
+
+                        return StaticFallback ? getFromStatic() : null;
+
+                    case JObject jobj:
+                        capitalized = Name.Capitalize();
+                        if (!(jobj.GetValue(capitalized, OrdinalIgnoreCase)?.Parent is JProperty property))
                             return StaticFallback ? getFromStatic() : null;
-                        Name = actualKey;
-                        return value;
-                    case IDictionary idict:
-                        if (!idict.TryGetNoCase(Name, out actualKey, out value))
-                            return StaticFallback ? getFromStatic() : null;
-                        Name = actualKey;
-                        return value;
-                    case IDictionary<string, JToken> jobj:
-                        if (!jobj.TryGetNoCase(Name, out actualKey, out var jvalue))
-                            return StaticFallback ? getFromStatic() : null;
-                        Name = actualKey;
-                        return jvalue.ToObject<dynamic>();
+                        Name = property.Name;
+                        return property.Value.ToObject<dynamic>();
+
                     default: return getFromStatic();
                 }
             };
