@@ -79,7 +79,7 @@ namespace RESTar.Internal
         /// flagged (preceded by $) in the REST API to avoid capture against 
         /// dynamic properties?
         /// </summary>
-        bool StaticPropertiesFlagged { get; }
+        bool DeclaredPropertiesFlagged { get; }
 
         /// <summary>
         /// The binding rule to use when binding output terms for this resource

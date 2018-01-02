@@ -50,8 +50,8 @@ namespace RESTar.Requests
             get => uri;
             private set
             {
-                BodyBytes = BodyBytes ?? value.Macro?.BodyBinary.ToArray();
-                Uri.Macro?.HeadersDictionary?.ForEach(pair =>
+                BodyBytes = BodyBytes ?? value?.Macro?.BodyBinary.ToArray();
+                value?.Macro?.HeadersDictionary?.ForEach(pair =>
                 {
                     var currentValue = Headers.SafeGet(pair.Key);
                     if (string.IsNullOrWhiteSpace(currentValue) || currentValue == "*/*")
@@ -66,18 +66,18 @@ namespace RESTar.Requests
         public byte[] BodyBytes { get; set; }
         public IDictionary<string, string> Headers { get; }
         public MimeType ContentType { get; set; }
-        public MimeType[] Accept { get; set; }
+        public MimeType Accept { get; }
         public ResultFinalizer ResultFinalizer { get; }
         internal string AuthToken { get; set; }
-        private Exception Error { get; }
+        internal Exception Error { get; set; }
 
         public void ThrowIfError()
         {
             if (Error != null) throw Error;
         }
 
-        internal IEnumerable<KeyValuePair<string, string>> CustomHeaders => Headers.Where(h =>
-            !Regex.IsMatch(h.Key, RegEx.ReservedHeaders, IgnoreCase));
+        internal IEnumerable<KeyValuePair<string, string>> CustomHeaders => Headers
+            .Where(h => !Regex.IsMatch(h.Key, RegEx.ReservedHeaders, IgnoreCase));
 
         private static bool PercentCharsEscaped(IDictionary<string, string> headers)
         {
@@ -87,10 +87,16 @@ namespace RESTar.Requests
         internal Arguments(Action action, string query, byte[] body = null, Dictionary<string, string> headers = null, Origin origin = null)
         {
             Action = action;
+            Uri = URI.ParseInternal(query, PercentCharsEscaped(headers), out var protocol);
             BodyBytes = body;
             Headers = headers ?? new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             Origin = origin ?? Origin.Internal;
-            Uri = URI.ParseInternal(query, PercentCharsEscaped(headers), out var protocol);
+            ContentType = MimeType.Parse(Headers.SafeGet("Content-Type"));
+            Accept = MimeType.ParseMany(Headers.SafeGet("Accept"));
+            if (ContentType.TypeCode == MimeTypeCode.Unsupported)
+                Error = new UnsupportedContent(ContentType);
+            if (Accept.TypeCode == MimeTypeCode.Unsupported)
+                Error = new NotAcceptable(Accept);
             if (uri.HasError)
                 Error = uri.Error;
             switch (protocol)

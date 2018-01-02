@@ -11,11 +11,11 @@ namespace RESTar
     public class MimeType
     {
         internal MimeTypeCode TypeCode { get; }
+        internal string TypeCodeString { get; } = "null";
         internal Dictionary<string, string> Data { get; } = new Dictionary<string, string>();
         internal decimal Q { get; } = 1;
 
         internal static readonly MimeType Default = new MimeType(Json);
-        internal static readonly MimeType[] DefaultArray = {Default};
 
         internal static MimeType Parse(string headerValue)
         {
@@ -23,14 +23,14 @@ namespace RESTar
             return new MimeType(headerValue);
         }
 
-        internal static MimeType[] ParseMany(string headerValue)
+        internal static MimeType ParseMany(string headerValue)
         {
-            if (string.IsNullOrEmpty(headerValue)) return DefaultArray;
-            return headerValue.Split(',')
+            if (string.IsNullOrEmpty(headerValue)) return Default;
+            var found = headerValue.Split(',')
                 .Select(Parse)
-                .Where(m => m.TypeCode != Unsupported)
                 .OrderByDescending(m => m.Q)
-                .ToArray();
+                .FirstOrDefault();
+            return found ?? new MimeType(Unsupported);
         }
 
         private MimeType(MimeTypeCode code) => TypeCode = code;
@@ -38,7 +38,8 @@ namespace RESTar
         private MimeType(string headerValue)
         {
             var parts = headerValue.ToLower().Split(';');
-            switch (parts[0].Trim())
+            TypeCodeString = parts[0].Trim();
+            switch (TypeCodeString)
             {
                 case "*/*":
                 case "json":
@@ -48,6 +49,9 @@ namespace RESTar
                 case "excel":
                 case "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
                     TypeCode = Excel;
+                    break;
+                default:
+                    TypeCode = Unsupported;
                     break;
             }
 
@@ -70,19 +74,6 @@ namespace RESTar
     {
         public const string Excel = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
         public const string JSON = "application/json;charset=utf-8";
-
-        internal static MimeTypeCode Match(string mimeTypeString)
-        {
-            switch (mimeTypeString?.ToLower())
-            {
-                case "":
-                case null:
-                case "json":
-                case JSON:
-                case "*/*": return Json;
-                case var unsupported: throw new NotAcceptable(unsupported);
-            }
-        }
 
         internal static string GetString(MimeTypeCode mimeType)
         {

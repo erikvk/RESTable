@@ -26,7 +26,7 @@ namespace RESTar.Requests
         public MetaConditions MetaConditions { get; }
         public Stream Body { get; private set; }
         public string AuthToken { get; }
-        public IDictionary<string, string> ResponseHeaders { get; }
+        public Headers ResponseHeaders { get; }
         public IUriParameters UriParameters { get; }
         IResource IRequest.Resource => Resource;
         public ITarget<T> Target { get; }
@@ -67,7 +67,7 @@ namespace RESTar.Requests
             Resource = resource;
             Target = resource;
             Headers = new Headers();
-            ResponseHeaders = new Dictionary<string, string>();
+            ResponseHeaders = new Headers();
             Conditions = new Condition<T>[0];
             MetaConditions = new MetaConditions();
 
@@ -86,7 +86,7 @@ namespace RESTar.Requests
             Destination = arguments.Headers.SafeGet("Destination");
             CORSOrigin = arguments.Headers.SafeGet("Origin");
             ContentType = arguments.ContentType.TypeCode;
-            Accept = arguments.Accept[0].TypeCode;
+            Accept = arguments.Accept.TypeCode;
             InputDataConfig = Source != null ? DataConfig.External : DataConfig.Client;
             OutputDataConfig = Destination != null ? DataConfig.External : DataConfig.Client;
             arguments.CustomHeaders.ForEach(Headers.Put);

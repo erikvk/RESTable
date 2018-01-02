@@ -39,8 +39,8 @@ namespace RESTar.Internal
         {
             var attribute = type.GetAttribute<RESTarViewAttribute>();
             ConditionBindingRule = attribute.AllowDynamicConditions
-                ? StaticWithDynamicFallback
-                : OnlyStatic;
+                ? DeclaredWithDynamicFallback
+                : OnlyDeclared;
             Name = type.Name;
             Description = attribute.Description;
             Type = type;

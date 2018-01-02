@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using System.IO;
+﻿using System.IO;
 using RESTar.Internal;
 using RESTar.Requests;
 
@@ -85,7 +84,7 @@ namespace RESTar
         /// beginning with "X-" will be renamed to "X-[name]" where name 
         /// is the key-value pair key.
         /// </summary>
-        IDictionary<string, string> ResponseHeaders { get; }
+        Headers ResponseHeaders { get; }
 
         /// <summary>
         /// The URI parameters that was used to construct this request

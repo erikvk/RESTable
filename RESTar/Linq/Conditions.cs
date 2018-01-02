@@ -103,7 +103,7 @@ namespace RESTar.Linq
         [Pure]
         public static IEnumerable<Condition<T>> Redirect<T>(this IEnumerable<ICondition> conds, string direct, string to) where T : class
         {
-            var props = typeof(T).GetStaticProperties();
+            var props = typeof(T).GetDeclaredProperties();
             return conds
                 .Where(cond => cond.Term.IsDynamic || props.ContainsKey(cond.Term.First.Name))
                 .Select(cond => direct.EqualsNoCase(cond.Key) ? cond.Redirect<T>(to) : cond.Redirect<T>());
@@ -118,7 +118,7 @@ namespace RESTar.Linq
         public static IEnumerable<Condition<T>> Redirect<T>(this IEnumerable<ICondition> conds, params (string direct, string to)[] newKeyAssignments)
             where T : class
         {
-            var props = typeof(T).GetStaticProperties();
+            var props = typeof(T).GetDeclaredProperties();
             return conds
                 .Where(cond => cond.Term.IsDynamic || props.ContainsKey(cond.Term.First.Name))
                 .Select(cond =>

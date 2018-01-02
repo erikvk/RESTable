@@ -316,7 +316,7 @@ namespace RESTar
 
             var jobj = new JObject();
             entity.GetType()
-                .GetStaticProperties()
+                .GetDeclaredProperties()
                 .Values
                 .Where(p => !p.Hidden)
                 .ForEach(prop =>
@@ -757,7 +757,7 @@ namespace RESTar
             {
                 case RESTarException re: return (re.ErrorCode, re);
                 case FormatException _:
-                    return (UnsupportedContent, new Result
+                    return (ErrorCodes.UnsupportedContent, new Result
                     {
                         StatusCode = HttpStatusCode.BadRequest,
                         StatusDescription = "Bad request",
@@ -899,7 +899,7 @@ namespace RESTar
 
                     return table;
                 default:
-                    var properties = resource.Type.GetStaticProperties().Values
+                    var properties = resource.Type.GetDeclaredProperties().Values
                         .Where(p => !p.Hidden)
                         .ToList();
                     properties.ForEach(prop => table.Columns.Add(prop.MakeColumn()));
@@ -964,12 +964,12 @@ namespace RESTar
         internal static Dictionary<string, dynamic> MakeViewModelTemplate(this IResource resource)
         {
             if (resource.IsDDictionary) return new Dictionary<string, dynamic>();
-            return resource.Type.GetStaticProperties().Values
+            return resource.Type.GetDeclaredProperties().Values
                 .Where(p => !p.Hidden || p is SpecialProperty)
                 .ToDictionary(p => p.ViewModelName, p => p.Type.MakeViewModelDefault(p));
         }
 
-        internal static dynamic MakeViewModelDefault(this Type type, StaticProperty property = null)
+        internal static dynamic MakeViewModelDefault(this Type type, DeclaredProperty property = null)
         {
             dynamic DefaultValueRecurser(Type propType)
             {
@@ -987,7 +987,7 @@ namespace RESTar
                 {
                     if (propType == typeof(object))
                         return "@RESTar()";
-                    var props = propType.GetStaticProperties().Values;
+                    var props = propType.GetDeclaredProperties().Values;
                     return props.ToDictionary(
                         p => p.ViewModelName,
                         p => DefaultValueRecurser(p.Type));

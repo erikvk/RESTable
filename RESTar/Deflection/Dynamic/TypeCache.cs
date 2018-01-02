@@ -13,13 +13,13 @@ namespace RESTar.Deflection.Dynamic
 {
     /// <summary>
     /// The type cache keeps track of discovered types and provides
-    /// fast access to their static properties.
+    /// fast access to their declared properties.
     /// </summary>limit
     public static class TypeCache
     {
         static TypeCache()
         {
-            StaticPropertyCache = new ConcurrentDictionary<string, IDictionary<string, StaticProperty>>();
+            DeclaredPropertyCache = new ConcurrentDictionary<string, IDictionary<string, DeclaredProperty>>();
             TermCache = new ConcurrentDictionary<(string, string, TermBindingRules), Term>();
         }
 
@@ -59,64 +59,66 @@ namespace RESTar.Deflection.Dynamic
 
         #endregion
 
-        #region Static properties
+        #region Declared properties
 
-        private static readonly ConcurrentDictionary<string, IDictionary<string, StaticProperty>> StaticPropertyCache;
+        private static readonly ConcurrentDictionary<string, IDictionary<string, DeclaredProperty>> DeclaredPropertyCache;
 
-        private static IEnumerable<StaticProperty> ParseStaticProperties(this IEnumerable<PropertyInfo> props, bool flag) => props
+        private static IEnumerable<DeclaredProperty> ParseDeclaredProperties(this IEnumerable<PropertyInfo> props, bool flag) => props
             .Where(p => !p.RESTarIgnored())
             .Where(p => !p.GetIndexParameters().Any())
-            .Select(p => new StaticProperty(p, flag))
+            .Select(p => new DeclaredProperty(p, flag))
             .OrderBy(p => p.Order);
 
         /// <summary>
-        /// Gets the static properties for a given type
+        /// Gets the declared properties for a given type
         /// </summary>
-        public static IDictionary<string, StaticProperty> GetStaticProperties(this Type type)
+        public static IDictionary<string, DeclaredProperty> GetDeclaredProperties(this Type type)
         {
-            IEnumerable<StaticProperty> make(Type _type)
+            IEnumerable<DeclaredProperty> make(Type _type)
             {
                 switch (_type)
                 {
-                    case null: return new StaticProperty[0];
+                    case null: return new DeclaredProperty[0];
+                    case var _ when _type.IsNullable(out var underlying):
+                        return underlying.GetDeclaredProperties().Values;
                     case var _ when _type.HasAttribute<RESTarViewAttribute>():
                         return _type.GetProperties(Instance | Public)
-                            .ParseStaticProperties(false)
+                            .ParseDeclaredProperties(false)
                             .Union(make(_type.DeclaringType));
                     case var _ when _type.IsDDictionary():
                         return _type.GetProperties(Instance | Public)
-                            .ParseStaticProperties(flag: true)
+                            .ParseDeclaredProperties(flag: true)
                             .Union(GetObjectIDAndObjectNo(flag: true));
-                    case var _ when Resource.SafeGet(_type)?.StaticPropertiesFlagged == true:
+                    case var _ when Resource.SafeGet(_type)?.DeclaredPropertiesFlagged == true:
                         return _type.GetProperties(Instance | Public)
-                            .ParseStaticProperties(flag: true);
+                            .ParseDeclaredProperties(flag: true);
                     case var _ when _type.IsInterface:
                         return new[] {_type}
                             .Concat(_type.GetInterfaces())
                             .SelectMany(i => i.GetProperties(Instance | Public))
-                            .ParseStaticProperties(false);
+                            .ParseDeclaredProperties(false);
                     default:
                         return _type.GetProperties(Instance | Public)
-                            .ParseStaticProperties(false)
+                            .ParseDeclaredProperties(false)
                             .If(_type.IsStarcounter, ps => ps.Union(GetObjectIDAndObjectNo(false)));
                 }
             }
 
             if (type?.FullName == null) return null;
-            if (!StaticPropertyCache.TryGetValue(type.FullName, out var props))
-                props = StaticPropertyCache[type.FullName] = make(type).ToDictionary(p => p.Name, StringComparer.OrdinalIgnoreCase);
+            if (!DeclaredPropertyCache.TryGetValue(type.FullName, out var props))
+                props = DeclaredPropertyCache[type.FullName] = make(type).ToDictionary(p => p.Name, StringComparer.OrdinalIgnoreCase);
             return props;
         }
 
         /// <summary>
-        /// Gets the StaticProperty for a given MemberInfo
+        /// Gets the DeclaredProperty for a given MemberInfo
         /// </summary>
-        public static StaticProperty GetStaticProperty(this MemberInfo member)
+        public static DeclaredProperty GetDeclaredProperty(this MemberInfo member)
         {
             var declaringType = member.DeclaringType;
             if (declaringType?.FullName == null)
-                throw new Exception($"Cannot get static property for member '{member}' of unknown type");
-            return declaringType.GetStaticProperties().FirstOrDefault(p => p.Value.ActualName == member.Name).Value;
+                throw new Exception($"Cannot get declared property for member '{member}' of unknown type");
+            return declaringType.GetDeclaredProperties().FirstOrDefault(p => p.Value.ActualName == member.Name).Value;
         }
 
         #endregion

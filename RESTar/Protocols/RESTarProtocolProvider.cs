@@ -18,14 +18,13 @@ namespace RESTar.Protocols
     {
         internal static void PopulateUri(URI uri, string query)
         {
-            if (query.Count(c => c == '/') > 3) throw new InvalidSeparator();
             var match = Regex.Match(query, RegEx.RESTarRequestUri);
             if (!match.Success) throw new InvalidSyntax(InvalidUriSyntax, "Check URI syntax");
 
-            var resourceOrMacro = match.Groups["resource_or_macro"].Value.TrimStart('/');
+            var resourceOrMacro = match.Groups["res"].Value.TrimStart('/');
             var view = match.Groups["view"].Value.TrimStart('-');
-            var conditions = match.Groups["conditions"].Value.TrimStart('/');
-            var metaConditions = match.Groups["metaconditions"].Value.TrimStart('/');
+            var conditions = match.Groups["cond"].Value.TrimStart('/');
+            var metaConditions = match.Groups["meta"].Value.TrimStart('/');
 
             switch (conditions)
             {
@@ -73,8 +72,8 @@ namespace RESTar.Protocols
         private static string JoinConditions(ICollection<UriCondition> toJoin) => toJoin.Count > 0 ? string.Join("&", toJoin) : null;
 
         internal static string MakeRelativeUri(IUriParameters parameters) => $"/{parameters.ResourceSpecifier}" +
-                                                                    $"/{JoinConditions(parameters.Conditions) ?? "_"}" +
-                                                                    $"/{JoinConditions(parameters.MetaConditions) ?? "_"}";
+                                                                             $"/{JoinConditions(parameters.Conditions) ?? "_"}" +
+                                                                             $"/{JoinConditions(parameters.MetaConditions) ?? "_"}";
 
         internal static IFinalizedResult FinalizeResult(Result result)
         {

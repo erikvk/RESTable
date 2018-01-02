@@ -216,7 +216,7 @@
     <Compile Include="Internal\StarcounterOperations.cs" />
     <Compile Include="Operations\Select.cs" />
     <Compile Include="Admin\Settings.cs" />
-    <Compile Include="Deflection\Dynamic\StaticProperty.cs" />
+    <Compile Include="Deflection\Dynamic\DeclaredProperty.cs" />
     <Compile Include="Serialization\ValueProviders.cs" />
     <Compile Include="Serialization\CreateViewModelResolver.cs" />
     <Compile Include="Serialization\DefaultResolver.cs" />

@@ -42,8 +42,7 @@ namespace RESTar.Requests
                     case DELETE:
                     case REPORT:
                         arguments = new Arguments(action, query, body, headers, origin);
-                        var authToken = arguments.GetAuthToken();
-                        if (authToken == null) return Authenticator.NotAuthorized;
+                        arguments.Authenticate();
                         arguments.ThrowIfError();
                         return HandleREST((dynamic) arguments.IResource, arguments);
 

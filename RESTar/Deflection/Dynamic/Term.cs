@@ -87,13 +87,13 @@ namespace RESTar.Deflection.Dynamic
         /// <summary>
         /// Create a new term for a given type, with a key describing the target property
         /// </summary>
-        public static Term Create(Type type, string key) => type.MakeOrGetCachedTerm(key, StaticWithDynamicFallback);
+        public static Term Create(Type type, string key) => type.MakeOrGetCachedTerm(key, DeclaredWithDynamicFallback);
 
         /// <summary>
         /// Create a new term from a given PropertyInfo
         /// </summary>
         public static Term Create(PropertyInfo propertyInfo) => propertyInfo.DeclaringType
-            .MakeOrGetCachedTerm(propertyInfo.Name, StaticWithDynamicFallback);
+            .MakeOrGetCachedTerm(propertyInfo.Name, DeclaredWithDynamicFallback);
 
         #endregion
 
@@ -118,17 +118,17 @@ namespace RESTar.Deflection.Dynamic
                     switch (bindingRule)
                     {
                         case var _ when type.IsDDictionary():
-                        case StaticWithDynamicFallback:
+                        case DeclaredWithDynamicFallback:
                             try
                             {
-                                return StaticProperty.Find(type, str);
+                                return DeclaredProperty.Find(type, str);
                             }
                             catch
                             {
                                 return DynamicProperty.Parse(str);
                             }
-                        case DynamicWithStaticFallback: return DynamicProperty.Parse(str, true);
-                        case OnlyStatic: return StaticProperty.Find(type, str);
+                        case DynamicWithDeclaredFallback: return DynamicProperty.Parse(str, true);
+                        case OnlyDeclared: return DeclaredProperty.Find(type, str);
                         default: throw new Exception();
                     }
                 }
@@ -136,15 +136,15 @@ namespace RESTar.Deflection.Dynamic
                 switch (term.Store.LastOrDefault())
                 {
                     case null: return make(resource);
-                    case StaticProperty stat: return make(stat.Type);
+                    case DeclaredProperty stat: return make(stat.Type);
                     default: return DynamicProperty.Parse(str);
                 }
             }
 
             key.Split('.').ForEach(s => term.Store.Add(propertyMaker(s)));
             term.ScQueryable = term.Store.All(p => p.ScQueryable);
-            term.IsStatic = term.Store.All(p => p is StaticProperty);
-            term.ConditionSkip = term.Store.Any(p => p is StaticProperty s && s.SkipConditions);
+            term.IsStatic = term.Store.All(p => p is DeclaredProperty);
+            term.ConditionSkip = term.Store.Any(p => p is DeclaredProperty s && s.SkipConditions);
             term.Key = string.Join(".", term.Store.Select(p => p.Name));
             term.DbKey = string.Join(".", term.Store.Select(p => p.ActualName));
             return term;
@@ -162,7 +162,7 @@ namespace RESTar.Deflection.Dynamic
                 {
                     case SpecialProperty _:
                     case DynamicProperty _: return prop;
-                    case StaticProperty _: return DynamicProperty.Parse(prop.Name);
+                    case DeclaredProperty _: return DynamicProperty.Parse(prop.Name);
                     default: throw new ArgumentOutOfRangeException();
                 }
             }).ToList();

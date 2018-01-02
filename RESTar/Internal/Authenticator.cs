@@ -47,7 +47,14 @@ namespace RESTar.Internal
                 throw new Forbidden(FailedResourceAuthentication, authResults.Reason);
         }
 
-        internal static string GetAuthToken(this Arguments arguments)
+        internal static void Authenticate(this Arguments arguments)
+        {
+            arguments.AuthToken = GetAuthToken(arguments);
+            if (arguments.AuthToken == null)
+                arguments.Error = NotAuthorized;
+        }
+
+        private static string GetAuthToken(Arguments arguments)
         {
             if (!RequireApiKey)
                 return AssignAuthtoken(AccessRights.Root);

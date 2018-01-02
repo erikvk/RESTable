@@ -89,7 +89,6 @@ namespace RESTar
         /// <returns></returns>
         public static IResource[] SafeFindMany(string searchString)
         {
-            searchString = searchString.ToLower();
             switch (searchString.Count(i => i == '*'))
             {
                 case 0:
@@ -101,12 +100,11 @@ namespace RESTar
                 case 1:
                     var commonPart = searchString.TrimEnd('*');
                     var commonPartDots = commonPart.Count(c => c == '.');
-                    var matches = RESTarConfig.ResourceByName
-                        .Where(pair => pair.Key.StartsWith(commonPart) &&
+                    return RESTarConfig.ResourceByName
+                        .Where(pair => pair.Key.StartsWith(commonPart, OrdinalIgnoreCase) &&
                                        pair.Key.Count(c => c == '.') == commonPartDots)
                         .Select(pair => pair.Value)
                         .ToArray();
-                    return matches;
                 default: throw new Exception("Invalid resource string syntax. Can only include one asterisk (*)");
             }
         }

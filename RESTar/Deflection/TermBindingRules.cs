@@ -6,21 +6,21 @@
     public enum TermBindingRules
     {
         /// <summary>
-        /// First finds static properties, then creates dynamic properties
+        /// First finds declared properties, then creates dynamic properties
         /// for any unknown property
         /// </summary>
-        StaticWithDynamicFallback,
+        DeclaredWithDynamicFallback,
 
         /// <summary>
         /// First finds dynamic properties, then (at runtime) searches for 
-        /// static properties if no dynamic property was found
+        /// declared properties if no dynamic property was found
         /// </summary>
-        DynamicWithStaticFallback,
+        DynamicWithDeclaredFallback,
 
         /// <summary>
-        /// Binds only static properties, and throws an exception if no 
-        /// static property was found
+        /// Binds only declared properties, and throws an exception if no 
+        /// declared property was found
         /// </summary>
-        OnlyStatic
+        OnlyDeclared
     }
 }

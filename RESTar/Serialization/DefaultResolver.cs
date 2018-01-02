@@ -14,7 +14,7 @@ namespace RESTar.Serialization
             switch (member.MemberType)
             {
                 case MemberTypes.Property:
-                    var property = member.GetStaticProperty();
+                    var property = member.GetDeclaredProperty();
                     if (property?.Hidden != false) return null;
                     var p = base.CreateProperty(member, memberSerialization);
                     p.Writable = property.Writable;

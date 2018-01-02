@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using RESTar.Protocols;
 using System.Text.RegularExpressions;
+using RESTar.Protocols;
 using RESTar.Admin;
 using RESTar.Internal;
 
@@ -22,21 +22,14 @@ namespace RESTar.Requests
         internal static URI ParseInternal(string query, bool percentCharsEscaped, out RESTProtocols protocol)
         {
             var uri = new URI();
-            var match = Regex.Match(query, RegEx.Protocol);
-            if (!match.Success)
-            {
-                uri.Error = new InvalidSyntax(ErrorCodes.InvalidUriSyntax, "Invalid URI syntax");
-                protocol = RESTProtocols.RESTar;
-                return uri;
-            }
-            var groups = match.Groups;
-            query = groups["tail"].Value;
             if (percentCharsEscaped) query = query.Replace("%25", "%");
             Action<URI, string> populator;
-            switch (groups["protocol"].Value)
+            var groups = Regex.Match(query, RegEx.Protocol).Groups;
+            var protocolString = groups["proto"].Value;
+            var tail = groups["tail"].Value;
+            switch (protocolString)
             {
                 case "":
-                case null:
                 case "-restar":
                     populator = RESTarProtocolProvider.PopulateUri;
                     protocol = RESTProtocols.RESTar;
@@ -45,11 +38,14 @@ namespace RESTar.Requests
                     populator = ODataProtocolProvider.PopulateUri;
                     protocol = RESTProtocols.OData;
                     break;
-                case var unknown: throw new InvalidSyntax(ErrorCodes.InvalidUriSyntax, $"Unknown protocol '{unknown}'");
+                default:
+                    protocol = default;
+                    uri.Error = new InvalidSyntax(ErrorCodes.InvalidUriSyntax, $"Unknown protocol '{protocolString}'");
+                    return uri;
             }
             try
             {
-                populator(uri, query);
+                populator(uri, tail);
             }
             catch (Exception e)
             {

@@ -111,7 +111,7 @@ namespace RESTar
         /// </summary>
         internal bool ScQueryable => Term.ScQueryable;
 
-        internal Type Type => Term.IsStatic ? Term.LastAs<StaticProperty>()?.Type : null;
+        internal Type Type => Term.IsStatic ? Term.LastAs<DeclaredProperty>()?.Type : null;
         internal bool IsOfType<T1>() => Type == typeof(T1);
 
         /// <inheritdoc />
@@ -121,7 +121,7 @@ namespace RESTar
             return new Condition<T1>
             (
                 term: Resource<T1>.SafeGet?.MakeConditionTerm(newKey ?? Key)
-                      ?? typeof(T1).MakeOrGetCachedTerm(newKey ?? Key, TermBindingRules.StaticWithDynamicFallback),
+                      ?? typeof(T1).MakeOrGetCachedTerm(newKey ?? Key, TermBindingRules.DeclaredWithDynamicFallback),
                 op: Operator,
                 value: Value
             );
@@ -135,7 +135,7 @@ namespace RESTar
         /// <param name="value">The value to compare the property referenced by the key with</param>
         public Condition(string key, Operators op, object value) : this(
             term: Resource<T>.SafeGet?.MakeConditionTerm(key)
-                  ?? typeof(T).MakeOrGetCachedTerm(key, TermBindingRules.StaticWithDynamicFallback),
+                  ?? typeof(T).MakeOrGetCachedTerm(key, TermBindingRules.DeclaredWithDynamicFallback),
             op: op,
             value: value
         ) { }
@@ -207,7 +207,7 @@ namespace RESTar
             if (!term.Last.AllowedConditionOperators.HasFlag(op.OpCode))
                 throw new ForbiddenConditionOperator(key, target, op, term, term.Last.AllowedConditionOperators.ToOperators());
             var value = valueLiteral.ParseConditionValue();
-            if (term.Last is StaticProperty prop && prop.Type.IsEnum && value is string)
+            if (term.Last is DeclaredProperty prop && prop.Type.IsEnum && value is string)
             {
                 try
                 {

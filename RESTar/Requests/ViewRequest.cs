@@ -26,7 +26,7 @@ namespace RESTar.Requests
         public Condition<T>[] Conditions { get; private set; }
         public MetaConditions MetaConditions { get; private set; }
         public string AuthToken { get; internal set; }
-        public IDictionary<string, string> ResponseHeaders { get; }
+        public Headers ResponseHeaders { get; }
         public IUriParameters UriParameters { get; private set; }
         public Stream Body { get; private set; }
         Methods IRequest.Method => GET;
@@ -49,7 +49,7 @@ namespace RESTar.Requests
             Resource = resource;
             Target = resource;
             Headers = new Headers();
-            ResponseHeaders = new Dictionary<string, string>();
+            ResponseHeaders = new Headers();
             MetaConditions = new MetaConditions();
             Conditions = new Condition<T>[0];
             Origin = origin;

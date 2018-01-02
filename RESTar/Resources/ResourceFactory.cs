@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using Newtonsoft.Json.Linq;
 using RESTar.Linq;
 using RESTar.Admin;
 using RESTar.Internal;
@@ -98,12 +99,14 @@ namespace RESTar.Resources
                     #region Check for invalid IDictionary implementation
 
                     var validTypes = new[] {typeof(string), typeof(object)};
-                    if (type.Implements(typeof(IDictionary<,>), out var typeParams) && !typeParams.SequenceEqual(validTypes))
+                    if (type.Implements(typeof(IDictionary<,>), out var typeParams)
+                        && !type.IsSubclassOf(typeof(JObject))
+                        && !typeParams.SequenceEqual(validTypes))
                         throw new ResourceDeclarationException(
-                            $"Invalid resource declaration for type '{type.FullName}'. All resources implementing " +
-                            "the generic 'System.Collections.Generic.IDictionary`2' interface must have System.String as " +
-                            $"first type parameter and System.Object as second type parameter. Found {typeParams[0].FullName} " +
-                            $"and {typeParams[1].FullName}");
+                            $"Invalid resource declaration for type '{type.FullName}'. All resource types implementing " +
+                            "the generic 'System.Collections.Generic.IDictionary`2' interface must either be subclasses of " +
+                            "Newtonsoft.Json.Linq.JObject or have System.String as first type parameter and System.Object as " +
+                            $"second type parameter. Found {typeParams[0].FullName} and {typeParams[1].FullName}");
 
                     #endregion
 

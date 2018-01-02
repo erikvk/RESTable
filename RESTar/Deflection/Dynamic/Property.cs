@@ -28,9 +28,9 @@ namespace RESTar.Deflection.Dynamic
         public abstract bool Dynamic { get; }
 
         /// <summary>
-        /// Is this property a static member?
+        /// Is this property a declared member?
         /// </summary>
-        public bool Static => !Dynamic;
+        public bool Declared => !Dynamic;
 
         /// <summary>
         /// The allowed condition operators for this property
@@ -71,7 +71,7 @@ namespace RESTar.Deflection.Dynamic
         public static Property Parse(string keyString, Type resource, bool dynamic)
         {
             if (dynamic) return DynamicProperty.Parse(keyString);
-            return StaticProperty.Find(resource, keyString);
+            return DeclaredProperty.Find(resource, keyString);
         }
     }
 }

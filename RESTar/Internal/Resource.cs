@@ -43,7 +43,7 @@ namespace RESTar.Internal
         /// <summary>
         /// True for DDictionary resources and dynamic resources with DynamicConditionsAllowed
         /// </summary>
-        public bool StaticPropertiesFlagged { get; }
+        public bool DeclaredPropertiesFlagged { get; }
 
         public string AliasOrName => Alias ?? Name;
         public override string ToString() => AliasOrName;
@@ -125,13 +125,13 @@ namespace RESTar.Internal
             IsSingleton = attribute.Singleton;
             IsInternal = attribute is RESTarInternalAttribute;
             DynamicConditionsAllowed = typeof(T).IsDDictionary() || attribute.AllowDynamicConditions;
-            StaticPropertiesFlagged = typeof(T).IsDDictionary() || attribute.FlagStaticMembers;
-            ConditionBindingRule = DynamicConditionsAllowed ? StaticWithDynamicFallback : OnlyStatic;
-            if (StaticPropertiesFlagged)
-                OutputBindingRule = StaticWithDynamicFallback;
-            else if (typeof(T).IsDynamic() && !StaticPropertiesFlagged)
-                OutputBindingRule = DynamicWithStaticFallback;
-            else OutputBindingRule = OnlyStatic;
+            DeclaredPropertiesFlagged = typeof(T).IsDDictionary() || attribute.FlagStaticMembers;
+            ConditionBindingRule = DynamicConditionsAllowed ? DeclaredWithDynamicFallback : OnlyDeclared;
+            if (DeclaredPropertiesFlagged)
+                OutputBindingRule = DeclaredWithDynamicFallback;
+            else if (typeof(T).IsDynamic() && !DeclaredPropertiesFlagged)
+                OutputBindingRule = DynamicWithDeclaredFallback;
+            else OutputBindingRule = OnlyDeclared;
             RequiresValidation = typeof(IValidatable).IsAssignableFrom(typeof(T));
             IsStarcounterResource = typeof(T).HasAttribute<DatabaseAttribute>();
             IsDDictionary = typeof(T).IsDDictionary();
@@ -149,7 +149,7 @@ namespace RESTar.Internal
             if (views?.Any() == true)
             {
                 ViewDictionaryInternal = views.ToDictionary(v => v.Name.ToLower(), v => v);
-                views.ForEach(view => view.Type.GetStaticProperties());
+                views.ForEach(view => view.Type.GetDeclaredProperties());
             }
             CheckOperationsSupport();
             RESTarConfig.AddResource(this);

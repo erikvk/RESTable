@@ -10,7 +10,6 @@ using RESTar.Http;
 using RESTar.Internal;
 using RESTar.Operations;
 using static RESTar.Internal.ErrorCodes;
-using static RESTar.Admin.Settings;
 using IResource = RESTar.Internal.IResource;
 
 namespace RESTar
@@ -139,10 +138,24 @@ namespace RESTar
     /// </summary>
     public class NotAcceptable : RESTarException
     {
-        internal NotAcceptable(string type) : base(ErrorCodes.NotAcceptable, $"Unsupported format: '{type}'")
+        internal NotAcceptable(MimeType unsupported) : base(ErrorCodes.NotAcceptable,
+            $"Unsupported accept format: '{unsupported.TypeCodeString}'")
         {
             StatusCode = HttpStatusCode.NotAcceptable;
             StatusDescription = "Not acceptable";
+        }
+    }
+
+    /// <summary>
+    /// Thrown when a request had a non-supported Content-Type header
+    /// </summary>
+    public class UnsupportedContent : RESTarException
+    {
+        internal UnsupportedContent(MimeType unsupported) : base(ErrorCodes.UnsupportedContent,
+            $"Unsupported content type: '{unsupported.TypeCodeString}'")
+        {
+            StatusCode = HttpStatusCode.UnsupportedMediaType;
+            StatusDescription = "Unsupported media type";
         }
     }
 
@@ -276,7 +289,7 @@ namespace RESTar
     public class UnknownProperty : NotFound
     {
         internal UnknownProperty(MemberInfo type, string str) : base(ErrorCodes.UnknownProperty,
-            $"Could not find any property in {(type.HasAttribute<RESTarViewAttribute>() ? $"view '{type.Name}' or resource '{Resource.Get(type.DeclaringType)?.Name}'" : $"resource '{type.Name}'")} by '{str}'.") { }
+            $"Could not find any property in {(type.HasAttribute<RESTarViewAttribute>() ? $"view '{type.Name}' or type '{Resource.Get(type.DeclaringType)?.Name}'" : $"type '{type.Name}'")} by '{str}'.") { }
     }
 
     /// <inheritdoc />
@@ -351,18 +364,6 @@ namespace RESTar
     {
         internal ExcelFormatError(string message, Exception ie) : base(ExcelReaderError,
             $"RESTar was unable to write entities to excel. {message}. ", ie) { }
-    }
-
-
-    /// <inheritdoc />
-    /// <summary>
-    /// Thrown when a syntax error was discovered when parsing a request
-    /// </summary>
-    public class InvalidSeparator : BadRequest
-    {
-        internal InvalidSeparator() : base(ErrorCodes.InvalidSeparator,
-            "Syntax error while parsing request: Invalid argument separator count. A RESTar URI can contain at most 3 " +
-            $"forward slashes after the base uri. URI scheme: {_ResourcesPath}/[resource][-view]/[conditions]/[meta-conditions]") { }
     }
 
     /// <inheritdoc />

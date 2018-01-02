@@ -13,9 +13,9 @@ namespace RESTar.Deflection.Dynamic
 {
     /// <inheritdoc />
     /// <summary>
-    /// A static property represents a compile time known property of a class.
+    /// A declared property represents a compile time known property of a type.
     /// </summary>
-    public class StaticProperty : Property
+    public class DeclaredProperty : Property
     {
         /// <summary>
         /// The property type for this property
@@ -83,7 +83,7 @@ namespace RESTar.Deflection.Dynamic
         /// <summary>
         /// Used in SpecialProperty
         /// </summary>
-        internal StaticProperty(
+        internal DeclaredProperty(
             string name, string actualName, Type type, int? order, bool scQueryable,
             ICollection<Attribute> attributes, bool skipConditions, bool hidden, bool hiddenIfNull,
             Operators allowedConditionOperators, Getter getter, Setter setter)
@@ -103,9 +103,9 @@ namespace RESTar.Deflection.Dynamic
         }
 
         /// <summary>
-        /// The regular constructor, called by the type cache when creating static properties
+        /// The regular constructor, called by the type cache when creating declared properties
         /// </summary>
-        internal StaticProperty(PropertyInfo p, bool flagName = false)
+        internal DeclaredProperty(PropertyInfo p, bool flagName = false)
         {
             if (p == null) return;
             Name = p.RESTarMemberName(flagName);
@@ -146,28 +146,32 @@ namespace RESTar.Deflection.Dynamic
         }
 
         /// <summary>
-        /// Parses a static property from a key string and a type
+        /// Parses a declared property from a key string and a type
         /// </summary>
         /// <param name="type">The type to match the property from</param>
         /// <param name="key">The string to match a property from</param>
         /// <returns></returns>
-        public static StaticProperty Find(Type type, string key)
+        public static DeclaredProperty Find(Type type, string key)
         {
-            if (!type.GetStaticProperties().TryGetValue(key, out var prop))
+            if (!type.GetDeclaredProperties().TryGetValue(key, out var prop))
+            {
+                if (type.IsNullable(out var underlying))
+                    type = underlying;
                 throw new UnknownProperty(type, key);
+            }
             return prop;
         }
 
         /// <summary>
-        /// Parses a static property from a key string and a type
+        /// Parses a declared property from a key string and a type
         /// </summary>
         /// <param name="type">The type to match the property from</param>
         /// <param name="key">The string to match a property from</param>
-        /// <param name="staticProperty">The static property found</param>
+        /// <param name="declaredProperty">The declared property found</param>
         /// <returns></returns>
-        public static bool TryFind(Type type, string key, out StaticProperty staticProperty)
+        public static bool TryFind(Type type, string key, out DeclaredProperty declaredProperty)
         {
-            return type.GetStaticProperties().TryGetValue(key, out staticProperty);
+            return type.GetDeclaredProperties().TryGetValue(key, out declaredProperty);
         }
 
         internal long ByteCount(object target)

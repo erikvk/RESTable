@@ -21,7 +21,7 @@ namespace RESTarExample
             RESTarConfig.Init
             (
                 uri: "/rest/",
-                // requireApiKey: true,
+                requireApiKey: true,
                 allowAllOrigins: false,
                 viewEnabled: true,
                 configFilePath: @"C:\Mopedo\mopedo\Mopedo.config",
@@ -62,9 +62,7 @@ namespace RESTarExample
                     ["Int"] = 14
                 },
                 new SemiDynamic
-                {
-                    ["Str"] = "123"
-                },
+                    {["Str"] = "123"},
                 new SemiDynamic
                 {
                     ["Str"] = "1ds23",
@@ -87,9 +85,7 @@ namespace RESTarExample
                     ["Int"] = 14
                 },
                 new SemiDynamic2
-                {
-                    ["Str"] = "123"
-                },
+                    {["Str"] = "123"},
                 new SemiDynamic2
                 {
                     ["Str"] = "1ds23",

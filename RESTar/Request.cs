@@ -33,7 +33,7 @@ namespace RESTar
 
         public Stream Body { get; set; }
         public string AuthToken { get; internal set; }
-        public IDictionary<string, string> ResponseHeaders { get; }
+        public Headers ResponseHeaders { get; }
         public IUriParameters UriParameters => throw new InvalidOperationException();
         IResource IRequest.Resource => Resource;
         public MetaConditions MetaConditions { get; }
@@ -69,10 +69,8 @@ namespace RESTar
                     Conditions.ResetStatus();
                     return;
                 }
-
                 if (cond.ValueChanged) valueChanged = true;
             }
-
             if (!valueChanged) return;
             Conditions.Where(c => !c.Skip).ForEach((cond, cindex) => SqlValues[ValuesAssignments[cindex]] = cond.Value);
             Conditions.ResetStatus();
@@ -89,10 +87,10 @@ namespace RESTar
             }
             else
             {
-                var wh = sql.MakeWhereClause(out var assignments);
-                SelectQuery = $"{StarcounterOperations<T>.SELECT}{wh.WhereString}";
-                CountQuery = $"{StarcounterOperations<T>.COUNT}{wh.WhereString}";
-                SqlValues = wh.Values;
+                var (WhereString, Values) = sql.MakeWhereClause(out var assignments);
+                SelectQuery = $"{StarcounterOperations<T>.SELECT}{WhereString}";
+                CountQuery = $"{StarcounterOperations<T>.COUNT}{WhereString}";
+                SqlValues = Values;
                 ValuesAssignments = assignments;
             }
         }
@@ -103,11 +101,8 @@ namespace RESTar
                 throw new NotInitializedException();
             Resource = Resource<T>.Get;
             Target = Resource;
-            ResponseHeaders = new Dictionary<string, string>();
-            MetaConditions = new MetaConditions
-            {
-                Unsafe = true
-            };
+            ResponseHeaders = new Headers();
+            MetaConditions = new MetaConditions {Unsafe = true};
             Origin = Origin.Internal;
             Conditions = conditions;
             this.Authenticate();

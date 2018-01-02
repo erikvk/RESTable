@@ -18,7 +18,6 @@ using Starcounter;
 using static RESTar.Methods;
 using static RESTar.Requests.StarcounterHandlers;
 using IResource = RESTar.Internal.IResource;
-using ResourceFinder = System.Collections.Concurrent.ConcurrentDictionary<string, RESTar.Internal.IResource>;
 
 namespace RESTar
 {
@@ -28,7 +27,7 @@ namespace RESTar
     /// </summary>
     public static class RESTarConfig
     {
-        internal static ResourceFinder ResourceFinder { get; private set; }
+        internal static ConcurrentDictionary<string, IResource> ResourceFinder { get; private set; }
         internal static IDictionary<string, IResource> ResourceByName { get; private set; }
         internal static IDictionary<Type, IResource> ResourceByType { get; private set; }
         internal static IDictionary<string, AccessRights> ApiKeys { get; private set; }
@@ -49,7 +48,7 @@ namespace RESTar
             ApiKeys = new Dictionary<string, AccessRights>();
             ResourceByType = new Dictionary<Type, IResource>();
             ResourceByName = new Dictionary<string, IResource>(StringComparer.OrdinalIgnoreCase);
-            ResourceFinder = new ResourceFinder();
+            ResourceFinder = new ConcurrentDictionary<string, IResource>(StringComparer.OrdinalIgnoreCase);
             AuthTokens = new ConcurrentDictionary<string, AccessRights>();
             AllowedOrigins = new List<Uri>();
             AuthTokens.TryAdd(Authenticator.AppToken, AccessRights.Root);
@@ -76,7 +75,7 @@ namespace RESTar
             ResourceByType[toAdd.Type] = toAdd;
             AddToResourceFinder(toAdd, ResourceFinder);
             UpdateAuthInfo();
-            toAdd.Type.GetStaticProperties();
+            toAdd.Type.GetDeclaredProperties();
         }
 
         internal static void RemoveResource(IResource toRemove)
@@ -89,12 +88,12 @@ namespace RESTar
 
         internal static void ReloadResourceFinder()
         {
-            var newFinder = new ResourceFinder();
+            var newFinder = new ConcurrentDictionary<string, IResource>(StringComparer.OrdinalIgnoreCase);
             Resources.ForEach(r => AddToResourceFinder(r, newFinder));
             ResourceFinder = newFinder;
         }
 
-        private static void AddToResourceFinder(IResource toAdd, ResourceFinder finder)
+        private static void AddToResourceFinder(IResource toAdd, IDictionary<string, IResource> finder)
         {
             string[] makeResourceParts(IResource resource)
             {
