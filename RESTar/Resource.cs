@@ -115,8 +115,7 @@ namespace RESTar
         /// Finds a resource by name (case insensitive) and throws an UnknownResourceException
         /// if no resource is found.
         /// </summary>
-        public static IResource Get(string name) => RESTarConfig.ResourceByName.SafeGet(name.ToLower())
-                                                    ?? throw new UnknownResource(name);
+        public static IResource Get(string name) => RESTarConfig.ResourceByName.SafeGet(name) ?? throw new UnknownResource(name);
 
         /// <summary>
         /// Finds a resource by name (case insensitive) and returns null

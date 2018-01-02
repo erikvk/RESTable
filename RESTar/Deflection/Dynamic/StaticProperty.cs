@@ -83,7 +83,8 @@ namespace RESTar.Deflection.Dynamic
         /// <summary>
         /// Used in SpecialProperty
         /// </summary>
-        internal StaticProperty(string name, string actualName, Type type, int? order, bool scQueryable,
+        internal StaticProperty(
+            string name, string actualName, Type type, int? order, bool scQueryable,
             ICollection<Attribute> attributes, bool skipConditions, bool hidden, bool hiddenIfNull,
             Operators allowedConditionOperators, Getter getter, Setter setter)
         {
@@ -152,8 +153,9 @@ namespace RESTar.Deflection.Dynamic
         /// <returns></returns>
         public static StaticProperty Find(Type type, string key)
         {
-            type.GetStaticProperties().TryGetValue(key.ToLower(), out var prop);
-            return prop ?? throw new UnknownProperty(type, key);
+            if (!type.GetStaticProperties().TryGetValue(key, out var prop))
+                throw new UnknownProperty(type, key);
+            return prop;
         }
 
         /// <summary>
@@ -165,7 +167,7 @@ namespace RESTar.Deflection.Dynamic
         /// <returns></returns>
         public static bool TryFind(Type type, string key, out StaticProperty staticProperty)
         {
-            return type.GetStaticProperties().TryGetValue(key.ToLower(), out staticProperty);
+            return type.GetStaticProperties().TryGetValue(key, out staticProperty);
         }
 
         internal long ByteCount(object target)

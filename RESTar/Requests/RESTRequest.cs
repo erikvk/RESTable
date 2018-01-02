@@ -19,27 +19,27 @@ namespace RESTar.Requests
 {
     internal class RESTRequest<T> : IRequest<T>, IDisposable where T : class
     {
-        public Methods Method { get; private set; }
+        public Methods Method { get; }
         public Origin Origin { get; }
         public IResource<T> Resource { get; }
-        public Condition<T>[] Conditions { get; private set; }
-        public MetaConditions MetaConditions { get; private set; }
+        public Condition<T>[] Conditions { get; }
+        public MetaConditions MetaConditions { get; }
         public Stream Body { get; private set; }
-        public string AuthToken { get; internal set; }
+        public string AuthToken { get; }
         public IDictionary<string, string> ResponseHeaders { get; }
-        public IUriParameters UriParameters { get; private set; }
+        public IUriParameters UriParameters { get; }
         IResource IRequest.Resource => Resource;
-        public ITarget<T> Target { get; private set; }
+        public ITarget<T> Target { get; }
         internal Result Result { get; set; }
-        private Func<RESTRequest<T>, Result> Evaluator { get; set; }
-        private string Source { get; set; }
-        private string Destination { get; set; }
-        private MimeTypeCode ContentType { get; set; }
-        public MimeTypeCode Accept { get; private set; }
-        private string CORSOrigin { get; set; }
-        private DataConfig InputDataConfig { get; set; }
-        private DataConfig OutputDataConfig { get; set; }
-        private ResultFinalizer ResultFinalizer { get; set; }
+        private Func<RESTRequest<T>, Result> Evaluator { get; }
+        private string Source { get; }
+        private string Destination { get; }
+        private MimeTypeCode ContentType { get; }
+        public MimeTypeCode Accept { get; }
+        private string CORSOrigin { get; }
+        private DataConfig InputDataConfig { get; }
+        private DataConfig OutputDataConfig { get; }
+        private ResultFinalizer ResultFinalizer { get; }
 
         internal void Evaluate()
         {
@@ -61,7 +61,7 @@ namespace RESTar.Requests
         public T1 BodyObject<T1>() where T1 : class => Body?.Deserialize<T1>();
         public Headers Headers { get; }
 
-        internal RESTRequest(IResource<T> resource, Origin origin)
+        internal RESTRequest(IResource<T> resource, Arguments arguments)
         {
             if (resource.IsInternal) throw new ResourceIsInternal(resource);
             Resource = resource;
@@ -70,21 +70,18 @@ namespace RESTar.Requests
             ResponseHeaders = new Dictionary<string, string>();
             Conditions = new Condition<T>[0];
             MetaConditions = new MetaConditions();
-            Origin = origin;
-        }
 
-        internal void Populate(Arguments arguments, Methods method)
-        {
-            if (arguments.ViewName != null)
+            Origin = arguments.Origin;
+            AuthToken = arguments.AuthToken;
+            UriParameters = arguments.Uri;
+            Method = (Methods) arguments.Action;
+            if (arguments.Uri.ViewName != null)
             {
-                if (!Resource.ViewDictionary.TryGetValue(arguments.ViewName, out var view))
-                    throw new UnknownView(arguments.ViewName, Resource);
+                if (!Resource.ViewDictionary.TryGetValue(arguments.Uri.ViewName, out var view))
+                    throw new UnknownView(arguments.Uri.ViewName, Resource);
                 Target = view;
             }
-
-            UriParameters = arguments;
-            Method = method;
-            Evaluator = Operations<T>.REST.GetEvaluator(method);
+            Evaluator = Operations<T>.REST.GetEvaluator(Method);
             Source = arguments.Headers.SafeGet("Source");
             Destination = arguments.Headers.SafeGet("Destination");
             CORSOrigin = arguments.Headers.SafeGet("Origin");
@@ -92,11 +89,13 @@ namespace RESTar.Requests
             Accept = arguments.Accept[0].TypeCode;
             InputDataConfig = Source != null ? DataConfig.External : DataConfig.Client;
             OutputDataConfig = Destination != null ? DataConfig.External : DataConfig.Client;
-            arguments.CustomHeaders.ForEach(Headers.Add);
-            Conditions = Condition<T>.Parse(arguments.UriConditions, Target) ?? Conditions;
-            MetaConditions = MetaConditions.Parse(arguments.UriMetaConditions, Resource) ?? MetaConditions;
+            arguments.CustomHeaders.ForEach(Headers.Put);
+            Conditions = Condition<T>.Parse(arguments.Uri.Conditions, Target) ?? Conditions;
+            MetaConditions = MetaConditions.Parse(arguments.Uri.MetaConditions, Resource) ?? MetaConditions;
             ResultFinalizer = arguments.ResultFinalizer;
             if (Origin.IsInternal) MetaConditions.Formatter = DbOutputFormat.Raw;
+            this.MethodCheck();
+            SetRequestData(arguments.BodyBytes);
         }
 
         internal void SetRequestData(byte[] bodyBytes)

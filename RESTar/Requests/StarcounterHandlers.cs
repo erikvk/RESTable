@@ -4,25 +4,25 @@ using RESTar.Linq;
 using RESTar.Operations;
 using Starcounter;
 using static RESTar.Admin.Settings;
-using static RESTar.Requests.HandlerActions;
+using static RESTar.Requests.Action;
 using static RESTar.Requests.RequestEvaluator;
 
 namespace RESTar.Requests
 {
     internal static class StarcounterHandlers
     {
-        private static readonly HandlerActions[] Verbs = {GET, POST, PATCH, PUT, DELETE, REPORT, OPTIONS};
+        private static readonly Action[] Actions = {GET, POST, PATCH, PUT, DELETE, REPORT, OPTIONS};
 
         internal static void RegisterRESTHandlers(bool setupMenu)
         {
-            Verbs.ForEach(verb => Handle.CUSTOM
+            Actions.ForEach(action => Handle.CUSTOM
             (
                 port: _Port,
-                methodSpaceUri: $"{verb} {_Uri}{{?}}",
+                methodSpaceUri: $"{action} {_Uri}{{?}}",
                 handler: (Request request, string query) => Evaluate
                 (
-                    action: verb,
-                    uri: query,
+                    action: action,
+                    query: query,
                     body: request.BodyBytes,
                     headers: request.HeadersDictionary,
                     origin: MakeOrigin(request)
@@ -101,8 +101,8 @@ namespace RESTar.Requests
 
         internal static void UnregisterRESTHandlers()
         {
-            void UnregisterREST(HandlerActions action) => Handle.UnregisterHttpHandler(_Port, $"{action}", $"{_Uri}{{?}}");
-            Verbs.ForEach(action => Do.Try(() => UnregisterREST(action)));
+            void UnregisterREST(Action action) => Handle.UnregisterHttpHandler(_Port, $"{action}", $"{_Uri}{{?}}");
+            Actions.ForEach(action => Do.Try(() => UnregisterREST(action)));
             var appName = Application.Current.Name;
             Do.Try(() => Handle.UnregisterHttpHandler(_Port, "GET", $"/{appName}{{?}}"));
             Do.Try(() => Handle.UnregisterHttpHandler(_Port, "GET", "/__restar/__page"));

@@ -59,7 +59,8 @@ namespace RESTar.Admin
         /// <summary>
         /// The views for this resource
         /// </summary>
-        [JsonProperty(NullValueHandling = Ignore)] public object Views { get; private set; }
+        [JsonProperty(NullValueHandling = Ignore)]
+        public object Views { get; private set; }
 
         /// <summary>
         /// The IResource of this resource
@@ -74,7 +75,8 @@ namespace RESTar.Admin
         /// <summary>
         /// Inner resources for this resource
         /// </summary>
-        [JsonProperty(NullValueHandling = Ignore)] public Resource[] InnerResources { get; private set; }
+        [JsonProperty(NullValueHandling = Ignore)]
+        public Resource[] InnerResources { get; private set; }
 
         [JsonConstructor]
         public Resource() => Provider = "undefined";
@@ -146,11 +148,11 @@ namespace RESTar.Admin
             }
             if (!Name.StartsWith("RESTar.Dynamic."))
             {
-                if (Name.ToLower().StartsWith("restar.dynamic."))
+                if (Name.StartsWith("restar.dynamic.", StringComparison.OrdinalIgnoreCase))
                     Name = $"RESTar.Dynamic.{Name.Split(new[] {'.'}, 3).Last()}";
                 else Name = $"RESTar.Dynamic.{Name}";
             }
-            if (RESTarConfig.ResourceByName.ContainsKey(Name.ToLower()))
+            if (RESTarConfig.ResourceByName.ContainsKey(Name))
                 throw new Exception($"Invalid resource name '{Name}'. Name already in use.");
         }
 

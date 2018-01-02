@@ -61,7 +61,6 @@ namespace RESTar.Serialization
                 JsonSerializer.Formatting = _PrettyPrint ? Indented : None;
                 JsonSerializer.Serialize(jwr, data);
             }
-
             stream.Seek(0, SeekOrigin.Begin);
             return true;
         }
@@ -131,12 +130,10 @@ namespace RESTar.Serialization
                         jwr.WriteEndObject();
                         objectCount += 1;
                     }
-
                     if ((method == PATCH || method == PUT) && objectCount > 1)
                         throw new InvalidInputCount();
                     jwr.WriteEndArray();
                 }
-
                 jsonStream.Seek(0, SeekOrigin.Begin);
                 return true;
             }
@@ -200,10 +197,7 @@ namespace RESTar.Serialization
             {
                 jsonReader.Read();
                 if (jsonReader.TokenType == JsonToken.StartObject)
-                    return new List<T>
-                    {
-                        JsonSerializer.Deserialize<T>(jsonReader)
-                    };
+                    return new List<T> {JsonSerializer.Deserialize<T>(jsonReader)};
                 return JsonSerializer.Deserialize<List<T>>(jsonReader);
             }
         }
@@ -217,6 +211,9 @@ namespace RESTar.Serialization
                 return JsonSerializer.Deserialize<T>(jsonReader);
         }
 
-        internal static string SerializeToViewModel(this object value) => JsonConvert.SerializeObject(value, VmSettings);
+        internal static string SerializeToViewModel(this object value)
+        {
+            return JsonConvert.SerializeObject(value, VmSettings);
+        }
     }
 }

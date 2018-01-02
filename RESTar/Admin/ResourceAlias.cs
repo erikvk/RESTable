@@ -51,7 +51,7 @@ namespace RESTar.Admin
             {
                 try
                 {
-                    var r = RESTarConfig.ResourceByName[value.ToLower()];
+                    var r = RESTarConfig.ResourceByName[value];
                     _resource = r.Name;
                 }
                 catch (KeyNotFoundException)
@@ -70,7 +70,7 @@ namespace RESTar.Admin
         /// <summary>
         /// Gets the resource denoted by this alias
         /// </summary>
-        [IgnoreDataMember] public IResource IResource => RESTarConfig.ResourceByName[Resource.ToLower()];
+        [IgnoreDataMember] public IResource IResource => RESTarConfig.ResourceByName[Resource];
 
         /// <summary>
         /// Gets a ResourceAlias by its alias (case insensitive)

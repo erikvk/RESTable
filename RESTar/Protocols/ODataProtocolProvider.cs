@@ -16,12 +16,12 @@ using static RESTar.Serialization.Serializer;
 
 namespace RESTar.Protocols
 {
-    internal class ODataProtocolProvider : IProtocolProvider
+    internal class ODataProtocolProvider
     {
-        public string MakeRelativeUri(IUriParameters parameters)
+        internal static string MakeRelativeUri(IUriParameters parameters)
         {
-            var hasFilter = parameters.UriConditions.Count > 0;
-            var hasOther = parameters.UriMetaConditions.Count > 0;
+            var hasFilter = parameters.Conditions.Count > 0;
+            var hasOther = parameters.MetaConditions.Count > 0;
 
             using (var b = new StringWriter())
             {
@@ -32,14 +32,14 @@ namespace RESTar.Protocols
                     if (hasFilter)
                     {
                         b.Write("$filter=");
-                        var conds = parameters.UriConditions.Select(c => $"{c.Key} {GetOperatorString(c.Operator.OpCode)} {c.ValueLiteral}");
+                        var conds = parameters.Conditions.Select(c => $"{c.Key} {GetOperatorString(c.Operator.OpCode)} {c.ValueLiteral}");
                         b.Write(string.Join(" and ", conds));
                     }
 
                     if (hasOther)
                     {
                         if (hasFilter) b.Write("&");
-                        var conds = parameters.UriMetaConditions.Select(c =>
+                        var conds = parameters.MetaConditions.Select(c =>
                         {
                             switch (c.Key)
                             {
@@ -59,16 +59,16 @@ namespace RESTar.Protocols
             }
         }
 
-        private static void PopulateFromUri(Arguments args, string uri)
+        internal static void PopulateUri(URI uri, string query)
         {
-            var uriMatch = Regex.Match(uri, RegEx.ODataRequestUri);
+            var uriMatch = Regex.Match(query, RegEx.ODataRequestUri);
             if (!uriMatch.Success) throw new InvalidSyntax(InvalidUriSyntax, "Check URI syntax");
             var entitySet = uriMatch.Groups["entityset"].Value.TrimStart('/');
             var options = uriMatch.Groups["options"].Value.TrimStart('?');
             if (entitySet.Length != 0)
-                args.ResourceSpecifier = entitySet;
+                uri.ResourceSpecifier = entitySet;
             if (options.Length != 0)
-                PopulateFromOptions(args, options);
+                PopulateFromOptions(uri, options);
         }
 
         private static void PopulateFromOptions(IUriParameters args, string options)
@@ -97,7 +97,7 @@ namespace RESTar.Protocols
                                     if (parts.Length != 3)
                                         throw new InvalidSyntax(InvalidConditionSyntax, "Invalid syntax in $filter query option");
                                     return new UriCondition(parts[0], GetOperator(parts[1]), parts[2]);
-                                }).ForEach(args.UriConditions.Add);
+                                }).ForEach(args.Conditions.Add);
 
                                 break;
 
@@ -110,10 +110,10 @@ namespace RESTar.Protocols
                                     case null:
                                     case "":
                                     case "asc":
-                                        args.UriMetaConditions.Add(new UriCondition("order_asc", Operators.EQUALS, term));
+                                        args.MetaConditions.Add(new UriCondition("order_asc", Operators.EQUALS, term));
                                         break;
                                     case "desc":
-                                        args.UriMetaConditions.Add(new UriCondition("order_desc", Operators.EQUALS, term));
+                                        args.MetaConditions.Add(new UriCondition("order_desc", Operators.EQUALS, term));
                                         break;
                                     default:
                                         throw new InvalidSyntax(InvalidConditionSyntax,
@@ -123,15 +123,15 @@ namespace RESTar.Protocols
                                 break;
 
                             case select:
-                                args.UriMetaConditions.Add(new UriCondition("select", Operators.EQUALS, decodedValue));
+                                args.MetaConditions.Add(new UriCondition("select", Operators.EQUALS, decodedValue));
                                 break;
 
                             case skip:
-                                args.UriMetaConditions.Add(new UriCondition("offset", Operators.EQUALS, decodedValue));
+                                args.MetaConditions.Add(new UriCondition("offset", Operators.EQUALS, decodedValue));
                                 break;
 
                             case top:
-                                args.UriMetaConditions.Add(new UriCondition("limit", Operators.EQUALS, decodedValue));
+                                args.MetaConditions.Add(new UriCondition("limit", Operators.EQUALS, decodedValue));
                                 break;
 
                             default: throw new ArgumentOutOfRangeException();
@@ -140,7 +140,7 @@ namespace RESTar.Protocols
                         break;
 
                     default:
-                        args.UriMetaConditions.Add(new UriCondition(optionKey, Operators.EQUALS, optionValue));
+                        args.MetaConditions.Add(new UriCondition(optionKey, Operators.EQUALS, optionValue));
                         break;
                 }
             }
@@ -174,7 +174,7 @@ namespace RESTar.Protocols
             }
         }
 
-        public IFinalizedResult FinalizeResult(Result result)
+        internal static IFinalizedResult FinalizeResult(Result result)
         {
             if (result.Entities is IEnumerable<AvailableResource> availableResources)
                 result.Entities = ServiceDocument.Make(availableResources);
@@ -213,22 +213,6 @@ namespace RESTar.Protocols
             }
 
             return result;
-        }
-
-        public Arguments MakeRequestArguments(string uri, byte[] body, IDictionary<string, string> headers,
-            MimeType contentType, MimeType[] accept, Origin origin = null)
-        {
-            var args = new Arguments
-            {
-                BodyBytes = body,
-                Headers = headers,
-                ContentType = contentType,
-                Accept = accept,
-                Origin = origin ?? Origin.Internal,
-                ResultFinalizer = FinalizeResult
-            };
-            PopulateFromUri(args, uri);
-            return args;
         }
     }
 }

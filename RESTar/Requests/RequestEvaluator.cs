@@ -3,9 +3,8 @@ using System.Collections.Generic;
 using System.Net;
 using RESTar.Internal;
 using RESTar.Operations;
-using RESTar.Protocols;
 using static RESTar.Operations.Transact;
-using static RESTar.Requests.HandlerActions;
+using static RESTar.Requests.Action;
 using static RESTar.Internal.ErrorCodes;
 using static RESTar.RESTarConfig;
 using Error = RESTar.Admin.Error;
@@ -23,20 +22,17 @@ namespace RESTar.Requests
 
         internal static IFinalizedResult Evaluate
         (
-            HandlerActions action,
-            string uri,
+            Action action,
+            string query,
             byte[] body,
             Dictionary<string, string> headers,
             Origin origin
         )
         {
             if (StackDepth++ > 300) throw new InfiniteLoop();
-            IResource resource = null;
             Arguments arguments = null;
             try
             {
-                arguments = Protocol.MakeArguments(uri, body, headers, origin);
-                resource = arguments?.IResource;
                 switch (action)
                 {
                     case GET:
@@ -44,9 +40,19 @@ namespace RESTar.Requests
                     case PUT:
                     case PATCH:
                     case DELETE:
-                    case REPORT: return HandleREST((dynamic) resource, arguments, action);
-                    case OPTIONS: return HandleOptions(resource, arguments);
-                    case VIEW: return HandleView((dynamic) resource, arguments);
+                    case REPORT:
+                        arguments = new Arguments(action, query, body, headers, origin);
+                        var authToken = arguments.GetAuthToken();
+                        if (authToken == null) return Authenticator.NotAuthorized;
+                        arguments.ThrowIfError();
+                        return HandleREST((dynamic) arguments.IResource, arguments);
+
+                    case OPTIONS:
+                        arguments = new Arguments(action, query, body, headers, origin);
+                        arguments.ThrowIfError();
+                        return HandleOptions(arguments.IResource, arguments);
+
+                    // case VIEW: return HandleView((dynamic) resource, arguments);
                     // case PAGE:
                     // #pragma warning disable 618
                     //     if (Current?.Data is View.Page) return Current.Data;
@@ -56,6 +62,7 @@ namespace RESTar.Requests
                     // case MENU:
                     //     CheckUser();
                     //     return new Menu().Populate().MakeCurrentView();
+
                     default: throw new Exception();
                 }
             }
@@ -63,7 +70,7 @@ namespace RESTar.Requests
             {
                 var (code, result) = ex.GetError();
                 Error.ClearOld();
-                var error = Trans(() => Error.Create(code, ex, resource, arguments, action));
+                var error = Trans(() => Error.Create(code, ex, arguments, action));
                 switch (action)
                 {
                     case GET:
@@ -102,16 +109,11 @@ namespace RESTar.Requests
             return null; //request.GetView();
         }
 
-        private static IFinalizedResult HandleREST<T>(IResource<T> resource, Arguments arguments, HandlerActions action)
+        private static IFinalizedResult HandleREST<T>(IResource<T> resource, Arguments arguments)
             where T : class
         {
-            using (var request = new RESTRequest<T>(resource, arguments.Origin))
+            using (var request = new RESTRequest<T>(resource, arguments))
             {
-                request.Authenticate(arguments);
-                arguments.PassedAuth = true;
-                request.Populate(arguments, (Methods) action);
-                request.MethodCheck();
-                request.SetRequestData(arguments.BodyBytes);
                 request.RunResourceAuthentication();
                 request.Evaluate();
                 return request.GetFinalizedResult();

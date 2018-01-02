@@ -4,11 +4,12 @@ using System.Text;
 using RESTar.Internal;
 using RESTar.Linq;
 using RESTar.Operations;
+using RESTar.Protocols;
 using RESTar.Requests;
 using Starcounter;
 using static RESTar.Admin.Settings;
 using static RESTar.Methods;
-using IResource = RESTar.Internal.IResource;
+using Action = RESTar.Requests.Action;
 
 namespace RESTar.Admin
 {
@@ -44,7 +45,7 @@ namespace RESTar.Admin
         /// <summary>
         /// The method used when the error was created
         /// </summary>
-        public HandlerActions HandlerAction;
+        public Action Action;
 
         /// <summary>
         /// The error code of the error
@@ -80,13 +81,14 @@ namespace RESTar.Admin
 
         private const int MaxStringLength = 10000;
 
-        internal static Error Create(ErrorCodes errorCode, Exception e, IResource resource, Arguments arguments,
-            HandlerActions action)
+        internal static Error Create(ErrorCodes errorCode, Exception e, Arguments arguments,
+            Action action)
         {
-            arguments?.UriMetaConditions
+            arguments.Uri.MetaConditions
                 .Where(c => c.Key.EqualsNoCase("key"))
                 .ForEach(cond => cond.ValueLiteral = "*******");
-            var uri = arguments?.UriString;
+            var resource = arguments.SafeGet(a => a.IResource);
+            var uri = arguments.Uri.ToString(RESTProtocols.RESTar);
             var stackTrace = $"{e.StackTrace} §§§ INNER: {e.InnerException?.StackTrace}";
             var totalMessage = e.TotalMessage();
             return new Error
@@ -94,16 +96,16 @@ namespace RESTar.Admin
                 Time = DateTime.Now,
                 ResourceName = (resource?.Name ?? "<unknown>") +
                                (resource?.Alias != null ? $" ({resource.Alias})" : ""),
-                HandlerAction = action,
+                Action = action,
                 ErrorCode = errorCode,
-                Body = arguments?.BodyBytes != null
+                Body = arguments.BodyBytes != null
                     ? Encoding.UTF8.GetString(arguments.BodyBytes.Take(5000).ToArray())
                     : null,
                 StackTrace = stackTrace.Length > MaxStringLength ? stackTrace.Substring(0, MaxStringLength) : stackTrace,
                 Message = totalMessage.Length > MaxStringLength ? totalMessage.Substring(0, MaxStringLength) : totalMessage,
                 Uri = uri,
                 Headers = resource?.RequiresAuthentication == false
-                    ? arguments?.Headers.StringJoin(" | ", dict => dict.Select(header =>
+                    ? arguments.Headers.StringJoin(" | ", dict => dict.Select(header =>
                     {
                         switch (header.Key.ToLower())
                         {

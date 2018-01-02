@@ -104,7 +104,7 @@ namespace RESTar.Deflection.Dynamic
 
             if (type?.FullName == null) return null;
             if (!StaticPropertyCache.TryGetValue(type.FullName, out var props))
-                props = StaticPropertyCache[type.FullName] = make(type).ToDictionary(p => p.Name.ToLower());
+                props = StaticPropertyCache[type.FullName] = make(type).ToDictionary(p => p.Name, StringComparer.OrdinalIgnoreCase);
             return props;
         }
 

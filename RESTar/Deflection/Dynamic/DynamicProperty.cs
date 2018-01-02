@@ -69,22 +69,18 @@ namespace RESTar.Deflection.Dynamic
                             Name = capitalized;
                             return value;
                         }
-
                         if (dict.TryFindInDictionary(Name, out actualKey, out value))
                         {
                             Name = actualKey;
                             return value;
                         }
-
                         return StaticFallback ? getFromStatic() : null;
-
                     case JObject jobj:
                         capitalized = Name.Capitalize();
                         if (!(jobj.GetValue(capitalized, OrdinalIgnoreCase)?.Parent is JProperty property))
                             return StaticFallback ? getFromStatic() : null;
                         Name = property.Name;
                         return property.Value.ToObject<dynamic>();
-
                     default: return getFromStatic();
                 }
             };

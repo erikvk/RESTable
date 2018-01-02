@@ -46,8 +46,8 @@ namespace RESTar.Operations
         public IUriParameters GetNextPageLink()
         {
             var existing = Request.UriParameters;
-            existing.UriMetaConditions.RemoveAll(c => c.Key.EqualsNoCase("offset"));
-            existing.UriMetaConditions.Add(new UriCondition("offset", EQUALS, (Request.MetaConditions.Offset + EntityCount).ToString()));
+            existing.MetaConditions.RemoveAll(c => c.Key.EqualsNoCase("offset"));
+            existing.MetaConditions.Add(new UriCondition("offset", EQUALS, (Request.MetaConditions.Offset + EntityCount).ToString()));
             return existing;
         }
 

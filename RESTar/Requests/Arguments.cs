@@ -1,8 +1,8 @@
-﻿using System.Collections.Generic;
-using System.IO;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
-using RESTar.Admin;
+using RESTar.Linq;
 using RESTar.Protocols;
 using static System.Text.RegularExpressions.RegexOptions;
 using IResource = RESTar.Internal.IResource;
@@ -27,12 +27,12 @@ namespace RESTar.Requests
         /// <summary>
         /// Specifies the conditions for the request
         /// </summary>
-        List<UriCondition> UriConditions { get; }
+        List<UriCondition> Conditions { get; }
 
         /// <summary>
         /// Specifies the meta-conditions for the request
         /// </summary>
-        List<UriCondition> UriMetaConditions { get; }
+        List<UriCondition> MetaConditions { get; }
     }
 
     /// <summary>
@@ -40,49 +40,68 @@ namespace RESTar.Requests
     /// an incoming call. Arguments is a unified way to talk about the input to request evaluation, 
     /// regardless of protocol and web technologies.
     /// </summary>
-    internal class Arguments : IUriParameters
+    internal class Arguments
     {
-        public string ResourceSpecifier { get; set; }
-        public string ViewName { get; set; }
-        public List<UriCondition> UriConditions { get; }
-        public List<UriCondition> UriMetaConditions { get; }
+        public Action Action { get; }
+        private URI uri;
 
-        public IResource IResource => Resource.Find(ResourceSpecifier);
-        public DbMacro Macro { get; set; }
-        public Origin Origin { get; set; }
+        public URI Uri
+        {
+            get => uri;
+            private set
+            {
+                BodyBytes = BodyBytes ?? value.Macro?.BodyBinary.ToArray();
+                Uri.Macro?.HeadersDictionary?.ForEach(pair =>
+                {
+                    var currentValue = Headers.SafeGet(pair.Key);
+                    if (string.IsNullOrWhiteSpace(currentValue) || currentValue == "*/*")
+                        Headers[pair.Key] = pair.Value;
+                });
+                uri = value;
+            }
+        }
+
+        public IResource IResource => Resource.Find(Uri.ResourceSpecifier);
+        public Origin Origin { get; }
         public byte[] BodyBytes { get; set; }
-        public IDictionary<string, string> Headers { get; set; }
+        public IDictionary<string, string> Headers { get; }
         public MimeType ContentType { get; set; }
         public MimeType[] Accept { get; set; }
-        public ResultFinalizer ResultFinalizer { get; set; }
-        private static readonly string DefaultResourceSpecifier = typeof(AvailableResource).FullName;
-        internal bool PassedAuth { get; set; }
+        public ResultFinalizer ResultFinalizer { get; }
+        internal string AuthToken { get; set; }
+        private Exception Error { get; }
+
+        public void ThrowIfError()
+        {
+            if (Error != null) throw Error;
+        }
 
         internal IEnumerable<KeyValuePair<string, string>> CustomHeaders => Headers.Where(h =>
             !Regex.IsMatch(h.Key, RegEx.ReservedHeaders, IgnoreCase));
 
-        internal string UriString
+        private static bool PercentCharsEscaped(IDictionary<string, string> headers)
         {
-            get
-            {
-                using (var writer = new StringWriter())
-                {
-                    writer.Write('/');
-                    writer.Write(Macro != null ? '$' + Macro.Name : ResourceSpecifier);
-                    writer.Write('/');
-                    writer.Write(UriConditions != null ? string.Join("&", UriConditions) : null);
-                    writer.Write('/');
-                    writer.Write(UriMetaConditions != null ? string.Join("&", UriMetaConditions) : null);
-                    return writer.ToString().TrimEnd('/');
-                }
-            }
+            return headers?.ContainsKey("X-ARR-LOG-ID") == true;
         }
 
-        internal Arguments()
+        internal Arguments(Action action, string query, byte[] body = null, Dictionary<string, string> headers = null, Origin origin = null)
         {
-            ResourceSpecifier = DefaultResourceSpecifier;
-            UriConditions = new List<UriCondition>();
-            UriMetaConditions = new List<UriCondition>();
+            Action = action;
+            BodyBytes = body;
+            Headers = headers ?? new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            Origin = origin ?? Origin.Internal;
+            Uri = URI.ParseInternal(query, PercentCharsEscaped(headers), out var protocol);
+            if (uri.HasError)
+                Error = uri.Error;
+            switch (protocol)
+            {
+                case RESTProtocols.RESTar:
+                    ResultFinalizer = RESTarProtocolProvider.FinalizeResult;
+                    break;
+                case RESTProtocols.OData:
+                    ResultFinalizer = ODataProtocolProvider.FinalizeResult;
+                    break;
+            }
         }
     }
 }

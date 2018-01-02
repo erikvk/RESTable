@@ -57,17 +57,17 @@ namespace RESTar.Requests
 
         internal void Populate(Arguments arguments)
         {
-            if (arguments.ViewName != null)
+            if (arguments.Uri.ViewName != null)
             {
-                if (!Resource.ViewDictionary.TryGetValue(arguments.ViewName, out var view))
-                    throw new UnknownView(arguments.ViewName, Resource);
+                if (!Resource.ViewDictionary.TryGetValue(arguments.Uri.ViewName, out var view))
+                    throw new UnknownView(arguments.Uri.ViewName, Resource);
                 Target = view;
             }
 
-            UriParameters = arguments;
-            arguments.CustomHeaders.ForEach(Headers.Add);
-            Conditions = Condition<T>.Parse(arguments.UriConditions, Resource) ?? Conditions;
-            MetaConditions = MetaConditions.Parse(arguments.UriMetaConditions, Resource, false) ?? MetaConditions;
+            UriParameters = arguments.Uri;
+            arguments.CustomHeaders.ForEach(Headers.Put);
+            Conditions = Condition<T>.Parse(arguments.Uri.Conditions, Resource) ?? Conditions;
+            MetaConditions = MetaConditions.Parse(arguments.Uri.MetaConditions, Resource, false) ?? MetaConditions;
         }
 
         internal void Evaluate()

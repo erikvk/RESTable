@@ -3,7 +3,7 @@
 
 namespace RESTar.Requests
 {
-    public enum HandlerActions
+    public enum Action
     {
         GET,
         POST,

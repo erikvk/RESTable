@@ -1,11 +1,9 @@
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using RESTar.Admin;
 using RESTar.Http;
-using RESTar.Linq;
 using RESTar.Operations;
 using RESTar.Requests;
 using RESTar.Serialization;
@@ -16,13 +14,14 @@ using static RESTar.Admin.Settings;
 
 namespace RESTar.Protocols
 {
-    internal class RESTarProtocolProvider : IProtocolProvider
+    internal class RESTarProtocolProvider
     {
-        private static void PopulateFromUri(Arguments args, string uri)
+        internal static void PopulateUri(URI uri, string query)
         {
-            if (uri.Count(c => c == '/') > 3) throw new InvalidSeparator();
-            var match = Regex.Match(uri, RegEx.RESTarRequestUri);
+            if (query.Count(c => c == '/') > 3) throw new InvalidSeparator();
+            var match = Regex.Match(query, RegEx.RESTarRequestUri);
             if (!match.Success) throw new InvalidSyntax(InvalidUriSyntax, "Check URI syntax");
+
             var resourceOrMacro = match.Groups["resource_or_macro"].Value.TrimStart('/');
             var view = match.Groups["view"].Value.TrimStart('-');
             var conditions = match.Groups["conditions"].Value.TrimStart('/');
@@ -33,7 +32,7 @@ namespace RESTar.Protocols
                 case var _ when conditions.Length == 0:
                 case var _ when conditions == "_": break;
                 default:
-                    args.UriConditions.AddRange(UriCondition.ParseMany(conditions, true));
+                    uri.Conditions.AddRange(UriCondition.ParseMany(conditions, true));
                     break;
             }
 
@@ -42,50 +41,42 @@ namespace RESTar.Protocols
                 case var _ when metaConditions.Length == 0:
                 case var _ when metaConditions == "_": break;
                 default:
-                    args.UriMetaConditions.AddRange(UriCondition.ParseMany(metaConditions, true));
+                    uri.MetaConditions.AddRange(UriCondition.ParseMany(metaConditions, true));
                     break;
             }
 
             if (view.Length != 0)
-                args.ViewName = view;
+                uri.ViewName = view;
 
             switch (resourceOrMacro)
             {
                 case var _ when resourceOrMacro.Length == 0:
                 case var _ when resourceOrMacro == "_": break;
                 case var resource when resourceOrMacro[0] != '$':
-                    args.ResourceSpecifier = resource;
+                    uri.ResourceSpecifier = resource;
                     break;
                 case var macro:
                     var macroName = macro.Substring(1);
-                    args.Macro = DbMacro.Get(macroName) ?? throw new UnknownMacro(macroName);
-                    args.ResourceSpecifier = args.Macro.ResourceSpecifier;
-                    args.ViewName = args.ViewName ?? args.Macro.ViewName;
-                    var macroConditions = args.Macro.UriConditions;
+                    uri.Macro = DbMacro.Get(macroName) ?? throw new UnknownMacro(macroName);
+                    uri.ResourceSpecifier = uri.Macro.ResourceSpecifier;
+                    uri.ViewName = uri.ViewName ?? uri.Macro.ViewName;
+                    var macroConditions = uri.Macro.UriConditions;
                     if (macroConditions != null)
-                        args.UriConditions.AddRange(macroConditions);
-                    var macroMetaConditions = args.Macro.UriMetaConditions;
+                        uri.Conditions.AddRange(macroConditions);
+                    var macroMetaConditions = uri.Macro.UriMetaConditions;
                     if (macroMetaConditions != null)
-                        args.UriMetaConditions.AddRange(macroMetaConditions);
-                    args.BodyBytes = args.BodyBytes ?? args.Macro.BodyBinary.ToArray();
-                    if (args.Macro.Headers == null) break;
-                    args.Macro.HeadersDictionary.ForEach(pair =>
-                    {
-                        var currentValue = args.Headers.SafeGet(pair.Key);
-                        if (String.IsNullOrWhiteSpace(currentValue) || currentValue == "*/*")
-                            args.Headers[pair.Key] = pair.Value;
-                    });
+                        uri.MetaConditions.AddRange(macroMetaConditions);
                     break;
             }
         }
 
         private static string JoinConditions(ICollection<UriCondition> toJoin) => toJoin.Count > 0 ? string.Join("&", toJoin) : null;
 
-        public string MakeRelativeUri(IUriParameters parameters) => $"/{parameters.ResourceSpecifier}" +
-                                                                    $"/{JoinConditions(parameters.UriConditions) ?? "_"}" +
-                                                                    $"/{JoinConditions(parameters.UriMetaConditions) ?? "_"}";
+        internal static string MakeRelativeUri(IUriParameters parameters) => $"/{parameters.ResourceSpecifier}" +
+                                                                    $"/{JoinConditions(parameters.Conditions) ?? "_"}" +
+                                                                    $"/{JoinConditions(parameters.MetaConditions) ?? "_"}";
 
-        public IFinalizedResult FinalizeResult(Result result)
+        internal static IFinalizedResult FinalizeResult(Result result)
         {
             if (result.HasEntities)
             {
@@ -160,22 +151,6 @@ namespace RESTar.Protocols
             }
 
             return result;
-        }
-
-        public Arguments MakeRequestArguments(string uri, byte[] body = null, IDictionary<string, string> headers = null,
-            MimeType contentType = null, MimeType[] accept = null, Origin origin = null)
-        {
-            var args = new Arguments
-            {
-                BodyBytes = body,
-                Headers = headers ?? new Dictionary<string, string>(),
-                ContentType = contentType,
-                Accept = accept,
-                ResultFinalizer = FinalizeResult,
-                Origin = origin ?? Origin.Internal
-            };
-            PopulateFromUri(args, uri);
-            return args;
         }
     }
 }

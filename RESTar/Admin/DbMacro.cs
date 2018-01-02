@@ -7,7 +7,6 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using RESTar.Linq;
 using RESTar.Operations;
-using RESTar.Protocols;
 using RESTar.Requests;
 using Starcounter;
 
@@ -84,7 +83,7 @@ namespace RESTar.Admin
         /// <summary>
         /// A dictionary representation of the headers for this macro
         /// </summary>
-        internal Dictionary<string, string> HeadersDictionary => JsonConvert.DeserializeObject<Dictionary<string, string>>(Headers);
+        internal Headers HeadersDictionary => JsonConvert.DeserializeObject<Headers>(Headers);
 
         #endregion
 
@@ -121,7 +120,7 @@ namespace RESTar.Admin
         /// <summary>
         /// The headers of the macro
         /// </summary>
-        [RESTarMember(replaceOnUpdate: true)] public Dictionary<string, string> Headers { get; set; }
+        [RESTarMember(replaceOnUpdate: true)] public Headers Headers { get; set; }
 
         /// <inheritdoc />
         /// <summary>
@@ -149,8 +148,7 @@ namespace RESTar.Admin
 
             try
             {
-                var args = Protocol.MakeArguments(Uri);
-                if (args.UriMetaConditions.Any(c => c.Key.EqualsNoCase("key")))
+                if (URI.Parse(Uri).MetaConditions.Any(c => c.Key.EqualsNoCase("key")))
                 {
                     invalidReason = "Macro URIs cannot contain the 'Key' meta-condition. If API keys are " +
                                     "required, they are expected in each call to the macro.";
@@ -199,14 +197,14 @@ namespace RESTar.Admin
             {
                 if (DbMacro.Get(entity.Name) != null)
                     throw new Exception($"Invalid name. '{entity.Name}' is already in use.");
-                var args = Protocol.MakeArguments(entity.Uri);
+                var args = URI.Parse(entity.Uri);
                 Transact.Trans(() => new DbMacro
                 {
                     Name = entity.Name,
                     ResourceSpecifier = args.ResourceSpecifier,
                     ViewName = args.ViewName,
-                    UriConditionsString = args.UriConditions.Any() ? string.Join("&", args.UriConditions) : null,
-                    UriMetaConditionsString = args.UriMetaConditions.Any() ? string.Join("&", args.UriMetaConditions) : null,
+                    UriConditionsString = args.Conditions.Any() ? string.Join("&", args.Conditions) : null,
+                    UriMetaConditionsString = args.MetaConditions.Any() ? string.Join("&", args.MetaConditions) : null,
                     BodyBinary = entity.Body != null ? new Binary(Encoding.UTF8.GetBytes(entity.Body?.ToString())) : default,
                     Headers = entity.Headers != null ? JsonConvert.SerializeObject(entity.Headers) : null
                 });
@@ -224,13 +222,13 @@ namespace RESTar.Admin
             {
                 var dbEntity = DbMacro.Get(entity.Name);
                 if (dbEntity == null) return;
-                var args = Protocol.MakeArguments(entity.Uri);
+                var args = URI.Parse(entity.Uri);
                 Transact.Trans(() =>
                 {
                     dbEntity.ResourceSpecifier = args.ResourceSpecifier;
                     dbEntity.ViewName = args.ViewName;
-                    dbEntity.UriConditionsString = args.UriConditions.Any() ? string.Join("&", args.UriConditions) : null;
-                    dbEntity.UriMetaConditionsString = args.UriMetaConditions.Any() ? string.Join("&", args.UriMetaConditions) : null;
+                    dbEntity.UriConditionsString = args.Conditions.Any() ? string.Join("&", args.Conditions) : null;
+                    dbEntity.UriMetaConditionsString = args.MetaConditions.Any() ? string.Join("&", args.MetaConditions) : null;
                     dbEntity.BodyBinary = entity.Body != null ? new Binary(Encoding.UTF8.GetBytes(entity.Body?.ToString())) : default;
                     dbEntity.Headers = entity.Headers != null ? JsonConvert.SerializeObject(entity.Headers) : null;
                     count += 1;
