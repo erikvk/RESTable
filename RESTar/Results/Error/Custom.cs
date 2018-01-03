@@ -2,5 +2,5 @@
 
 namespace RESTar.Results.Error
 {
-    public class Custom : Result { }
+    internal class Custom : Result { }
 }

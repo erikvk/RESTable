@@ -1,17 +1,12 @@
-﻿using System.IO;
-using System.Net;
-using RESTar.Operations;
-using RESTar.Requests;
+﻿using RESTar.Results.Success;
 
 namespace RESTar.OData
 {
-    internal class MetadataDocument : IFinalizedResult
+    internal class MetadataDocument : OK
     {
-        public HttpStatusCode StatusCode { get; }
-        public string StatusDescription { get; }
-        public Stream Body { get; }
-        public string ContentType { get; }
-        public Headers Headers { get; }
-        public bool HasContent { get; }
+        internal MetadataDocument()
+        {
+
+        }
     }
 }

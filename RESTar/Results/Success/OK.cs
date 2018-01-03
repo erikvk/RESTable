@@ -3,7 +3,7 @@ using RESTar.Operations;
 
 namespace RESTar.Results.Success
 {
-    public class OK : Result
+    internal class OK : Result
     {
         internal OK()
         {

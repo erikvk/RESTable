@@ -4,7 +4,7 @@ using RESTar.Requests;
 
 namespace RESTar.Results.Success
 {
-    public class Entities : OK
+    internal class Entities : OK
     {
         internal IRequest Request { get; private set; }
         internal IEnumerable<dynamic> Content { get; set; }

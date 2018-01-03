@@ -3,7 +3,7 @@ using static RESTar.RESTarConfig;
 
 namespace RESTar.Results.Success
 {
-    public class AcceptOrigin : OK
+    internal class AcceptOrigin : OK
     {
         internal AcceptOrigin(string origin, IResource resource)
         {

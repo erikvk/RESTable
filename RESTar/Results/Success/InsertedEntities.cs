@@ -4,7 +4,7 @@ using RESTar.Operations;
 
 namespace RESTar.Results.Success
 {
-    public class InsertedEntities : Result
+    internal class InsertedEntities : Result
     {
         internal InsertedEntities(int count, IResource resource)
         {

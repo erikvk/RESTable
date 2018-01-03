@@ -2,7 +2,7 @@
 
 namespace RESTar.Results.Success
 {
-    public class SafePostedEntities : OK
+    internal class SafePostedEntities : OK
     {
         internal SafePostedEntities(int upd, int ins, IResource resource)
         {

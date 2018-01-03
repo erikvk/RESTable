@@ -2,7 +2,7 @@
 
 namespace RESTar.Results.Success
 {
-    public class UpdatedEntities : OK
+    internal class UpdatedEntities : OK
     {
         internal UpdatedEntities(int count, IResource resource)
         {

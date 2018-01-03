@@ -5,7 +5,7 @@ using RESTar.Serialization;
 
 namespace RESTar.Results.Success
 {
-    public class Report : OK
+    internal class Report : OK
     {
         internal Report(long count)
         {
