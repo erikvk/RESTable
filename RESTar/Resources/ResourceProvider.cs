@@ -5,6 +5,7 @@ using System.Reflection;
 using RESTar.Internal;
 using RESTar.Linq;
 using RESTar.Operations;
+using RESTar.Results.Error;
 using static System.Reflection.BindingFlags;
 using static RESTar.Operations.DelegateMaker;
 

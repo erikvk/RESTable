@@ -8,6 +8,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
 using RESTar.Internal;
+using RESTar.Results.Error;
 using static System.Linq.Enumerable;
 using static Newtonsoft.Json.Formatting;
 using static RESTar.Admin.Settings;
@@ -22,7 +23,7 @@ namespace RESTar.Serialization
     {
         private static readonly JsonSerializerSettings VmSettings;
         internal static readonly JsonSerializerSettings Settings;
-        internal static readonly JsonSerializer JsonSerializer;
+        internal static readonly JsonSerializer Json;
         internal static readonly Encoding UTF8;
 
         static Serializer()
@@ -46,32 +47,19 @@ namespace RESTar.Serialization
             var enumConverter = new StringEnumConverter();
             Settings.Converters.Add(enumConverter);
             VmSettings.Converters.Add(enumConverter);
-            JsonSerializer = JsonSerializer.Create(Settings);
+            Json = JsonSerializer.Create(Settings);
             UTF8 = new UTF8Encoding(false);
         }
 
         #region Main serializers
-
-        internal static bool TryGetReportJsonStream(this Report data, out MemoryStream stream)
-        {
-            stream = new MemoryStream();
-            using (var swr = new StreamWriter(stream, UTF8, 1024, true))
-            using (var jwr = new RESTarJsonWriter(swr, 0))
-            {
-                JsonSerializer.Formatting = _PrettyPrint ? Indented : None;
-                JsonSerializer.Serialize(jwr, data);
-            }
-            stream.Seek(0, SeekOrigin.Begin);
-            return true;
-        }
 
         internal static string SerializeFormatter(this JToken formatterToken, out int indents)
         {
             using (var sw = new StringWriter())
             using (var jwr = new FormatWriter(sw))
             {
-                JsonSerializer.Formatting = Indented;
-                JsonSerializer.Serialize(jwr, formatterToken);
+                Json.Formatting = Indented;
+                Json.Serialize(jwr, formatterToken);
                 indents = jwr.Depth;
                 return sw.ToString();
             }
@@ -185,10 +173,10 @@ namespace RESTar.Serialization
         internal static void Populate(JToken value, object target)
         {
             using (var sr = value.CreateReader())
-                JsonSerializer.Populate(sr, target);
+                Json.Populate(sr, target);
         }
 
-        internal static JToken ToJToken(this object o) => JToken.FromObject(o, JsonSerializer);
+        internal static JToken ToJToken(this object o) => JToken.FromObject(o, Json);
         internal static T Deserialize<T>(this string json) => JsonConvert.DeserializeObject<T>(json);
 
         internal static List<T> DeserializeList<T>(this Stream jsonStream)
@@ -197,8 +185,8 @@ namespace RESTar.Serialization
             {
                 jsonReader.Read();
                 if (jsonReader.TokenType == JsonToken.StartObject)
-                    return new List<T> {JsonSerializer.Deserialize<T>(jsonReader)};
-                return JsonSerializer.Deserialize<List<T>>(jsonReader);
+                    return new List<T> {Json.Deserialize<T>(jsonReader)};
+                return Json.Deserialize<List<T>>(jsonReader);
             }
         }
 
@@ -208,7 +196,7 @@ namespace RESTar.Serialization
         public static T Deserialize<T>(this Stream jsonStream)
         {
             using (var jsonReader = new JsonTextReader(new StreamReader(jsonStream)))
-                return JsonSerializer.Deserialize<T>(jsonReader);
+                return Json.Deserialize<T>(jsonReader);
         }
 
         internal static string SerializeToViewModel(this object value)

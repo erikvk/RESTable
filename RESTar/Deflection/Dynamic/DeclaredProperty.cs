@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using Newtonsoft.Json;
+using RESTar.Results.Error;
 using Starcounter;
 using static System.Reflection.BindingFlags;
 using static Newtonsoft.Json.NullValueHandling;

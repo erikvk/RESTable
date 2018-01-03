@@ -4,17 +4,17 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Web;
+using System.Xml;
+using RESTar.Internal;
 using RESTar.Linq;
-using RESTar.OData;
 using RESTar.Operations;
 using RESTar.Requests;
+using RESTar.Results.Error;
+using RESTar.Results.Success;
 using RESTar.Serialization;
-using static RESTar.Internal.ErrorCodes;
-using static RESTar.OData.QueryOptions;
-using static Newtonsoft.Json.Formatting;
-using static RESTar.Serialization.Serializer;
+using Formatting = Newtonsoft.Json.Formatting;
 
-namespace RESTar.Protocols
+namespace RESTar.OData
 {
     internal static class ODataProtocolProvider
     {
@@ -62,7 +62,7 @@ namespace RESTar.Protocols
         internal static void PopulateUri(URI uri, string query)
         {
             var uriMatch = Regex.Match(query, RegEx.ODataRequestUri);
-            if (!uriMatch.Success) throw new InvalidSyntax(InvalidUriSyntax, "Check URI syntax");
+            if (!uriMatch.Success) throw new InvalidSyntax(ErrorCodes.InvalidUriSyntax, "Check URI syntax");
             var entitySet = uriMatch.Groups["entityset"].Value.TrimStart('/');
             var options = uriMatch.Groups["options"].Value.TrimStart('?');
             if (entitySet.Length != 0)
@@ -76,32 +76,32 @@ namespace RESTar.Protocols
             foreach (var (optionKey, optionValue) in options.Split('&').Select(option => option.TSplit('=')))
             {
                 if (string.IsNullOrWhiteSpace(optionKey))
-                    throw new InvalidSyntax(InvalidConditionSyntax, "An OData query option key was invalid");
+                    throw new InvalidSyntax(ErrorCodes.InvalidConditionSyntax, "An OData query option key was invalid");
                 if (string.IsNullOrWhiteSpace(optionValue))
-                    throw new InvalidSyntax(InvalidConditionSyntax, $"The OData query option value for {optionKey} was invalid");
+                    throw new InvalidSyntax(ErrorCodes.InvalidConditionSyntax, $"The OData query option value for {optionKey} was invalid");
                 var decodedValue = HttpUtility.UrlDecode(optionValue);
                 switch (optionKey)
                 {
                     case var system when optionKey[0] == '$':
 
-                        if (!Enum.TryParse(system.Substring(1), out QueryOptions option) || option == none)
+                        if (!Enum.TryParse(system.Substring(1), out QueryOptions option) || option == QueryOptions.none)
                             throw new FeatureNotImplemented($"Unknown or not implemented query option '{system}'");
                         switch (option)
                         {
-                            case filter:
+                            case QueryOptions.filter:
                                 if (Regex.Match(decodedValue, RegEx.UnsupportedODataOperatorRegex) is Match m && m.Success)
                                     throw new FeatureNotImplemented($"Not implemented operator '{m.Value}' in $filter");
                                 decodedValue.Replace("(", "").Replace(")", "").Split(" and ").Select(c =>
                                 {
                                     var parts = c.Split(' ');
                                     if (parts.Length != 3)
-                                        throw new InvalidSyntax(InvalidConditionSyntax, "Invalid syntax in $filter query option");
+                                        throw new InvalidSyntax(ErrorCodes.InvalidConditionSyntax, "Invalid syntax in $filter query option");
                                     return new UriCondition(parts[0], GetOperator(parts[1]), parts[2]);
                                 }).ForEach(args.Conditions.Add);
 
                                 break;
 
-                            case orderby:
+                            case QueryOptions.@orderby:
                                 if (decodedValue.Contains(","))
                                     throw new FeatureNotImplemented("Multiple expressions not implemented for $orderby");
                                 var (term, order) = decodedValue.TSplit(' ');
@@ -116,21 +116,21 @@ namespace RESTar.Protocols
                                         args.MetaConditions.Add(new UriCondition("order_desc", Operators.EQUALS, term));
                                         break;
                                     default:
-                                        throw new InvalidSyntax(InvalidConditionSyntax,
+                                        throw new InvalidSyntax(ErrorCodes.InvalidConditionSyntax,
                                             "The OData query option value for $orderby was invalid");
                                 }
 
                                 break;
 
-                            case select:
+                            case QueryOptions.@select:
                                 args.MetaConditions.Add(new UriCondition("select", Operators.EQUALS, decodedValue));
                                 break;
 
-                            case skip:
+                            case QueryOptions.skip:
                                 args.MetaConditions.Add(new UriCondition("offset", Operators.EQUALS, decodedValue));
                                 break;
 
-                            case top:
+                            case QueryOptions.top:
                                 args.MetaConditions.Add(new UriCondition("limit", Operators.EQUALS, decodedValue));
                                 break;
 
@@ -187,44 +187,60 @@ namespace RESTar.Protocols
             }
         }
 
-        private static string GetServiceRoot(Result result)
+        private static string GetServiceRoot(Entities entities)
         {
-            var origin = result.Request.Origin;
-            var hostAndPath = $"{origin.Host}/{Admin.Settings._Uri}-odata";
+            var origin = entities.Request.Origin;
+            var hostAndPath = $"{origin.Host}{Admin.Settings._Uri}-odata";
             return origin.HTTPS ? $"https://{hostAndPath}" : $"http://{hostAndPath}";
+        }
+
+        private static void WritePre(this XmlWriter writer)
+        {
+            writer.WriteRaw("<edmx:Edmx Version=\"4.0\" xmlns:edmx=\"http://docs.oasis-open.org/odata/ns/edmx\"><edmx:DataServices>");
+        }
+
+        private static void WritePost(this XmlWriter writer)
+        {
+            writer.WriteRaw("</edmx:DataServices></edmx:Edmx>");
+        }
+
+        internal static IFinalizedResult MakeMetadataDocument()
+        {
+            return new MetadataDocument();
         }
 
         internal static IFinalizedResult FinalizeResult(Result result)
         {
-            if (result.Entities is IEnumerable<AvailableResource> availableResources)
-                result.Entities = ServiceDocument.Make(availableResources);
             result.Headers["OData-Version"] = "4.0";
-            if (result.Entities != null)
+            if (result is Entities entities)
             {
+                if (entities.Content is IEnumerable<AvailableResource> availableResources)
+                    entities.Content = ServiceDocument.Make(availableResources);
+
                 var stream = new MemoryStream();
-                using (var swr = new StreamWriter(stream, UTF8, 1024, true))
+                using (var swr = new StreamWriter(stream, Serializer.UTF8, 1024, true))
                 using (var jwr = new ODataJsonWriter(swr))
                 {
-                    JsonSerializer.Formatting = Indented;
+                    Serializer.Json.Formatting = Formatting.Indented;
                     jwr.WritePre();
-                    jwr.WriteRaw($"\"@odata.context\": \"{GetServiceRoot(result)}/$metadata#{result.Request.Resource.Name}\",");
+                    jwr.WriteRaw($"\"@odata.context\": \"{GetServiceRoot(entities)}/$metadata#{entities.Request.Resource.Name}\",");
                     jwr.WriteIndentation();
                     jwr.WritePropertyName("value");
-                    JsonSerializer.Serialize(jwr, result.Entities);
-                    result.EntityCount = jwr.ObjectsWritten;
+                    Serializer.Json.Serialize(jwr, entities.Content);
+                    entities.EntityCount = jwr.ObjectsWritten;
                     jwr.WriteRaw(",");
                     jwr.WriteIndentation();
-                    jwr.WriteRaw($"\"@odata.count\": {result.EntityCount}");
-                    if (result.IsPaged)
+                    jwr.WriteRaw($"\"@odata.count\": {entities.EntityCount}");
+                    if (entities.IsPaged)
                     {
                         jwr.WriteRaw(",");
                         jwr.WriteIndentation();
-                        var pager = result.GetNextPageLink();
+                        var pager = entities.GetNextPageLink();
                         jwr.WriteRaw($"\"@odata.nextLink\": {MakeRelativeUri(pager)}");
                     }
                     jwr.WritePost();
                 }
-                if (result.HasEntities)
+                if (entities.EntityCount > 0)
                 {
                     stream.Seek(0, SeekOrigin.Begin);
                     result.ContentType = MimeTypes.JSONOData;

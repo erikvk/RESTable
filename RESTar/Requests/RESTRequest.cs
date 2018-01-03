@@ -1,15 +1,12 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Net;
 using RESTar.Admin;
 using RESTar.Http;
 using RESTar.Internal;
 using RESTar.Linq;
 using RESTar.Operations;
-using RESTar.Protocols;
+using RESTar.Results.Error;
 using RESTar.Serialization;
-using static System.Net.HttpStatusCode;
 using static RESTar.Internal.ErrorCodes;
 using static RESTar.RESTarConfig;
 using static RESTar.Methods;
@@ -32,19 +29,17 @@ namespace RESTar.Requests
         public ITarget<T> Target { get; }
         internal Result Result { get; set; }
         private Func<RESTRequest<T>, Result> Evaluator { get; }
-        private string Source { get; }
-        private string Destination { get; }
+        internal string Source { get; }
+        internal string Destination { get; }
         private MimeTypeCode ContentType { get; }
         public MimeType Accept { get; }
         private string CORSOrigin { get; }
         private DataConfig InputDataConfig { get; }
         private DataConfig OutputDataConfig { get; }
-        private ResultFinalizer ResultFinalizer { get; }
 
         internal void Evaluate()
         {
             Result = Evaluator(this);
-            Result.ExternalDestination = Destination;
             ResponseHeaders.ForEach(h =>
             {
                 if (h.Key.StartsWith("X-"))
@@ -91,7 +86,6 @@ namespace RESTar.Requests
             arguments.CustomHeaders.ForEach(Headers.Put);
             Conditions = Condition<T>.Parse(arguments.Uri.Conditions, Target) ?? Conditions;
             MetaConditions = MetaConditions.Parse(arguments.Uri.MetaConditions, Resource) ?? MetaConditions;
-            ResultFinalizer = arguments.ResultFinalizer;
             if (Origin.IsInternal) MetaConditions.Formatter = DbOutputFormat.Raw;
             this.MethodCheck();
             SetRequestData(arguments.BodyBytes);
@@ -144,84 +138,10 @@ namespace RESTar.Requests
             }
         }
 
-        internal IFinalizedResult GetFinalizedResult()
-        {
-            try
-            {
-                var finalizedResult = ResultFinalizer(Result);
-                if (Method == GET && !finalizedResult.HasContent)
-                    return NoContent;
-                return finalizedResult;
-            }
-            catch (Exception e)
-            {
-                throw new AbortedSelectorException<T>(e, this);
-            }
-        }
-
         public void Dispose()
         {
             if (Origin.IsExternal && AuthToken != null)
                 AuthTokens.TryRemove(AuthToken, out var _);
         }
-
-
-        #region Success responses
-
-        internal Result NoContent => new Result(this)
-        {
-            StatusCode = HttpStatusCode.NoContent,
-            StatusDescription = "No content",
-            Headers = {["RESTar-info"] = "No entities found matching request."}
-        };
-
-        internal Result Entities(IEnumerable<dynamic> entities) => new Result(this)
-        {
-            StatusCode = OK,
-            StatusDescription = "OK",
-            Entities = entities
-        };
-
-        internal Result Report(Report report)
-        {
-            if (!report.TryGetReportJsonStream(out var stream)) return NoContent;
-            return new Result(this)
-            {
-                StatusCode = OK,
-                StatusDescription = "OK",
-                Headers = {["RESTar-info"] = $"Resource '{Resource.Name}'"},
-                Body = stream
-            };
-        }
-
-        internal Result InsertedEntities(int count) => new Result(this)
-        {
-            StatusCode = Created,
-            StatusDescription = "Created",
-            Headers = {["RESTar-info"] = $"{count} entities inserted into resource '{Resource.Name}'"}
-        };
-
-        internal Result UpdatedEntities(int count) => new Result(this)
-        {
-            StatusCode = OK,
-            StatusDescription = "OK",
-            Headers = {["RESTar-info"] = $"{count} entities updated in resource '{Resource.Name}'"}
-        };
-
-        internal Result SafePostedEntities(int upd, int ins) => new Result(this)
-        {
-            StatusCode = OK,
-            StatusDescription = "OK",
-            Headers = {["RESTar-info"] = $"Updated {upd} and then inserted {ins} entities in resource '{Resource.Name}'"}
-        };
-
-        internal Result DeletedEntities(int count) => new Result(this)
-        {
-            StatusCode = OK,
-            StatusDescription = "OK",
-            Headers = {["RESTar-info"] = $"{count} entities deleted from resource '{Resource.Name}'"}
-        };
-
-        #endregion
     }
 }

@@ -5,6 +5,8 @@ using Newtonsoft.Json.Linq;
 using RESTar.Admin;
 using RESTar.Linq;
 using RESTar.Requests;
+using RESTar.Results.Error;
+using RESTar.Results.Success;
 using RESTar.Serialization;
 using Starcounter;
 using static RESTar.Operations.Do;
@@ -402,27 +404,27 @@ namespace RESTar.Operations
 
             private static Result GET(RESTRequest<T> request)
             {
-                return request.Entities(SELECT_FILTER_PROCESS(request));
+                return Entities.Create(request, SELECT_FILTER_PROCESS(request));
             }
 
             private static Result REPORT(RESTRequest<T> request)
             {
-                return request.Report(new Report {Count = OP_COUNT(request)});
+                return new Report(OP_COUNT(request));
             }
 
             private static Result POST(RESTRequest<T> request)
             {
                 if (request.MetaConditions.SafePost != null) return SafePOST(request);
-                return request.InsertedEntities(Transaction<T>.Transact(() => INSERT(request)));
+                return new InsertedEntities(Transaction<T>.Transact(() => INSERT(request)), request.Resource);
             }
 
             private static Result PATCH(RESTRequest<T> request)
             {
                 var source = SELECT_FILTER(request)?.ToList();
-                if (source?.Any() != true) return request.UpdatedEntities(0);
+                if (source?.Any() != true) return new UpdatedEntities(0, request.Resource);
                 if (!request.MetaConditions.Unsafe && source.Count > 1)
                     throw new AmbiguousMatchException(request.Resource);
-                return request.UpdatedEntities(Transaction<T>.Transact(() => UPDATE(request, source)));
+                return new UpdatedEntities(Transaction<T>.Transact(() => UPDATE(request, source)), request.Resource);
             }
 
             private static Result PUT(RESTRequest<T> request)
@@ -431,8 +433,8 @@ namespace RESTar.Operations
                 switch (source?.Count)
                 {
                     case null:
-                    case 0: return request.InsertedEntities(Transaction<T>.Transact(() => INSERT_ONE(request)));
-                    case 1: return request.UpdatedEntities(Transaction<T>.Transact(() => UPDATE_ONE(request, source[0])));
+                    case 0: return new InsertedEntities(Transaction<T>.Transact(() => INSERT_ONE(request)), request.Resource);
+                    case 1: return new UpdatedEntities(Transaction<T>.Transact(() => UPDATE_ONE(request, source[0])), request.Resource);
                     default: throw new AmbiguousMatchException(request.Resource);
                 }
             }
@@ -440,7 +442,7 @@ namespace RESTar.Operations
             private static Result DELETE(RESTRequest<T> request)
             {
                 var source = SELECT_FILTER(request);
-                if (source == null) return request.DeletedEntities(0);
+                if (source == null) return new DeletedEntities(0, request.Resource);
                 if (!request.MetaConditions.Unsafe)
                 {
                     var list = source.ToList();
@@ -448,7 +450,7 @@ namespace RESTar.Operations
                         throw new AmbiguousMatchException(request.Resource);
                     source = list;
                 }
-                return request.DeletedEntities(Transaction<T>.Transact(() => OP_DELETE(request, source)));
+                return new DeletedEntities(Transaction<T>.Transact(() => OP_DELETE(request, source)), request.Resource);
             }
 
             private static (Request<T> InnerRequest, JArray ToInsert, IList<(JObject json, T source)> ToUpdate)
@@ -528,7 +530,7 @@ namespace RESTar.Operations
                         }
                     });
                     outerTrans.Commit();
-                    return request.SafePostedEntities(updatedCount, insertedCount);
+                    return new SafePostedEntities(updatedCount, insertedCount, request.Resource);
                 }
                 catch
                 {

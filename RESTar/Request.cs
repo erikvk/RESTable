@@ -8,6 +8,7 @@ using RESTar.Linq;
 using RESTar.Operations;
 using RESTar.Requests;
 using RESTar.Resources;
+using RESTar.Results.Error;
 using RESTar.Serialization;
 using static RESTar.Internal.ErrorCodes;
 using IResource = RESTar.Internal.IResource;

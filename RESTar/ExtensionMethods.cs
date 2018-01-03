@@ -19,6 +19,7 @@ using RESTar.Internal;
 using RESTar.Linq;
 using RESTar.Operations;
 using RESTar.Resources;
+using RESTar.Results.Error;
 using RESTar.Serialization;
 using RESTar.View;
 using Starcounter;
@@ -310,7 +311,7 @@ namespace RESTar
                     foreach (DictionaryEntry pair in idict)
                         _jobj[pair.Key.ToString()] = pair.Value == null
                             ? null
-                            : JToken.FromObject(pair.Value, Serializer.JsonSerializer);
+                            : JToken.FromObject(pair.Value, Serializer.Json);
                     return _jobj;
             }
 
@@ -757,14 +758,14 @@ namespace RESTar
             {
                 case RESTarException re: return (re.ErrorCode, re);
                 case FormatException _:
-                    return (ErrorCodes.UnsupportedContent, new Result
+                    return (ErrorCodes.UnsupportedContent, new Custom
                     {
                         StatusCode = HttpStatusCode.BadRequest,
                         StatusDescription = "Bad request",
                         Headers = {["RESTar-info"] = e.Message}
                     });
                 case JsonReaderException _:
-                    return (FailedJsonDeserialization, new Result
+                    return (FailedJsonDeserialization, new Custom
                     {
                         StatusCode = HttpStatusCode.BadRequest,
                         StatusDescription = "Bad request",
@@ -772,13 +773,13 @@ namespace RESTar
                     });
                 case DbException _:
                     var result = e.Message.Contains("SCERR4034")
-                        ? new Result
+                        ? new Custom
                         {
                             StatusCode = HttpStatusCode.Forbidden,
                             StatusDescription = "Forbidden",
                             Headers = {["RESTar-info"] = "The operation was aborted by a commit hook. " + (e.InnerException?.Message ?? e.Message)}
                         }
-                        : new Result
+                        : new Custom
                         {
                             StatusCode = HttpStatusCode.InternalServerError,
                             StatusDescription = "Internal server error",
@@ -787,7 +788,7 @@ namespace RESTar
                     return (DatabaseError, result);
 
                 default:
-                    return (Unknown, new Result
+                    return (Unknown, new Custom
                     {
                         StatusCode = HttpStatusCode.InternalServerError,
                         StatusDescription = "Internal server error",

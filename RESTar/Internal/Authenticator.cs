@@ -3,6 +3,7 @@ using System.Linq;
 using System.Net;
 using RESTar.Auth;
 using RESTar.Requests;
+using RESTar.Results.Error;
 using Starcounter;
 using static RESTar.Internal.ErrorCodes;
 using static RESTar.RESTarConfig;

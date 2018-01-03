@@ -20,7 +20,7 @@ namespace RESTarExample
         {
             RESTarConfig.Init
             (
-                uri: "/rest/",
+                uri: "/rest",
                 requireApiKey: true,
                 allowAllOrigins: false,
                 viewEnabled: true,

@@ -7,6 +7,7 @@ using Newtonsoft.Json;
 using RESTar.Internal;
 using RESTar.Linq;
 using RESTar.Resources;
+using RESTar.Results.Error;
 using static Newtonsoft.Json.NullValueHandling;
 using IResource = RESTar.Internal.IResource;
 

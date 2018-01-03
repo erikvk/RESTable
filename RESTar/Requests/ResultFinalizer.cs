@@ -1,6 +1,6 @@
 ﻿using RESTar.Operations;
 
-namespace RESTar.Protocols
+namespace RESTar.Requests
 {
     /// <summary>
     /// The Finalizer finalizes a result according to some protocol

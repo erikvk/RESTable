@@ -5,22 +5,23 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using RESTar.Admin;
 using RESTar.Http;
+using RESTar.Internal;
 using RESTar.Operations;
-using RESTar.Requests;
+using RESTar.Results.Error;
+using RESTar.Results.Success;
 using RESTar.Serialization;
-using static RESTar.Internal.ErrorCodes;
 using static Newtonsoft.Json.Formatting;
-using static RESTar.Serialization.Serializer;
 using static RESTar.Admin.Settings;
+using static RESTar.Serialization.Serializer;
 
-namespace RESTar.Protocols
+namespace RESTar.Requests
 {
     internal class RESTarProtocolProvider
     {
         internal static void PopulateUri(URI uri, string query)
         {
             var match = Regex.Match(query, RegEx.RESTarRequestUri);
-            if (!match.Success) throw new InvalidSyntax(InvalidUriSyntax, "Check URI syntax");
+            if (!match.Success) throw new InvalidSyntax(ErrorCodes.InvalidUriSyntax, "Check URI syntax");
 
             var resourceOrMacro = match.Groups["res"].Value.TrimStart('/');
             var view = match.Groups["view"].Value.TrimStart('-');
@@ -82,81 +83,80 @@ namespace RESTar.Protocols
             return true;
         }
 
-        internal static IFinalizedResult FinalizeResult(Result result)
+        internal static IFinalizedResult FinalizeResult(Result _result)
         {
-            if (result.HasEntities)
+            if (!(_result is Entities entities)) return _result;
+
+            var accept = entities.Request.Accept;
+            switch (accept.TypeCode)
             {
-                var accept = result.Request.Accept;
-                switch (accept.TypeCode)
-                {
-                    case MimeTypeCode.Json:
-                        var stream = new MemoryStream();
-                        var formatter = result.Request.MetaConditions.Formatter;
-                        using (var swr = new StreamWriter(stream, UTF8, 1024, true))
-                        using (var jwr = new RESTarJsonWriter(swr, formatter.StartIndent))
-                        {
-                            JsonSerializer.Formatting = _PrettyPrint ? Indented : None;
-                            swr.Write(formatter.Pre);
-                            JsonSerializer.Serialize(jwr, result.Entities);
-                            result.EntityCount = jwr.ObjectsWritten;
-                            swr.Write(formatter.Post);
-                        }
-                        if (result.HasEntities)
-                        {
-                            result.ContentType = MimeTypes.JSON;
-                            result.Body = stream;
-                            result.SetContentDisposition(".json");
-                        }
-                        break;
+                case MimeTypeCode.Json:
+                    var stream = new MemoryStream();
+                    var formatter = entities.Request.MetaConditions.Formatter;
+                    using (var swr = new StreamWriter(stream, UTF8, 1024, true))
+                    using (var jwr = new RESTarJsonWriter(swr, formatter.StartIndent))
+                    {
+                        Json.Formatting = _PrettyPrint ? Indented : None;
+                        swr.Write(formatter.Pre);
+                        Json.Serialize(jwr, entities.Content);
+                        entities.EntityCount = jwr.ObjectsWritten;
+                        swr.Write(formatter.Post);
+                    }
+                    if (entities.EntityCount > 0)
+                    {
+                        entities.ContentType = MimeTypes.JSON;
+                        entities.Body = stream;
+                        entities.SetContentDisposition(".json");
+                    }
+                    else return new NoContent();
+                    if (entities.IsPaged)
+                    {
+                        var pager = entities.GetNextPageLink();
+                        entities.Headers["RESTar-pager"] = MakeRelativeUri(pager);
+                    }
+                    break;
 
-                    case MimeTypeCode.Excel:
-                        result.Body = null;
-                        var excel = result.Entities.ToExcel(result.Request.Resource);
-                        if (excel != null)
-                        {
-                            result.ContentType = MimeTypes.Excel;
-                            result.EntityCount = excel.Worksheet(1).RowsUsed().Count() - 1;
-                            result.Body = new MemoryStream();
-                            excel.SaveAs(result.Body);
-                            result.SetContentDisposition(".xlsx");
-                        }
-                        break;
-                }
-
-                result.Body?.Seek(0, SeekOrigin.Begin);
-                result.Headers["RESTar-count"] = result.EntityCount.ToString();
-                if (result.IsPaged)
-                {
-                    var pager = result.GetNextPageLink();
-                    result.Headers["RESTar-pager"] = MakeRelativeUri(pager);
-                }
+                case MimeTypeCode.Excel:
+                    entities.Body = null;
+                    var excel = entities.Content.ToExcel(entities.Request.Resource);
+                    if (excel != null)
+                    {
+                        entities.ContentType = MimeTypes.Excel;
+                        entities.EntityCount = excel.Worksheet(1).RowsUsed().Count() - 1;
+                        entities.Body = new MemoryStream();
+                        excel.SaveAs(entities.Body);
+                        entities.SetContentDisposition(".xlsx");
+                    }
+                    else return new NoContent();
+                    break;
             }
+            entities.Body?.Seek(0, SeekOrigin.Begin);
+            entities.Headers["RESTar-count"] = entities.EntityCount.ToString();
 
-            if (result.ExternalDestination != null)
+            if (entities.ExternalDestination != null)
             {
                 try
                 {
-                    var request = new HttpRequest(result.ExternalDestination)
+                    var request = new HttpRequest(entities.ExternalDestination)
                     {
-                        ContentType = result.ContentType,
-                        AuthToken = result.Request.AuthToken,
-                        Body = result.Body
+                        ContentType = entities.ContentType,
+                        AuthToken = entities.Request.AuthToken,
+                        Body = entities.Body
                     };
                     var response = request.GetResponse() ?? throw new InvalidExternalDestination(request, "No response");
                     if (!response.IsSuccessStatusCode)
                         throw new InvalidExternalDestination(request,
                             $"Received {response.StatusCode.ToCode()} - {response.StatusDescription}. {response.Headers.SafeGet("RESTar-info")}");
-                    if (result.Headers.TryGetValue("Access-Control-Allow-Origin", out var h))
+                    if (entities.Headers.TryGetValue("Access-Control-Allow-Origin", out var h))
                         response.Headers["Access-Control-Allow-Origin"] = h;
                     return response;
                 }
                 catch (HttpRequestException re)
                 {
-                    throw new InvalidSyntax(InvalidDestination, $"{re.Message} in the Destination header");
+                    throw new InvalidSyntax(ErrorCodes.InvalidDestination, $"{re.Message} in the Destination header");
                 }
             }
-
-            return result;
+            return entities;
         }
     }
 }

@@ -1,8 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Net;
 using RESTar.Internal;
 using RESTar.Operations;
+using RESTar.Results.Error;
+using RESTar.Results.Success;
 using static RESTar.Operations.Transact;
 using static RESTar.Requests.Action;
 using static RESTar.Internal.ErrorCodes;
@@ -115,7 +116,14 @@ namespace RESTar.Requests
             {
                 request.RunResourceAuthentication();
                 request.Evaluate();
-                return request.GetFinalizedResult();
+                try
+                {
+                    return arguments.ResultFinalizer.Invoke(request.Result);
+                }
+                catch (Exception e)
+                {
+                    throw new AbortedSelectorException<T>(e, request);
+                }
             }
         }
 
@@ -123,19 +131,7 @@ namespace RESTar.Requests
         {
             var origin = arguments.Headers.SafeGet("Origin");
             if (origin != null && (AllowAllOrigins || AllowedOrigins.Contains(new Uri(origin))))
-                return new Result
-                {
-                    StatusCode = HttpStatusCode.OK,
-                    StatusDescription = "OK",
-                    Headers =
-                    {
-                        ["Access-Control-Allow-Origin"] = AllowAllOrigins ? "*" : origin,
-                        ["Access-Control-Allow-Methods"] = string.Join(", ", resource.AvailableMethods),
-                        ["Access-Control-Max-Age"] = "120",
-                        ["Access-Control-Allow-Credentials"] = "true",
-                        ["Access-Control-Allow-Headers"] = "origin, content-type, accept, authorization, source, destination"
-                    }
-                };
+                return new AcceptOrigin(origin, resource);
             return new Forbidden(NotAuthorized, "Invalid or unauthorized origin");
         }
     }

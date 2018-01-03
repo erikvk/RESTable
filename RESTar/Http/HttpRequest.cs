@@ -6,6 +6,7 @@ using System.Text.RegularExpressions;
 using RESTar.Admin;
 using RESTar.Linq;
 using RESTar.Operations;
+using RESTar.Results.Error;
 using Starcounter;
 
 namespace RESTar.Http

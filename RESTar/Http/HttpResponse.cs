@@ -1,8 +1,8 @@
-﻿using System.Collections.Generic;
-using System.IO;
+﻿using System.IO;
 using System.Net;
 using System;
 using RESTar.Operations;
+using RESTar.Requests;
 using Starcounter;
 using static System.StringSplitOptions;
 
@@ -15,7 +15,7 @@ namespace RESTar.Http
         public long ContentLength { get; set; }
         public string ContentType { get; set; }
         public Stream Body { get; set; }
-        public Dictionary<string, string> Headers { get; set; }
+        public Headers Headers { get; set; }
         public bool HasContent => ContentLength > 0;
         internal bool IsSuccessStatusCode => StatusCode >= (HttpStatusCode) 200 && StatusCode < (HttpStatusCode) 300;
 
@@ -28,7 +28,7 @@ namespace RESTar.Http
                 ContentLength = webResponse.ContentLength,
                 ContentType = webResponse.ContentType,
                 Body = webResponse.GetResponseStream() ?? throw new NullReferenceException("ResponseStream was null"),
-                Headers = new Dictionary<string, string>()
+                Headers = new Headers()
             };
             foreach (var header in webResponse.Headers.AllKeys)
                 response.Headers[header] = webResponse.Headers[header];
@@ -44,7 +44,7 @@ namespace RESTar.Http
                 ContentLength = scResponse.ContentLength,
                 ContentType = scResponse.ContentType,
                 Body = scResponse.StreamedBody,
-                Headers = new Dictionary<string, string>()
+                Headers = new Headers()
             };
             foreach (var header in scResponse.GetAllHeaders().Split(new[] {"\r\n"}, RemoveEmptyEntries))
             {

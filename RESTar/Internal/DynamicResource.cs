@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Serialization;
 using RESTar.Resources;
+using RESTar.Results.Error;
 using Starcounter;
 using static RESTar.Operations.Transact;
 

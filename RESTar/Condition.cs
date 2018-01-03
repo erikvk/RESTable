@@ -7,6 +7,7 @@ using RESTar.Deflection.Dynamic;
 using RESTar.Internal;
 using RESTar.Operations;
 using RESTar.Requests;
+using RESTar.Results.Error;
 using static System.StringComparison;
 using static RESTar.Operators;
 

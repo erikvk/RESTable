@@ -67,7 +67,7 @@ namespace RESTar.Requests
                 }
             }
 
-            response.SetHeadersDictionary(result.Headers);
+            response.SetHeadersDictionary(result.Headers._dict);
             return response;
         }
 

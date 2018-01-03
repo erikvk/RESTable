@@ -1,9 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
-using RESTar.Protocols;
 using RESTar.Admin;
 using RESTar.Internal;
+using RESTar.OData;
+using RESTar.Results.Error;
 
 namespace RESTar.Requests
 {

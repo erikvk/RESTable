@@ -1,4 +1,4 @@
-﻿namespace RESTar.Protocols
+﻿namespace RESTar.Requests
 {
     /// <summary>
     /// The available protocols in RESTar

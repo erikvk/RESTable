@@ -7,6 +7,7 @@ using Newtonsoft.Json.Linq;
 using RESTar.Linq;
 using RESTar.Admin;
 using RESTar.Internal;
+using RESTar.Results.Error;
 using static System.Reflection.BindingFlags;
 
 namespace RESTar.Resources
