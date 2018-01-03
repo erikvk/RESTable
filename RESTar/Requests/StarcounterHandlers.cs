@@ -73,29 +73,22 @@ namespace RESTar.Requests
 
         private static Origin MakeOrigin(Request request)
         {
-            var origin = new Origin();
-            if (request == null)
+            var origin = new Origin
             {
-                origin.Type = OriginType.Internal;
-                origin.IP = null;
-                origin.Proxy = null;
-            }
-            else
+                Host = request.Host,
+                Type = request.IsExternal ? OriginType.External : OriginType.Internal,
+                ClientIP = request.ClientIpAddress
+            };
+
+            if (origin.IsExternal && request.HeadersDictionary != null)
             {
-                if (request.HeadersDictionary?.SafeGet("X-Forwarded-For") is string ip)
+                origin.HTTPS = request.HeadersDictionary.ContainsKey("X-ARR-SSL") || request.HeadersDictionary.ContainsKey("X-HTTPS");
+                if (request.HeadersDictionary.TryGetValue("X-Forwarded-For", out var ip))
                 {
-                    origin.IP = IPAddress.Parse(ip.Split(':')[0]);
-                    origin.Proxy = request.ClientIpAddress;
+                    origin.ClientIP = IPAddress.Parse(ip.Split(':')[0]);
+                    origin.ProxyIP = request.ClientIpAddress;
                 }
-                else
-                {
-                    origin.IP = request.ClientIpAddress;
-                    origin.Proxy = null;
-                }
-
-                origin.Type = request.IsExternal ? OriginType.External : OriginType.Internal;
             }
-
             return origin;
         }
 

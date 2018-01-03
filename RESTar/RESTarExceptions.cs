@@ -129,6 +129,14 @@ namespace RESTar
             "initialize the RESTar instance before making calls to it.") { }
     }
 
+    /// <summary>
+    /// Thrown when a RESTar needed a configuration file, but did not get a configuration file path in the call to RESTarConfig.Init
+    /// </summary>
+    public class MissingConfigurationFile : RESTarException
+    {
+        internal MissingConfigurationFile(string message) : base(ErrorCodes.MissingConfigurationFile, message) { }
+    }
+
     #endregion
 
     #region Other
@@ -480,6 +488,15 @@ namespace RESTar
     {
         internal NoAvalailableDynamicTableException() : base(NoAvalailableDynamicTable,
             "RESTar have no more unallocated dynamic tables. Remove an existing table and try again.") { }
+    }
+
+    /// <summary>
+    /// Throw when a request for an unsupported OData protocol version was encountered
+    /// </summary>
+    public class UnsupportedODataVersion : BadRequest
+    {
+        internal UnsupportedODataVersion() : base(UnsupportedODataProtocolVersion,
+            "Unsupported OData protocol version. Supported protocol version: 4.0") { }
     }
 
     internal class HttpRequestException : Exception

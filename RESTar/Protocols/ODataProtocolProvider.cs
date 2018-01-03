@@ -16,7 +16,7 @@ using static RESTar.Serialization.Serializer;
 
 namespace RESTar.Protocols
 {
-    internal class ODataProtocolProvider
+    internal static class ODataProtocolProvider
     {
         internal static string MakeRelativeUri(IUriParameters parameters)
         {
@@ -174,11 +174,31 @@ namespace RESTar.Protocols
             }
         }
 
+        internal static bool IsCompliant(Arguments args, out Exception error)
+        {
+            error = null;
+            switch (args.Headers["OData-Version"] ?? args.Headers["OData-MaxVersion"])
+            {
+                case null:
+                case "4.0": return true;
+                default:
+                    error = new UnsupportedODataVersion();
+                    return false;
+            }
+        }
+
+        private static string GetServiceRoot(Result result)
+        {
+            var origin = result.Request.Origin;
+            var hostAndPath = $"{origin.Host}/{Admin.Settings._Uri}-odata";
+            return origin.HTTPS ? $"https://{hostAndPath}" : $"http://{hostAndPath}";
+        }
+
         internal static IFinalizedResult FinalizeResult(Result result)
         {
             if (result.Entities is IEnumerable<AvailableResource> availableResources)
                 result.Entities = ServiceDocument.Make(availableResources);
-            result.Headers["DataServiceVersion"] = "3.0";
+            result.Headers["OData-Version"] = "4.0";
             if (result.Entities != null)
             {
                 var stream = new MemoryStream();
@@ -187,13 +207,14 @@ namespace RESTar.Protocols
                 {
                     JsonSerializer.Formatting = Indented;
                     jwr.WritePre();
+                    jwr.WriteRaw($"\"@odata.context\": \"{GetServiceRoot(result)}/$metadata#{result.Request.Resource.Name}\",");
+                    jwr.WriteIndentation();
+                    jwr.WritePropertyName("value");
                     JsonSerializer.Serialize(jwr, result.Entities);
                     result.EntityCount = jwr.ObjectsWritten;
                     jwr.WriteRaw(",");
                     jwr.WriteIndentation();
-                    jwr.WriteRaw($"\"@odata.count\": {result.EntityCount},");
-                    jwr.WriteIndentation();
-                    jwr.WriteRaw($"\"@odata.context\": /$metadata#{result.Request.Resource.Name}");
+                    jwr.WriteRaw($"\"@odata.count\": {result.EntityCount}");
                     if (result.IsPaged)
                     {
                         jwr.WriteRaw(",");
@@ -201,17 +222,15 @@ namespace RESTar.Protocols
                         var pager = result.GetNextPageLink();
                         jwr.WriteRaw($"\"@odata.nextLink\": {MakeRelativeUri(pager)}");
                     }
-
                     jwr.WritePost();
                 }
-
                 if (result.HasEntities)
                 {
                     stream.Seek(0, SeekOrigin.Begin);
+                    result.ContentType = MimeTypes.JSONOData;
                     result.Body = stream;
                 }
             }
-
             return result;
         }
     }

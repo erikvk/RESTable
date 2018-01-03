@@ -40,7 +40,7 @@ namespace RESTar
         /// <summary>
         /// The media type accepted by the client
         /// </summary>
-        MimeTypeCode Accept { get; }
+        MimeType Accept { get; }
 
         /// <summary>
         /// The resource of the request

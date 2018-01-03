@@ -11,11 +11,11 @@ namespace RESTar
     public class MimeType
     {
         internal MimeTypeCode TypeCode { get; }
-        internal string TypeCodeString { get; } = "null";
+        internal string TypeCodeString { get; }
         internal Dictionary<string, string> Data { get; } = new Dictionary<string, string>();
         internal decimal Q { get; } = 1;
 
-        internal static readonly MimeType Default = new MimeType(Json);
+        internal static readonly MimeType Default = new MimeType(Json, MimeTypes.JSON);
 
         internal static MimeType Parse(string headerValue)
         {
@@ -29,11 +29,15 @@ namespace RESTar
             var found = headerValue.Split(',')
                 .Select(Parse)
                 .OrderByDescending(m => m.Q)
-                .FirstOrDefault();
-            return found ?? new MimeType(Unsupported);
+                .FirstOrDefault(m => m.TypeCode != Unsupported);
+            return found ?? new MimeType(Unsupported, headerValue);
         }
 
-        private MimeType(MimeTypeCode code) => TypeCode = code;
+        private MimeType(MimeTypeCode code, string codeString)
+        {
+            TypeCode = code;
+            TypeCodeString = codeString;
+        }
 
         private MimeType(string headerValue)
         {
@@ -74,6 +78,7 @@ namespace RESTar
     {
         public const string Excel = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
         public const string JSON = "application/json;charset=utf-8";
+        public const string JSONOData = "application/json;odata.metadata=minimal;odata.streaming=true;charset=utf-8";
 
         internal static string GetString(MimeTypeCode mimeType)
         {

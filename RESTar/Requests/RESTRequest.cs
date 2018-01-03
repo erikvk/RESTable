@@ -35,7 +35,7 @@ namespace RESTar.Requests
         private string Source { get; }
         private string Destination { get; }
         private MimeTypeCode ContentType { get; }
-        public MimeTypeCode Accept { get; }
+        public MimeType Accept { get; }
         private string CORSOrigin { get; }
         private DataConfig InputDataConfig { get; }
         private DataConfig OutputDataConfig { get; }
@@ -45,7 +45,6 @@ namespace RESTar.Requests
         {
             Result = Evaluator(this);
             Result.ExternalDestination = Destination;
-            Result.ContentType = MimeTypes.GetString(Accept);
             ResponseHeaders.ForEach(h =>
             {
                 if (h.Key.StartsWith("X-"))
@@ -86,7 +85,7 @@ namespace RESTar.Requests
             Destination = arguments.Headers.SafeGet("Destination");
             CORSOrigin = arguments.Headers.SafeGet("Origin");
             ContentType = arguments.ContentType.TypeCode;
-            Accept = arguments.Accept.TypeCode;
+            Accept = arguments.Accept;
             InputDataConfig = Source != null ? DataConfig.External : DataConfig.Client;
             OutputDataConfig = Destination != null ? DataConfig.External : DataConfig.Client;
             arguments.CustomHeaders.ForEach(Headers.Put);

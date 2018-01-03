@@ -31,7 +31,6 @@ namespace RESTar.Serialization
         {
             WriteStartObject();
             WriteIndent();
-            WritePropertyName("value");
         }
 
         public void WritePost()

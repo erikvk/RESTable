@@ -23,7 +23,7 @@ namespace RESTar.Admin
         /// <summary>
         /// Reloads the config file and updates the access rights for API keys
         /// </summary>
-        public static void ReloadConfigFile() => RESTarConfig.UpdateAuthInfo();
+        public static void ReloadConfigFile() => RESTarConfig.UpdateConfiguration();
 
         /// <inheritdoc />
         public IEnumerable<AdminTools> Select(IRequest<AdminTools> request)

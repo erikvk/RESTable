@@ -37,6 +37,7 @@ namespace RESTar
         internal static string[] ReservedNamespaces { get; private set; }
         internal static bool RequireApiKey { get; private set; }
         internal static bool AllowAllOrigins { get; private set; }
+        internal static bool NeedsConfiguration => RequireApiKey || !AllowAllOrigins;
         private static string ConfigFilePath { get; set; }
         internal static bool Initialized { get; private set; }
         internal static readonly Methods[] Methods = {GET, POST, PATCH, PUT, DELETE, REPORT};
@@ -60,10 +61,21 @@ namespace RESTar
                 .ToArray();
         }
 
-        internal static void UpdateAuthInfo()
+        internal static void UpdateConfiguration()
         {
             if (!Initialized) return;
-            if (ConfigFilePath != null) ReadConfig();
+            if (NeedsConfiguration && ConfigFilePath == null)
+            {
+                var (task, measure) = RequireApiKey
+                    ? ("require API keys", "read keys and assign access rights")
+                    : !AllowAllOrigins
+                        ? ("only allow some CORS origins", "know what origins to deny")
+                        : ("publish an OData service", "generate context URLs");
+                throw new MissingConfigurationFile($"RESTar was set up to {task}, but needs to read settings from a configuration file in " +
+                                                   $"order to {measure}. Provide a configuration file path in the call to RESTarConfig.Init. " +
+                                                   "See the specification for more info.");
+            }
+            if (NeedsConfiguration) ReadConfig();
             AccessRights.Root = Resources
                 .ToDictionary(r => r, r => Methods)
                 .CollectDict(dict => new AccessRights(dict));
@@ -74,7 +86,7 @@ namespace RESTar
             ResourceByName[toAdd.Name] = toAdd;
             ResourceByType[toAdd.Type] = toAdd;
             AddToResourceFinder(toAdd, ResourceFinder);
-            UpdateAuthInfo();
+            UpdateConfiguration();
             toAdd.Type.GetDeclaredProperties();
         }
 
@@ -83,7 +95,7 @@ namespace RESTar
             ResourceByName.Remove(toRemove.Name);
             ResourceByType.Remove(toRemove.Type);
             ReloadResourceFinder();
-            UpdateAuthInfo();
+            UpdateConfiguration();
         }
 
         internal static void ReloadResourceFinder()
@@ -162,7 +174,7 @@ namespace RESTar
                 Initialized = true;
                 DatabaseIndex.Init();
                 DbOutputFormat.Init();
-                UpdateAuthInfo();
+                UpdateConfiguration();
             }
             catch
             {
@@ -192,9 +204,6 @@ namespace RESTar
 
         private static void ReadConfig()
         {
-            if (!RequireApiKey && AllowAllOrigins) return;
-            if (ConfigFilePath == null)
-                throw new Exception("RESTar init error: No config file path given for API keys and/or allowed origins");
             try
             {
                 dynamic config;

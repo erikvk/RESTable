@@ -85,6 +85,8 @@ namespace RESTar.Internal
         ResourceProviderError = 402,
         ResourceWrapperError = 403,
         InfiniteLoopDetected = 404,
-        NotImplemented = 405
+        NotImplemented = 405,
+        UnsupportedODataProtocolVersion = 406,
+        MissingConfigurationFile = 407,
     }
 }

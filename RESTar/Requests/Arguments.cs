@@ -64,7 +64,7 @@ namespace RESTar.Requests
         public IResource IResource => Resource.Find(Uri.ResourceSpecifier);
         public Origin Origin { get; }
         public byte[] BodyBytes { get; set; }
-        public IDictionary<string, string> Headers { get; }
+        public Headers Headers { get; }
         public MimeType ContentType { get; set; }
         public MimeType Accept { get; }
         public ResultFinalizer ResultFinalizer { get; }
@@ -89,25 +89,30 @@ namespace RESTar.Requests
             Action = action;
             Uri = URI.ParseInternal(query, PercentCharsEscaped(headers), out var protocol);
             BodyBytes = body;
-            Headers = headers ?? new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            Origin = origin ?? Origin.Internal;
+            Headers = new Headers(headers);
+            Origin = origin;
             ContentType = MimeType.Parse(Headers.SafeGet("Content-Type"));
             Accept = MimeType.ParseMany(Headers.SafeGet("Accept"));
-            if (ContentType.TypeCode == MimeTypeCode.Unsupported)
-                Error = new UnsupportedContent(ContentType);
-            if (Accept.TypeCode == MimeTypeCode.Unsupported)
-                Error = new NotAcceptable(Accept);
-            if (uri.HasError)
-                Error = uri.Error;
             switch (protocol)
             {
                 case RESTProtocols.RESTar:
                     ResultFinalizer = RESTarProtocolProvider.FinalizeResult;
                     break;
                 case RESTProtocols.OData:
+                    if (!ODataProtocolProvider.IsCompliant(this, out var odataError))
+                    {
+                        Error = odataError;
+                        return;
+                    }
                     ResultFinalizer = ODataProtocolProvider.FinalizeResult;
                     break;
             }
+            if (ContentType.TypeCode == MimeTypeCode.Unsupported)
+                Error = new UnsupportedContent(ContentType);
+            if (Accept.TypeCode == MimeTypeCode.Unsupported)
+                Error = new NotAcceptable(Accept);
+            if (uri.HasError)
+                Error = uri.Error;
         }
     }
 }

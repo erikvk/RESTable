@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -75,13 +76,20 @@ namespace RESTar.Protocols
                                                                              $"/{JoinConditions(parameters.Conditions) ?? "_"}" +
                                                                              $"/{JoinConditions(parameters.MetaConditions) ?? "_"}";
 
+        internal static bool IsCompliant(Arguments args, out Exception error)
+        {
+            error = null;
+            return true;
+        }
+
         internal static IFinalizedResult FinalizeResult(Result result)
         {
             if (result.HasEntities)
             {
-                switch (result.ContentType)
+                var accept = result.Request.Accept;
+                switch (accept.TypeCode)
                 {
-                    case MimeTypes.JSON:
+                    case MimeTypeCode.Json:
                         var stream = new MemoryStream();
                         var formatter = result.Request.MetaConditions.Formatter;
                         using (var swr = new StreamWriter(stream, UTF8, 1024, true))
@@ -93,26 +101,25 @@ namespace RESTar.Protocols
                             result.EntityCount = jwr.ObjectsWritten;
                             swr.Write(formatter.Post);
                         }
-
                         if (result.HasEntities)
                         {
+                            result.ContentType = MimeTypes.JSON;
                             result.Body = stream;
                             result.SetContentDisposition(".json");
                         }
-
                         break;
 
-                    case MimeTypes.Excel:
+                    case MimeTypeCode.Excel:
                         result.Body = null;
                         var excel = result.Entities.ToExcel(result.Request.Resource);
                         if (excel != null)
                         {
+                            result.ContentType = MimeTypes.Excel;
                             result.EntityCount = excel.Worksheet(1).RowsUsed().Count() - 1;
                             result.Body = new MemoryStream();
                             excel.SaveAs(result.Body);
                             result.SetContentDisposition(".xlsx");
                         }
-
                         break;
                 }
 

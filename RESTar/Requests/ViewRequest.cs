@@ -31,7 +31,7 @@ namespace RESTar.Requests
         public Stream Body { get; private set; }
         Methods IRequest.Method => GET;
         IResource IRequest.Resource => Resource;
-        MimeTypeCode IRequest.Accept => MimeTypeCode.Json;
+        public MimeType Accept => MimeType.Default;
         public ITarget<T> Target { get; private set; }
         public bool Home => MetaConditions.Empty && Conditions == null;
         internal bool IsTemplate { get; set; }

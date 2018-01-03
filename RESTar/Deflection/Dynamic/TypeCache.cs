@@ -6,6 +6,7 @@ using System.Reflection;
 using RESTar.Internal;
 using RESTar.Linq;
 using static System.Reflection.BindingFlags;
+using static System.StringComparer;
 using static RESTar.Deflection.Dynamic.SpecialProperty;
 using IResource = RESTar.Internal.IResource;
 
@@ -19,7 +20,7 @@ namespace RESTar.Deflection.Dynamic
     {
         static TypeCache()
         {
-            DeclaredPropertyCache = new ConcurrentDictionary<string, IDictionary<string, DeclaredProperty>>();
+            DeclaredPropertyCache = new ConcurrentDictionary<Type, IDictionary<string, DeclaredProperty>>();
             TermCache = new ConcurrentDictionary<(string, string, TermBindingRules), Term>();
         }
 
@@ -61,7 +62,7 @@ namespace RESTar.Deflection.Dynamic
 
         #region Declared properties
 
-        private static readonly ConcurrentDictionary<string, IDictionary<string, DeclaredProperty>> DeclaredPropertyCache;
+        private static readonly ConcurrentDictionary<Type, IDictionary<string, DeclaredProperty>> DeclaredPropertyCache;
 
         private static IEnumerable<DeclaredProperty> ParseDeclaredProperties(this IEnumerable<PropertyInfo> props, bool flag) => props
             .Where(p => !p.RESTarIgnored())
@@ -105,8 +106,8 @@ namespace RESTar.Deflection.Dynamic
             }
 
             if (type?.FullName == null) return null;
-            if (!DeclaredPropertyCache.TryGetValue(type.FullName, out var props))
-                props = DeclaredPropertyCache[type.FullName] = make(type).ToDictionary(p => p.Name, StringComparer.OrdinalIgnoreCase);
+            if (!DeclaredPropertyCache.TryGetValue(type, out var props))
+                props = DeclaredPropertyCache[type] = make(type).ToDictionary(p => p.Name, OrdinalIgnoreCase);
             return props;
         }
 

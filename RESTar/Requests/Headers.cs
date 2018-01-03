@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using RESTar.Linq;
 
 namespace RESTar.Requests
 {
@@ -29,7 +28,18 @@ namespace RESTar.Requests
         private readonly Dictionary<string, string> dict;
         internal void Put(KeyValuePair<string, string> kvp) => dict[kvp.Key] = kvp.Value;
         internal Headers() => dict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        internal Headers(Dictionary<string, string> dictToUse) : this() => dictToUse.ForEach(p => dict[p.Key] = p.Value);
+
+        internal Headers(Dictionary<string, string> dictToUse)
+        {
+            if (dictToUse == null)
+            {
+                dict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                return;
+            }
+            dict = dictToUse.Comparer.Equals(StringComparer.OrdinalIgnoreCase)
+                ? dictToUse
+                : new Dictionary<string, string>(dictToUse, StringComparer.OrdinalIgnoreCase);
+        }
 
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 

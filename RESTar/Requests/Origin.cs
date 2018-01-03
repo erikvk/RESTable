@@ -19,7 +19,23 @@ namespace RESTar.Requests
     }
 
     /// <summary>
-    /// Describes the origin of a request
+    /// Describes the scheme of a request
+    /// </summary>
+    public enum Scheme
+    {
+        /// <summary>
+        /// The HTTP scheme
+        /// </summary>
+        HTTP,
+
+        /// <summary>
+        /// The HTTPS scheme
+        /// </summary>
+        HTTPS
+    }
+
+    /// <summary>
+    /// Describes the origin and basic parameters of a request
     /// </summary>
     public class Origin
     {
@@ -31,19 +47,29 @@ namespace RESTar.Requests
         /// <summary>
         /// The client IP address that made the request (null for internal requests)
         /// </summary>
-        public IPAddress IP { get; internal set; }
+        public IPAddress ClientIP { get; internal set; }
 
         /// <summary>
         /// If the client was forwarded by a proxy, this property contains the proxy's IP address. Otherwise null.
         /// </summary>
-        public IPAddress Proxy { get; internal set; }
+        public IPAddress ProxyIP { get; internal set; }
+
+        /// <summary>
+        /// The host, as defined in the incoming request
+        /// </summary>
+        public string Host { get; internal set; }
+
+        /// <summary>
+        /// Was the request sent over HTTPS?
+        /// </summary>
+        public bool HTTPS { get; internal set; }
 
         internal Origin() { }
 
         /// <summary>
         /// The internal location
         /// </summary>
-        public static readonly Origin Internal = new Origin();
+        public static readonly Origin Internal = new Origin {Host = $"localhost:{Admin.Settings._Port}"};
 
         /// <summary>
         /// Is the origin internal?

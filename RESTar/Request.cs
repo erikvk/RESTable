@@ -41,9 +41,9 @@ namespace RESTar
         Methods IRequest.Method => 0;
         public ITarget<T> Target { get; }
         public T1 BodyObject<T1>() where T1 : class => Body?.Deserialize<T1>();
-        public Dictionary<string, string> RequestHeaders { get; set; }
-        Headers IRequest.Headers => new Headers(RequestHeaders);
-        MimeTypeCode IRequest.Accept => MimeTypeCode.Json;
+        public Headers RequestHeaders { get; set; }
+        Headers IRequest.Headers => RequestHeaders;
+        MimeType IRequest.Accept => MimeType.Default;
 
         private readonly bool ScSql;
         internal string SelectQuery { get; private set; }
