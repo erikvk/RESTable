@@ -3,7 +3,7 @@ using System.Linq;
 using System.Net;
 using RESTar.Auth;
 using RESTar.Requests;
-using RESTar.Results.Error.Forbidden;
+using RESTar.Results.Fail.Forbidden;
 using Starcounter;
 using static RESTar.RESTarConfig;
 

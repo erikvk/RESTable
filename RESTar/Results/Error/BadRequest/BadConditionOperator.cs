@@ -3,7 +3,7 @@ using System.Linq;
 using RESTar.Deflection.Dynamic;
 using RESTar.Internal;
 
-namespace RESTar.Results.Error.BadRequest
+namespace RESTar.Results.Fail.BadRequest
 {
     internal class BadConditionOperator : BadRequest
     {

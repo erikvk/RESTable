@@ -5,6 +5,7 @@ using RESTar.Internal;
 using RESTar.Linq;
 using RESTar.Operations;
 using RESTar.Requests;
+using RESTar.Results.Fail;
 using Starcounter;
 using static RESTar.Admin.Settings;
 using static RESTar.Methods;
@@ -80,23 +81,22 @@ namespace RESTar.Admin
 
         private const int MaxStringLength = 10000;
 
-        internal static Error Create(ErrorCodes errorCode, Exception e, Arguments arguments,
-            Action action)
+        internal static Error Create(RESTarError error, Arguments arguments)
         {
             arguments.Uri.MetaConditions
                 .Where(c => c.Key.EqualsNoCase("key"))
                 .ForEach(cond => cond.ValueLiteral = "*******");
             var resource = arguments.SafeGet(a => a.IResource);
             var uri = arguments.Uri.ToString(RESTProtocols.RESTar);
-            var stackTrace = $"{e.StackTrace} §§§ INNER: {e.InnerException?.StackTrace}";
-            var totalMessage = e.TotalMessage();
+            var stackTrace = $"{error.StackTrace} §§§ INNER: {error.InnerException?.StackTrace}";
+            var totalMessage = error.TotalMessage();
             return new Error
             {
                 Time = DateTime.Now,
                 ResourceName = (resource?.Name ?? "<unknown>") +
                                (resource?.Alias != null ? $" ({resource.Alias})" : ""),
-                Action = action,
-                ErrorCode = errorCode,
+                Action = arguments.Action,
+                ErrorCode = error.ErrorCode,
                 Body = arguments.BodyBytes != null
                     ? Encoding.UTF8.GetString(arguments.BodyBytes.Take(5000).ToArray())
                     : null,

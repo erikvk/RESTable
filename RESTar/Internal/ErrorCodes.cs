@@ -80,6 +80,7 @@ namespace RESTar.Internal
         FailedResourceAuthentication = 213,
 
         DatabaseError = 300,
+        AbortedByCommitHook = 301,
         NotInitialized = 400,
         AddOnError = 401,
         ResourceProviderError = 402,

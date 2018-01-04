@@ -1,15 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
+using Newtonsoft.Json;
+using RESTar.Admin;
 using RESTar.Internal;
 using RESTar.Operations;
-using RESTar.Results.Error;
-using RESTar.Results.Error.BadRequest.Aborted;
-using RESTar.Results.Error.Forbidden;
+using RESTar.Results.Fail;
+using RESTar.Results.Fail.BadRequest;
+using RESTar.Results.Fail.BadRequest.Aborted;
+using RESTar.Results.Fail.Forbidden;
 using RESTar.Results.Success;
 using static RESTar.Operations.Transact;
 using static RESTar.Requests.Action;
 using static RESTar.RESTarConfig;
-using Error = RESTar.Admin.Error;
 using IResource = RESTar.Internal.IResource;
 using Response = RESTar.Http.HttpResponse;
 
@@ -69,9 +71,22 @@ namespace RESTar.Requests
             }
             catch (Exception ex)
             {
-                var (code, result) = ex.GetError();
+                RESTarError getError()
+                {
+                    switch (ex)
+                    {
+                        case RESTarError re: return re;
+                        case FormatException _: return new UnsupportedContent(ex);
+                        case JsonReaderException _: return new FailedJsonDeserialization(ex);
+                        case Starcounter.DbException _ when ex.Message.Contains("SCERR4034"): return new AbortedByCommitHook(ex);
+                        case Starcounter.DbException _: return new DatabaseError(ex);
+                        default: return new Unknown(ex);
+                    }
+                }
+
+                var error = getError();
                 Error.ClearOld();
-                var error = Trans(() => Error.Create(code, ex, arguments, action));
+                var loggedError = Trans(() => Error.Create(error, arguments));
                 switch (action)
                 {
                     case GET:
@@ -80,8 +95,8 @@ namespace RESTar.Requests
                     case PUT:
                     case DELETE:
                     case REPORT:
-                        result.Headers["ErrorInfo"] = $"/{typeof(Error).FullName}/id={error.Id}";
-                        return result;
+                        error.Headers["ErrorInfo"] = $"/{typeof(Error).FullName}/id={loggedError.Id}";
+                        return error;
                     case OPTIONS: return new InvalidOrigin();
                     //case VIEW:
                     //case PAGE:
@@ -123,7 +138,7 @@ namespace RESTar.Requests
                 }
                 catch (Exception e)
                 {
-                    throw new AbortedSelector<T>(e, request);
+                    throw new AbortedSelect<T>(e, request);
                 }
             }
         }

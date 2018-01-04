@@ -1,8 +1,8 @@
 ﻿using RESTar.Internal;
 
-namespace RESTar.Results.Error
+namespace RESTar.Results.Fail
 {
-    internal class InvalidResourceWrapper : RESTarException
+    internal class InvalidResourceWrapper : RESTarError
     {
         internal InvalidResourceWrapper(string message) : base(ErrorCodes.ResourceWrapperError, message) { }
     }

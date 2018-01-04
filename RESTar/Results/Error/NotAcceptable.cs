@@ -1,9 +1,9 @@
 ﻿using System.Net;
 using RESTar.Internal;
 
-namespace RESTar.Results.Error
+namespace RESTar.Results.Fail
 {
-    internal class NotAcceptable : RESTarException
+    internal class NotAcceptable : RESTarError
     {
         internal NotAcceptable(MimeType unsupported) : base(ErrorCodes.NotAcceptable,
             $"Unsupported accept format: '{unsupported.TypeCodeString}'")

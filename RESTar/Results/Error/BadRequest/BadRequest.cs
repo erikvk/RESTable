@@ -2,10 +2,16 @@
 using System.Net;
 using RESTar.Internal;
 
-namespace RESTar.Results.Error.BadRequest
+namespace RESTar.Results.Fail.BadRequest
 {
-    internal abstract class BadRequest : RESTarException
+    internal class BadRequest : RESTarError
     {
+        internal BadRequest(ErrorCodes code, Exception ie) : base(code, ie.Message, ie)
+        {
+            StatusCode = HttpStatusCode.BadRequest;
+            StatusDescription = "Bad request";
+        }
+
         internal BadRequest(ErrorCodes code, string message) : base(code, message)
         {
             StatusCode = HttpStatusCode.BadRequest;

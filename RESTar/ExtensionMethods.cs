@@ -19,9 +19,8 @@ using RESTar.Internal;
 using RESTar.Linq;
 using RESTar.Operations;
 using RESTar.Resources;
-using RESTar.Results.Error;
-using RESTar.Results.Error.BadRequest;
-using RESTar.Results.Error.Forbidden;
+using RESTar.Results.Fail.BadRequest;
+using RESTar.Results.Fail.Forbidden;
 using RESTar.Serialization;
 using RESTar.View;
 using Starcounter;
@@ -336,10 +335,8 @@ namespace RESTar
             {
                 case TypeCode.Empty: return false;
                 case TypeCode.DBNull: return false;
-                case TypeCode.Object:
-                    if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))
-                        return IsStarcounterCompatible(type.GenericTypeArguments[0]);
-                    return type.IsClass && type.HasAttribute<DatabaseAttribute>();
+                case TypeCode.Object when type.IsNullable(out var t): return IsStarcounterCompatible(t);
+                case TypeCode.Object: return type.IsClass && type.HasAttribute<DatabaseAttribute>();
                 case TypeCode.Boolean:
                 case TypeCode.Char:
                 case TypeCode.SByte:
@@ -752,51 +749,6 @@ namespace RESTar
         {
             conditions = request.Conditions.Get(key).ToList();
             return !conditions.Any() != true;
-        }
-
-        internal static (ErrorCodes Code, IFinalizedResult Result) GetError(this Exception e)
-        {
-            switch (e)
-            {
-                case RESTarException re: return (re.ErrorCode, re);
-                case FormatException _:
-                    return (ErrorCodes.UnsupportedContent, new Custom
-                    {
-                        StatusCode = HttpStatusCode.BadRequest,
-                        StatusDescription = "Bad request",
-                        Headers = {["RESTar-info"] = e.Message}
-                    });
-                case JsonReaderException _:
-                    return (FailedJsonDeserialization, new Custom
-                    {
-                        StatusCode = HttpStatusCode.BadRequest,
-                        StatusDescription = "Bad request",
-                        Headers = {["RESTar-info"] = "Error while deserializing JSON. Check JSON syntax."}
-                    });
-                case DbException _:
-                    var result = e.Message.Contains("SCERR4034")
-                        ? new Custom
-                        {
-                            StatusCode = HttpStatusCode.Forbidden,
-                            StatusDescription = "Forbidden",
-                            Headers = {["RESTar-info"] = "The operation was aborted by a commit hook. " + (e.InnerException?.Message ?? e.Message)}
-                        }
-                        : new Custom
-                        {
-                            StatusCode = HttpStatusCode.InternalServerError,
-                            StatusDescription = "Internal server error",
-                            Headers = {["RESTar-info"] = "The Starcounter database encountered an error: " + (e.InnerException?.Message ?? e.Message)}
-                        };
-                    return (DatabaseError, result);
-
-                default:
-                    return (Unknown, new Custom
-                    {
-                        StatusCode = HttpStatusCode.InternalServerError,
-                        StatusDescription = "Internal server error",
-                        Headers = {["RESTar-info"] = e.Message}
-                    });
-            }
         }
 
         #endregion

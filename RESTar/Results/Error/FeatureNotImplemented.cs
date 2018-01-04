@@ -1,9 +1,9 @@
 ﻿using System.Net;
 using RESTar.Internal;
 
-namespace RESTar.Results.Error
+namespace RESTar.Results.Fail
 {
-    internal class FeatureNotImplemented : RESTarException
+    internal class FeatureNotImplemented : RESTarError
     {
         internal FeatureNotImplemented(string message) : base(ErrorCodes.NotImplemented, message)
         {

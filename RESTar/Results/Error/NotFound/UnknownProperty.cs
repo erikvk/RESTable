@@ -1,7 +1,7 @@
 ﻿using System.Reflection;
 using RESTar.Internal;
 
-namespace RESTar.Results.Error.NotFound
+namespace RESTar.Results.Fail.NotFound
 {
     internal class UnknownProperty : NotFound
     {

@@ -7,8 +7,8 @@ using Newtonsoft.Json.Linq;
 using RESTar.Linq;
 using RESTar.Admin;
 using RESTar.Internal;
-using RESTar.Results.Error;
-using RESTar.Results.Error.BadRequest;
+using RESTar.Results.Fail;
+using RESTar.Results.Fail.BadRequest;
 using static System.Reflection.BindingFlags;
 
 namespace RESTar.Resources

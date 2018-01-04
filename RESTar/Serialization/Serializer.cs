@@ -8,7 +8,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
 using RESTar.Internal;
-using RESTar.Results.Error.BadRequest;
+using RESTar.Results.Fail.BadRequest;
 using static System.Linq.Enumerable;
 using static Newtonsoft.Json.Formatting;
 using static RESTar.Admin.Settings;

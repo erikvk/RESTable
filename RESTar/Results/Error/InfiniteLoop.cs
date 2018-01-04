@@ -1,9 +1,9 @@
 ﻿using System.Net;
 using RESTar.Internal;
 
-namespace RESTar.Results.Error
+namespace RESTar.Results.Fail
 {
-    internal class InfiniteLoop : RESTarException
+    internal class InfiniteLoop : RESTarError
     {
         internal InfiniteLoop() : base(ErrorCodes.InfiniteLoopDetected,
             "RESTar encountered a potentially infinite loop of recursive internal calls.")

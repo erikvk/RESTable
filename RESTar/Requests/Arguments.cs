@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using RESTar.Linq;
 using RESTar.OData;
-using RESTar.Results.Error;
+using RESTar.Results.Fail;
 using static System.Text.RegularExpressions.RegexOptions;
 using IResource = RESTar.Internal.IResource;
 

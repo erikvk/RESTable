@@ -5,12 +5,12 @@ using RESTar.Internal;
 using RESTar.Operations;
 using RESTar.Requests;
 
-namespace RESTar.Results.Error
+namespace RESTar.Results.Fail
 {
     /// <summary>
     /// A super class for all custom RESTar exceptions
     /// </summary>
-    internal abstract class RESTarException : Exception, IFinalizedResult
+    internal abstract class RESTarError : Exception, IFinalizedResult
     {
         /// <summary>
         /// The error code for this error
@@ -40,13 +40,13 @@ namespace RESTar.Results.Error
         Stream IFinalizedResult.Body { get; } = null;
         string IFinalizedResult.ContentType { get; } = null;
 
-        internal RESTarException(ErrorCodes code, string message) : base(message)
+        internal RESTarError(ErrorCodes code, string message) : base(message)
         {
             ErrorCode = code;
             Headers["RESTar-info"] = Message;
         }
 
-        internal RESTarException(ErrorCodes code, string message, Exception ie) : base(message, ie)
+        internal RESTarError(ErrorCodes code, string message, Exception ie) : base(message, ie)
         {
             ErrorCode = code;
             Headers["RESTar-info"] = Message;

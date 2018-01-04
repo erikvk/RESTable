@@ -1,12 +1,12 @@
 ﻿using System.Net;
 using RESTar.Internal;
 
-namespace RESTar.Results.Error.NotFound
+namespace RESTar.Results.Fail.NotFound
 {
     /// <summary>
     /// Exceptions that should be treated as bad requests
     /// </summary>
-    internal abstract class NotFound : RESTarException
+    internal abstract class NotFound : RESTarError
     {
         internal NotFound(ErrorCodes code, string message) : base(code, message)
         {

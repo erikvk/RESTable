@@ -1,6 +1,6 @@
 ﻿using RESTar.Internal;
 
-namespace RESTar.Results.Error.BadRequest
+namespace RESTar.Results.Fail.BadRequest
 {
     internal class InvalidSyntax : BadRequest
     {

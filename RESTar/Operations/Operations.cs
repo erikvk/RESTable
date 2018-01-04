@@ -5,9 +5,9 @@ using Newtonsoft.Json.Linq;
 using RESTar.Admin;
 using RESTar.Linq;
 using RESTar.Requests;
-using RESTar.Results.Error;
-using RESTar.Results.Error.BadRequest;
-using RESTar.Results.Error.BadRequest.Aborted;
+using RESTar.Results.Fail;
+using RESTar.Results.Fail.BadRequest;
+using RESTar.Results.Fail.BadRequest.Aborted;
 using RESTar.Results.Success;
 using RESTar.Serialization;
 using Starcounter;
@@ -30,7 +30,7 @@ namespace RESTar.Operations
             }
             catch (Exception e)
             {
-                throw new AbortedSelector<T>(e, request);
+                throw new AbortedSelect<T>(e, request);
             }
         }
 
@@ -44,7 +44,7 @@ namespace RESTar.Operations
             }
             catch (Exception e)
             {
-                throw new AbortedSelector<T>(e, request);
+                throw new AbortedSelect<T>(e, request);
             }
         }
 
@@ -62,7 +62,7 @@ namespace RESTar.Operations
             }
             catch (Exception e)
             {
-                throw new AbortedSelector<T>(e, request);
+                throw new AbortedSelect<T>(e, request);
             }
         }
 
@@ -91,7 +91,7 @@ namespace RESTar.Operations
             }
             catch (Exception e)
             {
-                throw new AbortedSelector<T>(e, request);
+                throw new AbortedSelect<T>(e, request);
             }
         }
 
@@ -105,7 +105,7 @@ namespace RESTar.Operations
             }
             catch (Exception e)
             {
-                throw new AbortedCounter<T>(e, request);
+                throw new AbortedReport<T>(e, request);
             }
         }
 
@@ -117,7 +117,7 @@ namespace RESTar.Operations
             }
             catch (Exception e)
             {
-                throw new AbortedProfiler<T>(e, request);
+                throw new AbortedProfile<T>(e, request);
             }
         }
 
@@ -137,7 +137,7 @@ namespace RESTar.Operations
             }
             catch (Exception e)
             {
-                throw new AbortedInserter<T>(e, request);
+                throw new AbortedInsert<T>(e, request);
             }
         }
 
@@ -154,7 +154,7 @@ namespace RESTar.Operations
             }
             catch (Exception e)
             {
-                throw new AbortedInserter<T>(e, request);
+                throw new AbortedInsert<T>(e, request);
             }
         }
 
@@ -168,7 +168,7 @@ namespace RESTar.Operations
             }
             catch (Exception e)
             {
-                throw new AbortedInserter<T>(e, request);
+                throw new AbortedInsert<T>(e, request);
             }
         }
 
@@ -184,7 +184,7 @@ namespace RESTar.Operations
             }
             catch (Exception e)
             {
-                throw new AbortedInserter<T>(e, request);
+                throw new AbortedInsert<T>(e, request);
             }
         }
 
@@ -198,7 +198,7 @@ namespace RESTar.Operations
             }
             catch (Exception e)
             {
-                throw new AbortedInserter<T>(e, request);
+                throw new AbortedInsert<T>(e, request);
             }
         }
 
@@ -213,7 +213,7 @@ namespace RESTar.Operations
             }
             catch (Exception e)
             {
-                throw new AbortedInserter<T>(e, request);
+                throw new AbortedInsert<T>(e, request);
             }
         }
 
@@ -231,7 +231,7 @@ namespace RESTar.Operations
             {
                 var _results = results;
                 Db.TransactAsync(() => _results?.Where(i => i != null).ForEach(item => Try(item.Delete)));
-                throw new AbortedInserter<T>(e, request);
+                throw new AbortedInsert<T>(e, request);
             }
         }
 
@@ -247,7 +247,7 @@ namespace RESTar.Operations
             catch (Exception e)
             {
                 Try(() => result?.Delete());
-                throw new AbortedInserter<T>(e, request);
+                throw new AbortedInsert<T>(e, request);
             }
         }
 
@@ -265,7 +265,7 @@ namespace RESTar.Operations
             {
                 var _results = results;
                 Db.TransactAsync(() => _results?.Where(i => i != null).ForEach(item => Try(item.Delete)));
-                throw new AbortedInserter<T>(e, request);
+                throw new AbortedInsert<T>(e, request);
             }
         }
 
@@ -284,7 +284,7 @@ namespace RESTar.Operations
             }
             catch (Exception e)
             {
-                throw new AbortedUpdater<T>(e, request);
+                throw new AbortedUpdate<T>(e, request);
             }
         }
 
@@ -302,7 +302,7 @@ namespace RESTar.Operations
             }
             catch (Exception e)
             {
-                throw new AbortedUpdater<T>(e, request);
+                throw new AbortedUpdate<T>(e, request);
             }
         }
 
@@ -317,7 +317,7 @@ namespace RESTar.Operations
             }
             catch (Exception e)
             {
-                throw new AbortedUpdater<T>(e, request);
+                throw new AbortedUpdate<T>(e, request);
             }
         }
 
@@ -333,7 +333,7 @@ namespace RESTar.Operations
             }
             catch (Exception e)
             {
-                throw new AbortedUpdater<T>(e, request);
+                throw new AbortedUpdate<T>(e, request);
             }
         }
 
@@ -352,7 +352,7 @@ namespace RESTar.Operations
             }
             catch (Exception e)
             {
-                throw new AbortedUpdater<T>(e, request);
+                throw new AbortedUpdate<T>(e, request);
             }
         }
 
@@ -368,7 +368,7 @@ namespace RESTar.Operations
             }
             catch (Exception e)
             {
-                throw new AbortedDeleter<T>(e, request);
+                throw new AbortedDelete<T>(e, request);
             }
         }
 
@@ -380,7 +380,7 @@ namespace RESTar.Operations
             }
             catch (Exception e)
             {
-                throw new AbortedDeleter<T>(e, request);
+                throw new AbortedDelete<T>(e, request);
             }
         }
 
@@ -486,7 +486,7 @@ namespace RESTar.Operations
                 }
                 catch (Exception e)
                 {
-                    throw new AbortedInserter<T>(e, request, e.Message);
+                    throw new AbortedInsert<T>(e, request, e.Message);
                 }
             }
 

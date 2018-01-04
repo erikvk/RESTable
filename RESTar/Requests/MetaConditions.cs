@@ -5,7 +5,7 @@ using RESTar.Admin;
 using RESTar.Internal;
 using RESTar.Linq;
 using RESTar.Operations;
-using RESTar.Results.Error.BadRequest;
+using RESTar.Results.Fail.BadRequest;
 using static RESTar.Internal.ErrorCodes;
 using static RESTar.Operators;
 

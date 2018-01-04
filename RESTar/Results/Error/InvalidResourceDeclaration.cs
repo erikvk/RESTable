@@ -1,8 +1,8 @@
 ﻿using RESTar.Internal;
 
-namespace RESTar.Results.Error
+namespace RESTar.Results.Fail
 {
-    internal class InvalidResourceDeclaration : RESTarException
+    internal class InvalidResourceDeclaration : RESTarError
     {
         internal InvalidResourceDeclaration(string message) : base(ErrorCodes.InvalidResourceDeclaration, message) { }
     }

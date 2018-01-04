@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using RESTar.Internal;
 using RESTar.Resources;
-using RESTar.Results.Error.NotFound;
+using RESTar.Results.Fail.NotFound;
 using static System.StringComparison;
 using IResource = RESTar.Internal.IResource;
 

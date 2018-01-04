@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace RESTar.Results.Error
+namespace RESTar.Results.Fail
 {
     internal class HttpRequestException : Exception
     {

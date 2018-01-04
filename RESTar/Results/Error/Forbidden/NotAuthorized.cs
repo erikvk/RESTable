@@ -1,6 +1,6 @@
 ﻿using RESTar.Internal;
 
-namespace RESTar.Results.Error.Forbidden
+namespace RESTar.Results.Fail.Forbidden
 {
     internal class NotAuthorized : Forbidden
     {
