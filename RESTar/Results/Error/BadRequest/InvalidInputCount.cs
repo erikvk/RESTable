@@ -6,7 +6,7 @@ namespace RESTar.Results.Error.BadRequest
     /// <summary>
     /// Thrown when an invalid number of data entities was provided for a certain method.
     /// </summary>
-    public class InvalidInputCount : Base
+    internal class InvalidInputCount : BadRequest
     {
         internal InvalidInputCount() : base(ErrorCodes.DataSourceFormat,
             "Invalid input count. Expected object/row, but found array/multiple rows. " +

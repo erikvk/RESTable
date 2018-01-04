@@ -10,7 +10,7 @@ namespace RESTar.Results.Error
     /// <summary>
     /// A super class for all custom RESTar exceptions
     /// </summary>
-    public abstract class RESTarException : Exception, IFinalizedResult
+    internal abstract class RESTarException : Exception, IFinalizedResult
     {
         /// <summary>
         /// The error code for this error

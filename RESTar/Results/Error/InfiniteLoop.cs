@@ -7,7 +7,7 @@ namespace RESTar.Results.Error
     /// <summary>
     /// Thrown when a RESTar encounters an infinite loop when evaluating a request
     /// </summary>
-    public class InfiniteLoop : RESTarException
+    internal class InfiniteLoop : RESTarException
     {
         internal InfiniteLoop() : base(ErrorCodes.InfiniteLoopDetected,
             "RESTar encountered a potentially infinite loop of recursive internal calls.")

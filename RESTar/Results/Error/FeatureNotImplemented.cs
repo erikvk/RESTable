@@ -6,7 +6,7 @@ namespace RESTar.Results.Error
     /// <summary>
     /// Thrown when RESTar encounters an unknown or not implemented feature
     /// </summary>
-    public class FeatureNotImplemented : RESTarException
+    internal class FeatureNotImplemented : RESTarException
     {
         internal FeatureNotImplemented(string message) : base(ErrorCodes.NotImplemented, message)
         {

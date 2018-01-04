@@ -6,7 +6,7 @@ namespace RESTar.Results.Error
     /// <summary>
     /// Thrown when a RESTar add-on could not be connected properly
     /// </summary>
-    public class RESTarAddOnException : RESTarException
+    internal class RESTarAddOnException : RESTarException
     {
         internal RESTarAddOnException(string message) : base(ErrorCodes.AddOnError, message) { }
     }

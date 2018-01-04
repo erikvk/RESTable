@@ -9,7 +9,7 @@ namespace RESTar.Results.Error.BadRequest
     /// <summary>
     /// Thrown when a provided operator was forbidden for the given property
     /// </summary>
-    public class BadConditionOperator : Base
+    internal class BadConditionOperator : BadRequest
     {
         internal BadConditionOperator(string c, ITarget target, Operator found, Term term, IEnumerable<Operator> allowed)
             : base(ErrorCodes.InvalidConditionOperator, $"Forbidden operator for condition '{c}'. '{found}' is not allowed when " +

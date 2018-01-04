@@ -8,7 +8,6 @@ using Newtonsoft.Json.Linq;
 using RESTar.Internal;
 using RESTar.Linq;
 using RESTar.Operations;
-using RESTar.Results.Error;
 using RESTar.Results.Error.Forbidden;
 using RESTar.Results.Error.NotFound;
 using RESTar.Serialization;

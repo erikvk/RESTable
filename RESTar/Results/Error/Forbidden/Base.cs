@@ -7,9 +7,9 @@ namespace RESTar.Results.Error.Forbidden
     /// <summary>
     /// Thrown when a client does something that is forbidden
     /// </summary>
-    public abstract class Base : RESTarException
+    internal abstract class Forbidden : RESTarException
     {
-        internal Base(ErrorCodes code, string message) : base(code, message)
+        internal Forbidden(ErrorCodes code, string message) : base(code, message)
         {
             StatusCode = HttpStatusCode.Forbidden;
             StatusDescription = "Forbidden";

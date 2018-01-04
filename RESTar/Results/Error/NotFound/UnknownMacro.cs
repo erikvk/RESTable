@@ -6,7 +6,7 @@ namespace RESTar.Results.Error.NotFound
     /// <summary>
     /// Thrown when RESTar cannot locate a macro using a given search string
     /// </summary>
-    public class UnknownMacro : NotFound
+    internal class UnknownMacro : NotFound
     {
         internal UnknownMacro(string searchString) : base(ErrorCodes.UnknownMacro,
             $"RESTar could not locate any macro by '{searchString}'.") { }

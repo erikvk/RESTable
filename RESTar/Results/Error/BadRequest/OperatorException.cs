@@ -6,7 +6,7 @@ namespace RESTar.Results.Error.BadRequest
     /// <summary>
     /// Thrown when a provided operator was invalid
     /// </summary>
-    public class OperatorException : InvalidSyntax
+    internal class OperatorException : InvalidSyntax
     {
         internal OperatorException(string c) : base(ErrorCodes.InvalidConditionOperator,
             $"Invalid or missing operator or separator ('&') for condition '{c}'. Always URI encode all equals ('=' -> '%3D') " +

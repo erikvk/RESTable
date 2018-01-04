@@ -6,7 +6,7 @@ namespace RESTar.Results.Error
     /// <summary>
     /// Thrown when a RESTar resource provider was found invalid
     /// </summary>
-    public class ExternalResourceProviderException : RESTarException
+    internal class ExternalResourceProviderException : RESTarException
     {
         internal ExternalResourceProviderException(string message) : base(ErrorCodes.ResourceProviderError,
             "An error was found in an external ResourceProvider: " + message) { }

@@ -6,7 +6,7 @@ namespace RESTar.Results.Error
     /// <summary>
     /// Thrown when an error was detected in a virtual resource declaration.
     /// </summary>
-    public class ResourceDeclarationException : RESTarException
+    internal class ResourceDeclarationException : RESTarException
     {
         internal ResourceDeclarationException(string message) : base(ErrorCodes.InvalidResourceDeclaration, message) { }
     }

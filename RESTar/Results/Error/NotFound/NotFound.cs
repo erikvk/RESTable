@@ -6,7 +6,7 @@ namespace RESTar.Results.Error.NotFound
     /// <summary>
     /// Exceptions that should be treated as bad requests
     /// </summary>
-    public abstract class NotFound : RESTarException
+    internal abstract class NotFound : RESTarException
     {
         internal NotFound(ErrorCodes code, string message) : base(code, message)
         {

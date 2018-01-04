@@ -6,7 +6,7 @@ namespace RESTar.Results.Error.BadRequest
     /// <summary>
     /// Thrown when an invalid members was detected in a resource declaration.
     /// </summary>
-    public class ResourceMemberException : Base
+    internal class ResourceMemberException : BadRequest
     {
         internal ResourceMemberException(string message) : base(ErrorCodes.InvalidResourceMember, message) { }
     }

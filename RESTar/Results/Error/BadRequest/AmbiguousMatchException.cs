@@ -7,7 +7,7 @@ namespace RESTar.Results.Error.BadRequest
     /// Thrown when a uniquely matched entity in a resource was expected for a request,
     /// but multiple was found. 
     /// </summary>
-    public class AmbiguousMatchException : Base
+    internal class AmbiguousMatchException : BadRequest
     {
         internal AmbiguousMatchException(ITarget resource) : base(ErrorCodes.AmbiguousMatch,
             $"Expected a uniquely matched entity in resource '{resource.Name}', but found multiple. " +
