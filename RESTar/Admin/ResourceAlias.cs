@@ -58,7 +58,7 @@ namespace RESTar.Admin
                 catch (KeyNotFoundException)
                 {
                     this.Delete();
-                    throw new UnknownResourceForAliasException(value, RESTar.Resource.Find(value));
+                    throw new UnknownResourceForAlias(value, RESTar.Resource.Find(value));
                 }
                 catch
                 {

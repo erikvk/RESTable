@@ -94,10 +94,10 @@ namespace RESTar.Internal
                 {
                     if (usedAliasMapping.Resource == Name)
                         return;
-                    throw new AliasAlreadyInUseException(usedAliasMapping);
+                    throw new AliasAlreadyInUse(usedAliasMapping);
                 }
                 if (RESTarConfig.Resources.Any(r => r.Name.EqualsNoCase(value)))
-                    throw new AliasEqualToResourceNameException(value);
+                    throw new AliasEqualToResourceName(value);
                 Trans(() =>
                 {
                     existingAssignment = existingAssignment ?? new Admin.ResourceAlias {Resource = Name};
@@ -201,7 +201,7 @@ namespace RESTar.Internal
                 if (del == null)
                 {
                     var @interface = MatchingInterface(op);
-                    throw new ResourceDeclarationException(
+                    throw new InvalidResourceDeclaration(
                         $"The '{op}' operation is needed to support method(s) {AvailableMethods.ToMethodsString()} for resource '{Name}', but " +
                         "RESTar found no implementation of the operation interface in the type declaration. Add an implementation of the " +
                         $"'{@interface.ToString().Replace("`1[T]", $"<{Name}>")}' interface to the resource's type declaration");

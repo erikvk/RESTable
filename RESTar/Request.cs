@@ -100,7 +100,7 @@ namespace RESTar
         public Request(params Condition<T>[] conditions)
         {
             if (!RESTarConfig.Initialized)
-                throw new NotInitializedException();
+                throw new NotInitialized();
             Resource = Resource<T>.Get;
             Target = Resource;
             ResponseHeaders = new Headers();
@@ -215,7 +215,7 @@ namespace RESTar
                 case null:
                 case 0: return 0;
                 case 1: return Operations<T>.App.PATCH(updater, source.First(), this);
-                default: throw new AmbiguousMatchException(Resource);
+                default: throw new AmbiguousMatch(Resource);
             }
         }
 
@@ -254,7 +254,7 @@ namespace RESTar
             {
                 var list = source.ToList();
                 if (list.Count > 1)
-                    throw new AmbiguousMatchException(Resource);
+                    throw new AmbiguousMatch(Resource);
                 source = list;
             }
 

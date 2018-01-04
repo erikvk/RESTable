@@ -116,7 +116,7 @@ namespace RESTar.Resources
         internal override bool Include(Type type)
         {
             if (!typeof(TBase).IsAssignableFrom(type))
-                throw new ResourceDeclarationException(
+                throw new InvalidResourceDeclaration(
                     $"Invalid resource declaration for type '{type.FullName}'. Expected type to " +
                     $"inherit from base type '{typeof(TBase).FullName}' as required by resource " +
                     $"provider of type '{GetType().FullName}'.");
@@ -135,7 +135,7 @@ namespace RESTar.Resources
         internal override void MakeClaimRegular(IEnumerable<Type> types) => types.ForEach(type =>
         {
             if (!IsValid(type, out var reason))
-                throw new ResourceDeclarationException("An error was found in the declaration for resource " +
+                throw new InvalidResourceDeclaration("An error was found in the declaration for resource " +
                                                        $"type '{type.FullName}': " + reason);
             BuildRegularMethod.MakeGenericMethod(type).Invoke(this, null);
         });
@@ -143,7 +143,7 @@ namespace RESTar.Resources
         internal override void MakeClaimWrapped(IEnumerable<Type> types) => types.ForEach(type =>
         {
             if (!IsValid(type, out var reason))
-                throw new ResourceDeclarationException("An error was found in the declaration for wrapper resource " +
+                throw new InvalidResourceDeclaration("An error was found in the declaration for wrapper resource " +
                                                        $"type '{type.FullName}': " + reason);
             BuildWrapperMethod.MakeGenericMethod(type, type.GetWrappedType()).Invoke(this, null);
         });
@@ -184,11 +184,11 @@ namespace RESTar.Resources
         internal override void Validate()
         {
             if (AttributeType == null)
-                throw new ExternalResourceProviderException("AttributeType cannot be null");
+                throw new InvalidExternalResourceProvider("AttributeType cannot be null");
             if (!AttributeType.IsSubclassOf(typeof(Attribute)))
-                throw new ExternalResourceProviderException("Provided AttributeType is not an attribute type");
+                throw new InvalidExternalResourceProvider("Provided AttributeType is not an attribute type");
             if (!AttributeType.IsSubclassOf(typeof(ResourceProviderAttribute)))
-                throw new ExternalResourceProviderException($"Provided AttributeType '{AttributeType.FullName}' " +
+                throw new InvalidExternalResourceProvider($"Provided AttributeType '{AttributeType.FullName}' " +
                                                             $"does not inherit from RESTar.ResourceProviderAttribute");
         }
 

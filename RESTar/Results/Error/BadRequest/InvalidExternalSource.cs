@@ -3,10 +3,6 @@ using RESTar.Internal;
 
 namespace RESTar.Results.Error.BadRequest
 {
-    /// <inheritdoc />
-    /// <summary>
-    /// Thrown when RESTar encounters an error getting entities from an external data source.
-    /// </summary>
     internal class InvalidExternalSource : BadRequest
     {
         internal InvalidExternalSource(HttpRequest request, string message) : base(ErrorCodes.InvalidSourceData,

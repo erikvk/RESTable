@@ -52,24 +52,4 @@ namespace RESTar.Results.Error
             Headers["RESTar-info"] = Message;
         }
     }
-
-    #region Non-results
-
-    #endregion
-
-    #region Other
-
-    #endregion
-
-    #region Not found
-
-    #endregion
-
-    #region Bad request
-
-    #endregion
-
-    #region Aborted operations
-
-    #endregion
 }

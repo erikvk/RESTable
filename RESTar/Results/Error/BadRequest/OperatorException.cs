@@ -2,10 +2,6 @@
 
 namespace RESTar.Results.Error.BadRequest
 {
-    /// <inheritdoc />
-    /// <summary>
-    /// Thrown when a provided operator was invalid
-    /// </summary>
     internal class OperatorException : InvalidSyntax
     {
         internal OperatorException(string c) : base(ErrorCodes.InvalidConditionOperator,

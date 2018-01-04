@@ -2,10 +2,6 @@
 
 namespace RESTar.Results.Error.NotFound
 {
-    /// <inheritdoc />
-    /// <summary>
-    /// Thrown when no HTML was found for a resource view.
-    /// </summary>
     internal class NoHtml : NotFound
     {
         internal NoHtml(IResource resource, string matcher) : base(ErrorCodes.NoMatchingHtml,

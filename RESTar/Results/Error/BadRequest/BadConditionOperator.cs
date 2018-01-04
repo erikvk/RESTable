@@ -5,10 +5,6 @@ using RESTar.Internal;
 
 namespace RESTar.Results.Error.BadRequest
 {
-    /// <inheritdoc />
-    /// <summary>
-    /// Thrown when a provided operator was forbidden for the given property
-    /// </summary>
     internal class BadConditionOperator : BadRequest
     {
         internal BadConditionOperator(string c, ITarget target, Operator found, Term term, IEnumerable<Operator> allowed)

@@ -117,7 +117,7 @@ namespace RESTar.Operations
             }
             catch (Exception e)
             {
-                throw new AbortedProfilerException<T>(e, request);
+                throw new AbortedProfiler<T>(e, request);
             }
         }
 
@@ -425,7 +425,7 @@ namespace RESTar.Operations
                 var source = SELECT_FILTER(request)?.ToList();
                 if (source?.Any() != true) return new UpdatedEntities(0, request.Resource);
                 if (!request.MetaConditions.Unsafe && source.Count > 1)
-                    throw new AmbiguousMatchException(request.Resource);
+                    throw new AmbiguousMatch(request.Resource);
                 return new UpdatedEntities(Transaction<T>.Transact(() => UPDATE(request, source)), request.Resource);
             }
 
@@ -437,7 +437,7 @@ namespace RESTar.Operations
                     case null:
                     case 0: return new InsertedEntities(Transaction<T>.Transact(() => INSERT_ONE(request)), request.Resource);
                     case 1: return new UpdatedEntities(Transaction<T>.Transact(() => UPDATE_ONE(request, source[0])), request.Resource);
-                    default: throw new AmbiguousMatchException(request.Resource);
+                    default: throw new AmbiguousMatch(request.Resource);
                 }
             }
 
@@ -449,7 +449,7 @@ namespace RESTar.Operations
                 {
                     var list = source.ToList();
                     if (list.Count > 1)
-                        throw new AmbiguousMatchException(request.Resource);
+                        throw new AmbiguousMatch(request.Resource);
                     source = list;
                 }
                 return new DeletedEntities(Transaction<T>.Transact(() => OP_DELETE(request, source)), request.Resource);
@@ -479,7 +479,7 @@ namespace RESTar.Operations
                             case 1:
                                 toUpdate.Add((entity, results[0]));
                                 break;
-                            default: throw new AmbiguousMatchException(request.Resource);
+                            default: throw new AmbiguousMatch(request.Resource);
                         }
                     }
                     return (innerRequest, toInsert, toUpdate);
@@ -591,7 +591,7 @@ namespace RESTar.Operations
                     case null:
                     case 0: return Transaction<T>.Transact(() => INSERT_ONE(request, inserter));
                     case 1: return 0;
-                    default: throw new AmbiguousMatchException(request.Resource);
+                    default: throw new AmbiguousMatch(request.Resource);
                 }
             }
 
@@ -604,7 +604,7 @@ namespace RESTar.Operations
                     case null:
                     case 0: return Transaction<T>.Transact(() => INSERT_ONE(request, inserter));
                     case 1: return Transaction<T>.Transact(() => UPDATE_ONE(request, updater, list[0]));
-                    default: throw new AmbiguousMatchException(request.Resource);
+                    default: throw new AmbiguousMatch(request.Resource);
                 }
             }
 

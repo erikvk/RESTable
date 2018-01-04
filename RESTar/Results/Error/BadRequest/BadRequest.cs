@@ -4,9 +4,6 @@ using RESTar.Internal;
 
 namespace RESTar.Results.Error.BadRequest
 {
-    /// <summary>
-    /// Exceptions that should be treated as bad requests
-    /// </summary>
     internal abstract class BadRequest : RESTarException
     {
         internal BadRequest(ErrorCodes code, string message) : base(code, message)

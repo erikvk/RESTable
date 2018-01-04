@@ -127,7 +127,7 @@ namespace RESTar.Admin
                 entity.Provider = "DynamicResource";
                 entity.ResolveDynamicResourceName();
                 if (!string.IsNullOrWhiteSpace(entity.Alias) && ResourceAlias.Exists(entity.Alias, out var alias))
-                    throw new AliasAlreadyInUseException(alias);
+                    throw new AliasAlreadyInUse(alias);
                 if (entity.EnabledMethods?.Any() != true)
                     entity.EnabledMethods = RESTarConfig.Methods;
                 DynamicResource.MakeTable(entity);
