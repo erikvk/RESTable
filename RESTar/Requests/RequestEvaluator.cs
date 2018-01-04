@@ -123,7 +123,7 @@ namespace RESTar.Requests
                 }
                 catch (Exception e)
                 {
-                    throw new AbortedSelectorException<T>(e, request);
+                    throw new AbortedSelector<T>(e, request);
                 }
             }
         }

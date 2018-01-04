@@ -30,7 +30,7 @@ namespace RESTar.Operations
             }
             catch (Exception e)
             {
-                throw new AbortedSelectorException<T>(e, request);
+                throw new AbortedSelector<T>(e, request);
             }
         }
 
@@ -44,7 +44,7 @@ namespace RESTar.Operations
             }
             catch (Exception e)
             {
-                throw new AbortedSelectorException<T>(e, request);
+                throw new AbortedSelector<T>(e, request);
             }
         }
 
@@ -62,7 +62,7 @@ namespace RESTar.Operations
             }
             catch (Exception e)
             {
-                throw new AbortedSelectorException<T>(e, request);
+                throw new AbortedSelector<T>(e, request);
             }
         }
 
@@ -91,7 +91,7 @@ namespace RESTar.Operations
             }
             catch (Exception e)
             {
-                throw new AbortedSelectorException<T>(e, request);
+                throw new AbortedSelector<T>(e, request);
             }
         }
 
@@ -105,7 +105,7 @@ namespace RESTar.Operations
             }
             catch (Exception e)
             {
-                throw new AbortedCounterException<T>(e, request);
+                throw new AbortedCounter<T>(e, request);
             }
         }
 
@@ -137,7 +137,7 @@ namespace RESTar.Operations
             }
             catch (Exception e)
             {
-                throw new AbortedInserterException<T>(e, request);
+                throw new AbortedInserter<T>(e, request);
             }
         }
 
@@ -154,7 +154,7 @@ namespace RESTar.Operations
             }
             catch (Exception e)
             {
-                throw new AbortedInserterException<T>(e, request);
+                throw new AbortedInserter<T>(e, request);
             }
         }
 
@@ -168,7 +168,7 @@ namespace RESTar.Operations
             }
             catch (Exception e)
             {
-                throw new AbortedInserterException<T>(e, request);
+                throw new AbortedInserter<T>(e, request);
             }
         }
 
@@ -184,7 +184,7 @@ namespace RESTar.Operations
             }
             catch (Exception e)
             {
-                throw new AbortedInserterException<T>(e, request);
+                throw new AbortedInserter<T>(e, request);
             }
         }
 
@@ -198,7 +198,7 @@ namespace RESTar.Operations
             }
             catch (Exception e)
             {
-                throw new AbortedInserterException<T>(e, request);
+                throw new AbortedInserter<T>(e, request);
             }
         }
 
@@ -213,7 +213,7 @@ namespace RESTar.Operations
             }
             catch (Exception e)
             {
-                throw new AbortedInserterException<T>(e, request);
+                throw new AbortedInserter<T>(e, request);
             }
         }
 
@@ -231,7 +231,7 @@ namespace RESTar.Operations
             {
                 var _results = results;
                 Db.TransactAsync(() => _results?.Where(i => i != null).ForEach(item => Try(item.Delete)));
-                throw new AbortedInserterException<T>(e, request);
+                throw new AbortedInserter<T>(e, request);
             }
         }
 
@@ -247,7 +247,7 @@ namespace RESTar.Operations
             catch (Exception e)
             {
                 Try(() => result?.Delete());
-                throw new AbortedInserterException<T>(e, request);
+                throw new AbortedInserter<T>(e, request);
             }
         }
 
@@ -265,7 +265,7 @@ namespace RESTar.Operations
             {
                 var _results = results;
                 Db.TransactAsync(() => _results?.Where(i => i != null).ForEach(item => Try(item.Delete)));
-                throw new AbortedInserterException<T>(e, request);
+                throw new AbortedInserter<T>(e, request);
             }
         }
 
@@ -284,7 +284,7 @@ namespace RESTar.Operations
             }
             catch (Exception e)
             {
-                throw new AbortedUpdaterException<T>(e, request);
+                throw new AbortedUpdater<T>(e, request);
             }
         }
 
@@ -302,7 +302,7 @@ namespace RESTar.Operations
             }
             catch (Exception e)
             {
-                throw new AbortedUpdaterException<T>(e, request);
+                throw new AbortedUpdater<T>(e, request);
             }
         }
 
@@ -317,7 +317,7 @@ namespace RESTar.Operations
             }
             catch (Exception e)
             {
-                throw new AbortedUpdaterException<T>(e, request);
+                throw new AbortedUpdater<T>(e, request);
             }
         }
 
@@ -333,7 +333,7 @@ namespace RESTar.Operations
             }
             catch (Exception e)
             {
-                throw new AbortedUpdaterException<T>(e, request);
+                throw new AbortedUpdater<T>(e, request);
             }
         }
 
@@ -352,7 +352,7 @@ namespace RESTar.Operations
             }
             catch (Exception e)
             {
-                throw new AbortedUpdaterException<T>(e, request);
+                throw new AbortedUpdater<T>(e, request);
             }
         }
 
@@ -368,7 +368,7 @@ namespace RESTar.Operations
             }
             catch (Exception e)
             {
-                throw new AbortedDeleterException<T>(e, request);
+                throw new AbortedDeleter<T>(e, request);
             }
         }
 
@@ -380,7 +380,7 @@ namespace RESTar.Operations
             }
             catch (Exception e)
             {
-                throw new AbortedDeleterException<T>(e, request);
+                throw new AbortedDeleter<T>(e, request);
             }
         }
 
@@ -486,7 +486,7 @@ namespace RESTar.Operations
                 }
                 catch (Exception e)
                 {
-                    throw new AbortedInserterException<T>(e, request, e.Message);
+                    throw new AbortedInserter<T>(e, request, e.Message);
                 }
             }
 

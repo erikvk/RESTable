@@ -7,9 +7,9 @@ namespace RESTar.Results.Error.BadRequest.Aborted
     /// <summary>
     /// Thrown when RESTar encounters an error selecting entities from a given resource.
     /// </summary>
-    internal class AbortedSelectorException<T> : AbortedOperation<T> where T : class
+    internal class AbortedSelector<T> : AbortedOperation<T> where T : class
     {
-        internal AbortedSelectorException(Exception ie, IRequest<T> request, string message = null)
+        internal AbortedSelector(Exception ie, IRequest<T> request, string message = null)
             : base(ErrorCodes.AbortedSelect, ie, request, message) { }
     }
 }
