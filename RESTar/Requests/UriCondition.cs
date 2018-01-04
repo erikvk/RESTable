@@ -51,7 +51,7 @@ namespace RESTar.Requests
 
             var operatorCharacters = new string(conditionString.Where(c => OpMatchChars.Contains(c)).ToArray());
             if (!Operator.TryParse(operatorCharacters, out var op))
-                throw new OperatorException(conditionString);
+                throw new InvalidOperator(conditionString);
             var keyValuePair = conditionString.Split(new[] {op.Common}, StringSplitOptions.None);
             Key = WebUtility.UrlDecode(keyValuePair[0]);
             Operator = op;

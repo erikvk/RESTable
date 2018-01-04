@@ -59,7 +59,7 @@ namespace RESTar
             if (!RESTarConfig.ResourceFinder.TryGetValue(searchString, out resource))
                 throw new UnknownResource(searchString);
             if (resource == null)
-                throw new AmbiguousResourceException(searchString);
+                throw new AmbiguousResource(searchString);
             return resource;
         }
 
@@ -76,7 +76,7 @@ namespace RESTar
             if (!RESTarConfig.ResourceFinder.TryGetValue(searchString, out resource))
                 return null;
             if (resource == null)
-                throw new AmbiguousResourceException(searchString);
+                throw new AmbiguousResource(searchString);
             return resource;
         }
 

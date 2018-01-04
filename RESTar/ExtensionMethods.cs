@@ -283,7 +283,7 @@ namespace RESTar
         internal static void Validate(this IValidatable ivalidatable)
         {
             if (!ivalidatable.IsValid(out var reason))
-                throw new ValidatableException(reason);
+                throw new FailedValidation(reason);
         }
 
         internal static IEnumerable<Operator> ToOperators(this Operators operators)
