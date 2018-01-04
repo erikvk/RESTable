@@ -7,7 +7,7 @@ using RESTar.Deflection.Dynamic;
 using RESTar.Internal;
 using RESTar.Operations;
 using RESTar.Requests;
-using RESTar.Results.Error;
+using RESTar.Results.Error.BadRequest;
 using static System.StringComparison;
 using static RESTar.Operators;
 
@@ -206,7 +206,7 @@ namespace RESTar
             var (key, op, valueLiteral) = (c.Key, c.Operator, c.ValueLiteral);
             var term = target.MakeConditionTerm(key);
             if (!term.Last.AllowedConditionOperators.HasFlag(op.OpCode))
-                throw new ForbiddenConditionOperator(key, target, op, term, term.Last.AllowedConditionOperators.ToOperators());
+                throw new BadConditionOperator(key, target, op, term, term.Last.AllowedConditionOperators.ToOperators());
             var value = valueLiteral.ParseConditionValue();
             if (term.Last is DeclaredProperty prop && prop.Type.IsEnum && value is string)
             {

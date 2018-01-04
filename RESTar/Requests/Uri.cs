@@ -4,7 +4,7 @@ using System.Text.RegularExpressions;
 using RESTar.Admin;
 using RESTar.Internal;
 using RESTar.OData;
-using RESTar.Results.Error;
+using RESTar.Results.Error.BadRequest;
 
 namespace RESTar.Requests
 {

@@ -9,6 +9,8 @@ using RESTar.Internal;
 using RESTar.Linq;
 using RESTar.Operations;
 using RESTar.Results.Error;
+using RESTar.Results.Error.Forbidden;
+using RESTar.Results.Error.NotFound;
 using RESTar.Serialization;
 using RESTar.View;
 using Starcounter;
@@ -240,7 +242,7 @@ namespace RESTar.Requests
         private void CheckMethod(Methods method, string errorMessage)
         {
             if (!Authenticator.MethodCheck(method, Resource, AuthToken))
-                throw new NotAllowedViewAction(NotAuthorized, errorMessage);
+                throw new NotAllowedViewAction(ErrorCodes.NotAuthorized, errorMessage);
         }
     }
 }

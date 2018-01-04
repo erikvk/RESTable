@@ -20,6 +20,8 @@ using RESTar.Linq;
 using RESTar.Operations;
 using RESTar.Resources;
 using RESTar.Results.Error;
+using RESTar.Results.Error.BadRequest;
+using RESTar.Results.Error.Forbidden;
 using RESTar.Serialization;
 using RESTar.View;
 using Starcounter;
@@ -725,7 +727,7 @@ namespace RESTar
         internal static void MethodCheck(this IRequest request)
         {
             if (!Authenticator.MethodCheck(request.Method, request.Resource, request.AuthToken))
-                throw Authenticator.NotAuthorized;
+                throw new NotAuthorized();
         }
 
         /// <summary>

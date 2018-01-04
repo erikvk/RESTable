@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Serialization;
-using RESTar.Results.Error;
+using RESTar.Results.Error.BadRequest;
 using Starcounter;
 using static RESTar.Methods;
 using IResource = RESTar.Internal.IResource;

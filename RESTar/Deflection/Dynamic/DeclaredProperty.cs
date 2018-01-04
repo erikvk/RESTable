@@ -5,7 +5,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using Newtonsoft.Json;
-using RESTar.Results.Error;
+using RESTar.Results.Error.NotFound;
 using Starcounter;
 using static System.Reflection.BindingFlags;
 using static Newtonsoft.Json.NullValueHandling;
@@ -113,10 +113,8 @@ namespace RESTar.Deflection.Dynamic
             ActualName = p.Name;
             Type = p.PropertyType;
             Attributes = p.GetCustomAttributes().ToList();
-
             var memberAttribute = GetAttribute<RESTarMemberAttribute>();
             var jsonAttribute = GetAttribute<JsonPropertyAttribute>();
-
             Order = memberAttribute?.Order ?? jsonAttribute?.Order;
             ScQueryable = p.DeclaringType?.HasAttribute<DatabaseAttribute>() == true && p.PropertyType.IsStarcounterCompatible();
             SkipConditions = memberAttribute?.SkipConditions == true || p.DeclaringType.HasAttribute<RESTarViewAttribute>();

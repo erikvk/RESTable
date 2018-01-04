@@ -3,10 +3,11 @@ using System.Collections.Generic;
 using RESTar.Internal;
 using RESTar.Operations;
 using RESTar.Results.Error;
+using RESTar.Results.Error.BadRequest.Aborted;
+using RESTar.Results.Error.Forbidden;
 using RESTar.Results.Success;
 using static RESTar.Operations.Transact;
 using static RESTar.Requests.Action;
-using static RESTar.Internal.ErrorCodes;
 using static RESTar.RESTarConfig;
 using Error = RESTar.Admin.Error;
 using IResource = RESTar.Internal.IResource;
@@ -81,7 +82,7 @@ namespace RESTar.Requests
                     case REPORT:
                         result.Headers["ErrorInfo"] = $"/{typeof(Error).FullName}/id={error.Id}";
                         return result;
-                    case OPTIONS: return new Forbidden(NotAuthorized, "Invalid or unauthorized origin");
+                    case OPTIONS: return new InvalidOrigin();
                     //case VIEW:
                     //case PAGE:
                     //case MENU:
@@ -132,7 +133,7 @@ namespace RESTar.Requests
             var origin = arguments.Headers.SafeGet("Origin");
             if (origin != null && (AllowAllOrigins || AllowedOrigins.Contains(new Uri(origin))))
                 return new AcceptOrigin(origin, resource);
-            return new Forbidden(NotAuthorized, "Invalid or unauthorized origin");
+            return new InvalidOrigin();
         }
     }
 }

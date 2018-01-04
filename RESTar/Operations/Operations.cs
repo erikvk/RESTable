@@ -6,6 +6,8 @@ using RESTar.Admin;
 using RESTar.Linq;
 using RESTar.Requests;
 using RESTar.Results.Error;
+using RESTar.Results.Error.BadRequest;
+using RESTar.Results.Error.BadRequest.Aborted;
 using RESTar.Results.Success;
 using RESTar.Serialization;
 using Starcounter;

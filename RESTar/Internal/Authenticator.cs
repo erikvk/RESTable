@@ -3,9 +3,8 @@ using System.Linq;
 using System.Net;
 using RESTar.Auth;
 using RESTar.Requests;
-using RESTar.Results.Error;
+using RESTar.Results.Error.Forbidden;
 using Starcounter;
-using static RESTar.Internal.ErrorCodes;
 using static RESTar.RESTarConfig;
 
 namespace RESTar.Internal
@@ -14,8 +13,6 @@ namespace RESTar.Internal
     {
         internal const string CurrentUser = "SELECT t.Token.User FROM Simplified.Ring5.SystemUserSession t " +
                                             "WHERE t.SessionIdString =? AND t.Token.User IS NOT NULL";
-
-        internal static Forbidden NotAuthorized => new Forbidden(ErrorCodes.NotAuthorized, "Not authorized");
 
         internal static readonly string AppToken = Guid.NewGuid().ToString();
 
@@ -28,12 +25,12 @@ namespace RESTar.Internal
         internal static void CheckUser()
         {
             if (GetCurrentSystemUser() == null)
-                throw new Forbidden(NotSignedIn, "User is not signed in");
+                throw new UserNotSignedIn();
         }
 
         internal static void Authenticate<T>(this ViewRequest<T> request) where T : class
         {
-            var user = GetCurrentSystemUser() ?? throw new Forbidden(NotSignedIn, "User is not signed in");
+            var user = GetCurrentSystemUser() ?? throw new UserNotSignedIn();
             var token = user.GetObjectID().SHA256();
             if (AuthTokens.ContainsKey(token))
                 request.AuthToken = token;
@@ -45,14 +42,14 @@ namespace RESTar.Internal
             if (!request.Resource.RequiresAuthentication) return;
             var authResults = request.Resource.Authenticate(request);
             if (!authResults.Success)
-                throw new Forbidden(FailedResourceAuthentication, authResults.Reason);
+                throw new FailedResourceAuthentication(authResults.Reason);
         }
 
         internal static void Authenticate(this Arguments arguments)
         {
             arguments.AuthToken = GetAuthToken(arguments);
             if (arguments.AuthToken == null)
-                arguments.Error = NotAuthorized;
+                arguments.Error = new NotAuthorized();
         }
 
         private static string GetAuthToken(Arguments arguments)

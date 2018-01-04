@@ -10,6 +10,7 @@ using RESTar.Linq;
 using RESTar.Operations;
 using RESTar.Requests;
 using RESTar.Results.Error;
+using RESTar.Results.Error.BadRequest;
 using RESTar.Results.Success;
 using RESTar.Serialization;
 using Formatting = Newtonsoft.Json.Formatting;

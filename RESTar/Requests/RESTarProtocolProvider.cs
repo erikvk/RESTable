@@ -8,6 +8,8 @@ using RESTar.Http;
 using RESTar.Internal;
 using RESTar.Operations;
 using RESTar.Results.Error;
+using RESTar.Results.Error.BadRequest;
+using RESTar.Results.Error.NotFound;
 using RESTar.Results.Success;
 using RESTar.Serialization;
 using static Newtonsoft.Json.Formatting;

@@ -10,6 +10,7 @@ using RESTar.Linq;
 using RESTar.Operations;
 using RESTar.Resources;
 using RESTar.Results.Error;
+using RESTar.Results.Error.BadRequest;
 using Starcounter;
 using static RESTar.Methods;
 using static RESTar.Deflection.TermBindingRules;

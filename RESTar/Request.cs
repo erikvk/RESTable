@@ -9,8 +9,9 @@ using RESTar.Operations;
 using RESTar.Requests;
 using RESTar.Resources;
 using RESTar.Results.Error;
+using RESTar.Results.Error.BadRequest;
+using RESTar.Results.Error.Forbidden;
 using RESTar.Serialization;
-using static RESTar.Internal.ErrorCodes;
 using IResource = RESTar.Internal.IResource;
 
 #pragma warning disable 1591
@@ -160,9 +161,6 @@ namespace RESTar
 
         public Request<T> WithConditions(string key, Operators op, object value) => WithConditions((key, op, value));
 
-        private Exception Deny(Methods method) =>
-            new Forbidden(NotAuthorized, $"{method} is not available for resource '{Resource.Name}'");
-
         /// <summary>
         /// Makes a GET request and serializes the output to an Excel workbook file. Returns a tuple with 
         /// the excel file as Stream and the number of non-header rows in the excel workbook.
@@ -177,40 +175,40 @@ namespace RESTar
         public IEnumerable<T> GET()
         {
             Prep();
-            if (!GETAllowed) throw Deny(Methods.GET);
+            if (!GETAllowed) throw new MethodUnavailable(Methods.GET, Resource);
             return Operations<T>.SELECT(this) ?? new T[0];
         }
 
         public bool ANY()
         {
             Prep();
-            if (!GETAllowed) throw Deny(Methods.GET);
+            if (!GETAllowed) throw new MethodUnavailable(Methods.GET, Resource);
             return Operations<T>.SELECT(this)?.Any() == true;
         }
 
         public long COUNT()
         {
             Prep();
-            if (!GETAllowed) throw Deny(Methods.GET);
+            if (!GETAllowed) throw new MethodUnavailable(Methods.GET, Resource);
             return Operations<T>.OP_COUNT(this);
         }
 
         public int POST(Func<T> inserter)
         {
-            if (!POSTAllowed) throw Deny(Methods.POST);
+            if (!POSTAllowed) throw new MethodUnavailable(Methods.POST, Resource);
             return Operations<T>.App.POST(inserter, this);
         }
 
         public int POST(Func<IEnumerable<T>> inserter)
         {
-            if (!POSTAllowed) throw Deny(Methods.POST);
+            if (!POSTAllowed) throw new MethodUnavailable(Methods.POST, Resource);
             return Operations<T>.App.POST(inserter, this);
         }
 
         public int PATCH(Func<T, T> updater)
         {
             Prep();
-            if (!PATCHAllowed) throw Deny(Methods.PATCH);
+            if (!PATCHAllowed) throw new MethodUnavailable(Methods.PATCH, Resource);
             var source = Operations<T>.SELECT(this)?.ToList();
             switch (source?.Count)
             {
@@ -224,7 +222,7 @@ namespace RESTar
         public int PATCH(Func<IEnumerable<T>, IEnumerable<T>> updater)
         {
             Prep();
-            if (!PATCHAllowed) throw Deny(Methods.PATCH);
+            if (!PATCHAllowed) throw new MethodUnavailable(Methods.PATCH, Resource);
             var source = Operations<T>.SELECT(this)?.ToList();
             if (source?.Any() != true) return 0;
             return Operations<T>.App.PATCH(updater, source, this);
@@ -233,7 +231,7 @@ namespace RESTar
         public int PUT(Func<T> inserter)
         {
             Prep();
-            if (!PUTAllowed) throw Deny(Methods.PUT);
+            if (!PUTAllowed) throw new MethodUnavailable(Methods.PUT, Resource);
             var source = Operations<T>.SELECT(this);
             return Operations<T>.App.PUT(inserter, source, this);
         }
@@ -241,7 +239,7 @@ namespace RESTar
         public int PUT(Func<T> inserter, Func<T, T> updater)
         {
             Prep();
-            if (!PUTAllowed) throw Deny(Methods.PUT);
+            if (!PUTAllowed) throw new MethodUnavailable(Methods.PUT, Resource);
             var source = Operations<T>.SELECT(this);
             return Operations<T>.App.PUT(inserter, updater, source, this);
         }
@@ -249,7 +247,7 @@ namespace RESTar
         public int DELETE(bool @unsafe = false)
         {
             Prep();
-            if (!DELETEAllowed) throw Deny(Methods.DELETE);
+            if (!DELETEAllowed) throw new MethodUnavailable(Methods.DELETE, Resource);
             var source = Operations<T>.SELECT(this);
             if (source == null) return 0;
             if (!@unsafe)
