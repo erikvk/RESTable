@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using Dynamit;
 using RESTar.Internal;
+using RESTar.Linq;
 using RESTar.Operations;
 using static System.Reflection.BindingFlags;
 
@@ -17,17 +19,11 @@ namespace RESTar.Resources
             return false;
         }
 
-        internal override void MakeClaimRegular(IEnumerable<Type> types)
-        {
-        }
+        internal override void MakeClaimRegular(IEnumerable<Type> types) { }
 
-        internal override void MakeClaimWrapped(IEnumerable<Type> types)
-        {
-        }
+        internal override void MakeClaimWrapped(IEnumerable<Type> types) { }
 
-        internal override void Validate()
-        {
-        }
+        internal override void Validate() { }
 
         // ReSharper disable once UnassignedGetOnlyAutoProperty
         public override Type AttributeType { get; }
@@ -75,19 +71,25 @@ namespace RESTar.Resources
             .MakeGenericMethod(resource.Table)
             .Invoke(this, new object[] {resource});
 
-        private void _BuildDynamicResource<T>(DynamicResource resource) where T : DDictionary => new Internal.Resource<T>
-        (
-            name: resource.Name,
-            attribute: resource.Attribute,
-            selector: DDictionaryOperations<T>.Select,
-            inserter: DDictionaryOperations<T>.Insert,
-            updater: DDictionaryOperations<T>.Update,
-            deleter: DDictionaryOperations<T>.Delete,
-            counter: DDictionaryOperations<T>.Count,
-            profiler: DDictionaryOperations<T>.Profile,
-            authenticator: null,
-            views: null,
-            provider: this
-        );
+        private void _BuildDynamicResource<T>(DynamicResource resource) where T : DDictionary
+        {
+            var nameSplit = resource.Name.Split('.');
+            var (@namespace, name) = (nameSplit.Take(nameSplit.Length - 1).StringJoin("."), nameSplit.Last());
+            new Internal.Resource<T>
+            (
+                @namespace: @namespace,
+                name: name,
+                attribute: resource.Attribute,
+                selector: DDictionaryOperations<T>.Select,
+                inserter: DDictionaryOperations<T>.Insert,
+                updater: DDictionaryOperations<T>.Update,
+                deleter: DDictionaryOperations<T>.Delete,
+                counter: DDictionaryOperations<T>.Count,
+                profiler: DDictionaryOperations<T>.Profile,
+                authenticator: null,
+                views: null,
+                provider: this
+            );
+        }
     }
 }

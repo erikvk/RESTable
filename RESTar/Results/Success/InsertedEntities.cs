@@ -10,7 +10,7 @@ namespace RESTar.Results.Success
         {
             StatusCode = HttpStatusCode.Created;
             StatusDescription = "Created";
-            Headers["RESTar-info"] = $"{count} entities inserted into resource '{resource.Name}'";
+            Headers["RESTar-info"] = $"{count} entities inserted into resource '{resource.FullName}'";
         }
     }
 }

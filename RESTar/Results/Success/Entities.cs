@@ -16,7 +16,7 @@ namespace RESTar.Results.Success
         private Entities() { }
 
         internal void SetContentDisposition(string extension) => Headers["Content-Disposition"] =
-            $"attachment;filename={Request.Resource.Name}_{DateTime.Now:yyMMddHHmmssfff}{extension}";
+            $"attachment;filename={Request.Resource.FullName}_{DateTime.Now:yyMMddHHmmssfff}{extension}";
 
         internal IUriParameters GetNextPageLink()
         {

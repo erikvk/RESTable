@@ -151,7 +151,8 @@ namespace RESTar.Resources
         private void BuildRegularResource<TResource>()
             where TResource : class, TBase => new Internal.Resource<TResource>
         (
-            name: typeof(TResource).FullName,
+            @namespace: typeof(TResource).Namespace,
+            name: typeof(TResource).Name,
             attribute: typeof(TResource).GetAttribute<RESTarAttribute>(),
             selector: GetDelegate<Selector<TResource>>(typeof(TResource)) ?? GetDefaultSelector<TResource>(),
             inserter: GetDelegate<Inserter<TResource>>(typeof(TResource)) ?? GetDefaultInserter<TResource>(),
@@ -168,7 +169,8 @@ namespace RESTar.Resources
             where TWrapper : ResourceWrapper<TWrapped>
             where TWrapped : class, TBase => new Internal.Resource<TWrapped>
         (
-            name: typeof(TWrapper).FullName,
+            @namespace: typeof(TWrapper).Namespace, 
+            name: typeof(TWrapper).Name,
             attribute: typeof(TWrapper).GetAttribute<RESTarAttribute>(),
             selector: GetDelegate<Selector<TWrapped>>(typeof(TWrapper)) ?? GetDefaultSelector<TWrapped>(),
             inserter: GetDelegate<Inserter<TWrapped>>(typeof(TWrapper)) ?? GetDefaultInserter<TWrapped>(),

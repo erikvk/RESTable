@@ -246,7 +246,7 @@ namespace RESTar.Resources
                 var parentResource = (IResourceInternal) Resource.SafeGet(group.Key);
                 if (parentResource == null)
                     throw new InvalidResourceDeclaration(
-                        $"Resource types {string.Join(", ", group.Select(item => $"'{item.Name}'"))} are declared " +
+                        $"Resource types {string.Join(", ", group.Select(item => $"'{item.FullName}'"))} are declared " +
                         $"within the scope of another class '{group.Key}', that is not a RESTar resource. Inner " +
                         "resources must be declared within a resource class.");
                 parentResource.InnerResources = group.ToList();

@@ -10,9 +10,19 @@ namespace RESTar.Internal
     public interface ITarget
     {
         /// <summary>
+        /// The full name of the target
+        /// </summary>
+        string FullName { get; }
+
+        /// <summary>
         /// The name of the target
         /// </summary>
         string Name { get; }
+
+        /// <summary>
+        /// The namespace of the target
+        /// </summary>
+        string Namespace { get; }
 
         /// <summary>
         /// Descriptions are visible in the AvailableMethods resource

@@ -24,7 +24,7 @@ namespace RESTar.Resources
                 .Where(index => !index.Name.StartsWith("DYNAMIT_GENERATED_INDEX"))
                 .Select(index => (resource: Resource.ByTypeName(index.Table.FullName), index))
                 .Where(pair => pair.resource != null)
-                .Select(pair => new DatabaseIndex(pair.resource.Name)
+                .Select(pair => new DatabaseIndex(pair.resource.FullName)
                 {
                     Name = pair.index.Name,
                     Columns = Db.SQL<IndexedColumn>(ColumnByIndex, pair.index).Select(c => new ColumnInfo
@@ -54,7 +54,7 @@ namespace RESTar.Resources
                 catch (SqlException e)
                 {
                     throw new Exception($"Could not create index '{index.Name}' on Starcounter database resource " +
-                                        $"'{index.IResource.Name}'. Indexes must point to statically defined instance " +
+                                        $"'{index.IResource.FullName}'. Indexes must point to statically defined instance " +
                                         "properties of Starcounter database classes.", e);
                 }
             }
@@ -78,7 +78,7 @@ namespace RESTar.Resources
                 catch (SqlException e)
                 {
                     throw new Exception($"Could not update index '{index.Name}' on Starcounter database resource " +
-                                        $"'{index.IResource.Name}'. Indexes must point to statically defined instance " +
+                                        $"'{index.IResource.FullName}'. Indexes must point to statically defined instance " +
                                         "properties of Starcounter database classes.", e);
                 }
             }

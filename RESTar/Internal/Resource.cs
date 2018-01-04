@@ -21,7 +21,9 @@ namespace RESTar.Internal
 {
     internal class Resource<T> : IResource<T>, IResourceInternal where T : class
     {
+        public string FullName { get; }
         public string Name { get; }
+        public string Namespace { get; }
         public bool Editable { get; }
         public IReadOnlyList<Methods> AvailableMethods { get; internal set; }
         public string Description { get; internal set; }
@@ -40,14 +42,14 @@ namespace RESTar.Internal
         public TermBindingRules ConditionBindingRule { get; }
         public TermBindingRules OutputBindingRule { get; }
         public bool RequiresAuthentication => Authenticate != null;
-        
+
         /// <inheritdoc />
         /// <summary>
         /// True for DDictionary resources and dynamic resources with DynamicConditionsAllowed
         /// </summary>
         public bool DeclaredPropertiesFlagged { get; }
 
-        public string AliasOrName => Alias ?? Name;
+        public string AliasOrName => Alias ?? FullName;
         public override string ToString() => AliasOrName;
         public bool IsStarcounterResource { get; }
         public bool RequiresValidation { get; }
@@ -78,10 +80,10 @@ namespace RESTar.Internal
 
         public string Alias
         {
-            get => Admin.ResourceAlias.GetByResource(Name)?.Alias;
+            get => Admin.ResourceAlias.GetByResource(FullName)?.Alias;
             set
             {
-                var existingAssignment = Admin.ResourceAlias.GetByResource(Name);
+                var existingAssignment = Admin.ResourceAlias.GetByResource(FullName);
                 if (value == null)
                 {
                     Trans(() => existingAssignment?.Delete());
@@ -92,15 +94,15 @@ namespace RESTar.Internal
                 var usedAliasMapping = Admin.ResourceAlias.GetByAlias(value);
                 if (usedAliasMapping != null)
                 {
-                    if (usedAliasMapping.Resource == Name)
+                    if (usedAliasMapping.Resource == FullName)
                         return;
                     throw new AliasAlreadyInUse(usedAliasMapping);
                 }
-                if (RESTarConfig.Resources.Any(r => r.Name.EqualsNoCase(value)))
+                if (RESTarConfig.Resources.Any(r => r.FullName.EqualsNoCase(value)))
                     throw new AliasEqualToResourceName(value);
                 Trans(() =>
                 {
-                    existingAssignment = existingAssignment ?? new Admin.ResourceAlias {Resource = Name};
+                    existingAssignment = existingAssignment ?? new Admin.ResourceAlias {Resource = FullName};
                     existingAssignment.Alias = value;
                 });
             }
@@ -109,18 +111,21 @@ namespace RESTar.Internal
         /// <summary>
         /// All resources are constructed here
         /// </summary>
-        internal Resource(string name, RESTarAttribute attribute, Selector<T> selector, Inserter<T> inserter,
+        internal Resource(string name, string @namespace, RESTarAttribute attribute, Selector<T> selector, Inserter<T> inserter,
             Updater<T> updater, Deleter<T> deleter, Counter<T> counter, Profiler<T> profiler, Authenticator<T> authenticator,
             ResourceProvider provider, View<T>[] views)
         {
-            if (name.Contains('+'))
+            Name = name;
+            Namespace = @namespace;
+            var fullName = $"{@namespace}.{name}";
+            if (fullName.Contains('+'))
             {
                 IsInnerResource = true;
-                var location = name.LastIndexOf('+');
-                ParentResourceName = name.Substring(0, location).Replace('+', '.');
-                Name = name.Replace('+', '.');
+                var location = fullName.LastIndexOf('+');
+                ParentResourceName = fullName.Substring(0, location).Replace('+', '.');
+                FullName = fullName.Replace('+', '.');
             }
-            else Name = name;
+            else FullName = fullName;
             Editable = attribute.Editable;
             Description = attribute.Description;
             AvailableMethods = attribute.AvailableMethods;
@@ -133,12 +138,12 @@ namespace RESTar.Internal
                 OutputBindingRule = DeclaredWithDynamicFallback;
             else if (typeof(T).IsDynamic() && !DeclaredPropertiesFlagged)
                 OutputBindingRule = DynamicWithDeclaredFallback;
-            else OutputBindingRule = OnlyDeclared;
+            else
+                OutputBindingRule = OnlyDeclared;
             RequiresValidation = typeof(IValidatable).IsAssignableFrom(typeof(T));
             IsStarcounterResource = typeof(T).HasAttribute<DatabaseAttribute>();
             IsDDictionary = typeof(T).IsDDictionary();
-            IsDynamic = IsDDictionary || typeof(T).IsSubclassOf(typeof(JObject)) ||
-                        typeof(IDictionary).IsAssignableFrom(typeof(T));
+            IsDynamic = IsDDictionary || typeof(T).IsSubclassOf(typeof(JObject)) || typeof(IDictionary).IsAssignableFrom(typeof(T));
             Provider = provider.GetProviderId();
             Select = selector;
             Insert = inserter;
@@ -147,10 +152,9 @@ namespace RESTar.Internal
             Count = counter;
             Profile = profiler;
             Authenticate = authenticator;
-
             if (views?.Any() == true)
             {
-                ViewDictionaryInternal = views.ToDictionary(v => v.Name.ToLower(), v => v);
+                ViewDictionaryInternal = views.ToDictionary(v => v.FullName.ToLower(), v => v);
                 views.ForEach(view => view.Type.GetDeclaredProperties());
             }
             CheckOperationsSupport();
@@ -202,16 +206,16 @@ namespace RESTar.Internal
                 {
                     var @interface = MatchingInterface(op);
                     throw new InvalidResourceDeclaration(
-                        $"The '{op}' operation is needed to support method(s) {AvailableMethods.ToMethodsString()} for resource '{Name}', but " +
+                        $"The '{op}' operation is needed to support method(s) {AvailableMethods.ToMethodsString()} for resource '{FullName}', but " +
                         "RESTar found no implementation of the operation interface in the type declaration. Add an implementation of the " +
-                        $"'{@interface.ToString().Replace("`1[T]", $"<{Name}>")}' interface to the resource's type declaration");
+                        $"'{@interface.ToString().Replace("`1[T]", $"<{FullName}>")}' interface to the resource's type declaration");
                 }
             }
         }
 
-        public bool Equals(IResource x, IResource y) => x?.Name == y?.Name;
-        public int GetHashCode(IResource obj) => obj.Name.GetHashCode();
-        public int CompareTo(IResource other) => string.Compare(Name, other.Name, StringComparison.Ordinal);
-        public override int GetHashCode() => Name.GetHashCode();
+        public bool Equals(IResource x, IResource y) => x?.FullName == y?.FullName;
+        public int GetHashCode(IResource obj) => obj.FullName.GetHashCode();
+        public int CompareTo(IResource other) => string.Compare(FullName, other.FullName, StringComparison.Ordinal);
+        public override int GetHashCode() => FullName.GetHashCode();
     }
 }

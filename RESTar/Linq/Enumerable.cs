@@ -25,6 +25,17 @@ namespace RESTar.Linq
         }
 
         /// <summary>
+        /// Joins strings using a separator.
+        /// </summary>
+        /// <param name="source"></param>
+        /// <param name="separator"></param>
+        /// <returns></returns>
+        public static string StringJoin(this IEnumerable<string> source, string separator)
+        {
+            return string.Join(separator, source);
+        }
+
+        /// <summary>
         /// Returns true if and only if the source IEnumerable contains two or more equal objects.
         /// If a duplicate is found, it is assigned to the out 'duplicate' variable.
         /// </summary>

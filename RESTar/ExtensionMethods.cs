@@ -64,7 +64,7 @@ namespace RESTar
         internal static bool IsDDictionary(this Type type) => type == typeof(DDictionary) ||
                                                               type.IsSubclassOf(typeof(DDictionary));
 
-        internal static bool IsStarcounter(this Type type) => type.HasAttribute<DatabaseAttribute>();
+        internal static bool IsStarcounterDbClass(this Type type) => type.HasAttribute<DatabaseAttribute>();
 
         internal static IList<Type> GetConcreteSubclasses(this Type baseType) => baseType.GetSubclasses()
             .Where(type => !type.IsAbstract)
@@ -127,7 +127,7 @@ namespace RESTar
             {
                 case TypeCode.Object:
                     if (type.IsNullable(out var baseType)) return CountBytes(baseType);
-                    if (type.IsStarcounter()) return 16;
+                    if (type.IsStarcounterDbClass()) return 16;
                     throw new Exception($"Unknown type encountered: '{type.FullName}'");
                 case TypeCode.Boolean: return 4;
                 case TypeCode.Char: return 2;
@@ -329,35 +329,6 @@ namespace RESTar
             return jobj;
         }
 
-        internal static bool IsStarcounterCompatible(this Type type)
-        {
-            switch (Type.GetTypeCode(type))
-            {
-                case TypeCode.Empty: return false;
-                case TypeCode.DBNull: return false;
-                case TypeCode.Object when type.IsNullable(out var t): return IsStarcounterCompatible(t);
-                case TypeCode.Object: return type.IsClass && type.HasAttribute<DatabaseAttribute>();
-                case TypeCode.Boolean:
-                case TypeCode.Char:
-                case TypeCode.SByte:
-                case TypeCode.Byte:
-                case TypeCode.Int16:
-                case TypeCode.UInt16:
-                case TypeCode.Int32:
-                case TypeCode.UInt32:
-                case TypeCode.Int64:
-                case TypeCode.UInt64:
-                case TypeCode.Single:
-                case TypeCode.Double:
-                case TypeCode.Decimal:
-                case TypeCode.DateTime:
-                case TypeCode.String: return true;
-            }
-
-            if (type == typeof(Binary)) return true;
-            return false;
-        }
-
         internal static string GetProviderId(this Type providerType)
         {
             var typeName = providerType.Name;
@@ -383,7 +354,7 @@ namespace RESTar
         /// If the type is represented by some RESTar resource in the current instance,
         /// returns the name of this resource. Else null.
         /// </summary>
-        public static string GetResourceName(this Type type) => type.GetResource()?.Name;
+        public static string GetResourceName(this Type type) => type.GetResource()?.FullName;
 
         #endregion
 
@@ -702,22 +673,22 @@ namespace RESTar
 
         private static readonly CultureInfo en_US = new CultureInfo("en-US");
 
-        internal static dynamic ParseConditionValue(this string str)
+        internal static dynamic ParseConditionValue(this string valueLiteral)
         {
-            switch (str)
+            switch (valueLiteral)
             {
                 case null: return null;
                 case "null": return null;
                 case "": throw new InvalidSyntax(InvalidConditionSyntax, "No condition value literal after operator");
-                case var _ when Regex.Match(str, RegEx.DoubleQuoteRegex) is Match m && m.Success: return m.Groups["content"].Value;
-                case var _ when Regex.Match(str, RegEx.SingleQuoteRegex) is Match m && m.Success: return m.Groups["content"].Value;
-                case var _ when bool.TryParse(str, out var @bool): return @bool;
-                case var _ when int.TryParse(str, out var @int): return @int;
-                case var _ when decimal.TryParse(str, Float, en_US, out var dec): return dec;
-                case var _ when DateTime.TryParseExact(str, "yyyy-MM-dd", null, AssumeUniversal, out var dat) ||
-                                DateTime.TryParseExact(str, "yyyy-MM-ddTHH:mm:ss", null, AssumeUniversal, out dat) ||
-                                DateTime.TryParseExact(str, "O", null, AssumeUniversal, out dat): return dat;
-                default: return str;
+                case var _ when Regex.Match(valueLiteral, RegEx.DoubleQuoteRegex) is Match m && m.Success: return m.Groups["content"].Value;
+                case var _ when Regex.Match(valueLiteral, RegEx.SingleQuoteRegex) is Match m && m.Success: return m.Groups["content"].Value;
+                case var _ when bool.TryParse(valueLiteral, out var @bool): return @bool;
+                case var _ when int.TryParse(valueLiteral, out var @int): return @int;
+                case var _ when decimal.TryParse(valueLiteral, Float, en_US, out var dec): return dec;
+                case var _ when DateTime.TryParseExact(valueLiteral, "yyyy-MM-dd", null, AssumeUniversal, out var dat) ||
+                                DateTime.TryParseExact(valueLiteral, "yyyy-MM-ddTHH:mm:ss", null, AssumeUniversal, out dat) ||
+                                DateTime.TryParseExact(valueLiteral, "O", null, AssumeUniversal, out dat): return dat;
+                default: return valueLiteral;
             }
         }
 

@@ -4,7 +4,6 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Web;
-using System.Xml;
 using RESTar.Internal;
 using RESTar.Linq;
 using RESTar.Operations;
@@ -195,16 +194,6 @@ namespace RESTar.OData
             return origin.HTTPS ? $"https://{hostAndPath}" : $"http://{hostAndPath}";
         }
 
-        private static void WritePre(this XmlWriter writer)
-        {
-            writer.WriteRaw("<edmx:Edmx Version=\"4.0\" xmlns:edmx=\"http://docs.oasis-open.org/odata/ns/edmx\"><edmx:DataServices>");
-        }
-
-        private static void WritePost(this XmlWriter writer)
-        {
-            writer.WriteRaw("</edmx:DataServices></edmx:Edmx>");
-        }
-
         internal static IFinalizedResult MakeMetadataDocument()
         {
             return new MetadataDocument();
@@ -224,7 +213,7 @@ namespace RESTar.OData
                 {
                     Serializer.Json.Formatting = Formatting.Indented;
                     jwr.WritePre();
-                    jwr.WriteRaw($"\"@odata.context\": \"{GetServiceRoot(entities)}/$metadata#{entities.Request.Resource.Name}\",");
+                    jwr.WriteRaw($"\"@odata.context\": \"{GetServiceRoot(entities)}/$metadata#{entities.Request.Resource.FullName}\",");
                     jwr.WriteIndentation();
                     jwr.WritePropertyName("value");
                     Serializer.Json.Serialize(jwr, entities.Content);

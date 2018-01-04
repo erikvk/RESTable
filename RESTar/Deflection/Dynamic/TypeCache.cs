@@ -101,7 +101,7 @@ namespace RESTar.Deflection.Dynamic
                     default:
                         return _type.GetProperties(Instance | Public)
                             .ParseDeclaredProperties(false)
-                            .If(_type.IsStarcounter, ps => ps.Union(GetObjectIDAndObjectNo(false)));
+                            .If(_type.IsStarcounterDbClass, ps => ps.Union(GetObjectIDAndObjectNo(false)));
                 }
             }
 

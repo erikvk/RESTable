@@ -6,7 +6,7 @@ namespace RESTar.Results.Success
     {
         internal UpdatedEntities(int count, IResource resource)
         {
-            Headers["RESTar-info"] = $"{count} entities updated in resource '{resource.Name}'";
+            Headers["RESTar-info"] = $"{count} entities updated in resource '{resource.FullName}'";
         }
     }
 }

@@ -48,6 +48,8 @@ namespace RESTar
                 case "*/*":
                 case "json":
                 case "application/json":
+                case "application/x-www-form-urlencoded":
+                case "application/octet-stream":
                     TypeCode = Json;
                     break;
                 case "excel":

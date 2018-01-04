@@ -1,7 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Text.RegularExpressions;
 using RESTar.Internal;
 using RESTar.Results.Fail.BadRequest;
 
@@ -15,8 +15,6 @@ namespace RESTar.Requests
         internal string Key { get; }
         internal Operator Operator { get; }
         internal string ValueLiteral { get; set; }
-
-        private const string OpMatchChars = "<>=!";
 
         internal static IEnumerable<UriCondition> ParseMany(string conditionsString, bool check = false) =>
             conditionsString.Split('&').Select(s => new UriCondition(s, check));
@@ -48,14 +46,15 @@ namespace RESTar.Requests
                 if (!replaced) conditionString = conditionString.ReplaceFirst("%3E", ">", out replaced);
                 if (!replaced) conditionString = conditionString.ReplaceFirst("%3C", "<", out replaced);
             }
-
-            var operatorCharacters = new string(conditionString.Where(c => OpMatchChars.Contains(c)).ToArray());
-            if (!Operator.TryParse(operatorCharacters, out var op))
+            var match = Regex.Match(conditionString, RegEx.UriCondition);
+            if (!match.Success)
+                throw new InvalidSyntax(ErrorCodes.InvalidConditionSyntax, $"Invalid condition syntax at '{conditionString}'");
+            var (key, opString, valueLiteral) = (match.Groups["key"].Value, match.Groups["op"].Value, match.Groups["val"].Value);
+            Key = WebUtility.UrlDecode(key);
+            if (!Operator.TryParse(opString, out var op))
                 throw new InvalidOperator(conditionString);
-            var keyValuePair = conditionString.Split(new[] {op.Common}, StringSplitOptions.None);
-            Key = WebUtility.UrlDecode(keyValuePair[0]);
             Operator = op;
-            ValueLiteral = WebUtility.UrlDecode(keyValuePair[1]);
+            ValueLiteral = WebUtility.UrlDecode(valueLiteral);
         }
     }
 }

@@ -31,6 +31,7 @@ namespace RESTar
         internal static ConcurrentDictionary<string, IResource> ResourceFinder { get; private set; }
         internal static IDictionary<string, IResource> ResourceByName { get; private set; }
         internal static IDictionary<Type, IResource> ResourceByType { get; private set; }
+        internal static IDictionary<string, List<IResource>> ResourcesByNamespace { get; private set; }
         internal static IDictionary<string, AccessRights> ApiKeys { get; private set; }
         internal static ConcurrentDictionary<string, AccessRights> AuthTokens { get; private set; }
         internal static ICollection<IResource> Resources => ResourceByName.Values;
@@ -51,6 +52,7 @@ namespace RESTar
             ResourceByType = new Dictionary<Type, IResource>();
             ResourceByName = new Dictionary<string, IResource>(StringComparer.OrdinalIgnoreCase);
             ResourceFinder = new ConcurrentDictionary<string, IResource>(StringComparer.OrdinalIgnoreCase);
+            ResourcesByNamespace = new Dictionary<string, List<IResource>>();
             AuthTokens = new ConcurrentDictionary<string, AccessRights>();
             AllowedOrigins = new List<Uri>();
             AuthTokens.TryAdd(Authenticator.AppToken, AccessRights.Root);
@@ -84,8 +86,11 @@ namespace RESTar
 
         internal static void AddResource(IResource toAdd)
         {
-            ResourceByName[toAdd.Name] = toAdd;
+            ResourceByName[toAdd.FullName] = toAdd;
             ResourceByType[toAdd.Type] = toAdd;
+            if (ResourcesByNamespace.ContainsKey(toAdd.Namespace))
+                ResourcesByNamespace[toAdd.Namespace].Add(toAdd);
+            else ResourcesByNamespace[toAdd.Namespace] = new List<IResource> {toAdd};
             AddToResourceFinder(toAdd, ResourceFinder);
             UpdateConfiguration();
             toAdd.Type.GetDeclaredProperties();
@@ -93,8 +98,11 @@ namespace RESTar
 
         internal static void RemoveResource(IResource toRemove)
         {
-            ResourceByName.Remove(toRemove.Name);
+            ResourceByName.Remove(toRemove.FullName);
             ResourceByType.Remove(toRemove.Type);
+            if (ResourcesByNamespace[toRemove.Namespace].Count == 1)
+                ResourcesByNamespace.Remove(toRemove.Namespace);
+            else ResourcesByNamespace[toRemove.Namespace].Remove(toRemove);
             ReloadResourceFinder();
             UpdateConfiguration();
         }
@@ -112,11 +120,11 @@ namespace RESTar
             {
                 switch (resource)
                 {
-                    case var _ when resource.IsInternal: return new[] {resource.Name};
+                    case var _ when resource.IsInternal: return new[] {resource.FullName};
                     case var _ when resource.IsInnerResource:
-                        var dots = resource.Name.Count('.');
-                        return resource.Name.ToLower().Split(new[] {'.'}, dots);
-                    default: return resource.Name.ToLower().Split('.');
+                        var dots = resource.FullName.Count('.');
+                        return resource.FullName.ToLower().Split(new[] {'.'}, dots);
+                    default: return resource.FullName.ToLower().Split('.');
                 }
             }
 
@@ -284,7 +292,7 @@ namespace RESTar
                                 recurseResources(allowAccess["Resource"]);
                                 accessRightList.Add(new AccessRight
                                 {
-                                    Resources = resourceSet.OrderBy(r => r.Name).ToList(),
+                                    Resources = resourceSet.OrderBy(r => r.FullName).ToList(),
                                     AllowedMethods = allowAccess["Methods"].Value<string>().ToUpper().ToMethodsArray()
                                 });
                                 return;

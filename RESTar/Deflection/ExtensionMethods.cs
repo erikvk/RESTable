@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Reflection;
 using RESTar.Deflection.Dynamic;
+using Starcounter;
 
 namespace RESTar.Deflection
 {
@@ -21,10 +22,10 @@ namespace RESTar.Deflection
                 {
                     case var _ when p.DeclaringType?.IsValueType == true: return p.GetValue;
                     case var _ when p.GetIndexParameters().Any(): return null;
+                    default:
+                        var getter = p.GetGetMethod()?.CreateDelegate(typeof(Func<,>).MakeGenericType(p.DeclaringType, p.PropertyType));
+                        return getter != null ? obj => ((dynamic) getter)((dynamic) obj) : default(Getter);
                 }
-
-                var getter = p.GetGetMethod()?.CreateDelegate(typeof(Func<,>).MakeGenericType(p.DeclaringType, p.PropertyType));
-                return getter != null ? obj => ((dynamic) getter)((dynamic) obj) : default(Getter);
             }
             catch
             {
@@ -43,15 +44,43 @@ namespace RESTar.Deflection
                 {
                     case var _ when p.DeclaringType?.IsValueType == true: return p.SetValue;
                     case var _ when p.GetIndexParameters().Any(): return null;
+                    default:
+                        var setter = p.GetSetMethod()?.CreateDelegate(typeof(Action<,>).MakeGenericType(p.DeclaringType, p.PropertyType));
+                        return setter != null ? (obj, value) => ((dynamic) setter)((dynamic) obj, value) : default(Setter);
                 }
-
-                var setter = p.GetSetMethod()?.CreateDelegate(typeof(Action<,>).MakeGenericType(p.DeclaringType, p.PropertyType));
-                return setter != null ? (obj, value) => ((dynamic) setter)((dynamic) obj, value) : default(Setter);
             }
             catch
             {
                 return null;
             }
+        }
+
+        internal static bool IsStarcounterCompatible(this Type type)
+        {
+            switch (Type.GetTypeCode(type))
+            {
+                case TypeCode.Boolean:
+                case TypeCode.Char:
+                case TypeCode.SByte:
+                case TypeCode.Byte:
+                case TypeCode.Int16:
+                case TypeCode.UInt16:
+                case TypeCode.Int32:
+                case TypeCode.UInt32:
+                case TypeCode.Int64:
+                case TypeCode.UInt64:
+                case TypeCode.Single:
+                case TypeCode.Double:
+                case TypeCode.Decimal:
+                case TypeCode.DateTime:
+                case TypeCode.String: return true;
+                case TypeCode.Empty: return false;
+                case TypeCode.DBNull: return false;
+                case TypeCode.Object when type.IsNullable(out var t): return IsStarcounterCompatible(t);
+                case TypeCode.Object when type == typeof(Binary): return true;
+                case TypeCode.Object: return type.IsStarcounterDbClass();
+            }
+            return false;
         }
     }
 }

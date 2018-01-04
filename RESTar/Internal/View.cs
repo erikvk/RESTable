@@ -24,7 +24,13 @@ namespace RESTar.Internal
         public TermBindingRules ConditionBindingRule { get; }
 
         /// <inheritdoc />
+        public string FullName { get; }
+
+        /// <inheritdoc />
         public string Name { get; }
+
+        /// <inheritdoc />
+        public string Namespace { get; }
 
         /// <inheritdoc />
         public string Description { get; }
@@ -37,14 +43,16 @@ namespace RESTar.Internal
 
         internal View(Type type)
         {
-            var attribute = type.GetAttribute<RESTarViewAttribute>();
-            ConditionBindingRule = attribute.AllowDynamicConditions
+            Type = type;
+            Namespace = type.Namespace;
+            Name = type.Name;
+            FullName = type.FullName;
+            Select = DelegateMaker.GetDelegate<Selector<T>>(type);
+            var viewAttribute = type.GetAttribute<RESTarViewAttribute>();
+            Description = viewAttribute.Description;
+            ConditionBindingRule = viewAttribute.AllowDynamicConditions
                 ? DeclaredWithDynamicFallback
                 : OnlyDeclared;
-            Name = type.Name;
-            Description = attribute.Description;
-            Type = type;
-            Select = DelegateMaker.GetDelegate<Selector<T>>(type);
         }
     }
 }

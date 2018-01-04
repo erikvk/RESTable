@@ -54,7 +54,7 @@ namespace RESTar.Admin
             {
                 var resource = RESTar.Resource.Find(input);
                 var profile = resource.ResourceProfile
-                              ?? throw new Exception($"Cannot profile '{resource.Name}'. No profiler implemented for type");
+                              ?? throw new Exception($"Cannot profile '{resource.FullName}'. No profiler implemented for type");
                 profiles = new[] {profile};
             }
             return profiles
@@ -69,7 +69,7 @@ namespace RESTar.Admin
         public static ResourceProfile Make(Type type)
         {
             if (type.IsDDictionary()) return GetDDict(type);
-            if (type.IsStarcounter()) return GetSC(type);
+            if (type.IsStarcounterDbClass()) return GetSC(type);
             throw new Exception($"Cannot profile '{type.FullName}'. No profiler implemented for type");
         }
 
@@ -99,7 +99,7 @@ namespace RESTar.Admin
             }
             return new ResourceProfile
             {
-                Resource = resource.Name,
+                Resource = resource.FullName,
                 NumberOfEntities = domainCount,
                 ApproximateSize = new ResourceSize(totalBytes),
                 SampleSize = sampleSize

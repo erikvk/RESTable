@@ -58,7 +58,7 @@ namespace RESTar
 
             AvailableResource Make(IResource iresource) => new AvailableResource
             {
-                Name = iresource.Name,
+                Name = iresource.FullName,
                 Alias = iresource.Alias,
                 Description = iresource.Description ?? "No description",
                 Methods = rights.SafeGet(iresource)?
@@ -66,7 +66,7 @@ namespace RESTar
                               .ToArray() ?? new Methods[0],
                 Views = iresource.Views?.Select(v => new
                 {
-                    v.Name,
+                    Name = v.FullName,
                     Description = v.Description ?? "No description"
                 }).ToArray() ?? new object[0],
                 InnerResources = ((IResourceInternal) iresource).InnerResources?
@@ -76,7 +76,7 @@ namespace RESTar
 
             return rights?.Keys
                 .Where(r => r.IsGlobal && !r.IsInnerResource)
-                .OrderBy(r => r.Name)
+                .OrderBy(r => r.FullName)
                 .Select(Make)
                 .Where(request.Conditions);
         }

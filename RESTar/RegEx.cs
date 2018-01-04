@@ -69,5 +69,10 @@
         /// Matches condition literals sorrounded with single quotes
         /// </summary>
         internal const string SingleQuoteRegex = "^\'(?<content>[^\']*)\'$";
+
+        /// <summary>
+        /// Used when matching parts of URI conditions
+        /// </summary>
+        internal const string UriCondition = @"^(?<key>[^\!=<>]*)(?<op>(=|\!=|<|>|<=|>=))(?<val>.*)$";
     }
 }
