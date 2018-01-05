@@ -8,7 +8,6 @@ namespace RESTar.Results.Success
     {
         internal IRequest Request { get; private set; }
         internal IEnumerable<dynamic> Content { get; set; }
-
         public long EntityCount { get; set; }
         internal string ExternalDestination { get; set; }
         public bool IsPaged => Content != null && EntityCount > 0 && EntityCount == Request.MetaConditions.Limit;
@@ -25,7 +24,7 @@ namespace RESTar.Results.Success
             existing.MetaConditions.Add(new UriCondition("offset", Operators.EQUALS, (Request.MetaConditions.Offset + EntityCount).ToString()));
             return existing;
         }
-        
+
         internal static Entities Create<T>(RESTRequest<T> request, IEnumerable<dynamic> content) where T : class => new Entities
         {
             Content = content,

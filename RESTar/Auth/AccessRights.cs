@@ -7,17 +7,13 @@ namespace RESTar.Auth
     {
         internal static AccessRights Root { get; set; }
 
-        internal AccessRights()
-        {
-        }
+        internal AccessRights() { }
 
-        internal AccessRights(IDictionary<IResource, Methods[]> other) : base(other)
-        {
-        }
+        internal AccessRights(IDictionary<IResource, Methods[]> other) : base(other) { }
 
         internal new Methods[] this[IResource resource]
         {
-            get => ContainsKey(resource) ? base[resource] : null;
+            get => TryGetValue(resource, out var r) ? r : null;
             set => base[resource] = value;
         }
     }

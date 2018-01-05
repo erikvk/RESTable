@@ -107,7 +107,7 @@
     <Compile Include="OData\MetadataKeys.cs" />
     <Compile Include="OData\QueryOptions.cs" />
     <Compile Include="OData\MetaDataLevel.cs" />
-    <Compile Include="OData\ServiceDocument.cs" />
+    <Compile Include="OData\ODataServiceEntity.cs" />
     <Compile Include="Operations\AuthResults.cs" />
     <Compile Include="Operations\Distinct.cs" />
     <Compile Include="Operations\IFinalizedResult.cs" />
@@ -268,6 +268,7 @@
     <Compile Include="Results\Success\DeletedEntities.cs" />
     <Compile Include="Results\Success\Entities.cs" />
     <Compile Include="Results\Success\InsertedEntities.cs" />
+    <Compile Include="Metadata.cs" />
     <Compile Include="Results\Success\NoContent.cs" />
     <Compile Include="Results\Success\OK.cs" />
     <Compile Include="Results\Success\Report.cs" />

@@ -42,13 +42,11 @@ namespace RESTar.Serialization
 
         public object GetValue(object target)
         {
-            var val = Property.GetValue(target);
-            var typeCode = Type.GetTypeCode(val.GetType());
-            switch (typeCode)
+            switch (Property.GetValue(target))
             {
-                case TypeCode.DateTime: return $"@RESTar(\"{(DateTime) Property.GetValue(target):O}\")";
-                case TypeCode.String: return $"@RESTar(\"{Property.GetValue(target)}\")";
-                default: return $"@RESTar({Property.GetValue(target)})";
+                case DateTime dateTime: return $"@RESTar(\"{dateTime:O}\")";
+                case string @string: return $"@RESTar(\"{@string}\")";
+                case var other: return $"@RESTar({other})";
             }
         }
     }

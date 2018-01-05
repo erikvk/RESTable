@@ -66,7 +66,11 @@ namespace RESTar.OData
             var entitySet = uriMatch.Groups["entityset"].Value.TrimStart('/');
             var options = uriMatch.Groups["options"].Value.TrimStart('?');
             if (entitySet.Length != 0)
-                uri.ResourceSpecifier = entitySet;
+            {
+                if (entitySet == "$metadata")
+                    uri.ResourceSpecifier = URI.MetadataResourceSpecifier;
+                else uri.ResourceSpecifier = entitySet;
+            }
             if (options.Length != 0)
                 PopulateFromOptions(uri, options);
         }
@@ -194,48 +198,48 @@ namespace RESTar.OData
             return origin.HTTPS ? $"https://{hostAndPath}" : $"http://{hostAndPath}";
         }
 
-        internal static IFinalizedResult MakeMetadataDocument()
-        {
-            return new MetadataDocument();
-        }
-
         internal static IFinalizedResult FinalizeResult(Result result)
         {
             result.Headers["OData-Version"] = "4.0";
-            if (result is Entities entities)
-            {
-                if (entities.Content is IEnumerable<AvailableResource> availableResources)
-                    entities.Content = ServiceDocument.Make(availableResources);
+            if (!(result is Entities entities)) return result;
 
-                var stream = new MemoryStream();
-                using (var swr = new StreamWriter(stream, Serializer.UTF8, 1024, true))
-                using (var jwr = new ODataJsonWriter(swr))
+            switch (entities.Content)
+            {
+                case IEnumerable<AvailableResource> availableResources:
+                    entities.Content = availableResources.Select(ODataServiceEntity.Convert);
+                    break;
+                case IEnumerable<Metadata> metadata:
+                    return new MetadataDocument(metadata.First());
+            }
+
+            var stream = new MemoryStream();
+            using (var swr = new StreamWriter(stream, Serializer.UTF8, 1024, true))
+            using (var jwr = new ODataJsonWriter(swr))
+            {
+                Serializer.Json.Formatting = Formatting.Indented;
+                jwr.WritePre();
+                jwr.WriteRaw($"\"@odata.context\": \"{GetServiceRoot(entities)}/$metadata#{entities.Request.Resource.FullName}\",");
+                jwr.WriteIndentation();
+                jwr.WritePropertyName("value");
+                Serializer.Json.Serialize(jwr, entities.Content);
+                entities.EntityCount = jwr.ObjectsWritten;
+                jwr.WriteRaw(",");
+                jwr.WriteIndentation();
+                jwr.WriteRaw($"\"@odata.count\": {entities.EntityCount}");
+                if (entities.IsPaged)
                 {
-                    Serializer.Json.Formatting = Formatting.Indented;
-                    jwr.WritePre();
-                    jwr.WriteRaw($"\"@odata.context\": \"{GetServiceRoot(entities)}/$metadata#{entities.Request.Resource.FullName}\",");
-                    jwr.WriteIndentation();
-                    jwr.WritePropertyName("value");
-                    Serializer.Json.Serialize(jwr, entities.Content);
-                    entities.EntityCount = jwr.ObjectsWritten;
                     jwr.WriteRaw(",");
                     jwr.WriteIndentation();
-                    jwr.WriteRaw($"\"@odata.count\": {entities.EntityCount}");
-                    if (entities.IsPaged)
-                    {
-                        jwr.WriteRaw(",");
-                        jwr.WriteIndentation();
-                        var pager = entities.GetNextPageLink();
-                        jwr.WriteRaw($"\"@odata.nextLink\": {MakeRelativeUri(pager)}");
-                    }
-                    jwr.WritePost();
+                    var pager = entities.GetNextPageLink();
+                    jwr.WriteRaw($"\"@odata.nextLink\": {MakeRelativeUri(pager)}");
                 }
-                if (entities.EntityCount > 0)
-                {
-                    stream.Seek(0, SeekOrigin.Begin);
-                    result.ContentType = MimeTypes.JSONOData;
-                    result.Body = stream;
-                }
+                jwr.WritePost();
+            }
+            if (entities.EntityCount > 0)
+            {
+                stream.Seek(0, SeekOrigin.Begin);
+                result.ContentType = MimeTypes.JSONOData;
+                result.Body = stream;
             }
             return result;
         }

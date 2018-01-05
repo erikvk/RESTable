@@ -86,34 +86,31 @@ namespace RESTar.Admin
         public IEnumerable<Resource> Select(IRequest<Resource> request)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
-
-            Resource Make(IResource iresource) => new Resource
-            {
-                Name = iresource.FullName,
-                Alias = iresource.Alias,
-                Description = iresource.Description ?? "No description",
-                EnabledMethods = iresource.AvailableMethods.ToArray(),
-                Editable = iresource.Editable,
-                IsInternal = iresource.IsInternal,
-                Type = iresource.Type.FullName,
-                Views = iresource.Views?.Select(v => new
-                {
-                    Name = v.FullName,
-                    Description = v.Description ?? "No description"
-                }).ToArray() ?? new object[0],
-                IResource = iresource,
-                Provider = iresource.Provider,
-                InnerResources = ((IResourceInternal) iresource).InnerResources?
-                    .Select(Make)
-                    .ToArray()
-            };
-
             return RESTarConfig.Resources
                 .Where(r => r.IsGlobal)
                 .OrderBy(r => r.FullName)
                 .Select(Make)
                 .Where(request.Conditions);
         }
+
+        internal static Resource Make(IResource iresource) => new Resource
+        {
+            Name = iresource.FullName,
+            Alias = iresource.Alias,
+            Description = iresource.Description ?? "No description",
+            EnabledMethods = iresource.AvailableMethods.ToArray(),
+            Editable = iresource.Editable,
+            IsInternal = iresource.IsInternal,
+            Type = iresource.Type.FullName,
+            Views = iresource.Views?.Select(v => new
+            {
+                Name = v.FullName,
+                Description = v.Description ?? "No description"
+            }).ToArray() ?? new object[0],
+            IResource = iresource,
+            Provider = iresource.Provider,
+            InnerResources = ((IResourceInternal) iresource).InnerResources?.Select(Make).ToArray()
+        };
 
         /// <inheritdoc />
         public int Insert(IEnumerable<Resource> resources, IRequest<Resource> request)

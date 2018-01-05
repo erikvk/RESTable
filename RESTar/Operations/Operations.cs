@@ -404,12 +404,12 @@ namespace RESTar.Operations
                 }
             }
 
-            private static Result GET(RESTRequest<T> request)
+            private static Entities GET(RESTRequest<T> request)
             {
                 return Entities.Create(request, SELECT_FILTER_PROCESS(request));
             }
 
-            private static Result REPORT(RESTRequest<T> request)
+            private static Report REPORT(RESTRequest<T> request)
             {
                 return new Report(OP_COUNT(request));
             }

@@ -85,10 +85,9 @@ namespace RESTar.Requests
             return true;
         }
 
-        internal static IFinalizedResult FinalizeResult(Result _result)
+        internal static IFinalizedResult FinalizeResult(Result result)
         {
-            if (!(_result is Entities entities)) return _result;
-
+            if (!(result is Entities entities)) return result;
             var accept = entities.Request.Accept;
             switch (accept.TypeCode)
             {

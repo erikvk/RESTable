@@ -56,6 +56,9 @@ namespace RESTar
                 case "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
                     TypeCode = Excel;
                     break;
+                case "application/xml":
+                    TypeCode = XML;
+                    break;
                 default:
                     TypeCode = Unsupported;
                     break;
@@ -98,6 +101,7 @@ namespace RESTar
         Unsupported,
         Json,
         Excel,
+        XML
     }
 
     internal static class MimeTypeExtensions

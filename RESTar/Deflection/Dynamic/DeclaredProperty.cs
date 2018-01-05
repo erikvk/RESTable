@@ -58,6 +58,11 @@ namespace RESTar.Deflection.Dynamic
         public bool ReplaceOnUpdate { get; }
 
         /// <summary>
+        /// Is this property nullable?
+        /// </summary>
+        public bool Nullable { get; }
+
+        /// <summary>
         /// The attributes that this property has been decorated with
         /// </summary>  
         private ICollection<Attribute> Attributes { get; }
@@ -84,10 +89,8 @@ namespace RESTar.Deflection.Dynamic
         /// <summary>
         /// Used in SpecialProperty
         /// </summary>
-        internal DeclaredProperty(
-            string name, string actualName, Type type, int? order, bool scQueryable,
-            ICollection<Attribute> attributes, bool skipConditions, bool hidden, bool hiddenIfNull,
-            Operators allowedConditionOperators, Getter getter, Setter setter)
+        internal DeclaredProperty(string name, string actualName, Type type, int? order, bool scQueryable, ICollection<Attribute> attributes,
+            bool skipConditions, bool hidden, bool hiddenIfNull, Operators allowedConditionOperators, Getter getter, Setter setter)
         {
             Name = name;
             ActualName = actualName;
@@ -99,6 +102,7 @@ namespace RESTar.Deflection.Dynamic
             Hidden = hidden;
             HiddenIfNull = hiddenIfNull;
             AllowedConditionOperators = allowedConditionOperators;
+            Nullable = type.IsClass || type.IsNullable(out var _);
             Getter = getter;
             Setter = setter;
         }
@@ -121,6 +125,7 @@ namespace RESTar.Deflection.Dynamic
             Hidden = memberAttribute?.Hidden == true;
             HiddenIfNull = memberAttribute?.HiddenIfNull == true || jsonAttribute?.NullValueHandling == Ignore;
             AllowedConditionOperators = memberAttribute?.AllowedOperators ?? Operators.All;
+            Nullable = p.PropertyType.IsClass || p.PropertyType.IsNullable(out var _);
             if (memberAttribute?.ExcelReducerName != null)
                 ExcelReducer = MakeExcelReducer(memberAttribute.ExcelReducerName, p);
             Getter = p.MakeDynamicGetter();

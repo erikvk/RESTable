@@ -18,7 +18,8 @@ namespace RESTar.Requests
         internal Exception Error { get; private set; }
         internal bool HasError => Error != null;
 
-        private static readonly string DefaultResourceSpecifier = typeof(AvailableResource).FullName;
+        internal static readonly string DefaultResourceSpecifier = typeof(AvailableResource).FullName;
+        internal static readonly string MetadataResourceSpecifier = typeof(Metadata).FullName;
 
         internal static URI ParseInternal(string query, bool percentCharsEscaped, out RESTProtocols protocol)
         {
