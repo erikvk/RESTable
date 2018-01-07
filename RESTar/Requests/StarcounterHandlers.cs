@@ -3,6 +3,7 @@ using System.IO;
 using System.Net;
 using RESTar.Linq;
 using RESTar.Operations;
+using RESTar.Results.Fail;
 using RESTar.Results.Success;
 using Starcounter;
 using static RESTar.Admin.Settings;
@@ -42,8 +43,6 @@ namespace RESTar.Requests
                         Console.SendConsoleInit();
                         return HandlerStatus.Handled;
                     }
-                    var socket = request.SendUpgrade("restar_ws");
-                    socket.SendGETResult(result);
                     Handle.WebSocket(_Port, "restar_ws", (input, _socket) =>
                     {
                         switch (input[0])
@@ -77,6 +76,8 @@ namespace RESTar.Requests
                                 break;
                         }
                     });
+                    var socket = request.SendUpgrade("restar_ws");
+                    socket.SendGETResult(result);
                     return HandlerStatus.Handled;
                 }));
 
@@ -132,6 +133,11 @@ namespace RESTar.Requests
                 ws.Send(">>> 400: Bad request. Cannot enter the WebSocket console from another WebSocket.\n");
                 return;
             }
+            if (result is RESTarError)
+            {
+                ws.SendStatus(result);
+                return;
+            }
             if (result.StatusCode == HttpStatusCode.NoContent)
                 ws.SendNoContent();
             else
@@ -150,6 +156,11 @@ namespace RESTar.Requests
         private static void SendPOST(this WebSocket ws, string query, byte[] body, Dictionary<string, string> headers, Origin origin)
         {
             var result = Evaluate(POST, query, body, headers, origin);
+            ws.SendStatus(result);
+        }
+
+        private static void SendStatus(this WebSocket ws, IFinalizedResult result)
+        {
             ws.Send($">>> {result.StatusCode.ToCode()}: {result.StatusDescription}. " +
                     $"{result.Headers["RESTar-Info"]} {result.Headers["ErrorInfo"]}\n");
         }
