@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Web;
 using RESTar.Linq;
 using RESTar.OData;
 using RESTar.Results.Fail;
@@ -64,9 +65,9 @@ namespace RESTar.Requests
 
         public IResource IResource => Resource.Find(Uri.ResourceSpecifier);
         public Origin Origin { get; }
-        public byte[] BodyBytes { get; set; }
+        public byte[] BodyBytes { get; private set; }
         public Headers Headers { get; }
-        public MimeType ContentType { get; set; }
+        public MimeType ContentType { get; }
         public MimeType Accept { get; }
         public ResultFinalizer ResultFinalizer { get; }
         internal string AuthToken { get; set; }
@@ -85,12 +86,19 @@ namespace RESTar.Requests
             return headers?.ContainsKey("X-ARR-LOG-ID") == true;
         }
 
-        internal Arguments(Action action, string query, byte[] body = null, Dictionary<string, string> headers = null, Origin origin = null)
+        private static string UnpackUriKey(string uriKey)
+        {
+            return uriKey != null ? HttpUtility.UrlDecode(uriKey).Substring(1, uriKey.Length - 2) : null;
+        }
+
+        internal Arguments(Action action, ref string query, byte[] body = null, Headers headers = null, Origin origin = null)
         {
             Action = action;
-            Uri = URI.ParseInternal(query, PercentCharsEscaped(headers), out var protocol);
+            Headers = headers ?? new Headers();
+            Uri = URI.ParseInternal(ref query, PercentCharsEscaped(headers), out var protocol, out var key);
+            if (key != null)
+                Headers["Authorization"] = $"apikey {UnpackUriKey(key)}";
             BodyBytes = body;
-            Headers = new Headers(headers);
             Origin = origin;
             ContentType = MimeType.Parse(Headers.SafeGet("Content-Type"));
             Accept = MimeType.ParseMany(Headers.SafeGet("Accept"));

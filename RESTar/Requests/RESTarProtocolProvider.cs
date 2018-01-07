@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -79,12 +78,6 @@ namespace RESTar.Requests
                                                                              $"/{JoinConditions(parameters.Conditions) ?? "_"}" +
                                                                              $"/{JoinConditions(parameters.MetaConditions) ?? "_"}";
 
-        internal static bool IsCompliant(Arguments args, out Exception error)
-        {
-            error = null;
-            return true;
-        }
-
         internal static IFinalizedResult FinalizeResult(Result result)
         {
             if (!(result is Entities entities)) return result;
@@ -133,7 +126,6 @@ namespace RESTar.Requests
             }
             entities.Body?.Seek(0, SeekOrigin.Begin);
             entities.Headers["RESTar-count"] = entities.EntityCount.ToString();
-
             if (entities.ExternalDestination != null)
             {
                 try

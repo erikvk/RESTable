@@ -4,7 +4,6 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Web;
-using RESTar.Internal;
 using RESTar.Linq;
 using RESTar.Operations;
 using RESTar.Requests;
@@ -12,6 +11,8 @@ using RESTar.Results.Fail;
 using RESTar.Results.Fail.BadRequest;
 using RESTar.Results.Success;
 using RESTar.Serialization;
+using static RESTar.Internal.ErrorCodes;
+using static RESTar.OData.QueryOptions;
 using Formatting = Newtonsoft.Json.Formatting;
 
 namespace RESTar.OData
@@ -22,7 +23,6 @@ namespace RESTar.OData
         {
             var hasFilter = parameters.Conditions.Count > 0;
             var hasOther = parameters.MetaConditions.Count > 0;
-
             using (var b = new StringWriter())
             {
                 b.Write(parameters.ResourceSpecifier);
@@ -54,7 +54,6 @@ namespace RESTar.OData
                         b.Write(string.Join("&", conds));
                     }
                 }
-
                 return b.ToString();
             }
         }
@@ -62,7 +61,7 @@ namespace RESTar.OData
         internal static void PopulateUri(URI uri, string query)
         {
             var uriMatch = Regex.Match(query, RegEx.ODataRequestUri);
-            if (!uriMatch.Success) throw new InvalidSyntax(ErrorCodes.InvalidUriSyntax, "Check URI syntax");
+            if (!uriMatch.Success) throw new InvalidSyntax(InvalidUriSyntax, "Check URI syntax");
             var entitySet = uriMatch.Groups["entityset"].Value.TrimStart('/');
             var options = uriMatch.Groups["options"].Value.TrimStart('?');
             if (entitySet.Length != 0)
@@ -80,32 +79,29 @@ namespace RESTar.OData
             foreach (var (optionKey, optionValue) in options.Split('&').Select(option => option.TSplit('=')))
             {
                 if (string.IsNullOrWhiteSpace(optionKey))
-                    throw new InvalidSyntax(ErrorCodes.InvalidConditionSyntax, "An OData query option key was invalid");
+                    throw new InvalidSyntax(InvalidConditionSyntax, "An OData query option key was invalid");
                 if (string.IsNullOrWhiteSpace(optionValue))
-                    throw new InvalidSyntax(ErrorCodes.InvalidConditionSyntax, $"The OData query option value for {optionKey} was invalid");
+                    throw new InvalidSyntax(InvalidConditionSyntax, $"The OData query option value for {optionKey} was invalid");
                 var decodedValue = HttpUtility.UrlDecode(optionValue);
                 switch (optionKey)
                 {
                     case var system when optionKey[0] == '$':
-
-                        if (!Enum.TryParse(system.Substring(1), out QueryOptions option) || option == QueryOptions.none)
+                        if (!Enum.TryParse(system.Substring(1), out QueryOptions option) || option == none)
                             throw new FeatureNotImplemented($"Unknown or not implemented query option '{system}'");
                         switch (option)
                         {
-                            case QueryOptions.filter:
+                            case filter:
                                 if (Regex.Match(decodedValue, RegEx.UnsupportedODataOperatorRegex) is Match m && m.Success)
                                     throw new FeatureNotImplemented($"Not implemented operator '{m.Value}' in $filter");
                                 decodedValue.Replace("(", "").Replace(")", "").Split(" and ").Select(c =>
                                 {
                                     var parts = c.Split(' ');
                                     if (parts.Length != 3)
-                                        throw new InvalidSyntax(ErrorCodes.InvalidConditionSyntax, "Invalid syntax in $filter query option");
+                                        throw new InvalidSyntax(InvalidConditionSyntax, "Invalid syntax in $filter query option");
                                     return new UriCondition(parts[0], GetOperator(parts[1]), parts[2]);
                                 }).ForEach(args.Conditions.Add);
-
                                 break;
-
-                            case QueryOptions.@orderby:
+                            case orderby:
                                 if (decodedValue.Contains(","))
                                     throw new FeatureNotImplemented("Multiple expressions not implemented for $orderby");
                                 var (term, order) = decodedValue.TSplit(' ');
@@ -120,29 +116,22 @@ namespace RESTar.OData
                                         args.MetaConditions.Add(new UriCondition("order_desc", Operators.EQUALS, term));
                                         break;
                                     default:
-                                        throw new InvalidSyntax(ErrorCodes.InvalidConditionSyntax,
+                                        throw new InvalidSyntax(InvalidConditionSyntax,
                                             "The OData query option value for $orderby was invalid");
                                 }
-
                                 break;
-
-                            case QueryOptions.@select:
+                            case select:
                                 args.MetaConditions.Add(new UriCondition("select", Operators.EQUALS, decodedValue));
                                 break;
-
-                            case QueryOptions.skip:
+                            case skip:
                                 args.MetaConditions.Add(new UriCondition("offset", Operators.EQUALS, decodedValue));
                                 break;
-
-                            case QueryOptions.top:
+                            case top:
                                 args.MetaConditions.Add(new UriCondition("limit", Operators.EQUALS, decodedValue));
                                 break;
-
                             default: throw new ArgumentOutOfRangeException();
                         }
-
                         break;
-
                     default:
                         args.MetaConditions.Add(new UriCondition(optionKey, Operators.EQUALS, optionValue));
                         break;
@@ -247,7 +236,8 @@ namespace RESTar.OData
                 stream.Seek(0, SeekOrigin.Begin);
                 result.ContentType = MimeTypes.JSONOData;
                 result.Body = stream;
-            }else return new NoContent();
+            }
+            else return new NoContent();
             return result;
         }
     }

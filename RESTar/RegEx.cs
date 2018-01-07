@@ -8,7 +8,7 @@
         /// <summary>
         /// Used when extracting the protocol from a URI
         /// </summary>
-        internal const string Protocol = @"^(?<proto>-[^\?/]*)?(?<tail>.*)";
+        internal const string Protocol = @"^(?<proto>-[^\?/\(]*)?(?<key>\([^\)]+\))?(?<tail>.*)";
 
         /// <summary>
         /// The main URI regex, used when parsing requests
@@ -19,6 +19,11 @@
         /// The main URI regex, used when parsing requests
         /// </summary>
         internal const string ODataRequestUri = @"(?<entityset>/[^/\?]*)?(?<options>\?[^/]*)?";
+
+        /// <summary>
+        /// Checks API keys for invalid characters. May only contain non-whitespace characters and non-parentheses
+        /// </summary>
+        internal const string ApiKey = @"^[^\s\(\)]+$";
 
         /// <summary>
         /// The base URI regex, used when validating base uris in RESTarConfig.Init

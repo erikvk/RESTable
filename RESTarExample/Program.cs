@@ -21,7 +21,7 @@ namespace RESTarExample
             RESTarConfig.Init
             (
                 uri: "/rest",
-                //requireApiKey: true,
+                requireApiKey: true,
                 allowAllOrigins: false,
                 viewEnabled: true,
                 configFilePath: @"C:\Mopedo\mopedo\Mopedo.config",

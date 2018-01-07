@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using Newtonsoft.Json;
 using RESTar.Admin;
 using RESTar.Internal;
@@ -27,9 +26,9 @@ namespace RESTar.Requests
         internal static IFinalizedResult Evaluate
         (
             Action action,
-            string query,
+            ref string query,
             byte[] body,
-            Dictionary<string, string> headers,
+            Headers headers,
             Origin origin
         )
         {
@@ -45,13 +44,13 @@ namespace RESTar.Requests
                     case PATCH:
                     case DELETE:
                     case REPORT:
-                        arguments = new Arguments(action, query, body, headers, origin);
+                        arguments = new Arguments(action,  ref query, body, headers, origin);
                         arguments.Authenticate();
                         arguments.ThrowIfError();
                         return HandleREST((dynamic) arguments.IResource, arguments);
 
                     case OPTIONS:
-                        arguments = new Arguments(action, query, body, headers, origin);
+                        arguments = new Arguments(action, ref query, body, headers, origin);
                         arguments.ThrowIfError();
                         return HandleOptions(arguments.IResource, arguments);
 
@@ -85,6 +84,7 @@ namespace RESTar.Requests
                 }
 
                 var error = getError();
+                if (error is Forbidden) return error;
                 Error.ClearOld();
                 var loggedError = Trans(() => Error.Create(error, arguments));
                 switch (action)

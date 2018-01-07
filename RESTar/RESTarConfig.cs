@@ -258,8 +258,8 @@ namespace RESTar
             {
                 case JObject apiKey:
                     var keyString = apiKey["Key"].Value<string>();
-                    if (string.IsNullOrWhiteSpace(keyString) || keyString.Any(char.IsWhiteSpace))
-                        throw new Exception("An API key was invalid. Must be a non-empty string, not containing whitespace");
+                    if (keyString == null || !Regex.IsMatch(keyString, RegEx.ApiKey))
+                        throw new Exception("An API key was invalid. Must be a non-empty string, not containing whitespace or parentheses");
                     var key = keyString.SHA256();
                     var accessRightList = new List<AccessRight>();
 

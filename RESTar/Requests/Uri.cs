@@ -21,14 +21,21 @@ namespace RESTar.Requests
         internal static readonly string DefaultResourceSpecifier = typeof(AvailableResource).FullName;
         internal static readonly string MetadataResourceSpecifier = typeof(Metadata).FullName;
 
-        internal static URI ParseInternal(string query, bool percentCharsEscaped, out RESTProtocols protocol)
+        internal static URI ParseInternal(ref string query, bool percentCharsEscaped, out RESTProtocols protocol, out string key)
         {
             var uri = new URI();
+            key = null;
             if (percentCharsEscaped) query = query.Replace("%25", "%");
             Action<URI, string> populator;
             var groups = Regex.Match(query, RegEx.Protocol).Groups;
             var protocolString = groups["proto"].Value;
+            var _key = groups["key"].Value;
             var tail = groups["tail"].Value;
+            if (_key.Length > 0)
+            {
+                key = _key;
+                query = protocolString + tail;
+            }
             switch (protocolString)
             {
                 case "":
@@ -58,7 +65,7 @@ namespace RESTar.Requests
 
         internal static URI Parse(string uriString)
         {
-            var uri = ParseInternal(uriString, false, out var _);
+            var uri = ParseInternal(ref uriString, false, out var _, out var _);
             if (uri.HasError) throw uri.Error;
             return uri;
         }

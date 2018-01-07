@@ -44,7 +44,7 @@ namespace RESTar.OData
                 foreach (var entityType in metadata.Resources)
                 {
                     swr.Write($"<EntityType Name=\"{entityType.FullName}\" OpenType=\"{entityType.IsDynamic}\">");
-                    foreach (var property in entityType.Type.GetDeclaredProperties().Values.Where(p => p.Readable))
+                    foreach (var property in entityType.Type.GetDeclaredProperties().Values.Where(p => p.Readable && !p.Hidden))
                     {
                         swr.Write($"<Property Name=\"{property.Name}\" Nullable=\"{property.Nullable}\" " +
                                   $"Type=\"{property.Type.GetEdmTypeName()}\"");
@@ -64,21 +64,16 @@ namespace RESTar.OData
                     swr.Write("</EntitySet>");
                 }
                 swr.Write("</EntityContainer>");
-
                 swr.Write($"<Annotations Target=\"global.{EntityContainerName}\">");
-
                 swr.Write("<Annotation Term=\"Org.OData.Capabilities.V1.ConformanceLevel\"><EnumMember>Org.OData.Capabilities.V1." +
                           "ConformanceLevelType/Minimal</EnumMember></Annotation>");
-
                 swr.Write("<Annotation Term=\"Org.OData.Capabilities.V1.SupportedFormats\">");
                 swr.Write("<Collection>");
                 swr.Write("<String>application/json;odata.metadata=minimal;IEEE754Compatible=false;odata.streaming=true</String>");
                 swr.Write("</Collection>");
                 swr.Write("</Annotation>");
-
                 swr.Write("<Annotation Bool=\"true\" Term=\"Org.OData.Capabilities.V1.AsynchronousRequestsSupported\"/>");
                 swr.Write("<Annotation Term=\"Org.OData.Capabilities.V1.FilterFunctions\"><Collection></Collection></Annotation>");
-                
                 swr.Write("</Annotations>");
                 swr.Write("</Schema>");
                 swr.Write("</edmx:DataServices></edmx:Edmx>");
@@ -106,10 +101,10 @@ namespace RESTar.OData
                         case var _ when type == typeof(Guid): return "Edm.Guid";
                         case var _ when type == typeof(JToken): return typeof(JToken).FullName;
                         case var _ when type.Implements(typeof(IDictionary<,>), out var p) && p[0] == typeof(string):
-                            return "RESTar.DynamicResource";
+                            return "global.RESTar.DynamicResource";
                         case var _ when type.Implements(typeof(IEnumerable<>), out var p):
-                            return $"Collection({GetEdmTypeName(p[0])}";
-                        default: return type.FullName;
+                            return $"Collection({GetEdmTypeName(p[0])})";
+                        default: return $"global.{type.FullName}";
                     }
                 case TypeCode.Boolean: return "Edm.Boolean";
                 case TypeCode.Byte: return "Edm.Byte";

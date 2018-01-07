@@ -1,9 +1,9 @@
-﻿using System.Collections.Generic;
-using System.IO;
+﻿using System.IO;
 using System.Net;
 using RESTar.Linq;
 using RESTar.Operations;
 using RESTar.Results.Fail;
+using RESTar.Results.Fail.Forbidden;
 using RESTar.Results.Success;
 using Starcounter;
 using static RESTar.Admin.Settings;
@@ -28,10 +28,11 @@ namespace RESTar.Requests
                 handler: (Request request, string query) =>
                 {
                     var origin = MakeOrigin(request);
+                    var headers = new Headers(request.HeadersDictionary);
                     RequestCount += 1;
                     if (ConsoleActive)
                         Console.Send($"=> [{RequestCount}] {action} '{request.Uri}' from '{request.ClientIpAddress}'\n");
-                    var result = Evaluate(action, query, request.BodyBytes, request.HeadersDictionary, origin);
+                    var result = Evaluate(action, ref query, request.BodyBytes, headers, origin);
                     if (ConsoleActive)
                         Console.Send($"<= [{RequestCount}] {result.StatusCode.ToCode()}: '{result.StatusDescription}'. " +
                                      $"{result.Headers["RESTar-info"]} {result.Headers["ErrorInfo"]}\n");
@@ -49,13 +50,14 @@ namespace RESTar.Requests
                         switch (input[0])
                         {
                             case '\n': break;
+                            case '-':
                             case '/':
                                 query = input.Trim();
-                                ws.SendGET(query, request.HeadersDictionary, origin);
+                                ws.SendGET(ref query, headers, origin);
                                 break;
                             case '[':
                             case '{':
-                                ws.SendPOST(query, input.ToBytes(), request.HeadersDictionary, origin);
+                                ws.SendPOST(ref query, input.ToBytes(), headers, origin);
                                 break;
                             default:
                                 if (input.Length > 2000) ws.SendBadRequest();
@@ -68,7 +70,7 @@ namespace RESTar.Requests
                                         ws.Send($">>> {query}\n");
                                         break;
                                     case "RELOAD":
-                                        ws.SendGET(query, request.HeadersDictionary, origin);
+                                        ws.SendGET(ref query, headers, origin);
                                         break;
                                     case var other:
                                         ws.SendUnknownCommand(other);
@@ -77,9 +79,7 @@ namespace RESTar.Requests
                                 break;
                         }
                     });
-                    Handle.WebSocketDisconnect(_Port, groupName, socket =>
-                    {
-                    });
+                    Handle.WebSocketDisconnect(_Port, groupName, socket => { });
 
                     request.SendUpgrade(groupName).SendGETResult(result);
                     return HandlerStatus.Handled;
@@ -132,34 +132,38 @@ namespace RESTar.Requests
 
         private static void SendGETResult(this WebSocket ws, IFinalizedResult result)
         {
-            if (result is ConsoleInit)
+            switch (result)
             {
-                ws.Send(">>> 400: Bad request. Cannot enter the WebSocket console from another WebSocket.\n");
-                return;
-            }
-            if (result is RESTarError)
-            {
-                ws.SendStatus(result);
-                return;
-            }
-            if (result.StatusCode == HttpStatusCode.NoContent)
-                ws.SendNoContent();
-            else
-            {
-                ws.Send(result.Body.ToByteArray());
-                ws.Send("\n");
+                case ConsoleInit _:
+                    ws.Send(">>> 400: Bad request. Cannot enter the WebSocket console from another WebSocket.\n");
+                    break;
+                case Forbidden _:
+                    ws.SendStatus(result);
+                    ws.Close();
+                    break;
+                case RESTarError _:
+                    ws.SendStatus(result);
+                    break;
+                case NoContent _:
+                    ws.SendNoContent();
+                    break;
+                case Report _:
+                case Entities _:
+                    ws.Send(result.Body.ToByteArray());
+                    ws.Send("\n");
+                    break;
             }
         }
 
-        private static void SendGET(this WebSocket ws, string query, Dictionary<string, string> headers, Origin origin)
+        private static void SendGET(this WebSocket ws, ref string query, Headers headers, Origin origin)
         {
-            var result = Evaluate(GET, query, null, headers, origin);
+            var result = Evaluate(GET, ref query, null, headers, origin);
             ws.SendGETResult(result);
         }
 
-        private static void SendPOST(this WebSocket ws, string query, byte[] body, Dictionary<string, string> headers, Origin origin)
+        private static void SendPOST(this WebSocket ws, ref string query, byte[] body, Headers headers, Origin origin)
         {
-            var result = Evaluate(POST, query, body, headers, origin);
+            var result = Evaluate(POST, ref query, body, headers, origin);
             ws.SendStatus(result);
         }
 

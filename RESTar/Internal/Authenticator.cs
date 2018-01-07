@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Linq;
-using System.Net;
+using System.Text;
 using RESTar.Auth;
 using RESTar.Requests;
 using RESTar.Results.Fail.Forbidden;
@@ -65,19 +65,19 @@ namespace RESTar.Internal
                 return authToken;
             }
             var authorizationHeader = arguments.Headers.SafeGet("Authorization");
-            if (string.IsNullOrWhiteSpace(authorizationHeader))
+            if (string.IsNullOrWhiteSpace(authorizationHeader)) return null;
+            var (method, key) = authorizationHeader.TSplit(' ');
+            if (key == null) return null;
+            switch (method.ToLower())
             {
-                if (!arguments.Uri.MetaConditions.Any()) return null;
-                var keyMetaCondition = arguments.Uri.MetaConditions.FirstOrDefault(c => c.Key.EqualsNoCase("key"));
-                if (keyMetaCondition.ValueLiteral == null) return null;
-                arguments.Uri.MetaConditions.Remove(keyMetaCondition);
-                authorizationHeader = $"apikey {WebUtility.UrlDecode(keyMetaCondition.ValueLiteral)}";
+                case "apikey": break;
+                case "basic":
+                    key = Encoding.UTF8.GetString(Convert.FromBase64String(key)).Split(":").ElementAtOrDefault(1);
+                    if (key == null) return null;
+                    break;
+                default: return null;
             }
-            var apikey_key = authorizationHeader.Split(' ');
-            if (apikey_key[0].ToLower() != "apikey" || apikey_key.Length != 2)
-                return null;
-            var apiKey = apikey_key[1].SHA256();
-            if (!ApiKeys.TryGetValue(apiKey, out accessRights))
+            if (!ApiKeys.TryGetValue(key.SHA256(), out accessRights))
                 return null;
             return AssignAuthtoken(accessRights);
         }
