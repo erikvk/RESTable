@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Newtonsoft.Json.Linq;
+using RESTar.Deflection;
 using RESTar.Deflection.Dynamic;
 using RESTar.Results.Success;
 using Starcounter;
@@ -41,10 +42,17 @@ namespace RESTar.OData
                 swr.WriteXMLHeader();
                 swr.Write("<edmx:Edmx Version=\"4.0\" xmlns:edmx=\"http://docs.oasis-open.org/odata/ns/edmx\"><edmx:DataServices>");
                 swr.Write("<Schema Namespace=\"global\" xmlns=\"http://docs.oasis-open.org/odata/ns/edm\">");
-                foreach (var entityType in metadata.Resources)
+                foreach (var enumType in metadata.EnumTypes)
                 {
-                    swr.Write($"<EntityType Name=\"{entityType.FullName}\" OpenType=\"{entityType.IsDynamic}\">");
-                    foreach (var property in entityType.Type.GetDeclaredProperties().Values.Where(p => p.Readable && !p.Hidden))
+                    swr.Write($"<EnumType Name=\"{enumType.FullName}\">");
+                    foreach (var member in EnumMember.GetMembers(enumType))
+                        swr.Write($"<Member Name=\"{member.Name}\" Value=\"{member.Value}\"/>");
+                    swr.Write("</EnumType>");
+                }
+                foreach (var entityType in metadata.EntityTypes)
+                {
+                    swr.Write($"<EntityType Name=\"{entityType.FullName}\" OpenType=\"{entityType.IsDynamic()}\">");
+                    foreach (var property in entityType.GetDeclaredProperties().Values.Where(p => p.Readable && !p.Hidden))
                     {
                         swr.Write($"<Property Name=\"{property.Name}\" Nullable=\"{property.Nullable}\" " +
                                   $"Type=\"{property.Type.GetEdmTypeName()}\"");
@@ -54,7 +62,7 @@ namespace RESTar.OData
                 }
                 swr.Write("<EntityType Name=\"RESTar.DynamicResource\" OpenType=\"true\"/>");
                 swr.Write($"<EntityContainer Name=\"{EntityContainerName}\">");
-                foreach (var entitySet in metadata.Resources)
+                foreach (var entitySet in metadata.EntitySets)
                 {
                     swr.Write($"<EntitySet EntityType=\"global.{entitySet.FullName}\" Name=\"{entitySet.FullName}\">");
                     var methods = metadata.CurrentAccessRights[entitySet];
@@ -117,7 +125,7 @@ namespace RESTar.OData
                 case TypeCode.Int64: return "Edm.Int64";
                 case TypeCode.SByte: return "Edm.SByte";
                 case TypeCode.String: return "Edm.String";
-                default: return type.FullName;
+                default: return "global." + type.FullName;
             }
         }
     }

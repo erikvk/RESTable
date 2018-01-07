@@ -31,7 +31,6 @@ namespace RESTar
         internal static ConcurrentDictionary<string, IResource> ResourceFinder { get; private set; }
         internal static IDictionary<string, IResource> ResourceByName { get; private set; }
         internal static IDictionary<Type, IResource> ResourceByType { get; private set; }
-        internal static IDictionary<string, List<IResource>> ResourcesByNamespace { get; private set; }
         internal static IDictionary<string, AccessRights> ApiKeys { get; private set; }
         internal static ConcurrentDictionary<string, AccessRights> AuthTokens { get; private set; }
         internal static ICollection<IResource> Resources => ResourceByName.Values;
@@ -52,7 +51,6 @@ namespace RESTar
             ResourceByType = new Dictionary<Type, IResource>();
             ResourceByName = new Dictionary<string, IResource>(StringComparer.OrdinalIgnoreCase);
             ResourceFinder = new ConcurrentDictionary<string, IResource>(StringComparer.OrdinalIgnoreCase);
-            ResourcesByNamespace = new Dictionary<string, List<IResource>>();
             AuthTokens = new ConcurrentDictionary<string, AccessRights>();
             AllowedOrigins = new List<Uri>();
             AuthTokens.TryAdd(Authenticator.AppToken, AccessRights.Root);
@@ -88,9 +86,6 @@ namespace RESTar
         {
             ResourceByName[toAdd.FullName] = toAdd;
             ResourceByType[toAdd.Type] = toAdd;
-            if (ResourcesByNamespace.ContainsKey(toAdd.Namespace))
-                ResourcesByNamespace[toAdd.Namespace].Add(toAdd);
-            else ResourcesByNamespace[toAdd.Namespace] = new List<IResource> {toAdd};
             AddToResourceFinder(toAdd, ResourceFinder);
             UpdateConfiguration();
             toAdd.Type.GetDeclaredProperties();
@@ -100,9 +95,6 @@ namespace RESTar
         {
             ResourceByName.Remove(toRemove.FullName);
             ResourceByType.Remove(toRemove.Type);
-            if (ResourcesByNamespace[toRemove.Namespace].Count == 1)
-                ResourcesByNamespace.Remove(toRemove.Namespace);
-            else ResourcesByNamespace[toRemove.Namespace].Remove(toRemove);
             ReloadResourceFinder();
             UpdateConfiguration();
         }
