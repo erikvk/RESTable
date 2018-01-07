@@ -95,15 +95,30 @@ namespace RESTar
             return attribute != null;
         }
 
-        internal static bool Implements(this Type type, Type interfaceType) => type
-            .GetInterfaces()
-            .Any(i => i.Name == interfaceType.Name && i.Namespace == interfaceType.Namespace);
+        internal static bool Implements(this Type type, Type interfaceType)
+        {
+            if (type.Name == interfaceType.Name &&
+                type.Namespace == interfaceType.Namespace &&
+                type.Assembly == interfaceType.Assembly)
+                return true;
+            return type
+                .GetInterfaces()
+                .Any(i => i.Name == interfaceType.Name &&
+                          i.Namespace == interfaceType.Namespace &&
+                          i.Assembly == interfaceType.Assembly);
+        }
 
         internal static bool Implements(this Type type, Type interfaceType, out Type[] genericParameters)
         {
-            var match = type
-                .GetInterfaces()
-                .FirstOrDefault(i => i.Name == interfaceType.Name && i.Namespace == interfaceType.Namespace);
+            var match = type.GetInterfaces()
+                .FirstOrDefault(i => i.Name == interfaceType.Name &&
+                                     i.Namespace == interfaceType.Namespace &&
+                                     i.Assembly == interfaceType.Assembly);
+            if (match == null &&
+                type.Name == interfaceType.Name &&
+                type.Namespace == interfaceType.Namespace &&
+                type.Assembly == interfaceType.Assembly)
+                match = type;
             genericParameters = match?.GetGenericArguments();
             return match != null;
         }

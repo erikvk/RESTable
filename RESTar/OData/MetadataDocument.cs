@@ -99,7 +99,7 @@ namespace RESTar.OData
 
         internal static string GetEdmTypeName(this Type type)
         {
-            if (type.IsEnum) return type.FullName;
+            if (type.IsEnum) return "global." + type.FullName;
             switch (Type.GetTypeCode(type))
             {
                 case TypeCode.Object:
@@ -108,6 +108,8 @@ namespace RESTar.OData
                         case var _ when type == typeof(Binary): return "Edm.Binary";
                         case var _ when type == typeof(Guid): return "Edm.Guid";
                         case var _ when type == typeof(JToken): return typeof(JToken).FullName;
+                        case var _ when type.IsNullable(out var t): return GetEdmTypeName(t);
+                        case var _ when type == typeof(object):
                         case var _ when type.Implements(typeof(IDictionary<,>), out var p) && p[0] == typeof(string):
                             return "global.RESTar.DynamicResource";
                         case var _ when type.Implements(typeof(IEnumerable<>), out var p):
@@ -121,9 +123,13 @@ namespace RESTar.OData
                 case TypeCode.Double: return "Edm.Double";
                 case TypeCode.Single: return "Edm.Single";
                 case TypeCode.Int16: return "Edm.Int16";
+                case TypeCode.UInt16:
                 case TypeCode.Int32: return "Edm.Int32";
+                case TypeCode.UInt32:
+                case TypeCode.UInt64:
                 case TypeCode.Int64: return "Edm.Int64";
                 case TypeCode.SByte: return "Edm.SByte";
+                case TypeCode.Char:
                 case TypeCode.String: return "Edm.String";
                 default: return "global." + type.FullName;
             }

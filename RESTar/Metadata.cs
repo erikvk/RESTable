@@ -23,9 +23,11 @@ namespace RESTar
             var rights = RESTarConfig.AuthTokens[request.AuthToken];
             var enumTypes = new HashSet<Type>();
             var entityTypes = new HashSet<Type>();
+            var thisResource = Resource<Metadata>.Get;
             var resources = rights?.Keys
                 .Where(r => r.IsGlobal && !r.IsInnerResource)
                 .Where(r => rights.ContainsKey(r))
+                .Where(r => r != thisResource)
                 .OrderBy(r => r.FullName)
                 .ToList();
             if (rights == null) return null;
@@ -33,6 +35,8 @@ namespace RESTar
             void parseType(Type type)
             {
                 if (type == typeof(object))
+                    return;
+                if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(KeyValuePair<,>))
                     return;
                 if (type.IsEnum)
                 {
@@ -42,6 +46,13 @@ namespace RESTar
                 if (type.IsNullable(out var t))
                 {
                     parseType(t);
+                    return;
+                }
+                if (type.Implements(typeof(IEnumerable<>), out var param))
+                {
+                    if (param[0].Implements(typeof(IEnumerable<>)))
+                        return;
+                    parseType(param[0]);
                     return;
                 }
                 switch (Type.GetTypeCode(type))
