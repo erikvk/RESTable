@@ -43,7 +43,8 @@ namespace RESTar.Requests
                         Console.SendConsoleInit();
                         return HandlerStatus.Handled;
                     }
-                    Handle.WebSocket(_Port, "restar_ws", (input, ws) =>
+                    var groupName = $"restar_ws_{RequestCount}";
+                    Handle.WebSocket(_Port, groupName, (input, ws) =>
                     {
                         switch (input[0])
                         {
@@ -76,7 +77,11 @@ namespace RESTar.Requests
                                 break;
                         }
                     });
-                    request.SendUpgrade("restar_ws").SendGETResult(result);
+                    Handle.WebSocketDisconnect(_Port, groupName, socket =>
+                    {
+                    });
+
+                    request.SendUpgrade(groupName).SendGETResult(result);
                     return HandlerStatus.Handled;
                 }));
 
