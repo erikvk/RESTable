@@ -8,20 +8,28 @@ namespace TestProject
     {
         public static void Main()
         {
-            //Handle.GET(8100, "/test", () => new Response
-            //{
-            //    StatusCode = 200,
-            //    StatusDescription = "OK",
-            //    Headers = {["X-MySingleHeader"] = "Some value\r\nFoo: other value\r\nThird value"}
-            //});
-            //var response = Http.GET("http://localhost:8100/test");
-            //var fooHeader = response.Headers["Foo"];
+            WebSocket wsocket;
 
-            var request = new Request();
+            Handle.WebSocket("wstest", (string data, WebSocket socket) =>
+            {
 
-            var s = "";
+                var s = data;
 
-            // other value
+                socket.Send("Heej igen");
+            });
+
+
+            Handle.GET("/test", (Request request) =>
+            {
+                //if (!request.WebSocketUpgrade)
+                //    return 204;
+
+                wsocket = request.SendUpgrade("wstest");
+
+                wsocket.Send("HEEELLLLOOOO!!!!");
+                
+                return HandlerStatus.Handled;
+            });
         }
     }
 }

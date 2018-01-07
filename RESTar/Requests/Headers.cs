@@ -27,8 +27,10 @@ namespace RESTar.Requests
 
         internal Dictionary<string, string> _dict { get; }
         internal void Put(KeyValuePair<string, string> kvp) => _dict[kvp.Key] = kvp.Value;
-        internal Headers() => _dict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
+        /// <inheritdoc />
+        public Headers() => _dict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+         
         internal Headers(Dictionary<string, string> dictToUse)
         {
             if (dictToUse == null)

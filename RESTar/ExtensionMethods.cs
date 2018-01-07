@@ -752,6 +752,7 @@ namespace RESTar
 
         internal static byte[] ToByteArray(this Stream stream)
         {
+            if (stream == null) return null;
             MemoryStream ms;
             if (stream is MemoryStream _ms) ms = _ms;
             else

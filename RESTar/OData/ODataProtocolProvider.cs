@@ -203,10 +203,14 @@ namespace RESTar.OData
             result.Headers["OData-Version"] = "4.0";
             if (!(result is Entities entities)) return result;
 
+            var contextFragment = $"#{entities.Request.Resource.FullName}";
+            var writeMetadata = true;
             switch (entities.Content)
             {
                 case IEnumerable<AvailableResource> availableResources:
                     entities.Content = availableResources.Select(ODataServiceEntity.Convert);
+                    contextFragment = null;
+                    writeMetadata = false;
                     break;
                 case IEnumerable<Metadata> metadata:
                     return new MetadataDocument(metadata.First());
@@ -218,20 +222,23 @@ namespace RESTar.OData
             {
                 Serializer.Json.Formatting = Formatting.Indented;
                 jwr.WritePre();
-                jwr.WriteRaw($"\"@odata.context\": \"{GetServiceRoot(entities)}/$metadata#{entities.Request.Resource.FullName}\",");
+                jwr.WriteRaw($"\"@odata.context\": \"{GetServiceRoot(entities)}/$metadata{contextFragment}\",");
                 jwr.WriteIndentation();
                 jwr.WritePropertyName("value");
                 Serializer.Json.Serialize(jwr, entities.Content);
                 entities.EntityCount = jwr.ObjectsWritten;
-                jwr.WriteRaw(",");
-                jwr.WriteIndentation();
-                jwr.WriteRaw($"\"@odata.count\": {entities.EntityCount}");
-                if (entities.IsPaged)
+                if (writeMetadata)
                 {
                     jwr.WriteRaw(",");
                     jwr.WriteIndentation();
-                    var pager = entities.GetNextPageLink();
-                    jwr.WriteRaw($"\"@odata.nextLink\": {MakeRelativeUri(pager)}");
+                    jwr.WriteRaw($"\"@odata.count\": {entities.EntityCount}");
+                    if (entities.IsPaged)
+                    {
+                        jwr.WriteRaw(",");
+                        jwr.WriteIndentation();
+                        var pager = entities.GetNextPageLink();
+                        jwr.WriteRaw($"\"@odata.nextLink\": {MakeRelativeUri(pager)}");
+                    }
                 }
                 jwr.WritePost();
             }
@@ -240,7 +247,7 @@ namespace RESTar.OData
                 stream.Seek(0, SeekOrigin.Begin);
                 result.ContentType = MimeTypes.JSONOData;
                 result.Body = stream;
-            }
+            }else return new NoContent();
             return result;
         }
     }
