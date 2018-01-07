@@ -64,7 +64,7 @@ namespace RESTar.OData
                 swr.Write($"<EntityContainer Name=\"{EntityContainerName}\">");
                 foreach (var entitySet in metadata.EntitySets)
                 {
-                    swr.Write($"<EntitySet EntityType=\"global.{entitySet.FullName}\" Name=\"{entitySet.FullName}\">");
+                    swr.Write($"<EntitySet EntityType=\"global.{entitySet.Type.FullName}\" Name=\"{entitySet.FullName}\">");
                     var methods = metadata.CurrentAccessRights[entitySet];
                     swr.Write(InsertableAnnotation(methods.Contains(Methods.POST)));
                     swr.Write(UpdatableAnnotation(methods.Contains(Methods.PATCH)));
