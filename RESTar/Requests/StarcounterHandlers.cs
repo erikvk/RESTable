@@ -43,41 +43,40 @@ namespace RESTar.Requests
                         Console.SendConsoleInit();
                         return HandlerStatus.Handled;
                     }
-                    Handle.WebSocket(_Port, "restar_ws", (input, _socket) =>
+                    Handle.WebSocket(_Port, "restar_ws", (input, ws) =>
                     {
                         switch (input[0])
                         {
                             case '\n': break;
                             case '/':
                                 query = input.Trim();
-                                _socket.SendGET(query, request.HeadersDictionary, origin);
+                                ws.SendGET(query, request.HeadersDictionary, origin);
                                 break;
                             case '[':
                             case '{':
-                                _socket.SendPOST(query, input.ToBytes(), request.HeadersDictionary, origin);
+                                ws.SendPOST(query, input.ToBytes(), request.HeadersDictionary, origin);
                                 break;
                             default:
-                                if (input.Length > 2000) _socket.SendBadRequest();
+                                if (input.Length > 2000) ws.SendBadRequest();
                                 switch (input.Trim().ToUpperInvariant())
                                 {
                                     case "CLOSE":
-                                        _socket.Close();
+                                        ws.Close();
                                         break;
                                     case "?":
-                                        _socket.Send($">>> {query}\n");
+                                        ws.Send($">>> {query}\n");
                                         break;
                                     case "RELOAD":
-                                        _socket.SendGET(query, request.HeadersDictionary, origin);
+                                        ws.SendGET(query, request.HeadersDictionary, origin);
                                         break;
                                     case var other:
-                                        _socket.SendUnknownCommand(other);
+                                        ws.SendUnknownCommand(other);
                                         break;
                                 }
                                 break;
                         }
                     });
-                    var socket = request.SendUpgrade("restar_ws");
-                    socket.SendGETResult(result);
+                    request.SendUpgrade("restar_ws").SendGETResult(result);
                     return HandlerStatus.Handled;
                 }));
 
@@ -105,7 +104,7 @@ namespace RESTar.Requests
                         Console = null;
                         break;
                     case var unrecognized:
-                        Console.Send($">>> Unrecognized command: '{unrecognized}'\n");
+                        Console.SendUnknownCommand(unrecognized);
                         break;
                 }
             });
@@ -177,7 +176,7 @@ namespace RESTar.Requests
 
         private static void SendUnknownCommand(this WebSocket ws, string command)
         {
-            ws.Send($">>> 400: Bad request. Unknown command '{command}'.\n");
+            ws.Send($">>> Unknown command '{command}'.\n");
         }
 
         private static void Close(this WebSocket ws)
