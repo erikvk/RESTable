@@ -138,7 +138,7 @@ namespace RESTar.Requests
                         ws.SendCancel();
                         break;
                     default:
-                        ws.SendPreConfirmation();
+                        ws.SendConfirmationRequest();
                         break;
                 }
                 return;
@@ -158,7 +158,8 @@ namespace RESTar.Requests
                     break;
                 default:
                     if (input.Length > 2000) ws.SendBadRequest();
-                    switch (input.Trim().ToUpperInvariant())
+                    var (command, body) = input.Trim().TSplit(' ');
+                    switch (command.ToUpperInvariant())
                     {
                         case "CLOSE":
                             ws.Close();
@@ -170,10 +171,10 @@ namespace RESTar.Requests
                             ws.SendGET(ref query, headers, origin);
                             break;
                         case "DELETE":
+                            ws.SendDELETE(query, headers, origin);
                             break;
-                        case var patch when patch.StartsWith("PATCH {"):
-                            var body = patch.Split(new[] {' '}, 2)[1];
-                            SendPATCH(ws, query, body.ToBytes(), headers, origin);
+                        case "PATCH":
+                            ws.SendPATCH(query, body.ToBytes(), headers, origin);
                             break;
                         case var other:
                             ws.SendUnknownCommand(other);
@@ -220,28 +221,56 @@ namespace RESTar.Requests
             ws.SendGETResult(result);
         }
 
-        private static void DoPatch(this WebSocket ws, string query, byte[] body, Headers headers, Origin origin)
-        {
-            headers.UnsafeOverride = true;
-            var result = ws.WsEvaluate(PATCH, ref query, body, headers, origin);
-            ws.SendStatus(result);
-        }
-
         private static void SendPATCH(this WebSocket ws, string query, byte[] body, Headers headers, Origin origin)
         {
-            if (PreviousResult.SafeGet(ws.ToUInt64()) is Entities entities && entities.EntityCount > 0)
+            void patch()
             {
-                if (entities.EntityCount == 1)
-                {
-                    ws.DoPatch(query, body, headers, origin);
-                    return;
-                }
-                ConfirmationActions[ws.ToUInt64()] = () => ws.DoPatch(query, body, headers, origin);
-                ws.SendPreConfirmation($"This will update {entities.EntityCount} entities in resource '{entities.Request.Resource.FullName}'. ");
-                return;
+                headers.UnsafeOverride = true;
+                var result = ws.WsEvaluate(PATCH, ref query, body, headers, origin);
+                ws.SendStatus(result);
             }
-            ws.Send("400: Bad request. No entities to patch. PATCH commands should be preceeded by " +
-                    "a command selecting the entities to patch");
+
+            var entities = PreviousResult.SafeGet(ws.ToUInt64()) as Entities;
+            switch (entities?.EntityCount)
+            {
+                case null:
+                case 0:
+                    ws.SendBadRequest(". No entities to patch. Make a selecting request before running PATCH");
+                    break;
+                case 1:
+                    patch();
+                    break;
+                case var many:
+                    ConfirmationActions[ws.ToUInt64()] = patch;
+                    ws.SendConfirmationRequest($"This will update {many} entities in resource '{entities.Request.Resource.FullName}'. ");
+                    break;
+            }
+        }
+
+        private static void SendDELETE(this WebSocket ws, string query, Headers headers, Origin origin)
+        {
+            void delete()
+            {
+                headers.UnsafeOverride = true;
+                var result = ws.WsEvaluate(DELETE, ref query, null, headers, origin);
+                ws.SendStatus(result);
+            }
+
+            var entities = PreviousResult.SafeGet(ws.ToUInt64()) as Entities;
+            switch (entities?.EntityCount)
+            {
+                case null:
+                case 0:
+                    ws.SendBadRequest(". No entities to delete. Make a selecting request before running DELETE");
+                    break;
+                case 1:
+                    delete();
+                    break;
+                case var many:
+                    ConfirmationActions[ws.ToUInt64()] = delete;
+                    ws.SendConfirmationRequest($"This will delete {many} entities from resource '{entities.Request.Resource.FullName}'. ");
+                    break;
+            }
         }
 
         private static void SendPOST(this WebSocket ws, ref string query, byte[] body, Headers headers, Origin origin)
@@ -250,7 +279,7 @@ namespace RESTar.Requests
             ws.SendStatus(result);
         }
 
-        private static void SendPreConfirmation(this WebSocket ws, string initialInfo = null)
+        private static void SendConfirmationRequest(this WebSocket ws, string initialInfo = null)
         {
             ws.Send(initialInfo + "Type 'Y' to continue, 'N' to cancel");
         }
@@ -277,9 +306,9 @@ namespace RESTar.Requests
             ws.Send("204: No content");
         }
 
-        private static void SendBadRequest(this WebSocket ws)
+        private static void SendBadRequest(this WebSocket ws, string message = null)
         {
-            ws.Send("400: Bad request");
+            ws.Send("400: Bad request" + message);
         }
 
         private static void SendUnknownCommand(this WebSocket ws, string command)
