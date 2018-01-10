@@ -89,6 +89,11 @@ namespace RESTar.Requests
             arguments.CustomHeaders.ForEach(Headers.Put);
             Conditions = Condition<T>.Parse(arguments.Uri.Conditions, Target) ?? Conditions;
             MetaConditions = MetaConditions.Parse(arguments.Uri.MetaConditions, Resource) ?? MetaConditions;
+            if (arguments.Headers.UnsafeOverride)
+            {
+                MetaConditions.Unsafe = true;
+                arguments.Headers.UnsafeOverride = false;
+            }
             if (Origin.IsInternal) MetaConditions.Formatter = DbOutputFormat.Raw;
             this.MethodCheck();
             SetRequestData(arguments.BodyBytes);

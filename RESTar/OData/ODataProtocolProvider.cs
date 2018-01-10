@@ -231,13 +231,9 @@ namespace RESTar.OData
                 }
                 jwr.WritePost();
             }
-            if (entities.EntityCount > 0)
-            {
-                stream.Seek(0, SeekOrigin.Begin);
-                result.ContentType = MimeTypes.JSONOData;
-                result.Body = stream;
-            }
-            else return new NoContent();
+            stream.Seek(0, SeekOrigin.Begin);
+            result.ContentType = MimeTypes.JSONOData;
+            result.Body = stream;
             return result;
         }
     }

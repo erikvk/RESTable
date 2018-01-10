@@ -1,4 +1,8 @@
-﻿using System.IO;
+﻿using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Net;
 using RESTar.Linq;
 using RESTar.Operations;
@@ -18,6 +22,18 @@ namespace RESTar.Requests
         private static WebSocket Console;
         private static bool ConsoleActive;
         private static ulong RequestCount;
+        private const string WsGroupName = "restar_ws";
+        private const string ConsoleGroupName = "restar_console";
+        private static readonly IDictionary<ulong, Action<string, WebSocket>> WebSocketActions;
+        private static readonly IDictionary<ulong, IFinalizedResult> PreviousResult;
+        private static readonly IDictionary<ulong, System.Action> ConfirmationActions;
+
+        static StarcounterHandlers()
+        {
+            WebSocketActions = new ConcurrentDictionary<ulong, Action<string, WebSocket>>();
+            PreviousResult = new ConcurrentDictionary<ulong, IFinalizedResult>();
+            ConfirmationActions = new ConcurrentDictionary<ulong, System.Action>();
+        }
 
         internal static void RegisterRESTHandlers(bool setupMenu)
         {
@@ -31,88 +47,36 @@ namespace RESTar.Requests
                     var headers = new Headers(request.HeadersDictionary);
                     RequestCount += 1;
                     if (ConsoleActive)
-                        Console.Send($"=> [{RequestCount}] {action} '{request.Uri}' from '{request.ClientIpAddress}'\n");
+                        Console.Send($"=> [{RequestCount}] {action} '{request.Uri}' from '{request.ClientIpAddress}'");
                     var result = Evaluate(action, ref query, request.BodyBytes, headers, origin);
                     if (ConsoleActive)
                         Console.Send($"<= [{RequestCount}] {result.StatusCode.ToCode()}: '{result.StatusDescription}'. " +
-                                     $"{result.Headers["RESTar-info"]} {result.Headers["ErrorInfo"]}\n");
+                                     $"{result.Headers["RESTar-info"]} {result.Headers["ErrorInfo"]}");
                     if (!request.WebSocketUpgrade)
                         return result.ToResponse();
                     if (result is ConsoleInit)
                     {
-                        Console = request.SendUpgrade("restar_console");
+                        Console = request.SendUpgrade(ConsoleGroupName);
                         Console.SendConsoleInit();
                         return HandlerStatus.Handled;
                     }
-                    var groupName = $"restar_ws_{RequestCount}";
-                    Handle.WebSocket(_Port, groupName, (input, ws) =>
-                    {
-                        switch (input[0])
-                        {
-                            case '\n': break;
-                            case '-':
-                            case '/':
-                                query = input.Trim();
-                                ws.SendGET(ref query, headers, origin);
-                                break;
-                            case '[':
-                            case '{':
-                                ws.SendPOST(ref query, input.ToBytes(), headers, origin);
-                                break;
-                            default:
-                                if (input.Length > 2000) ws.SendBadRequest();
-                                switch (input.Trim().ToUpperInvariant())
-                                {
-                                    case "CLOSE":
-                                        ws.Close();
-                                        break;
-                                    case "?":
-                                        ws.Send($">>> {query}\n");
-                                        break;
-                                    case "RELOAD":
-                                        ws.SendGET(ref query, headers, origin);
-                                        break;
-                                    case var other:
-                                        ws.SendUnknownCommand(other);
-                                        break;
-                                }
-                                break;
-                        }
-                    });
-                    Handle.WebSocketDisconnect(_Port, groupName, socket => { });
-
-                    request.SendUpgrade(groupName).SendGETResult(result);
+                    WebSocketActions[request.GetWebSocketId()] = (input, _ws) => WebSocketShell(input, _ws, ref query, headers, origin);
+                    var ws = request.SendUpgrade(WsGroupName);
+                    PreviousResult[ws.ToUInt64()] = result;
+                    ws.SendGETResult(result);
                     return HandlerStatus.Handled;
                 }));
 
-            Handle.WebSocket(_Port, "restar_console", (s, socket) =>
+            Handle.WebSocket(_Port, WsGroupName, (input, ws) => WebSocketActions.SafeGet(ws.ToUInt64())?.Invoke(input, ws));
+            Handle.WebSocketDisconnect(_Port, WsGroupName, ws =>
             {
-                if (socket.ToUInt64() != Console.ToUInt64())
-                {
-                    Console.Disconnect();
-                    Console = socket;
-                }
-                switch (s.ToUpperInvariant().Trim())
-                {
-                    case "": break;
-                    case "BEGIN":
-                        ConsoleActive = true;
-                        Console.Send(">>> Status: ACTIVE\n\n");
-                        break;
-                    case "PAUSE":
-                        ConsoleActive = false;
-                        Console.Send(">>> Status: PAUSED\n\n");
-                        break;
-                    case "CLOSE":
-                        Console.Send(">>> Status: CLOSED\n\n");
-                        Console.Disconnect();
-                        Console = null;
-                        break;
-                    case var unrecognized:
-                        Console.SendUnknownCommand(unrecognized);
-                        break;
-                }
+                var @ulong = ws.ToUInt64();
+                WebSocketActions.Remove(@ulong);
+                ConfirmationActions.Remove(@ulong);
+                PreviousResult.Remove(@ulong);
             });
+            Handle.WebSocket(_Port, ConsoleGroupName, ConsoleShell);
+            Handle.WebSocketDisconnect(_Port, ConsoleGroupName, ws => Console = null);
 
             #region View
 
@@ -128,14 +92,110 @@ namespace RESTar.Requests
             #endregion
         }
 
+        private static void ConsoleShell(string input, WebSocket ws)
+        {
+            if (ws.ToUInt64() != Console.ToUInt64())
+            {
+                Console.Disconnect();
+                Console = ws;
+            }
+            switch (input.ToUpperInvariant().Trim())
+            {
+                case "": break;
+                case "BEGIN":
+                    ConsoleActive = true;
+                    Console.Send("Status: ACTIVE\n");
+                    break;
+                case "PAUSE":
+                    ConsoleActive = false;
+                    Console.Send("Status: PAUSED\n");
+                    break;
+                case "CLOSE":
+                    Console.Send("Status: CLOSED\n");
+                    Console.Disconnect();
+                    Console = null;
+                    break;
+                case var unrecognized:
+                    Console.SendUnknownCommand(unrecognized);
+                    break;
+            }
+        }
+
+        private static void WebSocketShell(string input, WebSocket ws, ref string query, Headers headers, Origin origin)
+        {
+            if (ConfirmationActions.TryGetValue(ws.ToUInt64(), out var action))
+            {
+                switch (input.ElementAtOrDefault(0))
+                {
+                    case 'Y':
+                    case 'y':
+                        action();
+                        ConfirmationActions.Remove(ws.ToUInt64());
+                        break;
+                    case 'N':
+                    case 'n':
+                        ConfirmationActions.Remove(ws.ToUInt64());
+                        ws.SendCancel();
+                        break;
+                    default:
+                        ws.SendPreConfirmation();
+                        break;
+                }
+                return;
+            }
+            switch (input.ElementAtOrDefault(0))
+            {
+                case '\0':
+                case '\n': break;
+                case '-':
+                case '/':
+                    query = input.Trim();
+                    ws.SendGET(ref query, headers, origin);
+                    break;
+                case '[':
+                case '{':
+                    ws.SendPOST(ref query, input.ToBytes(), headers, origin);
+                    break;
+                default:
+                    if (input.Length > 2000) ws.SendBadRequest();
+                    switch (input.Trim().ToUpperInvariant())
+                    {
+                        case "CLOSE":
+                            ws.Close();
+                            break;
+                        case "?":
+                            ws.Send($"{(query.Any() ? query : "/")}");
+                            break;
+                        case "RELOAD":
+                            ws.SendGET(ref query, headers, origin);
+                            break;
+                        case "DELETE":
+                            break;
+                        case var patch when patch.StartsWith("PATCH {"):
+                            var body = patch.Split(new[] {' '}, 2)[1];
+                            SendPATCH(ws, query, body.ToBytes(), headers, origin);
+                            break;
+                        case var other:
+                            ws.SendUnknownCommand(other);
+                            break;
+                    }
+                    break;
+            }
+        }
+
         #region Websockets extensions
+
+        private static IFinalizedResult WsEvaluate(this WebSocket ws, Action action, ref string query, byte[] body, Headers headers, Origin origin)
+        {
+            return PreviousResult[ws.ToUInt64()] = Evaluate(action, ref query, body, headers, origin);
+        }
 
         private static void SendGETResult(this WebSocket ws, IFinalizedResult result)
         {
             switch (result)
             {
                 case ConsoleInit _:
-                    ws.Send(">>> 400: Bad request. Cannot enter the WebSocket console from another WebSocket.\n");
+                    ws.Send("400: Bad request. Cannot enter the WebSocket console from another WebSocket");
                     break;
                 case Forbidden _:
                     ws.SendStatus(result);
@@ -150,47 +210,86 @@ namespace RESTar.Requests
                 case Report _:
                 case Entities _:
                     ws.Send(result.Body.ToByteArray());
-                    ws.Send("\n");
                     break;
             }
         }
 
         private static void SendGET(this WebSocket ws, ref string query, Headers headers, Origin origin)
         {
-            var result = Evaluate(GET, ref query, null, headers, origin);
+            var result = ws.WsEvaluate(GET, ref query, null, headers, origin);
             ws.SendGETResult(result);
+        }
+
+        private static void DoPatch(this WebSocket ws, string query, byte[] body, Headers headers, Origin origin)
+        {
+            headers.UnsafeOverride = true;
+            var result = ws.WsEvaluate(PATCH, ref query, body, headers, origin);
+            ws.SendStatus(result);
+        }
+
+        private static void SendPATCH(this WebSocket ws, string query, byte[] body, Headers headers, Origin origin)
+        {
+            if (PreviousResult.SafeGet(ws.ToUInt64()) is Entities entities && entities.EntityCount > 0)
+            {
+                if (entities.EntityCount == 1)
+                {
+                    ws.DoPatch(query, body, headers, origin);
+                    return;
+                }
+                ConfirmationActions[ws.ToUInt64()] = () => ws.DoPatch(query, body, headers, origin);
+                ws.SendPreConfirmation($"This will update {entities.EntityCount} entities in resource '{entities.Request.Resource.FullName}'. ");
+                return;
+            }
+            ws.Send("400: Bad request. No entities to patch. PATCH commands should be preceeded by " +
+                    "a command selecting the entities to patch");
         }
 
         private static void SendPOST(this WebSocket ws, ref string query, byte[] body, Headers headers, Origin origin)
         {
-            var result = Evaluate(POST, ref query, body, headers, origin);
+            var result = ws.WsEvaluate(POST, ref query, body, headers, origin);
             ws.SendStatus(result);
+        }
+
+        private static void SendPreConfirmation(this WebSocket ws, string initialInfo = null)
+        {
+            ws.Send(initialInfo + "Type 'Y' to continue, 'N' to cancel");
+        }
+
+        private static void SendCancel(this WebSocket ws)
+        {
+            ws.Send("Operation cancelled");
         }
 
         private static void SendStatus(this WebSocket ws, IFinalizedResult result)
         {
-            ws.Send($">>> {result.StatusCode.ToCode()}: {result.StatusDescription}. " +
-                    $"{result.Headers["RESTar-Info"]} {result.Headers["ErrorInfo"]}\n");
+            var info = result.Headers["RESTar-Info"];
+            var errorInfo = result.Headers["ErrorInfo"];
+            var tail = "";
+            if (info != null)
+                tail += $". {info}";
+            if (errorInfo != null)
+                tail += $". See {errorInfo}";
+            ws.Send($"{result.StatusCode.ToCode()}: {result.StatusDescription}{tail}");
         }
 
         private static void SendNoContent(this WebSocket ws)
         {
-            ws.Send("204: No content\n");
+            ws.Send("204: No content");
         }
 
         private static void SendBadRequest(this WebSocket ws)
         {
-            ws.Send(">>> 400: Bad request\n");
+            ws.Send("400: Bad request");
         }
 
         private static void SendUnknownCommand(this WebSocket ws, string command)
         {
-            ws.Send($">>> Unknown command '{command}'.\n");
+            ws.Send($"Unknown command '{command}'");
         }
 
         private static void Close(this WebSocket ws)
         {
-            ws.Send(">>> Now closing...\n");
+            ws.Send("Now closing...");
             ws.Disconnect();
         }
 
@@ -202,7 +301,7 @@ namespace RESTar.Requests
                     ">>> Status: PAUSED\n\n" +
                     "> To begin, type BEGIN\n" +
                     "> To pause, type PAUSE\n" +
-                    "> To close, type CLOSE\n\n");
+                    "> To close, type CLOSE\n");
         }
 
         #endregion

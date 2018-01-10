@@ -8,7 +8,6 @@ using RESTar.Internal;
 using RESTar.Linq;
 using RESTar.Resources;
 using RESTar.Results.Fail.BadRequest;
-using static Newtonsoft.Json.NullValueHandling;
 using IResource = RESTar.Internal.IResource;
 
 namespace RESTar.Admin
@@ -60,7 +59,7 @@ namespace RESTar.Admin
         /// <summary>
         /// The views for this resource
         /// </summary>
-        [JsonProperty(NullValueHandling = Ignore)]
+        [RESTarMember(hideIfNull: true, hide: true)]
         public object Views { get; private set; }
 
         /// <summary>
@@ -76,7 +75,7 @@ namespace RESTar.Admin
         /// <summary>
         /// Inner resources for this resource
         /// </summary>
-        [JsonProperty(NullValueHandling = Ignore)]
+        [RESTarMember(hideIfNull: true)]
         public Resource[] InnerResources { get; private set; }
 
         [JsonConstructor]

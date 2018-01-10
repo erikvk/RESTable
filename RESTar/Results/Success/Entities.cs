@@ -8,9 +8,9 @@ namespace RESTar.Results.Success
     {
         internal IRequest Request { get; private set; }
         internal IEnumerable<dynamic> Content { get; set; }
-        public long EntityCount { get; set; }
+        public ulong EntityCount { get; set; }
         internal string ExternalDestination { get; set; }
-        public bool IsPaged => Content != null && EntityCount > 0 && EntityCount == Request.MetaConditions.Limit;
+        public bool IsPaged => Content != null && EntityCount > 0 && (long) EntityCount == Request.MetaConditions.Limit;
 
         private Entities() { }
 
@@ -21,7 +21,7 @@ namespace RESTar.Results.Success
         {
             var existing = Request.UriParameters;
             existing.MetaConditions.RemoveAll(c => c.Key.EqualsNoCase("offset"));
-            existing.MetaConditions.Add(new UriCondition("offset", Operators.EQUALS, (Request.MetaConditions.Offset + EntityCount).ToString()));
+            existing.MetaConditions.Add(new UriCondition("offset", Operators.EQUALS, (Request.MetaConditions.Offset + (long) EntityCount).ToString()));
             return existing;
         }
 

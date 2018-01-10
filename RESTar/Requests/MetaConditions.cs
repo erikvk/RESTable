@@ -126,7 +126,7 @@ namespace RESTar.Requests
             if (!uriMetaConditions.Any()) return null;
             var renames = uriMetaConditions.Where(c => c.Key.EqualsNoCase("rename"));
             var regular = uriMetaConditions.Where(c => !c.Key.EqualsNoCase("rename"));
-            var mc = new MetaConditions {Empty = false};
+            var mc = new MetaConditions{Empty = false};
             ICollection<string> dynamicDomain = default;
 
             void make(IEnumerable<UriCondition> conds) => conds.ForEach(cond =>

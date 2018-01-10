@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Newtonsoft.Json.Linq;
+using RESTar.Admin;
 using RESTar.Deflection;
-using RESTar.Deflection.Dynamic;
 using RESTar.Results.Success;
 using Starcounter;
 
@@ -49,22 +49,27 @@ namespace RESTar.OData
                         swr.Write($"<Member Name=\"{member.Name}\" Value=\"{member.Value}\"/>");
                     swr.Write("</EnumType>");
                 }
-                foreach (var entityType in metadata.EntityTypes)
-                {
-                    swr.Write($"<EntityType Name=\"{entityType.FullName}\" OpenType=\"{entityType.IsDynamic()}\">");
-                    foreach (var property in entityType.GetDeclaredProperties().Values.Where(p => p.Readable && !p.Hidden))
-                    {
-                        swr.Write($"<Property Name=\"{property.Name}\" Nullable=\"{property.Nullable}\" " +
-                                  $"Type=\"{property.Type.GetEdmTypeName()}\"");
-                        swr.Write(property.ReadOnly ? $">{ReadOnlyAnnotation}</Property>" : "/>");
-                    }
-                    swr.Write("</EntityType>");
-                }
+//                foreach (var entityType in metadata.EntityTypes)
+//                {
+//                    swr.Write($"<EntityType Name=\"{entityType.FullName}\" OpenType=\"{entityType.IsDynamic()}\">");
+//                    foreach (var property in entityType.GetDeclaredProperties().Values.Where(p => p.Readable && !p.Hidden))
+//                    {
+//                        swr.Write($"<Property Name=\"{property.Name}\" Nullable=\"{property.Nullable}\" " +
+//                                  $"Type=\"{property.Type.GetEdmTypeName()}\"");
+//                        swr.Write(property.ReadOnly ? $">{ReadOnlyAnnotation}</Property>" : "/>");
+//                    }
+//                    swr.Write("</EntityType>");
+//                }
                 swr.Write("<EntityType Name=\"RESTar.DynamicResource\" OpenType=\"true\"/>");
                 swr.Write($"<EntityContainer Name=\"{EntityContainerName}\">");
-                foreach (var entitySet in metadata.EntitySets)
+                foreach (var entitySet in metadata.EntitySets.Except(new Internal.IResource[]
                 {
-                    swr.Write($"<EntitySet EntityType=\"global.{entitySet.Type.FullName}\" Name=\"{entitySet.FullName}\">");
+                    Resource<AvailableResource>.Get, Resource<Admin.Console>.Get, Resource<Schema>.Get, Resource<Echo>.Get,
+                    Resource<ResourceProfile>.Get, Resource<OutputFormat>.Get, Resource<Macro>.Get, Resource<AdminTools>.Get,
+                    Resource<Aggregator>.Get, Resource<SetOperations>.Get
+                }))
+                {
+                    swr.Write($"<EntitySet EntityType=\"{entitySet.Type.GetEdmTypeName()}\" Name=\"{entitySet.FullName}\">");
                     var methods = metadata.CurrentAccessRights[entitySet];
                     swr.Write(InsertableAnnotation(methods.Contains(Methods.POST)));
                     swr.Write(UpdatableAnnotation(methods.Contains(Methods.PATCH)));
@@ -107,18 +112,17 @@ namespace RESTar.OData
                     {
                         case var _ when type == typeof(Binary): return "Edm.Binary";
                         case var _ when type == typeof(Guid): return "Edm.Guid";
-                        case var _ when type == typeof(JToken): return typeof(JToken).FullName;
                         case var _ when type.IsNullable(out var t): return GetEdmTypeName(t);
-                        case var _ when type == typeof(object):
                         case var _ when type.Implements(typeof(IDictionary<,>), out var p) && p[0] == typeof(string):
                             return "global.RESTar.DynamicResource";
-                        case var _ when type.Implements(typeof(IEnumerable<>), out var p):
-                            return $"Collection({GetEdmTypeName(p[0])})";
+                        case var _ when type == typeof(JToken) || type.IsSubclassOf(typeof(JToken)):
+                        case var _ when type == typeof(object): return "Edm.ComplexType";
+                        case var _ when type.Implements(typeof(IEnumerable<>), out var p): return $"Collection({GetEdmTypeName(p[0])})";
                         default: return $"global.{type.FullName}";
                     }
                 case TypeCode.Boolean: return "Edm.Boolean";
                 case TypeCode.Byte: return "Edm.Byte";
-                case TypeCode.DateTime: return "Edm.DateTime";
+                case TypeCode.DateTime: return "Edm.DateTimeOffset";
                 case TypeCode.Decimal: return "Edm.Decimal";
                 case TypeCode.Double: return "Edm.Double";
                 case TypeCode.Single: return "Edm.Single";

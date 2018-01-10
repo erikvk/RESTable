@@ -11,7 +11,7 @@ namespace RESTar.Serialization
         private readonly string NewLine;
         private int BaseIndentation;
         private int CurrentDepth;
-        public long ObjectsWritten { get; private set; }
+        public ulong ObjectsWritten { get; private set; }
         
         public override void WriteStartObject()
         {

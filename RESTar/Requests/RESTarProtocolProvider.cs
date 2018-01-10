@@ -116,7 +116,9 @@ namespace RESTar.Requests
                     if (excel != null)
                     {
                         entities.ContentType = MimeTypes.Excel;
-                        entities.EntityCount = excel.Worksheet(1).RowsUsed().Count() - 1;
+                        var count = excel.Worksheet(1).RowsUsed().Count();
+                        if (count > 0)
+                            entities.EntityCount = (ulong) (count - 1);
                         entities.Body = new MemoryStream();
                         excel.SaveAs(entities.Body);
                         entities.SetContentDisposition(".xlsx");

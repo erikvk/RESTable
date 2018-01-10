@@ -14,7 +14,8 @@ namespace RESTar
     {
         public AccessRights CurrentAccessRights { get; private set; }
         public List<Type> EnumTypes { get; private set; }
-        public List<Type> EntityTypes { get; private set; }
+        public List<Type> ComplexTypes { get; private set; }
+        public List<IResource> EntityTypes { get; private set; }
         public List<IResource> EntitySets { get; private set; }
 
         public IEnumerable<Metadata> Select(IRequest<Metadata> request)
@@ -22,7 +23,7 @@ namespace RESTar
             if (request == null) throw new ArgumentNullException(nameof(request));
             var rights = RESTarConfig.AuthTokens[request.AuthToken];
             var enumTypes = new HashSet<Type>();
-            var entityTypes = new HashSet<Type>();
+            var entityTypes = new HashSet<IResource>();
             var thisResource = Resource<Metadata>.Get;
             var resources = rights?.Keys
                 .Where(r => r.IsGlobal && !r.IsInnerResource)
@@ -34,52 +35,26 @@ namespace RESTar
 
             void parseType(Type type)
             {
-                if (type == typeof(object))
-                    return;
-                if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(KeyValuePair<,>))
-                    return;
-                if (type.IsEnum)
+                switch (type)
                 {
-                    enumTypes.Add(type);
-                    return;
-                }
-                if (type.IsNullable(out var t))
-                {
-                    parseType(t);
-                    return;
-                }
-                if (type.Implements(typeof(IEnumerable<>), out var param))
-                {
-                    if (param[0].Implements(typeof(IEnumerable<>)))
+                    case var _ when type.IsGenericType && type.GetGenericTypeDefinition() == typeof(KeyValuePair<,>):
+                    case var _ when IsPrimitive(type):
+                    case var _ when type == typeof(object): return;
+
+                    case var @enum when type.IsEnum:
+                        enumTypes.Add(@enum);
                         return;
-                    parseType(param[0]);
-                    return;
-                }
-                switch (Type.GetTypeCode(type))
-                {
-                    case TypeCode.Empty:
-                    case TypeCode.DBNull:
-                    case TypeCode.Boolean:
-                    case TypeCode.Char:
-                    case TypeCode.SByte:
-                    case TypeCode.Byte:
-                    case TypeCode.Int16:
-                    case TypeCode.UInt16:
-                    case TypeCode.Int32:
-                    case TypeCode.UInt32:
-                    case TypeCode.Int64:
-                    case TypeCode.UInt64:
-                    case TypeCode.Single:
-                    case TypeCode.Double:
-                    case TypeCode.Decimal:
-                    case TypeCode.DateTime:
-                    case TypeCode.String: return;
-                }
-                if (entityTypes.Add(type))
-                {
-                    type.GetDeclaredProperties()
-                        .Select(pair => pair.Value.Type)
-                        .ForEach(parseType);
+                    case var _ when type.IsNullable(out var baseType):
+                        parseType(baseType);
+                        return;
+                    case var _ when type.Implements(typeof(IEnumerable<>), out var param):
+                        if (param[0].Implements(typeof(IEnumerable<>))) return;
+                        parseType(param[0]);
+                        return;
+
+                    case var _ when Resource.SafeGet(type) is IResource resource && entityTypes.Add(resource):
+                        type.GetDeclaredProperties().Values.Select(p => p.Type).ForEach(parseType);
+                        return;
                 }
             }
 
@@ -95,6 +70,31 @@ namespace RESTar
                     EntitySets = resources
                 }
             };
+        }
+
+        private static bool IsPrimitive(Type type)
+        {
+            switch (Type.GetTypeCode(type))
+            {
+                case TypeCode.Empty:
+                case TypeCode.DBNull:
+                case TypeCode.Boolean:
+                case TypeCode.Char:
+                case TypeCode.SByte:
+                case TypeCode.Byte:
+                case TypeCode.Int16:
+                case TypeCode.UInt16:
+                case TypeCode.Int32:
+                case TypeCode.UInt32:
+                case TypeCode.Int64:
+                case TypeCode.UInt64:
+                case TypeCode.Single:
+                case TypeCode.Double:
+                case TypeCode.Decimal:
+                case TypeCode.DateTime:
+                case TypeCode.String: return true;
+                default: return false;
+            }
         }
     }
 }

@@ -25,12 +25,14 @@ namespace RESTar.Requests
             set => _dict[key] = value;
         }
 
+        internal bool UnsafeOverride { get; set; }
+
         internal Dictionary<string, string> _dict { get; }
         internal void Put(KeyValuePair<string, string> kvp) => _dict[kvp.Key] = kvp.Value;
 
         /// <inheritdoc />
         public Headers() => _dict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-         
+
         internal Headers(Dictionary<string, string> dictToUse)
         {
             if (dictToUse == null)
