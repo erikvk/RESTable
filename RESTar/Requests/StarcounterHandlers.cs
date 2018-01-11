@@ -203,6 +203,10 @@ namespace RESTar.Requests
                         case "RELOAD":
                             ws.SafeOperation(GET, ref query, null, headers, origin);
                             break;
+                        case "HI":
+                        case "HELLO":
+                            ws.Send("Well, hello there :D");
+                            break;
                         case "CREDITS":
                             ws.SendCredits();
                             break;
