@@ -184,8 +184,16 @@ namespace RESTar.Requests
                             ws.UnsafeOperation(DELETE, query, null, headers, origin);
                             break;
                         case "REPORT":
+                            if (!string.IsNullOrWhiteSpace(tail))
+                                query = tail;
                             ws.SafeOperation(REPORT, ref query, null, headers, origin);
                             break;
+                        case "HELP":
+                            ws.SendHelp();
+                            break;
+                        case "EXIT":
+                        case "QUIT":
+                        case "DISCONNECT":
                         case "CLOSE":
                             ws.Close();
                             break;
@@ -195,8 +203,11 @@ namespace RESTar.Requests
                         case "RELOAD":
                             ws.SafeOperation(GET, ref query, null, headers, origin);
                             break;
-                        case var other:
-                            ws.SendUnknownCommand(other);
+                        case "CREDITS":
+                            ws.SendCredits();
+                            break;
+                        case var unknown:
+                            ws.SendUnknownCommand(unknown);
                             break;
                     }
                     break;
@@ -294,15 +305,42 @@ namespace RESTar.Requests
 
         private static void Close(this WebSocket ws)
         {
-            ws.Send("Now closing...");
+            ws.Send("Closing RESTar WebSocket interface...");
             ws.Disconnect();
+        }
+
+        private static void SendHelp(this WebSocket ws)
+        {
+            ws.Send("### Welcome to the RESTar WebSocket interface! ###\n\n" +
+                    "  The RESTar WebSocket interface makes it easy to send \n" +
+                    "  multiple requests to the RESTar API, over a single \n" +
+                    "  TCP connection. Using commands, the client can \n" +
+                    "  navigate around the resources of the API, and read, \n" +
+                    "  insert, update and/or delete entities. To navigate \n" +
+                    "  and select entities, simply send a request URI over \n" +
+                    "  the WebSocket, e.g. '/availableresource//limit=3'. \n" +
+                    "  To insert an entity into a resource, send the JSON \n" +
+                    "  representation over the WebSocket. To update entities,\n" +
+                    "  send 'PATCH <json>', where <json> is the JSON data to \n" +
+                    "  update entities from. To delete selected entities, send\n" +
+                    "  'DELETE'. For potentially unsafe operations, you will be\n" +
+                    "  asked to confirm before changes are applied.\n\n" +
+                    "  Some other simple commands:\n" +
+                    "  ?           Prints the current location \n" +
+                    "  REPORT      Counts the entities at the current location\n" +
+                    "  RELOAD      Relods the current location \n" +
+                    "  HELP        Prints this help page \n" +
+                    "  CLOSE       Closes the WebSocket\n");
+        }
+
+        private static void SendCredits(this WebSocket ws)
+        {
+            ws.Send("RESTar is designed and developed by Erik von Krusenstierna");
         }
 
         private static void SendConsoleInit(this WebSocket ws)
         {
-            ws.Send("################################################\n" +
-                    "### Welcome to the RESTar WebSocket console! ###\n" +
-                    "################################################\n\n" +
+            ws.Send("### Welcome to the RESTar WebSocket console! ###\n\n" +
                     ">>> Status: PAUSED\n\n" +
                     "> To begin, type BEGIN\n" +
                     "> To pause, type PAUSE\n" +
