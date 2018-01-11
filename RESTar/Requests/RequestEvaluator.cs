@@ -29,7 +29,7 @@ namespace RESTar.Requests
             ref string query,
             byte[] body,
             Headers headers,
-            Origin origin
+            TCPConnection tcpConnection
         )
         {
             if (StackDepth++ > 300) throw new InfiniteLoop();
@@ -44,13 +44,13 @@ namespace RESTar.Requests
                     case PATCH:
                     case DELETE:
                     case REPORT:
-                        arguments = new Arguments(action,  ref query, body, headers, origin);
+                        arguments = new Arguments(action, ref query, body, headers, tcpConnection);
                         arguments.Authenticate();
                         arguments.ThrowIfError();
                         return HandleREST((dynamic) arguments.IResource, arguments);
 
                     case OPTIONS:
-                        arguments = new Arguments(action, ref query, body, headers, origin);
+                        arguments = new Arguments(action, ref query, body, headers, tcpConnection);
                         arguments.ThrowIfError();
                         return HandleOptions(arguments.IResource, arguments);
 
@@ -117,7 +117,7 @@ namespace RESTar.Requests
 
         private static Response HandleView<T>(IResource<T> resource, Arguments arguments) where T : class
         {
-            var request = new ViewRequest<T>(resource, arguments.Origin);
+            var request = new ViewRequest<T>(resource, arguments.TcpConnection);
             request.Authenticate();
             request.Populate(arguments);
             request.MethodCheck();

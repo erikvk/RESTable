@@ -120,6 +120,7 @@
     <Compile Include="Requests\RequestEvaluator.cs" />
     <Compile Include="Requests\Headers.cs" />
     <Compile Include="Requests\RESTProtocols.cs" />
+    <Compile Include="Requests\StarcounterWebSocket.cs" />
     <Compile Include="Requests\Uri.cs" />
     <Compile Include="Requests\UriCondition.cs" />
     <Compile Include="ResourceProviderAttribute.cs" />
@@ -150,7 +151,7 @@
     <Compile Include="Internal\ErrorCodes.cs" />
     <Compile Include="Operators.cs" />
     <Compile Include="Request.cs" />
-    <Compile Include="Requests\Origin.cs" />
+    <Compile Include="Requests\TCPConnection.cs" />
     <Compile Include="Requests\ViewRequest.cs" />
     <Compile Include="Resource.cs" />
     <Compile Include="ResourceAlias.cs" />
@@ -305,6 +306,8 @@
       <DependentUpon>Item.json</DependentUpon>
     </Compile>
     <Compile Include="View\RESTarDataView.cs" />
+    <Compile Include="RESTarWebSocket.cs" />
+    <Compile Include="WebSocketController.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

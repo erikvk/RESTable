@@ -20,7 +20,7 @@ namespace RESTar.Requests
     internal class RESTRequest<T> : IRequest<T>, IDisposable where T : class
     {
         public Methods Method { get; }
-        public Origin Origin { get; }
+        public TCPConnection TcpConnection { get; }
         public IResource<T> Resource { get; }
         public Condition<T>[] Conditions { get; }
         public MetaConditions MetaConditions { get; }
@@ -67,8 +67,8 @@ namespace RESTar.Requests
             ResponseHeaders = new Headers();
             Conditions = new Condition<T>[0];
             MetaConditions = new MetaConditions();
-
-            Origin = arguments.Origin;
+            
+            TcpConnection = arguments.TcpConnection;
             AuthToken = arguments.AuthToken;
             UriParameters = arguments.Uri;
             Method = (Methods) arguments.Action;
@@ -78,6 +78,8 @@ namespace RESTar.Requests
                     throw new UnknownView(arguments.Uri.ViewName, Resource);
                 Target = view;
             }
+            if (TcpConnection.HasWebSocket)
+                WebSocketController.Register(typeof(Ta));
             Evaluator = Operations<T>.REST.GetEvaluator(Method);
             Source = arguments.Headers.SafeGet("Source");
             Destination = arguments.Headers.SafeGet("Destination");
@@ -94,7 +96,7 @@ namespace RESTar.Requests
                 MetaConditions.Unsafe = true;
                 arguments.Headers.UnsafeOverride = false;
             }
-            if (Origin.IsInternal) MetaConditions.Formatter = DbOutputFormat.Raw;
+            if (TcpConnection.IsInternal) MetaConditions.Formatter = DbOutputFormat.Raw;
             this.MethodCheck();
             SetRequestData(arguments.BodyBytes);
         }
@@ -148,7 +150,7 @@ namespace RESTar.Requests
 
         public void Dispose()
         {
-            if (Origin.IsExternal && AuthToken != null)
+            if (TcpConnection.IsExternal && AuthToken != null)
                 AuthTokens.TryRemove(AuthToken, out var _);
         }
     }

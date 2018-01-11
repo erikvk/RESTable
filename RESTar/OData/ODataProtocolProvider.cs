@@ -182,7 +182,7 @@ namespace RESTar.OData
 
         private static string GetServiceRoot(Entities entities)
         {
-            var origin = entities.Request.Origin;
+            var origin = entities.Request.TcpConnection;
             var hostAndPath = $"{origin.Host}{Admin.Settings._Uri}-odata";
             return origin.HTTPS ? $"https://{hostAndPath}" : $"http://{hostAndPath}";
         }

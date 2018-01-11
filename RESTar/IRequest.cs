@@ -55,7 +55,7 @@ namespace RESTar
         /// <summary>
         /// The origin of the request
         /// </summary>
-        Origin Origin { get; }
+        TCPConnection TcpConnection { get; }
 
         /// <summary>
         /// The body of the request

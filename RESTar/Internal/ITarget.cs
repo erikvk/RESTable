@@ -38,6 +38,11 @@ namespace RESTar.Internal
         /// The binding rule to use when binding condition terms for this target
         /// </summary>
         TermBindingRules ConditionBindingRule { get; }
+
+        /// <summary>
+        /// An action to perform when receieving data over a WebSocket connected to this target
+        /// </summary>
+        WebSocketReceiveAction WebSocketReceiveAction { get; }
     }
 
     /// <inheritdoc />

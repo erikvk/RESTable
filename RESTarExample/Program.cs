@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using Dynamit;
 using Newtonsoft.Json.Linq;
 using RESTar;
@@ -31,6 +32,30 @@ namespace RESTarExample
     }
 
     #region Stuff
+
+    [RESTar(Methods.GET)]
+    public class MyTest : ISelector<MyTest>, IWebSocketController
+    {
+        private static Timer timer;
+
+        static MyTest()
+        {
+            timer = new Timer(state => SendDataToAllSockets("Swoo"), null, new TimeSpan(0, 0, 0, 10), Timeout.InfiniteTimeSpan);
+        }
+
+        private static void SendDataToAllSockets(string data) { }
+
+        public void OnReceive(IWebSocket webSocket, string input) => webSocket.Send("Right back at ya!");
+
+        public IEnumerable<MyTest> Select(IRequest<MyTest> request)
+        {
+            if (request.TcpConnection.HasWebSocket)
+            {
+                request.TcpConnection.WebSocket.Send("SWIIIII");
+            }
+            return null;
+        }
+    }
 
     [Database, RESTar(Methods.GET, Methods.POST)]
     public class Static

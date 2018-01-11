@@ -23,7 +23,7 @@ namespace RESTar.Requests
 {
     internal class ViewRequest<T> : IRequest<T>, IViewRequest where T : class
     {
-        public Origin Origin { get; }
+        public TCPConnection TcpConnection { get; }
         public IResource<T> Resource { get; }
         public Condition<T>[] Conditions { get; private set; }
         public MetaConditions MetaConditions { get; private set; }
@@ -45,7 +45,7 @@ namespace RESTar.Requests
         public T1 BodyObject<T1>() where T1 : class => Body?.Deserialize<T1>();
         public Headers Headers { get; }
 
-        internal ViewRequest(IResource<T> resource, Origin origin)
+        internal ViewRequest(IResource<T> resource, TCPConnection tcpConnection)
         {
             if (resource.IsInternal) throw new ResourceIsInternal(resource);
             Resource = resource;
@@ -54,7 +54,7 @@ namespace RESTar.Requests
             ResponseHeaders = new Headers();
             MetaConditions = new MetaConditions();
             Conditions = new Condition<T>[0];
-            Origin = origin;
+            TcpConnection = tcpConnection;
         }
 
         internal void Populate(Arguments arguments)

@@ -1,4 +1,5 @@
 ﻿using System.Net;
+using Starcounter;
 
 namespace RESTar.Requests
 {
@@ -19,30 +20,14 @@ namespace RESTar.Requests
     }
 
     /// <summary>
-    /// Describes the scheme of a request
+    /// Describes the origin and basic TCP connection parameters of a request
     /// </summary>
-    public enum Scheme
-    {
-        /// <summary>
-        /// The HTTP scheme
-        /// </summary>
-        HTTP,
-
-        /// <summary>
-        /// The HTTPS scheme
-        /// </summary>
-        HTTPS
-    }
-
-    /// <summary>
-    /// Describes the origin and basic parameters of a request
-    /// </summary>
-    public class Origin
+    public class TCPConnection
     {
         /// <summary>
         /// The origin type
         /// </summary>
-        public OriginType Type { get; internal set; }
+        public OriginType Origin { get; internal set; }
 
         /// <summary>
         /// The client IP address that made the request (null for internal requests)
@@ -64,21 +49,31 @@ namespace RESTar.Requests
         /// </summary>
         public bool HTTPS { get; internal set; }
 
-        internal Origin() { }
-
         /// <summary>
         /// The internal location
         /// </summary>
-        public static readonly Origin Internal = new Origin {Host = $"localhost:{Admin.Settings._Port}"};
+        public static readonly TCPConnection Internal = new TCPConnection {Host = $"localhost:{Admin.Settings._Port}"};
 
         /// <summary>
         /// Is the origin internal?
         /// </summary>
-        public bool IsInternal => Type == OriginType.Internal;
+        public bool IsInternal => Origin == OriginType.Internal;
 
         /// <summary>
         /// Is the origin external?
         /// </summary>
-        public bool IsExternal => Type == OriginType.External;
+        public bool IsExternal => Origin == OriginType.External;
+
+        /// <summary>
+        /// The ID of the websocket connected with this TCP connection
+        /// </summary>
+        public IWebSocket WebSocket { get; internal set; }
+
+        /// <summary>
+        /// Does this TCP connection have a WebSocket?
+        /// </summary>
+        public bool HasWebSocket => WebSocket != null;
+
+        internal TCPConnection() { }
     }
 }

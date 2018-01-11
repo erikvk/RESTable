@@ -64,7 +64,7 @@ namespace RESTar.Requests
         }
 
         public IResource IResource => Resource.Find(Uri.ResourceSpecifier);
-        public Origin Origin { get; }
+        public TCPConnection TcpConnection { get; }
         public byte[] BodyBytes { get; private set; }
         public Headers Headers { get; }
         public MimeType ContentType { get; }
@@ -91,7 +91,7 @@ namespace RESTar.Requests
             return uriKey != null ? HttpUtility.UrlDecode(uriKey).Substring(1, uriKey.Length - 2) : null;
         }
 
-        internal Arguments(Action action, ref string query, byte[] body = null, Headers headers = null, Origin origin = null)
+        internal Arguments(Action action, ref string query, byte[] body = null, Headers headers = null, TCPConnection tcpConnection = null)
         {
             Action = action;
             Headers = headers ?? new Headers();
@@ -99,7 +99,7 @@ namespace RESTar.Requests
             if (key != null)
                 Headers["Authorization"] = $"apikey {UnpackUriKey(key)}";
             BodyBytes = body;
-            Origin = origin;
+            TcpConnection = tcpConnection;
             ContentType = MimeType.Parse(Headers.SafeGet("Content-Type"));
             Accept = MimeType.ParseMany(Headers.SafeGet("Accept"));
             switch (protocol)

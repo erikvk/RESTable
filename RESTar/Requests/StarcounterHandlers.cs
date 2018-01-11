@@ -42,27 +42,31 @@ namespace RESTar.Requests
                 methodSpaceUri: $"{action} {_Uri}{{?}}",
                 handler: (Request request, string query) =>
                 {
-                    var origin = MakeOrigin(request);
+                    var connection = GetTCPConnection(request);
                     var headers = new Headers(request.HeadersDictionary);
                     RequestCount += 1;
-                    if (ConsoleActive)
-                        Console.Send($"=> [{RequestCount}] {action} '{request.Uri}' from '{request.ClientIpAddress}'");
-                    var result = Evaluate(action, ref query, request.BodyBytes, headers, origin);
-                    if (ConsoleActive)
-                        Console.Send($"<= [{RequestCount}] {result.StatusCode.ToCode()}: '{result.StatusDescription}'. " +
-                                     $"{result.Headers["RESTar-info"]} {result.Headers["ErrorInfo"]}");
+                    Console.LogRequest(action, request);
+                    if (request.WebSocketUpgrade)
+                    {
+                        var wsId = request.GetWebSocketId();
+                        WebSocketActions[wsId] = (input, _ws) => WebSocketShell(input, _ws, ref query, headers, connection);
+                        var ws = request.SendUpgrade(WsGroupName);
+                        
+                    }
+                    var result = Evaluate(action, ref query, request.BodyBytes, headers, connection);
+                    Console.LogResult(result);
                     if (!request.WebSocketUpgrade)
                         return result.ToResponse();
-                    if (result is ConsoleInit)
-                    {
-                        Console = request.SendUpgrade(ConsoleGroupName);
-                        Console.SendConsoleInit();
-                        return HandlerStatus.Handled;
-                    }
-                    WebSocketActions[request.GetWebSocketId()] = (input, _ws) => WebSocketShell(input, _ws, ref query, headers, origin);
-                    var ws = request.SendUpgrade(WsGroupName);
-                    PreviousResult[ws.ToUInt64()] = result;
-                    ws.SendContent(result);
+
+                    // if (result is ConsoleInit)
+                    // {
+                    //     Console = request.SendUpgrade(ConsoleGroupName);
+                    //     Console.SendConsoleInit();
+                    //     return HandlerStatus.Handled;
+                    // }
+
+                    PreviousResult[connection.WebSocketId] = result;
+                    connection.GetWebSocket().SendContent(result);
                     return HandlerStatus.Handled;
                 }));
 
@@ -112,6 +116,7 @@ namespace RESTar.Requests
                 case "CLOSE":
                     Console.Send("Status: CLOSED\n");
                     Console.Disconnect();
+                    ConsoleActive = false;
                     Console = null;
                     break;
                 case var unrecognized:
@@ -120,7 +125,7 @@ namespace RESTar.Requests
             }
         }
 
-        private static void WebSocketShell(string input, WebSocket ws, ref string query, Headers headers, Origin origin)
+        private static void WebSocketShell(string input, WebSocket ws, ref string query, Headers headers, TCPConnection tcpConnection)
         {
             if (OnConfirmationActions.TryGetValue(ws.ToUInt64(), out var action))
             {
@@ -148,16 +153,16 @@ namespace RESTar.Requests
                 case '\0':
                 case '\n': break;
                 case ' ' when input.Length == 1:
-                    ws.SafeOperation(GET, ref query, null, headers, origin);
+                    ws.SafeOperation(GET, ref query, null, headers, tcpConnection);
                     break;
                 case '-':
                 case '/':
                     query = input.Trim();
-                    ws.SafeOperation(GET, ref query, null, headers, origin);
+                    ws.SafeOperation(GET, ref query, null, headers, tcpConnection);
                     break;
                 case '[':
                 case '{':
-                    ws.SafeOperation(POST, ref query, input.ToBytes(), headers, origin);
+                    ws.SafeOperation(POST, ref query, input.ToBytes(), headers, tcpConnection);
                     break;
                 case var _ when input.Length > 2000:
                     ws.SendBadRequest();
@@ -169,24 +174,24 @@ namespace RESTar.Requests
                         case "GET":
                             if (!string.IsNullOrWhiteSpace(tail))
                                 query = tail;
-                            ws.SafeOperation(GET, ref query, null, headers, origin);
+                            ws.SafeOperation(GET, ref query, null, headers, tcpConnection);
                             break;
                         case "POST":
-                            ws.SafeOperation(POST, ref query, tail.ToBytes(), headers, origin);
+                            ws.SafeOperation(POST, ref query, tail.ToBytes(), headers, tcpConnection);
                             break;
                         case "PUT":
                             ws.SendBadRequest("PUT is not available in the WebSocket interface");
                             break;
                         case "PATCH":
-                            ws.UnsafeOperation(PATCH, query, tail.ToBytes(), headers, origin);
+                            ws.UnsafeOperation(PATCH, query, tail.ToBytes(), headers, tcpConnection);
                             break;
                         case "DELETE":
-                            ws.UnsafeOperation(DELETE, query, null, headers, origin);
+                            ws.UnsafeOperation(DELETE, query, null, headers, tcpConnection);
                             break;
                         case "REPORT":
                             if (!string.IsNullOrWhiteSpace(tail))
                                 query = tail;
-                            ws.SafeOperation(REPORT, ref query, null, headers, origin);
+                            ws.SafeOperation(REPORT, ref query, null, headers, tcpConnection);
                             break;
                         case "HELP":
                             ws.SendHelp();
@@ -201,11 +206,29 @@ namespace RESTar.Requests
                             ws.Send($"{(query.Any() ? query : "/")}");
                             break;
                         case "RELOAD":
-                            ws.SafeOperation(GET, ref query, null, headers, origin);
+                            ws.SafeOperation(GET, ref query, null, headers, tcpConnection);
                             break;
                         case "HI":
                         case "HELLO":
-                            ws.Send("Well, hello there :D");
+
+                            string getGreeting()
+                            {
+                                switch (new Random().Next(0, 10))
+                                {
+                                    case 0: return "Well, hello there :D";
+                                    case 1: return "Greetings, friend";
+                                    case 2: return "Hello, dear client";
+                                    case 3: return "Hello to you";
+                                    case 4: return "Hi!";
+                                    case 5: return "Nice to see you!";
+                                    case 6: return "What's up?";
+                                    case 7: return "✌️";
+                                    case 8: return "'sup";
+                                    default: return "Oh no, it's you again...";
+                                }
+                            }
+
+                            ws.Send(getGreeting());
                             break;
                         case "CREDITS":
                             ws.SendCredits();
@@ -220,22 +243,36 @@ namespace RESTar.Requests
 
         #region Websockets extensions
 
-        private static IFinalizedResult WsEvaluate(this WebSocket ws, Action action, ref string query, byte[] body, Headers headers, Origin origin)
+        private static void LogRequest(this WebSocket ws, Action action, Request request)
         {
-            return PreviousResult[ws.ToUInt64()] = Evaluate(action, ref query, body, headers, origin);
+            if (ConsoleActive)
+                ws.Send($"=> [{RequestCount}] {action} '{request.Uri}' from '{request.ClientIpAddress}'");
         }
 
-        private static void SafeOperation(this WebSocket ws, Action action, ref string query, byte[] body, Headers headers, Origin origin)
+        private static void LogResult(this WebSocket ws, IFinalizedResult result)
         {
-            ws.SendContent(ws.WsEvaluate(action, ref query, body, headers, origin));
+            if (ConsoleActive)
+                ws.Send($"<= [{RequestCount}] {result.StatusCode.ToCode()}: '{result.StatusDescription}'. " +
+                        $"{result.Headers["RESTar-info"]} {result.Headers["ErrorInfo"]}");
         }
 
-        private static void UnsafeOperation(this WebSocket ws, Action action, string query, byte[] body, Headers headers, Origin origin)
+        private static IFinalizedResult WsEvaluate(this WebSocket ws, Action action, ref string query, byte[] body, Headers headers,
+            TCPConnection tcpConnection)
+        {
+            return PreviousResult[ws.ToUInt64()] = Evaluate(action, ref query, body, headers, tcpConnection);
+        }
+
+        private static void SafeOperation(this WebSocket ws, Action action, ref string query, byte[] body, Headers headers, TCPConnection tcpConnection)
+        {
+            ws.SendContent(ws.WsEvaluate(action, ref query, body, headers, tcpConnection));
+        }
+
+        private static void UnsafeOperation(this WebSocket ws, Action action, string query, byte[] body, Headers headers, TCPConnection tcpConnection)
         {
             void operate()
             {
                 headers.UnsafeOverride = true;
-                var result = ws.WsEvaluate(action, ref query, body, headers, origin);
+                var result = ws.WsEvaluate(action, ref query, body, headers, tcpConnection);
                 ws.SendStatus(result);
             }
 
@@ -381,12 +418,12 @@ namespace RESTar.Requests
             return response;
         }
 
-        private static Origin MakeOrigin(Request request)
+        private static TCPConnection GetTCPConnection(Request request)
         {
-            var origin = new Origin
+            var origin = new TCPConnection
             {
                 Host = request.Host,
-                Type = request.IsExternal ? OriginType.External : OriginType.Internal,
+                Origin = request.IsExternal ? OriginType.External : OriginType.Internal,
                 ClientIP = request.ClientIpAddress
             };
 

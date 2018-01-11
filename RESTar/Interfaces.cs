@@ -100,4 +100,16 @@ namespace RESTar
         /// </summary>
         AuthResults Authenticate(IRequest<T> request);
     }
+
+    /// <summary>
+    /// Declares the resource type as a WebSocket controller, and allows RESTar to
+    /// register WebSockets with it.
+    /// </summary>
+    public interface IWebSocketController : IOperationsInterface
+    {
+        /// <summary>
+        /// An action to perform when receiving data on a WebSocket connected to this resource
+        /// </summary>
+        void OnReceive(IWebSocket webSocket, string input);
+    }
 }

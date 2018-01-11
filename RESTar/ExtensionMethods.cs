@@ -299,7 +299,7 @@ namespace RESTar
             if (!ivalidatable.IsValid(out var reason))
                 throw new FailedValidation(reason);
         }
-
+        
         internal static IEnumerable<Operator> ToOperators(this Operators operators)
         {
             var opList = new List<Operator>();
@@ -490,125 +490,6 @@ namespace RESTar
         {
             return dict.Contains(key) ? dict[key] : null;
         }
-
-        //        /// <summary>
-        //        /// Gets the value of a key from an IDictionary, without case sensitivity, or throws a KeyNotFoundException
-        //        /// if the dictionary does not contain the key.
-        //        /// </summary>
-        //        public static T GetNoCase<T>(this IDictionary<string, T> dict, string key)
-        //        {
-        //            return dict.First(pair => pair.Key.EqualsNoCase(key)).Value;
-        //        }
-
-
-        //        /// <summary>
-        //        /// Gets the value of a key from an IDictionary, without case sensitivity, or null if the dictionary does 
-        //        /// not contain the key.
-        //        /// </summary>
-        //        public static T SafeGetNoCase<T>(this IDictionary<string, T> dict, string key)
-        //        {
-        //            var matches = dict.Where(pair => pair.Key.EqualsNoCase(key)).ToList();
-        //            switch (matches.Count)
-        //            {
-        //                case 0: return default;
-        //                case 1: return matches[0].Value;
-        //                default: return dict.SafeGet(key);
-        //            }
-        //        }
-
-        //        /// <summary>
-        //        /// Gets the value of a key from an IDictionary, without case sensitivity, or null if the dictionary does 
-        //        /// not contain the key.
-        //        /// </summary>
-        //        public static dynamic SafeGetNoCase(this IDictionary dict, string key, out string actualKey)
-        //        {
-        //            var matches = dict.Keys.Cast<string>().Where(k => k.EqualsNoCase(key)).ToList();
-        //            if (matches.Count > 1)
-        //            {
-        //                var val = dict.SafeGet(key);
-        //                if (val == null)
-        //                {
-        //                    actualKey = null;
-        //                    return null;
-        //                }
-        //
-        //                actualKey = key;
-        //                return val;
-        //            }
-        //
-        //            var match = matches.FirstOrDefault();
-        //            actualKey = match;
-        //            return match == null ? null : dict[match];
-        //        }
-
-        //        /// <summary>
-        //        /// Gets the value of a key from an IDictionary, without case sensitivity, or null if the dictionary does 
-        //        /// not contain the key. The actual key is returned in the actualKey out parameter.
-        //        /// </summary>
-        //        public static T SafeGetNoCase<T>(this IDictionary<string, T> dict, string key, out string actualKey)
-        //        {
-        //            var matches = dict.Where(pair => pair.Key.EqualsNoCase(key)).ToList();
-        //            if (matches.Count > 1)
-        //            {
-        //                var val = dict.SafeGet(key);
-        //                if (val == null)
-        //                {
-        //                    actualKey = null;
-        //                    return default;
-        //                }
-        //
-        //                actualKey = key;
-        //                return val;
-        //            }
-        //
-        //            var match = matches.FirstOrDefault();
-        //            actualKey = match.Key;
-        //            return match.Value;
-        //        }
-
-
-        //        /// <summary>
-        //        /// Tries to get the value of a key from an IDictionary, without case sensitivity
-        //        /// </summary>
-        //        public static bool TryGetNoCase<T>(this IDictionary<string, T> dict, string key, out T result)
-        //        {
-        //            result = default;
-        //            var matches = dict.Where(pair => pair.Key.EqualsNoCase(key)).ToList();
-        //            switch (matches.Count)
-        //            {
-        //                case 0: return false;
-        //                case 1:
-        //                    result = matches[0].Value;
-        //                    return true;
-        //                default: return dict.TryGetValue(key, out result);
-        //            }
-        //        }
-
-
-        //        /// <summary>
-        //        /// Tries to get the value of a key from an IDictionary, without case sensitivity, and returns
-        //        /// the actual key of the key value pair (if found).
-        //        /// </summary>
-        //        public static bool TryGetNoCase(this IDictionary dict, string key, out string actualKey, out dynamic result)
-        //        {
-        //            result = default(object);
-        //            actualKey = null;
-        //            var matches = dict.Keys.Cast<string>().Where(k => k.EqualsNoCase(key)).ToList();
-        //            switch (matches.Count)
-        //            {
-        //                case 0: return false;
-        //                case 1:
-        //                    actualKey = matches[0];
-        //                    result = dict[actualKey];
-        //                    return true;
-        //                default:
-        //                    if (!dict.Contains(key))
-        //                        return false;
-        //                    actualKey = key;
-        //                    result = dict[key];
-        //                    return true;
-        //            }
-        //        }
 
         /// <summary>
         /// Gets the value of a key from an IDictionary, without case sensitivity, or null if the dictionary does 

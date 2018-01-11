@@ -39,7 +39,7 @@ namespace RESTar
         public IUriParameters UriParameters => throw new InvalidOperationException();
         IResource IRequest.Resource => Resource;
         public MetaConditions MetaConditions { get; }
-        public Origin Origin { get; }
+        public TCPConnection TcpConnection { get; }
         Methods IRequest.Method => 0;
         public ITarget<T> Target { get; }
         public T1 BodyObject<T1>() where T1 : class => Body?.Deserialize<T1>();
@@ -105,7 +105,7 @@ namespace RESTar
             Target = Resource;
             ResponseHeaders = new Headers();
             MetaConditions = new MetaConditions {Unsafe = true};
-            Origin = Origin.Internal;
+            TcpConnection = TCPConnection.Internal;
             Conditions = conditions;
             this.Authenticate();
             ScSql = Resource.Provider == typeof(StarcounterProvider).GetProviderId();

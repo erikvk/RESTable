@@ -57,7 +57,7 @@ namespace RESTar.Internal
             if (!RequireApiKey)
                 return AssignAuthtoken(AccessRights.Root);
             AccessRights accessRights;
-            if (arguments.Origin.IsInternal)
+            if (arguments.TcpConnection.IsInternal)
             {
                 var authToken = arguments.Headers.SafeGet("RESTar-AuthToken");
                 if (authToken == null || !AuthTokens.TryGetValue(authToken, out accessRights))

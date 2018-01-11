@@ -21,6 +21,7 @@ namespace RESTar.Operations
                 case var d when d == typeof(Counter<>).MakeGenericType(t): return typeof(ICounter<>).MakeGenericType(t);
                 case var d when d == typeof(Profiler<>).MakeGenericType(t): return typeof(IProfiler<>).MakeGenericType(t);
                 case var d when d == typeof(Authenticator<>).MakeGenericType(t): return typeof(IAuthenticatable<>).MakeGenericType(t);
+                case var d when d == typeof(WebSocketReceiveAction): return typeof(IWebSocketController);
                 default: throw new ArgumentOutOfRangeException();
             }
         }
@@ -94,4 +95,9 @@ namespace RESTar.Operations
     /// Authenticates a request
     /// </summary>
     public delegate AuthResults Authenticator<T>(IRequest<T> request) where T : class;
+
+    /// <summary>
+    /// An action to perform when receieving data over a WebSocket
+    /// </summary>
+    public delegate void WebSocketReceiveAction(IWebSocket webSocket, string input);
 }
