@@ -6,7 +6,6 @@ using System.Linq;
 using System.Net;
 using RESTar.Linq;
 using RESTar.Operations;
-using RESTar.Results.Fail;
 using RESTar.Results.Fail.Forbidden;
 using RESTar.Results.Success;
 using Starcounter;
@@ -26,13 +25,13 @@ namespace RESTar.Requests
         private const string ConsoleGroupName = "restar_console";
         private static readonly IDictionary<ulong, Action<string, WebSocket>> WebSocketActions;
         private static readonly IDictionary<ulong, IFinalizedResult> PreviousResult;
-        private static readonly IDictionary<ulong, System.Action> ConfirmationActions;
+        private static readonly IDictionary<ulong, System.Action> OnConfirmationActions;
 
         static StarcounterHandlers()
         {
             WebSocketActions = new ConcurrentDictionary<ulong, Action<string, WebSocket>>();
             PreviousResult = new ConcurrentDictionary<ulong, IFinalizedResult>();
-            ConfirmationActions = new ConcurrentDictionary<ulong, System.Action>();
+            OnConfirmationActions = new ConcurrentDictionary<ulong, System.Action>();
         }
 
         internal static void RegisterRESTHandlers(bool setupMenu)
@@ -63,7 +62,7 @@ namespace RESTar.Requests
                     WebSocketActions[request.GetWebSocketId()] = (input, _ws) => WebSocketShell(input, _ws, ref query, headers, origin);
                     var ws = request.SendUpgrade(WsGroupName);
                     PreviousResult[ws.ToUInt64()] = result;
-                    ws.SendGETResult(result);
+                    ws.SendContent(result);
                     return HandlerStatus.Handled;
                 }));
 
@@ -72,7 +71,7 @@ namespace RESTar.Requests
             {
                 var @ulong = ws.ToUInt64();
                 WebSocketActions.Remove(@ulong);
-                ConfirmationActions.Remove(@ulong);
+                OnConfirmationActions.Remove(@ulong);
                 PreviousResult.Remove(@ulong);
             });
             Handle.WebSocket(_Port, ConsoleGroupName, ConsoleShell);
@@ -123,44 +122,70 @@ namespace RESTar.Requests
 
         private static void WebSocketShell(string input, WebSocket ws, ref string query, Headers headers, Origin origin)
         {
-            if (ConfirmationActions.TryGetValue(ws.ToUInt64(), out var action))
+            if (OnConfirmationActions.TryGetValue(ws.ToUInt64(), out var action))
             {
-                switch (input.ElementAtOrDefault(0))
+                switch (input.FirstOrDefault())
                 {
+                    case var _ when input.Length > 1:
+                    default:
+                        ws.SendConfirmationRequest();
+                        break;
                     case 'Y':
                     case 'y':
                         action();
-                        ConfirmationActions.Remove(ws.ToUInt64());
+                        OnConfirmationActions.Remove(ws.ToUInt64());
                         break;
                     case 'N':
                     case 'n':
-                        ConfirmationActions.Remove(ws.ToUInt64());
+                        OnConfirmationActions.Remove(ws.ToUInt64());
                         ws.SendCancel();
-                        break;
-                    default:
-                        ws.SendConfirmationRequest();
                         break;
                 }
                 return;
             }
-            switch (input.ElementAtOrDefault(0))
+            switch (input.FirstOrDefault())
             {
                 case '\0':
                 case '\n': break;
+                case ' ' when input.Length == 1:
+                    ws.SafeOperation(GET, ref query, null, headers, origin);
+                    break;
                 case '-':
                 case '/':
                     query = input.Trim();
-                    ws.SendGET(ref query, headers, origin);
+                    ws.SafeOperation(GET, ref query, null, headers, origin);
                     break;
                 case '[':
                 case '{':
-                    ws.SendPOST(ref query, input.ToBytes(), headers, origin);
+                    ws.SafeOperation(POST, ref query, input.ToBytes(), headers, origin);
+                    break;
+                case var _ when input.Length > 2000:
+                    ws.SendBadRequest();
                     break;
                 default:
-                    if (input.Length > 2000) ws.SendBadRequest();
-                    var (command, body) = input.Trim().TSplit(' ');
+                    var (command, tail) = input.Trim().TSplit(' ');
                     switch (command.ToUpperInvariant())
                     {
+                        case "GET":
+                            if (!string.IsNullOrWhiteSpace(tail))
+                                query = tail;
+                            ws.SafeOperation(GET, ref query, null, headers, origin);
+                            break;
+                        case "POST":
+                            ws.SafeOperation(POST, ref query, tail.ToBytes(), headers, origin);
+                            break;
+                        case "PUT":
+                            ws.SendBadRequest("PUT is not available in the WebSocket interface");
+                            break;
+                        case "PATCH":
+                            ws.UnsafeOperation(PATCH, query, tail.ToBytes(), headers, origin);
+                            break;
+                        case "DELETE":
+                            ws.UnsafeOperation(DELETE, query, null, headers, origin);
+                            break;
+                        case "REPORT":
+                            ws.SafeOperation(REPORT, ref query, null, headers, origin);
+                            break;
                         case "CLOSE":
                             ws.Close();
                             break;
@@ -168,13 +193,7 @@ namespace RESTar.Requests
                             ws.Send($"{(query.Any() ? query : "/")}");
                             break;
                         case "RELOAD":
-                            ws.SendGET(ref query, headers, origin);
-                            break;
-                        case "DELETE":
-                            ws.SendDELETE(query, headers, origin);
-                            break;
-                        case "PATCH":
-                            ws.SendPATCH(query, body.ToBytes(), headers, origin);
+                            ws.SafeOperation(GET, ref query, null, headers, origin);
                             break;
                         case var other:
                             ws.SendUnknownCommand(other);
@@ -191,102 +210,52 @@ namespace RESTar.Requests
             return PreviousResult[ws.ToUInt64()] = Evaluate(action, ref query, body, headers, origin);
         }
 
-        private static void SendGETResult(this WebSocket ws, IFinalizedResult result)
+        private static void SafeOperation(this WebSocket ws, Action action, ref string query, byte[] body, Headers headers, Origin origin)
+        {
+            ws.SendContent(ws.WsEvaluate(action, ref query, body, headers, origin));
+        }
+
+        private static void UnsafeOperation(this WebSocket ws, Action action, string query, byte[] body, Headers headers, Origin origin)
+        {
+            void operate()
+            {
+                headers.UnsafeOverride = true;
+                var result = ws.WsEvaluate(action, ref query, body, headers, origin);
+                ws.SendStatus(result);
+            }
+
+            var entities = PreviousResult.SafeGet(ws.ToUInt64()) as Entities;
+            switch (entities?.EntityCount)
+            {
+                case null:
+                case 0:
+                    ws.SendBadRequest($". No entities for {action} operation. Make a selecting request before running {action}");
+                    break;
+                case 1:
+                    operate();
+                    break;
+                case var many:
+                    OnConfirmationActions[ws.ToUInt64()] = operate;
+                    ws.SendConfirmationRequest($"This will run {action} on {many} entities in resource '{entities.Request.Resource.FullName}'. ");
+                    break;
+            }
+        }
+
+        private static void SendContent(this WebSocket ws, IFinalizedResult result)
         {
             switch (result)
             {
                 case ConsoleInit _:
                     ws.Send("400: Bad request. Cannot enter the WebSocket console from another WebSocket");
                     break;
-                case Forbidden _:
-                    ws.SendStatus(result);
-                    ws.Close();
-                    break;
-                case RESTarError _:
-                    ws.SendStatus(result);
-                    break;
-                case NoContent _:
-                    ws.SendNoContent();
-                    break;
                 case Report _:
                 case Entities _:
                     ws.Send(result.Body.ToByteArray());
                     break;
-            }
-        }
-
-        private static void SendGET(this WebSocket ws, ref string query, Headers headers, Origin origin)
-        {
-            var result = ws.WsEvaluate(GET, ref query, null, headers, origin);
-            ws.SendGETResult(result);
-        }
-
-        private static void SendPATCH(this WebSocket ws, string query, byte[] body, Headers headers, Origin origin)
-        {
-            void patch()
-            {
-                headers.UnsafeOverride = true;
-                var result = ws.WsEvaluate(PATCH, ref query, body, headers, origin);
-                ws.SendStatus(result);
-            }
-
-            var entities = PreviousResult.SafeGet(ws.ToUInt64()) as Entities;
-            switch (entities?.EntityCount)
-            {
-                case null:
-                case 0:
-                    ws.SendBadRequest(". No entities to patch. Make a selecting request before running PATCH");
-                    break;
-                case 1:
-                    patch();
-                    break;
-                case var many:
-                    ConfirmationActions[ws.ToUInt64()] = patch;
-                    ws.SendConfirmationRequest($"This will update {many} entities in resource '{entities.Request.Resource.FullName}'. ");
+                default:
+                    ws.SendStatus(result);
                     break;
             }
-        }
-
-        private static void SendDELETE(this WebSocket ws, string query, Headers headers, Origin origin)
-        {
-            void delete()
-            {
-                headers.UnsafeOverride = true;
-                var result = ws.WsEvaluate(DELETE, ref query, null, headers, origin);
-                ws.SendStatus(result);
-            }
-
-            var entities = PreviousResult.SafeGet(ws.ToUInt64()) as Entities;
-            switch (entities?.EntityCount)
-            {
-                case null:
-                case 0:
-                    ws.SendBadRequest(". No entities to delete. Make a selecting request before running DELETE");
-                    break;
-                case 1:
-                    delete();
-                    break;
-                case var many:
-                    ConfirmationActions[ws.ToUInt64()] = delete;
-                    ws.SendConfirmationRequest($"This will delete {many} entities from resource '{entities.Request.Resource.FullName}'. ");
-                    break;
-            }
-        }
-
-        private static void SendPOST(this WebSocket ws, ref string query, byte[] body, Headers headers, Origin origin)
-        {
-            var result = ws.WsEvaluate(POST, ref query, body, headers, origin);
-            ws.SendStatus(result);
-        }
-
-        private static void SendConfirmationRequest(this WebSocket ws, string initialInfo = null)
-        {
-            ws.Send(initialInfo + "Type 'Y' to continue, 'N' to cancel");
-        }
-
-        private static void SendCancel(this WebSocket ws)
-        {
-            ws.Send("Operation cancelled");
         }
 
         private static void SendStatus(this WebSocket ws, IFinalizedResult result)
@@ -299,16 +268,23 @@ namespace RESTar.Requests
             if (errorInfo != null)
                 tail += $". See {errorInfo}";
             ws.Send($"{result.StatusCode.ToCode()}: {result.StatusDescription}{tail}");
+            if (result is Forbidden)
+                ws.Close();
         }
 
-        private static void SendNoContent(this WebSocket ws)
+        private static void SendConfirmationRequest(this WebSocket ws, string initialInfo = null)
         {
-            ws.Send("204: No content");
+            ws.Send($"{initialInfo}Type 'Y' to continue, 'N' to cancel");
+        }
+
+        private static void SendCancel(this WebSocket ws)
+        {
+            ws.Send("Operation cancelled");
         }
 
         private static void SendBadRequest(this WebSocket ws, string message = null)
         {
-            ws.Send("400: Bad request" + message);
+            ws.Send($"400: Bad request{message}");
         }
 
         private static void SendUnknownCommand(this WebSocket ws, string command)
