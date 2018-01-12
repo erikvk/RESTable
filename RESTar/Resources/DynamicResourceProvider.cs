@@ -87,6 +87,7 @@ namespace RESTar.Resources
                 counter: DDictionaryOperations<T>.Count,
                 profiler: DDictionaryOperations<T>.Profile,
                 authenticator: null,
+                webSocketConnectionHandler: null,
                 views: null,
                 provider: this
             );

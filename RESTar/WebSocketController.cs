@@ -11,29 +11,25 @@ using Action = RESTar.Requests.Action;
 
 namespace RESTar
 {
-    internal class WebSocketComparer : IEqualityComparer<IWebSocket>
-    {
-        public bool Equals(IWebSocket x, IWebSocket y) => x?.Id == y?.Id;
-        public int GetHashCode(IWebSocket obj) => obj.Id.GetHashCode();
-    }
-
-    internal static class WSController
+    internal static class WebSocketController
     {
         private static readonly IDictionary<Type, ConcurrentBag<IWebSocket>> ActiveSockets;
-        private static readonly IDictionary<IWebSocket, IEntitiesMetaData> PreviousResultMetadata;
+        private static readonly IDictionary<IWebSocket, IEntitiesMetadata> PreviousResultMetadata;
         private static readonly IDictionary<IWebSocket, System.Action> OnConfirmationActions;
         private static readonly IDictionary<string, IWebSocket> AllSockets;
 
-        static WSController()
+        internal static IWebSocket Get(string wsId) => AllSockets.SafeGet(wsId);
+
+        static WebSocketController()
         {
             var comparer = new WebSocketComparer();
             ActiveSockets = new ConcurrentDictionary<Type, ConcurrentBag<IWebSocket>>();
-            PreviousResultMetadata = new ConcurrentDictionary<IWebSocket, IEntitiesMetaData>(comparer);
+            PreviousResultMetadata = new ConcurrentDictionary<IWebSocket, IEntitiesMetadata>(comparer);
             OnConfirmationActions = new ConcurrentDictionary<IWebSocket, System.Action>(comparer);
             AllSockets = new ConcurrentDictionary<string, IWebSocket>();
         }
 
-        internal static void HandleMessage(string wsId, string input) { }
+
 
         internal static void HandleDisconnect(string wsId)
         {
@@ -165,7 +161,7 @@ namespace RESTar
             TCPConnection tcpConnection)
         {
             var result = RequestEvaluator.Evaluate(action, ref query, body, headers, tcpConnection);
-            if (result is IEntitiesMetaData entitiesMetaData)
+            if (result is IEntitiesMetadata entitiesMetaData)
                 PreviousResultMetadata[ws] = entitiesMetaData;
             return result;
         }
@@ -173,7 +169,7 @@ namespace RESTar
         private static void SafeOperation(this IWebSocket ws, Action action, ref string query, byte[] body, Headers headers,
             TCPConnection tcpConnection)
         {
-            ws.SendContent(ws.WsEvaluate(action, ref query, body, headers, tcpConnection));
+            ws.SendResult(ws.WsEvaluate(action, ref query, body, headers, tcpConnection));
         }
 
         private static void UnsafeOperation(this IWebSocket ws, Action action, string query, byte[] body, Headers headers, TCPConnection tcpConnection)
@@ -204,12 +200,17 @@ namespace RESTar
 
         internal static void SendInitialResult(IWebSocket ws, IFinalizedResult result)
         {
-            if (result is IEntitiesMetaData entitiesMetaData)
-                PreviousResultMetadata[ws] = entitiesMetaData;
-            ws.SendContent(result);
+            switch (result)
+            {
+                case IEntitiesMetadata entitiesMetadata:
+                    PreviousResultMetadata[ws] = entitiesMetadata;
+                    break;
+                case NoContent _: return;
+            }
+            ws.SendResult(result);
         }
 
-        private static void SendContent(this IWebSocket ws, IFinalizedResult result)
+        private static void SendResult(this IWebSocket ws, IFinalizedResult result)
         {
             switch (result)
             {

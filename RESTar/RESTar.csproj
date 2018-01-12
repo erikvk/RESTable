@@ -102,6 +102,7 @@
     <Compile Include="Internal\IResourceInternal.cs" />
     <Compile Include="Internal\ITarget.cs" />
     <Compile Include="Internal\View.cs" />
+    <Compile Include="IWebSocket.cs" />
     <Compile Include="LineEndings.cs" />
     <Compile Include="Methods.cs" />
     <Compile Include="OData\MetadataDocument.cs" />
@@ -306,8 +307,9 @@
       <DependentUpon>Item.json</DependentUpon>
     </Compile>
     <Compile Include="View\RESTarDataView.cs" />
-    <Compile Include="RESTarWebSocket.cs" />
-    <Compile Include="WSController.cs" />
+    <Compile Include="IWebSocketInternal.cs" />
+    <Compile Include="WebSocketComparer.cs" />
+    <Compile Include="WebSocketController.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

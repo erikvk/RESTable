@@ -7,11 +7,6 @@ using Starcounter;
 
 namespace RESTar.Requests
 {
-    internal interface IWebSocketInternal
-    {
-        void Open();
-    }
-
     internal class StarcounterWebSocket : IWebSocket, IWebSocketInternal
     {
         private readonly ConcurrentQueue<string> Queue;
@@ -21,7 +16,18 @@ namespace RESTar.Requests
         public string Id { get; }
         public WebSocketReceiveAction InputHandler { get; set; }
         public WebSocketDisconnectAction DisconnectHandler { get; set; }
-        
+        public void HandleInput(string input) => InputHandler?.Invoke(this, input);
+        public void HandleDisconnect() => DisconnectHandler?.Invoke(this);
+        public bool IsOpen { get; private set; }
+
+        public void SetFallbackHandlers(WebSocketReceiveAction receiveAction, WebSocketDisconnectAction disconnectAction)
+        {
+            if (InputHandler == null)
+                InputHandler = receiveAction;
+            if (DisconnectHandler == null)
+                DisconnectHandler = disconnectAction;
+        }
+
         public void Send(string data)
         {
             if (WebSocket == null)
@@ -44,14 +50,15 @@ namespace RESTar.Requests
         public void Open()
         {
             WebSocket = Request.SendUpgrade(GroupName);
-            Queue.ForEach(message => WebSocket.Send(message));
+            IsOpen = true;
         }
 
-        internal StarcounterWebSocket(string groupName, Request request, WebSocketReceiveAction inputHandler)
+        public void SendQueuedMessages() => Queue.ForEach(message => WebSocket.Send(message));
+
+        internal StarcounterWebSocket(string groupName, Request request)
         {
             GroupName = groupName;
             Request = request;
-            InputHandler = inputHandler;
             Id = request.GetWebSocketId().ToString();
             Queue = new ConcurrentQueue<string>();
         }

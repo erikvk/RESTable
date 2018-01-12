@@ -161,6 +161,7 @@ namespace RESTar.Resources
             counter: GetDelegate<Counter<TResource>>(typeof(TResource)) ?? GetDefaultCounter<TResource>(),
             profiler: GetProfiler<TResource>(),
             authenticator: GetDelegate<Authenticator<TResource>>(typeof(TResource)),
+            webSocketConnectionHandler: GetDelegate<WebSocketConnectionHandler>(typeof(TResource)),
             views: GetViews<TResource>(),
             provider: this
         );
@@ -179,6 +180,7 @@ namespace RESTar.Resources
             counter: GetDelegate<Counter<TWrapped>>(typeof(TWrapper)) ?? GetDefaultCounter<TWrapped>(),
             profiler: GetProfiler<TWrapped>(),
             authenticator: GetDelegate<Authenticator<TWrapped>>(typeof(TWrapper)),
+            webSocketConnectionHandler: GetDelegate<WebSocketConnectionHandler>(typeof(TWrapper)),
             views: GetWrappedViews<TWrapper, TWrapped>(),
             provider: this
         );

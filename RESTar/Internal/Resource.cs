@@ -77,6 +77,7 @@ namespace RESTar.Internal
         public Counter<T> Count { get; }
         public Profiler<T> Profile { get; }
         public Authenticator<T> Authenticate { get; }
+        public WebSocketConnectionHandler WebSocketConnectionHandler { get; }
 
         public string Alias
         {
@@ -113,7 +114,7 @@ namespace RESTar.Internal
         /// </summary>
         internal Resource(string name, string @namespace, RESTarAttribute attribute, Selector<T> selector, Inserter<T> inserter,
             Updater<T> updater, Deleter<T> deleter, Counter<T> counter, Profiler<T> profiler, Authenticator<T> authenticator,
-            ResourceProvider provider, View<T>[] views)
+            WebSocketConnectionHandler webSocketConnectionHandler, ResourceProvider provider, View<T>[] views)
         {
             Name = name;
             Namespace = @namespace;
@@ -152,6 +153,7 @@ namespace RESTar.Internal
             Count = counter;
             Profile = profiler;
             Authenticate = authenticator;
+            WebSocketConnectionHandler = webSocketConnectionHandler;
             if (views?.Any() == true)
             {
                 ViewDictionaryInternal = views.ToDictionary(v => v.FullName.ToLower(), v => v);

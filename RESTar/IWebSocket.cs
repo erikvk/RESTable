@@ -19,25 +19,33 @@ namespace RESTar
         WebSocketDisconnectAction DisconnectHandler { set; }
 
         /// <summary>
-        /// Gets a unique ID of the WebSocket
+        /// Gets a unique ID of the WebSocket.
         /// </summary>
         string Id { get; }
 
         /// <summary>
-        /// Sends the string data over the WebSocket
+        /// Sends the string data over the WebSocket. Send calls to a closed WebSocket will be queued and sent 
+        /// when the WebSocket is opened.
         /// </summary>
         /// <param name="data"></param>
         void Send(string data);
 
         /// <summary>
-        /// Sends the Stream data over the WebSocket
+        /// Sends the Stream data over the WebSocket. Send calls to a closed WebSocket will be queued and sent 
+        /// when the WebSocket is opened.
         /// </summary>
         /// <param name="data"></param>
         void Send(Stream data);
-        
+
         /// <summary>
         /// Disconnects the WebSocket
         /// </summary>
         void Disconnect();
+
+        /// <summary>
+        /// Is the WebSocket open? Send calls to a closed WebSocket will be queued and sent 
+        /// when the WebSocket is opened.
+        /// </summary>
+        bool IsOpen { get; }
     }
 }

@@ -27,22 +27,37 @@ namespace RESTar.Requests
                     var headers = new Headers(request.HeadersDictionary);
                     RequestCount += 1;
                     Admin.Console.LogRequest(RequestCount, action, request.Uri, request.ClientIpAddress);
+                    if (request.WebSocketUpgrade)
+                        connection.WebSocket = new StarcounterWebSocket(WsGroupName, request);
                     var result = Evaluate(action, ref query, request.BodyBytes, headers, connection);
                     Admin.Console.LogResult(RequestCount, result);
-                    if (!request.WebSocketUpgrade) return result.ToResponse();
-                    connection.WebSocket = new StarcounterWebSocket
+                    if (!request.WebSocketUpgrade)
+                        return result.ToResponse();
+
+                    var webSocket = (IWebSocketInternal) connection.WebSocket;
+                    webSocket.SetFallbackHandlers
                     (
-                        groupName: WsGroupName,
-                        request: request,
-                        inputHandler: (ws, input) => WSController.Shell(input, ws, ref query, headers, connection)
+                        receiveAction: (ws, input) => WebSocketController.Shell(input, ws, ref query, headers, connection),
+                        disconnectAction: ws => WebSocketController.HandleDisconnect(ws.Id)
                     );
-                    WSController.SendInitialResult(connection.WebSocket, result);
+                    webSocket.Open();
+                    WebSocketController.SendInitialResult(connection.WebSocket, result);
+                    webSocket.SendQueuedMessages();
                     return HandlerStatus.Handled;
                 }
             ));
 
-            Handle.WebSocket(_Port, WsGroupName, (input, ws) => WSController.HandleMessage(ws.ToUInt64().ToString(), input));
-            Handle.WebSocketDisconnect(_Port, WsGroupName, ws => WSController.HandleDisconnect(ws.ToUInt64().ToString()));
+            Handle.WebSocket(_Port, WsGroupName, (input, ws) =>
+            {
+                if (WebSocketController.Get(ws.ToUInt64().ToString()) is IWebSocketInternal webSocket)
+                    webSocket.HandleInput(input);
+            });
+            Handle.WebSocketDisconnect(_Port, WsGroupName, ws =>
+            {
+                if (WebSocketController.Get(ws.ToUInt64().ToString()) is IWebSocketInternal webSocket)
+                    webSocket.HandleDisconnect();
+            });
+
             //Handle.WebSocket(_Port, ConsoleGroupName, ConsoleShell);
             //Handle.WebSocketDisconnect(_Port, ConsoleGroupName, ws => Console = null);
 

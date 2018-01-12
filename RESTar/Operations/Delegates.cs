@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using RESTar;
 using RESTar.Admin;
 using RESTar.Internal;
 
@@ -11,7 +12,7 @@ namespace RESTar.Operations
     {
         private static Type MatchingInterface<TDelegate>()
         {
-            var t = typeof(TDelegate).GetGenericArguments()[0];
+            var t = typeof(TDelegate).GetGenericArguments().ElementAtOrDefault(0);
             switch (typeof(TDelegate))
             {
                 case var d when d == typeof(Selector<>).MakeGenericType(t): return typeof(ISelector<>).MakeGenericType(t);
@@ -21,6 +22,7 @@ namespace RESTar.Operations
                 case var d when d == typeof(Counter<>).MakeGenericType(t): return typeof(ICounter<>).MakeGenericType(t);
                 case var d when d == typeof(Profiler<>).MakeGenericType(t): return typeof(IProfiler<>).MakeGenericType(t);
                 case var d when d == typeof(Authenticator<>).MakeGenericType(t): return typeof(IAuthenticatable<>).MakeGenericType(t);
+                case var d when d == typeof(WebSocketConnectionHandler): return typeof(IWebSocketController);
                 default: throw new ArgumentOutOfRangeException();
             }
         }
@@ -104,4 +106,9 @@ namespace RESTar.Operations
     /// An action to perform when receieving data over a WebSocket
     /// </summary>
     public delegate void WebSocketDisconnectAction(IWebSocket webSocket);
+
+    /// <summary>
+    /// An action to perform when a WebSocket is connected to a target
+    /// </summary>
+    public delegate void WebSocketConnectionHandler(IWebSocket webSocket);
 }

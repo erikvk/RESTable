@@ -78,6 +78,10 @@ namespace RESTar.Requests
                     throw new UnknownView(arguments.Uri.ViewName, Resource);
                 Target = view;
             }
+
+            if (TcpConnection.HasWebSocket)
+                Target.WebSocketConnectionHandler?.Invoke(TcpConnection.WebSocket);
+
             Evaluator = Operations<T>.REST.GetEvaluator(Method);
             Source = arguments.Headers.SafeGet("Source");
             Destination = arguments.Headers.SafeGet("Destination");

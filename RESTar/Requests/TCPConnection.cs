@@ -63,21 +63,24 @@ namespace RESTar.Requests
         /// </summary>
         public bool IsExternal => Origin == OriginType.External;
 
+        private IWebSocket webSocket;
+
         /// <summary>
         /// The ID of the websocket connected with this TCP connection
         /// </summary>
-        public IWebSocket WebSocket { get; internal set; }
+        public IWebSocket WebSocket
+        {
+            get => webSocket;
+            internal set
+            {
+                WebSocketController.
+            }
+        }
 
         /// <summary>
         /// Does this TCP connection have a WebSocket?
         /// </summary>
         public bool HasWebSocket => WebSocket != null;
-
-        internal void OpenWebSocket()
-        {
-            if (WebSocket is IWebSocketInternal socket)
-                socket.Open();
-        }
 
         internal TCPConnection() { }
     }

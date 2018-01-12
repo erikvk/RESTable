@@ -4,18 +4,18 @@ using RESTar.Requests;
 
 namespace RESTar.Results.Success
 {
-    internal interface IEntitiesMetaData
+    internal interface IEntitiesMetadata
     {
         ulong EntityCount { get; }
         string ResourceFullName { get; }
     }
 
-    internal class Entities : OK, IEntitiesMetaData
+    internal class Entities : OK, IEntitiesMetadata
     {
         internal IRequest Request { get; private set; }
         internal IEnumerable<dynamic> Content { get; set; }
         public ulong EntityCount { get; set; }
-        string IEntitiesMetaData.ResourceFullName => Request.Resource.FullName;
+        string IEntitiesMetadata.ResourceFullName => Request.Resource.FullName;
         internal string ExternalDestination { get; set; }
         public bool IsPaged => Content != null && EntityCount > 0 && (long) EntityCount == Request.MetaConditions.Limit;
 
