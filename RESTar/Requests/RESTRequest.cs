@@ -67,7 +67,7 @@ namespace RESTar.Requests
             ResponseHeaders = new Headers();
             Conditions = new Condition<T>[0];
             MetaConditions = new MetaConditions();
-            
+
             TcpConnection = arguments.TcpConnection;
             AuthToken = arguments.AuthToken;
             UriParameters = arguments.Uri;
@@ -78,8 +78,6 @@ namespace RESTar.Requests
                     throw new UnknownView(arguments.Uri.ViewName, Resource);
                 Target = view;
             }
-            if (TcpConnection.HasWebSocket)
-                WebSocketController.Register(typeof(Ta));
             Evaluator = Operations<T>.REST.GetEvaluator(Method);
             Source = arguments.Headers.SafeGet("Source");
             Destination = arguments.Headers.SafeGet("Destination");

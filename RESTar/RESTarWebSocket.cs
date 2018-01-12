@@ -1,5 +1,5 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
+using RESTar.Operations;
 
 namespace RESTar
 {
@@ -11,18 +11,17 @@ namespace RESTar
         /// <summary>
         /// The action to perform when receiving string data over the WebSocket
         /// </summary>
-        Action<string> OnReceive { get; set; }
+        WebSocketReceiveAction InputHandler { set; }
+
+        /// <summary>
+        /// The action to perform when disconnecting the WebSocket
+        /// </summary>
+        WebSocketDisconnectAction DisconnectHandler { set; }
 
         /// <summary>
         /// Gets a unique ID of the WebSocket
         /// </summary>
         string Id { get; }
-
-        /// <summary>
-        /// Sends the byte array data over the WebSocket
-        /// </summary>
-        /// <param name="data"></param>
-        void Send(byte[] data);
 
         /// <summary>
         /// Sends the string data over the WebSocket
@@ -35,7 +34,7 @@ namespace RESTar
         /// </summary>
         /// <param name="data"></param>
         void Send(Stream data);
-
+        
         /// <summary>
         /// Disconnects the WebSocket
         /// </summary>

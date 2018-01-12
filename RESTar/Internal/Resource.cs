@@ -77,7 +77,6 @@ namespace RESTar.Internal
         public Counter<T> Count { get; }
         public Profiler<T> Profile { get; }
         public Authenticator<T> Authenticate { get; }
-        public WebSocketReceiveAction WebSocketReceiveAction { get; }
 
         public string Alias
         {

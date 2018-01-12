@@ -1,5 +1,4 @@
 ﻿using System.Net;
-using Starcounter;
 
 namespace RESTar.Requests
 {
@@ -73,6 +72,12 @@ namespace RESTar.Requests
         /// Does this TCP connection have a WebSocket?
         /// </summary>
         public bool HasWebSocket => WebSocket != null;
+
+        internal void OpenWebSocket()
+        {
+            if (WebSocket is IWebSocketInternal socket)
+                socket.Open();
+        }
 
         internal TCPConnection() { }
     }

@@ -136,7 +136,7 @@ namespace RESTar.Resources
         {
             if (!IsValid(type, out var reason))
                 throw new InvalidResourceDeclaration("An error was found in the declaration for resource " +
-                                                       $"type '{type.FullName}': " + reason);
+                                                     $"type '{type.FullName}': " + reason);
             BuildRegularMethod.MakeGenericMethod(type).Invoke(this, null);
         });
 
@@ -144,7 +144,7 @@ namespace RESTar.Resources
         {
             if (!IsValid(type, out var reason))
                 throw new InvalidResourceDeclaration("An error was found in the declaration for wrapper resource " +
-                                                       $"type '{type.FullName}': " + reason);
+                                                     $"type '{type.FullName}': " + reason);
             BuildWrapperMethod.MakeGenericMethod(type, type.GetWrappedType()).Invoke(this, null);
         });
 
@@ -169,7 +169,7 @@ namespace RESTar.Resources
             where TWrapper : ResourceWrapper<TWrapped>
             where TWrapped : class, TBase => new Internal.Resource<TWrapped>
         (
-            @namespace: typeof(TWrapper).Namespace, 
+            @namespace: typeof(TWrapper).Namespace,
             name: typeof(TWrapper).Name,
             attribute: typeof(TWrapper).GetAttribute<RESTarAttribute>(),
             selector: GetDelegate<Selector<TWrapped>>(typeof(TWrapper)) ?? GetDefaultSelector<TWrapped>(),
@@ -191,7 +191,7 @@ namespace RESTar.Resources
                 throw new InvalidExternalResourceProvider("Provided AttributeType is not an attribute type");
             if (!AttributeType.IsSubclassOf(typeof(ResourceProviderAttribute)))
                 throw new InvalidExternalResourceProvider($"Provided AttributeType '{AttributeType.FullName}' " +
-                                                            $"does not inherit from RESTar.ResourceProviderAttribute");
+                                                          $"does not inherit from RESTar.ResourceProviderAttribute");
         }
 
         private static View<TResource>[] GetViews<TResource>() where TResource : class, TBase => typeof(TResource)

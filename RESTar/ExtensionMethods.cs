@@ -290,6 +290,15 @@ namespace RESTar
             }
         }
 
+        /// <summary>
+        /// Sends a WebSocket message to a collection of sockets
+        /// </summary>
+        public static void SendToAll(this IEnumerable<IWebSocket> sockets, string message)
+        {
+            foreach (var webSocket in sockets.AsParallel())
+                webSocket.Send(message);
+        }
+
         #endregion
 
         #region Resource helpers
@@ -299,7 +308,7 @@ namespace RESTar
             if (!ivalidatable.IsValid(out var reason))
                 throw new FailedValidation(reason);
         }
-        
+
         internal static IEnumerable<Operator> ToOperators(this Operators operators)
         {
             var opList = new List<Operator>();

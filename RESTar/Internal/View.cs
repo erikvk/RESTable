@@ -41,9 +41,6 @@ namespace RESTar.Internal
         /// <inheritdoc />
         public Selector<T> Select { get; }
 
-        /// <inheritdoc />
-        public WebSocketReceiveAction WebSocketReceiveAction { get; }
-
         internal View(Type type)
         {
             Type = type;
@@ -51,8 +48,6 @@ namespace RESTar.Internal
             Name = type.Name;
             FullName = type.FullName;
             Select = DelegateMaker.GetDelegate<Selector<T>>(type);
-            WebSocketReceiveAction = DelegateMaker.GetDelegate<>()
-
             var viewAttribute = type.GetAttribute<RESTarViewAttribute>();
             Description = viewAttribute.Description;
             ConditionBindingRule = viewAttribute.AllowDynamicConditions

@@ -40,12 +40,14 @@ namespace RESTarExample
 
         static MyTest()
         {
-            timer = new Timer(state => SendDataToAllSockets("Swoo"), null, new TimeSpan(0, 0, 0, 10), Timeout.InfiniteTimeSpan);
+//            timer = new Timer(state => SendDataToAllSockets("Swoo"), null, new TimeSpan(0, 0, 0, 10), Timeout.InfiniteTimeSpan);
         }
 
-        private static void SendDataToAllSockets(string data) { }
+        public void HandleWebSocketConnection(IWebSocket webSocket)
+        {
+            throw new NotImplementedException();
+        }
 
-        public void OnReceive(IWebSocket webSocket, string input) => webSocket.Send("Right back at ya!");
 
         public IEnumerable<MyTest> Select(IRequest<MyTest> request)
         {

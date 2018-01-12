@@ -110,6 +110,6 @@ namespace RESTar
         /// <summary>
         /// An action to perform when receiving data on a WebSocket connected to this resource
         /// </summary>
-        void OnReceive(IWebSocket webSocket, string input);
+        void HandleWebSocketConnection(IWebSocket webSocket);
     }
 }

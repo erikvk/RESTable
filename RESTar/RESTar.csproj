@@ -307,7 +307,7 @@
     </Compile>
     <Compile Include="View\RESTarDataView.cs" />
     <Compile Include="RESTarWebSocket.cs" />
-    <Compile Include="WebSocketController.cs" />
+    <Compile Include="WSController.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
