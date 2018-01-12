@@ -8,10 +8,7 @@ using RESTar;
 using RESTar.Resources;
 using Starcounter;
 
-// ReSharper disable UnassignedGetOnlyAutoProperty
-// ReSharper disable UnusedMember.Global
-
-#pragma warning disable 1591
+// ReSharper disable All
 
 namespace RESTarExample
 {
@@ -40,7 +37,7 @@ namespace RESTarExample
 
         static MyTest()
         {
-//            timer = new Timer(state => SendDataToAllSockets("Swoo"), null, new TimeSpan(0, 0, 0, 10), Timeout.InfiniteTimeSpan);
+            //            timer = new Timer(state => SendDataToAllSockets("Swoo"), null, new TimeSpan(0, 0, 0, 10), Timeout.InfiniteTimeSpan);
         }
 
         public void HandleWebSocketConnection(IWebSocket webSocket)

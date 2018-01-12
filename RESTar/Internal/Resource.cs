@@ -215,6 +215,7 @@ namespace RESTar.Internal
             }
         }
 
+        public override bool Equals(object obj) => obj is Resource<T> resource && resource.FullName == FullName;
         public bool Equals(IResource x, IResource y) => x?.FullName == y?.FullName;
         public int GetHashCode(IResource obj) => obj.FullName.GetHashCode();
         public int CompareTo(IResource other) => string.Compare(FullName, other.FullName, StringComparison.Ordinal);

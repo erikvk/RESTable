@@ -80,7 +80,14 @@ namespace RESTar.Requests
             }
 
             if (TcpConnection.HasWebSocket)
-                Target.WebSocketConnectionHandler?.Invoke(TcpConnection.WebSocket);
+            {
+                var webSocket = (IWebSocketInternal) TcpConnection.WebSocket;
+                if (!Target.Equals(webSocket.Target))
+                {
+                    webSocket.Target = Target;
+                    Target.WebSocketConnectionHandler?.Invoke(TcpConnection.WebSocket);
+                }
+            }
 
             Evaluator = Operations<T>.REST.GetEvaluator(Method);
             Source = arguments.Headers.SafeGet("Source");

@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using RESTar;
 using RESTar.Admin;
 using RESTar.Internal;
 
@@ -15,6 +14,7 @@ namespace RESTar.Operations
             var t = typeof(TDelegate).GetGenericArguments().ElementAtOrDefault(0);
             switch (typeof(TDelegate))
             {
+                case var d when d == typeof(WebSocketConnectionHandler): return typeof(IWebSocketController);
                 case var d when d == typeof(Selector<>).MakeGenericType(t): return typeof(ISelector<>).MakeGenericType(t);
                 case var d when d == typeof(Inserter<>).MakeGenericType(t): return typeof(IInserter<>).MakeGenericType(t);
                 case var d when d == typeof(Updater<>).MakeGenericType(t): return typeof(IUpdater<>).MakeGenericType(t);
@@ -22,7 +22,6 @@ namespace RESTar.Operations
                 case var d when d == typeof(Counter<>).MakeGenericType(t): return typeof(ICounter<>).MakeGenericType(t);
                 case var d when d == typeof(Profiler<>).MakeGenericType(t): return typeof(IProfiler<>).MakeGenericType(t);
                 case var d when d == typeof(Authenticator<>).MakeGenericType(t): return typeof(IAuthenticatable<>).MakeGenericType(t);
-                case var d when d == typeof(WebSocketConnectionHandler): return typeof(IWebSocketController);
                 default: throw new ArgumentOutOfRangeException();
             }
         }

@@ -26,13 +26,15 @@ namespace RESTar.Requests
                     var connection = GetTCPConnection(request);
                     var headers = new Headers(request.HeadersDictionary);
                     RequestCount += 1;
-                    Admin.Console.LogRequest(RequestCount, action, request.Uri, request.ClientIpAddress);
+                    Admin.Console.LogRequest(RequestCount.ToString(), action, query, request.ClientIpAddress);
                     if (request.WebSocketUpgrade)
-                        connection.WebSocket = new StarcounterWebSocket(WsGroupName, request);
+                        connection.WebSocket = new StarcounterWebSocket(WsGroupName, request, query);
                     var result = Evaluate(action, ref query, request.BodyBytes, headers, connection);
-                    Admin.Console.LogResult(RequestCount, result);
                     if (!request.WebSocketUpgrade)
+                    {
+                        Admin.Console.LogResult(RequestCount.ToString(), result);
                         return result.ToResponse();
+                    }
 
                     var webSocket = (IWebSocketInternal) connection.WebSocket;
                     webSocket.SetFallbackHandlers
@@ -49,17 +51,15 @@ namespace RESTar.Requests
 
             Handle.WebSocket(_Port, WsGroupName, (input, ws) =>
             {
-                if (WebSocketController.Get(ws.ToUInt64().ToString()) is IWebSocketInternal webSocket)
-                    webSocket.HandleInput(input);
+                if (!WebSocketController.TryGet(ws.ToUInt64().ToString(), out var webSocket)) return;
+                Admin.Console.LogWebSocketInput(input, webSocket);
+                webSocket.HandleInput(input);
             });
             Handle.WebSocketDisconnect(_Port, WsGroupName, ws =>
             {
-                if (WebSocketController.Get(ws.ToUInt64().ToString()) is IWebSocketInternal webSocket)
-                    webSocket.HandleDisconnect();
+                if (!WebSocketController.TryGet(ws.ToUInt64().ToString(), out var webSocket)) return;
+                webSocket.HandleDisconnect();
             });
-
-            //Handle.WebSocket(_Port, ConsoleGroupName, ConsoleShell);
-            //Handle.WebSocketDisconnect(_Port, ConsoleGroupName, ws => Console = null);
 
             #region View
 

@@ -5,6 +5,7 @@ using System.Linq;
 using System.Net;
 using RESTar.Operations;
 using static RESTar.Admin.ConsoleStatus;
+using Action = RESTar.Requests.Action;
 
 namespace RESTar.Admin
 {
@@ -17,17 +18,30 @@ namespace RESTar.Admin
     [RESTar(Methods.GET)]
     internal class Console : ISelector<Console>, ICounter<Console>, IWebSocketController
     {
-        public IEnumerable<Console> Select(IRequest<Console> request) => throw new NotImplementedException();
+        private const string ThisTarget = nameof(RESTar) + "." + nameof(Admin) + "." + nameof(Console);
+
+        public IEnumerable<Console> Select(IRequest<Console> request) => null;
         public long Count(IRequest<Console> request) => 0;
-        
-        static Console() => Sockets = new ConcurrentDictionary<IWebSocket, ConsoleStatus>();
-        private static readonly IDictionary<IWebSocket, ConsoleStatus> Sockets;
+
+        static Console() => ActiveConsoles = new ConcurrentDictionary<IWebSocket, ConsoleStatus>();
+        private static readonly IDictionary<IWebSocket, ConsoleStatus> ActiveConsoles;
 
         public void HandleWebSocketConnection(IWebSocket webSocket)
         {
-            Sockets[webSocket] = 0;
+            ActiveConsoles[webSocket] = 0;
             webSocket.InputHandler = ConsoleShell;
-            webSocket.DisconnectHandler = ws => Sockets.Remove(webSocket);
+            webSocket.DisconnectHandler = ws => ActiveConsoles.Remove(webSocket);
+            webSocket.IgnoreOutput = true;
+            SendConsoleInit(webSocket);
+        }
+
+        private static void SendConsoleInit(IWebSocket ws)
+        {
+            ws.Send("### Welcome to the RESTar WebSocket console! ###\n\n" +
+                    ">>> Status: PAUSED\n\n" +
+                    "> To begin, type BEGIN\n" +
+                    "> To pause, type PAUSE\n" +
+                    "> To close, type CLOSE\n");
         }
 
         private static void ConsoleShell(IWebSocket ws, string input)
@@ -36,11 +50,11 @@ namespace RESTar.Admin
             {
                 case "": break;
                 case "BEGIN":
-                    Sockets[ws] = ACTIVE;
+                    ActiveConsoles[ws] = ACTIVE;
                     ws.Send("Status: ACTIVE\n");
                     break;
                 case "PAUSE":
-                    Sockets[ws] = PAUSED;
+                    ActiveConsoles[ws] = PAUSED;
                     ws.Send("Status: PAUSED\n");
                     break;
                 case "CLOSE":
@@ -53,18 +67,43 @@ namespace RESTar.Admin
             }
         }
 
-
-        internal static void LogRequest(ulong requestId, Requests.Action action, string uri, IPAddress clientIpAddress)
+        internal static void LogRequest(string requestId, Action action, string uri, IPAddress clientIpAddress)
         {
-            foreach (var pair in Sockets.AsParallel().Where(p => p.Value == ACTIVE))
-                pair.Key.Send($"=> [{requestId}] {action} '{uri}' from '{clientIpAddress}'");
+            if (!ActiveConsoles.Any()) return;
+            SendToAll($"=> [{requestId}] {action} '{uri}' from '{clientIpAddress}'  @ {DateTime.Now:O}");
         }
 
-        internal static void LogResult(ulong requestId, IFinalizedResult result)
+        internal static void LogResult(string requestId, IFinalizedResult result)
         {
-            foreach (var pair in Sockets.AsParallel().Where(p => p.Value == ACTIVE))
-                pair.Key.Send($"<= [{requestId}] {result.StatusCode.ToCode()}: '{result.StatusDescription}'. " +
-                              $"{result.Headers["RESTar-info"]} {result.Headers["ErrorInfo"]}");
+            if (!ActiveConsoles.Any()) return;
+            var info = result.Headers["RESTar-Info"];
+            var errorInfo = result.Headers["ErrorInfo"];
+            var tail = "";
+            if (info != null)
+                tail += $". {info}";
+            if (errorInfo != null)
+                tail += $". See {errorInfo}";
+            SendToAll($"<= [{requestId}] {result.StatusCode.ToCode()}: '{result.StatusDescription}'. " +
+                      $"{tail}  @ {DateTime.Now:O}");
+        }
+
+        internal static void LogWebSocketInput(string input, IWebSocketInternal webSocket)
+        {
+            if (!ActiveConsoles.Any() || webSocket.Target.FullName == ThisTarget) return;
+            SendToAll($"=> [WS {webSocket.Id}] Received: '{input}' at '{webSocket.CurrentLocation}' from " +
+                      $"'{webSocket.ClientIpAddress}'  @ {DateTime.Now:O}");
+        }
+
+        internal static void LogWebSocketOutput(IWebSocketInternal webSocket, string output)
+        {
+            if (!ActiveConsoles.Any() || webSocket.Target.FullName == ThisTarget) return;
+            SendToAll($"<= [WS {webSocket.Id}] Sent: '{output}'  @ {DateTime.Now:O}");
+        }
+
+        private static void SendToAll(string message)
+        {
+            foreach (var pair in ActiveConsoles.AsParallel().Where(p => p.Value == ACTIVE))
+                pair.Key.Send(message);
         }
     }
 }

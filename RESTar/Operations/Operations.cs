@@ -394,7 +394,6 @@ namespace RESTar.Operations
             {
                 switch (method)
                 {
-                    case Methods.GET when typeof(T)==typeof(Admin.Console): return CONSOLE;
                     case Methods.GET: return GET;
                     case Methods.POST: return POST;
                     case Methods.PATCH: return PATCH;
@@ -403,11 +402,6 @@ namespace RESTar.Operations
                     case Methods.REPORT: return REPORT;
                     default: return null;
                 }
-            }
-
-            private static ConsoleInit CONSOLE(RESTRequest<T> request)
-            {
-                return new ConsoleInit();
             }
 
             private static Entities GET(RESTRequest<T> request)

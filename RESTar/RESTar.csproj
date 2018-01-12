@@ -268,7 +268,6 @@
     <Compile Include="Results\Error\BadRequest\FailedValidation.cs" />
     <Compile Include="Results\Error\InvalidVirtualResourceDeclaration.cs" />
     <Compile Include="Results\Success\AcceptOrigin.cs" />
-    <Compile Include="Results\Success\ConsoleINit.cs" />
     <Compile Include="Results\Success\DeletedEntities.cs" />
     <Compile Include="Results\Success\Entities.cs" />
     <Compile Include="Results\Success\InsertedEntities.cs" />

@@ -13,30 +13,38 @@ namespace RESTar
 {
     internal static class WebSocketController
     {
-        private static readonly IDictionary<Type, ConcurrentBag<IWebSocket>> ActiveSockets;
         private static readonly IDictionary<IWebSocket, IEntitiesMetadata> PreviousResultMetadata;
         private static readonly IDictionary<IWebSocket, System.Action> OnConfirmationActions;
         private static readonly IDictionary<string, IWebSocket> AllSockets;
 
-        internal static IWebSocket Get(string wsId) => AllSockets.SafeGet(wsId);
+        internal static bool TryGet(string wsId, out IWebSocketInternal ws)
+        {
+            if (AllSockets.TryGetValue(wsId, out var _ws))
+            {
+                ws = (IWebSocketInternal) _ws;
+                return true;
+            }
+            ws = null;
+            return false;
+        }
+
+        internal static IWebSocketInternal Get(string wsId) => (IWebSocketInternal) AllSockets.SafeGet(wsId);
+        internal static void Add(IWebSocket webSocket) => AllSockets[webSocket.Id] = webSocket;
+        internal static void Remove(IWebSocket webSocket) => AllSockets.Remove(webSocket.Id);
 
         static WebSocketController()
         {
             var comparer = new WebSocketComparer();
-            ActiveSockets = new ConcurrentDictionary<Type, ConcurrentBag<IWebSocket>>();
             PreviousResultMetadata = new ConcurrentDictionary<IWebSocket, IEntitiesMetadata>(comparer);
             OnConfirmationActions = new ConcurrentDictionary<IWebSocket, System.Action>(comparer);
             AllSockets = new ConcurrentDictionary<string, IWebSocket>();
         }
-
-
 
         internal static void HandleDisconnect(string wsId)
         {
             if (!AllSockets.TryGetValue(wsId, out var ws)) return;
             OnConfirmationActions.Remove(ws);
             PreviousResultMetadata.Remove(ws);
-            AllSockets.Remove(wsId);
         }
 
         #region Shell
@@ -169,6 +177,8 @@ namespace RESTar
         private static void SafeOperation(this IWebSocket ws, Action action, ref string query, byte[] body, Headers headers,
             TCPConnection tcpConnection)
         {
+            var wsInternal = (IWebSocketInternal) ws;
+            wsInternal.SetCurrentLocation(query);
             ws.SendResult(ws.WsEvaluate(action, ref query, body, headers, tcpConnection));
         }
 
@@ -178,7 +188,7 @@ namespace RESTar
             {
                 headers.UnsafeOverride = true;
                 var result = ws.WsEvaluate(action, ref query, body, headers, tcpConnection);
-                ws.SendStatus(result);
+                ws.SendResult(result);
             }
 
             var entitiesMetaData = PreviousResultMetadata.SafeGet(ws);
@@ -200,45 +210,34 @@ namespace RESTar
 
         internal static void SendInitialResult(IWebSocket ws, IFinalizedResult result)
         {
-            switch (result)
-            {
-                case IEntitiesMetadata entitiesMetadata:
-                    PreviousResultMetadata[ws] = entitiesMetadata;
-                    break;
-                case NoContent _: return;
-            }
+            if (result is IEntitiesMetadata entitiesMetadata)
+                PreviousResultMetadata[ws] = entitiesMetadata;
+            if (ws.IgnoreOutput) return;
             ws.SendResult(result);
         }
 
         private static void SendResult(this IWebSocket ws, IFinalizedResult result)
         {
+            if (ws.IgnoreOutput) return;
             switch (result)
             {
-                case ConsoleInit _:
-                    ws.Send("400: Bad request. Cannot enter the WebSocket console from another WebSocket");
-                    break;
                 case Report _:
                 case Entities _:
                     ws.Send(result.Body);
                     break;
                 default:
-                    ws.SendStatus(result);
+                    var info = result.Headers["RESTar-Info"];
+                    var errorInfo = result.Headers["ErrorInfo"];
+                    var tail = "";
+                    if (info != null)
+                        tail += $". {info}";
+                    if (errorInfo != null)
+                        tail += $". See {errorInfo}";
+                    ws.Send($"{result.StatusCode.ToCode()}: {result.StatusDescription}{tail}");
+                    if (result is Forbidden)
+                        ws.Close();
                     break;
             }
-        }
-
-        private static void SendStatus(this IWebSocket ws, IFinalizedResult result)
-        {
-            var info = result.Headers["RESTar-Info"];
-            var errorInfo = result.Headers["ErrorInfo"];
-            var tail = "";
-            if (info != null)
-                tail += $". {info}";
-            if (errorInfo != null)
-                tail += $". See {errorInfo}";
-            ws.Send($"{result.StatusCode.ToCode()}: {result.StatusDescription}{tail}");
-            if (result is Forbidden)
-                ws.Close();
         }
 
         private static void SendConfirmationRequest(this IWebSocket ws, string initialInfo = null)
@@ -270,39 +269,30 @@ namespace RESTar
         private static void SendHelp(this IWebSocket ws)
         {
             ws.Send("### Welcome to the RESTar WebSocket interface! ###\n\n" +
-                    "  The RESTar WebSocket interface makes it easy to send \n" +
-                    "  multiple requests to the RESTar API, over a single \n" +
-                    "  TCP connection. Using commands, the client can \n" +
-                    "  navigate around the resources of the API, and read, \n" +
-                    "  insert, update and/or delete entities. To navigate \n" +
-                    "  and select entities, simply send a request URI over \n" +
-                    "  the WebSocket, e.g. '/availableresource//limit=3'. \n" +
-                    "  To insert an entity into a resource, send the JSON \n" +
+                    "  The RESTar WebSocket interface makes it easy to send\n" +
+                    "  multiple requests to the RESTar API, over a single\n" +
+                    "  TCP connection. Using commands, the client can\n" +
+                    "  navigate around the resources of the API, and read,\n" +
+                    "  insert, update and/or delete entities. To navigate\n" +
+                    "  and select entities, simply send a request URI over\n" +
+                    "  the WebSocket, e.g. '/availableresource//limit=3'.\n" +
+                    "  To insert an entity into a resource, send the JSON\n" +
                     "  representation over the WebSocket. To update entities,\n" +
-                    "  send 'PATCH <json>', where <json> is the JSON data to \n" +
+                    "  send 'PATCH <json>', where <json> is the JSON data to\n" +
                     "  update entities from. To delete selected entities, send\n" +
                     "  'DELETE'. For potentially unsafe operations, you will be\n" +
                     "  asked to confirm before changes are applied.\n\n" +
                     "  Some other simple commands:\n" +
-                    "  ?           Prints the current location \n" +
+                    "  ?           Prints the current location\n" +
                     "  REPORT      Counts the entities at the current location\n" +
-                    "  RELOAD      Relods the current location \n" +
-                    "  HELP        Prints this help page \n" +
+                    "  RELOAD      Relods the current location\n" +
+                    "  HELP        Prints this help page\n" +
                     "  CLOSE       Closes the WebSocket\n");
         }
 
         private static void SendCredits(this IWebSocket ws)
         {
-            ws.Send("RESTar is designed and developed by Erik von Krusenstierna");
-        }
-
-        private static void SendConsoleInit(this IWebSocket ws)
-        {
-            ws.Send("### Welcome to the RESTar WebSocket console! ###\n\n" +
-                    ">>> Status: PAUSED\n\n" +
-                    "> To begin, type BEGIN\n" +
-                    "> To pause, type PAUSE\n" +
-                    "> To close, type CLOSE\n");
+            ws.Send($"RESTar is designed and developed by Erik von Krusenstierna, © Mopedo AB {DateTime.Now.Year}");
         }
 
         #endregion

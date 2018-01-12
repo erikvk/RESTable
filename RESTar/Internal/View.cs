@@ -58,5 +58,14 @@ namespace RESTar.Internal
                 ? DeclaredWithDynamicFallback
                 : OnlyDeclared;
         }
+
+        /// <inheritdoc />
+        public override string ToString() => FullName;
+
+        /// <inheritdoc />
+        public override bool Equals(object obj) => obj is View<T> view && view.FullName == FullName;
+
+        /// <inheritdoc />
+        public override int GetHashCode() => FullName.GetHashCode();
     }
 }

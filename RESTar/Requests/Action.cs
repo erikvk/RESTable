@@ -14,6 +14,7 @@ namespace RESTar.Requests
         OPTIONS,
         VIEW,
         PAGE,
-        MENU
+        MENU,
+        WebSocket
     }
 }
