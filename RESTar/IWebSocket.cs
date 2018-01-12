@@ -70,11 +70,6 @@ namespace RESTar
         WebSocketStatus Status { get; }
 
         /// <summary>
-        /// Should the output from regular RESTar operations be ignored?
-        /// </summary>
-        bool IgnoreOutput { get; set; }
-
-        /// <summary>
         /// The current location within the API, where the WebSocket is located
         /// </summary>
         string CurrentLocation { get; }

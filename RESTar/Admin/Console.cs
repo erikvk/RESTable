@@ -31,7 +31,6 @@ namespace RESTar.Admin
             ActiveConsoles[webSocket] = 0;
             webSocket.InputHandler = ConsoleShell;
             webSocket.DisconnectHandler = ws => ActiveConsoles.Remove(webSocket);
-            webSocket.IgnoreOutput = true;
             SendConsoleInit(webSocket);
         }
 

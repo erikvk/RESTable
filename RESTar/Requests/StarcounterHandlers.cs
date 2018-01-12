@@ -35,15 +35,11 @@ namespace RESTar.Requests
                         Admin.Console.LogResult(RequestCount.ToString(), result);
                         return result.ToResponse();
                     }
-
                     var webSocket = (IWebSocketInternal) connection.WebSocket;
-                    webSocket.SetFallbackHandlers
-                    (
-                        receiveAction: (ws, input) => WebSocketController.Shell(input, ws, ref query, headers, connection),
-                        disconnectAction: ws => WebSocketController.HandleDisconnect(ws.Id)
-                    );
+                    webSocket.SetShellHandler((ws, input) => WebSocketController.Shell(input, ws, ref query, headers, connection));
                     webSocket.Open();
-                    WebSocketController.SendInitialResult(connection.WebSocket, result);
+                    if (webSocket.IsShell)
+                        WebSocketController.SendInitialShellResult(connection.WebSocket, result);
                     webSocket.SendQueuedMessages();
                     return HandlerStatus.Handled;
                 }

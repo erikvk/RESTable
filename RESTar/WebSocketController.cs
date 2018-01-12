@@ -28,9 +28,7 @@ namespace RESTar
             return false;
         }
 
-        internal static IWebSocketInternal Get(string wsId) => (IWebSocketInternal) AllSockets.SafeGet(wsId);
         internal static void Add(IWebSocket webSocket) => AllSockets[webSocket.Id] = webSocket;
-        internal static void Remove(IWebSocket webSocket) => AllSockets.Remove(webSocket.Id);
 
         static WebSocketController()
         {
@@ -45,6 +43,7 @@ namespace RESTar
             if (!AllSockets.TryGetValue(wsId, out var ws)) return;
             OnConfirmationActions.Remove(ws);
             PreviousResultMetadata.Remove(ws);
+            AllSockets.Remove(wsId);
         }
 
         #region Shell
@@ -208,17 +207,15 @@ namespace RESTar
             }
         }
 
-        internal static void SendInitialResult(IWebSocket ws, IFinalizedResult result)
+        internal static void SendInitialShellResult(IWebSocket ws, IFinalizedResult result)
         {
             if (result is IEntitiesMetadata entitiesMetadata)
                 PreviousResultMetadata[ws] = entitiesMetadata;
-            if (ws.IgnoreOutput) return;
             ws.SendResult(result);
         }
 
         private static void SendResult(this IWebSocket ws, IFinalizedResult result)
         {
-            if (ws.IgnoreOutput) return;
             switch (result)
             {
                 case Report _:

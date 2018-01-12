@@ -25,23 +25,25 @@ namespace RESTar.Requests
         public void SetCurrentLocation(string location) => CurrentLocation = location;
         public IPAddress ClientIpAddress { get; }
         public ITarget Target { get; set; }
+        public bool IsShell { get; private set; }
+
+        public void SetShellHandler(WebSocketReceiveAction shellHandler)
+        {
+            if (InputHandler == null)
+            {
+                InputHandler = shellHandler;
+                IsShell = true;
+            }
+        }
 
         public void HandleDisconnect()
         {
             DisconnectHandler?.Invoke(this);
             Status = WebSocketStatus.Closed;
-            WebSocketController.Remove(this);
+            WebSocketController.HandleDisconnect(Id);
         }
 
         public WebSocketStatus Status { get; private set; }
-
-        public void SetFallbackHandlers(WebSocketReceiveAction receiveAction, WebSocketDisconnectAction disconnectAction)
-        {
-            if (InputHandler == null)
-                InputHandler = receiveAction;
-            if (DisconnectHandler == null)
-                DisconnectHandler = disconnectAction;
-        }
 
         public void Send(string data)
         {

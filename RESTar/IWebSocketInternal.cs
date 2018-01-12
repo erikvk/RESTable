@@ -8,11 +8,12 @@ namespace RESTar
     {
         void Open();
         void SendQueuedMessages();
-        void SetFallbackHandlers(WebSocketReceiveAction receiveAction, WebSocketDisconnectAction disconnectAction);
+        void SetShellHandler(WebSocketReceiveAction shellHandler);
         void HandleInput(string input);
         void HandleDisconnect();
         void SetCurrentLocation(string location);
         IPAddress ClientIpAddress { get; }
         ITarget Target { get; set; }
+        bool IsShell { get; }
     }
 }
