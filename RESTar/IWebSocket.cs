@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System.Collections.Generic;
+using System.IO;
 using RESTar.Operations;
 
 namespace RESTar
@@ -19,10 +20,16 @@ namespace RESTar
         Open,
 
         /// <summary>
-        /// The WebSocket is pending. Send messages will be queued until the WebSocket
+        /// The WebSocket is pending and will soon open. Sent messages will be queued until the WebSocket
         /// is opened. Messages cannot be received.
         /// </summary>
-        Pending
+        PendingOpen,
+
+        /// <summary>
+        /// The WebSocket is pending and will soon close. Messages cannot be sent. Disconnect calls are
+        /// ignored.
+        /// </summary>
+        PendingClose
     }
 
     /// <summary>
@@ -46,17 +53,20 @@ namespace RESTar
         string Id { get; }
 
         /// <summary>
+        /// Sends an IEnumerable of objects over the WebSocket, serialized as a JSON array
+        /// </summary>
+        void SendEntities<T>(IEnumerable<T> items) where T : class;
+
+        /// <summary>
         /// Sends the string data over the WebSocket. Send calls to a closed WebSocket will be queued and sent 
         /// when the WebSocket is opened.
         /// </summary>
-        /// <param name="data"></param>
         void Send(string data);
 
         /// <summary>
         /// Sends the Stream data over the WebSocket. Send calls to a closed WebSocket will be queued and sent 
         /// when the WebSocket is opened.
         /// </summary>
-        /// <param name="data"></param>
         void Send(Stream data);
 
         /// <summary>
@@ -68,10 +78,5 @@ namespace RESTar
         /// The current status of this WebSocket
         /// </summary>
         WebSocketStatus Status { get; }
-
-        /// <summary>
-        /// The current location within the API, where the WebSocket is located
-        /// </summary>
-        string CurrentLocation { get; }
     }
 }

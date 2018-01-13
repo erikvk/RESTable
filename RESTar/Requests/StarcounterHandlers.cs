@@ -1,7 +1,9 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Net;
 using RESTar.Linq;
 using RESTar.Operations;
+using RESTar.WebSockets;
 using Starcounter;
 using static RESTar.Admin.Settings;
 using static RESTar.Requests.Action;
@@ -36,25 +38,46 @@ namespace RESTar.Requests
                         return result.ToResponse();
                     }
                     var webSocket = (IWebSocketInternal) connection.WebSocket;
-                    webSocket.SetShellHandler((ws, input) => WebSocketController.Shell(input, ws, ref query, headers, connection));
+                    webSocket.SetQueryProperties(query, headers, connection);
                     webSocket.Open();
-                    if (webSocket.IsShell)
-                        WebSocketController.SendInitialShellResult(connection.WebSocket, result);
-                    webSocket.SendQueuedMessages();
                     return HandlerStatus.Handled;
+
+                    // webSocket.SetShellHandler((ws, input) => WebSocketController.Shell(input, ws, ref query, headers, connection));
+                    // if (webSocket.IsShell)
+                    //     WebSocketController.SendInitialShellResult(webSocket, result);
                 }
             ));
 
             Handle.WebSocket(_Port, WsGroupName, (input, ws) =>
             {
-                if (!WebSocketController.TryGet(ws.ToUInt64().ToString(), out var webSocket)) return;
-                Admin.Console.LogWebSocketInput(input, webSocket);
-                webSocket.HandleInput(input);
+                try
+                {
+                    if (!_WebSocketController.TryGet(ws.ToUInt64().ToString(), out var webSocket))
+                    {
+                        ws.Disconnect();
+                        return;
+                    }
+                    Admin.Console.LogWebSocketInput(input, webSocket);
+                    webSocket.HandleInput(input);
+                }
+                catch (Exception e)
+                {
+                    ws.Send("WebSocket error: " + e.Message);
+                    ws.Disconnect();
+                }
             });
             Handle.WebSocketDisconnect(_Port, WsGroupName, ws =>
             {
-                if (!WebSocketController.TryGet(ws.ToUInt64().ToString(), out var webSocket)) return;
-                webSocket.HandleDisconnect();
+                try
+                {
+                    if (!_WebSocketController.TryGet(ws.ToUInt64().ToString(), out var webSocket))
+                    {
+                        ws.Disconnect();
+                        return;
+                    }
+                    webSocket.HandleDisconnect();
+                }
+                catch { }
             });
 
             #region View

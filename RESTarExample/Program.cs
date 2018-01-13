@@ -31,7 +31,7 @@ namespace RESTarExample
     #region Stuff
 
     [RESTar(Methods.GET)]
-    public class MyTest : ISelector<MyTest>, IWebSocketController
+    public class MyTest : ISelector<MyTest>
     {
         private static Timer timer;
 

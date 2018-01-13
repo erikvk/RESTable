@@ -14,7 +14,6 @@ namespace RESTar.Operations
             var t = typeof(TDelegate).GetGenericArguments().ElementAtOrDefault(0);
             switch (typeof(TDelegate))
             {
-                case var d when d == typeof(WebSocketConnectionHandler): return typeof(IWebSocketController);
                 case var d when d == typeof(Selector<>).MakeGenericType(t): return typeof(ISelector<>).MakeGenericType(t);
                 case var d when d == typeof(Inserter<>).MakeGenericType(t): return typeof(IInserter<>).MakeGenericType(t);
                 case var d when d == typeof(Updater<>).MakeGenericType(t): return typeof(IUpdater<>).MakeGenericType(t);

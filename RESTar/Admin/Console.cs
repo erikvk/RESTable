@@ -3,7 +3,9 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using RESTar.Linq;
 using RESTar.Operations;
+using RESTar.WebSockets;
 using static RESTar.Admin.ConsoleStatus;
 using Action = RESTar.Requests.Action;
 
@@ -16,21 +18,18 @@ namespace RESTar.Admin
     }
 
     [RESTar(Methods.GET)]
-    internal class Console : ISelector<Console>, ICounter<Console>, IWebSocketController
+    internal class Console : ISelector<Console>, ICounter<Console>
     {
-        private const string ThisTarget = nameof(RESTar) + "." + nameof(Admin) + "." + nameof(Console);
-
         public IEnumerable<Console> Select(IRequest<Console> request) => null;
         public long Count(IRequest<Console> request) => 0;
-
-        static Console() => ActiveConsoles = new ConcurrentDictionary<IWebSocket, ConsoleStatus>();
-        private static readonly IDictionary<IWebSocket, ConsoleStatus> ActiveConsoles;
+        static Console() => Consoles = new ConcurrentDictionary<IWebSocket, ConsoleStatus>();
+        private static readonly IDictionary<IWebSocket, ConsoleStatus> Consoles;
 
         public void HandleWebSocketConnection(IWebSocket webSocket)
         {
-            ActiveConsoles[webSocket] = 0;
+            Consoles[webSocket] = 0;
             webSocket.InputHandler = ConsoleShell;
-            webSocket.DisconnectHandler = ws => ActiveConsoles.Remove(webSocket);
+            webSocket.DisconnectHandler = ws => Consoles.Remove(webSocket);
             SendConsoleInit(webSocket);
         }
 
@@ -49,13 +48,16 @@ namespace RESTar.Admin
             {
                 case "": break;
                 case "BEGIN":
-                    ActiveConsoles[ws] = ACTIVE;
+                    Consoles[ws] = ACTIVE;
                     ws.Send("Status: ACTIVE\n");
                     break;
                 case "PAUSE":
-                    ActiveConsoles[ws] = PAUSED;
+                    Consoles[ws] = PAUSED;
                     ws.Send("Status: PAUSED\n");
                     break;
+                case "EXIT":
+                case "QUIT":
+                case "DISCONNECT":
                 case "CLOSE":
                     ws.Send("Status: CLOSED\n");
                     ws.Disconnect();
@@ -68,13 +70,13 @@ namespace RESTar.Admin
 
         internal static void LogRequest(string requestId, Action action, string uri, IPAddress clientIpAddress)
         {
-            if (!ActiveConsoles.Any()) return;
+            if (!Consoles.Any()) return;
             SendToAll($"=> [{requestId}] {action} '{uri}' from '{clientIpAddress}'  @ {DateTime.Now:O}");
         }
 
         internal static void LogResult(string requestId, IFinalizedResult result)
         {
-            if (!ActiveConsoles.Any()) return;
+            if (!Consoles.Any()) return;
             var info = result.Headers["RESTar-Info"];
             var errorInfo = result.Headers["ErrorInfo"];
             var tail = "";
@@ -86,23 +88,24 @@ namespace RESTar.Admin
                       $"{tail}  @ {DateTime.Now:O}");
         }
 
+        private const string ThisType = "RESTar.Admin.Console";
+
         internal static void LogWebSocketInput(string input, IWebSocketInternal webSocket)
         {
-            if (!ActiveConsoles.Any() || webSocket.Target.FullName == ThisTarget) return;
+            if (!Consoles.Any() || webSocket.Target.FullName == ThisType) return;
             SendToAll($"=> [WS {webSocket.Id}] Received: '{input}' at '{webSocket.CurrentLocation}' from " +
                       $"'{webSocket.ClientIpAddress}'  @ {DateTime.Now:O}");
         }
 
         internal static void LogWebSocketOutput(IWebSocketInternal webSocket, string output)
         {
-            if (!ActiveConsoles.Any() || webSocket.Target.FullName == ThisTarget) return;
+            if (!Consoles.Any() || webSocket.Target.FullName == ThisType) return;
             SendToAll($"<= [WS {webSocket.Id}] Sent: '{output}'  @ {DateTime.Now:O}");
         }
 
-        private static void SendToAll(string message)
-        {
-            foreach (var pair in ActiveConsoles.AsParallel().Where(p => p.Value == ACTIVE))
-                pair.Key.Send(message);
-        }
+        private static void SendToAll(string message) => Consoles
+            .AsParallel()
+            .Where(p => p.Value == ACTIVE)
+            .ForEach(p => p.Key.Send(message));
     }
 }

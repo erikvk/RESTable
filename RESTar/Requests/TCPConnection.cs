@@ -1,4 +1,5 @@
 ﻿using System.Net;
+using RESTar.WebSockets;
 
 namespace RESTar.Requests
 {
@@ -73,7 +74,7 @@ namespace RESTar.Requests
             get => webSocket;
             internal set
             {
-                WebSocketController.Add(value);
+                _WebSocketController.Add(value);
                 webSocket = value;
             }
         }

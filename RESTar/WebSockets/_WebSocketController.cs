@@ -6,12 +6,11 @@ using RESTar.Operations;
 using RESTar.Requests;
 using RESTar.Results.Fail.Forbidden;
 using RESTar.Results.Success;
-using static RESTar.Requests.Action;
 using Action = RESTar.Requests.Action;
 
-namespace RESTar
+namespace RESTar.WebSockets
 {
-    internal static class WebSocketController
+    internal static class _WebSocketController
     {
         private static readonly IDictionary<IWebSocket, IEntitiesMetadata> PreviousResultMetadata;
         private static readonly IDictionary<IWebSocket, System.Action> OnConfirmationActions;
@@ -30,7 +29,7 @@ namespace RESTar
 
         internal static void Add(IWebSocket webSocket) => AllSockets[webSocket.Id] = webSocket;
 
-        static WebSocketController()
+        static _WebSocketController()
         {
             var comparer = new WebSocketComparer();
             PreviousResultMetadata = new ConcurrentDictionary<IWebSocket, IEntitiesMetadata>(comparer);
@@ -76,16 +75,16 @@ namespace RESTar
                 case '\0':
                 case '\n': break;
                 case ' ' when input.Length == 1:
-                    ws.SafeOperation(GET, ref query, null, headers, tcpConnection);
+                    ws.SafeOperation(Action.GET, ref query, null, headers, tcpConnection);
                     break;
                 case '-':
                 case '/':
                     query = input.Trim();
-                    ws.SafeOperation(GET, ref query, null, headers, tcpConnection);
+                    ws.SafeOperation(Action.GET, ref query, null, headers, tcpConnection);
                     break;
                 case '[':
                 case '{':
-                    ws.SafeOperation(POST, ref query, input.ToBytes(), headers, tcpConnection);
+                    ws.SafeOperation(Action.POST, ref query, input.ToBytes(), headers, tcpConnection);
                     break;
                 case var _ when input.Length > 2000:
                     ws.SendBadRequest();
@@ -97,24 +96,24 @@ namespace RESTar
                         case "GET":
                             if (!string.IsNullOrWhiteSpace(tail))
                                 query = tail;
-                            ws.SafeOperation(GET, ref query, null, headers, tcpConnection);
+                            ws.SafeOperation(Action.GET, ref query, null, headers, tcpConnection);
                             break;
                         case "POST":
-                            ws.SafeOperation(POST, ref query, tail.ToBytes(), headers, tcpConnection);
+                            ws.SafeOperation(Action.POST, ref query, tail.ToBytes(), headers, tcpConnection);
                             break;
                         case "PUT":
                             ws.SendBadRequest("PUT is not available in the WebSocket interface");
                             break;
                         case "PATCH":
-                            ws.UnsafeOperation(PATCH, query, tail.ToBytes(), headers, tcpConnection);
+                            ws.UnsafeOperation(Action.PATCH, query, tail.ToBytes(), headers, tcpConnection);
                             break;
                         case "DELETE":
-                            ws.UnsafeOperation(DELETE, query, null, headers, tcpConnection);
+                            ws.UnsafeOperation(Action.DELETE, query, null, headers, tcpConnection);
                             break;
                         case "REPORT":
                             if (!string.IsNullOrWhiteSpace(tail))
                                 query = tail;
-                            ws.SafeOperation(REPORT, ref query, null, headers, tcpConnection);
+                            ws.SafeOperation(Action.REPORT, ref query, null, headers, tcpConnection);
                             break;
                         case "HELP":
                             ws.SendHelp();
@@ -129,7 +128,7 @@ namespace RESTar
                             ws.Send($"{(query.Any() ? query : "/")}");
                             break;
                         case "RELOAD":
-                            ws.SafeOperation(GET, ref query, null, headers, tcpConnection);
+                            ws.SafeOperation(Action.GET, ref query, null, headers, tcpConnection);
                             break;
                         case "HI":
                         case "HELLO":
@@ -207,11 +206,31 @@ namespace RESTar
             }
         }
 
-        internal static void SendInitialShellResult(IWebSocket ws, IFinalizedResult result)
+        internal static void SendInitialShellResult(IWebSocketInternal ws, IFinalizedResult result)
         {
-            if (result is IEntitiesMetadata entitiesMetadata)
-                PreviousResultMetadata[ws] = entitiesMetadata;
-            ws.SendResult(result);
+            switch (result)
+            {
+                case Entities entities:
+                    PreviousResultMetadata[ws] = entities;
+                    switch (ws.CurrentLocation)
+                    {
+                        case "":
+                        case "/":
+                            break;
+                        default:
+                            ws.SendResult(entities);
+                            break;
+                    }
+                    break;
+                case Forbidden forbidden:
+                    ws.SendResult(forbidden);
+                    ws.Disconnect();
+                    return;
+                case var other:
+                    ws.SendResult(other);
+                    break;
+            }
+            ws.SendShellInit();
         }
 
         private static void SendResult(this IWebSocket ws, IFinalizedResult result)
@@ -231,10 +250,14 @@ namespace RESTar
                     if (errorInfo != null)
                         tail += $". See {errorInfo}";
                     ws.Send($"{result.StatusCode.ToCode()}: {result.StatusDescription}{tail}");
-                    if (result is Forbidden)
-                        ws.Close();
                     break;
             }
+        }
+
+        private static void SendShellInit(this IWebSocket ws)
+        {
+            ws.Send("### Entering the RESTar WebSocket shell... ###");
+            ws.Send("### Type a command to continue (e.g. HELP) ###");
         }
 
         private static void SendConfirmationRequest(this IWebSocket ws, string initialInfo = null)
@@ -259,15 +282,14 @@ namespace RESTar
 
         private static void Close(this IWebSocket ws)
         {
-            ws.Send("Closing RESTar WebSocket interface...");
+            ws.Send("### Closing the RESTar WebSocket shell... ###");
             ws.Disconnect();
         }
 
         private static void SendHelp(this IWebSocket ws)
         {
-            ws.Send("### Welcome to the RESTar WebSocket interface! ###\n\n" +
-                    "  The RESTar WebSocket interface makes it easy to send\n" +
-                    "  multiple requests to the RESTar API, over a single\n" +
+            ws.Send("\n  The RESTar WebSocket shell makes it easy to send\n" +
+                    "  multiple requests to a RESTar API, over a single\n" +
                     "  TCP connection. Using commands, the client can\n" +
                     "  navigate around the resources of the API, and read,\n" +
                     "  insert, update and/or delete entities. To navigate\n" +

@@ -10,6 +10,7 @@ using RESTar.Results.Fail.BadRequest;
 using RESTar.Results.Fail.Forbidden;
 using RESTar.Results.Fail.NotFound;
 using RESTar.Serialization;
+using RESTar.WebSockets;
 using static RESTar.Internal.ErrorCodes;
 using static RESTar.RESTarConfig;
 using static RESTar.Methods;

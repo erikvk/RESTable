@@ -306,9 +306,9 @@
       <DependentUpon>Item.json</DependentUpon>
     </Compile>
     <Compile Include="View\RESTarDataView.cs" />
-    <Compile Include="IWebSocketInternal.cs" />
-    <Compile Include="WebSocketComparer.cs" />
-    <Compile Include="WebSocketController.cs" />
+    <Compile Include="WebSockets\IWebSocketInternal.cs" />
+    <Compile Include="WebSockets\WebSocketComparer.cs" />
+    <Compile Include="WebSockets\_WebSocketController.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

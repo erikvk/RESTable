@@ -1,12 +1,17 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using RESTar.Internal;
 using RESTar.Linq;
 using RESTar.Operations;
 using RESTar.Serialization;
+using RESTar.WebSockets;
 using Starcounter;
+using static Newtonsoft.Json.Formatting;
+using static RESTar.Admin.Settings;
+using static RESTar.Serialization.Serializer;
 
 namespace RESTar.Requests
 {
@@ -16,31 +21,34 @@ namespace RESTar.Requests
         private WebSocket WebSocket;
         private readonly Request Request;
         private readonly string GroupName;
+        private bool AbortOpen;
         public string Id { get; }
         public WebSocketReceiveAction InputHandler { get; set; }
         public WebSocketDisconnectAction DisconnectHandler { get; set; }
         public void HandleInput(string input) => InputHandler?.Invoke(this, input);
-        public bool IgnoreOutput { get; set; }
         public string CurrentLocation { get; set; }
         public void SetCurrentLocation(string location) => CurrentLocation = location;
         public IPAddress ClientIpAddress { get; }
         public ITarget Target { get; set; }
         public bool IsShell { get; private set; }
+        public void SetQueryProperties(string query, Headers headers, TCPConnection connection)
+        {
+            throw new NotImplementedException();
+        }
 
         public void SetShellHandler(WebSocketReceiveAction shellHandler)
         {
-            if (InputHandler == null)
-            {
-                InputHandler = shellHandler;
-                IsShell = true;
-            }
+            if (InputHandler != null) return;
+            InputHandler = shellHandler;
+            IsShell = true;
         }
 
         public void HandleDisconnect()
         {
+            Status = WebSocketStatus.PendingClose;
             DisconnectHandler?.Invoke(this);
             Status = WebSocketStatus.Closed;
-            WebSocketController.HandleDisconnect(Id);
+            _WebSocketController.HandleDisconnect(Id);
         }
 
         public WebSocketStatus Status { get; private set; }
@@ -49,6 +57,19 @@ namespace RESTar.Requests
         {
             Send(data.ToBytes());
             Admin.Console.LogWebSocketOutput(this, data);
+        }
+
+        public void SendEntities<T>(IEnumerable<T> items) where T : class
+        {
+            var stream = new MemoryStream();
+            using (var swr = new StreamWriter(stream, UTF8, 1024, true))
+            using (var jwr = new RESTarJsonWriter(swr, 0))
+            {
+                Serializer.Json.Formatting = _PrettyPrint ? Indented : None;
+                Serializer.Json.Serialize(jwr, items);
+            }
+            stream.Seek(0, SeekOrigin.Begin);
+            Send(stream);
         }
 
         public void Send(Stream data)
@@ -66,7 +87,7 @@ namespace RESTar.Requests
                 case WebSocketStatus.Open:
                     WebSocket.Send(bytes, true);
                     break;
-                case WebSocketStatus.Pending:
+                case WebSocketStatus.PendingOpen:
                     Enqueue(bytes);
                     break;
             }
@@ -78,7 +99,19 @@ namespace RESTar.Requests
             Queue.Enqueue(data);
         }
 
-        public void Disconnect() => WebSocket?.Disconnect();
+        public void Disconnect()
+        {
+            switch (Status)
+            {
+                case WebSocketStatus.Open:
+                    WebSocket.Disconnect();
+                    break;
+                case WebSocketStatus.PendingOpen:
+                    AbortOpen = true;
+                    break;
+            }
+        }
+
         public override string ToString() => Id;
         public override bool Equals(object obj) => obj is StarcounterWebSocket sws && sws.Id == Id;
         public override int GetHashCode() => Id.GetHashCode();
@@ -87,12 +120,9 @@ namespace RESTar.Requests
         {
             WebSocket = Request.SendUpgrade(GroupName);
             Status = WebSocketStatus.Open;
-        }
-
-        public void SendQueuedMessages()
-        {
             Queue?.ForEach(message => WebSocket.Send(message));
             Queue = null;
+            if (AbortOpen) Disconnect();
         }
 
         internal StarcounterWebSocket(string groupName, Request request, string initialLocation)
@@ -101,7 +131,7 @@ namespace RESTar.Requests
             Request = request;
             Id = request.GetWebSocketId().ToString();
             ClientIpAddress = request.ClientIpAddress;
-            Status = WebSocketStatus.Pending;
+            Status = WebSocketStatus.PendingOpen;
             CurrentLocation = initialLocation;
         }
     }
