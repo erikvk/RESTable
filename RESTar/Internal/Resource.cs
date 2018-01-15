@@ -10,7 +10,6 @@ using RESTar.Linq;
 using RESTar.Operations;
 using RESTar.Resources;
 using RESTar.Results.Error;
-using RESTar.Results.Fail;
 using RESTar.Results.Fail.BadRequest;
 using Starcounter;
 using static RESTar.Methods;
@@ -20,11 +19,9 @@ using static RESTar.Operations.Transact;
 
 namespace RESTar.Internal
 {
-    internal class Resource<T> : IResource<T>, IResourceInternal where T : class
+    internal class Resource<T> : IEntityResource<T>, IResourceInternal where T : class
     {
         public string FullName { get; }
-        public string Name { get; }
-        public string Namespace { get; }
         public bool Editable { get; }
         public IReadOnlyList<Methods> AvailableMethods { get; internal set; }
         public string Description { get; internal set; }
@@ -50,12 +47,11 @@ namespace RESTar.Internal
         /// </summary>
         public bool DeclaredPropertiesFlagged { get; }
 
-        public string AliasOrName => Alias ?? FullName;
-        public override string ToString() => AliasOrName;
+        public override string ToString() => FullName;
         public bool IsStarcounterResource { get; }
         public bool RequiresValidation { get; }
         public string Provider { get; }
-        public IReadOnlyList<IResource> InnerResources { get; set; }
+        public IReadOnlyList<IEntityResource> InnerResources { get; set; }
         public ResourceProfile ResourceProfile => Profile?.Invoke(this);
         public bool ClaimedBy<T1>() where T1 : ResourceProvider => Provider == typeof(T1).GetProviderId();
 
@@ -78,7 +74,6 @@ namespace RESTar.Internal
         public Counter<T> Count { get; }
         public Profiler<T> Profile { get; }
         public Authenticator<T> Authenticate { get; }
-        public WebSocketConnectionHandler WebSocketConnectionHandler { get; }
 
         public string Alias
         {
@@ -113,13 +108,10 @@ namespace RESTar.Internal
         /// <summary>
         /// All resources are constructed here
         /// </summary>
-        internal Resource(string name, string @namespace, RESTarAttribute attribute, Selector<T> selector, Inserter<T> inserter,
+        internal Resource(string fullName, RESTarAttribute attribute, Selector<T> selector, Inserter<T> inserter,
             Updater<T> updater, Deleter<T> deleter, Counter<T> counter, Profiler<T> profiler, Authenticator<T> authenticator,
-            WebSocketConnectionHandler webSocketConnectionHandler, ResourceProvider provider, View<T>[] views)
+            ResourceProvider provider, View<T>[] views)
         {
-            Name = name;
-            Namespace = @namespace;
-            var fullName = $"{@namespace}.{name}";
             if (fullName.Contains('+'))
             {
                 IsInnerResource = true;
@@ -154,7 +146,6 @@ namespace RESTar.Internal
             Count = counter;
             Profile = profiler;
             Authenticate = authenticator;
-            WebSocketConnectionHandler = webSocketConnectionHandler;
             if (views?.Any() == true)
             {
                 ViewDictionaryInternal = views.ToDictionary(v => v.FullName.ToLower(), v => v);
@@ -217,9 +208,9 @@ namespace RESTar.Internal
         }
 
         public override bool Equals(object obj) => obj is Resource<T> resource && resource.FullName == FullName;
-        public bool Equals(IResource x, IResource y) => x?.FullName == y?.FullName;
-        public int GetHashCode(IResource obj) => obj.FullName.GetHashCode();
-        public int CompareTo(IResource other) => string.Compare(FullName, other.FullName, StringComparison.Ordinal);
+        public bool Equals(IEntityResource x, IEntityResource y) => x?.FullName == y?.FullName;
+        public int GetHashCode(IEntityResource obj) => obj.FullName.GetHashCode();
+        public int CompareTo(IEntityResource other) => string.Compare(FullName, other.FullName, StringComparison.Ordinal);
         public override int GetHashCode() => FullName.GetHashCode();
     }
 }

@@ -1,10 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using Dynamit;
 using RESTar.Internal;
-using RESTar.Linq;
 using RESTar.Operations;
 using static System.Reflection.BindingFlags;
 
@@ -12,53 +10,17 @@ namespace RESTar.Resources
 {
     internal class DynamicResourceProvider : ResourceProvider<object>
     {
-        #region Skipped
-
-        internal override bool Include(Type type)
-        {
-            return false;
-        }
-
+        internal override bool Include(Type type) => false;
         internal override void MakeClaimRegular(IEnumerable<Type> types) { }
-
         internal override void MakeClaimWrapped(IEnumerable<Type> types) { }
-
         internal override void Validate() { }
-
-        // ReSharper disable once UnassignedGetOnlyAutoProperty
-        public override Type AttributeType { get; }
-
-        public override Selector<T> GetDefaultSelector<T>()
-        {
-            throw new NotImplementedException();
-        }
-
-        public override Inserter<T> GetDefaultInserter<T>()
-        {
-            throw new NotImplementedException();
-        }
-
-        public override Updater<T> GetDefaultUpdater<T>()
-        {
-            throw new NotImplementedException();
-        }
-
-        public override Deleter<T> GetDefaultDeleter<T>()
-        {
-            throw new NotImplementedException();
-        }
-
-        public override Counter<T> GetDefaultCounter<T>()
-        {
-            throw new NotImplementedException();
-        }
-
-        public override Profiler<T> GetProfiler<T>()
-        {
-            throw new NotImplementedException();
-        }
-
-        #endregion
+        public override Type AttributeType { get; } = null;
+        public override Selector<T> GetDefaultSelector<T>() => throw new NotImplementedException();
+        public override Inserter<T> GetDefaultInserter<T>() => throw new NotImplementedException();
+        public override Updater<T> GetDefaultUpdater<T>() => throw new NotImplementedException();
+        public override Deleter<T> GetDefaultDeleter<T>() => throw new NotImplementedException();
+        public override Counter<T> GetDefaultCounter<T>() => throw new NotImplementedException();
+        public override Profiler<T> GetProfiler<T>() => throw new NotImplementedException();
 
         private readonly MethodInfo DynamicBuilderMethod;
 
@@ -73,12 +35,9 @@ namespace RESTar.Resources
 
         private void _BuildDynamicResource<T>(DynamicResource resource) where T : DDictionary
         {
-            var nameSplit = resource.Name.Split('.');
-            var (@namespace, name) = (nameSplit.Take(nameSplit.Length - 1).StringJoin("."), nameSplit.Last());
             new Internal.Resource<T>
             (
-                @namespace: @namespace,
-                name: name,
+                fullName: resource.Name,
                 attribute: resource.Attribute,
                 selector: DDictionaryOperations<T>.Select,
                 inserter: DDictionaryOperations<T>.Insert,
@@ -87,7 +46,6 @@ namespace RESTar.Resources
                 counter: DDictionaryOperations<T>.Count,
                 profiler: DDictionaryOperations<T>.Profile,
                 authenticator: null,
-                webSocketConnectionHandler: null,
                 views: null,
                 provider: this
             );

@@ -62,7 +62,7 @@ namespace RESTar.OData
 //                }
                 swr.Write("<EntityType Name=\"RESTar.DynamicResource\" OpenType=\"true\"/>");
                 swr.Write($"<EntityContainer Name=\"{EntityContainerName}\">");
-                foreach (var entitySet in metadata.EntitySets.Except(new Internal.IResource[]
+                foreach (var entitySet in metadata.EntitySets.Except(new Internal.IEntityResource[]
                 {
                     Resource<AvailableResource>.Get, Resource<Admin.Console>.Get, Resource<Schema>.Get, Resource<Echo>.Get,
                     Resource<ResourceProfile>.Get, Resource<OutputFormat>.Get, Resource<Macro>.Get, Resource<AdminTools>.Get,

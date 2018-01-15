@@ -9,11 +9,9 @@ using RESTar.Operations;
 using RESTar.Requests;
 using RESTar.Resources;
 using RESTar.Results.Error;
-using RESTar.Results.Fail;
 using RESTar.Results.Fail.BadRequest;
 using RESTar.Results.Fail.Forbidden;
 using RESTar.Serialization;
-using IResource = RESTar.Internal.IResource;
 
 #pragma warning disable 1591
 
@@ -21,7 +19,7 @@ namespace RESTar
 {
     public class Request<T> : IRequest<T> where T : class
     {
-        public IResource<T> Resource { get; }
+        public IEntityResource<T> Resource { get; }
         private Condition<T>[] _conditions;
 
         public Condition<T>[] Conditions
@@ -38,7 +36,7 @@ namespace RESTar
         public string AuthToken { get; internal set; }
         public Headers ResponseHeaders { get; }
         public IUriParameters UriParameters => throw new InvalidOperationException();
-        IResource IRequest.Resource => Resource;
+        IEntityResource IRequest.Resource => Resource;
         public MetaConditions MetaConditions { get; }
         public TCPConnection TcpConnection { get; }
         Methods IRequest.Method => 0;

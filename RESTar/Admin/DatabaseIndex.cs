@@ -49,7 +49,7 @@ namespace RESTar.Admin
             get => _table;
             set
             {
-                IResource = RESTar.Resource.Get(value);
+                IResource = RESTar.Resource.GetEntityResource(value);
                 _table = IResource.FullName;
                 Provider = IResource.Provider;
             }
@@ -63,7 +63,7 @@ namespace RESTar.Admin
         /// <summary>
         /// The RESTar resource corresponding to the table on which this index is registered
         /// </summary>
-        [IgnoreDataMember] public IResource IResource { get; private set; }
+        [IgnoreDataMember] public IEntityResource IResource { get; private set; }
 
         /// <summary>
         /// The columns on which this index is registered

@@ -1,4 +1,6 @@
-﻿namespace RESTar
+﻿using System;
+
+namespace RESTar
 {
     /// <summary>
     /// ITerminal defines the functionality of a RESTar terminal. The terminal will be
@@ -6,7 +8,7 @@
     /// instantiated, using the Create method, when targeted in a request or from the 
     /// RESTar WebSocket shell.
     /// </summary>
-    public interface ITerminal
+    public interface ITerminal : IDisposable
     {
         /// <summary>
         /// The WebSocket connected to this terminal. To add custom logic that runs when 
@@ -14,11 +16,6 @@
         /// the setter of this property.
         /// </summary>
         IWebSocket WebSocket { set; }
-
-        /// <summary>
-        /// A description for the terminal
-        /// </summary>
-        string Description { get; }
 
         /// <summary>
         /// Performs an action on string input
@@ -31,15 +28,15 @@
         void HandleBinaryInput(byte[] input);
 
         /// <summary>
-        /// Does this terminal support text input and output?
+        /// Does this terminal support text input?
         /// </summary>
         /// <returns></returns>
-        bool HandlesText { get; }
+        bool SupportsTextInput { get; }
 
         /// <summary>
-        /// Does this terminal support binary input and output?
+        /// Does this terminal support binary input?
         /// </summary>
         /// <returns></returns>
-        bool HandlesBinary { get; }
+        bool SupportsBinaryInput { get; }
     }
 }

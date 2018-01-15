@@ -15,16 +15,6 @@ namespace RESTar.Internal
         string FullName { get; }
 
         /// <summary>
-        /// The name of the target
-        /// </summary>
-        string Name { get; }
-
-        /// <summary>
-        /// The namespace of the target
-        /// </summary>
-        string Namespace { get; }
-
-        /// <summary>
         /// Descriptions are visible in the AvailableMethods resource
         /// </summary>
         string Description { get; }
@@ -38,11 +28,6 @@ namespace RESTar.Internal
         /// The binding rule to use when binding condition terms for this target
         /// </summary>
         TermBindingRules ConditionBindingRule { get; }
-
-        /// <summary>
-        /// The action to perform when a WebSocket is connected to this target
-        /// </summary>
-        WebSocketConnectionHandler WebSocketConnectionHandler { get; }
     }
 
     /// <inheritdoc />

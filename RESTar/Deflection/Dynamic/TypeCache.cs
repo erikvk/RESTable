@@ -8,7 +8,6 @@ using RESTar.Linq;
 using static System.Reflection.BindingFlags;
 using static System.StringComparer;
 using static RESTar.Deflection.Dynamic.SpecialProperty;
-using IResource = RESTar.Internal.IResource;
 
 namespace RESTar.Deflection.Dynamic
 {
@@ -39,7 +38,7 @@ namespace RESTar.Deflection.Dynamic
         /// Output terms are terms that refer to properties in RESTar output. If they refer to
         /// a property in the dynamic domain, they are not cached. 
         /// </summary>
-        internal static Term MakeOutputTerm(this IResource target, string key, ICollection<string> dynamicDomain) =>
+        internal static Term MakeOutputTerm(this IEntityResource target, string key, ICollection<string> dynamicDomain) =>
             dynamicDomain == null
                 ? MakeOrGetCachedTerm(target.Type, key, target.OutputBindingRule)
                 : Term.Parse(target.Type, key, target.OutputBindingRule, dynamicDomain);
@@ -90,7 +89,7 @@ namespace RESTar.Deflection.Dynamic
                         return _type.GetProperties(Instance | Public)
                             .ParseDeclaredProperties(flag: true)
                             .Union(GetObjectIDAndObjectNo(flag: true));
-                    case var _ when Resource.SafeGet(_type)?.DeclaredPropertiesFlagged == true:
+                    case var _ when Resource.SafeGet(_type) is IEntityResource e && e.DeclaredPropertiesFlagged:
                         return _type.GetProperties(Instance | Public)
                             .ParseDeclaredProperties(flag: true);
                     case var _ when _type.IsInterface:

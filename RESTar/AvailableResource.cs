@@ -63,11 +63,12 @@ namespace RESTar
             return _rights?.Keys
                 .Where(r => r.IsGlobal && !r.IsInnerResource)
                 .OrderBy(r => r.FullName)
+                .OfType<IEntityResource>()
                 .Select(r => Make(r, _rights))
                 .Where(request.Conditions);
         }
 
-        internal static AvailableResource Make(IResource iresource, AccessRights rights) => new AvailableResource
+        internal static AvailableResource Make(IEntityResource iresource, AccessRights rights) => new AvailableResource
         {
             Name = iresource.FullName,
             Alias = iresource.Alias,

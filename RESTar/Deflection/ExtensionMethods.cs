@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Reflection;
 using RESTar.Deflection.Dynamic;
 using Starcounter;
@@ -54,6 +55,45 @@ namespace RESTar.Deflection
                 return null;
             }
         }
+
+        /// <summary>
+        /// Makes a fast delegate for setting the value for a given property.
+        /// </summary>
+        public static Constructor MakeDynamicConstructor(this Type t)
+        {
+            try
+            {
+                switch (t)
+                {
+                    case var _ when t.GetConstructor(Type.EmptyTypes) == null: return null;
+                    default: return Expression.Lambda<Constructor>(Expression.New(t)).Compile();
+                }
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Makes a fast delegate for setting the value for a given property.
+        /// </summary>
+        public static Constructor<T> MakeStaticConstructor<T>(this Type t)
+        {
+            try
+            {
+                switch (t)
+                {
+                    case var _ when t.GetConstructor(Type.EmptyTypes) == null: return null;
+                    default: return Expression.Lambda<Constructor<T>>(Expression.New(t)).Compile();
+                }
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
 
         internal static bool IsStarcounterCompatible(this Type type)
         {

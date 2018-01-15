@@ -15,7 +15,6 @@ using RESTar.Internal;
 using RESTar.Linq;
 using RESTar.Resources;
 using RESTar.Results.Error;
-using RESTar.Results.Fail;
 using Starcounter;
 using static RESTar.Methods;
 using static RESTar.Requests.StarcounterHandlers;
@@ -29,12 +28,13 @@ namespace RESTar
     /// </summary>
     public static class RESTarConfig
     {
-        internal static ConcurrentDictionary<string, IResource> ResourceFinder { get; private set; }
+        internal static IDictionary<string, IResource> ResourceFinder { get; private set; }
         internal static IDictionary<string, IResource> ResourceByName { get; private set; }
         internal static IDictionary<Type, IResource> ResourceByType { get; private set; }
         internal static IDictionary<string, AccessRights> ApiKeys { get; private set; }
         internal static ConcurrentDictionary<string, AccessRights> AuthTokens { get; private set; }
         internal static ICollection<IResource> Resources => ResourceByName.Values;
+        internal static IEnumerable<IEntityResource> EntityResources => ResourceByName.Values.OfType<IEntityResource>();
         internal static List<Uri> AllowedOrigins { get; private set; }
         internal static string[] ReservedNamespaces { get; private set; }
         internal static bool RequireApiKey { get; private set; }
@@ -116,8 +116,8 @@ namespace RESTar
                     case var _ when resource.IsInternal: return new[] {resource.FullName};
                     case var _ when resource.IsInnerResource:
                         var dots = resource.FullName.Count('.');
-                        return resource.FullName.ToLower().Split(new[] {'.'}, dots);
-                    default: return resource.FullName.ToLower().Split('.');
+                        return resource.FullName.Split(new[] {'.'}, dots);
+                    default: return resource.FullName.Split('.');
                 }
             }
 

@@ -26,8 +26,8 @@ namespace RESTar.View
                 .Resources
                 .Select(r => new
                 {
-                    Name = r.AliasOrName,
-                    Url = $"/{Application.Current.Name}/{r.AliasOrName}"
+                    Name = r.FullName,
+                    Url = $"/{Application.Current.Name}/{r.FullName}"
                 }.Serialize())
                 .ForEach(str => Resources.Add(new Json(str)));
             return this;

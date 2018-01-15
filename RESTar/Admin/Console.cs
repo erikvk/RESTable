@@ -1,5 +1,10 @@
 ﻿using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Linq;
 using System.Net;
+using System.Text;
+using RESTar.Linq;
 using RESTar.Operations;
 using RESTar.WebSockets;
 using static RESTar.Admin.ConsoleStatus;
@@ -13,25 +18,34 @@ namespace RESTar.Admin
         ACTIVE
     }
 
+    [RESTar(Description = "The console")]
     internal class Console : ITerminal
     {
+        private struct _ { }
+
+        private static readonly IDictionary<Console, _> Consoles;
+        static Console() => Consoles = new ConcurrentDictionary<Console, _>();
+
         internal ConsoleStatus Status;
-        private IWebSocket _webSocket;
+        private IWebSocketInternal WebSocketInternal;
 
         public IWebSocket WebSocket
         {
-            private get => _webSocket;
+            private get => WebSocketInternal;
             set
             {
-                _webSocket = value;
+                WebSocketInternal = (IWebSocketInternal) value;
+                Consoles[this] = default;
+                Status = PAUSED;
                 SendConsoleInit();
             }
         }
 
-        public string Description => "The console";
+        public void Dispose() => Consoles.Remove(this);
+
         public void HandleBinaryInput(byte[] input) => throw new NotImplementedException();
-        public bool HandlesText => true;
-        public bool HandlesBinary => false;
+        public bool SupportsTextInput { get; } = true;
+        public bool SupportsBinaryInput { get; } = false;
 
         private void SendConsoleInit() => WebSocket
             .SendText("### Welcome to the RESTar WebSocket console! ###\n\n" +
@@ -66,12 +80,12 @@ namespace RESTar.Admin
             }
         }
 
-        internal void LogHTTPRequest(string requestId, Action action, string uri, IPAddress clientIpAddress)
+        internal static void LogHTTPRequest(string requestId, Action action, string uri, IPAddress clientIpAddress)
         {
-            WebSocket.SendText($"=> [{requestId}] {action} '{uri}' from '{clientIpAddress}'  @ {DateTime.Now:O}");
+            SendToAll($"=> [{requestId}] {action} '{uri}' from '{clientIpAddress}'  @ {DateTime.Now:O}");
         }
 
-        internal void LogHTTPResult(string requestId, IFinalizedResult result)
+        internal static void LogHTTPResult(string requestId, IFinalizedResult result)
         {
             var info = result.Headers["RESTar-Info"];
             var errorInfo = result.Headers["ErrorInfo"];
@@ -80,21 +94,54 @@ namespace RESTar.Admin
                 tail += $". {info}";
             if (errorInfo != null)
                 tail += $". See {errorInfo}";
-            WebSocket.SendText($"<= [{requestId}] {result.StatusCode.ToCode()}: '{result.StatusDescription}'. " +
-                               $"{tail}  @ {DateTime.Now:O}");
+            SendToAll($"<= [{requestId}] {result.StatusCode.ToCode()}: '{result.StatusDescription}'. " +
+                      $"{tail}  @ {DateTime.Now:O}");
         }
 
-        internal void LogWebSocketInput(string input, IWebSocketInternal webSocket)
+        private const string DateTimeFormat = "yyyy-MM-dd HH:mm:ss.ff";
+        private static string _DateTime => DateTime.Now.ToString(DateTimeFormat);
+
+        internal static void LogWebSocketOpen(IWebSocketInternal webSocket)
         {
-            if (webSocket.Equals(WebSocket)) return;
-            WebSocket.SendText($"=> [WS {webSocket.Id}] Received: '{input}' at '{webSocket.CurrentLocation}' from " +
-                               $"'{webSocket.ClientIpAddress}'  @ {DateTime.Now:O}");
+            SendToAll($"# New WebSocket {webSocket.Id} opened to '{webSocket.TerminalResource.FullName}' " +
+                      $"from '{webSocket.TcpConnection.ClientIP}' at {webSocket.Opened.ToString(DateTimeFormat)}");
         }
 
-        internal void LogWebSocketOutput(string output, IWebSocketInternal webSocket)
+        internal static void LogWebSocketClosed(IWebSocketInternal webSocket)
         {
-            if (webSocket.Equals(WebSocket)) return;
-            WebSocket.SendText($"<= [WS {webSocket.Id}] Sent: '{output}'  @ {DateTime.Now:O}");
+            SendToAll($"# Closed WebSocket {webSocket.Id} to '{webSocket.TerminalResource.FullName}' " +
+                      $"from '{webSocket.TcpConnection.ClientIP}' at {webSocket.Closed.ToString(DateTimeFormat)}");
         }
+
+        internal static void LogWebSocketTextInput(string input, IWebSocketInternal webSocket)
+        {
+            var length = Encoding.UTF8.GetByteCount(input);
+            SendToAll($"=> [WS {webSocket.Id}] Received {length} bytes to '{webSocket.TerminalResource.FullName}' from " +
+                      $"'{webSocket.TcpConnection.ClientIP}' at {_DateTime}. Content: {input}");
+        }
+
+        internal static void LogWebSocketBinaryInput(int inputLength, IWebSocketInternal webSocket)
+        {
+            SendToAll($"=> [WS {webSocket.Id}] Received {inputLength} bytes to '{webSocket.TerminalResource.FullName}' from " +
+                      $"'{webSocket.TcpConnection.ClientIP}' at {_DateTime}.");
+        }
+
+        internal static void LogWebSocketTextOutput(string output, IWebSocketInternal webSocket)
+        {
+            var length = Encoding.UTF8.GetByteCount(output);
+            SendToAll($"<= [WS {webSocket.Id}] Sent {length} bytes to '{webSocket.TcpConnection.ClientIP}' from " +
+                      $"'{webSocket.TerminalResource.FullName}' at {_DateTime}. Content: {output}");
+        }
+
+        internal static void LogWebSocketBinaryOutput(int outputLength, IWebSocketInternal webSocket)
+        {
+            SendToAll($"<= [WS {webSocket.Id}] Sent {outputLength} bytes to '{webSocket.TcpConnection.ClientIP}' from " +
+                      $"'{webSocket.TerminalResource.FullName}' at {_DateTime}.");
+        }
+
+        private static void SendToAll(string message) => Consoles.Keys
+            .AsParallel()
+            .Where(c => c.Status == ACTIVE)
+            .ForEach(c => c.WebSocketInternal.SendTextRaw(message));
     }
 }

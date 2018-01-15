@@ -13,13 +13,13 @@ namespace RESTar.Operations
         internal string Key => Term.Key;
         internal bool Descending { get; }
         internal bool Ascending => !Descending;
-        internal IResource Resource { get; }
+        internal IEntityResource Resource { get; }
         internal readonly Term Term;
         internal bool IsSqlQueryable = true;
         internal string SQL => !IsSqlQueryable ? null : $"ORDER BY {Term.DbKey.Fnuttify()} {(Descending ? "DESC" : "ASC")}";
-        internal OrderBy(IResource resource) => Resource = resource;
+        internal OrderBy(IEntityResource resource) => Resource = resource;
 
-        internal OrderBy(IResource resource, bool descending, string key, ICollection<string> dynamicMembers)
+        internal OrderBy(IEntityResource resource, bool descending, string key, ICollection<string> dynamicMembers)
         {
             Resource = resource;
             Descending = descending;

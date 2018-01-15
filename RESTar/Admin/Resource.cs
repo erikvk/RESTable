@@ -8,7 +8,6 @@ using RESTar.Internal;
 using RESTar.Linq;
 using RESTar.Resources;
 using RESTar.Results.Fail.BadRequest;
-using IResource = RESTar.Internal.IResource;
 
 namespace RESTar.Admin
 {
@@ -65,7 +64,7 @@ namespace RESTar.Admin
         /// <summary>
         /// The IResource of this resource
         /// </summary>
-        [IgnoreDataMember] public IResource IResource { get; private set; }
+        [IgnoreDataMember] public IEntityResource IResource { get; private set; }
 
         /// <summary>
         /// The resource provider that generated this resource
@@ -75,8 +74,7 @@ namespace RESTar.Admin
         /// <summary>
         /// Inner resources for this resource
         /// </summary>
-        [RESTarMember(hideIfNull: true)]
-        public Resource[] InnerResources { get; private set; }
+        [RESTarMember(hideIfNull: true)] public Resource[] InnerResources { get; private set; }
 
         [JsonConstructor]
         public Resource() => Provider = "undefined";
@@ -87,12 +85,13 @@ namespace RESTar.Admin
             if (request == null) throw new ArgumentNullException(nameof(request));
             return RESTarConfig.Resources
                 .Where(r => r.IsGlobal)
+                .OfType<IEntityResource>()
                 .OrderBy(r => r.FullName)
                 .Select(Make)
                 .Where(request.Conditions);
         }
 
-        internal static Resource Make(IResource iresource) => new Resource
+        internal static Resource Make(IEntityResource iresource) => new Resource
         {
             Name = iresource.FullName,
             Alias = iresource.Alias,

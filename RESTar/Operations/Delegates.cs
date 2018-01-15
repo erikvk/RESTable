@@ -88,25 +88,10 @@ namespace RESTar.Operations
     /// <summary>
     /// Generates a profile for a given resource
     /// </summary>
-    public delegate ResourceProfile Profiler<T>(IResource<T> resource) where T : class;
+    public delegate ResourceProfile Profiler<T>(IEntityResource<T> resource) where T : class;
 
     /// <summary>
     /// Authenticates a request
     /// </summary>
     public delegate AuthResults Authenticator<T>(IRequest<T> request) where T : class;
-
-    /// <summary>
-    /// An action to perform when receieving data over a WebSocket
-    /// </summary>
-    public delegate void WebSocketReceiveAction(IWebSocket webSocket, string input);
-
-    /// <summary>
-    /// An action to perform when receieving data over a WebSocket
-    /// </summary>
-    public delegate void WebSocketDisconnectAction(IWebSocket webSocket);
-
-    /// <summary>
-    /// An action to perform when a WebSocket is connected to a target
-    /// </summary>
-    public delegate void WebSocketConnectionHandler(IWebSocket webSocket);
 }

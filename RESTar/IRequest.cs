@@ -14,7 +14,7 @@ namespace RESTar
         /// <summary>
         /// The resource of the request
         /// </summary>
-        new IResource<T> Resource { get; }
+        new IEntityResource<T> Resource { get; }
 
         /// <summary>
         /// The conditions of the request
@@ -45,7 +45,7 @@ namespace RESTar
         /// <summary>
         /// The resource of the request
         /// </summary>
-        IResource Resource { get; }
+        IEntityResource Resource { get; }
 
         /// <summary>
         /// The meta-conditions of the request

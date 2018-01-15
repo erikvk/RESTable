@@ -13,7 +13,7 @@ namespace RESTar.Operations
     /// </summary>
     public class Rename : Dictionary<Term, string>, IProcessor
     {
-        internal Rename(IResource resource, string keys, out ICollection<string> dynamicDomain)
+        internal Rename(IEntityResource resource, string keys, out ICollection<string> dynamicDomain)
         {
             keys.Split(',').ForEach(keyString =>
             {

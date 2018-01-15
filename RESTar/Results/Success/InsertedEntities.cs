@@ -6,7 +6,7 @@ namespace RESTar.Results.Success
 {
     internal class InsertedEntities : Result
     {
-        internal InsertedEntities(int count, IResource resource)
+        internal InsertedEntities(int count, IEntityResource resource)
         {
             StatusCode = HttpStatusCode.Created;
             StatusDescription = "Created";

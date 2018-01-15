@@ -5,7 +5,6 @@ using RESTar.Internal;
 using RESTar.Resources;
 using RESTar.Results.Fail.NotFound;
 using static System.StringComparison;
-using IResource = RESTar.Internal.IResource;
 
 namespace RESTar
 {
@@ -25,14 +24,16 @@ namespace RESTar
         /// Gets all registered RESTar resources that were claimed by the given 
         /// ResourceProvider type.
         /// </summary>
-        public static IEnumerable<IResource> ClaimedBy<T>() where T : ResourceProvider => All
+        public static IEnumerable<IEntityResource> ClaimedBy<T>() where T : ResourceProvider => All
+            .OfType<IEntityResource>()
             .Where(r => r.ClaimedBy<T>());
 
         /// <summary>
         /// Gets all registered RESTar resources that were claimed by the given 
         /// ResourceProvider type.
         /// </summary>
-        public static ICollection<IResource> ClaimedBy(ResourceProvider provider) => All
+        public static ICollection<IEntityResource> ClaimedBy(ResourceProvider provider) => All
+            .OfType<IEntityResource>()
             .Where(r => r.Provider == provider.GetProviderId())
             .ToList();
 
@@ -117,6 +118,12 @@ namespace RESTar
         public static IResource Get(string name) => RESTarConfig.ResourceByName.SafeGet(name) ?? throw new UnknownResource(name);
 
         /// <summary>
+        /// Finds an entity resource by name (case insensitive) and throws an UnknownResourceException
+        /// if no resource is found.
+        /// </summary>
+        public static IEntityResource GetEntityResource(string name) => Get(name) as IEntityResource ?? throw new UnknownResource(name);
+
+        /// <summary>
         /// Finds a resource by name (case insensitive) and returns null
         /// if no resource is found
         /// </summary>
@@ -149,12 +156,12 @@ namespace RESTar
         /// Gets the resource for a given type, or throws an UnknownResourceException 
         /// if there is no such resource
         /// </summary>
-        public static IResource<T> Get => RESTarConfig.ResourceByType.SafeGet(typeof(T)) as IResource<T> ??
-                                          throw new UnknownResource(typeof(T).FullName);
+        public static IEntityResource<T> Get => RESTarConfig.ResourceByType.SafeGet(typeof(T)) as IEntityResource<T> ??
+                                                throw new UnknownResource(typeof(T).FullName);
 
         /// <summary>
         /// Gets the resource for a given type or null if there is no such resource
         /// </summary>
-        public static IResource<T> SafeGet => RESTarConfig.ResourceByType.SafeGet(typeof(T)) as IResource<T>;
+        public static IEntityResource<T> SafeGet => RESTarConfig.ResourceByType.SafeGet(typeof(T)) as IEntityResource<T>;
     }
 }

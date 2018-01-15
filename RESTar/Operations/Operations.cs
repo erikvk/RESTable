@@ -6,7 +6,6 @@ using RESTar.Admin;
 using RESTar.Linq;
 using RESTar.Requests;
 using RESTar.Results.Error;
-using RESTar.Results.Fail;
 using RESTar.Results.Fail.BadRequest;
 using RESTar.Results.Fail.BadRequest.Aborted;
 using RESTar.Results.Success;

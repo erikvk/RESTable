@@ -4,7 +4,6 @@ using RESTar.Admin;
 using RESTar.Internal;
 using RESTar.Operations;
 using RESTar.Results.Error;
-using RESTar.Results.Fail;
 using RESTar.Results.Fail.BadRequest;
 using RESTar.Results.Fail.BadRequest.Aborted;
 using RESTar.Results.Fail.Forbidden;
@@ -12,7 +11,6 @@ using RESTar.Results.Success;
 using static RESTar.Operations.Transact;
 using static RESTar.Requests.Action;
 using static RESTar.RESTarConfig;
-using IResource = RESTar.Internal.IResource;
 using Response = RESTar.Http.HttpResponse;
 
 namespace RESTar.Requests
@@ -48,8 +46,26 @@ namespace RESTar.Requests
                         arguments = new Arguments(action, ref query, body, headers, tcpConnection);
                         arguments.Authenticate();
                         arguments.ThrowIfError();
-                        return HandleREST((dynamic) arguments.IResource, arguments);
-
+                        switch (arguments.IResource)
+                        {
+                            case TerminalResource terminalResource:
+                                if (!tcpConnection.HasWebSocket)
+                                    return new UpgradeRequired(terminalResource.FullName);
+                                terminalResource.CreateFor(tcpConnection.WebSocketInternal);
+                                tcpConnection.WebSocketInternal.Open();
+                                return new WebSocketOpened();
+                            case var entityResource:
+                                var result = HandleREST((dynamic) entityResource, arguments);
+                                if (!tcpConnection.HasWebSocket)
+                                    return result;
+                                using (var webSocket = tcpConnection.WebSocketInternal)
+                                {
+                                    TerminalResource.Default.CreateFor(webSocket);
+                                    webSocket.Open();
+                                    webSocket.SendResult(result);
+                                    return new WebSocketDone();
+                                }
+                        }
                     case OPTIONS:
                         arguments = new Arguments(action, ref query, body, headers, tcpConnection);
                         arguments.ThrowIfError();
@@ -116,7 +132,7 @@ namespace RESTar.Requests
             }
         }
 
-        private static Response HandleView<T>(IResource<T> resource, Arguments arguments) where T : class
+        private static Response HandleView<T>(IEntityResource<T> resource, Arguments arguments) where T : class
         {
             var request = new ViewRequest<T>(resource, arguments.TcpConnection);
             request.Authenticate();
@@ -126,7 +142,7 @@ namespace RESTar.Requests
             return null; //request.GetView();
         }
 
-        private static IFinalizedResult HandleREST<T>(IResource<T> resource, Arguments arguments)
+        private static IFinalizedResult HandleREST<T>(IEntityResource<T> resource, Arguments arguments)
             where T : class
         {
             using (var request = new RESTRequest<T>(resource, arguments))

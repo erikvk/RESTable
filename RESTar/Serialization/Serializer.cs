@@ -68,7 +68,7 @@ namespace RESTar.Serialization
         internal static bool SerializeOutputExcel
         (
             this IEnumerable<object> data,
-            IResource resource,
+            IEntityResource resource,
             out MemoryStream stream,
             out long count
         )

@@ -8,6 +8,7 @@ using Starcounter;
 using static RESTar.Admin.Settings;
 using static RESTar.Requests.Action;
 using static RESTar.Requests.RequestEvaluator;
+using Console = RESTar.Admin.Console;
 
 namespace RESTar.Requests
 {
@@ -28,23 +29,16 @@ namespace RESTar.Requests
                     var connection = GetTCPConnection(request);
                     var headers = new Headers(request.HeadersDictionary);
                     RequestCount += 1;
-                    //Admin.Console.LogHTTPRequest(RequestCount.ToString(), action, query, request.ClientIpAddress);
+                    Console.LogHTTPRequest(RequestCount.ToString(), action, query, request.ClientIpAddress);
                     if (request.WebSocketUpgrade)
-                        connection.WebSocket = new StarcounterWebSocket(WsGroupName, request, query);
-                    var result = Evaluate(action, ref query, request.BodyBytes, headers, connection);
-                    if (!request.WebSocketUpgrade)
                     {
-                        //Admin.Console.LogHTTPResult(RequestCount.ToString(), result);
-                        return result.ToResponse();
+                        connection.WebSocket = new StarcounterWebSocket(WsGroupName, request, headers, connection);
+                        Evaluate(action, ref query, request.BodyBytes, headers, connection);
+                        return HandlerStatus.Handled;
                     }
-                    var webSocket = (IWebSocketInternal) connection.WebSocket;
-                    webSocket.SetQueryProperties(query, headers, connection);
-                    webSocket.Open();
-                    return HandlerStatus.Handled;
-
-                    // webSocket.SetShellHandler((ws, input) => WebSocketController.Shell(input, ws, ref query, headers, connection));
-                    // if (webSocket.IsShell)
-                    //     WebSocketController.SendInitialShellResult(webSocket, result);
+                    var result = Evaluate(action, ref query, request.BodyBytes, headers, connection);
+                    Console.LogHTTPResult(RequestCount.ToString(), result);
+                    return result.ToResponse();
                 }
             ));
 
@@ -57,9 +51,7 @@ namespace RESTar.Requests
                         ws.Disconnect();
                         return;
                     }
-                    if (webSocket.Terminal.HandlesText)
-                        webSocket.Terminal.HandleTextInput(text);
-                    else ws.Send($"400: Bad request. Terminal '{webSocket.Terminal.GetType().FullName}' does not support text input");
+                    webSocket.HandleTextInput(text);
                 }
                 catch (Exception e)
                 {
@@ -76,10 +68,7 @@ namespace RESTar.Requests
                         ws.Disconnect();
                         return;
                     }
-                    //Admin.Console.LogWebSocketInput($"[{binary.Length} bytes]", webSocket);
-                    if (webSocket.Terminal.HandlesBinary)
-                        webSocket.Terminal.HandleBinaryInput(binary);
-                    else ws.Send($"400: Bad request. Terminal '{webSocket.Terminal.GetType().FullName}' does not support binary input");
+                    webSocket.HandleBinaryInput(binary);
                 }
                 catch (Exception e)
                 {
@@ -96,7 +85,7 @@ namespace RESTar.Requests
                         ws.Disconnect();
                         return;
                     }
-                    webSocket.HandleDisconnect();
+                    webSocket.Dispose();
                 }
                 catch { }
             });

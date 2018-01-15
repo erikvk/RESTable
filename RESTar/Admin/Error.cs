@@ -6,7 +6,6 @@ using RESTar.Linq;
 using RESTar.Operations;
 using RESTar.Requests;
 using RESTar.Results.Error;
-using RESTar.Results.Fail;
 using Starcounter;
 using static RESTar.Admin.Settings;
 using static RESTar.Methods;
@@ -104,8 +103,9 @@ namespace RESTar.Admin
                 StackTrace = stackTrace.Length > MaxStringLength ? stackTrace.Substring(0, MaxStringLength) : stackTrace,
                 Message = totalMessage.Length > MaxStringLength ? totalMessage.Substring(0, MaxStringLength) : totalMessage,
                 Uri = uri,
-                Headers = resource?.RequiresAuthentication == false
-                    ? arguments.Headers.StringJoin(" | ", dict => dict.Select(header =>
+                Headers = resource is IEntityResource e && e.RequiresAuthentication
+                    ? null
+                    : arguments.Headers.StringJoin(" | ", dict => dict.Select(header =>
                     {
                         switch (header.Key.ToLower())
                         {
@@ -114,7 +114,6 @@ namespace RESTar.Admin
                             default: return $"{header.Key}: {header.Value}";
                         }
                     }))
-                    : null
             };
         }
 

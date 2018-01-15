@@ -31,7 +31,6 @@ using static System.StringComparison;
 using static RESTar.Internal.ErrorCodes;
 using static RESTar.Operators;
 using static Starcounter.DbHelper;
-using IResource = RESTar.Internal.IResource;
 
 
 namespace RESTar
@@ -372,7 +371,7 @@ namespace RESTar
         /// If the type is represented by some RESTar resource in the current instance,
         /// returns this resource. Else null.
         /// </summary>
-        public static IResource GetResource(this Type type) => Resource.ByTypeName(type.FullName);
+        public static Internal.IResource GetResource(this Type type) => Resource.ByTypeName(type.FullName);
 
         /// <summary>
         /// If the type is represented by some RESTar resource in the current instance,
@@ -672,7 +671,7 @@ namespace RESTar
             return ms.ToArray();
         }
 
-        internal static ClosedXML.Excel.XLWorkbook ToExcel(this IEnumerable<object> entities, IResource resource)
+        internal static ClosedXML.Excel.XLWorkbook ToExcel(this IEnumerable<object> entities, IEntityResource resource)
         {
             var dataSet = new DataSet();
             var table = entities.MakeDataTable(resource);
@@ -698,7 +697,7 @@ namespace RESTar
             return workbook;
         }
 
-        internal static DataTable MakeDataTable(this IEnumerable<object> entities, IResource resource)
+        internal static DataTable MakeDataTable(this IEnumerable<object> entities, IEntityResource resource)
         {
             var table = new DataTable();
             switch (entities)
@@ -796,7 +795,7 @@ namespace RESTar
             return master;
         }
 
-        internal static Dictionary<string, dynamic> MakeViewModelTemplate(this IResource resource)
+        internal static Dictionary<string, dynamic> MakeViewModelTemplate(this IEntityResource resource)
         {
             if (resource.IsDDictionary) return new Dictionary<string, dynamic>();
             return resource.Type.GetDeclaredProperties().Values

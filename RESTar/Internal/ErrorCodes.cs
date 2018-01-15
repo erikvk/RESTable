@@ -32,6 +32,7 @@ namespace RESTar.Internal
         UnsupportedContent = 014,
         UnknownFormatter = 015,
         NotAcceptable = 016,
+        UpgradeRequired = 017,
 
         // 020-029: Headers error
         InvalidSourceData = 020,

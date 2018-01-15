@@ -8,8 +8,8 @@ using RESTar.Linq;
 using RESTar.Admin;
 using RESTar.Internal;
 using RESTar.Results.Error;
-using RESTar.Results.Fail;
 using RESTar.Results.Fail.BadRequest;
+using Starcounter;
 using static System.Reflection.BindingFlags;
 
 namespace RESTar.Resources
@@ -54,10 +54,10 @@ namespace RESTar.Resources
         {
             (List<Type> regular, List<Type> wrappers, List<Type> terminals) lists;
             var allTypes = typeof(object).GetSubclasses().ToList();
-            var resourceTypes = allTypes.Where(t => t.HasAttribute<RESTarAttribute>()).ToList();
+            var entityTypes = allTypes.Where(t => t.HasAttribute<RESTarAttribute>() && !t.Implements(typeof(ITerminal))).ToList();
             var viewTypes = allTypes.Where(t => t.HasAttribute<RESTarViewAttribute>()).ToList();
-            var terminals = allTypes.Where(t => t.Implements(typeof(ITerminal))).ToList();
-            if (resourceTypes.Union(viewTypes).Union(terminals).ContainsDuplicates(t => t.FullName?.ToLower() ?? "unknown", out var dupe))
+            var terminals = allTypes.Where(t => t.HasAttribute<RESTarAttribute>() && t.Implements(typeof(ITerminal))).ToList();
+            if (entityTypes.Union(viewTypes).Union(terminals).ContainsDuplicates(t => t.FullName?.ToLower() ?? "unknown", out var dupe))
                 throw new InvalidResourceDeclaration("Types used by RESTar must have unique case insensitive names. Found " +
                                                      $"multiple types with case insensitive name '{dupe}'.");
 
@@ -235,6 +235,18 @@ namespace RESTar.Resources
             {
                 foreach (var type in types)
                 {
+                    if (type.HasResourceProviderAttribute())
+                        throw new InvalidTerminalDeclaration($"Invalid terminal declaration '{type.FullName}'. Terminal types " +
+                                                             "must not be decorated with a resource provider attribute");
+                    if (type.HasAttribute<RESTarViewAttribute>())
+                        throw new InvalidTerminalDeclaration($"Invalid terminal declaration '{type.FullName}'. Terminal types " +
+                                                             "must not be decorated with the RESTarViewAttribute attribute");
+                    if (type.HasAttribute<DatabaseAttribute>())
+                        throw new InvalidTerminalDeclaration($"Invalid terminal declaration '{type.FullName}'. Terminal types " +
+                                                             "must not be decorated with the Starcounter.DatabaseAttribute attribute");
+                    if (typeof(IOperationsInterface).IsAssignableFrom(type))
+                        throw new InvalidTerminalDeclaration($"Invalid terminal declaration '{type.FullName}'. Terminal types " +
+                                                             "must not implement any other RESTar operations interfaces");
                     if (type.GetConstructor(Type.EmptyTypes) == null)
                         throw new InvalidTerminalDeclaration($"Invalid terminal declaration '{type.FullName}'. Terminal types " +
                                                              "must contain a parameterless constructor");
@@ -243,13 +255,13 @@ namespace RESTar.Resources
                 lists.terminals = types;
             }
 
-            ValidateResourceTypes(resourceTypes);
+            ValidateResourceTypes(entityTypes);
             ValidateViewTypes(viewTypes);
             ValidateTerminals(terminals);
             return lists;
         }
 
-        private static void ValidateInnerResources() => RESTarConfig.Resources
+        private static void ValidateInnerResources() => RESTarConfig.EntityResources
             .GroupBy(r => r.ParentResourceName)
             .Where(group => group.Key != null)
             .ForEach(group =>
@@ -257,7 +269,7 @@ namespace RESTar.Resources
                 var parentResource = (IResourceInternal) Resource.SafeGet(group.Key);
                 if (parentResource == null)
                     throw new InvalidResourceDeclaration(
-                        $"Resource types {string.Join(", ", group.Select(item => $"'{item.FullName}'"))} are declared " +
+                        $"Resource type(s) {string.Join(", ", group.Select(item => $"'{item.FullName}'"))} is/are declared " +
                         $"within the scope of another class '{group.Key}', that is not a RESTar resource. Inner " +
                         "resources must be declared within a resource class.");
                 parentResource.InnerResources = group.ToList();
@@ -290,7 +302,7 @@ namespace RESTar.Resources
             }
 
             DynamicResource.GetAll().ForEach(MakeDynamicResource);
-
+            TerminalResource.RegisterTerminalTypes(terminals);
         }
 
         internal static void MakeDynamicResource(DynamicResource resource) => DynProvider.BuildDynamicResource(resource);

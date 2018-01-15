@@ -120,7 +120,7 @@ namespace RESTar.Requests
         private static string AllMetaConditions =>
             $"{string.Join(", ", Enum.GetNames(typeof(RESTarMetaConditions)).Except(new[] {"New", "Delete"}))}";
 
-        internal static MetaConditions Parse(List<UriCondition> uriMetaConditions, IResource resource,
+        internal static MetaConditions Parse(List<UriCondition> uriMetaConditions, IEntityResource resource,
             bool processors = true)
         {
             if (!uriMetaConditions.Any()) return null;

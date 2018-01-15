@@ -1,19 +1,20 @@
-﻿using System.Net;
+﻿using System;
 using RESTar.Internal;
-using RESTar.Requests;
 
 namespace RESTar.WebSockets
 {
     internal interface IWebSocketInternal : IWebSocket
     {
         void Open();
-        void HandleDisconnect();
-        void SetCurrentLocation(string location);
-        IPAddress ClientIpAddress { get; }
         ITarget Target { get; set; }
-        bool IsShell { get; }
         ITerminal Terminal { get; set; }
-        string CurrentLocation { get; }
-        void SetQueryProperties(string query, Headers headers, TCPConnection connection);
+        TerminalResource TerminalResource { get; set; }
+        DateTime Opened { get; }
+        DateTime Closed { get; }
+        ulong BytesReceived { get; }
+        ulong BytesSent { get; }
+        void HandleTextInput(string textData);
+        void HandleBinaryInput(byte[] binaryData);
+        void SendTextRaw(string textData);
     }
 }

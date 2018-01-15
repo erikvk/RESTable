@@ -6,7 +6,6 @@ using RESTar.Internal;
 using RESTar.Linq;
 using RESTar.Operations;
 using RESTar.Results.Error;
-using RESTar.Results.Fail;
 using static System.Reflection.BindingFlags;
 using static RESTar.Operations.DelegateMaker;
 
@@ -34,7 +33,7 @@ namespace RESTar.Resources
         /// The ReceiveClaimed method is called by RESTar once the resources provided
         /// by this ResourceProvider have been added.
         /// </summary>
-        public virtual void ReceiveClaimed(ICollection<IResource> claimedResources) { }
+        public virtual void ReceiveClaimed(ICollection<IEntityResource> claimedResources) { }
     }
 
     /// <inheritdoc />
@@ -152,8 +151,7 @@ namespace RESTar.Resources
         private void BuildRegularResource<TResource>()
             where TResource : class, TBase => new Internal.Resource<TResource>
         (
-            @namespace: typeof(TResource).Namespace,
-            name: typeof(TResource).Name,
+            fullName: typeof(TResource).FullName,
             attribute: typeof(TResource).GetAttribute<RESTarAttribute>(),
             selector: GetDelegate<Selector<TResource>>(typeof(TResource)) ?? GetDefaultSelector<TResource>(),
             inserter: GetDelegate<Inserter<TResource>>(typeof(TResource)) ?? GetDefaultInserter<TResource>(),
@@ -162,7 +160,6 @@ namespace RESTar.Resources
             counter: GetDelegate<Counter<TResource>>(typeof(TResource)) ?? GetDefaultCounter<TResource>(),
             profiler: GetProfiler<TResource>(),
             authenticator: GetDelegate<Authenticator<TResource>>(typeof(TResource)),
-            webSocketConnectionHandler: GetDelegate<WebSocketConnectionHandler>(typeof(TResource)),
             views: GetViews<TResource>(),
             provider: this
         );
@@ -171,8 +168,7 @@ namespace RESTar.Resources
             where TWrapper : ResourceWrapper<TWrapped>
             where TWrapped : class, TBase => new Internal.Resource<TWrapped>
         (
-            @namespace: typeof(TWrapper).Namespace,
-            name: typeof(TWrapper).Name,
+            fullName: typeof(TWrapper).FullName,
             attribute: typeof(TWrapper).GetAttribute<RESTarAttribute>(),
             selector: GetDelegate<Selector<TWrapped>>(typeof(TWrapper)) ?? GetDefaultSelector<TWrapped>(),
             inserter: GetDelegate<Inserter<TWrapped>>(typeof(TWrapper)) ?? GetDefaultInserter<TWrapped>(),
@@ -181,7 +177,6 @@ namespace RESTar.Resources
             counter: GetDelegate<Counter<TWrapped>>(typeof(TWrapper)) ?? GetDefaultCounter<TWrapped>(),
             profiler: GetProfiler<TWrapped>(),
             authenticator: GetDelegate<Authenticator<TWrapped>>(typeof(TWrapper)),
-            webSocketConnectionHandler: GetDelegate<WebSocketConnectionHandler>(typeof(TWrapper)),
             views: GetWrappedViews<TWrapper, TWrapped>(),
             provider: this
         );

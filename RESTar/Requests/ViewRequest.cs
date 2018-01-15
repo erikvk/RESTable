@@ -17,14 +17,13 @@ using static RESTar.Methods;
 using static RESTar.Internal.ErrorCodes;
 using static RESTar.View.MessageTypes;
 using static Starcounter.Templates.Template;
-using IResource = RESTar.Internal.IResource;
 
 namespace RESTar.Requests
 {
     internal class ViewRequest<T> : IRequest<T>, IViewRequest where T : class
     {
         public TCPConnection TcpConnection { get; }
-        public IResource<T> Resource { get; }
+        public IEntityResource<T> Resource { get; }
         public Condition<T>[] Conditions { get; private set; }
         public MetaConditions MetaConditions { get; private set; }
         public string AuthToken { get; internal set; }
@@ -32,7 +31,7 @@ namespace RESTar.Requests
         public IUriParameters UriParameters { get; private set; }
         public Stream Body { get; private set; }
         Methods IRequest.Method => GET;
-        IResource IRequest.Resource => Resource;
+        IEntityResource IRequest.Resource => Resource;
         public MimeType Accept => MimeType.Default;
         public ITarget<T> Target { get; private set; }
         public bool Home => MetaConditions.Empty && Conditions == null;
@@ -45,7 +44,7 @@ namespace RESTar.Requests
         public T1 BodyObject<T1>() where T1 : class => Body?.Deserialize<T1>();
         public Headers Headers { get; }
 
-        internal ViewRequest(IResource<T> resource, TCPConnection tcpConnection)
+        internal ViewRequest(IEntityResource<T> resource, TCPConnection tcpConnection)
         {
             if (resource.IsInternal) throw new ResourceIsInternal(resource);
             Resource = resource;

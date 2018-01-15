@@ -15,20 +15,21 @@ namespace RESTar
         public AccessRights CurrentAccessRights { get; private set; }
         public List<Type> EnumTypes { get; private set; }
         public List<Type> ComplexTypes { get; private set; }
-        public List<IResource> EntityTypes { get; private set; }
-        public List<IResource> EntitySets { get; private set; }
+        public List<IEntityResource> EntityTypes { get; private set; }
+        public List<IEntityResource> EntitySets { get; private set; }
 
         public IEnumerable<Metadata> Select(IRequest<Metadata> request)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
             var rights = RESTarConfig.AuthTokens[request.AuthToken];
             var enumTypes = new HashSet<Type>();
-            var entityTypes = new HashSet<IResource>();
+            var entityTypes = new HashSet<IEntityResource>();
             var thisResource = Resource<Metadata>.Get;
             var resources = rights?.Keys
+                .OfType<IEntityResource>()
                 .Where(r => r.IsGlobal && !r.IsInnerResource)
                 .Where(r => rights.ContainsKey(r))
-                .Where(r => r != thisResource)
+                .Where(r => !Equals(r, thisResource))
                 .OrderBy(r => r.FullName)
                 .ToList();
             if (rights == null) return null;
@@ -52,7 +53,7 @@ namespace RESTar
                         parseType(param[0]);
                         return;
 
-                    case var _ when Resource.SafeGet(type) is IResource resource && entityTypes.Add(resource):
+                    case var _ when Resource.SafeGet(type) is IEntityResource resource && entityTypes.Add(resource):
                         type.GetDeclaredProperties().Values.Select(p => p.Type).ForEach(parseType);
                         return;
                 }

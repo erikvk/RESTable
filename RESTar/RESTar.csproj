@@ -99,8 +99,10 @@
     <Compile Include="DynamicTableAttribute.cs" />
     <Compile Include="Formatter.cs" />
     <Compile Include="Http\HttpResponse.cs" />
+    <Compile Include="Internal\IResource.cs" />
     <Compile Include="Internal\IResourceInternal.cs" />
     <Compile Include="Internal\ITarget.cs" />
+    <Compile Include="Internal\TerminalResource.cs" />
     <Compile Include="Internal\View.cs" />
     <Compile Include="IWebSocket.cs" />
     <Compile Include="LineEndings.cs" />
@@ -187,7 +189,7 @@
     <Compile Include="DynamitControl.cs" />
     <Compile Include="Internal\DDictionaryOperations.cs" />
     <Compile Include="DynamicTables.cs" />
-    <Compile Include="Internal\IResource.cs" />
+    <Compile Include="Internal\IEntityResource.cs" />
     <Compile Include="Deflection\Dynamic\Property.cs" />
     <Compile Include="Deflection\Dynamic\Term.cs" />
     <Compile Include="Operations\Delegates.cs" />
@@ -223,6 +225,8 @@
     <Compile Include="Results\Error\Forbidden\UserNotSignedIn.cs" />
     <Compile Include="Results\Error\Internal.cs" />
     <Compile Include="Results\Error\InvalidTerminalDeclaration.cs" />
+    <Compile Include="Results\Error\UnsupportedWebSocketData.cs" />
+    <Compile Include="Results\Error\UpgradeRequired.cs" />
     <Compile Include="Results\Error\NotFound\AmbiguousResource.cs" />
     <Compile Include="Results\Error\BadRequest\ExcelFormatError.cs" />
     <Compile Include="Results\Error\BadRequest\ExcelInputError.cs" />
@@ -278,6 +282,8 @@
     <Compile Include="Results\Success\Report.cs" />
     <Compile Include="Results\Success\SafePostedEntities.cs" />
     <Compile Include="Results\Success\UpdatedEntities.cs" />
+    <Compile Include="Results\Success\WebSocketDone.cs" />
+    <Compile Include="Results\Success\WebSocketOpened.cs" />
     <Compile Include="Serialization\FormatWriter.cs" />
     <Compile Include="Serialization\ODataJsonWriter.cs" />
     <Compile Include="Serialization\RESTarFromExcelJsonWriter.cs" />
@@ -308,8 +314,10 @@
       <DependentUpon>Item.json</DependentUpon>
     </Compile>
     <Compile Include="View\RESTarDataView.cs" />
+    <Compile Include="WebSocketStatus.cs" />
     <Compile Include="WebSockets\IWebSocketInternal.cs" />
-    <Compile Include="Terminal.cs" />
+    <Compile Include="Admin\ActiveTerminal.cs" />
+    <Compile Include="WebSockets\Shell.cs" />
     <Compile Include="WebSockets\WebSocketComparer.cs" />
     <Compile Include="WebSockets\WebSocketController.cs" />
   </ItemGroup>

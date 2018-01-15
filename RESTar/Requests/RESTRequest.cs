@@ -6,7 +6,6 @@ using RESTar.Internal;
 using RESTar.Linq;
 using RESTar.Operations;
 using RESTar.Results.Error;
-using RESTar.Results.Fail;
 using RESTar.Results.Fail.BadRequest;
 using RESTar.Results.Fail.Forbidden;
 using RESTar.Results.Fail.NotFound;
@@ -15,7 +14,6 @@ using RESTar.WebSockets;
 using static RESTar.Internal.ErrorCodes;
 using static RESTar.RESTarConfig;
 using static RESTar.Methods;
-using IResource = RESTar.Internal.IResource;
 
 namespace RESTar.Requests
 {
@@ -23,14 +21,14 @@ namespace RESTar.Requests
     {
         public Methods Method { get; }
         public TCPConnection TcpConnection { get; }
-        public IResource<T> Resource { get; }
+        public IEntityResource<T> Resource { get; }
         public Condition<T>[] Conditions { get; }
         public MetaConditions MetaConditions { get; }
         public Stream Body { get; private set; }
         public string AuthToken { get; }
         public Headers ResponseHeaders { get; }
         public IUriParameters UriParameters { get; }
-        IResource IRequest.Resource => Resource;
+        IEntityResource IRequest.Resource => Resource;
         public ITarget<T> Target { get; }
         internal Result Result { get; set; }
         private Func<RESTRequest<T>, Result> Evaluator { get; }
@@ -60,7 +58,7 @@ namespace RESTar.Requests
         public T1 BodyObject<T1>() where T1 : class => Body?.Deserialize<T1>();
         public Headers Headers { get; }
 
-        internal RESTRequest(IResource<T> resource, Arguments arguments)
+        internal RESTRequest(IEntityResource<T> resource, Arguments arguments)
         {
             if (resource.IsInternal) throw new ResourceIsInternal(resource);
             Resource = resource;
@@ -87,7 +85,7 @@ namespace RESTar.Requests
                 if (!Target.Equals(webSocket.Target))
                 {
                     webSocket.Target = Target;
-                    Target.WebSocketConnectionHandler?.Invoke(TcpConnection.WebSocket);
+                    //Target.WebSocketConnectionHandler?.Invoke(TcpConnection.WebSocket);
                 }
             }
 

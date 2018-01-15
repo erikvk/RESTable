@@ -1,15 +1,19 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.IO;
-using System.Net;
+using System.Text;
 using RESTar.Internal;
 using RESTar.Linq;
+using RESTar.Operations;
+using RESTar.Results.Error;
+using RESTar.Results.Success;
 using RESTar.Serialization;
 using RESTar.WebSockets;
 using Starcounter;
 using static Newtonsoft.Json.Formatting;
 using static RESTar.Admin.Settings;
 using static RESTar.Serialization.Serializer;
+using Console = RESTar.Admin.Console;
 
 namespace RESTar.Requests
 {
@@ -17,16 +21,60 @@ namespace RESTar.Requests
     {
         private ConcurrentQueue<(object data, bool isText)> Queue;
         private WebSocket WebSocket;
-        private readonly Request Request;
+        private readonly Request ScRequest;
         private readonly string GroupName;
         private bool AbortOpen;
         public string Id { get; }
-        public string CurrentLocation { get; set; }
-        public void SetCurrentLocation(string location) => CurrentLocation = location;
-        public IPAddress ClientIpAddress { get; }
         public ITarget Target { get; set; }
-        public bool IsShell { get; private set; }
         public ITerminal Terminal { get; set; }
+        public TerminalResource TerminalResource { get; set; }
+        public DateTime Opened { get; private set; }
+        public DateTime Closed { get; private set; }
+        public ulong BytesReceived { get; internal set; }
+        public ulong BytesSent { get; private set; }
+        public TCPConnection TcpConnection { get; }
+        public Headers Headers { get; }
+
+        public void HandleTextInput(string textData)
+        {
+            if (!Terminal.SupportsTextInput)
+            {
+                SendResult(new UnsupportedWebSocketInput($"Terminal '{TerminalResource.FullName}' does not support text input"));
+                return;
+            }
+            Console.LogWebSocketTextInput(textData, this);
+            Terminal.HandleTextInput(textData);
+            BytesReceived += (ulong) Encoding.UTF8.GetByteCount(textData);
+        }
+
+        public void HandleBinaryInput(byte[] binaryData)
+        {
+            if (!Terminal.SupportsBinaryInput)
+            {
+                SendResult(new UnsupportedWebSocketInput($"Terminal '{TerminalResource.FullName}' does not support binary input"));
+                return;
+            }
+            Console.LogWebSocketBinaryInput(binaryData.Length, this);
+            Terminal.HandleBinaryInput(binaryData);
+            BytesSent += (ulong) binaryData.Length;
+        }
+
+        public void Dispose()
+        {
+            Status = WebSocketStatus.PendingClose;
+            Terminal.Dispose();
+            Status = WebSocketStatus.Closed;
+            Closed = DateTime.Now;
+            Console.LogWebSocketClosed(this);
+            WebSocketController.HandleDisconnect(Id);
+        }
+
+        public void SendTextRaw(string textData)
+        {
+            if (Status != WebSocketStatus.Open) return;
+            WebSocket.Send(textData);
+            BytesSent += (ulong) Encoding.UTF8.GetByteCount(textData);
+        }
 
         private void _SendText(string textData)
         {
@@ -35,7 +83,8 @@ namespace RESTar.Requests
                 case WebSocketStatus.Closed: throw new InvalidOperationException("Cannot send data to a closed WebSocket");
                 case WebSocketStatus.Open:
                     WebSocket.Send(textData);
-                    //Admin.Console.LogWebSocketOutput(textData, this);
+                    BytesSent += (ulong) Encoding.UTF8.GetByteCount(textData);
+                    Console.LogWebSocketTextOutput(textData, this);
                     break;
                 case WebSocketStatus.PendingOpen:
                     Enqueue(textData, true);
@@ -50,10 +99,32 @@ namespace RESTar.Requests
                 case WebSocketStatus.Closed: throw new InvalidOperationException("Cannot send data to a closed WebSocket");
                 case WebSocketStatus.Open:
                     WebSocket.Send(binaryData, isText);
-                    //Admin.Console.LogWebSocketOutput($"[{binaryData.Length} bytes]", this);
+                    BytesSent += (ulong) binaryData.Length;
+                    Console.LogWebSocketTextOutput($"[{binaryData.Length} bytes]", this);
                     break;
                 case WebSocketStatus.PendingOpen:
                     Enqueue(binaryData, isText);
+                    break;
+            }
+        }
+
+        public void SendResult(IFinalizedResult result)
+        {
+            switch (result)
+            {
+                case Report _:
+                case Entities _:
+                    SendText(result.Body);
+                    break;
+                default:
+                    var info = result.Headers["RESTar-Info"];
+                    var errorInfo = result.Headers["ErrorInfo"];
+                    var tail = "";
+                    if (info != null)
+                        tail += $". {info}";
+                    if (errorInfo != null)
+                        tail += $". See {errorInfo}";
+                    _SendText($"{result.StatusCode.ToCode()}: {result.StatusDescription}{tail}");
                     break;
             }
         }
@@ -64,14 +135,14 @@ namespace RESTar.Requests
         public void SendBinary(byte[] data) => _SendBinary(data, false);
         public void SendBinary(Stream data) => _SendBinary(data.ToByteArray(), false);
 
-        public void SendJson(object items)
+        public void SendJson(object item)
         {
             var stream = new MemoryStream();
             using (var swr = new StreamWriter(stream, UTF8, 1024, true))
             using (var jwr = new RESTarJsonWriter(swr, 0))
             {
                 Serializer.Json.Formatting = _PrettyPrint ? Indented : None;
-                Serializer.Json.Serialize(jwr, items);
+                Serializer.Json.Serialize(jwr, item);
             }
             stream.Seek(0, SeekOrigin.Begin);
             _SendBinary(stream.ToArray(), true);
@@ -81,18 +152,6 @@ namespace RESTar.Requests
         {
             Queue = Queue ?? new ConcurrentQueue<(object, bool)>();
             Queue.Enqueue((data, isText));
-        }
-
-        public void SetQueryProperties(string query, Headers headers, TCPConnection connection)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void HandleDisconnect()
-        {
-            Status = WebSocketStatus.PendingClose;
-            Status = WebSocketStatus.Closed;
-            WebSocketController.HandleDisconnect(Id);
         }
 
         public WebSocketStatus Status { get; private set; }
@@ -116,8 +175,10 @@ namespace RESTar.Requests
 
         public void Open()
         {
-            WebSocket = Request.SendUpgrade(GroupName);
+            WebSocket = ScRequest.SendUpgrade(GroupName);
             Status = WebSocketStatus.Open;
+            Opened = DateTime.Now;
+            Console.LogWebSocketOpen(this);
             Queue?.ForEach(message =>
             {
                 switch (message.data)
@@ -134,14 +195,14 @@ namespace RESTar.Requests
             if (AbortOpen) Disconnect();
         }
 
-        internal StarcounterWebSocket(string groupName, Request request, string initialLocation)
+        internal StarcounterWebSocket(string groupName, Request scRequest, Headers headers, TCPConnection tcpConnection)
         {
             GroupName = groupName;
-            Request = request;
-            Id = request.GetWebSocketId().ToString();
-            ClientIpAddress = request.ClientIpAddress;
+            ScRequest = scRequest;
+            Id = scRequest.GetWebSocketId().ToString();
+            Headers = headers;
+            TcpConnection = tcpConnection;
             Status = WebSocketStatus.PendingOpen;
-            CurrentLocation = initialLocation;
         }
     }
 }

@@ -79,6 +79,8 @@ namespace RESTar.Requests
             }
         }
 
+        internal IWebSocketInternal WebSocketInternal => (IWebSocketInternal) WebSocket;
+
         /// <summary>
         /// Does this TCP connection have a WebSocket?
         /// </summary>

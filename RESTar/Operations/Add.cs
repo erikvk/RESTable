@@ -13,7 +13,7 @@ namespace RESTar.Operations
     /// </summary>
     public class Add : List<Term>, IProcessor
     {
-        internal Add(IResource resource, string keys, ICollection<string> dynDomain) => keys
+        internal Add(IEntityResource resource, string keys, ICollection<string> dynDomain) => keys
             .ToLower()
             .Split(',')
             .Distinct()

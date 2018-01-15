@@ -7,7 +7,6 @@ using RESTar.Http;
 using RESTar.Internal;
 using RESTar.Operations;
 using RESTar.Results.Error;
-using RESTar.Results.Fail;
 using RESTar.Results.Fail.BadRequest;
 using RESTar.Results.Fail.NotFound;
 using RESTar.Results.Success;
