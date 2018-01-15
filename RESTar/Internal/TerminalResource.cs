@@ -19,11 +19,11 @@ namespace RESTar.Internal
         public void Dispose() { }
     }
 
-    internal class TerminalResource : IResource<ITerminal>
+    internal class TerminalResource : IResource<ITerminal>, IResourceInternal
     {
         public string FullName { get; }
         public Type Type { get; }
-        public IReadOnlyList<Methods> AvailableMethods { get; }
+        public IReadOnlyList<Methods> AvailableMethods { get; set; }
         public string Alias { get; set; }
         public bool IsInternal { get; }
         public bool IsGlobal { get; }
@@ -33,12 +33,13 @@ namespace RESTar.Internal
         public int GetHashCode(IEntityResource obj) => obj.FullName.GetHashCode();
         public int CompareTo(IEntityResource other) => string.Compare(FullName, other.FullName, StringComparison.Ordinal);
         public TermBindingRules ConditionBindingRule { get; }
-        public string Description { get; }
+        public string Description { get; set; }
         public override string ToString() => FullName;
         public override bool Equals(object obj) => obj is TerminalResource t && t.FullName == FullName;
         public override int GetHashCode() => FullName.GetHashCode();
         internal static TerminalResource Default { get; }
         static TerminalResource() => Default = new TerminalResource(typeof(WebSocketSerializer)) {Constructor = () => new WebSocketSerializer()};
+        public IReadOnlyList<IEntityResource> InnerResources { get; set; }
 
         public Selector<ITerminal> Select { get; }
         private Constructor<ITerminal> Constructor { get; set; }

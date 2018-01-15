@@ -1,6 +1,4 @@
-﻿using RESTar.Operations;
-
-namespace RESTar.Results.Success
+﻿namespace RESTar.Results.Success
 {
-    internal class WebSocketDone : Result { }
+    internal class WebSocketDone : WebSocketResult { }
 }

@@ -53,6 +53,8 @@ namespace RESTar.Requests
                                     return new UpgradeRequired(terminalResource.FullName);
                                 terminalResource.CreateFor(tcpConnection.WebSocketInternal);
                                 tcpConnection.WebSocketInternal.Open();
+                                if (arguments.Uri.WebSocketInput is var initialInput)
+                                    tcpConnection.WebSocketInternal.HandleTextInput(initialInput);
                                 return new WebSocketOpened();
                             case var entityResource:
                                 var result = HandleREST((dynamic) entityResource, arguments);
@@ -101,9 +103,34 @@ namespace RESTar.Requests
                 }
 
                 var error = getError();
-                if (error is Forbidden) return error;
-                Error.ClearOld();
-                var loggedError = Trans(() => Error.Create(error, arguments));
+                string errorId = null;
+                if (!(error is Forbidden))
+                {
+                    Error.ClearOld();
+                    errorId = Trans(() => Error.Create(error, arguments)).Id;
+                }
+                if (tcpConnection.HasWebSocket)
+                {
+                    switch (tcpConnection.WebSocket.Status)
+                    {
+                        case WebSocketStatus.PendingClose:
+                        case WebSocketStatus.Closed: break;
+                        case WebSocketStatus.Open:
+                            using (var webSocket = tcpConnection.WebSocketInternal)
+                            {
+                                webSocket.SendResult(error);
+                                return new WebSocketDone();
+                            }
+                        case WebSocketStatus.PendingOpen:
+                            using (var webSocket = tcpConnection.WebSocketInternal)
+                            {
+                                webSocket.Open();
+                                webSocket.SendResult(error);
+                                return new WebSocketDone();
+                            }
+                    }
+                }
+
                 switch (action)
                 {
                     case GET:
@@ -112,7 +139,8 @@ namespace RESTar.Requests
                     case PUT:
                     case DELETE:
                     case REPORT:
-                        error.Headers["ErrorInfo"] = $"/{typeof(Error).FullName}/id={loggedError.Id}";
+                        if (errorId != null)
+                            error.Headers["ErrorInfo"] = $"/{typeof(Error).FullName}/id={errorId}";
                         return error;
                     case OPTIONS: return new InvalidOrigin();
                     //case VIEW:

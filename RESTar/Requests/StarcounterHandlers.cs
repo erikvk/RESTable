@@ -3,6 +3,7 @@ using System.IO;
 using System.Net;
 using RESTar.Linq;
 using RESTar.Operations;
+using RESTar.Results.Success;
 using RESTar.WebSockets;
 using Starcounter;
 using static RESTar.Admin.Settings;
@@ -31,12 +32,10 @@ namespace RESTar.Requests
                     RequestCount += 1;
                     Console.LogHTTPRequest(RequestCount.ToString(), action, query, request.ClientIpAddress);
                     if (request.WebSocketUpgrade)
-                    {
                         connection.WebSocket = new StarcounterWebSocket(WsGroupName, request, headers, connection);
-                        Evaluate(action, ref query, request.BodyBytes, headers, connection);
-                        return HandlerStatus.Handled;
-                    }
                     var result = Evaluate(action, ref query, request.BodyBytes, headers, connection);
+                    if (result is WebSocketResult)
+                        return HandlerStatus.Handled;
                     Console.LogHTTPResult(RequestCount.ToString(), result);
                     return result.ToResponse();
                 }

@@ -72,7 +72,7 @@ namespace RESTar.Requests
         public ResultFinalizer ResultFinalizer { get; }
         internal string AuthToken { get; set; }
         internal Exception Error { get; set; }
-
+        
         public void ThrowIfError()
         {
             if (Error != null) throw Error;

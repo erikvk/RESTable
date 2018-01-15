@@ -18,6 +18,12 @@ namespace RESTar.Requests
         internal Exception Error { get; private set; }
         internal bool HasError => Error != null;
 
+        /// <summary>
+        /// A raw string representation of the conditions part of the URI, used 
+        /// for WebSocket terminal input
+        /// </summary>
+        internal string WebSocketInput { get; private set; }
+
         internal static readonly string DefaultResourceSpecifier = typeof(AvailableResource).FullName;
         internal static readonly string MetadataResourceSpecifier = typeof(Metadata).FullName;
 
@@ -36,11 +42,13 @@ namespace RESTar.Requests
                 key = _key;
                 query = protocolString + tail;
             }
+            string webSocketInput = null;
+
             switch (protocolString)
             {
                 case "":
                 case "-restar":
-                    populator = RESTarProtocolProvider.PopulateUri;
+                    populator = (u, s) => RESTarProtocolProvider.PopulateUri(u, s, out webSocketInput);
                     protocol = RESTProtocols.RESTar;
                     break;
                 case "-odata":
@@ -55,6 +63,7 @@ namespace RESTar.Requests
             try
             {
                 populator(uri, tail);
+                uri.WebSocketInput = webSocketInput;
             }
             catch (Exception e)
             {
