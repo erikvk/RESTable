@@ -50,7 +50,7 @@ namespace RESTarExample
         {
             if (request.TcpConnection.HasWebSocket)
             {
-                request.TcpConnection.WebSocket.Send("SWIIIII");
+                request.TcpConnection.WebSocket.SendText("SWIIIII");
             }
             return null;
         }

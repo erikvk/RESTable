@@ -222,6 +222,7 @@
     <Compile Include="Results\Error\Forbidden\MethodUnavailable.cs" />
     <Compile Include="Results\Error\Forbidden\UserNotSignedIn.cs" />
     <Compile Include="Results\Error\Internal.cs" />
+    <Compile Include="Results\Error\InvalidTerminalDeclaration.cs" />
     <Compile Include="Results\Error\NotFound\AmbiguousResource.cs" />
     <Compile Include="Results\Error\BadRequest\ExcelFormatError.cs" />
     <Compile Include="Results\Error\BadRequest\ExcelInputError.cs" />
@@ -290,6 +291,7 @@
     <Compile Include="Serialization\ValueProviders.cs" />
     <Compile Include="Serialization\CreateViewModelResolver.cs" />
     <Compile Include="Serialization\DefaultResolver.cs" />
+    <Compile Include="ITerminal.cs" />
     <Compile Include="View\Menu.json.cs">
       <DependentUpon>Menu.json</DependentUpon>
     </Compile>
@@ -307,8 +309,9 @@
     </Compile>
     <Compile Include="View\RESTarDataView.cs" />
     <Compile Include="WebSockets\IWebSocketInternal.cs" />
+    <Compile Include="Terminal.cs" />
     <Compile Include="WebSockets\WebSocketComparer.cs" />
-    <Compile Include="WebSockets\_WebSocketController.cs" />
+    <Compile Include="WebSockets\WebSocketController.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

@@ -1,6 +1,6 @@
 ﻿using RESTar.Internal;
 
-namespace RESTar.Results.Fail
+namespace RESTar.Results.Error
 {
     internal class MissingConfigurationFile : RESTarError
     {

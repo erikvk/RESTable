@@ -1,7 +1,7 @@
 ﻿using System;
 using RESTar.Internal;
 
-namespace RESTar.Results.Fail
+namespace RESTar.Results.Error
 {
     internal class InvalidResourceViewDeclaration : RESTarError
     {

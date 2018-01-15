@@ -28,13 +28,13 @@ namespace RESTar.Requests
                     var connection = GetTCPConnection(request);
                     var headers = new Headers(request.HeadersDictionary);
                     RequestCount += 1;
-                    Admin.Console.LogRequest(RequestCount.ToString(), action, query, request.ClientIpAddress);
+                    //Admin.Console.LogHTTPRequest(RequestCount.ToString(), action, query, request.ClientIpAddress);
                     if (request.WebSocketUpgrade)
                         connection.WebSocket = new StarcounterWebSocket(WsGroupName, request, query);
                     var result = Evaluate(action, ref query, request.BodyBytes, headers, connection);
                     if (!request.WebSocketUpgrade)
                     {
-                        Admin.Console.LogResult(RequestCount.ToString(), result);
+                        //Admin.Console.LogHTTPResult(RequestCount.ToString(), result);
                         return result.ToResponse();
                     }
                     var webSocket = (IWebSocketInternal) connection.WebSocket;
@@ -48,17 +48,38 @@ namespace RESTar.Requests
                 }
             ));
 
-            Handle.WebSocket(_Port, WsGroupName, (input, ws) =>
+            Handle.WebSocket(_Port, WsGroupName, (text, ws) =>
             {
                 try
                 {
-                    if (!_WebSocketController.TryGet(ws.ToUInt64().ToString(), out var webSocket))
+                    if (!WebSocketController.TryGet(ws.ToUInt64().ToString(), out var webSocket))
                     {
                         ws.Disconnect();
                         return;
                     }
-                    Admin.Console.LogWebSocketInput(input, webSocket);
-                    webSocket.HandleInput(input);
+                    if (webSocket.Terminal.HandlesText)
+                        webSocket.Terminal.HandleTextInput(text);
+                    else ws.Send($"400: Bad request. Terminal '{webSocket.Terminal.GetType().FullName}' does not support text input");
+                }
+                catch (Exception e)
+                {
+                    ws.Send("WebSocket error: " + e.Message);
+                    ws.Disconnect();
+                }
+            });
+            Handle.WebSocket(_Port, WsGroupName, (binary, ws) =>
+            {
+                try
+                {
+                    if (!WebSocketController.TryGet(ws.ToUInt64().ToString(), out var webSocket))
+                    {
+                        ws.Disconnect();
+                        return;
+                    }
+                    //Admin.Console.LogWebSocketInput($"[{binary.Length} bytes]", webSocket);
+                    if (webSocket.Terminal.HandlesBinary)
+                        webSocket.Terminal.HandleBinaryInput(binary);
+                    else ws.Send($"400: Bad request. Terminal '{webSocket.Terminal.GetType().FullName}' does not support binary input");
                 }
                 catch (Exception e)
                 {
@@ -70,7 +91,7 @@ namespace RESTar.Requests
             {
                 try
                 {
-                    if (!_WebSocketController.TryGet(ws.ToUInt64().ToString(), out var webSocket))
+                    if (!WebSocketController.TryGet(ws.ToUInt64().ToString(), out var webSocket))
                     {
                         ws.Disconnect();
                         return;

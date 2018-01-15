@@ -8,6 +8,7 @@ using RESTar.Linq;
 using RESTar.Operations;
 using RESTar.Requests;
 using RESTar.Resources;
+using RESTar.Results.Error;
 using RESTar.Results.Fail;
 using RESTar.Results.Fail.BadRequest;
 using RESTar.Results.Fail.Forbidden;

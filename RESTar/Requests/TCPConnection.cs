@@ -74,7 +74,7 @@ namespace RESTar.Requests
             get => webSocket;
             internal set
             {
-                _WebSocketController.Add(value);
+                WebSocketController.Add(value);
                 webSocket = value;
             }
         }

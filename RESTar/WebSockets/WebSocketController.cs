@@ -10,7 +10,7 @@ using Action = RESTar.Requests.Action;
 
 namespace RESTar.WebSockets
 {
-    internal static class _WebSocketController
+    internal static class WebSocketController
     {
         private static readonly IDictionary<IWebSocket, IEntitiesMetadata> PreviousResultMetadata;
         private static readonly IDictionary<IWebSocket, System.Action> OnConfirmationActions;
@@ -29,7 +29,7 @@ namespace RESTar.WebSockets
 
         internal static void Add(IWebSocket webSocket) => AllSockets[webSocket.Id] = webSocket;
 
-        static _WebSocketController()
+        static WebSocketController()
         {
             var comparer = new WebSocketComparer();
             PreviousResultMetadata = new ConcurrentDictionary<IWebSocket, IEntitiesMetadata>(comparer);
@@ -125,7 +125,7 @@ namespace RESTar.WebSockets
                             ws.Close();
                             break;
                         case "?":
-                            ws.Send($"{(query.Any() ? query : "/")}");
+                            ws.SendText($"{(query.Any() ? query : "/")}");
                             break;
                         case "RELOAD":
                             ws.SafeOperation(Action.GET, ref query, null, headers, tcpConnection);
@@ -150,7 +150,7 @@ namespace RESTar.WebSockets
                                 }
                             }
 
-                            ws.Send(getGreeting());
+                            ws.SendText(getGreeting());
                             break;
                         case "CREDITS":
                             ws.SendCredits();
@@ -239,7 +239,7 @@ namespace RESTar.WebSockets
             {
                 case Report _:
                 case Entities _:
-                    ws.Send(result.Body);
+                    ws.SendBinary(result.Body);
                     break;
                 default:
                     var info = result.Headers["RESTar-Info"];
@@ -249,46 +249,46 @@ namespace RESTar.WebSockets
                         tail += $". {info}";
                     if (errorInfo != null)
                         tail += $". See {errorInfo}";
-                    ws.Send($"{result.StatusCode.ToCode()}: {result.StatusDescription}{tail}");
+                    ws.SendText($"{result.StatusCode.ToCode()}: {result.StatusDescription}{tail}");
                     break;
             }
         }
 
         private static void SendShellInit(this IWebSocket ws)
         {
-            ws.Send("### Entering the RESTar WebSocket shell... ###");
-            ws.Send("### Type a command to continue (e.g. HELP) ###");
+            ws.SendText("### Entering the RESTar WebSocket shell... ###");
+            ws.SendText("### Type a command to continue (e.g. HELP) ###");
         }
 
         private static void SendConfirmationRequest(this IWebSocket ws, string initialInfo = null)
         {
-            ws.Send($"{initialInfo}Type 'Y' to continue, 'N' to cancel");
+            ws.SendText($"{initialInfo}Type 'Y' to continue, 'N' to cancel");
         }
 
         private static void SendCancel(this IWebSocket ws)
         {
-            ws.Send("Operation cancelled");
+            ws.SendText("Operation cancelled");
         }
 
         private static void SendBadRequest(this IWebSocket ws, string message = null)
         {
-            ws.Send($"400: Bad request{message}");
+            ws.SendText($"400: Bad request{message}");
         }
 
         private static void SendUnknownCommand(this IWebSocket ws, string command)
         {
-            ws.Send($"Unknown command '{command}'");
+            ws.SendText($"Unknown command '{command}'");
         }
 
         private static void Close(this IWebSocket ws)
         {
-            ws.Send("### Closing the RESTar WebSocket shell... ###");
+            ws.SendText("### Closing the RESTar WebSocket shell... ###");
             ws.Disconnect();
         }
 
         private static void SendHelp(this IWebSocket ws)
         {
-            ws.Send("\n  The RESTar WebSocket shell makes it easy to send\n" +
+            ws.SendText("\n  The RESTar WebSocket shell makes it easy to send\n" +
                     "  multiple requests to a RESTar API, over a single\n" +
                     "  TCP connection. Using commands, the client can\n" +
                     "  navigate around the resources of the API, and read,\n" +
@@ -311,7 +311,7 @@ namespace RESTar.WebSockets
 
         private static void SendCredits(this IWebSocket ws)
         {
-            ws.Send($"RESTar is designed and developed by Erik von Krusenstierna, © Mopedo AB {DateTime.Now.Year}");
+            ws.SendText($"RESTar is designed and developed by Erik von Krusenstierna, © Mopedo AB {DateTime.Now.Year}");
         }
 
         #endregion

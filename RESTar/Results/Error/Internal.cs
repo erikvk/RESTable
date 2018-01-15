@@ -2,7 +2,7 @@
 using System.Net;
 using RESTar.Internal;
 
-namespace RESTar.Results.Fail
+namespace RESTar.Results.Error
 {
     internal abstract class Internal : RESTarError
     {

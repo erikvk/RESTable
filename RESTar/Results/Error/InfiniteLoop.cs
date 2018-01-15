@@ -1,7 +1,7 @@
 ﻿using System.Net;
 using RESTar.Internal;
 
-namespace RESTar.Results.Fail
+namespace RESTar.Results.Error
 {
     internal class InfiniteLoop : RESTarError
     {

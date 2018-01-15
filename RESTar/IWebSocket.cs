@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-using System.IO;
-using RESTar.Operations;
+﻿using System.IO;
 
 namespace RESTar
 {
@@ -38,36 +36,44 @@ namespace RESTar
     public interface IWebSocket
     {
         /// <summary>
-        /// The action to perform when receiving string data over the WebSocket
-        /// </summary>
-        WebSocketReceiveAction InputHandler { set; }
-
-        /// <summary>
-        /// The action to perform when disconnecting the WebSocket
-        /// </summary>
-        WebSocketDisconnectAction DisconnectHandler { set; }
-
-        /// <summary>
         /// Gets a unique ID of the WebSocket.
         /// </summary>
         string Id { get; }
 
         /// <summary>
-        /// Sends an IEnumerable of objects over the WebSocket, serialized as a JSON array
+        /// Sends an object over the WebSocket, serialized as JSON text
         /// </summary>
-        void SendEntities<T>(IEnumerable<T> items) where T : class;
+        void SendJson(object items);
 
         /// <summary>
-        /// Sends the string data over the WebSocket. Send calls to a closed WebSocket will be queued and sent 
+        /// Sends the string data as text over the WebSocket. Send calls to a closed WebSocket will be queued and sent 
         /// when the WebSocket is opened.
         /// </summary>
-        void Send(string data);
+        void SendText(string data);
 
         /// <summary>
-        /// Sends the Stream data over the WebSocket. Send calls to a closed WebSocket will be queued and sent 
+        /// Sends the byte array data as text over the WebSocket. Send calls to a closed WebSocket will be queued and sent 
         /// when the WebSocket is opened.
         /// </summary>
-        void Send(Stream data);
+        void SendText(byte[] data);
+
+        /// <summary>
+        /// Sends the Stream data as text over the WebSocket. Send calls to a closed WebSocket will be queued and sent 
+        /// when the WebSocket is opened.
+        /// </summary>
+        void SendText(Stream data);
+
+        /// <summary>
+        /// Sends the byte array data as binary over the WebSocket. Send calls to a closed WebSocket will be queued and sent 
+        /// when the WebSocket is opened.
+        /// </summary>
+        void SendBinary(byte[] data);
+
+        /// <summary>
+        /// Sends the Stream data as binary over the WebSocket. Send calls to a closed WebSocket will be queued and sent 
+        /// when the WebSocket is opened.
+        /// </summary>
+        void SendBinary(Stream data);
 
         /// <summary>
         /// Disconnects the WebSocket

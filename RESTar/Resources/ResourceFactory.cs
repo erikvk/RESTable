@@ -7,6 +7,7 @@ using Newtonsoft.Json.Linq;
 using RESTar.Linq;
 using RESTar.Admin;
 using RESTar.Internal;
+using RESTar.Results.Error;
 using RESTar.Results.Fail;
 using RESTar.Results.Fail.BadRequest;
 using static System.Reflection.BindingFlags;
@@ -36,12 +37,12 @@ namespace RESTar.Resources
             externalProviders.ForEach(p => p.Validate());
             if (externalProviders.ContainsDuplicates(p => p.GetType().FullName, out var typeDupe))
                 throw new InvalidExternalResourceProvider("Two or more external ResourceProviders with the same " +
-                                                            $"type '{typeDupe.GetType().FullName}' was found. Include " +
-                                                            "only one in the call to RESTarConfig.Init()");
+                                                          $"type '{typeDupe.GetType().FullName}' was found. Include " +
+                                                          "only one in the call to RESTarConfig.Init()");
             if (externalProviders.Select(p => p.GetProviderId().ToLower()).ContainsDuplicates(out var idDupe))
                 throw new InvalidExternalResourceProvider("Two or more external ResourceProviders had simliar type " +
-                                                            "names, which would lead to confusion. Only one provider " +
-                                                            $"should be associated with '{idDupe}'");
+                                                          "names, which would lead to confusion. Only one provider " +
+                                                          $"should be associated with '{idDupe}'");
             ResourceProviders.AddRange(externalProviders);
         }
 
@@ -49,18 +50,19 @@ namespace RESTar.Resources
         /// All types covered by RESTar are selected and validated here
         /// </summary>
         /// <returns></returns>
-        private static (List<Type>, List<Type>) ValidateAndBuildTypeLists()
+        private static (List<Type> regularResources, List<Type> resourceWrappers, List<Type> terminals) ValidateAndBuildTypeLists()
         {
-            (List<Type> regular, List<Type> wrappers) lists;
+            (List<Type> regular, List<Type> wrappers, List<Type> terminals) lists;
             var allTypes = typeof(object).GetSubclasses().ToList();
             var resourceTypes = allTypes.Where(t => t.HasAttribute<RESTarAttribute>()).ToList();
             var viewTypes = allTypes.Where(t => t.HasAttribute<RESTarViewAttribute>()).ToList();
+            var terminals = allTypes.Where(t => t.Implements(typeof(ITerminal))).ToList();
+            if (resourceTypes.Union(viewTypes).Union(terminals).ContainsDuplicates(t => t.FullName?.ToLower() ?? "unknown", out var dupe))
+                throw new InvalidResourceDeclaration("Types used by RESTar must have unique case insensitive names. Found " +
+                                                     $"multiple types with case insensitive name '{dupe}'.");
 
             void ValidateResourceTypes(List<Type> types)
             {
-                if (types.ContainsDuplicates(t => t.FullName?.ToLower() ?? "unknown", out var dupe))
-                    throw new InvalidResourceDeclaration("RESTar resources must have unique case insensitive names. Found " +
-                                                           $"multiple resource declarations for types with case insensitive name '{dupe}'.");
                 var regularResourceTypes = types
                     .Where(t => !typeof(IResourceWrapper).IsAssignableFrom(t))
                     .ToList();
@@ -78,7 +80,7 @@ namespace RESTar.Resources
 
                     if (type.FullName.Count(c => c == '+') >= 2)
                         throw new InvalidResourceDeclaration($"Invalid resource '{type.FullName.Replace('+', '.')}'. " +
-                                                               "Inner resources cannot have their own inner resources");
+                                                             "Inner resources cannot have their own inner resources");
 
                     if (type.HasAttribute<RESTarViewAttribute>())
                         throw new InvalidResourceDeclaration(
@@ -161,7 +163,7 @@ namespace RESTar.Resources
                 {
                     if (wrappers.Select(w => w.GetWrappedType()).ContainsDuplicates(out var wrapperDupe))
                         throw new InvalidResourceWrapper("RESTar found multiple RESTar.ResourceWrapper declarations for " +
-                                                           $"type '{wrapperDupe.FullName}'. A type can only be wrapped once.");
+                                                         $"type '{wrapperDupe.FullName}'. A type can only be wrapped once.");
                     foreach (var wrapper in wrappers)
                     {
                         var members = wrapper.GetMembers(Public | Instance);
@@ -186,16 +188,16 @@ namespace RESTar.Resources
                                 $"'{wrapped.FullName}'.");
                         if (wrapped.FullName?.Contains("+") == true)
                             throw new InvalidResourceWrapper($"Invalid RESTar.ResourceWrapper '{wrapper.FullName}'. Cannot " +
-                                                               "wrap types that are declared within the scope of some other class.");
+                                                             "wrap types that are declared within the scope of some other class.");
                         if (wrapped.HasAttribute<RESTarAttribute>())
                             throw new InvalidResourceWrapper("RESTar found a RESTar.ResourceWrapper declaration for type " +
-                                                               $"'{wrapped.FullName}', a type that is already a RESTar " +
-                                                               "resource type. Only non-resource types can be wrapped.");
+                                                             $"'{wrapped.FullName}', a type that is already a RESTar " +
+                                                             "resource type. Only non-resource types can be wrapped.");
                         if (wrapper.Namespace == null)
                             throw new InvalidResourceDeclaration($"Invalid type '{wrapper.FullName}'. Unknown namespace");
                         if (wrapper.Assembly == typeof(RESTarConfig).Assembly)
                             throw new InvalidResourceWrapper("RESTar found an invalid RESTar.ResourceWrapper declaration for " +
-                                                               $"type '{wrapped.FullName}'. RESTar types cannot be wrapped.");
+                                                             $"type '{wrapped.FullName}'. RESTar types cannot be wrapped.");
                     }
                 }
 
@@ -208,10 +210,6 @@ namespace RESTar.Resources
 
             void ValidateViewTypes(List<Type> types)
             {
-                if (types.ContainsDuplicates(t => t.FullName?.ToLower() ?? "unknown", out var typeDupe))
-                    throw new InvalidResourceViewDeclaration(typeDupe,
-                        "RESTar resources must have unique case insensitive names. Found " +
-                        $"multiple resource declarations for types with case insensitive name '{typeDupe.FullName}'.");
                 foreach (var type in types)
                 {
                     var resource = type.DeclaringType;
@@ -233,8 +231,21 @@ namespace RESTar.Resources
                 }
             }
 
+            void ValidateTerminals(List<Type> types)
+            {
+                foreach (var type in types)
+                {
+                    if (type.GetConstructor(Type.EmptyTypes) == null)
+                        throw new InvalidTerminalDeclaration($"Invalid terminal declaration '{type.FullName}'. Terminal types " +
+                                                             "must contain a parameterless constructor");
+                }
+
+                lists.terminals = types;
+            }
+
             ValidateResourceTypes(resourceTypes);
             ValidateViewTypes(viewTypes);
+            ValidateTerminals(terminals);
             return lists;
         }
 
@@ -255,7 +266,7 @@ namespace RESTar.Resources
         internal static void MakeResources(ICollection<ResourceProvider> externalProviders)
         {
             ValidateResourceProviders(externalProviders);
-            var (regularResources, resourceWrappers) = ValidateAndBuildTypeLists();
+            var (regularResources, resourceWrappers, terminals) = ValidateAndBuildTypeLists();
             foreach (var provider in ResourceProviders)
             {
                 var claim = provider.GetClaim(regularResources);
@@ -279,6 +290,7 @@ namespace RESTar.Resources
             }
 
             DynamicResource.GetAll().ForEach(MakeDynamicResource);
+
         }
 
         internal static void MakeDynamicResource(DynamicResource resource) => DynProvider.BuildDynamicResource(resource);

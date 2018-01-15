@@ -5,7 +5,7 @@ using RESTar.Internal;
 using RESTar.Operations;
 using RESTar.Requests;
 
-namespace RESTar.Results.Fail
+namespace RESTar.Results.Error
 {
     /// <summary>
     /// A super class for all custom RESTar exceptions

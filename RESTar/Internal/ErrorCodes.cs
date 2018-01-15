@@ -62,7 +62,8 @@ namespace RESTar.Internal
         InvalidVirtualResourceDeclaration = 123,
         InvalidResourceDeclaration = 124,
         InvalidResourceViewDeclaration = 125,
-        InvalidAllowedRequestHeaders = 126,
+        InvalidTerminalDeclaration = 126,
+
 
         // 130-139: Alias errors
         AliasAlreadyInUse = 130,

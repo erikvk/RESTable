@@ -296,7 +296,7 @@ namespace RESTar
         public static void SendToAll(this IEnumerable<IWebSocket> sockets, string message)
         {
             foreach (var webSocket in sockets.AsParallel())
-                webSocket.Send(message);
+                webSocket.SendText(message);
         }
 
         #endregion

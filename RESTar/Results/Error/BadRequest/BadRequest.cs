@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Net;
 using RESTar.Internal;
+using RESTar.Results.Error;
 
 namespace RESTar.Results.Fail.BadRequest
 {

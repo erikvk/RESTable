@@ -1,9 +1,5 @@
 ﻿using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net;
-using RESTar.Linq;
 using RESTar.Operations;
 using RESTar.WebSockets;
 using static RESTar.Admin.ConsoleStatus;
@@ -17,66 +13,66 @@ namespace RESTar.Admin
         ACTIVE
     }
 
-    [RESTar(Methods.GET)]
-    internal class Console : ISelector<Console>, ICounter<Console>
+    internal class Console : ITerminal
     {
-        public IEnumerable<Console> Select(IRequest<Console> request) => null;
-        public long Count(IRequest<Console> request) => 0;
-        static Console() => Consoles = new ConcurrentDictionary<IWebSocket, ConsoleStatus>();
-        private static readonly IDictionary<IWebSocket, ConsoleStatus> Consoles;
+        internal ConsoleStatus Status;
+        private IWebSocket _webSocket;
 
-        public void HandleWebSocketConnection(IWebSocket webSocket)
+        public IWebSocket WebSocket
         {
-            Consoles[webSocket] = 0;
-            webSocket.InputHandler = ConsoleShell;
-            webSocket.DisconnectHandler = ws => Consoles.Remove(webSocket);
-            SendConsoleInit(webSocket);
+            private get => _webSocket;
+            set
+            {
+                _webSocket = value;
+                SendConsoleInit();
+            }
         }
 
-        private static void SendConsoleInit(IWebSocket ws)
-        {
-            ws.Send("### Welcome to the RESTar WebSocket console! ###\n\n" +
-                    ">>> Status: PAUSED\n\n" +
-                    "> To begin, type BEGIN\n" +
-                    "> To pause, type PAUSE\n" +
-                    "> To close, type CLOSE\n");
-        }
+        public string Description => "The console";
+        public void HandleBinaryInput(byte[] input) => throw new NotImplementedException();
+        public bool HandlesText => true;
+        public bool HandlesBinary => false;
 
-        private static void ConsoleShell(IWebSocket ws, string input)
+        private void SendConsoleInit() => WebSocket
+            .SendText("### Welcome to the RESTar WebSocket console! ###\n\n" +
+                      ">>> Status: PAUSED\n\n" +
+                      "> To begin, type BEGIN\n" +
+                      "> To pause, type PAUSE\n" +
+                      "> To close, type CLOSE\n");
+
+        public void HandleTextInput(string input)
         {
             switch (input.ToUpperInvariant().Trim())
             {
                 case "": break;
                 case "BEGIN":
-                    Consoles[ws] = ACTIVE;
-                    ws.Send("Status: ACTIVE\n");
+                    Status = ACTIVE;
+                    WebSocket.SendText("Status: ACTIVE\n");
                     break;
                 case "PAUSE":
-                    Consoles[ws] = PAUSED;
-                    ws.Send("Status: PAUSED\n");
+                    Status = PAUSED;
+                    WebSocket.SendText("Status: PAUSED\n");
                     break;
                 case "EXIT":
                 case "QUIT":
                 case "DISCONNECT":
                 case "CLOSE":
-                    ws.Send("Status: CLOSED\n");
-                    ws.Disconnect();
+                    WebSocket.SendText("Status: CLOSED\n");
+                    WebSocket.Disconnect();
                     break;
                 case var unrecognized:
-                    ws.Send($"Unknown command '{unrecognized}'");
+                    WebSocket.SendText($"Unknown command '{unrecognized}'");
                     break;
             }
         }
 
-        internal static void LogRequest(string requestId, Action action, string uri, IPAddress clientIpAddress)
+        internal void LogHTTPRequest(string requestId, Action action, string uri, IPAddress clientIpAddress)
         {
-            if (!Consoles.Any()) return;
-            SendToAll($"=> [{requestId}] {action} '{uri}' from '{clientIpAddress}'  @ {DateTime.Now:O}");
+            WebSocket.SendText($"=> [{requestId}] {action} '{uri}' from '{clientIpAddress}'  @ {DateTime.Now:O}");
         }
 
-        internal static void LogResult(string requestId, IFinalizedResult result)
+        internal void LogHTTPResult(string requestId, IFinalizedResult result)
         {
-            if (!Consoles.Any()) return;
             var info = result.Headers["RESTar-Info"];
             var errorInfo = result.Headers["ErrorInfo"];
             var tail = "";
@@ -84,28 +80,21 @@ namespace RESTar.Admin
                 tail += $". {info}";
             if (errorInfo != null)
                 tail += $". See {errorInfo}";
-            SendToAll($"<= [{requestId}] {result.StatusCode.ToCode()}: '{result.StatusDescription}'. " +
-                      $"{tail}  @ {DateTime.Now:O}");
+            WebSocket.SendText($"<= [{requestId}] {result.StatusCode.ToCode()}: '{result.StatusDescription}'. " +
+                               $"{tail}  @ {DateTime.Now:O}");
         }
 
-        private const string ThisType = "RESTar.Admin.Console";
-
-        internal static void LogWebSocketInput(string input, IWebSocketInternal webSocket)
+        internal void LogWebSocketInput(string input, IWebSocketInternal webSocket)
         {
-            if (!Consoles.Any() || webSocket.Target.FullName == ThisType) return;
-            SendToAll($"=> [WS {webSocket.Id}] Received: '{input}' at '{webSocket.CurrentLocation}' from " +
-                      $"'{webSocket.ClientIpAddress}'  @ {DateTime.Now:O}");
+            if (webSocket.Equals(WebSocket)) return;
+            WebSocket.SendText($"=> [WS {webSocket.Id}] Received: '{input}' at '{webSocket.CurrentLocation}' from " +
+                               $"'{webSocket.ClientIpAddress}'  @ {DateTime.Now:O}");
         }
 
-        internal static void LogWebSocketOutput(IWebSocketInternal webSocket, string output)
+        internal void LogWebSocketOutput(string output, IWebSocketInternal webSocket)
         {
-            if (!Consoles.Any() || webSocket.Target.FullName == ThisType) return;
-            SendToAll($"<= [WS {webSocket.Id}] Sent: '{output}'  @ {DateTime.Now:O}");
+            if (webSocket.Equals(WebSocket)) return;
+            WebSocket.SendText($"<= [WS {webSocket.Id}] Sent: '{output}'  @ {DateTime.Now:O}");
         }
-
-        private static void SendToAll(string message) => Consoles
-            .AsParallel()
-            .Where(p => p.Value == ACTIVE)
-            .ForEach(p => p.Key.Send(message));
     }
 }

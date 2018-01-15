@@ -1,11 +1,9 @@
 ﻿using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using RESTar.Internal;
 using RESTar.Linq;
-using RESTar.Operations;
 using RESTar.Serialization;
 using RESTar.WebSockets;
 using Starcounter;
@@ -17,49 +15,56 @@ namespace RESTar.Requests
 {
     internal class StarcounterWebSocket : IWebSocket, IWebSocketInternal
     {
-        private ConcurrentQueue<byte[]> Queue;
+        private ConcurrentQueue<(object data, bool isText)> Queue;
         private WebSocket WebSocket;
         private readonly Request Request;
         private readonly string GroupName;
         private bool AbortOpen;
         public string Id { get; }
-        public WebSocketReceiveAction InputHandler { get; set; }
-        public WebSocketDisconnectAction DisconnectHandler { get; set; }
-        public void HandleInput(string input) => InputHandler?.Invoke(this, input);
         public string CurrentLocation { get; set; }
         public void SetCurrentLocation(string location) => CurrentLocation = location;
         public IPAddress ClientIpAddress { get; }
         public ITarget Target { get; set; }
         public bool IsShell { get; private set; }
-        public void SetQueryProperties(string query, Headers headers, TCPConnection connection)
+        public ITerminal Terminal { get; set; }
+
+        private void _SendText(string textData)
         {
-            throw new NotImplementedException();
+            switch (Status)
+            {
+                case WebSocketStatus.Closed: throw new InvalidOperationException("Cannot send data to a closed WebSocket");
+                case WebSocketStatus.Open:
+                    WebSocket.Send(textData);
+                    //Admin.Console.LogWebSocketOutput(textData, this);
+                    break;
+                case WebSocketStatus.PendingOpen:
+                    Enqueue(textData, true);
+                    break;
+            }
         }
 
-        public void SetShellHandler(WebSocketReceiveAction shellHandler)
+        private void _SendBinary(byte[] binaryData, bool isText)
         {
-            if (InputHandler != null) return;
-            InputHandler = shellHandler;
-            IsShell = true;
+            switch (Status)
+            {
+                case WebSocketStatus.Closed: throw new InvalidOperationException("Cannot send data to a closed WebSocket");
+                case WebSocketStatus.Open:
+                    WebSocket.Send(binaryData, isText);
+                    //Admin.Console.LogWebSocketOutput($"[{binaryData.Length} bytes]", this);
+                    break;
+                case WebSocketStatus.PendingOpen:
+                    Enqueue(binaryData, isText);
+                    break;
+            }
         }
 
-        public void HandleDisconnect()
-        {
-            Status = WebSocketStatus.PendingClose;
-            DisconnectHandler?.Invoke(this);
-            Status = WebSocketStatus.Closed;
-            _WebSocketController.HandleDisconnect(Id);
-        }
+        public void SendText(string data) => _SendText(data);
+        public void SendText(byte[] data) => _SendBinary(data, true);
+        public void SendText(Stream data) => _SendBinary(data.ToByteArray(), true);
+        public void SendBinary(byte[] data) => _SendBinary(data, false);
+        public void SendBinary(Stream data) => _SendBinary(data.ToByteArray(), false);
 
-        public WebSocketStatus Status { get; private set; }
-
-        public void Send(string data)
-        {
-            Send(data.ToBytes());
-            Admin.Console.LogWebSocketOutput(this, data);
-        }
-
-        public void SendEntities<T>(IEnumerable<T> items) where T : class
+        public void SendJson(object items)
         {
             var stream = new MemoryStream();
             using (var swr = new StreamWriter(stream, UTF8, 1024, true))
@@ -69,35 +74,28 @@ namespace RESTar.Requests
                 Serializer.Json.Serialize(jwr, items);
             }
             stream.Seek(0, SeekOrigin.Begin);
-            Send(stream);
+            _SendBinary(stream.ToArray(), true);
         }
 
-        public void Send(Stream data)
+        private void Enqueue(object data, bool isText)
         {
-            var bytes = data.ToByteArray();
-            Send(bytes);
-            Admin.Console.LogWebSocketOutput(this, data.GetString());
+            Queue = Queue ?? new ConcurrentQueue<(object, bool)>();
+            Queue.Enqueue((data, isText));
         }
 
-        private void Send(byte[] bytes)
+        public void SetQueryProperties(string query, Headers headers, TCPConnection connection)
         {
-            switch (Status)
-            {
-                case WebSocketStatus.Closed: throw new InvalidOperationException("Cannot send data to a closed WebSocket");
-                case WebSocketStatus.Open:
-                    WebSocket.Send(bytes, true);
-                    break;
-                case WebSocketStatus.PendingOpen:
-                    Enqueue(bytes);
-                    break;
-            }
+            throw new NotImplementedException();
         }
 
-        private void Enqueue(byte[] data)
+        public void HandleDisconnect()
         {
-            Queue = Queue ?? new ConcurrentQueue<byte[]>();
-            Queue.Enqueue(data);
+            Status = WebSocketStatus.PendingClose;
+            Status = WebSocketStatus.Closed;
+            WebSocketController.HandleDisconnect(Id);
         }
+
+        public WebSocketStatus Status { get; private set; }
 
         public void Disconnect()
         {
@@ -120,7 +118,18 @@ namespace RESTar.Requests
         {
             WebSocket = Request.SendUpgrade(GroupName);
             Status = WebSocketStatus.Open;
-            Queue?.ForEach(message => WebSocket.Send(message));
+            Queue?.ForEach(message =>
+            {
+                switch (message.data)
+                {
+                    case string textData:
+                        _SendText(textData);
+                        break;
+                    case byte[] byteData:
+                        _SendBinary(byteData, message.isText);
+                        break;
+                }
+            });
             Queue = null;
             if (AbortOpen) Disconnect();
         }
