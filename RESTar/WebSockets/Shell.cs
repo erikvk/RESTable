@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Linq;
+using RESTar.Internal;
 using RESTar.Operations;
 using RESTar.Requests;
-using RESTar.Results.Fail.Forbidden;
 using RESTar.Results.Success;
 using static RESTar.Requests.Action;
 using Action = RESTar.Requests.Action;
@@ -12,13 +12,16 @@ namespace RESTar.WebSockets
     [RESTar(Description = "The shell")]
     internal class Shell : ITerminal
     {
-        private string Query;
+        internal static TerminalResource TerminalResource { get; set; }
+
+        private string Query = "";
         private IEntitiesMetadata PreviousResultMetadata;
         private System.Action OnConfirm;
         public IWebSocket WebSocket { get; set; }
         public void HandleBinaryInput(byte[] input) => throw new NotImplementedException();
         public bool SupportsTextInput { get; } = true;
         public bool SupportsBinaryInput { get; } = false;
+        public void Open() => SendShellInit();
 
         public void HandleTextInput(string input)
         {
@@ -175,33 +178,6 @@ namespace RESTar.WebSockets
                     SendConfirmationRequest($"This will run {action} on {many} entities in resource '{PreviousResultMetadata.ResourceFullName}'. ");
                     break;
             }
-        }
-
-        internal void SendInitialShellResult(IFinalizedResult result)
-        {
-            switch (result)
-            {
-                case Entities entities:
-                    PreviousResultMetadata = entities;
-                    switch (Query)
-                    {
-                        case "":
-                        case "/":
-                            break;
-                        default:
-                            SendResult(entities);
-                            break;
-                    }
-                    break;
-                case Forbidden forbidden:
-                    SendResult(forbidden);
-                    WebSocket.Disconnect();
-                    return;
-                case var other:
-                    SendResult(other);
-                    break;
-            }
-            SendShellInit();
         }
 
         private void SendResult(IFinalizedResult result) => WebSocket.SendResult(result);

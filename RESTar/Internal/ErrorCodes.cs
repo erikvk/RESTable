@@ -33,6 +33,7 @@ namespace RESTar.Internal
         UnknownFormatter = 015,
         NotAcceptable = 016,
         UpgradeRequired = 017,
+        UnknownWebSocketId = 018,
 
         // 020-029: Headers error
         InvalidSourceData = 020,

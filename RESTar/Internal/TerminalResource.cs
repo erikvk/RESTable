@@ -6,19 +6,10 @@ using RESTar.Deflection.Dynamic;
 using RESTar.Linq;
 using RESTar.Operations;
 using RESTar.WebSockets;
+using static RESTar.WebSocketStatus;
 
 namespace RESTar.Internal
 {
-    internal class WebSocketSerializer : ITerminal
-    {
-        public IWebSocket WebSocket { get; set; }
-        public void HandleTextInput(string input) { }
-        public void HandleBinaryInput(byte[] input) { }
-        public bool SupportsTextInput { get; } = false;
-        public bool SupportsBinaryInput { get; } = false;
-        public void Dispose() { }
-    }
-
     internal class TerminalResource : IResource<ITerminal>, IResourceInternal
     {
         public string FullName { get; }
@@ -37,24 +28,37 @@ namespace RESTar.Internal
         public override string ToString() => FullName;
         public override bool Equals(object obj) => obj is TerminalResource t && t.FullName == FullName;
         public override int GetHashCode() => FullName.GetHashCode();
-        internal static TerminalResource Default { get; }
-        static TerminalResource() => Default = new TerminalResource(typeof(WebSocketSerializer)) {Constructor = () => new WebSocketSerializer()};
         public IReadOnlyList<IEntityResource> InnerResources { get; set; }
 
         public Selector<ITerminal> Select { get; }
-        private Constructor<ITerminal> Constructor { get; set; }
+        private Constructor<ITerminal> Constructor { get; }
 
-        internal void CreateFor(IWebSocketInternal webSocket)
+        internal void InstantiateFor(IWebSocketInternal webSocket)
         {
-            var terminal = Constructor();
-            terminal.WebSocket = webSocket;
-            webSocket.Terminal = terminal;
+            var newTerminal = Constructor();
+            newTerminal.WebSocket = webSocket;
+            webSocket.Terminal = newTerminal;
             webSocket.TerminalResource = this;
+            switch (webSocket.Status)
+            {
+                case Waiting:
+                    webSocket.Open();
+                    break;
+                case Open: break;
+                case var closed:
+                    throw new InvalidOperationException($"Unable to instantiate terminal '{FullName}' " +
+                                                        $"for a WebSocket with status '{closed}'");
+            }
+            newTerminal.Open();
         }
 
-        internal static void RegisterTerminalTypes(List<Type> terminalTypes) => terminalTypes
-            .OrderBy(t => t.FullName)
-            .ForEach(type => RESTarConfig.AddResource(new TerminalResource(type)));
+        internal static void RegisterTerminalTypes(List<Type> terminalTypes)
+        {
+            terminalTypes
+                .OrderBy(t => t.FullName)
+                .ForEach(type => RESTarConfig.AddResource(new TerminalResource(type)));
+            Shell.TerminalResource = Resource.Get(typeof(Shell)) as TerminalResource;
+        }
 
         public TerminalResource(Type type)
         {

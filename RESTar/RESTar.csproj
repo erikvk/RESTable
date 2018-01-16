@@ -282,9 +282,6 @@
     <Compile Include="Results\Success\Report.cs" />
     <Compile Include="Results\Success\SafePostedEntities.cs" />
     <Compile Include="Results\Success\UpdatedEntities.cs" />
-    <Compile Include="Results\Success\WebSocketDone.cs" />
-    <Compile Include="Results\Success\WebSocketResult.cs" />
-    <Compile Include="Results\Success\WebSocketOpened.cs" />
     <Compile Include="Serialization\FormatWriter.cs" />
     <Compile Include="Serialization\ODataJsonWriter.cs" />
     <Compile Include="Serialization\RESTarFromExcelJsonWriter.cs" />
@@ -319,6 +316,7 @@
     <Compile Include="WebSockets\IWebSocketInternal.cs" />
     <Compile Include="Admin\ActiveTerminal.cs" />
     <Compile Include="WebSockets\Shell.cs" />
+    <Compile Include="WebSockets\UnknownWebSocket.cs" />
     <Compile Include="WebSockets\WebSocketComparer.cs" />
     <Compile Include="WebSockets\WebSocketController.cs" />
   </ItemGroup>

@@ -16,7 +16,12 @@ namespace RESTar.Requests
         /// <summary>
         /// The request originated from outside the RESTar application
         /// </summary>
-        External
+        External,
+
+        /// <summary>
+        /// The request originated from a WebSocket
+        /// </summary>
+        Shell
     }
 
     /// <summary>
@@ -80,6 +85,8 @@ namespace RESTar.Requests
         }
 
         internal IWebSocketInternal WebSocketInternal => (IWebSocketInternal) WebSocket;
+
+        internal bool NeedsUpgrade => HasWebSocket && WebSocket.Status == WebSocketStatus.Waiting;
 
         /// <summary>
         /// Does this TCP connection have a WebSocket?

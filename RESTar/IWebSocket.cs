@@ -1,5 +1,4 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 using RESTar.Operations;
 using RESTar.Requests;
 
@@ -8,13 +7,13 @@ namespace RESTar
     /// <summary>
     /// WebSockets support sending continuous data over a single TCP connection
     /// </summary>
-    public interface IWebSocket : IDisposable
+    public interface IWebSocket
     {
         /// <summary>
         /// Gets a unique ID of the WebSocket.
         /// </summary>
         string Id { get; }
-        
+
         /// <summary>
         /// Sends the string data as text over the WebSocket. Send calls to a closed WebSocket will be queued and sent 
         /// when the WebSocket is opened.

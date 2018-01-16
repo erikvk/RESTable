@@ -11,11 +11,16 @@ namespace RESTar
     public interface ITerminal : IDisposable
     {
         /// <summary>
-        /// The WebSocket connected to this terminal. To add custom logic that runs when 
-        /// the WebSocket is assigned, for example sending a welcome message, add it to 
-        /// the setter of this property.
+        /// The WebSocket connected to this terminal. This property is set just before the 
+        /// WebSocket is opened.
         /// </summary>
         IWebSocket WebSocket { set; }
+
+        /// <summary>
+        /// This method is called when the WebSocket is opened, and when data can be sent
+        /// and received by this terminal.
+        /// </summary>
+        void Open();
 
         /// <summary>
         /// Performs an action on string input

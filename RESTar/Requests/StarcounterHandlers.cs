@@ -34,10 +34,16 @@ namespace RESTar.Requests
                     if (request.WebSocketUpgrade)
                         connection.WebSocket = new StarcounterWebSocket(WsGroupName, request, headers, connection);
                     var result = Evaluate(action, ref query, request.BodyBytes, headers, connection);
-                    if (result is WebSocketResult)
-                        return HandlerStatus.Handled;
-                    Console.LogHTTPResult(RequestCount.ToString(), result);
-                    return result.ToResponse();
+                    switch (result)
+                    {
+                        case WebSocketResult webSocketResult:
+                            if (!webSocketResult.LeaveOpen)
+                                connection.WebSocket.Disconnect();
+                            return HandlerStatus.Handled;
+                        default:
+                            Console.LogHTTPResult(RequestCount.ToString(), result);
+                            return result.ToResponse();
+                    }
                 }
             ));
 
@@ -45,12 +51,7 @@ namespace RESTar.Requests
             {
                 try
                 {
-                    if (!WebSocketController.TryGet(ws.ToUInt64().ToString(), out var webSocket))
-                    {
-                        ws.Disconnect();
-                        return;
-                    }
-                    webSocket.HandleTextInput(text);
+                    WebSocketController.HandleTextInput(ws.ToUInt64().ToString(), text);
                 }
                 catch (Exception e)
                 {
@@ -62,12 +63,7 @@ namespace RESTar.Requests
             {
                 try
                 {
-                    if (!WebSocketController.TryGet(ws.ToUInt64().ToString(), out var webSocket))
-                    {
-                        ws.Disconnect();
-                        return;
-                    }
-                    webSocket.HandleBinaryInput(binary);
+                    WebSocketController.HandleBinaryInput(ws.ToUInt64().ToString(), binary);
                 }
                 catch (Exception e)
                 {
@@ -79,12 +75,7 @@ namespace RESTar.Requests
             {
                 try
                 {
-                    if (!WebSocketController.TryGet(ws.ToUInt64().ToString(), out var webSocket))
-                    {
-                        ws.Disconnect();
-                        return;
-                    }
-                    webSocket.Dispose();
+                    WebSocketController.HandleDisconnect(ws.ToUInt64().ToString());
                 }
                 catch { }
             });

@@ -1,9 +1,7 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.IO;
 using System.Text;
 using RESTar.Internal;
-using RESTar.Linq;
 using RESTar.Operations;
 using RESTar.Results.Error;
 using RESTar.Results.Success;
@@ -19,14 +17,24 @@ namespace RESTar.Requests
 {
     internal class StarcounterWebSocket : IWebSocket, IWebSocketInternal
     {
-        private ConcurrentQueue<(object data, bool isText)> Queue;
         private WebSocket WebSocket;
         private readonly Request ScRequest;
         private readonly string GroupName;
-        private bool AbortOpen;
         public string Id { get; }
         public ITarget Target { get; set; }
-        public ITerminal Terminal { get; set; }
+
+        private ITerminal terminal;
+
+        public ITerminal Terminal
+        {
+            get => terminal;
+            set
+            {
+                terminal?.Dispose();
+                terminal = value;
+            }
+        }
+
         public TerminalResource TerminalResource { get; set; }
         public DateTime Opened { get; private set; }
         public DateTime Closed { get; private set; }
@@ -34,9 +42,13 @@ namespace RESTar.Requests
         public ulong BytesSent { get; private set; }
         public TCPConnection TcpConnection { get; }
         public Headers Headers { get; }
+        public WebSocketStatus Status { get; private set; }
+
+        #region Interface
 
         public void HandleTextInput(string textData)
         {
+            if (Terminal == null) return;
             if (!Terminal.SupportsTextInput)
             {
                 SendResult(new UnsupportedWebSocketInput($"Terminal '{TerminalResource.FullName}' does not support text input"));
@@ -49,6 +61,7 @@ namespace RESTar.Requests
 
         public void HandleBinaryInput(byte[] binaryData)
         {
+            if (Terminal == null) return;
             if (!Terminal.SupportsBinaryInput)
             {
                 SendResult(new UnsupportedWebSocketInput($"Terminal '{TerminalResource.FullName}' does not support binary input"));
@@ -61,12 +74,21 @@ namespace RESTar.Requests
 
         public void Dispose()
         {
+            if (!WebSocket.IsDead())
+            {
+                WebSocket.Disconnect();
+                return;
+            }
+            if (Status == WebSocketStatus.Closed)
+            {
+                Terminal = null;
+                return;
+            }
             Status = WebSocketStatus.PendingClose;
-            Terminal.Dispose();
+            Terminal = null;
             Status = WebSocketStatus.Closed;
             Closed = DateTime.Now;
             Console.LogWebSocketClosed(this);
-            WebSocketController.HandleDisconnect(Id);
         }
 
         public void SendTextRaw(string textData)
@@ -86,9 +108,6 @@ namespace RESTar.Requests
                     BytesSent += (ulong) Encoding.UTF8.GetByteCount(textData);
                     Console.LogWebSocketTextOutput(textData, this);
                     break;
-                case WebSocketStatus.PendingOpen:
-                    Enqueue(textData, true);
-                    break;
             }
         }
 
@@ -100,18 +119,25 @@ namespace RESTar.Requests
                 case WebSocketStatus.Open:
                     WebSocket.Send(binaryData, isText);
                     BytesSent += (ulong) binaryData.Length;
-                    Console.LogWebSocketTextOutput($"[{binaryData.Length} bytes]", this);
-                    break;
-                case WebSocketStatus.PendingOpen:
-                    Enqueue(binaryData, isText);
+                    Console.LogWebSocketBinaryOutput(binaryData.Length, this);
                     break;
             }
         }
 
         public void SendResult(IFinalizedResult result)
         {
+            switch (Status)
+            {
+                case WebSocketStatus.Waiting:
+                    Open();
+                    break;
+                case WebSocketStatus.Open: break;
+                case var closed:
+                    throw new InvalidOperationException($"Unable to send results to a WebSocket with status '{closed}'");
+            }
             switch (result)
             {
+                case WebSocketResult _: break;
                 case Report _:
                 case Entities _:
                     SendText(result.Body);
@@ -148,26 +174,9 @@ namespace RESTar.Requests
             _SendBinary(stream.ToArray(), true);
         }
 
-        private void Enqueue(object data, bool isText)
-        {
-            Queue = Queue ?? new ConcurrentQueue<(object, bool)>();
-            Queue.Enqueue((data, isText));
-        }
+        #endregion
 
-        public WebSocketStatus Status { get; private set; }
-
-        public void Disconnect()
-        {
-            switch (Status)
-            {
-                case WebSocketStatus.Open:
-                    WebSocket.Disconnect();
-                    break;
-                case WebSocketStatus.PendingOpen:
-                    AbortOpen = true;
-                    break;
-            }
-        }
+        public void Disconnect() => Dispose();
 
         public override string ToString() => Id;
         public override bool Equals(object obj) => obj is StarcounterWebSocket sws && sws.Id == Id;
@@ -175,25 +184,19 @@ namespace RESTar.Requests
 
         public void Open()
         {
-            WebSocket = ScRequest.SendUpgrade(GroupName);
-            Status = WebSocketStatus.Open;
-            Opened = DateTime.Now;
-            Console.LogWebSocketOpen(this);
-            Queue?.ForEach(message =>
+            switch (Status)
             {
-                switch (message.data)
-                {
-                    case string textData:
-                        _SendText(textData);
-                        break;
-                    case byte[] byteData:
-                        _SendBinary(byteData, message.isText);
-                        break;
-                }
-            });
-            Queue = null;
-            if (AbortOpen) Disconnect();
+                case WebSocketStatus.Waiting:
+                    WebSocket = ScRequest.SendUpgrade(GroupName);
+                    Status = WebSocketStatus.Open;
+                    Opened = DateTime.Now;
+                    Console.LogWebSocketOpen(this);
+                    break;
+                default: throw new InvalidOperationException($"Unable to open WebSocket with status '{Status}'");
+            }
         }
+
+        public void EnterShell() => Shell.TerminalResource.InstantiateFor(this);
 
         internal StarcounterWebSocket(string groupName, Request scRequest, Headers headers, TCPConnection tcpConnection)
         {
@@ -202,7 +205,7 @@ namespace RESTar.Requests
             Id = scRequest.GetWebSocketId().ToString();
             Headers = headers;
             TcpConnection = tcpConnection;
-            Status = WebSocketStatus.PendingOpen;
+            Status = WebSocketStatus.Waiting;
         }
     }
 }

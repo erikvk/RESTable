@@ -3,7 +3,7 @@ using RESTar.Internal;
 
 namespace RESTar.WebSockets
 {
-    internal interface IWebSocketInternal : IWebSocket
+    internal interface IWebSocketInternal : IWebSocket, IDisposable
     {
         void Open();
         ITarget Target { get; set; }
@@ -16,5 +16,6 @@ namespace RESTar.WebSockets
         void HandleTextInput(string textData);
         void HandleBinaryInput(byte[] binaryData);
         void SendTextRaw(string textData);
+        void EnterShell();
     }
 }

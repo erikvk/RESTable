@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
-using System.Web;
 using RESTar.Admin;
 using RESTar.Internal;
 using RESTar.Operations;
@@ -20,7 +19,7 @@ namespace RESTar.Requests
 {
     internal class RESTarProtocolProvider
     {
-        internal static void PopulateUri(URI uri, string query, out string webSocketInput)
+        internal static void PopulateUri(URI uri, string query)
         {
             var match = Regex.Match(query, RegEx.RESTarRequestUri);
             if (!match.Success) throw new InvalidSyntax(ErrorCodes.InvalidUriSyntax, "Check URI syntax");
@@ -29,8 +28,7 @@ namespace RESTar.Requests
             var view = match.Groups["view"].Value.TrimStart('-');
             var conditions = match.Groups["cond"].Value.TrimStart('/');
             var metaConditions = match.Groups["meta"].Value.TrimStart('/');
-            webSocketInput = HttpUtility.UrlDecode(conditions);
-
+         
             switch (conditions)
             {
                 case var _ when conditions.Length == 0:

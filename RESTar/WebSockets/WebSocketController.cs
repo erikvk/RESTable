@@ -1,5 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace RESTar.WebSockets
 {
@@ -9,7 +10,7 @@ namespace RESTar.WebSockets
         static WebSocketController() => AllSockets = new ConcurrentDictionary<string, IWebSocket>();
         internal static void Add(IWebSocket webSocket) => AllSockets[webSocket.Id] = webSocket;
 
-        internal static bool TryGet(string wsId, out IWebSocketInternal ws)
+        private static bool TryGet(string wsId, out IWebSocketInternal ws)
         {
             if (AllSockets.TryGetValue(wsId, out var _ws))
             {
@@ -20,9 +21,34 @@ namespace RESTar.WebSockets
             return false;
         }
 
+        internal static void HandleTextInput(string wsId, string textInput)
+        {
+            if (!TryGet(wsId, out var webSocket))
+                throw new UnknownWebSocketId($"Unknown WebSocket ID: {wsId}");
+            if (textInput.ElementAtOrDefault(0) == '#')
+            {
+                switch (textInput.Trim().ToUpperInvariant())
+                {
+                    case "#HOME":
+                        webSocket.EnterShell();
+                        return;
+                }
+            }
+            webSocket.HandleTextInput(textInput);
+        }
+
+        internal static void HandleBinaryInput(string wsId, byte[] binaryInput)
+        {
+            if (!TryGet(wsId, out var webSocket))
+                throw new UnknownWebSocketId($"Unknown WebSocket ID: {wsId}");
+            webSocket.HandleBinaryInput(binaryInput);
+        }
+
         internal static void HandleDisconnect(string wsId)
         {
-            if (!AllSockets.TryGetValue(wsId, out var _)) return;
+            if (!TryGet(wsId, out var webSocket))
+                throw new UnknownWebSocketId($"Unknown WebSocket ID: {wsId}");
+            webSocket.Dispose();
             AllSockets.Remove(wsId);
         }
     }

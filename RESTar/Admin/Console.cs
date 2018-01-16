@@ -23,26 +23,27 @@ namespace RESTar.Admin
     {
         private struct _ { }
 
+        private const string This = "RESTar.Admin.Console";
+
         private static readonly IDictionary<Console, _> Consoles;
         static Console() => Consoles = new ConcurrentDictionary<Console, _>();
-
-        internal ConsoleStatus Status;
-        private IWebSocketInternal WebSocketInternal;
 
         public IWebSocket WebSocket
         {
             private get => WebSocketInternal;
-            set
-            {
-                WebSocketInternal = (IWebSocketInternal) value;
-                Consoles[this] = default;
-                Status = PAUSED;
-                SendConsoleInit();
-            }
+            set => WebSocketInternal = (IWebSocketInternal) value;
         }
 
-        public void Dispose() => Consoles.Remove(this);
+        public void Open()
+        {
+            Consoles[this] = default;
+            Status = PAUSED;
+            SendConsoleInit();
+        }
 
+        private ConsoleStatus Status;
+        private IWebSocketInternal WebSocketInternal;
+        public void Dispose() => Consoles.Remove(this);
         public void HandleBinaryInput(byte[] input) => throw new NotImplementedException();
         public bool SupportsTextInput { get; } = true;
         public bool SupportsBinaryInput { get; } = false;
@@ -101,42 +102,51 @@ namespace RESTar.Admin
         private const string DateTimeFormat = "yyyy-MM-dd HH:mm:ss.ff";
         private static string _DateTime => DateTime.Now.ToString(DateTimeFormat);
 
+        private static string TerminalResourcePart(IWebSocketInternal webSocket, string direction) =>
+            webSocket.TerminalResource != null ? $"{direction} '{webSocket.TerminalResource.FullName}' " : null;
+
         internal static void LogWebSocketOpen(IWebSocketInternal webSocket)
         {
-            SendToAll($"# New WebSocket {webSocket.Id} opened to '{webSocket.TerminalResource.FullName}' " +
-                      $"from '{webSocket.TcpConnection.ClientIP}' at {webSocket.Opened.ToString(DateTimeFormat)}");
+            if (!Consoles.Any() || webSocket.TerminalResource?.FullName == This) return;
+            SendToAll($"# New WebSocket {webSocket.Id} opened {TerminalResourcePart(webSocket, "to")}from " +
+                      $"'{webSocket.TcpConnection.ClientIP}' at {webSocket.Opened.ToString(DateTimeFormat)}");
         }
 
         internal static void LogWebSocketClosed(IWebSocketInternal webSocket)
         {
-            SendToAll($"# Closed WebSocket {webSocket.Id} to '{webSocket.TerminalResource.FullName}' " +
-                      $"from '{webSocket.TcpConnection.ClientIP}' at {webSocket.Closed.ToString(DateTimeFormat)}");
+            if (!Consoles.Any() || webSocket.TerminalResource?.FullName == This) return;
+            SendToAll($"# Closed WebSocket {webSocket.Id} {TerminalResourcePart(webSocket, "to")}from " +
+                      $"'{webSocket.TcpConnection.ClientIP}' at {webSocket.Closed.ToString(DateTimeFormat)}");
         }
 
         internal static void LogWebSocketTextInput(string input, IWebSocketInternal webSocket)
         {
+            if (!Consoles.Any() || webSocket.TerminalResource?.FullName == This) return;
             var length = Encoding.UTF8.GetByteCount(input);
-            SendToAll($"=> [WS {webSocket.Id}] Received {length} bytes to '{webSocket.TerminalResource.FullName}' from " +
+            SendToAll($"=> [WS {webSocket.Id}] Received {length} bytes {TerminalResourcePart(webSocket, "to")}from " +
                       $"'{webSocket.TcpConnection.ClientIP}' at {_DateTime}. Content: {input}");
         }
 
         internal static void LogWebSocketBinaryInput(int inputLength, IWebSocketInternal webSocket)
         {
-            SendToAll($"=> [WS {webSocket.Id}] Received {inputLength} bytes to '{webSocket.TerminalResource.FullName}' from " +
+            if (!Consoles.Any() || webSocket.TerminalResource?.FullName == This) return;
+            SendToAll($"=> [WS {webSocket.Id}] Received {inputLength} bytes {TerminalResourcePart(webSocket, "to")}from " +
                       $"'{webSocket.TcpConnection.ClientIP}' at {_DateTime}.");
         }
 
         internal static void LogWebSocketTextOutput(string output, IWebSocketInternal webSocket)
         {
+            if (!Consoles.Any() || webSocket.TerminalResource?.FullName == This) return;
             var length = Encoding.UTF8.GetByteCount(output);
-            SendToAll($"<= [WS {webSocket.Id}] Sent {length} bytes to '{webSocket.TcpConnection.ClientIP}' from " +
-                      $"'{webSocket.TerminalResource.FullName}' at {_DateTime}. Content: {output}");
+            SendToAll($"<= [WS {webSocket.Id}] Sent {length} bytes to '{webSocket.TcpConnection.ClientIP}' " +
+                      $"{TerminalResourcePart(webSocket, "from")}at {_DateTime}. Content: {output}");
         }
 
         internal static void LogWebSocketBinaryOutput(int outputLength, IWebSocketInternal webSocket)
         {
-            SendToAll($"<= [WS {webSocket.Id}] Sent {outputLength} bytes to '{webSocket.TcpConnection.ClientIP}' from " +
-                      $"'{webSocket.TerminalResource.FullName}' at {_DateTime}.");
+            if (!Consoles.Any() || webSocket.TerminalResource?.FullName == This) return;
+            SendToAll($"<= [WS {webSocket.Id}] Sent {outputLength} bytes to '{webSocket.TcpConnection.ClientIP}' " +
+                      $"{TerminalResourcePart(webSocket, "from")}at {_DateTime}.");
         }
 
         private static void SendToAll(string message) => Consoles.Keys

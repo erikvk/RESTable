@@ -653,7 +653,6 @@ namespace RESTar
                     message.Append(" | ");
                 ie = ie.InnerException;
             }
-
             return message.ToString().Replace("\r\n", " | ");
         }
 
@@ -667,7 +666,6 @@ namespace RESTar
                 ms = new MemoryStream();
                 using (stream) stream.CopyTo(ms);
             }
-
             return ms.ToArray();
         }
 
@@ -715,7 +713,6 @@ namespace RESTar
 
                         table.Rows.Add(row);
                     }
-
                     return table;
                 case IEnumerable<JObject> jobjects:
                     foreach (var item in jobjects)
@@ -727,10 +724,8 @@ namespace RESTar
                                 table.Columns.Add(pair.Key);
                             row[pair.Key] = pair.Value.ToObject<object>().MakeDynamicCellValue();
                         }
-
                         table.Rows.Add(row);
                     }
-
                     return table;
                 default:
                     var properties = resource.Type.GetDeclaredProperties().Values
