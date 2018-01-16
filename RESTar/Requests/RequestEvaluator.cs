@@ -53,9 +53,8 @@ namespace RESTar.Requests
                             case TerminalResource terminalResource:
                                 if (!tcpConnection.HasWebSocket)
                                     return new UpgradeRequired(terminalResource.FullName);
-                                terminalResource.InstantiateFor(tcpConnection.WebSocketInternal);
-                                if (arguments.Uri.Conditions.FirstOrDefault(c => c.Key.EqualsNoCase("input")).ValueLiteral is string initialInput)
-                                    tcpConnection.WebSocketInternal.HandleTextInput(initialInput);
+                                var initialInput = arguments.Uri.Conditions.FirstOrDefault(c => c.Key.EqualsNoCase("input")).ValueLiteral;
+                                terminalResource.InstantiateFor(tcpConnection.WebSocketInternal, initialInput);
                                 return new WebSocketResult(true);
                             case var entityResource:
                                 IFinalizedResult result = HandleREST((dynamic) entityResource, arguments);

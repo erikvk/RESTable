@@ -196,8 +196,6 @@ namespace RESTar.Requests
             }
         }
 
-        public void EnterShell() => Shell.TerminalResource.InstantiateFor(this);
-
         internal StarcounterWebSocket(string groupName, Request scRequest, Headers headers, TCPConnection tcpConnection)
         {
             GroupName = groupName;

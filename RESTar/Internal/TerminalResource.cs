@@ -33,7 +33,7 @@ namespace RESTar.Internal
         public Selector<ITerminal> Select { get; }
         private Constructor<ITerminal> Constructor { get; }
 
-        internal void InstantiateFor(IWebSocketInternal webSocket)
+        internal void InstantiateFor(IWebSocketInternal webSocket, string initialInput = null)
         {
             var newTerminal = Constructor();
             newTerminal.WebSocket = webSocket;
@@ -49,7 +49,7 @@ namespace RESTar.Internal
                     throw new InvalidOperationException($"Unable to instantiate terminal '{FullName}' " +
                                                         $"for a WebSocket with status '{closed}'");
             }
-            newTerminal.Open();
+            newTerminal.Open(initialInput);
         }
 
         internal static void RegisterTerminalTypes(List<Type> terminalTypes)

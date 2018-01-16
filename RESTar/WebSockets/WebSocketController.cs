@@ -30,7 +30,7 @@ namespace RESTar.WebSockets
                 switch (textInput.Trim().ToUpperInvariant())
                 {
                     case "#HOME":
-                        webSocket.EnterShell();
+                        Shell.TerminalResource.InstantiateFor(webSocket);
                         return;
                 }
             }

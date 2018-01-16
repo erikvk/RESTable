@@ -34,11 +34,10 @@ namespace RESTar.Admin
             set => WebSocketInternal = (IWebSocketInternal) value;
         }
 
-        public void Open()
+        public void Open(string initialInput)
         {
             Consoles[this] = default;
             Status = PAUSED;
-            SendConsoleInit();
         }
 
         private ConsoleStatus Status;

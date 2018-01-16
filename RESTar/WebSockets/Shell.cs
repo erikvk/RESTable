@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using RESTar.Internal;
+using RESTar.Linq;
 using RESTar.Operations;
 using RESTar.Requests;
 using RESTar.Results.Success;
@@ -17,11 +18,21 @@ namespace RESTar.WebSockets
         private string Query = "";
         private IEntitiesMetadata PreviousResultMetadata;
         private System.Action OnConfirm;
+        private Func<IUriParameters> GetNextPageLink;
+        private bool Silent;
+
         public IWebSocket WebSocket { get; set; }
         public void HandleBinaryInput(byte[] input) => throw new NotImplementedException();
         public bool SupportsTextInput { get; } = true;
         public bool SupportsBinaryInput { get; } = false;
-        public void Open() => SendShellInit();
+
+        public void Open(string initialInput)
+        {
+            WebSocket.TcpConnection.Origin = OriginType.Shell;
+            initialInput?.Split(',').ForEach(HandleTextInput);
+            if (!Silent)
+                SendShellInit();
+        }
 
         public void HandleTextInput(string input)
         {
@@ -106,6 +117,19 @@ namespace RESTar.WebSockets
                         case "RELOAD":
                             SafeOperation(GET);
                             break;
+                        case "NEXT":
+                            var link = GetNextPageLink?.Invoke()?.ToString();
+                            if (link == null)
+                                SendResult(new NoContent());
+                            else
+                            {
+                                Query = link;
+                                SafeOperation(GET);
+                            }
+                            break;
+                        case "SILENT":
+                            Silent = true;
+                            break;
                         case "HI":
                         case "HELLO":
 
@@ -141,8 +165,10 @@ namespace RESTar.WebSockets
 
         public void Dispose()
         {
+            WebSocket.TcpConnection.Origin = OriginType.External;
             OnConfirm = null;
             PreviousResultMetadata = null;
+            GetNextPageLink = null;
             Query = null;
         }
 
@@ -150,7 +176,10 @@ namespace RESTar.WebSockets
         {
             var result = RequestEvaluator.Evaluate(action, ref Query, body, WebSocket.Headers, WebSocket.TcpConnection);
             if (result is IEntitiesMetadata entitiesMetaData)
+            {
                 PreviousResultMetadata = entitiesMetaData;
+                GetNextPageLink = entitiesMetaData.GetNextPageLink;
+            }
             return result;
         }
 

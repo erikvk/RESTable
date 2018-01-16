@@ -8,6 +8,7 @@ namespace RESTar.Results.Success
     {
         ulong EntityCount { get; }
         string ResourceFullName { get; }
+        IUriParameters GetNextPageLink();
     }
 
     internal class Entities : OK, IEntitiesMetadata
@@ -24,11 +25,12 @@ namespace RESTar.Results.Success
         internal void SetContentDisposition(string extension) => Headers["Content-Disposition"] =
             $"attachment;filename={Request.Resource.FullName}_{DateTime.Now:yyMMddHHmmssfff}{extension}";
 
-        internal IUriParameters GetNextPageLink()
+        public IUriParameters GetNextPageLink()
         {
             var existing = Request.UriParameters;
             existing.MetaConditions.RemoveAll(c => c.Key.EqualsNoCase("offset"));
-            existing.MetaConditions.Add(new UriCondition("offset", Operators.EQUALS, (Request.MetaConditions.Offset + (long) EntityCount).ToString()));
+            existing.MetaConditions.Add(new UriCondition("offset", Operators.EQUALS,
+                (Request.MetaConditions.Offset + (long)EntityCount).ToString()));
             return existing;
         }
 
