@@ -51,9 +51,10 @@ namespace RESTar
         void SendResult(IFinalizedResult result);
 
         /// <summary>
-        /// Sends an object over the WebSocket, serialized as JSON text
+        /// Sends an object over the WebSocket, serialized as JSON text. The output pretty print setting is controlled by
+        /// the prettyPrint parameter. If null, the global pretty print setting is used.
         /// </summary>
-        void SendJson(object item);
+        void SendJson(object item, bool? prettyPrint = null);
 
         /// <summary>
         /// The TCP connection over which this WebSocket is facilitated

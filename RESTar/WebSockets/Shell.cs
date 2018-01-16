@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Linq;
+using RESTar.Admin;
 using RESTar.Internal;
-using RESTar.Linq;
 using RESTar.Operations;
 using RESTar.Requests;
 using RESTar.Results.Success;
@@ -15,23 +15,22 @@ namespace RESTar.WebSockets
     {
         internal static TerminalResource TerminalResource { get; set; }
 
-        private string Query = "";
-        private IEntitiesMetadata PreviousResultMetadata;
-        private System.Action OnConfirm;
+        public string Query = "";
+        public bool Silent;
+        public bool PrettyPrint = Settings._PrettyPrint;
+
         private Func<IUriParameters> GetNextPageLink;
-        private bool Silent;
+        private System.Action OnConfirm;
+        private IEntitiesMetadata PreviousResultMetadata;
 
         public IWebSocket WebSocket { get; set; }
         public void HandleBinaryInput(byte[] input) => throw new NotImplementedException();
         public bool SupportsTextInput { get; } = true;
         public bool SupportsBinaryInput { get; } = false;
 
-        public void Open(string initialInput)
+        public void Open()
         {
             WebSocket.TcpConnection.Origin = OriginType.Shell;
-            initialInput?.Split(',').ForEach(HandleTextInput);
-            if (!Silent)
-                SendShellInit();
         }
 
         public void HandleTextInput(string input)
@@ -127,8 +126,11 @@ namespace RESTar.WebSockets
                                 SafeOperation(GET);
                             }
                             break;
-                        case "SILENT":
-                            Silent = true;
+                        case "PRETTYPRINT":
+                            if (!bool.TryParse(tail, out var value))
+                                SendInvalidCommandArgument(command, tail);
+                            PrettyPrint = value;
+                            SendVariableState(nameof(PrettyPrint), value);
                             break;
                         case "HI":
                         case "HELLO":
@@ -151,6 +153,26 @@ namespace RESTar.WebSockets
                             }
 
                             WebSocket.SendText(getGreeting());
+                            break;
+                        case "NICE":
+                        case "THANKS":
+                        case "THANK":
+
+                            string getYoureWelcome()
+                            {
+                                switch (new Random().Next(0, 7))
+                                {
+                                    case 0: return "😎";
+                                    case 1: return "👍";
+                                    case 2: return "🙌";
+                                    case 3: return "🎉";
+                                    case 4: return "🤘";
+                                    case 5: return "You're welcome!";
+                                    default: return "✌️";
+                                }
+                            }
+
+                            WebSocket.SendText(getYoureWelcome());
                             break;
                         case "CREDITS":
                             SendCredits();
@@ -220,6 +242,14 @@ namespace RESTar.WebSockets
         private void SendConfirmationRequest(string initialInfo = null) => WebSocket.SendText($"{initialInfo}Type 'Y' to continue, 'N' to cancel");
         private void SendCancel() => WebSocket.SendText("Operation cancelled");
         private void SendBadRequest(string message = null) => WebSocket.SendText($"400: Bad request{message}");
+        private void SendInvalidCommandArgument(string command, string arg) => WebSocket.SendText($"Invalid argument '{arg}' for command '{command}'");
+
+        private void SendVariableState(string variableName, object state)
+        {
+            if (Silent) return;
+            WebSocket.SendText($"{variableName} is {state}");
+        }
+
         private void SendUnknownCommand(string command) => WebSocket.SendText($"Unknown command '{command}'");
 
         private void Close()

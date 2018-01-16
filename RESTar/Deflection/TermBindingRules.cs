@@ -21,11 +21,6 @@
         /// Binds only declared properties, and throws an exception if no 
         /// declared property was found
         /// </summary>
-        OnlyDeclared,
-
-        /// <summary>
-        /// Bind anything
-        /// </summary>
-        FreeText
+        OnlyDeclared
     }
 }

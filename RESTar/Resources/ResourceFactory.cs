@@ -54,19 +54,24 @@ namespace RESTar.Resources
         {
             (List<Type> regular, List<Type> wrappers, List<Type> terminals) lists;
             var allTypes = typeof(object).GetSubclasses().ToList();
-            var entityTypes = allTypes.Where(t => t.HasAttribute<RESTarAttribute>() && !t.Implements(typeof(ITerminal))).ToList();
+            var resourceTypes = allTypes.Where(t => t.HasAttribute<RESTarAttribute>()).ToList();
             var viewTypes = allTypes.Where(t => t.HasAttribute<RESTarViewAttribute>()).ToList();
-            var terminals = allTypes.Where(t => t.HasAttribute<RESTarAttribute>() && t.Implements(typeof(ITerminal))).ToList();
-            if (entityTypes.Union(viewTypes).Union(terminals).ContainsDuplicates(t => t.FullName?.ToLower() ?? "unknown", out var dupe))
+            if (resourceTypes.Union(viewTypes).ContainsDuplicates(t => t.FullName?.ToLower() ?? "unknown", out var dupe))
                 throw new InvalidResourceDeclaration("Types used by RESTar must have unique case insensitive names. Found " +
                                                      $"multiple types with case insensitive name '{dupe}'.");
 
             void ValidateResourceTypes(List<Type> types)
             {
-                var regularResourceTypes = types
+                var entityTypes = types
+                    .Where(t => !t.Implements(typeof(ITerminal)))
+                    .ToList();
+                var terminalTypes = types
+                    .Where(t => t.Implements(typeof(ITerminal)))
+                    .ToList();
+                var regularResourceTypes = entityTypes
                     .Where(t => !typeof(IResourceWrapper).IsAssignableFrom(t))
                     .ToList();
-                var resourceWrapperTypes = types
+                var resourceWrapperTypes = entityTypes
                     .Where(t => typeof(IResourceWrapper).IsAssignableFrom(t))
                     .ToList();
 
@@ -153,7 +158,7 @@ namespace RESTar.Resources
                     #endregion
                 }
 
-                void ValidateRegularResourceDeclarations(List<Type> regularResources)
+                void ValidateEntityDeclarations(List<Type> regularResources)
                 {
                     foreach (var type in regularResources)
                         ValidateCommon(type);
@@ -201,11 +206,44 @@ namespace RESTar.Resources
                     }
                 }
 
-                ValidateRegularResourceDeclarations(regularResourceTypes);
+                void ValidateTerminalDeclarations(List<Type> terminals)
+                {
+                    foreach (var type in terminals)
+                    {
+                        ValidateCommon(type);
+
+                        if (type.Implements(typeof(IEnumerable<>)))
+                            throw new InvalidTerminalDeclaration($"Invalid terminal declaration '{type.FullName}'. Terminal types " +
+                                                                 "must not be collections");
+                        var indexers = type.GetProperties(Public | Instance)
+                            .Where(p => p.GetIndexParameters().Length > 0)
+                            .Where(p => p.GetIndexParameters();
+                        if (type.GetAttribute<RESTarAttribute>().AllowDynamicConditions && !indexers.Any())
+                            throw new InvalidTerminalDeclaration($"Invalid terminal declaration '{type.FullName}'. Terminal types " +
+                                                                 "declared to allow dynamic conditions must implement an indexer accepting " +
+                                                                 "strings as keys and objects as values.");
+                        if (type.HasResourceProviderAttribute())
+                            throw new InvalidTerminalDeclaration($"Invalid terminal declaration '{type.FullName}'. Terminal types " +
+                                                                 "must not be decorated with a resource provider attribute");
+                        if (type.HasAttribute<DatabaseAttribute>())
+                            throw new InvalidTerminalDeclaration($"Invalid terminal declaration '{type.FullName}'. Terminal types " +
+                                                                 "must not be decorated with the Starcounter.DatabaseAttribute attribute");
+                        if (typeof(IOperationsInterface).IsAssignableFrom(type))
+                            throw new InvalidTerminalDeclaration($"Invalid terminal declaration '{type.FullName}'. Terminal types " +
+                                                                 "must not implement any other RESTar operations interfaces");
+                        if (type.GetConstructor(Type.EmptyTypes) == null)
+                            throw new InvalidTerminalDeclaration($"Invalid terminal declaration '{type.FullName}'. Terminal types " +
+                                                                 "must contain a parameterless constructor");
+                    }
+                }
+
+                ValidateEntityDeclarations(entityTypes);
                 ValidateWrapperDeclaration(resourceWrapperTypes);
+                ValidateTerminalDeclarations(terminalTypes);
 
                 lists.regular = regularResourceTypes;
                 lists.wrappers = resourceWrapperTypes;
+                lists.terminals = terminalTypes;
             }
 
             void ValidateViewTypes(List<Type> types)
@@ -231,33 +269,8 @@ namespace RESTar.Resources
                 }
             }
 
-            void ValidateTerminals(List<Type> types)
-            {
-                foreach (var type in types)
-                {
-                    if (type.HasResourceProviderAttribute())
-                        throw new InvalidTerminalDeclaration($"Invalid terminal declaration '{type.FullName}'. Terminal types " +
-                                                             "must not be decorated with a resource provider attribute");
-                    if (type.HasAttribute<RESTarViewAttribute>())
-                        throw new InvalidTerminalDeclaration($"Invalid terminal declaration '{type.FullName}'. Terminal types " +
-                                                             "must not be decorated with the RESTarViewAttribute attribute");
-                    if (type.HasAttribute<DatabaseAttribute>())
-                        throw new InvalidTerminalDeclaration($"Invalid terminal declaration '{type.FullName}'. Terminal types " +
-                                                             "must not be decorated with the Starcounter.DatabaseAttribute attribute");
-                    if (typeof(IOperationsInterface).IsAssignableFrom(type))
-                        throw new InvalidTerminalDeclaration($"Invalid terminal declaration '{type.FullName}'. Terminal types " +
-                                                             "must not implement any other RESTar operations interfaces");
-                    if (type.GetConstructor(Type.EmptyTypes) == null)
-                        throw new InvalidTerminalDeclaration($"Invalid terminal declaration '{type.FullName}'. Terminal types " +
-                                                             "must contain a parameterless constructor");
-                }
-
-                lists.terminals = types;
-            }
-
-            ValidateResourceTypes(entityTypes);
+            ValidateResourceTypes(resourceTypes);
             ValidateViewTypes(viewTypes);
-            ValidateTerminals(terminals);
             return lists;
         }
 

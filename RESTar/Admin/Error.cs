@@ -87,7 +87,7 @@ namespace RESTar.Admin
                 .Where(c => c.Key.EqualsNoCase("key"))
                 .ForEach(cond => cond.ValueLiteral = "*******");
             var resource = arguments.SafeGet(a => a.IResource);
-            var uri = arguments.Uri.ToString(RESTProtocols.RESTar);
+            var uri = arguments.Uri.ToString();
             var stackTrace = $"{error.StackTrace} §§§ INNER: {error.InnerException?.StackTrace}";
             var totalMessage = error.TotalMessage();
             return new Error

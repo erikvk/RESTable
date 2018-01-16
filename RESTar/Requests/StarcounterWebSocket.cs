@@ -161,13 +161,14 @@ namespace RESTar.Requests
         public void SendBinary(byte[] data) => _SendBinary(data, false);
         public void SendBinary(Stream data) => _SendBinary(data.ToByteArray(), false);
 
-        public void SendJson(object item)
+        public void SendJson(object item, bool? prettyPrint = null)
         {
             var stream = new MemoryStream();
             using (var swr = new StreamWriter(stream, UTF8, 1024, true))
             using (var jwr = new RESTarJsonWriter(swr, 0))
             {
-                Serializer.Json.Formatting = _PrettyPrint ? Indented : None;
+                var _prettyPrint = prettyPrint ?? _PrettyPrint; 
+                Serializer.Json.Formatting = _prettyPrint ? Indented : None;
                 Serializer.Json.Serialize(jwr, item);
             }
             stream.Seek(0, SeekOrigin.Begin);

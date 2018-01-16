@@ -76,7 +76,7 @@ namespace RESTar.Requests
             MetaConditions = new List<UriCondition>();
         }
 
-        public string ToString(RESTProtocols protocol)
+        public string ToString(RESTProtocols protocol = RESTProtocols.RESTar)
         {
             switch (protocol)
             {

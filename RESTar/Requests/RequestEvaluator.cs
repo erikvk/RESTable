@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Linq;
 using Newtonsoft.Json;
 using RESTar.Admin;
 using RESTar.Internal;
@@ -53,8 +52,7 @@ namespace RESTar.Requests
                             case TerminalResource terminalResource:
                                 if (!tcpConnection.HasWebSocket)
                                     return new UpgradeRequired(terminalResource.FullName);
-                                var initialInput = arguments.Uri.Conditions.FirstOrDefault(c => c.Key.EqualsNoCase("input")).ValueLiteral;
-                                terminalResource.InstantiateFor(tcpConnection.WebSocketInternal, initialInput);
+                                terminalResource.InstantiateFor(tcpConnection.WebSocketInternal, arguments.Uri.Conditions);
                                 return new WebSocketResult(true);
                             case var entityResource:
                                 IFinalizedResult result = HandleREST((dynamic) entityResource, arguments);

@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
 using Dynamit;
 using Newtonsoft.Json.Linq;
 using RESTar;
@@ -29,32 +28,6 @@ namespace RESTarExample
     }
 
     #region Stuff
-
-    [RESTar(Methods.GET)]
-    public class MyTest : ISelector<MyTest>
-    {
-        private static Timer timer;
-
-        static MyTest()
-        {
-            //            timer = new Timer(state => SendDataToAllSockets("Swoo"), null, new TimeSpan(0, 0, 0, 10), Timeout.InfiniteTimeSpan);
-        }
-
-        public void HandleWebSocketConnection(IWebSocket webSocket)
-        {
-            throw new NotImplementedException();
-        }
-
-
-        public IEnumerable<MyTest> Select(IRequest<MyTest> request)
-        {
-            if (request.TcpConnection.HasWebSocket)
-            {
-                request.TcpConnection.WebSocket.SendText("SWIIIII");
-            }
-            return null;
-        }
-    }
 
     [Database, RESTar(Methods.GET, Methods.POST)]
     public class Static

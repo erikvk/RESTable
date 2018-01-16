@@ -5,7 +5,9 @@ using RESTar.Deflection;
 using RESTar.Deflection.Dynamic;
 using RESTar.Linq;
 using RESTar.Operations;
+using RESTar.Requests;
 using RESTar.WebSockets;
+using static RESTar.Deflection.TermBindingRules;
 using static RESTar.WebSocketStatus;
 
 namespace RESTar.Internal
@@ -33,7 +35,7 @@ namespace RESTar.Internal
         public Selector<ITerminal> Select { get; }
         private Constructor<ITerminal> Constructor { get; }
 
-        internal void InstantiateFor(IWebSocketInternal webSocket, string initialInput = null)
+        internal void InstantiateFor(IWebSocketInternal webSocket, ICollection<UriCondition> assignments = null)
         {
             var newTerminal = Constructor();
             newTerminal.WebSocket = webSocket;
@@ -49,7 +51,27 @@ namespace RESTar.Internal
                     throw new InvalidOperationException($"Unable to instantiate terminal '{FullName}' " +
                                                         $"for a WebSocket with status '{closed}'");
             }
-            newTerminal.Open(initialInput);
+            // TODO: Validate assignments, evaluate assignments
+
+            if (assignments?.Any() == true)
+            {
+                var properties = Type.GetDeclaredProperties();
+                foreach (var assignment in assignments)
+                {
+                    var property = properties.SafeGet(assignment.Key);
+                    switch (ConditionBindingRule)
+                    {
+                        case DeclaredWithDynamicFallback:
+
+
+                            break;
+                        case OnlyDeclared:
+                            break;
+                    }
+                }
+            }
+
+            newTerminal.Open();
         }
 
         internal static void RegisterTerminalTypes(List<Type> terminalTypes)
@@ -67,8 +89,11 @@ namespace RESTar.Internal
             AvailableMethods = new[] {Methods.GET};
             IsInternal = false;
             IsGlobal = true;
-            ConditionBindingRule = TermBindingRules.FreeText;
-            Description = type.GetAttribute<RESTarAttribute>()?.Description;
+            var attribute = type.GetAttribute<RESTarAttribute>();
+            ConditionBindingRule = attribute?.AllowDynamicConditions == true
+                ? DeclaredWithDynamicFallback
+                : OnlyDeclared;
+            Description = attribute?.Description;
             Select = null;
             Constructor = type.MakeStaticConstructor<ITerminal>();
             if (FullName.Contains('+'))

@@ -8,7 +8,7 @@ namespace RESTar
     public interface ICondition
     {
         /// <summary>
-        /// The key of the condition, the path to a property of an entity.
+        /// The key of the condition
         /// </summary>
         string Key { get; }
 

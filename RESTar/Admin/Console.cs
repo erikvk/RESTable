@@ -21,20 +21,13 @@ namespace RESTar.Admin
     [RESTar(Description = "The console")]
     internal class Console : ITerminal
     {
-        private struct _ { }
-
-        private const string This = "RESTar.Admin.Console";
-
-        private static readonly IDictionary<Console, _> Consoles;
-        static Console() => Consoles = new ConcurrentDictionary<Console, _>();
-
         public IWebSocket WebSocket
         {
             private get => WebSocketInternal;
             set => WebSocketInternal = (IWebSocketInternal) value;
         }
 
-        public void Open(string initialInput)
+        public void Open()
         {
             Consoles[this] = default;
             Status = PAUSED;
@@ -104,6 +97,11 @@ namespace RESTar.Admin
 
         private static string TerminalResourcePart(IWebSocketInternal webSocket, string direction) =>
             webSocket.TerminalResource != null ? $"{direction} '{webSocket.TerminalResource.FullName}' " : null;
+
+        private const string This = "RESTar.Admin.Console";
+        private static readonly IDictionary<Console, byte> Consoles;
+        static Console() => Consoles = new ConcurrentDictionary<Console, byte>();
+
 
         internal static void LogWebSocketOpen(IWebSocketInternal webSocket)
         {

@@ -20,7 +20,7 @@ namespace RESTar
         /// This method is called when the WebSocket is opened, and when data can be sent
         /// and received by this terminal.
         /// </summary>
-        void Open(string initialInput);
+        void Open();
 
         /// <summary>
         /// Performs an action on string input

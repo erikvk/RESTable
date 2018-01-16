@@ -15,7 +15,7 @@ namespace RESTar.Requests
         internal string Key { get; }
         internal Operator Operator { get; }
         internal string ValueLiteral { get; set; }
-
+        
         internal static IEnumerable<UriCondition> ParseMany(string conditionsString, bool check = false) =>
             conditionsString.Split('&').Select(s => new UriCondition(s, check));
 
