@@ -51,7 +51,7 @@ namespace RESTar.Requests
             {
                 try
                 {
-                    WebSocketController.HandleTextInput(ws.ToUInt64().ToString(), text);
+                    WebSocketController.HandleTextInput(DbHelper.Base64ForUrlEncode(ws.ToUInt64()), text);
                 }
                 catch (Exception e)
                 {
@@ -63,7 +63,7 @@ namespace RESTar.Requests
             {
                 try
                 {
-                    WebSocketController.HandleBinaryInput(ws.ToUInt64().ToString(), binary);
+                    WebSocketController.HandleBinaryInput(DbHelper.Base64ForUrlEncode(ws.ToUInt64()), binary);
                 }
                 catch (Exception e)
                 {
@@ -75,7 +75,7 @@ namespace RESTar.Requests
             {
                 try
                 {
-                    WebSocketController.HandleDisconnect(ws.ToUInt64().ToString());
+                    WebSocketController.HandleDisconnect(DbHelper.Base64ForUrlEncode(ws.ToUInt64()));
                 }
                 catch { }
             });
@@ -117,7 +117,6 @@ namespace RESTar.Requests
                     }
                 }
             }
-
             response.SetHeadersDictionary(result.Headers._dict);
             return response;
         }
@@ -130,7 +129,6 @@ namespace RESTar.Requests
                 Origin = request.IsExternal ? OriginType.External : OriginType.Internal,
                 ClientIP = request.ClientIpAddress
             };
-
             if (origin.IsExternal && request.HeadersDictionary != null)
             {
                 origin.HTTPS = request.HeadersDictionary.ContainsKey("X-ARR-SSL") || request.HeadersDictionary.ContainsKey("X-HTTPS");

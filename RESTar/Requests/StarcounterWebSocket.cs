@@ -202,7 +202,7 @@ namespace RESTar.Requests
         {
             GroupName = groupName;
             ScRequest = scRequest;
-            Id = scRequest.GetWebSocketId().ToString();
+            Id = DbHelper.Base64ForUrlEncode(scRequest.GetWebSocketId());
             Headers = headers;
             TcpConnection = tcpConnection;
             Status = WebSocketStatus.Waiting;

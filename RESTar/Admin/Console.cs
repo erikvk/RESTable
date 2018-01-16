@@ -83,7 +83,8 @@ namespace RESTar.Admin
 
         internal static void LogHTTPRequest(string requestId, Action action, string uri, IPAddress clientIpAddress)
         {
-            SendToAll($"=> [{requestId}] {action} '{uri}' from '{clientIpAddress}'  @ {DateTime.Now:O}");
+            if (uri.Length == 0) uri = "/";
+            SendToAll($"=> [{requestId}] {action} '{uri}' from '{clientIpAddress}' at {_DateTime}");
         }
 
         internal static void LogHTTPResult(string requestId, IFinalizedResult result)
@@ -96,7 +97,7 @@ namespace RESTar.Admin
             if (errorInfo != null)
                 tail += $". See {errorInfo}";
             SendToAll($"<= [{requestId}] {result.StatusCode.ToCode()}: '{result.StatusDescription}'. " +
-                      $"{tail}  @ {DateTime.Now:O}");
+                      $"{tail} at {_DateTime}");
         }
 
         private const string DateTimeFormat = "yyyy-MM-dd HH:mm:ss.ff";
@@ -108,14 +109,14 @@ namespace RESTar.Admin
         internal static void LogWebSocketOpen(IWebSocketInternal webSocket)
         {
             if (!Consoles.Any() || webSocket.TerminalResource?.FullName == This) return;
-            SendToAll($"# New WebSocket {webSocket.Id} opened {TerminalResourcePart(webSocket, "to")}from " +
+            SendToAll($"++ [WS {webSocket.Id}] opened {TerminalResourcePart(webSocket, "to")}from " +
                       $"'{webSocket.TcpConnection.ClientIP}' at {webSocket.Opened.ToString(DateTimeFormat)}");
         }
 
         internal static void LogWebSocketClosed(IWebSocketInternal webSocket)
         {
             if (!Consoles.Any() || webSocket.TerminalResource?.FullName == This) return;
-            SendToAll($"# Closed WebSocket {webSocket.Id} {TerminalResourcePart(webSocket, "to")}from " +
+            SendToAll($"-- [WS {webSocket.Id}] closed {TerminalResourcePart(webSocket, "to")}from " +
                       $"'{webSocket.TcpConnection.ClientIP}' at {webSocket.Closed.ToString(DateTimeFormat)}");
         }
 
@@ -123,14 +124,14 @@ namespace RESTar.Admin
         {
             if (!Consoles.Any() || webSocket.TerminalResource?.FullName == This) return;
             var length = Encoding.UTF8.GetByteCount(input);
-            SendToAll($"=> [WS {webSocket.Id}] Received {length} bytes {TerminalResourcePart(webSocket, "to")}from " +
+            SendToAll($"=> [WS {webSocket.Id}] received {length} bytes {TerminalResourcePart(webSocket, "to")}from " +
                       $"'{webSocket.TcpConnection.ClientIP}' at {_DateTime}. Content: {input}");
         }
 
         internal static void LogWebSocketBinaryInput(int inputLength, IWebSocketInternal webSocket)
         {
             if (!Consoles.Any() || webSocket.TerminalResource?.FullName == This) return;
-            SendToAll($"=> [WS {webSocket.Id}] Received {inputLength} bytes {TerminalResourcePart(webSocket, "to")}from " +
+            SendToAll($"=> [WS {webSocket.Id}] received {inputLength} bytes {TerminalResourcePart(webSocket, "to")}from " +
                       $"'{webSocket.TcpConnection.ClientIP}' at {_DateTime}.");
         }
 
@@ -138,14 +139,14 @@ namespace RESTar.Admin
         {
             if (!Consoles.Any() || webSocket.TerminalResource?.FullName == This) return;
             var length = Encoding.UTF8.GetByteCount(output);
-            SendToAll($"<= [WS {webSocket.Id}] Sent {length} bytes to '{webSocket.TcpConnection.ClientIP}' " +
+            SendToAll($"<= [WS {webSocket.Id}] sent {length} bytes to '{webSocket.TcpConnection.ClientIP}' " +
                       $"{TerminalResourcePart(webSocket, "from")}at {_DateTime}. Content: {output}");
         }
 
         internal static void LogWebSocketBinaryOutput(int outputLength, IWebSocketInternal webSocket)
         {
             if (!Consoles.Any() || webSocket.TerminalResource?.FullName == This) return;
-            SendToAll($"<= [WS {webSocket.Id}] Sent {outputLength} bytes to '{webSocket.TcpConnection.ClientIP}' " +
+            SendToAll($"<= [WS {webSocket.Id}] sent {outputLength} bytes to '{webSocket.TcpConnection.ClientIP}' " +
                       $"{TerminalResourcePart(webSocket, "from")}at {_DateTime}.");
         }
 
