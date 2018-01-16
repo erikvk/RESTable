@@ -6,6 +6,7 @@ using RESTar.Deflection.Dynamic;
 using RESTar.Linq;
 using RESTar.Operations;
 using RESTar.Requests;
+using RESTar.Results.Fail.NotFound;
 using RESTar.WebSockets;
 using static RESTar.Deflection.TermBindingRules;
 using static RESTar.WebSocketStatus;
@@ -59,14 +60,11 @@ namespace RESTar.Internal
                 foreach (var assignment in assignments)
                 {
                     var property = properties.SafeGet(assignment.Key);
-                    switch (ConditionBindingRule)
+                    if (property == null)
                     {
-                        case DeclaredWithDynamicFallback:
-
-
-                            break;
-                        case OnlyDeclared:
-                            break;
+                        if (newTerminal is IDynamicTerminal dynTerminal)
+                            dynTerminal[assignment.Key] = assignment.ValueLiteral;
+                        else throw new UnknownProperty(Type, assignment.Key);
                     }
                 }
             }
@@ -90,7 +88,7 @@ namespace RESTar.Internal
             IsInternal = false;
             IsGlobal = true;
             var attribute = type.GetAttribute<RESTarAttribute>();
-            ConditionBindingRule = attribute?.AllowDynamicConditions == true
+            ConditionBindingRule = type.Implements(typeof(IDynamicTerminal))
                 ? DeclaredWithDynamicFallback
                 : OnlyDeclared;
             Description = attribute?.Description;

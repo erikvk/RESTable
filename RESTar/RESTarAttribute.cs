@@ -13,7 +13,8 @@ namespace RESTar
     public class RESTarAttribute : Attribute
     {
         /// <summary>
-        /// The methods declared as available for this RESTar resource
+        /// The methods declared as available for this RESTar resource. Not applicable for 
+        /// terminal resources.
         /// </summary>
         public IReadOnlyList<Methods> AvailableMethods { get; }
 
@@ -21,25 +22,27 @@ namespace RESTar
         /// If true, unknown conditions encountered when handling incoming requests
         /// will be passed through as dynamic. This allows for a dynamic handling of
         /// members, both for condition matching and for entities returned from the 
-        /// resource selector.
+        /// resource selector. Not applicable for terminal resources.
         /// </summary>
         public bool AllowDynamicConditions { get; set; }
 
         /// <summary>
         /// This will place a dollar sign ($) before all statically defined properties 
         /// for this type in the REST API, to avoid capture with dynamic members. Always 
-        /// true for DDictionary resources.
+        /// true for DDictionary resources. Not applicable for terminal resources.
         /// </summary>
         public bool FlagStaticMembers { get; set; }
 
         /// <summary>
-        /// Should this resource be editable after registration?
+        /// Should this resource be editable after registration? Not applicable for 
+        /// terminal resources.
         /// </summary>
         internal bool Editable { get; set; }
 
         /// <summary>
         /// Singleton resources get special treatment in the view. They have no list 
-        /// view, but only entity view. Good for settings, reports etc.
+        /// view, but only entity view. Good for settings, reports etc. Not applicable for 
+        /// terminal resources.
         /// </summary>
         public bool Singleton { get; set; }
 
