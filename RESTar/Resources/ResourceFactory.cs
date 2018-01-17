@@ -215,13 +215,6 @@ namespace RESTar.Resources
                         if (type.Implements(typeof(IEnumerable<>)))
                             throw new InvalidTerminalDeclaration($"Invalid terminal declaration '{type.FullName}'. Terminal types " +
                                                                  "must not be collections");
-                        var indexers = type.GetProperties(Public | Instance)
-                            .Where(p => p.GetIndexParameters().Length > 0)
-                            .Where(p => p.GetIndexParameters();
-                        if (type.GetAttribute<RESTarAttribute>().AllowDynamicConditions && !indexers.Any())
-                            throw new InvalidTerminalDeclaration($"Invalid terminal declaration '{type.FullName}'. Terminal types " +
-                                                                 "declared to allow dynamic conditions must implement an indexer accepting " +
-                                                                 "strings as keys and objects as values.");
                         if (type.HasResourceProviderAttribute())
                             throw new InvalidTerminalDeclaration($"Invalid terminal declaration '{type.FullName}'. Terminal types " +
                                                                  "must not be decorated with a resource provider attribute");

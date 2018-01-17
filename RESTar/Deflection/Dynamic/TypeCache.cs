@@ -19,7 +19,7 @@ namespace RESTar.Deflection.Dynamic
     {
         static TypeCache()
         {
-            DeclaredPropertyCache = new ConcurrentDictionary<Type, IDictionary<string, DeclaredProperty>>();
+            DeclaredPropertyCache = new ConcurrentDictionary<Type, IReadOnlyDictionary<string, DeclaredProperty>>();
             TermCache = new ConcurrentDictionary<(string, string, TermBindingRules), Term>();
         }
 
@@ -61,7 +61,7 @@ namespace RESTar.Deflection.Dynamic
 
         #region Declared properties
 
-        private static readonly ConcurrentDictionary<Type, IDictionary<string, DeclaredProperty>> DeclaredPropertyCache;
+        private static readonly ConcurrentDictionary<Type, IReadOnlyDictionary<string, DeclaredProperty>> DeclaredPropertyCache;
 
         private static IEnumerable<DeclaredProperty> ParseDeclaredProperties(this IEnumerable<PropertyInfo> props, bool flag) => props
             .Where(p => !p.RESTarIgnored())
@@ -72,13 +72,22 @@ namespace RESTar.Deflection.Dynamic
         /// <summary>
         /// Gets the declared properties for a given type
         /// </summary>
-        public static IDictionary<string, DeclaredProperty> GetDeclaredProperties(this Type type)
+        public static IReadOnlyDictionary<string, DeclaredProperty> GetDeclaredProperties(this Type type)
         {
             IEnumerable<DeclaredProperty> make(Type _type)
             {
                 switch (_type)
                 {
                     case null: return new DeclaredProperty[0];
+                    case var _ when _type.IsInterface:
+                        return new[] {_type}
+                            .Concat(_type.GetInterfaces())
+                            .SelectMany(i => i.GetProperties(Instance | Public))
+                            .ParseDeclaredProperties(false);
+                    case var _ when _type.Implements(typeof(ITerminal)):
+                        return _type.GetProperties(Instance | Public)
+                            .ParseDeclaredProperties(flag: false)
+                            .Except(make(typeof(ITerminal)), DeclaredProperty.NameComparer);
                     case var _ when _type.IsNullable(out var underlying):
                         return underlying.GetDeclaredProperties().Values;
                     case var _ when _type.HasAttribute<RESTarViewAttribute>():
@@ -92,11 +101,6 @@ namespace RESTar.Deflection.Dynamic
                     case var _ when Resource.SafeGet(_type) is IEntityResource e && e.DeclaredPropertiesFlagged:
                         return _type.GetProperties(Instance | Public)
                             .ParseDeclaredProperties(flag: true);
-                    case var _ when _type.IsInterface:
-                        return new[] {_type}
-                            .Concat(_type.GetInterfaces())
-                            .SelectMany(i => i.GetProperties(Instance | Public))
-                            .ParseDeclaredProperties(false);
                     default:
                         return _type.GetProperties(Instance | Public)
                             .ParseDeclaredProperties(false)

@@ -59,7 +59,7 @@ namespace RESTar.Internal
             AccessRights accessRights;
             if (arguments.TcpConnection.IsInternal)
             {
-                var authToken = arguments.Headers.SafeGet("RESTar-AuthToken");
+                var authToken = arguments.Headers["RESTar-AuthToken"];
                 if (authToken == null || !AuthTokens.TryGetValue(authToken, out accessRights))
                     return null;
                 return authToken;

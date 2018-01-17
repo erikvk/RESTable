@@ -4,13 +4,13 @@ using System.Collections.Generic;
 
 namespace RESTar.Requests
 {
-    /// <inheritdoc />
+    /// <inheritdoc cref="IDictionary{TKey,TValue}" />
     /// <summary>
     /// A collection of request headers
     /// </summary>
-    public class Headers : IDictionary<string, string>
+    public class Headers : IDictionary<string, string>, IReadOnlyDictionary<string, string>
     {
-        /// <inheritdoc />
+        /// <inheritdoc cref="IDictionary{TKey,TValue}" />
         /// <summary>
         /// Gets the header with the given name, or null if there is 
         /// no such header.
@@ -29,6 +29,9 @@ namespace RESTar.Requests
 
         internal Dictionary<string, string> _dict { get; }
         internal void Put(KeyValuePair<string, string> kvp) => _dict[kvp.Key] = kvp.Value;
+
+        IEnumerable<string> IReadOnlyDictionary<string, string>.Keys => Keys;
+        IEnumerable<string> IReadOnlyDictionary<string, string>.Values => Values;
 
         /// <inheritdoc />
         public Headers() => _dict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -65,13 +68,13 @@ namespace RESTar.Requests
         /// <inheritdoc />
         public bool Remove(KeyValuePair<string, string> item) => ((IDictionary<string, string>) _dict).Remove(item);
 
-        /// <inheritdoc />
+        /// <inheritdoc cref="IDictionary{TKey,TValue}" />
         public int Count => _dict.Count;
 
         /// <inheritdoc />
         public bool IsReadOnly => ((IDictionary<string, string>) _dict).IsReadOnly;
 
-        /// <inheritdoc />
+        /// <inheritdoc cref="IDictionary{TKey,TValue}" />
         public bool ContainsKey(string key) => _dict.ContainsKey(key);
 
         /// <inheritdoc />
@@ -80,7 +83,7 @@ namespace RESTar.Requests
         /// <inheritdoc />
         public bool Remove(string key) => _dict.Remove(key);
 
-        /// <inheritdoc />
+        /// <inheritdoc cref="IDictionary{TKey,TValue}" />
         public bool TryGetValue(string key, out string value) => _dict.TryGetValue(key, out value);
 
         /// <inheritdoc />

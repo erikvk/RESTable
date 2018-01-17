@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Linq;
-using RESTar.Admin;
 using RESTar.Internal;
 using RESTar.Operations;
 using RESTar.Requests;
@@ -15,9 +14,9 @@ namespace RESTar.WebSockets
     {
         internal static TerminalResource TerminalResource { get; set; }
 
-        public string Query = "";
-        public bool Silent;
-        public bool PrettyPrint = Settings._PrettyPrint;
+        public string Query { get; set; } = "";
+        public bool Silent { get; set; }
+        public bool Unsafe { get; set; }
 
         private Func<IUriParameters> GetNextPageLink;
         private System.Action OnConfirm;
@@ -31,6 +30,9 @@ namespace RESTar.WebSockets
         public void Open()
         {
             WebSocket.TcpConnection.Origin = OriginType.Shell;
+            if (Query != "")
+                SafeOperation(GET);
+            else SendShellInit();
         }
 
         public void HandleTextInput(string input)
@@ -126,12 +128,6 @@ namespace RESTar.WebSockets
                                 SafeOperation(GET);
                             }
                             break;
-                        case "PRETTYPRINT":
-                            if (!bool.TryParse(tail, out var value))
-                                SendInvalidCommandArgument(command, tail);
-                            PrettyPrint = value;
-                            SendVariableState(nameof(PrettyPrint), value);
-                            break;
                         case "HI":
                         case "HELLO":
 
@@ -196,7 +192,9 @@ namespace RESTar.WebSockets
 
         private IFinalizedResult WsEvaluate(Action action, byte[] body)
         {
-            var result = RequestEvaluator.Evaluate(action, ref Query, body, WebSocket.Headers, WebSocket.TcpConnection);
+            var query = Query;
+            var result = RequestEvaluator.Evaluate(action, ref query, body, WebSocket.Headers, WebSocket.TcpConnection);
+            Query = query;
             if (result is IEntitiesMetadata entitiesMetaData)
             {
                 PreviousResultMetadata = entitiesMetaData;
@@ -225,6 +223,11 @@ namespace RESTar.WebSockets
                     operate();
                     break;
                 case var many:
+                    if (Unsafe)
+                    {
+                        operate();
+                        break;
+                    }
                     OnConfirm = operate;
                     SendConfirmationRequest($"This will run {action} on {many} entities in resource '{PreviousResultMetadata.ResourceFullName}'. ");
                     break;
@@ -235,6 +238,7 @@ namespace RESTar.WebSockets
 
         private void SendShellInit()
         {
+            if (Silent) return;
             WebSocket.SendText("### Entering the RESTar WebSocket shell... ###");
             WebSocket.SendText("### Type a command to continue (e.g. HELP) ###");
         }
@@ -243,17 +247,11 @@ namespace RESTar.WebSockets
         private void SendCancel() => WebSocket.SendText("Operation cancelled");
         private void SendBadRequest(string message = null) => WebSocket.SendText($"400: Bad request{message}");
         private void SendInvalidCommandArgument(string command, string arg) => WebSocket.SendText($"Invalid argument '{arg}' for command '{command}'");
-
-        private void SendVariableState(string variableName, object state)
-        {
-            if (Silent) return;
-            WebSocket.SendText($"{variableName} is {state}");
-        }
-
         private void SendUnknownCommand(string command) => WebSocket.SendText($"Unknown command '{command}'");
 
         private void Close()
         {
+            if (Silent) return;
             WebSocket.SendText("### Closing the RESTar WebSocket shell... ###");
             WebSocket.Disconnect();
         }

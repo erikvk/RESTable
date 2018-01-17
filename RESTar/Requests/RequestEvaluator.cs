@@ -1,10 +1,8 @@
 ﻿using System;
-using Newtonsoft.Json;
 using RESTar.Admin;
 using RESTar.Internal;
 using RESTar.Operations;
 using RESTar.Results.Error;
-using RESTar.Results.Fail.BadRequest;
 using RESTar.Results.Fail.BadRequest.Aborted;
 using RESTar.Results.Fail.Forbidden;
 using RESTar.Results.Success;
@@ -80,22 +78,9 @@ namespace RESTar.Requests
                     default: throw new Exception();
                 }
             }
-            catch (Exception ex)
+            catch (Exception exs)
             {
-                RESTarError getError()
-                {
-                    switch (ex)
-                    {
-                        case RESTarError re: return re;
-                        case FormatException _: return new UnsupportedContent(ex);
-                        case JsonReaderException _: return new FailedJsonDeserialization(ex);
-                        case Starcounter.DbException _ when ex.Message.Contains("SCERR4034"): return new AbortedByCommitHook(ex);
-                        case Starcounter.DbException _: return new DatabaseError(ex);
-                        default: return new Unknown(ex);
-                    }
-                }
-
-                var error = getError();
+                var error = RESTarError.GetError(exs);
                 string errorId = null;
                 if (!(error is Forbidden))
                 {

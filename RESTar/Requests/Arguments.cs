@@ -105,8 +105,8 @@ namespace RESTar.Requests
                 Headers["Authorization"] = $"apikey {UnpackUriKey(key)}";
             BodyBytes = body;
             TcpConnection = tcpConnection;
-            ContentType = MimeType.Parse(Headers.SafeGet("Content-Type"));
-            Accept = MimeType.ParseMany(Headers.SafeGet("Accept"));
+            ContentType = MimeType.Parse(Headers["Content-Type"]);
+            Accept = MimeType.ParseMany(Headers["Accept"]);
             switch (protocol)
             {
                 case RESTProtocols.RESTar:

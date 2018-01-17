@@ -16,5 +16,6 @@ namespace RESTar.WebSockets
         void HandleTextInput(string textData);
         void HandleBinaryInput(byte[] binaryData);
         void SendTextRaw(string textData);
+        ClientProfile GetClientProfile();
     }
 }

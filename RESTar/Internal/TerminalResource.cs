@@ -6,6 +6,7 @@ using RESTar.Deflection.Dynamic;
 using RESTar.Linq;
 using RESTar.Operations;
 using RESTar.Requests;
+using RESTar.Results.Fail.BadRequest;
 using RESTar.Results.Fail.NotFound;
 using RESTar.WebSockets;
 using static RESTar.Deflection.TermBindingRules;
@@ -36,6 +37,12 @@ namespace RESTar.Internal
         public Selector<ITerminal> Select { get; }
         private Constructor<ITerminal> Constructor { get; }
 
+        internal Dictionary<string, object> GetTerminalState(ITerminal terminal) => Type
+            .GetDeclaredProperties().Values.ToDictionary(p => p.Name, p => p.GetValue(terminal));
+
+        internal void SetTerminalState(IDictionary<string, object> state, ITerminal terminal) => Type
+            .GetDeclaredProperties().Values.ForEach(p => p.SetValue(terminal, state[p.Name]));
+
         internal void InstantiateFor(IWebSocketInternal webSocket, ICollection<UriCondition> assignments = null)
         {
             var newTerminal = Constructor();
@@ -52,20 +59,22 @@ namespace RESTar.Internal
                     throw new InvalidOperationException($"Unable to instantiate terminal '{FullName}' " +
                                                         $"for a WebSocket with status '{closed}'");
             }
-            // TODO: Validate assignments, evaluate assignments
-
             if (assignments?.Any() == true)
             {
                 var properties = Type.GetDeclaredProperties();
                 foreach (var assignment in assignments)
                 {
-                    var property = properties.SafeGet(assignment.Key);
-                    if (property == null)
+                    if (assignment.Operator.OpCode != Operators.EQUALS)
+                        throw new InvalidSyntax(ErrorCodes.InvalidConditionOperator,
+                            $"Invalid operator '{assignment.Operator.Common}' in condition to terminal resource. " +
+                            "Only \'=\' is valid in terminal conditions.");
+                    if (!properties.TryGetValue(assignment.Key, out var property))
                     {
                         if (newTerminal is IDynamicTerminal dynTerminal)
                             dynTerminal[assignment.Key] = assignment.ValueLiteral;
                         else throw new UnknownProperty(Type, assignment.Key);
                     }
+                    else property.SetValue(newTerminal, Convert.ChangeType(assignment.ValueLiteral, property.Type));
                 }
             }
 

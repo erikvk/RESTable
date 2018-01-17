@@ -313,6 +313,7 @@
     </Compile>
     <Compile Include="View\RESTarDataView.cs" />
     <Compile Include="WebSocketStatus.cs" />
+    <Compile Include="WebSockets\ClientProfile.cs" />
     <Compile Include="WebSockets\IWebSocketInternal.cs" />
     <Compile Include="Admin\ActiveTerminal.cs" />
     <Compile Include="WebSockets\Shell.cs" />

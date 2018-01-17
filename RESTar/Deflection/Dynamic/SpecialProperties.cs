@@ -13,9 +13,10 @@ namespace RESTar.Deflection.Dynamic
     /// </summary>
     internal class SpecialProperty : DeclaredProperty
     {
-        private SpecialProperty(string name, string actualName, Type type, int? order, bool scQueryable,
+        private SpecialProperty(int metadataToken, string name, string actualName, Type type, int? order, bool scQueryable,
             bool hidden, bool hiddenIfNull, Getter getter) : base
             (
+                metadataToken: metadataToken,
                 name: name,
                 actualName: actualName,
                 type: type,
@@ -33,11 +34,22 @@ namespace RESTar.Deflection.Dynamic
         internal static IEnumerable<SpecialProperty> GetObjectIDAndObjectNo(bool flag) =>
             flag ? new[] {FlaggedObjectID, FlaggedObjectNo} : new[] {ObjectID, ObjectNo};
 
+        // ReSharper disable PossibleNullReferenceException
+
+        private static readonly int ObjectNoMetadataToken =
+            typeof(DbHelper).GetMethod(nameof(DbHelper.GetObjectNo), new[] {typeof(object)}).MetadataToken;
+
+        private static readonly int ObjectIDMetadataToken =
+            typeof(DbHelper).GetMethod(nameof(DbHelper.GetObjectID), new[] {typeof(object)}).MetadataToken;
+
+        // ReSharper restore PossibleNullReferenceException
+
         /// <summary>
         /// A property describing the ObjectNo of a class
         /// </summary>
         private static readonly SpecialProperty FlaggedObjectNo = new SpecialProperty
         (
+            metadataToken: ObjectNoMetadataToken,
             name: "$ObjectNo",
             actualName: "ObjectNo",
             type: typeof(ulong),
@@ -53,6 +65,7 @@ namespace RESTar.Deflection.Dynamic
         /// </summary>
         private static readonly SpecialProperty FlaggedObjectID = new SpecialProperty
         (
+            metadataToken: ObjectIDMetadataToken,
             name: "$ObjectID",
             actualName: "ObjectID",
             type: typeof(string),
@@ -68,6 +81,7 @@ namespace RESTar.Deflection.Dynamic
         /// </summary>
         private static readonly SpecialProperty ObjectNo = new SpecialProperty
         (
+            metadataToken: ObjectNoMetadataToken,
             name: "ObjectNo",
             actualName: "ObjectNo",
             type: typeof(ulong),
@@ -84,6 +98,7 @@ namespace RESTar.Deflection.Dynamic
         /// </summary>
         private static readonly SpecialProperty ObjectID = new SpecialProperty
         (
+            metadataToken: ObjectIDMetadataToken,
             name: "ObjectID",
             actualName: "ObjectID",
             type: typeof(string),

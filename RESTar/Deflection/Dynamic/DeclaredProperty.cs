@@ -19,6 +19,11 @@ namespace RESTar.Deflection.Dynamic
     public class DeclaredProperty : Property
     {
         /// <summary>
+        /// A unique identifier for this property
+        /// </summary>
+        private int MetadataToken { get; }
+
+        /// <summary>
         /// The property type for this property
         /// </summary>
         public Type Type { get; }
@@ -89,9 +94,11 @@ namespace RESTar.Deflection.Dynamic
         /// <summary>
         /// Used in SpecialProperty
         /// </summary>
-        internal DeclaredProperty(string name, string actualName, Type type, int? order, bool scQueryable, ICollection<Attribute> attributes,
+        internal DeclaredProperty(int metadataToken, string name, string actualName, Type type, int? order, bool scQueryable,
+            ICollection<Attribute> attributes,
             bool skipConditions, bool hidden, bool hiddenIfNull, Operators allowedConditionOperators, Getter getter, Setter setter)
         {
+            MetadataToken = metadataToken;
             Name = name;
             ActualName = actualName;
             Type = type;
@@ -113,6 +120,7 @@ namespace RESTar.Deflection.Dynamic
         internal DeclaredProperty(PropertyInfo p, bool flagName = false)
         {
             if (p == null) return;
+            MetadataToken = p.MetadataToken;
             Name = p.RESTarMemberName(flagName);
             ActualName = p.Name;
             Type = p.PropertyType;
@@ -221,6 +229,37 @@ namespace RESTar.Deflection.Dynamic
             }
 
             row[Name] = getBaseValue().MakeDynamicCellValue();
+        }
+
+        /// <inheritdoc />
+        public override string ToString() => $"{Type.FullName}.{Name}";
+
+        /// <inheritdoc />
+        public override bool Equals(object obj) => obj is DeclaredProperty p && p.MetadataToken == MetadataToken;
+
+        /// <inheritdoc />
+        public override int GetHashCode() => MetadataToken;
+
+        /// <summary>
+        /// Compares properties by name
+        /// </summary>
+        public static IEqualityComparer<DeclaredProperty> NameComparer = new _NameComparer();
+
+        /// <summary>
+        /// Compares properties by identity
+        /// </summary>
+        public static IEqualityComparer<DeclaredProperty> IdentityComparer = new _IdentityComparer();
+
+        private class _NameComparer : IEqualityComparer<DeclaredProperty>
+        {
+            public bool Equals(DeclaredProperty x, DeclaredProperty y) => x?.Name == y?.Name;
+            public int GetHashCode(DeclaredProperty obj) => obj.Name.GetHashCode();
+        }
+
+        private class _IdentityComparer : IEqualityComparer<DeclaredProperty>
+        {
+            public bool Equals(DeclaredProperty x, DeclaredProperty y) => x?.MetadataToken == y?.MetadataToken;
+            public int GetHashCode(DeclaredProperty obj) => obj.MetadataToken;
         }
     }
 }

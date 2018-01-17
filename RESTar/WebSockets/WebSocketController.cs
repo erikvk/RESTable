@@ -1,6 +1,10 @@
-﻿using System.Collections.Concurrent;
+﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using RESTar.Linq;
+using RESTar.Results.Error;
+using RESTar.Serialization;
 
 namespace RESTar.WebSockets
 {
@@ -27,14 +31,54 @@ namespace RESTar.WebSockets
                 throw new UnknownWebSocketId($"Unknown WebSocket ID: {wsId}");
             if (textInput.ElementAtOrDefault(0) == '#')
             {
-                switch (textInput.Trim().ToUpperInvariant())
+                var (command, tail) = textInput.Trim().TSplit(' ');
+                switch (command.ToUpperInvariant())
                 {
+                    case "#SHELL":
                     case "#HOME":
                         Shell.TerminalResource.InstantiateFor(webSocket);
-                        return;
+                        break;
+                    case "#ME" when tail is string json:
+                        try
+                        {
+                            var profile = webSocket.GetClientProfile();
+                            Serializer.Populate(json, profile);
+                            profile.ClearUnavailableHeaders();
+                            profile.CustomHeaders.ForEach(header => webSocket.Headers[header.Key] = header.Value);
+                            webSocket.SendText("Profile updated");
+                            webSocket.SendJson(webSocket.GetClientProfile());
+                        }
+                        catch (Exception e)
+                        {
+                            webSocket.SendResult(RESTarError.GetError(e));
+                        }
+                        break;
+                    case "#ME":
+                        webSocket.SendJson(webSocket.GetClientProfile());
+                        break;
+                    case "#TERMINAL" when tail is string json:
+                        try
+                        {
+                            var state = webSocket.TerminalResource.GetTerminalState(webSocket.Terminal);
+                            Serializer.Populate(json, state);
+                            webSocket.TerminalResource.SetTerminalState(state, webSocket.Terminal);
+                            webSocket.SendText("Terminal updated");
+                            webSocket.SendJson(state);
+                        }
+                        catch (Exception e)
+                        {
+                            webSocket.SendResult(RESTarError.GetError(e));
+                        }
+                        break;
+                    case "#TERMINAL":
+                        webSocket.SendJson(webSocket.TerminalResource.GetTerminalState(webSocket.Terminal));
+                        break;
+                    default:
+                        webSocket.SendText($"Unknown global command '{command}'");
+                        break;
                 }
             }
-            webSocket.HandleTextInput(textInput);
+            else webSocket.HandleTextInput(textInput);
         }
 
         internal static void HandleBinaryInput(string wsId, byte[] binaryInput)

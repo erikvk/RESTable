@@ -43,6 +43,7 @@ namespace RESTar.Requests
         public TCPConnection TcpConnection { get; }
         public Headers Headers { get; }
         public WebSocketStatus Status { get; private set; }
+        public ClientProfile GetClientProfile() => new ClientProfile(this);
 
         #region Interface
 
@@ -82,10 +83,12 @@ namespace RESTar.Requests
             if (Status == WebSocketStatus.Closed)
             {
                 Terminal = null;
+                TerminalResource = null;
                 return;
             }
             Status = WebSocketStatus.PendingClose;
             Terminal = null;
+            TerminalResource = null;
             Status = WebSocketStatus.Closed;
             Closed = DateTime.Now;
             Console.LogWebSocketClosed(this);
@@ -167,7 +170,7 @@ namespace RESTar.Requests
             using (var swr = new StreamWriter(stream, UTF8, 1024, true))
             using (var jwr = new RESTarJsonWriter(swr, 0))
             {
-                var _prettyPrint = prettyPrint ?? _PrettyPrint; 
+                var _prettyPrint = prettyPrint ?? _PrettyPrint;
                 Serializer.Json.Formatting = _prettyPrint ? Indented : None;
                 Serializer.Json.Serialize(jwr, item);
             }

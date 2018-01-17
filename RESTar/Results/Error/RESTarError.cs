@@ -1,9 +1,12 @@
 ﻿using System;
 using System.IO;
 using System.Net;
+using Newtonsoft.Json;
 using RESTar.Internal;
 using RESTar.Operations;
 using RESTar.Requests;
+using RESTar.Results.Fail.BadRequest;
+using RESTar.Results.Fail.Forbidden;
 
 namespace RESTar.Results.Error
 {
@@ -50,6 +53,19 @@ namespace RESTar.Results.Error
         {
             ErrorCode = code;
             Headers["RESTar-info"] = Message;
+        }
+
+        internal static RESTarError GetError(Exception exception)
+        {
+            switch (exception)
+            {
+                case RESTarError re: return re;
+                case FormatException _: return new UnsupportedContent(exception);
+                case JsonReaderException _: return new FailedJsonDeserialization(exception);
+                case Starcounter.DbException _ when exception.Message.Contains("SCERR4034"): return new AbortedByCommitHook(exception);
+                case Starcounter.DbException _: return new DatabaseError(exception);
+                default: return new Unknown(exception);
+            }
         }
     }
 }
