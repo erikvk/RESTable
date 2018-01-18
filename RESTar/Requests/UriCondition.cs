@@ -1,9 +1,11 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Text.RegularExpressions;
 using RESTar.Internal;
 using RESTar.Results.Fail.BadRequest;
+using static System.StringComparison;
 
 namespace RESTar.Requests
 {
@@ -14,8 +16,8 @@ namespace RESTar.Requests
     {
         internal string Key { get; }
         internal Operator Operator { get; }
-        internal string ValueLiteral { get; set; }
-        
+        internal string ValueLiteral { get; }
+
         internal static IEnumerable<UriCondition> ParseMany(string conditionsString, bool check = false) =>
             conditionsString.Split('&').Select(s => new UriCondition(s, check));
 
@@ -55,6 +57,49 @@ namespace RESTar.Requests
                 throw new InvalidOperator(conditionString);
             Operator = op;
             ValueLiteral = WebUtility.UrlDecode(valueLiteral);
+        }
+
+        /// <inheritdoc />
+        public override bool Equals(object obj) => obj is UriCondition u &&
+                                                   string.Equals(u.Key, Key, OrdinalIgnoreCase) &&
+                                                   u.Operator == Operator &&
+                                                   u.ValueLiteral == ValueLiteral;
+
+        /// <inheritdoc />
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                var hash = 17;
+                hash = hash * 23 + StringComparer.OrdinalIgnoreCase.GetHashCode(Key);
+                hash = hash * 23 + Operator.OpCode.GetHashCode();
+                hash = hash * 23 + ValueLiteral.GetHashCode();
+                return hash;
+            }
+        }
+
+        /// <summary>
+        /// EqualityComparer for UriCondition objects
+        /// </summary>
+        public static IEqualityComparer<UriCondition> EqualityComparer = new _EqualityComparer();
+
+        private class _EqualityComparer : IEqualityComparer<UriCondition>
+        {
+            public bool Equals(UriCondition x, UriCondition y) => string.Equals(x.Key, y.Key, OrdinalIgnoreCase)
+                                                                  && x.Operator == y.Operator
+                                                                  && x.ValueLiteral == y.ValueLiteral;
+
+            public int GetHashCode(UriCondition obj)
+            {
+                unchecked
+                {
+                    var hash = 17;
+                    hash = hash * 23 + StringComparer.OrdinalIgnoreCase.GetHashCode(obj.Key);
+                    hash = hash * 23 + obj.Operator.OpCode.GetHashCode();
+                    hash = hash * 23 + obj.ValueLiteral.GetHashCode();
+                    return hash;
+                }
+            }
         }
     }
 }

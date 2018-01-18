@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using static System.StringComparer;
 
@@ -9,7 +8,7 @@ namespace RESTar.WebSockets
     {
         public string WebSocketId { get; }
         public string IPAddress { get; }
-        public DateTime ConnectedAt { get; }
+        public string ConnectedAt { get; }
         public string CurrentTerminal { get; }
         public IDictionary<string, string> CustomHeaders { get; private set; }
 
@@ -17,7 +16,7 @@ namespace RESTar.WebSockets
         {
             WebSocketId = webSocket.Id;
             IPAddress = webSocket.TcpConnection.ClientIP.ToString();
-            ConnectedAt = webSocket.Opened;
+            ConnectedAt = webSocket.Opened.ToString("yyyy-MM-dd HH:mm:ss");
             CurrentTerminal = webSocket.TerminalResource?.FullName ?? "none";
             CustomHeaders = webSocket.Headers
                 .Where(IsAvailable)

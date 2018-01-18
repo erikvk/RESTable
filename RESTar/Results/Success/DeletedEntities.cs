@@ -6,7 +6,7 @@ namespace RESTar.Results.Success
     {
         internal DeletedEntities(int count, IEntityResource resource)
         {
-            Headers["RESTar-info"] = $"{count} entities deleted from resource '{resource.FullName}'";
+            Headers["RESTar-info"] = $"{count} entities deleted from '{resource.FullName}'";
         }
     }
 }

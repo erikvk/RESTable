@@ -63,7 +63,7 @@ namespace RESTar.WebSockets
                             Serializer.Populate(json, state);
                             webSocket.TerminalResource.SetTerminalState(state, webSocket.Terminal);
                             webSocket.SendText("Terminal updated");
-                            webSocket.SendJson(state);
+                            webSocket.SendJson(webSocket.TerminalResource.GetTerminalState(webSocket.Terminal));
                         }
                         catch (Exception e)
                         {

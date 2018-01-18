@@ -68,6 +68,11 @@ namespace RESTar.Deflection.Dynamic
         public bool Nullable { get; }
 
         /// <summary>
+        /// Is the type an enum type?
+        /// </summary>
+        public bool IsEnum { get; }
+
+        /// <summary>
         /// The attributes that this property has been decorated with
         /// </summary>  
         private ICollection<Attribute> Attributes { get; }
@@ -95,8 +100,8 @@ namespace RESTar.Deflection.Dynamic
         /// Used in SpecialProperty
         /// </summary>
         internal DeclaredProperty(int metadataToken, string name, string actualName, Type type, int? order, bool scQueryable,
-            ICollection<Attribute> attributes,
-            bool skipConditions, bool hidden, bool hiddenIfNull, Operators allowedConditionOperators, Getter getter, Setter setter)
+            ICollection<Attribute> attributes, bool skipConditions, bool hidden, bool hiddenIfNull, bool isEnum,
+            Operators allowedConditionOperators, Getter getter, Setter setter)
         {
             MetadataToken = metadataToken;
             Name = name;
@@ -108,6 +113,7 @@ namespace RESTar.Deflection.Dynamic
             SkipConditions = skipConditions;
             Hidden = hidden;
             HiddenIfNull = hiddenIfNull;
+            IsEnum = isEnum;
             AllowedConditionOperators = allowedConditionOperators;
             Nullable = type.IsClass || type.IsNullable(out var _);
             Getter = getter;
@@ -134,6 +140,7 @@ namespace RESTar.Deflection.Dynamic
             HiddenIfNull = memberAttribute?.HiddenIfNull == true || jsonAttribute?.NullValueHandling == Ignore;
             AllowedConditionOperators = memberAttribute?.AllowedOperators ?? Operators.All;
             Nullable = p.PropertyType.IsClass || p.PropertyType.IsNullable(out var _);
+            IsEnum = p.PropertyType.IsEnum;
             if (memberAttribute?.ExcelReducerName != null)
                 ExcelReducer = MakeExcelReducer(memberAttribute.ExcelReducerName, p);
             Getter = p.MakeDynamicGetter();

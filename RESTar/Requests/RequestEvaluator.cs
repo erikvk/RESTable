@@ -8,7 +8,6 @@ using RESTar.Results.Fail.Forbidden;
 using RESTar.Results.Success;
 using static RESTar.Operations.Transact;
 using static RESTar.Requests.Action;
-using static RESTar.Requests.OriginType;
 using static RESTar.RESTarConfig;
 using Response = RESTar.Http.HttpResponse;
 
@@ -54,7 +53,7 @@ namespace RESTar.Requests
                                 return new WebSocketResult(true);
                             case var entityResource:
                                 IFinalizedResult result = HandleREST((dynamic) entityResource, arguments);
-                                if (!tcpConnection.HasWebSocket || tcpConnection.Origin == Shell)
+                                if (!tcpConnection.HasWebSocket || tcpConnection.Origin == OriginType.Shell)
                                     return result;
                                 tcpConnection.WebSocketInternal.SendResult(result);
                                 return new WebSocketResult(false);
@@ -87,7 +86,7 @@ namespace RESTar.Requests
                     Error.ClearOld();
                     errorId = Trans(() => Error.Create(error, arguments)).Id;
                 }
-                if (tcpConnection.HasWebSocket && tcpConnection.Origin != Shell)
+                if (tcpConnection.HasWebSocket && tcpConnection.Origin != OriginType.Shell)
                 {
                     tcpConnection.WebSocketInternal.SendResult(error);
                     return new WebSocketResult(false);

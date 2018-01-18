@@ -152,7 +152,7 @@ namespace RESTar.Requests
                     if (info != null)
                         tail += $". {info}";
                     if (errorInfo != null)
-                        tail += $". See {errorInfo}";
+                        tail += $" (see {errorInfo})";
                     _SendText($"{result.StatusCode.ToCode()}: {result.StatusDescription}{tail}");
                     break;
             }

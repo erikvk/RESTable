@@ -1,11 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Newtonsoft.Json;
 using RESTar.Auth;
 using RESTar.Internal;
 using RESTar.Linq;
-using static Newtonsoft.Json.NullValueHandling;
 using static RESTar.Methods;
 
 namespace RESTar
@@ -34,8 +32,7 @@ namespace RESTar
         /// <summary>
         /// The alias of this resource, if any
         /// </summary>
-        [JsonProperty(NullValueHandling = Ignore)]
-        public string Alias { get; set; }
+        [RESTarMember(hideIfNull: true)] public string Alias { get; set; }
 
         /// <summary>
         /// The methods that have been enabled for this resource
@@ -43,16 +40,19 @@ namespace RESTar
         public Methods[] Methods { get; set; }
 
         /// <summary>
+        /// The resource type, entity resource or terminal resource
+        /// </summary>
+        public ResourceKind Kind { get; set; }
+
+        /// <summary>
         /// The views for this resource
         /// </summary>
-        [JsonProperty(NullValueHandling = Ignore)]
-        public object Views { get; private set; }
+        [RESTarMember(hideIfNull: true)] public object Views { get; private set; }
 
         /// <summary>
         /// Inner resources for this resource
         /// </summary>
-        [JsonProperty(NullValueHandling = Ignore)]
-        public AvailableResource[] InnerResources { get; private set; }
+        [RESTarMember(hideIfNull: true)] public AvailableResource[] InnerResources { get; private set; }
 
         /// <inheritdoc />
         public IEnumerable<AvailableResource> Select(IRequest<AvailableResource> request)
@@ -63,12 +63,11 @@ namespace RESTar
             return _rights?.Keys
                 .Where(r => r.IsGlobal && !r.IsInnerResource)
                 .OrderBy(r => r.FullName)
-                .OfType<IEntityResource>()
                 .Select(r => Make(r, _rights))
                 .Where(request.Conditions);
         }
 
-        internal static AvailableResource Make(IEntityResource iresource, AccessRights rights) => new AvailableResource
+        internal static AvailableResource Make(IResource iresource, AccessRights rights) => new AvailableResource
         {
             Name = iresource.FullName,
             Alias = iresource.Alias,
@@ -76,11 +75,11 @@ namespace RESTar
             Methods = rights.SafeGet(iresource)?
                           .Intersect(iresource.AvailableMethods)
                           .ToArray() ?? new Methods[0],
-            Views = iresource.Views?.Select(v => new
-            {
-                Name = v.FullName,
-                Description = v.Description ?? "No description"
-            }).ToArray() ?? new object[0],
+            Kind = iresource is IEntityResource ? ResourceKind.EntityResource : ResourceKind.TerminalResource,
+            Views = iresource is IEntityResource er
+                ? er.Views?.Select(v => new {Name = v.FullName, Description = v.Description ?? "No description"})
+                      .ToArray() ?? new object[0]
+                : new object[0],
             InnerResources = ((IResourceInternal) iresource).InnerResources?.Select(r => Make(r, rights)).ToArray()
         };
     }

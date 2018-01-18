@@ -3,18 +3,33 @@ using System.Linq;
 using RESTar.Internal;
 using RESTar.Operations;
 using RESTar.Requests;
+using RESTar.Results.Fail.BadRequest;
 using RESTar.Results.Success;
-using static RESTar.Requests.Action;
+using static RESTar.Internal.ErrorCodes;
 using Action = RESTar.Requests.Action;
 
-namespace RESTar.WebSockets
+namespace RESTar
 {
     [RESTar(Description = "The shell")]
     internal class Shell : ITerminal
     {
-        internal static TerminalResource TerminalResource { get; set; }
+        private string query = "";
 
-        public string Query { get; set; } = "";
+        public string Query
+        {
+            get => query;
+            set
+            {
+                switch (value)
+                {
+                    case "": break;
+                    case null:
+                    case var _ when value[0] != '/': throw new InvalidSyntax(InvalidUriSyntax, "Shell queries must begin with '/'");
+                }
+                query = value;
+            }
+        }
+
         public bool Silent { get; set; }
         public bool Unsafe { get; set; }
 
@@ -26,12 +41,13 @@ namespace RESTar.WebSockets
         public void HandleBinaryInput(byte[] input) => throw new NotImplementedException();
         public bool SupportsTextInput { get; } = true;
         public bool SupportsBinaryInput { get; } = false;
+        internal static TerminalResource TerminalResource { get; set; }
 
         public void Open()
         {
             WebSocket.TcpConnection.Origin = OriginType.Shell;
             if (Query != "")
-                SafeOperation(GET);
+                SafeOperation(Action.GET);
             else SendShellInit();
         }
 
@@ -63,16 +79,16 @@ namespace RESTar.WebSockets
                 case '\0':
                 case '\n': break;
                 case ' ' when input.Length == 1:
-                    SafeOperation(GET);
+                    SafeOperation(Action.GET);
                     break;
                 case '-':
                 case '/':
                     Query = input.Trim();
-                    SafeOperation(GET);
+                    SafeOperation(Action.GET);
                     break;
                 case '[':
                 case '{':
-                    SafeOperation(POST, input.ToBytes());
+                    SafeOperation(Action.POST, input.ToBytes());
                     break;
                 case var _ when input.Length > 2000:
                     SendBadRequest();
@@ -84,24 +100,24 @@ namespace RESTar.WebSockets
                         case "GET":
                             if (!string.IsNullOrWhiteSpace(tail))
                                 Query = tail;
-                            SafeOperation(GET);
+                            SafeOperation(Action.GET);
                             break;
                         case "POST":
-                            SafeOperation(POST, tail.ToBytes());
+                            SafeOperation(Action.POST, tail.ToBytes());
                             break;
                         case "PUT":
                             SendBadRequest("PUT is not available in the WebSocket interface");
                             break;
                         case "PATCH":
-                            UnsafeOperation(PATCH, tail.ToBytes());
+                            UnsafeOperation(Action.PATCH, tail.ToBytes());
                             break;
                         case "DELETE":
-                            UnsafeOperation(DELETE);
+                            UnsafeOperation(Action.DELETE);
                             break;
                         case "REPORT":
                             if (!string.IsNullOrWhiteSpace(tail))
                                 Query = tail;
-                            SafeOperation(REPORT);
+                            SafeOperation(Action.REPORT);
                             break;
                         case "HELP":
                             SendHelp();
@@ -116,7 +132,7 @@ namespace RESTar.WebSockets
                             WebSocket.SendText($"{(Query.Any() ? Query : "/")}");
                             break;
                         case "RELOAD":
-                            SafeOperation(GET);
+                            SafeOperation(Action.GET);
                             break;
                         case "NEXT":
                             var link = GetNextPageLink?.Invoke()?.ToString();
@@ -125,7 +141,7 @@ namespace RESTar.WebSockets
                             else
                             {
                                 Query = link;
-                                SafeOperation(GET);
+                                SafeOperation(Action.GET);
                             }
                             break;
                         case "HI":
@@ -192,9 +208,7 @@ namespace RESTar.WebSockets
 
         private IFinalizedResult WsEvaluate(Action action, byte[] body)
         {
-            var query = Query;
             var result = RequestEvaluator.Evaluate(action, ref query, body, WebSocket.Headers, WebSocket.TcpConnection);
-            Query = query;
             if (result is IEntitiesMetadata entitiesMetaData)
             {
                 PreviousResultMetadata = entitiesMetaData;
@@ -256,28 +270,26 @@ namespace RESTar.WebSockets
             WebSocket.Disconnect();
         }
 
-        private void SendHelp()
-        {
-            WebSocket.SendText("\n  The RESTar WebSocket shell makes it easy to send\n" +
-                               "  multiple requests to a RESTar API, over a single\n" +
-                               "  TCP connection. Using commands, the client can\n" +
-                               "  navigate around the resources of the API, and read,\n" +
-                               "  insert, update and/or delete entities. To navigate\n" +
-                               "  and select entities, simply send a request URI over\n" +
-                               "  the WebSocket, e.g. '/availableresource//limit=3'.\n" +
-                               "  To insert an entity into a resource, send the JSON\n" +
-                               "  representation over the WebSocket. To update entities,\n" +
-                               "  send 'PATCH <json>', where <json> is the JSON data to\n" +
-                               "  update entities from. To delete selected entities, send\n" +
-                               "  'DELETE'. For potentially unsafe operations, you will be\n" +
-                               "  asked to confirm before changes are applied.\n\n" +
-                               "  Some other simple commands:\n" +
-                               "  ?           Prints the current location\n" +
-                               "  REPORT      Counts the entities at the current location\n" +
-                               "  RELOAD      Relods the current location\n" +
-                               "  HELP        Prints this help page\n" +
-                               "  CLOSE       Closes the WebSocket\n");
-        }
+        private void SendHelp() => WebSocket.SendText(
+            "\n  The RESTar WebSocket shell makes it possible to send\n" +
+            "  multiple requests to a RESTar API, over a single TCP\n" +
+            "  connection. Using commands, the client can navigate\n" +
+            "  around the resources of the API, read, insert, update\n" +
+            "  and/or delete entities, or enter terminals. To navigate\n" +
+            "  and select entities, simply send a request URI over this\n" +
+            "  WebSocket, e.g. '/availableresource//limit=3'. To insert\n" +
+            "  an entity into a resource, send the JSON representation\n" +
+            "  over the WebSocket. To update entities, send 'PATCH <json>',\n" +
+            "  where <json> is the JSON data to update entities from. To\n" +
+            "  delete selected entities, send 'DELETE'. For potentially\n" +
+            "  unsafe operations, you will be asked to confirm before\n" +
+            "  changes are applied.\n\n" +
+            "  Some other simple commands:\n" +
+            "  ?           Prints the current location\n" +
+            "  REPORT      Counts the entities at the current location\n" +
+            "  RELOAD      Relods the current location\n" +
+            "  HELP        Prints this help page\n" +
+            "  CLOSE       Closes the WebSocket\n");
 
         private void SendCredits()
         {

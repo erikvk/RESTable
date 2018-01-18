@@ -2,6 +2,7 @@
 
 namespace RESTar
 {
+    /// <inheritdoc />
     /// <summary>
     /// ITerminal defines the functionality of a RESTar terminal. The terminal will be
     /// made available as a WebSocket endpoint in the API, and each ITerminal type will be

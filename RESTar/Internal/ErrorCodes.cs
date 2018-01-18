@@ -22,7 +22,7 @@ namespace RESTar.Internal
         InvalidConditionSyntax = 006,
         InvalidConditionOperator = 007,
         InvalidResourceSpecifier = 008,
-        InvalidSeparator = 009,
+        InvalidConditionValueType = 009,
 
         // 010-019: Data source syntax and format errors
         FailedJsonDeserialization = 010,
@@ -34,6 +34,7 @@ namespace RESTar.Internal
         NotAcceptable = 016,
         UpgradeRequired = 017,
         UnknownWebSocketId = 018,
+        InvalidEnumValue = 019,
 
         // 020-029: Headers error
         InvalidSourceData = 020,
@@ -65,8 +66,7 @@ namespace RESTar.Internal
         InvalidResourceDeclaration = 124,
         InvalidResourceViewDeclaration = 125,
         InvalidTerminalDeclaration = 126,
-
-
+        
         // 130-139: Alias errors
         AliasAlreadyInUse = 130,
         AliasEqualToResourceName = 131,
@@ -81,6 +81,7 @@ namespace RESTar.Internal
         NotAuthorized = 211,
         NoMatchingHtml = 212,
         FailedResourceAuthentication = 213,
+        MethodNotAllowed = 214,
 
         DatabaseError = 300,
         AbortedByCommitHook = 301,

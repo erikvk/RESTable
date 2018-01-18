@@ -167,6 +167,7 @@
     <Compile Include="Resources\StarcounterProvider.cs" />
     <Compile Include="Resources\VirtualResourceProvider.cs" />
     <Compile Include="Resources\ResourceWrapper.cs" />
+    <Compile Include="ResourceKind.cs" />
     <Compile Include="RESTarAttribute.cs" />
     <Compile Include="RESTarInternalAttribute.cs" />
     <Compile Include="MethodComparer.cs" />
@@ -216,12 +217,14 @@
     <Compile Include="Results\Error\BadRequest\AliasAlreadyInUse.cs" />
     <Compile Include="Results\Error\BadRequest\AliasEqualToResourceName.cs" />
     <Compile Include="Results\Error\BadRequest\AmbiguousMatch.cs" />
+    <Compile Include="Results\Error\BadRequest\BadConditionOperator - Copy.cs" />
     <Compile Include="Results\Error\BadRequest\BadRequest.cs" />
     <Compile Include="Results\Error\BadRequest\FailedJsonDeserialization.cs" />
     <Compile Include="Results\Error\DatabaseError.cs" />
     <Compile Include="Results\Error\Forbidden\AbortedByCommitHook.cs" />
     <Compile Include="Results\Error\Forbidden\FailedResourceAuthentication.cs" />
     <Compile Include="Results\Error\Forbidden\MethodUnavailable.cs" />
+    <Compile Include="Results\Error\Forbidden\MethodNotAllowed.cs" />
     <Compile Include="Results\Error\Forbidden\UserNotSignedIn.cs" />
     <Compile Include="Results\Error\Internal.cs" />
     <Compile Include="Results\Error\InvalidTerminalDeclaration.cs" />
@@ -315,8 +318,7 @@
     <Compile Include="WebSocketStatus.cs" />
     <Compile Include="WebSockets\ClientProfile.cs" />
     <Compile Include="WebSockets\IWebSocketInternal.cs" />
-    <Compile Include="Admin\ActiveTerminal.cs" />
-    <Compile Include="WebSockets\Shell.cs" />
+    <Compile Include="Shell.cs" />
     <Compile Include="WebSockets\UnknownWebSocket.cs" />
     <Compile Include="WebSockets\WebSocketComparer.cs" />
     <Compile Include="WebSockets\WebSocketController.cs" />

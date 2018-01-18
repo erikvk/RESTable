@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.Serialization;
 using System.Text.RegularExpressions;
 using Newtonsoft.Json;
 using RESTar.Internal;
@@ -58,18 +57,22 @@ namespace RESTar.Admin
         /// <summary>
         /// The views for this resource
         /// </summary>
-        [RESTarMember(hideIfNull: true, hide: true)]
-        public object Views { get; private set; }
+        [RESTarMember(hideIfNull: true)] public object Views { get; private set; }
 
         /// <summary>
         /// The IResource of this resource
         /// </summary>
-        [IgnoreDataMember] public IEntityResource IResource { get; private set; }
+        [RESTarMember(hide: true)] public IResource IResource { get; private set; }
 
         /// <summary>
         /// The resource provider that generated this resource
         /// </summary>
         public string Provider { get; private set; }
+
+        /// <summary>
+        /// The resource type, entity resource or terminal resource
+        /// </summary>
+        public ResourceKind Kind { get; set; }
 
         /// <summary>
         /// Inner resources for this resource
@@ -85,30 +88,36 @@ namespace RESTar.Admin
             if (request == null) throw new ArgumentNullException(nameof(request));
             return RESTarConfig.Resources
                 .Where(r => r.IsGlobal)
-                .OfType<IEntityResource>()
                 .OrderBy(r => r.FullName)
                 .Select(Make)
                 .Where(request.Conditions);
         }
 
-        internal static Resource Make(IEntityResource iresource) => new Resource
+        internal static Resource Make(IResource iresource)
         {
-            Name = iresource.FullName,
-            Alias = iresource.Alias,
-            Description = iresource.Description ?? "No description",
-            EnabledMethods = iresource.AvailableMethods.ToArray(),
-            Editable = iresource.Editable,
-            IsInternal = iresource.IsInternal,
-            Type = iresource.Type.FullName,
-            Views = iresource.Views?.Select(v => new
+            var entityResource = iresource as IEntityResource;
+            return new Resource
             {
-                Name = v.FullName,
-                Description = v.Description ?? "No description"
-            }).ToArray() ?? new object[0],
-            IResource = iresource,
-            Provider = iresource.Provider,
-            InnerResources = ((IResourceInternal) iresource).InnerResources?.Select(Make).ToArray()
-        };
+                Name = iresource.FullName,
+                Alias = iresource.Alias,
+                Description = iresource.Description ?? "No description",
+                EnabledMethods = iresource.AvailableMethods.ToArray(),
+                Editable = entityResource?.Editable == true,
+                IsInternal = iresource.IsInternal,
+                Type = iresource.Type.FullName,
+                Views = entityResource == null
+                    ? null
+                    : (entityResource.Views?.Select(v => new
+                    {
+                        Name = v.FullName,
+                        Description = v.Description ?? "No description"
+                    }).ToArray() ?? new object[0]),
+                IResource = iresource,
+                Provider = entityResource?.Provider ?? "undefined",
+                Kind = entityResource != null ? ResourceKind.EntityResource : ResourceKind.TerminalResource,
+                InnerResources = ((IResourceInternal) iresource).InnerResources?.Select(Make).ToArray()
+            };
+        }
 
         /// <inheritdoc />
         public int Insert(IEnumerable<Resource> resources, IRequest<Resource> request)
@@ -171,7 +180,7 @@ namespace RESTar.Admin
 
                 #endregion
 
-                if (iresource.Editable)
+                if (iresource is IEntityResource er && er.Editable)
                 {
                     #region Edit other properties (available for dynamic resources)
 

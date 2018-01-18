@@ -26,6 +26,7 @@ namespace RESTar.Deflection.Dynamic
                 skipConditions: false,
                 hidden: hidden,
                 hiddenIfNull: hiddenIfNull,
+                isEnum: false,
                 allowedConditionOperators: Operators.All,
                 getter: getter,
                 setter: null

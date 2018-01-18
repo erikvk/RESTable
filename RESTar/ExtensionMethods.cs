@@ -9,7 +9,6 @@ using System.Net;
 using System.Reflection;
 using System.Runtime.Serialization;
 using System.Text;
-using System.Text.RegularExpressions;
 using Dynamit;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -19,13 +18,12 @@ using RESTar.Internal;
 using RESTar.Linq;
 using RESTar.Operations;
 using RESTar.Resources;
+using RESTar.Results.Error.Forbidden;
 using RESTar.Results.Fail.BadRequest;
-using RESTar.Results.Fail.Forbidden;
 using RESTar.Serialization;
 using RESTar.View;
 using Starcounter;
 using static System.Globalization.DateTimeStyles;
-using static System.Globalization.NumberStyles;
 using static System.Reflection.BindingFlags;
 using static System.StringComparison;
 using static RESTar.Internal.ErrorCodes;
@@ -577,29 +575,70 @@ namespace RESTar
 
         private static readonly CultureInfo en_US = new CultureInfo("en-US");
 
-        internal static dynamic ParseConditionValue(this string valueLiteral)
+        /// <summary>
+        /// Parses a condition value from a value literal, and performs an optional type check (non-optional for enums)
+        /// </summary>
+        internal static object ParseConditionValue(this string valueLiteral, DeclaredProperty property = null)
         {
+            if (valueLiteral == "null") return null;
+            if (property?.IsEnum == true)
+            {
+                try
+                {
+                    return Enum.Parse(property.Type, valueLiteral);
+                }
+                catch
+                {
+                    throw new InvalidSyntax(InvalidEnumValue, $"'{valueLiteral}' is not a valid enum value for property '{property.Name}'");
+                }
+            }
+            var (first, length) = (valueLiteral[0], valueLiteral.Length);
+            switch (first)
+            {
+                case '\'':
+                case '\"':
+                    if (length > 1 && valueLiteral[length - 1] == first)
+                        valueLiteral = valueLiteral.Substring(1, length - 2);
+                    break;
+            }
+            if (property != null)
+            {
+                try
+                {
+                    return Convert.ChangeType(valueLiteral, property.Type);
+                }
+                catch
+                {
+                    throw new InvalidConditionValueType(valueLiteral, property);
+                }
+            }
             switch (valueLiteral)
             {
-                case null: return null;
-                case "null": return null;
-                case "": throw new InvalidSyntax(InvalidConditionSyntax, "No condition value literal after operator");
-                case var _ when Regex.Match(valueLiteral, RegEx.DoubleQuoteRegex) is Match m && m.Success: return m.Groups["content"].Value;
-                case var _ when Regex.Match(valueLiteral, RegEx.SingleQuoteRegex) is Match m && m.Success: return m.Groups["content"].Value;
-                case var _ when bool.TryParse(valueLiteral, out var @bool): return @bool;
-                case var _ when int.TryParse(valueLiteral, out var @int): return @int;
-                case var _ when decimal.TryParse(valueLiteral, Float, en_US, out var dec): return dec;
-                case var _ when DateTime.TryParseExact(valueLiteral, "yyyy-MM-dd", null, AssumeUniversal, out var dat) ||
-                                DateTime.TryParseExact(valueLiteral, "yyyy-MM-ddTHH:mm:ss", null, AssumeUniversal, out dat) ||
-                                DateTime.TryParseExact(valueLiteral, "O", null, AssumeUniversal, out dat): return dat;
-                default: return valueLiteral;
+                case "true":
+                case "True":
+                case "TRUE": return true;
+                case "false":
+                case "False":
+                case "FALSE": return false;
             }
+            if (char.IsDigit(first))
+            {
+                if (int.TryParse(valueLiteral, out var i))
+                    return i;
+                if (decimal.TryParse(valueLiteral, out var d))
+                    return d;
+                if (DateTime.TryParseExact(valueLiteral, "yyyy-MM-dd", null, AssumeUniversal, out var dat) ||
+                    DateTime.TryParseExact(valueLiteral, "yyyy-MM-ddTHH:mm:ss", null, AssumeUniversal, out dat) ||
+                    DateTime.TryParseExact(valueLiteral, "O", null, AssumeUniversal, out dat))
+                    return dat;
+            }
+            return valueLiteral;
         }
 
         internal static void MethodCheck(this IRequest request)
         {
             if (!Authenticator.MethodCheck(request.Method, request.Resource, request.AuthToken))
-                throw new NotAuthorized();
+                throw new MethodNotAllowed(request.Method, request.Resource);
         }
 
         /// <summary>

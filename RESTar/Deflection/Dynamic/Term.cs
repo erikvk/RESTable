@@ -35,12 +35,12 @@ namespace RESTar.Deflection.Dynamic
         public bool ScQueryable { get; private set; }
 
         /// <summary>
-        /// Is this term static? (Are all of its containing property references denoting static members?)
+        /// Is this term static? (Are all of its containing property references denoting declared members?)
         /// </summary>
         public bool IsStatic { get; private set; }
 
         /// <summary>
-        /// Is this term dynamic? (Are not all of its containing property references denoting static members?)
+        /// Is this term dynamic? (Are not all of its containing property references denoting declared members?)
         /// </summary>
         public bool IsDynamic => !IsStatic;
 

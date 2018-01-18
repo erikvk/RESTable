@@ -126,7 +126,7 @@ namespace RESTar.Requests
             if (!uriMetaConditions.Any()) return null;
             var renames = uriMetaConditions.Where(c => c.Key.EqualsNoCase("rename"));
             var regular = uriMetaConditions.Where(c => !c.Key.EqualsNoCase("rename"));
-            var mc = new MetaConditions{Empty = false};
+            var mc = new MetaConditions {Empty = false};
             ICollection<string> dynamicDomain = default;
 
             void make(IEnumerable<UriCondition> conds) => conds.ForEach(cond =>
@@ -138,11 +138,18 @@ namespace RESTar.Requests
                 if (!Enum.TryParse(key, true, out RESTarMetaConditions metaCondition))
                     throw new InvalidSyntax(InvalidMetaConditionKey,
                         $"Invalid meta-condition '{key}'. Available meta-conditions: {AllMetaConditions}");
+
                 var expectedType = metaCondition.GetExpectedType();
-                var value = valueLiteral.ParseConditionValue();
-                if (expectedType != value.GetType())
+                dynamic value;
+                try
+                {
+                    value = Convert.ChangeType(valueLiteral, expectedType) ?? throw new Exception();
+                }
+                catch
+                {
                     throw new InvalidSyntax(InvalidMetaConditionValueType,
                         $"Invalid data type assigned to meta-condition '{key}'. Expected {GetTypeString(expectedType)}.");
+                }
                 switch (metaCondition)
                 {
                     case RESTarMetaConditions.Unsafe:

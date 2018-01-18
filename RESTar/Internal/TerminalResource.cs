@@ -9,7 +9,9 @@ using RESTar.Requests;
 using RESTar.Results.Fail.BadRequest;
 using RESTar.Results.Fail.NotFound;
 using RESTar.WebSockets;
+using static System.StringComparer;
 using static RESTar.Deflection.TermBindingRules;
+using static RESTar.Operators;
 using static RESTar.WebSocketStatus;
 
 namespace RESTar.Internal
@@ -33,17 +35,16 @@ namespace RESTar.Internal
         public override bool Equals(object obj) => obj is TerminalResource t && t.FullName == FullName;
         public override int GetHashCode() => FullName.GetHashCode();
         public IReadOnlyList<IEntityResource> InnerResources { get; set; }
-
         public Selector<ITerminal> Select { get; }
         private Constructor<ITerminal> Constructor { get; }
 
         internal Dictionary<string, object> GetTerminalState(ITerminal terminal) => Type
-            .GetDeclaredProperties().Values.ToDictionary(p => p.Name, p => p.GetValue(terminal));
+            .GetDeclaredProperties().Values.ToDictionary(p => p.Name, p => p.GetValue(terminal), OrdinalIgnoreCase);
 
         internal void SetTerminalState(IDictionary<string, object> state, ITerminal terminal) => Type
             .GetDeclaredProperties().Values.ForEach(p => p.SetValue(terminal, state[p.Name]));
 
-        internal void InstantiateFor(IWebSocketInternal webSocket, ICollection<UriCondition> assignments = null)
+        internal void InstantiateFor(IWebSocketInternal webSocket, IEnumerable<UriCondition> assignments = null)
         {
             var newTerminal = Constructor();
             newTerminal.WebSocket = webSocket;
@@ -59,25 +60,18 @@ namespace RESTar.Internal
                     throw new InvalidOperationException($"Unable to instantiate terminal '{FullName}' " +
                                                         $"for a WebSocket with status '{closed}'");
             }
-            if (assignments?.Any() == true)
+            assignments?.ForEach(assignment =>
             {
-                var properties = Type.GetDeclaredProperties();
-                foreach (var assignment in assignments)
+                if (assignment.Operator.OpCode != EQUALS)
+                    throw new BadConditionOperator(this, assignment.Operator);
+                if (!Type.GetDeclaredProperties().TryGetValue(assignment.Key, out var property))
                 {
-                    if (assignment.Operator.OpCode != Operators.EQUALS)
-                        throw new InvalidSyntax(ErrorCodes.InvalidConditionOperator,
-                            $"Invalid operator '{assignment.Operator.Common}' in condition to terminal resource. " +
-                            "Only \'=\' is valid in terminal conditions.");
-                    if (!properties.TryGetValue(assignment.Key, out var property))
-                    {
-                        if (newTerminal is IDynamicTerminal dynTerminal)
-                            dynTerminal[assignment.Key] = assignment.ValueLiteral;
-                        else throw new UnknownProperty(Type, assignment.Key);
-                    }
-                    else property.SetValue(newTerminal, Convert.ChangeType(assignment.ValueLiteral, property.Type));
+                    if (newTerminal is IDynamicTerminal dynTerminal)
+                        dynTerminal[assignment.Key] = assignment.ValueLiteral.ParseConditionValue();
+                    else throw new UnknownProperty(Type, assignment.Key);
                 }
-            }
-
+                else property.SetValue(newTerminal, Convert.ChangeType(assignment.ValueLiteral, property.Type));
+            });
             newTerminal.Open();
         }
 

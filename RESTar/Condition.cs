@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Linq;
@@ -21,6 +22,9 @@ namespace RESTar
     /// </summary>
     public class Condition<T> : ICondition where T : class
     {
+        private static readonly IDictionary<UriCondition, Condition<T>> ConditionCache;
+        static Condition() => ConditionCache = new ConcurrentDictionary<UriCondition, Condition<T>>(UriCondition.EqualityComparer);
+
         /// <inheritdoc />
         public string Key => Term.Key;
 
@@ -203,25 +207,18 @@ namespace RESTar
         /// </summary>
         public static Condition<T>[] Parse(IEnumerable<UriCondition> uriConditions, ITarget<T> target) => uriConditions.Select(c =>
         {
-            var (key, op, valueLiteral) = (c.Key, c.Operator, c.ValueLiteral);
-            var term = target.MakeConditionTerm(key);
-            if (!term.Last.AllowedConditionOperators.HasFlag(op.OpCode))
-                throw new BadConditionOperator(key, target, op, term, term.Last.AllowedConditionOperators.ToOperators());
-            var value = valueLiteral.ParseConditionValue();
-            if (term.Last is DeclaredProperty prop && prop.Type.IsEnum && value is string)
-            {
-                try
-                {
-                    value = Enum.Parse(prop.Type, value);
-                }
-                catch
-                {
-                    throw new InvalidSyntax(ErrorCodes.InvalidConditionSyntax,
-                        $"Invalid string value for condition '{term.Key}'. The property type for '{prop.Name}' " +
-                        $"has a predefined set of allowed values, not containing '{value}'.");
-                }
-            }
-            return new Condition<T>(term, op.OpCode, value);
+            if (ConditionCache.TryGetValue(c, out var cond))
+                return cond;
+            var term = target.MakeConditionTerm(c.Key);
+            var last = term.Last;
+            if (!last.AllowedConditionOperators.HasFlag(c.Operator.OpCode))
+                throw new BadConditionOperator(c.Key, target, c.Operator, term, last.AllowedConditionOperators.ToOperators());
+            return ConditionCache[c] = new Condition<T>
+            (
+                term: term,
+                op: c.Operator.OpCode,
+                value: c.ValueLiteral.ParseConditionValue(last as DeclaredProperty)
+            );
         }).ToArray();
     }
 }

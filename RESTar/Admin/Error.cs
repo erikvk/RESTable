@@ -83,9 +83,6 @@ namespace RESTar.Admin
 
         internal static Error Create(RESTarError error, Arguments arguments)
         {
-            arguments.Uri.MetaConditions
-                .Where(c => c.Key.EqualsNoCase("key"))
-                .ForEach(cond => cond.ValueLiteral = "*******");
             var resource = arguments.SafeGet(a => a.IResource);
             var uri = arguments.Uri.ToString();
             var stackTrace = $"{error.StackTrace} §§§ INNER: {error.InnerException?.StackTrace}";
