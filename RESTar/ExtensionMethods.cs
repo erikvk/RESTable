@@ -724,7 +724,7 @@ namespace RESTar
         /// </summary>
         public static ClosedXML.Excel.XLWorkbook ToExcel<T>(this IEnumerable<T> entities) where T : class
         {
-            var resource = Resource<T>.Get;
+            var resource = Resource<T>.GetEntityResource;
             var dataSet = new DataSet();
             var table = entities.MakeDataTable(resource);
             if (table.Rows.Count == 0) return null;

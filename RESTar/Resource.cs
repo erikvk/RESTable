@@ -156,12 +156,24 @@ namespace RESTar
         /// Gets the resource for a given type, or throws an UnknownResourceException 
         /// if there is no such resource
         /// </summary>
-        public static IEntityResource<T> Get => RESTarConfig.ResourceByType.SafeGet(typeof(T)) as IEntityResource<T> ??
-                                                throw new UnknownResource(typeof(T).FullName);
+        public static IResource<T> Get => RESTarConfig.ResourceByType.SafeGet(typeof(T)) as IResource<T>
+                                          ?? throw new UnknownResource(typeof(T).FullName);
 
         /// <summary>
         /// Gets the resource for a given type or null if there is no such resource
         /// </summary>
-        public static IEntityResource<T> SafeGet => RESTarConfig.ResourceByType.SafeGet(typeof(T)) as IEntityResource<T>;
+        public static IResource<T> SafeGet => RESTarConfig.ResourceByType.SafeGet(typeof(T)) as IResource<T>;
+
+        /// <summary>
+        /// Gets the entity resource for a given type, or throws an UnknownResourceException 
+        /// if there is no such resource
+        /// </summary>
+        public static IEntityResource<T> GetEntityResource => RESTarConfig.ResourceByType.SafeGet(typeof(T)) as IEntityResource<T>
+                                                              ?? throw new UnknownResource(typeof(T).FullName);
+
+        /// <summary>
+        /// Gets the entity resource for a given type or null if there is no such resource
+        /// </summary>
+        public static IEntityResource<T> SafeGetEntityResource => RESTarConfig.ResourceByType.SafeGet(typeof(T)) as IEntityResource<T>;
     }
 }

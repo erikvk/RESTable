@@ -5,6 +5,8 @@ using System.Linq;
 using Newtonsoft.Json.Linq;
 using RESTar.Admin;
 using RESTar.Deflection;
+using RESTar.Deflection.Dynamic;
+using RESTar.Internal;
 using RESTar.Results.Success;
 using Starcounter;
 
@@ -31,6 +33,13 @@ namespace RESTar.OData
                                                                  "<PropertyValue Property=\"NonDeletableNavigationProperties\">" +
                                                                  "<Collection/></PropertyValue></Record></Annotation>";
 
+        private static readonly IEntityResource[] HiddenResources =
+        {
+            Resource<AvailableResource>.GetEntityResource, Resource<Schema>.GetEntityResource, Resource<Echo>.GetEntityResource,
+            Resource<ResourceProfile>.GetEntityResource, Resource<OutputFormat>.GetEntityResource, Resource<Macro>.GetEntityResource,
+            Resource<AdminTools>.GetEntityResource, Resource<Aggregator>.GetEntityResource, Resource<SetOperations>.GetEntityResource
+        };
+
         private const string EntityContainerName = "DefaultContainer";
 
         internal MetadataDocument(Metadata metadata)
@@ -49,25 +58,20 @@ namespace RESTar.OData
                         swr.Write($"<Member Name=\"{member.Name}\" Value=\"{member.Value}\"/>");
                     swr.Write("</EnumType>");
                 }
-//                foreach (var entityType in metadata.EntityTypes)
-//                {
-//                    swr.Write($"<EntityType Name=\"{entityType.FullName}\" OpenType=\"{entityType.IsDynamic()}\">");
-//                    foreach (var property in entityType.GetDeclaredProperties().Values.Where(p => p.Readable && !p.Hidden))
-//                    {
-//                        swr.Write($"<Property Name=\"{property.Name}\" Nullable=\"{property.Nullable}\" " +
-//                                  $"Type=\"{property.Type.GetEdmTypeName()}\"");
-//                        swr.Write(property.ReadOnly ? $">{ReadOnlyAnnotation}</Property>" : "/>");
-//                    }
-//                    swr.Write("</EntityType>");
-//                }
+                foreach (var entityType in metadata.EntityTypes)
+                {
+                    swr.Write($"<EntityType Name=\"{entityType.FullName}\" OpenType=\"{entityType.IsDynamic}\">");
+                    foreach (var property in entityType.Type.GetDeclaredProperties().Values.Where(p => p.Readable && !p.Hidden))
+                    {
+                        swr.Write($"<Property Name=\"{property.Name}\" Nullable=\"{property.Nullable}\" " +
+                                  $"Type=\"{property.Type.GetEdmTypeName()}\"");
+                        swr.Write(property.ReadOnly ? $">{ReadOnlyAnnotation}</Property>" : "/>");
+                    }
+                    swr.Write("</EntityType>");
+                }
                 swr.Write("<EntityType Name=\"RESTar.DynamicResource\" OpenType=\"true\"/>");
                 swr.Write($"<EntityContainer Name=\"{EntityContainerName}\">");
-                foreach (var entitySet in metadata.EntitySets.Except(new Internal.IEntityResource[]
-                {
-                    Resource<AvailableResource>.Get, Resource<Admin.Console>.Get, Resource<Schema>.Get, Resource<Echo>.Get,
-                    Resource<ResourceProfile>.Get, Resource<OutputFormat>.Get, Resource<Macro>.Get, Resource<AdminTools>.Get,
-                    Resource<Aggregator>.Get, Resource<SetOperations>.Get
-                }))
+                foreach (var entitySet in metadata.EntitySets.Except(HiddenResources))
                 {
                     swr.Write($"<EntitySet EntityType=\"{entitySet.Type.GetEdmTypeName()}\" Name=\"{entitySet.FullName}\">");
                     var methods = metadata.CurrentAccessRights[entitySet];

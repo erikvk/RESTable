@@ -13,6 +13,7 @@ using RESTar.Results.Success;
 using RESTar.Serialization;
 using static RESTar.Internal.ErrorCodes;
 using static RESTar.OData.QueryOptions;
+using static RESTar.ResourceKind;
 using Formatting = Newtonsoft.Json.Formatting;
 
 namespace RESTar.OData
@@ -197,7 +198,9 @@ namespace RESTar.OData
             switch (entities.Content)
             {
                 case IEnumerable<AvailableResource> availableResources:
-                    entities.Content = availableResources.Select(ODataServiceEntity.Convert);
+                    entities.Content = availableResources
+                        .Where(r => r.Kind == EntityResource)
+                        .Select(ODataServiceEntity.Convert);
                     contextFragment = null;
                     writeMetadata = false;
                     break;

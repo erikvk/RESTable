@@ -100,7 +100,7 @@ namespace RESTar
         {
             if (!RESTarConfig.Initialized)
                 throw new NotInitialized();
-            Resource = Resource<T>.Get;
+            Resource = Resource<T>.GetEntityResource;
             Target = Resource;
             ResponseHeaders = new Headers();
             MetaConditions = new MetaConditions {Unsafe = true};
