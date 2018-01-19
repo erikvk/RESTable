@@ -55,7 +55,7 @@ namespace RESTar.Admin
                 var resource = RESTar.Resource.Find(input);
                 var entityResource = resource as IEntityResource;
                 var profile = entityResource?.ResourceProfile
-                              ?? throw new Exception($"Cannot profile '{resource.FullName}'. No profiler implemented for type");
+                              ?? throw new Exception($"Cannot profile '{resource.Name}'. No profiler implemented for type");
                 profiles = new[] {profile};
             }
             return profiles
@@ -100,7 +100,7 @@ namespace RESTar.Admin
             }
             return new ResourceProfile
             {
-                Resource = resource.FullName,
+                Resource = resource.Name,
                 NumberOfEntities = domainCount,
                 ApproximateSize = new ResourceSize(totalBytes),
                 SampleSize = sampleSize

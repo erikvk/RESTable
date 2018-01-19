@@ -85,7 +85,7 @@ namespace RESTar
 
         internal static void AddResource(IResource toAdd)
         {
-            ResourceByName[toAdd.FullName] = toAdd;
+            ResourceByName[toAdd.Name] = toAdd;
             ResourceByType[toAdd.Type] = toAdd;
             AddToResourceFinder(toAdd, ResourceFinder);
             UpdateConfiguration();
@@ -94,7 +94,7 @@ namespace RESTar
 
         internal static void RemoveResource(IResource toRemove)
         {
-            ResourceByName.Remove(toRemove.FullName);
+            ResourceByName.Remove(toRemove.Name);
             ResourceByType.Remove(toRemove.Type);
             ReloadResourceFinder();
             UpdateConfiguration();
@@ -113,11 +113,11 @@ namespace RESTar
             {
                 switch (resource)
                 {
-                    case var _ when resource.IsInternal: return new[] {resource.FullName};
+                    case var _ when resource.IsInternal: return new[] {resource.Name};
                     case var _ when resource.IsInnerResource:
-                        var dots = resource.FullName.Count('.');
-                        return resource.FullName.Split(new[] {'.'}, dots);
-                    default: return resource.FullName.Split('.');
+                        var dots = resource.Name.Count('.');
+                        return resource.Name.Split(new[] {'.'}, dots);
+                    default: return resource.Name.Split('.');
                 }
             }
 
@@ -285,7 +285,7 @@ namespace RESTar
                                 recurseResources(allowAccess["Resource"]);
                                 accessRightList.Add(new AccessRight
                                 {
-                                    Resources = resourceSet.OrderBy(r => r.FullName).ToList(),
+                                    Resources = resourceSet.OrderBy(r => r.Name).ToList(),
                                     AllowedMethods = allowAccess["Methods"].Value<string>().ToUpper().ToMethodsArray()
                                 });
                                 return;

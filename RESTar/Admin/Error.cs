@@ -90,7 +90,7 @@ namespace RESTar.Admin
             return new Error
             {
                 Time = DateTime.Now,
-                ResourceName = (resource?.FullName ?? "<unknown>") +
+                ResourceName = (resource?.Name ?? "<unknown>") +
                                (resource?.Alias != null ? $" ({resource.Alias})" : ""),
                 Action = arguments.Action,
                 ErrorCode = error.ErrorCode,

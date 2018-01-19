@@ -45,10 +45,10 @@ namespace RESTar.View
             get => _request;
             set
             {
-                SetResourceName(value.Resource.FullName);
-                SetResourcePath($"/{Application.Current.Name}/{value.Resource.FullName}");
+                SetResourceName(value.Resource.Name);
+                SetResourcePath($"/{Application.Current.Name}/{value.Resource.Name}");
                 var wd = Application.Current.WorkingDirectory;
-                var html = $"{value.Resource.FullName}{HtmlSuffix}";
+                var html = $"{value.Resource.Name}{HtmlSuffix}";
                 var exists = File.Exists($"{wd}/wwwroot/resources/{html}");
                 if (!exists) exists = File.Exists($"{wd}/../wwwroot/resources/{html}");
                 if (!exists) throw new NoHtml(value.Resource, html);

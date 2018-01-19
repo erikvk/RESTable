@@ -17,7 +17,7 @@ namespace RESTar.WebSockets
             WebSocketId = webSocket.Id;
             IPAddress = webSocket.TcpConnection.ClientIP.ToString();
             ConnectedAt = webSocket.Opened.ToString("yyyy-MM-dd HH:mm:ss");
-            CurrentTerminal = webSocket.TerminalResource?.FullName ?? "none";
+            CurrentTerminal = webSocket.TerminalResource?.Name ?? "none";
             CustomHeaders = webSocket.Headers
                 .Where(IsAvailable)
                 .ToDictionary(p => p.Key, p => p.Value, OrdinalIgnoreCase);

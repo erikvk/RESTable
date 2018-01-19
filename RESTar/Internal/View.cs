@@ -24,7 +24,7 @@ namespace RESTar.Internal
         public TermBindingRules ConditionBindingRule { get; }
 
         /// <inheritdoc />
-        public string FullName { get; }
+        public string Name { get; }
 
         /// <inheritdoc />
         public string Description { get; }
@@ -38,7 +38,7 @@ namespace RESTar.Internal
         internal View(Type type)
         {
             Type = type;
-            FullName = type.FullName;
+            Name = type.Name;
             Select = DelegateMaker.GetDelegate<Selector<T>>(type);
             var viewAttribute = type.GetAttribute<RESTarViewAttribute>();
             Description = viewAttribute.Description;
@@ -48,12 +48,12 @@ namespace RESTar.Internal
         }
 
         /// <inheritdoc />
-        public override string ToString() => FullName;
+        public override string ToString() => Name;
 
         /// <inheritdoc />
-        public override bool Equals(object obj) => obj is View<T> view && view.FullName == FullName;
+        public override bool Equals(object obj) => obj is View<T> view && view.Name == Name;
 
         /// <inheritdoc />
-        public override int GetHashCode() => FullName.GetHashCode();
+        public override int GetHashCode() => Name.GetHashCode();
     }
 }

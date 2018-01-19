@@ -48,7 +48,7 @@ namespace RESTar.Requests
                         {
                             case TerminalResource terminalResource:
                                 if (!tcpConnection.HasWebSocket)
-                                    return new UpgradeRequired(terminalResource.FullName);
+                                    return new UpgradeRequired(terminalResource.Name);
                                 terminalResource.InstantiateFor(tcpConnection.WebSocketInternal, arguments.Uri.Conditions);
                                 return new WebSocketResult(true);
                             case var entityResource:

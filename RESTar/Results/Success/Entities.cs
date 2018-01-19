@@ -16,14 +16,14 @@ namespace RESTar.Results.Success
         internal IRequest Request { get; private set; }
         internal IEnumerable<dynamic> Content { get; set; }
         public ulong EntityCount { get; set; }
-        string IEntitiesMetadata.ResourceFullName => Request.Resource.FullName;
+        string IEntitiesMetadata.ResourceFullName => Request.Resource.Name;
         internal string ExternalDestination { get; set; }
         public bool IsPaged => Content != null && EntityCount > 0 && (long) EntityCount == Request.MetaConditions.Limit;
 
         private Entities() { }
 
         internal void SetContentDisposition(string extension) => Headers["Content-Disposition"] =
-            $"attachment;filename={Request.Resource.FullName}_{DateTime.Now:yyMMddHHmmssfff}{extension}";
+            $"attachment;filename={Request.Resource.Name}_{DateTime.Now:yyMMddHHmmssfff}{extension}";
 
         public IUriParameters GetNextPageLink()
         {

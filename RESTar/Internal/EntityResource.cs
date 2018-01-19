@@ -12,6 +12,7 @@ using RESTar.Resources;
 using RESTar.Results.Error;
 using RESTar.Results.Fail.BadRequest;
 using Starcounter;
+using static System.StringComparer;
 using static RESTar.Methods;
 using static RESTar.Deflection.TermBindingRules;
 using static RESTar.Operations.DelegateMaker;
@@ -19,9 +20,9 @@ using static RESTar.Operations.Transact;
 
 namespace RESTar.Internal
 {
-    internal class Resource<T> : IEntityResource<T>, IResourceInternal where T : class
+    internal class EntityResource<T> : IEntityResource<T>, IResourceInternal where T : class
     {
-        public string FullName { get; }
+        public string Name { get; }
         public bool Editable { get; }
         public IReadOnlyList<Methods> AvailableMethods { get; internal set; }
         public string Description { get; internal set; }
@@ -34,8 +35,8 @@ namespace RESTar.Internal
         public string ParentResourceName { get; }
         public bool IsSingleton { get; }
         public bool DynamicConditionsAllowed { get; }
+        private Dictionary<string, View<T>> ViewDictionaryInternal { get; }
         public IReadOnlyDictionary<string, View<T>> ViewDictionary => ViewDictionaryInternal;
-        internal Dictionary<string, View<T>> ViewDictionaryInternal { get; }
         public IEnumerable<IView> Views => ViewDictionaryInternal?.Values;
         public TermBindingRules ConditionBindingRule { get; }
         public TermBindingRules OutputBindingRule { get; }
@@ -47,7 +48,7 @@ namespace RESTar.Internal
         /// </summary>
         public bool DeclaredPropertiesFlagged { get; }
 
-        public override string ToString() => FullName;
+        public override string ToString() => Name;
         public bool IsStarcounterResource { get; }
         public bool RequiresValidation { get; }
         public string Provider { get; }
@@ -77,10 +78,10 @@ namespace RESTar.Internal
 
         public string Alias
         {
-            get => Admin.ResourceAlias.GetByResource(FullName)?.Alias;
+            get => Admin.ResourceAlias.GetByResource(Name)?.Alias;
             set
             {
-                var existingAssignment = Admin.ResourceAlias.GetByResource(FullName);
+                var existingAssignment = Admin.ResourceAlias.GetByResource(Name);
                 if (value == null)
                 {
                     Trans(() => existingAssignment?.Delete());
@@ -91,15 +92,15 @@ namespace RESTar.Internal
                 var usedAliasMapping = Admin.ResourceAlias.GetByAlias(value);
                 if (usedAliasMapping != null)
                 {
-                    if (usedAliasMapping.Resource == FullName)
+                    if (usedAliasMapping.Resource == Name)
                         return;
                     throw new AliasAlreadyInUse(usedAliasMapping);
                 }
-                if (RESTarConfig.Resources.Any(r => r.FullName.EqualsNoCase(value)))
+                if (RESTarConfig.Resources.Any(r => r.Name.EqualsNoCase(value)))
                     throw new AliasEqualToResourceName(value);
                 Trans(() =>
                 {
-                    existingAssignment = existingAssignment ?? new Admin.ResourceAlias {Resource = FullName};
+                    existingAssignment = existingAssignment ?? new Admin.ResourceAlias {Resource = Name};
                     existingAssignment.Alias = value;
                 });
             }
@@ -108,7 +109,7 @@ namespace RESTar.Internal
         /// <summary>
         /// All resources are constructed here
         /// </summary>
-        internal Resource(string fullName, RESTarAttribute attribute, Selector<T> selector, Inserter<T> inserter,
+        internal EntityResource(string fullName, RESTarAttribute attribute, Selector<T> selector, Inserter<T> inserter,
             Updater<T> updater, Deleter<T> deleter, Counter<T> counter, Profiler<T> profiler, Authenticator<T> authenticator,
             ResourceProvider provider, View<T>[] views)
         {
@@ -117,9 +118,9 @@ namespace RESTar.Internal
                 IsInnerResource = true;
                 var location = fullName.LastIndexOf('+');
                 ParentResourceName = fullName.Substring(0, location).Replace('+', '.');
-                FullName = fullName.Replace('+', '.');
+                Name = fullName.Replace('+', '.');
             }
-            else FullName = fullName;
+            else Name = fullName;
             Editable = attribute.Editable;
             Description = attribute.Description;
             AvailableMethods = attribute.AvailableMethods;
@@ -148,7 +149,7 @@ namespace RESTar.Internal
             Authenticate = authenticator;
             if (views?.Any() == true)
             {
-                ViewDictionaryInternal = views.ToDictionary(v => v.FullName.ToLower(), v => v);
+                ViewDictionaryInternal = views.ToDictionary(v => v.Name, OrdinalIgnoreCase);
                 views.ForEach(view => view.Type.GetDeclaredProperties());
             }
             CheckOperationsSupport();
@@ -200,17 +201,17 @@ namespace RESTar.Internal
                 {
                     var @interface = MatchingInterface(op);
                     throw new InvalidResourceDeclaration(
-                        $"The '{op}' operation is needed to support method(s) {AvailableMethods.ToMethodsString()} for resource '{FullName}', but " +
+                        $"The '{op}' operation is needed to support method(s) {AvailableMethods.ToMethodsString()} for resource '{Name}', but " +
                         "RESTar found no implementation of the operation interface in the type declaration. Add an implementation of the " +
-                        $"'{@interface.ToString().Replace("`1[T]", $"<{FullName}>")}' interface to the resource's type declaration");
+                        $"'{@interface.ToString().Replace("`1[T]", $"<{Name}>")}' interface to the resource's type declaration");
                 }
             }
         }
 
-        public override bool Equals(object obj) => obj is Resource<T> resource && resource.FullName == FullName;
-        public bool Equals(IEntityResource x, IEntityResource y) => x?.FullName == y?.FullName;
-        public int GetHashCode(IEntityResource obj) => obj.FullName.GetHashCode();
-        public int CompareTo(IEntityResource other) => string.Compare(FullName, other.FullName, StringComparison.Ordinal);
-        public override int GetHashCode() => FullName.GetHashCode();
+        public override bool Equals(object obj) => obj is EntityResource<T> resource && resource.Name == Name;
+        public bool Equals(IEntityResource x, IEntityResource y) => x?.Name == y?.Name;
+        public int GetHashCode(IEntityResource obj) => obj.Name.GetHashCode();
+        public int CompareTo(IEntityResource other) => string.Compare(Name, other.Name, StringComparison.Ordinal);
+        public override int GetHashCode() => Name.GetHashCode();
     }
 }

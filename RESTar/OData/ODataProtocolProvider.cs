@@ -193,7 +193,7 @@ namespace RESTar.OData
             result.Headers["OData-Version"] = "4.0";
             if (!(result is Entities entities)) return result;
 
-            var contextFragment = $"#{entities.Request.Resource.FullName}";
+            var contextFragment = $"#{entities.Request.Resource.Name}";
             var writeMetadata = true;
             switch (entities.Content)
             {

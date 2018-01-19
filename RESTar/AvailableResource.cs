@@ -62,14 +62,14 @@ namespace RESTar
 
             return _rights?.Keys
                 .Where(r => r.IsGlobal && !r.IsInnerResource)
-                .OrderBy(r => r.FullName)
+                .OrderBy(r => r.Name)
                 .Select(r => Make(r, _rights))
                 .Where(request.Conditions);
         }
 
         internal static AvailableResource Make(IResource iresource, AccessRights rights) => new AvailableResource
         {
-            Name = iresource.FullName,
+            Name = iresource.Name,
             Alias = iresource.Alias,
             Description = iresource.Description ?? "No description",
             Methods = rights.SafeGet(iresource)?
@@ -77,7 +77,7 @@ namespace RESTar
                           .ToArray() ?? new Methods[0],
             Kind = iresource is IEntityResource ? ResourceKind.EntityResource : ResourceKind.TerminalResource,
             Views = iresource is IEntityResource er
-                ? er.Views?.Select(v => new ViewInfo(v.FullName, v.Description ?? "No description")).ToArray()
+                ? er.Views?.Select(v => new ViewInfo(v.Name, v.Description ?? "No description")).ToArray()
                   ?? new ViewInfo[0]
                 : null,
             InnerResources = ((IResourceInternal) iresource).InnerResources?.Select(r => Make(r, rights)).ToArray()

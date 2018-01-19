@@ -201,7 +201,7 @@
     <Compile Include="ExtensionMethods.cs" />
     <Compile Include="Help.cs" />
     <Compile Include="IRequest.cs" />
-    <Compile Include="Internal\Resource.cs" />
+    <Compile Include="Internal\EntityResource.cs" />
     <Compile Include="Log.cs" />
     <Compile Include="Operator.cs" />
     <Compile Include="Admin\Resource.cs" />

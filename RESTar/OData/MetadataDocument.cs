@@ -98,7 +98,7 @@ namespace RESTar.OData
                 swr.Write($"<EntityContainer Name=\"{EntityContainerName}\">");
                 foreach (var entitySet in metadata.EntityResources.Except(HiddenResources))
                 {
-                    swr.Write($"<EntitySet EntityType=\"{entitySet.Type.GetEdmTypeName()}\" Name=\"{entitySet.FullName}\">");
+                    swr.Write($"<EntitySet EntityType=\"{entitySet.Type.GetEdmTypeName()}\" Name=\"{entitySet.Name}\">");
                     var methods = metadata.CurrentAccessRights[entitySet].Intersect(entitySet.AvailableMethods).ToList();
                     swr.Write(InsertableAnnotation(methods.Contains(Methods.POST)));
                     swr.Write(UpdatableAnnotation(methods.Contains(Methods.PATCH)));

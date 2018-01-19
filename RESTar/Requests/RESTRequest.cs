@@ -10,7 +10,6 @@ using RESTar.Results.Fail.BadRequest;
 using RESTar.Results.Fail.Forbidden;
 using RESTar.Results.Fail.NotFound;
 using RESTar.Serialization;
-using RESTar.WebSockets;
 using static RESTar.Internal.ErrorCodes;
 using static RESTar.RESTarConfig;
 using static RESTar.Methods;
@@ -67,7 +66,6 @@ namespace RESTar.Requests
             ResponseHeaders = new Headers();
             Conditions = new Condition<T>[0];
             MetaConditions = new MetaConditions();
-
             TcpConnection = arguments.TcpConnection;
             AuthToken = arguments.AuthToken;
             UriParameters = arguments.Uri;
@@ -78,17 +76,6 @@ namespace RESTar.Requests
                     throw new UnknownView(arguments.Uri.ViewName, Resource);
                 Target = view;
             }
-
-            if (TcpConnection.HasWebSocket)
-            {
-                var webSocket = (IWebSocketInternal) TcpConnection.WebSocket;
-                if (!Target.Equals(webSocket.Target))
-                {
-                    webSocket.Target = Target;
-                    //Target.WebSocketConnectionHandler?.Invoke(TcpConnection.WebSocket);
-                }
-            }
-
             Evaluator = Operations<T>.REST.GetEvaluator(Method);
             Source = arguments.Headers.SafeGet("Source");
             Destination = arguments.Headers.SafeGet("Destination");

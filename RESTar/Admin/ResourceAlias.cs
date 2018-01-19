@@ -53,7 +53,7 @@ namespace RESTar.Admin
                 try
                 {
                     var r = RESTarConfig.ResourceByName[value];
-                    _resource = r.FullName;
+                    _resource = r.Name;
                 }
                 catch (KeyNotFoundException)
                 {

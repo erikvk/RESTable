@@ -52,7 +52,7 @@ namespace RESTar.Requests
             if (Terminal == null) return;
             if (!Terminal.SupportsTextInput)
             {
-                SendResult(new UnsupportedWebSocketInput($"Terminal '{TerminalResource.FullName}' does not support text input"));
+                SendResult(new UnsupportedWebSocketInput($"Terminal '{TerminalResource.Name}' does not support text input"));
                 return;
             }
             Console.LogWebSocketTextInput(textData, this);
@@ -65,7 +65,7 @@ namespace RESTar.Requests
             if (Terminal == null) return;
             if (!Terminal.SupportsBinaryInput)
             {
-                SendResult(new UnsupportedWebSocketInput($"Terminal '{TerminalResource.FullName}' does not support binary input"));
+                SendResult(new UnsupportedWebSocketInput($"Terminal '{TerminalResource.Name}' does not support binary input"));
                 return;
             }
             Console.LogWebSocketBinaryInput(binaryData, this);

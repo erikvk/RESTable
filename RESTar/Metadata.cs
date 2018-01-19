@@ -31,7 +31,7 @@ namespace RESTar
                 .OfType<IEntityResource>()
                 .Where(r => !Equals(r, ThisResource))
                 .Where(r => r.IsGlobal)
-                .OrderBy(r => r.FullName)
+                .OrderBy(r => r.Name)
                 .ToList();
             var terminalResources = rights.Keys
                 .OfType<TerminalResource>()

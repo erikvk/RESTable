@@ -6,7 +6,6 @@ namespace RESTar.WebSockets
     internal interface IWebSocketInternal : IWebSocket, IDisposable
     {
         void Open();
-        ITarget Target { get; set; }
         ITerminal Terminal { get; set; }
         TerminalResource TerminalResource { get; set; }
         DateTime Opened { get; }

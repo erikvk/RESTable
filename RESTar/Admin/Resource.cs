@@ -88,7 +88,7 @@ namespace RESTar.Admin
             if (request == null) throw new ArgumentNullException(nameof(request));
             return RESTarConfig.Resources
                 .Where(r => r.IsGlobal)
-                .OrderBy(r => r.FullName)
+                .OrderBy(r => r.Name)
                 .Select(Make)
                 .Where(request.Conditions);
         }
@@ -98,7 +98,7 @@ namespace RESTar.Admin
             var entityResource = iresource as IEntityResource;
             return new Resource
             {
-                Name = iresource.FullName,
+                Name = iresource.Name,
                 Alias = iresource.Alias,
                 Description = iresource.Description ?? "No description",
                 EnabledMethods = iresource.AvailableMethods.ToArray(),
@@ -106,7 +106,7 @@ namespace RESTar.Admin
                 IsInternal = iresource.IsInternal,
                 Type = iresource.Type.FullName,
                 Views = entityResource != null
-                    ? (entityResource.Views?.Select(v => new ViewInfo(v.FullName, v.Description ?? "No description")).ToArray()
+                    ? (entityResource.Views?.Select(v => new ViewInfo(v.Name, v.Description ?? "No description")).ToArray()
                        ?? new ViewInfo[0])
                     : null,
                 IResource = iresource,
@@ -181,7 +181,7 @@ namespace RESTar.Admin
                 {
                     #region Edit other properties (available for dynamic resources)
 
-                    var dynamicResource = DynamicResource.Get(iresource.FullName);
+                    var dynamicResource = DynamicResource.Get(iresource.Name);
                     var diresource = (IResourceInternal) iresource;
 
                     if (iresource.Description != resource.Description)
@@ -200,11 +200,11 @@ namespace RESTar.Admin
                         updated = true;
                     }
 
-                    if (resource.Name != iresource.FullName)
+                    if (resource.Name != iresource.Name)
                     {
                         resource.ResolveDynamicResourceName();
                         dynamicResource.Name = resource.Name;
-                        var alias = ResourceAlias.GetByResource(iresource.FullName);
+                        var alias = ResourceAlias.GetByResource(iresource.Name);
                         if (alias != null) alias._resource = resource.Name;
                         RESTarConfig.RemoveResource(iresource);
                         ResourceFactory.MakeDynamicResource(dynamicResource);

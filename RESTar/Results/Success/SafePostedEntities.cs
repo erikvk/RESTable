@@ -6,7 +6,7 @@ namespace RESTar.Results.Success
     {
         internal SafePostedEntities(int upd, int ins, IEntityResource resource)
         {
-            Headers["RESTar-info"] = $"Updated {upd} and then inserted {ins} entities in resource '{resource.FullName}'";
+            Headers["RESTar-info"] = $"Updated {upd} and then inserted {ins} entities in resource '{resource.Name}'";
         }
     }
 }

@@ -375,7 +375,7 @@ namespace RESTar
         /// If the type is represented by some RESTar resource in the current instance,
         /// returns the name of this resource. Else null.
         /// </summary>
-        public static string GetResourceName(this Type type) => type.GetResource()?.FullName;
+        public static string GetResourceName(this Type type) => type.GetResource()?.Name;
 
         #endregion
 
@@ -605,7 +605,7 @@ namespace RESTar
             {
                 try
                 {
-                    return Convert.ChangeType(valueLiteral, property.Type);
+                    return Convert.ChangeType(valueLiteral, property.Type.IsNullable(out var t) ? t : property.Type);
                 }
                 catch
                 {

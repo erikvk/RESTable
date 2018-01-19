@@ -50,7 +50,7 @@ namespace RESTar.Admin
             set
             {
                 IResource = RESTar.Resource.GetEntityResource(value);
-                _table = IResource.FullName;
+                _table = IResource.Name;
                 Provider = IResource.Provider;
             }
         }
@@ -161,7 +161,7 @@ namespace RESTar.Admin
             .Sum(group =>
             {
                 if (!Indexers.TryGetValue(group.Key, out var indexer))
-                    throw new Exception($"Unable to register index. Resource '{group.First().IResource.FullName}' " +
+                    throw new Exception($"Unable to register index. Resource '{group.First().IResource.Name}' " +
                                         "is not a database resource.");
                 return indexer.Insert(group, request);
             });

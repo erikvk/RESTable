@@ -18,7 +18,7 @@ namespace RESTar.Internal
 {
     internal class TerminalResource : IResource<ITerminal>, IResourceInternal
     {
-        public string FullName { get; }
+        public string Name { get; }
         public Type Type { get; }
         public IReadOnlyList<Methods> AvailableMethods { get; set; }
         public string Alias { get; set; }
@@ -26,14 +26,14 @@ namespace RESTar.Internal
         public bool IsGlobal { get; }
         public bool IsInnerResource { get; }
         public string ParentResourceName { get; }
-        public bool Equals(IEntityResource x, IEntityResource y) => x?.FullName == y?.FullName;
-        public int GetHashCode(IEntityResource obj) => obj.FullName.GetHashCode();
-        public int CompareTo(IEntityResource other) => string.Compare(FullName, other.FullName, StringComparison.Ordinal);
+        public bool Equals(IEntityResource x, IEntityResource y) => x?.Name == y?.Name;
+        public int GetHashCode(IEntityResource obj) => obj.Name.GetHashCode();
+        public int CompareTo(IEntityResource other) => string.Compare(Name, other.Name, StringComparison.Ordinal);
         public TermBindingRules ConditionBindingRule { get; }
         public string Description { get; set; }
-        public override string ToString() => FullName;
-        public override bool Equals(object obj) => obj is TerminalResource t && t.FullName == FullName;
-        public override int GetHashCode() => FullName.GetHashCode();
+        public override string ToString() => Name;
+        public override bool Equals(object obj) => obj is TerminalResource t && t.Name == Name;
+        public override int GetHashCode() => Name.GetHashCode();
         public IReadOnlyList<IEntityResource> InnerResources { get; set; }
         public Selector<ITerminal> Select { get; }
         private Constructor<ITerminal> Constructor { get; }
@@ -57,7 +57,7 @@ namespace RESTar.Internal
                     break;
                 case Open: break;
                 case var closed:
-                    throw new InvalidOperationException($"Unable to instantiate terminal '{FullName}' " +
+                    throw new InvalidOperationException($"Unable to instantiate terminal '{Name}' " +
                                                         $"for a WebSocket with status '{closed}'");
             }
             if (assignments == null)
@@ -91,7 +91,7 @@ namespace RESTar.Internal
 
         public TerminalResource(Type type)
         {
-            FullName = type.FullName ?? throw new Exception();
+            Name = type.FullName ?? throw new Exception();
             Type = type;
             AvailableMethods = new[] {Methods.GET};
             IsInternal = false;
@@ -103,12 +103,12 @@ namespace RESTar.Internal
             Description = attribute?.Description;
             Select = null;
             Constructor = type.MakeStaticConstructor<ITerminal>();
-            if (FullName.Contains('+'))
+            if (Name.Contains('+'))
             {
                 IsInnerResource = true;
-                var location = FullName.LastIndexOf('+');
-                ParentResourceName = FullName.Substring(0, location).Replace('+', '.');
-                FullName = FullName.Replace('+', '.');
+                var location = Name.LastIndexOf('+');
+                ParentResourceName = Name.Substring(0, location).Replace('+', '.');
+                Name = Name.Replace('+', '.');
             }
         }
     }
