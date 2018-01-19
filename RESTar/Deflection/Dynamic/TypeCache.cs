@@ -63,11 +63,23 @@ namespace RESTar.Deflection.Dynamic
 
         private static readonly ConcurrentDictionary<Type, IReadOnlyDictionary<string, DeclaredProperty>> DeclaredPropertyCache;
 
-        private static IEnumerable<DeclaredProperty> ParseDeclaredProperties(this IEnumerable<PropertyInfo> props, bool flag) => props
-            .Where(p => !p.RESTarIgnored())
-            .Where(p => !p.GetIndexParameters().Any())
-            .Select(p => new DeclaredProperty(p, flag))
-            .OrderBy(p => p.Order);
+        private static IEnumerable<DeclaredProperty> ParseDeclaredProperties(this IEnumerable<PropertyInfo> props, bool flag)
+        {
+            var properties = props
+                .Where(p => !p.RESTarIgnored())
+                .Where(p => !p.GetIndexParameters().Any())
+                .Select(p => new DeclaredProperty(p, flag))
+                .OrderBy(p => p.Order)
+                .ToList();
+            var keyIndex = properties.FindIndex(p => p.IsKey);
+            if (keyIndex > 0)
+                properties.ForEach((property, index) =>
+                {
+                    if (index != keyIndex)
+                        property.IsKey = false;
+                });
+            return properties;
+        }
 
         /// <summary>
         /// Gets the declared properties for a given type
@@ -97,14 +109,14 @@ namespace RESTar.Deflection.Dynamic
                     case var _ when _type.IsDDictionary():
                         return _type.GetProperties(Instance | Public)
                             .ParseDeclaredProperties(flag: true)
-                            .Union(GetObjectIDAndObjectNo(flag: true));
+                            .Union(GetObjectNoAndObjectID(flag: true));
                     case var _ when Resource.SafeGet(_type) is IEntityResource e && e.DeclaredPropertiesFlagged:
                         return _type.GetProperties(Instance | Public)
                             .ParseDeclaredProperties(flag: true);
                     default:
                         return _type.GetProperties(Instance | Public)
                             .ParseDeclaredProperties(false)
-                            .If(_type.IsStarcounterDbClass, ps => ps.Union(GetObjectIDAndObjectNo(false)));
+                            .If(_type.IsStarcounterDbClass, ps => ps.Union(GetObjectNoAndObjectID(false)));
                 }
             }
 

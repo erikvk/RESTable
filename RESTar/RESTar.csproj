@@ -93,6 +93,7 @@
     <Compile Include="Admin\AdminTools.cs" />
     <Compile Include="Admin\Console.cs" />
     <Compile Include="Admin\DbMacro.cs" />
+    <Compile Include="ViewInfo.cs" />
     <Compile Include="Aggregator.cs" />
     <Compile Include="Deflection\TermBindingRules.cs" />
     <Compile Include="Admin\DbOutputFormat.cs" />

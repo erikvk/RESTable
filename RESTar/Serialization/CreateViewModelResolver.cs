@@ -63,7 +63,6 @@ namespace RESTar.Serialization
                     ValueProvider = new ObjectIDProvider()
                 });
             }
-
             return results;
         }
 
@@ -83,7 +82,6 @@ namespace RESTar.Serialization
                 if (pi.PropertyType.IsClass)
                     return new ClassNullToEmptyObjectProvider(pi);
             }
-
             return base.CreateMemberValueProvider(member);
         }
     }

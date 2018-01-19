@@ -1,7 +1,10 @@
 using System;
 using System.Collections.Generic;
+using Newtonsoft.Json.Serialization;
 using RESTar.Operations;
 using Starcounter;
+using static Newtonsoft.Json.NullValueHandling;
+using static Newtonsoft.Json.ObjectCreationHandling;
 
 namespace RESTar.Deflection.Dynamic
 {
@@ -13,7 +16,27 @@ namespace RESTar.Deflection.Dynamic
     /// </summary>
     internal class SpecialProperty : DeclaredProperty
     {
-        private SpecialProperty(int metadataToken, string name, string actualName, Type type, int? order, bool scQueryable,
+        private class SpecialPropertyValueProvider : IValueProvider
+        {
+            private readonly DeclaredProperty Property;
+            internal SpecialPropertyValueProvider(DeclaredProperty property) => Property = property;
+            public void SetValue(object target, object value) => Property.Setter(target, value);
+            public object GetValue(object target) => Property.Getter(target);
+        }
+
+        internal JsonProperty JsonProperty => new JsonProperty
+        {
+            PropertyType = Type,
+            PropertyName = Name,
+            Readable = Readable,
+            Writable = Writable,
+            ValueProvider = new SpecialPropertyValueProvider(this),
+            ObjectCreationHandling = ReplaceOnUpdate ? Replace : Reuse,
+            NullValueHandling = HiddenIfNull ? Ignore : Include,
+            Order = Order
+        };
+
+        private SpecialProperty(int metadataToken, string name, string actualName, Type type, int? order, bool isKey, bool scQueryable,
             bool hidden, bool hiddenIfNull, Getter getter) : base
             (
                 metadataToken: metadataToken,
@@ -21,6 +44,7 @@ namespace RESTar.Deflection.Dynamic
                 actualName: actualName,
                 type: type,
                 order: order,
+                isKey: isKey,
                 scQueryable: scQueryable,
                 attributes: null,
                 skipConditions: false,
@@ -32,8 +56,8 @@ namespace RESTar.Deflection.Dynamic
                 setter: null
             ) { }
 
-        internal static IEnumerable<SpecialProperty> GetObjectIDAndObjectNo(bool flag) =>
-            flag ? new[] {FlaggedObjectID, FlaggedObjectNo} : new[] {ObjectID, ObjectNo};
+        internal static IEnumerable<SpecialProperty> GetObjectNoAndObjectID(bool flag) =>
+            flag ? new[] {FlaggedObjectNo, FlaggedObjectID} : new[] {ObjectNo, ObjectID};
 
         // ReSharper disable PossibleNullReferenceException
 
@@ -48,6 +72,23 @@ namespace RESTar.Deflection.Dynamic
         /// <summary>
         /// A property describing the ObjectNo of a class
         /// </summary>
+        private static readonly SpecialProperty ObjectNo = new SpecialProperty
+        (
+            metadataToken: ObjectNoMetadataToken,
+            name: "ObjectNo",
+            actualName: "ObjectNo",
+            type: typeof(ulong),
+            order: int.MaxValue - 1,
+            isKey: true,
+            scQueryable: true,
+            hidden: false,
+            hiddenIfNull: false,
+            getter: t => Do.TryAndThrow(t.GetObjectNo, "Could not get ObjectNo from non-Starcounter resource.")
+        );
+
+        /// <summary>
+        /// A property describing the ObjectNo of a class
+        /// </summary>
         private static readonly SpecialProperty FlaggedObjectNo = new SpecialProperty
         (
             metadataToken: ObjectNoMetadataToken,
@@ -55,10 +96,28 @@ namespace RESTar.Deflection.Dynamic
             actualName: "ObjectNo",
             type: typeof(ulong),
             order: int.MaxValue - 1,
+            isKey: true,
+            scQueryable: true,
+            hidden: false,
+            hiddenIfNull: false,
+            getter: t => Do.TryAndThrow(t.GetObjectNo, "Could not get ObjectNo from non-Starcounter resource.")
+        );
+
+        /// <summary>
+        /// A property describing the ObjectNo of a class
+        /// </summary>
+        private static readonly SpecialProperty ObjectID = new SpecialProperty
+        (
+            metadataToken: ObjectIDMetadataToken,
+            name: "ObjectID",
+            actualName: "ObjectID",
+            type: typeof(string),
+            order: int.MaxValue,
+            isKey: false,
             scQueryable: true,
             hidden: true,
             hiddenIfNull: false,
-            getter: t => Do.TryAndThrow(t.GetObjectNo, "Could not get ObjectNo from non-Starcounter resource.")
+            getter: t => Do.TryAndThrow(t.GetObjectID, "Could not get ObjectID from non-Starcounter resource.")
         );
 
         /// <summary>
@@ -71,39 +130,7 @@ namespace RESTar.Deflection.Dynamic
             actualName: "ObjectID",
             type: typeof(string),
             order: int.MaxValue,
-            scQueryable: true,
-            hidden: true,
-            hiddenIfNull: false,
-            getter: t => Do.TryAndThrow(t.GetObjectID, "Could not get ObjectID from non-Starcounter resource.")
-        );
-
-        /// <summary>
-        /// A property describing the ObjectNo of a class
-        /// </summary>
-        private static readonly SpecialProperty ObjectNo = new SpecialProperty
-        (
-            metadataToken: ObjectNoMetadataToken,
-            name: "ObjectNo",
-            actualName: "ObjectNo",
-            type: typeof(ulong),
-            order: int.MaxValue - 1,
-            scQueryable: true,
-            hidden: true,
-            hiddenIfNull: false,
-            getter: t => Do.TryAndThrow(t.GetObjectNo, "Could not get ObjectNo from non-Starcounter resource.")
-        );
-
-
-        /// <summary>
-        /// A property describing the ObjectNo of a class
-        /// </summary>
-        private static readonly SpecialProperty ObjectID = new SpecialProperty
-        (
-            metadataToken: ObjectIDMetadataToken,
-            name: "ObjectID",
-            actualName: "ObjectID",
-            type: typeof(string),
-            order: int.MaxValue,
+            isKey: false,
             scQueryable: true,
             hidden: true,
             hiddenIfNull: false,

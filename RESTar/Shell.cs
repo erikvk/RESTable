@@ -203,7 +203,7 @@ namespace RESTar
             OnConfirm = null;
             PreviousResultMetadata = null;
             GetNextPageLink = null;
-            Query = null;
+            query = "";
         }
 
         private IFinalizedResult WsEvaluate(Action action, byte[] body)

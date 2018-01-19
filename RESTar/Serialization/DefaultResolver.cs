@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
@@ -15,7 +18,8 @@ namespace RESTar.Serialization
             {
                 case MemberTypes.Property:
                     var property = member.GetDeclaredProperty();
-                    if (property?.Hidden != false) return null;
+                    if (property == null || !property.IsKey && property.Hidden)
+                        return null;
                     var p = base.CreateProperty(member, memberSerialization);
                     p.Writable = property.Writable;
                     p.NullValueHandling = property.HiddenIfNull ? Ignore : Include;
@@ -30,6 +34,17 @@ namespace RESTar.Serialization
                     return f;
                 default: return null;
             }
+        }
+
+        protected override IList<JsonProperty> CreateProperties(Type type, MemberSerialization memberSerialization)
+        {
+            var properties = base.CreateProperties(type, memberSerialization);
+            foreach (var specialProperty in type.GetDeclaredProperties().Values.OfType<SpecialProperty>())
+            {
+                if (specialProperty.IsKey || !specialProperty.Hidden)
+                    properties.Add(specialProperty.JsonProperty);
+            }
+            return properties;
         }
     }
 }

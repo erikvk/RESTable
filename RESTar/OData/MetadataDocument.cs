@@ -7,8 +7,10 @@ using RESTar.Admin;
 using RESTar.Deflection;
 using RESTar.Deflection.Dynamic;
 using RESTar.Internal;
+using RESTar.Linq;
 using RESTar.Results.Success;
 using Starcounter;
+using static System.Reflection.BindingFlags;
 
 namespace RESTar.OData
 {
@@ -19,17 +21,17 @@ namespace RESTar.OData
                                                   "</Annotation>";
 
         private static string InsertableAnnotation(bool state) => "<Annotation Term=\"Org.OData.Capabilities.V1.InsertRestrictions\">" +
-                                                                  $"<Record><PropertyValue Bool=\"{state}\" Property=\"Insertable\"/>" +
+                                                                  $"<Record><PropertyValue Bool=\"{state.XMLBool()}\" Property=\"Insertable\"/>" +
                                                                   "<PropertyValue Property=\"NonInsertableNavigationProperties\">" +
                                                                   "<Collection/></PropertyValue></Record></Annotation>";
 
         private static string UpdatableAnnotation(bool state) => "<Annotation Term=\"Org.OData.Capabilities.V1.UpdateRestrictions\">" +
-                                                                 $"<Record><PropertyValue Bool=\"{state}\" Property=\"Updatable\"/>" +
+                                                                 $"<Record><PropertyValue Bool=\"{state.XMLBool()}\" Property=\"Updatable\"/>" +
                                                                  "<PropertyValue Property=\"NonUpdatableNavigationProperties\">" +
                                                                  "<Collection/></PropertyValue></Record></Annotation>";
 
         private static string DeletableAnnotation(bool state) => "<Annotation Term=\"Org.OData.Capabilities.V1.DeleteRestrictions\">" +
-                                                                 $"<Record><PropertyValue Bool=\"{state}\" Property=\"Deletable\"/>" +
+                                                                 $"<Record><PropertyValue Bool=\"{state.XMLBool()}\" Property=\"Deletable\"/>" +
                                                                  "<PropertyValue Property=\"NonDeletableNavigationProperties\">" +
                                                                  "<Collection/></PropertyValue></Record></Annotation>";
 
@@ -51,19 +53,42 @@ namespace RESTar.OData
                 swr.WriteXMLHeader();
                 swr.Write("<edmx:Edmx Version=\"4.0\" xmlns:edmx=\"http://docs.oasis-open.org/odata/ns/edmx\"><edmx:DataServices>");
                 swr.Write("<Schema Namespace=\"global\" xmlns=\"http://docs.oasis-open.org/odata/ns/edm\">");
-                foreach (var enumType in metadata.EnumTypes)
+                var (enumTypes, complexTypes) = metadata.PeripheralTypes.Split(t => t.IsEnum);
+                foreach (var enumType in enumTypes)
                 {
                     swr.Write($"<EnumType Name=\"{enumType.FullName}\">");
                     foreach (var member in EnumMember.GetMembers(enumType))
                         swr.Write($"<Member Name=\"{member.Name}\" Value=\"{member.Value}\"/>");
                     swr.Write("</EnumType>");
                 }
-                foreach (var entityType in metadata.EntityTypes)
+                foreach (var complexType in complexTypes)
                 {
-                    swr.Write($"<EntityType Name=\"{entityType.FullName}\" OpenType=\"{entityType.IsDynamic}\">");
-                    foreach (var property in entityType.Type.GetDeclaredProperties().Values.Where(p => p.Readable && !p.Hidden))
+                    swr.Write($"<ComplexType Name=\"{complexType.FullName}\" OpenType=\"{complexType.IsDynamic().XMLBool()}\">");
+                    foreach (var property in complexType.GetDeclaredProperties().Values.Where(p => p.Readable && !p.Hidden))
                     {
-                        swr.Write($"<Property Name=\"{property.Name}\" Nullable=\"{property.Nullable}\" " +
+                        swr.Write($"<Property Name=\"{property.Name}\" Nullable=\"{property.Nullable.XMLBool()}\" " +
+                                  $"Type=\"{property.Type.GetEdmTypeName()}\"");
+                        swr.Write(property.ReadOnly ? $">{ReadOnlyAnnotation}</Property>" : "/>");
+                    }
+                    foreach (var field in complexType.GetFields(Public | Instance).Where(f => !f.RESTarIgnored()))
+                    {
+                        var nullable = field.FieldType.IsClass || field.FieldType.IsNullable(out var _);
+                        swr.Write($"<Property Name=\"{field.RESTarMemberName()}\" Nullable=\"{nullable.XMLBool()}\" " +
+                                  $"Type=\"{field.FieldType.GetEdmTypeName()}\"");
+                        swr.Write(field.IsInitOnly ? $">{ReadOnlyAnnotation}</Property>" : "/>");
+                    }
+                    swr.Write("</ComplexType>");
+                }
+                foreach (var entityType in metadata.EntityResourceTypes)
+                {
+                    swr.Write($"<EntityType Name=\"{entityType.FullName}\" OpenType=\"{entityType.IsDynamic().XMLBool()}\">");
+                    var properties = entityType.GetDeclaredProperties().Values.ToList();
+                    var key = properties.FirstOrDefault(p => p.IsKey);
+                    if (key != null)
+                        swr.Write($"<Key><PropertyRef Name=\"{key.Name}\"/></Key>");
+                    foreach (var property in properties.Where(p => p.Readable && (!p.Hidden || p.Equals(key))))
+                    {
+                        swr.Write($"<Property Name=\"{property.Name}\" Nullable=\"{property.Nullable.XMLBool()}\" " +
                                   $"Type=\"{property.Type.GetEdmTypeName()}\"");
                         swr.Write(property.ReadOnly ? $">{ReadOnlyAnnotation}</Property>" : "/>");
                     }
@@ -71,10 +96,10 @@ namespace RESTar.OData
                 }
                 swr.Write("<EntityType Name=\"RESTar.DynamicResource\" OpenType=\"true\"/>");
                 swr.Write($"<EntityContainer Name=\"{EntityContainerName}\">");
-                foreach (var entitySet in metadata.EntitySets.Except(HiddenResources))
+                foreach (var entitySet in metadata.EntityResources.Except(HiddenResources))
                 {
                     swr.Write($"<EntitySet EntityType=\"{entitySet.Type.GetEdmTypeName()}\" Name=\"{entitySet.FullName}\">");
-                    var methods = metadata.CurrentAccessRights[entitySet];
+                    var methods = metadata.CurrentAccessRights[entitySet].Intersect(entitySet.AvailableMethods).ToList();
                     swr.Write(InsertableAnnotation(methods.Contains(Methods.POST)));
                     swr.Write(UpdatableAnnotation(methods.Contains(Methods.PATCH)));
                     swr.Write(DeletableAnnotation(methods.Contains(Methods.DELETE)));

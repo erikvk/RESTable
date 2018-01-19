@@ -57,7 +57,7 @@ namespace RESTar.Admin
         /// <summary>
         /// The views for this resource
         /// </summary>
-        [RESTarMember(hideIfNull: true)] public object Views { get; private set; }
+        [RESTarMember(hideIfNull: true)] public ViewInfo[] Views { get; private set; }
 
         /// <summary>
         /// The IResource of this resource
@@ -105,13 +105,10 @@ namespace RESTar.Admin
                 Editable = entityResource?.Editable == true,
                 IsInternal = iresource.IsInternal,
                 Type = iresource.Type.FullName,
-                Views = entityResource == null
-                    ? null
-                    : (entityResource.Views?.Select(v => new
-                    {
-                        Name = v.FullName,
-                        Description = v.Description ?? "No description"
-                    }).ToArray() ?? new object[0]),
+                Views = entityResource != null
+                    ? (entityResource.Views?.Select(v => new ViewInfo(v.FullName, v.Description ?? "No description")).ToArray()
+                       ?? new ViewInfo[0])
+                    : null,
                 IResource = iresource,
                 Provider = entityResource?.Provider ?? "undefined",
                 Kind = entityResource != null ? ResourceKind.EntityResource : ResourceKind.TerminalResource,

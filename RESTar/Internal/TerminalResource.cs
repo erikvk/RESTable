@@ -60,17 +60,23 @@ namespace RESTar.Internal
                     throw new InvalidOperationException($"Unable to instantiate terminal '{FullName}' " +
                                                         $"for a WebSocket with status '{closed}'");
             }
-            assignments?.ForEach(assignment =>
+            if (assignments == null)
+            {
+                newTerminal.Open();
+                return;
+            }
+            var properties = Type.GetDeclaredProperties();
+            assignments.ForEach(assignment =>
             {
                 if (assignment.Operator.OpCode != EQUALS)
                     throw new BadConditionOperator(this, assignment.Operator);
-                if (!Type.GetDeclaredProperties().TryGetValue(assignment.Key, out var property))
+                if (!properties.TryGetValue(assignment.Key, out var property))
                 {
                     if (newTerminal is IDynamicTerminal dynTerminal)
                         dynTerminal[assignment.Key] = assignment.ValueLiteral.ParseConditionValue();
                     else throw new UnknownProperty(Type, assignment.Key);
                 }
-                else property.SetValue(newTerminal, Convert.ChangeType(assignment.ValueLiteral, property.Type));
+                else property.SetValue(newTerminal, assignment.ValueLiteral.ParseConditionValue(property));
             });
             newTerminal.Open();
         }

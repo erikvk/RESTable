@@ -813,6 +813,14 @@ namespace RESTar
             }
         }
 
+        internal static string XMLBool(this bool @bool)
+        {
+            const string trueString = "true";
+            const string FalseString = "false";
+            if (@bool) return trueString;
+            return FalseString;
+        }
+
         /// <summary>
         /// Converts an HTTP status code to the underlying numeric code
         /// </summary>

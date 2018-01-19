@@ -26,6 +26,11 @@ namespace RESTar
         public int Order { get; }
 
         /// <summary>
+        /// Is this property a key?
+        /// </summary>
+        public bool IsKey { get; }
+
+        /// <summary>
         /// Should this property be hidden in output by default? It can still be added and queried against.
         /// To make RESTar completely ignore a property, use the Ignored property.
         /// </summary>
@@ -68,6 +73,7 @@ namespace RESTar
         /// </summary>
         /// <param name="ignore">Should this property be completely ignored by RESTar?</param>
         /// <param name="name">A new name for this property</param>
+        /// <param name="key">Is this property a unique identifier for this type?</param>
         /// <param name="order">The order at which this property appears when all properties are enumerated</param>
         /// <param name="hide">Should this property be hidden in serialized output by default? It can still be added and queried against.</param>
         /// <param name="hideIfNull">Should this property be hidden in output if the value is null? Only applies to JSON output.</param>
@@ -78,13 +84,14 @@ namespace RESTar
         /// property to an excel-compatible string</param>
         /// <param name="replaceOnUpdate">Should this object be replaced with a new instance on update, or reused? Applicable for types such as 
         /// Dictionaries and Lists.</param>
-        public RESTarMemberAttribute(bool ignore = false, string name = null, int order = 0, bool hide = false,
+        public RESTarMemberAttribute(bool ignore = false, string name = null, bool key = false, int order = 0, bool hide = false,
             bool hideIfNull = false, bool readOnly = false, bool skipConditions = false, Operators allowedOperators = Operators.All,
             string excelReducer = null, bool replaceOnUpdate = false)
         {
             Ignored = ignore;
             Name = name;
             Order = order;
+            IsKey = key;
             Hidden = hide;
             HiddenIfNull = hideIfNull;
             ReadOnly = readOnly;

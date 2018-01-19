@@ -5,6 +5,7 @@ using RESTar.Auth;
 using RESTar.Deflection.Dynamic;
 using RESTar.Internal;
 using RESTar.Linq;
+using static System.Reflection.BindingFlags;
 using static RESTar.Methods;
 
 namespace RESTar
@@ -12,63 +13,78 @@ namespace RESTar
     [RESTar(GET)]
     internal class Metadata : ISelector<Metadata>
     {
+        private static readonly IEntityResource ThisResource = Resource<Metadata>.GetEntityResource;
+
         public AccessRights CurrentAccessRights { get; private set; }
-        public List<Type> EnumTypes { get; private set; }
-        public List<Type> ComplexTypes { get; private set; }
-        public List<IEntityResource> EntityTypes { get; private set; }
-        public List<IEntityResource> EntitySets { get; private set; }
+        public List<IEntityResource> EntityResources { get; private set; }
+        public List<Type> EntityResourceTypes { get; private set; }
+        public List<TerminalResource> TerminalResources { get; private set; }
+        public List<Type> PeripheralTypes { get; private set; }
 
         public IEnumerable<Metadata> Select(IRequest<Metadata> request)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
             var rights = RESTarConfig.AuthTokens[request.AuthToken];
-            var enumTypes = new HashSet<Type>();
-            var entityTypes = new HashSet<IEntityResource>();
-            var thisResource = Resource<Metadata>.Get;
-            var resources = rights?.Keys
+            if (rights == null) return null;
+
+            var entityResources = rights.Keys
                 .OfType<IEntityResource>()
-                .Where(r => r.IsGlobal && !r.IsInnerResource)
-                .Where(r => rights.ContainsKey(r))
-                .Where(r => !Equals(r, thisResource))
+                .Where(r => !Equals(r, ThisResource))
+                .Where(r => r.IsGlobal)
                 .OrderBy(r => r.FullName)
                 .ToList();
-            if (rights == null) return null;
+            var terminalResources = rights.Keys
+                .OfType<TerminalResource>()
+                .ToList();
+            var entityTypes = entityResources.Select(r => r.Type).ToList();
+            var checkedTypes = new HashSet<Type>();
 
             void parseType(Type type)
             {
                 switch (type)
                 {
-                    case var _ when type.IsGenericType && type.GetGenericTypeDefinition() == typeof(KeyValuePair<,>):
-                    case var _ when IsPrimitive(type):
-                    case var _ when type == typeof(object): return;
-
-                    case var @enum when type.IsEnum:
-                        enumTypes.Add(@enum);
-                        return;
+                    case var _ when type.IsEnum:
+                        checkedTypes.Add(type);
+                        break;
                     case var _ when type.IsNullable(out var baseType):
                         parseType(baseType);
-                        return;
+                        break;
                     case var _ when type.Implements(typeof(IEnumerable<>), out var param):
-                        if (param[0].Implements(typeof(IEnumerable<>))) return;
+                        if (param[0].Implements(typeof(IEnumerable<>)))
+                            break;
                         parseType(param[0]);
-                        return;
+                        break;
 
-                    case var _ when Resource.SafeGet(type) is IEntityResource resource && entityTypes.Add(resource):
-                        type.GetDeclaredProperties().Values.Select(p => p.Type).ForEach(parseType);
-                        return;
+                    case var _ when type.IsGenericType && type.GetGenericTypeDefinition() == typeof(KeyValuePair<,>):
+                    case var _ when IsPrimitive(type):
+                    case var _ when type == typeof(object):
+                        break;
+
+                    case var _ when checkedTypes.Add(type):
+                        type.GetFields(Public | Instance)
+                            .Where(p => !p.RESTarIgnored())
+                            .Select(p => p.FieldType)
+                            .ForEach(parseType);
+                        type.GetDeclaredProperties().Values
+                            .Where(p => p.Readable && (p.IsKey || !p.Hidden))
+                            .Select(p => p.Type)
+                            .ForEach(parseType);
+                        break;
                 }
             }
 
-            resources.Select(r => r.Type).ForEach(parseType);
+            entityTypes.ForEach(parseType);
+            checkedTypes.ExceptWith(entityTypes);
 
             return new[]
             {
                 new Metadata
                 {
                     CurrentAccessRights = rights,
-                    EnumTypes = enumTypes.ToList(),
-                    EntityTypes = entityTypes.ToList(),
-                    EntitySets = resources
+                    EntityResources = entityResources,
+                    EntityResourceTypes = entityTypes,
+                    TerminalResources = terminalResources,
+                    PeripheralTypes = checkedTypes.ToList()
                 }
             };
         }

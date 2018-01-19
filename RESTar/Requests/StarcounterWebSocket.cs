@@ -68,7 +68,7 @@ namespace RESTar.Requests
                 SendResult(new UnsupportedWebSocketInput($"Terminal '{TerminalResource.FullName}' does not support binary input"));
                 return;
             }
-            Console.LogWebSocketBinaryInput(binaryData.Length, this);
+            Console.LogWebSocketBinaryInput(binaryData, this);
             Terminal.HandleBinaryInput(binaryData);
             BytesSent += (ulong) binaryData.Length;
         }
@@ -122,7 +122,7 @@ namespace RESTar.Requests
                 case WebSocketStatus.Open:
                     WebSocket.Send(binaryData, isText);
                     BytesSent += (ulong) binaryData.Length;
-                    Console.LogWebSocketBinaryOutput(binaryData.Length, this);
+                    Console.LogWebSocketBinaryOutput(binaryData, this);
                     break;
             }
         }
