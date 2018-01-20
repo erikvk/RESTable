@@ -1,6 +1,9 @@
 ﻿using System.IO;
 using System.Net;
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using RESTar.Linq;
 using RESTar.Operations;
 using RESTar.Requests;
 using Starcounter;
@@ -13,9 +16,10 @@ namespace RESTar.Http
         public HttpStatusCode StatusCode { get; set; }
         public string StatusDescription { get; set; }
         public long ContentLength { get; set; }
-        public string ContentType { get; set; }
-        public Stream Body { get; set; }
-        public Headers Headers { get; set; }
+        public string ContentType { get; private set; }
+        public Stream Body { get; private set; }
+        public Headers Headers { get; private set; }
+        public ICollection<string> Cookies { get; private set; }
         public bool HasContent => ContentLength > 0;
         internal bool IsSuccessStatusCode => StatusCode >= (HttpStatusCode) 200 && StatusCode < (HttpStatusCode) 300;
 
@@ -28,7 +32,8 @@ namespace RESTar.Http
                 ContentLength = webResponse.ContentLength,
                 ContentType = webResponse.ContentType,
                 Body = webResponse.GetResponseStream() ?? throw new NullReferenceException("ResponseStream was null"),
-                Headers = new Headers()
+                Headers = new Headers(),
+                Cookies = new List<string>()
             };
             foreach (var header in webResponse.Headers.AllKeys)
                 response.Headers[header] = webResponse.Headers[header];
@@ -46,12 +51,16 @@ namespace RESTar.Http
                 Body = scResponse.StreamedBody,
                 Headers = new Headers()
             };
-            foreach (var header in scResponse.GetAllHeaders().Split(new[] {"\r\n"}, RemoveEmptyEntries))
-            {
-                var name_value = header.Split(':');
-                response.Headers[name_value[0]] = name_value.SafeGet(v => v[1].Trim());
-            }
-
+            scResponse.GetAllHeaders()
+                .Split("\r\n", RemoveEmptyEntries)
+                .Select(s => s.TSplit(':'))
+                .ForEach(tuple =>
+                {
+                    var (name, value) = tuple;
+                    if (name.EqualsNoCase("Set-Cookie"))
+                        response.Cookies.Add(value.Trim());
+                    else response.Headers[name] = value.Trim();
+                });
             return response;
         }
     }

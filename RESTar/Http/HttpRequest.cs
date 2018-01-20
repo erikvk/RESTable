@@ -160,7 +160,8 @@ namespace RESTar.Http
                 {
                     request.ContentLength = body.Length;
                     using (var requestStream = request.GetRequestStream())
-                    using (body) body.CopyTo(requestStream);
+                    using (body)
+                        body.CopyTo(requestStream);
                 }
                 var webResponse = (HttpWebResponse) request.GetResponse();
                 var respLoc = webResponse.Headers["Location"];

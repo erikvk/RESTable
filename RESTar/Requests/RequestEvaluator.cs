@@ -53,7 +53,13 @@ namespace RESTar.Requests
                                 return new WebSocketResult(true);
                             case var entityResource:
                                 IFinalizedResult result = HandleREST((dynamic) entityResource, arguments);
-                                if (!tcpConnection.HasWebSocket || tcpConnection.Origin == OriginType.Shell)
+                                if (!tcpConnection.HasWebSocket)
+                                {
+                                    Admin.Console.Log(arguments);
+                                    Admin.Console.Log(result as ILogable);
+                                    return result;
+                                }
+                                if (tcpConnection.Origin == OriginType.Shell)
                                     return result;
                                 tcpConnection.WebSocketInternal.SendResult(result);
                                 return new WebSocketResult(false);
@@ -153,7 +159,7 @@ namespace RESTar.Requests
         {
             var origin = arguments.Headers.SafeGet("Origin");
             if (origin != null && (AllowAllOrigins || AllowedOrigins.Contains(new Uri(origin))))
-                return new AcceptOrigin(origin, resource);
+                return new AcceptOrigin(origin, resource, arguments);
             return new InvalidOrigin();
         }
     }

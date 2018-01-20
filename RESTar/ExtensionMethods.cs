@@ -260,9 +260,9 @@ namespace RESTar
             return (collection.ElementAtOrDefault(0), collection.ElementAtOrDefault(1));
         }
 
-        internal static string[] Split(this string str, string separator)
+        internal static string[] Split(this string str, string separator, StringSplitOptions options = StringSplitOptions.None)
         {
-            return str.Split(new[] {separator}, StringSplitOptions.None);
+            return str.Split(new[] {separator}, options);
         }
 
         internal static (string, string) TSplit(this string str, char separator)
@@ -487,6 +487,14 @@ namespace RESTar
         public static void TPut<TKey, TValue>(this IDictionary<TKey, TValue> dict, (TKey key, TValue value) pair)
         {
             dict[pair.key] = pair.value;
+        }
+
+        /// <summary>
+        /// Puts the KeyValuePair into the IDictionary
+        /// </summary>
+        public static void Put<TKey, TValue>(this IDictionary<TKey, TValue> dict, KeyValuePair<TKey, TValue> pair)
+        {
+            dict[pair.Key] = pair.Value;
         }
 
         /// <summary>

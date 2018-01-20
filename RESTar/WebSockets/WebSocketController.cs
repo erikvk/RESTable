@@ -2,7 +2,6 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using RESTar.Linq;
 using RESTar.Results.Error;
 using RESTar.Serialization;
 
@@ -12,7 +11,7 @@ namespace RESTar.WebSockets
     {
         private static readonly IDictionary<string, IWebSocket> AllSockets;
         static WebSocketController() => AllSockets = new ConcurrentDictionary<string, IWebSocket>();
-        internal static void Add(IWebSocket webSocket) => AllSockets[webSocket.Id] = webSocket;
+        internal static void Add(IWebSocket webSocket) => AllSockets[webSocket.TraceId] = webSocket;
 
         private static bool TryGet(string wsId, out IWebSocketInternal ws)
         {
@@ -43,8 +42,6 @@ namespace RESTar.WebSockets
                         {
                             var profile = webSocket.GetClientProfile();
                             Serializer.Populate(json, profile);
-                            profile.ClearUnavailableHeaders();
-                            profile.CustomHeaders.ForEach(header => webSocket.Headers[header.Key] = header.Value);
                             webSocket.SendText("Profile updated");
                             webSocket.SendJson(webSocket.GetClientProfile());
                         }

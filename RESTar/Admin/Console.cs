@@ -2,28 +2,126 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
 using System.Text;
+using Newtonsoft.Json;
 using RESTar.Linq;
 using RESTar.Operations;
+using RESTar.Requests;
+using RESTar.Serialization;
 using RESTar.WebSockets;
+using static Newtonsoft.Json.NullValueHandling;
+using static RESTar.Admin.ConsoleFormat;
 using static RESTar.Admin.ConsoleStatus;
-using Action = RESTar.Requests.Action;
+using static RESTar.Admin.LogEventType;
 
 namespace RESTar.Admin
 {
-    internal enum ConsoleStatus : byte
+    internal enum ConsoleStatus
     {
         PAUSED,
         ACTIVE
+    }
+
+    internal enum ConsoleFormat
+    {
+        Line,
+        JSON
+    }
+
+    internal enum LogEventType
+    {
+        HttpInput,
+        HttpOutput,
+        WebSocketInput,
+        WebSocketOutput,
+        WebSocketOpen,
+        WebSocketClose
+    }
+
+    internal interface ILogable: ITraceable
+    {
+        LogEventType LogEventType { get; }
+        string LogMessage { get; }
+        string LogContent { get; }
+        Headers Headers { get; }
+        string CustomHeadersString { get; }
+    }
+
+    internal struct LogItem
+    {
+        public string Id;
+        public string Message;
+
+        [JsonProperty(NullValueHandling = Ignore)]
+        public string Content;
+
+        [JsonProperty(NullValueHandling = Ignore)]
+        public string ClientIP;
+
+        [JsonProperty(NullValueHandling = Ignore)]
+        public Headers Headers;
+
+        [JsonProperty(NullValueHandling = Ignore)]
+        public DateTime? Time;
+
+        public LogItem(ILogable logable)
+        {
+            Id = logable.TraceId;
+            Message = logable.LogMessage;
+            Content = logable.LogContent;
+            ClientIP = logable.TcpConnection.ClientIP.ToString();
+            Headers = logable.Headers;
+            Time = null;
+        }
+    }
+
+    internal class WebSocketEvent : ILogable
+    {
+        public LogEventType LogEventType { get; }
+        public string TraceId { get; }
+        public string LogMessage { get; }
+        public string LogContent { get; }
+        public TCPConnection TcpConnection { get; }
+        public Headers Headers { get; }
+
+        private string _chs;
+        public string CustomHeadersString => _chs ?? (_chs = string.Join(", ", Headers.CustomHeaders.Select(p => $"{p.Key}: {p.Value}")));
+
+        public WebSocketEvent(LogEventType direction, IWebSocket webSocket, string content = null, int length = 0)
+        {
+            LogEventType = direction;
+            TraceId = webSocket.TraceId;
+            switch (direction)
+            {
+                case WebSocketInput:
+                    LogMessage = $"Received {length} bytes";
+                    break;
+                case WebSocketOutput:
+                    LogMessage = $"Sent {length} bytes";
+                    break;
+                case WebSocketOpen:
+                    LogMessage = "WebSocket opened";
+                    break;
+                case WebSocketClose:
+                    LogMessage = "WebSocket closed";
+                    break;
+            }
+            LogContent = content;
+            TcpConnection = webSocket.TcpConnection;
+            Headers = webSocket.Headers;
+        }
     }
 
     [RESTar(Description = "The console")]
     internal class Console : ITerminal
     {
         public ConsoleStatus Status { get; set; }
-        public bool ShowWelcomeText { get; set; } = true;
+        public ConsoleFormat Format { get; set; }
+        public bool IncludeClient { get; set; } = true;
+        public bool IncludeTime { get; set; } = true;
+        public bool IncludeHeaders { get; set; } = false;
         public bool IncludeContent { get; set; } = false;
+        public bool ShowWelcomeText { get; set; } = true;
 
         private IWebSocketInternal WebSocketInternal;
 
@@ -82,11 +180,76 @@ namespace RESTar.Admin
             }
         }
 
-        internal static void LogHTTPRequest(string requestId, Action action, string uri, IPAddress clientIpAddress)
+        private static string GetLogLineStub(ILogable logable)
         {
-            if (uri.Length == 0) uri = "/";
-            SendToAll($"=> [{requestId}] {action} '{uri}' from '{clientIpAddress}' at {_DateTime}");
+            var builder = new StringBuilder();
+            switch (logable.LogEventType)
+            {
+                case WebSocketInput:
+                case HttpInput:
+                    builder.Append("=> ");
+                    break;
+                case HttpOutput:
+                case WebSocketOutput:
+                    builder.Append("<= ");
+                    break;
+                case WebSocketOpen:
+                    builder.Append("++ ");
+                    break;
+                case WebSocketClose:
+                    builder.Append("-- ");
+                    break;
+            }
+            builder.Append($"[{logable.TraceId}] ");
+            builder.Append(logable.LogMessage);
+            return builder.ToString();
         }
+
+        internal static void Log(ILogable logable) => Consoles.Keys
+            .AsParallel()
+            .Where(c => c.Status == ACTIVE)
+            .GroupBy(c => c.Format)
+            .ForEach(group =>
+            {
+                switch (group.Key)
+                {
+                    case Line:
+                        var message = GetLogLineStub(logable);
+                        group.AsParallel().ForEach(c =>
+                        {
+                            var builder = new StringBuilder(message);
+                            if (c.IncludeClient)
+                                builder.Append($" | Client: {logable.TcpConnection.ClientIP}");
+                            if (c.IncludeTime)
+                                builder.Append($" | Time: {DateTime.Now:yyyy-MM-dd HH:mm:ss.ff}");
+                            if (c.IncludeHeaders)
+                                builder.Append($" | Headers: {logable.CustomHeadersString}");
+                            if (c.IncludeContent)
+                                builder.Append($" | Content: {logable.LogContent}");
+                            c.WebSocketInternal.SendTextRaw(builder.ToString());
+                        });
+                        break;
+                    case JSON:
+                        var item = new LogItem(logable);
+                        group.AsParallel().ForEach(c =>
+                        {
+                            var localItem = item;
+                            if (!c.IncludeClient)
+                                localItem.ClientIP = null;
+                            if (c.IncludeTime)
+                                localItem.Time = DateTime.Now;
+                            if (!c.IncludeHeaders)
+                                localItem.Headers = null;
+                            if (!c.IncludeContent)
+                                localItem.Content = null;
+                            var json = JsonConvert.SerializeObject(localItem, Serializer.Settings);
+                            c.WebSocketInternal.SendTextRaw(json);
+                        });
+                        break;
+                    default: throw new ArgumentOutOfRangeException();
+                }
+                //group.WebSocketInternal.SendTextRaw(message);
+            });
 
         internal static void LogHTTPResult(string requestId, IFinalizedResult result)
         {
@@ -115,14 +278,14 @@ namespace RESTar.Admin
         internal static void LogWebSocketOpen(IWebSocketInternal webSocket)
         {
             if (!Consoles.Any() || webSocket.TerminalResource?.Name == This) return;
-            SendToAll($"++ [WS {webSocket.Id}] opened {TerminalResourcePart(webSocket, "to")}from " +
+            SendToAll($"++ [WS {webSocket.TraceId}] opened {TerminalResourcePart(webSocket, "to")}from " +
                       $"'{webSocket.TcpConnection.ClientIP}' at {webSocket.Opened.ToString(DateTimeFormat)}");
         }
 
         internal static void LogWebSocketClosed(IWebSocketInternal webSocket)
         {
             if (!Consoles.Any() || webSocket.TerminalResource?.Name == This) return;
-            SendToAll($"-- [WS {webSocket.Id}] closed {TerminalResourcePart(webSocket, "to")}from " +
+            SendToAll($"-- [WS {webSocket.TraceId}] closed {TerminalResourcePart(webSocket, "to")}from " +
                       $"'{webSocket.TcpConnection.ClientIP}' at {webSocket.Closed.ToString(DateTimeFormat)}");
         }
 
@@ -130,14 +293,14 @@ namespace RESTar.Admin
         {
             if (!Consoles.Any() || webSocket.TerminalResource?.Name == This) return;
             var length = Encoding.UTF8.GetByteCount(input);
-            SendToAll($"=> [WS {webSocket.Id}] received {length} bytes {TerminalResourcePart(webSocket, "to")}from " +
+            SendToAll($"=> [WS {webSocket.TraceId}] received {length} bytes {TerminalResourcePart(webSocket, "to")}from " +
                       $"'{webSocket.TcpConnection.ClientIP}' at {_DateTime}.", input);
         }
 
         internal static void LogWebSocketBinaryInput(byte[] input, IWebSocketInternal webSocket)
         {
             if (!Consoles.Any() || webSocket.TerminalResource?.Name == This) return;
-            SendToAll($"=> [WS {webSocket.Id}] received {input.Length} bytes {TerminalResourcePart(webSocket, "to")}from " +
+            SendToAll($"=> [WS {webSocket.TraceId}] received {input.Length} bytes {TerminalResourcePart(webSocket, "to")}from " +
                       $"'{webSocket.TcpConnection.ClientIP}' at {_DateTime}.", input);
         }
 
@@ -145,14 +308,14 @@ namespace RESTar.Admin
         {
             if (!Consoles.Any() || webSocket.TerminalResource?.Name == This) return;
             var length = Encoding.UTF8.GetByteCount(output);
-            SendToAll($"<= [WS {webSocket.Id}] sent {length} bytes to '{webSocket.TcpConnection.ClientIP}' " +
+            SendToAll($"<= [WS {webSocket.TraceId}] sent {length} bytes to '{webSocket.TcpConnection.ClientIP}' " +
                       $"{TerminalResourcePart(webSocket, "from")}at {_DateTime}.", output);
         }
 
         internal static void LogWebSocketBinaryOutput(byte[] output, IWebSocketInternal webSocket)
         {
             if (!Consoles.Any() || webSocket.TerminalResource?.Name == This) return;
-            SendToAll($"<= [WS {webSocket.Id}] sent {output.Length} bytes to '{webSocket.TcpConnection.ClientIP}' " +
+            SendToAll($"<= [WS {webSocket.TraceId}] sent {output.Length} bytes to '{webSocket.TcpConnection.ClientIP}' " +
                       $"{TerminalResourcePart(webSocket, "from")}at {_DateTime}.", output);
         }
 

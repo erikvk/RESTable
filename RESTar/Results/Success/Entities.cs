@@ -20,7 +20,7 @@ namespace RESTar.Results.Success
         internal string ExternalDestination { get; set; }
         public bool IsPaged => Content != null && EntityCount > 0 && (long) EntityCount == Request.MetaConditions.Limit;
 
-        private Entities() { }
+        private Entities(ITraceable trace) : base(trace) { }
 
         internal void SetContentDisposition(string extension) => Headers["Content-Disposition"] =
             $"attachment;filename={Request.Resource.Name}_{DateTime.Now:yyMMddHHmmssfff}{extension}";
@@ -34,7 +34,7 @@ namespace RESTar.Results.Success
             return existing;
         }
 
-        internal static Entities Create<T>(RESTRequest<T> request, IEnumerable<dynamic> content) where T : class => new Entities
+        internal static Entities Create<T>(RESTRequest<T> request, IEnumerable<dynamic> content) where T : class => new Entities(request)
         {
             Content = content,
             Request = request,

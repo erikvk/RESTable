@@ -56,11 +56,6 @@
         internal const string MapMacro = @"\$\([^\$\(\)]+\)";
 
         /// <summary>
-        /// Matches all header names reserved by RESTar
-        /// </summary>
-        internal const string ReservedHeaders = @"^(source|destination|authorization|restar-authtoken)$";
-
-        /// <summary>
         /// Matches unsupported OData operators in URIs
         /// </summary>
         internal const string UnsupportedODataOperatorRegex = @"(/| has | not | cast\(.*\)| mul | div | mod | add | sub | isof | or )";

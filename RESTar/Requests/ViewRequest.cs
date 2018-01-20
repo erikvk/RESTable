@@ -28,6 +28,7 @@ namespace RESTar.Requests
         public MetaConditions MetaConditions { get; private set; }
         public string AuthToken { get; internal set; }
         public Headers ResponseHeaders { get; }
+        public ICollection<string> Cookies { get; }
         public IUriParameters UriParameters { get; private set; }
         public Stream Body { get; private set; }
         Methods IRequest.Method => GET;
@@ -43,17 +44,22 @@ namespace RESTar.Requests
         internal Json GetView() => DataView.MakeCurrentView();
         public T1 BodyObject<T1>() where T1 : class => Body?.Deserialize<T1>();
         public Headers Headers { get; }
-
+        public string TraceId { get; }
+        
         internal ViewRequest(IEntityResource<T> resource, TCPConnection tcpConnection)
         {
             if (resource.IsInternal) throw new ResourceIsInternal(resource);
+
+            TraceId = tcpConnection.TraceId;
+            TcpConnection = tcpConnection;
+
             Resource = resource;
             Target = resource;
             Headers = new Headers();
             ResponseHeaders = new Headers();
+            Cookies = new List<string>();
             MetaConditions = new MetaConditions();
             Conditions = new Condition<T>[0];
-            TcpConnection = tcpConnection;
         }
 
         internal void Populate(Arguments arguments)

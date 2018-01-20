@@ -1,5 +1,8 @@
-﻿using System.IO;
+﻿using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Net;
+using RESTar.Admin;
 using RESTar.Requests;
 
 namespace RESTar.Operations
@@ -7,7 +10,7 @@ namespace RESTar.Operations
     /// <summary>
     /// The result of a RESTar request operation
     /// </summary>
-    public abstract class Result : IFinalizedResult
+    internal abstract class Result : IFinalizedResult, ILogable
     {
         /// <summary>
         /// The status code to use in HTTP responses based on this result
@@ -36,6 +39,24 @@ namespace RESTar.Operations
         /// </summary>
         public Headers Headers { get; }
 
-        internal Result() => Headers = new Headers();
+        /// <summary>
+        /// The cookies to set in the response
+        /// </summary>
+        public ICollection<string> Cookies { get; internal set; }
+
+        public LogEventType LogEventType => LogEventType.HttpOutput;
+        public string TraceId { get; }
+        public string LogMessage => $"{StatusCode.ToCode()}: {StatusDescription}";
+        public string LogContent { get; } = null;
+        public TCPConnection TcpConnection { get; }
+        private string _headersString;
+        string ILogable.CustomHeadersString => _headersString ?? (_headersString = string.Join(", ", Headers.Select(p => $"{p.Key}: {p.Value}")));
+
+        internal Result(ITraceable trace)
+        {
+            Headers = new Headers();
+            TcpConnection = trace.TcpConnection;
+            TraceId = trace.TraceId;
+        }
     }
 }

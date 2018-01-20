@@ -1,13 +1,14 @@
 ﻿using System.IO;
 using Newtonsoft.Json;
 using RESTar.Admin;
+using RESTar.Requests;
 using RESTar.Serialization;
 
 namespace RESTar.Results.Success
 {
     internal class Report : OK
     {
-        internal Report(long count)
+        internal Report(long count, ITraceable trace) : base(trace)
         {
             Body = new MemoryStream();
             using (var swr = new StreamWriter(Body, Serializer.UTF8, 1024, true))

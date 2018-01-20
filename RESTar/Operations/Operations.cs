@@ -411,22 +411,22 @@ namespace RESTar.Operations
 
             private static Report REPORT(RESTRequest<T> request)
             {
-                return new Report(OP_COUNT(request));
+                return new Report(OP_COUNT(request), request);
             }
 
             private static Result POST(RESTRequest<T> request)
             {
                 if (request.MetaConditions.SafePost != null) return SafePOST(request);
-                return new InsertedEntities(Transaction<T>.Transact(() => INSERT(request)), request.Resource);
+                return new InsertedEntities(Transaction<T>.Transact(() => INSERT(request)), request);
             }
 
             private static Result PATCH(RESTRequest<T> request)
             {
                 var source = SELECT_FILTER(request)?.ToList();
-                if (source?.Any() != true) return new UpdatedEntities(0, request.Resource);
+                if (source?.Any() != true) return new UpdatedEntities(0, request);
                 if (!request.MetaConditions.Unsafe && source.Count > 1)
                     throw new AmbiguousMatch(request.Resource);
-                return new UpdatedEntities(Transaction<T>.Transact(() => UPDATE(request, source)), request.Resource);
+                return new UpdatedEntities(Transaction<T>.Transact(() => UPDATE(request, source)), request);
             }
 
             private static Result PUT(RESTRequest<T> request)
@@ -435,8 +435,8 @@ namespace RESTar.Operations
                 switch (source?.Count)
                 {
                     case null:
-                    case 0: return new InsertedEntities(Transaction<T>.Transact(() => INSERT_ONE(request)), request.Resource);
-                    case 1: return new UpdatedEntities(Transaction<T>.Transact(() => UPDATE_ONE(request, source[0])), request.Resource);
+                    case 0: return new InsertedEntities(Transaction<T>.Transact(() => INSERT_ONE(request)), request);
+                    case 1: return new UpdatedEntities(Transaction<T>.Transact(() => UPDATE_ONE(request, source[0])), request);
                     default: throw new AmbiguousMatch(request.Resource);
                 }
             }
@@ -444,7 +444,7 @@ namespace RESTar.Operations
             private static Result DELETE(RESTRequest<T> request)
             {
                 var source = SELECT_FILTER(request);
-                if (source == null) return new DeletedEntities(0, request.Resource);
+                if (source == null) return new DeletedEntities(0, request);
                 if (!request.MetaConditions.Unsafe)
                 {
                     var list = source.ToList();
@@ -452,7 +452,7 @@ namespace RESTar.Operations
                         throw new AmbiguousMatch(request.Resource);
                     source = list;
                 }
-                return new DeletedEntities(Transaction<T>.Transact(() => OP_DELETE(request, source)), request.Resource);
+                return new DeletedEntities(Transaction<T>.Transact(() => OP_DELETE(request, source)), request);
             }
 
             private static (Request<T> InnerRequest, JArray ToInsert, IList<(JObject json, T source)> ToUpdate)
@@ -532,7 +532,7 @@ namespace RESTar.Operations
                         }
                     });
                     outerTrans.Commit();
-                    return new SafePostedEntities(updatedCount, insertedCount, request.Resource);
+                    return new SafePostedEntities(updatedCount, insertedCount, request);
                 }
                 catch
                 {

@@ -1,5 +1,7 @@
-﻿using System.Net;
+﻿using System.Linq;
+using System.Net;
 using RESTar.WebSockets;
+using Starcounter;
 
 namespace RESTar.Requests
 {
@@ -25,10 +27,50 @@ namespace RESTar.Requests
     }
 
     /// <summary>
+    /// An ID, generated when a new connection is set up
+    /// </summary>
+    [Database]
+    public class ConnectionId
+    {
+        private const string All = "SELECT t FROM UserSyncer.UserNr t";
+
+        /// <summary>
+        /// The number stored in the database
+        /// </summary>
+        public ulong _number { get; private set; }
+
+        private ConnectionId() { }
+        internal static string Next => DbHelper.Base64EncodeObjectNo(Db.Transact(() => Get._number += 1));
+        private static ConnectionId Get => Db.SQL<ConnectionId>(All).FirstOrDefault() ?? Db.Transact(() => new ConnectionId());
+    }
+
+    /// <summary>
+    /// Defines something that can be traced from a TCP connection
+    /// </summary>
+    public interface ITraceable
+    {
+        /// <summary>
+        /// A unique ID
+        /// </summary>
+        string TraceId { get; }
+
+        /// <summary>
+        /// The initial TCP connection
+        /// </summary>
+        TCPConnection TcpConnection { get; }
+    }
+
+    /// <summary>
     /// Describes the origin and basic TCP connection parameters of a request
     /// </summary>
-    public class TCPConnection
+    public class TCPConnection : ITraceable
     {
+        /// <inheritdoc />
+        public string TraceId { get; }
+
+        /// <inheritdoc />
+        public TCPConnection TcpConnection => this;
+
         /// <summary>
         /// The origin type
         /// </summary>
@@ -93,6 +135,6 @@ namespace RESTar.Requests
         /// </summary>
         public bool HasWebSocket => WebSocket != null;
 
-        internal TCPConnection() { }
+        internal TCPConnection() => TraceId = $"R#{ConnectionId.Next}";
     }
 }

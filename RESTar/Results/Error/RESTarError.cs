@@ -1,7 +1,10 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net;
 using Newtonsoft.Json;
+using RESTar.Admin;
 using RESTar.Internal;
 using RESTar.Operations;
 using RESTar.Requests;
@@ -13,7 +16,7 @@ namespace RESTar.Results.Error
     /// <summary>
     /// A super class for all custom RESTar exceptions
     /// </summary>
-    internal abstract class RESTarError : Exception, IFinalizedResult
+    internal abstract class RESTarError : Exception, IFinalizedResult, ILogable
     {
         /// <summary>
         /// The error code for this error
@@ -35,13 +38,32 @@ namespace RESTar.Results.Error
         /// </summary>
         public Headers Headers { get; } = new Headers();
 
-        /// <summary>
-        /// Does this result contain content?
-        /// </summary>
-        public bool HasContent { get; } = false;
-
+        public ICollection<string> Cookies { get; } = new List<string>();
         Stream IFinalizedResult.Body { get; } = null;
         string IFinalizedResult.ContentType { get; } = null;
+
+        public string TraceId { get; internal set; }
+        public TCPConnection TcpConnection { get; internal set; }
+        public LogEventType LogEventType => LogEventType.HttpOutput;
+
+        public string LogMessage
+        {
+            get
+            {
+                var info = Headers["RESTar-Info"];
+                var errorInfo = Headers["ErrorInfo"];
+                var tail = "";
+                if (info != null)
+                    tail += $". {info}";
+                if (errorInfo != null)
+                    tail += $" (see {errorInfo})";
+                return $"{StatusCode.ToCode()}: {StatusDescription}{tail}";
+            }
+        }
+
+        public string LogContent { get; } = null;
+        private string _headersString;
+        string ILogable.CustomHeadersString => _headersString ?? (_headersString = string.Join(", ", Headers.Select(p => $"{p.Key}: {p.Value}")));
 
         internal RESTarError(ErrorCodes code, string message) : base(message)
         {

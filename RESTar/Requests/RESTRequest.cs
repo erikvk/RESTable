@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using RESTar.Admin;
 using RESTar.Http;
@@ -19,13 +20,13 @@ namespace RESTar.Requests
     internal class RESTRequest<T> : IRequest<T>, IDisposable where T : class
     {
         public Methods Method { get; }
-        public TCPConnection TcpConnection { get; }
         public IEntityResource<T> Resource { get; }
         public Condition<T>[] Conditions { get; }
         public MetaConditions MetaConditions { get; }
         public Stream Body { get; private set; }
         public string AuthToken { get; }
         public Headers ResponseHeaders { get; }
+        public ICollection<string> Cookies { get; }
         public IUriParameters UriParameters { get; }
         IEntityResource IRequest.Resource => Resource;
         public ITarget<T> Target { get; }
@@ -38,20 +39,16 @@ namespace RESTar.Requests
         private string CORSOrigin { get; }
         private DataConfig InputDataConfig { get; }
         private DataConfig OutputDataConfig { get; }
+        public string TraceId { get; }
+        public TCPConnection TcpConnection { get; }
 
         internal void Evaluate()
         {
             Result = Evaluator(this);
-            ResponseHeaders.ForEach(h =>
-            {
-                if (h.Key.StartsWith("X-"))
-                    Result.Headers[h.Key] = h.Value;
-                else Result.Headers["X-" + h.Key] = h.Value;
-            });
-            if (AllowAllOrigins)
-                Result.Headers["Access-Control-Allow-Origin"] = "*";
-            else if (CORSOrigin != null)
-                Result.Headers["Access-Control-Allow-Origin"] = CORSOrigin;
+            Result.Cookies = Cookies;
+            ResponseHeaders.ForEach(h => Result.Headers[h.Key.StartsWith("X-") ? h.Key : "X-" + h.Key] = h.Value);
+            if ((AllowAllOrigins ? "*" : CORSOrigin) is string allowedOrigin)
+                Result.Headers["Access-Control-Allow-Origin"] = allowedOrigin;
         }
 
         public T1 BodyObject<T1>() where T1 : class => Body?.Deserialize<T1>();
@@ -60,13 +57,17 @@ namespace RESTar.Requests
         internal RESTRequest(IEntityResource<T> resource, Arguments arguments)
         {
             if (resource.IsInternal) throw new ResourceIsInternal(resource);
+
+            TraceId = arguments.TraceId;
+            TcpConnection = arguments.TcpConnection;
+
             Resource = resource;
             Target = resource;
             Headers = new Headers();
             ResponseHeaders = new Headers();
+            Cookies = new List<string>();
             Conditions = new Condition<T>[0];
             MetaConditions = new MetaConditions();
-            TcpConnection = arguments.TcpConnection;
             AuthToken = arguments.AuthToken;
             UriParameters = arguments.Uri;
             Method = (Methods) arguments.Action;

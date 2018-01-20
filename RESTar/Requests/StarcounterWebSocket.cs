@@ -20,8 +20,7 @@ namespace RESTar.Requests
         private WebSocket WebSocket;
         private readonly Request ScRequest;
         private readonly string GroupName;
-        public string Id { get; }
-        public ITarget Target { get; set; }
+        public string TraceId { get; }
 
         private ITerminal terminal;
 
@@ -182,9 +181,9 @@ namespace RESTar.Requests
 
         public void Disconnect() => Dispose();
 
-        public override string ToString() => Id;
-        public override bool Equals(object obj) => obj is StarcounterWebSocket sws && sws.Id == Id;
-        public override int GetHashCode() => Id.GetHashCode();
+        public override string ToString() => TraceId;
+        public override bool Equals(object obj) => obj is StarcounterWebSocket sws && sws.TraceId == TraceId;
+        public override int GetHashCode() => TraceId.GetHashCode();
 
         public void Open()
         {
@@ -204,7 +203,7 @@ namespace RESTar.Requests
         {
             GroupName = groupName;
             ScRequest = scRequest;
-            Id = DbHelper.Base64ForUrlEncode(scRequest.GetWebSocketId());
+            TraceId = $"WS#{DbHelper.Base64EncodeObjectNo(scRequest.GetWebSocketId())}";
             Headers = headers;
             TcpConnection = tcpConnection;
             Status = WebSocketStatus.Waiting;

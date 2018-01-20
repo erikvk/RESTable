@@ -205,7 +205,7 @@ namespace RESTar.OData
                     writeMetadata = false;
                     break;
                 case IEnumerable<Metadata> metadata:
-                    return new MetadataDocument(metadata.First());
+                    return new MetadataDocument(metadata.First(), entities);
             }
 
             var stream = new MemoryStream();

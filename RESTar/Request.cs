@@ -35,6 +35,7 @@ namespace RESTar
         public Stream Body { get; set; }
         public string AuthToken { get; internal set; }
         public Headers ResponseHeaders { get; }
+        public ICollection<string> Cookies { get; }
         public IUriParameters UriParameters => throw new InvalidOperationException();
         IEntityResource IRequest.Resource => Resource;
         public MetaConditions MetaConditions { get; }
@@ -45,6 +46,7 @@ namespace RESTar
         public Headers RequestHeaders { get; set; }
         Headers IRequest.Headers => RequestHeaders;
         MimeType IRequest.Accept => MimeType.Default;
+        string ITraceable.TraceId => null;
 
         private readonly bool ScSql;
         internal string SelectQuery { get; private set; }
@@ -103,6 +105,7 @@ namespace RESTar
             Resource = Resource<T>.GetEntityResource;
             Target = Resource;
             ResponseHeaders = new Headers();
+            Cookies = new List<string>();
             MetaConditions = new MetaConditions {Unsafe = true};
             TcpConnection = TCPConnection.Internal;
             Conditions = conditions;

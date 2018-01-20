@@ -1,5 +1,4 @@
 ﻿using System.IO;
-using RESTar.Operations;
 using RESTar.Requests;
 
 namespace RESTar
@@ -7,13 +6,8 @@ namespace RESTar
     /// <summary>
     /// WebSockets support sending continuous data over a single TCP connection
     /// </summary>
-    public interface IWebSocket
+    public interface IWebSocket : ITraceable
     {
-        /// <summary>
-        /// Gets a unique ID of the WebSocket.
-        /// </summary>
-        string Id { get; }
-
         /// <summary>
         /// Sends the string data as text over the WebSocket. Send calls to a closed WebSocket will be queued and sent 
         /// when the WebSocket is opened.
@@ -45,21 +39,10 @@ namespace RESTar
         void SendBinary(Stream data);
 
         /// <summary>
-        /// Sends a result over the WebSocket. Send calls to a closed WebSocket will be queued and sent 
-        /// when the WebSocket is opened.
-        /// </summary>
-        void SendResult(IFinalizedResult result);
-
-        /// <summary>
         /// Sends an object over the WebSocket, serialized as JSON text. The output pretty print setting is controlled by
         /// the prettyPrint parameter. If null, the global pretty print setting is used.
         /// </summary>
         void SendJson(object item, bool? prettyPrint = null);
-
-        /// <summary>
-        /// The TCP connection over which this WebSocket is facilitated
-        /// </summary>
-        TCPConnection TcpConnection { get; }
 
         /// <summary>
         /// The headers included in the initial HTTP request

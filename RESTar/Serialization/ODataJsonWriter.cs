@@ -1,11 +1,18 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 using static RESTar.Admin.Settings;
 
 #pragma warning disable 1591
 
 namespace RESTar.Serialization
 {
+    public class C : JsonDictionaryContract
+    {
+        public C(Type underlyingType) : base(underlyingType) { }
+    }
+
     public class ODataJsonWriter : JsonTextWriter
     {
         internal readonly string NewLine;

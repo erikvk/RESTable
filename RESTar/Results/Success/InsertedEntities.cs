@@ -1,16 +1,15 @@
 ﻿using System.Net;
-using RESTar.Internal;
 using RESTar.Operations;
 
 namespace RESTar.Results.Success
 {
     internal class InsertedEntities : Result
     {
-        internal InsertedEntities(int count, IEntityResource resource)
+        internal InsertedEntities(int count, IRequest request) : base(request)
         {
             StatusCode = HttpStatusCode.Created;
             StatusDescription = "Created";
-            Headers["RESTar-info"] = $"{count} entities inserted into '{resource.Name}'";
+            Headers["RESTar-info"] = $"{count} entities inserted into '{request.Resource.Name}'";
         }
     }
 }

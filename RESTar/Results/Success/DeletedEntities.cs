@@ -1,12 +1,10 @@
-﻿using RESTar.Internal;
-
-namespace RESTar.Results.Success
+﻿namespace RESTar.Results.Success
 {
     internal class DeletedEntities : OK
     {
-        internal DeletedEntities(int count, IEntityResource resource)
+        internal DeletedEntities(int count, IRequest request) : base(request)
         {
-            Headers["RESTar-info"] = $"{count} entities deleted from '{resource.Name}'";
+            Headers["RESTar-info"] = $"{count} entities deleted from '{request.Resource.Name}'";
         }
     }
 }

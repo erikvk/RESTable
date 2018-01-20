@@ -8,10 +8,10 @@ using RESTar.Deflection;
 using RESTar.Deflection.Dynamic;
 using RESTar.Internal;
 using RESTar.Linq;
+using RESTar.Requests;
 using RESTar.Results.Success;
 using Starcounter;
 using static System.Reflection.BindingFlags;
-using IResource = RESTar.Internal.IResource;
 
 namespace RESTar.OData
 {
@@ -45,7 +45,7 @@ namespace RESTar.OData
 
         private const string EntityContainerName = "DefaultContainer";
 
-        internal MetadataDocument(Metadata metadata)
+        internal MetadataDocument(Metadata metadata, ITraceable trace) : base(trace)
         {
             ContentType = "application/xml";
             Body = new MemoryStream();
@@ -97,11 +97,9 @@ namespace RESTar.OData
                 }
                 swr.Write("<EntityType Name=\"RESTar.DynamicResource\" OpenType=\"true\"/>");
                 swr.Write($"<EntityContainer Name=\"{EntityContainerName}\">");
-                var entitySets = metadata.EntityResources.Except(HiddenResources).ToList();
-
-                foreach (var (name, entitySet) in MakeEntitySetNames(entitySets))
+                foreach (var entitySet in metadata.EntityResources.Except(HiddenResources))
                 {
-                    swr.Write($"<EntitySet EntityType=\"{entitySet.Type.GetEdmTypeName()}\" Name=\"{name}\">");
+                    swr.Write($"<EntitySet EntityType=\"{entitySet.Type.GetEdmTypeName()}\" Name=\"{entitySet.Name}\">");
                     var methods = metadata.CurrentAccessRights[entitySet].Intersect(entitySet.AvailableMethods).ToList();
                     swr.Write(InsertableAnnotation(methods.Contains(Methods.POST)));
                     swr.Write(UpdatableAnnotation(methods.Contains(Methods.PATCH)));
@@ -124,38 +122,6 @@ namespace RESTar.OData
                 swr.Write("</edmx:DataServices></edmx:Edmx>");
             }
             Body.Seek(0, SeekOrigin.Begin);
-        }
-
-        private static IEnumerable<(string name, IEntityResource resource)> MakeEntitySetNames(IEnumerable<IEntityResource> entitySets)
-        {
-            string[] makeResourceParts(IResource resource)
-            {
-                switch (resource)
-                {
-                    case var _ when resource.IsInnerResource:
-                        var dots = resource.Name.Count('.');
-                        return resource.Name.Split(new[] {'.'}, dots);
-                    default: return resource.Name.Split('.');
-                }
-            }
-
-            var dict = new Dictionary<string, IEntityResource>(StringComparer.OrdinalIgnoreCase);
-            foreach (var entitySet in entitySets)
-            {
-                var parts = makeResourceParts(entitySet);
-                parts.ForEach((item, index) =>
-                {
-                    var key = string.Join(".", parts.Skip(index));
-                    if (dict.ContainsKey(key))
-                        dict[key] = null;
-                    else dict[key] = entitySet;
-                });
-            }
-            return dict
-                .Where(p => p.Value != null)
-                .OrderBy(p => p.Key.Length)
-                .GroupBy(item => item.Value)
-                .Select(group => (group.FirstOrDefault().Key, group.Key));
         }
     }
 

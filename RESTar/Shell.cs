@@ -5,6 +5,7 @@ using RESTar.Operations;
 using RESTar.Requests;
 using RESTar.Results.Fail.BadRequest;
 using RESTar.Results.Success;
+using RESTar.WebSockets;
 using static RESTar.Internal.ErrorCodes;
 using Action = RESTar.Requests.Action;
 
@@ -137,7 +138,7 @@ namespace RESTar
                         case "NEXT":
                             var link = GetNextPageLink?.Invoke()?.ToString();
                             if (link == null)
-                                SendResult(new NoContent());
+                                SendResult(new NoContent(WebSocket));
                             else
                             {
                                 Query = link;
@@ -248,7 +249,11 @@ namespace RESTar
             }
         }
 
-        private void SendResult(IFinalizedResult result) => WebSocket.SendResult(result);
+        private void SendResult(IFinalizedResult result)
+        {
+            var webSocketInternal = (IWebSocketInternal) WebSocket;
+            webSocketInternal.SendResult(result);
+        }
 
         private void SendShellInit()
         {

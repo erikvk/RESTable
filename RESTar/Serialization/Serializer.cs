@@ -45,8 +45,11 @@ namespace RESTar.Serialization
             };
 
             var enumConverter = new StringEnumConverter();
+            var headersConverter = new HeadersConverter();
             Settings.Converters.Add(enumConverter);
+            Settings.Converters.Add(headersConverter);
             VmSettings.Converters.Add(enumConverter);
+            VmSettings.Converters.Add(headersConverter);
             Json = JsonSerializer.Create(Settings);
             UTF8 = new UTF8Encoding(false);
         }

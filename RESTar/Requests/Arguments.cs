@@ -1,13 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Web;
-using RESTar.Internal;
+using RESTar.Admin;
 using RESTar.Linq;
 using RESTar.OData;
 using RESTar.Results.Error;
 using static System.Text.RegularExpressions.RegexOptions;
+using IResource = RESTar.Internal.IResource;
 
 namespace RESTar.Requests
 {
@@ -47,7 +49,7 @@ namespace RESTar.Requests
     /// an incoming call. Arguments is a unified way to talk about the input to request evaluation, 
     /// regardless of protocol and web technologies.
     /// </summary>
-    internal class Arguments
+    internal class Arguments : ILogable, ITraceable
     {
         public Action Action { get; }
         private URI uri;
@@ -77,6 +79,14 @@ namespace RESTar.Requests
         public ResultFinalizer ResultFinalizer { get; }
         internal string AuthToken { get; set; }
         internal Exception Error { get; set; }
+        public string TraceId { get; }
+
+        LogEventType ILogable.LogEventType { get; } = LogEventType.HttpInput;
+        string ILogable.LogMessage => $"{Action} '{uri}'";
+        private string _contentString;
+        string ILogable.LogContent => _contentString ?? (_contentString = Encoding.UTF8.GetString(BodyBytes));
+        private string _headersString;
+        string ILogable.CustomHeadersString => _headersString ?? (_headersString = string.Join(", ", Headers.Select(p => $"{p.Key}: {p.Value}")));
 
         public void ThrowIfError()
         {
@@ -84,7 +94,7 @@ namespace RESTar.Requests
         }
 
         internal IEnumerable<KeyValuePair<string, string>> CustomHeaders => Headers
-            .Where(h => !Regex.IsMatch(h.Key, RegEx.ReservedHeaders, IgnoreCase));
+            .Where(h => !Regex.IsMatch(h.Key, "", IgnoreCase));
 
         private static bool PercentCharsEscaped(IDictionary<string, string> headers)
         {
@@ -96,8 +106,9 @@ namespace RESTar.Requests
             return uriKey != null ? HttpUtility.UrlDecode(uriKey).Substring(1, uriKey.Length - 2) : null;
         }
 
-        internal Arguments(Action action, ref string query, byte[] body = null, Headers headers = null, TCPConnection tcpConnection = null)
+        internal Arguments(Action action, ref string query, byte[] body, Headers headers, TCPConnection tcpConnection)
         {
+            TraceId = tcpConnection.TraceId;
             Action = action;
             Headers = headers ?? new Headers();
             Uri = URI.ParseInternal(ref query, PercentCharsEscaped(headers), out var protocol, out var key);

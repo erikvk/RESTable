@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net;
 using RESTar.Linq;
 using RESTar.Operations;
@@ -9,7 +11,6 @@ using Starcounter;
 using static RESTar.Admin.Settings;
 using static RESTar.Requests.Action;
 using static RESTar.Requests.RequestEvaluator;
-using Console = RESTar.Admin.Console;
 
 namespace RESTar.Requests
 {
@@ -17,7 +18,6 @@ namespace RESTar.Requests
     {
         private static readonly Action[] Actions = {GET, POST, PATCH, PUT, DELETE, REPORT, OPTIONS};
         private const string WsGroupName = "restar_ws";
-        private static ulong RequestCount;
 
         internal static void RegisterRESTHandlers(bool setupMenu)
         {
@@ -29,21 +29,16 @@ namespace RESTar.Requests
                 {
                     var connection = GetTCPConnection(request);
                     var headers = new Headers(request.HeadersDictionary);
-                    RequestCount += 1;
-                    Console.LogHTTPRequest(RequestCount.ToString(), action, query, request.ClientIpAddress);
                     if (request.WebSocketUpgrade)
                         connection.WebSocket = new StarcounterWebSocket(WsGroupName, request, headers, connection);
                     var result = Evaluate(action, ref query, request.BodyBytes, headers, connection);
-                    switch (result)
+                    if (result is WebSocketResult webSocketResult)
                     {
-                        case WebSocketResult webSocketResult:
-                            if (!webSocketResult.LeaveOpen)
-                                connection.WebSocket.Disconnect();
-                            return HandlerStatus.Handled;
-                        default:
-                            Console.LogHTTPResult(RequestCount.ToString(), result);
-                            return result.ToResponse();
+                        if (!webSocketResult.LeaveOpen)
+                            connection.WebSocket.Disconnect();
+                        return HandlerStatus.Handled;
                     }
+                    return result.ToResponse();
                 }
             ));
 
@@ -117,7 +112,8 @@ namespace RESTar.Requests
                     }
                 }
             }
-            response.SetHeadersDictionary(result.Headers._dict);
+            result.Headers.ForEach(header => response.Headers[header.Key] = header.Value);
+            response.Cookies = result.Cookies as List<string> ?? response.Cookies.ToList();
             return response;
         }
 

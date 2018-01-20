@@ -1,6 +1,6 @@
-﻿using System.IO;
+﻿using System.Collections.Generic;
+using System.IO;
 using System.Net;
-using RESTar.Internal;
 using RESTar.Operations;
 using RESTar.Requests;
 
@@ -8,9 +8,9 @@ namespace RESTar.Results.Success
 {
     internal class UpdatedEntities : OK
     {
-        internal UpdatedEntities(int count, IEntityResource resource)
+        internal UpdatedEntities(int count, IRequest request) : base(request)
         {
-            Headers["RESTar-info"] = $"{count} entities updated in '{resource.Name}'";
+            Headers["RESTar-info"] = $"{count} entities updated in '{request.Resource.Name}'";
         }
     }
 
@@ -21,6 +21,7 @@ namespace RESTar.Results.Success
         string IFinalizedResult.StatusDescription => default;
         Stream IFinalizedResult.Body => default;
         string IFinalizedResult.ContentType => default;
+        ICollection<string> IFinalizedResult.Cookies => default;
         Headers IFinalizedResult.Headers => default;
         public WebSocketResult(bool leaveOpen) : this() => LeaveOpen = leaveOpen;
     }

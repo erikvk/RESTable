@@ -28,7 +28,7 @@ namespace RESTar.Requests
             var view = match.Groups["view"].Value.TrimStart('-');
             var conditions = match.Groups["cond"].Value.TrimStart('/');
             var metaConditions = match.Groups["meta"].Value.TrimStart('/');
-         
+
             switch (conditions)
             {
                 case var _ when conditions.Length == 0:
@@ -102,7 +102,7 @@ namespace RESTar.Requests
                         entities.Body = stream;
                         entities.SetContentDisposition(".json");
                     }
-                    else return new NoContent();
+                    else return new NoContent(entities);
                     if (entities.IsPaged)
                     {
                         var pager = entities.GetNextPageLink();
@@ -123,7 +123,7 @@ namespace RESTar.Requests
                         excel.SaveAs(entities.Body);
                         entities.SetContentDisposition(".xlsx");
                     }
-                    else return new NoContent();
+                    else return new NoContent(entities);
                     break;
             }
             entities.Body?.Seek(0, SeekOrigin.Begin);
@@ -142,7 +142,7 @@ namespace RESTar.Requests
                     if (!response.IsSuccessStatusCode)
                         throw new InvalidExternalDestination(request,
                             $"Received {response.StatusCode.ToCode()} - {response.StatusDescription}. {response.Headers.SafeGet("RESTar-info")}");
-                    if (entities.Headers.TryGetValue("Access-Control-Allow-Origin", out var h))
+                    if (entities.Headers.FirstOrDefault(pair => pair.Key.EqualsNoCase("Access-Control-Allow-Origin")).Value is string h)
                         response.Headers["Access-Control-Allow-Origin"] = h;
                     return response;
                 }

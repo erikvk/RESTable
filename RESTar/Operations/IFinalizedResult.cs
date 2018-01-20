@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System.Collections.Generic;
+using System.IO;
 using System.Net;
 using RESTar.Requests;
 
@@ -8,7 +9,7 @@ namespace RESTar.Operations
     /// Describes a result that is ready to be sent back to the client, for example 
     /// using an HTTP response
     /// </summary>
-    public interface IFinalizedResult
+    internal interface IFinalizedResult
     {
         /// <summary>
         /// The status code of the result
@@ -31,8 +32,13 @@ namespace RESTar.Operations
         string ContentType { get; }
 
         /// <summary>
-        /// The headers contained in the result
+        /// The headers to use in HTTP responses based on this result
         /// </summary>
         Headers Headers { get; }
+
+        /// <summary>
+        /// The cookies to set in the response
+        /// </summary>
+        ICollection<string> Cookies { get; }
     }
 }

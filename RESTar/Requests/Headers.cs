@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
+using static System.StringComparison;
 
 namespace RESTar.Requests
 {
@@ -27,14 +29,36 @@ namespace RESTar.Requests
 
         internal bool UnsafeOverride { get; set; }
 
-        internal Dictionary<string, string> _dict { get; }
+        private Dictionary<string, string> _dict { get; }
         internal void Put(KeyValuePair<string, string> kvp) => _dict[kvp.Key] = kvp.Value;
+        internal IEnumerable<KeyValuePair<string, string>> CustomHeaders => this.Where(pair => IsCustom(pair.Key));
+
+        internal static bool IsCustom(string key)
+        {
+            switch (key)
+            {
+                case var _ when string.Equals(key, "host", OrdinalIgnoreCase):
+                case var _ when string.Equals(key, "authorization", OrdinalIgnoreCase):
+                case var _ when string.Equals(key, "restar-authtoken", OrdinalIgnoreCase):
+                case var _ when string.Equals(key, "connection", OrdinalIgnoreCase):
+                case var _ when string.Equals(key, "upgrade", OrdinalIgnoreCase):
+                case var _ when string.Equals(key, "sec-websocket-version", OrdinalIgnoreCase):
+                case var _ when string.Equals(key, "sec-websocket-key", OrdinalIgnoreCase):
+                case var _ when string.Equals(key, "sec-websocket-extensions", OrdinalIgnoreCase):
+                case var _ when string.Equals(key, "source", OrdinalIgnoreCase):
+                case var _ when string.Equals(key, "destination", OrdinalIgnoreCase): return false;
+                default: return true;
+            }
+        }
 
         IEnumerable<string> IReadOnlyDictionary<string, string>.Keys => Keys;
         IEnumerable<string> IReadOnlyDictionary<string, string>.Values => Values;
 
         /// <inheritdoc />
-        public Headers() => _dict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        public Headers()
+        {
+            _dict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        }
 
         internal Headers(Dictionary<string, string> dictToUse)
         {
@@ -57,7 +81,7 @@ namespace RESTar.Requests
         void ICollection<KeyValuePair<string, string>>.Add(KeyValuePair<string, string> item) => Put(item);
 
         /// <inheritdoc />
-        public void Clear() => _dict.Clear();
+        public void Clear() => throw new InvalidOperationException();
 
         /// <inheritdoc />
         public bool Contains(KeyValuePair<string, string> item) => ((IDictionary<string, string>) _dict).Contains(item);
@@ -66,7 +90,7 @@ namespace RESTar.Requests
         public void CopyTo(KeyValuePair<string, string>[] array, int arrayIndex) => ((IDictionary<string, string>) _dict).CopyTo(array, arrayIndex);
 
         /// <inheritdoc />
-        public bool Remove(KeyValuePair<string, string> item) => ((IDictionary<string, string>) _dict).Remove(item);
+        public bool Remove(KeyValuePair<string, string> item) => throw new InvalidOperationException();
 
         /// <inheritdoc cref="IDictionary{TKey,TValue}" />
         public int Count => _dict.Count;
@@ -81,7 +105,7 @@ namespace RESTar.Requests
         public void Add(string key, string value) => _dict.Add(key, value);
 
         /// <inheritdoc />
-        public bool Remove(string key) => _dict.Remove(key);
+        public bool Remove(string key) => throw new InvalidOperationException();
 
         /// <inheritdoc cref="IDictionary{TKey,TValue}" />
         public bool TryGetValue(string key, out string value) => _dict.TryGetValue(key, out value);

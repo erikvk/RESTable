@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System.Collections.Generic;
+using System.IO;
 using RESTar.Internal;
 using RESTar.Requests;
 
@@ -30,7 +31,7 @@ namespace RESTar
     /// <summary>
     /// A non-generic common interface for all request classes used in RESTar
     /// </summary>
-    public interface IRequest
+    public interface IRequest : ITraceable
     {
         /// <summary>
         /// The method of the request
@@ -51,11 +52,6 @@ namespace RESTar
         /// The meta-conditions of the request
         /// </summary>
         MetaConditions MetaConditions { get; }
-
-        /// <summary>
-        /// The origin of the request
-        /// </summary>
-        TCPConnection TcpConnection { get; }
 
         /// <summary>
         /// The body of the request
@@ -80,11 +76,18 @@ namespace RESTar
 
         /// <summary>
         /// To include additional HTTP headers in the response, add them to 
-        /// this dictionary. Headers inserted here with names not already 
+        /// this collection. Headers inserted here with names not already 
         /// beginning with "X-" will be renamed to "X-[name]" where name 
-        /// is the key-value pair key.
+        /// is the key-value pair key. To add cookies, use the Cookies 
+        /// string collection instead. 
         /// </summary>
         Headers ResponseHeaders { get; }
+
+        /// <summary>
+        /// Set cookies by adding strings to this collection. The strings in this
+        /// collection will be used as values for Set-Cookie response headers.
+        /// </summary>
+        ICollection<string> Cookies { get; }
 
         /// <summary>
         /// The URI parameters that was used to construct this request
