@@ -54,11 +54,7 @@ namespace RESTar.Requests
                             case var entityResource:
                                 IFinalizedResult result = HandleREST((dynamic) entityResource, arguments);
                                 if (!tcpConnection.HasWebSocket)
-                                {
-                                    Admin.Console.Log(arguments);
-                                    Admin.Console.Log(result as ILogable);
                                     return result;
-                                }
                                 if (tcpConnection.Origin == OriginType.Shell)
                                     return result;
                                 tcpConnection.WebSocketInternal.SendResult(result);

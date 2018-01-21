@@ -93,6 +93,13 @@
     <Compile Include="Admin\AdminTools.cs" />
     <Compile Include="Admin\Console.cs" />
     <Compile Include="Admin\DbMacro.cs" />
+    <Compile Include="Logging\ConsoleFormat.cs" />
+    <Compile Include="Logging\ConsoleStatus.cs" />
+    <Compile Include="Logging\ILogable.cs" />
+    <Compile Include="Logging\LogEventType.cs" />
+    <Compile Include="Logging\LogItem.cs" />
+    <Compile Include="Logging\HTTPEvent.cs" />
+    <Compile Include="Logging\WebSocketEvent.cs" />
     <Compile Include="Serialization\HeadersConverter.cs" />
     <Compile Include="ViewInfo.cs" />
     <Compile Include="Aggregator.cs" />

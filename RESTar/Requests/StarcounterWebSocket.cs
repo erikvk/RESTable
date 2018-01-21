@@ -203,7 +203,7 @@ namespace RESTar.Requests
         {
             GroupName = groupName;
             ScRequest = scRequest;
-            TraceId = $"WS#{DbHelper.Base64EncodeObjectNo(scRequest.GetWebSocketId())}";
+            TraceId = DbHelper.Base64EncodeObjectNo(scRequest.GetWebSocketId());
             Headers = headers;
             TcpConnection = tcpConnection;
             Status = WebSocketStatus.Waiting;

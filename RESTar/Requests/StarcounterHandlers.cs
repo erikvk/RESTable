@@ -46,7 +46,7 @@ namespace RESTar.Requests
             {
                 try
                 {
-                    WebSocketController.HandleTextInput(DbHelper.Base64ForUrlEncode(ws.ToUInt64()), text);
+                    WebSocketController.HandleTextInput(DbHelper.Base64EncodeObjectNo(ws.ToUInt64()), text);
                 }
                 catch (Exception e)
                 {
@@ -58,7 +58,7 @@ namespace RESTar.Requests
             {
                 try
                 {
-                    WebSocketController.HandleBinaryInput(DbHelper.Base64ForUrlEncode(ws.ToUInt64()), binary);
+                    WebSocketController.HandleBinaryInput(DbHelper.Base64EncodeObjectNo(ws.ToUInt64()), binary);
                 }
                 catch (Exception e)
                 {
@@ -70,7 +70,7 @@ namespace RESTar.Requests
             {
                 try
                 {
-                    WebSocketController.HandleDisconnect(DbHelper.Base64ForUrlEncode(ws.ToUInt64()));
+                    WebSocketController.HandleDisconnect(DbHelper.Base64EncodeObjectNo(ws.ToUInt64()));
                 }
                 catch { }
             });
@@ -123,7 +123,8 @@ namespace RESTar.Requests
             {
                 Host = request.Host,
                 Origin = request.IsExternal ? OriginType.External : OriginType.Internal,
-                ClientIP = request.ClientIpAddress
+                ClientIP = request.ClientIpAddress,
+                UserAgent = request.Headers["User-Agent"]
             };
             if (origin.IsExternal && request.HeadersDictionary != null)
             {

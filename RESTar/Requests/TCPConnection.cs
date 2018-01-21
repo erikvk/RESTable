@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using System.Net;
 using RESTar.WebSockets;
 using Starcounter;
@@ -32,7 +33,7 @@ namespace RESTar.Requests
     [Database]
     public class ConnectionId
     {
-        private const string All = "SELECT t FROM UserSyncer.UserNr t";
+        private const string All = "SELECT t FROM RESTar.Requests.ConnectionId t";
 
         /// <summary>
         /// The number stored in the database
@@ -92,9 +93,24 @@ namespace RESTar.Requests
         public string Host { get; internal set; }
 
         /// <summary>
+        /// The user agent, as defined in the incoming request
+        /// </summary>
+        public string UserAgent { get; internal set; }
+
+        /// <summary>
         /// Was the request sent over HTTPS?
         /// </summary>
         public bool HTTPS { get; internal set; }
+
+        /// <summary>
+        /// The date and time when this connection was opened
+        /// </summary>
+        public DateTime OpenedAt { get; internal set; }
+
+        /// <summary>
+        /// The date and time when this connection was closed
+        /// </summary>
+        public DateTime? ClosedAt { get; internal set; }
 
         /// <summary>
         /// The internal location
@@ -135,6 +151,6 @@ namespace RESTar.Requests
         /// </summary>
         public bool HasWebSocket => WebSocket != null;
 
-        internal TCPConnection() => TraceId = $"R#{ConnectionId.Next}";
+        internal TCPConnection() => TraceId = ConnectionId.Next;
     }
 }

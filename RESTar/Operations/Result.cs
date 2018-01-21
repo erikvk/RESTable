@@ -2,7 +2,7 @@
 using System.IO;
 using System.Linq;
 using System.Net;
-using RESTar.Admin;
+using RESTar.Logging;
 using RESTar.Requests;
 
 namespace RESTar.Operations
