@@ -37,7 +37,7 @@ namespace RESTar
             if (request == null) throw new ArgumentNullException(nameof(request));
             var uri = new Uri($"{URL}/{request.Conditions.ToUriString()}");
             var headers = new Dictionary<string, string> {["Authorization"] = "apikey restar"};
-            return HttpRequest.External(method: GET, uri: uri, headers: headers)?.Body?.Deserialize<Help[]>();
+            return HttpRequest.External(request, method: GET, uri: uri, headers: headers)?.Body?.Deserialize<Help[]>();
         }
     }
 }

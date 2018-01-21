@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.IO;
 using System.Net;
+using RESTar.Logging;
 using RESTar.Operations;
 using RESTar.Requests;
 
@@ -22,7 +23,20 @@ namespace RESTar.Results.Success
         Stream IFinalizedResult.Body => default;
         string IFinalizedResult.ContentType => default;
         ICollection<string> IFinalizedResult.Cookies => default;
-        Headers IFinalizedResult.Headers => default;
-        public WebSocketResult(bool leaveOpen) : this() => LeaveOpen = leaveOpen;
+        Headers ILogable.Headers => default;
+        public string TraceId { get; }
+        public TCPConnection TcpConnection { get; }
+        public LogEventType LogEventType => default;
+        public string LogMessage => default;
+        public string LogContent => default;
+        public Headers Headers => default;
+        public string CustomHeadersString => default;
+
+        public WebSocketResult(bool leaveOpen, ITraceable trace) : this()
+        {
+            LeaveOpen = leaveOpen;
+            TraceId = trace.TraceId;
+            TcpConnection = trace.TcpConnection;
+        }
     }
 }

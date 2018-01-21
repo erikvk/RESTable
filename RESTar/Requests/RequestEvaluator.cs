@@ -9,6 +9,7 @@ using RESTar.Results.Success;
 using static RESTar.Operations.Transact;
 using static RESTar.Requests.Action;
 using static RESTar.RESTarConfig;
+using Console = RESTar.Admin.Console;
 using Response = RESTar.Http.HttpResponse;
 
 namespace RESTar.Requests
@@ -30,7 +31,8 @@ namespace RESTar.Requests
         )
         {
             if (StackDepth++ > 300) throw new InfiniteLoop();
-            Arguments arguments = null;
+            var (arguments, result) = (default(Arguments), default(IFinalizedResult));
+
             try
             {
                 switch (action)
@@ -48,22 +50,20 @@ namespace RESTar.Requests
                         {
                             case TerminalResource terminalResource:
                                 if (!tcpConnection.HasWebSocket)
-                                    return new UpgradeRequired(terminalResource.Name);
+                                    return result = new UpgradeRequired(terminalResource.Name);
                                 terminalResource.InstantiateFor(tcpConnection.WebSocketInternal, arguments.Uri.Conditions);
-                                return new WebSocketResult(true);
+                                return result = new WebSocketResult(true, arguments);
                             case var entityResource:
-                                IFinalizedResult result = HandleREST((dynamic) entityResource, arguments);
-                                if (!tcpConnection.HasWebSocket)
-                                    return result;
-                                if (tcpConnection.Origin == OriginType.Shell)
+                                result = HandleREST((dynamic) entityResource, arguments);
+                                if (!tcpConnection.HasWebSocket || tcpConnection.Origin == OriginType.Shell)
                                     return result;
                                 tcpConnection.WebSocketInternal.SendResult(result);
-                                return new WebSocketResult(false);
+                                return result = new WebSocketResult(false, arguments);
                         }
                     case OPTIONS:
                         arguments = new Arguments(action, ref query, body, headers, tcpConnection);
                         arguments.ThrowIfError();
-                        return HandleOptions(arguments.IResource, arguments);
+                        return result = HandleOptions(arguments.IResource, arguments);
 
                     // case VIEW: return HandleView((dynamic) resource, arguments);
                     // case PAGE:
@@ -82,6 +82,7 @@ namespace RESTar.Requests
             catch (Exception exs)
             {
                 var error = RESTarError.GetError(exs);
+                error.SetTrace(tcpConnection);
                 string errorId = null;
                 if (!(error is Forbidden))
                 {
@@ -91,7 +92,7 @@ namespace RESTar.Requests
                 if (tcpConnection.HasWebSocket && tcpConnection.Origin != OriginType.Shell)
                 {
                     tcpConnection.WebSocketInternal.SendResult(error);
-                    return new WebSocketResult(false);
+                    return result = new WebSocketResult(false, error);
                 }
 
                 switch (action)
@@ -104,8 +105,8 @@ namespace RESTar.Requests
                     case REPORT:
                         if (errorId != null)
                             error.Headers["ErrorInfo"] = $"/{typeof(Error).FullName}/id={errorId}";
-                        return error;
-                    case OPTIONS: return new InvalidOrigin();
+                        return result = error;
+                    case OPTIONS: return result = new InvalidOrigin();
                     //case VIEW:
                     //case PAGE:
                     //case MENU:
@@ -119,6 +120,8 @@ namespace RESTar.Requests
             }
             finally
             {
+                if (!(result is WebSocketResult) && tcpConnection.Origin != OriginType.Shell)
+                    Console.Log(arguments, result);
                 StackDepth--;
             }
         }

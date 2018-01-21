@@ -6,7 +6,6 @@ using System.Text;
 using Newtonsoft.Json;
 using RESTar.Linq;
 using RESTar.Logging;
-using RESTar.Operations;
 using RESTar.Serialization;
 using RESTar.WebSockets;
 
@@ -15,6 +14,8 @@ namespace RESTar.Admin
     [RESTar(Description = "The console")]
     internal class Console : ITerminal
     {
+        internal const string TypeName = "RESTar.Admin.Console";
+
         public ConsoleStatus Status { get; set; }
         public ConsoleFormat Format { get; set; }
         public bool IncludeConnection { get; set; } = true;
@@ -43,9 +44,6 @@ namespace RESTar.Admin
         public void HandleBinaryInput(byte[] input) => throw new NotImplementedException();
         public bool SupportsTextInput { get; } = true;
         public bool SupportsBinaryInput { get; } = false;
-
-        private static string Content(string content) => $" Content: {content}";
-        private static string Content(byte[] content) => $" Content: {Encoding.UTF8.GetString(content)}";
 
         private void SendConsoleInit() => WebSocket
             .SendText("### Welcome to the RESTar WebSocket console! ###\n\n" +
@@ -80,13 +78,39 @@ namespace RESTar.Admin
             }
         }
 
+        private const string connection = " | Connection: ";
+        private const string time = " | Time: ";
+        private const string headers = " | Headers: ";
+        private const string content = " | Content: ";
+
+        private void PrintLine(StringBuilder builder, ILogable logable)
+        {
+            if (IncludeConnection)
+            {
+                builder.Append(connection);
+                builder.Append(logable.TcpConnection.ClientIP);
+            }
+            if (IncludeTime)
+            {
+                var dateTimeString = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.ff");
+                builder.Append(time);
+                builder.Append(dateTimeString);
+            }
+            if (IncludeHeaders)
+            {
+                builder.Append(headers);
+                builder.Append(logable.CustomHeadersString);
+            }
+            if (IncludeContent)
+            {
+                builder.Append(content);
+                builder.Append(logable.LogContent);
+            }
+            WebSocketInternal.SendTextRaw(builder.ToString());
+        }
+
         private void PrintLines(StringBuilder builder1, ILogable logable1, StringBuilder builder2, ILogable logable2)
         {
-            const string connection = " | Connection: ";
-            const string time = " | Time: ";
-            const string headers = " | Headers: ";
-            const string content = " | Content: ";
-
             if (IncludeConnection)
             {
                 builder1.Append(connection);
@@ -145,7 +169,7 @@ namespace RESTar.Admin
             return builder.ToString();
         }
 
-        internal static void Log(ILogable httpRequest, ILogable httpResponse) => Consoles.Keys
+        internal static void Log(ILogable initial, ILogable final) => Consoles.Keys
             .AsParallel()
             .Where(c => c.Status == ConsoleStatus.ACTIVE)
             .GroupBy(c => c.Format)
@@ -154,142 +178,82 @@ namespace RESTar.Admin
                 switch (group.Key)
                 {
                     case ConsoleFormat.Line:
-                        var requestStub = GetLogLineStub(httpRequest);
-                        var responseStub = GetLogLineStub(httpResponse);
+                        var requestStub = GetLogLineStub(initial);
+                        var responseStub = GetLogLineStub(final);
                         group.AsParallel().ForEach(c => c.PrintLines(
-                            new StringBuilder(requestStub), httpRequest,
-                            new StringBuilder(responseStub), httpResponse)
+                            new StringBuilder(requestStub), initial,
+                            new StringBuilder(responseStub), final)
                         );
                         break;
                     case ConsoleFormat.JSON:
-                        var item = new RequestResponse
-                        {
-                            Connection = new Connection(httpRequest.TcpConnection),
-                            Request = new LogItem(httpRequest, false),
-                            Response = new LogItem(httpResponse, false)
-                        };
                         group.AsParallel().ForEach(c =>
                         {
-                            var localItem = item;
-                            if (!c.IncludeConnection)
+                            var item = new InputOutput
                             {
-                                localItem.Connection = null;
-                                if (c.IncludeTime)
-                                {
-                                    localItem.Request.Time = httpRequest.TcpConnection.OpenedAt;
-                                    localItem.Response.Time = httpRequest.TcpConnection.ClosedAt;
-                                }
-                            }
-                            if (!c.IncludeHeaders)
+                                In = new LogItem {Id = initial.TraceId, Message = initial.LogMessage},
+                                Out = new LogItem {Id = final.TraceId, Message = final.LogMessage}
+                            };
+                            if (c.IncludeConnection)
+                                item.Connection = new Connection(initial.TcpConnection, c.IncludeTime);
+                            else if (c.IncludeTime)
                             {
-                                localItem.Request.Headers = null;
-                                localItem.Response.Headers = null;
+                                item.In.Time = initial.TcpConnection.OpenedAt;
+                                item.Out.Time = initial.TcpConnection.ClosedAt;
                             }
-                            if (!c.IncludeContent)
+                            if (c.IncludeHeaders)
                             {
-                                localItem.Request.Content = null;
-                                localItem.Response.Content = null;
+                                item.In.Headers = initial.Headers;
+                                item.Out.Headers = final.Headers;
                             }
-                            var json = JsonConvert.SerializeObject(localItem, Serializer.Settings);
+                            if (c.IncludeContent)
+                            {
+                                item.In.Content = initial.LogContent;
+                                item.Out.Content = final.LogContent;
+                            }
+                            var json = JsonConvert.SerializeObject(item, Serializer.Settings);
                             c.WebSocketInternal.SendTextRaw(json);
                         });
                         break;
                     default: throw new ArgumentOutOfRangeException();
                 }
-                //group.WebSocketInternal.SendTextRaw(message);
             });
 
-        internal static void LogHTTPResult(string requestId, IFinalizedResult result)
-        {
-            var info = result.Headers["RESTar-Info"];
-            var errorInfo = result.Headers["ErrorInfo"];
-            var tail = "";
-            if (info != null)
-                tail += $". {info}";
-            if (errorInfo != null)
-                tail += $". See {errorInfo}";
-            SendToAll($"<= [{requestId}] {result.StatusCode.ToCode()}: '{result.StatusDescription}'. " +
-                      $"{tail} at {_DateTime}");
-        }
+        internal static void Log(ILogable logable) => Consoles.Keys
+            .AsParallel()
+            .Where(c => c.Status == ConsoleStatus.ACTIVE)
+            .GroupBy(c => c.Format)
+            .ForEach(group =>
+            {
+                switch (group.Key)
+                {
+                    case ConsoleFormat.Line:
+                        var requestStub = GetLogLineStub(logable);
+                        group.AsParallel().ForEach(c => c.PrintLine(new StringBuilder(requestStub), logable));
+                        break;
+                    case ConsoleFormat.JSON:
+                        group.AsParallel().ForEach(c =>
+                        {
+                            var item = new LogItem
+                            {
+                                Id = logable.TraceId,
+                                Message = logable.LogMessage
+                            };
+                            if (c.IncludeConnection)
+                                item.Connection = new Connection(logable.TcpConnection, c.IncludeTime);
+                            else if (c.IncludeTime)
+                                item.Time = logable.TcpConnection.OpenedAt;
+                            if (c.IncludeHeaders)
+                                item.Headers = logable.Headers;
+                            if (c.IncludeContent)
+                                item.Content = logable.LogContent;
+                            var json = JsonConvert.SerializeObject(item, Serializer.Settings);
+                            c.WebSocketInternal.SendTextRaw(json);
+                        });
+                        break;
+                }
+            });
 
-        private const string DateTimeFormat = "yyyy-MM-dd HH:mm:ss.ff";
-
-        private static string _DateTime => DateTime.Now.ToString(DateTimeFormat);
-
-        private static string TerminalResourcePart(IWebSocketInternal webSocket, string direction) =>
-            webSocket.TerminalResource != null ? $"{direction} '{webSocket.TerminalResource.Name}' " : null;
-
-        private const string This = "RESTar.Admin.Console";
         private static readonly IDictionary<Console, byte> Consoles;
         static Console() => Consoles = new ConcurrentDictionary<Console, byte>();
-
-        internal static void LogWebSocketOpen(IWebSocketInternal webSocket)
-        {
-            if (!Consoles.Any() || webSocket.TerminalResource?.Name == This) return;
-            SendToAll($"++ [WS {webSocket.TraceId}] opened {TerminalResourcePart(webSocket, "to")}from " +
-                      $"'{webSocket.TcpConnection.ClientIP}' at {webSocket.Opened.ToString(DateTimeFormat)}");
-        }
-
-        internal static void LogWebSocketClosed(IWebSocketInternal webSocket)
-        {
-            if (!Consoles.Any() || webSocket.TerminalResource?.Name == This) return;
-            SendToAll($"-- [WS {webSocket.TraceId}] closed {TerminalResourcePart(webSocket, "to")}from " +
-                      $"'{webSocket.TcpConnection.ClientIP}' at {webSocket.Closed.ToString(DateTimeFormat)}");
-        }
-
-        internal static void LogWebSocketTextInput(string input, IWebSocketInternal webSocket)
-        {
-            if (!Consoles.Any() || webSocket.TerminalResource?.Name == This) return;
-            var length = Encoding.UTF8.GetByteCount(input);
-            SendToAll($"=> [WS {webSocket.TraceId}] received {length} bytes {TerminalResourcePart(webSocket, "to")}from " +
-                      $"'{webSocket.TcpConnection.ClientIP}' at {_DateTime}.", input);
-        }
-
-        internal static void LogWebSocketBinaryInput(byte[] input, IWebSocketInternal webSocket)
-        {
-            if (!Consoles.Any() || webSocket.TerminalResource?.Name == This) return;
-            SendToAll($"=> [WS {webSocket.TraceId}] received {input.Length} bytes {TerminalResourcePart(webSocket, "to")}from " +
-                      $"'{webSocket.TcpConnection.ClientIP}' at {_DateTime}.", input);
-        }
-
-        internal static void LogWebSocketTextOutput(string output, IWebSocketInternal webSocket)
-        {
-            if (!Consoles.Any() || webSocket.TerminalResource?.Name == This) return;
-            var length = Encoding.UTF8.GetByteCount(output);
-            SendToAll($"<= [WS {webSocket.TraceId}] sent {length} bytes to '{webSocket.TcpConnection.ClientIP}' " +
-                      $"{TerminalResourcePart(webSocket, "from")}at {_DateTime}.", output);
-        }
-
-        internal static void LogWebSocketBinaryOutput(byte[] output, IWebSocketInternal webSocket)
-        {
-            if (!Consoles.Any() || webSocket.TerminalResource?.Name == This) return;
-            SendToAll($"<= [WS {webSocket.TraceId}] sent {output.Length} bytes to '{webSocket.TcpConnection.ClientIP}' " +
-                      $"{TerminalResourcePart(webSocket, "from")}at {_DateTime}.", output);
-        }
-
-        private static void SendToAll(string message, string stringContent) => Consoles.Keys
-            .AsParallel()
-            .Where(c => c.Status == ConsoleStatus.ACTIVE)
-            .ForEach(c =>
-            {
-                if (c.IncludeContent)
-                    message = message + Content(stringContent);
-                c.WebSocketInternal.SendTextRaw(message);
-            });
-
-        private static void SendToAll(string message, byte[] bytesContent) => Consoles.Keys
-            .AsParallel()
-            .Where(c => c.Status == ConsoleStatus.ACTIVE)
-            .ForEach(c =>
-            {
-                if (c.IncludeContent)
-                    message = message + Content(bytesContent);
-                c.WebSocketInternal.SendTextRaw(message);
-            });
-
-        private static void SendToAll(string message) => Consoles.Keys
-            .AsParallel()
-            .Where(c => c.Status == ConsoleStatus.ACTIVE)
-            .ForEach(c => c.WebSocketInternal.SendTextRaw(message));
     }
 }

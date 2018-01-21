@@ -118,7 +118,7 @@ namespace RESTar.Requests
                         };
                         if (request.Method != GET)
                             throw new InvalidSyntax(InvalidSource, "Only GET is allowed in Source headers");
-                        var response = request.GetResponse() ?? throw new InvalidExternalSource(request, "No response");
+                        var response = request.GetResponse(this) ?? throw new InvalidExternalSource(request, "No response");
                         if (!response.IsSuccessStatusCode)
                             throw new InvalidExternalSource(request,
                                 $"Status: {response.StatusCode.ToCode()} - {response.StatusDescription}. {response.Headers.SafeGet("RESTar-info")}");

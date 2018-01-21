@@ -138,7 +138,7 @@ namespace RESTar.Requests
                         AuthToken = entities.Request.AuthToken,
                         Body = entities.Body
                     };
-                    var response = request.GetResponse() ?? throw new InvalidExternalDestination(request, "No response");
+                    var response = request.GetResponse(entities) ?? throw new InvalidExternalDestination(request, "No response");
                     if (!response.IsSuccessStatusCode)
                         throw new InvalidExternalDestination(request,
                             $"Received {response.StatusCode.ToCode()} - {response.StatusDescription}. {response.Headers.SafeGet("RESTar-info")}");

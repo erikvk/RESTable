@@ -42,8 +42,15 @@ namespace RESTar.Results.Error
         Stream IFinalizedResult.Body { get; } = null;
         string IFinalizedResult.ContentType { get; } = null;
 
-        public string TraceId { get; internal set; }
-        public TCPConnection TcpConnection { get; internal set; }
+        internal void SetTrace(ITraceable trace)
+        {
+            TraceId = trace.TraceId;
+            TcpConnection = trace.TcpConnection;
+        }
+
+        public string TraceId { get; private set; }
+        public TCPConnection TcpConnection { get; private set; }
+
         public LogEventType LogEventType => LogEventType.HttpOutput;
 
         public string LogMessage

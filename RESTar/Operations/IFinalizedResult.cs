@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.IO;
 using System.Net;
-using RESTar.Requests;
+using RESTar.Logging;
 
 namespace RESTar.Operations
 {
@@ -9,7 +9,7 @@ namespace RESTar.Operations
     /// Describes a result that is ready to be sent back to the client, for example 
     /// using an HTTP response
     /// </summary>
-    internal interface IFinalizedResult
+    internal interface IFinalizedResult : ILogable
     {
         /// <summary>
         /// The status code of the result
@@ -30,12 +30,7 @@ namespace RESTar.Operations
         /// The content type of the result body
         /// </summary>
         string ContentType { get; }
-
-        /// <summary>
-        /// The headers to use in HTTP responses based on this result
-        /// </summary>
-        Headers Headers { get; }
-
+        
         /// <summary>
         /// The cookies to set in the response
         /// </summary>

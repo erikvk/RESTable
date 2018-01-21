@@ -58,8 +58,7 @@ namespace RESTar
                         else if (char.IsDigit(first) || first == '/')
                         {
                             var uri = str;
-                            var response = HttpRequest.Internal(GET, new Uri(uri, UriKind.Relative),
-                                request.AuthToken);
+                            var response = HttpRequest.Internal(request, GET, new Uri(uri, UriKind.Relative), request.AuthToken);
                             if (response?.IsSuccessStatusCode != true)
                                 throw new Exception(
                                     $"Could not get source data from '{uri}'. " +
@@ -162,7 +161,7 @@ namespace RESTar
 
                 if (!skip)
                 {
-                    var response = HttpRequest.Internal(GET, new Uri(localMapper, UriKind.Relative), request.AuthToken);
+                    var response = HttpRequest.Internal(request, GET, new Uri(localMapper, UriKind.Relative), request.AuthToken);
                     if (response?.IsSuccessStatusCode != true)
                         throw new Exception(
                             $"Could not get source data from '{localMapper}'. " +

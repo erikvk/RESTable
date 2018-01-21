@@ -69,7 +69,7 @@ namespace RESTar
                         else uriString = method_uri[0];
                         if (uriString[0] != '/') break;
 
-                        var response = HttpRequest.Internal(method, new Uri(uriString, UriKind.Relative), request.AuthToken);
+                        var response = HttpRequest.Internal(request, method, new Uri(uriString, UriKind.Relative), request.AuthToken);
                         if (response?.IsSuccessStatusCode != true)
                             throw new Exception(
                                 $"Could not get source data from '{uriString}'. {response?.StatusCode.ToCode()}: " +
