@@ -496,38 +496,42 @@ namespace RESTarTester
     {
         [RESTarMember(
             order: 5
-        )] public string STR { get; set; }
+        )]
+        public string STR { get; set; }
 
         [RESTarMember(
             order: 4,
             readOnly: true
-        )] public int INT { get; set; }
+        )]
+        public int INT { get; set; }
 
         [RESTarMember(
             name: "BLOO",
             allowedOperators: EQUALS | GREATER_THAN
-        )] public bool BOOL { get; set; }
+        )]
+        public bool BOOL { get; set; }
 
         public Hoo Hoo => new Hoo {Goo = "Swoo", Ioo = 321};
 
-        [RESTarMember(
-        )] public object Goo => new FooGoo { };
+        [RESTarMember()] public object Goo => new FooGoo { };
 
-        [RESTarMember(
-        )] public FooGoo FooGoo => new FooGoo { };
+        [RESTarMember()] public FooGoo FooGoo => new FooGoo { };
 
         [RESTarMember(
             hide: true
-        )] public int HENGTH => STR.Length;
+        )]
+        public int HENGTH => STR.Length;
 
         [RESTarMember(
             hideIfNull: true,
             skipConditions: true
-        )] public string FOO { get; set; }
+        )]
+        public string FOO { get; set; }
 
         [RESTarMember(
             ignore: true
-        )] public int LENGTH => STR.Length;
+        )]
+        public int LENGTH => STR.Length;
     }
 
     public class FooGoo
@@ -625,12 +629,11 @@ namespace RESTarTester
 
         public IEnumerable<AuthResource> Select(IRequest<AuthResource> request) => Items.Where(request.Conditions);
 
-        public int Insert(IRequest<AuthResource> request) => request.GetEntities()
-            .Aggregate(0, (count, entity) =>
-            {
-                Items.Add(entity);
-                return count += 1;
-            });
+        public int Insert(IRequest<AuthResource> request) => request.GetEntities().Aggregate(0, (count, entity) =>
+        {
+            Items.Add(entity);
+            return count += 1;
+        });
 
         public int Delete(IRequest<AuthResource> request) => request.GetEntities()
             .Aggregate(0, (count, entity) => count += Items.RemoveAll(i => i.Id == entity.Id));
