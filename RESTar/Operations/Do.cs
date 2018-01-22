@@ -127,7 +127,7 @@ namespace RESTar.Operations
         public static async void Schedule(Action action, TimeSpan delay)
         {
             await Task.Delay(delay);
-            Scheduling.ScheduleTask(action);
+            Scheduling.RunTask(action).Start();
         }
     }
 }

@@ -53,7 +53,7 @@ namespace RESTar.Operations
         {
             if (action == null)
                 throw new ArgumentNullException(nameof(action));
-            Scheduling.ScheduleTask(() =>
+            Scheduling.RunTask(() =>
             {
                 try
                 {
