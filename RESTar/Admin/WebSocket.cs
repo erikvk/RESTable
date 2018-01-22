@@ -1,6 +1,8 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using Newtonsoft.Json.Linq;
 using RESTar.Linq;
+using RESTar.Serialization;
 using RESTar.WebSockets;
 using static RESTar.Methods;
 
@@ -11,8 +13,8 @@ namespace RESTar.Admin
     {
         public string Id { get; private set; }
         public string TerminalType { get; private set; }
-        public ITerminal Terminal { get; private set; }
-        public ClientProfile Client { get; private set; }
+        public JObject Terminal { get; private set; }
+        public JObject Client { get; private set; }
         private IWebSocketInternal WebSocketInternal { get; set; }
 
         public IEnumerable<WebSocket> Select(IRequest<WebSocket> request) => WebSocketController
@@ -22,8 +24,8 @@ namespace RESTar.Admin
             {
                 Id = socket.TraceId,
                 TerminalType = socket.TerminalResource.Name,
-                Client = socket.GetClientProfile(),
-                Terminal = socket.Terminal,
+                Client = JObject.Parse(socket.GetClientProfile().Serialize()),
+                Terminal = JObject.Parse(socket.Terminal.Serialize()),
                 WebSocketInternal = socket
             })
             .Where(request.Conditions);

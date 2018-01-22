@@ -28,6 +28,8 @@ namespace RESTar.Admin
 
         private IWebSocketInternal WebSocketInternal;
 
+        #region Terminal
+
         public void Open()
         {
             Consoles[this] = default;
@@ -45,13 +47,6 @@ namespace RESTar.Admin
         public void HandleBinaryInput(byte[] input) => throw new NotImplementedException();
         public bool SupportsTextInput { get; } = true;
         public bool SupportsBinaryInput { get; } = false;
-
-        private void SendConsoleInit() => WebSocket
-            .SendText("### Welcome to the RESTar WebSocket console! ###\n\n" +
-                      $">>> Status: {Status}\n\n" +
-                      (Status == Active ? "" : "> To begin, type BEGIN\n") +
-                      "> To pause, type PAUSE\n" +
-                      "> To close, type CLOSE\n");
 
         public void HandleTextInput(string input)
         {
@@ -79,103 +74,9 @@ namespace RESTar.Admin
             }
         }
 
-        private const string connection = " | Connection: ";
-        private const string time = " | Time: ";
-        private const string headers = " | Custom headers: ";
-        private const string content = " | Content: ";
+        #endregion
 
-        private void PrintLine(StringBuilder builder, ILogable logable)
-        {
-            if (IncludeConnection)
-            {
-                builder.Append(connection);
-                builder.Append(logable.TcpConnection.ClientIP);
-            }
-            if (IncludeTime)
-            {
-                var dateTimeString = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.ff");
-                builder.Append(time);
-                builder.Append(dateTimeString);
-            }
-            if (IncludeHeaders)
-            {
-                builder.Append(headers);
-                if (logable.HeadersStringCache == null)
-                    logable.HeadersStringCache = string.Join(", ", logable.Headers.CustomHeaders.Select(p => $"{p.Key}: {p.Value}"));
-                builder.Append(logable.HeadersStringCache);
-            }
-            if (IncludeContent)
-            {
-                builder.Append(content);
-                builder.Append(logable.LogContent);
-            }
-            WebSocketInternal.SendTextRaw(builder.ToString());
-        }
-
-        private void PrintLines(StringBuilder builder1, ILogable logable1, StringBuilder builder2, ILogable logable2)
-        {
-            if (IncludeConnection)
-            {
-                builder1.Append(connection);
-                builder2.Append(connection);
-                builder1.Append(logable1.TcpConnection.ClientIP);
-                builder2.Append(logable2.TcpConnection.ClientIP);
-            }
-            if (IncludeTime)
-            {
-                var dateTimeString = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.ff");
-                builder1.Append(time);
-                builder2.Append(time);
-                builder1.Append(dateTimeString);
-                builder2.Append(dateTimeString);
-            }
-            if (IncludeHeaders)
-            {
-                builder1.Append(headers);
-                builder2.Append(headers);
-
-                if (logable1.HeadersStringCache == null)
-                    logable1.HeadersStringCache = string.Join(", ", logable1.Headers.CustomHeaders.Select(p => $"{p.Key}: {p.Value}"));
-                if (logable2.HeadersStringCache == null)
-                    logable2.HeadersStringCache = string.Join(", ", logable2.Headers.CustomHeaders.Select(p => $"{p.Key}: {p.Value}"));
-                builder1.Append(logable1.HeadersStringCache);
-                builder2.Append(logable2.HeadersStringCache);
-            }
-            if (IncludeContent)
-            {
-                builder1.Append(content);
-                builder2.Append(content);
-                builder1.Append(logable1.LogContent);
-                builder2.Append(logable2.LogContent);
-            }
-            WebSocketInternal.SendTextRaw(builder1.ToString());
-            WebSocketInternal.SendTextRaw(builder2.ToString());
-        }
-
-        private static string GetLogLineStub(ILogable logable)
-        {
-            var builder = new StringBuilder();
-            switch (logable.LogEventType)
-            {
-                case LogEventType.WebSocketInput:
-                case LogEventType.HttpInput:
-                    builder.Append("=> ");
-                    break;
-                case LogEventType.HttpOutput:
-                case LogEventType.WebSocketOutput:
-                    builder.Append("<= ");
-                    break;
-                case LogEventType.WebSocketOpen:
-                    builder.Append("++ ");
-                    break;
-                case LogEventType.WebSocketClose:
-                    builder.Append("-- ");
-                    break;
-            }
-            builder.Append($"[{logable.TraceId}] ");
-            builder.Append(logable.LogMessage);
-            return builder.ToString();
-        }
+        #region Console
 
         internal static void Log(ILogable initial, ILogable final) => Consoles.Keys
             .AsParallel()
@@ -211,8 +112,10 @@ namespace RESTar.Admin
                             }
                             if (c.IncludeHeaders)
                             {
-                                item.In.CustomHeaders = initial.Headers;
-                                item.Out.CustomHeaders = final.Headers;
+                                if (!initial.ExcludeHeaders)
+                                    item.In.CustomHeaders = initial.Headers;
+                                if (!final.ExcludeHeaders)
+                                    item.Out.CustomHeaders = final.Headers;
                             }
                             if (c.IncludeContent)
                             {
@@ -252,7 +155,7 @@ namespace RESTar.Admin
                                 item.Connection = new Connection(logable.TcpConnection, c.IncludeTime);
                             else if (c.IncludeTime)
                                 item.Time = logable.TcpConnection.OpenedAt;
-                            if (c.IncludeHeaders)
+                            if (c.IncludeHeaders && !logable.ExcludeHeaders)
                                 item.CustomHeaders = logable.Headers;
                             if (c.IncludeContent)
                                 item.Content = logable.LogContent;
@@ -263,7 +166,120 @@ namespace RESTar.Admin
                 }
             });
 
+
+        private void SendConsoleInit() => WebSocket
+            .SendText("### Welcome to the RESTar WebSocket console! ###\n\n" +
+                      $">>> Status: {Status}\n\n" +
+                      (Status == Active ? "" : "> To begin, type BEGIN\n") +
+                      "> To pause, type PAUSE\n" +
+                      "> To close, type CLOSE\n");
+
+        private const string connection = " | Connection: ";
+        private const string time = " | Time: ";
+        private const string headers = " | Custom headers: ";
+        private const string content = " | Content: ";
+
+        private void PrintLine(StringBuilder builder, ILogable logable)
+        {
+            if (IncludeConnection)
+            {
+                builder.Append(connection);
+                builder.Append(logable.TcpConnection.ClientIP);
+            }
+            if (IncludeTime)
+            {
+                var dateTimeString = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.ff");
+                builder.Append(time);
+                builder.Append(dateTimeString);
+            }
+            if (IncludeHeaders && !logable.ExcludeHeaders)
+            {
+                builder.Append(headers);
+                if (logable.HeadersStringCache == null)
+                    logable.HeadersStringCache = string.Join(", ", logable.Headers.CustomHeaders.Select(p => $"{p.Key}: {p.Value}"));
+                builder.Append(logable.HeadersStringCache);
+            }
+            if (IncludeContent)
+            {
+                builder.Append(content);
+                builder.Append(logable.LogContent);
+            }
+            WebSocketInternal.SendTextRaw(builder.ToString());
+        }
+
+        private void PrintLines(StringBuilder builder1, ILogable logable1, StringBuilder builder2, ILogable logable2)
+        {
+            if (IncludeConnection)
+            {
+                builder1.Append(connection);
+                builder2.Append(connection);
+                builder1.Append(logable1.TcpConnection.ClientIP);
+                builder2.Append(logable2.TcpConnection.ClientIP);
+            }
+            if (IncludeTime)
+            {
+                var dateTimeString = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.ff");
+                builder1.Append(time);
+                builder2.Append(time);
+                builder1.Append(dateTimeString);
+                builder2.Append(dateTimeString);
+            }
+            if (IncludeHeaders)
+            {
+                if (!logable1.ExcludeHeaders)
+                {
+                    builder1.Append(headers);
+                    if (logable1.HeadersStringCache == null)
+                        logable1.HeadersStringCache = string.Join(", ", logable1.Headers.CustomHeaders.Select(p => $"{p.Key}: {p.Value}"));
+                    builder1.Append(logable1.HeadersStringCache);
+                }
+                if (!logable2.ExcludeHeaders)
+                {
+                    builder2.Append(headers);
+                    if (logable2.HeadersStringCache == null)
+                        logable2.HeadersStringCache = string.Join(", ", logable2.Headers.CustomHeaders.Select(p => $"{p.Key}: {p.Value}"));
+                    builder2.Append(logable2.HeadersStringCache);
+                }
+            }
+            if (IncludeContent)
+            {
+                builder1.Append(content);
+                builder2.Append(content);
+                builder1.Append(logable1.LogContent);
+                builder2.Append(logable2.LogContent);
+            }
+            WebSocketInternal.SendTextRaw(builder1.ToString());
+            WebSocketInternal.SendTextRaw(builder2.ToString());
+        }
+
+        private static string GetLogLineStub(ILogable logable)
+        {
+            var builder = new StringBuilder();
+            switch (logable.LogEventType)
+            {
+                case LogEventType.WebSocketInput:
+                case LogEventType.HttpInput:
+                    builder.Append("=> ");
+                    break;
+                case LogEventType.HttpOutput:
+                case LogEventType.WebSocketOutput:
+                    builder.Append("<= ");
+                    break;
+                case LogEventType.WebSocketOpen:
+                    builder.Append("++ ");
+                    break;
+                case LogEventType.WebSocketClose:
+                    builder.Append("-- ");
+                    break;
+            }
+            builder.Append($"[{logable.TraceId}] ");
+            builder.Append(logable.LogMessage);
+            return builder.ToString();
+        }
+
         private static readonly IDictionary<Console, byte> Consoles;
         static Console() => Consoles = new ConcurrentDictionary<Console, byte>();
+
+        #endregion
     }
 }

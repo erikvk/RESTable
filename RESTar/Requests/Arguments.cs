@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Web;
+using RESTar.Internal;
 using RESTar.Linq;
 using RESTar.Logging;
 using RESTar.OData;
@@ -65,7 +66,8 @@ namespace RESTar.Requests
             }
         }
 
-        public IResource IResource => Resource.Find(Uri.ResourceSpecifier);
+        private IResource iresource;
+        public IResource IResource => iresource ?? (iresource = Resource.Find(Uri.ResourceSpecifier));
         public TCPConnection TcpConnection { get; }
         public byte[] BodyBytes { get; private set; }
         public Headers Headers { get; }
@@ -75,6 +77,7 @@ namespace RESTar.Requests
         internal string AuthToken { get; set; }
         internal Exception Error { get; set; }
         public string TraceId { get; }
+        public bool ExcludeHeaders => IResource is IEntityResource e && e.RequiresAuthentication;
 
         LogEventType ILogable.LogEventType { get; } = LogEventType.HttpInput;
         string ILogable.LogMessage => $"{Action} {uri}";

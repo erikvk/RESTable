@@ -30,6 +30,7 @@ namespace RESTar.Results.Success
         public string LogMessage => default;
         public string LogContent => default;
         public string HeadersStringCache { get; set; }
+        public bool ExcludeHeaders => default;
 
         public WebSocketResult(bool leaveOpen, ITraceable trace) : this()
         {

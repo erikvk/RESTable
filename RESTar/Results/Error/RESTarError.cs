@@ -41,6 +41,7 @@ namespace RESTar.Results.Error
         Stream IFinalizedResult.Body { get; } = null;
         string IFinalizedResult.ContentType { get; } = null;
         public string HeadersStringCache { get; set; }
+        public bool ExcludeHeaders { get; }
 
         internal void SetTrace(ITraceable trace)
         {
@@ -69,15 +70,17 @@ namespace RESTar.Results.Error
         }
 
         public string LogContent { get; } = null;
-        
+
         internal RESTarError(ErrorCodes code, string message) : base(message)
         {
+            ExcludeHeaders = false;
             ErrorCode = code;
             Headers["RESTar-info"] = Message;
         }
 
         internal RESTarError(ErrorCodes code, string message, Exception ie) : base(message, ie)
         {
+            ExcludeHeaders = false;
             ErrorCode = code;
             Headers["RESTar-info"] = Message;
         }

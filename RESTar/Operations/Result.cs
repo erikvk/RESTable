@@ -49,10 +49,12 @@ namespace RESTar.Operations
         public string LogContent { get; } = null;
         public TCPConnection TcpConnection { get; }
         public string HeadersStringCache { get; set; }
+        public bool ExcludeHeaders { get; }
 
         internal Result(ITraceable trace)
         {
             Headers = new Headers();
+            ExcludeHeaders = false;
             TcpConnection = trace.TcpConnection;
             TraceId = trace.TraceId;
         }

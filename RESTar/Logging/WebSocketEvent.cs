@@ -1,5 +1,6 @@
 ﻿using System.Linq;
 using RESTar.Requests;
+using RESTar.WebSockets;
 
 namespace RESTar.Logging
 {
@@ -12,14 +13,18 @@ namespace RESTar.Logging
         public TCPConnection TcpConnection { get; }
         public Headers Headers { get; }
         public string HeadersStringCache { get; set; }
+        private IWebSocketInternal WebSocket { get; }
+        public bool ExcludeHeaders { get; }
 
         private string _chs;
         public string CustomHeadersString => _chs ?? (_chs = string.Join(", ", Headers.CustomHeaders.Select(p => $"{p.Key}: {p.Value}")));
 
-        public WebSocketEvent(LogEventType direction, IWebSocket webSocket, string content = null, int length = 0)
+        public WebSocketEvent(LogEventType direction, IWebSocketInternal webSocket, string content = null, int length = 0)
         {
             LogEventType = direction;
             TraceId = webSocket.TraceId;
+            WebSocket = webSocket;
+            ExcludeHeaders = false;
             switch (direction)
             {
                 case LogEventType.WebSocketInput:

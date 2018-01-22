@@ -29,9 +29,11 @@ namespace RESTar.Http
         public string LogMessage => $"{StatusCode.ToCode()}: {StatusDescription}";
         public string LogContent { get; } = null;
         public string HeadersStringCache { get; set; }
+        public bool ExcludeHeaders { get; }
 
         private HttpResponse(ITraceable trace)
         {
+            ExcludeHeaders = false;
             TraceId = trace.TraceId;
             TcpConnection = trace.TcpConnection;
         }

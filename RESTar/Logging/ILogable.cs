@@ -9,5 +9,6 @@ namespace RESTar.Logging
         string LogContent { get; }
         Headers Headers { get; }
         string HeadersStringCache { get; set; }
+        bool ExcludeHeaders { get; }
     }
 }

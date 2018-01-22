@@ -63,7 +63,7 @@ namespace RESTar.Requests
 
             Resource = resource;
             Target = resource;
-            Headers = new Headers();
+            Headers = arguments.Headers;
             ResponseHeaders = new Headers();
             Cookies = new List<string>();
             Conditions = new Condition<T>[0];
@@ -85,7 +85,6 @@ namespace RESTar.Requests
             Accept = arguments.Accept;
             InputDataConfig = Source != null ? DataConfig.External : DataConfig.Client;
             OutputDataConfig = Destination != null ? DataConfig.External : DataConfig.Client;
-            arguments.CustomHeaders.ForEach(Headers.Put);
             Conditions = Condition<T>.Parse(arguments.Uri.Conditions, Target) ?? Conditions;
             MetaConditions = MetaConditions.Parse(arguments.Uri.MetaConditions, Resource) ?? MetaConditions;
             if (arguments.Headers.UnsafeOverride)
