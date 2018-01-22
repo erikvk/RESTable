@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using RESTar.Admin;
 using RESTar.Linq;
@@ -10,8 +11,6 @@ using RESTar.Results.Fail.BadRequest;
 using RESTar.Results.Fail.BadRequest.Aborted;
 using RESTar.Results.Success;
 using RESTar.Serialization;
-using Starcounter;
-using static RESTar.Operations.Do;
 using static RESTar.Serialization.Serializer;
 
 namespace RESTar.Operations
@@ -99,9 +98,7 @@ namespace RESTar.Operations
         {
             try
             {
-                return request.Resource.Count?.Invoke(request)
-                       ?? request.Target.Select(request)?.LongCount()
-                       ?? 0L;
+                return request.Resource.Count?.Invoke(request) ?? request.Target.Select(request)?.LongCount() ?? 0L;
             }
             catch (Exception e)
             {
@@ -125,147 +122,121 @@ namespace RESTar.Operations
 
         #region INSERT
 
-        private static int INSERT(IRequest<T> request)
+        private static int INSERT(IRequestInternal<T> request)
         {
             try
             {
-                var results = request.Body.DeserializeList<T>();
-                if (results.Count == 0) return 0;
-                if (request.Resource.RequiresValidation)
-                    results.OfType<IValidatable>().ForEach(item => item.Validate());
-                return request.Resource.Insert(results, request);
+                request.EntitiesGenerator = () =>
+                {
+                    var entities = request.Body.DeserializeList<T>();
+                    if (request.Resource.RequiresValidation)
+                        entities.OfType<IValidatable>().ForEach(item => item.Validate());
+                    return entities;
+                };
+                return request.Resource.Insert(request);
             }
             catch (Exception e)
             {
-                throw new AbortedInsert<T>(e, request);
+                var jsonMessage = e is JsonSerializationException jse ? jse.TotalMessage() : null;
+                throw new AbortedInsert<T>(e, request, jsonMessage);
             }
         }
 
-        private static int INSERT(IRequest<T> request, Func<IEnumerable<T>> inserter)
+        private static int INSERT(Request<T> request, Func<IEnumerable<T>> inserter)
         {
             try
             {
-                var ienum = inserter?.Invoke();
-                var results = ienum as ICollection<T> ?? ienum?.ToList();
-                if (results?.Any() != true) return 0;
-                if (request.Resource.RequiresValidation)
-                    results.OfType<IValidatable>().ForEach(item => item.Validate());
-                return request.Resource.Insert(results, request);
+                request.EntitiesGenerator = () =>
+                {
+                    var ienum = inserter.Invoke();
+                    var results = ienum as ICollection<T> ?? ienum.ToList();
+                    if (request.Resource.RequiresValidation)
+                        results.OfType<IValidatable>().ForEach(item => item.Validate());
+                    return results;
+                };
+                return request.Resource.Insert(request);
             }
             catch (Exception e)
             {
-                throw new AbortedInsert<T>(e, request);
+                var jsonMessage = e is JsonSerializationException jse ? jse.TotalMessage() : null;
+                throw new AbortedInsert<T>(e, request, jsonMessage);
             }
         }
 
-        private static int INSERT_ONE(IRequest<T> request)
+        private static int INSERT_ONE(IRequestInternal<T> request)
         {
             try
             {
-                var result = request.Body.Deserialize<T>();
-                if (result is IValidatable i) i.Validate();
-                return request.Resource.Insert(new[] {result}, request);
+                request.EntitiesGenerator = () =>
+                {
+                    var result = request.Body.Deserialize<T>();
+                    if (result is IValidatable i) i.Validate();
+                    return new[] {result};
+                };
+                return request.Resource.Insert(request);
             }
             catch (Exception e)
             {
-                throw new AbortedInsert<T>(e, request);
+                var jsonMessage = e is JsonSerializationException jse ? jse.TotalMessage() : null;
+                throw new AbortedInsert<T>(e, request, jsonMessage);
             }
         }
 
-        private static int INSERT_ONE(IRequest<T> request, Func<T> inserter)
+        private static int INSERT_ONE(Request<T> request, Func<T> inserter)
         {
             try
             {
-                var result = inserter?.Invoke();
-                if (result == null) return 0;
-                if (result is IValidatable i)
-                    i.Validate();
-                return request.Resource.Insert(new[] {result}, request);
+                request.EntitiesGenerator = () =>
+                {
+                    var result = inserter.Invoke();
+                    if (result is IValidatable i) i.Validate();
+                    return new[] {result};
+                };
+                return request.Resource.Insert(request);
             }
             catch (Exception e)
             {
-                throw new AbortedInsert<T>(e, request);
+                var jsonMessage = e is JsonSerializationException jse ? jse.TotalMessage() : null;
+                throw new AbortedInsert<T>(e, request, jsonMessage);
             }
         }
 
-        private static int INSERT_ONE_JOBJECT(IRequest<T> request, JObject json)
+        private static int INSERT_ONE_JOBJECT(IRequestInternal<T> request, JObject json)
         {
             try
             {
-                var result = json.ToObject<T>();
-                if (result is IValidatable i) i.Validate();
-                return request.Resource.Insert(new[] {result}, request);
+                request.EntitiesGenerator = () =>
+                {
+                    var result = json.ToObject<T>();
+                    if (result is IValidatable i) i.Validate();
+                    return new[] {result};
+                };
+                return request.Resource.Insert(request);
             }
             catch (Exception e)
             {
-                throw new AbortedInsert<T>(e, request);
+                var jsonMessage = e is JsonSerializationException jse ? jse.TotalMessage() : null;
+                throw new AbortedInsert<T>(e, request, jsonMessage);
             }
         }
 
-        private static int INSERT_JARRAY(IRequest<T> request, JArray json)
+        private static int INSERT_JARRAY(IRequestInternal<T> request, JArray json)
         {
             try
             {
-                var results = json.ToObject<List<T>>();
-                if (request.Resource.RequiresValidation)
-                    results.OfType<IValidatable>().ForEach(item => item.Validate());
-                return request.Resource.Insert(results, request);
+                request.EntitiesGenerator = () =>
+                {
+                    var results = json.ToObject<List<T>>();
+                    if (request.Resource.RequiresValidation)
+                        results.OfType<IValidatable>().ForEach(item => item.Validate());
+                    return results;
+                };
+                return request.Resource.Insert(request);
             }
             catch (Exception e)
             {
-                throw new AbortedInsert<T>(e, request);
-            }
-        }
-
-        private static int INSERTorTryDelete(IRequest<T> request)
-        {
-            List<T> results = null;
-            try
-            {
-                results = request.Body.DeserializeList<T>();
-                if (request.Resource.RequiresValidation)
-                    results.OfType<IValidatable>().ForEach(item => item.Validate());
-                return request.Resource.Insert(results, request);
-            }
-            catch (Exception e)
-            {
-                var _results = results;
-                Db.TransactAsync(() => _results?.Where(i => i != null).ForEach(item => Try(item.Delete)));
-                throw new AbortedInsert<T>(e, request);
-            }
-        }
-
-        private static int INSERT_ONEorTryDelete(IRequest<T> request)
-        {
-            var result = default(T);
-            try
-            {
-                result = request.Body.Deserialize<T>();
-                if (result is IValidatable i) i.Validate();
-                return request.Resource.Insert(new[] {result}, request);
-            }
-            catch (Exception e)
-            {
-                Try(() => result?.Delete());
-                throw new AbortedInsert<T>(e, request);
-            }
-        }
-
-        private static int INSERT_JARRAYorTryDelete(IRequest<T> request, JArray json)
-        {
-            List<T> results = null;
-            try
-            {
-                results = json.ToObject<List<T>>();
-                if (request.Resource.RequiresValidation)
-                    results.OfType<IValidatable>().ForEach(item => item.Validate());
-                return request.Resource.Insert(results, request);
-            }
-            catch (Exception e)
-            {
-                var _results = results;
-                Db.TransactAsync(() => _results?.Where(i => i != null).ForEach(item => Try(item.Delete)));
-                throw new AbortedInsert<T>(e, request);
+                var jsonMessage = e is JsonSerializationException jse ? jse.TotalMessage() : null;
+                throw new AbortedInsert<T>(e, request, jsonMessage);
             }
         }
 
@@ -273,86 +244,107 @@ namespace RESTar.Operations
 
         #region UPDATE
 
-        private static int UPDATE(IRequest<T> request, ICollection<T> source)
+        private static int UPDATE(IRequestInternal<T> request, ICollection<T> source)
         {
             try
             {
-                var updatedSource = source.Populate(request.Body.GetJsonUpdateString());
-                if (request.Resource.RequiresValidation)
-                    source.OfType<IValidatable>().ForEach(item => item.Validate());
-                return request.Resource.Update(updatedSource, request);
+                request.EntitiesGenerator = () =>
+                {
+                    var updatedSource = source.Populate(request.Body.GetJsonUpdateString());
+                    if (request.Resource.RequiresValidation)
+                        source.OfType<IValidatable>().ForEach(item => item.Validate());
+                    return updatedSource;
+                };
+                return request.Resource.Update(request);
             }
             catch (Exception e)
             {
-                throw new AbortedUpdate<T>(e, request);
+                var jsonMessage = e is JsonSerializationException jse ? jse.TotalMessage() : null;
+                throw new AbortedUpdate<T>(e, request, jsonMessage);
             }
         }
 
-        private static int UPDATE(IRequest<T> request, Func<IEnumerable<T>, IEnumerable<T>> updater,
+        private static int UPDATE(Request<T> request, Func<IEnumerable<T>, IEnumerable<T>> updater,
             ICollection<T> source)
         {
             try
             {
-                var ienum = updater?.Invoke(source);
-                var results = ienum as ICollection<T> ?? ienum?.ToList();
-                if (results?.Any() != true) return 0;
-                if (request.Resource.RequiresValidation)
-                    results.OfType<IValidatable>().ForEach(item => item.Validate());
-                return request.Resource.Update(results, request);
-            }
-            catch (Exception e)
-            {
-                throw new AbortedUpdate<T>(e, request);
-            }
-        }
-
-        private static int UPDATE_ONE(IRequest<T> request, T source)
-        {
-            try
-            {
-                Populate(request.Body.GetJsonUpdateString(), source);
-                if (source is IValidatable i)
-                    i.Validate();
-                return request.Resource.Update(new[] {source}, request);
-            }
-            catch (Exception e)
-            {
-                throw new AbortedUpdate<T>(e, request);
-            }
-        }
-
-        private static int UPDATE_ONE(IRequest<T> request, Func<T, T> updater, T source)
-        {
-            try
-            {
-                var result = updater?.Invoke(source);
-                if (result == null) return 0;
-                if (result is IValidatable i)
-                    i.Validate();
-                return request.Resource.Update(new[] {result}, request);
-            }
-            catch (Exception e)
-            {
-                throw new AbortedUpdate<T>(e, request);
-            }
-        }
-
-        private static int UPDATE_MANY(IRequest<T> request, ICollection<(JObject json, T source)> items)
-        {
-            try
-            {
-                var updated = items.Select(item =>
+                request.EntitiesGenerator = () =>
                 {
-                    Populate(item.json, item.source);
-                    return item.source;
-                }).ToList();
-                if (request.Resource.RequiresValidation)
-                    updated.OfType<IValidatable>().ForEach(item => item.Validate());
-                return request.Resource.Update(updated, request);
+                    var ienum = updater.Invoke(source);
+                    var results = ienum as ICollection<T> ?? ienum.ToList();
+                    if (request.Resource.RequiresValidation)
+                        results.OfType<IValidatable>().ForEach(item => item.Validate());
+                    return results;
+                };
+                return request.Resource.Update(request);
             }
             catch (Exception e)
             {
-                throw new AbortedUpdate<T>(e, request);
+                var jsonMessage = e is JsonSerializationException jse ? jse.TotalMessage() : null;
+                throw new AbortedUpdate<T>(e, request, jsonMessage);
+            }
+        }
+
+        private static int UPDATE_ONE(IRequestInternal<T> request, T source)
+        {
+            try
+            {
+                request.EntitiesGenerator = () =>
+                {
+                    Populate(request.Body.GetJsonUpdateString(), source);
+                    if (source is IValidatable i) i.Validate();
+                    return new[] {source};
+                };
+                return request.Resource.Update(request);
+            }
+            catch (Exception e)
+            {
+                var jsonMessage = e is JsonSerializationException jse ? jse.TotalMessage() : null;
+                throw new AbortedUpdate<T>(e, request, jsonMessage);
+            }
+        }
+
+        private static int UPDATE_ONE(Request<T> request, Func<T, T> updater, T source)
+        {
+            try
+            {
+                request.EntitiesGenerator = () =>
+                {
+                    var result = updater.Invoke(source);
+                    if (result is IValidatable i) i.Validate();
+                    return new[] {result};
+                };
+                return request.Resource.Update(request);
+            }
+            catch (Exception e)
+            {
+                var jsonMessage = e is JsonSerializationException jse ? jse.TotalMessage() : null;
+                throw new AbortedUpdate<T>(e, request, jsonMessage);
+            }
+        }
+
+        private static int UPDATE_MANY(IRequestInternal<T> request, ICollection<(JObject json, T source)> items)
+        {
+            try
+            {
+                request.EntitiesGenerator = () =>
+                {
+                    var updated = items.Select(item =>
+                    {
+                        Populate(item.json, item.source);
+                        return item.source;
+                    }).ToList();
+                    if (request.Resource.RequiresValidation)
+                        updated.OfType<IValidatable>().ForEach(item => item.Validate());
+                    return updated;
+                };
+                return request.Resource.Update(request);
+            }
+            catch (Exception e)
+            {
+                var jsonMessage = e is JsonSerializationException jse ? jse.TotalMessage() : null;
+                throw new AbortedUpdate<T>(e, request, jsonMessage);
             }
         }
 
@@ -360,11 +352,12 @@ namespace RESTar.Operations
 
         #region DELETE
 
-        private static int OP_DELETE(IRequest<T> request, IEnumerable<T> source)
+        private static int OP_DELETE(IRequestInternal<T> request, IEnumerable<T> source)
         {
             try
             {
-                return request.Resource.Delete(source, request);
+                request.EntitiesGenerator = () => source;
+                return request.Resource.Delete(request);
             }
             catch (Exception e)
             {
@@ -372,11 +365,12 @@ namespace RESTar.Operations
             }
         }
 
-        private static int OP_DELETE_ONE(IRequest<T> request, T source)
+        private static int OP_DELETE_ONE(IRequestInternal<T> request, T source)
         {
             try
             {
-                return request.Resource.Delete(new[] {source}, request);
+                request.EntitiesGenerator = () => new[] {source};
+                return request.Resource.Delete(request);
             }
             catch (Exception e)
             {
@@ -417,7 +411,7 @@ namespace RESTar.Operations
             private static Result POST(RESTRequest<T> request)
             {
                 if (request.MetaConditions.SafePost != null) return SafePOST(request);
-                return new InsertedEntities(Transaction<T>.Transact(() => INSERT(request)), request);
+                return new InsertedEntities(INSERT(request), request);
             }
 
             private static Result PATCH(RESTRequest<T> request)
@@ -426,7 +420,7 @@ namespace RESTar.Operations
                 if (source?.Any() != true) return new UpdatedEntities(0, request);
                 if (!request.MetaConditions.Unsafe && source.Count > 1)
                     throw new AmbiguousMatch(request.Resource);
-                return new UpdatedEntities(Transaction<T>.Transact(() => UPDATE(request, source)), request);
+                return new UpdatedEntities(UPDATE(request, source), request);
             }
 
             private static Result PUT(RESTRequest<T> request)
@@ -435,8 +429,8 @@ namespace RESTar.Operations
                 switch (source?.Count)
                 {
                     case null:
-                    case 0: return new InsertedEntities(Transaction<T>.Transact(() => INSERT_ONE(request)), request);
-                    case 1: return new UpdatedEntities(Transaction<T>.Transact(() => UPDATE_ONE(request, source[0])), request);
+                    case 0: return new InsertedEntities(INSERT_ONE(request), request);
+                    case 1: return new UpdatedEntities(UPDATE_ONE(request, source[0]), request);
                     default: throw new AmbiguousMatch(request.Resource);
                 }
             }
@@ -452,7 +446,7 @@ namespace RESTar.Operations
                         throw new AmbiguousMatch(request.Resource);
                     source = list;
                 }
-                return new DeletedEntities(Transaction<T>.Transact(() => OP_DELETE(request, source)), request);
+                return new DeletedEntities(OP_DELETE(request, source), request);
             }
 
             private static (Request<T> InnerRequest, JArray ToInsert, IList<(JObject json, T source)> ToUpdate)
@@ -493,95 +487,28 @@ namespace RESTar.Operations
             private static Result SafePOST(RESTRequest<T> request)
             {
                 var (innerRequest, toInsert, toUpdate) = GetSafePostTasks(request);
-                var outerTrans = new Transaction<T>();
-                try
-                {
-                    int updatedCount = 0, insertedCount = 0;
-                    outerTrans.Scope(() =>
-                    {
-                        if (toUpdate.Any())
-                        {
-                            var updTrans = new Transaction<T>();
-                            try
-                            {
-                                updTrans.Scope(() => updatedCount = UPDATE_MANY(innerRequest, toUpdate));
-                                updTrans.Commit();
-                            }
-                            catch
-                            {
-                                updTrans.Rollback();
-                                throw;
-                            }
-                        }
-
-                        if (toInsert.Any())
-                        {
-                            var insTrans = new Transaction<T>();
-                            try
-                            {
-                                {
-                                    insTrans.Scope(() => insertedCount = INSERT_JARRAY(innerRequest, toInsert));
-                                    insTrans.Commit();
-                                }
-                            }
-                            catch
-                            {
-                                insTrans.Rollback();
-                                throw;
-                            }
-                        }
-                    });
-                    outerTrans.Commit();
-                    return new SafePostedEntities(updatedCount, insertedCount, request);
-                }
-                catch
-                {
-                    outerTrans.Rollback();
-                    throw;
-                }
+                var (updatedCount, insertedCount) = (0, 0);
+                if (toUpdate.Any()) updatedCount = UPDATE_MANY(innerRequest, toUpdate);
+                if (toInsert.Any()) insertedCount = INSERT_JARRAY(innerRequest, toInsert);
+                return new SafePostedEntities(updatedCount, insertedCount, request);
             }
         }
 
         internal static class View
         {
-            internal static int POST(ViewRequest<T> request)
-            {
-                return Transaction<T>.Transact(() => INSERT_ONE(request));
-            }
-
-            internal static int PATCH(ViewRequest<T> request, T item)
-            {
-                return Transaction<T>.Transact(() => UPDATE_ONE(request, item));
-            }
-
-            internal static int DELETE(ViewRequest<T> request, T item)
-            {
-                return Transaction<T>.Transact(() => OP_DELETE_ONE(request, item));
-            }
+            internal static int POST(ViewRequest<T> request) => INSERT_ONE(request);
+            internal static int PATCH(ViewRequest<T> request, T item) => UPDATE_ONE(request, item);
+            internal static int DELETE(ViewRequest<T> request, T item) => OP_DELETE_ONE(request, item);
         }
 
         internal static class App
         {
-            internal static int POST(Func<T> inserter, Request<T> request)
-            {
-                return Transaction<T>.Transact(() => INSERT_ONE(request, inserter));
-            }
+            internal static int POST(Func<T> inserter, Request<T> request) => INSERT_ONE(request, inserter);
+            internal static int POST(Func<IEnumerable<T>> inserter, Request<T> request) => INSERT(request, inserter);
+            internal static int PATCH(Func<T, T> updater, T source, Request<T> request) => UPDATE_ONE(request, updater, source);
 
-            internal static int POST(Func<IEnumerable<T>> inserter, Request<T> request)
-            {
-                return Transaction<T>.Transact(() => INSERT(request, inserter));
-            }
-
-            internal static int PATCH(Func<T, T> updater, T source, Request<T> request)
-            {
-                return Transaction<T>.Transact(() => UPDATE_ONE(request, updater, source));
-            }
-
-            internal static int PATCH(Func<IEnumerable<T>, IEnumerable<T>> updater, ICollection<T> source,
-                Request<T> request)
-            {
-                return Transaction<T>.Transact(() => UPDATE(request, updater, source));
-            }
+            internal static int PATCH(Func<IEnumerable<T>, IEnumerable<T>> updater, ICollection<T> source, Request<T> request)
+                => UPDATE(request, updater, source);
 
             internal static int PUT(Func<T> inserter, IEnumerable<T> source, Request<T> request)
             {
@@ -589,7 +516,7 @@ namespace RESTar.Operations
                 switch (list?.Count)
                 {
                     case null:
-                    case 0: return Transaction<T>.Transact(() => INSERT_ONE(request, inserter));
+                    case 0: return INSERT_ONE(request, inserter);
                     case 1: return 0;
                     default: throw new AmbiguousMatch(request.Resource);
                 }
@@ -602,21 +529,15 @@ namespace RESTar.Operations
                 switch (list?.Count)
                 {
                     case null:
-                    case 0: return Transaction<T>.Transact(() => INSERT_ONE(request, inserter));
-                    case 1: return Transaction<T>.Transact(() => UPDATE_ONE(request, updater, list[0]));
+                    case 0: return INSERT_ONE(request, inserter);
+                    case 1: return UPDATE_ONE(request, updater, list[0]);
                     default: throw new AmbiguousMatch(request.Resource);
                 }
             }
 
-            internal static int DELETE(T item, Request<T> request)
-            {
-                return Transaction<T>.Transact(() => OP_DELETE_ONE(request, item));
-            }
+            internal static int DELETE(T item, Request<T> request) => OP_DELETE_ONE(request, item);
 
-            internal static int DELETE(IEnumerable<T> items, Request<T> request)
-            {
-                return Transaction<T>.Transact(() => OP_DELETE(request, items));
-            }
+            internal static int DELETE(IEnumerable<T> items, Request<T> request) => OP_DELETE(request, items);
         }
     }
 }

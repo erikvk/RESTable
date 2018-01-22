@@ -117,11 +117,11 @@ namespace RESTar.Admin
         }
 
         /// <inheritdoc />
-        public int Insert(IEnumerable<Resource> resources, IRequest<Resource> request)
+        public int Insert(IRequest<Resource> request)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
             var count = 0;
-            foreach (var entity in resources)
+            foreach (var entity in request.GetEntities())
             {
                 if (string.IsNullOrWhiteSpace(entity.Name))
                     throw new Exception("Missing or invalid name for new resource");
@@ -159,11 +159,11 @@ namespace RESTar.Admin
         }
 
         /// <inheritdoc />
-        public int Update(IEnumerable<Resource> entities, IRequest<Resource> request)
+        public int Update(IRequest<Resource> request)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
             var count = 0;
-            foreach (var resource in entities)
+            foreach (var resource in request.GetEntities())
             {
                 #region Edit alias (available for all resources)
 
@@ -219,10 +219,10 @@ namespace RESTar.Admin
         }
 
         /// <inheritdoc />
-        public int Delete(IEnumerable<Resource> entities, IRequest<Resource> request)
+        public int Delete(IRequest<Resource> request)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
-            return entities.Count(DynamicResource.DeleteTable);
+            return request.GetEntities().Count(DynamicResource.DeleteTable);
         }
     }
 }

@@ -11,7 +11,7 @@ namespace RESTar.Operations
         /// Performs the action delegate synchronously inside a transaction scope and
         /// returns the result of the transaction. Uses Db.TransactAsync
         /// </summary>
-        public static T Trans<T>(Func<T> action)
+        internal static T Trans<T>(Func<T> action)
         {
             if (action == null)
                 throw new ArgumentNullException(nameof(action));
@@ -31,7 +31,7 @@ namespace RESTar.Operations
         /// Performs the action delegate synchronously inside a transaction scope. 
         /// Uses Db.TransactAsync
         /// </summary>
-        public static void Trans(Action action)
+        internal static void Trans(Action action)
         {
             if (action == null)
                 throw new ArgumentNullException(nameof(action));
@@ -49,7 +49,7 @@ namespace RESTar.Operations
         /// Performs the action delegate synchronously inside a transaction scope. 
         /// Uses Db.TransactAsync
         /// </summary>
-        public static void TransAsync(Action action)
+        internal static void TransAsync(Action action)
         {
             if (action == null)
                 throw new ArgumentNullException(nameof(action));

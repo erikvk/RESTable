@@ -156,25 +156,37 @@ namespace RESTar.Admin
             .SelectMany(indexer => indexer.Select(request));
 
         /// <inheritdoc />
-        public int Insert(IEnumerable<DatabaseIndex> entities, IRequest<DatabaseIndex> request) => entities
+        public int Insert(IRequest<DatabaseIndex> request) => request.GetEntities()
             .GroupBy(index => index.IResource.Provider)
             .Sum(group =>
             {
+                var requestinternal = (IRequestInternal<DatabaseIndex>) request;
                 if (!Indexers.TryGetValue(group.Key, out var indexer))
                     throw new Exception($"Unable to register index. Resource '{group.First().IResource.Name}' " +
                                         "is not a database resource.");
-                return indexer.Insert(group, request);
+                requestinternal.EntitiesGenerator = () => group;
+                return indexer.Insert(requestinternal);
             });
 
         /// <inheritdoc />
-        public int Update(IEnumerable<DatabaseIndex> entities, IRequest<DatabaseIndex> request) => entities
+        public int Update(IRequest<DatabaseIndex> request) => request.GetEntities()
             .GroupBy(index => index.IResource.Provider)
-            .Sum(group => Indexers[group.Key].Update(group, request));
+            .Sum(group =>
+            {
+                var requestinternal = (IRequestInternal<DatabaseIndex>) request;
+                requestinternal.EntitiesGenerator = () => group;
+                return Indexers[group.Key].Update(requestinternal);
+            });
 
         /// <inheritdoc />
-        public int Delete(IEnumerable<DatabaseIndex> entities, IRequest<DatabaseIndex> request) => entities
+        public int Delete(IRequest<DatabaseIndex> request) => request.GetEntities()
             .GroupBy(index => index.IResource.Provider)
-            .Sum(group => Indexers[group.Key].Delete(group, request));
+            .Sum(group =>
+            {
+                var requestinternal = (IRequestInternal<DatabaseIndex>) request;
+                requestinternal.EntitiesGenerator = () => group;
+                return Indexers[group.Key].Delete(requestinternal);
+            });
     }
 
     /// <summary>

@@ -36,13 +36,28 @@ namespace RESTar.Internal
                 var results = Finder<T>.Where(finderConditions.ToArray());
                 return otherConditions.Any() ? results.Where(otherConditions) : results;
             };
-            Insert = (e, r) => e.Count();
-            Update = (e, r) => e.Count();
-            Delete = (e, r) => e.Sum(_e =>
+            Insert = r =>
             {
-                _e.Delete();
-                return 1;
-            });
+                var count = 0;
+                Db.TransactAsync(() => count = r.GetEntities().Count());
+                return count;
+            };
+            Update = r =>
+            {
+                var count = 0;
+                Db.TransactAsync(() => count = r.GetEntities().Count());
+                return count;
+            };
+            Delete = r =>
+            {
+                var count = 0;
+                Db.TransactAsync(() => r.GetEntities().ForEach(entity =>
+                {
+                    entity.Delete();
+                    count += 1;
+                }));
+                return count;
+            };
             Count = r =>
             {
                 if (r.MetaConditions.Distinct != null)

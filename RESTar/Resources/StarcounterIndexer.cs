@@ -37,11 +37,11 @@ namespace RESTar.Resources
         }
 
         /// <inheritdoc />
-        public int Insert(IEnumerable<DatabaseIndex> indexes, IRequest<DatabaseIndex> request)
+        public int Insert(IRequest<DatabaseIndex> request)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
             var count = 0;
-            foreach (var index in indexes)
+            foreach (var index in request.GetEntities())
             {
                 if (index.IResource == null)
                     throw new Exception("Found no resource to register index on");
@@ -62,11 +62,11 @@ namespace RESTar.Resources
         }
 
         /// <inheritdoc />
-        public int Update(IEnumerable<DatabaseIndex> indexes, IRequest<DatabaseIndex> request)
+        public int Update(IRequest<DatabaseIndex> request)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
             var count = 0;
-            foreach (var index in indexes)
+            foreach (var index in request.GetEntities())
             {
                 Db.SQL($"DROP INDEX {index.Name.Fnuttify()} ON {index.IResource.Type.FullName.Fnuttify()}");
                 try
@@ -86,11 +86,11 @@ namespace RESTar.Resources
         }
 
         /// <inheritdoc />
-        public int Delete(IEnumerable<DatabaseIndex> indexes, IRequest<DatabaseIndex> request)
+        public int Delete(IRequest<DatabaseIndex> request)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
             var count = 0;
-            foreach (var index in indexes)
+            foreach (var index in request.GetEntities())
             {
                 Db.SQL($"DROP INDEX {index.Name.Fnuttify()} ON {index.IResource.Type.FullName.Fnuttify()}");
                 count += 1;

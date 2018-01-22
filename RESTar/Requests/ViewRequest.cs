@@ -20,7 +20,7 @@ using static Starcounter.Templates.Template;
 
 namespace RESTar.Requests
 {
-    internal class ViewRequest<T> : IRequest<T>, IViewRequest where T : class
+    internal class ViewRequest<T> : IRequest<T>, IRequestInternal<T>, IViewRequest where T : class
     {
         public TCPConnection TcpConnection { get; }
         public IEntityResource<T> Resource { get; }
@@ -45,7 +45,9 @@ namespace RESTar.Requests
         public T1 BodyObject<T1>() where T1 : class => Body?.Deserialize<T1>();
         public Headers Headers { get; }
         public string TraceId { get; }
-        
+        public Func<IEnumerable<T>> EntitiesGenerator { private get; set; }
+        public IEnumerable<T> GetEntities() => EntitiesGenerator?.Invoke();
+
         internal ViewRequest(IEntityResource<T> resource, TCPConnection tcpConnection)
         {
             if (resource.IsInternal) throw new ResourceIsInternal(resource);

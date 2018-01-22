@@ -30,10 +30,10 @@ namespace RESTar.Admin
             })
             .Where(request.Conditions);
 
-        public int Delete(IEnumerable<WebSocket> entities, IRequest<WebSocket> request)
+        public int Delete(IRequest<WebSocket> request)
         {
             var count = 0;
-            foreach (var entity in entities)
+            foreach (var entity in request.GetEntities())
             {
                 entity.WebSocketInternal.Disconnect();
                 count += 1;

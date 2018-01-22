@@ -34,13 +34,13 @@ namespace RESTar.Admin
         }
 
         /// <inheritdoc />
-        public int Update(IEnumerable<AdminTools> entities, IRequest<AdminTools> request)
+        public int Update(IRequest<AdminTools> request)
         {
             if (request == null)
                 throw new ArgumentNullException(nameof(request));
             var updated = false;
             var count = 0;
-            foreach (var at in entities)
+            foreach (var at in request.GetEntities())
             {
                 if (at._ReloadConfigFile)
                 {

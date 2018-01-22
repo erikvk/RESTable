@@ -62,7 +62,7 @@ namespace RESTar.Operations
     /// them into the resource, and returns the number of entities successfully inserted.
     /// </summary>
     /// <typeparam name="T">The resource type</typeparam>
-    public delegate int Inserter<T>(IEnumerable<T> entities, IRequest<T> request) where T : class;
+    public delegate int Inserter<T>(IRequest<T> request) where T : class;
 
     /// <summary>
     /// Specifies the Update operation used in PATCH and PUT. Takes a set of entities and updates 
@@ -70,14 +70,14 @@ namespace RESTar.Operations
     /// the new), and returns the number of entities successfully updated.
     /// </summary>
     /// <typeparam name="T">The resource type</typeparam>
-    public delegate int Updater<T>(IEnumerable<T> entities, IRequest<T> request) where T : class;
+    public delegate int Updater<T>(IRequest<T> request) where T : class;
 
     /// <summary>
     /// Specifies the Delete operation used in DELETE. Takes a set of entities and deletes them from 
     /// the resource, and returns the number of entities successfully deleted.
     /// </summary>
     /// <typeparam name="T">The resource type</typeparam>
-    public delegate int Deleter<T>(IEnumerable<T> entities, IRequest<T> request) where T : class;
+    public delegate int Deleter<T>(IRequest<T> request) where T : class;
 
     /// <summary>
     /// Counts the entities that satisfy certain conditions provided in the request

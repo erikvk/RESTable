@@ -1,10 +1,16 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using RESTar.Internal;
 using RESTar.Requests;
 
 namespace RESTar
 {
+    internal interface IRequestInternal<T> : IRequest<T> where T : class
+    {
+        Func<IEnumerable<T>> EntitiesGenerator { set; }
+    }
+
     /// <inheritdoc />
     /// <summary>
     /// A RESTar request for a resource T. This is a common generic interface for all
@@ -26,6 +32,11 @@ namespace RESTar
         /// The target to use when binding conditions and selecting entities for this request
         /// </summary>
         ITarget<T> Target { get; }
+
+        /// <summary>
+        /// Returns the entities belonging to this request
+        /// </summary>
+        IEnumerable<T> GetEntities();
     }
 
     /// <summary>

@@ -29,11 +29,23 @@ namespace RESTarExample
 
     #region Stuff
 
-    [Database, RESTar(Methods.GET, Methods.POST)]
+    [Database, RESTar]
     public class Static
     {
         public int Swoo { get; set; }
-        public string Str { get; set; }
+        private string _str;
+
+        public string Str
+        {
+            get => _str;
+            set
+            {
+                if (value == "nono")
+                    throw new Exception("Oh no no!");
+                else _str = value;
+            }
+        }
+
         public int Int { get; set; }
     }
 
@@ -225,8 +237,9 @@ namespace RESTarExample
         public string S { get; set; }
         public string[] Ss { get; set; }
 
-        public int Insert(IEnumerable<R> entities, IRequest<R> request)
+        public int Insert(IRequest<R> request)
         {
+            var entities = request.GetEntities();
             return entities.Count();
         }
 
@@ -235,13 +248,15 @@ namespace RESTarExample
             return new[] {new R {S = "Swoo", Ss = new[] {"S", "Sd"}}};
         }
 
-        public int Update(IEnumerable<R> entities, IRequest<R> request)
+        public int Update(IRequest<R> request)
         {
+            var entities = request.GetEntities();
             return entities.Count();
         }
 
-        public int Delete(IEnumerable<R> entities, IRequest<R> request)
+        public int Delete(IRequest<R> request)
         {
+            var entities = request.GetEntities();
             return entities.Count();
         }
     }

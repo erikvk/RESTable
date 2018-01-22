@@ -17,7 +17,7 @@ using RESTar.Serialization;
 
 namespace RESTar
 {
-    public class Request<T> : IRequest<T> where T : class
+    public class Request<T> : IRequest<T>, IRequestInternal<T> where T : class
     {
         public IEntityResource<T> Resource { get; }
         private Condition<T>[] _conditions;
@@ -47,7 +47,9 @@ namespace RESTar
         Headers IRequest.Headers => RequestHeaders;
         MimeType IRequest.Accept => MimeType.Default;
         string ITraceable.TraceId => null;
-
+        public Func<IEnumerable<T>> EntitiesGenerator { private get; set; }
+        public IEnumerable<T> GetEntities() => EntitiesGenerator?.Invoke();
+      
         private readonly bool ScSql;
         internal string SelectQuery { get; private set; }
         internal string CountQuery { get; private set; }

@@ -17,7 +17,7 @@ using static RESTar.Methods;
 
 namespace RESTar.Requests
 {
-    internal class RESTRequest<T> : IRequest<T>, IDisposable where T : class
+    internal class RESTRequest<T> : IRequest<T>, IRequestInternal<T>, IDisposable where T : class
     {
         public Methods Method { get; }
         public IEntityResource<T> Resource { get; }
@@ -41,6 +41,8 @@ namespace RESTar.Requests
         private DataConfig OutputDataConfig { get; }
         public string TraceId { get; }
         public TCPConnection TcpConnection { get; }
+        public Func<IEnumerable<T>> EntitiesGenerator { private get; set; }
+        public IEnumerable<T> GetEntities() => EntitiesGenerator?.Invoke();
 
         internal void Evaluate()
         {

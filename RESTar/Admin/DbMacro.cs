@@ -190,10 +190,10 @@ namespace RESTar.Admin
             .Where(request.Conditions);
 
         /// <inheritdoc />
-        public int Insert(IEnumerable<Macro> entities, IRequest<Macro> request)
+        public int Insert(IRequest<Macro> request)
         {
             var count = 0;
-            foreach (var entity in entities)
+            foreach (var entity in request.GetEntities())
             {
                 if (DbMacro.Get(entity.Name) != null)
                     throw new Exception($"Invalid name. '{entity.Name}' is already in use.");
@@ -215,10 +215,10 @@ namespace RESTar.Admin
         }
 
         /// <inheritdoc />
-        public int Update(IEnumerable<Macro> entities, IRequest<Macro> request)
+        public int Update(IRequest<Macro> request)
         {
             var count = 0;
-            entities.ForEach(entity =>
+            request.GetEntities().ForEach(entity =>
             {
                 var dbEntity = DbMacro.Get(entity.Name);
                 if (dbEntity == null) return;
@@ -238,10 +238,10 @@ namespace RESTar.Admin
         }
 
         /// <inheritdoc />
-        public int Delete(IEnumerable<Macro> entities, IRequest<Macro> request)
+        public int Delete(IRequest<Macro> request)
         {
             var count = 0;
-            entities.ForEach(entity =>
+            request.GetEntities().ForEach(entity =>
             {
                 Transact.Trans(DbMacro.Get(entity.Name).Delete);
                 count += 1;
