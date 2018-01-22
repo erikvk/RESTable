@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Net;
 using RESTar.Logging;
 using RESTar.Requests;
@@ -49,8 +48,7 @@ namespace RESTar.Operations
         public string LogMessage => $"{StatusCode.ToCode()}: {StatusDescription}";
         public string LogContent { get; } = null;
         public TCPConnection TcpConnection { get; }
-        private string _headersString;
-        string ILogable.CustomHeadersString => _headersString ?? (_headersString = string.Join(", ", Headers.Select(p => $"{p.Key}: {p.Value}")));
+        public string HeadersStringCache { get; set; }
 
         internal Result(ITraceable trace)
         {

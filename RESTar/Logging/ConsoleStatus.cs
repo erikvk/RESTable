@@ -2,7 +2,7 @@
 {
     internal enum ConsoleStatus
     {
-        PAUSED,
-        ACTIVE
+        Paused,
+        Active
     }
 }

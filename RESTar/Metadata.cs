@@ -21,19 +21,16 @@ namespace RESTar
         public List<TerminalResource> TerminalResources { get; private set; }
         public List<Type> PeripheralTypes { get; private set; }
 
-        public IEnumerable<Metadata> Select(IRequest<Metadata> request)
+        internal static Metadata Make(AccessRights rights = null)
         {
-            if (request == null) throw new ArgumentNullException(nameof(request));
-            var rights = RESTarConfig.AuthTokens[request.AuthToken];
-            if (rights == null) return null;
-
-            var entityResources = rights.Keys
+            var domain = rights?.Keys ?? RESTarConfig.Resources;
+            var entityResources = domain
                 .OfType<IEntityResource>()
                 .Where(r => !Equals(r, ThisResource))
                 .Where(r => r.IsGlobal)
                 .OrderBy(r => r.Name)
                 .ToList();
-            var terminalResources = rights.Keys
+            var terminalResources = domain
                 .OfType<TerminalResource>()
                 .ToList();
             var entityTypes = entityResources.Select(r => r.Type).ToList();
@@ -76,17 +73,22 @@ namespace RESTar
             entityTypes.ForEach(parseType);
             checkedTypes.ExceptWith(entityTypes);
 
-            return new[]
+            return new Metadata
             {
-                new Metadata
-                {
-                    CurrentAccessRights = rights,
-                    EntityResources = entityResources,
-                    EntityResourceTypes = entityTypes,
-                    TerminalResources = terminalResources,
-                    PeripheralTypes = checkedTypes.ToList()
-                }
+                CurrentAccessRights = rights,
+                EntityResources = entityResources,
+                EntityResourceTypes = entityTypes,
+                TerminalResources = terminalResources,
+                PeripheralTypes = checkedTypes.ToList()
             };
+        }
+
+        public IEnumerable<Metadata> Select(IRequest<Metadata> request)
+        {
+            if (request == null) throw new ArgumentNullException(nameof(request));
+            var rights = RESTarConfig.AuthTokens[request.AuthToken];
+            if (rights == null) return null;
+            return new[] {Make()};
         }
 
         private static bool IsPrimitive(Type type)

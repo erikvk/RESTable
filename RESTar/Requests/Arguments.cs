@@ -37,11 +37,6 @@ namespace RESTar.Requests
         /// Specifies the meta-conditions for the request
         /// </summary>
         List<UriCondition> MetaConditions { get; }
-
-        /// <summary>
-        /// Writes the URI parameters to an URI string
-        /// </summary>
-        string ToString(RESTProtocols protocol = RESTProtocols.RESTar);
     }
 
     /// <summary>
@@ -82,11 +77,10 @@ namespace RESTar.Requests
         public string TraceId { get; }
 
         LogEventType ILogable.LogEventType { get; } = LogEventType.HttpInput;
-        string ILogable.LogMessage => $"{Action} '{uri}'";
+        string ILogable.LogMessage => $"{Action} {uri}";
         private string _contentString;
         string ILogable.LogContent => _contentString ?? (_contentString = Encoding.UTF8.GetString(BodyBytes));
-        private string _headersString;
-        string ILogable.CustomHeadersString => _headersString ?? (_headersString = string.Join(", ", Headers.Select(p => $"{p.Key}: {p.Value}")));
+        public string HeadersStringCache { get; set; }
 
         public void ThrowIfError()
         {
@@ -111,14 +105,14 @@ namespace RESTar.Requests
             TraceId = tcpConnection.TraceId;
             Action = action;
             Headers = headers ?? new Headers();
-            Uri = URI.ParseInternal(ref query, PercentCharsEscaped(headers), out var protocol, out var key);
+            Uri = URI.ParseInternal(ref query, PercentCharsEscaped(headers), out var key);
             if (key != null)
                 Headers["Authorization"] = $"apikey {UnpackUriKey(key)}";
             BodyBytes = body;
             TcpConnection = tcpConnection;
             ContentType = MimeType.Parse(Headers["Content-Type"]);
             Accept = MimeType.ParseMany(Headers["Accept"]);
-            switch (protocol)
+            switch (uri.Protocol)
             {
                 case RESTProtocols.RESTar:
                     ResultFinalizer = RESTarProtocolProvider.FinalizeResult;

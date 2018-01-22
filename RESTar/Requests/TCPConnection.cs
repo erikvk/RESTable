@@ -105,7 +105,7 @@ namespace RESTar.Requests
         /// <summary>
         /// The date and time when this connection was opened
         /// </summary>
-        public DateTime OpenedAt { get; internal set; }
+        public DateTime OpenedAt { get; }
 
         /// <summary>
         /// The date and time when this connection was closed
@@ -151,6 +151,10 @@ namespace RESTar.Requests
         /// </summary>
         public bool HasWebSocket => WebSocket != null;
 
-        internal TCPConnection() => TraceId = ConnectionId.Next;
+        internal TCPConnection()
+        {
+            OpenedAt = DateTime.Now;
+            TraceId = ConnectionId.Next;
+        }
     }
 }

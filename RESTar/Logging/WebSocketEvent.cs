@@ -11,6 +11,7 @@ namespace RESTar.Logging
         public string LogContent { get; }
         public TCPConnection TcpConnection { get; }
         public Headers Headers { get; }
+        public string HeadersStringCache { get; set; }
 
         private string _chs;
         public string CustomHeadersString => _chs ?? (_chs = string.Join(", ", Headers.CustomHeaders.Select(p => $"{p.Key}: {p.Value}")));

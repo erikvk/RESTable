@@ -29,8 +29,7 @@ namespace RESTar.Results.Success
         public LogEventType LogEventType => default;
         public string LogMessage => default;
         public string LogContent => default;
-        public Headers Headers => default;
-        public string CustomHeadersString => default;
+        public string HeadersStringCache { get; set; }
 
         public WebSocketResult(bool leaveOpen, ITraceable trace) : this()
         {

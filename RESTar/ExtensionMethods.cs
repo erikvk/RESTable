@@ -593,7 +593,7 @@ namespace RESTar
             {
                 try
                 {
-                    return Enum.Parse(property.Type, valueLiteral);
+                    return Enum.Parse(property.Type, valueLiteral, true);
                 }
                 catch
                 {

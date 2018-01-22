@@ -8,6 +8,8 @@ using RESTar.Linq;
 using RESTar.Logging;
 using RESTar.Serialization;
 using RESTar.WebSockets;
+using static Newtonsoft.Json.Formatting;
+using static RESTar.Logging.ConsoleStatus;
 
 namespace RESTar.Admin
 {
@@ -29,7 +31,6 @@ namespace RESTar.Admin
         public void Open()
         {
             Consoles[this] = default;
-            Status = ConsoleStatus.PAUSED;
             if (ShowWelcomeText)
                 SendConsoleInit();
         }
@@ -47,8 +48,8 @@ namespace RESTar.Admin
 
         private void SendConsoleInit() => WebSocket
             .SendText("### Welcome to the RESTar WebSocket console! ###\n\n" +
-                      ">>> Status: PAUSED\n\n" +
-                      "> To begin, type BEGIN\n" +
+                      $">>> Status: {Status}\n\n" +
+                      (Status == Active ? "" : "> To begin, type BEGIN\n") +
                       "> To pause, type PAUSE\n" +
                       "> To close, type CLOSE\n");
 
@@ -58,11 +59,11 @@ namespace RESTar.Admin
             {
                 case "": break;
                 case "BEGIN":
-                    Status = ConsoleStatus.ACTIVE;
+                    Status = Active;
                     WebSocket.SendText("Status: ACTIVE\n");
                     break;
                 case "PAUSE":
-                    Status = ConsoleStatus.PAUSED;
+                    Status = Paused;
                     WebSocket.SendText("Status: PAUSED\n");
                     break;
                 case "EXIT":
@@ -80,7 +81,7 @@ namespace RESTar.Admin
 
         private const string connection = " | Connection: ";
         private const string time = " | Time: ";
-        private const string headers = " | Headers: ";
+        private const string headers = " | Custom headers: ";
         private const string content = " | Content: ";
 
         private void PrintLine(StringBuilder builder, ILogable logable)
@@ -99,7 +100,9 @@ namespace RESTar.Admin
             if (IncludeHeaders)
             {
                 builder.Append(headers);
-                builder.Append(logable.CustomHeadersString);
+                if (logable.HeadersStringCache == null)
+                    logable.HeadersStringCache = string.Join(", ", logable.Headers.CustomHeaders.Select(p => $"{p.Key}: {p.Value}"));
+                builder.Append(logable.HeadersStringCache);
             }
             if (IncludeContent)
             {
@@ -130,8 +133,13 @@ namespace RESTar.Admin
             {
                 builder1.Append(headers);
                 builder2.Append(headers);
-                builder1.Append(logable1.CustomHeadersString);
-                builder2.Append(logable2.CustomHeadersString);
+
+                if (logable1.HeadersStringCache == null)
+                    logable1.HeadersStringCache = string.Join(", ", logable1.Headers.CustomHeaders.Select(p => $"{p.Key}: {p.Value}"));
+                if (logable2.HeadersStringCache == null)
+                    logable2.HeadersStringCache = string.Join(", ", logable2.Headers.CustomHeaders.Select(p => $"{p.Key}: {p.Value}"));
+                builder1.Append(logable1.HeadersStringCache);
+                builder2.Append(logable2.HeadersStringCache);
             }
             if (IncludeContent)
             {
@@ -171,7 +179,7 @@ namespace RESTar.Admin
 
         internal static void Log(ILogable initial, ILogable final) => Consoles.Keys
             .AsParallel()
-            .Where(c => c.Status == ConsoleStatus.ACTIVE)
+            .Where(c => c.Status == Active)
             .GroupBy(c => c.Format)
             .ForEach(group =>
             {
@@ -202,15 +210,15 @@ namespace RESTar.Admin
                             }
                             if (c.IncludeHeaders)
                             {
-                                item.In.Headers = initial.Headers;
-                                item.Out.Headers = final.Headers;
+                                item.In.CustomHeaders = initial.Headers;
+                                item.Out.CustomHeaders = final.Headers;
                             }
                             if (c.IncludeContent)
                             {
                                 item.In.Content = initial.LogContent;
                                 item.Out.Content = final.LogContent;
                             }
-                            var json = JsonConvert.SerializeObject(item, Serializer.Settings);
+                            var json = JsonConvert.SerializeObject(item, Indented, Serializer.Settings);
                             c.WebSocketInternal.SendTextRaw(json);
                         });
                         break;
@@ -220,7 +228,7 @@ namespace RESTar.Admin
 
         internal static void Log(ILogable logable) => Consoles.Keys
             .AsParallel()
-            .Where(c => c.Status == ConsoleStatus.ACTIVE)
+            .Where(c => c.Status == Active)
             .GroupBy(c => c.Format)
             .ForEach(group =>
             {
@@ -243,10 +251,10 @@ namespace RESTar.Admin
                             else if (c.IncludeTime)
                                 item.Time = logable.TcpConnection.OpenedAt;
                             if (c.IncludeHeaders)
-                                item.Headers = logable.Headers;
+                                item.CustomHeaders = logable.Headers;
                             if (c.IncludeContent)
                                 item.Content = logable.LogContent;
-                            var json = JsonConvert.SerializeObject(item, Serializer.Settings);
+                            var json = JsonConvert.SerializeObject(item, Indented, Serializer.Settings);
                             c.WebSocketInternal.SendTextRaw(json);
                         });
                         break;

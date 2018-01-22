@@ -19,8 +19,9 @@ namespace RESTar.Requests
         internal bool HasError => Error != null;
         internal static readonly string DefaultResourceSpecifier = typeof(AvailableResource).FullName;
         internal static readonly string MetadataResourceSpecifier = typeof(Metadata).FullName;
+        internal RESTProtocols Protocol { get; private set; }
 
-        internal static URI ParseInternal(ref string query, bool percentCharsEscaped, out RESTProtocols protocol, out string key)
+        internal static URI ParseInternal(ref string query, bool percentCharsEscaped, out string key)
         {
             var uri = new URI();
             key = null;
@@ -40,14 +41,14 @@ namespace RESTar.Requests
                 case "":
                 case "-restar":
                     populator = RESTarProtocolProvider.PopulateUri;
-                    protocol = RESTProtocols.RESTar;
+                    uri.Protocol = RESTProtocols.RESTar;
                     break;
                 case "-odata":
                     populator = ODataProtocolProvider.PopulateUri;
-                    protocol = RESTProtocols.OData;
+                    uri.Protocol = RESTProtocols.OData;
                     break;
                 default:
-                    protocol = default;
+                    uri.Protocol = default;
                     uri.Error = new InvalidSyntax(ErrorCodes.InvalidUriSyntax, $"Unknown protocol '{protocolString}'");
                     return uri;
             }
@@ -64,7 +65,7 @@ namespace RESTar.Requests
 
         internal static URI Parse(string uriString)
         {
-            var uri = ParseInternal(ref uriString, false, out var _, out var _);
+            var uri = ParseInternal(ref uriString, false, out var _);
             if (uri.HasError) throw uri.Error;
             return uri;
         }
@@ -76,13 +77,13 @@ namespace RESTar.Requests
             MetaConditions = new List<UriCondition>();
         }
 
-        public string ToString(RESTProtocols protocol = RESTProtocols.RESTar)
+        public override string ToString()
         {
-            switch (protocol)
+            switch (Protocol)
             {
                 case RESTProtocols.RESTar: return RESTarProtocolProvider.MakeRelativeUri(this);
                 case RESTProtocols.OData: return ODataProtocolProvider.MakeRelativeUri(this);
-                default: throw new ArgumentOutOfRangeException(nameof(protocol), protocol, null);
+                default: throw new ArgumentOutOfRangeException();
             }
         }
     }

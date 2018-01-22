@@ -28,8 +28,7 @@ namespace RESTar.Http
         public LogEventType LogEventType { get; } = LogEventType.HttpOutput;
         public string LogMessage => $"{StatusCode.ToCode()}: {StatusDescription}";
         public string LogContent { get; } = null;
-        private string _headersString;
-        string ILogable.CustomHeadersString => _headersString ?? (_headersString = string.Join(", ", Headers.Select(p => $"{p.Key}: {p.Value}")));
+        public string HeadersStringCache { get; set; }
 
         private HttpResponse(ITraceable trace)
         {

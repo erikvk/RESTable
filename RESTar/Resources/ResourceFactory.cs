@@ -307,6 +307,16 @@ namespace RESTar.Resources
                 provider.ReceiveClaimed(Resource.ClaimedBy(provider));
             }
 
+            var metadata = Metadata.Make();
+            foreach (var enumType in metadata.PeripheralTypes.Where(t => t.IsEnum))
+            {
+                if (Enum.GetNames(enumType).Select(name => name.ToLower()).ContainsDuplicates(out var dupe))
+                    throw new InvalidReferencedEnumDeclaration("A reference was made in some resource type to an enum type with name " +
+                                                               $"'{enumType.FullName}', containing multiple named constants equal to '{dupe}' " +
+                                                               "(case insensitive). All enum types referenced by some RESTar resource " +
+                                                               "type must have unique case insensitive named constants");
+            }
+
             DynamicResource.GetAll().ForEach(MakeDynamicResource);
             TerminalResource.RegisterTerminalTypes(terminals);
         }

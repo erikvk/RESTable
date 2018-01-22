@@ -6,4 +6,9 @@ namespace RESTar.Results.Error
     {
         internal InvalidResourceDeclaration(string message) : base(ErrorCodes.InvalidResourceDeclaration, message) { }
     }
+
+    internal class InvalidReferencedEnumDeclaration : RESTarError
+    {
+        internal InvalidReferencedEnumDeclaration(string message) : base(ErrorCodes.InvalidReferencedEnumDeclaration, message) { }
+    }
 }

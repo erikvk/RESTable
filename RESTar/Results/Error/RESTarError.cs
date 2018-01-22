@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Net;
 using Newtonsoft.Json;
 using RESTar.Internal;
@@ -41,6 +40,7 @@ namespace RESTar.Results.Error
         public ICollection<string> Cookies { get; } = new List<string>();
         Stream IFinalizedResult.Body { get; } = null;
         string IFinalizedResult.ContentType { get; } = null;
+        public string HeadersStringCache { get; set; }
 
         internal void SetTrace(ITraceable trace)
         {
@@ -69,9 +69,7 @@ namespace RESTar.Results.Error
         }
 
         public string LogContent { get; } = null;
-        private string _headersString;
-        string ILogable.CustomHeadersString => _headersString ?? (_headersString = string.Join(", ", Headers.Select(p => $"{p.Key}: {p.Value}")));
-
+        
         internal RESTarError(ErrorCodes code, string message) : base(message)
         {
             ErrorCode = code;

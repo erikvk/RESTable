@@ -23,7 +23,6 @@ namespace RESTar.Requests
         {
             var match = Regex.Match(query, RegEx.RESTarRequestUri);
             if (!match.Success) throw new InvalidSyntax(ErrorCodes.InvalidUriSyntax, "Check URI syntax");
-
             var resourceOrMacro = match.Groups["res"].Value.TrimStart('/');
             var view = match.Groups["view"].Value.TrimStart('-');
             var conditions = match.Groups["cond"].Value.TrimStart('/');

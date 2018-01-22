@@ -8,6 +8,6 @@ namespace RESTar.Logging
         string LogMessage { get; }
         string LogContent { get; }
         Headers Headers { get; }
-        string CustomHeadersString { get; }
+        string HeadersStringCache { get; set; }
     }
 }

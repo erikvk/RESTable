@@ -24,7 +24,6 @@ namespace RESTar.Logging
         public string Protocol;
         public string UserAgent;
         public DateTime? OpenedAt;
-        public DateTime? ClosedAt;
 
         internal Connection(TCPConnection tcpConnection, bool includeTimes)
         {
@@ -33,11 +32,8 @@ namespace RESTar.Logging
             Protocol = tcpConnection.HTTPS ? "HTTPS" : "HTTP";
             UserAgent = tcpConnection.UserAgent;
             if (includeTimes)
-            {
                 OpenedAt = tcpConnection.OpenedAt;
-                ClosedAt = tcpConnection.ClosedAt;
-            }
-            else OpenedAt = ClosedAt = null;
+            else OpenedAt = null;
         }
     }
 
@@ -53,7 +49,7 @@ namespace RESTar.Logging
         public string Content;
 
         [JsonProperty(NullValueHandling = Ignore)]
-        public Headers Headers;
+        public Headers CustomHeaders;
 
         [JsonProperty(NullValueHandling = Ignore)]
         public DateTime? Time;

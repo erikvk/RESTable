@@ -15,6 +15,7 @@ namespace RESTar
     internal class Shell : ITerminal
     {
         private string query = "";
+        private string previousQuery = "";
 
         public string Query
         {
@@ -27,6 +28,7 @@ namespace RESTar
                     case null:
                     case var _ when value[0] != '/': throw new InvalidSyntax(InvalidUriSyntax, "Shell queries must begin with '/'");
                 }
+                previousQuery = query;
                 query = value;
             }
         }
@@ -43,6 +45,12 @@ namespace RESTar
         public bool SupportsTextInput { get; } = true;
         public bool SupportsBinaryInput { get; } = false;
         internal static TerminalResource TerminalResource { get; set; }
+
+        internal void GoToPrevious()
+        {
+            query = previousQuery;
+            previousQuery = "";
+        }
 
         public void Open()
         {
@@ -205,11 +213,15 @@ namespace RESTar
             PreviousResultMetadata = null;
             GetNextPageLink = null;
             query = "";
+            previousQuery = "";
         }
 
         private IFinalizedResult WsEvaluate(Action action, byte[] body)
         {
+            var preQuery = query;
             var result = RequestEvaluator.Evaluate(action, ref query, body, WebSocket.Headers, WebSocket.TcpConnection);
+            if (query != preQuery)
+                previousQuery = preQuery;
             if (result is IEntitiesMetadata entitiesMetaData)
             {
                 PreviousResultMetadata = entitiesMetaData;
