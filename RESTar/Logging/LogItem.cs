@@ -7,6 +7,8 @@ namespace RESTar.Logging
 {
     internal struct InputOutput
     {
+        public string Type;
+
         [JsonProperty(NullValueHandling = Ignore)]
         public Connection? Connection;
 
@@ -39,6 +41,9 @@ namespace RESTar.Logging
 
     internal struct LogItem
     {
+        [JsonProperty(NullValueHandling = Ignore)]
+        public string Type;
+
         public string Id;
         public string Message;
 

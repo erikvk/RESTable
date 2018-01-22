@@ -198,6 +198,7 @@ namespace RESTar.Admin
                         {
                             var item = new InputOutput
                             {
+                                Type = "HTTPRequestResponse",
                                 In = new LogItem {Id = initial.TraceId, Message = initial.LogMessage},
                                 Out = new LogItem {Id = final.TraceId, Message = final.LogMessage}
                             };
@@ -243,6 +244,7 @@ namespace RESTar.Admin
                         {
                             var item = new LogItem
                             {
+                                Type = logable.LogEventType.ToString(),
                                 Id = logable.TraceId,
                                 Message = logable.LogMessage
                             };

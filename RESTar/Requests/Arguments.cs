@@ -79,7 +79,16 @@ namespace RESTar.Requests
         LogEventType ILogable.LogEventType { get; } = LogEventType.HttpInput;
         string ILogable.LogMessage => $"{Action} {uri}";
         private string _contentString;
-        string ILogable.LogContent => _contentString ?? (_contentString = Encoding.UTF8.GetString(BodyBytes));
+
+        string ILogable.LogContent
+        {
+            get
+            {
+                if (BodyBytes == null) return null;
+                return _contentString ?? (_contentString = Encoding.UTF8.GetString(BodyBytes));
+            }
+        }
+
         public string HeadersStringCache { get; set; }
 
         public void ThrowIfError()
