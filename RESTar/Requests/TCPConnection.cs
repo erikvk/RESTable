@@ -61,6 +61,7 @@ namespace RESTar.Requests
         TCPConnection TcpConnection { get; }
     }
 
+    /// <inheritdoc />
     /// <summary>
     /// Describes the origin and basic TCP connection parameters of a request
     /// </summary>
@@ -70,7 +71,7 @@ namespace RESTar.Requests
         public string TraceId { get; }
 
         /// <inheritdoc />
-        public TCPConnection TcpConnection => this;
+        TCPConnection ITraceable.TcpConnection => this;
 
         /// <summary>
         /// The origin type

@@ -75,7 +75,7 @@ namespace RESTar
 
             return new Metadata
             {
-                CurrentAccessRights = rights,
+                CurrentAccessRights = rights ?? AccessRights.Root,
                 EntityResources = entityResources,
                 EntityResourceTypes = entityTypes,
                 TerminalResources = terminalResources,

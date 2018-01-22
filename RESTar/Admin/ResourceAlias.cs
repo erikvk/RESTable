@@ -24,6 +24,8 @@ namespace RESTar.Admin
         internal const string ByAlias = All + " WHERE t.Alias =?";
         internal const string ByResource = All + " WHERE t.Resource =?";
 
+        internal ResourceAlias() { }
+
         private string alias;
 
         /// <summary>

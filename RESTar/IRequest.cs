@@ -34,7 +34,10 @@ namespace RESTar
         ITarget<T> Target { get; }
 
         /// <summary>
-        /// Returns the entities belonging to this request
+        /// Returns the processed entities belonging to this request. If the request is an update request,
+        /// for example, this IEnumerable contains all the updated entities. For insert requests, all the 
+        /// requests to insert, and so on. For update and insert requests, if the resource type is a
+        /// Starcounter database class, make sure to call GetEntities() from inside a transaction scope.
         /// </summary>
         IEnumerable<T> GetEntities();
     }
