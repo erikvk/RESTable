@@ -50,7 +50,7 @@ namespace RESTar.Requests
                 }
                 catch (Exception e)
                 {
-                    ws.Send("WebSocket error: " + e.Message);
+                    ws.Send(e.Message);
                     ws.Disconnect();
                 }
             });
@@ -62,7 +62,7 @@ namespace RESTar.Requests
                 }
                 catch (Exception e)
                 {
-                    ws.Send("WebSocket error: " + e.Message);
+                    ws.Send(e.Message);
                     ws.Disconnect();
                 }
             });

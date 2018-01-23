@@ -12,11 +12,11 @@ namespace RESTar.WebSockets
         internal static readonly IDictionary<string, IWebSocketInternal> AllSockets;
         static WebSocketController() => AllSockets = new ConcurrentDictionary<string, IWebSocketInternal>();
         internal static void Add(IWebSocketInternal webSocket) => AllSockets[webSocket.TraceId] = webSocket;
-        
+
         internal static void HandleTextInput(string wsId, string textInput)
         {
             if (!AllSockets.TryGetValue(wsId, out var webSocket))
-                throw new UnknownWebSocketId($"Unknown WebSocket ID: {wsId}");
+                throw new UnknownWebSocketId($"WebSocket {wsId} no longer connected");
             if (textInput.ElementAtOrDefault(0) == '#')
             {
                 var (command, tail) = textInput.Trim().TSplit(' ');
