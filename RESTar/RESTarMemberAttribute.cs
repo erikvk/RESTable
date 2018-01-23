@@ -52,6 +52,12 @@ namespace RESTar
         public bool SkipConditions { get; }
 
         /// <summary>
+        /// Is this property marked as primitive? Only applicable when System.Object is used as property type. 
+        /// If false, System.Object properties will be assumed to be complex types
+        /// </summary>
+        public bool MarkedAsPrimitive { get; }
+
+        /// <summary>
         /// These operators will be allowed in conditions targeting this property.
         /// </summary>
         public Operators AllowedOperators { get; }
@@ -79,14 +85,16 @@ namespace RESTar
         /// <param name="hideIfNull">Should this property be hidden in output if the value is null? Only applies to JSON output.</param>
         /// <param name="readOnly">Makes this property read-only over the REST API, even if it has a public setter.</param>
         /// <param name="skipConditions">Sets the Skip property of all conditions matched against this property to true by default.</param>
+        /// <param name="markPrimitive">Should this property be marked as primitive? Only applicable when System.Object is used as property type. 
+        /// If false, System.Object properties will be assumed to be complex types</param>
         /// <param name="allowedOperators">These operators will be allowed in conditions targeting this property.</param>
         /// <param name="excelReducer">The name of an optional public ToString-like method, declared in the same scope as the property, that reduces the 
         /// property to an excel-compatible string</param>
         /// <param name="replaceOnUpdate">Should this object be replaced with a new instance on update, or reused? Applicable for types such as 
         /// Dictionaries and Lists.</param>
         public RESTarMemberAttribute(bool ignore = false, string name = null, bool key = false, int order = 0, bool hide = false,
-            bool hideIfNull = false, bool readOnly = false, bool skipConditions = false, Operators allowedOperators = Operators.All,
-            string excelReducer = null, bool replaceOnUpdate = false)
+            bool hideIfNull = false, bool readOnly = false, bool skipConditions = false, bool markPrimitive = false,
+            Operators allowedOperators = Operators.All, string excelReducer = null, bool replaceOnUpdate = false)
         {
             Ignored = ignore;
             Name = name;
@@ -95,6 +103,7 @@ namespace RESTar
             Hidden = hide;
             HiddenIfNull = hideIfNull;
             ReadOnly = readOnly;
+            MarkedAsPrimitive = markPrimitive;
             SkipConditions = skipConditions;
             AllowedOperators = allowedOperators;
             ExcelReducerName = excelReducer;

@@ -78,6 +78,12 @@ namespace RESTar.Deflection.Dynamic
         public bool IsEnum { get; }
 
         /// <summary>
+        /// Is this property marked as primitive? Only applicable when System.Object is used as property type. 
+        /// If false, System.Object properties will be assumed to be complex types
+        /// </summary>
+        public bool MarkedAsPrimitive { get; }
+
+        /// <summary>
         /// The attributes that this property has been decorated with
         /// </summary>  
         private ICollection<Attribute> Attributes { get; }
@@ -105,7 +111,7 @@ namespace RESTar.Deflection.Dynamic
         /// Used in SpecialProperty
         /// </summary>
         internal DeclaredProperty(int metadataToken, string name, string actualName, Type type, bool isKey, int? order, bool scQueryable,
-            ICollection<Attribute> attributes, bool skipConditions, bool hidden, bool hiddenIfNull, bool isEnum,
+            ICollection<Attribute> attributes, bool skipConditions, bool hidden, bool hiddenIfNull, bool isEnum, bool markedAsPrimitive,
             Operators allowedConditionOperators, Getter getter, Setter setter)
         {
             MetadataToken = metadataToken;
@@ -120,6 +126,7 @@ namespace RESTar.Deflection.Dynamic
             Hidden = hidden;
             HiddenIfNull = hiddenIfNull;
             IsEnum = isEnum;
+            MarkedAsPrimitive = markedAsPrimitive;
             AllowedConditionOperators = allowedConditionOperators;
             Nullable = !type.IsValueType || type.IsNullable(out var _) || hidden;
             Getter = getter;
@@ -148,6 +155,7 @@ namespace RESTar.Deflection.Dynamic
             AllowedConditionOperators = memberAttribute?.AllowedOperators ?? Operators.All;
             Nullable = !p.PropertyType.IsValueType || p.PropertyType.IsNullable(out var _) || Hidden;
             IsEnum = p.PropertyType.IsEnum;
+            MarkedAsPrimitive = memberAttribute?.MarkedAsPrimitive == true;
             if (memberAttribute?.ExcelReducerName != null)
                 ExcelReducer = MakeExcelReducer(memberAttribute.ExcelReducerName, p);
             Getter = p.MakeDynamicGetter();

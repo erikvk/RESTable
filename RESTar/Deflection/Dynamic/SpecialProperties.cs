@@ -50,6 +50,7 @@ namespace RESTar.Deflection.Dynamic
                 skipConditions: false,
                 hidden: hidden,
                 hiddenIfNull: hiddenIfNull,
+                markedAsPrimitive: false,
                 isEnum: false,
                 allowedConditionOperators: Operators.All,
                 getter: getter,
