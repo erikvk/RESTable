@@ -45,11 +45,12 @@ namespace RESTar.Operations
 
         public LogEventType LogEventType => LogEventType.HttpOutput;
         public string TraceId { get; }
-        public string LogMessage => $"{StatusCode.ToCode()}: {StatusDescription}";
+        public string LogMessage => $"{StatusCode.ToCode()}: {StatusDescription} ({LogContentLength} bytes)";
         public string LogContent { get; } = null;
         public TCPConnection TcpConnection { get; }
         public string HeadersStringCache { get; set; }
         public bool ExcludeHeaders { get; }
+        public long LogContentLength { get; }
 
         internal Result(ITraceable trace)
         {
@@ -57,6 +58,7 @@ namespace RESTar.Operations
             ExcludeHeaders = false;
             TcpConnection = trace.TcpConnection;
             TraceId = trace.TraceId;
+            LogContentLength = Body?.Length ?? 0;
         }
     }
 }

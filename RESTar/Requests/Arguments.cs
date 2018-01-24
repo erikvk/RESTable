@@ -1,15 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Web;
 using RESTar.Internal;
 using RESTar.Linq;
 using RESTar.Logging;
 using RESTar.OData;
 using RESTar.Results.Error;
-using static System.Text.RegularExpressions.RegexOptions;
 using IResource = RESTar.Internal.IResource;
 
 namespace RESTar.Requests
@@ -49,6 +46,7 @@ namespace RESTar.Requests
     {
         public Action Action { get; }
         private URI uri;
+        private string UnparsedUri { get; }
 
         public URI Uri
         {
@@ -78,9 +76,10 @@ namespace RESTar.Requests
         internal Exception Error { get; set; }
         public string TraceId { get; }
         public bool ExcludeHeaders => IResource is IEntityResource e && e.RequiresAuthentication;
+        public long LogContentLength { get; }
 
         LogEventType ILogable.LogEventType { get; } = LogEventType.HttpInput;
-        string ILogable.LogMessage => $"{Action} {uri}";
+        string ILogable.LogMessage => $"{Action} {UnparsedUri}{(LogContentLength > 0 ? $" ({LogContentLength} bytes)" : "")}";
         private string _contentString;
 
         string ILogable.LogContent
@@ -98,9 +97,6 @@ namespace RESTar.Requests
         {
             if (Error != null) throw Error;
         }
-
-        internal IEnumerable<KeyValuePair<string, string>> CustomHeaders => Headers
-            .Where(h => !Regex.IsMatch(h.Key, "", IgnoreCase));
 
         private static bool PercentCharsEscaped(IDictionary<string, string> headers)
         {
@@ -120,7 +116,9 @@ namespace RESTar.Requests
             Uri = URI.ParseInternal(ref query, PercentCharsEscaped(headers), out var key);
             if (key != null)
                 Headers["Authorization"] = $"apikey {UnpackUriKey(key)}";
+            UnparsedUri = query;
             BodyBytes = body;
+            LogContentLength = body?.Length ?? 0;
             TcpConnection = tcpConnection;
             ContentType = MimeType.Parse(Headers["Content-Type"]);
             Accept = MimeType.ParseMany(Headers["Accept"]);

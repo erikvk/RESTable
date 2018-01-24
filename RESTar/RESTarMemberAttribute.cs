@@ -23,7 +23,7 @@ namespace RESTar
         /// <summary>
         /// The order at which this property appears when all properties are enumerated
         /// </summary>
-        public int Order { get; }
+        public int? Order { get; }
 
         /// <summary>
         /// Is this property a key?
@@ -92,13 +92,14 @@ namespace RESTar
         /// property to an excel-compatible string</param>
         /// <param name="replaceOnUpdate">Should this object be replaced with a new instance on update, or reused? Applicable for types such as 
         /// Dictionaries and Lists.</param>
-        public RESTarMemberAttribute(bool ignore = false, string name = null, bool key = false, int order = 0, bool hide = false,
+        public RESTarMemberAttribute(bool ignore = false, string name = null, bool key = false, int order = int.MinValue, bool hide = false,
             bool hideIfNull = false, bool readOnly = false, bool skipConditions = false, bool markPrimitive = false,
             Operators allowedOperators = Operators.All, string excelReducer = null, bool replaceOnUpdate = false)
         {
             Ignored = ignore;
             Name = name;
-            Order = order;
+            if (order != int.MinValue)
+                Order = order;
             IsKey = key;
             Hidden = hide;
             HiddenIfNull = hideIfNull;

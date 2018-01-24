@@ -133,9 +133,8 @@ namespace RESTar.Requests
 
         private static Response HandleView<T>(IEntityResource<T> resource, Arguments arguments) where T : class
         {
-            var request = new ViewRequest<T>(resource, arguments.TcpConnection);
+            var request = new ViewRequest<T>(resource, arguments);
             request.Authenticate();
-            request.Populate(arguments);
             request.MethodCheck();
             request.Evaluate();
             return null; //request.GetView();

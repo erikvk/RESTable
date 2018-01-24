@@ -32,6 +32,7 @@ namespace RESTarExample
     [Database, RESTar]
     public class Static
     {
+        [RESTarMember(hideIfNull:true)]
         public int Swoo { get; set; }
         private string _str;
 

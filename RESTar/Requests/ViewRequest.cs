@@ -24,17 +24,17 @@ namespace RESTar.Requests
     {
         public TCPConnection TcpConnection { get; }
         public IEntityResource<T> Resource { get; }
-        public Condition<T>[] Conditions { get; private set; }
-        public MetaConditions MetaConditions { get; private set; }
+        public Condition<T>[] Conditions { get; }
+        public MetaConditions MetaConditions { get; }
         public string AuthToken { get; internal set; }
         public Headers ResponseHeaders { get; }
         public ICollection<string> Cookies { get; }
-        public IUriParameters UriParameters { get; private set; }
+        public IUriParameters UriParameters { get; }
         public Stream Body { get; private set; }
         Methods IRequest.Method => GET;
         IEntityResource IRequest.Resource => Resource;
         public MimeType Accept => MimeType.Default;
-        public ITarget<T> Target { get; private set; }
+        public ITarget<T> Target { get; }
         public bool Home => MetaConditions.Empty && Conditions == null;
         internal bool IsTemplate { get; set; }
         internal bool CanInsert { get; set; }
@@ -48,33 +48,27 @@ namespace RESTar.Requests
         public Func<IEnumerable<T>> EntitiesGenerator { private get; set; }
         public IEnumerable<T> GetEntities() => EntitiesGenerator?.Invoke();
 
-        internal ViewRequest(IEntityResource<T> resource, TCPConnection tcpConnection)
+        internal ViewRequest(IEntityResource<T> resource, Arguments arguments)
         {
             if (resource.IsInternal) throw new ResourceIsInternal(resource);
 
-            TraceId = tcpConnection.TraceId;
-            TcpConnection = tcpConnection;
+            TraceId = arguments.TraceId;
+            TcpConnection = arguments.TcpConnection;
 
             Resource = resource;
             Target = resource;
-            Headers = new Headers();
+            Headers = arguments.Headers;
             ResponseHeaders = new Headers();
             Cookies = new List<string>();
             MetaConditions = new MetaConditions();
             Conditions = new Condition<T>[0];
-        }
-
-        internal void Populate(Arguments arguments)
-        {
             if (arguments.Uri.ViewName != null)
             {
                 if (!Resource.ViewDictionary.TryGetValue(arguments.Uri.ViewName, out var view))
                     throw new UnknownView(arguments.Uri.ViewName, Resource);
                 Target = view;
             }
-
             UriParameters = arguments.Uri;
-            arguments.CustomHeaders.ForEach(Headers.Put);
             Conditions = Condition<T>.Parse(arguments.Uri.Conditions, Resource) ?? Conditions;
             MetaConditions = MetaConditions.Parse(arguments.Uri.MetaConditions, Resource, false) ?? MetaConditions;
         }
