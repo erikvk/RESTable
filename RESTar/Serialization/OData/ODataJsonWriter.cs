@@ -1,21 +1,21 @@
 ﻿using System.IO;
 using Newtonsoft.Json;
-using static RESTar.Admin.Settings;
+using RESTar.Admin;
 
 #pragma warning disable 1591
 
-namespace RESTar.Serialization
+namespace RESTar.Serialization.OData
 {
-    public class RESTarJsonWriter : JsonTextWriter
+    public class ODataJsonWriter : JsonTextWriter
     {
-        private readonly string NewLine;
+        internal readonly string NewLine;
         private int BaseIndentation;
         private int CurrentDepth;
         public ulong ObjectsWritten { get; private set; }
-        
+
         public override void WriteStartObject()
         {
-            if (CurrentDepth == 0)
+            if (CurrentDepth == BaseIndentation)
                 ObjectsWritten += 1;
             CurrentDepth += 1;
             base.WriteStartObject();
@@ -27,10 +27,35 @@ namespace RESTar.Serialization
             base.WriteEndObject();
         }
 
-        public RESTarJsonWriter(TextWriter textWriter, int baseIndentation) : base(textWriter)
+        public void WritePre()
         {
-            BaseIndentation = baseIndentation;
-            switch (_LineEndings)
+            WriteStartObject();
+            WriteIndent();
+        }
+
+        public void WritePost()
+        {
+            WriteWhitespace(NewLine);
+            WriteEndObject();
+        }
+
+        public void WriteIndentation()
+        {
+            WriteIndent();
+        }
+
+        public void WriteMetadata(string propertyName, long valueNr)
+        {
+            WriteIndent();
+            WritePropertyName(propertyName);
+            WriteWhitespace(" ");
+            WriteValue(valueNr);
+        }
+
+        public ODataJsonWriter(TextWriter textWriter) : base(textWriter)
+        {
+            BaseIndentation = 1;
+            switch (Settings._LineEndings)
             {
                 case LineEndings.Windows:
                     NewLine = "\r\n";
@@ -44,7 +69,6 @@ namespace RESTar.Serialization
 
         protected override void WriteIndent()
         {
-            // if (Formatting != Formatting.Indented) return;
             WriteWhitespace(NewLine);
             var currentIndentCount = Top * Indentation + BaseIndentation;
             for (var i = 0; i < currentIndentCount; i++)

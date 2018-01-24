@@ -116,6 +116,8 @@ namespace RESTar.Requests
             Uri = URI.ParseInternal(ref query, PercentCharsEscaped(headers), out var key);
             if (key != null)
                 Headers["Authorization"] = $"apikey {UnpackUriKey(key)}";
+            if (tcpConnection.HasWebSocket && uri.ResourceSpecifier == URI.DefaultResourceSpecifier)
+                Uri.ResourceSpecifier = "RESTar.Shell";
             UnparsedUri = query;
             BodyBytes = body;
             LogContentLength = body?.Length ?? 0;

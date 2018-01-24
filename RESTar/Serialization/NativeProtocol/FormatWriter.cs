@@ -2,7 +2,7 @@
 using System.IO;
 using Newtonsoft.Json;
 
-namespace RESTar.Serialization
+namespace RESTar.Serialization.NativeProtocol
 {
     internal class FormatWriter : JsonTextWriter
     {

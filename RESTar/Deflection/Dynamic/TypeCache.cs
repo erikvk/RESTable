@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using Newtonsoft.Json.Serialization;
 using RESTar.Internal;
 using RESTar.Linq;
 using static System.Reflection.BindingFlags;
@@ -127,14 +128,25 @@ namespace RESTar.Deflection.Dynamic
         }
 
         /// <summary>
-        /// Gets the DeclaredProperty for a given MemberInfo
+        /// Gets the DeclaredProperty for a given PropertyInfo
         /// </summary>
-        public static DeclaredProperty GetDeclaredProperty(this MemberInfo member)
+        public static DeclaredProperty GetDeclaredProperty(this PropertyInfo member)
         {
             var declaringType = member.DeclaringType;
             if (declaringType?.FullName == null)
                 throw new Exception($"Cannot get declared property for member '{member}' of unknown type");
             return declaringType.GetDeclaredProperties().FirstOrDefault(p => p.Value.ActualName == member.Name).Value;
+        }
+
+        /// <summary>
+        /// Gets the DeclaredProperty for a given JsonProperty
+        /// </summary>
+        public static DeclaredProperty GetDeclaredProperty(this JsonProperty member)
+        {
+            var declaringType = member.DeclaringType;
+            if (declaringType?.FullName == null)
+                throw new Exception($"Cannot get declared property for member '{member}' of unknown type");
+            return declaringType.GetDeclaredProperties().FirstOrDefault(p => p.Value.Name == member.PropertyName).Value;
         }
 
         #endregion

@@ -4,25 +4,24 @@ using System.Collections.Generic;
 using System.Reflection;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
-using Starcounter;
 using RESTar.Deflection.Dynamic;
-using static Newtonsoft.Json.ObjectCreationHandling;
+using System.Linq;
 
-namespace RESTar.Serialization
+namespace RESTar.Serialization.NativeProtocol
 {
     /// <inheritdoc />
     internal class CreateViewModelResolver : DefaultContractResolver
     {
         protected override JsonProperty CreateProperty(MemberInfo member, MemberSerialization memberSerialization)
         {
-            switch (member.MemberType)
+            switch (member)
             {
-                case MemberTypes.Property:
-                    var property = member.GetDeclaredProperty();
+                case PropertyInfo propertyInfo:
+                    var property = propertyInfo.GetDeclaredProperty();
                     if (property?.Hidden != false) return null;
                     var p = base.CreateProperty(member, memberSerialization);
                     p.PropertyName = property.Name;
-                    p.ObjectCreationHandling = property.ReplaceOnUpdate ? Replace : Auto;
+                    p.ObjectCreationHandling = property.ReplaceOnUpdate ? ObjectCreationHandling.Replace : ObjectCreationHandling.Auto;
                     p.Order = property.Order;
                     if (property.Writable)
                     {
@@ -31,10 +30,10 @@ namespace RESTar.Serialization
                     }
                     else p.Writable = false;
                     return p;
-                case MemberTypes.Field:
-                    if (member.RESTarIgnored()) return null;
-                    var f = base.CreateProperty(member, memberSerialization);
-                    f.PropertyName = member.RESTarMemberName();
+                case FieldInfo fieldInfo:
+                    if (fieldInfo.RESTarIgnored()) return null;
+                    var f = base.CreateProperty(fieldInfo, memberSerialization);
+                    f.PropertyName = fieldInfo.RESTarMemberName();
                     if (f.Writable) f.PropertyName += "$";
                     return f;
                 default: return null;
@@ -43,27 +42,13 @@ namespace RESTar.Serialization
 
         protected override IList<JsonProperty> CreateProperties(Type type, MemberSerialization memberSerialization)
         {
-            var results = base.CreateProperties(type, memberSerialization);
-            if (type.HasAttribute<DatabaseAttribute>())
+            var properties = base.CreateProperties(type, memberSerialization);
+            foreach (var specialProperty in type.GetDeclaredProperties().Values.OfType<SpecialProperty>())
             {
-                results.Add(new JsonProperty
-                {
-                    PropertyType = typeof(ulong),
-                    PropertyName = "ObjectNo",
-                    Readable = true,
-                    Writable = false,
-                    ValueProvider = new ObjectNoProvider()
-                });
-                results.Add(new JsonProperty
-                {
-                    PropertyType = typeof(string),
-                    PropertyName = "ObjectID",
-                    Readable = true,
-                    Writable = false,
-                    ValueProvider = new ObjectIDProvider()
-                });
+                if (specialProperty.IsKey || !specialProperty.Hidden)
+                    properties.Add(specialProperty.JsonProperty);
             }
-            return results;
+            return properties;
         }
 
         protected override IValueProvider CreateMemberValueProvider(MemberInfo member)

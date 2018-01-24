@@ -7,6 +7,7 @@ using RESTar.Operations;
 using RESTar.Results.Error;
 using RESTar.Results.Success;
 using RESTar.Serialization;
+using RESTar.Serialization.NativeProtocol;
 using RESTar.WebSockets;
 using Starcounter;
 using static Newtonsoft.Json.Formatting;

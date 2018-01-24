@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Newtonsoft.Json.Serialization;
 using RESTar.Operations;
+using RESTar.Serialization;
 using Starcounter;
 using static Newtonsoft.Json.NullValueHandling;
 using static Newtonsoft.Json.ObjectCreationHandling;
@@ -16,21 +17,13 @@ namespace RESTar.Deflection.Dynamic
     /// </summary>
     internal class SpecialProperty : DeclaredProperty
     {
-        private class SpecialPropertyValueProvider : IValueProvider
-        {
-            private readonly DeclaredProperty Property;
-            internal SpecialPropertyValueProvider(DeclaredProperty property) => Property = property;
-            public void SetValue(object target, object value) => Property.Setter(target, value);
-            public object GetValue(object target) => Property.Getter(target);
-        }
-
         internal JsonProperty JsonProperty => new JsonProperty
         {
             PropertyType = Type,
             PropertyName = Name,
             Readable = Readable,
             Writable = Writable,
-            ValueProvider = new SpecialPropertyValueProvider(this),
+            ValueProvider = new GetterSetterProvider(Getter, Setter),
             ObjectCreationHandling = ReplaceOnUpdate ? Replace : Reuse,
             NullValueHandling = HiddenIfNull ? Ignore : Include,
             Order = Order

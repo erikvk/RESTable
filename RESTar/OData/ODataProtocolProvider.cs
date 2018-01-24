@@ -11,6 +11,7 @@ using RESTar.Results.Error;
 using RESTar.Results.Fail.BadRequest;
 using RESTar.Results.Success;
 using RESTar.Serialization;
+using RESTar.Serialization.OData;
 using static RESTar.Internal.ErrorCodes;
 using static RESTar.OData.QueryOptions;
 using static RESTar.ResourceKind;

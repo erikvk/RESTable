@@ -1,35 +1,43 @@
 ﻿using Starcounter;
+using System;
+using System.Linq;
 
 // ReSharper disable All
 
 namespace TestProject
 {
+    [Database]
+    public class MyClass
+    {
+        public DateTime? Time { get; set; }
+    }
+
     public class Program
     {
         public static void Main()
         {
-            WebSocket wsocket;
-
-            Handle.WebSocket("wstest", (string data, WebSocket socket) =>
+            Db.TransactAsync(() =>
             {
-
-                var s = data;
-
-                socket.Send("Heej igen");
+                foreach (var myClass in Db.SQL<MyClass>("SELECT t FROM TestProject.MyClass t"))
+                    myClass.Delete();
             });
 
-
-            Handle.GET("/test", (Request request) =>
+            Db.TransactAsync(() =>
             {
-                //if (!request.WebSocketUpgrade)
-                //    return 204;
-
-                wsocket = request.SendUpgrade("wstest");
-
-                wsocket.Send("HEEELLLLOOOO!!!!");
-                
-                return HandlerStatus.Handled;
+                foreach (var _ in Enumerable.Range(0, 100))
+                {
+                    new MyClass {Time = null};
+                    new MyClass {Time = DateTime.Now};
+                }
             });
+            var whereNull = Db.SQL<MyClass>("SELECT t FROM TestProject.MyClass t WHERE t.\"Time\" IS NULL");
+            var whereNotNull = Db.SQL<MyClass>("SELECT t FROM TestProject.MyClass t WHERE t.\"Time\" IS NOT NULL");
+
+            var totalCount = Db.SQL<long>("SELECT COUNT(t) FROM TestProject.MyClass t").FirstOrDefault();
+            var whereNullCount = whereNull.Count();
+            var notNullCount = whereNotNull.Count();
+
+            var s = "";
         }
     }
 }

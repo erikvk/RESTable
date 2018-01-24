@@ -6,7 +6,7 @@ using Newtonsoft.Json.Linq;
 using RESTar.Linq;
 using RESTar.Requests;
 
-namespace RESTar.Serialization
+namespace RESTar.Serialization.NativeProtocol
 {
     internal class HeadersConverter : JsonConverter
     {

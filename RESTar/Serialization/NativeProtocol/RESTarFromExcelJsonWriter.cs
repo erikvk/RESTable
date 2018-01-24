@@ -4,7 +4,7 @@ using Newtonsoft.Json;
 
 #pragma warning disable 1591
 
-namespace RESTar.Serialization
+namespace RESTar.Serialization.NativeProtocol
 {
     public class RESTarFromExcelJsonWriter : JsonTextWriter
     {

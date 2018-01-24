@@ -3,6 +3,7 @@ using Newtonsoft.Json;
 using RESTar.Admin;
 using RESTar.Requests;
 using RESTar.Serialization;
+using RESTar.Serialization.NativeProtocol;
 
 namespace RESTar.Results.Success
 {

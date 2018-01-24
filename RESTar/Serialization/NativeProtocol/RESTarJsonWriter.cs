@@ -1,28 +1,21 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Serialization;
-using static RESTar.Admin.Settings;
+using RESTar.Admin;
 
 #pragma warning disable 1591
 
-namespace RESTar.Serialization
+namespace RESTar.Serialization.NativeProtocol
 {
-    public class C : JsonDictionaryContract
+    public class RESTarJsonWriter : JsonTextWriter
     {
-        public C(Type underlyingType) : base(underlyingType) { }
-    }
-
-    public class ODataJsonWriter : JsonTextWriter
-    {
-        internal readonly string NewLine;
+        private readonly string NewLine;
         private int BaseIndentation;
         private int CurrentDepth;
         public ulong ObjectsWritten { get; private set; }
-
+        
         public override void WriteStartObject()
         {
-            if (CurrentDepth == BaseIndentation)
+            if (CurrentDepth == 0)
                 ObjectsWritten += 1;
             CurrentDepth += 1;
             base.WriteStartObject();
@@ -34,35 +27,10 @@ namespace RESTar.Serialization
             base.WriteEndObject();
         }
 
-        public void WritePre()
+        public RESTarJsonWriter(TextWriter textWriter, int baseIndentation) : base(textWriter)
         {
-            WriteStartObject();
-            WriteIndent();
-        }
-
-        public void WritePost()
-        {
-            WriteWhitespace(NewLine);
-            WriteEndObject();
-        }
-
-        public void WriteIndentation()
-        {
-            WriteIndent();
-        }
-
-        public void WriteMetadata(string propertyName, long valueNr)
-        {
-            WriteIndent();
-            WritePropertyName(propertyName);
-            WriteWhitespace(" ");
-            WriteValue(valueNr);
-        }
-
-        public ODataJsonWriter(TextWriter textWriter) : base(textWriter)
-        {
-            BaseIndentation = 1;
-            switch (_LineEndings)
+            BaseIndentation = baseIndentation;
+            switch (Settings._LineEndings)
             {
                 case LineEndings.Windows:
                     NewLine = "\r\n";
@@ -76,6 +44,7 @@ namespace RESTar.Serialization
 
         protected override void WriteIndent()
         {
+            // if (Formatting != Formatting.Indented) return;
             WriteWhitespace(NewLine);
             var currentIndentCount = Top * Indentation + BaseIndentation;
             for (var i = 0; i < currentIndentCount; i++)

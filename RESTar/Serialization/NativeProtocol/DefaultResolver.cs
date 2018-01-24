@@ -5,32 +5,30 @@ using System.Reflection;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using RESTar.Deflection.Dynamic;
-using static Newtonsoft.Json.NullValueHandling;
-using static Newtonsoft.Json.ObjectCreationHandling;
 
-namespace RESTar.Serialization
+namespace RESTar.Serialization.NativeProtocol
 {
     internal class DefaultResolver : DefaultContractResolver
     {
         protected override JsonProperty CreateProperty(MemberInfo member, MemberSerialization memberSerialization)
         {
-            switch (member.MemberType)
+            switch (member)
             {
-                case MemberTypes.Property:
-                    var property = member.GetDeclaredProperty();
+                case PropertyInfo propertyInfo:
+                    var property = propertyInfo.GetDeclaredProperty();
                     if (property == null || !property.IsKey && property.Hidden)
                         return null;
-                    var p = base.CreateProperty(member, memberSerialization);
+                    var p = base.CreateProperty(propertyInfo, memberSerialization);
                     p.Writable = property.Writable;
-                    p.NullValueHandling = property.HiddenIfNull ? Ignore : Include;
-                    p.ObjectCreationHandling = property.ReplaceOnUpdate ? Replace : Auto;
+                    p.NullValueHandling = property.HiddenIfNull ? NullValueHandling.Ignore : NullValueHandling.Include;
+                    p.ObjectCreationHandling = property.ReplaceOnUpdate ? ObjectCreationHandling.Replace : ObjectCreationHandling.Auto;
                     p.PropertyName = property.Name;
                     p.Order = property.Order;
                     return p;
-                case MemberTypes.Field:
-                    if (member.RESTarIgnored()) return null;
-                    var f = base.CreateProperty(member, memberSerialization);
-                    f.PropertyName = member.RESTarMemberName();
+                case FieldInfo fieldInfo:
+                    if (fieldInfo.RESTarIgnored()) return null;
+                    var f = base.CreateProperty(fieldInfo, memberSerialization);
+                    f.PropertyName = fieldInfo.RESTarMemberName();
                     return f;
                 default: return null;
             }
