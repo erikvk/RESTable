@@ -102,7 +102,6 @@
     <Compile Include="Logging\HTTPEvent.cs" />
     <Compile Include="Logging\WebSocketEvent.cs" />
     <Compile Include="Serialization\GetterSetterProvider.cs" />
-    <Compile Include="Serialization\OData\ODataResolver.cs" />
     <Compile Include="Serialization\NativeProtocol\HeadersConverter.cs" />
     <Compile Include="ViewInfo.cs" />
     <Compile Include="Aggregator.cs" />

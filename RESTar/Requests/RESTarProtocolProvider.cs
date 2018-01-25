@@ -9,7 +9,6 @@ using RESTar.Results.Error;
 using RESTar.Results.Fail.BadRequest;
 using RESTar.Results.Fail.NotFound;
 using RESTar.Results.Success;
-using RESTar.Serialization;
 using RESTar.Serialization.NativeProtocol;
 using static Newtonsoft.Json.Formatting;
 using static RESTar.Admin.Settings;
