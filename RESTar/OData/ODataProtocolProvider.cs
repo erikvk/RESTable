@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Web;
+using RESTar.Admin;
 using RESTar.Linq;
 using RESTar.Operations;
 using RESTar.Requests;
@@ -185,7 +186,7 @@ namespace RESTar.OData
         private static string GetServiceRoot(Entities entities)
         {
             var origin = entities.Request.TcpConnection;
-            var hostAndPath = $"{origin.Host}{Admin.Settings._Uri}-odata";
+            var hostAndPath = $"{origin.Host}{Settings._Uri}-odata";
             return origin.HTTPS ? $"https://{hostAndPath}" : $"http://{hostAndPath}";
         }
 

@@ -1,16 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using RESTar.Auth;
 using RESTar.Deflection.Dynamic;
 using RESTar.Internal;
 using RESTar.Linq;
-using static System.Reflection.BindingFlags;
-using static RESTar.Methods;
 
-namespace RESTar
+namespace RESTar.Admin
 {
-    [RESTar(GET)]
+    [RESTar(Methods.GET)]
     internal class Metadata : ISelector<Metadata>
     {
         private static readonly IEntityResource ThisResource = Resource<Metadata>.GetEntityResource;
@@ -58,7 +57,7 @@ namespace RESTar
                         break;
 
                     case var _ when checkedTypes.Add(type):
-                        type.GetFields(Public | Instance)
+                        type.GetFields(BindingFlags.Public | BindingFlags.Instance)
                             .Where(p => !p.RESTarIgnored())
                             .Select(p => p.FieldType)
                             .ForEach(parseType);

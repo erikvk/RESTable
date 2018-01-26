@@ -290,7 +290,7 @@
     <Compile Include="Results\Success\DeletedEntities.cs" />
     <Compile Include="Results\Success\Entities.cs" />
     <Compile Include="Results\Success\InsertedEntities.cs" />
-    <Compile Include="Metadata.cs" />
+    <Compile Include="Admin\Metadata.cs" />
     <Compile Include="Results\Success\NoContent.cs" />
     <Compile Include="Results\Success\OK.cs" />
     <Compile Include="Results\Success\Report.cs" />
