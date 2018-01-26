@@ -108,7 +108,6 @@ namespace RESTar.Requests
                         entities.Headers["RESTar-pager"] = MakeRelativeUri(pager);
                     }
                     break;
-
                 case MimeTypeCode.Excel:
                     entities.Body = null;
                     var excel = entities.Content.ToExcel(entities.Request.Resource);

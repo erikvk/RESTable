@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using Newtonsoft.Json.Linq;
 using RESTar.Admin;
 using RESTar.Deflection;
@@ -45,6 +46,9 @@ namespace RESTar.OData
 
         private const string EntityContainerName = "DefaultContainer";
 
+        private static bool IsDynamicMember(DeclaredProperty member) => member.Type == typeof(object) || member.Type == typeof(JValue);
+        private static bool IsDynamicMember(FieldInfo member) => member.FieldType == typeof(object) || member.FieldType == typeof(JValue);
+
         internal MetadataDocument(Metadata metadata, ITraceable trace) : base(trace)
         {
             ContentType = "application/xml";
@@ -62,35 +66,39 @@ namespace RESTar.OData
                         swr.Write($"<Member Name=\"{member.Name}\" Value=\"{member.Value}\"/>");
                     swr.Write("</EnumType>");
                 }
-                foreach (var complexType in complexTypes)
+                foreach (var type in complexTypes)
                 {
-                    swr.Write($"<ComplexType Name=\"{complexType.FullName}\" OpenType=\"{complexType.IsDynamic().XMLBool()}\">");
-                    foreach (var property in complexType.GetDeclaredProperties().Values.Where(p => p.Readable && !p.Hidden))
+                    var (dynamicProps, staticProps) = type.GetDeclaredProperties().Values.Where(p => p.Readable && !p.Hidden).Split(IsDynamicMember);
+                    var (dynamicFields, staticFields) = type.GetFields(Public | Instance).Where(f => !f.RESTarIgnored()).Split(IsDynamicMember);
+                    var isOpenType = type.IsDynamic() || dynamicProps.Any() || dynamicFields.Any();
+
+                    swr.Write($"<ComplexType Name=\"{type.FullName}\" OpenType=\"{isOpenType.XMLBool()}\">");
+                    foreach (var property in staticProps)
                     {
                         swr.Write($"<Property Name=\"{property.Name}\" Nullable=\"{property.Nullable.XMLBool()}\" " +
-                                  $"Type=\"{property.Type.GetEdmTypeName(property.MarkedAsPrimitive)}\"");
+                                  $"Type=\"{property.Type.GetEdmTypeName()}\"");
                         swr.Write(property.ReadOnly ? $">{ReadOnlyAnnotation}</Property>" : "/>");
                     }
-                    foreach (var field in complexType.GetFields(Public | Instance).Where(f => !f.RESTarIgnored()))
+                    foreach (var field in staticFields)
                     {
                         var nullable = field.FieldType.IsClass || field.FieldType.IsNullable(out var _);
                         swr.Write($"<Property Name=\"{field.RESTarMemberName()}\" Nullable=\"{nullable.XMLBool()}\" " +
-                                  $"Type=\"{field.FieldType.GetEdmTypeName(false)}\"");
+                                  $"Type=\"{field.FieldType.GetEdmTypeName()}\"");
                         swr.Write(field.IsInitOnly ? $">{ReadOnlyAnnotation}</Property>" : "/>");
                     }
                     swr.Write("</ComplexType>");
                 }
-                foreach (var entityType in metadata.EntityResourceTypes)
+                foreach (var type in metadata.EntityResourceTypes)
                 {
-                    swr.Write($"<EntityType Name=\"{entityType.FullName}\" OpenType=\"{entityType.IsDynamic().XMLBool()}\">");
-                    var properties = entityType.GetDeclaredProperties().Values.ToList();
-                    var key = properties.FirstOrDefault(p => p.IsKey);
-                    if (key != null)
-                        swr.Write($"<Key><PropertyRef Name=\"{key.Name}\"/></Key>");
-                    foreach (var property in properties.Where(p => p.Readable && (!p.Hidden || p.Equals(key))))
+                    var (dynamicProps, staticProps) = type.GetDeclaredProperties().Values.Where(p => p.Readable).Split(IsDynamicMember);
+                    var isOpenType = type.IsDynamic() || dynamicProps.Any();
+                    swr.Write($"<EntityType Name=\"{type.FullName}\" OpenType=\"{isOpenType.XMLBool()}\">");
+                    var key = staticProps.FirstOrDefault(p => p.IsKey);
+                    if (key != null) swr.Write($"<Key><PropertyRef Name=\"{key.Name}\"/></Key>");
+                    foreach (var property in staticProps.Where(p => !p.Hidden || p.Equals(key)))
                     {
                         swr.Write($"<Property Name=\"{property.Name}\" Nullable=\"{property.Nullable.XMLBool()}\" " +
-                                  $"Type=\"{property.Type.GetEdmTypeName(property.MarkedAsPrimitive)}\"");
+                                  $"Type=\"{property.Type.GetEdmTypeName()}\"");
                         swr.Write(property.ReadOnly ? $">{ReadOnlyAnnotation}</Property>" : "/>");
                     }
                     swr.Write("</EntityType>");
@@ -99,7 +107,7 @@ namespace RESTar.OData
                 swr.Write($"<EntityContainer Name=\"{EntityContainerName}\">");
                 foreach (var entitySet in metadata.EntityResources.Except(HiddenResources))
                 {
-                    swr.Write($"<EntitySet EntityType=\"{entitySet.Type.GetEdmTypeName(false)}\" Name=\"{entitySet.Name}\">");
+                    swr.Write($"<EntitySet EntityType=\"{entitySet.Type.GetEdmTypeName()}\" Name=\"{entitySet.Name}\">");
                     var methods = metadata.CurrentAccessRights[entitySet].Intersect(entitySet.AvailableMethods).ToList();
                     swr.Write(InsertableAnnotation(methods.Contains(Methods.POST)));
                     swr.Write(UpdatableAnnotation(methods.Contains(Methods.PATCH)));
@@ -133,7 +141,7 @@ namespace RESTar.OData
             swr.Write("<?xml version=\"1.0\" encoding=\"utf-8\"?>");
         }
 
-        internal static string GetEdmTypeName(this Type type, bool markedAsPrimitive)
+        internal static string GetEdmTypeName(this Type type)
         {
             if (type.IsEnum) return "global." + type.FullName;
             switch (Type.GetTypeCode(type))
@@ -143,15 +151,12 @@ namespace RESTar.OData
                     {
                         case var _ when type == typeof(Binary): return "Edm.Binary";
                         case var _ when type == typeof(Guid): return "Edm.Guid";
-                        case var _ when type.IsNullable(out var t): return GetEdmTypeName(t, false);
+                        case var _ when type.IsNullable(out var t): return GetEdmTypeName(t);
                         case var _ when type.Implements(typeof(IDictionary<,>), out var p) && p[0] == typeof(string):
                             return "global.RESTar.DynamicResource";
                         case var _ when typeof(JValue).IsAssignableFrom(type): return "Edm.PrimitiveType";
                         case var _ when typeof(JToken).IsAssignableFrom(type): return "Edm.ComplexType";
-                        case var _ when type == typeof(object) && markedAsPrimitive: return "Edm.PrimitiveType";
-                        case var _ when type == typeof(object): return "Edm.ComplexType";
-                        case var _ when type.Implements(typeof(IEnumerable<>), out var p):
-                            return $"Collection({GetEdmTypeName(p[0], markedAsPrimitive)})";
+                        case var _ when type.Implements(typeof(IEnumerable<>), out var p): return $"Collection({GetEdmTypeName(p[0])})";
                         default: return $"global.{type.FullName}";
                     }
                 case TypeCode.Boolean: return "Edm.Boolean";

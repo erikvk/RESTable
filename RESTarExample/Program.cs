@@ -47,6 +47,8 @@ namespace RESTarExample
             }
         }
 
+        public dynamic XOXO => Str;
+
         public int Int { get; set; }
     }
 
