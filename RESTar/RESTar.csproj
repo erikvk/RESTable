@@ -101,6 +101,7 @@
     <Compile Include="Logging\LogItem.cs" />
     <Compile Include="Logging\HTTPEvent.cs" />
     <Compile Include="Logging\WebSocketEvent.cs" />
+    <Compile Include="Operations\Search.cs" />
     <Compile Include="Serialization\GetterSetterProvider.cs" />
     <Compile Include="Serialization\NativeProtocol\HeadersConverter.cs" />
     <Compile Include="ViewInfo.cs" />

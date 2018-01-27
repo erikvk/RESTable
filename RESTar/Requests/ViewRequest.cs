@@ -241,7 +241,7 @@ namespace RESTar.Requests
 
         private void CheckMethod(Methods method, string errorMessage)
         {
-            if (!Authenticator.MethodCheck(method, Resource, AuthToken))
+            if (!Authenticator.MethodCheck(method, Resource, AuthToken, out var _))
                 throw new NotAllowedViewAction(ErrorCodes.NotAuthorized, errorMessage);
         }
     }

@@ -94,12 +94,16 @@ namespace RESTar.Internal
             return token;
         }
 
-        internal static bool MethodCheck(Methods requestedMethod, IEntityResource resource, string authToken)
+        internal static bool MethodCheck(Methods requestedMethod, IEntityResource resource, string authToken, out bool failedAuth)
         {
+            failedAuth = false;
             if (!resource.AvailableMethods.Contains(requestedMethod)) return false;
             var accessRights = AuthTokens[authToken];
             var rights = accessRights?[resource];
-            return rights?.Contains(requestedMethod) == true;
+            if (rights?.Contains(requestedMethod) == true)
+                return true;
+            failedAuth = true;
+            return false;
         }
     }
 }

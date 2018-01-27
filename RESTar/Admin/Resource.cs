@@ -110,7 +110,7 @@ namespace RESTar.Admin
                        ?? new ViewInfo[0])
                     : null,
                 IResource = iresource,
-                Provider = entityResource?.Provider ?? "undefined",
+                Provider = entityResource?.Provider ?? "Terminal",
                 Kind = entityResource != null ? ResourceKind.EntityResource : ResourceKind.TerminalResource,
                 InnerResources = ((IResourceInternal) iresource).InnerResources?.Select(Make).ToArray()
             };

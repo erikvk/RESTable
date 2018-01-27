@@ -69,7 +69,7 @@ namespace RESTar
             if (!methodRestrictions.Any())
                 methodRestrictions = RESTarConfig.Methods;
             var restrictions = methodRestrictions.OrderBy(i => i, MethodComparer.Instance).ToList();
-            if (methodRestrictions.Contains(Methods.GET))
+            if (methodRestrictions.Contains(Methods.GET) && !methodRestrictions.Contains(Methods.REPORT))
                 restrictions.Add(Methods.REPORT);
             AvailableMethods = restrictions;
         }

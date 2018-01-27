@@ -24,6 +24,7 @@ namespace RESTar.Requests
         Add,
         Rename,
         Distinct,
+        Search,
         Safepost,
         Format,
         New,
@@ -45,6 +46,7 @@ namespace RESTar.Requests
                 case RESTarMetaConditions.Add: return typeof(string);
                 case RESTarMetaConditions.Rename: return typeof(string);
                 case RESTarMetaConditions.Distinct: return typeof(bool);
+                case RESTarMetaConditions.Search: return typeof(string);
                 case RESTarMetaConditions.Safepost: return typeof(string);
                 case RESTarMetaConditions.Format: return typeof(string);
                 case RESTarMetaConditions.New: return typeof(bool);
@@ -62,7 +64,7 @@ namespace RESTar.Requests
         /// <summary>
         /// Is this request unsafe?
         /// </summary>
-        public bool Unsafe { get; set; }
+        public bool Unsafe { get; internal set; }
 
         /// <summary>
         /// The limit by which the request's response body entity count should be restricted to
@@ -78,27 +80,32 @@ namespace RESTar.Requests
         /// <summary>
         /// The OrderBy filter to apply to the output from this request
         /// </summary>
-        public OrderBy OrderBy { get; set; }
+        public OrderBy OrderBy { get; internal set; }
 
         /// <summary>
         /// The Select processor to apply to the output from this request
         /// </summary>
-        public Select Select { get; set; }
+        public Select Select { get; internal set; }
 
         /// <summary>
         /// The Add processor to apply to the output from this request
         /// </summary>
-        public Add Add { get; set; }
+        public Add Add { get; internal set; }
 
         /// <summary>
         /// The Renam processor to apply to the output from this request
         /// </summary>
-        public Rename Rename { get; set; }
+        public Rename Rename { get; internal set; }
 
         /// <summary>
         /// The Distinct processor to apply to the output from this request
         /// </summary>
-        public Distinct Distinct { get; set; }
+        public Distinct Distinct { get; internal set; }
+
+        /// <summary>
+        /// The search filter to apply to the output from this request
+        /// </summary>
+        public Search Search { get; internal set; }
 
         /// <summary>
         /// The term to use for safepost
@@ -183,6 +190,9 @@ namespace RESTar.Requests
                         if (!processors) break;
                         if ((bool) value)
                             mc.Distinct = new Distinct();
+                        break;
+                    case RESTarMetaConditions.Search:
+                        mc.Search = new Search((string) value);
                         break;
                     case RESTarMetaConditions.Safepost:
                         mc.SafePost = value;

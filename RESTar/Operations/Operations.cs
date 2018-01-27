@@ -55,6 +55,7 @@ namespace RESTar.Operations
                 if (!request.MetaConditions.Unsafe && request.MetaConditions.Limit == -1)
                     request.MetaConditions.Limit = (Limit) 1000;
                 return request.Target.Select(request)?
+                    .Filter(request.MetaConditions.Search)
                     .Filter(request.MetaConditions.OrderBy)
                     .Filter(request.MetaConditions.Offset)
                     .Filter(request.MetaConditions.Limit);
@@ -75,11 +76,13 @@ namespace RESTar.Operations
                 if (results == null) return null;
                 if (!request.MetaConditions.HasProcessors)
                     return results
+                        .Filter(request.MetaConditions.Search)
                         .Filter(request.MetaConditions.OrderBy)
                         .Filter(request.MetaConditions.Offset)
                         .Filter(request.MetaConditions.Limit);
                 return results
                     .Process(request.MetaConditions.Processors)
+                    .Filter(request.MetaConditions.Search)
                     .Filter(request.MetaConditions.OrderBy)
                     .Filter(request.MetaConditions.Offset)
                     .Filter(request.MetaConditions.Limit);

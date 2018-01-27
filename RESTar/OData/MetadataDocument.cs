@@ -41,7 +41,7 @@ namespace RESTar.OData
         {
             Resource<AvailableResource>.GetEntityResource, Resource<Schema>.GetEntityResource, Resource<Echo>.GetEntityResource,
             Resource<ResourceProfile>.GetEntityResource, Resource<OutputFormat>.GetEntityResource, Resource<Macro>.GetEntityResource,
-            Resource<AdminTools>.GetEntityResource, Resource<Aggregator>.GetEntityResource, Resource<SetOperations>.GetEntityResource
+            Resource<Utilities>.GetEntityResource, Resource<Aggregator>.GetEntityResource, Resource<SetOperations>.GetEntityResource
         };
 
         private const string EntityContainerName = "DefaultContainer";
