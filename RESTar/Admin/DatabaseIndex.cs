@@ -197,21 +197,29 @@ namespace RESTar.Admin
         /// <summary>
         /// The name of the column (property name)
         /// </summary>
-        public string Name { get; set; }
+        public string Name { get; }
 
         /// <summary>
         /// Is this index descending? (otherwise ascending)
         /// </summary>
-        public bool Descending { get; set; }
+        public bool Descending { get; }
+
+        /// <summary>
+        /// Creates a new ColumnInfo instance
+        /// </summary>
+        public ColumnInfo(string name, bool descending)
+        {
+            Name = name.Trim();
+            Descending = descending;
+        }
 
         /// <summary>
         /// Creates a new ColumnInfo from a tuple describing a column name and direction
         /// </summary>
         /// <param name="column"></param>
-        public static implicit operator ColumnInfo((string Name, bool Descending) column) => new ColumnInfo
+        public static implicit operator ColumnInfo((string Name, bool Descending) column)
         {
-            Name = column.Name,
-            Descending = column.Descending
-        };
+            return new ColumnInfo(column.Name, column.Descending);
+        }
     }
 }

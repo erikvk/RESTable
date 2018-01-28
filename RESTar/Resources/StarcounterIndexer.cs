@@ -27,11 +27,9 @@ namespace RESTar.Resources
                 .Select(pair => new DatabaseIndex(pair.resource.Name)
                 {
                     Name = pair.index.Name,
-                    Columns = Db.SQL<IndexedColumn>(ColumnByIndex, pair.index).Select(c => new ColumnInfo
-                    {
-                        Name = c.Column.Name,
-                        Descending = c.Ascending == 0
-                    }).ToArray()
+                    Columns = Db.SQL<IndexedColumn>(ColumnByIndex, pair.index)
+                        .Select(c => new ColumnInfo(c.Column.Name, c.Ascending == 0))
+                        .ToArray()
                 })
                 .Where(request.Conditions);
         }
