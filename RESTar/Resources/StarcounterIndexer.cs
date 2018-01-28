@@ -46,7 +46,7 @@ namespace RESTar.Resources
                 try
                 {
                     Db.SQL($"CREATE INDEX {index.Name.Fnuttify()} ON {index.IResource.Type.FullName.Fnuttify()} " +
-                           $"({string.Join(", ", index.Columns.Select(c => $"{c.Name.Fnuttify()} {(c.Descending ? "DESC" : "")}"))})");
+                           $"({string.Join(", ", index.Columns.Select(c => $"{c.Name.Fnuttify()}{(c.Descending ? " DESC" : "")}"))})");
                     count += 1;
                 }
                 catch (SqlException e)
