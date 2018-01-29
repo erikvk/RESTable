@@ -205,7 +205,7 @@ namespace RESTar.Admin
             if (IncludeContent)
             {
                 builder.Append(content);
-                builder.Append(logable.LogContent);
+                builder.Append(logable.LogContent ?? "null");
             }
             WebSocketInternal.SendTextRaw(builder.ToString());
         }
@@ -248,8 +248,8 @@ namespace RESTar.Admin
             {
                 builder1.Append(content);
                 builder2.Append(content);
-                builder1.Append(logable1.LogContent);
-                builder2.Append(logable2.LogContent);
+                builder1.Append(logable1.LogContent ?? "null");
+                builder2.Append(logable2.LogContent ?? "null");
             }
             WebSocketInternal.SendTextRaw(builder1.ToString());
             WebSocketInternal.SendTextRaw(builder2.ToString());
