@@ -136,7 +136,7 @@ namespace RESTar.Requests
                     ResultFinalizer = ODataProtocolProvider.FinalizeResult;
                     break;
             }
-            if (ContentType.TypeCode == MimeTypeCode.Unsupported)
+            if (ContentType.TypeCode == MimeTypeCode.Unsupported && action < Action.OPTIONS)
                 Error = new UnsupportedContent(ContentType);
             if (Accept.TypeCode == MimeTypeCode.Unsupported)
                 Error = new NotAcceptable(Accept);

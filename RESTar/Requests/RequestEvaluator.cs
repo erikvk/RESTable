@@ -160,8 +160,8 @@ namespace RESTar.Requests
 
         private static IFinalizedResult HandleOptions(IResource resource, Arguments arguments)
         {
-            var origin = arguments.Headers.SafeGet("Origin");
-            if (origin != null && (AllowAllOrigins || AllowedOrigins.Contains(new Uri(origin))))
+            var origin = arguments.Headers["Origin"];
+            if (origin != null && origin != "null" && (AllowAllOrigins || AllowedOrigins.Contains(new Uri(origin))))
                 return new AcceptOrigin(origin, resource, arguments);
             return new InvalidOrigin();
         }

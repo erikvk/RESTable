@@ -47,6 +47,7 @@ namespace RESTar
             {
                 case "*/*":
                 case "json":
+                case "text/plain":
                 case "application/json":
                 case "application/x-www-form-urlencoded":
                 case "application/octet-stream":
