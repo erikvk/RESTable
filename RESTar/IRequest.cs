@@ -38,6 +38,7 @@ namespace RESTar
         /// for example, this IEnumerable contains all the updated entities. For insert requests, all the 
         /// requests to insert, and so on. For update and insert requests, if the resource type is a
         /// Starcounter database class, make sure to call GetEntities() from inside a transaction scope.
+        /// The returned value from GetEntities() is never null, but may contain zero entities.
         /// </summary>
         IEnumerable<T> GetEntities();
     }

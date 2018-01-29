@@ -42,7 +42,7 @@ namespace RESTar.Requests
         public string TraceId { get; }
         public TCPConnection TcpConnection { get; }
         public Func<IEnumerable<T>> EntitiesGenerator { private get; set; }
-        public IEnumerable<T> GetEntities() => EntitiesGenerator?.Invoke();
+        public IEnumerable<T> GetEntities() => EntitiesGenerator?.Invoke() ?? new T[0];
 
         internal void Evaluate()
         {

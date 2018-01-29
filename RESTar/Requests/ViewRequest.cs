@@ -46,7 +46,7 @@ namespace RESTar.Requests
         public Headers Headers { get; }
         public string TraceId { get; }
         public Func<IEnumerable<T>> EntitiesGenerator { private get; set; }
-        public IEnumerable<T> GetEntities() => EntitiesGenerator?.Invoke();
+        public IEnumerable<T> GetEntities() => EntitiesGenerator?.Invoke() ?? new T[0];
 
         internal ViewRequest(IEntityResource<T> resource, Arguments arguments)
         {

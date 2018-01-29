@@ -48,8 +48,8 @@ namespace RESTar
         MimeType IRequest.Accept => MimeType.Default;
         string ITraceable.TraceId => null;
         public Func<IEnumerable<T>> EntitiesGenerator { private get; set; }
-        public IEnumerable<T> GetEntities() => EntitiesGenerator?.Invoke();
-      
+        public IEnumerable<T> GetEntities() => EntitiesGenerator?.Invoke() ?? new T[0];
+
         private readonly bool ScSql;
         internal string SelectQuery { get; private set; }
         internal string CountQuery { get; private set; }
