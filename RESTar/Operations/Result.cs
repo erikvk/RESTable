@@ -9,7 +9,7 @@ namespace RESTar.Operations
     /// <summary>
     /// The result of a RESTar request operation
     /// </summary>
-    internal abstract class Result : IFinalizedResult, ILogable
+    internal abstract class Result : IFinalizedResult
     {
         /// <summary>
         /// The status code to use in HTTP responses based on this result
@@ -45,12 +45,11 @@ namespace RESTar.Operations
 
         public LogEventType LogEventType => LogEventType.HttpOutput;
         public string TraceId { get; }
-        public string LogMessage => $"{StatusCode.ToCode()}: {StatusDescription} ({LogContentLength} bytes)";
+        public string LogMessage => $"{StatusCode.ToCode()}: {StatusDescription} ({Body?.Length ?? 0} bytes)";
         public string LogContent { get; } = null;
         public TCPConnection TcpConnection { get; }
         public string HeadersStringCache { get; set; }
         public bool ExcludeHeaders { get; }
-        public long LogContentLength { get; }
 
         internal Result(ITraceable trace)
         {
@@ -58,7 +57,6 @@ namespace RESTar.Operations
             ExcludeHeaders = false;
             TcpConnection = trace.TcpConnection;
             TraceId = trace.TraceId;
-            LogContentLength = Body?.Length ?? 0;
         }
     }
 }

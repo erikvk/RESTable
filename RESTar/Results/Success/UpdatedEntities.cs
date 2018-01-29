@@ -31,8 +31,7 @@ namespace RESTar.Results.Success
         public string LogContent => default;
         public string HeadersStringCache { get; set; }
         public bool ExcludeHeaders => default;
-        public long LogContentLength => default;
-
+        
         public WebSocketResult(bool leaveOpen, ITraceable trace) : this()
         {
             LeaveOpen = leaveOpen;

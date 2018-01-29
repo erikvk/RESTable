@@ -11,9 +11,12 @@ using Action = RESTar.Requests.Action;
 
 namespace RESTar
 {
-    [RESTar(Description = "The shell")]
+    [RESTar(Description = description)]
     internal class Shell : ITerminal
     {
+        private const string description = "The RESTar WebSocket shell lets the client navigate around the resources of the " +
+                                           "RESTar application, perform CRUD operations and enter terminal resources.";
+
         private string query = "";
         private string previousQuery = "";
 
@@ -36,7 +39,7 @@ namespace RESTar
         public bool Silent { get; set; }
         public bool Unsafe { get; set; }
 
-        private Func<IUriParameters> GetNextPageLink;
+        private Func<int, IUriParameters> GetNextPageLink;
         private System.Action OnConfirm;
         private IEntitiesMetadata PreviousResultMetadata;
 
@@ -144,7 +147,9 @@ namespace RESTar
                             SafeOperation(Action.GET);
                             break;
                         case "NEXT":
-                            var link = GetNextPageLink?.Invoke()?.ToString();
+                            if (tail == null || !int.TryParse(tail, out var count))
+                                count = -1;
+                            var link = GetNextPageLink?.Invoke(count)?.ToString();
                             if (link == null)
                                 SendResult(new NoContent(WebSocket));
                             else

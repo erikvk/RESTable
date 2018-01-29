@@ -77,14 +77,13 @@ namespace RESTar.Requests
             BytesSent += (ulong) binaryData.Length;
         }
 
+        private bool disposed;
         public void Dispose()
         {
+            if (disposed) return;
             var terminalName = TerminalResource?.Name;
             if (!WebSocket.IsDead())
-            {
                 WebSocket.Disconnect();
-                return;
-            }
             if (Status == WebSocketStatus.Closed)
             {
                 Terminal = null;
@@ -98,6 +97,7 @@ namespace RESTar.Requests
             Closed = DateTime.Now;
             if (terminalName != Console.TypeName)
                 Console.Log(new WebSocketEvent(WebSocketClose, this));
+            disposed = true;
         }
 
         public void SendTextRaw(string textData)

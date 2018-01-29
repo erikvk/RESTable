@@ -13,9 +13,12 @@ using static RESTar.Logging.ConsoleStatus;
 
 namespace RESTar.Admin
 {
-    [RESTar(Description = "The console")]
+    [RESTar(Description = description)]
     internal class Console : ITerminal
     {
+        private const string description = "The console is a terminal resource that allows a WebSocket client to receive " +
+                                           "pushed updates when the REST API receives requests and WebSocket events.";
+
         internal const string TypeName = "RESTar.Admin.Console";
 
         public ConsoleStatus Status { get; set; }

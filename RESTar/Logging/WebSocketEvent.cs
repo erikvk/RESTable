@@ -9,7 +9,6 @@ namespace RESTar.Logging
         public string TraceId { get; }
         public string LogMessage { get; }
         public string LogContent { get; }
-        public long LogContentLength { get; }
         public TCPConnection TcpConnection { get; }
         public Headers Headers { get; }
         public string HeadersStringCache { get; set; }
@@ -38,7 +37,6 @@ namespace RESTar.Logging
                     break;
             }
             LogContent = content;
-            LogContentLength = length;
             TcpConnection = webSocket.TcpConnection;
             Headers = webSocket.Headers;
         }

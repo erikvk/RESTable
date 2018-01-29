@@ -76,10 +76,9 @@ namespace RESTar.Requests
         internal Exception Error { get; set; }
         public string TraceId { get; }
         public bool ExcludeHeaders => IResource is IEntityResource e && e.RequiresAuthentication;
-        public long LogContentLength { get; }
 
         LogEventType ILogable.LogEventType { get; } = LogEventType.HttpInput;
-        string ILogable.LogMessage => $"{Action} {UnparsedUri}{(LogContentLength > 0 ? $" ({LogContentLength} bytes)" : "")}";
+        string ILogable.LogMessage => $"{Action} {UnparsedUri}{(BodyBytes?.Length > 0 ? $" ({BodyBytes.Length} bytes)" : "")}";
         private string _contentString;
 
         string ILogable.LogContent
@@ -120,7 +119,6 @@ namespace RESTar.Requests
                 Uri.ResourceSpecifier = "RESTar.Shell";
             UnparsedUri = query;
             BodyBytes = body;
-            LogContentLength = body?.Length ?? 0;
             TcpConnection = tcpConnection;
             ContentType = MimeType.Parse(Headers["Content-Type"]);
             Accept = MimeType.ParseMany(Headers["Accept"]);

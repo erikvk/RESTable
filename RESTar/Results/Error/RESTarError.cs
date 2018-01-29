@@ -42,8 +42,7 @@ namespace RESTar.Results.Error
         string IFinalizedResult.ContentType { get; } = null;
         public string HeadersStringCache { get; set; }
         public bool ExcludeHeaders { get; }
-        public long LogContentLength { get; } = 0;
-
+        
         internal void SetTrace(ITraceable trace)
         {
             TraceId = trace.TraceId;

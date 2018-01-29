@@ -26,11 +26,10 @@ namespace RESTar.Http
         public TCPConnection TcpConnection { get; }
 
         public LogEventType LogEventType { get; } = LogEventType.HttpOutput;
-        public string LogMessage => $"{StatusCode.ToCode()}: {StatusDescription} ({LogContentLength} bytes)";
+        public string LogMessage => $"{StatusCode.ToCode()}: {StatusDescription} ({ContentLength} bytes)";
         public string LogContent { get; } = null;
         public string HeadersStringCache { get; set; }
         public bool ExcludeHeaders { get; }
-        public long LogContentLength => ContentLength;
 
         private HttpResponse(ITraceable trace)
         {
