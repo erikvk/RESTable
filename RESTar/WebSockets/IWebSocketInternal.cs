@@ -23,6 +23,6 @@ namespace RESTar.WebSockets
         /// </summary>
         void SendResult(IFinalizedResult result);
 
-        ClientProfile GetClientProfile();
+        ConnectionProfile GetConnectionProfile();
     }
 }

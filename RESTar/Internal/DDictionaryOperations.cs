@@ -29,7 +29,7 @@ namespace RESTar.Internal
                 var otherConditions = new HashSet<Condition<T>>();
                 foreach (var cond in r.Conditions)
                 {
-                    if (cond.InternalOperator.Equality && cond.Term.Count == 1 && cond.Term.IsDynamic)
+                    if (cond.InternalOperator.Equality && (cond.Term.Count == 1 || cond.Term.IsStatic))
                         finderConditions.Add(finderCond(cond));
                     else otherConditions.Add(cond);
                 }

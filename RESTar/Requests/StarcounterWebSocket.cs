@@ -45,7 +45,7 @@ namespace RESTar.Requests
         public TCPConnection TcpConnection { get; }
         public Headers Headers { get; }
         public WebSocketStatus Status { get; private set; }
-        public ClientProfile GetClientProfile() => new ClientProfile(this);
+        public ConnectionProfile GetConnectionProfile() => new ConnectionProfile(this);
 
         #region Interface
 

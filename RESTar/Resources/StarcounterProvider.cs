@@ -14,9 +14,7 @@ namespace RESTar.Resources
             return type.HasAttribute<DatabaseAttribute>() && !type.HasResourceProviderAttribute();
         }
 
-        internal override void Validate()
-        {
-        }
+        internal override void Validate() { }
 
         internal StarcounterProvider() => DatabaseIndexer = new StarcounterIndexer();
 
@@ -35,7 +33,7 @@ namespace RESTar.Resources
             if (type.Implements(typeof(IProfiler<>)))
             {
                 reason = $"Invalid IProfiler interface implementation for resource type '{type.FullName}'. " +
-                         "DDictionary resources use their default profilers, and cannot implement IProfiler";
+                         "Starcounter database resources use their default profilers, and cannot implement IProfiler";
                 return false;
             }
             reason = null;

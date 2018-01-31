@@ -250,11 +250,12 @@ namespace RESTar.Resources
                             "resource type they are views for");
                     if (type.IsSubclassOf(type))
                         throw new InvalidResourceViewDeclaration(type, "Views cannot inherit from their resource types");
+
                     if (!type.Implements(typeof(ISelector<>), out var param) || param[0] != resource)
                         throw new InvalidResourceViewDeclaration(type,
                             $"Expected view type to implement ISelector<{resource.FullName}>");
                     var propertyUnion = resource.GetProperties(Public | Instance).Union(type.GetProperties(Public | Instance));
-                    if (propertyUnion.ContainsDuplicates(p => p.Name.ToLower(), out var propDupe))
+                    if (propertyUnion.ContainsDuplicates(p => p.RESTarMemberName(), StringComparer.OrdinalIgnoreCase, out var propDupe))
                         throw new InvalidResourceViewDeclaration(type,
                             $"Invalid property '{propDupe.Name}'. Resource view types must not contain any public instance " +
                             "properties with the same name (case insensitive) as a property of the corresponding resource. " +

@@ -26,21 +26,21 @@ namespace RESTar.WebSockets
                     case "#HOME":
                         Shell.TerminalResource.InstantiateFor(webSocket);
                         break;
-                    case "#ME" when tail is string json:
+                    case "#INFO" when tail is string json:
                         try
                         {
-                            var profile = webSocket.GetClientProfile();
+                            var profile = webSocket.GetConnectionProfile();
                             Serializer.Populate(json, profile);
                             webSocket.SendText("Profile updated");
-                            webSocket.SendJson(webSocket.GetClientProfile());
+                            webSocket.SendJson(webSocket.GetConnectionProfile());
                         }
                         catch (Exception e)
                         {
                             webSocket.SendResult(RESTarError.GetError(e));
                         }
                         break;
-                    case "#ME":
-                        webSocket.SendJson(webSocket.GetClientProfile());
+                    case "#INFO":
+                        webSocket.SendJson(webSocket.GetConnectionProfile());
                         break;
                     case "#TERMINAL" when tail is string json:
                         try

@@ -2,18 +2,22 @@
 
 namespace RESTar.WebSockets
 {
-    internal class ClientProfile
+    internal class ConnectionProfile
     {
+        public string Host { get; }
         public string WebSocketId { get; }
-        public string IPAddress { get; }
+        public bool IsSSLEncrypted { get; }
+        public string ClientIP { get; }
         public string ConnectedAt { get; }
         public string CurrentTerminal { get; }
         public Headers CustomHeaders { get; }
 
-        internal ClientProfile(IWebSocketInternal webSocket)
+        internal ConnectionProfile(IWebSocketInternal webSocket)
         {
             WebSocketId = webSocket.TraceId;
-            IPAddress = webSocket.TcpConnection.ClientIP.ToString();
+            Host = webSocket.TcpConnection.Host;
+            IsSSLEncrypted = webSocket.TcpConnection.HTTPS;
+            ClientIP = webSocket.TcpConnection.ClientIP.ToString();
             ConnectedAt = webSocket.Opened.ToString("yyyy-MM-dd HH:mm:ss");
             CurrentTerminal = webSocket.TerminalResource?.Name ?? "none";
             CustomHeaders = webSocket.Headers;
