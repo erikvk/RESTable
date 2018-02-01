@@ -24,13 +24,12 @@ namespace RESTar.Internal
         {
             Select = r =>
             {
-                (string, Dynamit.Operator, dynamic)? finderCond(Condition<T> c) => (c.Key, (Dynamit.Operator) c.Operator, c.Value);
-                var finderConditions = new List<(string, Dynamit.Operator, dynamic)?>();
+                var finderConditions = new List<(string, Dynamit.Operator, dynamic)>();
                 var otherConditions = new HashSet<Condition<T>>();
                 foreach (var cond in r.Conditions)
                 {
-                    if (cond.InternalOperator.Equality && (cond.Term.Count == 1 || cond.Term.IsStatic))
-                        finderConditions.Add(finderCond(cond));
+                    if (cond.InternalOperator.Equality && cond.Term.Count == 1)
+                        finderConditions.Add((cond.Key, (Dynamit.Operator) cond.Operator, cond.Value));
                     else otherConditions.Add(cond);
                 }
                 var results = Finder<T>.Where(finderConditions.ToArray());

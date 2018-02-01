@@ -1,5 +1,7 @@
 ﻿using System;
-using System.Linq;
+using System.Collections.Generic;
+using System.IO;
+using System.Net;
 using Starcounter;
 
 // ReSharper disable All
@@ -16,28 +18,24 @@ namespace TestProject
     {
         public static void Main()
         {
-            Db.TransactAsync(() =>
-            {
-                foreach (var myClass in Db.SQL<MyClass>("SELECT t FROM TestProject.MyClass t"))
-                    myClass.Delete();
-            });
+            Handle.GET("/test", code: (Request request) => request.ContentType ?? "was null");
+            var response1 = Http.GET
+            (
+                uri: "http://localhost:8080/test",
+                headersDictionary: new Dictionary<string, string> {["Content-Type"] = "application/json"}
+            );
+            var body1 = response1.Body;
+            // "was null"
 
-            Db.TransactAsync(() =>
-            {
-                foreach (var _ in Enumerable.Range(0, 100))
-                {
-                    new MyClass {Time = null};
-                    new MyClass {Time = DateTime.Now};
-                }
-            });
-            var whereNull = Db.SQL<MyClass>("SELECT t FROM TestProject.MyClass t WHERE t.\"Time\" IS NULL");
-            var whereNotNull = Db.SQL<MyClass>("SELECT t FROM TestProject.MyClass t WHERE t.\"Time\" IS NOT NULL");
-
-            var totalCount = Db.SQL<long>("SELECT COUNT(t) FROM TestProject.MyClass t").FirstOrDefault();
-            var whereNullCount = whereNull.Count();
-            var notNullCount = whereNotNull.Count();
-
-            var s = "";
+            var webrequest = (HttpWebRequest) WebRequest.Create("http://localhost:8080/test");
+            webrequest.Method = "GET";
+            webrequest.ContentType = "application/json";
+            var webResponse = (HttpWebResponse) webrequest.GetResponse();
+            string _body;
+            using (var reader = new StreamReader(webResponse.GetResponseStream()))
+                _body = reader.ReadToEnd();
+            var body2 = body1;
+            // "was null"
         }
     }
 }

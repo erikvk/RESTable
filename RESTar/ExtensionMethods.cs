@@ -413,10 +413,8 @@ namespace RESTar
                             break;
                         default: throw new Exception($"Operator '{op}' is not valid for comparison with NULL");
                     }
-
                     return $"t.{key} {op}";
                 }
-
                 literals.Add(c.Value);
                 _valuesAssignments[index] = literals.Count - 1;
                 return $"t.{key} {c.InternalOperator.SQL} ? ";
@@ -426,7 +424,6 @@ namespace RESTar
                 valuesAssignments = null;
                 return (null, null);
             }
-
             valuesAssignments = _valuesAssignments;
             return ($"WHERE {clause}", literals.ToArray());
         }
@@ -450,10 +447,8 @@ namespace RESTar
                             break;
                         default: throw new Exception($"Operator '{op}' is not valid for comparison with NULL");
                     }
-
                     return $"t.{key} {op}";
                 }
-
                 literals.Add(c.Value);
                 return $"t.{key} {c.InternalOperator.SQL} ? ";
             }));
