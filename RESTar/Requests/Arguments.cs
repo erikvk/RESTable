@@ -112,13 +112,13 @@ namespace RESTar.Requests
             TraceId = tcpConnection.TraceId;
             Action = action;
             Headers = headers ?? new Headers();
+            BodyBytes = body;
             Uri = URI.ParseInternal(ref query, PercentCharsEscaped(headers), out var key);
             if (key != null)
                 Headers["Authorization"] = $"apikey {UnpackUriKey(key)}";
             if (tcpConnection.HasWebSocket && uri.ResourceSpecifier == URI.DefaultResourceSpecifier)
                 Uri.ResourceSpecifier = "RESTar.Shell";
             UnparsedUri = query;
-            BodyBytes = body;
             TcpConnection = tcpConnection;
             ContentType = MimeType.Parse(Headers["Content-Type"]);
             Accept = MimeType.ParseMany(Headers["Accept"]);

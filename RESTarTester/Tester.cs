@@ -392,7 +392,8 @@ namespace RESTarTester
 
             #region POST Excel
 
-            var headers2 = new Dictionary<string, string> {["Content-Type"] = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", ["Foo"] = "123"};
+            var headers2 = new Dictionary<string, string>
+                {["Content-Type"] = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", ["Foo"] = "123"};
             var excelPostResponse1 = Http.POST("http://localhost:9000/rest/resource1", bodyBytes: excelResponse1.BodyBytes,
                 headersDictionary: headers2);
             Debug.Assert(excelPostResponse1?.IsSuccessStatusCode == true);

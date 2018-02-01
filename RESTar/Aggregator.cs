@@ -26,10 +26,9 @@ namespace RESTar
             {
                 switch (token)
                 {
-                    case null: return null;
                     case JObject obj: return obj;
                     case JArray arr when arr.Count == 1: return getTemplate(arr[0]);
-                    default: throw new Exception("Invalid Aggregator template. Expected a single object");
+                    default: return null;
                 }
             }
 
@@ -94,7 +93,9 @@ namespace RESTar
                 }
             }
 
-            var tree = getTemplate(request.BodyObject<JToken>());
+            if (!(request.BodyObject<JToken>() is JObject bodyObject))
+                throw new Exception("Invalid Aggregator template. Expected a single object");
+            var tree = getTemplate(bodyObject);
             populator(tree);
             return new[] {new Aggregator(tree)}.Where(request.Conditions);
         }

@@ -83,7 +83,14 @@ namespace RESTar.Admin
         /// <summary>
         /// A dictionary representation of the headers for this macro
         /// </summary>
-        internal Headers HeadersDictionary => JsonConvert.DeserializeObject<Headers>(Headers);
+        internal Headers HeadersDictionary
+        {
+            get
+            {
+                if (Headers == null) return null;
+                return JsonConvert.DeserializeObject<Headers>(Headers);
+            }
+        }
 
         #endregion
 
