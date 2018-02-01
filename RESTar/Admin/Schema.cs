@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using Newtonsoft.Json.Linq;
 using RESTar.Deflection.Dynamic;
+using RESTar.Internal;
 using RESTar.Linq;
 using static RESTar.Methods;
 using static RESTar.Operators;
@@ -11,7 +13,7 @@ namespace RESTar.Admin
     /// The Schema resource provides schemas for non-dynamic RESTar resources
     /// </summary>
     [RESTar(GET, Singleton = true, Description = description)]
-    internal class Schema : Dictionary<string, string>, ISelector<Schema>
+    internal class Schema : JObject, ISelector<Schema>
     {
         private const string description = "The Schema resource provides schemas for " +
                                            "non-dynamic RESTar resources.";
@@ -28,10 +30,10 @@ namespace RESTar.Admin
             if (!(request.Conditions.Get("resource", EQUALS)?.Value is string resourceName))
                 throw new Exception("Invalid syntax in request to RESTar.Schema. Format: " +
                                     "/schema/resource=insert_resource_name_here");
-            var res = RESTar.Resource.Find(resourceName);
-            if (res.IsDynamic) return null;
+            var res = RESTar.Resource.Find(resourceName) as IEntityResource;
+            if (res?.IsDynamic != false) return null;
             var schema = new Schema();
-            res.GetStaticProperties().Values.ForEach(p => schema[p.Name] = p.Type.FullName);
+            res.Type.GetDeclaredProperties().Values.ForEach(p => schema[p.Name] = p.Type.FullName);
             return new[] {schema};
         }
     }

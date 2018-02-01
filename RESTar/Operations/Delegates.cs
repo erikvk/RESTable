@@ -9,16 +9,18 @@ namespace RESTar.Operations
 {
     internal static class DelegateMaker
     {
-        private static Type MatchingInterface<TDelegate, TResource>() where TResource : class
+        private static Type MatchingInterface<TDelegate>()
         {
+            var t = typeof(TDelegate).GetGenericArguments().ElementAtOrDefault(0);
             switch (typeof(TDelegate))
             {
-                case var d when d == typeof(Selector<TResource>): return typeof(ISelector<TResource>);
-                case var d when d == typeof(Inserter<TResource>): return typeof(IInserter<TResource>);
-                case var d when d == typeof(Updater<TResource>): return typeof(IUpdater<TResource>);
-                case var d when d == typeof(Deleter<TResource>): return typeof(IDeleter<TResource>);
-                case var d when d == typeof(Counter<TResource>): return typeof(ICounter<TResource>);
-                case var d when d == typeof(Profiler): return typeof(IProfiler);
+                case var d when d == typeof(Selector<>).MakeGenericType(t): return typeof(ISelector<>).MakeGenericType(t);
+                case var d when d == typeof(Inserter<>).MakeGenericType(t): return typeof(IInserter<>).MakeGenericType(t);
+                case var d when d == typeof(Updater<>).MakeGenericType(t): return typeof(IUpdater<>).MakeGenericType(t);
+                case var d when d == typeof(Deleter<>).MakeGenericType(t): return typeof(IDeleter<>).MakeGenericType(t);
+                case var d when d == typeof(Counter<>).MakeGenericType(t): return typeof(ICounter<>).MakeGenericType(t);
+                case var d when d == typeof(Profiler<>).MakeGenericType(t): return typeof(IProfiler<>).MakeGenericType(t);
+                case var d when d == typeof(Authenticator<>).MakeGenericType(t): return typeof(IAuthenticatable<>).MakeGenericType(t);
                 default: throw new ArgumentOutOfRangeException();
             }
         }
@@ -40,11 +42,11 @@ namespace RESTar.Operations
         /// <summary>
         /// Gets the given operations delegate from a given resource type definition
         /// </summary>
-        internal static TDelegate GetDelegate<TDelegate, TResource>() where TResource : class => typeof(TResource)
-            .SafeGet(t => t.GetInterfaceMap(MatchingInterface<TDelegate, TResource>()))
-            .TargetMethods?
-            .FirstOrDefault()?
-            .MakeDelegate<TDelegate>();
+        internal static TDelegate GetDelegate<TDelegate>(Type target) => target
+            .SafeGet(t => t.GetInterfaceMap(MatchingInterface<TDelegate>())
+                .TargetMethods?
+                .FirstOrDefault()?
+                .MakeDelegate<TDelegate>());
     }
 
     /// <summary>
@@ -60,7 +62,7 @@ namespace RESTar.Operations
     /// them into the resource, and returns the number of entities successfully inserted.
     /// </summary>
     /// <typeparam name="T">The resource type</typeparam>
-    public delegate int Inserter<T>(IEnumerable<T> entities, IRequest<T> request) where T : class;
+    public delegate int Inserter<T>(IRequest<T> request) where T : class;
 
     /// <summary>
     /// Specifies the Update operation used in PATCH and PUT. Takes a set of entities and updates 
@@ -68,14 +70,14 @@ namespace RESTar.Operations
     /// the new), and returns the number of entities successfully updated.
     /// </summary>
     /// <typeparam name="T">The resource type</typeparam>
-    public delegate int Updater<T>(IEnumerable<T> entities, IRequest<T> request) where T : class;
+    public delegate int Updater<T>(IRequest<T> request) where T : class;
 
     /// <summary>
     /// Specifies the Delete operation used in DELETE. Takes a set of entities and deletes them from 
     /// the resource, and returns the number of entities successfully deleted.
     /// </summary>
     /// <typeparam name="T">The resource type</typeparam>
-    public delegate int Deleter<T>(IEnumerable<T> entities, IRequest<T> request) where T : class;
+    public delegate int Deleter<T>(IRequest<T> request) where T : class;
 
     /// <summary>
     /// Counts the entities that satisfy certain conditions provided in the request
@@ -86,7 +88,10 @@ namespace RESTar.Operations
     /// <summary>
     /// Generates a profile for a given resource
     /// </summary>
-    public delegate ResourceProfile Profiler();
+    public delegate ResourceProfile Profiler<T>(IEntityResource<T> resource) where T : class;
 
-    internal delegate long ByteCounter<in T>(IEnumerable<T> objects);
+    /// <summary>
+    /// Authenticates a request
+    /// </summary>
+    public delegate AuthResults Authenticator<T>(IRequest<T> request) where T : class;
 }

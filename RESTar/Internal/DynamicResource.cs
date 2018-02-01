@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Serialization;
+using RESTar.Resources;
+using RESTar.Results.Fail.BadRequest;
 using Starcounter;
 using static RESTar.Operations.Transact;
 
@@ -13,6 +15,10 @@ namespace RESTar.Internal
     [Database]
     public class DynamicResource
     {
+        internal const string All = "SELECT t FROM RESTar.Internal.DynamicResource t";
+        internal const string ByTableName = All + " WHERE t.TableName =?";
+        internal const string ByName = All + " WHERE t.Name =?";
+
         /// <summary>
         /// The available methods for this resource
         /// </summary>
@@ -35,33 +41,28 @@ namespace RESTar.Internal
         /// <summary>
         /// The name of the dynamic table (used internally)
         /// </summary>
-        public string TableName { get; internal set; }
+        public string TableName { get; }
 
         /// <summary>
         /// A string representation of the available REST methods
         /// </summary>
-        [IgnoreDataMember]
-        public string AvailableMethodsString { get; private set; }
+        [IgnoreDataMember] public string AvailableMethodsString { get; private set; }
 
         /// <summary>
         /// The target type for this resource
         /// </summary>
         public Type Table => DynamitControl.GetByTableName(TableName);
 
-        internal RESTarAttribute Attribute => new RESTarAttribute
-            (AvailableMethods.OrderBy(i => i, MethodComparer.Instance).ToList())
-            {
-                AllowDynamicConditions = true,
-                Singleton = false,
-                Editable = true,
-                Description = Description
-            };
+        internal RESTarAttribute Attribute => new RESTarAttribute(
+            AvailableMethods.OrderBy(i => i, MethodComparer.Instance).ToList())
+        {
+            Singleton = false,
+            Editable = true,
+            Description = Description
+        };
 
-        private static readonly string SQL = $"SELECT t FROM {typeof(DynamicResource).FullName} t";
-        internal static IEnumerable<DynamicResource> All => Db.SQL<DynamicResource>(SQL);
-
-        private static bool Exists(string tableName) =>
-            Db.SQL<DynamicResource>($"{SQL} WHERE t.TableName =?", tableName).First != null;
+        internal static IEnumerable<DynamicResource> GetAll() => Db.SQL<DynamicResource>(All);
+        private static bool Exists(string tableName) => Db.SQL<DynamicResource>(ByTableName, tableName).FirstOrDefault() != null;
 
         private DynamicResource(string name, Type table, IEnumerable<Methods> availableMethods,
             string description = null)
@@ -74,10 +75,10 @@ namespace RESTar.Internal
             AvailableMethods = methods;
         }
 
-        internal static void MakeTable(Admin.Resource resource) => Resource.RegisterDynamicResource(Trans(() =>
+        internal static void MakeTable(Admin.Resource resource) => ResourceFactory.MakeDynamicResource(Trans(() =>
         {
             var newTable = DynamitControl.DynamitTypes.FirstOrDefault(type => !Exists(type.FullName))
-                           ?? throw new NoAvalailableDynamicTableException();
+                           ?? throw new NoAvalailableDynamicTable();
             if (!string.IsNullOrWhiteSpace(resource.Alias))
                 new Admin.ResourceAlias
                 {
@@ -87,17 +88,15 @@ namespace RESTar.Internal
             return new DynamicResource(resource.Name, newTable, resource.EnabledMethods, resource.Description);
         }));
 
-        private const string DynamicResourceSQL = "SELECT t FROM RESTar.Internal.DynamicResource t WHERE t.Name =?";
-
         internal static DynamicResource Get(string resourceName) => Db
-            .SQL<DynamicResource>(DynamicResourceSQL, resourceName).First;
+            .SQL<DynamicResource>(ByName, resourceName).FirstOrDefault();
 
         internal static bool DeleteTable(Admin.Resource resource)
         {
             var dynamicResource = Get(resource.Name);
             if (dynamicResource == null) return false;
             DynamitControl.ClearTable(dynamicResource.TableName);
-            var alias = Admin.ResourceAlias.ByResource(dynamicResource.Name);
+            var alias = Admin.ResourceAlias.GetByResource(dynamicResource.Name);
             Trans(() =>
             {
                 alias?.Delete();

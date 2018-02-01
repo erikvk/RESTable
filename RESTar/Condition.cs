@@ -1,10 +1,14 @@
 ﻿using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Diagnostics.Contracts;
-using System.Net;
 using System.Linq;
+using RESTar.Deflection;
 using RESTar.Deflection.Dynamic;
 using RESTar.Internal;
 using RESTar.Operations;
+using RESTar.Requests;
+using RESTar.Results.Fail.BadRequest;
 using static System.StringComparison;
 using static RESTar.Operators;
 
@@ -18,26 +22,36 @@ namespace RESTar
     /// </summary>
     public class Condition<T> : ICondition where T : class
     {
+        private static readonly IDictionary<UriCondition, Condition<T>> ConditionCache;
+        static Condition() => ConditionCache = new ConcurrentDictionary<UriCondition, Condition<T>>(UriCondition.EqualityComparer);
+
         /// <inheritdoc />
         public string Key => Term.Key;
 
-        private Operator _operator;
+        private Operators _operator;
 
         /// <summary>
         /// The operator of the condition, specifies the operation of the truth
         /// evaluation. Should the condition check for equality, for example?
         /// </summary>
-        public Operator Operator
+        public Operators Operator
         {
             get => _operator;
             set
             {
                 if (value == _operator) return;
+                switch (value)
+                {
+                    case All:
+                    case None: throw new ArgumentException($"Invalid condition operator '{value}'");
+                }
                 _operator = value;
                 if (!ScQueryable) return;
                 HasChanged = true;
             }
         }
+
+        internal Operator InternalOperator => Operator;
 
         private dynamic _value;
 
@@ -50,7 +64,8 @@ namespace RESTar
             get => _value;
             set
             {
-                if (value == _value) return;
+                if (Do.Try<bool>(() => value == _value, false))
+                    return;
                 var oldValue = _value;
                 _value = value;
                 if (!ScQueryable) return;
@@ -101,17 +116,21 @@ namespace RESTar
         /// </summary>
         internal bool ScQueryable => Term.ScQueryable;
 
-        internal Type Type => Term.IsStatic ? Term.LastAs<StaticProperty>()?.Type : null;
+        internal Type Type => Term.IsStatic ? Term.LastAs<DeclaredProperty>()?.Type : null;
         internal bool IsOfType<T1>() => Type == typeof(T1);
 
         /// <inheritdoc />
         [Pure]
-        public Condition<T1> Redirect<T1>(string newKey = null) where T1 : class => new Condition<T1>
-        (
-            term: typeof(T1).MakeTerm(newKey ?? Key, Resource<T1>.SafeGet?.DynamicConditionsAllowed ?? false),
-            op: Operator,
-            value: Value
-        );
+        public Condition<T1> Redirect<T1>(string newKey = null) where T1 : class
+        {
+            return new Condition<T1>
+            (
+                term: Resource<T1>.SafeGet?.MakeConditionTerm(newKey ?? Key)
+                      ?? typeof(T1).MakeOrGetCachedTerm(newKey ?? Key, TermBindingRules.DeclaredWithDynamicFallback),
+                op: Operator,
+                value: Value
+            );
+        }
 
         /// <summary>
         /// Creates a new condition for the resource type T using a key, operator and value
@@ -119,25 +138,32 @@ namespace RESTar
         /// <param name="key">The key of the property of T to target, e.g. "Name", "Name.Length"</param>
         /// <param name="op">The operator denoting the operation to evaluate for the property</param>
         /// <param name="value">The value to compare the property referenced by the key with</param>
-        public Condition(string key, Operator op, object value) : this(Term.Create<T>(key), op, value)
-        {
-        }
+        public Condition(string key, Operators op, object value) : this(
+            term: Resource<T>.SafeGet?.MakeConditionTerm(key)
+                  ?? typeof(T).MakeOrGetCachedTerm(key, TermBindingRules.DeclaredWithDynamicFallback),
+            op: op,
+            value: value
+        ) { }
 
-        internal Condition(Term term, Operator op, object value)
+        internal Condition(Term term, Operators op, object value)
         {
             Term = term;
             _operator = op;
             _value = value;
+            _skip = term.ConditionSkip;
             if (!ScQueryable) return;
             HasChanged = true;
         }
 
-        internal bool HoldsFor(T subject)
+        /// <summary>
+        /// Returns true if and only if the condition holds for the given subject
+        /// </summary>
+        public bool HoldsFor(T subject)
         {
             if (Skip) return true;
             var subjectValue = Term.Evaluate(subject);
 
-            switch (Operator.OpCode)
+            switch (Operator)
             {
                 case EQUALS: return Do.Try<bool>(() => subjectValue == Value, false);
                 case NOT_EQUALS: return Do.Try<bool>(() => subjectValue != Value, true);
@@ -173,51 +199,26 @@ namespace RESTar
             }
         }
 
-        private const string OpMatchChars = "<>=!";
+        internal static Condition<T>[] Parse(string conditionsString, ITarget<T> target) =>
+            Parse(UriCondition.ParseMany(conditionsString), target);
 
         /// <summary>
-        /// Parses a Conditions object from a conditions section of a REST request URI
+        /// Parses and checks the semantics of Conditions object from a conditions of a REST request URI
         /// </summary>
-        public static Condition<T>[] Parse(string conditionString, IResource<T> resource)
+        public static Condition<T>[] Parse(IEnumerable<UriCondition> uriConditions, ITarget<T> target) => uriConditions.Select(c =>
         {
-            if (string.IsNullOrEmpty(conditionString)) return null;
-            return conditionString.Split('&').Select(s =>
-            {
-                if (s == "")
-                    throw new SyntaxException(ErrorCodes.InvalidConditionSyntax, "Invalid condition syntax");
-
-                s = s.ReplaceFirst("%3E=", ">=", out var replaced);
-                if (!replaced) s = s.ReplaceFirst("%3C=", "<=", out replaced);
-                if (!replaced) s = s.ReplaceFirst("%3E", ">", out replaced);
-                if (!replaced) s = s.ReplaceFirst("%3C", "<", out replaced);
-
-                var operatorCharacters = new string(s.Where(c => OpMatchChars.Contains(c)).ToArray());
-                if (!Operator.TryParse(operatorCharacters, out var op))
-                    throw new OperatorException(s);
-                var keyValuePair = s.Split(new[] {op.Common}, StringSplitOptions.None);
-
-                var term = resource.MakeTerm(WebUtility.UrlDecode(keyValuePair[0]), resource.DynamicConditionsAllowed);
-                if (term.Last is StaticProperty stat &&
-                    stat.GetAttribute<AllowedConditionOperatorsAttribute>()?.Operators?.Contains(op) == false)
-                    throw new ForbiddenOperatorException(s, resource, op, term,
-                        stat.GetAttribute<AllowedConditionOperatorsAttribute>()?.Operators);
-
-                var value = WebUtility.UrlDecode(keyValuePair[1]).ParseConditionValue();
-                if (term.Last is StaticProperty prop && prop.Type.IsEnum && value is string)
-                {
-                    try
-                    {
-                        value = Enum.Parse(prop.Type, value);
-                    }
-                    catch
-                    {
-                        throw new SyntaxException(ErrorCodes.InvalidConditionSyntax,
-                            $"Invalid string value for condition '{term.Key}'. The property type for '{prop.Name}' " +
-                            $"has a predefined set of allowed values, not containing '{value}'.");
-                    }
-                }
-                return new Condition<T>(term, op, value);
-            }).ToArray();
-        }
+            if (ConditionCache.TryGetValue(c, out var cond))
+                return cond;
+            var term = target.MakeConditionTerm(c.Key);
+            var last = term.Last;
+            if (!last.AllowedConditionOperators.HasFlag(c.Operator.OpCode))
+                throw new BadConditionOperator(c.Key, target, c.Operator, term, last.AllowedConditionOperators.ToOperators());
+            return ConditionCache[c] = new Condition<T>
+            (
+                term: term,
+                op: c.Operator.OpCode,
+                value: c.ValueLiteral.ParseConditionValue(last as DeclaredProperty)
+            );
+        }).ToArray();
     }
 }

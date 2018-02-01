@@ -5,7 +5,9 @@ using System.Reflection;
 using Newtonsoft.Json.Linq;
 using RESTar.Internal;
 using RESTar.Linq;
-using RESTar.Operations;
+using RESTar.Results.Fail.BadRequest;
+using static RESTar.Deflection.TermBindingRules;
+using static System.StringComparison;
 
 namespace RESTar.Deflection.Dynamic
 {
@@ -33,14 +35,19 @@ namespace RESTar.Deflection.Dynamic
         public bool ScQueryable { get; private set; }
 
         /// <summary>
-        /// Is this term static? (Are all of its containing property references denoting static members?)
+        /// Is this term static? (Are all of its containing property references denoting declared members?)
         /// </summary>
         public bool IsStatic { get; private set; }
 
         /// <summary>
-        /// Is this term dynamic? (Are not all of its containing property references denoting static members?)
+        /// Is this term dynamic? (Are not all of its containing property references denoting declared members?)
         /// </summary>
         public bool IsDynamic => !IsStatic;
+
+        /// <summary>
+        /// Automatically sets the Skip property of conditions matched against this term to true
+        /// </summary>
+        public bool ConditionSkip { get; private set; }
 
         /// <summary>
         /// Gets the first property reference of the term, and safe casts it to T
@@ -62,65 +69,85 @@ namespace RESTar.Deflection.Dynamic
         /// </summary>
         public Property Last => Store.LastOrDefault();
 
+        /// <summary>
+        /// Counts the properties of the Term
+        /// </summary>
+        public int Count => Store.Count;
+
         private static readonly NoCaseComparer Comparer = new NoCaseComparer();
+
         private Term() => Store = new List<Property>();
 
-        /// <summary>
-        /// Create a new term for a given type, with a key describing the target property
-        /// </summary>
-        public static Term Create<T>(string key) where T : class =>
-            typeof(T).MakeTerm(key, Resource<T>.SafeGet?.DynamicConditionsAllowed == true);
+        #region Public create methods, not used internally
 
         /// <summary>
         /// Create a new term for a given type, with a key describing the target property
         /// </summary>
-        public static Term Create(Type type, string key) => type.MakeTerm(key,
-            Resource.SafeGet(type)?.DynamicConditionsAllowed == true);
+        public static Term Create<T>(string key) where T : class => Create(typeof(T), key);
+
+        /// <summary>
+        /// Create a new term for a given type, with a key describing the target property
+        /// </summary>
+        public static Term Create(Type type, string key) => type.MakeOrGetCachedTerm(key, DeclaredWithDynamicFallback);
 
         /// <summary>
         /// Create a new term from a given PropertyInfo
         /// </summary>
-        public static Term Create(PropertyInfo propertyInfo) => propertyInfo.ToTerm();
+        public static Term Create(PropertyInfo propertyInfo) => propertyInfo.DeclaringType
+            .MakeOrGetCachedTerm(propertyInfo.Name, DeclaredWithDynamicFallback);
+
+        #endregion
 
         /// <summary>
-        /// Parses a term key string and returns a term describing it.
+        /// Parses a term key string and returns a term describing it. All terms are created here.
+        /// The main caller is TypeCache.MakeTerm, but it's also called from places that use a 
+        /// dynamic domain (processors).
         /// </summary>
-        internal static Term Parse(Type resource, string key, bool dynamicUnknowns,
-            IEnumerable<string> dynamicDomain = null)
+        internal static Term Parse(Type resource, string key, TermBindingRules bindingRule, ICollection<string> dynDomain)
         {
             var term = new Term();
 
             Property propertyMaker(string str)
             {
                 if (string.IsNullOrWhiteSpace(str))
-                    throw new SyntaxException(ErrorCodes.InvalidConditionSyntax, $"Invalid condition '{str}'");
-                if (dynamicDomain?.Contains(str, Comparer) == true)
+                    throw new InvalidSyntax(ErrorCodes.InvalidConditionSyntax, $"Invalid condition '{str}'");
+                if (dynDomain?.Contains(str, Comparer) == true)
                     return DynamicProperty.Parse(str);
 
                 Property make(Type type)
                 {
-                    if (type.IsDDictionary())
-                        return DynamicProperty.Parse(str);
-                    if (dynamicUnknowns)
-                        return Do.Try<Property>(
-                            () => StaticProperty.Find(type, str),
-                            () => DynamicProperty.Parse(str));
-                    return StaticProperty.Find(type, str);
+                    switch (bindingRule)
+                    {
+                        case var _ when type.IsDDictionary():
+                        case DeclaredWithDynamicFallback:
+                            try
+                            {
+                                return DeclaredProperty.Find(type, str);
+                            }
+                            catch
+                            {
+                                return DynamicProperty.Parse(str);
+                            }
+                        case DynamicWithDeclaredFallback: return DynamicProperty.Parse(str, true);
+                        case OnlyDeclared: return DeclaredProperty.Find(type, str);
+                        default: throw new Exception();
+                    }
                 }
 
                 switch (term.Store.LastOrDefault())
                 {
                     case null: return make(resource);
-                    case StaticProperty stat: return make(stat.Type);
+                    case DeclaredProperty stat: return make(stat.Type);
                     default: return DynamicProperty.Parse(str);
                 }
             }
 
             key.Split('.').ForEach(s => term.Store.Add(propertyMaker(s)));
             term.ScQueryable = term.Store.All(p => p.ScQueryable);
-            term.IsStatic = term.Store.All(p => p is StaticProperty);
+            term.IsStatic = term.Store.All(p => p is DeclaredProperty);
+            term.ConditionSkip = term.Store.Any(p => p is DeclaredProperty s && s.SkipConditions);
             term.Key = string.Join(".", term.Store.Select(p => p.Name));
-            term.DbKey = string.Join(".", term.Store.Select(p => p.DatabaseQueryName));
+            term.DbKey = string.Join(".", term.Store.Select(p => p.ActualName));
             return term;
         }
 
@@ -136,7 +163,7 @@ namespace RESTar.Deflection.Dynamic
                 {
                     case SpecialProperty _:
                     case DynamicProperty _: return prop;
-                    case StaticProperty _: return new DynamicProperty(prop.Name);
+                    case DeclaredProperty _: return DynamicProperty.Parse(prop.Name);
                     default: throw new ArgumentOutOfRangeException();
                 }
             }).ToList();
@@ -162,22 +189,20 @@ namespace RESTar.Deflection.Dynamic
             // and select). This code handles those cases.
             if (target is JObject jobj)
             {
-                if (jobj.TryGetNoCase(Key, out var actual, out var jvalue))
+                if (jobj.GetValue(Key, OrdinalIgnoreCase)?.Parent is JProperty property)
                 {
-                    actualKey = actual;
-                    return jvalue.ToObject<dynamic>();
+                    actualKey = property.Name;
+                    return property.Value.ToObject<dynamic>();
                 }
+
                 MakeDynamic();
             }
 
             // Walk over the properties in the term, and if null is encountered, simply
-            // keep the null. Else keep evaluating the next property as a property of the
+            // keep the null. Else continue evaluating the next property as a property of the
             // previous property value.
-            Store.ForEach(prop =>
-            {
-                if (target != null)
-                    target = prop.GetValue(target);
-            });
+            for (var i = 0; target != null && i < Store.Count; i++)
+                target = Store[i].GetValue(target);
 
             // If the term is dynamic, we do not know the actual key beforehand. We instead
             // set names for dynamic properties when getting their values, and concatenate the
@@ -188,5 +213,11 @@ namespace RESTar.Deflection.Dynamic
             actualKey = Key;
             return target;
         }
+
+        /// <summary>
+        /// Gets a string representation of the given term
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString() => Key;
     }
 }

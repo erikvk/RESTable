@@ -1,12 +1,15 @@
 ﻿using System;
 using System.Linq;
+using System.Text;
 using RESTar.Internal;
 using RESTar.Linq;
 using RESTar.Operations;
 using RESTar.Requests;
+using RESTar.Results.Error;
 using Starcounter;
+using static RESTar.Admin.Settings;
 using static RESTar.Methods;
-using IResource = RESTar.Internal.IResource;
+using Action = RESTar.Requests.Action;
 
 namespace RESTar.Admin
 {
@@ -20,6 +23,9 @@ namespace RESTar.Admin
     {
         private const string description = "The Error resource records instances where an " +
                                            "error was encountered while handling a request.";
+
+        internal const string All = "SELECT t FROM RESTar.Admin.Error t";
+        internal const string ByTimeLessThan = All + " WHERE t.\"Time\" <?";
 
         /// <summary>
         /// A unique ID for this error instance
@@ -39,7 +45,7 @@ namespace RESTar.Admin
         /// <summary>
         /// The method used when the error was created
         /// </summary>
-        public HandlerActions HandlerAction;
+        public Action Action;
 
         /// <summary>
         /// The error code of the error
@@ -71,38 +77,49 @@ namespace RESTar.Admin
         /// </summary>
         public string Body;
 
-        private Error()
+        private Error() { }
+
+        private const int MaxStringLength = 10000;
+
+        internal static Error Create(RESTarError error, Arguments arguments)
         {
+            var resource = arguments.SafeGet(a => a.IResource);
+            var uri = arguments.Uri.ToString();
+            var stackTrace = $"{error.StackTrace} §§§ INNER: {error.InnerException?.StackTrace}";
+            var totalMessage = error.TotalMessage();
+            return new Error
+            {
+                Time = DateTime.Now,
+                ResourceName = (resource?.Name ?? "<unknown>") +
+                               (resource?.Alias != null ? $" ({resource.Alias})" : ""),
+                Action = arguments.Action,
+                ErrorCode = error.ErrorCode,
+                Body = arguments.BodyBytes != null
+                    ? Encoding.UTF8.GetString(arguments.BodyBytes.Take(5000).ToArray())
+                    : null,
+                StackTrace = stackTrace.Length > MaxStringLength ? stackTrace.Substring(0, MaxStringLength) : stackTrace,
+                Message = totalMessage.Length > MaxStringLength ? totalMessage.Substring(0, MaxStringLength) : totalMessage,
+                Uri = uri,
+                Headers = resource is IEntityResource e && e.RequiresAuthentication
+                    ? null
+                    : arguments.Headers.StringJoin(" | ", dict => dict.Select(header =>
+                    {
+                        switch (header.Key.ToLower())
+                        {
+                            case "authorization": return "Authorization: apikey *******";
+                            case "x-original-url" when header.Value.Contains("key="): return "*******";
+                            default: return $"{header.Key}: {header.Value}";
+                        }
+                    }))
+            };
         }
 
-        internal static Error Create(ErrorCodes errorCode, Exception e, IResource resource, Request scRequest,
-            HandlerActions action) => new Error
-        {
-            Time = DateTime.Now,
-            ResourceName = (resource?.Name ?? "<unknown>") +
-                           (resource?.Alias != null ? $" ({resource.Alias})" : ""),
-            HandlerAction = action,
-            ErrorCode = errorCode,
-            StackTrace = $"{e.StackTrace} §§§ INNER: {e.InnerException?.StackTrace}",
-            Message = e.TotalMessage(),
-            Body = scRequest?.Body,
-            Uri = scRequest?.Uri,
-            Headers = scRequest?.HeadersDictionary?.StringJoin(" | ", dict => dict.Select(header =>
-            {
-                if (header.Key?.ToLower() == "authorization")
-                    return "Authorization: apikey *******";
-                return $"{header.Key}: {header.Value}";
-            }))
-        };
-
         private static DateTime Checked;
-
-        private const string SQL = "SELECT t FROM RESTar.Admin.Error t WHERE t.\"Time\" <?";
 
         internal static void ClearOld()
         {
             if (Checked >= DateTime.Now.Date) return;
-            var matches = Db.SQL<Error>(SQL,DateTime.Now.AddDays(0 - Settings._DaysToSaveErrors));
+            var matches = Db.SQL<Error>(ByTimeLessThan, DateTime.Now.AddDays(0 - _DaysToSaveErrors));
             matches.ForEach(match => Transact.TransAsync(match.Delete));
             Checked = DateTime.Now.Date;
         }

@@ -1,14 +1,17 @@
 {
-  "Html": "",
-  "ResourceName": "",
-  "ResourcePath": "",
-  "RedirectUrl$": "",
-  "Message": "",
-  "ErrorCode": -1,
-  "MessageType": "",
-  "HasMessage":  false,
-  "CanInsert": false,
-  "Entities": [{}],
-  "Add$": 0,
-  "Delete$": "" 
+	"Html": "",
+	"ResourceName": "",
+	"ResourcePath": "",
+	"NextPagePath": "",
+	"NrOfPages": 1,
+	"RedirectUrl$": "",
+	"Message": "",
+	"ErrorCode": -1,
+	"MessageType": "",
+	"HasMessage": false,
+
+	"Entities": [{}],
+	"Add$": 0,
+	"Delete$": "",
+	"CanInsert": false
 }

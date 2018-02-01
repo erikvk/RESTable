@@ -5,28 +5,25 @@ using RESTar.Internal;
 
 namespace RESTar.Operations
 {
-    internal class OrderBy : IFilter
+    /// <summary>
+    /// Orders the entities in an IEnumerable based on the values for some property
+    /// </summary>
+    public class OrderBy : IFilter
     {
         internal string Key => Term.Key;
         internal bool Descending { get; }
         internal bool Ascending => !Descending;
-        internal IResource Resource { get; }
+        internal IEntityResource Resource { get; }
         internal readonly Term Term;
-        internal bool IsStarcounterQueryable = true;
+        internal bool IsSqlQueryable = true;
+        internal string SQL => !IsSqlQueryable ? null : $"ORDER BY {Term.DbKey.Fnuttify()} {(Descending ? "DESC" : "ASC")}";
+        internal OrderBy(IEntityResource resource) => Resource = resource;
 
-        internal string SQL => IsStarcounterQueryable
-            ? $"ORDER BY t.{Term.DbKey.Fnuttify()} {(Descending ? "DESC" : "ASC")}"
-            : null;
-
-        internal OrderBy(IResource resource) => Resource = resource;
-
-        internal OrderBy(IResource resource, bool descending, string key, IEnumerable<string> dynamicMembers)
+        internal OrderBy(IEntityResource resource, bool descending, string key, ICollection<string> dynamicMembers)
         {
             Resource = resource;
             Descending = descending;
-            Term = dynamicMembers == null
-                ? resource.MakeTerm(key, resource.IsDynamic)
-                : Term.Parse(resource.Type, key, resource.IsDynamic, dynamicMembers);
+            Term = resource.MakeOutputTerm(key, dynamicMembers);
         }
 
         /// <summary>
@@ -34,7 +31,7 @@ namespace RESTar.Operations
         /// </summary>
         public IEnumerable<T> Apply<T>(IEnumerable<T> entities)
         {
-            if (IsStarcounterQueryable) return entities;
+            if (IsSqlQueryable) return entities;
             dynamic selector(T i) => Do.Try(() => Term.Evaluate(i), default(object));
             return Ascending ? entities.OrderBy(selector) : entities.OrderByDescending(selector);
         }

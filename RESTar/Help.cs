@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using RESTar.Http;
 using RESTar.Linq;
 using RESTar.Serialization;
 using static RESTar.Methods;
@@ -36,7 +37,7 @@ namespace RESTar
             if (request == null) throw new ArgumentNullException(nameof(request));
             var uri = new Uri($"{URL}/{request.Conditions.ToUriString()}");
             var headers = new Dictionary<string, string> {["Authorization"] = "apikey restar"};
-            return HTTP.External(method: GET, uri: uri, headers: headers)?.Body?.Deserialize<Help[]>();
+            return HttpRequest.External(request, method: GET, uri: uri, headers: headers)?.Body?.Deserialize<Help[]>();
         }
     }
 }

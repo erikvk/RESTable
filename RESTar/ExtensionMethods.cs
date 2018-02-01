@@ -5,32 +5,31 @@ using System.Data;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Reflection;
 using System.Runtime.Serialization;
 using System.Text;
-using System.Text.RegularExpressions;
-using System.Web;
 using Dynamit;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using RESTar.Admin;
 using RESTar.Auth;
 using RESTar.Deflection.Dynamic;
 using RESTar.Internal;
 using RESTar.Linq;
 using RESTar.Operations;
-using RESTar.Requests;
+using RESTar.Resources;
+using RESTar.Results.Error.Forbidden;
+using RESTar.Results.Fail.BadRequest;
 using RESTar.Serialization;
 using RESTar.View;
 using Starcounter;
 using static System.Globalization.DateTimeStyles;
-using static System.Globalization.NumberStyles;
 using static System.Reflection.BindingFlags;
 using static System.StringComparison;
 using static RESTar.Internal.ErrorCodes;
-using static RESTar.Requests.Responses;
+using static RESTar.Operators;
 using static Starcounter.DbHelper;
-using IResource = RESTar.Internal.IResource;
+
 
 namespace RESTar
 {
@@ -39,7 +38,30 @@ namespace RESTar
     /// </summary>
     public static class ExtensionMethods
     {
-        #region Reflection
+        #region Member reflection
+
+        internal static string RESTarMemberName(this MemberInfo m, bool flagged = false)
+        {
+            var name = m.GetAttribute<RESTarMemberAttribute>()?.Name ??
+                       m.GetAttribute<DataMemberAttribute>()?.Name ??
+                       m.GetAttribute<JsonPropertyAttribute>()?.PropertyName ??
+                       m.Name;
+            return flagged ? "$" + name : name;
+        }
+
+        internal static bool RESTarIgnored(this MemberInfo m) => m.GetAttribute<RESTarMemberAttribute>()?.Ignored == true ||
+                                                                 m.HasAttribute<IgnoreDataMemberAttribute>();
+
+        #endregion
+
+        #region Type reflection
+
+        internal static bool IsDynamic(this Type type) => type.Implements(typeof(IDictionary<,>));
+
+        internal static bool IsDDictionary(this Type type) => type == typeof(DDictionary) ||
+                                                              type.IsSubclassOf(typeof(DDictionary));
+
+        internal static bool IsStarcounterDbClass(this Type type) => type.HasAttribute<DatabaseAttribute>();
 
         internal static IList<Type> GetConcreteSubclasses(this Type baseType) => baseType.GetSubclasses()
             .Where(type => !type.IsAbstract)
@@ -54,6 +76,12 @@ namespace RESTar
         internal static TAttribute GetAttribute<TAttribute>(this MemberInfo type) where TAttribute : Attribute =>
             type?.GetCustomAttributes<TAttribute>().FirstOrDefault();
 
+        internal static bool HasAttribute(this MemberInfo type, Type attributeType) =>
+            (type?.GetCustomAttributes(attributeType).Any()).GetValueOrDefault();
+
+        internal static bool HasResourceProviderAttribute(this Type resource) =>
+            resource.GetCustomAttributes().OfType<ResourceProviderAttribute>().Any();
+
         internal static bool HasAttribute<TAttribute>(this MemberInfo type)
             where TAttribute : Attribute => (type?.GetCustomAttributes<TAttribute>().Any()).GetValueOrDefault();
 
@@ -64,15 +92,30 @@ namespace RESTar
             return attribute != null;
         }
 
-        internal static bool Implements(this Type type, Type interfaceType) => type
-            .GetInterfaces()
-            .Any(i => i.Name == interfaceType.Name && i.Namespace == interfaceType.Namespace);
+        internal static bool Implements(this Type type, Type interfaceType)
+        {
+            if (type.Name == interfaceType.Name &&
+                type.Namespace == interfaceType.Namespace &&
+                type.Assembly == interfaceType.Assembly)
+                return true;
+            return type
+                .GetInterfaces()
+                .Any(i => i.Name == interfaceType.Name &&
+                          i.Namespace == interfaceType.Namespace &&
+                          i.Assembly == interfaceType.Assembly);
+        }
 
         internal static bool Implements(this Type type, Type interfaceType, out Type[] genericParameters)
         {
-            var match = type
-                .GetInterfaces()
-                .FirstOrDefault(i => i.Name == interfaceType.Name && i.Namespace == interfaceType.Namespace);
+            var match = type.GetInterfaces()
+                .FirstOrDefault(i => i.Name == interfaceType.Name &&
+                                     i.Namespace == interfaceType.Namespace &&
+                                     i.Assembly == interfaceType.Assembly);
+            if (match == null &&
+                type.Name == interfaceType.Name &&
+                type.Namespace == interfaceType.Namespace &&
+                type.Assembly == interfaceType.Assembly)
+                match = type;
             genericParameters = match?.GetGenericArguments();
             return match != null;
         }
@@ -96,7 +139,7 @@ namespace RESTar
             {
                 case TypeCode.Object:
                     if (type.IsNullable(out var baseType)) return CountBytes(baseType);
-                    if (type.IsStarcounter()) return 16;
+                    if (type.IsStarcounterDbClass()) return 16;
                     throw new Exception($"Unknown type encountered: '{type.FullName}'");
                 case TypeCode.Boolean: return 4;
                 case TypeCode.Char: return 2;
@@ -120,9 +163,6 @@ namespace RESTar
 
         #region Other
 
-        internal static string UriDecode(this string str) => HttpUtility.UrlDecode(str);
-        internal static string UriEncode(this string str) => HttpUtility.UrlEncode(str);
-
         /// <summary>
         /// Gets the object for a Starcounter object number
         /// </summary>
@@ -140,10 +180,6 @@ namespace RESTar
         internal static bool EqualsNoCase(this string s1, string s2) => string.Equals(s1, s2, CurrentCultureIgnoreCase);
         internal static string ToMethodsString(this IEnumerable<Methods> ie) => string.Join(", ", ie);
 
-        internal static string RemoveTabsAndBreaks(this string input) => input != null
-            ? Regex.Replace(input, @"\t|\n|\r", "")
-            : null;
-
         internal static string ReplaceFirst(this string text, string search, string replace, out bool replaced)
         {
             var pos = text.IndexOf(search, Ordinal);
@@ -152,6 +188,7 @@ namespace RESTar
                 replaced = false;
                 return text;
             }
+
             replaced = true;
             return $"{text.Substring(0, pos)}{replace}{text.Substring(pos + search.Length)}";
         }
@@ -217,22 +254,68 @@ namespace RESTar
             }
         }
 
+        internal static (T, T) ToTuple<T>(this ICollection<T> collection)
+        {
+            if (collection.Count > 2) throw new InvalidOperationException("Collection contained more than two elements");
+            return (collection.ElementAtOrDefault(0), collection.ElementAtOrDefault(1));
+        }
+
+        internal static string[] Split(this string str, string separator, StringSplitOptions options = StringSplitOptions.None)
+        {
+            return str.Split(new[] {separator}, options);
+        }
+
+        internal static (string, string) TSplit(this string str, char separator)
+        {
+            var split = str.Split(new[] {separator}, 2);
+            switch (split.Length)
+            {
+                case 1: return (split[0], null);
+                case 2: return (split[0], split[1]);
+                default: return (null, null);
+            }
+        }
+
+        internal static (string, string) TSplit(this string str, string separator)
+        {
+            var split = str.Split(new[] {separator}, 2, StringSplitOptions.None);
+            switch (split.Length)
+            {
+                case 1: return (split[0], null);
+                case 2: return (split[0], split[1]);
+                default: return (null, null);
+            }
+        }
+
+        /// <summary>
+        /// Sends a WebSocket message to a collection of sockets
+        /// </summary>
+        public static void SendToAll(this IEnumerable<IWebSocket> sockets, string message)
+        {
+            foreach (var webSocket in sockets.AsParallel())
+                webSocket.SendText(message);
+        }
+
         #endregion
 
         #region Resource helpers
 
-        internal static bool IsDDictionary(this Type type) => type == typeof(DDictionary) ||
-                                                              type.IsSubclassOf(typeof(DDictionary));
-
-        internal static bool IsStarcounter(this Type type) => type.HasAttribute<DatabaseAttribute>();
-
-        internal static string RESTarMemberName(this MemberInfo m) => m.GetAttribute<DataMemberAttribute>()?.Name ??
-                                                                      m.Name;
-
         internal static void Validate(this IValidatable ivalidatable)
         {
             if (!ivalidatable.IsValid(out var reason))
-                throw new ValidatableException(reason);
+                throw new FailedValidation(reason);
+        }
+
+        internal static IEnumerable<Operator> ToOperators(this Operators operators)
+        {
+            var opList = new List<Operator>();
+            if (operators.HasFlag(EQUALS)) opList.Add(EQUALS);
+            if (operators.HasFlag(NOT_EQUALS)) opList.Add(NOT_EQUALS);
+            if (operators.HasFlag(LESS_THAN)) opList.Add(LESS_THAN);
+            if (operators.HasFlag(GREATER_THAN)) opList.Add(GREATER_THAN);
+            if (operators.HasFlag(LESS_THAN_OR_EQUALS)) opList.Add(LESS_THAN_OR_EQUALS);
+            if (operators.HasFlag(GREATER_THAN_OR_EQUALS)) opList.Add(GREATER_THAN_OR_EQUALS);
+            return opList;
         }
 
         /// <summary>
@@ -250,14 +333,15 @@ namespace RESTar
                     foreach (DictionaryEntry pair in idict)
                         _jobj[pair.Key.ToString()] = pair.Value == null
                             ? null
-                            : JToken.FromObject(pair.Value, Serializer.JsonSerializer);
+                            : JToken.FromObject(pair.Value, Serializer.Json);
                     return _jobj;
             }
+
             var jobj = new JObject();
             entity.GetType()
-                .GetStaticProperties()
+                .GetDeclaredProperties()
                 .Values
-                .Where(p => !(p is SpecialProperty))
+                .Where(p => !p.Hidden)
                 .ForEach(prop =>
                 {
                     object val = prop.GetValue(entity);
@@ -266,49 +350,36 @@ namespace RESTar
             return jobj;
         }
 
-        internal static bool IsStarcounterCompatible(this Type type)
+        internal static string GetProviderId(this Type providerType)
         {
-            switch (Type.GetTypeCode(type))
-            {
-                case TypeCode.Empty: return false;
-                case TypeCode.DBNull: return false;
-                case TypeCode.Object:
-                    if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))
-                        return IsStarcounterCompatible(type.GenericTypeArguments[0]);
-                    return type.IsClass && type.HasAttribute<DatabaseAttribute>();
-                case TypeCode.Boolean:
-                case TypeCode.Char:
-                case TypeCode.SByte:
-                case TypeCode.Byte:
-                case TypeCode.Int16:
-                case TypeCode.UInt16:
-                case TypeCode.Int32:
-                case TypeCode.UInt32:
-                case TypeCode.Int64:
-                case TypeCode.UInt64:
-                case TypeCode.Single:
-                case TypeCode.Double:
-                case TypeCode.Decimal:
-                case TypeCode.DateTime:
-                case TypeCode.String: return true;
-            }
-            if (type == typeof(Binary)) return true;
-            return false;
+            var typeName = providerType.Name;
+            if (typeName == null) throw new ArgumentNullException();
+            if (typeName.EndsWith("provider", InvariantCultureIgnoreCase))
+                typeName = typeName.Substring(0, typeName.Length - 8);
+            return typeName;
         }
+
+        internal static string GetProviderId(this ResourceProvider provider) => GetProviderId(provider.GetType());
+
+        internal static Type GetWrappedType(this Type wrapperType) => wrapperType.BaseType?.GetGenericArguments()[0];
+
+        internal static bool IsWrapper(this Type type) => typeof(IResourceWrapper).IsAssignableFrom(type);
+
+        /// <summary>
+        /// If the type is represented by some RESTar resource in the current instance,
+        /// returns this resource. Else null.
+        /// </summary>
+        public static Internal.IResource GetResource(this Type type) => Resource.ByTypeName(type.FullName);
+
+        /// <summary>
+        /// If the type is represented by some RESTar resource in the current instance,
+        /// returns the name of this resource. Else null.
+        /// </summary>
+        public static string GetResourceName(this Type type) => type.GetResource()?.Name;
 
         #endregion
 
         #region Filter and Process
-
-        /// <summary>
-        /// Applies this list of conditions to an IEnumerable of entities and returns
-        /// the entities for which all the conditions hold.
-        /// </summary>
-        internal static IEnumerable<T> Apply<T>(this IEnumerable<Condition<T>> conditions, IEnumerable<T> entities)
-            where T : class
-        {
-            return entities.Where(entity => conditions.All(condition => condition.HoldsFor(entity)));
-        }
 
         internal static IEnumerable<T> Filter<T>(this IEnumerable<T> entities, IFilter filter) where T : class
         {
@@ -316,47 +387,72 @@ namespace RESTar
         }
 
         internal static IEnumerable<JObject> Process<T>(this IEnumerable<T> entities, IProcessor[] processors)
-            where T : class => processors
-            .Aggregate(default(IEnumerable<JObject>), (e, p) => e != null ? p.Apply(e) : p.Apply(entities));
+            where T : class
+        {
+            return processors.Aggregate(default(IEnumerable<JObject>), (e, p) => e != null ? p.Apply(e) : p.Apply(entities));
+        }
 
         internal static (string WhereString, object[] Values) MakeWhereClause<T>(this IEnumerable<Condition<T>> conds,
             out Dictionary<int, int> valuesAssignments)
             where T : class
         {
             var _valuesAssignments = new Dictionary<int, int>();
-            var Values = new List<object>();
-            var WhereString = string.Join(" AND ", conds.Where(c => !c.Skip).Select((c, index) =>
+            var literals = new List<object>();
+            var clause = string.Join(" AND ", conds.Where(c => !c.Skip).Select((c, index) =>
             {
-                var key = c.Term.DbKey.Fnuttify();
-                if (c.Value == null)
-                    return $"t.{key} {(c.Operator == Operator.NOT_EQUALS ? "IS NOT NULL" : "IS NULL")}";
-                Values.Add(c.Value);
-                _valuesAssignments[index] = Values.Count - 1;
-                return $"t.{key} {c.Operator.SQL}?";
+                var (key, op, value) = (c.Term.DbKey.Fnuttify(), c.InternalOperator.SQL, (object) c.Value);
+                if (value == null)
+                {
+                    switch (c.Operator)
+                    {
+                        case EQUALS:
+                            op = "IS NULL";
+                            break;
+                        case NOT_EQUALS:
+                            op = "IS NOT NULL";
+                            break;
+                        default: throw new Exception($"Operator '{op}' is not valid for comparison with NULL");
+                    }
+                    return $"t.{key} {op}";
+                }
+                literals.Add(c.Value);
+                _valuesAssignments[index] = literals.Count - 1;
+                return $"t.{key} {c.InternalOperator.SQL} ? ";
             }));
-            if (WhereString == "")
+            if (clause.Length == 0)
             {
                 valuesAssignments = null;
                 return (null, null);
             }
             valuesAssignments = _valuesAssignments;
-            return ($"WHERE {WhereString}", Values.ToArray());
+            return ($"WHERE {clause}", literals.ToArray());
         }
 
         internal static (string WhereString, object[] Values) MakeWhereClause<T>(this IEnumerable<Condition<T>> conds)
             where T : class
         {
-            var Values = new List<object>();
-            var WhereString = string.Join(" AND ", conds.Where(c => !c.Skip).Select(c =>
+            var literals = new List<object>();
+            var clause = string.Join(" AND ", conds.Where(c => !c.Skip).Select(c =>
             {
-                var key = c.Term.DbKey.Fnuttify();
-                if (c.Value == null)
-                    return $"t.{key} {(c.Operator == Operator.NOT_EQUALS ? "IS NOT NULL" : "IS NULL")}";
-                Values.Add(c.Value);
-                return $"t.{key} {c.Operator.SQL}?";
+                var (key, op, value) = (c.Term.DbKey.Fnuttify(), c.InternalOperator.SQL, (object) c.Value);
+                if (value == null)
+                {
+                    switch (c.Operator)
+                    {
+                        case EQUALS:
+                            op = "IS NULL";
+                            break;
+                        case NOT_EQUALS:
+                            op = "IS NOT NULL";
+                            break;
+                        default: throw new Exception($"Operator '{op}' is not valid for comparison with NULL");
+                    }
+                    return $"t.{key} {op}";
+                }
+                literals.Add(c.Value);
+                return $"t.{key} {c.InternalOperator.SQL} ? ";
             }));
-            if (WhereString == "") return (null, null);
-            return ($"WHERE {WhereString}", Values.ToArray());
+            return clause.Length > 0 ? ($"WHERE {clause}", literals.ToArray()) : (null, null);
         }
 
         #endregion
@@ -373,133 +469,42 @@ namespace RESTar
         }
 
         /// <summary>
+        /// Adds the tuple to the IDictionary
+        /// </summary>
+        public static void TAdd<TKey, TValue>(this IDictionary<TKey, TValue> dict, (TKey key, TValue value) pair)
+        {
+            dict.Add(pair.key, pair.value);
+        }
+
+        /// <summary>
+        /// Puts the tuple into the IDictionary
+        /// </summary>
+        public static void TPut<TKey, TValue>(this IDictionary<TKey, TValue> dict, (TKey key, TValue value) pair)
+        {
+            dict[pair.key] = pair.value;
+        }
+
+        /// <summary>
+        /// Puts the KeyValuePair into the IDictionary
+        /// </summary>
+        public static void Put<TKey, TValue>(this IDictionary<TKey, TValue> dict, KeyValuePair<TKey, TValue> pair)
+        {
+            dict[pair.Key] = pair.Value;
+        }
+
+        /// <summary>
         /// Gets the value of a key from an IDictionary, or null if the dictionary does not contain the key.
         /// </summary>
-        public static dynamic SafeGet(this IDictionary dict, string key)
+        private static dynamic SafeGet(this IDictionary dict, string key)
         {
             return dict.Contains(key) ? dict[key] : null;
         }
 
         /// <summary>
-        /// Gets the value of a key from an IDictionary, without case sensitivity, or throws a KeyNotFoundException
-        /// if the dictionary does not contain the key.
-        /// </summary>
-        public static T GetNoCase<T>(this IDictionary<string, T> dict, string key)
-        {
-            return dict.First(pair => pair.Key.EqualsNoCase(key)).Value;
-        }
-
-
-        /// <summary>
-        /// Gets the value of a key from an IDictionary, without case sensitivity, or null if the dictionary does 
-        /// not contain the key.
-        /// </summary>
-        public static T SafeGetNoCase<T>(this IDictionary<string, T> dict, string key)
-        {
-            var matches = dict.Where(pair => pair.Key.EqualsNoCase(key)).ToList();
-            switch (matches.Count)
-            {
-                case 0: return default;
-                case 1: return matches[0].Value;
-                default: return dict.SafeGet(key);
-            }
-        }
-
-        /// <summary>
-        /// Gets the value of a key from an IDictionary, without case sensitivity, or null if the dictionary does 
-        /// not contain the key.
-        /// </summary>
-        public static dynamic SafeGetNoCase(this IDictionary dict, string key, out string actualKey)
-        {
-            var matches = dict.Keys.Cast<string>().Where(k => k.EqualsNoCase(key)).ToList();
-            if (matches.Count > 1)
-            {
-                var val = dict.SafeGet(key);
-                if (val == null)
-                {
-                    actualKey = null;
-                    return null;
-                }
-                actualKey = key;
-                return val;
-            }
-            var match = matches.FirstOrDefault();
-            actualKey = match;
-            return match == null ? null : dict[match];
-        }
-
-        /// <summary>
         /// Gets the value of a key from an IDictionary, without case sensitivity, or null if the dictionary does 
         /// not contain the key. The actual key is returned in the actualKey out parameter.
         /// </summary>
-        public static T SafeGetNoCase<T>(this IDictionary<string, T> dict, string key, out string actualKey)
-        {
-            var matches = dict.Where(pair => pair.Key.EqualsNoCase(key)).ToList();
-            if (matches.Count > 1)
-            {
-                var val = dict.SafeGet(key);
-                if (val == null)
-                {
-                    actualKey = null;
-                    return default;
-                }
-                actualKey = key;
-                return val;
-            }
-            var match = matches.FirstOrDefault();
-            actualKey = match.Key;
-            return match.Value;
-        }
-
-
-        /// <summary>
-        /// Tries to get the value of a key from an IDictionary, without case sensitivity
-        /// </summary>
-        public static bool TryGetNoCase<T>(this IDictionary<string, T> dict, string key, out T result)
-        {
-            result = default;
-            var matches = dict.Where(pair => pair.Key.EqualsNoCase(key)).ToList();
-            switch (matches.Count)
-            {
-                case 0: return false;
-                case 1:
-                    result = matches[0].Value;
-                    return true;
-                default: return dict.TryGetValue(key, out result);
-            }
-        }
-
-
-        /// <summary>
-        /// Tries to get the value of a key from an IDictionary, without case sensitivity, and returns
-        /// the actual key of the key value pair (if found).
-        /// </summary>
-        public static bool TryGetNoCase(this IDictionary dict, string key, out string actualKey, out dynamic result)
-        {
-            result = default(object);
-            actualKey = null;
-            var matches = dict.Keys.Cast<string>().Where(k => k.EqualsNoCase(key)).ToList();
-            switch (matches.Count)
-            {
-                case 0: return false;
-                case 1:
-                    actualKey = matches[0];
-                    result = dict[actualKey];
-                    return true;
-                default:
-                    if (!dict.Contains(key))
-                        return false;
-                    actualKey = key;
-                    result = dict[key];
-                    return true;
-            }
-        }
-
-        /// <summary>
-        /// Gets the value of a key from an IDictionary, without case sensitivity, or null if the dictionary does 
-        /// not contain the key. The actual key is returned in the actualKey out parameter.
-        /// </summary>
-        public static bool TryGetNoCase<T>(this IDictionary<string, T> dict, string key, out string actualKey,
+        internal static bool TryFindInDictionary<T>(this IDictionary<string, T> dict, string key, out string actualKey,
             out T result)
         {
             result = default;
@@ -519,6 +524,12 @@ namespace RESTar
             }
         }
 
+        internal static string Capitalize(this string input)
+        {
+            var array = input.ToCharArray();
+            array[0] = char.ToUpper(array[0]);
+            return new string(array);
+        }
 
         /// <summary>
         /// Converts a DDictionary object to a JSON.net JObject
@@ -526,7 +537,7 @@ namespace RESTar
         public static JObject ToJObject(this DDictionary d)
         {
             var jobj = new JObject();
-            d.KeyValuePairs.ForEach(pair => jobj[pair.Key] = (JToken) pair.Value);
+            d.KeyValuePairs.ForEach(pair => jobj[pair.Key] = MakeJToken(pair.Value));
             return jobj;
         }
 
@@ -536,83 +547,101 @@ namespace RESTar
         public static JObject ToJObject(this Dictionary<string, dynamic> d)
         {
             var jobj = new JObject();
-            d.ForEach(pair => jobj[pair.Key] = (JToken) pair.Value);
+            d.ForEach(pair => jobj[pair.Key] = MakeJToken(pair.Value));
             return jobj;
         }
 
-        internal static string MatchKey(this IDictionary dict, string key)
+        private static JToken MakeJToken(dynamic value)
         {
-            return dict.Keys.Cast<string>().FirstOrDefault(k => key == k);
+            try
+            {
+                return (JToken) value;
+            }
+            catch
+            {
+                try
+                {
+                    return new JArray(value);
+                }
+                catch
+                {
+                    return JToken.FromObject(value);
+                }
+            }
         }
 
-        private static IEnumerable<DictionaryEntry> Cast(this IDictionary dict)
-        {
-            foreach (DictionaryEntry item in dict) yield return item;
-        }
-
-        internal static string MatchKeyIgnoreCase_IDict(this IDictionary dict, string key)
-        {
-            var matches = dict.Cast().Where(pair => pair.Key.ToString().EqualsNoCase(key)).ToList();
-            return matches.Count > 1 ? dict.MatchKey(key) : (string) matches.FirstOrDefault().Key;
-        }
-
-        internal static string MatchKey<T>(this IDictionary<string, T> dict, string key)
-        {
-            return dict.Keys.FirstOrDefault(k => key == k);
-        }
-
-        internal static string MatchKeyIgnoreCase<T>(this IDictionary<string, T> dict, string key)
-        {
-            var matches = dict.Where(pair => pair.Key.EqualsNoCase(key)).ToList();
-            return matches.Count > 1 ? dict.MatchKey(key) : matches.FirstOrDefault().Key;
-        }
+        private static IEnumerable<DictionaryEntry> Cast(this IDictionary dict) => dict.Cast<DictionaryEntry>();
 
         #endregion
 
         #region Requests
 
-        internal static bool IsInternal<T>(this IRequest<T> request) where T : class => request is Request<T>;
-
-        internal static bool IsExternal<T>(this IRequest<T> request) where T : class => !request.IsInternal();
-
         private static readonly CultureInfo en_US = new CultureInfo("en-US");
 
-        internal static dynamic ParseConditionValue(this string str)
+        /// <summary>
+        /// Parses a condition value from a value literal, and performs an optional type check (non-optional for enums)
+        /// </summary>
+        internal static object ParseConditionValue(this string valueLiteral, DeclaredProperty property = null)
         {
-            switch (str)
+            if (valueLiteral == "null") return null;
+            if (property?.IsEnum == true)
             {
-                case null: return null;
-                case "null": return null;
-                case "": throw new SyntaxException(InvalidConditionSyntax, "No condition value literal after operator");
-                case var s when s[0] == '\"' && s[s.Length - 1] == '\"': return s.Remove(0, 1).Remove(s.Length - 2, 1);
-                case var _ when bool.TryParse(str, out var @bool): return @bool;
-                case var _ when int.TryParse(str, out var @int): return @int;
-                case var _ when decimal.TryParse(str, Float, en_US, out var dec): return dec;
-                case var _ when DateTime.TryParseExact(str, "yyyy-MM-dd", null, AssumeUniversal, out var dat) ||
-                                DateTime.TryParseExact(str, "yyyy-MM-ddTHH:mm:ss", null, AssumeUniversal, out dat) ||
-                                DateTime.TryParseExact(str, "O", null, AssumeUniversal, out dat): return dat;
-                default: return str;
+                try
+                {
+                    return Enum.Parse(property.Type, valueLiteral, true);
+                }
+                catch
+                {
+                    throw new InvalidSyntax(InvalidEnumValue, $"'{valueLiteral}' is not a valid enum value for property '{property.Name}'");
+                }
             }
-        }
-
-        internal static Args ToArgs(this string query, Request request) => new Args(query, request);
-
-        private static string CheckQuery(this string query, Request request)
-        {
-            if (query.Count(c => c == '/') > 3)
-                throw new SyntaxException(InvalidSeparator,
-                    "Invalid argument separator count. A RESTar URI can contain at most 3 " +
-                    $"forward slashes after the base uri. URI scheme: {Settings._ResourcesPath}" +
-                    "/[resource]/[conditions]/[meta-conditions]");
-            if (request.HeadersDictionary.ContainsKey("X-ARR-LOG-ID"))
-                return query.Replace("%25", "%");
-            return query;
+            var (first, length) = (valueLiteral[0], valueLiteral.Length);
+            switch (first)
+            {
+                case '\'':
+                case '\"':
+                    if (length > 1 && valueLiteral[length - 1] == first)
+                        valueLiteral = valueLiteral.Substring(1, length - 2);
+                    break;
+            }
+            if (property != null)
+            {
+                try
+                {
+                    return Convert.ChangeType(valueLiteral, property.Type.IsNullable(out var t) ? t : property.Type);
+                }
+                catch
+                {
+                    throw new InvalidConditionValueType(valueLiteral, property);
+                }
+            }
+            switch (valueLiteral)
+            {
+                case "true":
+                case "True":
+                case "TRUE": return true;
+                case "false":
+                case "False":
+                case "FALSE": return false;
+            }
+            if (char.IsDigit(first))
+            {
+                if (int.TryParse(valueLiteral, out var i))
+                    return i;
+                if (decimal.TryParse(valueLiteral, out var d))
+                    return d;
+                if (DateTime.TryParseExact(valueLiteral, "yyyy-MM-dd", null, AssumeUniversal, out var dat) ||
+                    DateTime.TryParseExact(valueLiteral, "yyyy-MM-ddTHH:mm:ss", null, AssumeUniversal, out dat) ||
+                    DateTime.TryParseExact(valueLiteral, "O", null, AssumeUniversal, out dat))
+                    return dat;
+            }
+            return valueLiteral;
         }
 
         internal static void MethodCheck(this IRequest request)
         {
-            if (!Authenticator.MethodCheck(request.Method, request.Resource, request.AuthToken))
-                throw Authenticator.NotAuthorizedException;
+            if (!Authenticator.MethodCheck(request.Method, request.Resource, request.AuthToken, out var failedAuth))
+                throw new MethodNotAllowed(request.Method, request.Resource, failedAuth);
         }
 
         /// <summary>
@@ -620,7 +649,7 @@ namespace RESTar
         /// operator (case insensitive). If true, the out Condition parameter will contain a reference to the found
         /// condition.
         /// </summary>
-        public static bool TryGetCondition<T>(this IRequest<T> request, string key, Operator op,
+        public static bool TryGetCondition<T>(this IRequest<T> request, string key, Operators op,
             out Condition<T> condition) where T : class
         {
             condition = request.Conditions?.Get(key, op);
@@ -639,33 +668,6 @@ namespace RESTar
             return !conditions.Any() != true;
         }
 
-        /// <summary>
-        /// If the resource is a static Starcounter resource, returns an SQL query for the request.
-        /// </summary>
-        public static (string SQL, object[] Values) GetSQL<T>(this IRequest<T> request) where T : class
-        {
-            if (request.Resource.ResourceType != RESTarResourceType.StaticStarcounter)
-                throw new ArgumentException("Can only get SQL for static Starcounter resources. Resource " +
-                                            $"'{request.Resource.Name}' is of type {request.Resource.ResourceType}");
-            var whereClause = request.Conditions.MakeWhereClause();
-            return ($"SELECT t FROM {typeof(T).FullName} t " +
-                    $"{whereClause.WhereString} " +
-                    $"{request.MetaConditions.OrderBy?.SQL} " +
-                    $"{request.MetaConditions.Limit.SQL}", whereClause.Values);
-        }
-
-        internal static (ErrorCodes Code, Response Response) GetError(this Exception ex)
-        {
-            switch (ex)
-            {
-                case RESTarException re: return (re.ErrorCode, re.Response);
-                case FormatException _: return (UnsupportedContent, BadRequest(ex));
-                case JsonReaderException _: return (FailedJsonDeserialization, JsonError);
-                case DbException _: return (DatabaseError, DbError(ex));
-                default: return (Unknown, InternalError(ex));
-            }
-        }
-
         #endregion
 
         #region Conversion
@@ -676,7 +678,10 @@ namespace RESTar
                 return Convert.ToBase64String(hasher.ComputeHash(Encoding.UTF8.GetBytes(input)));
         }
 
-        internal static byte[] ToBytes(this string json) => Encoding.UTF8.GetBytes(json);
+        internal static byte[] ToBytes(this string str)
+        {
+            return str != null ? Encoding.UTF8.GetBytes(str) : null;
+        }
 
         internal static string TotalMessage(this Exception e)
         {
@@ -685,15 +690,28 @@ namespace RESTar
             while (ie != null)
             {
                 if (!string.IsNullOrWhiteSpace(ie.Message))
-                    message.Append(ie.Message);
+                    message.Append($" {ie.Message}");
                 if (ie.InnerException != null)
-                    message.Append(" : ");
+                    message.Append(" | ");
                 ie = ie.InnerException;
             }
-            return message.ToString();
+            return message.ToString().Replace("\r\n", " | ");
         }
 
-        internal static ClosedXML.Excel.XLWorkbook ToExcel(this IEnumerable<object> entities, IResource resource)
+        internal static byte[] ToByteArray(this Stream stream)
+        {
+            if (stream == null) return null;
+            MemoryStream ms;
+            if (stream is MemoryStream _ms) ms = _ms;
+            else
+            {
+                ms = new MemoryStream();
+                using (stream) stream.CopyTo(ms);
+            }
+            return ms.ToArray();
+        }
+
+        internal static ClosedXML.Excel.XLWorkbook ToExcel(this IEnumerable<object> entities, IEntityResource resource)
         {
             var dataSet = new DataSet();
             var table = entities.MakeDataTable(resource);
@@ -709,7 +727,7 @@ namespace RESTar
         /// </summary>
         public static ClosedXML.Excel.XLWorkbook ToExcel<T>(this IEnumerable<T> entities) where T : class
         {
-            var resource = Resource<T>.Get;
+            var resource = Resource<T>.GetEntityResource;
             var dataSet = new DataSet();
             var table = entities.MakeDataTable(resource);
             if (table.Rows.Count == 0) return null;
@@ -719,19 +737,7 @@ namespace RESTar
             return workbook;
         }
 
-        /// <summary>
-        /// Serializes an Excel workbook to a byte array
-        /// </summary>
-        public static byte[] SerializeExcel(this ClosedXML.Excel.XLWorkbook excel)
-        {
-            using (var memstream = new MemoryStream())
-            {
-                excel.SaveAs(memstream);
-                return memstream.ToArray();
-            }
-        }
-
-        internal static DataTable MakeDataTable(this IEnumerable<object> entities, IResource resource)
+        internal static DataTable MakeDataTable(this IEnumerable<object> entities, IEntityResource resource)
         {
             var table = new DataTable();
             switch (entities)
@@ -746,6 +752,7 @@ namespace RESTar
                                 table.Columns.Add(pair.Key);
                             row[pair.Key] = pair.Value.MakeDynamicCellValue();
                         }
+
                         table.Rows.Add(row);
                     }
                     return table;
@@ -763,15 +770,16 @@ namespace RESTar
                     }
                     return table;
                 default:
-                    var properties = resource.GetStaticProperties().Values;
-                    foreach (var prop in properties)
-                        table.Columns.Add(prop.MakeColumn());
-                    foreach (var item in entities)
+                    var properties = resource.Type.GetDeclaredProperties().Values
+                        .Where(p => !p.Hidden)
+                        .ToList();
+                    properties.ForEach(prop => table.Columns.Add(prop.MakeColumn()));
+                    entities.ForEach(item =>
                     {
                         var row = table.NewRow();
                         properties.ForEach(prop => prop.WriteCell(row, item));
                         table.Rows.Add(row);
-                    }
+                    });
                     return table;
             }
         }
@@ -801,9 +809,25 @@ namespace RESTar
                 case IEnumerable<object> other: return string.Join(", ", other.Select(o => o.ToString()));
                 case DBNull _:
                 case null: return DBNull.Value;
+                case var enumArr when value.GetType().Implements(typeof(IEnumerable<>), out var p) && p.Any() && p[0].IsEnum:
+                    IEnumerable<object> objects = System.Linq.Enumerable.Cast<object>((dynamic) enumArr);
+                    return string.Join(", ", objects.Select(o => o.ToString()));
                 default: return Do.Try(() => $"$(ObjectID: {value.GetObjectID()})", value.ToString);
             }
         }
+
+        internal static string XMLBool(this bool @bool)
+        {
+            const string trueString = "true";
+            const string FalseString = "false";
+            if (@bool) return trueString;
+            return FalseString;
+        }
+
+        /// <summary>
+        /// Converts an HTTP status code to the underlying numeric code
+        /// </summary>
+        internal static ushort? ToCode(this HttpStatusCode statusCode) => (ushort) statusCode;
 
         #endregion
 
@@ -816,18 +840,15 @@ namespace RESTar
             return master;
         }
 
-        internal static Dictionary<string, dynamic> MakeViewModelTemplate(this IResource resource)
+        internal static Dictionary<string, dynamic> MakeViewModelTemplate(this IEntityResource resource)
         {
-            if (resource.IsDDictionary)
-                return new Dictionary<string, dynamic>();
-            var properties = resource.GetStaticProperties().Values;
-            return properties.ToDictionary(
-                p => p.ViewModelName,
-                p => p.Type.MakeViewModelDefault(p)
-            );
+            if (resource.IsDDictionary) return new Dictionary<string, dynamic>();
+            return resource.Type.GetDeclaredProperties().Values
+                .Where(p => !p.Hidden || p is SpecialProperty)
+                .ToDictionary(p => p.ViewModelName, p => p.Type.MakeViewModelDefault(p));
         }
 
-        internal static dynamic MakeViewModelDefault(this Type type, StaticProperty property = null)
+        internal static dynamic MakeViewModelDefault(this Type type, DeclaredProperty property = null)
         {
             dynamic DefaultValueRecurser(Type propType)
             {
@@ -840,21 +861,24 @@ namespace RESTar
                     var elementType = ienumImplementation.GenericTypeArguments[0];
                     return new object[] {DefaultValueRecurser(elementType)};
                 }
+
                 if (propType.IsClass)
                 {
                     if (propType == typeof(object))
                         return "@RESTar()";
-                    var props = propType.GetStaticProperties().Values;
+                    var props = propType.GetDeclaredProperties().Values;
                     return props.ToDictionary(
                         p => p.ViewModelName,
                         p => DefaultValueRecurser(p.Type));
                 }
+
                 if (propType.IsValueType)
                 {
                     if (propType.IsGenericType && propType.GetGenericTypeDefinition() == typeof(Nullable<>))
                         return propType.GetGenericArguments()[0].GetDefault();
                     return propType.GetDefault();
                 }
+
                 throw new ArgumentOutOfRangeException();
             }
 

@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.Serialization;
+using RESTar.Results.Fail.BadRequest;
 using Starcounter;
 using static RESTar.Methods;
 using IResource = RESTar.Internal.IResource;
@@ -18,10 +20,27 @@ namespace RESTar.Admin
                                            "alias to a resource, making it possible to reference " +
                                            "the resource with only the alias.";
 
+        internal const string All = "SELECT t FROM RESTar.Admin.ResourceAlias t";
+        internal const string ByAlias = All + " WHERE t.Alias =?";
+        internal const string ByResource = All + " WHERE t.Resource =?";
+
+        internal ResourceAlias() { }
+
+        private string alias;
+
         /// <summary>
         /// The alias string
         /// </summary>
-        public string Alias;
+        public string Alias
+        {
+            get => alias;
+            set
+            {
+                if (value[0] == '$')
+                    throw new Exception($"Invalid Alias '{value}'. Aliases cannot begin with '$'");
+                alias = value;
+            }
+        }
 
         internal string _resource;
 
@@ -35,13 +54,13 @@ namespace RESTar.Admin
             {
                 try
                 {
-                    var r = RESTarConfig.ResourceByName[value.ToLower()];
+                    var r = RESTarConfig.ResourceByName[value];
                     _resource = r.Name;
                 }
                 catch (KeyNotFoundException)
                 {
                     this.Delete();
-                    throw new UnknownResourceForAliasException(value, RESTar.Resource.Find(value));
+                    throw new UnknownResourceForAlias(value, RESTar.Resource.Find(value));
                 }
                 catch
                 {
@@ -54,58 +73,28 @@ namespace RESTar.Admin
         /// <summary>
         /// Gets the resource denoted by this alias
         /// </summary>
-        [IgnoreDataMember]
-        public IResource IResource => RESTarConfig.ResourceByName[Resource.ToLower()];
-
-        private const string AliasSQL = "SELECT t FROM RESTar.Admin.ResourceAlias t WHERE t.Alias =?";
-        private const string ResourceSQL = "SELECT t FROM RESTar.Admin.ResourceAlias t WHERE t.Resource =?";
-        private const string AllSQL = "SELECT t FROM RESTar.Admin.ResourceAlias t";
-
-        internal static IEnumerable<ResourceAlias> All => Db.SQL<ResourceAlias>(AllSQL);
+        [IgnoreDataMember] public IResource IResource => RESTarConfig.ResourceByName[Resource];
 
         /// <summary>
         /// Gets a ResourceAlias by its alias (case insensitive)
         /// </summary>
-        public static ResourceAlias ByAlias(string alias) => Db.SQL<ResourceAlias>(AliasSQL, alias).First;
+        public static ResourceAlias GetByAlias(string alias) => Db
+            .SQL<ResourceAlias>(ByAlias, alias).FirstOrDefault();
 
         /// <summary>
         /// Gets a ResourceAlias by its resource name
         /// </summary>
-        public static ResourceAlias ByResource(string resourceName) => Db
-            .SQL<ResourceAlias>(ResourceSQL, resourceName).First;
+        public static ResourceAlias GetByResource(string resourceName) => Db
+            .SQL<ResourceAlias>(ByResource, resourceName).FirstOrDefault();
 
         /// <summary>
         /// Returns true if and only if there is an alias with this name
         /// </summary>
         public static bool Exists(string alias, out ResourceAlias resourceAlias)
         {
-            resourceAlias = ByAlias(alias);
+            resourceAlias = GetByAlias(alias);
             return resourceAlias != null;
         }
-
-        /// <summary>
-        /// Returns true if and only if there is an alias for the given resource type
-        /// </summary>
-        public static bool Exists(Type type, out ResourceAlias alias)
-        {
-            alias = ByResource(type.FullName);
-            return alias != null;
-        }
-
-        /// <summary>
-        /// Returns true if and only if there is no alias for the given resource type
-        /// </summary>
-        public static bool NotExists(Type resource) => !Exists(resource, out var _);
-
-        /// <summary>
-        /// Returns true if and only if there is an alias for the given resource
-        /// </summary>
-        public static bool Exists(IResource resource, out ResourceAlias alias) => Exists(resource.Type, out alias);
-
-        /// <summary>
-        /// Returns true if and only if there is no alias for the given resource
-        /// </summary>
-        public static bool NotExists(IResource resource) => !Exists(resource, out var _);
 
         /// <summary>
         /// </summary>

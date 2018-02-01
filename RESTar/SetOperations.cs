@@ -3,10 +3,12 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Net;
-using System.Text;
 using System.Text.RegularExpressions;
 using Newtonsoft.Json.Linq;
+using RESTar.Http;
 using RESTar.Serialization;
+using static System.Net.HttpStatusCode;
+using static System.StringComparison;
 using static RESTar.Methods;
 using JTokens = System.Collections.Generic.IEnumerable<Newtonsoft.Json.Linq.JToken>;
 
@@ -25,15 +27,10 @@ namespace RESTar
                                            "on entities in one or more RESTar resources. See the RESTar " +
                                            "Specification for details.";
 
-        public SetOperations()
-        {
-        }
-
-        private SetOperations(JObject other) : base(other)
-        {
-        }
-
-        static SetOperations() => macroRegex = new Regex(@"\$\([^\$\(\)]+\)");
+        public SetOperations() { }
+        private SetOperations(JObject other) : base(other) { }
+        static SetOperations() => MapMacroRegex = new Regex(RegEx.MapMacro);
+        private static readonly Regex MapMacroRegex;
 
         /// <inheritdoc />
         public IEnumerable<SetOperations> Select(IRequest<SetOperations> request)
@@ -41,7 +38,7 @@ namespace RESTar
             if (request == null) throw new ArgumentNullException(nameof(request));
             if (request.Body == null)
                 throw new Exception("Missing data source for operation");
-            var jobject = Parse(request.Body);
+            var jobject = request.BodyObject<JObject>();
 
             JTokens recursor(JToken token)
             {
@@ -61,19 +58,19 @@ namespace RESTar
                         else if (char.IsDigit(first) || first == '/')
                         {
                             var uri = str;
-                            var response = HTTP.Internal(GET, new Uri(uri, UriKind.Relative),
-                                request.AuthToken);
+                            var response = HttpRequest.Internal(request, GET, new Uri(uri, UriKind.Relative), request.AuthToken);
                             if (response?.IsSuccessStatusCode != true)
                                 throw new Exception(
                                     $"Could not get source data from '{uri}'. " +
-                                    $"{response?.StatusCode}: {response?.StatusDescription}. {response?.Headers["RESTar-info"]}");
-                            if (response.StatusCode == 204 || string.IsNullOrEmpty(response.Body))
+                                    $"{response?.StatusCode.ToCode()}: {response?.StatusDescription}. {response?.Headers.SafeGet("RESTar-info")}");
+                            if (response.StatusCode == NoContent || !(response.Body?.Length > 2))
                                 json = "[]";
-                            else json = response.Body;
+                            else json = response.Body.GetString();
                         }
                         else
                             throw new Exception($"Invalid string '{str}'. Must be a relative REST request URI " +
                                                 "beginning with '/<resource locator>' or a JSON array.");
+
                         return json.Deserialize<JArray>();
                     case JObject obj:
                         var prop = obj.Properties().FirstOrDefault();
@@ -135,7 +132,6 @@ namespace RESTar
         private static JTokens Except(params JTokens[] arrays) => Checked(arrays)
             .Aggregate((x, y) => x.Except(y, EqualityComparer));
 
-        private static readonly Regex macroRegex;
 
         private static JTokens Map(JTokens set, string mapper, IRequest request)
         {
@@ -146,35 +142,35 @@ namespace RESTar
             var mapped = new HashSet<JToken>(EqualityComparer);
             foreach (var item in Distinct(set))
             {
+                var obj = item as JObject ??
+                          throw new Exception("JSON syntax error in map set. Set must be of objects");
                 var skip = false;
-                var localMapper = new StringBuilder(mapper);
-                if (!(item is IDictionary<string, JToken> dict))
-                    throw new Exception("JSON syntax error in map set. Set must be of objects");
-                foreach (var match in macroRegex.Matches(mapper))
+                var localMapper = mapper;
+                foreach (Match match in MapMacroRegex.Matches(mapper))
                 {
-                    var matchstring = match.ToString();
-                    var key = matchstring.Substring(2, matchstring.Length - 3);
-                    if (dict.ContainsKey(key))
+                    var matchValue = match.Value;
+                    var key = matchValue.Substring(2, matchValue.Length - 3);
+                    if (obj.GetValue(key, OrdinalIgnoreCase) is JToken val)
                     {
-                        var value = dict[key]?.ToString() ?? "null";
+                        var value = val.Value<string>();
                         if (value == "") value = "\"\"";
-                        localMapper.Replace(matchstring, WebUtility.UrlEncode(value) ?? "null");
+                        localMapper = localMapper.Replace(matchValue, WebUtility.UrlEncode(value));
                     }
                     else skip = true;
                 }
+
                 if (!skip)
                 {
-                    var uri = localMapper.ToString();
-                    var response = HTTP.Internal(GET, new Uri(uri, UriKind.Relative), request.AuthToken);
+                    var response = HttpRequest.Internal(request, GET, new Uri(localMapper, UriKind.Relative), request.AuthToken);
                     if (response?.IsSuccessStatusCode != true)
                         throw new Exception(
-                            $"Could not get source data from '{uri}'. " +
-                            $"{response?.StatusCode}: {response?.StatusDescription}. {response?.Headers["RESTar-info"]}");
-                    if (response.StatusCode == 204 || string.IsNullOrEmpty(response.Body))
-                        mapped.Add(new JObject());
-                    else Serializer.Populate(response.Body, mapped);
+                            $"Could not get source data from '{localMapper}'. " +
+                            $"{response?.StatusCode.ToCode()}: {response?.StatusDescription}. {response?.Headers.SafeGet("RESTar-info")}");
+                    if (response.StatusCode == NoContent) mapped.Add(new JObject());
+                    else Serializer.Populate(response.Body.GetString(), mapped);
                 }
             }
+
             return mapped;
         }
 

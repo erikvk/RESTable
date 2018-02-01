@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Reflection;
 using RESTar.Deflection.Dynamic;
+using Starcounter;
 
 namespace RESTar.Deflection
 {
@@ -17,14 +19,14 @@ namespace RESTar.Deflection
         {
             try
             {
-                if (p.DeclaringType?.IsValueType == true)
-                    return p.GetValue;
-                if (p.GetIndexParameters().Any()) return null;
-                var getterDelegate = p
-                    .GetGetMethod()?
-                    .CreateDelegate(typeof(Func<,>)
-                        .MakeGenericType(p.DeclaringType, p.PropertyType));
-                return getterDelegate != null ? obj => ((dynamic) getterDelegate)((dynamic) obj) : default(Getter);
+                switch (p)
+                {
+                    case var _ when p.DeclaringType?.IsValueType == true: return p.GetValue;
+                    case var _ when p.GetIndexParameters().Any(): return null;
+                    default:
+                        var getter = p.GetGetMethod()?.CreateDelegate(typeof(Func<,>).MakeGenericType(p.DeclaringType, p.PropertyType));
+                        return getter != null ? obj => ((dynamic) getter)((dynamic) obj) : default(Getter);
+                }
             }
             catch
             {
@@ -39,22 +41,86 @@ namespace RESTar.Deflection
         {
             try
             {
-                if (p.DeclaringType?.IsValueType == true)
-                    return p.SetValue;
-                if (p.HasAttribute<ReadOnlyAttribute>()) return null;
-                if (p.GetIndexParameters().Any()) return null;
-                var setterDelegate = p
-                    .GetSetMethod()?
-                    .CreateDelegate(typeof(Action<,>)
-                        .MakeGenericType(p.DeclaringType, p.PropertyType));
-                return setterDelegate != null
-                    ? (obj, value) => ((dynamic) setterDelegate)((dynamic) obj, value)
-                    : default(Setter);
+                switch (p)
+                {
+                    case var _ when p.DeclaringType?.IsValueType == true: return p.SetValue;
+                    case var _ when p.GetIndexParameters().Any(): return null;
+                    default:
+                        var setter = p.GetSetMethod()?.CreateDelegate(typeof(Action<,>).MakeGenericType(p.DeclaringType, p.PropertyType));
+                        return setter != null ? (obj, value) => ((dynamic) setter)((dynamic) obj, value) : default(Setter);
+                }
             }
             catch
             {
                 return null;
             }
+        }
+
+        /// <summary>
+        /// Makes a fast delegate for setting the value for a given property.
+        /// </summary>
+        public static Constructor MakeDynamicConstructor(this Type t)
+        {
+            try
+            {
+                switch (t)
+                {
+                    case var _ when t.GetConstructor(Type.EmptyTypes) == null: return null;
+                    default: return Expression.Lambda<Constructor>(Expression.New(t)).Compile();
+                }
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Makes a fast delegate for setting the value for a given property.
+        /// </summary>
+        public static Constructor<T> MakeStaticConstructor<T>(this Type t)
+        {
+            try
+            {
+                switch (t)
+                {
+                    case var _ when t.GetConstructor(Type.EmptyTypes) == null: return null;
+                    default: return Expression.Lambda<Constructor<T>>(Expression.New(t)).Compile();
+                }
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+
+        internal static bool IsStarcounterCompatible(this Type type)
+        {
+            switch (Type.GetTypeCode(type))
+            {
+                case TypeCode.Boolean:
+                case TypeCode.Char:
+                case TypeCode.SByte:
+                case TypeCode.Byte:
+                case TypeCode.Int16:
+                case TypeCode.UInt16:
+                case TypeCode.Int32:
+                case TypeCode.UInt32:
+                case TypeCode.Int64:
+                case TypeCode.UInt64:
+                case TypeCode.Single:
+                case TypeCode.Double:
+                case TypeCode.Decimal:
+                case TypeCode.DateTime:
+                case TypeCode.String: return true;
+                case TypeCode.Empty: return false;
+                case TypeCode.DBNull: return false;
+                case TypeCode.Object when type.IsNullable(out var t): return IsStarcounterCompatible(t);
+                case TypeCode.Object when type == typeof(Binary): return true;
+                case TypeCode.Object: return type.IsStarcounterDbClass();
+            }
+            return false;
         }
     }
 }

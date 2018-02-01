@@ -12,12 +12,9 @@ namespace RESTarExample.TestDb
         public static Response DeleteTestDatabase()
         {
             foreach (var o in DB.All<TestBase>())
-                Db.TransactAsync(() => { o.Delete(); });
+                Db.TransactAsync(() => o.Delete());
 
-            return new Response
-            {
-                StatusDescription = "Test database deleted"
-            };
+            return new Response {StatusDescription = "Test database deleted"};
         }
 
         public static Response GenerateTestDatabase()
@@ -733,7 +730,7 @@ namespace RESTarExample.TestDb
                 "Moreno",
                 "Bowman",
                 "Medina",
-                "Fowler",
+                "Fowler"
             };
 
             #endregion

@@ -1,4 +1,5 @@
-﻿using System.Runtime.Serialization;
+﻿using System.Linq;
+using System.Runtime.Serialization;
 using RESTar.Linq;
 using RESTar.Operations;
 using Starcounter;
@@ -15,6 +16,8 @@ namespace RESTar.Admin
         private const string description = "The Settings resource contains the current " +
                                            "settings for the RESTar instance.";
 
+        internal const string All = "SELECT t FROM RESTar.Admin.Settings t";
+
         internal static ushort _Port => Instance.Port;
         internal static string _Uri => Instance.Uri;
         internal static bool _ViewEnabled => Instance.ViewEnabled;
@@ -23,6 +26,7 @@ namespace RESTar.Admin
         internal static string _ResourcesPath => Instance.ResourcesPath;
         internal static string _HelpResourcePath => Instance.HelpResourcePath;
         internal static bool _DontUseLRT => Instance.DontUseLRT;
+        internal static LineEndings _LineEndings => Instance.LineEndings;
 
         /// <summary>
         /// The port of the RESTar REST API
@@ -50,6 +54,11 @@ namespace RESTar.Admin
         public bool DontUseLRT { get; set; }
 
         /// <summary>
+        /// The line endings to use when writing JSON
+        /// </summary>
+        public LineEndings LineEndings { get; private set; }
+
+        /// <summary>
         /// The path where resources are available
         /// </summary>
         public string ResourcesPath => $"http://[IP address]:{Port}{Uri}";
@@ -64,26 +73,26 @@ namespace RESTar.Admin
         /// </summary>
         public int DaysToSaveErrors { get; private set; }
 
-        private const string SQL = "SELECT t FROM RESTar.Admin.Settings t";
-
         internal static void Init(ushort port, string uri, bool viewEnabled, bool prettyPrint,
-            int daysToSaveErrors) => Transact.Trans(() =>
+            int daysToSaveErrors, LineEndings lineEndings) => Transact.Trans(() =>
         {
-            Db.SQL<Settings>(SQL).ForEach(Db.Delete);
+            Clear();
             new Settings
             {
                 Port = port,
                 Uri = uri,
                 ViewEnabled = viewEnabled,
                 PrettyPrint = prettyPrint,
-                DaysToSaveErrors = daysToSaveErrors
+                DaysToSaveErrors = daysToSaveErrors,
+                LineEndings = lineEndings
             };
         });
+
+        internal static void Clear() => Transact.Trans(() => Db.SQL<Settings>(All).ForEach(Db.Delete));
 
         /// <summary>
         /// Gets the only instance of the Settings resource
         /// </summary>
-        [IgnoreDataMember]
-        public static Settings Instance => Db.SQL<Settings>(SQL).First;
+        [IgnoreDataMember] public static Settings Instance => Db.SQL<Settings>(All).FirstOrDefault();
     }
 }

@@ -24,7 +24,7 @@ namespace RESTarExample
 
         public static bool Exists<T>() where T : class
         {
-            return Db.SQL<T>($"SELECT t FROM {typeof(T).FullName} t").First != null;
+            return Db.SQL<T>($"SELECT t FROM {typeof(T).FullName} t").FirstOrDefault() != null;
         }
 
         #endregion

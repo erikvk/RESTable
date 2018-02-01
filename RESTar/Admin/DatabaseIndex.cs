@@ -1,14 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using RESTar.Linq;
-using Starcounter;
-using Starcounter.Metadata;
+using System.Runtime.Serialization;
+using System.Text.RegularExpressions;
+using Newtonsoft.Json;
+using RESTar.Internal;
 
 namespace RESTar.Admin
 {
     /// <summary>
-    /// The DatabaseIndex resource lets an administrator set indexes for Starcounter database resources.
+    /// The DatabaseIndex resource lets an administrator set indexes for RESTar database resources.
     /// </summary>
     [RESTar(Description = description)]
     public class DatabaseIndex : ISelector<DatabaseIndex>, IInserter<DatabaseIndex>, IUpdater<DatabaseIndex>,
@@ -17,130 +18,112 @@ namespace RESTar.Admin
         private const string description = "The DatabaseIndex resource lets an administrator set " +
                                            "indexes for Starcounter database resources.";
 
+        private string _name;
+
         /// <summary>
         /// The name of the index
         /// </summary>
-        public string Name { get; set; }
+        public string Name
+        {
+            get => _name;
+            set
+            {
+                if (value == null)
+                    throw new ArgumentNullException(nameof(Name));
+                if (!Regex.IsMatch(value, RegEx.LettersNumsAndUs))
+                    throw new FormatException("Index name contained invalid characters. Can only contain " +
+                                              "letters, numbers and underscores");
+
+                _name = value;
+            }
+        }
+
+        private string _table;
 
         /// <summary>
-        /// The table for which this index is registered
+        /// The name of the RESTar resource corresponding with the database table on which 
+        /// this index is registered
         /// </summary>
-        public string Table { get; set; }
+        public string Table
+        {
+            get => _table;
+            set
+            {
+                IResource = RESTar.Resource.GetEntityResource(value);
+                _table = IResource.Name;
+                Provider = IResource.Provider;
+            }
+        }
+
+        /// <summary>
+        /// The resource provider that generated this index
+        /// </summary>
+        public string Provider { get; private set; }
+
+        /// <summary>
+        /// The RESTar resource corresponding to the table on which this index is registered
+        /// </summary>
+        [IgnoreDataMember] public IEntityResource IResource { get; private set; }
 
         /// <summary>
         /// The columns on which this index is registered
         /// </summary>
         public ColumnInfo[] Columns { get; set; }
 
-        /// <summary>
-        /// Creates an ascending database index for the table T with a given name on the given column.
-        /// If an index with the same name already exists, does nothing.
-        /// </summary>
-        public static void Register<T>(string name, string columnName)
-            where T : class => Register<T>(name, (columnName, false));
+        /// <inheritdoc />
+        [JsonConstructor]
+        public DatabaseIndex(string table)
+        {
+            if (string.IsNullOrWhiteSpace(table))
+                throw new Exception("Found no resource to register index on. Resource was null or empty");
+            Table = table;
+        }
+
+        #region Public helpers
 
         /// <summary>
-        /// Creates an ascending database index for the table T with a given name on the given columns.
+        /// Creates an ascending database index for the table T with a given name on the given column(s).
         /// If an index with the same name already exists, does nothing.
         /// </summary>
-        public static void Register<T>(string name, string columnName1, string columnName2)
-            where T : class => Register<T>(name, (columnName1, false), (columnName2, false));
+        public static void Register<T>(string indexName, params string[] columnNames) where T : class
+        {
+            Register<T>(indexName, columnNames.Select(columnName => (ColumnInfo) (columnName, false)).ToArray());
+        }
 
         /// <summary>
-        /// Creates a database index for a table type with a given name on the given column and direction.
+        /// Creates a database index for the table T with a given name on the given column(s).
         /// If an index with the same name already exists, does nothing.
         /// </summary>
-        public static void Register<T>(string name, string columnName, bool descending)
-            where T : class => Register<T>(name, (columnName, descending));
+        public static void Register<T>(string indexName, params (string columnName, bool descending)[] columns) where T : class
+        {
+            Register<T>(indexName, columns.Select(column => (ColumnInfo) column).ToArray());
+        }
 
         /// <summary>
         /// Creates a database index for a table type with a given name on a given list of columns.
         /// If an index with the same name already exists, does nothing.
         /// </summary>
-        public static void Register<T>(string name, params ColumnInfo[] columns) where T : class
+        private static void Register<T>(string indexName, params ColumnInfo[] columns) where T : class
         {
-            SelectionCondition.Value = name;
-            SelectionRequest.PUT(() => new DatabaseIndex
+            SelectionCondition.Value = indexName;
+            SelectionRequest.PUT(() => new DatabaseIndex(typeof(T).FullName)
             {
-                Table = typeof(T).FullName,
-                Name = name,
+                Name = indexName,
                 Columns = columns
             });
         }
 
-        private static readonly Condition<DatabaseIndex> SelectionCondition;
-        private static readonly Request<DatabaseIndex> SelectionRequest;
+        #endregion
 
-        static DatabaseIndex()
+        private static Condition<DatabaseIndex> SelectionCondition { get; set; }
+        private static Request<DatabaseIndex> SelectionRequest { get; set; }
+        internal static readonly Dictionary<string, IDatabaseIndexer> Indexers;
+        static DatabaseIndex() => Indexers = new Dictionary<string, IDatabaseIndexer>();
+
+        internal static void Init()
         {
-            SelectionCondition = new Condition<DatabaseIndex>(nameof(Name), Operator.EQUALS, null);
+            SelectionCondition = new Condition<DatabaseIndex>(nameof(Name), Operators.EQUALS, null);
             SelectionRequest = new Request<DatabaseIndex>(SelectionCondition);
-        }
-
-        private const string ColumnSql = "SELECT t FROM Starcounter.Metadata.IndexedColumn t " +
-                                         "WHERE t.\"Index\" =? ORDER BY t.Position";
-
-        /// <inheritdoc />
-        public IEnumerable<DatabaseIndex> Select(IRequest<DatabaseIndex> request)
-        {
-            if (request == null) throw new ArgumentNullException(nameof(request));
-            return Db
-                .SQL<Index>("SELECT t FROM Starcounter.Metadata.\"Index\" t")
-                .Where(index => !index.Table.FullName.StartsWith("Starcounter."))
-                .Where(index => !index.Name.StartsWith("DYNAMIT_GENERATED_INDEX"))
-                .Select(index => new DatabaseIndex
-                {
-                    Name = index.Name,
-                    Table = index.Table.FullName,
-                    Columns = Db.SQL<IndexedColumn>(ColumnSql, index).Select(c => new ColumnInfo
-                    {
-                        Name = c.Column.Name,
-                        Descending = c.Ascending == 0
-                    }).ToArray()
-                })
-                .Where(request.Conditions);
-        }
-
-        /// <inheritdoc />
-        public int Insert(IEnumerable<DatabaseIndex> indexes, IRequest<DatabaseIndex> request)
-        {
-            if (request == null) throw new ArgumentNullException(nameof(request));
-            var count = 0;
-            foreach (var index in indexes)
-            {
-                Db.SQL($"CREATE INDEX \"{index.Name}\" ON {index.Table} " +
-                       $"({string.Join(", ", index.Columns.Select(c => $"\"{c.Name}\" {(c.Descending ? "DESC" : "")}"))})");
-                count += 1;
-            }
-            return count;
-        }
-
-        /// <inheritdoc />
-        public int Update(IEnumerable<DatabaseIndex> indexes, IRequest<DatabaseIndex> request)
-        {
-            if (request == null) throw new ArgumentNullException(nameof(request));
-            var count = 0;
-            foreach (var index in indexes)
-            {
-                Db.SQL($"DROP INDEX {index.Name} ON {index.Table}");
-                Db.SQL($"CREATE INDEX \"{index.Name}\" ON {index.Table} " +
-                       $"({string.Join(", ", index.Columns.Select(c => $"\"{c.Name}\" {(c.Descending ? "DESC" : "")}"))})");
-                count += 1;
-            }
-            return count;
-        }
-
-        /// <inheritdoc />
-        public int Delete(IEnumerable<DatabaseIndex> indexes, IRequest<DatabaseIndex> request)
-        {
-            if (request == null) throw new ArgumentNullException(nameof(request));
-            var count = 0;
-            foreach (var index in indexes)
-            {
-                Db.SQL($"DROP INDEX {index.Name} ON {index.Table}");
-                count += 1;
-            }
-            return count;
         }
 
         /// <inheritdoc />
@@ -148,7 +131,7 @@ namespace RESTar.Admin
         {
             if (string.IsNullOrWhiteSpace(Table))
             {
-                invalidReason = "Index table cannot be null or whitespace";
+                invalidReason = "Index resource name cannot be null or whitespace";
                 return false;
             }
             if (string.IsNullOrWhiteSpace(Name))
@@ -161,9 +144,49 @@ namespace RESTar.Admin
                 invalidReason = "No columns specified for index";
                 return false;
             }
+
             invalidReason = null;
             return true;
         }
+
+        /// <inheritdoc />
+        public IEnumerable<DatabaseIndex> Select(IRequest<DatabaseIndex> request) => Indexers
+            .Values
+            .Distinct()
+            .SelectMany(indexer => indexer.Select(request));
+
+        /// <inheritdoc />
+        public int Insert(IRequest<DatabaseIndex> request) => request.GetEntities()
+            .GroupBy(index => index.IResource.Provider)
+            .Sum(group =>
+            {
+                var requestinternal = (IRequestInternal<DatabaseIndex>) request;
+                if (!Indexers.TryGetValue(group.Key, out var indexer))
+                    throw new Exception($"Unable to register index. Resource '{group.First().IResource.Name}' " +
+                                        "is not a database resource.");
+                requestinternal.EntitiesGenerator = () => group;
+                return indexer.Insert(requestinternal);
+            });
+
+        /// <inheritdoc />
+        public int Update(IRequest<DatabaseIndex> request) => request.GetEntities()
+            .GroupBy(index => index.IResource.Provider)
+            .Sum(group =>
+            {
+                var requestinternal = (IRequestInternal<DatabaseIndex>) request;
+                requestinternal.EntitiesGenerator = () => group;
+                return Indexers[group.Key].Update(requestinternal);
+            });
+
+        /// <inheritdoc />
+        public int Delete(IRequest<DatabaseIndex> request) => request.GetEntities()
+            .GroupBy(index => index.IResource.Provider)
+            .Sum(group =>
+            {
+                var requestinternal = (IRequestInternal<DatabaseIndex>) request;
+                requestinternal.EntitiesGenerator = () => group;
+                return Indexers[group.Key].Delete(requestinternal);
+            });
     }
 
     /// <summary>
@@ -174,21 +197,29 @@ namespace RESTar.Admin
         /// <summary>
         /// The name of the column (property name)
         /// </summary>
-        public string Name { get; set; }
+        public string Name { get; }
 
         /// <summary>
         /// Is this index descending? (otherwise ascending)
         /// </summary>
-        public bool Descending { get; set; }
+        public bool Descending { get; }
+
+        /// <summary>
+        /// Creates a new ColumnInfo instance
+        /// </summary>
+        public ColumnInfo(string name, bool descending)
+        {
+            Name = name.Trim();
+            Descending = descending;
+        }
 
         /// <summary>
         /// Creates a new ColumnInfo from a tuple describing a column name and direction
         /// </summary>
         /// <param name="column"></param>
-        public static implicit operator ColumnInfo((string Name, bool Descending) column) => new ColumnInfo
+        public static implicit operator ColumnInfo((string Name, bool Descending) column)
         {
-            Name = column.Name,
-            Descending = column.Descending
-        };
+            return new ColumnInfo(column.Name, column.Descending);
+        }
     }
 }

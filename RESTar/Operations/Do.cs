@@ -1,16 +1,24 @@
 ﻿using System;
-
-#pragma warning disable 1591
+using System.Threading.Tasks;
+using Starcounter;
 
 namespace RESTar.Operations
 {
+    /// <summary>
+    /// The Do class provides static methods for task-related operations and 
+    /// try/catch operations. It is provided as a utility for external assemblies.
+    /// </summary>
     public static class Do
     {
-        public static T Try<T>(Func<T> thingy, T onfail)
+        /// <summary>
+        /// Returns the result of the function, or the onFail parameter if the 
+        /// function invokation encounters any unhandled exceptions.
+        /// </summary>
+        public static T Try<T>(Func<T> function, T onfail)
         {
             try
             {
-                return thingy();
+                return function();
             }
             catch
             {
@@ -18,11 +26,15 @@ namespace RESTar.Operations
             }
         }
 
-        public static T SafeGet<T>(Func<T> thingy)
+        /// <summary>
+        /// Returns the result of the function, or the default for T if the action 
+        /// encounters any unhandled exceptions.
+        /// </summary>
+        public static T SafeGet<T>(Func<T> function)
         {
             try
             {
-                return thingy();
+                return function();
             }
             catch
             {
@@ -30,24 +42,15 @@ namespace RESTar.Operations
             }
         }
 
-        public static T Try<T>(Action thingy, T onfail)
+        /// <summary>
+        /// Returns the result of the function, or the result of the onFail function 
+        /// if the function encounters any unhandled exceptions.
+        /// </summary>
+        public static T Try<T>(Func<T> function, Func<T> onFail)
         {
             try
             {
-                thingy();
-                return default;
-            }
-            catch
-            {
-                return onfail;
-            }
-        }
-
-        public static T Try<T>(Func<T> thingy, Func<T> onFail)
-        {
-            try
-            {
-                return thingy();
+                return function();
             }
             catch
             {
@@ -55,75 +58,76 @@ namespace RESTar.Operations
             }
         }
 
-        public static T TryAndThrow<T>(Func<T> thingy, Exception onFail)
-        {
-            try
-            {
-                return thingy();
-            }
-            catch
-            {
-                throw onFail;
-            }
-        }
-
-        public static T TryCatch<T>(Func<T> @try, Action<Exception> @catch)
+        /// <summary>
+        /// A functional programming approach to try/catch. Tries to return the result 
+        /// of the try function, else runs the given action on the encountered exception.
+        /// </summary>
+        public static T TryCatch<T, TException>(Func<T> @try, Action<TException> @catch) where TException : Exception
         {
             try
             {
                 return @try();
             }
-            catch (Exception e)
+            catch (TException e)
             {
                 @catch(e);
                 return default;
             }
         }
 
-        public static void TryCatch(Action thingy, Action<Exception> onCatch)
+        /// <summary>
+        /// A functional programming approach to try/catch. Tries to run the try action, 
+        /// else runs the given action on the encountered exception.
+        /// </summary>
+        public static void TryCatch<TException>(Action @try, Action<TException> @catch) where TException : Exception
         {
             try
             {
-                thingy();
+                @try();
+            }
+            catch (TException e)
+            {
+                @catch(e);
+            }
+        }
+
+        /// <summary>
+        /// Tries to run the function, else throws a new exception with the provided message
+        /// and the original exception as InnerException
+        /// </summary>
+        public static T TryAndThrow<T>(Func<T> function, string message)
+        {
+            try
+            {
+                return function();
             }
             catch (Exception e)
             {
-                onCatch(e);
+                throw new Exception(message, e);
             }
         }
 
-        public static T TryAndThrow<T>(Func<T> thingy, string onFailMessage)
+        /// <summary>
+        /// Tries to run the action, and simply returns when encountering an unhandled exception
+        /// </summary>
+        /// <param name="action"></param>
+        public static void Try(Action action)
         {
             try
             {
-                return thingy();
+                action();
             }
-            catch
-            {
-                throw new Exception(onFailMessage);
-            }
+            catch { }
         }
 
-        public static void Try(Action thingy)
+        /// <summary>
+        /// Runs an action after a given delay. Uses Scheduling.ScheduleTask to ensure proper 
+        /// Starcounter thread handling.
+        /// </summary>
+        public static async void Schedule(Action action, TimeSpan delay)
         {
-            try
-            {
-                thingy();
-            }
-            catch
-            {
-            }
-        }
-
-        public static T Run<T>(Action thingy, T @return = default)
-        {
-            thingy();
-            return @return;
-        }
-
-        public static T Run<T>(Func<T> thingy)
-        {
-            return thingy();
+            await Task.Delay(delay);
+            await Scheduling.RunTask(action);
         }
     }
 }
