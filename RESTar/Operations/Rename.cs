@@ -4,6 +4,7 @@ using Newtonsoft.Json.Linq;
 using RESTar.Deflection.Dynamic;
 using RESTar.Internal;
 using RESTar.Linq;
+using static System.StringComparison;
 
 namespace RESTar.Operations
 {
@@ -12,7 +13,7 @@ namespace RESTar.Operations
     /// </summary>
     public class Rename : Dictionary<Term, string>, IProcessor
     {
-        internal Rename(IResource resource, string keys, out ICollection<string> dynamicDomain)
+        internal Rename(IEntityResource resource, string keys, out ICollection<string> dynamicDomain)
         {
             keys.Split(',').ForEach(keyString =>
             {
@@ -26,11 +27,14 @@ namespace RESTar.Operations
         {
             foreach (var pair in this)
             {
-                var value = entity.SafeGetNoCase(pair.Key.Key, out var actualKey);
+                var value = entity.GetValue(pair.Key.Key, OrdinalIgnoreCase);
+                var property = (JProperty) value.Parent;
+                var actualKey = property.Name;
                 if (actualKey != null)
                     entity.Remove(actualKey);
                 entity[pair.Value] = value;
             }
+
             return entity;
         }
 

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Serialization;
 using RESTar.Resources;
+using RESTar.Results.Fail.BadRequest;
 using Starcounter;
 using static RESTar.Operations.Transact;
 
@@ -77,7 +78,7 @@ namespace RESTar.Internal
         internal static void MakeTable(Admin.Resource resource) => ResourceFactory.MakeDynamicResource(Trans(() =>
         {
             var newTable = DynamitControl.DynamitTypes.FirstOrDefault(type => !Exists(type.FullName))
-                           ?? throw new NoAvalailableDynamicTableException();
+                           ?? throw new NoAvalailableDynamicTable();
             if (!string.IsNullOrWhiteSpace(resource.Alias))
                 new Admin.ResourceAlias
                 {

@@ -49,11 +49,12 @@ namespace RESTar.Admin
             string input = request.Conditions.Get(nameof(Resource), Operators.EQUALS)?.Value;
             request.Conditions.Get(nameof(Resource)).ForEach(c => c.Skip = true);
             if (input == null)
-                profiles = RESTarConfig.Resources.Select(r => r.ResourceProfile).Where(r => r != null);
+                profiles = RESTarConfig.Resources.OfType<IEntityResource>().Select(r => r.ResourceProfile).Where(r => r != null);
             else
             {
                 var resource = RESTar.Resource.Find(input);
-                var profile = resource.ResourceProfile
+                var entityResource = resource as IEntityResource;
+                var profile = entityResource?.ResourceProfile
                               ?? throw new Exception($"Cannot profile '{resource.Name}'. No profiler implemented for type");
                 profiles = new[] {profile};
             }
@@ -69,7 +70,7 @@ namespace RESTar.Admin
         public static ResourceProfile Make(Type type)
         {
             if (type.IsDDictionary()) return GetDDict(type);
-            if (type.IsStarcounter()) return GetSC(type);
+            if (type.IsStarcounterDbClass()) return GetSC(type);
             throw new Exception($"Cannot profile '{type.FullName}'. No profiler implemented for type");
         }
 
@@ -78,7 +79,7 @@ namespace RESTar.Admin
         /// </summary>
         public static ResourceProfile Make<T>() where T : class => Make(typeof(T));
 
-        internal static ResourceProfile Make<T>(IResource<T> resource, Func<IEnumerable<T>, long> byteCounter) where T : class
+        internal static ResourceProfile Make<T>(IEntityResource<T> resource, Func<IEnumerable<T>, long> byteCounter) where T : class
         {
             var sqlName = typeof(T).FullName.Fnuttify();
             var domain = SELECT<T>(sqlName);
@@ -110,8 +111,8 @@ namespace RESTar.Admin
         private static dynamic GetDDict(Type type) => DDICTPROFILER.MakeGenericMethod(type).Invoke(null, null);
         private static readonly MethodInfo SCPROFILER = typeof(ResourceProfile).GetMethod("ScProfiler", NonPublic | Static);
         private static readonly MethodInfo DDICTPROFILER = typeof(ResourceProfile).GetMethod("DDictProfiler", NonPublic | Static);
-        private static ResourceProfile ScProfiler<T>(IResource<T> r) where T : class => StarcounterOperations<T>.Profile(r);
-        private static ResourceProfile DDProfiler<T>(IResource<T> r) where T : DDictionary => DDictionaryOperations<T>.Profile(r);
+        private static ResourceProfile ScProfiler<T>(IEntityResource<T> r) where T : class => StarcounterOperations<T>.Profile(r);
+        private static ResourceProfile DDProfiler<T>(IEntityResource<T> r) where T : DDictionary => DDictionaryOperations<T>.Profile(r);
         private static long COUNT(string name) => Db.SQL<long>($"SELECT COUNT(t) FROM {name} t").FirstOrDefault();
         private static IEnumerable<T> SELECT<T>(string name) => Db.SQL<T>($"SELECT t FROM {name} t");
     }

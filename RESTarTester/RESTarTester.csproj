@@ -45,20 +45,18 @@
     <LangVersion>7.1</LangVersion>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Dynamit, Version=0.1.23.0, Culture=neutral, processorArchitecture=AMD64">
-      <HintPath>..\packages\Dynamit.0.1.23\lib\net45\Dynamit.dll</HintPath>
+    <Reference Include="Dynamit, Version=0.1.28.0, Culture=neutral, processorArchitecture=AMD64">
+      <HintPath>..\packages\Dynamit.0.1.28\lib\net45\Dynamit.dll</HintPath>
     </Reference>
     <Reference Include="Newtonsoft.Json, Version=10.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\packages\Newtonsoft.Json.10.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
+    <Reference Include="Starcounter, Version=2.0.0.0, Culture=neutral, PublicKeyToken=d2df1e81d0ca3abf, processorArchitecture=AMD64" />
     <Reference Include="System" />
     <Reference Include="System.Core">
       <RequiredTargetFramework>4.0</RequiredTargetFramework>
     </Reference>
     <Reference Include="Microsoft.CSharp" />
-    <Reference Include="Starcounter, Version=2.0.0.0, Culture=neutral, PublicKeyToken=d2df1e81d0ca3abf">
-      <Private>False</Private>
-    </Reference>
     <Reference Include="Starcounter.Internal, Version=2.0.0.0, Culture=neutral, PublicKeyToken=d2df1e81d0ca3abf">
       <Private>False</Private>
     </Reference>

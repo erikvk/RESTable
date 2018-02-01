@@ -49,7 +49,7 @@ namespace RESTar.Admin
             get => _table;
             set
             {
-                IResource = RESTar.Resource.Get(value);
+                IResource = RESTar.Resource.GetEntityResource(value);
                 _table = IResource.Name;
                 Provider = IResource.Provider;
             }
@@ -63,7 +63,7 @@ namespace RESTar.Admin
         /// <summary>
         /// The RESTar resource corresponding to the table on which this index is registered
         /// </summary>
-        [IgnoreDataMember] public IResource IResource { get; private set; }
+        [IgnoreDataMember] public IEntityResource IResource { get; private set; }
 
         /// <summary>
         /// The columns on which this index is registered
@@ -156,25 +156,37 @@ namespace RESTar.Admin
             .SelectMany(indexer => indexer.Select(request));
 
         /// <inheritdoc />
-        public int Insert(IEnumerable<DatabaseIndex> entities, IRequest<DatabaseIndex> request) => entities
+        public int Insert(IRequest<DatabaseIndex> request) => request.GetEntities()
             .GroupBy(index => index.IResource.Provider)
             .Sum(group =>
             {
+                var requestinternal = (IRequestInternal<DatabaseIndex>) request;
                 if (!Indexers.TryGetValue(group.Key, out var indexer))
                     throw new Exception($"Unable to register index. Resource '{group.First().IResource.Name}' " +
                                         "is not a database resource.");
-                return indexer.Insert(group, request);
+                requestinternal.EntitiesGenerator = () => group;
+                return indexer.Insert(requestinternal);
             });
 
         /// <inheritdoc />
-        public int Update(IEnumerable<DatabaseIndex> entities, IRequest<DatabaseIndex> request) => entities
+        public int Update(IRequest<DatabaseIndex> request) => request.GetEntities()
             .GroupBy(index => index.IResource.Provider)
-            .Sum(group => Indexers[group.Key].Update(group, request));
+            .Sum(group =>
+            {
+                var requestinternal = (IRequestInternal<DatabaseIndex>) request;
+                requestinternal.EntitiesGenerator = () => group;
+                return Indexers[group.Key].Update(requestinternal);
+            });
 
         /// <inheritdoc />
-        public int Delete(IEnumerable<DatabaseIndex> entities, IRequest<DatabaseIndex> request) => entities
+        public int Delete(IRequest<DatabaseIndex> request) => request.GetEntities()
             .GroupBy(index => index.IResource.Provider)
-            .Sum(group => Indexers[group.Key].Delete(group, request));
+            .Sum(group =>
+            {
+                var requestinternal = (IRequestInternal<DatabaseIndex>) request;
+                requestinternal.EntitiesGenerator = () => group;
+                return Indexers[group.Key].Delete(requestinternal);
+            });
     }
 
     /// <summary>
@@ -185,21 +197,29 @@ namespace RESTar.Admin
         /// <summary>
         /// The name of the column (property name)
         /// </summary>
-        public string Name { get; set; }
+        public string Name { get; }
 
         /// <summary>
         /// Is this index descending? (otherwise ascending)
         /// </summary>
-        public bool Descending { get; set; }
+        public bool Descending { get; }
+
+        /// <summary>
+        /// Creates a new ColumnInfo instance
+        /// </summary>
+        public ColumnInfo(string name, bool descending)
+        {
+            Name = name.Trim();
+            Descending = descending;
+        }
 
         /// <summary>
         /// Creates a new ColumnInfo from a tuple describing a column name and direction
         /// </summary>
         /// <param name="column"></param>
-        public static implicit operator ColumnInfo((string Name, bool Descending) column) => new ColumnInfo
+        public static implicit operator ColumnInfo((string Name, bool Descending) column)
         {
-            Name = column.Name,
-            Descending = column.Descending
-        };
+            return new ColumnInfo(column.Name, column.Descending);
+        }
     }
 }

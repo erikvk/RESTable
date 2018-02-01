@@ -14,11 +14,11 @@ using RESTar.Deflection.Dynamic;
 using RESTar.Internal;
 using RESTar.Linq;
 using RESTar.Resources;
+using RESTar.Results.Error;
 using Starcounter;
 using static RESTar.Methods;
 using static RESTar.Requests.StarcounterHandlers;
 using IResource = RESTar.Internal.IResource;
-using ResourceFinder = System.Collections.Concurrent.ConcurrentDictionary<string, RESTar.Internal.IResource>;
 
 namespace RESTar
 {
@@ -28,16 +28,18 @@ namespace RESTar
     /// </summary>
     public static class RESTarConfig
     {
-        internal static ResourceFinder ResourceFinder { get; private set; }
+        internal static IDictionary<string, IResource> ResourceFinder { get; private set; }
         internal static IDictionary<string, IResource> ResourceByName { get; private set; }
         internal static IDictionary<Type, IResource> ResourceByType { get; private set; }
         internal static IDictionary<string, AccessRights> ApiKeys { get; private set; }
         internal static ConcurrentDictionary<string, AccessRights> AuthTokens { get; private set; }
         internal static ICollection<IResource> Resources => ResourceByName.Values;
+        internal static IEnumerable<IEntityResource> EntityResources => ResourceByName.Values.OfType<IEntityResource>();
         internal static List<Uri> AllowedOrigins { get; private set; }
         internal static string[] ReservedNamespaces { get; private set; }
         internal static bool RequireApiKey { get; private set; }
         internal static bool AllowAllOrigins { get; private set; }
+        internal static bool NeedsConfiguration => RequireApiKey || !AllowAllOrigins;
         private static string ConfigFilePath { get; set; }
         internal static bool Initialized { get; private set; }
         internal static readonly Methods[] Methods = {GET, POST, PATCH, PUT, DELETE, REPORT};
@@ -48,8 +50,8 @@ namespace RESTar
         {
             ApiKeys = new Dictionary<string, AccessRights>();
             ResourceByType = new Dictionary<Type, IResource>();
-            ResourceByName = new Dictionary<string, IResource>();
-            ResourceFinder = new ResourceFinder();
+            ResourceByName = new Dictionary<string, IResource>(StringComparer.OrdinalIgnoreCase);
+            ResourceFinder = new ConcurrentDictionary<string, IResource>(StringComparer.OrdinalIgnoreCase);
             AuthTokens = new ConcurrentDictionary<string, AccessRights>();
             AllowedOrigins = new List<Uri>();
             AuthTokens.TryAdd(Authenticator.AppToken, AccessRights.Root);
@@ -61,10 +63,21 @@ namespace RESTar
                 .ToArray();
         }
 
-        internal static void UpdateAuthInfo()
+        internal static void UpdateConfiguration()
         {
             if (!Initialized) return;
-            if (ConfigFilePath != null) ReadConfig();
+            if (NeedsConfiguration && ConfigFilePath == null)
+            {
+                var (task, measure) = RequireApiKey
+                    ? ("require API keys", "read keys and assign access rights")
+                    : !AllowAllOrigins
+                        ? ("only allow some CORS origins", "know what origins to deny")
+                        : ("publish an OData service", "generate context URLs");
+                throw new MissingConfigurationFile($"RESTar was set up to {task}, but needs to read settings from a configuration file in " +
+                                                   $"order to {measure}. Provide a configuration file path in the call to RESTarConfig.Init. " +
+                                                   "See the specification for more info.");
+            }
+            if (NeedsConfiguration) ReadConfig();
             AccessRights.Root = Resources
                 .ToDictionary(r => r, r => Methods)
                 .CollectDict(dict => new AccessRights(dict));
@@ -72,29 +85,29 @@ namespace RESTar
 
         internal static void AddResource(IResource toAdd)
         {
-            ResourceByName[toAdd.Name.ToLower()] = toAdd;
+            ResourceByName[toAdd.Name] = toAdd;
             ResourceByType[toAdd.Type] = toAdd;
             AddToResourceFinder(toAdd, ResourceFinder);
-            UpdateAuthInfo();
-            toAdd.Type.GetStaticProperties();
+            UpdateConfiguration();
+            toAdd.Type.GetDeclaredProperties();
         }
 
         internal static void RemoveResource(IResource toRemove)
         {
-            ResourceByName.Remove(toRemove.Name.ToLower());
+            ResourceByName.Remove(toRemove.Name);
             ResourceByType.Remove(toRemove.Type);
             ReloadResourceFinder();
-            UpdateAuthInfo();
+            UpdateConfiguration();
         }
 
         internal static void ReloadResourceFinder()
         {
-            var newFinder = new ResourceFinder();
+            var newFinder = new ConcurrentDictionary<string, IResource>(StringComparer.OrdinalIgnoreCase);
             Resources.ForEach(r => AddToResourceFinder(r, newFinder));
             ResourceFinder = newFinder;
         }
 
-        private static void AddToResourceFinder(IResource toAdd, ResourceFinder finder)
+        private static void AddToResourceFinder(IResource toAdd, IDictionary<string, IResource> finder)
         {
             string[] makeResourceParts(IResource resource)
             {
@@ -103,8 +116,8 @@ namespace RESTar
                     case var _ when resource.IsInternal: return new[] {resource.Name};
                     case var _ when resource.IsInnerResource:
                         var dots = resource.Name.Count('.');
-                        return resource.Name.ToLower().Split(new[] {'.'}, dots);
-                    default: return resource.Name.ToLower().Split('.');
+                        return resource.Name.Split(new[] {'.'}, dots);
+                    default: return resource.Name.Split('.');
                 }
             }
 
@@ -163,7 +176,7 @@ namespace RESTar
                 Initialized = true;
                 DatabaseIndex.Init();
                 DbOutputFormat.Init();
-                UpdateAuthInfo();
+                UpdateConfiguration();
             }
             catch
             {
@@ -171,7 +184,7 @@ namespace RESTar
                 RequireApiKey = default;
                 AllowAllOrigins = default;
                 ConfigFilePath = default;
-                UnRegisterRESTHandlers();
+                UnregisterRESTHandlers();
                 Settings.Clear();
                 NewState();
                 throw;
@@ -183,19 +196,16 @@ namespace RESTar
             uri = uri?.Trim() ?? "/rest";
             if (!Regex.IsMatch(uri, RegEx.BaseUri))
                 throw new FormatException("URI contained invalid characters. Can only contain " +
-                                          "letters, numbers and underscores");
+                                          "letters, numbers, forward slashes and underscores");
             var appName = Application.Current.Name;
             if (uri.EqualsNoCase(appName))
                 throw new ArgumentException($"URI must differ from application name ({appName})", nameof(appName));
             if (uri[0] != '/') uri = $"/{uri}";
-            return uri;
+            return uri.TrimEnd('/');
         }
 
         private static void ReadConfig()
         {
-            if (!RequireApiKey && AllowAllOrigins) return;
-            if (ConfigFilePath == null)
-                throw new Exception("RESTar init error: No config file path given for API keys and/or allowed origins");
             try
             {
                 dynamic config;
@@ -241,8 +251,8 @@ namespace RESTar
             {
                 case JObject apiKey:
                     var keyString = apiKey["Key"].Value<string>();
-                    if (string.IsNullOrWhiteSpace(keyString) || keyString.Any(char.IsWhiteSpace))
-                        throw new Exception("An API key was invalid. Must be a non-empty string, not containing whitespace");
+                    if (keyString == null || !Regex.IsMatch(keyString, RegEx.ApiKey))
+                        throw new Exception("An API key was invalid. Must be a non-empty string, not containing whitespace or parentheses");
                     var key = keyString.SHA256();
                     var accessRightList = new List<AccessRight>();
 

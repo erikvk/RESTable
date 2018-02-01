@@ -1,4 +1,7 @@
-﻿using Starcounter;
+﻿using System.Collections.Generic;
+using System.IO;
+using System.Net;
+using Starcounter;
 
 // ReSharper disable All
 
@@ -8,15 +11,24 @@ namespace TestProject
     {
         public static void Main()
         {
-            Handle.GET(8100, "/test", () => new Response
-            {
-                StatusCode = 200,
-                StatusDescription = "OK",
-                Headers = {["X-MySingleHeader"] = "Some value\r\nFoo: other value\r\nThird value"}
-            });
-            var response = Http.GET("http://localhost:8100/test");
-            var fooHeader = response.Headers["Foo"];
-            // other value
+            Handle.GET("/test", (Request request) => request.ContentType ?? "was null");
+            var response1 = Http.GET
+            (
+                uri: "http://localhost:8080/test",
+                headersDictionary: new Dictionary<string, string> {["Content-Type"] = "application/json"}
+            );
+            var body1 = response1.Body;
+            // "was null"
+
+            var webrequest = (HttpWebRequest) WebRequest.Create("http://localhost:8080/test");
+            webrequest.Method = "GET";
+            webrequest.ContentType = "application/json";
+            var webResponse = (HttpWebResponse) webrequest.GetResponse();
+            string _body;
+            using (var reader = new StreamReader(webResponse.GetResponseStream()))
+                _body = reader.ReadToEnd();
+            var body2 = body1;
+            // "was null"
         }
     }
 }

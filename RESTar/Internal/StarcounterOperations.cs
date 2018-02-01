@@ -1,10 +1,13 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using RESTar.Admin;
 using RESTar.Linq;
 using RESTar.Operations;
 using Starcounter;
 using Starcounter.Metadata;
 using static System.Reflection.BindingFlags;
+using static System.StringComparison;
+using static RESTar.Operators;
 
 namespace RESTar.Internal
 {
@@ -33,21 +36,66 @@ namespace RESTar.Internal
                     case Request<T> @internal:
                         var r1 = Db.SQL<T>(@internal.SelectQuery, @internal.SqlValues);
                         return !@internal.Conditions.HasPost(out var _post) ? r1 : r1.Where(_post);
-                    case var external when !external.Conditions.Any():
-                        return Db.SQL<T>($"{SELECT}{external.MetaConditions.OrderBy?.SQL}");
                     case var external:
+                        switch (external.Conditions.Length)
+                        {
+                            case 0: return Db.SQL<T>($"{SELECT}{external.MetaConditions.OrderBy?.SQL}");
+                            case 1 when external.Conditions[0] is var only && only.Operator == EQUALS:
+                                if (string.Equals("objectno", only.Key, OrdinalIgnoreCase))
+                                {
+                                    try
+                                    {
+                                        var objectNo = (ulong) only.Value;
+                                        var result = Db.FromId<T>(objectNo);
+                                        return result == null ? null : new[] {result};
+                                    }
+                                    catch
+                                    {
+                                        throw new Exception("Invalid ObjectNo format. Should be positive integer");
+                                    }
+                                }
+                                if (string.Equals("objectid", only.Key, OrdinalIgnoreCase))
+                                {
+                                    try
+                                    {
+                                        var objectID = (string) only.Value;
+                                        var result = Db.FromId<T>(objectID);
+                                        return result == null ? null : new[] {result};
+                                    }
+                                    catch
+                                    {
+                                        throw new Exception("Invalid ObjectNo format. Should be positive integer");
+                                    }
+                                }
+                                break;
+                        }
                         var (whereString, values) = external.Conditions.GetSQL().MakeWhereClause();
                         var r2 = Db.SQL<T>($"{SELECT}{whereString} {external.MetaConditions.OrderBy?.SQL}", values);
                         return !external.Conditions.HasPost(out var post) ? r2 : r2.Where(post);
                 }
             };
-            Insert = (e, r) => e.Count();
-            Update = (e, r) => e.Count();
-            Delete = (e, r) => e.Sum(_e =>
+            Insert = r =>
             {
-                _e.Delete();
-                return 1;
-            });
+                var count = 0;
+                Db.TransactAsync(() => count = r.GetEntities().Count());
+                return count;
+            };
+            Update = r =>
+            {
+                var count = 0;
+                Db.TransactAsync(() => count = r.GetEntities().Count());
+                return count;
+            };
+            Delete = r =>
+            {
+                var count = 0;
+                Db.TransactAsync(() => r.GetEntities().ForEach(entity =>
+                {
+                    entity.Delete();
+                    count += 1;
+                }));
+                return count;
+            };
             Count = r =>
             {
                 switch (r)

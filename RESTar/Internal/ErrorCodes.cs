@@ -14,7 +14,7 @@ namespace RESTar.Internal
         // - - - - - - - - - 
         // 001-099: Request errors
         // 000-009: URI errors
-        UnknownMetaCondition = 001,
+        InvalidUriSyntax = 001,
         InvalidMetaConditionValueType = 002,
         InvalidMetaConditionOperator = 003,
         InvalidMetaConditionSyntax = 004,
@@ -22,8 +22,8 @@ namespace RESTar.Internal
         InvalidConditionSyntax = 006,
         InvalidConditionOperator = 007,
         InvalidResourceSpecifier = 008,
-        InvalidSeparator = 009,
-        
+        InvalidConditionValueType = 009,
+
         // 010-019: Data source syntax and format errors
         FailedJsonDeserialization = 010,
         ExcelReaderError = 011,
@@ -31,6 +31,10 @@ namespace RESTar.Internal
         NoDataSource = 013,
         UnsupportedContent = 014,
         UnknownFormatter = 015,
+        NotAcceptable = 016,
+        UpgradeRequired = 017,
+        UnknownWebSocketId = 018,
+        InvalidEnumValue = 019,
 
         // 020-029: Headers error
         InvalidSourceData = 020,
@@ -61,7 +65,8 @@ namespace RESTar.Internal
         InvalidVirtualResourceDeclaration = 123,
         InvalidResourceDeclaration = 124,
         InvalidResourceViewDeclaration = 125,
-        InvalidAllowedRequestHeaders = 126,
+        InvalidTerminalDeclaration = 126,
+        InvalidReferencedEnumDeclaration = 127,
 
         // 130-139: Alias errors
         AliasAlreadyInUse = 130,
@@ -77,12 +82,17 @@ namespace RESTar.Internal
         NotAuthorized = 211,
         NoMatchingHtml = 212,
         FailedResourceAuthentication = 213,
+        MethodNotAllowed = 214,
 
         DatabaseError = 300,
+        AbortedByCommitHook = 301,
         NotInitialized = 400,
         AddOnError = 401,
         ResourceProviderError = 402,
         ResourceWrapperError = 403,
-        InfiniteLoopDetected = 404
+        InfiniteLoopDetected = 404,
+        NotImplemented = 405,
+        UnsupportedODataProtocolVersion = 406,
+        MissingConfigurationFile = 407,
     }
 }

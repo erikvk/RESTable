@@ -1,16 +1,15 @@
 ﻿using System;
 using System.Linq;
 using System.Text;
-using System.Text.RegularExpressions;
 using RESTar.Internal;
 using RESTar.Linq;
 using RESTar.Operations;
 using RESTar.Requests;
+using RESTar.Results.Error;
 using Starcounter;
-using static System.Text.RegularExpressions.RegexOptions;
 using static RESTar.Admin.Settings;
 using static RESTar.Methods;
-using IResource = RESTar.Internal.IResource;
+using Action = RESTar.Requests.Action;
 
 namespace RESTar.Admin
 {
@@ -46,7 +45,7 @@ namespace RESTar.Admin
         /// <summary>
         /// The method used when the error was created
         /// </summary>
-        public HandlerActions HandlerAction;
+        public Action Action;
 
         /// <summary>
         /// The error code of the error
@@ -82,27 +81,28 @@ namespace RESTar.Admin
 
         private const int MaxStringLength = 10000;
 
-        internal static Error Create(ErrorCodes errorCode, Exception e, IResource resource, Args args,
-            HandlerActions action)
+        internal static Error Create(RESTarError error, Arguments arguments)
         {
-            if (args?.HasMetaConditions == true && args.MetaConditions.ToLower().Contains("key="))
-                args.MetaConditions = Regex.Replace(args.MetaConditions, RegEx.KeyMetaCondition, "key=*******", IgnoreCase);
-            var uri = args?.UriString;
-            var stackTrace = $"{e.StackTrace} §§§ INNER: {e.InnerException?.StackTrace}";
-            var totalMessage = e.TotalMessage();
+            var resource = arguments.SafeGet(a => a.IResource);
+            var uri = arguments.Uri.ToString();
+            var stackTrace = $"{error.StackTrace} §§§ INNER: {error.InnerException?.StackTrace}";
+            var totalMessage = error.TotalMessage();
             return new Error
             {
                 Time = DateTime.Now,
                 ResourceName = (resource?.Name ?? "<unknown>") +
                                (resource?.Alias != null ? $" ({resource.Alias})" : ""),
-                HandlerAction = action,
-                ErrorCode = errorCode,
-                Body = args?.BodyBytes != null ? Encoding.UTF8.GetString(args.BodyBytes.Take(5000).ToArray()) : null,
+                Action = arguments.Action,
+                ErrorCode = error.ErrorCode,
+                Body = arguments.BodyBytes != null
+                    ? Encoding.UTF8.GetString(arguments.BodyBytes.Take(5000).ToArray())
+                    : null,
                 StackTrace = stackTrace.Length > MaxStringLength ? stackTrace.Substring(0, MaxStringLength) : stackTrace,
                 Message = totalMessage.Length > MaxStringLength ? totalMessage.Substring(0, MaxStringLength) : totalMessage,
                 Uri = uri,
-                Headers = resource?.RequiresAuthentication == false
-                    ? args?.Headers.StringJoin(" | ", dict => dict.Select(header =>
+                Headers = resource is IEntityResource e && e.RequiresAuthentication
+                    ? null
+                    : arguments.Headers.StringJoin(" | ", dict => dict.Select(header =>
                     {
                         switch (header.Key.ToLower())
                         {
@@ -111,7 +111,6 @@ namespace RESTar.Admin
                             default: return $"{header.Key}: {header.Value}";
                         }
                     }))
-                    : null
             };
         }
 

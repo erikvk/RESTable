@@ -23,7 +23,12 @@ namespace RESTar
         /// <summary>
         /// The order at which this property appears when all properties are enumerated
         /// </summary>
-        public int Order { get; }
+        public int? Order { get; }
+
+        /// <summary>
+        /// Is this property a key?
+        /// </summary>
+        public bool IsKey { get; }
 
         /// <summary>
         /// Should this property be hidden in output by default? It can still be added and queried against.
@@ -56,12 +61,19 @@ namespace RESTar
         /// </summary>
         public string ExcelReducerName { get; }
 
+        /// <summary>
+        /// Should this object be replaced with a new instance on update, or reused? Applicable for types 
+        /// such as Dictionaries and Lists.
+        /// </summary>
+        public bool ReplaceOnUpdate { get; }
+
         /// <inheritdoc />
         /// <summary>
         /// Creates a new RESTar property configuration for a property
         /// </summary>
         /// <param name="ignore">Should this property be completely ignored by RESTar?</param>
         /// <param name="name">A new name for this property</param>
+        /// <param name="key">Is this property a unique identifier for this type?</param>
         /// <param name="order">The order at which this property appears when all properties are enumerated</param>
         /// <param name="hide">Should this property be hidden in serialized output by default? It can still be added and queried against.</param>
         /// <param name="hideIfNull">Should this property be hidden in output if the value is null? Only applies to JSON output.</param>
@@ -70,19 +82,23 @@ namespace RESTar
         /// <param name="allowedOperators">These operators will be allowed in conditions targeting this property.</param>
         /// <param name="excelReducer">The name of an optional public ToString-like method, declared in the same scope as the property, that reduces the 
         /// property to an excel-compatible string</param>
-        public RESTarMemberAttribute(bool ignore = false, string name = null, int order = 0, bool hide = false,
-            bool hideIfNull = false, bool readOnly = false, bool skipConditions = false, Operators allowedOperators = Operators.All,
-            string excelReducer = null)
+        /// <param name="replaceOnUpdate">Should this object be replaced with a new instance on update, or reused? Applicable for types such as 
+        /// Dictionaries and Lists.</param>
+        public RESTarMemberAttribute(bool ignore = false, string name = null, bool key = false, int order = int.MinValue, bool hide = false,
+            bool hideIfNull = false, bool readOnly = false, bool skipConditions = false, Operators allowedOperators = Operators.All, string excelReducer = null, bool replaceOnUpdate = false)
         {
             Ignored = ignore;
             Name = name;
-            Order = order;
+            if (order != int.MinValue)
+                Order = order;
+            IsKey = key;
             Hidden = hide;
             HiddenIfNull = hideIfNull;
             ReadOnly = readOnly;
             SkipConditions = skipConditions;
             AllowedOperators = allowedOperators;
             ExcelReducerName = excelReducer;
+            ReplaceOnUpdate = replaceOnUpdate;
         }
     }
 }

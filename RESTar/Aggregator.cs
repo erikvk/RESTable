@@ -26,10 +26,9 @@ namespace RESTar
             {
                 switch (token)
                 {
-                    case null: return null;
                     case JObject obj: return obj;
                     case JArray arr when arr.Count == 1: return getTemplate(arr[0]);
-                    default: throw new Exception("Invalid Aggregator template. Expected a single object");
+                    default: return null;
                 }
             }
 
@@ -69,7 +68,7 @@ namespace RESTar
                         else uriString = method_uri[0];
                         if (uriString[0] != '/') break;
 
-                        var response = HttpRequest.Internal(method, new Uri(uriString, UriKind.Relative), request.AuthToken);
+                        var response = HttpRequest.Internal(request, method, new Uri(uriString, UriKind.Relative), request.AuthToken);
                         if (response?.IsSuccessStatusCode != true)
                             throw new Exception(
                                 $"Could not get source data from '{uriString}'. {response?.StatusCode.ToCode()}: " +
@@ -94,7 +93,9 @@ namespace RESTar
                 }
             }
 
-            var tree = getTemplate(request.BodyObject<JToken>());
+            if (!(request.BodyObject<JToken>() is JObject bodyObject))
+                throw new Exception("Invalid Aggregator template. Expected a single object");
+            var tree = getTemplate(bodyObject);
             populator(tree);
             return new[] {new Aggregator(tree)}.Where(request.Conditions);
         }

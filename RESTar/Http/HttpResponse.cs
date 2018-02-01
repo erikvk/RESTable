@@ -1,77 +1,81 @@
-﻿using System.Collections.Generic;
-using System.IO;
+﻿using System.IO;
 using System.Net;
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using RESTar.Linq;
+using RESTar.Logging;
+using RESTar.Operations;
+using RESTar.Requests;
 using Starcounter;
 using static System.StringSplitOptions;
 
 namespace RESTar.Http
 {
-    internal class HttpResponse
+    internal class HttpResponse : IFinalizedResult
     {
-        public HttpStatusCode StatusCode { get; set; }
-        public string StatusDescription { get; set; }
-        public long ContentLength { get; set; }
-        public string ContentType { get; set; }
-        public Stream Body { get; set; }
-        public Dictionary<string, string> Headers { get; set; }
+        public HttpStatusCode StatusCode { get; }
+        public string StatusDescription { get; }
+        public long ContentLength { get; }
+        public string ContentType { get; }
+        public Stream Body { get; }
+        public Headers Headers { get; }
+        public ICollection<string> Cookies { get; }
+        internal bool IsSuccessStatusCode => StatusCode >= (HttpStatusCode) 200 && StatusCode < (HttpStatusCode) 300;
+        public string TraceId { get; }
+        public TCPConnection TcpConnection { get; }
 
-        internal bool IsSuccessStatusCode => StatusCode >= (HttpStatusCode) 200 &&
-                                             StatusCode < (HttpStatusCode) 300;
+        public LogEventType LogEventType { get; } = LogEventType.HttpOutput;
+        public string LogMessage => $"{StatusCode.ToCode()}: {StatusDescription} ({ContentLength} bytes)";
+        public string LogContent { get; } = null;
+        public string HeadersStringCache { get; set; }
+        public bool ExcludeHeaders { get; }
 
-        public static explicit operator Response(HttpResponse response)
+        private HttpResponse(ITraceable trace)
         {
-            var scResponse = new Response
-            {
-                StatusCode = (ushort) response.StatusCode,
-                StatusDescription = response.StatusDescription
-            };
-            if (response.ContentType != null)
-                scResponse.ContentType = response.ContentType;
-            scResponse.SetHeadersDictionary(response.Headers);
-            if (response.Body != null)
-            {
-                if (!response.Body.CanSeek)
-                    scResponse.BodyBytes = response.Body.ToByteArray();
-                else scResponse.StreamedBody = response.Body;
-            }
-            return scResponse;
+            ExcludeHeaders = false;
+            TraceId = trace.TraceId;
+            TcpConnection = trace.TcpConnection;
         }
 
-        public static explicit operator HttpResponse(HttpWebResponse webResponse)
+        internal HttpResponse(ITraceable trace, HttpStatusCode statusCode, string statusDescription) : this(trace)
         {
-            var response = new HttpResponse
-            {
-                StatusCode = webResponse.StatusCode,
-                StatusDescription = webResponse.StatusDescription,
-                ContentLength = webResponse.ContentLength,
-                ContentType = webResponse.ContentType,
-                Body = webResponse.GetResponseStream()
-                       ?? throw new NullReferenceException("ResponseStream was null"),
-                Headers = new Dictionary<string, string>()
-            };
+            StatusCode = statusCode;
+            StatusDescription = statusDescription;
+        }
+
+        internal HttpResponse(ITraceable trace, HttpWebResponse webResponse) : this(trace)
+        {
+            StatusCode = webResponse.StatusCode;
+            StatusDescription = webResponse.StatusDescription;
+            ContentLength = webResponse.ContentLength;
+            ContentType = webResponse.ContentType;
+            Body = webResponse.GetResponseStream() ?? throw new NullReferenceException("ResponseStream was null");
+            Headers = new Headers();
+            Cookies = new List<string>();
             foreach (var header in webResponse.Headers.AllKeys)
-                response.Headers[header] = webResponse.Headers[header];
-            return response;
+                Headers[header] = webResponse.Headers[header];
         }
 
-        public static explicit operator HttpResponse(Response scResponse)
+        internal HttpResponse(ITraceable trace, Response scResponse) : this(trace)
         {
-            var response = new HttpResponse
-            {
-                StatusCode = (HttpStatusCode) scResponse.StatusCode,
-                StatusDescription = scResponse.StatusDescription,
-                ContentLength = scResponse.ContentLength,
-                ContentType = scResponse.ContentType,
-                Body = scResponse.StreamedBody,
-                Headers = new Dictionary<string, string>()
-            };
-            foreach (var header in scResponse.GetAllHeaders().Split(new[] {"\r\n"}, RemoveEmptyEntries))
-            {
-                var name_value = header.Split(':');
-                response.Headers[name_value[0]] = name_value.SafeGet(v => v[1].Trim());
-            }
-            return response;
+            StatusCode = (HttpStatusCode) scResponse.StatusCode;
+            StatusDescription = scResponse.StatusDescription;
+            ContentLength = scResponse.ContentLength;
+            ContentType = scResponse.ContentType;
+            Body = scResponse.StreamedBody;
+            Headers = new Headers();
+            Cookies = new List<string>();
+            scResponse.GetAllHeaders()
+                .Split("\r\n", RemoveEmptyEntries)
+                .Select(s => s.TSplit(':'))
+                .ForEach(tuple =>
+                {
+                    var (name, value) = tuple;
+                    if (name.EqualsNoCase("Set-Cookie"))
+                        Cookies.Add(value.Trim());
+                    else Headers[name] = value.Trim();
+                });
         }
     }
 }

@@ -25,6 +25,17 @@ namespace RESTar.Linq
         }
 
         /// <summary>
+        /// Joins strings using a separator.
+        /// </summary>
+        /// <param name="source"></param>
+        /// <param name="separator"></param>
+        /// <returns></returns>
+        public static string StringJoin(this IEnumerable<string> source, string separator)
+        {
+            return string.Join(separator, source);
+        }
+
+        /// <summary>
         /// Returns true if and only if the source IEnumerable contains two or more equal objects.
         /// If a duplicate is found, it is assigned to the out 'duplicate' variable.
         /// </summary>
@@ -52,6 +63,47 @@ namespace RESTar.Linq
         {
             duplicate = default;
             var d = new HashSet<T2>();
+            foreach (var t1 in source)
+            {
+                var t2 = selector(t1);
+                if (!d.Add(t2))
+                {
+                    duplicate = t1;
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Returns true if and only if the source IEnumerable contains two or more equal objects.
+        /// If a duplicate is found, it is assigned to the out 'duplicate' variable.
+        /// </summary>
+        public static bool ContainsDuplicates<T>(this IEnumerable<T> source, IEqualityComparer<T> comparer, out T duplicate)
+        {
+            duplicate = default;
+            var d = new HashSet<T>(comparer);
+            foreach (var t in source)
+            {
+                if (!d.Add(t))
+                {
+                    duplicate = t;
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Returns true if and only if the source IEnumerable contains two or more equal objects by
+        /// comparing the images of a selector function. If a duplicate is found, it is assigned to 
+        /// the out 'duplicate' variable.
+        /// </summary>
+        public static bool ContainsDuplicates<T1, T2>(this IEnumerable<T1> source, Func<T1, T2> selector, IEqualityComparer<T2> comparer,
+            out T1 duplicate)
+        {
+            duplicate = default;
+            var d = new HashSet<T2>(comparer);
             foreach (var t1 in source)
             {
                 var t2 = selector(t1);

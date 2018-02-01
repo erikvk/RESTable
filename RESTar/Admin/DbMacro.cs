@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using RESTar.Linq;
 using RESTar.Operations;
@@ -27,9 +29,44 @@ namespace RESTar.Admin
         public string Name { get; set; }
 
         /// <summary>
+        /// The resource locator to use in requests
+        /// </summary>
+        public string ResourceSpecifier { get; set; }
+
+        /// <summary>
+        /// The view, if any, to use in requests
+        /// </summary>
+        public string ViewName { get; set; }
+
+        /// <summary>
+        /// The uri conditions to append to requests
+        /// </summary>
+        public string UriConditionsString { get; set; }
+
+        /// <summary>
+        /// The uri meta-conditions to append to requests
+        /// </summary>
+        public string UriMetaConditionsString { get; set; }
+
+        /// <summary>
         /// The URI of the macro
         /// </summary>
-        public string Uri { get; set; }
+        public string Uri
+        {
+            get
+            {
+                using (var writer = new StringWriter())
+                {
+                    writer.Write('/');
+                    writer.Write(ResourceSpecifier);
+                    writer.Write('/');
+                    writer.Write(UriConditions != null ? string.Join("&", UriConditions) : null);
+                    writer.Write('/');
+                    writer.Write(UriMetaConditions != null ? string.Join("&", UriMetaConditions) : null);
+                    return writer.ToString().TrimEnd('/');
+                }
+            }
+        }
 
         /// <summary>
         /// The body of the macro
@@ -43,7 +80,22 @@ namespace RESTar.Admin
         /// </summary>
         public string Headers { get; set; }
 
+        /// <summary>
+        /// A dictionary representation of the headers for this macro
+        /// </summary>
+        internal Headers HeadersDictionary
+        {
+            get
+            {
+                if (Headers == null) return null;
+                return JsonConvert.DeserializeObject<Headers>(Headers);
+            }
+        }
+
         #endregion
+
+        internal IEnumerable<UriCondition> UriConditions => UriConditionsString?.Split('&').Select(c => new UriCondition(c));
+        internal IEnumerable<UriCondition> UriMetaConditions => UriMetaConditionsString?.Split('&').Select(c => new UriCondition(c));
 
         internal static IEnumerable<DbMacro> GetAll() => Db.SQL<DbMacro>(All);
         internal static DbMacro Get(string macroName) => Db.SQL<DbMacro>(ByName, macroName).FirstOrDefault();
@@ -70,12 +122,12 @@ namespace RESTar.Admin
         /// <summary>
         /// The body of the macro
         /// </summary>
-        public JToken Body { get; set; }
+        [RESTarMember(replaceOnUpdate: true)] public JToken Body { get; set; }
 
         /// <summary>
         /// The headers of the macro
         /// </summary>
-        public JObject Headers { get; set; }
+        [RESTarMember(replaceOnUpdate: true)] public Headers Headers { get; set; }
 
         /// <inheritdoc />
         /// <summary>
@@ -88,40 +140,38 @@ namespace RESTar.Admin
                 invalidReason = "Invalid or missing name";
                 return false;
             }
+
             if (string.IsNullOrWhiteSpace(Uri))
             {
                 invalidReason = "Invalid or missing URI";
                 return false;
             }
+
             if (Uri.ToLower().Contains($"${Name.ToLower()}"))
             {
                 invalidReason = "Macro URIs cannot contain self-references";
                 return false;
             }
+
             try
             {
-                var args = new Args(Uri);
-                if (args.HasMetaConditions && args.MetaConditions.ToLower().Contains("key="))
+                if (URI.Parse(Uri).MetaConditions.Any(c => c.Key.EqualsNoCase("key")))
                 {
                     invalidReason = "Macro URIs cannot contain the 'Key' meta-condition. If API keys are " +
                                     "required, they are expected in each call to the macro.";
                     return false;
                 }
             }
-            catch
+            catch (Exception e)
             {
-                invalidReason = $"Invalid format for URI '{Uri}'.";
+                invalidReason = $"Invalid format for URI '{Uri}'. " + e.Message;
                 return false;
             }
+
             if (Headers != null)
             {
                 foreach (var prop in Headers)
                 {
-                    if (prop.Value.Type != JTokenType.String)
-                    {
-                        invalidReason = $"Invalid value for header '{prop.Key}'. Value must be string";
-                        return false;
-                    }
                     if (prop.Key.ToLower() == "authorization")
                     {
                         invalidReason = "Macro headers cannot contain the Authorization header. If API keys are " +
@@ -130,6 +180,7 @@ namespace RESTar.Admin
                     }
                 }
             }
+
             invalidReason = null;
             return true;
         }
@@ -141,44 +192,52 @@ namespace RESTar.Admin
                 Name = m.Name,
                 Uri = m.Uri,
                 Body = m.BodyBinary != default ? JToken.Parse(m.BodyUTF8) : null,
-                Headers = m.Headers != null ? JObject.Parse(m.Headers) : null
+                Headers = m.Headers != null ? m.HeadersDictionary : null
             })
             .Where(request.Conditions);
 
         /// <inheritdoc />
-        public int Insert(IEnumerable<Macro> entities, IRequest<Macro> request)
+        public int Insert(IRequest<Macro> request)
         {
             var count = 0;
-            foreach (var entity in entities)
+            foreach (var entity in request.GetEntities())
             {
                 if (DbMacro.Get(entity.Name) != null)
                     throw new Exception($"Invalid name. '{entity.Name}' is already in use.");
+                var args = URI.Parse(entity.Uri);
                 Transact.Trans(() => new DbMacro
                 {
                     Name = entity.Name,
-                    Uri = entity.Uri,
+                    ResourceSpecifier = args.ResourceSpecifier,
+                    ViewName = args.ViewName,
+                    UriConditionsString = args.Conditions.Any() ? string.Join("&", args.Conditions) : null,
+                    UriMetaConditionsString = args.MetaConditions.Any() ? string.Join("&", args.MetaConditions) : null,
                     BodyBinary = entity.Body != null ? new Binary(Encoding.UTF8.GetBytes(entity.Body?.ToString())) : default,
-                    Headers = entity.Headers?.ToString()
+                    Headers = entity.Headers != null ? JsonConvert.SerializeObject(entity.Headers) : null
                 });
                 count += 1;
             }
+
             return count;
         }
 
         /// <inheritdoc />
-        public int Update(IEnumerable<Macro> entities, IRequest<Macro> request)
+        public int Update(IRequest<Macro> request)
         {
             var count = 0;
-            entities.ForEach(entity =>
+            request.GetEntities().ForEach(entity =>
             {
                 var dbEntity = DbMacro.Get(entity.Name);
                 if (dbEntity == null) return;
+                var args = URI.Parse(entity.Uri);
                 Transact.Trans(() =>
                 {
-                    dbEntity.Uri = entity.Uri;
-                    dbEntity.BodyBinary =
-                        entity.Body != null ? new Binary(Encoding.UTF8.GetBytes(entity.Body?.ToString())) : default;
-                    dbEntity.Headers = entity.Headers?.ToString();
+                    dbEntity.ResourceSpecifier = args.ResourceSpecifier;
+                    dbEntity.ViewName = args.ViewName;
+                    dbEntity.UriConditionsString = args.Conditions.Any() ? string.Join("&", args.Conditions) : null;
+                    dbEntity.UriMetaConditionsString = args.MetaConditions.Any() ? string.Join("&", args.MetaConditions) : null;
+                    dbEntity.BodyBinary = entity.Body != null ? new Binary(Encoding.UTF8.GetBytes(entity.Body?.ToString())) : default;
+                    dbEntity.Headers = entity.Headers != null ? JsonConvert.SerializeObject(entity.Headers) : null;
                     count += 1;
                 });
             });
@@ -186,10 +245,10 @@ namespace RESTar.Admin
         }
 
         /// <inheritdoc />
-        public int Delete(IEnumerable<Macro> entities, IRequest<Macro> request)
+        public int Delete(IRequest<Macro> request)
         {
             var count = 0;
-            entities.ForEach(entity =>
+            request.GetEntities().ForEach(entity =>
             {
                 Transact.Trans(DbMacro.Get(entity.Name).Delete);
                 count += 1;

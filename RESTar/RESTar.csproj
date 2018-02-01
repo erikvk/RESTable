@@ -49,8 +49,8 @@
     <Reference Include="DocumentFormat.OpenXml, Version=2.5.5631.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <HintPath>..\packages\DocumentFormat.OpenXml.2.5\lib\DocumentFormat.OpenXml.dll</HintPath>
     </Reference>
-    <Reference Include="Dynamit, Version=0.1.23.0, Culture=neutral, processorArchitecture=AMD64">
-      <HintPath>..\packages\Dynamit.0.1.23\lib\net45\Dynamit.dll</HintPath>
+    <Reference Include="Dynamit, Version=0.1.28.0, Culture=neutral, processorArchitecture=AMD64">
+      <HintPath>..\packages\Dynamit.0.1.28\lib\net45\Dynamit.dll</HintPath>
     </Reference>
     <Reference Include="ExcelDataReader, Version=3.3.0.0, Culture=neutral, PublicKeyToken=93517dbe6a4012fa, processorArchitecture=MSIL">
       <HintPath>..\packages\ExcelDataReader.3.3.0\lib\net45\ExcelDataReader.dll</HintPath>
@@ -66,19 +66,13 @@
     <Reference Include="Newtonsoft.Json, Version=10.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\packages\Newtonsoft.Json.10.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
+    <Reference Include="Starcounter, Version=2.0.0.0, Culture=neutral, PublicKeyToken=d2df1e81d0ca3abf, processorArchitecture=AMD64" />
+    <Reference Include="Starcounter.Internal, Version=2.0.0.0, Culture=neutral, PublicKeyToken=d2df1e81d0ca3abf, processorArchitecture=MSIL" />
+    <Reference Include="Starcounter.Logging, Version=2.0.0.0, Culture=neutral, PublicKeyToken=d2df1e81d0ca3abf, processorArchitecture=MSIL" />
     <Reference Include="Starcounter.XSON, Version=2.0.0.0, Culture=neutral, PublicKeyToken=d2df1e81d0ca3abf, processorArchitecture=MSIL" />
     <Reference Include="System" />
     <Reference Include="System.Core">
       <RequiredTargetFramework>4.0</RequiredTargetFramework>
-    </Reference>
-    <Reference Include="Starcounter, Version=2.0.0.0, Culture=neutral, PublicKeyToken=d2df1e81d0ca3abf">
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="Starcounter.Internal, Version=2.0.0.0, Culture=neutral, PublicKeyToken=d2df1e81d0ca3abf">
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="Starcounter.Logging, Version=2.0.0.0, Culture=neutral, PublicKeyToken=d2df1e81d0ca3abf">
-      <Private>False</Private>
     </Reference>
     <Reference Include="System.Data" />
     <Reference Include="System.IO.Compression" />
@@ -90,24 +84,54 @@
     <Reference Include="System.XML" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Admin\WebSocket.cs" />
     <Compile Include="Admin\AdminTools.cs" />
+    <Compile Include="Admin\Console.cs" />
     <Compile Include="Admin\DbMacro.cs" />
+    <Compile Include="Logging\ConsoleFormat.cs" />
+    <Compile Include="Logging\ConsoleStatus.cs" />
+    <Compile Include="Logging\ILogable.cs" />
+    <Compile Include="Logging\LogEventType.cs" />
+    <Compile Include="Logging\LogItem.cs" />
+    <Compile Include="Logging\HTTPEvent.cs" />
+    <Compile Include="Logging\WebSocketEvent.cs" />
+    <Compile Include="Operations\Search.cs" />
+    <Compile Include="Serialization\GetterSetterProvider.cs" />
+    <Compile Include="Serialization\NativeProtocol\HeadersConverter.cs" />
+    <Compile Include="ViewInfo.cs" />
     <Compile Include="Aggregator.cs" />
     <Compile Include="Deflection\TermBindingRules.cs" />
     <Compile Include="Admin\DbOutputFormat.cs" />
     <Compile Include="DynamicTableAttribute.cs" />
     <Compile Include="Formatter.cs" />
     <Compile Include="Http\HttpResponse.cs" />
+    <Compile Include="Internal\IResource.cs" />
     <Compile Include="Internal\IResourceInternal.cs" />
     <Compile Include="Internal\ITarget.cs" />
+    <Compile Include="Internal\TerminalResource.cs" />
     <Compile Include="Internal\View.cs" />
+    <Compile Include="IWebSocket.cs" />
     <Compile Include="LineEndings.cs" />
+    <Compile Include="Methods.cs" />
+    <Compile Include="OData\MetadataDocument.cs" />
+    <Compile Include="OData\MetadataKeys.cs" />
+    <Compile Include="OData\QueryOptions.cs" />
+    <Compile Include="OData\MetaDataLevel.cs" />
+    <Compile Include="OData\ODataServiceEntity.cs" />
     <Compile Include="Operations\AuthResults.cs" />
     <Compile Include="Operations\Distinct.cs" />
+    <Compile Include="Operations\IFinalizedResult.cs" />
+    <Compile Include="Operations\Result.cs" />
+    <Compile Include="OData\ODataProtocolProvider.cs" />
+    <Compile Include="Requests\RESTarProtocolProvider.cs" />
+    <Compile Include="Requests\ResultFinalizer.cs" />
     <Compile Include="RegEx.cs" />
-    <Compile Include="Report.cs" />
-    <Compile Include="Requests\Evaluator.cs" />
+    <Compile Include="Requests\RequestEvaluator.cs" />
     <Compile Include="Requests\Headers.cs" />
+    <Compile Include="Requests\RESTProtocols.cs" />
+    <Compile Include="Requests\StarcounterWebSocket.cs" />
+    <Compile Include="Requests\Uri.cs" />
+    <Compile Include="Requests\UriCondition.cs" />
     <Compile Include="ResourceProviderAttribute.cs" />
     <Compile Include="Resources\StarcounterIndexer.cs" />
     <Compile Include="AvailableResource.cs" />
@@ -117,7 +141,7 @@
     <Compile Include="Deflection\EnumMember.cs" />
     <Compile Include="Deflection\ExtensionMethods.cs" />
     <Compile Include="Deflection\Dynamic\Delegates.cs" />
-    <Compile Include="Deflection\Dynamic\SpecialProperties.cs" />
+    <Compile Include="Deflection\Dynamic\SpecialProperty.cs" />
     <Compile Include="Deflection\Dynamic\TypeCache.cs" />
     <Compile Include="Admin\TermCache.cs" />
     <Compile Include="Echo.cs" />
@@ -130,13 +154,13 @@
     <Compile Include="Operations\IProcessor.cs" />
     <Compile Include="Operations\Transact.cs" />
     <Compile Include="Operations\Transaction.cs" />
-    <Compile Include="Requests\Args.cs" />
+    <Compile Include="Requests\Arguments.cs" />
     <Compile Include="Requests\DataConfig.cs" />
-    <Compile Include="Requests\HandlerActions.cs" />
+    <Compile Include="Requests\Action.cs" />
     <Compile Include="Internal\ErrorCodes.cs" />
     <Compile Include="Operators.cs" />
     <Compile Include="Request.cs" />
-    <Compile Include="Requests\Origin.cs" />
+    <Compile Include="Requests\TCPConnection.cs" />
     <Compile Include="Requests\ViewRequest.cs" />
     <Compile Include="Resource.cs" />
     <Compile Include="ResourceAlias.cs" />
@@ -149,9 +173,10 @@
     <Compile Include="Resources\StarcounterProvider.cs" />
     <Compile Include="Resources\VirtualResourceProvider.cs" />
     <Compile Include="Resources\ResourceWrapper.cs" />
+    <Compile Include="ResourceKind.cs" />
     <Compile Include="RESTarAttribute.cs" />
     <Compile Include="RESTarInternalAttribute.cs" />
-    <Compile Include="RESTarMethods.cs" />
+    <Compile Include="MethodComparer.cs" />
     <Compile Include="Internal\RESTarOperations.cs" />
     <Compile Include="Internal\Authenticator.cs" />
     <Compile Include="Operations\Add.cs" />
@@ -171,7 +196,7 @@
     <Compile Include="DynamitControl.cs" />
     <Compile Include="Internal\DDictionaryOperations.cs" />
     <Compile Include="DynamicTables.cs" />
-    <Compile Include="Internal\IResource.cs" />
+    <Compile Include="Internal\IEntityResource.cs" />
     <Compile Include="Deflection\Dynamic\Property.cs" />
     <Compile Include="Deflection\Dynamic\Term.cs" />
     <Compile Include="Operations\Delegates.cs" />
@@ -181,33 +206,105 @@
     <Compile Include="ExtensionMethods.cs" />
     <Compile Include="Help.cs" />
     <Compile Include="IRequest.cs" />
-    <Compile Include="Internal\Resource.cs" />
+    <Compile Include="Internal\EntityResource.cs" />
     <Compile Include="Log.cs" />
     <Compile Include="Operator.cs" />
     <Compile Include="Admin\Resource.cs" />
     <Compile Include="Admin\ResourceAlias.cs" />
     <Compile Include="RESTarConfig.cs" />
     <Compile Include="Operations\Operations.cs" />
-    <Compile Include="RESTarExceptions.cs" />
+    <Compile Include="Results\Error\BadRequest\Aborted\AbortedReport.cs" />
+    <Compile Include="Results\Error\BadRequest\Aborted\AbortedDelete.cs" />
+    <Compile Include="Results\Error\BadRequest\Aborted\AbortedInsert.cs" />
+    <Compile Include="Results\Error\BadRequest\Aborted\AbortedOperation.cs" />
+    <Compile Include="Results\Error\BadRequest\Aborted\AbortedProfile.cs" />
+    <Compile Include="Results\Error\BadRequest\Aborted\AbortedSelect.cs" />
+    <Compile Include="Results\Error\BadRequest\Aborted\AbortedUpdate.cs" />
+    <Compile Include="Results\Error\BadRequest\AliasAlreadyInUse.cs" />
+    <Compile Include="Results\Error\BadRequest\AliasEqualToResourceName.cs" />
+    <Compile Include="Results\Error\BadRequest\AmbiguousMatch.cs" />
+    <Compile Include="Results\Error\BadRequest\BadConditionOperator - Copy.cs" />
+    <Compile Include="Results\Error\BadRequest\BadRequest.cs" />
+    <Compile Include="Results\Error\BadRequest\FailedJsonDeserialization.cs" />
+    <Compile Include="Results\Error\DatabaseError.cs" />
+    <Compile Include="Results\Error\Forbidden\AbortedByCommitHook.cs" />
+    <Compile Include="Results\Error\Forbidden\FailedResourceAuthentication.cs" />
+    <Compile Include="Results\Error\Forbidden\MethodUnavailable.cs" />
+    <Compile Include="Results\Error\Forbidden\MethodNotAllowed.cs" />
+    <Compile Include="Results\Error\Forbidden\UserNotSignedIn.cs" />
+    <Compile Include="Results\Error\Internal.cs" />
+    <Compile Include="Results\Error\InvalidTerminalDeclaration.cs" />
+    <Compile Include="Results\Error\UnsupportedWebSocketData.cs" />
+    <Compile Include="Results\Error\UpgradeRequired.cs" />
+    <Compile Include="Results\Error\NotFound\AmbiguousResource.cs" />
+    <Compile Include="Results\Error\BadRequest\ExcelFormatError.cs" />
+    <Compile Include="Results\Error\BadRequest\ExcelInputError.cs" />
+    <Compile Include="Results\Error\InvalidExternalResourceProvider.cs" />
+    <Compile Include="Results\Error\FeatureNotImplemented.cs" />
+    <Compile Include="Results\Error\Forbidden\Forbidden.cs" />
+    <Compile Include="Results\Error\BadRequest\BadConditionOperator.cs" />
+    <Compile Include="Results\Error\HttpRequestException.cs" />
+    <Compile Include="Results\Error\InfiniteLoop.cs" />
+    <Compile Include="Results\Error\BadRequest\InvalidExternalDestination.cs" />
+    <Compile Include="Results\Error\BadRequest\InvalidExternalSource.cs" />
+    <Compile Include="Results\Error\BadRequest\InvalidInputCount.cs" />
+    <Compile Include="Results\Error\Forbidden\InvalidOrigin.cs" />
+    <Compile Include="Results\Error\BadRequest\InvalidSyntax.cs" />
+    <Compile Include="Results\Error\MissingConfigurationFile.cs" />
+    <Compile Include="Results\Error\BadRequest\NoAvalailableDynamicTable.cs" />
+    <Compile Include="Results\Error\NotFound\NoHtml.cs" />
+    <Compile Include="Results\Error\NotAcceptable.cs" />
+    <Compile Include="Results\Error\Forbidden\NotAllowedViewAction.cs" />
+    <Compile Include="Results\Error\Forbidden\NotAuthorized.cs" />
+    <Compile Include="Results\Error\NotFound\NotFound.cs" />
+    <Compile Include="Results\Error\NotInitialized.cs" />
+    <Compile Include="Results\Error\BadRequest\InvalidOperator.cs" />
+    <Compile Include="Results\Error\InvalidResourceDeclaration.cs" />
+    <Compile Include="Results\Error\Forbidden\ResourceIsInternal.cs" />
+    <Compile Include="Results\Error\BadRequest\InvalidResourceMember.cs" />
+    <Compile Include="Results\Error\InvalidResourceViewDeclaration.cs" />
+    <Compile Include="Results\Error\InvalidResourceWrapper.cs" />
+    <Compile Include="Results\Error\RESTarError.cs" />
     <Compile Include="Operations\OrderBy.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Admin\Error.cs" />
     <Compile Include="Admin\Schema.cs" />
     <Compile Include="RESTarMemberAttribute.cs" />
     <Compile Include="RESTarViewAttribute.cs" />
-    <Compile Include="Serialization\FormatWriter.cs" />
-    <Compile Include="Serialization\RESTarFromExcelJsonWriter.cs" />
-    <Compile Include="Serialization\RESTarJsonWriter.cs" />
+    <Compile Include="Results\Error\NotFound\UnknownMacro.cs" />
+    <Compile Include="Results\Error\NotFound\UnknownProperty.cs" />
+    <Compile Include="Results\Error\NotFound\UnknownResource.cs" />
+    <Compile Include="Results\Error\BadRequest\UnknownResourceForAlias.cs" />
+    <Compile Include="Results\Error\NotFound\UnknownView.cs" />
+    <Compile Include="Results\Error\Unknown.cs" />
+    <Compile Include="Results\Error\UnsupportedContent.cs" />
+    <Compile Include="Results\Error\BadRequest\UnsupportedODataVersion.cs" />
+    <Compile Include="Results\Error\BadRequest\FailedValidation.cs" />
+    <Compile Include="Results\Error\InvalidVirtualResourceDeclaration.cs" />
+    <Compile Include="Results\Success\AcceptOrigin.cs" />
+    <Compile Include="Results\Success\DeletedEntities.cs" />
+    <Compile Include="Results\Success\Entities.cs" />
+    <Compile Include="Results\Success\InsertedEntities.cs" />
+    <Compile Include="Admin\Metadata.cs" />
+    <Compile Include="Results\Success\NoContent.cs" />
+    <Compile Include="Results\Success\OK.cs" />
+    <Compile Include="Results\Success\Report.cs" />
+    <Compile Include="Results\Success\SafePostedEntities.cs" />
+    <Compile Include="Results\Success\UpdatedEntities.cs" />
+    <Compile Include="Serialization\NativeProtocol\FormatWriter.cs" />
+    <Compile Include="Serialization\OData\ODataJsonWriter.cs" />
+    <Compile Include="Serialization\NativeProtocol\RESTarFromExcelJsonWriter.cs" />
+    <Compile Include="Serialization\NativeProtocol\RESTarJsonWriter.cs" />
     <Compile Include="Serialization\Serializer.cs" />
     <Compile Include="SetOperations.cs" />
     <Compile Include="Internal\StarcounterOperations.cs" />
-    <Compile Include="Requests\Responses.cs" />
     <Compile Include="Operations\Select.cs" />
     <Compile Include="Admin\Settings.cs" />
-    <Compile Include="Deflection\Dynamic\StaticProperty.cs" />
-    <Compile Include="Serialization\ValueProviders.cs" />
-    <Compile Include="Serialization\CreateViewModelResolver.cs" />
-    <Compile Include="Serialization\DefaultResolver.cs" />
+    <Compile Include="Deflection\Dynamic\DeclaredProperty.cs" />
+    <Compile Include="Serialization\NativeProtocol\ValueProviders.cs" />
+    <Compile Include="Serialization\NativeProtocol\CreateViewModelResolver.cs" />
+    <Compile Include="Serialization\NativeProtocol\DefaultResolver.cs" />
+    <Compile Include="ITerminal.cs" />
     <Compile Include="View\Menu.json.cs">
       <DependentUpon>Menu.json</DependentUpon>
     </Compile>
@@ -224,6 +321,13 @@
       <DependentUpon>Item.json</DependentUpon>
     </Compile>
     <Compile Include="View\RESTarDataView.cs" />
+    <Compile Include="WebSocketStatus.cs" />
+    <Compile Include="WebSockets\ConnectionProfile.cs" />
+    <Compile Include="WebSockets\IWebSocketInternal.cs" />
+    <Compile Include="Shell.cs" />
+    <Compile Include="WebSockets\UnknownWebSocket.cs" />
+    <Compile Include="WebSockets\WebSocketComparer.cs" />
+    <Compile Include="WebSockets\WebSocketController.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
@@ -248,6 +352,7 @@
     </TypedJSON>
     <None Include="weaver.ignore" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="$(StarcounterBin)\Starcounter.MsBuild.targets" />
   <PropertyGroup>

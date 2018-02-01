@@ -6,21 +6,30 @@
     internal struct RegEx
     {
         /// <summary>
+        /// Used when extracting the protocol from a URI
+        /// </summary>
+        internal const string Protocol = @"^(?<proto>-[^\?/\(]*)?(?<key>\([^\)]+\))?(?<tail>.*)";
+
+        /// <summary>
         /// The main URI regex, used when parsing requests
         /// </summary>
-        internal const string RequestUri =
-            @"\?*(?<resource_or_macro>/[^/-]*)?(?<view>-\w*)?(?<conditions>/[^/]*)?(?<metaconditions>/[^/]*)?";
+        internal const string RESTarRequestUri = @"^\??((?<res>/[^/-]*)|((?<res>/[^/-]*)(?<view>-\w*)))?(?<cond>/[^/]*)?(?<meta>/[^/]*)?/?$";
+
+        /// <summary>
+        /// The main URI regex, used when parsing requests
+        /// </summary>
+        internal const string ODataRequestUri = @"(?<entityset>/[^/\?]*)?(?<options>\?[^/]*)?";
+
+        /// <summary>
+        /// Checks API keys for invalid characters. May only contain non-whitespace characters and non-parentheses
+        /// </summary>
+        internal const string ApiKey = @"^[^\s\(\)]+$";
 
         /// <summary>
         /// The base URI regex, used when validating base uris in RESTarConfig.Init
         /// </summary>
-        internal const string BaseUri = @"^/?\w+$";
+        internal const string BaseUri = @"^/?[\/\w]+$";
 
-        /// <summary>
-        /// A regex used to isolate the key meta-condition in meta-condition strings
-        /// </summary>
-        internal const string KeyMetaCondition = @"&key=(?<key>[^/&]+)|key=(?<key>[^/&]+)&?";
-        
         /// <summary>
         /// Matches only letters, numbers and underscores
         /// </summary>
@@ -47,8 +56,23 @@
         internal const string MapMacro = @"\$\([^\$\(\)]+\)";
 
         /// <summary>
-        /// Matches all header names reserved by RESTar
+        /// Matches unsupported OData operators in URIs
         /// </summary>
-        internal const string ReservedHeaders = @"^(source|destination|authorization|restar-authtoken)$";
+        internal const string UnsupportedODataOperatorRegex = @"(/| has | not | cast\(.*\)| mul | div | mod | add | sub | isof | or )";
+
+        /// <summary>
+        /// Matches condition literals sorrounded with double quotes
+        /// </summary>
+        internal const string DoubleQuoteRegex = "^\"(?<content>[^\"]*)\"$";
+
+        /// <summary>
+        /// Matches condition literals sorrounded with single quotes
+        /// </summary>
+        internal const string SingleQuoteRegex = "^\'(?<content>[^\']*)\'$";
+
+        /// <summary>
+        /// Used when matching parts of URI conditions
+        /// </summary>
+        internal const string UriCondition = @"^(?<key>[^\!=<>]*)(?<op>(=|\!=|<|>|<=|>=))(?<val>.*)$";
     }
 }

@@ -8,6 +8,7 @@ using Newtonsoft.Json.Linq;
 using RESTar.Http;
 using RESTar.Serialization;
 using static System.Net.HttpStatusCode;
+using static System.StringComparison;
 using static RESTar.Methods;
 using JTokens = System.Collections.Generic.IEnumerable<Newtonsoft.Json.Linq.JToken>;
 
@@ -57,8 +58,7 @@ namespace RESTar
                         else if (char.IsDigit(first) || first == '/')
                         {
                             var uri = str;
-                            var response = HttpRequest.Internal(GET, new Uri(uri, UriKind.Relative),
-                                request.AuthToken);
+                            var response = HttpRequest.Internal(request, GET, new Uri(uri, UriKind.Relative), request.AuthToken);
                             if (response?.IsSuccessStatusCode != true)
                                 throw new Exception(
                                     $"Could not get source data from '{uri}'. " +
@@ -70,6 +70,7 @@ namespace RESTar
                         else
                             throw new Exception($"Invalid string '{str}'. Must be a relative REST request URI " +
                                                 "beginning with '/<resource locator>' or a JSON array.");
+
                         return json.Deserialize<JArray>();
                     case JObject obj:
                         var prop = obj.Properties().FirstOrDefault();
@@ -141,7 +142,7 @@ namespace RESTar
             var mapped = new HashSet<JToken>(EqualityComparer);
             foreach (var item in Distinct(set))
             {
-                var obj = item as IDictionary<string, JToken> ??
+                var obj = item as JObject ??
                           throw new Exception("JSON syntax error in map set. Set must be of objects");
                 var skip = false;
                 var localMapper = mapper;
@@ -149,17 +150,18 @@ namespace RESTar
                 {
                     var matchValue = match.Value;
                     var key = matchValue.Substring(2, matchValue.Length - 3);
-                    if (obj.TryGetNoCase(key, out var val))
+                    if (obj.GetValue(key, OrdinalIgnoreCase) is JToken val)
                     {
-                        var value = val?.ToString() ?? "null";
+                        var value = val.Value<string>();
                         if (value == "") value = "\"\"";
                         localMapper = localMapper.Replace(matchValue, WebUtility.UrlEncode(value));
                     }
                     else skip = true;
                 }
+
                 if (!skip)
                 {
-                    var response = HttpRequest.Internal(GET, new Uri(localMapper, UriKind.Relative), request.AuthToken);
+                    var response = HttpRequest.Internal(request, GET, new Uri(localMapper, UriKind.Relative), request.AuthToken);
                     if (response?.IsSuccessStatusCode != true)
                         throw new Exception(
                             $"Could not get source data from '{localMapper}'. " +
@@ -168,6 +170,7 @@ namespace RESTar
                     else Serializer.Populate(response.Body.GetString(), mapped);
                 }
             }
+
             return mapped;
         }
 

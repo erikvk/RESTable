@@ -7,10 +7,7 @@ using RESTar;
 using RESTar.Resources;
 using Starcounter;
 
-// ReSharper disable UnassignedGetOnlyAutoProperty
-// ReSharper disable UnusedMember.Global
-
-#pragma warning disable 1591
+// ReSharper disable All
 
 namespace RESTarExample
 {
@@ -20,6 +17,7 @@ namespace RESTarExample
         {
             RESTarConfig.Init
             (
+                uri: "/rest",
                 requireApiKey: true,
                 allowAllOrigins: false,
                 viewEnabled: true,
@@ -34,8 +32,23 @@ namespace RESTarExample
     [Database, RESTar]
     public class Static
     {
+        [RESTarMember(hideIfNull:true)]
         public int Swoo { get; set; }
-        public string Str { get; set; }
+        private string _str;
+
+        public string Str
+        {
+            get => _str;
+            set
+            {
+                if (value == "nono")
+                    throw new Exception("Oh no no!");
+                else _str = value;
+            }
+        }
+
+        public dynamic XOXO => Str;
+
         public int Int { get; set; }
     }
 
@@ -61,9 +74,7 @@ namespace RESTarExample
                     ["Int"] = 14
                 },
                 new SemiDynamic
-                {
-                    ["Str"] = "123"
-                },
+                    {["Str"] = "123"},
                 new SemiDynamic
                 {
                     ["Str"] = "1ds23",
@@ -86,9 +97,7 @@ namespace RESTarExample
                     ["Int"] = 14
                 },
                 new SemiDynamic2
-                {
-                    ["Str"] = "123"
-                },
+                    {["Str"] = "123"},
                 new SemiDynamic2
                 {
                     ["Str"] = "1ds23",
@@ -135,7 +144,7 @@ namespace RESTarExample
 
     #region Random resources
 
-    [RESTar(Methods.GET)]
+    [RESTar]
     public class MyThing : ResourceWrapper<Table> { }
 
     [Database]
@@ -231,8 +240,9 @@ namespace RESTarExample
         public string S { get; set; }
         public string[] Ss { get; set; }
 
-        public int Insert(IEnumerable<R> entities, IRequest<R> request)
+        public int Insert(IRequest<R> request)
         {
+            var entities = request.GetEntities();
             return entities.Count();
         }
 
@@ -241,13 +251,15 @@ namespace RESTarExample
             return new[] {new R {S = "Swoo", Ss = new[] {"S", "Sd"}}};
         }
 
-        public int Update(IEnumerable<R> entities, IRequest<R> request)
+        public int Update(IRequest<R> request)
         {
+            var entities = request.GetEntities();
             return entities.Count();
         }
 
-        public int Delete(IEnumerable<R> entities, IRequest<R> request)
+        public int Delete(IRequest<R> request)
         {
+            var entities = request.GetEntities();
             return entities.Count();
         }
     }

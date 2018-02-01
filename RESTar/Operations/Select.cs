@@ -13,7 +13,7 @@ namespace RESTar.Operations
     /// </summary>
     public class Select : List<Term>, ICollection<Term>, IProcessor
     {
-        internal Select(IResource resource, string keys, ICollection<string> dynDomain) => keys
+        internal Select(IEntityResource resource, string keys, ICollection<string> dynDomain) => keys
             .Split(',')
             .Distinct()
             .Select(key => resource.MakeOutputTerm(key, dynDomain))

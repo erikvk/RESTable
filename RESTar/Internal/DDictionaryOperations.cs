@@ -24,25 +24,39 @@ namespace RESTar.Internal
         {
             Select = r =>
             {
-                (string, Dynamit.Operator, dynamic)? finderCond(Condition<T> c) => (c.Key, (Dynamit.Operator) c.Operator, c.Value);
-                var finderConditions = new List<(string, Dynamit.Operator, dynamic)?>();
+                var finderConditions = new List<(string, Dynamit.Operator, dynamic)>();
                 var otherConditions = new HashSet<Condition<T>>();
                 foreach (var cond in r.Conditions)
                 {
-                    if (cond.InternalOperator.Equality && cond.Term.Count == 1 && cond.Term.IsDynamic)
-                        finderConditions.Add(finderCond(cond));
+                    if (cond.InternalOperator.Equality && cond.Term.Count == 1)
+                        finderConditions.Add((cond.Key, (Dynamit.Operator) cond.Operator, cond.Value));
                     else otherConditions.Add(cond);
                 }
                 var results = Finder<T>.Where(finderConditions.ToArray());
                 return otherConditions.Any() ? results.Where(otherConditions) : results;
             };
-            Insert = (e, r) => e.Count();
-            Update = (e, r) => e.Count();
-            Delete = (e, r) => e.Sum(_e =>
+            Insert = r =>
             {
-                _e.Delete();
-                return 1;
-            });
+                var count = 0;
+                Db.TransactAsync(() => count = r.GetEntities().Count());
+                return count;
+            };
+            Update = r =>
+            {
+                var count = 0;
+                Db.TransactAsync(() => count = r.GetEntities().Count());
+                return count;
+            };
+            Delete = r =>
+            {
+                var count = 0;
+                Db.TransactAsync(() => r.GetEntities().ForEach(entity =>
+                {
+                    entity.Delete();
+                    count += 1;
+                }));
+                return count;
+            };
             Count = r =>
             {
                 if (r.MetaConditions.Distinct != null)

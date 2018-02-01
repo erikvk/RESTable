@@ -5,6 +5,7 @@ using System.Reflection;
 using RESTar.Internal;
 using RESTar.Linq;
 using RESTar.Operations;
+using RESTar.Results.Error;
 using static System.Reflection.BindingFlags;
 using static RESTar.Operations.DelegateMaker;
 
@@ -32,7 +33,7 @@ namespace RESTar.Resources
         /// The ReceiveClaimed method is called by RESTar once the resources provided
         /// by this ResourceProvider have been added.
         /// </summary>
-        public virtual void ReceiveClaimed(ICollection<IResource> claimedResources) { }
+        public virtual void ReceiveClaimed(ICollection<IEntityResource> claimedResources) { }
     }
 
     /// <inheritdoc />
@@ -115,7 +116,7 @@ namespace RESTar.Resources
         internal override bool Include(Type type)
         {
             if (!typeof(TBase).IsAssignableFrom(type))
-                throw new ResourceDeclarationException(
+                throw new InvalidResourceDeclaration(
                     $"Invalid resource declaration for type '{type.FullName}'. Expected type to " +
                     $"inherit from base type '{typeof(TBase).FullName}' as required by resource " +
                     $"provider of type '{GetType().FullName}'.");
@@ -134,23 +135,23 @@ namespace RESTar.Resources
         internal override void MakeClaimRegular(IEnumerable<Type> types) => types.ForEach(type =>
         {
             if (!IsValid(type, out var reason))
-                throw new ResourceDeclarationException("An error was found in the declaration for resource " +
-                                                       $"type '{type.FullName}': " + reason);
+                throw new InvalidResourceDeclaration("An error was found in the declaration for resource " +
+                                                     $"type '{type.FullName}': " + reason);
             BuildRegularMethod.MakeGenericMethod(type).Invoke(this, null);
         });
 
         internal override void MakeClaimWrapped(IEnumerable<Type> types) => types.ForEach(type =>
         {
             if (!IsValid(type, out var reason))
-                throw new ResourceDeclarationException("An error was found in the declaration for wrapper resource " +
-                                                       $"type '{type.FullName}': " + reason);
+                throw new InvalidResourceDeclaration("An error was found in the declaration for wrapper resource " +
+                                                     $"type '{type.FullName}': " + reason);
             BuildWrapperMethod.MakeGenericMethod(type, type.GetWrappedType()).Invoke(this, null);
         });
 
         private void BuildRegularResource<TResource>()
-            where TResource : class, TBase => new Internal.Resource<TResource>
+            where TResource : class, TBase => new EntityResource<TResource>
         (
-            name: typeof(TResource).FullName,
+            fullName: typeof(TResource).FullName,
             attribute: typeof(TResource).GetAttribute<RESTarAttribute>(),
             selector: GetDelegate<Selector<TResource>>(typeof(TResource)) ?? GetDefaultSelector<TResource>(),
             inserter: GetDelegate<Inserter<TResource>>(typeof(TResource)) ?? GetDefaultInserter<TResource>(),
@@ -165,9 +166,9 @@ namespace RESTar.Resources
 
         private void BuildWrapperResource<TWrapper, TWrapped>()
             where TWrapper : ResourceWrapper<TWrapped>
-            where TWrapped : class, TBase => new Internal.Resource<TWrapped>
+            where TWrapped : class, TBase => new EntityResource<TWrapped>
         (
-            name: typeof(TWrapper).FullName,
+            fullName: typeof(TWrapper).FullName,
             attribute: typeof(TWrapper).GetAttribute<RESTarAttribute>(),
             selector: GetDelegate<Selector<TWrapped>>(typeof(TWrapper)) ?? GetDefaultSelector<TWrapped>(),
             inserter: GetDelegate<Inserter<TWrapped>>(typeof(TWrapper)) ?? GetDefaultInserter<TWrapped>(),
@@ -183,12 +184,12 @@ namespace RESTar.Resources
         internal override void Validate()
         {
             if (AttributeType == null)
-                throw new ExternalResourceProviderException("AttributeType cannot be null");
+                throw new InvalidExternalResourceProvider("AttributeType cannot be null");
             if (!AttributeType.IsSubclassOf(typeof(Attribute)))
-                throw new ExternalResourceProviderException("Provided AttributeType is not an attribute type");
+                throw new InvalidExternalResourceProvider("Provided AttributeType is not an attribute type");
             if (!AttributeType.IsSubclassOf(typeof(ResourceProviderAttribute)))
-                throw new ExternalResourceProviderException($"Provided AttributeType '{AttributeType.FullName}' " +
-                                                            $"does not inherit from RESTar.ResourceProviderAttribute");
+                throw new InvalidExternalResourceProvider($"Provided AttributeType '{AttributeType.FullName}' " +
+                                                          $"does not inherit from RESTar.ResourceProviderAttribute");
         }
 
         private static View<TResource>[] GetViews<TResource>() where TResource : class, TBase => typeof(TResource)

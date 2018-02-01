@@ -37,14 +37,23 @@ namespace RESTar.Internal
 
         internal View(Type type)
         {
-            var attribute = type.GetAttribute<RESTarViewAttribute>();
-            ConditionBindingRule = attribute.AllowDynamicConditions
-                ? StaticWithDynamicFallback
-                : OnlyStatic;
-            Name = type.Name;
-            Description = attribute.Description;
             Type = type;
+            Name = type.Name;
             Select = DelegateMaker.GetDelegate<Selector<T>>(type);
+            var viewAttribute = type.GetAttribute<RESTarViewAttribute>();
+            Description = viewAttribute.Description;
+            ConditionBindingRule = viewAttribute.AllowDynamicConditions
+                ? DeclaredWithDynamicFallback
+                : OnlyDeclared;
         }
+
+        /// <inheritdoc />
+        public override string ToString() => Name;
+
+        /// <inheritdoc />
+        public override bool Equals(object obj) => obj is View<T> view && view.Name == Name;
+
+        /// <inheritdoc />
+        public override int GetHashCode() => Name.GetHashCode();
     }
 }

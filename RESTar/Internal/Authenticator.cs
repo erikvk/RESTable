@@ -1,12 +1,10 @@
 ﻿using System;
 using System.Linq;
-using System.Net;
-using System.Text.RegularExpressions;
+using System.Text;
 using RESTar.Auth;
 using RESTar.Requests;
+using RESTar.Results.Fail.Forbidden;
 using Starcounter;
-using static System.Text.RegularExpressions.RegexOptions;
-using static RESTar.Internal.ErrorCodes;
 using static RESTar.RESTarConfig;
 
 namespace RESTar.Internal
@@ -15,9 +13,6 @@ namespace RESTar.Internal
     {
         internal const string CurrentUser = "SELECT t.Token.User FROM Simplified.Ring5.SystemUserSession t " +
                                             "WHERE t.SessionIdString =? AND t.Token.User IS NOT NULL";
-
-        internal static ForbiddenException NotAuthorizedException => new ForbiddenException(NotAuthorized,
-            "Not authorized");
 
         internal static readonly string AppToken = Guid.NewGuid().ToString();
 
@@ -30,12 +25,12 @@ namespace RESTar.Internal
         internal static void CheckUser()
         {
             if (GetCurrentSystemUser() == null)
-                throw new ForbiddenException(NotSignedIn, "User is not signed in");
+                throw new UserNotSignedIn();
         }
 
         internal static void Authenticate<T>(this ViewRequest<T> request) where T : class
         {
-            var user = GetCurrentSystemUser() ?? throw new ForbiddenException(NotSignedIn, "User is not signed in");
+            var user = GetCurrentSystemUser() ?? throw new UserNotSignedIn();
             var token = user.GetObjectID().SHA256();
             if (AuthTokens.ContainsKey(token))
                 request.AuthToken = token;
@@ -47,44 +42,44 @@ namespace RESTar.Internal
             if (!request.Resource.RequiresAuthentication) return;
             var authResults = request.Resource.Authenticate(request);
             if (!authResults.Success)
-                throw new ForbiddenException(FailedResourceAuthentication, authResults.Reason);
+                throw new FailedResourceAuthentication(authResults.Reason);
         }
 
-        internal static void Authenticate<T>(this RESTRequest<T> request, ref Args args) where T : class
+        internal static void Authenticate(this Arguments arguments)
+        {
+            arguments.AuthToken = GetAuthToken(arguments);
+            if (arguments.AuthToken == null)
+                arguments.Error = new NotAuthorized();
+        }
+
+        private static string GetAuthToken(Arguments arguments)
         {
             if (!RequireApiKey)
-            {
-                request.AuthToken = AssignAuthtoken(AccessRights.Root);
-                return;
-            }
+                return AssignAuthtoken(AccessRights.Root);
             AccessRights accessRights;
-            if (!args.Origin.IsExternal)
+            if (arguments.TcpConnection.IsInternal)
             {
-                var authToken = args.Headers.SafeGet("RESTar-AuthToken");
-                if (string.IsNullOrWhiteSpace(authToken))
-                    throw NotAuthorizedException;
-                if (!AuthTokens.TryGetValue(authToken, out accessRights))
-                    throw NotAuthorizedException;
-                request.AuthToken = authToken;
-                return;
+                var authToken = arguments.Headers["RESTar-AuthToken"];
+                if (authToken == null || !AuthTokens.TryGetValue(authToken, out accessRights))
+                    return null;
+                return authToken;
             }
-            var authorizationHeader = args.Headers.SafeGet("Authorization");
-            if (string.IsNullOrWhiteSpace(authorizationHeader))
+            var authorizationHeader = arguments.Headers.SafeGet("Authorization");
+            if (string.IsNullOrWhiteSpace(authorizationHeader)) return null;
+            var (method, key) = authorizationHeader.TSplit(' ');
+            if (key == null) return null;
+            switch (method.ToLower())
             {
-                if (!args.HasMetaConditions) throw NotAuthorizedException;
-                var match = Regex.Match(args.MetaConditions, RegEx.KeyMetaCondition, IgnoreCase);
-                if (!match.Success) throw NotAuthorizedException;
-                var conds = args.MetaConditions.Replace(match.Groups[0].Value, "");
-                args.MetaConditions = conds;
-                authorizationHeader = $"apikey {WebUtility.UrlDecode(match.Groups["key"].ToString())}";
+                case "apikey": break;
+                case "basic":
+                    key = Encoding.UTF8.GetString(Convert.FromBase64String(key)).Split(":").ElementAtOrDefault(1);
+                    if (key == null) return null;
+                    break;
+                default: return null;
             }
-            var apikey_key = authorizationHeader.Split(' ');
-            if (apikey_key[0].ToLower() != "apikey" || apikey_key.Length != 2)
-                throw NotAuthorizedException;
-            var apiKey = apikey_key[1].SHA256();
-            if (!ApiKeys.TryGetValue(apiKey, out accessRights))
-                throw NotAuthorizedException;
-            request.AuthToken = AssignAuthtoken(accessRights);
+            if (!ApiKeys.TryGetValue(key.SHA256(), out accessRights))
+                return null;
+            return AssignAuthtoken(accessRights);
         }
 
         internal static void Authenticate<T>(this Request<T> request) where T : class
@@ -99,12 +94,16 @@ namespace RESTar.Internal
             return token;
         }
 
-        internal static bool MethodCheck(Methods requestedMethod, IResource resource, string authToken)
+        internal static bool MethodCheck(Methods requestedMethod, IEntityResource resource, string authToken, out bool failedAuth)
         {
+            failedAuth = false;
             if (!resource.AvailableMethods.Contains(requestedMethod)) return false;
             var accessRights = AuthTokens[authToken];
             var rights = accessRights?[resource];
-            return rights?.Contains(requestedMethod) == true;
+            if (rights?.Contains(requestedMethod) == true)
+                return true;
+            failedAuth = true;
+            return false;
         }
     }
 }

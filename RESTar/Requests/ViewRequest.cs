@@ -8,6 +8,8 @@ using Newtonsoft.Json.Linq;
 using RESTar.Internal;
 using RESTar.Linq;
 using RESTar.Operations;
+using RESTar.Results.Fail.Forbidden;
+using RESTar.Results.Fail.NotFound;
 using RESTar.Serialization;
 using RESTar.View;
 using Starcounter;
@@ -15,22 +17,24 @@ using static RESTar.Methods;
 using static RESTar.Internal.ErrorCodes;
 using static RESTar.View.MessageTypes;
 using static Starcounter.Templates.Template;
-using IResource = RESTar.Internal.IResource;
 
 namespace RESTar.Requests
 {
-    internal class ViewRequest<T> : IRequest<T>, IViewRequest where T : class
+    internal class ViewRequest<T> : IRequest<T>, IRequestInternal<T>, IViewRequest where T : class
     {
-        public Origin Origin { get; }
-        public IResource<T> Resource { get; }
-        public Condition<T>[] Conditions { get; private set; }
-        public MetaConditions MetaConditions { get; private set; }
+        public TCPConnection TcpConnection { get; }
+        public IEntityResource<T> Resource { get; }
+        public Condition<T>[] Conditions { get; }
+        public MetaConditions MetaConditions { get; }
         public string AuthToken { get; internal set; }
-        public IDictionary<string, string> ResponseHeaders { get; }
+        public Headers ResponseHeaders { get; }
+        public ICollection<string> Cookies { get; }
+        public IUriParameters UriParameters { get; }
         public Stream Body { get; private set; }
         Methods IRequest.Method => GET;
-        IResource IRequest.Resource => Resource;
-        public ITarget<T> Target { get; private set; }
+        IEntityResource IRequest.Resource => Resource;
+        public MimeType Accept => MimeType.Default;
+        public ITarget<T> Target { get; }
         public bool Home => MetaConditions.Empty && Conditions == null;
         internal bool IsTemplate { get; set; }
         internal bool CanInsert { get; set; }
@@ -39,33 +43,34 @@ namespace RESTar.Requests
         internal T Entity { get; set; }
         internal Json GetView() => DataView.MakeCurrentView();
         public T1 BodyObject<T1>() where T1 : class => Body?.Deserialize<T1>();
-        public Headers Headers { get; private set; }
+        public Headers Headers { get; }
+        public string TraceId { get; }
+        public Func<IEnumerable<T>> EntitiesGenerator { private get; set; }
+        public IEnumerable<T> GetEntities() => EntitiesGenerator?.Invoke() ?? new T[0];
 
-        internal ViewRequest(IResource<T> resource, Origin origin)
+        internal ViewRequest(IEntityResource<T> resource, Arguments arguments)
         {
-            if (resource.IsInternal) throw new ResourceIsInternalException(resource);
+            if (resource.IsInternal) throw new ResourceIsInternal(resource);
+
+            TraceId = arguments.TraceId;
+            TcpConnection = arguments.TcpConnection;
+
             Resource = resource;
             Target = resource;
-            Headers = new Headers();
-            ResponseHeaders = new Dictionary<string, string>();
+            Headers = arguments.Headers;
+            ResponseHeaders = new Headers();
+            Cookies = new List<string>();
             MetaConditions = new MetaConditions();
             Conditions = new Condition<T>[0];
-            Origin = origin;
-        }
-
-        internal void Populate(Args args)
-        {
-            if (args.HasView)
+            if (arguments.Uri.ViewName != null)
             {
-                if (!Resource.ViewDictionary.TryGetValue(args.View, out var view))
-                    throw new UnknownViewException(args.View, Resource);
+                if (!Resource.ViewDictionary.TryGetValue(arguments.Uri.ViewName, out var view))
+                    throw new UnknownView(arguments.Uri.ViewName, Resource);
                 Target = view;
             }
-            args.NonReservedHeaders.ForEach(Headers.Add);
-            if (args.HasConditions)
-                Conditions = Condition<T>.Parse(args.Conditions, Resource) ?? Conditions;
-            if (args.HasMetaConditions)
-                MetaConditions = MetaConditions.Parse(args.MetaConditions, Resource, false) ?? MetaConditions;
+            UriParameters = arguments.Uri;
+            Conditions = Condition<T>.Parse(arguments.Uri.Conditions, Resource) ?? Conditions;
+            MetaConditions = MetaConditions.Parse(arguments.Uri.MetaConditions, Resource, false) ?? MetaConditions;
         }
 
         internal void Evaluate()
@@ -79,6 +84,7 @@ namespace RESTar.Requests
                 DataView = itemView;
                 return;
             }
+
             var domain = Operations<T>.SELECT_VIEW(this)?.ToList();
             Entities = domain?.Filter(MetaConditions.Offset).Filter(MetaConditions.Limit).ToList();
             if (Entities?.Any() != true || domain == null)
@@ -105,6 +111,7 @@ namespace RESTar.Requests
                 Entities.ForEach(e => listView.Entities.Add().PopulateFromJson(e.SerializeToViewModel()));
                 DataView = listView;
             }
+
             // TODO: Add pager here
         }
 
@@ -133,6 +140,7 @@ namespace RESTar.Requests
                 if (string.IsNullOrWhiteSpace(item.RedirectUrl))
                     item.RedirectUrl = item.ResourcePath;
             }
+
             CheckMethod(PATCH, $"You are not allowed to update the '{Resource}' resource");
             Operations<T>.View.PATCH(this, Entity);
         }
@@ -233,8 +241,8 @@ namespace RESTar.Requests
 
         private void CheckMethod(Methods method, string errorMessage)
         {
-            if (!Authenticator.MethodCheck(method, Resource, AuthToken))
-                throw new RESTarException(NotAuthorized, errorMessage);
+            if (!Authenticator.MethodCheck(method, Resource, AuthToken, out var _))
+                throw new NotAllowedViewAction(ErrorCodes.NotAuthorized, errorMessage);
         }
     }
 }

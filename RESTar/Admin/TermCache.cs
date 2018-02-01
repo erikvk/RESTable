@@ -34,11 +34,11 @@ namespace RESTar.Admin
             }).Where(request.Conditions);
         }
 
-        public int Delete(IEnumerable<TermCache> entities, IRequest<TermCache> request)
+        public int Delete(IRequest<TermCache> request)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
             var count = 0;
-            entities.ForEach(e =>
+            request.GetEntities().ForEach(e =>
             {
                 Deflection.Dynamic.TypeCache.TermCache
                     .Where(pair => pair.Key.Type == e.Type)

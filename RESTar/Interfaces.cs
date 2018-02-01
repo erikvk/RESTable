@@ -32,7 +32,7 @@ namespace RESTar
         /// The insert method for this IInserter instance. Defines the Insert
         /// operation for a given resource.
         /// </summary>
-        int Insert(IEnumerable<T> entities, IRequest<T> request);
+        int Insert(IRequest<T> request);
     }
 
     /// <inheritdoc />
@@ -45,7 +45,7 @@ namespace RESTar
         /// The update method for this IUpdater instance. Defines the Update
         /// operation for a given resource.
         /// </summary>
-        int Update(IEnumerable<T> entities, IRequest<T> request);
+        int Update(IRequest<T> request);
     }
 
     /// <inheritdoc />
@@ -58,7 +58,7 @@ namespace RESTar
         /// The delete method for this IDeleter instance. Defines the Delete
         /// operation for a given resource.
         /// </summary>
-        int Delete(IEnumerable<T> entities, IRequest<T> request);
+        int Delete(IRequest<T> request);
     }
 
     /// <inheritdoc />

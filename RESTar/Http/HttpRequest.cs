@@ -5,7 +5,8 @@ using System.Net;
 using System.Text.RegularExpressions;
 using RESTar.Admin;
 using RESTar.Linq;
-using RESTar.Operations;
+using RESTar.Requests;
+using RESTar.Results.Error;
 using Starcounter;
 
 namespace RESTar.Http
@@ -22,7 +23,9 @@ namespace RESTar.Http
         internal Stream Body;
         internal string AuthToken;
 
-        internal HttpResponse GetResponse() => IsInternal ? Internal(this) : External(this);
+        internal HttpResponse GetResponse(ITraceable trace) => IsInternal
+            ? Internal(trace, Method, URI, AuthToken, Body, ContentType, Accept, Headers)
+            : External(trace, Method, URI, Body, ContentType, Accept, Headers);
 
         internal HttpRequest(string uriString)
         {
@@ -76,26 +79,6 @@ namespace RESTar.Http
             });
         }
 
-        private static HttpResponse Internal(HttpRequest request) => Internal
-        (
-            method: request.Method,
-            relativeUri: request.URI,
-            authToken: request.AuthToken,
-            body: request.Body,
-            contentType: request.ContentType,
-            accept: request.Accept,
-            headers: request.Headers
-        );
-
-        private static HttpResponse External(HttpRequest request) => External
-        (
-            method: request.Method,
-            uri: request.URI,
-            body: request.Body,
-            contentType: request.ContentType,
-            accept: request.Accept,
-            headers: request.Headers
-        );
 
         /// <summary>
         /// Makes an internal request. Make sure to include the original Request's
@@ -103,6 +86,7 @@ namespace RESTar.Http
         /// </summary>
         internal static HttpResponse Internal
         (
+            ITraceable trace,
             Methods method,
             Uri relativeUri,
             string authToken,
@@ -131,20 +115,20 @@ namespace RESTar.Http
                 port: Settings._Port
             );
             if (response.StatusCode == 508)
-                throw new InfiniteLoopException(response.Headers["RESTar-Info"]);
-            return (HttpResponse) response;
+                throw new InfiniteLoop(response.Headers["RESTar-Info"]);
+            return new HttpResponse(trace, response);
         }
 
         /// <summary>
         /// Makes an external HTTP or HTTPS request
         /// </summary>
-        internal static HttpResponse External(Methods method, Uri uri, Stream body = null, string contentType = null,
+        internal static HttpResponse External(ITraceable trace, Methods method, Uri uri, Stream body = null, string contentType = null,
             string accept = null, Dictionary<string, string> headers = null)
         {
-            return Do.SafeGet(() => Request(method.ToString(), uri, body, contentType, accept, headers));
+            return MakeExternalRequest(trace, method.ToString(), uri, body, contentType, accept, headers);
         }
 
-        private static HttpResponse Request(string method, Uri uri, Stream body = null,
+        private static HttpResponse MakeExternalRequest(ITraceable trace, string method, Uri uri, Stream body = null,
             string contentType = null, string accept = null, IDictionary<string, string> headers = null)
         {
             try
@@ -159,23 +143,20 @@ namespace RESTar.Http
                 {
                     request.ContentLength = body.Length;
                     using (var requestStream = request.GetRequestStream())
-                    using (body) body.CopyTo(requestStream);
+                    using (body)
+                        body.CopyTo(requestStream);
                 }
                 var webResponse = (HttpWebResponse) request.GetResponse();
                 var respLoc = webResponse.Headers["Location"];
                 if (webResponse.StatusCode == HttpStatusCode.MovedPermanently && respLoc != null)
-                    return Request(method, new Uri(respLoc), body, contentType, accept, headers);
-                return (HttpResponse) webResponse;
+                    return MakeExternalRequest(trace, method, new Uri(respLoc), body, contentType, accept, headers);
+                return new HttpResponse(trace, webResponse);
             }
             catch (WebException we)
             {
                 Log.Warn($"!!! HTTP {method} Error at {uri} : {we.Message}");
                 if (!(we.Response is HttpWebResponse response)) return null;
-                var _response = new HttpResponse
-                {
-                    StatusCode = response.StatusCode,
-                    StatusDescription = response.StatusDescription
-                };
+                var _response = new HttpResponse(trace, response.StatusCode, response.StatusDescription);
                 foreach (var header in response.Headers.AllKeys)
                     _response.Headers[header] = response.Headers[header];
                 return _response;
@@ -183,7 +164,7 @@ namespace RESTar.Http
             catch (Exception e)
             {
                 Log.Warn($"!!! HTTP {method} Error at {uri} : {e.Message}");
-                return null;
+                return new HttpResponse(trace, HttpStatusCode.InternalServerError, e.Message);
             }
         }
     }

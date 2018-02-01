@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Serialization;
+using RESTar.Results.Fail.BadRequest;
 using Starcounter;
 using static RESTar.Methods;
 using IResource = RESTar.Internal.IResource;
@@ -22,6 +23,8 @@ namespace RESTar.Admin
         internal const string All = "SELECT t FROM RESTar.Admin.ResourceAlias t";
         internal const string ByAlias = All + " WHERE t.Alias =?";
         internal const string ByResource = All + " WHERE t.Resource =?";
+
+        internal ResourceAlias() { }
 
         private string alias;
 
@@ -51,13 +54,13 @@ namespace RESTar.Admin
             {
                 try
                 {
-                    var r = RESTarConfig.ResourceByName[value.ToLower()];
+                    var r = RESTarConfig.ResourceByName[value];
                     _resource = r.Name;
                 }
                 catch (KeyNotFoundException)
                 {
                     this.Delete();
-                    throw new UnknownResourceForAliasException(value, RESTar.Resource.Find(value));
+                    throw new UnknownResourceForAlias(value, RESTar.Resource.Find(value));
                 }
                 catch
                 {
@@ -70,7 +73,7 @@ namespace RESTar.Admin
         /// <summary>
         /// Gets the resource denoted by this alias
         /// </summary>
-        [IgnoreDataMember] public IResource IResource => RESTarConfig.ResourceByName[Resource.ToLower()];
+        [IgnoreDataMember] public IResource IResource => RESTarConfig.ResourceByName[Resource];
 
         /// <summary>
         /// Gets a ResourceAlias by its alias (case insensitive)

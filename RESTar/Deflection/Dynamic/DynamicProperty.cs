@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using Newtonsoft.Json.Linq;
 using RESTar.Operations;
+using static System.StringComparison;
 
 namespace RESTar.Deflection.Dynamic
 {
@@ -16,41 +17,42 @@ namespace RESTar.Deflection.Dynamic
         public override bool Dynamic => true;
 
         /// <summary>
-        /// Should the evaluation fall back to a static property 
-        /// if no dynamic property can be found in the target entity?
+        /// Should the evaluation fall back to a declared property if no dynamic property 
+        /// can be found in the target entity?
         /// </summary>
-        public readonly bool StaticFallback;
+        public readonly bool DeclaredFallback;
 
         /// <summary>
         /// Creates a dynamic property instance from a key string
         /// </summary>
         /// <param name="keyString">The string to parse</param>
-        /// <param name="staticFallback">Should the evaluation fall back to a static property 
+        /// <param name="declaredFallback">Should the evaluation fall back to a declared property 
         /// if no dynamic property can be found in the target entity?</param>
         /// <returns>A dynamic property that represents the runtime property
         /// described by the key string</returns>
-        public static DynamicProperty Parse(string keyString, bool staticFallback = false) =>
-            new DynamicProperty(keyString, staticFallback);
+        public static DynamicProperty Parse(string keyString, bool declaredFallback = false) =>
+            new DynamicProperty(keyString, declaredFallback);
 
         internal void SetName(string name) => Name = name;
 
-        private DynamicProperty(string name, bool staticFallback)
+        private DynamicProperty(string name, bool declaredFallback)
         {
             Name = ActualName = name;
             ScQueryable = false;
-            StaticFallback = staticFallback;
+            DeclaredFallback = declaredFallback;
 
             Getter = obj =>
             {
-                dynamic value;
+                object value;
                 string actualKey = null;
+                string capitalized;
 
                 dynamic getFromStatic()
                 {
                     var type = obj.GetType();
                     value = Do.Try(() =>
                     {
-                        var prop = StaticProperty.Find(type, Name);
+                        var prop = DeclaredProperty.Find(type, Name);
                         actualKey = prop.Name;
                         return prop.GetValue(obj);
                     }, default(object));
@@ -60,21 +62,25 @@ namespace RESTar.Deflection.Dynamic
 
                 switch (obj)
                 {
-                    case IDictionary<string, dynamic> ddict:
-                        if (!ddict.TryGetNoCase(Name, out actualKey, out value))
-                            return StaticFallback ? getFromStatic() : null;
-                        Name = actualKey;
-                        return value;
-                    case IDictionary idict:
-                        if (!idict.TryGetNoCase(Name, out actualKey, out value))
-                            return StaticFallback ? getFromStatic() : null;
-                        Name = actualKey;
-                        return value;
-                    case IDictionary<string, JToken> jobj:
-                        if (!jobj.TryGetNoCase(Name, out actualKey, out var jvalue))
-                            return StaticFallback ? getFromStatic() : null;
-                        Name = actualKey;
-                        return jvalue.ToObject<dynamic>();
+                    case IDictionary<string, object> dict:
+                        capitalized = Name.Capitalize();
+                        if (dict.TryGetValue(capitalized, out value))
+                        {
+                            Name = capitalized;
+                            return value;
+                        }
+                        if (dict.TryFindInDictionary(Name, out actualKey, out value))
+                        {
+                            Name = actualKey;
+                            return value;
+                        }
+                        return DeclaredFallback ? getFromStatic() : null;
+                    case JObject jobj:
+                        capitalized = Name.Capitalize();
+                        if (!(jobj.GetValue(capitalized, OrdinalIgnoreCase)?.Parent is JProperty property))
+                            return DeclaredFallback ? getFromStatic() : null;
+                        Name = property.Name;
+                        return property.Value.ToObject<dynamic>();
                     default: return getFromStatic();
                 }
             };
@@ -94,7 +100,7 @@ namespace RESTar.Deflection.Dynamic
                         break;
                     default:
                         var type = obj.GetType();
-                        Do.Try(() => StaticProperty.Find(type, Name)?.SetValue(obj, value));
+                        Do.Try(() => DeclaredProperty.Find(type, Name)?.SetValue(obj, value));
                         break;
                 }
             };

@@ -32,7 +32,8 @@ namespace RESTar.Linq
             return post.Any();
         }
 
-        internal static bool HasEquality<T>(this IEnumerable<Condition<T>> conds,
+        internal static bool HasEquality<T>(
+            this IEnumerable<Condition<T>> conds,
             out IEnumerable<Condition<T>> equality) where T : class
         {
             equality = conds.Where(c => c.InternalOperator.Equality).ToList();
@@ -100,14 +101,12 @@ namespace RESTar.Linq
         /// <typeparam name="T">The new type to target</typeparam>
         /// <returns></returns>
         [Pure]
-        public static IEnumerable<Condition<T>> Redirect<T>(this IEnumerable<ICondition> conds, string direct,
-            string to) where T : class
+        public static IEnumerable<Condition<T>> Redirect<T>(this IEnumerable<ICondition> conds, string direct, string to) where T : class
         {
-            var props = typeof(T).GetStaticProperties();
-            return conds.Where(cond => cond.Term.IsDynamic || props.ContainsKey(cond.Term.First?.Name.ToLower() ?? ""))
-                .Select(cond => direct.EqualsNoCase(cond.Key)
-                    ? cond.Redirect<T>(to)
-                    : cond.Redirect<T>());
+            var props = typeof(T).GetDeclaredProperties();
+            return conds
+                .Where(cond => cond.Term.IsDynamic || props.ContainsKey(cond.Term.First.Name))
+                .Select(cond => direct.EqualsNoCase(cond.Key) ? cond.Redirect<T>(to) : cond.Redirect<T>());
         }
 
         /// <summary>
@@ -116,16 +115,17 @@ namespace RESTar.Linq
         /// <typeparam name="T">The new type to target</typeparam>
         /// <returns></returns>
         [Pure]
-        public static IEnumerable<Condition<T>> Redirect<T>(this IEnumerable<ICondition> conds,
-            params (string direct, string to)[] newKeyAssignments) where T : class
+        public static IEnumerable<Condition<T>> Redirect<T>(this IEnumerable<ICondition> conds, params (string direct, string to)[] newKeyAssignments)
+            where T : class
         {
-            var props = typeof(T).GetStaticProperties();
-            return conds.Where(cond => cond.Term.IsDynamic || props.ContainsKey(cond.Term.First?.Name.ToLower() ?? ""))
+            var props = typeof(T).GetDeclaredProperties();
+            return conds
+                .Where(cond => cond.Term.IsDynamic || props.ContainsKey(cond.Term.First.Name))
                 .Select(cond =>
                 {
-                    foreach (var keyAssignment in newKeyAssignments)
-                        if (keyAssignment.direct.EqualsNoCase(cond.Key))
-                            return cond.Redirect<T>(keyAssignment.to);
+                    foreach (var (direct, to) in newKeyAssignments)
+                        if (direct.EqualsNoCase(cond.Key))
+                            return cond.Redirect<T>(to);
                     return cond.Redirect<T>();
                 });
         }

@@ -43,17 +43,12 @@
     <PlatformTarget>x64</PlatformTarget>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Dynamit">
-      <HintPath>..\..\DRTB\packages\Dynamit.0.1.19\lib\net45\Dynamit.dll</HintPath>
-    </Reference>
+    <Reference Include="Starcounter, Version=2.0.0.0, Culture=neutral, PublicKeyToken=d2df1e81d0ca3abf, processorArchitecture=AMD64" />
     <Reference Include="System" />
     <Reference Include="System.Core">
       <RequiredTargetFramework>4.0</RequiredTargetFramework>
     </Reference>
     <Reference Include="Microsoft.CSharp" />
-    <Reference Include="Starcounter, Version=2.0.0.0, Culture=neutral, PublicKeyToken=d2df1e81d0ca3abf">
-      <Private>False</Private>
-    </Reference>
     <Reference Include="Starcounter.Internal, Version=2.0.0.0, Culture=neutral, PublicKeyToken=d2df1e81d0ca3abf">
       <Private>False</Private>
     </Reference>
