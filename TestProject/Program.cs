@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using Starcounter;
@@ -8,17 +7,11 @@ using Starcounter;
 
 namespace TestProject
 {
-    [Database]
-    public class MyClass
-    {
-        public DateTime? Time { get; set; }
-    }
-
     public class Program
     {
         public static void Main()
         {
-            Handle.GET("/test", code: (Request request) => request.ContentType ?? "was null");
+            Handle.GET("/test", (Request request) => request.ContentType ?? "was null");
             var response1 = Http.GET
             (
                 uri: "http://localhost:8080/test",
