@@ -23,7 +23,7 @@
         /// <summary>
         /// Checks API keys for invalid characters. May only contain non-whitespace characters and non-parentheses
         /// </summary>
-        internal const string ApiKey = @"^[^\s\(\)]+$";
+        internal const string ApiKey = @"^[!-~]+$";
 
         /// <summary>
         /// The base URI regex, used when validating base uris in RESTarConfig.Init

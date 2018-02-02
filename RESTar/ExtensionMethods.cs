@@ -804,15 +804,16 @@ namespace RESTar
                 case char other: return other.ToString();
                 case DateTime other: return other.ToString("O");
                 case JObject _: return typeof(JObject).FullName;
-                case DDictionary _: return $"$(ObjectID: {value.GetObjectID()})";
+                case DDictionary _: return $"$(ObjectNo: {value.GetObjectNo()})";
                 case IDictionary other: return other.GetType().FullName;
                 case IEnumerable<object> other: return string.Join(", ", other.Select(o => o.ToString()));
                 case DBNull _:
                 case null: return DBNull.Value;
-                case var enumArr when value.GetType().Implements(typeof(IEnumerable<>), out var p) && p.Any() && p[0].IsEnum:
-                    IEnumerable<object> objects = System.Linq.Enumerable.Cast<object>((dynamic) enumArr);
+                case IEnumerable<DateTime> dateTimes: return string.Join(", ", dateTimes.Select(o => o.ToString("O")));
+                case var valueTypeArray when value.GetType().Implements(typeof(IEnumerable<>), out var p) && p.Any() && p[0].IsValueType:
+                    IEnumerable<object> objects = System.Linq.Enumerable.Cast<object>((dynamic) valueTypeArray);
                     return string.Join(", ", objects.Select(o => o.ToString()));
-                default: return Do.Try(() => $"$(ObjectID: {value.GetObjectID()})", value.ToString);
+                default: return Do.Try(() => $"$(ObjectNo: {value.GetObjectNo()})", value.ToString);
             }
         }
 
