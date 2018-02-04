@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using Dynamit;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using RESTar.Deflection.Dynamic;
@@ -34,16 +33,10 @@ namespace RESTar.Serialization.NativeProtocol
                 default: return null;
             }
         }
-        
+
         protected override IList<JsonProperty> CreateProperties(Type type, MemberSerialization memberSerialization)
         {
             var properties = base.CreateProperties(type, memberSerialization);
-
-            if (typeof(DDictionary).IsAssignableFrom(type))
-            {
-                var s = "";
-            }
-
             foreach (var specialProperty in type.GetDeclaredProperties().Values.OfType<SpecialProperty>())
             {
                 if (specialProperty.IsKey || !specialProperty.Hidden)

@@ -538,6 +538,7 @@ namespace RESTar
         {
             var jobj = new JObject();
             d.KeyValuePairs.ForEach(pair => jobj[pair.Key] = MakeJToken(pair.Value));
+            jobj["$ObjectNo"] = d.GetObjectNo();
             return jobj;
         }
 

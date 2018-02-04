@@ -392,13 +392,19 @@ namespace RESTarTester
 
             #region POST Excel
 
-            var webrequest = (HttpWebRequest)WebRequest.Create("http://localhost:9000/rest/resource1");
+            var headers2 = new Dictionary<string, string>
+                {["Content-Type"] = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", ["Foo"] = "123"};
+            var excelPostResponse1 = Http.POST("http://localhost:9000/rest/resource1", bodyBytes: excelResponse1.BodyBytes,
+                headersDictionary: headers2);
+            Debug.Assert(excelPostResponse1?.IsSuccessStatusCode == true);
+
+            var webrequest = (HttpWebRequest) WebRequest.Create("http://localhost:9000/rest/resource1");
             webrequest.Method = "POST";
             webrequest.ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
             using (var str = webrequest.GetRequestStream())
             using (var stream = new MemoryStream(excelResponse1.BodyBytes))
                 stream.CopyTo(str);
-            var webResponse = (HttpWebResponse)webrequest.GetResponse();
+            var webResponse = (HttpWebResponse) webrequest.GetResponse();
             string _body;
             using (var reader = new StreamReader(webResponse.GetResponseStream()))
                 _body = reader.ReadToEnd();
@@ -714,9 +720,9 @@ namespace RESTarTester
     public class Resource2 : Base
     {
         public MyEnum Enum => MyEnum.B;
-        public MyEnum[] Enums => new[] { MyEnum.B, MyEnum.A, MyEnum.E, MyEnum.C };
-        public DateTime[] Dts => new[] { System.DateTime.Now, System.DateTime.MaxValue, System.DateTime.MinValue };
-        public decimal[] Dcs => new[] { 1M, 123.321M, 32123.123321M, -123321.12321M };
+        public MyEnum[] Enums => new[] {MyEnum.B, MyEnum.A, MyEnum.E, MyEnum.C};
+        public DateTime[] Dts => new[] {System.DateTime.Now, System.DateTime.MaxValue, System.DateTime.MinValue};
+        public decimal[] Dcs => new[] {1M, 123.321M, 32123.123321M, -123321.12321M};
 
         public sbyte? Sbyte;
         public byte? Byte;

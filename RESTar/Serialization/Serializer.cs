@@ -47,10 +47,13 @@ namespace RESTar.Serialization
 
             var enumConverter = new StringEnumConverter();
             var headersConverter = new HeadersConverter();
+            var ddictionaryConverter = new DDictionaryConverter();
             Settings.Converters.Add(enumConverter);
             Settings.Converters.Add(headersConverter);
+            Settings.Converters.Add(ddictionaryConverter);
             VmSettings.Converters.Add(enumConverter);
             VmSettings.Converters.Add(headersConverter);
+            VmSettings.Converters.Add(ddictionaryConverter);
             Json = JsonSerializer.Create(Settings);
             UTF8 = new UTF8Encoding(false);
         }
