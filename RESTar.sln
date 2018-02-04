@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.27130.2024
+VisualStudioVersion = 15.0.27130.2026
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RESTar", "RESTar\RESTar.csproj", "{3CA9602F-FC6F-4DFE-8749-C6DBDD9A4809}"
 EndProject
@@ -12,8 +12,6 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RESTarTester", "RESTarTester\RESTarTester.csproj", "{80959E33-3C2D-48AA-9B19-9FA04AF41873}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestProject", "TestProject\TestProject.csproj", "{83B376F6-73DF-484B-9CEA-6F1722681838}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ODataTestCient", "ODataTestCient\ODataTestCient.csproj", "{AB6770E0-F1D8-49E1-AC67-262E3D93851B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -53,12 +51,6 @@ Global
 		{83B376F6-73DF-484B-9CEA-6F1722681838}.Release|Any CPU.ActiveCfg = Release|x64
 		{83B376F6-73DF-484B-9CEA-6F1722681838}.Release|x64.ActiveCfg = Release|x64
 		{83B376F6-73DF-484B-9CEA-6F1722681838}.Release|x64.Build.0 = Release|x64
-		{AB6770E0-F1D8-49E1-AC67-262E3D93851B}.Debug|Any CPU.ActiveCfg = Debug|x64
-		{AB6770E0-F1D8-49E1-AC67-262E3D93851B}.Debug|x64.ActiveCfg = Debug|x64
-		{AB6770E0-F1D8-49E1-AC67-262E3D93851B}.Debug|x64.Build.0 = Debug|x64
-		{AB6770E0-F1D8-49E1-AC67-262E3D93851B}.Release|Any CPU.ActiveCfg = Release|x64
-		{AB6770E0-F1D8-49E1-AC67-262E3D93851B}.Release|x64.ActiveCfg = Release|x64
-		{AB6770E0-F1D8-49E1-AC67-262E3D93851B}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
