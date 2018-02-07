@@ -73,6 +73,6 @@
         /// <summary>
         /// Used when matching parts of URI conditions
         /// </summary>
-        internal const string UriCondition = @"^(?<key>[^\!=<>]*)(?<op>(=|\!=|<|>|<=|>=))(?<val>.*)$";
+        internal const string UriCondition = @"^(?<key>[^\!=<>]*)(?<op>(=|\!=|<=|>=|<|>))(?<val>.*)$";
     }
 }
