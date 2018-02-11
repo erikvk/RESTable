@@ -3,6 +3,7 @@ using RESTar.Requests;
 
 namespace RESTar
 {
+    /// <inheritdoc />
     /// <summary>
     /// WebSockets support sending continuous data over a single TCP connection
     /// </summary>

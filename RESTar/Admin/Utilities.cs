@@ -5,6 +5,7 @@ using static RESTar.Methods;
 
 namespace RESTar.Admin
 {
+    /// <inheritdoc />
     /// <summary>
     /// Provides access to commmon admin tasks
     /// </summary>

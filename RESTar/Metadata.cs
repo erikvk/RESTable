@@ -27,6 +27,7 @@ namespace RESTar
         Full
     }
 
+    /// <inheritdoc />
     /// <summary>
     /// Creates metadata for the types and resources of the RESTar instance
     /// </summary>
@@ -130,8 +131,12 @@ namespace RESTar
             }
 
             var entityTypes = entityResources.Select(r => r.Type).ToList();
+            var terminalTypes = terminalResources.Select(r => r.Type).ToList();
+
             entityTypes.ForEach(parseType);
             checkedTypes.ExceptWith(entityTypes);
+            terminalTypes.ForEach(parseType);
+            checkedTypes.ExceptWith(terminalTypes);
 
             return new Metadata
             {

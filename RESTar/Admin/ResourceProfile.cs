@@ -10,6 +10,7 @@ using static System.Reflection.BindingFlags;
 
 namespace RESTar.Admin
 {
+    /// <inheritdoc />
     /// <summary>
     /// Provides a profile for a given resource
     /// </summary>

@@ -2,6 +2,7 @@ using System.Reflection;
 
 namespace RESTar.Deflection.Dynamic
 {
+    /// <inheritdoc />
     /// <summary>
     /// Encodes a field in a type
     /// </summary>

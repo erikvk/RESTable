@@ -43,6 +43,7 @@ namespace RESTar
         IEnumerable<T> GetEntities();
     }
 
+    /// <inheritdoc />
     /// <summary>
     /// A non-generic common interface for all request classes used in RESTar
     /// </summary>

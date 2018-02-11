@@ -160,9 +160,7 @@ namespace RESTar.Admin
         /// </summary>
         public JToken Example { get; private set; }
 
-        /// <summary>
-        /// Validates a output format
-        /// </summary>
+        /// <inheritdoc />
         public bool IsValid(out string invalidReason)
         {
             if (string.IsNullOrWhiteSpace(Name))

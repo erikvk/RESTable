@@ -7,6 +7,7 @@ using static RESTar.Methods;
 
 namespace RESTar
 {
+    /// <inheritdoc />
     /// <summary>
     /// Contains help articles for RESTar itself
     /// </summary>

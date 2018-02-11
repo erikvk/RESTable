@@ -2,6 +2,7 @@ using System;
 
 namespace RESTar.Deflection.Dynamic
 {
+    /// <inheritdoc />
     /// <summary>
     /// Describes a property of a resource
     /// </summary>

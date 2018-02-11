@@ -7,6 +7,7 @@ using RESTar.Results.Error.BadRequest;
 
 namespace RESTar.Requests
 {
+    /// <inheritdoc />
     /// <summary>
     /// Encodes a URI that is used in a request
     /// </summary>

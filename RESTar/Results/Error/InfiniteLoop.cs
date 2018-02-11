@@ -3,6 +3,10 @@ using RESTar.Internal;
 
 namespace RESTar.Results.Error
 {
+    /// <inheritdoc />
+    /// <summary>
+    /// Thrown when RESTar encounters an infinite loop of recursive internal requests
+    /// </summary>
     public class InfiniteLoop : RESTarError
     {
         internal InfiniteLoop() : base(ErrorCodes.InfiniteLoopDetected,

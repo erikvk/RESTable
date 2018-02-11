@@ -7,7 +7,5 @@ namespace RESTar
     /// group of resources.
     /// </summary>
     public interface IDatabaseIndexer : ISelector<DatabaseIndex>, IInserter<DatabaseIndex>, IUpdater<DatabaseIndex>,
-        IDeleter<DatabaseIndex>
-    {
-    }
+        IDeleter<DatabaseIndex> { }
 }

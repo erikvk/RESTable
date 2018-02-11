@@ -28,9 +28,7 @@ namespace RESTar.Results.Error
         /// <inheritdoc />
         public string StatusDescription { get; protected set; }
 
-        /// <summary>
-        /// The headers to use in HTTP responses
-        /// </summary>
+        /// <inheritdoc />
         public Headers Headers { get; } = new Headers();
 
         /// <inheritdoc />

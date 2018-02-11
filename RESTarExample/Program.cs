@@ -4,7 +4,6 @@ using System.Linq;
 using Dynamit;
 using Newtonsoft.Json.Linq;
 using RESTar;
-using RESTar.OData;
 using RESTar.Resources;
 using Starcounter;
 
@@ -23,8 +22,7 @@ namespace RESTarExample
                 allowAllOrigins: false,
                 viewEnabled: true,
                 configFilePath: @"C:\Mopedo\mopedo\Mopedo.config",
-                lineEndings: LineEndings.Linux,
-                protocolProviders: new[] {new ODataProtocolProvider()}
+                lineEndings: LineEndings.Linux
             );
         }
     }

@@ -103,10 +103,6 @@
     <Service Include="{3259AA49-8AA1-44D3-9025-A0B520596A8C}" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\RESTar.OData\RESTar.OData\RESTar.OData.csproj">
-      <Project>{38823a9d-615c-4bee-95c9-5df965eab153}</Project>
-      <Name>RESTar.OData</Name>
-    </ProjectReference>
     <ProjectReference Include="..\RESTar\RESTar.csproj">
       <Project>{3ca9602f-fc6f-4dfe-8749-c6dbdd9a4809}</Project>
       <Name>RESTar</Name>

@@ -5,6 +5,7 @@ using RESTar.Logging;
 
 namespace RESTar.Operations
 {
+    /// <inheritdoc />
     /// <summary>
     /// Describes a result that is ready to be sent back to the client, for example 
     /// using an HTTP response

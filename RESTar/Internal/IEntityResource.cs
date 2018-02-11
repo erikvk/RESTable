@@ -6,6 +6,7 @@ using RESTar.Resources;
 
 namespace RESTar.Internal
 {
+    /// <inheritdoc />
     /// <summary>
     /// A common non-generic interface for terminal resources
     /// </summary>

@@ -8,6 +8,7 @@ using static RESTar.Methods;
 
 namespace RESTar
 {
+    /// <inheritdoc />
     /// <summary>
     /// Gets the available resources for the current user
     /// </summary>

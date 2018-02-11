@@ -17,6 +17,7 @@ using HttpRequest = RESTar.Http.HttpRequest;
 
 namespace RESTar.Requests
 {
+    /// <inheritdoc />
     /// <summary>
     /// Contains the logic for the default RESTar protocol. This protocol is used if no 
     /// protocol indicator is included in the request URI.

@@ -2,6 +2,7 @@
 
 namespace RESTar.Results.Error.NotFound
 {
+    /// <inheritdoc />
     /// <summary>
     /// Thrown when RESTar cannot locate a macro based on some search string
     /// </summary>
