@@ -20,7 +20,6 @@ namespace RESTarExample
                 uri: "/rest",
                 requireApiKey: true,
                 allowAllOrigins: false,
-                viewEnabled: true,
                 configFilePath: @"C:\Mopedo\mopedo\Mopedo.config",
                 lineEndings: LineEndings.Linux
             );

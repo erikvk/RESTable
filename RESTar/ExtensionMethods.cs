@@ -596,7 +596,13 @@ namespace RESTar
         /// </summary>
         internal static object ParseConditionValue(this string valueLiteral, DeclaredProperty property = null)
         {
-            if (valueLiteral == "null") return null;
+            switch (valueLiteral)
+            {
+                case null:
+                case "null": return null;
+                case "": return "";
+            }
+
             if (property?.IsEnum == true)
             {
                 try

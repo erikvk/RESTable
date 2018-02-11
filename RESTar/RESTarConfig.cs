@@ -138,8 +138,6 @@ namespace RESTar
         /// <param name="prettyPrint">Should JSON output be pretty print formatted as default?
         ///  (can be changed in settings during runtime)</param>
         /// <param name="daysToSaveErrors">The number of days to save errors in the Error resource</param>
-        /// <param name="viewEnabled">Should the view be enabled?</param>
-        /// <param name="setupMenu">Shoud a menu be setup automatically in the view?</param>
         /// <param name="requireApiKey">Should the REST API require an API key?</param>
         /// <param name="allowAllOrigins">Should any origin be allowed to make CORS requests?</param>
         /// <param name="lineEndings">The line endings to use when writing JSON</param>
@@ -149,8 +147,8 @@ namespace RESTar
         (
             ushort port = 8282,
             string uri = "/rest",
-            bool viewEnabled = false,
-            bool setupMenu = false,
+            // bool viewEnabled = false,
+            // bool setupMenu = false,
             bool requireApiKey = false,
             bool allowAllOrigins = true,
             string configFilePath = null,
@@ -163,7 +161,7 @@ namespace RESTar
             try
             {
                 uri = ProcessUri(uri);
-                Settings.Init(port, uri, viewEnabled, prettyPrint, daysToSaveErrors, lineEndings);
+                Settings.Init(port, uri, false, prettyPrint, daysToSaveErrors, lineEndings);
                 Log.Init();
                 DynamitConfig.Init(true, true);
                 ResourceFactory.MakeResources(resourceProviders?.ToArray());
@@ -171,7 +169,7 @@ namespace RESTar
                 RequireApiKey = requireApiKey;
                 AllowAllOrigins = allowAllOrigins;
                 ConfigFilePath = configFilePath;
-                RegisterRESTHandlers(setupMenu);
+                RegisterRESTHandlers(setupMenu: false);
                 Initialized = true;
                 DatabaseIndex.Init();
                 DbOutputFormat.Init();

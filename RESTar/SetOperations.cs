@@ -29,8 +29,6 @@ namespace RESTar
 
         public SetOperations() { }
         private SetOperations(JObject other) : base(other) { }
-        static SetOperations() => MapMacroRegex = new Regex(RegEx.MapMacro);
-        private static readonly Regex MapMacroRegex;
 
         /// <inheritdoc />
         public IEnumerable<SetOperations> Select(IRequest<SetOperations> request)
@@ -60,9 +58,8 @@ namespace RESTar
                             var uri = str;
                             var response = HttpRequest.Internal(request, GET, new Uri(uri, UriKind.Relative), request.AuthToken);
                             if (response?.IsSuccessStatusCode != true)
-                                throw new Exception(
-                                    $"Could not get source data from '{uri}'. " +
-                                    $"{response?.StatusCode.ToCode()}: {response?.StatusDescription}. {response?.Headers.SafeGet("RESTar-info")}");
+                                throw new Exception($"Could not get source data from '{uri}'. {response?.StatusCode.ToCode()}: " +
+                                                    $"{response?.StatusDescription}. {response?.Headers.SafeGet("RESTar-info")}");
                             if (response.StatusCode == NoContent || !(response.Body?.Length > 2))
                                 json = "[]";
                             else json = response.Body.GetString();
@@ -79,7 +76,7 @@ namespace RESTar
                                                 "the name is a set operation and the value is a list of strings and/or " +
                                                 "objects.");
                         var arr = prop.Value.Value<JArray>();
-                        
+
                         switch (prop.Name.ToLower())
                         {
                             case "distinct":
@@ -123,16 +120,9 @@ namespace RESTar
         }
 
         private static JTokens Distinct(JTokens array) => array?.Distinct(EqualityComparer);
-
-        private static JTokens Intersect(params JTokens[] arrays) => Checked(arrays)
-            .Aggregate((x, y) => x.Intersect(y, EqualityComparer));
-
-        private static JTokens Union(params JTokens[] arrays) => Checked(arrays)
-            .Aggregate((x, y) => x.Union(y, EqualityComparer));
-
-        private static JTokens Except(params JTokens[] arrays) => Checked(arrays)
-            .Aggregate((x, y) => x.Except(y, EqualityComparer));
-
+        private static JTokens Intersect(params JTokens[] arrays) => Checked(arrays).Aggregate((x, y) => x.Intersect(y, EqualityComparer));
+        private static JTokens Union(params JTokens[] arrays) => Checked(arrays).Aggregate((x, y) => x.Union(y, EqualityComparer));
+        private static JTokens Except(params JTokens[] arrays) => Checked(arrays).Aggregate((x, y) => x.Except(y, EqualityComparer));
 
         private static JTokens Map(JTokens set, string mapper, IRequest request)
         {
@@ -140,22 +130,23 @@ namespace RESTar
                 throw new ArgumentException(nameof(set));
             if (string.IsNullOrEmpty(mapper))
                 throw new ArgumentException(nameof(mapper));
+
             var mapped = new HashSet<JToken>(EqualityComparer);
             foreach (var item in Distinct(set))
             {
-                var obj = item as JObject ??
-                          throw new Exception("JSON syntax error in map set. Set must be of objects");
+                var obj = item as JObject ?? throw new Exception("JSON syntax error in map set. Set must be of objects");
                 var skip = false;
                 var localMapper = mapper;
-                foreach (Match match in MapMacroRegex.Matches(mapper))
+                foreach (Match match in Regex.Matches(mapper, RegEx.MapMacro))
                 {
                     var matchValue = match.Value;
                     var key = matchValue.Substring(2, matchValue.Length - 3);
-                    if (obj.GetValue(key, OrdinalIgnoreCase) is JToken val)
+                    var token = obj.GetValue(key, OrdinalIgnoreCase);
+                    if (token == null || token is JValue)
                     {
-                        var value = val.Value<string>();
+                        var value = token?.Value<string>();
                         if (value == "") value = "\"\"";
-                        localMapper = localMapper.Replace(matchValue, WebUtility.UrlEncode(value));
+                        localMapper = localMapper.Replace(matchValue, WebUtility.UrlEncode(value ?? "null"));
                     }
                     else skip = true;
                 }
@@ -164,9 +155,8 @@ namespace RESTar
                 {
                     var response = HttpRequest.Internal(request, GET, new Uri(localMapper, UriKind.Relative), request.AuthToken);
                     if (response?.IsSuccessStatusCode != true)
-                        throw new Exception(
-                            $"Could not get source data from '{localMapper}'. " +
-                            $"{response?.StatusCode.ToCode()}: {response?.StatusDescription}. {response?.Headers.SafeGet("RESTar-info")}");
+                        throw new Exception($"Could not get source data from '{localMapper}'. {response?.StatusCode.ToCode()}: " +
+                                            $"{response?.StatusDescription}. {response?.Headers.SafeGet("RESTar-info")}");
                     if (response.StatusCode == NoContent) mapped.Add(new JObject());
                     else Serializer.Populate(response.Body.GetString(), mapped);
                 }

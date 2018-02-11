@@ -2,8 +2,7 @@
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using RESTar.Admin;
-using RESTar.Internal;
-using RESTar.Results.Error.BadRequest;
+using RESTar.Results.Error.NotFound;
 
 namespace RESTar.Requests
 {
@@ -47,7 +46,7 @@ namespace RESTar.Requests
             uri.Protocol = RequestEvaluator.ProtocolProviders.SafeGet(protocolString);
             if (uri.Protocol == null)
             {
-                uri.Error = new InvalidSyntax(ErrorCodes.InvalidUriSyntax, $"Could not identify any protocol by '{protocolString}'");
+                uri.Error = new UnknownProtocol(protocolString);
                 return uri;
             }
             try

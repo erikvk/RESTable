@@ -19,7 +19,7 @@ namespace RESTar
 
         private string query = "";
         private string previousQuery = "";
-        
+
         public string Query
         {
             get => query;
@@ -37,10 +37,21 @@ namespace RESTar
             }
         }
 
-        public bool Silent { get; set; } = false;
+        public bool Silent
+        {
+            get => !WriteStatusBeforeContent && !WriteQueryAfterContent && !WriteInfoTexts;
+            set
+            {
+                WriteStatusBeforeContent = !value;
+                WriteQueryAfterContent = !value;
+                WriteInfoTexts = !value;
+            }
+        }
+
         public bool Unsafe { get; set; } = false;
         public bool WriteStatusBeforeContent { get; set; } = true;
         public bool WriteQueryAfterContent { get; set; } = true;
+        public bool WriteInfoTexts { get; set; } = true;
 
         private Func<int, IUriParameters> GetNextPageLink;
         private System.Action OnConfirm;
@@ -115,9 +126,14 @@ namespace RESTar
                     switch (command.ToUpperInvariant())
                     {
                         case "GET":
+                            byte[] body = null;
                             if (!string.IsNullOrWhiteSpace(tail))
-                                Query = tail;
-                            SafeOperation(Action.GET);
+                            {
+                                var (q, b) = tail.TSplit(' ');
+                                Query = q;
+                                body = b?.ToBytes();
+                            }
+                            SafeOperation(Action.GET, body);
                             break;
                         case "POST":
                             SafeOperation(Action.POST, tail.ToBytes());
@@ -293,7 +309,7 @@ namespace RESTar
 
         private void SendShellInit()
         {
-            if (Silent) return;
+            if (!WriteInfoTexts) return;
             WebSocket.SendText("### Entering the RESTar WebSocket shell... ###");
             WebSocket.SendText("### Type a command to continue (e.g. HELP) ###");
         }
@@ -306,7 +322,7 @@ namespace RESTar
 
         private void Close()
         {
-            if (Silent) return;
+            if (!WriteInfoTexts) return;
             WebSocket.SendText("### Closing the RESTar WebSocket shell... ###");
             WebSocket.Disconnect();
         }

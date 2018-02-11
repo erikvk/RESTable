@@ -107,6 +107,7 @@
     <Compile Include="Results\Error\InvalidProtocolProvider.cs" />
     <Compile Include="Results\Error\InvalidReferencedEnumDeclaration.cs" />
     <Compile Include="Results\Error\NotFound\UnknownEntityResource.cs" />
+    <Compile Include="Results\Error\NotFound\UnknownProtocol.cs" />
     <Compile Include="Results\Success\IEntitiesMetadata.cs" />
     <Compile Include="Results\Success\NoQuery.cs" />
     <Compile Include="Results\Success\WebSocketResult.cs" />

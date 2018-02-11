@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
+using System.Web;
 using RESTar.Admin;
 using RESTar.Internal;
 using RESTar.Linq;
@@ -152,12 +153,12 @@ namespace RESTar.Requests
                     case DELETE:
                     case REPORT:
                         if (errorId != null)
-                            error.Headers["ErrorInfo"] = $"/{typeof(Error).FullName}/id={errorId}";
+                            error.Headers["ErrorInfo"] = $"/{typeof(Error).FullName}/id={HttpUtility.UrlEncode(errorId)}";
                         return result = error;
                     case OPTIONS: return result = new InvalidOrigin();
-                    //case VIEW:
-                    //case PAGE:
-                    //case MENU:
+                    // case VIEW:
+                    // case PAGE:
+                    // case MENU:
                     //    var master = Self.GET<View.Page>("/__restar/__page");
                     //    var partial = master.CurrentPage as RESTarView ?? new MessageWindow().Populate();
                     //    partial.SetMessage(ex.Message, code, MessageTypes.error);

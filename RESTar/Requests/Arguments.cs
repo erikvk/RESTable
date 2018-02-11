@@ -148,10 +148,11 @@ namespace RESTar.Requests
             TcpConnection = tcpConnection;
             ContentType = MimeType.Parse(Headers["Content-Type"]);
             Accept = MimeType.ParseMany(Headers["Accept"]);
-            ResultFinalizer = Uri.Protocol.FinalizeResult;
+            if (Uri.Protocol != null)
+                ResultFinalizer = Uri.Protocol.FinalizeResult;
             try
             {
-                Uri.Protocol.CheckCompliance(Headers);
+                Uri.Protocol?.CheckCompliance(Headers);
             }
             catch (NotImplementedException) { }
             catch (Exception e)

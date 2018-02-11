@@ -41,6 +41,8 @@ namespace RESTar.Internal
         InvalidSource = 021,
         InvalidDestination = 022,
 
+        UnknownProtocol = 030,
+
         // - - - - - - - - - 
         // 100-199: Resource errors
         // 100-109: Resource locator errors
@@ -85,7 +87,7 @@ namespace RESTar.Internal
         MethodNotAllowed = 214,
 
         // 300-400: Database errors
-                DatabaseError = 300,
+        DatabaseError = 300,
         AbortedByCommitHook = 301,
 
         // 400-500: Initialization errors

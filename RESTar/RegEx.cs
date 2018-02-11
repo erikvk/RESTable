@@ -48,7 +48,7 @@
         /// <summary>
         /// Used in setoperations when mapping object data to function parameters
         /// </summary>
-        internal const string MapMacro = @"\$\([^\$\(\)]+\)";
+        internal const string MapMacro = @"\$\([^\)]+\)";
 
 
         /// <summary>
