@@ -3,30 +3,37 @@ using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using RESTar.Admin;
 using RESTar.Internal;
-using RESTar.OData;
 using RESTar.Results.Fail.BadRequest;
 
 namespace RESTar.Requests
 {
-    internal class URI : IUriParameters
+    /// <summary>
+    /// Encodes a URI that is used in a request
+    /// </summary>
+    public class URI : IUriParameters
     {
-        public string ResourceSpecifier { get; internal set; }
-        public string ViewName { get; internal set; }
+        /// <inheritdoc />
+        public string ResourceSpecifier { get; set; }
+
+        /// <inheritdoc />
+        public string ViewName { get; set; }
+
+        /// <inheritdoc />
         public List<UriCondition> Conditions { get; }
+
+        /// <inheritdoc />
         public List<UriCondition> MetaConditions { get; }
-        public DbMacro Macro { get; internal set; }
+
+        internal DbMacro Macro { get; set; }
         internal Exception Error { get; private set; }
         internal bool HasError => Error != null;
-        internal static readonly string DefaultResourceSpecifier = typeof(AvailableResource).FullName;
-        internal static readonly string MetadataResourceSpecifier = typeof(Metadata).FullName;
-        internal RESTProtocols Protocol { get; private set; }
+        internal IProtocolProvider Protocol { get; private set; }
 
         internal static URI ParseInternal(ref string query, bool percentCharsEscaped, out string key)
         {
             var uri = new URI();
             key = null;
             if (percentCharsEscaped) query = query.Replace("%25", "%");
-            Action<URI, string> populator;
             var groups = Regex.Match(query, RegEx.Protocol).Groups;
             var protocolString = groups["proto"].Value;
             var _key = groups["key"].Value;
@@ -36,25 +43,15 @@ namespace RESTar.Requests
                 key = _key;
                 query = protocolString + tail;
             }
-            switch (protocolString)
+            uri.Protocol = RequestEvaluator.ProtocolProviders.SafeGet(protocolString);
+            if (uri.Protocol == null)
             {
-                case "":
-                case "-restar":
-                    populator = RESTarProtocolProvider.PopulateUri;
-                    uri.Protocol = RESTProtocols.RESTar;
-                    break;
-                case "-odata":
-                    populator = ODataProtocolProvider.PopulateUri;
-                    uri.Protocol = RESTProtocols.OData;
-                    break;
-                default:
-                    uri.Protocol = default;
-                    uri.Error = new InvalidSyntax(ErrorCodes.InvalidUriSyntax, $"Unknown protocol '{protocolString}'");
-                    return uri;
+                uri.Error = new InvalidSyntax(ErrorCodes.InvalidUriSyntax, $"Could not identify any protocol by '{protocolString}'");
+                return uri;
             }
             try
             {
-                populator(uri, tail);
+                uri.Protocol.ParseQuery(tail, uri);
             }
             catch (Exception e)
             {
@@ -72,19 +69,11 @@ namespace RESTar.Requests
 
         internal URI()
         {
-            ResourceSpecifier = DefaultResourceSpecifier;
             Conditions = new List<UriCondition>();
             MetaConditions = new List<UriCondition>();
         }
 
-        public override string ToString()
-        {
-            switch (Protocol)
-            {
-                case RESTProtocols.RESTar: return RESTarProtocolProvider.MakeRelativeUri(this);
-                case RESTProtocols.OData: return ODataProtocolProvider.MakeRelativeUri(this);
-                default: throw new ArgumentOutOfRangeException();
-            }
-        }
+        /// <inheritdoc />
+        public override string ToString() => Protocol?.MakeRelativeUri(this) ?? "";
     }
 }

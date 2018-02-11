@@ -9,7 +9,7 @@ namespace RESTar.Operations
     /// Describes a result that is ready to be sent back to the client, for example 
     /// using an HTTP response
     /// </summary>
-    internal interface IFinalizedResult : ILogable
+    public interface IFinalizedResult : ILogable
     {
         /// <summary>
         /// The status code of the result

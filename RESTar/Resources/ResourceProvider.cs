@@ -149,7 +149,7 @@ namespace RESTar.Resources
         });
 
         private void BuildRegularResource<TResource>()
-            where TResource : class, TBase => new EntityResource<TResource>
+            where TResource : class, TBase => new Internal.EntityResource<TResource>
         (
             fullName: typeof(TResource).FullName,
             attribute: typeof(TResource).GetAttribute<RESTarAttribute>(),
@@ -166,7 +166,7 @@ namespace RESTar.Resources
 
         private void BuildWrapperResource<TWrapper, TWrapped>()
             where TWrapper : ResourceWrapper<TWrapped>
-            where TWrapped : class, TBase => new EntityResource<TWrapped>
+            where TWrapped : class, TBase => new Internal.EntityResource<TWrapped>
         (
             fullName: typeof(TWrapper).FullName,
             attribute: typeof(TWrapper).GetAttribute<RESTarAttribute>(),

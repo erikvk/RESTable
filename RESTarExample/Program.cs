@@ -4,6 +4,7 @@ using System.Linq;
 using Dynamit;
 using Newtonsoft.Json.Linq;
 using RESTar;
+using RESTar.OData;
 using RESTar.Resources;
 using Starcounter;
 
@@ -22,7 +23,8 @@ namespace RESTarExample
                 allowAllOrigins: false,
                 viewEnabled: true,
                 configFilePath: @"C:\Mopedo\mopedo\Mopedo.config",
-                lineEndings: LineEndings.Linux
+                lineEndings: LineEndings.Linux,
+                protocolProviders: new[] {new ODataProtocolProvider()}
             );
         }
     }
@@ -32,8 +34,7 @@ namespace RESTarExample
     [Database, RESTar]
     public class Static
     {
-        [RESTarMember(hideIfNull:true)]
-        public int Swoo { get; set; }
+        [RESTarMember(hideIfNull: true)] public int Swoo { get; set; }
         private string _str;
 
         public string Str

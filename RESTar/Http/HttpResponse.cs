@@ -36,6 +36,8 @@ namespace RESTar.Http
             ExcludeHeaders = false;
             TraceId = trace.TraceId;
             TcpConnection = trace.TcpConnection;
+            Headers = new Headers();
+            Cookies = new List<string>();
         }
 
         internal HttpResponse(ITraceable trace, HttpStatusCode statusCode, string statusDescription) : this(trace)
@@ -51,8 +53,6 @@ namespace RESTar.Http
             ContentLength = webResponse.ContentLength;
             ContentType = webResponse.ContentType;
             Body = webResponse.GetResponseStream() ?? throw new NullReferenceException("ResponseStream was null");
-            Headers = new Headers();
-            Cookies = new List<string>();
             foreach (var header in webResponse.Headers.AllKeys)
                 Headers[header] = webResponse.Headers[header];
         }

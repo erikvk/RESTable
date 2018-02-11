@@ -35,7 +35,7 @@ namespace RESTar.Resources
 
         private void _BuildDynamicResource<T>(DynamicResource resource) where T : DDictionary
         {
-            new EntityResource<T>
+            new Internal.EntityResource<T>
             (
                 fullName: resource.Name,
                 attribute: resource.Attribute,

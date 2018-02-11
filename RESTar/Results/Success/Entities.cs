@@ -20,13 +20,32 @@ namespace RESTar.Results.Success
         IUriParameters GetNextPageLink();
     }
 
-    internal class Entities : OK, IEntitiesMetadata
+    /// <summary>
+    /// A result that contains a set of entities
+    /// </summary>
+    public class Entities : OK, IEntitiesMetadata
     {
-        internal IRequest Request { get; private set; }
-        internal IEnumerable<dynamic> Content { get; set; }
+        /// <summary>
+        /// The request that this result was generated for
+        /// </summary>
+        public IRequest Request { get; private set; }
+
+        /// <summary>
+        /// The entities contained in the result
+        /// </summary>
+        public IEnumerable<dynamic> Content { get; set; }
+
+        /// <summary>
+        /// The number of entities in the result
+        /// </summary>
         public ulong EntityCount { get; set; }
+
         string IEntitiesMetadata.ResourceFullName => Request.Resource.Name;
         internal string ExternalDestination { get; set; }
+
+        /// <summary>
+        /// Is the result paged?
+        /// </summary>
         public bool IsPaged => Content != null && EntityCount > 0 && (long) EntityCount == Request.MetaConditions.Limit;
 
         private Entities(ITraceable trace) : base(trace) { }

@@ -104,7 +104,7 @@ namespace RESTar
         {
             if (!RESTarConfig.Initialized)
                 throw new NotInitialized();
-            Resource = Resource<T>.GetEntityResource;
+            Resource = EntityResource<T>.Get;
             Target = Resource;
             ResponseHeaders = new Headers();
             Cookies = new List<string>();

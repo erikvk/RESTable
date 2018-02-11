@@ -56,7 +56,10 @@ namespace RESTar
 
         #region Type reflection
 
-        internal static bool IsDynamic(this Type type) => type.Implements(typeof(IDictionary<,>));
+        /// <summary>
+        /// Can this type hold dynamic members? Defined as implementing the IDictionary`2 interface
+        /// </summary>
+        public static bool IsDynamic(this Type type) => type.Implements(typeof(IDictionary<,>));
 
         internal static bool IsDDictionary(this Type type) => type == typeof(DDictionary) ||
                                                               type.IsSubclassOf(typeof(DDictionary));
@@ -92,7 +95,10 @@ namespace RESTar
             return attribute != null;
         }
 
-        internal static bool Implements(this Type type, Type interfaceType)
+        /// <summary>
+        /// Returns true if and only if the type implements the interface type
+        /// </summary>
+        public static bool Implements(this Type type, Type interfaceType)
         {
             if (type.Name == interfaceType.Name &&
                 type.Namespace == interfaceType.Namespace &&
@@ -105,7 +111,11 @@ namespace RESTar
                           i.Assembly == interfaceType.Assembly);
         }
 
-        internal static bool Implements(this Type type, Type interfaceType, out Type[] genericParameters)
+        /// <summary>
+        /// Returns true if and only if the type implements the interface type. Returns the 
+        /// generic type parameters (if any) in an out parameter.
+        /// </summary>
+        public static bool Implements(this Type type, Type interfaceType, out Type[] genericParameters)
         {
             var match = type.GetInterfaces()
                 .FirstOrDefault(i => i.Name == interfaceType.Name &&
@@ -229,13 +239,13 @@ namespace RESTar
 
         internal static string Fnuttify(this string sqlKey) => $"\"{sqlKey.Replace(".", "\".\"")}\"";
 
-        internal static bool IsNullable(this Type type, out Type baseType)
+        /// <summary>
+        /// Checks if the type is a Nullable struct, and - if so -  returns the underlying type in the out parameter.
+        /// </summary>
+        public static bool IsNullable(this Type type, out Type baseType)
         {
-            baseType = null;
-            if (!type.IsGenericType || type.GetGenericTypeDefinition() != typeof(Nullable<>))
-                return false;
-            baseType = type.GenericTypeArguments[0];
-            return true;
+            baseType = Nullable.GetUnderlyingType(type);
+            return baseType != null;
         }
 
         /// <summary>
@@ -260,12 +270,19 @@ namespace RESTar
             return (collection.ElementAtOrDefault(0), collection.ElementAtOrDefault(1));
         }
 
-        internal static string[] Split(this string str, string separator, StringSplitOptions options = StringSplitOptions.None)
+        /// <summary>
+        /// Splits a string by a separator string
+        /// </summary>
+        public static string[] Split(this string str, string separator, StringSplitOptions options = StringSplitOptions.None)
         {
             return str.Split(new[] {separator}, options);
         }
 
-        internal static (string, string) TSplit(this string str, char separator)
+        /// <summary>
+        /// Splits a string into two parts by a separator char, and returns a 2-tuple 
+        /// holding the parts.
+        /// </summary>
+        public static (string, string) TSplit(this string str, char separator)
         {
             var split = str.Split(new[] {separator}, 2);
             switch (split.Length)
@@ -276,7 +293,11 @@ namespace RESTar
             }
         }
 
-        internal static (string, string) TSplit(this string str, string separator)
+        /// <summary>
+        /// Splits a string into two parts by a separator string, and returns a 2-tuple 
+        /// holding the parts.
+        /// </summary>
+        public static (string, string) TSplit(this string str, string separator)
         {
             var split = str.Split(new[] {separator}, 2, StringSplitOptions.None);
             switch (split.Length)
@@ -285,15 +306,6 @@ namespace RESTar
                 case 2: return (split[0], split[1]);
                 default: return (null, null);
             }
-        }
-
-        /// <summary>
-        /// Sends a WebSocket message to a collection of sockets
-        /// </summary>
-        public static void SendToAll(this IEnumerable<IWebSocket> sockets, string message)
-        {
-            foreach (var webSocket in sockets.AsParallel())
-                webSocket.SendText(message);
         }
 
         #endregion
@@ -728,7 +740,7 @@ namespace RESTar
         /// </summary>
         public static ClosedXML.Excel.XLWorkbook ToExcel<T>(this IEnumerable<T> entities) where T : class
         {
-            var resource = Resource<T>.GetEntityResource;
+            var resource = EntityResource<T>.Get;
             var dataSet = new DataSet();
             var table = entities.MakeDataTable(resource);
             if (table.Rows.Count == 0) return null;
@@ -818,7 +830,12 @@ namespace RESTar
             }
         }
 
-        internal static string XMLBool(this bool @bool)
+        /// <summary>
+        /// Converts a boolean into an XML boolean string, i.e. "true" or "false" 
+        /// </summary>
+        /// <param name="bool"></param>
+        /// <returns></returns>
+        public static string XMLBool(this bool @bool)
         {
             const string trueString = "true";
             const string FalseString = "false";

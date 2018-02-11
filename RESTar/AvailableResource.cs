@@ -11,8 +11,8 @@ namespace RESTar
     /// <summary>
     /// Gets the available resources for the current user
     /// </summary>
-    [RESTar(GET, Description = description)]
-    internal sealed class AvailableResource : ISelector<AvailableResource>
+    [RESTar(GET, Description = description, GETAvailableToAll = true)]
+    public sealed class AvailableResource : ISelector<AvailableResource>
     {
         private const string description = "The AvailableResource resource contains all resources " +
                                            "available for the current user, as defined by the access " +
@@ -58,8 +58,7 @@ namespace RESTar
         public IEnumerable<AvailableResource> Select(IRequest<AvailableResource> request)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
-            var _rights = RESTarConfig.AuthTokens[request.AuthToken];
-
+            var _rights = Authenticator.AuthTokens.SafeGet(request.AuthToken);
             return _rights?.Keys
                 .Where(r => r.IsGlobal && !r.IsInnerResource)
                 .OrderBy(r => r.Name)
@@ -67,7 +66,7 @@ namespace RESTar
                 .Where(request.Conditions);
         }
 
-        internal static AvailableResource Make(IResource iresource, AccessRights rights) => new AvailableResource
+        private static AvailableResource Make(IResource iresource, AccessRights rights) => new AvailableResource
         {
             Name = iresource.Name,
             Alias = iresource.Alias,

@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using RESTar.Auth;
@@ -14,7 +16,16 @@ namespace RESTar.Internal
         internal const string CurrentUser = "SELECT t.Token.User FROM Simplified.Ring5.SystemUserSession t " +
                                             "WHERE t.SessionIdString =? AND t.Token.User IS NOT NULL";
 
+        internal static IDictionary<string, AccessRights> ApiKeys { get; private set; }
+        internal static ConcurrentDictionary<string, AccessRights> AuthTokens { get; private set; }
         internal static readonly string AppToken = Guid.NewGuid().ToString();
+
+        internal static void NewState()
+        {
+            ApiKeys = new Dictionary<string, AccessRights>();
+            AuthTokens = new ConcurrentDictionary<string, AccessRights>();
+            AuthTokens.TryAdd(AppToken, AccessRights.Root);
+        }
 
         private static object GetCurrentSystemUser()
         {

@@ -5,23 +5,8 @@ namespace RESTar.Deflection.Dynamic
     /// <summary>
     /// Describes a property of a resource
     /// </summary>
-    public abstract class Property
+    public abstract class Property : Member
     {
-        /// <summary>
-        /// The name of the property
-        /// </summary>
-        public string Name { get; internal set; }
-
-        /// <summary>
-        /// The name of the property, as defined in the type declaration
-        /// </summary>
-        public string ActualName { get; internal set; }
-
-        /// <summary>
-        /// The name to use in Starcounter view models
-        /// </summary>
-        public string ViewModelName => Writable ? Name + "$" : Name;
-
         /// <summary>
         /// Is this property a dynamic member?
         /// </summary>
@@ -60,9 +45,11 @@ namespace RESTar.Deflection.Dynamic
         /// </summary>
         internal Getter Getter { get; set; }
 
-        internal bool Readable => Getter != null;
-        internal bool Writable => Setter != null;
-        internal bool ReadOnly => Readable && !Writable;
+        /// <inheritdoc />
+        public override bool Readable => Getter != null;
+
+        /// <inheritdoc />
+        public override bool Writable => Setter != null;
 
         /// <summary>
         /// Parses an input property name string and returns a Property describing the 

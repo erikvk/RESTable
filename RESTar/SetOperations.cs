@@ -79,6 +79,7 @@ namespace RESTar
                                                 "the name is a set operation and the value is a list of strings and/or " +
                                                 "objects.");
                         var arr = prop.Value.Value<JArray>();
+                        
                         switch (prop.Name.ToLower())
                         {
                             case "distinct":

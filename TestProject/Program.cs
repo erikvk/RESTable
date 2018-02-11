@@ -1,5 +1,4 @@
 ﻿using Starcounter;
-
 // ReSharper disable All
 
 namespace TestProject
@@ -8,7 +7,10 @@ namespace TestProject
     {
         public static void Main()
         {
-            Handle.GET("/test", (Request request) => request.ContentType ?? "was null");
+            Handle.GET("/test", (Request request) =>
+            {
+                return request.ContentType ?? "was null";
+            });
 
             var s = ";";
         }

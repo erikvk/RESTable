@@ -13,4 +13,13 @@ namespace RESTar.Results.Success
             Headers["RESTar-info"] = "No entities found matching request.";
         }
     }
+
+    internal class NoQuery : Result
+    {
+        internal NoQuery(ITraceable trace) : base(trace)
+        {
+            StatusCode = HttpStatusCode.NoContent;
+            StatusDescription = "No query";
+        }
+    }
 }

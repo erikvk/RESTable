@@ -81,7 +81,7 @@ namespace RESTar.Deflection.Dynamic
                 });
             return properties;
         }
-
+        
         /// <summary>
         /// Gets the declared properties for a given type
         /// </summary>

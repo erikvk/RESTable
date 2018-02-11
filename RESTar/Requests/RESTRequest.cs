@@ -149,7 +149,7 @@ namespace RESTar.Requests
         public void Dispose()
         {
             if (TcpConnection.IsExternal && AuthToken != null)
-                AuthTokens.TryRemove(AuthToken, out var _);
+                Authenticator.AuthTokens.TryRemove(AuthToken, out var _);
         }
     }
 }

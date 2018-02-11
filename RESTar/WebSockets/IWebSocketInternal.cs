@@ -21,7 +21,7 @@ namespace RESTar.WebSockets
         /// Sends a result over the WebSocket. Send calls to a closed WebSocket will be queued and sent 
         /// when the WebSocket is opened.
         /// </summary>
-        void SendResult(IFinalizedResult result);
+        void SendResult(IFinalizedResult result, bool includeStatusWithContent = true);
 
         ConnectionProfile GetConnectionProfile();
     }

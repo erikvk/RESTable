@@ -41,6 +41,7 @@ namespace RESTar.Internal
         public TermBindingRules ConditionBindingRule { get; }
         public TermBindingRules OutputBindingRule { get; }
         public bool RequiresAuthentication => Authenticate != null;
+        public bool GETAvailableToAll { get; }
 
         /// <inheritdoc />
         /// <summary>
@@ -128,6 +129,7 @@ namespace RESTar.Internal
             IsInternal = attribute is RESTarInternalAttribute;
             DynamicConditionsAllowed = typeof(T).IsDDictionary() || attribute.AllowDynamicConditions;
             DeclaredPropertiesFlagged = typeof(T).IsDDictionary() || attribute.FlagStaticMembers;
+            GETAvailableToAll = attribute.GETAvailableToAll;
             ConditionBindingRule = DynamicConditionsAllowed ? DeclaredWithDynamicFallback : OnlyDeclared;
             if (DeclaredPropertiesFlagged)
                 OutputBindingRule = DeclaredWithDynamicFallback;
@@ -150,7 +152,11 @@ namespace RESTar.Internal
             if (views?.Any() == true)
             {
                 ViewDictionaryInternal = views.ToDictionary(v => v.Name, OrdinalIgnoreCase);
-                views.ForEach(view => view.Type.GetDeclaredProperties());
+                views.ForEach(view =>
+                {
+                    view.EntityResource = this;
+                    view.Type.GetDeclaredProperties();
+                });
             }
             CheckOperationsSupport();
             RESTarConfig.AddResource(this);

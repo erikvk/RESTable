@@ -6,6 +6,11 @@ using RESTar.Resources;
 
 namespace RESTar.Internal
 {
+    /// <summary>
+    /// A common non-generic interface for terminal resources
+    /// </summary>
+    public interface ITerminalResource : IResource { }
+
     /// <inheritdoc cref="ITarget" />
     /// <summary>
     /// The common non-generic interface for all entity resource entities used by RESTar

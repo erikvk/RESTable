@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using static RESTar.Methods;
 
 namespace RESTar.Admin
@@ -8,9 +9,9 @@ namespace RESTar.Admin
     /// Provides access to commmon admin tasks
     /// </summary>
     [RESTar(GET, Description = description)]
-    public class Utilities : ISelector<Utilities>
+    internal class Utilities : ISelector<Utilities>
     {
-        private const string description = "The AdminTools resource gives access to commonly used " +
+        private const string description = "The Utilities resource gives access to commonly used " +
                                            "tools for administrating a RESTar instance, in form of " +
                                            "views that can be used as static methods.";
 
@@ -18,6 +19,8 @@ namespace RESTar.Admin
         /// The message used when returning results from operations
         /// </summary>
         public string Message { get; set; }
+
+        [RESTarMember(hideIfNull: true)] public ViewInfo[] Views { get; set; }
 
         /// <inheritdoc />
         [RESTarView(Description = "Reloads the configuration file")]
@@ -41,7 +44,16 @@ namespace RESTar.Admin
         {
             if (request == null)
                 throw new ArgumentNullException(nameof(request));
-            return new[] {new Utilities {Message = description}};
+            return new[]
+            {
+                new Utilities
+                {
+                    Message = $"{description}",
+                    Views = EntityResource<Utilities>.Get.Views
+                        .Select(v => new ViewInfo(v.Name, v.Description))
+                        .ToArray()
+                }
+            };
         }
     }
 }

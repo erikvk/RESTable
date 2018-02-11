@@ -23,11 +23,6 @@ namespace RESTar.Deflection.Dynamic
         /// </summary>
         private int MetadataToken { get; }
 
-        /// <summary>
-        /// The property type for this property
-        /// </summary>
-        public Type Type { get; }
-
         /// <inheritdoc />
         public override bool Dynamic => false;
 
@@ -68,16 +63,6 @@ namespace RESTar.Deflection.Dynamic
         public bool ReplaceOnUpdate { get; }
 
         /// <summary>
-        /// Is this property nullable?
-        /// </summary>
-        public bool Nullable { get; }
-
-        /// <summary>
-        /// Is the type an enum type?
-        /// </summary>
-        public bool IsEnum { get; }
-
-        /// <summary>
         /// The attributes that this property has been decorated with
         /// </summary>  
         private ICollection<Attribute> Attributes { get; }
@@ -110,8 +95,8 @@ namespace RESTar.Deflection.Dynamic
         {
             MetadataToken = metadataToken;
             Name = name;
-            ActualName = actualName;
             Type = type;
+            ActualName = actualName;
             Order = order;
             IsKey = isKey;
             ScQueryable = scQueryable;
@@ -134,8 +119,8 @@ namespace RESTar.Deflection.Dynamic
             if (p == null) return;
             MetadataToken = p.MetadataToken;
             Name = p.RESTarMemberName(flagName);
-            ActualName = p.Name;
             Type = p.PropertyType;
+            ActualName = p.Name;
             Attributes = p.GetCustomAttributes().ToList();
             var memberAttribute = GetAttribute<RESTarMemberAttribute>();
             var jsonAttribute = GetAttribute<JsonPropertyAttribute>();

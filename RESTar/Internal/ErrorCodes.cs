@@ -72,7 +72,7 @@ namespace RESTar.Internal
         AliasAlreadyInUse = 130,
         AliasEqualToResourceName = 131,
 
-        // 200-399: Handler errors
+        // 200-300: Handler errors
         AbortedSelect = 201,
         AbortedInsert = 202,
         AbortedUpdate = 203,
@@ -84,15 +84,21 @@ namespace RESTar.Internal
         FailedResourceAuthentication = 213,
         MethodNotAllowed = 214,
 
-        DatabaseError = 300,
+        // 300-400: Database errors
+                DatabaseError = 300,
         AbortedByCommitHook = 301,
+
+        // 400-500: Initialization errors
         NotInitialized = 400,
         AddOnError = 401,
         ResourceProviderError = 402,
         ResourceWrapperError = 403,
         InfiniteLoopDetected = 404,
         NotImplemented = 405,
-        UnsupportedODataProtocolVersion = 406,
         MissingConfigurationFile = 407,
+        InvalidProtocolProvider = 408,
+
+        // 500-600: Protocol errors
+        NotCompliantWithProtocol = 500
     }
 }

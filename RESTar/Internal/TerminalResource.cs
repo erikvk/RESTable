@@ -15,7 +15,7 @@ using static RESTar.WebSocketStatus;
 
 namespace RESTar.Internal
 {
-    internal class TerminalResource : IResource<ITerminal>, IResourceInternal
+    internal class TerminalResource : IResource<ITerminal>, IResourceInternal, ITerminalResource
     {
         public string Name { get; }
         public Type Type { get; }
@@ -30,11 +30,13 @@ namespace RESTar.Internal
         public int CompareTo(IEntityResource other) => string.Compare(Name, other.Name, StringComparison.Ordinal);
         public TermBindingRules ConditionBindingRule { get; }
         public string Description { get; set; }
+        public bool GETAvailableToAll { get; }
         public override string ToString() => Name;
         public override bool Equals(object obj) => obj is TerminalResource t && t.Name == Name;
         public override int GetHashCode() => Name.GetHashCode();
         public IReadOnlyList<IEntityResource> InnerResources { get; set; }
         public Selector<ITerminal> Select { get; }
+
         private Constructor<ITerminal> Constructor { get; }
 
         internal void InstantiateFor(IWebSocketInternal webSocket, IEnumerable<UriCondition> assignments = null)
@@ -77,7 +79,7 @@ namespace RESTar.Internal
             terminalTypes
                 .OrderBy(t => t.FullName)
                 .ForEach(type => RESTarConfig.AddResource(new TerminalResource(type)));
-            Shell.TerminalResource = Resource.Get(typeof(Shell)) as TerminalResource;
+            Shell.TerminalResource = (TerminalResource) TerminalResource<Shell>.Get;
         }
 
         public TerminalResource(Type type)
@@ -94,6 +96,7 @@ namespace RESTar.Internal
             Description = attribute?.Description;
             Select = null;
             Constructor = type.MakeStaticConstructor<ITerminal>();
+            GETAvailableToAll = attribute?.GETAvailableToAll == true;
             if (Name.Contains('+'))
             {
                 IsInnerResource = true;

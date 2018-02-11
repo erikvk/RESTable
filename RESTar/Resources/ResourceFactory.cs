@@ -34,7 +34,11 @@ namespace RESTar.Resources
         private static void ValidateResourceProviders(ICollection<ResourceProvider> externalProviders)
         {
             if (externalProviders == null) return;
-            externalProviders.ForEach(p => p.Validate());
+            externalProviders.ForEach(p =>
+            {
+                if (p == null) throw new InvalidExternalResourceProvider("Found null value in 'resourceProviders' array");
+                p.Validate();
+            });
             if (externalProviders.ContainsDuplicates(p => p.GetType().FullName, out var typeDupe))
                 throw new InvalidExternalResourceProvider("Two or more external ResourceProviders with the same " +
                                                           $"type '{typeDupe.GetType().FullName}' was found. Include " +
@@ -282,7 +286,7 @@ namespace RESTar.Resources
                 parentResource.InnerResources = group.ToList();
             });
 
-        internal static void MakeResources(ICollection<ResourceProvider> externalProviders)
+        internal static void MakeResources(ResourceProvider[] externalProviders)
         {
             ValidateResourceProviders(externalProviders);
             var (regularResources, resourceWrappers, terminals) = ValidateAndBuildTypeLists();
@@ -308,8 +312,19 @@ namespace RESTar.Resources
                 provider.ReceiveClaimed(Resource.ClaimedBy(provider));
             }
 
-            var metadata = Metadata.Make();
-            foreach (var enumType in metadata.PeripheralTypes.Where(t => t.IsEnum))
+            DynamicResource.GetAll().ForEach(MakeDynamicResource);
+            TerminalResource.RegisterTerminalTypes(terminals);
+        }
+
+        internal static void MakeDynamicResource(DynamicResource resource) => DynProvider.BuildDynamicResource(resource);
+
+        /// <summary>
+        /// All resources are now in place and metadata can be built. This checks for any additional errors
+        /// </summary>
+        internal static void FinalCheck()
+        {
+            var metadata = Metadata.Get(MetadataLevel.Full);
+            foreach (var (enumType, _) in metadata.PeripheralTypes.Where(t => t.Type.IsEnum))
             {
                 if (Enum.GetNames(enumType).Select(name => name.ToLower()).ContainsDuplicates(out var dupe))
                     throw new InvalidReferencedEnumDeclaration("A reference was made in some resource type to an enum type with name " +
@@ -317,11 +332,6 @@ namespace RESTar.Resources
                                                                "(case insensitive). All enum types referenced by some RESTar resource " +
                                                                "type must have unique case insensitive named constants");
             }
-
-            DynamicResource.GetAll().ForEach(MakeDynamicResource);
-            TerminalResource.RegisterTerminalTypes(terminals);
         }
-
-        internal static void MakeDynamicResource(DynamicResource resource) => DynProvider.BuildDynamicResource(resource);
     }
 }

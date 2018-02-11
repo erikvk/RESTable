@@ -1,6 +1,10 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text.RegularExpressions;
 using RESTar.Admin;
 using RESTar.Internal;
+using RESTar.Linq;
 using RESTar.Operations;
 using RESTar.Results.Error;
 using RESTar.Results.Fail.BadRequest.Aborted;
@@ -19,6 +23,38 @@ namespace RESTar.Requests
     /// </summary>
     internal static class RequestEvaluator
     {
+        internal static IDictionary<string, IProtocolProvider> ProtocolProviders { get; private set; }
+
+        private static void AddProtocolProvider(IProtocolProvider provider)
+        {
+            var protocolId = "-" + provider.ProtocolIdentifier;
+            if (ProtocolProviders.TryGetValue(protocolId, out var existing))
+                throw new InvalidProtocolProvider($"Protocol identifier '{existing.ProtocolIdentifier}' already claimed by a protocol provider");
+            ProtocolProviders[protocolId] = provider;
+        }
+
+        private static void ValidateProtocolProvider(IProtocolProvider provider)
+        {
+            if (string.IsNullOrWhiteSpace(provider.ProtocolIdentifier))
+                throw new InvalidProtocolProvider($"Invalid protocol provider '{provider.GetType().FullName}'. " +
+                                                  "ProtocolIdentifier cannot be null or whitespace");
+            if (!Regex.IsMatch(provider.ProtocolIdentifier, "^[a-zA-Z]+$"))
+                throw new InvalidProtocolProvider($"Invalid protocol provider '{provider.GetType().FullName}'. " +
+                                                  "ProtocolIdentifier can only contain letters a-z and A-Z");
+        }
+
+        internal static void SetupProtocolProviders(IProtocolProvider[] protocolProviders)
+        {
+            ProtocolProviders = new Dictionary<string, IProtocolProvider>(StringComparer.OrdinalIgnoreCase);
+            var defaultProvider = protocolProviders?.OfType<DefaultProtocolProvider>().FirstOrDefault() ?? new DefaultProtocolProvider();
+            ProtocolProviders[""] = defaultProvider;
+            protocolProviders?.ForEach(provider =>
+            {
+                ValidateProtocolProvider(provider);
+                AddProtocolProvider(provider);
+            });
+        }
+
         private static int StackDepth;
 
         internal static IFinalizedResult Evaluate
@@ -46,19 +82,26 @@ namespace RESTar.Requests
                         arguments = new Arguments(action, ref query, body, headers, tcpConnection);
                         arguments.Authenticate();
                         arguments.ThrowIfError();
-                        switch (arguments.IResource)
+                        var requestedResource = arguments.IResource;
+                        if (tcpConnection.HasWebSocket
+                            && tcpConnection.Origin != OriginType.Shell
+                            && requestedResource.Equals(EntityResource<AvailableResource>.Get)
+                            && query.Length < nameof(AvailableResource).Length)
+                            requestedResource = Shell.TerminalResource;
+                        switch (requestedResource)
                         {
-                            case TerminalResource terminalResource:
+                            case TerminalResource terminal:
                                 if (!tcpConnection.HasWebSocket)
-                                    return result = new UpgradeRequired(terminalResource.Name);
-                                terminalResource.InstantiateFor(tcpConnection.WebSocketInternal, arguments.Uri.Conditions);
-                                return result = new WebSocketResult(true, arguments);
+                                    return result = new UpgradeRequired(terminal.Name);
+                                terminal.InstantiateFor(tcpConnection.WebSocketInternal, arguments.Uri.Conditions);
+                                return result = new WebSocketResult(leaveOpen: true, trace: arguments);
+
                             case var entityResource:
                                 result = HandleREST((dynamic) entityResource, arguments);
                                 if (!tcpConnection.HasWebSocket || tcpConnection.Origin == OriginType.Shell)
                                     return result;
                                 tcpConnection.WebSocketInternal.SendResult(result);
-                                return result = new WebSocketResult(false, arguments);
+                                return result = new WebSocketResult(leaveOpen: false, trace: arguments);
                         }
                     case OPTIONS:
                         arguments = new Arguments(action, ref query, body, headers, tcpConnection);

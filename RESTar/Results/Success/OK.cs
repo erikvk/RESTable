@@ -4,9 +4,11 @@ using RESTar.Requests;
 
 namespace RESTar.Results.Success
 {
-    internal class OK : Result
+    /// <inheritdoc />
+    public abstract class OK : Result
     {
-        internal OK(ITraceable trace) : base(trace)
+        /// <inheritdoc />
+        protected OK(ITraceable trace) : base(trace)
         {
             StatusCode = HttpStatusCode.OK;
             StatusDescription = "OK";

@@ -13,6 +13,7 @@ using RESTar.Auth;
 using RESTar.Deflection.Dynamic;
 using RESTar.Internal;
 using RESTar.Linq;
+using RESTar.Requests;
 using RESTar.Resources;
 using RESTar.Results.Error;
 using Starcounter;
@@ -31,8 +32,6 @@ namespace RESTar
         internal static IDictionary<string, IResource> ResourceFinder { get; private set; }
         internal static IDictionary<string, IResource> ResourceByName { get; private set; }
         internal static IDictionary<Type, IResource> ResourceByType { get; private set; }
-        internal static IDictionary<string, AccessRights> ApiKeys { get; private set; }
-        internal static ConcurrentDictionary<string, AccessRights> AuthTokens { get; private set; }
         internal static ICollection<IResource> Resources => ResourceByName.Values;
         internal static IEnumerable<IEntityResource> EntityResources => ResourceByName.Values.OfType<IEntityResource>();
         internal static List<Uri> AllowedOrigins { get; private set; }
@@ -48,19 +47,17 @@ namespace RESTar
 
         private static void NewState()
         {
-            ApiKeys = new Dictionary<string, AccessRights>();
             ResourceByType = new Dictionary<Type, IResource>();
             ResourceByName = new Dictionary<string, IResource>(StringComparer.OrdinalIgnoreCase);
             ResourceFinder = new ConcurrentDictionary<string, IResource>(StringComparer.OrdinalIgnoreCase);
-            AuthTokens = new ConcurrentDictionary<string, AccessRights>();
             AllowedOrigins = new List<Uri>();
-            AuthTokens.TryAdd(Authenticator.AppToken, AccessRights.Root);
             ReservedNamespaces = typeof(RESTarConfig).Assembly
                 .GetTypes()
                 .Select(type => type.Namespace?.ToLower())
                 .Where(ns => ns != null)
                 .Distinct()
                 .ToArray();
+            Authenticator.NewState();
         }
 
         internal static void UpdateConfiguration()
@@ -147,6 +144,7 @@ namespace RESTar
         /// <param name="allowAllOrigins">Should any origin be allowed to make CORS requests?</param>
         /// <param name="lineEndings">The line endings to use when writing JSON</param>
         /// <param name="resourceProviders">External resource providers for the RESTar instance</param>
+        /// <param name="protocolProviders">External protocol providers for the RESTar instance</param>
         public static void Init
         (
             ushort port = 8282,
@@ -159,7 +157,8 @@ namespace RESTar
             bool prettyPrint = true,
             ushort daysToSaveErrors = 30,
             LineEndings lineEndings = LineEndings.Windows,
-            IEnumerable<ResourceProvider> resourceProviders = null)
+            IEnumerable<ResourceProvider> resourceProviders = null,
+            IEnumerable<IProtocolProvider> protocolProviders = null)
         {
             try
             {
@@ -167,8 +166,8 @@ namespace RESTar
                 Settings.Init(port, uri, viewEnabled, prettyPrint, daysToSaveErrors, lineEndings);
                 Log.Init();
                 DynamitConfig.Init(true, true);
-                var externalProviders = resourceProviders?.Where(r => r != null).ToList();
-                ResourceFactory.MakeResources(externalProviders);
+                ResourceFactory.MakeResources(resourceProviders?.ToArray());
+                RequestEvaluator.SetupProtocolProviders(protocolProviders?.ToArray());
                 RequireApiKey = requireApiKey;
                 AllowAllOrigins = allowAllOrigins;
                 ConfigFilePath = configFilePath;
@@ -177,6 +176,7 @@ namespace RESTar
                 DatabaseIndex.Init();
                 DbOutputFormat.Init();
                 UpdateConfiguration();
+                ResourceFactory.FinalCheck();
             }
             catch
             {
@@ -300,10 +300,18 @@ namespace RESTar
 
                     recurseAllowAccess(apiKeyToken["AllowAccess"]);
                     var accessRights = accessRightList.ToAccessRights();
-                    var availableResources = Resource<AvailableResource>.Get;
-                    if (!accessRights.ContainsKey(availableResources))
-                        accessRights.Add(availableResources, new[] {GET});
-                    ApiKeys[key] = accessRights;
+                    foreach (var resource in Resources.Where(r => r.GETAvailableToAll))
+                    {
+                        if (!accessRights.TryGetValue(resource, out var methods))
+                            accessRights.Add(resource, new[] {GET, REPORT});
+                        else
+                            accessRights[resource] = methods
+                                .Union(new[] {GET, REPORT})
+                                .OrderBy(i => i, MethodComparer.Instance)
+                                .ToArray();
+                    }
+
+                    Authenticator.ApiKeys[key] = accessRights;
                     break;
                 case JArray apiKeys:
                     apiKeys.ForEach(ReadApiKeys);

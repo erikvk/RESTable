@@ -90,9 +90,12 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Admin\WebSocket.cs" />
-    <Compile Include="Admin\AdminTools.cs" />
+    <Compile Include="Admin\Utilities.cs" />
     <Compile Include="Admin\Console.cs" />
     <Compile Include="Admin\DbMacro.cs" />
+    <Compile Include="Deflection\Dynamic\Field.cs" />
+    <Compile Include="Deflection\Dynamic\Member.cs" />
+    <Compile Include="IProtocolProvider.cs" />
     <Compile Include="Logging\ConsoleFormat.cs" />
     <Compile Include="Logging\ConsoleStatus.cs" />
     <Compile Include="Logging\ILogable.cs" />
@@ -101,6 +104,7 @@
     <Compile Include="Logging\HTTPEvent.cs" />
     <Compile Include="Logging\WebSocketEvent.cs" />
     <Compile Include="Operations\Search.cs" />
+    <Compile Include="Results\Error\InvalidExternalResourceProvider - Copy.cs" />
     <Compile Include="Serialization\DDictionaryConverter.cs" />
     <Compile Include="Serialization\GetterSetterProvider.cs" />
     <Compile Include="Serialization\NativeProtocol\HeadersConverter.cs" />
@@ -119,17 +123,11 @@
     <Compile Include="IWebSocket.cs" />
     <Compile Include="LineEndings.cs" />
     <Compile Include="Methods.cs" />
-    <Compile Include="OData\MetadataDocument.cs" />
-    <Compile Include="OData\MetadataKeys.cs" />
-    <Compile Include="OData\QueryOptions.cs" />
-    <Compile Include="OData\MetaDataLevel.cs" />
-    <Compile Include="OData\ODataServiceEntity.cs" />
     <Compile Include="Operations\AuthResults.cs" />
     <Compile Include="Operations\Distinct.cs" />
     <Compile Include="Operations\IFinalizedResult.cs" />
     <Compile Include="Operations\Result.cs" />
-    <Compile Include="OData\ODataProtocolProvider.cs" />
-    <Compile Include="Requests\RESTarProtocolProvider.cs" />
+    <Compile Include="Requests\DefaultProtocolProvider.cs" />
     <Compile Include="Requests\ResultFinalizer.cs" />
     <Compile Include="RegEx.cs" />
     <Compile Include="Requests\RequestEvaluator.cs" />
@@ -168,7 +166,7 @@
     <Compile Include="Request.cs" />
     <Compile Include="Requests\TCPConnection.cs" />
     <Compile Include="Requests\ViewRequest.cs" />
-    <Compile Include="Resource.cs" />
+    <Compile Include="EntityResource.cs" />
     <Compile Include="ResourceAlias.cs" />
     <Compile Include="Admin\ResourceProfile.cs" />
     <Compile Include="Resources\DynamicResourceProvider.cs" />
@@ -284,21 +282,19 @@
     <Compile Include="Results\Error\NotFound\UnknownView.cs" />
     <Compile Include="Results\Error\Unknown.cs" />
     <Compile Include="Results\Error\UnsupportedContent.cs" />
-    <Compile Include="Results\Error\BadRequest\UnsupportedODataVersion.cs" />
     <Compile Include="Results\Error\BadRequest\FailedValidation.cs" />
     <Compile Include="Results\Error\InvalidVirtualResourceDeclaration.cs" />
     <Compile Include="Results\Success\AcceptOrigin.cs" />
     <Compile Include="Results\Success\DeletedEntities.cs" />
     <Compile Include="Results\Success\Entities.cs" />
     <Compile Include="Results\Success\InsertedEntities.cs" />
-    <Compile Include="Admin\Metadata.cs" />
+    <Compile Include="Metadata.cs" />
     <Compile Include="Results\Success\NoContent.cs" />
     <Compile Include="Results\Success\OK.cs" />
     <Compile Include="Results\Success\Report.cs" />
     <Compile Include="Results\Success\SafePostedEntities.cs" />
     <Compile Include="Results\Success\UpdatedEntities.cs" />
     <Compile Include="Serialization\NativeProtocol\FormatWriter.cs" />
-    <Compile Include="Serialization\OData\ODataJsonWriter.cs" />
     <Compile Include="Serialization\NativeProtocol\RESTarFromExcelJsonWriter.cs" />
     <Compile Include="Serialization\NativeProtocol\RESTarJsonWriter.cs" />
     <Compile Include="Serialization\Serializer.cs" />

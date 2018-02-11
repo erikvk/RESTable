@@ -78,6 +78,7 @@ namespace RESTar.Requests
         }
 
         private bool disposed;
+
         public void Dispose()
         {
             if (disposed) return;
@@ -135,7 +136,7 @@ namespace RESTar.Requests
             }
         }
 
-        public void SendResult(IFinalizedResult result)
+        public void SendResult(IFinalizedResult result, bool includeStatusWithContent = true)
         {
             switch (Status)
             {
@@ -146,24 +147,27 @@ namespace RESTar.Requests
                 case var closed:
                     throw new InvalidOperationException($"Unable to send results to a WebSocket with status '{closed}'");
             }
-            switch (result)
+            if (result is WebSocketResult) return;
+
+            void sendStatus()
             {
-                case WebSocketResult _: break;
-                case Report _:
-                case Entities _:
-                    SendText(result.Body);
-                    break;
-                default:
-                    var info = result.Headers["RESTar-Info"];
-                    var errorInfo = result.Headers["ErrorInfo"];
-                    var tail = "";
-                    if (info != null)
-                        tail += $". {info}";
-                    if (errorInfo != null)
-                        tail += $" (see {errorInfo})";
-                    _SendText($"{result.StatusCode.ToCode()}: {result.StatusDescription}{tail}");
-                    break;
+                var info = result.Headers["RESTar-Info"];
+                var errorInfo = result.Headers["ErrorInfo"];
+                var tail = "";
+                if (info != null)
+                    tail += $". {info}";
+                if (errorInfo != null)
+                    tail += $" (see {errorInfo})";
+                _SendText($"{result.StatusCode.ToCode()}: {result.StatusDescription}{tail}");
             }
+
+            if (result.Body != null && (!result.Body.CanSeek || result.Body.Length > 0))
+            {
+                if (includeStatusWithContent)
+                    sendStatus();
+                SendText(result.Body);
+            }
+            else sendStatus();
         }
 
         public void SendText(string data) => _SendText(data);

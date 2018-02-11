@@ -11,7 +11,7 @@ using Action = RESTar.Requests.Action;
 
 namespace RESTar
 {
-    [RESTar(Description = description)]
+    [RESTar(Description = description, GETAvailableToAll = true)]
     internal class Shell : ITerminal
     {
         private const string description = "The RESTar WebSocket shell lets the client navigate around the resources of the " +
@@ -29,15 +29,18 @@ namespace RESTar
                 {
                     case "": break;
                     case null:
-                    case var _ when value[0] != '/': throw new InvalidSyntax(InvalidUriSyntax, "Shell queries must begin with '/'");
+                    case var _ when value[0] != '/' && value[0] != '-':
+                        throw new InvalidSyntax(InvalidUriSyntax, "Shell queries must begin with '/' or '-'");
                 }
                 previousQuery = query;
                 query = value;
             }
         }
 
-        public bool Silent { get; set; }
-        public bool Unsafe { get; set; }
+        public bool Silent { get; set; } = false;
+        public bool Unsafe { get; set; } = false;
+        public bool WriteStatusBeforeContent { get; set; } = true;
+        public bool WriteQueryAfterContent { get; set; } = true;
 
         private Func<int, IUriParameters> GetNextPageLink;
         private System.Action OnConfirm;
@@ -86,16 +89,18 @@ namespace RESTar
                 }
                 return;
             }
-            switch (input.FirstOrDefault())
+            if (input == " ")
+            {
+                SafeOperation(Action.GET);
+                return;
+            }
+            switch (input.Trim().FirstOrDefault())
             {
                 case '\0':
                 case '\n': break;
-                case ' ' when input.Length == 1:
-                    SafeOperation(Action.GET);
-                    break;
                 case '-':
                 case '/':
-                    Query = input.Trim();
+                    Query = input;
                     SafeOperation(Action.GET);
                     break;
                 case '[':
@@ -106,7 +111,7 @@ namespace RESTar
                     SendBadRequest();
                     break;
                 default:
-                    var (command, tail) = input.Trim().TSplit(' ');
+                    var (command, tail) = input.TSplit(' ');
                     switch (command.ToUpperInvariant())
                     {
                         case "GET":
@@ -219,10 +224,13 @@ namespace RESTar
             GetNextPageLink = null;
             query = "";
             previousQuery = "";
+            WriteStatusBeforeContent = true;
+            WriteQueryAfterContent = true;
         }
 
         private IFinalizedResult WsEvaluate(Action action, byte[] body)
         {
+            if (query.Length == 0) return new NoQuery(WebSocket);
             var preQuery = query;
             var result = RequestEvaluator.Evaluate(action, ref query, body, WebSocket.Headers, WebSocket.TcpConnection);
             if (query != preQuery)
@@ -269,7 +277,13 @@ namespace RESTar
         private void SendResult(IFinalizedResult result)
         {
             var webSocketInternal = (IWebSocketInternal) WebSocket;
-            webSocketInternal.SendResult(result);
+            webSocketInternal.SendResult(result, WriteStatusBeforeContent);
+            if (WriteQueryAfterContent)
+            {
+                if (result is NoQuery)
+                    WebSocket.SendText("? <empty>");
+                else WebSocket.SendText("? " + Query);
+            }
         }
 
         private void SendShellInit()

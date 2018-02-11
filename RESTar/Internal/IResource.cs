@@ -37,6 +37,11 @@ namespace RESTar.Internal
         /// The name of the parent resource, if this is an inner resource
         /// </summary>
         string ParentResourceName { get; }
+
+        /// <summary>
+        /// Is this resource declared as available to all, regardless of API keys?
+        /// </summary>
+        bool GETAvailableToAll { get; }
     }
 
     /// <summary>

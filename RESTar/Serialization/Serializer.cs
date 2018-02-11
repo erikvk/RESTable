@@ -23,9 +23,18 @@ namespace RESTar.Serialization
     public static class Serializer
     {
         private static readonly JsonSerializerSettings VmSettings;
-        internal static readonly JsonSerializerSettings Settings;
-        internal static readonly JsonSerializer Json;
-        internal static readonly Encoding UTF8;
+        /// <summary>
+        /// The settings that are used when serializing and deserializing JSON
+        /// </summary>
+        public static readonly JsonSerializerSettings Settings;
+        /// <summary>
+        /// The JSON serializer
+        /// </summary>
+        public static readonly JsonSerializer Json;
+        /// <summary>
+        /// UTF 8 encoding without byte order mark (BOM)
+        /// </summary>
+        public static readonly Encoding UTF8;
 
         static Serializer()
         {

@@ -8,7 +8,7 @@ namespace RESTar.Requests
 {
     /// <inheritdoc cref="IDictionary{TKey,TValue}" />
     /// <summary>
-    /// A collection of request headers
+    /// A collection of request headers. Key comparison is case insensitive.
     /// </summary>
     public class Headers : IDictionary<string, string>, IReadOnlyDictionary<string, string>
     {

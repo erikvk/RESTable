@@ -46,8 +46,8 @@ namespace RESTar
 
         /// <summary>
         /// Finds a resource by a search string. The string can be a partial resource name. If no resource 
-        /// is found, throws an UnknownResourceException. If more than one resource is found, throws
-        /// an AmbiguousResourceException.
+        /// is found, throws an UnknownResource exception. If more than one resource is found, throws
+        /// an AmbiguousResource exception.
         /// <param name="searchString">The case insensitive string to use for the search</param>
         /// </summary>
         public static IResource Find(string searchString)
@@ -66,7 +66,7 @@ namespace RESTar
 
         /// <summary>
         /// Finds a resource by a search string. The string can be a partial resource name. If no resource 
-        /// is found, returns null. If more than one resource is found, throws an AmbiguousResourceException.
+        /// is found, returns null. If more than one resource is found, throws an AmbiguousResource exception.
         /// <param name="searchString">The case insensitive string to use for the search</param>
         /// </summary>
         public static IResource SafeFind(string searchString)
@@ -112,13 +112,13 @@ namespace RESTar
         }
 
         /// <summary>
-        /// Finds a resource by name (case insensitive) and throws an UnknownResourceException
+        /// Finds a resource by name (case insensitive) and throws an UnknownResource exception
         /// if no resource is found.
         /// </summary>
         public static IResource Get(string name) => RESTarConfig.ResourceByName.SafeGet(name) ?? throw new UnknownResource(name);
 
         /// <summary>
-        /// Finds an entity resource by name (case insensitive) and throws an UnknownResourceException
+        /// Finds an entity resource by name (case insensitive) and throws an UnknownResource exception
         /// if no resource is found.
         /// </summary>
         public static IEntityResource GetEntityResource(string name) => Get(name) as IEntityResource ?? throw new UnknownResource(name);
@@ -130,50 +130,65 @@ namespace RESTar
         public static IResource SafeGet(string name) => RESTarConfig.ResourceByName.SafeGet(name);
 
         /// <summary>
-        /// Finds a resource by target type and throws an UnknownResourceException
+        /// Finds a resource by target type and throws an UnknownResource exception
         /// if no resource is found.
         /// </summary>
-        public static IResource Get(Type type) => RESTarConfig.ResourceByType.SafeGet(type)
-                                                  ?? throw new UnknownResource(type.FullName);
+        public static IEntityResource Get(Type type) => RESTarConfig.ResourceByType.SafeGet(type) as IEntityResource
+                                                        ?? throw new UnknownResource(type.FullName);
 
         /// <summary>
-        /// Finds a resource by target type and throws an UnknownResourceException
+        /// Finds a resource by target type and throws an UnknownResource exception
         /// if no resource is found.
         /// </summary>
-        public static IResource SafeGet(Type type) => RESTarConfig.ResourceByType.SafeGet(type);
+        public static IEntityResource SafeGet(Type type) => RESTarConfig.ResourceByType.SafeGet(type) as IEntityResource;
 
         #endregion
     }
 
     /// <summary>
-    /// A static generic class for manually registering types as RESTar resources
-    /// and finding static resources by type
+    /// A static generic class for manually getting RESTar entity resources by type
     /// </summary>
     /// <typeparam name="T">The type to register</typeparam>
-    public static class Resource<T> where T : class
+    public static class EntityResource<T> where T : class
     {
         /// <summary>
-        /// Gets the resource for a given type, or throws an UnknownResourceException 
+        /// Gets the entity resource for a given type, or throws an UnknownResource exception 
         /// if there is no such resource
         /// </summary>
-        public static IResource<T> Get => RESTarConfig.ResourceByType.SafeGet(typeof(T)) as IResource<T>
-                                          ?? throw new UnknownResource(typeof(T).FullName);
-
-        /// <summary>
-        /// Gets the resource for a given type or null if there is no such resource
-        /// </summary>
-        public static IResource<T> SafeGet => RESTarConfig.ResourceByType.SafeGet(typeof(T)) as IResource<T>;
-
-        /// <summary>
-        /// Gets the entity resource for a given type, or throws an UnknownResourceException 
-        /// if there is no such resource
-        /// </summary>
-        public static IEntityResource<T> GetEntityResource => RESTarConfig.ResourceByType.SafeGet(typeof(T)) as IEntityResource<T>
-                                                              ?? throw new UnknownResource(typeof(T).FullName);
+        public static IEntityResource<T> Get => RESTarConfig.ResourceByType.SafeGet(typeof(T)) as IEntityResource<T>
+                                                ?? throw new UnknownResource(typeof(T).FullName);
 
         /// <summary>
         /// Gets the entity resource for a given type or null if there is no such resource
         /// </summary>
-        public static IEntityResource<T> SafeGetEntityResource => RESTarConfig.ResourceByType.SafeGet(typeof(T)) as IEntityResource<T>;
+        public static IEntityResource<T> SafeGet => RESTarConfig.ResourceByType.SafeGet(typeof(T)) as IEntityResource<T>;
+
+        /// <summary>
+        /// Gets the resource specifier for a given EntityResource
+        /// </summary>
+        public static string ResourceSpecifier => Get.Name;
+    }
+
+    /// <summary>
+    /// A static generic class for manually getting RESTar terminal resources by type
+    /// </summary>
+    public static class TerminalResource<T> where T : ITerminal
+    {
+        /// <summary>
+        /// Gets the terminal resource for a given type, and throws an UnknownResource exception 
+        /// if there is no such resource
+        /// </summary>
+        public static IResource<ITerminal> Get => Resource.Get(typeof(T).FullName) as IResource<ITerminal>
+                                                  ?? throw new UnknownResource(typeof(T).FullName);
+
+        /// <summary>
+        /// Gets the terminal resource for a given type or null if there is no such resource
+        /// </summary>
+        public static IResource<ITerminal> SafeGet => Resource.SafeGet(typeof(T).FullName) as IResource<ITerminal>;
+
+        /// <summary>
+        /// Gets the resource specifier for a given terminal resource
+        /// </summary>
+        public static string ResourceSpecifier => Get.Name;
     }
 }

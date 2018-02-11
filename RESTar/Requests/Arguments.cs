@@ -5,7 +5,6 @@ using System.Web;
 using RESTar.Internal;
 using RESTar.Linq;
 using RESTar.Logging;
-using RESTar.OData;
 using RESTar.Results.Error;
 using IResource = RESTar.Internal.IResource;
 
@@ -42,12 +41,19 @@ namespace RESTar.Requests
     /// an incoming call. Arguments is a unified way to talk about the input to request evaluation, 
     /// regardless of protocol and web technologies.
     /// </summary>
-    internal class Arguments : ILogable, ITraceable
+    public class Arguments : ILogable, ITraceable
     {
+        /// <summary>
+        /// The action to perform
+        /// </summary>
         public Action Action { get; }
+
         private URI uri;
         private string UnparsedUri { get; }
 
+        /// <summary>
+        /// The URI contained in the arguments
+        /// </summary>
         public URI Uri
         {
             get => uri;
@@ -65,16 +71,37 @@ namespace RESTar.Requests
         }
 
         private IResource iresource;
-        public IResource IResource => iresource ?? (iresource = Resource.Find(Uri.ResourceSpecifier));
+        internal IResource IResource => iresource ?? (iresource = Resource.Find(Uri.ResourceSpecifier));
+
+        /// <inheritdoc />
         public TCPConnection TcpConnection { get; }
+
+        /// <summary>
+        /// The body as byte array
+        /// </summary>
         public byte[] BodyBytes { get; private set; }
+
+        /// <inheritdoc />
         public Headers Headers { get; }
+
+        /// <summary>
+        /// The content type registered in the Content-Type header
+        /// </summary>
         public MimeType ContentType { get; }
+
+        /// <summary>
+        /// The content type registered in the Accept header
+        /// </summary>
         public MimeType Accept { get; }
-        public ResultFinalizer ResultFinalizer { get; }
+
+        internal ResultFinalizer ResultFinalizer { get; }
         internal string AuthToken { get; set; }
         internal Exception Error { get; set; }
+
+        /// <inheritdoc />
         public string TraceId { get; }
+
+        /// <inheritdoc />
         public bool ExcludeHeaders => IResource is IEntityResource e && e.RequiresAuthentication;
 
         LogEventType ILogable.LogEventType { get; } = LogEventType.HttpInput;
@@ -90,9 +117,10 @@ namespace RESTar.Requests
             }
         }
 
+        /// <inheritdoc />
         public string HeadersStringCache { get; set; }
 
-        public void ThrowIfError()
+        internal void ThrowIfError()
         {
             if (Error != null) throw Error;
         }
@@ -116,25 +144,20 @@ namespace RESTar.Requests
             Uri = URI.ParseInternal(ref query, PercentCharsEscaped(headers), out var key);
             if (key != null)
                 Headers["Authorization"] = $"apikey {UnpackUriKey(key)}";
-            if (tcpConnection.HasWebSocket && uri.ResourceSpecifier == URI.DefaultResourceSpecifier)
-                Uri.ResourceSpecifier = "RESTar.Shell";
             UnparsedUri = query;
             TcpConnection = tcpConnection;
             ContentType = MimeType.Parse(Headers["Content-Type"]);
             Accept = MimeType.ParseMany(Headers["Accept"]);
-            switch (uri.Protocol)
+            ResultFinalizer = Uri.Protocol.FinalizeResult;
+            try
             {
-                case RESTProtocols.RESTar:
-                    ResultFinalizer = RESTarProtocolProvider.FinalizeResult;
-                    break;
-                case RESTProtocols.OData:
-                    if (!ODataProtocolProvider.IsCompliant(this, out var odataError))
-                    {
-                        Error = odataError;
-                        return;
-                    }
-                    ResultFinalizer = ODataProtocolProvider.FinalizeResult;
-                    break;
+                Uri.Protocol.CheckCompliance(Headers);
+            }
+            catch (NotImplementedException) { }
+            catch (Exception e)
+            {
+                Error = e;
+                return;
             }
             if (ContentType.TypeCode == MimeTypeCode.Unsupported && action < Action.OPTIONS)
                 Error = new UnsupportedContent(ContentType);

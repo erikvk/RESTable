@@ -15,21 +15,17 @@ namespace RESTar.Results.Error
     /// <summary>
     /// A super class for all custom RESTar exceptions
     /// </summary>
-    internal abstract class RESTarError : Exception, IFinalizedResult, ILogable
+    public abstract class RESTarError : Exception, IFinalizedResult, ILogable
     {
         /// <summary>
         /// The error code for this error
         /// </summary>
         public ErrorCodes ErrorCode { get; }
 
-        /// <summary>
-        /// The status code to use in HTTP responses
-        /// </summary>
+        /// <inheritdoc />
         public HttpStatusCode StatusCode { get; protected set; }
 
-        /// <summary>
-        /// The status description to use in HTTP responses
-        /// </summary>
+        /// <inheritdoc />
         public string StatusDescription { get; protected set; }
 
         /// <summary>
@@ -37,23 +33,34 @@ namespace RESTar.Results.Error
         /// </summary>
         public Headers Headers { get; } = new Headers();
 
+        /// <inheritdoc />
         public ICollection<string> Cookies { get; } = new List<string>();
+
         Stream IFinalizedResult.Body { get; } = null;
         string IFinalizedResult.ContentType { get; } = null;
+
+        /// <inheritdoc />
         public string HeadersStringCache { get; set; }
+
+        /// <inheritdoc />
         public bool ExcludeHeaders { get; }
-        
+
         internal void SetTrace(ITraceable trace)
         {
             TraceId = trace.TraceId;
             TcpConnection = trace.TcpConnection;
         }
 
+        /// <inheritdoc />
         public string TraceId { get; private set; }
+
+        /// <inheritdoc />
         public TCPConnection TcpConnection { get; private set; }
 
+        /// <inheritdoc />
         public LogEventType LogEventType => LogEventType.HttpOutput;
 
+        /// <inheritdoc />
         public string LogMessage
         {
             get
@@ -69,6 +76,7 @@ namespace RESTar.Results.Error
             }
         }
 
+        /// <inheritdoc />
         public string LogContent { get; } = null;
 
         internal RESTarError(ErrorCodes code, string message) : base(message)

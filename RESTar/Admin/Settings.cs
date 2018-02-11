@@ -41,7 +41,7 @@ namespace RESTar.Admin
         /// <summary>
         /// Is the view enabled?
         /// </summary>
-        public bool ViewEnabled { get; private set; }
+        [RESTarMember(ignore: true)] public bool ViewEnabled { get; private set; }
 
         /// <summary>
         /// Will JSON be serialized with pretty print? (indented JSON)
@@ -51,7 +51,7 @@ namespace RESTar.Admin
         /// <summary>
         /// Use long running transactions instead of regular transact calls
         /// </summary>
-        public bool DontUseLRT { get; set; }
+        [RESTarMember(ignore:true)] public bool DontUseLRT { get; set; }
 
         /// <summary>
         /// The line endings to use when writing JSON

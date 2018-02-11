@@ -17,9 +17,19 @@ using HttpRequest = RESTar.Http.HttpRequest;
 
 namespace RESTar.Requests
 {
-    internal class RESTarProtocolProvider
+    /// <summary>
+    /// Contains the logic for the default RESTar protocol. This protocol is used if no 
+    /// protocol indicator is included in the request URI. To override the default protocol, 
+    /// create a subclass of this class and include in the protocolProviders array in the 
+    /// call to RESTarConfig.Init().
+    /// </summary>
+    public class DefaultProtocolProvider : IProtocolProvider
     {
-        internal static void PopulateUri(URI uri, string query)
+        /// <inheritdoc />
+        public string ProtocolIdentifier { get; } = "restar";
+
+        /// <inheritdoc />
+        public virtual void ParseQuery(string query, URI uri)
         {
             var match = Regex.Match(query, RegEx.RESTarRequestUri);
             if (!match.Success) throw new InvalidSyntax(ErrorCodes.InvalidUriSyntax, "Check URI syntax");
@@ -51,8 +61,10 @@ namespace RESTar.Requests
 
             switch (resourceOrMacro)
             {
-                case var _ when resourceOrMacro.Length == 0:
-                case var _ when resourceOrMacro == "_": break;
+                case "":
+                case "_":
+                    uri.ResourceSpecifier = EntityResource<AvailableResource>.ResourceSpecifier;
+                    break;
                 case var resource when resourceOrMacro[0] != '$':
                     uri.ResourceSpecifier = resource;
                     break;
@@ -71,15 +83,23 @@ namespace RESTar.Requests
             }
         }
 
-        private static string JoinConditions(ICollection<UriCondition> toJoin) => toJoin.Count > 0 ? string.Join("&", toJoin) : null;
+        /// <inheritdoc />
+        public string MakeRelativeUri(IUriParameters parameters)
+        {
+            string JoinConditions(List<UriCondition> c) => c.Count > 0 ? string.Join("&", c) : null;
+            return $"/{parameters.ResourceSpecifier}" +
+                   $"/{JoinConditions(parameters.Conditions) ?? "_"}" +
+                   $"/{JoinConditions(parameters.MetaConditions) ?? "_"}";
+        }
 
-        internal static string MakeRelativeUri(IUriParameters parameters) => $"/{parameters.ResourceSpecifier}" +
-                                                                             $"/{JoinConditions(parameters.Conditions) ?? "_"}" +
-                                                                             $"/{JoinConditions(parameters.MetaConditions) ?? "_"}";
-
-        internal static IFinalizedResult FinalizeResult(Result result)
+        /// <inheritdoc />
+        public virtual IFinalizedResult FinalizeResult(Result result)
         {
             if (!(result is Entities entities)) return result;
+
+            if (entities.Content is IEnumerable<Metadata>)
+                return new NoContent(result);
+
             var accept = entities.Request.Accept;
             switch (accept.TypeCode)
             {
@@ -151,5 +171,8 @@ namespace RESTar.Requests
             }
             return entities;
         }
+
+        /// <inheritdoc />
+        public void CheckCompliance(Headers arguments) { }
     }
 }

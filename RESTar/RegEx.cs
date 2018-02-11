@@ -16,11 +16,6 @@
         internal const string RESTarRequestUri = @"^\??((?<res>/[^/-]*)|((?<res>/[^/-]*)(?<view>-\w*)))?(?<cond>/[^/]*)?(?<meta>/[^/]*)?/?$";
 
         /// <summary>
-        /// The main URI regex, used when parsing requests
-        /// </summary>
-        internal const string ODataRequestUri = @"(?<entityset>/[^/\?]*)?(?<options>\?[^/]*)?";
-
-        /// <summary>
         /// Checks API keys for invalid characters. May only contain non-whitespace characters and non-parentheses
         /// </summary>
         internal const string ApiKey = @"^[!-~]+$";
@@ -55,10 +50,6 @@
         /// </summary>
         internal const string MapMacro = @"\$\([^\$\(\)]+\)";
 
-        /// <summary>
-        /// Matches unsupported OData operators in URIs
-        /// </summary>
-        internal const string UnsupportedODataOperatorRegex = @"(/| has | not | cast\(.*\)| mul | div | mod | add | sub | isof | or )";
 
         /// <summary>
         /// Matches condition literals sorrounded with double quotes

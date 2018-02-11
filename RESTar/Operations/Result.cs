@@ -6,19 +6,16 @@ using RESTar.Requests;
 
 namespace RESTar.Operations
 {
+    /// <inheritdoc />
     /// <summary>
     /// The result of a RESTar request operation
     /// </summary>
-    internal abstract class Result : IFinalizedResult
+    public abstract class Result : IFinalizedResult
     {
-        /// <summary>
-        /// The status code to use in HTTP responses based on this result
-        /// </summary>
+        /// <inheritdoc />
         public HttpStatusCode StatusCode { get; set; }
 
-        /// <summary>
-        /// The status description to use in HTTP responses based on this result
-        /// </summary>
+        /// <inheritdoc />
         public string StatusDescription { get; set; }
 
         /// <summary>
@@ -28,35 +25,42 @@ namespace RESTar.Operations
 
         Stream IFinalizedResult.Body => Body;
 
-        /// <summary>
-        /// The content type to use in HTTP responses based on this result
-        /// </summary>
+        /// <inheritdoc />
         public string ContentType { get; set; }
 
-        /// <summary>
-        /// The headers to use in HTTP responses based on this result
-        /// </summary>
+        /// <inheritdoc />
         public Headers Headers { get; }
 
-        /// <summary>
-        /// The cookies to set in the response
-        /// </summary>
+        /// <inheritdoc />
         public ICollection<string> Cookies { get; internal set; }
 
+        /// <inheritdoc />
         public LogEventType LogEventType => LogEventType.HttpOutput;
+
+        /// <inheritdoc />
         public string TraceId { get; }
+
+        /// <inheritdoc />
         public string LogMessage => $"{StatusCode.ToCode()}: {StatusDescription} ({Body?.Length ?? 0} bytes)";
+
+        /// <inheritdoc />
         public string LogContent { get; } = null;
+
+        /// <inheritdoc />
         public TCPConnection TcpConnection { get; }
+
+        /// <inheritdoc />
         public string HeadersStringCache { get; set; }
+
+        /// <inheritdoc />
         public bool ExcludeHeaders { get; }
 
         internal Result(ITraceable trace)
         {
             Headers = new Headers();
             ExcludeHeaders = false;
-            TcpConnection = trace.TcpConnection;
-            TraceId = trace.TraceId;
+            TcpConnection = trace?.TcpConnection;
+            TraceId = trace?.TraceId;
         }
     }
 }
