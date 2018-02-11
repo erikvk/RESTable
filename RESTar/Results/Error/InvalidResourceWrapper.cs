@@ -2,7 +2,7 @@
 
 namespace RESTar.Results.Error
 {
-    internal class InvalidResourceWrapper : RESTarError
+    public class InvalidResourceWrapper : RESTarError
     {
         internal InvalidResourceWrapper(string message) : base(ErrorCodes.ResourceWrapperError, message) { }
     }

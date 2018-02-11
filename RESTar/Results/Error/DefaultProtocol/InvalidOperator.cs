@@ -1,8 +1,9 @@
 ﻿using RESTar.Internal;
+using RESTar.Results.Error.BadRequest;
 
-namespace RESTar.Results.Fail.BadRequest
+namespace RESTar.Results.Error.DefaultProtocol
 {
-    internal class InvalidOperator : InvalidSyntax
+    public class InvalidOperator : InvalidSyntax
     {
         internal InvalidOperator(string c) : base(ErrorCodes.InvalidConditionOperator,
             $"Invalid or missing operator or separator ('&') for condition '{c}'. Always URI encode all equals ('=' -> '%3D') " +

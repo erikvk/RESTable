@@ -6,7 +6,7 @@ using Newtonsoft.Json;
 using RESTar.Internal;
 using RESTar.Linq;
 using RESTar.Resources;
-using RESTar.Results.Fail.BadRequest;
+using RESTar.Results.Error.BadRequest;
 
 namespace RESTar.Admin
 {

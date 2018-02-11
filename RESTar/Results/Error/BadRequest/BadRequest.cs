@@ -1,9 +1,8 @@
 ﻿using System;
 using System.Net;
 using RESTar.Internal;
-using RESTar.Results.Error;
 
-namespace RESTar.Results.Fail.BadRequest
+namespace RESTar.Results.Error.BadRequest
 {
     /// <inheritdoc />
     public abstract class BadRequest : RESTarError

@@ -1,8 +1,8 @@
 ﻿using RESTar.Internal;
 
-namespace RESTar.Results.Fail.BadRequest
+namespace RESTar.Results.Error
 {
-    internal class InvalidResourceMember : BadRequest
+    public class InvalidResourceMember : Error.BadRequest.BadRequest
     {
         internal InvalidResourceMember(string message) : base(ErrorCodes.InvalidResourceMember, message) { }
     }

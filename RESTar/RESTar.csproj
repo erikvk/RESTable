@@ -104,7 +104,8 @@
     <Compile Include="Logging\HTTPEvent.cs" />
     <Compile Include="Logging\WebSocketEvent.cs" />
     <Compile Include="Operations\Search.cs" />
-    <Compile Include="Results\Error\InvalidExternalResourceProvider - Copy.cs" />
+    <Compile Include="Results\Error\InvalidProtocolProvider.cs" />
+    <Compile Include="Results\Error\InvalidReferencedEnumDeclaration.cs" />
     <Compile Include="Serialization\DDictionaryConverter.cs" />
     <Compile Include="Serialization\GetterSetterProvider.cs" />
     <Compile Include="Serialization\NativeProtocol\HeadersConverter.cs" />
@@ -227,7 +228,7 @@
     <Compile Include="Results\Error\BadRequest\AliasAlreadyInUse.cs" />
     <Compile Include="Results\Error\BadRequest\AliasEqualToResourceName.cs" />
     <Compile Include="Results\Error\BadRequest\AmbiguousMatch.cs" />
-    <Compile Include="Results\Error\BadRequest\BadConditionOperator - Copy.cs" />
+    <Compile Include="Results\Error\BadRequest\InvalidConditionValueType.cs" />
     <Compile Include="Results\Error\BadRequest\BadRequest.cs" />
     <Compile Include="Results\Error\BadRequest\FailedJsonDeserialization.cs" />
     <Compile Include="Results\Error\DatabaseError.cs" />
@@ -246,7 +247,7 @@
     <Compile Include="Results\Error\InvalidExternalResourceProvider.cs" />
     <Compile Include="Results\Error\FeatureNotImplemented.cs" />
     <Compile Include="Results\Error\Forbidden\Forbidden.cs" />
-    <Compile Include="Results\Error\BadRequest\BadConditionOperator.cs" />
+    <Compile Include="Results\Error\DefaultProtocol\BadConditionOperator.cs" />
     <Compile Include="Results\Error\HttpRequestException.cs" />
     <Compile Include="Results\Error\InfiniteLoop.cs" />
     <Compile Include="Results\Error\BadRequest\InvalidExternalDestination.cs" />
@@ -262,10 +263,10 @@
     <Compile Include="Results\Error\Forbidden\NotAuthorized.cs" />
     <Compile Include="Results\Error\NotFound\NotFound.cs" />
     <Compile Include="Results\Error\NotInitialized.cs" />
-    <Compile Include="Results\Error\BadRequest\InvalidOperator.cs" />
+    <Compile Include="Results\Error\DefaultProtocol\InvalidOperator.cs" />
     <Compile Include="Results\Error\InvalidResourceDeclaration.cs" />
     <Compile Include="Results\Error\Forbidden\ResourceIsInternal.cs" />
-    <Compile Include="Results\Error\BadRequest\InvalidResourceMember.cs" />
+    <Compile Include="Results\Error\InvalidResourceMember.cs" />
     <Compile Include="Results\Error\InvalidResourceViewDeclaration.cs" />
     <Compile Include="Results\Error\InvalidResourceWrapper.cs" />
     <Compile Include="Results\Error\RESTarError.cs" />

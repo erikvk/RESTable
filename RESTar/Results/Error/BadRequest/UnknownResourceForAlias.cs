@@ -1,8 +1,8 @@
 ﻿using RESTar.Internal;
 
-namespace RESTar.Results.Fail.BadRequest
+namespace RESTar.Results.Error.BadRequest
 {
-    internal class UnknownResourceForAlias : BadRequest
+    public class UnknownResourceForAlias : BadRequest
     {
         internal UnknownResourceForAlias(string searchString, IResource match) : base(ErrorCodes.UnknownResource,
             "Resource alias assignments must be provided with fully qualified resource names. No match " +

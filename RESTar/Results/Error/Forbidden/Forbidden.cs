@@ -1,11 +1,10 @@
 ﻿using System;
 using System.Net;
 using RESTar.Internal;
-using RESTar.Results.Error;
 
-namespace RESTar.Results.Fail.Forbidden
+namespace RESTar.Results.Error.Forbidden
 {
-    internal abstract class Forbidden : RESTarError
+    public abstract class Forbidden : RESTarError
     {
         protected Forbidden(ErrorCodes code, string message, Exception ie) : base(code, message, ie) { }
 

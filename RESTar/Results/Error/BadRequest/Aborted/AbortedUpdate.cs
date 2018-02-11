@@ -1,7 +1,7 @@
 ﻿using System;
 using RESTar.Internal;
 
-namespace RESTar.Results.Fail.BadRequest.Aborted
+namespace RESTar.Results.Error.BadRequest.Aborted
 {
     /// <inheritdoc />
     /// <summary>

@@ -1,8 +1,8 @@
 ﻿using RESTar.Internal;
 
-namespace RESTar.Results.Fail.BadRequest
+namespace RESTar.Results.Error.BadRequest
 {
-    internal class InvalidInputCount : BadRequest
+    public class InvalidInputCount : BadRequest
     {
         internal InvalidInputCount() : base(ErrorCodes.DataSourceFormat,
             "Invalid input count. Expected object/row, but found array/multiple rows. " +

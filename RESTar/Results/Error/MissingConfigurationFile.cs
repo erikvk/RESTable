@@ -2,7 +2,7 @@
 
 namespace RESTar.Results.Error
 {
-    internal class MissingConfigurationFile : RESTarError
+    public class MissingConfigurationFile : RESTarError
     {
         internal MissingConfigurationFile(string message) : base(ErrorCodes.MissingConfigurationFile, message) { }
     }

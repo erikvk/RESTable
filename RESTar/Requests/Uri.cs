@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using RESTar.Admin;
 using RESTar.Internal;
-using RESTar.Results.Fail.BadRequest;
+using RESTar.Results.Error.BadRequest;
 
 namespace RESTar.Requests
 {

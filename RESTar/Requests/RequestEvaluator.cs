@@ -7,8 +7,8 @@ using RESTar.Internal;
 using RESTar.Linq;
 using RESTar.Operations;
 using RESTar.Results.Error;
-using RESTar.Results.Fail.BadRequest.Aborted;
-using RESTar.Results.Fail.Forbidden;
+using RESTar.Results.Error.BadRequest.Aborted;
+using RESTar.Results.Error.Forbidden;
 using RESTar.Results.Success;
 using static RESTar.Operations.Transact;
 using static RESTar.Requests.Action;
@@ -46,8 +46,9 @@ namespace RESTar.Requests
         internal static void SetupProtocolProviders(IProtocolProvider[] protocolProviders)
         {
             ProtocolProviders = new Dictionary<string, IProtocolProvider>(StringComparer.OrdinalIgnoreCase);
-            var defaultProvider = protocolProviders?.OfType<DefaultProtocolProvider>().FirstOrDefault() ?? new DefaultProtocolProvider();
+            var defaultProvider = new DefaultProtocolProvider();
             ProtocolProviders[""] = defaultProvider;
+            AddProtocolProvider(defaultProvider);
             protocolProviders?.ForEach(provider =>
             {
                 ValidateProtocolProvider(provider);

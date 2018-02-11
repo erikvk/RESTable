@@ -4,7 +4,7 @@ using RESTar.Internal;
 
 namespace RESTar.Results.Error
 {
-    internal class UnsupportedContent : RESTarError
+    public class UnsupportedContent : RESTarError
     {
         internal UnsupportedContent(Exception ie) : base(ErrorCodes.UnsupportedContent, ie.Message, ie)
         {
@@ -12,7 +12,7 @@ namespace RESTar.Results.Error
             StatusDescription = "Unsupported media type";
         }
 
-        internal UnsupportedContent(MimeType unsupported) : base(ErrorCodes.UnsupportedContent,
+        public UnsupportedContent(MimeType unsupported) : base(ErrorCodes.UnsupportedContent,
             $"Unsupported content type: '{unsupported.TypeCodeString}'")
         {
             StatusCode = HttpStatusCode.UnsupportedMediaType;

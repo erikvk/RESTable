@@ -1,8 +1,8 @@
 ﻿using RESTar.Internal;
 
-namespace RESTar.Results.Fail.Forbidden
+namespace RESTar.Results.Error.Forbidden
 {
-    internal class InvalidOrigin : Forbidden
+    public class InvalidOrigin : Forbidden
     {
         internal InvalidOrigin() : base(ErrorCodes.NotAuthorized, "Invalid or unauthorized origin") { }
     }

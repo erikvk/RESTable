@@ -1,9 +1,9 @@
 ﻿using System;
 using RESTar.Internal;
 
-namespace RESTar.Results.Fail.BadRequest
+namespace RESTar.Results.Error.BadRequest
 {
-    internal class FailedJsonDeserialization : BadRequest
+    public class FailedJsonDeserialization : BadRequest
     {
         internal FailedJsonDeserialization(Exception ie) : base(ErrorCodes.FailedJsonDeserialization, ie)
         {

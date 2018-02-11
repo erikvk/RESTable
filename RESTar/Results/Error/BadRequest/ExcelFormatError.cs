@@ -1,9 +1,9 @@
 ﻿using System;
 using RESTar.Internal;
 
-namespace RESTar.Results.Fail.BadRequest
+namespace RESTar.Results.Error.BadRequest
 {
-    internal class ExcelFormatError : BadRequest
+    public class ExcelFormatError : BadRequest
     {
         internal ExcelFormatError(string message, Exception ie) : base(ErrorCodes.ExcelReaderError,
             $"RESTar was unable to write entities to excel. {message}. ", ie) { }

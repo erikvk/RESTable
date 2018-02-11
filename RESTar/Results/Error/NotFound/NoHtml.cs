@@ -1,8 +1,8 @@
 ﻿using RESTar.Internal;
 
-namespace RESTar.Results.Fail.NotFound
+namespace RESTar.Results.Error.NotFound
 {
-    internal class NoHtml : NotFound
+    public class NoHtml : NotFound
     {
         internal NoHtml(IEntityResource resource, string matcher) : base(ErrorCodes.NoMatchingHtml,
             $"No matching HTML file found for resource '{resource.Name}'. Add a HTML file " +

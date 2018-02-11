@@ -8,7 +8,6 @@ using RESTar.Linq;
 using RESTar.Admin;
 using RESTar.Internal;
 using RESTar.Results.Error;
-using RESTar.Results.Fail.BadRequest;
 using Starcounter;
 using static System.Reflection.BindingFlags;
 

@@ -6,8 +6,8 @@ using RESTar.Admin;
 using RESTar.Internal;
 using RESTar.Operations;
 using RESTar.Results.Error;
-using RESTar.Results.Fail.BadRequest;
-using RESTar.Results.Fail.NotFound;
+using RESTar.Results.Error.BadRequest;
+using RESTar.Results.Error.NotFound;
 using RESTar.Results.Success;
 using RESTar.Serialization.NativeProtocol;
 using static Newtonsoft.Json.Formatting;
@@ -19,17 +19,17 @@ namespace RESTar.Requests
 {
     /// <summary>
     /// Contains the logic for the default RESTar protocol. This protocol is used if no 
-    /// protocol indicator is included in the request URI. To override the default protocol, 
-    /// create a subclass of this class and include in the protocolProviders array in the 
-    /// call to RESTarConfig.Init().
+    /// protocol indicator is included in the request URI.
     /// </summary>
-    public class DefaultProtocolProvider : IProtocolProvider
+    internal sealed class DefaultProtocolProvider : IProtocolProvider
     {
         /// <inheritdoc />
         public string ProtocolIdentifier { get; } = "restar";
 
+        internal DefaultProtocolProvider() { }
+
         /// <inheritdoc />
-        public virtual void ParseQuery(string query, URI uri)
+        public void ParseQuery(string query, URI uri)
         {
             var match = Regex.Match(query, RegEx.RESTarRequestUri);
             if (!match.Success) throw new InvalidSyntax(ErrorCodes.InvalidUriSyntax, "Check URI syntax");
@@ -93,7 +93,7 @@ namespace RESTar.Requests
         }
 
         /// <inheritdoc />
-        public virtual IFinalizedResult FinalizeResult(Result result)
+        public IFinalizedResult FinalizeResult(Result result)
         {
             if (!(result is Entities entities)) return result;
 

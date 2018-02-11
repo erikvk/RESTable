@@ -1,8 +1,8 @@
 ﻿using RESTar.Internal;
 
-namespace RESTar.Results.Fail.BadRequest
+namespace RESTar.Results.Error.BadRequest
 {
-    internal class AmbiguousMatch : BadRequest
+    public class AmbiguousMatch : BadRequest
     {
         internal AmbiguousMatch(ITarget resource) : base(ErrorCodes.AmbiguousMatch,
             $"Expected a uniquely matched entity in resource '{resource.Name}', but found multiple. " +

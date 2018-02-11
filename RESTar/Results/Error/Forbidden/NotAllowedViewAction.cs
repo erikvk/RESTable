@@ -1,8 +1,8 @@
 ﻿using RESTar.Internal;
 
-namespace RESTar.Results.Fail.Forbidden
+namespace RESTar.Results.Error.Forbidden
 {
-    internal class NotAllowedViewAction : Forbidden
+    public class NotAllowedViewAction : Forbidden
     {
         internal NotAllowedViewAction(ErrorCodes code, string message) : base(code, message) { }
     }

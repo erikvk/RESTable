@@ -1,8 +1,8 @@
 ﻿using RESTar.Internal;
 
-namespace RESTar.Results.Fail.BadRequest
+namespace RESTar.Results.Error.BadRequest
 {
-    internal class ExcelInputError : BadRequest
+    public class ExcelInputError : BadRequest
     {
         internal ExcelInputError(string message) : base(ErrorCodes.ExcelReaderError,
             "There was a format error in the excel input. Check that the file is being transmitted properly. In " +

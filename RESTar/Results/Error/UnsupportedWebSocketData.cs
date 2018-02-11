@@ -3,7 +3,7 @@ using RESTar.Internal;
 
 namespace RESTar.Results.Error
 {
-    internal class UnsupportedWebSocketInput : RESTarError
+    public class UnsupportedWebSocketInput : RESTarError
     {
         internal UnsupportedWebSocketInput(string message) : base(ErrorCodes.UnsupportedContent, message)
         {

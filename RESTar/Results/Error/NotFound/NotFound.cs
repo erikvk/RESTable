@@ -1,14 +1,16 @@
-﻿using System.Net;
+﻿using System;
+using System.Net;
 using RESTar.Internal;
-using RESTar.Results.Error;
 
-namespace RESTar.Results.Fail.NotFound
+namespace RESTar.Results.Error.NotFound
 {
     /// <summary>
     /// Exceptions that should be treated as bad requests
     /// </summary>
-    internal abstract class NotFound : RESTarError
+    public abstract class NotFound : RESTarError
     {
+        protected NotFound(ErrorCodes code, string message, Exception ie) : base(code, message, ie) { }
+
         internal NotFound(ErrorCodes code, string message) : base(code, message)
         {
             StatusCode = HttpStatusCode.NotFound;

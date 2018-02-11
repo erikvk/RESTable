@@ -3,7 +3,7 @@ using RESTar.Internal;
 
 namespace RESTar.Results.Error
 {
-    internal class InfiniteLoop : RESTarError
+    public class InfiniteLoop : RESTarError
     {
         internal InfiniteLoop() : base(ErrorCodes.InfiniteLoopDetected,
             "RESTar encountered a potentially infinite loop of recursive internal calls.")

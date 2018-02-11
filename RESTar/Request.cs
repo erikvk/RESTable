@@ -9,8 +9,8 @@ using RESTar.Operations;
 using RESTar.Requests;
 using RESTar.Resources;
 using RESTar.Results.Error;
-using RESTar.Results.Fail.BadRequest;
-using RESTar.Results.Fail.Forbidden;
+using RESTar.Results.Error.BadRequest;
+using RESTar.Results.Error.Forbidden;
 using RESTar.Serialization;
 
 #pragma warning disable 1591

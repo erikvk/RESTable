@@ -3,9 +3,9 @@ using System.Linq;
 using RESTar.Deflection.Dynamic;
 using RESTar.Internal;
 
-namespace RESTar.Results.Fail.BadRequest
+namespace RESTar.Results.Error.DefaultProtocol
 {
-    internal class BadConditionOperator : BadRequest
+    public class BadConditionOperator : BadRequest.BadRequest
     {
         internal BadConditionOperator(TerminalResource terminal, Operator found) : base(ErrorCodes.InvalidConditionOperator,
             $"Invalid operator '{found.Common}' in condition to terminal resource '{terminal.Name}'. Only \'=\' is valid in terminal conditions.") { }
