@@ -9,11 +9,11 @@
     <owners>Mopedo AB</owners>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <releaseNotes></releaseNotes>
-    <description>Create powerful RESTful web services with Starcounter. Spec: https://goo.gl/TIkN7m . For Starcounter 2.3.1.8329 or later</description>
+    <description>Create powerful RESTful web services with Starcounter. Docs: https://goo.gl/eUfi9q . For Starcounter 2.3.1.8329 or later</description>
     <copyright>Copyright 2017 Mopedo AB. All rights reserved.</copyright>
     <tags>mopedo starcounter REST RESTful web services dynamit</tags>
     <licenseUrl>https://goo.gl/eJS8o9</licenseUrl>
-    <projectUrl>https://goo.gl/TIkN7m</projectUrl>
+    <projectUrl>https://github.com/Mopedo/Home/tree/master/Documentation/RESTar</projectUrl>
     <iconUrl>https://storage.googleapis.com/mopedo-resources/RESTar_logo.png</iconUrl>
   </metadata>
 </package>
