@@ -19,7 +19,7 @@ namespace RESTar
 
         private string query = "";
         private string previousQuery = "";
-
+        
         public string Query
         {
             get => query;
@@ -278,11 +278,16 @@ namespace RESTar
         {
             var webSocketInternal = (IWebSocketInternal) WebSocket;
             webSocketInternal.SendResult(result, WriteStatusBeforeContent);
-            if (WriteQueryAfterContent)
+            if (!WriteQueryAfterContent) return;
+            switch (result)
             {
-                if (result is NoQuery)
+                case WebSocketResult _: return;
+                case NoQuery _:
                     WebSocket.SendText("? <empty>");
-                else WebSocket.SendText("? " + Query);
+                    break;
+                default:
+                    WebSocket.SendText("? " + Query);
+                    break;
             }
         }
 
