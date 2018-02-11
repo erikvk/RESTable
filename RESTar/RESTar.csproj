@@ -138,7 +138,6 @@
     <Compile Include="RegEx.cs" />
     <Compile Include="Requests\RequestEvaluator.cs" />
     <Compile Include="Requests\Headers.cs" />
-    <Compile Include="Requests\RESTProtocols.cs" />
     <Compile Include="Requests\StarcounterWebSocket.cs" />
     <Compile Include="Requests\Uri.cs" />
     <Compile Include="Requests\UriCondition.cs" />

@@ -65,11 +65,11 @@ namespace RESTar
             if (!Initialized) return;
             if (NeedsConfiguration && ConfigFilePath == null)
             {
-                var (task, measure) = RequireApiKey
-                    ? ("require API keys", "read keys and assign access rights")
-                    : !AllowAllOrigins
-                        ? ("only allow some CORS origins", "know what origins to deny")
-                        : ("publish an OData service", "generate context URLs");
+                var (task, measure) = default((string, string));
+                if (RequireApiKey)
+                    (task, measure) = ("require API keys", "read keys and assign access rights");
+                else if (!AllowAllOrigins)
+                    (task, measure) = ("only allow some CORS origins", "know what origins to deny");
                 throw new MissingConfigurationFile($"RESTar was set up to {task}, but needs to read settings from a configuration file in " +
                                                    $"order to {measure}. Provide a configuration file path in the call to RESTarConfig.Init. " +
                                                    "See the specification for more info.");

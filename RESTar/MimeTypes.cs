@@ -84,8 +84,7 @@ namespace RESTar
     {
         public const string Excel = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
         public const string JSON = "application/json;charset=utf-8";
-        public const string JSONOData = "application/json;odata.metadata=minimal;odata.streaming=true;charset=utf-8";
-
+        
         internal static string GetString(MimeTypeCode mimeType)
         {
             switch (mimeType)
