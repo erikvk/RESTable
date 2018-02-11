@@ -5,7 +5,6 @@ using System.Net;
 using System.Text.RegularExpressions;
 using RESTar.Internal;
 using RESTar.Results.Error.BadRequest;
-using RESTar.Results.Error.DefaultProtocol;
 using static System.StringComparison;
 
 namespace RESTar.Requests

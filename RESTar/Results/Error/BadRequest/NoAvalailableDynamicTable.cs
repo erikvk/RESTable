@@ -2,6 +2,10 @@
 
 namespace RESTar.Results.Error.BadRequest
 {
+    /// <inheritdoc />
+    /// <summary>
+    /// Thrown when RESTar cannot allocate a dynamic table for resource insertion
+    /// </summary>
     public class NoAvalailableDynamicTable : BadRequest
     {
         internal NoAvalailableDynamicTable() : base(ErrorCodes.NoAvalailableDynamicTable,

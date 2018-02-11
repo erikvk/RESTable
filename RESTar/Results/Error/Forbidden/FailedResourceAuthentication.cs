@@ -2,8 +2,14 @@
 
 namespace RESTar.Results.Error.Forbidden
 {
+    /// <inheritdoc />
+    /// <summary>
+    /// Thrown when a request failed resource-specific authentication
+    /// search string.
+    /// </summary>
     public class FailedResourceAuthentication : Forbidden
     {
-        public FailedResourceAuthentication(string message) : base(ErrorCodes.FailedResourceAuthentication, message) { }
+        /// <inheritdoc />
+        internal FailedResourceAuthentication(string message) : base(ErrorCodes.FailedResourceAuthentication, message) { }
     }
 }

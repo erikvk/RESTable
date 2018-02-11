@@ -3,6 +3,10 @@ using RESTar.Internal;
 
 namespace RESTar.Results.Error.BadRequest
 {
+    /// <inheritdoc />
+    /// <summary>
+    /// Thrown when RESTar encounters an error when writing to Excel
+    /// </summary>
     public class ExcelFormatError : BadRequest
     {
         internal ExcelFormatError(string message, Exception ie) : base(ErrorCodes.ExcelReaderError,

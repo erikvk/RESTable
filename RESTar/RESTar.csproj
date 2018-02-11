@@ -106,6 +106,10 @@
     <Compile Include="Operations\Search.cs" />
     <Compile Include="Results\Error\InvalidProtocolProvider.cs" />
     <Compile Include="Results\Error\InvalidReferencedEnumDeclaration.cs" />
+    <Compile Include="Results\Error\NotFound\UnknownEntityResource.cs" />
+    <Compile Include="Results\Success\IEntitiesMetadata.cs" />
+    <Compile Include="Results\Success\NoQuery.cs" />
+    <Compile Include="Results\Success\WebSocketResult.cs" />
     <Compile Include="Serialization\DDictionaryConverter.cs" />
     <Compile Include="Serialization\GetterSetterProvider.cs" />
     <Compile Include="Serialization\NativeProtocol\HeadersConverter.cs" />
@@ -231,7 +235,7 @@
     <Compile Include="Results\Error\BadRequest\InvalidConditionValueType.cs" />
     <Compile Include="Results\Error\BadRequest\BadRequest.cs" />
     <Compile Include="Results\Error\BadRequest\FailedJsonDeserialization.cs" />
-    <Compile Include="Results\Error\DatabaseError.cs" />
+    <Compile Include="Results\Error\StarcounterDatabaseError.cs" />
     <Compile Include="Results\Error\Forbidden\AbortedByCommitHook.cs" />
     <Compile Include="Results\Error\Forbidden\FailedResourceAuthentication.cs" />
     <Compile Include="Results\Error\Forbidden\MethodUnavailable.cs" />
@@ -239,7 +243,7 @@
     <Compile Include="Results\Error\Forbidden\UserNotSignedIn.cs" />
     <Compile Include="Results\Error\Internal.cs" />
     <Compile Include="Results\Error\InvalidTerminalDeclaration.cs" />
-    <Compile Include="Results\Error\UnsupportedWebSocketData.cs" />
+    <Compile Include="Results\Error\UnsupportedWebSocketInput.cs" />
     <Compile Include="Results\Error\UpgradeRequired.cs" />
     <Compile Include="Results\Error\NotFound\AmbiguousResource.cs" />
     <Compile Include="Results\Error\BadRequest\ExcelFormatError.cs" />
@@ -247,7 +251,7 @@
     <Compile Include="Results\Error\InvalidExternalResourceProvider.cs" />
     <Compile Include="Results\Error\FeatureNotImplemented.cs" />
     <Compile Include="Results\Error\Forbidden\Forbidden.cs" />
-    <Compile Include="Results\Error\DefaultProtocol\BadConditionOperator.cs" />
+    <Compile Include="Results\Error\BadRequest\BadConditionOperator.cs" />
     <Compile Include="Results\Error\HttpRequestException.cs" />
     <Compile Include="Results\Error\InfiniteLoop.cs" />
     <Compile Include="Results\Error\BadRequest\InvalidExternalDestination.cs" />
@@ -263,7 +267,7 @@
     <Compile Include="Results\Error\Forbidden\NotAuthorized.cs" />
     <Compile Include="Results\Error\NotFound\NotFound.cs" />
     <Compile Include="Results\Error\NotInitialized.cs" />
-    <Compile Include="Results\Error\DefaultProtocol\InvalidOperator.cs" />
+    <Compile Include="Results\Error\BadRequest\InvalidOperator.cs" />
     <Compile Include="Results\Error\InvalidResourceDeclaration.cs" />
     <Compile Include="Results\Error\Forbidden\ResourceIsInternal.cs" />
     <Compile Include="Results\Error\InvalidResourceMember.cs" />

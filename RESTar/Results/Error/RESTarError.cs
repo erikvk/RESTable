@@ -101,7 +101,7 @@ namespace RESTar.Results.Error
                 case FormatException _: return new UnsupportedContent(exception);
                 case JsonReaderException _: return new FailedJsonDeserialization(exception);
                 case Starcounter.DbException _ when exception.Message.Contains("SCERR4034"): return new AbortedByCommitHook(exception);
-                case Starcounter.DbException _: return new DatabaseError(exception);
+                case Starcounter.DbException _: return new StarcounterDatabaseError(exception);
                 default: return new Unknown(exception);
             }
         }

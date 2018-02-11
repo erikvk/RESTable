@@ -7,7 +7,11 @@ using RESTar.Serialization.NativeProtocol;
 
 namespace RESTar.Results.Success
 {
-    internal class Report : OK
+    /// <inheritdoc />
+    /// <summary>
+    /// Returned to the client on successful REPORT requests
+    /// </summary>
+    public class Report : OK
     {
         internal Report(long count, ITraceable trace) : base(trace)
         {

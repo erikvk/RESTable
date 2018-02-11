@@ -1,8 +1,12 @@
 ﻿using RESTar.Internal;
-using RESTar.Results.Error.BadRequest;
 
-namespace RESTar.Results.Error.DefaultProtocol
+namespace RESTar.Results.Error.BadRequest
 {
+    /// <inheritdoc />
+    /// <summary>
+    /// Thrown when an alias cannot be inserted because RESTar cannot locate a resource by some
+    /// search string.
+    /// </summary>
     public class InvalidOperator : InvalidSyntax
     {
         internal InvalidOperator(string c) : base(ErrorCodes.InvalidConditionOperator,

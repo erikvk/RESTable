@@ -3,6 +3,10 @@ using RESTar.Internal;
 
 namespace RESTar.Results.Error
 {
+    /// <inheritdoc />
+    /// <summary>
+    /// Thrown when a regular HTTP request was made to a resource that requires a WebSocket connection
+    /// </summary>
     public class UpgradeRequired : RESTarError
     {
         internal UpgradeRequired(string terminalName) : base(ErrorCodes.UpgradeRequired,

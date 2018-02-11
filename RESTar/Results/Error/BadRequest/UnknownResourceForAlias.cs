@@ -2,6 +2,11 @@
 
 namespace RESTar.Results.Error.BadRequest
 {
+    /// <inheritdoc />
+    /// <summary>
+    /// Thrown when an alias cannot be inserted because RESTar cannot locate a resource by some
+    /// search string.
+    /// </summary>
     public class UnknownResourceForAlias : BadRequest
     {
         internal UnknownResourceForAlias(string searchString, IResource match) : base(ErrorCodes.UnknownResource,

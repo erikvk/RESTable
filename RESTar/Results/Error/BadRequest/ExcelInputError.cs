@@ -2,6 +2,10 @@
 
 namespace RESTar.Results.Error.BadRequest
 {
+    /// <inheritdoc />
+    /// <summary>
+    /// Thrown when RESTar encounters an error when reading from Excel
+    /// </summary>
     public class ExcelInputError : BadRequest
     {
         internal ExcelInputError(string message) : base(ErrorCodes.ExcelReaderError,
