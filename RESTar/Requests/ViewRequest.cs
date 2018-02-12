@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using Newtonsoft.Json;
@@ -30,7 +29,7 @@ namespace RESTar.Requests
         public Headers ResponseHeaders { get; }
         public ICollection<string> Cookies { get; }
         public IUriParameters UriParameters { get; }
-        public Stream Body { get; private set; }
+        public byte[] Body { get; private set; }
         Methods IRequest.Method => GET;
         IEntityResource IRequest.Resource => Resource;
         public MimeType Accept => MimeType.Default;
@@ -132,7 +131,7 @@ namespace RESTar.Requests
             Authenticator.CheckUser();
             var item = (Item) DataView;
             var entityJson = item.Entity.ToJson().Replace(@"$"":", @""":");
-            Body = new MemoryStream(Regex.Replace(entityJson, RegEx.ViewMacro, "${content}").ToBytes());
+            Body = Regex.Replace(entityJson, RegEx.ViewMacro, "${content}").ToBytes();
             if (IsTemplate)
             {
                 CheckMethod(POST, $"You are not allowed to insert into the '{Resource}' resource");

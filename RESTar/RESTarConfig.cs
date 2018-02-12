@@ -156,7 +156,8 @@ namespace RESTar
             ushort daysToSaveErrors = 30,
             LineEndings lineEndings = LineEndings.Windows,
             IEnumerable<ResourceProvider> resourceProviders = null,
-            IEnumerable<IProtocolProvider> protocolProviders = null)
+            IEnumerable<IProtocolProvider> protocolProviders = null
+        )
         {
             try
             {

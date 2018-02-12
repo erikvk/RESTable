@@ -23,14 +23,17 @@ namespace RESTar.Serialization
     public static class Serializer
     {
         private static readonly JsonSerializerSettings VmSettings;
+
         /// <summary>
         /// The settings that are used when serializing and deserializing JSON
         /// </summary>
         public static readonly JsonSerializerSettings Settings;
+
         /// <summary>
         /// The JSON serializer
         /// </summary>
         public static readonly JsonSerializer Json;
+
         /// <summary>
         /// UTF 8 encoding without byte order mark (BOM)
         /// </summary>
@@ -106,12 +109,12 @@ namespace RESTar.Serialization
             }
         }
 
-        internal static bool SerializeInputExcel(this Stream excelStream, Methods method, out MemoryStream jsonStream)
+        internal static byte[] SerializeInputExcel(this byte[] excelBytes, Methods method)
         {
             try
             {
-                jsonStream = new MemoryStream();
-                using (excelStream)
+                var jsonStream = new MemoryStream();
+                using (var excelStream = new MemoryStream(excelBytes))
                 using (var swr = new StreamWriter(jsonStream, UTF8, 1024, true))
                 using (var jwr = new RESTarFromExcelJsonWriter(swr))
                 using (var reader = ExcelReaderFactory.CreateOpenXmlReader(excelStream))
@@ -138,8 +141,7 @@ namespace RESTar.Serialization
                         throw new InvalidInputCount();
                     jwr.WriteEndArray();
                 }
-                jsonStream.Seek(0, SeekOrigin.Begin);
-                return true;
+                return jsonStream.ToArray();
             }
             catch (Exception e)
             {
@@ -164,9 +166,24 @@ namespace RESTar.Serialization
             return json;
         }
 
+        internal static string GetJsonUpdateString(this byte[] bytes)
+        {
+            string json;
+            using (var stream = new MemoryStream(bytes))
+            using (var reader = new StreamReader(stream))
+                json = reader.ReadToEnd();
+            if (json[0] == '[') throw new InvalidInputCount();
+            return json;
+        }
+
         internal static string Serialize(this object value, Type type = null)
         {
             return JsonConvert.SerializeObject(value, type, _PrettyPrint ? Indented : None, Settings);
+        }
+
+        internal static byte[] SerializeToBytes(this object value, Type type = null)
+        {
+            return UTF8.GetBytes(JsonConvert.SerializeObject(value, type, _PrettyPrint ? Indented : None, Settings));
         }
 
         internal static IEnumerable<T> Populate<T>(this IEnumerable<T> source, string json)
@@ -197,7 +214,8 @@ namespace RESTar.Serialization
 
         internal static List<T> DeserializeList<T>(this Stream jsonStream)
         {
-            using (var jsonReader = new JsonTextReader(new StreamReader(jsonStream)))
+            using (var streamReader = new StreamReader(jsonStream, UTF8))
+            using (var jsonReader = new JsonTextReader(streamReader))
             {
                 jsonReader.Read();
                 if (jsonReader.TokenType == JsonToken.StartObject)
@@ -206,12 +224,38 @@ namespace RESTar.Serialization
             }
         }
 
+        internal static List<T> DeserializeList<T>(this byte[] jsonBytes)
+        {
+            using (var jsonStream = new MemoryStream(jsonBytes))
+            using (var streamReader = new StreamReader(jsonStream, UTF8))
+            using (var jsonReader = new JsonTextReader(streamReader))
+            {
+                jsonReader.Read();
+                if (jsonReader.TokenType == JsonToken.StartObject)
+                    return new List<T> {Json.Deserialize<T>(jsonReader)};
+                return Json.Deserialize<List<T>>(jsonReader);
+            }
+        }
+
+
         /// <summary>
         /// Deserializes the content of a stream to a given .NET object type
         /// </summary>
         public static T Deserialize<T>(this Stream jsonStream)
         {
-            using (var jsonReader = new JsonTextReader(new StreamReader(jsonStream)))
+            using (var streamReader = new StreamReader(jsonStream, UTF8))
+            using (var jsonReader = new JsonTextReader(streamReader))
+                return Json.Deserialize<T>(jsonReader);
+        }
+
+        /// <summary>
+        /// Deserializes the content of a stream to a given .NET object type
+        /// </summary>
+        public static T Deserialize<T>(this byte[] jsonBytes)
+        {
+            using (var jsonStream = new MemoryStream(jsonBytes))
+            using (var streamReader = new StreamReader(jsonStream, UTF8))
+            using (var jsonReader = new JsonTextReader(streamReader))
                 return Json.Deserialize<T>(jsonReader);
         }
 

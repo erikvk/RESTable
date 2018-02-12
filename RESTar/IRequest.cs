@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using RESTar.Internal;
 using RESTar.Requests;
 
@@ -72,7 +71,7 @@ namespace RESTar
         /// <summary>
         /// The body of the request
         /// </summary>
-        Stream Body { get; }
+        byte[] Body { get; }
 
         /// <summary>
         /// Gets the request body, deserialized to the given type

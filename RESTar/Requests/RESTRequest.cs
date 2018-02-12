@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using RESTar.Admin;
 using RESTar.Http;
 using RESTar.Internal;
@@ -23,7 +22,7 @@ namespace RESTar.Requests
         public IEntityResource<T> Resource { get; }
         public Condition<T>[] Conditions { get; }
         public MetaConditions MetaConditions { get; }
-        public Stream Body { get; private set; }
+        public byte[] Body { get; private set; }
         public string AuthToken { get; }
         public Headers ResponseHeaders { get; }
         public ICollection<string> Cookies { get; }
@@ -107,7 +106,7 @@ namespace RESTar.Requests
                     if (bodyBytes == null && (Method == PATCH || Method == POST || Method == PUT))
                         throw new InvalidSyntax(NoDataSource, "Missing data source for method " + Method);
                     if (bodyBytes == null) return;
-                    Body = new MemoryStream(bodyBytes);
+                    Body = bodyBytes;
                     break;
                 case DataConfig.External:
                     try
@@ -125,7 +124,7 @@ namespace RESTar.Requests
                                 $"Status: {response.StatusCode.ToCode()} - {response.StatusDescription}. {response.Headers.SafeGet("RESTar-info")}");
                         if (response.Body.CanSeek && response.Body.Length == 0)
                             throw new InvalidExternalSource(request, "Response was empty");
-                        Body = response.Body;
+                        Body = response.Body.ToByteArray();
                         break;
                     }
                     catch (HttpRequestException re)
@@ -138,8 +137,7 @@ namespace RESTar.Requests
             {
                 case MimeTypeCode.Json: break;
                 case MimeTypeCode.Excel:
-                    Body.SerializeInputExcel(Method, out var json);
-                    Body = json;
+                    Body = Body.SerializeInputExcel(Method);
                     break;
                 case MimeTypeCode.Unsupported:
                     break;

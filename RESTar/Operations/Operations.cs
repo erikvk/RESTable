@@ -145,7 +145,7 @@ namespace RESTar.Operations
             }
         }
 
-        private static int INSERT(Request<T> request, Func<IEnumerable<T>> inserter)
+        private static int INSERT(IRequestInternal<T> request, Func<IEnumerable<T>> inserter)
         {
             try
             {
@@ -185,7 +185,7 @@ namespace RESTar.Operations
             }
         }
 
-        private static int INSERT_ONE(Request<T> request, Func<T> inserter)
+        private static int INSERT_ONE(IRequestInternal<T> request, Func<T> inserter)
         {
             try
             {
@@ -267,7 +267,7 @@ namespace RESTar.Operations
             }
         }
 
-        private static int UPDATE(Request<T> request, Func<IEnumerable<T>, IEnumerable<T>> updater,
+        private static int UPDATE(IRequestInternal<T> request, Func<IEnumerable<T>, IEnumerable<T>> updater,
             ICollection<T> source)
         {
             try
@@ -308,7 +308,7 @@ namespace RESTar.Operations
             }
         }
 
-        private static int UPDATE_ONE(Request<T> request, Func<T, T> updater, T source)
+        private static int UPDATE_ONE(IRequestInternal<T> request, Func<T, T> updater, T source)
         {
             try
             {
