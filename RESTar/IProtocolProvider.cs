@@ -10,13 +10,15 @@ namespace RESTar
     public interface IProtocolProvider
     {
         /// <summary>
-        /// The identifier is used in requests to indicate the protocol to use
+        /// The identifier is used in request URIs to indicate the protocol to use. If the ProtocolIdentifer 
+        /// is OData, for example, and RESTar runs locally, on port 8282 and with root URI "/rest" requests 
+        /// can trigger the OData protocol by "127.0.0.1:8282/rest-odata",
         /// </summary>
         string ProtocolIdentifier { get; }
 
         /// <summary>
-        /// Reads the query string, parses its content according to some protocol and populates 
-        /// the URI
+        /// Reads a query string, which is everyting after the root URI in the full request URI, parses 
+        /// its content according to some protocol and populates the URI object.
         /// </summary>
         void ParseQuery(string query, URI uri);
 
@@ -25,11 +27,11 @@ namespace RESTar
         /// protocolprovider to throw an exception and abort a request if the request is not 
         /// in compliance with the protocol.
         /// </summary>
-        /// <param name="headers"></param>
         void CheckCompliance(Headers headers);
 
         /// <summary>
-        /// Generates a relative URI string from an IUriParameters instance
+        /// The protocol needs to be able to generate a relative URI string from an IUriParameters instance. 
+        /// Note that only components added to a URI in ParseQuery can be present in the IUriParameters instance.
         /// </summary>
         string MakeRelativeUri(IUriParameters parameters);
 

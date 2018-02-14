@@ -67,7 +67,7 @@ namespace RESTar.Requests
             return uri;
         }
 
-        internal URI()
+        private URI()
         {
             Conditions = new List<UriCondition>();
             MetaConditions = new List<UriCondition>();
