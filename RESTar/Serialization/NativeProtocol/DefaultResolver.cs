@@ -5,6 +5,7 @@ using System.Reflection;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using RESTar.Deflection.Dynamic;
+using RESTar.Linq;
 
 namespace RESTar.Serialization.NativeProtocol
 {
@@ -16,7 +17,7 @@ namespace RESTar.Serialization.NativeProtocol
             {
                 case PropertyInfo propertyInfo:
                     var property = propertyInfo.GetDeclaredProperty();
-                    if (property == null || !property.IsKey && property.Hidden)
+                    if (property == null || property.Hidden)
                         return null;
                     var p = base.CreateProperty(propertyInfo, memberSerialization);
                     p.Writable = property.Writable;
@@ -37,11 +38,12 @@ namespace RESTar.Serialization.NativeProtocol
         protected override IList<JsonProperty> CreateProperties(Type type, MemberSerialization memberSerialization)
         {
             var properties = base.CreateProperties(type, memberSerialization);
-            foreach (var specialProperty in type.GetDeclaredProperties().Values.OfType<SpecialProperty>())
-            {
-                if (specialProperty.IsKey || !specialProperty.Hidden)
-                    properties.Add(specialProperty.JsonProperty);
-            }
+            type.GetDeclaredProperties()
+                .Values
+                .OfType<SpecialProperty>()
+                .Where(p => !p.Hidden)
+                .Select(p => p.JsonProperty)
+                .ForEach(properties.Add);
             return properties;
         }
     }

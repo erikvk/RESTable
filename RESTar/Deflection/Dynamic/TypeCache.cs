@@ -64,24 +64,12 @@ namespace RESTar.Deflection.Dynamic
 
         private static readonly ConcurrentDictionary<Type, IReadOnlyDictionary<string, DeclaredProperty>> DeclaredPropertyCache;
 
-        private static IEnumerable<DeclaredProperty> ParseDeclaredProperties(this IEnumerable<PropertyInfo> props, bool flag)
-        {
-            var properties = props
-                .Where(p => !p.RESTarIgnored())
-                .Where(p => !p.GetIndexParameters().Any())
-                .Select(p => new DeclaredProperty(p, flag))
-                .OrderBy(p => p.Order)
-                .ToList();
-            var keyIndex = properties.FindIndex(p => p.IsKey);
-            if (keyIndex > 0)
-                properties.ForEach((property, index) =>
-                {
-                    if (index != keyIndex)
-                        property.IsKey = false;
-                });
-            return properties;
-        }
-        
+        private static IEnumerable<DeclaredProperty> ParseDeclaredProperties(this IEnumerable<PropertyInfo> props, bool flag) => props
+            .Where(p => !p.RESTarIgnored())
+            .Where(p => !p.GetIndexParameters().Any())
+            .Select(p => new DeclaredProperty(p, flag))
+            .OrderBy(p => p.Order);
+
         /// <summary>
         /// Gets the declared properties for a given type
         /// </summary>

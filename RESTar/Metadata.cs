@@ -123,7 +123,7 @@ namespace RESTar
                             .Select(p => p.FieldType)
                             .ForEach(parseType);
                         type.GetDeclaredProperties().Values
-                            .Where(p => p.Readable && (p.IsKey || !p.Hidden))
+                            .Where(p => !p.Hidden)
                             .Select(p => p.Type)
                             .ForEach(parseType);
                         break;

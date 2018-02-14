@@ -29,7 +29,7 @@ namespace RESTar.Deflection.Dynamic
             Order = Order
         };
 
-        private SpecialProperty(int metadataToken, string name, string actualName, Type type, int? order, bool isKey, bool scQueryable,
+        private SpecialProperty(int metadataToken, string name, string actualName, Type type, int? order, bool scQueryable,
             bool hidden, bool hiddenIfNull, Getter getter) : base
             (
                 metadataToken: metadataToken,
@@ -37,7 +37,6 @@ namespace RESTar.Deflection.Dynamic
                 actualName: actualName,
                 type: type,
                 order: order,
-                isKey: isKey,
                 scQueryable: scQueryable,
                 attributes: null,
                 skipConditions: false,
@@ -72,7 +71,6 @@ namespace RESTar.Deflection.Dynamic
             actualName: "ObjectNo",
             type: typeof(ulong),
             order: int.MaxValue - 1,
-            isKey: true,
             scQueryable: true,
             hidden: false,
             hiddenIfNull: false,
@@ -89,7 +87,6 @@ namespace RESTar.Deflection.Dynamic
             actualName: "ObjectNo",
             type: typeof(ulong),
             order: int.MaxValue - 1,
-            isKey: true,
             scQueryable: true,
             hidden: false,
             hiddenIfNull: false,
@@ -106,7 +103,6 @@ namespace RESTar.Deflection.Dynamic
             actualName: "ObjectID",
             type: typeof(string),
             order: int.MaxValue,
-            isKey: false,
             scQueryable: true,
             hidden: true,
             hiddenIfNull: false,
@@ -123,7 +119,6 @@ namespace RESTar.Deflection.Dynamic
             actualName: "ObjectID",
             type: typeof(string),
             order: int.MaxValue,
-            isKey: false,
             scQueryable: true,
             hidden: true,
             hiddenIfNull: false,

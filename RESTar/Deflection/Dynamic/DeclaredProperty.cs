@@ -27,11 +27,6 @@ namespace RESTar.Deflection.Dynamic
         public override bool Dynamic => false;
 
         /// <summary>
-        /// Is this property a unique identifier for its type?
-        /// </summary>
-        public bool IsKey { get; internal set; }
-
-        /// <summary>
         /// The order at which this property appears when all properties are enumerated
         /// </summary>
         public int? Order { get; }
@@ -89,7 +84,7 @@ namespace RESTar.Deflection.Dynamic
         /// <summary>
         /// Used in SpecialProperty
         /// </summary>
-        internal DeclaredProperty(int metadataToken, string name, string actualName, Type type, bool isKey, int? order, bool scQueryable,
+        internal DeclaredProperty(int metadataToken, string name, string actualName, Type type, int? order, bool scQueryable,
             ICollection<Attribute> attributes, bool skipConditions, bool hidden, bool hiddenIfNull, bool isEnum, Operators allowedConditionOperators,
             Getter getter, Setter setter)
         {
@@ -98,7 +93,6 @@ namespace RESTar.Deflection.Dynamic
             Type = type;
             ActualName = actualName;
             Order = order;
-            IsKey = isKey;
             ScQueryable = scQueryable;
             Attributes = attributes;
             SkipConditions = skipConditions;
@@ -125,7 +119,6 @@ namespace RESTar.Deflection.Dynamic
             var memberAttribute = GetAttribute<RESTarMemberAttribute>();
             var jsonAttribute = GetAttribute<JsonPropertyAttribute>();
             Order = memberAttribute?.Order ?? jsonAttribute?.Order;
-            IsKey = memberAttribute?.IsKey == true;
             ScQueryable = p.DeclaringType?.HasAttribute<DatabaseAttribute>() == true && p.PropertyType.IsStarcounterCompatible();
             SkipConditions = memberAttribute?.SkipConditions == true || p.DeclaringType.HasAttribute<RESTarViewAttribute>();
             Hidden = memberAttribute?.Hidden == true;
