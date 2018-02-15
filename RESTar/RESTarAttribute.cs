@@ -55,7 +55,7 @@ namespace RESTar
         /// <summary>
         /// Should this resource, with methods GET and REPORT, be included in all access scopes, 
         /// regardless of API keys in the configuration file? This is useful for global resources 
-        /// in foreign assenblies. The API will still require API key if requireApiKey is set to 
+        /// in foreign assemblies. The API will still require API key if requireApiKey is set to 
         /// true in the call to RESTarConfig.Init(), but this resource will be included in each 
         /// key's scope.
         /// </summary>
