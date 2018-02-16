@@ -13,7 +13,7 @@ namespace RESTar.Results.Success
     /// </summary>
     public class Report : OK
     {
-        internal Report(long count, ITraceable trace) : base(trace)
+        internal Report(ITraceable trace, long count) : base(trace)
         {
             Body = new MemoryStream();
             using (var swr = new StreamWriter(Body, Serializer.UTF8, 1024, true))

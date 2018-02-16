@@ -33,10 +33,16 @@ namespace RESTar
         DELETE,
 
         /// <summary>
-        /// COUNT, returns the number of entities contained in a GET 
+        /// REPORT, returns the number of entities contained in a GET 
         /// response from a resource. Enabling GET for a resource automatically 
-        /// enables COUNT for that resource.
+        /// enables REPORT for that resource.
         /// </summary>
-        REPORT
+        REPORT,
+
+        /// <summary>
+        /// Performs a GET request, but excludes the response body. Enabling GET 
+        /// for a resource automatically enables HEAD for that resource.
+        /// </summary>
+        HEAD
     }
 }

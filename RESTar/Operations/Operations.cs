@@ -397,6 +397,7 @@ namespace RESTar.Operations
                     case Methods.PUT: return PUT;
                     case Methods.DELETE: return DELETE;
                     case Methods.REPORT: return REPORT;
+                    case Methods.HEAD: return HEAD;
                     default: return null;
                 }
             }
@@ -408,7 +409,15 @@ namespace RESTar.Operations
 
             private static Report REPORT(RESTRequest<T> request)
             {
-                return new Report(OP_COUNT(request), request);
+                return new Report(request, OP_COUNT(request));
+            }
+
+            private static Result HEAD(RESTRequest<T> request)
+            {
+                var count = OP_COUNT(request);
+                if (count > 0)
+                    return new Head(request, count);
+                return new NoContent(request);
             }
 
             private static Result POST(RESTRequest<T> request)

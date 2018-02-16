@@ -176,6 +176,7 @@ namespace RESTar.Internal
             {
                 switch (method)
                 {
+                    case HEAD:
                     case REPORT:
                     case GET: return new[] {RESTarOperations.Select};
                     case POST: return new[] {RESTarOperations.Insert};

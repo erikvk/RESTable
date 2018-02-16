@@ -152,6 +152,18 @@ namespace RESTar
                                 Query = tail;
                             SafeOperation(Action.REPORT);
                             break;
+                        case "@":
+                        case "NAVIGATE":
+                        case "GO":
+                        case "HEAD":
+                            if (!string.IsNullOrWhiteSpace(tail))
+                                Query = tail;
+                            var result = WsEvaluate(Action.HEAD, null);
+                            if (!(result is Head))
+                                SendResult(result);
+                            else if (WriteQueryAfterContent)
+                                WebSocket.SendText("? " + Query);
+                            break;
                         case "HELP":
                             SendHelp();
                             break;

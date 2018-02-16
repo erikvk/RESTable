@@ -11,6 +11,7 @@ namespace RESTar.Requests
         PUT,
         DELETE,
         REPORT,
+        HEAD,
         OPTIONS,
         VIEW,
         PAGE,

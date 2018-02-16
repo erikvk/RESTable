@@ -16,7 +16,7 @@ namespace RESTar.Requests
 {
     internal static class StarcounterHandlers
     {
-        private static readonly Action[] Actions = {GET, POST, PATCH, PUT, DELETE, REPORT, OPTIONS};
+        private static readonly Action[] Actions = {GET, POST, PATCH, PUT, DELETE, REPORT, OPTIONS, HEAD};
         private const string WsGroupName = "restar_ws";
 
         internal static void RegisterRESTHandlers(bool setupMenu)

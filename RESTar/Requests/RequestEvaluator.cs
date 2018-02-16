@@ -80,6 +80,7 @@ namespace RESTar.Requests
                     case PATCH:
                     case DELETE:
                     case REPORT:
+                    case HEAD:
                         arguments = new Arguments(action, ref query, body, headers, tcpConnection);
                         arguments.Authenticate();
                         arguments.ThrowIfError();
@@ -152,6 +153,7 @@ namespace RESTar.Requests
                     case PUT:
                     case DELETE:
                     case REPORT:
+                    case HEAD:
                         if (errorId != null)
                             error.Headers["ErrorInfo"] = $"/{typeof(Error).FullName}/id={HttpUtility.UrlEncode(errorId)}";
                         return result = error;

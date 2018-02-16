@@ -41,7 +41,7 @@ namespace RESTar
         internal static bool NeedsConfiguration => RequireApiKey || !AllowAllOrigins;
         private static string ConfigFilePath { get; set; }
         internal static bool Initialized { get; private set; }
-        internal static readonly Methods[] Methods = {GET, POST, PATCH, PUT, DELETE, REPORT};
+        internal static readonly Methods[] Methods = {GET, POST, PATCH, PUT, DELETE, REPORT, HEAD};
 
         static RESTarConfig() => NewState();
 
@@ -302,10 +302,10 @@ namespace RESTar
                     foreach (var resource in Resources.Where(r => r.GETAvailableToAll))
                     {
                         if (!accessRights.TryGetValue(resource, out var methods))
-                            accessRights.Add(resource, new[] {GET, REPORT});
+                            accessRights.Add(resource, new[] {GET, REPORT, HEAD});
                         else
                             accessRights[resource] = methods
-                                .Union(new[] {GET, REPORT})
+                                .Union(new[] { GET, REPORT, HEAD })
                                 .OrderBy(i => i, MethodComparer.Instance)
                                 .ToArray();
                     }

@@ -65,7 +65,7 @@ namespace RESTar
         internal RESTarAttribute(IReadOnlyList<Methods> methods)
         {
             if (methods.Contains(GET))
-                AvailableMethods = methods.Union(new[] {REPORT}).ToList();
+                AvailableMethods = methods.Union(new[] {REPORT,HEAD}).ToList();
             else AvailableMethods = methods;
         }
 
@@ -81,6 +81,8 @@ namespace RESTar
             var restrictions = methodRestrictions.OrderBy(i => i, MethodComparer.Instance).ToList();
             if (methodRestrictions.Contains(GET) && !methodRestrictions.Contains(REPORT))
                 restrictions.Add(REPORT);
+            if (methodRestrictions.Contains(GET) && !methodRestrictions.Contains(HEAD))
+                restrictions.Add(HEAD);
             AvailableMethods = restrictions;
         }
     }
