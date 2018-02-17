@@ -84,18 +84,17 @@ namespace RESTarExample
 
         string IVersion1._ICanCallThisWhateverString
         {
-            get
-            {
-                if ("".Length > 0)
-                    throw new Exception();
-                return MyString;
-            }
+            get => MyString;
         }
 
         int IVersion1.__ThisIsMyINt
         {
             get => MyInt;
-            set => MyInt = value;
+            set
+            {
+                MyDateTime = DateTime.MaxValue;
+                MyInt = value;
+            }
         }
 
         DateTime IVersion1.AndTheDateTime_ffs

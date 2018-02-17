@@ -65,9 +65,6 @@
       <HintPath>..\packages\FastMember.Signed.1.1.0\lib\net40\FastMember.Signed.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.CSharp" />
-    <Reference Include="Mono.Reflection, Version=1.1.0.0, Culture=neutral, PublicKeyToken=0738eb9f132ed756, processorArchitecture=MSIL">
-      <HintPath>..\packages\Mono.Reflection.1.1.0.0\lib\Mono.Reflection.dll</HintPath>
-    </Reference>
     <Reference Include="Newtonsoft.Json, Version=10.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\packages\Newtonsoft.Json.10.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
@@ -100,6 +97,12 @@
     <Compile Include="Admin\DbMacro.cs" />
     <Compile Include="Deflection\Dynamic\Field.cs" />
     <Compile Include="Deflection\Dynamic\Member.cs" />
+    <Compile Include="Deflection\IL\ByteBuffer.cs" />
+    <Compile Include="Deflection\IL\Disassembler.cs" />
+    <Compile Include="Deflection\IL\ILPattern.cs" />
+    <Compile Include="Deflection\IL\Instruction.cs" />
+    <Compile Include="Deflection\IL\MatchContext.cs" />
+    <Compile Include="Deflection\IL\MethodBodyReader.cs" />
     <Compile Include="IProtocolProvider.cs" />
     <Compile Include="Logging\ConsoleFormat.cs" />
     <Compile Include="Logging\ConsoleStatus.cs" />

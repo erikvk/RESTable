@@ -25,6 +25,7 @@ namespace RESTar.Serialization.NativeProtocol
                     p.ObjectCreationHandling = property.ReplaceOnUpdate ? ObjectCreationHandling.Replace : ObjectCreationHandling.Auto;
                     p.PropertyName = property.Name;
                     p.Order = property.Order;
+                    p.ValueProvider = new GetterSetterProvider(property.Getter, property.Setter);
                     return p;
                 case FieldInfo fieldInfo:
                     if (fieldInfo.RESTarIgnored()) return null;

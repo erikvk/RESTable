@@ -4,10 +4,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
-using Mono.Reflection;
 using Newtonsoft.Json.Linq;
 using RESTar.Linq;
 using RESTar.Admin;
+using RESTar.Deflection.IL;
 using RESTar.Internal;
 using RESTar.Results.Error;
 using Starcounter;
@@ -171,8 +171,9 @@ namespace RESTar.Resources
                             if (calledProperty.PropertyType != propertyType)
                                 throw new InvalidResourceDeclaration(
                                     $"Invalid implementation of interface '{interfaceType.FullName}' assigned to resource '{type.FullName}'. " +
-                                    $"RESTar matched interface property '{interfaceProperty.Name}' with '{calledProperty.Name}' using the " +
-                                    "interface property matching rules, but these properties have a type mismatch.");
+                                    $"RESTar matched interface property '{interfaceProperty.Name}' with resource property '{calledProperty.Name}' " +
+                                    $"using the interface property matching rules, but these properties have a type mismatch. Expected " +
+                                    $"'{calledProperty.PropertyType.FullName}' but found '{propertyType.FullName}' in interface");
                         });
                     }
 
