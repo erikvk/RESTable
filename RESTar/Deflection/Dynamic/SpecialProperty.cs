@@ -24,7 +24,7 @@ namespace RESTar.Deflection.Dynamic
             PropertyName = Name,
             Readable = Readable,
             Writable = Writable,
-            ValueProvider = new GetterSetterProvider(Getter, Setter),
+            ValueProvider = new DefaultValueProvider(this),
             ObjectCreationHandling = ReplaceOnUpdate ? Replace : Reuse,
             NullValueHandling = HiddenIfNull ? Ignore : Include,
             Order = Order

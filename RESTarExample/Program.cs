@@ -8,6 +8,7 @@ using RESTar;
 using RESTar.Resources;
 using Starcounter;
 
+#pragma warning disable 1591
 // ReSharper disable All
 
 namespace RESTarExample
@@ -94,6 +95,7 @@ namespace RESTarExample
             {
                 MyDateTime = DateTime.MaxValue;
                 MyInt = value;
+                MyString = "ASDO";
             }
         }
 

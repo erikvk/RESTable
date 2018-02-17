@@ -7,11 +7,11 @@ namespace RESTar.Serialization
     /// <summary>
     /// A JSON.net IValueProvider that gets and sets using Deflection getters and setters
     /// </summary>
-    internal class GetterSetterProvider : IValueProvider
+    internal class DefaultValueProvider : IValueProvider
     {
         private Getter Get { get; }
         private Setter Set { get; }
-        public GetterSetterProvider(Getter getter, Setter setter) => (Get, Set) = (getter, setter);
+        public DefaultValueProvider(Property property) => (Get, Set) = (property.Getter, property.Setter);
         public void SetValue(object target, object value) => Set(target, value);
         public object GetValue(object target) => Get(target);
     }
