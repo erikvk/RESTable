@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Reflection.Emit;
 using Mono.Reflection;
 using Newtonsoft.Json.Serialization;
 using RESTar.Internal;
@@ -110,19 +111,21 @@ namespace RESTar.Deflection.Dynamic
                             var (getter, setter) = targetsByProp.SafeGet(p.Name);
                             if (p.Readable)
                             {
-                                p.ActualName = getter
-                                    .GetInstructions()
-                                    .Select(i => i.Operand as MethodInfo)
-                                    .FirstOrDefault(i => i?.Name.StartsWith("get_") == true)?
-                                    .Name.Substring(4);
+                                p.ActualName = getter.GetInstructions()
+                                    .Select(i => i.OpCode == OpCodes.Call && i.Operand is MethodInfo calledMethod && getter.IsSpecialName
+                                        ? type.GetProperties(Public | Instance).FirstOrDefault(prop => prop.GetGetMethod() == calledMethod)
+                                        : null)
+                                    .LastOrDefault(prop => prop != null)?
+                                    .Name;
                             }
                             else if (p.Writable)
                             {
-                                p.ActualName = setter
-                                    .GetInstructions()
-                                    .Select(i => i.Operand as MethodInfo)
-                                    .FirstOrDefault(i => i?.Name.StartsWith("set_") == true)?
-                                    .Name.Substring(4);
+                                p.ActualName = setter.GetInstructions()
+                                    .Select(i => i.OpCode == OpCodes.Call && i.Operand is MethodInfo calledMethod && setter.IsSpecialName
+                                        ? type.GetProperties(Public | Instance).FirstOrDefault(prop => prop.GetSetMethod() == calledMethod)
+                                        : null)
+                                    .LastOrDefault(prop => prop != null)?
+                                    .Name;
                             }
                             return p;
                         });

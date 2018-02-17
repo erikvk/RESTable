@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Reflection.Emit;
 using Mono.Reflection;
 using Newtonsoft.Json.Linq;
 using RESTar.Linq;
@@ -119,6 +120,7 @@ namespace RESTar.Resources
                             throw new InvalidResourceMember(
                                 $"Invalid Interface of type '{interfaceType.FullName}' assigned to resource '{type.FullName}'. " +
                                 $"Interface contained properties with duplicate names matching '{interfacePropDupe}' (case insensitive).");
+                        var interfaceName = interfaceType.FullName?.Replace('+', '.');
                         type.GetInterfaceMap(interfaceType).TargetMethods.ForEach(method =>
                         {
                             if (!method.IsSpecialName) return;
@@ -126,34 +128,51 @@ namespace RESTar.Resources
                                 throw new InvalidResourceDeclaration(
                                     $"Invalid implementation of interface '{interfaceType.FullName}' assigned to resource '{type.FullName}'. " +
                                     "All interface-implemented properties must have explicit implementations in the resource type.");
-                            try
+
+                            var interfaceProperty = interfaceType
+                                .GetProperties()
+                                .First(p => p.GetGetMethod()?.Name is string getname && method.Name.EndsWith(getname) ||
+                                            p.GetSetMethod()?.Name is string setname && method.Name.EndsWith(setname));
+
+                            Type propertyType = null;
+                            if (method.Name.StartsWith($"{interfaceName}.get_"))
+                                propertyType = method.ReturnType;
+                            else if (method.Name.StartsWith($"{interfaceName}.set_"))
+                                propertyType = method.GetParameters()[0].ParameterType;
+                            if (propertyType == null)
+                                throw new InvalidResourceDeclaration(
+                                    $"Invalid implementation of interface '{interfaceType.FullName}' assigned to resource '{type.FullName}'. " +
+                                    $"Unable to determine the type for interface property '{interfaceProperty.Name}'");
+                            PropertyInfo calledProperty;
+                            if (method.Name.StartsWith($"{interfaceName}.get_"))
                             {
-                                string actualName;
-                                if (method.Name.StartsWith("get_"))
-                                {
-                                    actualName = method
-                                        .GetInstructions()
-                                        .Select(i => i.Operand as MethodInfo)
-                                        .FirstOrDefault(i => i?.Name.StartsWith("get_") == true)?
-                                        .Name.Substring(4);
-                                }
-                                else if (method.Name.StartsWith("set_"))
-                                {
-                                    actualName = method
-                                        .GetInstructions()
-                                        .Select(i => i.Operand as MethodInfo)
-                                        .FirstOrDefault(i => i?.Name.StartsWith("set_") == true)?
-                                        .Name.Substring(4);
-                                }
-                                else return;
-                                if (actualName == null || !type.GetProperties(Public | Instance).Select(p => p.RESTarMemberName()).Contains(actualName))
-                                    throw new InvalidResourceDeclaration(
-                                        $"Invalid implementation of interface '{interfaceType.FullName}' assigned to resource '{type.FullName}'. " +
-                                        $"RESTar was unable to determine which property of '{type.FullName}' that is exposed by interface " +
-                                        $"property accessor method '{method.Name}'. Interface property-implementations must be strictly get or set, " +
-                                        "and cannot contain any other logic.");
+                                calledProperty = method.GetInstructions()
+                                    .Select(i => i.OpCode == OpCodes.Call && i.Operand is MethodInfo calledMethod && method.IsSpecialName
+                                        ? type.GetProperties(Public | Instance).FirstOrDefault(p => p.GetGetMethod() == calledMethod)
+                                        : null)
+                                    .LastOrDefault(p => p != null);
                             }
-                            catch { }
+                            else if (method.Name.StartsWith($"{interfaceName}.set_"))
+                            {
+                                calledProperty = method.GetInstructions()
+                                    .Select(i => i.OpCode == OpCodes.Call && i.Operand is MethodInfo calledMethod && method.IsSpecialName
+                                        ? type.GetProperties(Public | Instance).FirstOrDefault(p => p.GetSetMethod() == calledMethod)
+                                        : null)
+                                    .LastOrDefault(p => p != null);
+                            }
+                            else return;
+                            if (calledProperty == null)
+                                throw new InvalidResourceDeclaration(
+                                    $"Invalid implementation of interface '{interfaceType.FullName}' assigned to resource '{type.FullName}'. " +
+                                    $"RESTar was unable to determine which property of '{type.FullName}' that is exposed by interface " +
+                                    $"property '{interfaceProperty.Name}'. For getters, RESTar will look for the last IL instruction " +
+                                    "in the method body that fetches a property value from the resource type. For setters, RESTar will look " +
+                                    "for the last IL instruction in the method body that sets a property value in the resource type.");
+                            if (calledProperty.PropertyType != propertyType)
+                                throw new InvalidResourceDeclaration(
+                                    $"Invalid implementation of interface '{interfaceType.FullName}' assigned to resource '{type.FullName}'. " +
+                                    $"RESTar matched interface property '{interfaceProperty.Name}' with '{calledProperty.Name}' using the " +
+                                    "interface property matching rules, but these properties have a type mismatch.");
                         });
                     }
 

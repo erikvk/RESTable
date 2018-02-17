@@ -86,6 +86,8 @@ namespace RESTarExample
         {
             get
             {
+                if ("".Length > 0)
+                    throw new Exception();
                 return MyString;
             }
         }
