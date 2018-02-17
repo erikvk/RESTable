@@ -2,6 +2,7 @@
 
 namespace RESTar.Results.Success
 {
+    /// <inheritdoc />
     /// <summary>
     /// A result that contains only status code, description and headers
     /// </summary>

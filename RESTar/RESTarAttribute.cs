@@ -61,11 +61,17 @@ namespace RESTar
         /// </summary>
         public bool GETAvailableToAll { get; set; }
 
+        /// <summary>
+        /// An interface type to use instead of this type when determing the public instance 
+        /// members of this resource type. The resource type must implement this interface.
+        /// </summary>
+        public Type Interface { get; set; }
+
         /// <inheritdoc />
         internal RESTarAttribute(IReadOnlyList<Methods> methods)
         {
             if (methods.Contains(GET))
-                AvailableMethods = methods.Union(new[] {REPORT,HEAD}).ToList();
+                AvailableMethods = methods.Union(new[] {REPORT, HEAD}).ToList();
             else AvailableMethods = methods;
         }
 

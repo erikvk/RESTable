@@ -65,6 +65,9 @@
       <HintPath>..\packages\FastMember.Signed.1.1.0\lib\net40\FastMember.Signed.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.CSharp" />
+    <Reference Include="Mono.Reflection, Version=1.1.0.0, Culture=neutral, PublicKeyToken=0738eb9f132ed756, processorArchitecture=MSIL">
+      <HintPath>..\packages\Mono.Reflection.1.1.0.0\lib\Mono.Reflection.dll</HintPath>
+    </Reference>
     <Reference Include="Newtonsoft.Json, Version=10.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\packages\Newtonsoft.Json.10.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
@@ -90,6 +93,7 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Admin\PropertyCache.cs" />
     <Compile Include="Admin\WebSocket.cs" />
     <Compile Include="Admin\Utilities.cs" />
     <Compile Include="Admin\Console.cs" />
@@ -116,6 +120,7 @@
     <Compile Include="Serialization\DDictionaryConverter.cs" />
     <Compile Include="Serialization\GetterSetterProvider.cs" />
     <Compile Include="Serialization\NativeProtocol\HeadersConverter.cs" />
+    <Compile Include="TerminalSet.cs" />
     <Compile Include="ViewInfo.cs" />
     <Compile Include="Aggregator.cs" />
     <Compile Include="Deflection\TermBindingRules.cs" />

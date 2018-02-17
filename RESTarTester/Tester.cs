@@ -364,6 +364,10 @@ namespace RESTarTester
             var jsonResponse5format = Http.GET
                 ("http://localhost:9000/rest/resource4//add=datetime.day&select=datetime.day,datetime.month,string,string.length&order_desc=string.length&format=jsend&distinct=true");
 
+            var head = Http.CustomRESTRequest("HEAD", "http://localhost:9000/rest/resource1//distinct=true", default(string), null);
+            var report = Http.CustomRESTRequest("REPORT", "http://localhost:9000/rest/resource1//distinct=true", default(string), null);
+
+
             Debug.Assert(jsonResponse1?.IsSuccessStatusCode == true);
             Debug.Assert(jsonResponse1view?.IsSuccessStatusCode == true);
             Debug.Assert(jsonResponse2?.IsSuccessStatusCode == true);

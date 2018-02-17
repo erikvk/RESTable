@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Dynamit;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using RESTar;
 using RESTar.Resources;
@@ -27,6 +28,84 @@ namespace RESTarExample
     }
 
     #region Stuff
+
+    #region Solution 1
+
+    public class MyStaticConverter : JsonConverter
+    {
+        public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
+        {
+            var myStatic = (MyStatic) value;
+            writer.WriteStartObject();
+            writer.WritePropertyName("myString");
+            writer.WriteValue(myStatic.MyString);
+            writer.WritePropertyName("myInt");
+            writer.WriteValue(myStatic.MyInt);
+            writer.WritePropertyName("myDateTime");
+            writer.WriteValue(myStatic.MyDateTime);
+            writer.WriteEndObject();
+        }
+
+        public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer) =>
+            throw new NotImplementedException();
+
+        public override bool CanRead { get; } = false;
+        public override bool CanWrite { get; } = true;
+        public override bool CanConvert(Type objectType) => objectType == typeof(MyStatic);
+    }
+
+    [Database, RESTar, JsonConverter(typeof(MyStaticConverter))]
+    public class MyStatic
+    {
+        public string MyString { get; set; }
+        public int MyInt { get; set; }
+        public DateTime MyDateTime { get; set; }
+    }
+
+    #endregion
+
+    #region Solution 2
+
+    [Database, RESTar(Interface = typeof(IVersion1))]
+    public class MyStatic2 : MyStatic2.IVersion1
+    {
+        public string MyString { get; set; }
+        public int MyInt { get; set; }
+        public DateTime MyDateTime { get; set; }
+
+        #region Version1 interface
+
+        public interface IVersion1
+        {
+            string _ICanCallThisWhateverString { get; }
+            int __ThisIsMyINt { get; set; }
+            DateTime AndTheDateTime_ffs { get; set; }
+        }
+
+        string IVersion1._ICanCallThisWhateverString
+        {
+            get
+            {
+                return MyString;
+            }
+        }
+
+        int IVersion1.__ThisIsMyINt
+        {
+            get => MyInt;
+            set => MyInt = value;
+        }
+
+        DateTime IVersion1.AndTheDateTime_ffs
+        {
+            get => MyDateTime;
+            set => MyDateTime = value;
+        }
+
+        #endregion
+    }
+
+    #endregion
 
     [Database, RESTar]
     public class Static

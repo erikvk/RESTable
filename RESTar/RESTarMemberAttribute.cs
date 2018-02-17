@@ -61,7 +61,7 @@ namespace RESTar
         /// such as Dictionaries and Lists.
         /// </summary>
         public bool ReplaceOnUpdate { get; }
-
+        
         /// <inheritdoc />
         /// <summary>
         /// Creates a new RESTar property configuration for a property

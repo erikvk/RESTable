@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Newtonsoft.Json;
@@ -21,6 +19,9 @@ namespace RESTar.Admin
 
         internal const string TypeName = "RESTar.Admin.Console";
 
+        private static readonly TerminalSet<Console> Consoles;
+        static Console() => Consoles = new TerminalSet<Console>();
+
         public ConsoleStatus Status { get; set; }
         public ConsoleFormat Format { get; set; }
         public bool IncludeConnection { get; set; } = true;
@@ -30,12 +31,13 @@ namespace RESTar.Admin
         public bool ShowWelcomeText { get; set; } = true;
 
         private IWebSocketInternal WebSocketInternal;
+        
 
         #region Terminal
 
         public void Open()
         {
-            Consoles[this] = default;
+            Consoles.Add(this);
             if (ShowWelcomeText)
                 SendConsoleInit();
         }
@@ -81,7 +83,7 @@ namespace RESTar.Admin
 
         #region Console
 
-        internal static void Log(ILogable initial, ILogable final) => Consoles.Keys
+        internal static void Log(ILogable initial, ILogable final) => Consoles
             .AsParallel()
             .Where(c => c.Status == Active)
             .GroupBy(c => c.Format)
@@ -133,7 +135,7 @@ namespace RESTar.Admin
                 }
             });
 
-        internal static void Log(ILogable logable) => Consoles.Keys
+        internal static void Log(ILogable logable) => Consoles
             .AsParallel()
             .Where(c => c.Status == Active)
             .GroupBy(c => c.Format)
@@ -279,9 +281,6 @@ namespace RESTar.Admin
             builder.Append(logable.LogMessage);
             return builder.ToString();
         }
-
-        private static readonly IDictionary<Console, byte> Consoles;
-        static Console() => Consoles = new ConcurrentDictionary<Console, byte>();
 
         #endregion
     }

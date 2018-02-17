@@ -48,7 +48,7 @@ namespace RESTar.Serialization
                 DateTimeZoneHandling = DateTimeZoneHandling.Utc,
                 ContractResolver = new DefaultResolver(),
                 NullValueHandling = NullValueHandling.Include,
-                FloatParseHandling = FloatParseHandling.Decimal
+                FloatParseHandling = FloatParseHandling.Decimal,
             };
             VmSettings = new JsonSerializerSettings
             {

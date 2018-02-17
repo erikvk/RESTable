@@ -3,9 +3,11 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using Mono.Reflection;
 using Newtonsoft.Json.Serialization;
 using RESTar.Internal;
 using RESTar.Linq;
+using Starcounter;
 using static System.Reflection.BindingFlags;
 using static System.StringComparer;
 using static RESTar.Deflection.Dynamic.SpecialProperty;
@@ -62,7 +64,7 @@ namespace RESTar.Deflection.Dynamic
 
         #region Declared properties
 
-        private static readonly ConcurrentDictionary<Type, IReadOnlyDictionary<string, DeclaredProperty>> DeclaredPropertyCache;
+        internal static readonly ConcurrentDictionary<Type, IReadOnlyDictionary<string, DeclaredProperty>> DeclaredPropertyCache;
 
         private static IEnumerable<DeclaredProperty> ParseDeclaredProperties(this IEnumerable<PropertyInfo> props, bool flag) => props
             .Where(p => !p.RESTarIgnored())
@@ -85,6 +87,45 @@ namespace RESTar.Deflection.Dynamic
                             .Concat(_type.GetInterfaces())
                             .SelectMany(i => i.GetProperties(Instance | Public))
                             .ParseDeclaredProperties(false);
+                    case var _ when _type.HasAttribute<RESTarAttribute>(out var attr) && attr.Interface is Type t:
+                        var interfaceName = t.FullName?.Replace('+', '.');
+                        var targetsByProp = _type
+                            .GetInterfaceMap(t)
+                            .TargetMethods
+                            .GroupBy(m =>
+                            {
+                                if (m.Name.StartsWith($"{interfaceName}.get_"))
+                                    return m.Name.Split(interfaceName + ".get_")[1];
+                                if (m.Name.StartsWith($"{interfaceName}.set_"))
+                                    return m.Name.Split(interfaceName + ".set_")[1];
+                                throw new Exception("Invalid interface");
+                            })
+                            .ToDictionary(m => m.Key, m => (
+                                getter: m.FirstOrDefault(p => p.GetParameters().Length == 0),
+                                setter: m.FirstOrDefault(p => p.GetParameters().Length == 1)
+                            ));
+                        return make(t).Select(p =>
+                        {
+                            p.ScQueryable = _type.HasAttribute<DatabaseAttribute>() && p.Type.IsStarcounterCompatible();
+                            var (getter, setter) = targetsByProp.SafeGet(p.Name);
+                            if (p.Readable)
+                            {
+                                p.ActualName = getter
+                                    .GetInstructions()
+                                    .Select(i => i.Operand as MethodInfo)
+                                    .FirstOrDefault(i => i?.Name.StartsWith("get_") == true)?
+                                    .Name.Substring(4);
+                            }
+                            else if (p.Writable)
+                            {
+                                p.ActualName = setter
+                                    .GetInstructions()
+                                    .Select(i => i.Operand as MethodInfo)
+                                    .FirstOrDefault(i => i?.Name.StartsWith("set_") == true)?
+                                    .Name.Substring(4);
+                            }
+                            return p;
+                        });
                     case var _ when _type.Implements(typeof(ITerminal)):
                         return _type.GetProperties(Instance | Public)
                             .ParseDeclaredProperties(flag: false)

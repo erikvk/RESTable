@@ -13,14 +13,20 @@ namespace RESTar.Results.Success
     /// </summary>
     public class Report : OK
     {
+        private class ReportBody
+        {
+            public long Count { get; set; }
+        }
+
         internal Report(ITraceable trace, long count) : base(trace)
         {
+            Headers["RESTar-count"] = count.ToString();
             Body = new MemoryStream();
             using (var swr = new StreamWriter(Body, Serializer.UTF8, 1024, true))
             using (var jwr = new RESTarJsonWriter(swr, 0))
             {
                 Serializer.Json.Formatting = Settings._PrettyPrint ? Formatting.Indented : Formatting.None;
-                Serializer.Json.Serialize(jwr, new {Count = count});
+                Serializer.Json.Serialize(jwr, new ReportBody {Count = count});
             }
             Body.Seek(0, SeekOrigin.Begin);
         }

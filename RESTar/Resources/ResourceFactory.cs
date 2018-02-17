@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using Mono.Reflection;
 using Newtonsoft.Json.Linq;
 using RESTar.Linq;
 using RESTar.Admin;
@@ -105,6 +106,56 @@ namespace RESTar.Resources
                     if ((!type.IsClass || !type.IsPublic && !type.IsNestedPublic) && type.Assembly != typeof(Resource).Assembly)
                         throw new InvalidResourceDeclaration(
                             $"Invalid type '{type.FullName}'. Resource types must be public classes");
+
+                    if (type.HasAttribute<RESTarAttribute>(out var a) && a.Interface is Type interfaceType)
+                    {
+                        if (!interfaceType.IsInterface)
+                            throw new InvalidResourceDeclaration(
+                                $"Invalid Interface of type '{interfaceType.FullName}' assigned to resource '{type.FullName}'. " +
+                                "Type is not an interface");
+                        if (interfaceType.GetProperties()
+                            .Select(p => p.Name)
+                            .ContainsDuplicates(StringComparer.OrdinalIgnoreCase, out var interfacePropDupe))
+                            throw new InvalidResourceMember(
+                                $"Invalid Interface of type '{interfaceType.FullName}' assigned to resource '{type.FullName}'. " +
+                                $"Interface contained properties with duplicate names matching '{interfacePropDupe}' (case insensitive).");
+                        type.GetInterfaceMap(interfaceType).TargetMethods.ForEach(method =>
+                        {
+                            if (!method.IsSpecialName) return;
+                            if (!method.IsPrivate)
+                                throw new InvalidResourceDeclaration(
+                                    $"Invalid implementation of interface '{interfaceType.FullName}' assigned to resource '{type.FullName}'. " +
+                                    "All interface-implemented properties must have explicit implementations in the resource type.");
+                            try
+                            {
+                                string actualName;
+                                if (method.Name.StartsWith("get_"))
+                                {
+                                    actualName = method
+                                        .GetInstructions()
+                                        .Select(i => i.Operand as MethodInfo)
+                                        .FirstOrDefault(i => i?.Name.StartsWith("get_") == true)?
+                                        .Name.Substring(4);
+                                }
+                                else if (method.Name.StartsWith("set_"))
+                                {
+                                    actualName = method
+                                        .GetInstructions()
+                                        .Select(i => i.Operand as MethodInfo)
+                                        .FirstOrDefault(i => i?.Name.StartsWith("set_") == true)?
+                                        .Name.Substring(4);
+                                }
+                                else return;
+                                if (actualName == null || !type.GetProperties(Public | Instance).Select(p => p.RESTarMemberName()).Contains(actualName))
+                                    throw new InvalidResourceDeclaration(
+                                        $"Invalid implementation of interface '{interfaceType.FullName}' assigned to resource '{type.FullName}'. " +
+                                        $"RESTar was unable to determine which property of '{type.FullName}' that is exposed by interface " +
+                                        $"property accessor method '{method.Name}'. Interface property-implementations must be strictly get or set, " +
+                                        "and cannot contain any other logic.");
+                            }
+                            catch { }
+                        });
+                    }
 
                     #endregion
 
