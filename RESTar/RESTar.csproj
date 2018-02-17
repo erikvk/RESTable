@@ -121,7 +121,7 @@
     <Compile Include="Results\Success\NoQuery.cs" />
     <Compile Include="Results\Success\WebSocketResult.cs" />
     <Compile Include="Serialization\DDictionaryConverter.cs" />
-    <Compile Include="Serialization\GetterSetterProvider.cs" />
+    <Compile Include="Serialization\DefaultValueProvider.cs" />
     <Compile Include="Serialization\NativeProtocol\HeadersConverter.cs" />
     <Compile Include="TerminalSet.cs" />
     <Compile Include="ViewInfo.cs" />
