@@ -21,6 +21,7 @@ namespace RESTar.Resources
         internal static StarcounterProvider ScProvider { get; }
         internal static VirtualResourceProvider VrProvider { get; }
         internal static DynamicResourceProvider DynProvider { get; }
+        internal static TerminalResourceProvider TerminalProvider { get; }
         private static List<ResourceProvider> ResourceProviders { get; }
 
         static ResourceFactory()
@@ -28,8 +29,9 @@ namespace RESTar.Resources
             ScProvider = new StarcounterProvider();
             DDictProvider = new DDictionaryProvider {DatabaseIndexer = ScProvider.DatabaseIndexer};
             VrProvider = new VirtualResourceProvider();
-            DynProvider = new DynamicResourceProvider();
             ResourceProviders = new List<ResourceProvider> {DDictProvider, ScProvider, VrProvider};
+            DynProvider = new DynamicResourceProvider();
+            TerminalProvider = new TerminalResourceProvider();
         }
 
         private static void ValidateResourceProviders(ICollection<ResourceProvider> externalProviders)
@@ -384,7 +386,7 @@ namespace RESTar.Resources
             }
 
             DynamicResource.GetAll().ForEach(MakeDynamicResource);
-            TerminalResource.RegisterTerminalTypes(terminals);
+            TerminalProvider.RegisterTerminalTypes(terminals);
         }
 
         internal static void MakeDynamicResource(DynamicResource resource) => DynProvider.BuildDynamicResource(resource);

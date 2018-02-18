@@ -17,7 +17,7 @@ namespace RESTar.Admin
             new Option
             (
                 command: "ReloadConfigFile",
-                description: "Reloads the config file and updates the access rights for API keys",
+                description: "Reloads the configuration file and updates the access rights for API keys",
                 action: args => RESTarConfig.UpdateConfiguration()
             )
         };

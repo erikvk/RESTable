@@ -63,7 +63,7 @@ namespace RESTar
         public void HandleBinaryInput(byte[] input) => throw new NotImplementedException();
         public bool SupportsTextInput { get; } = true;
         public bool SupportsBinaryInput { get; } = false;
-        internal static TerminalResource TerminalResource { get; set; }
+        internal static ITerminalResourceInternal TerminalResource { get; set; }
 
         internal void GoToPrevious()
         {
@@ -307,7 +307,7 @@ namespace RESTar
 
         private void SendResult(IFinalizedResult result)
         {
-            WebSocketInternal.SendResult(result, WriteStatusBeforeContent);
+            WebSocket.SendResult(result, WriteStatusBeforeContent);
             if (!WriteQueryAfterContent) return;
             switch (result)
             {

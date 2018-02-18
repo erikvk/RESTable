@@ -15,7 +15,7 @@ using static RESTar.WebSocketStatus;
 
 namespace RESTar.Internal
 {
-    internal class TerminalResource : IResource<ITerminal>, IResourceInternal, ITerminalResource
+    internal class TerminalResource<T> : IResource<T>, IResourceInternal, ITerminalResource, ITerminalResourceInternal where T : class, ITerminal
     {
         public string Name { get; }
         public Type Type { get; }
@@ -32,16 +32,16 @@ namespace RESTar.Internal
         public string Description { get; set; }
         public bool GETAvailableToAll { get; }
         public override string ToString() => Name;
-        public override bool Equals(object obj) => obj is TerminalResource t && t.Name == Name;
+        public override bool Equals(object obj) => obj is TerminalResource<T> t && t.Name == Name;
         public override int GetHashCode() => Name.GetHashCode();
         public IReadOnlyList<IEntityResource> InnerResources { get; set; }
-        public Selector<ITerminal> Select { get; }
+        public Selector<T> Select { get; }
         public IReadOnlyDictionary<string, DeclaredProperty> Members { get; }
         private Constructor<ITerminal> Constructor { get; }
         public void SetAlias(string alias) => Alias = alias;
         public Type InterfaceType { get; }
 
-        internal void InstantiateFor(IWebSocketInternal webSocket, IEnumerable<UriCondition> assignments = null)
+        public void InstantiateFor(IWebSocketInternal webSocket, IEnumerable<UriCondition> assignments = null)
         {
             var newTerminal = Constructor();
             assignments?.ForEach(assignment =>
@@ -72,30 +72,22 @@ namespace RESTar.Internal
             newTerminal.Open();
         }
 
-        internal static void RegisterTerminalTypes(List<Type> terminalTypes)
+        internal TerminalResource()
         {
-            terminalTypes
-                .OrderBy(t => t.FullName)
-                .ForEach(type => RESTarConfig.AddResource(new TerminalResource(type)));
-            Shell.TerminalResource = (TerminalResource) TerminalResource<Shell>.Get;
-        }
-
-        private TerminalResource(Type type)
-        {
-            Name = type.FullName ?? throw new Exception();
-            Type = type;
+            Name = typeof(T).FullName ?? throw new Exception();
+            Type = typeof(T);
             AvailableMethods = new[] {Methods.GET};
             IsInternal = false;
             IsGlobal = true;
-            var attribute = type.GetAttribute<RESTarAttribute>();
+            var attribute = typeof(T).GetAttribute<RESTarAttribute>();
             InterfaceType = attribute?.Interface;
-            ConditionBindingRule = type.Implements(typeof(IDynamicTerminal))
+            ConditionBindingRule = typeof(T).Implements(typeof(IDynamicTerminal))
                 ? DeclaredWithDynamicFallback
                 : OnlyDeclared;
             Description = attribute?.Description;
             Select = null;
-            Members = type.GetDeclaredProperties();
-            Constructor = type.MakeStaticConstructor<ITerminal>();
+            Members = typeof(T).GetDeclaredProperties();
+            Constructor = typeof(T).MakeStaticConstructor<ITerminal>();
             GETAvailableToAll = attribute?.GETAvailableToAll == true;
             if (Name.Contains('+'))
             {

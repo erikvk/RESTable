@@ -26,7 +26,7 @@ namespace RESTar
         public Action<string[]> Action { get; }
 
         /// <summary>
-        /// 
+        /// Creates a new instance of the <see cref="Option"/> class.
         /// </summary>
         /// <param name="command">The command (case insensitive) to register the action for</param>
         /// <param name="description">The command (case insensitive) to register the action for</param>
@@ -76,8 +76,18 @@ namespace RESTar
                     WebSocket.SendToShell();
                     break;
                 case var _ when _options.TryGetValue(command, out var option):
-                    var argsArray = args.Split(" ", StringSplitOptions.RemoveEmptyEntries);
-                    option.Action(argsArray);
+                    var argsArray = args?.Split(" ", StringSplitOptions.RemoveEmptyEntries) ?? new string[0];
+                    WebSocket.SendText($"> {option.Command}");
+                    try
+                    {
+                        option.Action(argsArray);
+                        WebSocket.SendText("> Done!\n");
+                    }
+                    catch (Exception e)
+                    {
+                        WebSocket.SendException(e);
+                    }
+                    PrintOptions();
                     break;
                 case var unknown:
                     WebSocket.SendText($"Unknown option '{unknown}'.");
@@ -91,18 +101,17 @@ namespace RESTar
             if (!_options.Any())
             {
                 stringBuilder.Append("  No available options.\n\n");
-                stringBuilder.Append("> Type 'cancel' to return to shell");
+                stringBuilder.Append("> Type 'cancel' to return to the shell");
             }
             var first = true;
             foreach (var option in _options.Values)
             {
                 if (!first)
                     stringBuilder.Append("  - - - - - - - - - - - - - - - - - - - - - - - - - - - -  \n");
-                stringBuilder.Append($"  Option:  {option.Command}\n" +
-                                     $"  About:   {option.Description}\n");
+                stringBuilder.Append($"  Option:  {option.Command}\n  About:   {option.Description}\n");
                 first = false;
             }
-            stringBuilder.Append("\n> Type an option to continue, or 'cancel' to return to shell\n");
+            stringBuilder.Append("\n> Type an option to continue, or 'cancel' to return to the shell\n");
             WebSocket.SendText(stringBuilder.ToString());
         }
 

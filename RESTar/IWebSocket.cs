@@ -1,5 +1,7 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using RESTar.Internal;
+using RESTar.Operations;
 using RESTar.Requests;
 
 namespace RESTar
@@ -45,6 +47,16 @@ namespace RESTar
         /// the prettyPrint parameter. If null, the global pretty print setting is used.
         /// </summary>
         void SendJson(object item, bool? prettyPrint = null);
+
+        /// <summary>
+        /// Sends a result over the WebSocket.
+        /// </summary>
+        void SendResult(IFinalizedResult result, bool includeStatusWithContent = true);
+
+        /// <summary>
+        /// Sends an exception over the WebSocket.
+        /// </summary>
+        void SendException(Exception exception);
 
         /// <summary>
         /// The headers included in the initial HTTP request

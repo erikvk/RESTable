@@ -37,7 +37,7 @@ namespace RESTar.Requests
             }
         }
 
-        public TerminalResource TerminalResource { get; set; }
+        public ITerminalResource TerminalResource { get; set; }
         public DateTime Opened { get; private set; }
         public DateTime Closed { get; private set; }
         public ulong BytesReceived { get; internal set; }
@@ -52,7 +52,7 @@ namespace RESTar.Requests
         {
             if (terminalResource == null)
                 throw new ArgumentNullException(nameof(terminalResource));
-            var _terminalResource = (TerminalResource) terminalResource;
+            var _terminalResource = (ITerminalResourceInternal) terminalResource;
             _terminalResource.InstantiateFor(this);
         }
 
@@ -178,6 +178,8 @@ namespace RESTar.Requests
             }
             else sendStatus();
         }
+
+        public void SendException(Exception exception) => SendResult(RESTarError.GetError(exception));
 
         public void SendText(string data) => _SendText(data);
         public void SendText(byte[] data) => _SendBinary(data, true);

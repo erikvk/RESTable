@@ -12,7 +12,7 @@ namespace RESTar.Results.Error.BadRequest
     /// </summary>
     public class BadConditionOperator : BadRequest
     {
-        internal BadConditionOperator(TerminalResource terminal, Operator found) : base(ErrorCodes.InvalidConditionOperator,
+        internal BadConditionOperator(ITerminalResource terminal, Operator found) : base(ErrorCodes.InvalidConditionOperator,
             $"Invalid operator '{found.Common}' in condition to terminal resource '{terminal.Name}'. Only \'=\' is valid in terminal conditions.") { }
 
         internal BadConditionOperator(string c, ITarget target, Operator found, Term term, IEnumerable<Operator> allowed)

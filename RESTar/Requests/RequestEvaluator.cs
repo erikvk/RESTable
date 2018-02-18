@@ -92,7 +92,7 @@ namespace RESTar.Requests
                             requestedResource = Shell.TerminalResource;
                         switch (requestedResource)
                         {
-                            case TerminalResource terminal:
+                            case ITerminalResourceInternal terminal:
                                 if (!tcpConnection.HasWebSocket)
                                     return result = new UpgradeRequired(terminal.Name);
                                 terminal.InstantiateFor(tcpConnection.WebSocketInternal, arguments.Uri.Conditions);
@@ -102,7 +102,7 @@ namespace RESTar.Requests
                                 result = HandleREST((dynamic) entityResource, arguments);
                                 if (!tcpConnection.HasWebSocket || tcpConnection.Origin == OriginType.Shell)
                                     return result;
-                                tcpConnection.WebSocketInternal.SendResult(result);
+                                tcpConnection.WebSocket.SendResult(result);
                                 return result = new WebSocketResult(leaveOpen: false, trace: arguments);
                         }
                     case OPTIONS:
@@ -136,7 +136,7 @@ namespace RESTar.Requests
                 }
                 if (tcpConnection.HasWebSocket && tcpConnection.Origin != OriginType.Shell)
                 {
-                    tcpConnection.WebSocketInternal.SendResult(error);
+                    tcpConnection.WebSocket.SendResult(error);
                     return result = new WebSocketResult(false, error);
                 }
                 switch (action)

@@ -82,8 +82,7 @@ namespace RESTar
                 .OrderBy(r => r.Name)
                 .ToList();
             var terminalResources = domain
-                .OfType<TerminalResource>()
-                .Cast<ITerminalResource>()
+                .OfType<ITerminalResource>()
                 .ToList();
 
             if (level == MetadataLevel.OnlyResources)
