@@ -104,6 +104,7 @@
     <Compile Include="Deflection\IL\Instruction.cs" />
     <Compile Include="Deflection\IL\MatchContext.cs" />
     <Compile Include="Deflection\IL\MethodBodyReader.cs" />
+    <Compile Include="Help.cs" />
     <Compile Include="IProtocolProvider.cs" />
     <Compile Include="Logging\ConsoleFormat.cs" />
     <Compile Include="Logging\ConsoleStatus.cs" />
@@ -227,7 +228,6 @@
     <Compile Include="Requests\RESTRequest.cs" />
     <Compile Include="Condition.cs" />
     <Compile Include="ExtensionMethods.cs" />
-    <Compile Include="Help.cs" />
     <Compile Include="IRequest.cs" />
     <Compile Include="Internal\EntityResource.cs" />
     <Compile Include="Log.cs" />
