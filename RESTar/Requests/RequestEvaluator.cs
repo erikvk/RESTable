@@ -139,12 +139,6 @@ namespace RESTar.Requests
                     tcpConnection.WebSocketInternal.SendResult(error);
                     return result = new WebSocketResult(false, error);
                 }
-                if (tcpConnection.Origin == OriginType.Shell)
-                {
-                    var shell = (Shell) tcpConnection.WebSocketInternal.Terminal;
-                    shell.GoToPrevious();
-                }
-
                 switch (action)
                 {
                     case GET:

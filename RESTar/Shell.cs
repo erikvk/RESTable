@@ -3,6 +3,7 @@ using System.Linq;
 using RESTar.Internal;
 using RESTar.Operations;
 using RESTar.Requests;
+using RESTar.Results.Error;
 using RESTar.Results.Error.BadRequest;
 using RESTar.Results.Success;
 using RESTar.WebSockets;
@@ -259,10 +260,11 @@ namespace RESTar
         private IFinalizedResult WsEvaluate(Action action, byte[] body)
         {
             if (query.Length == 0) return new NoQuery(WebSocket);
-            var preQuery = query;
-            var result = RequestEvaluator.Evaluate(action, ref query, body, WebSocket.Headers, WebSocket.TcpConnection);
-            if (query != preQuery)
-                previousQuery = preQuery;
+            var localQuery = query;
+            var result = RequestEvaluator.Evaluate(action, ref localQuery, body, WebSocket.Headers, WebSocket.TcpConnection);
+            if (result is RESTarError _)
+                GoToPrevious();
+            else Query = localQuery;
             if (result is IEntitiesMetadata entitiesMetaData)
             {
                 PreviousResultMetadata = entitiesMetaData;
