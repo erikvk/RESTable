@@ -13,7 +13,7 @@ namespace RESTar.Results.Success
     /// </summary>
     public class Report : OK
     {
-        private class ReportBody
+        internal class ReportBody
         {
             public long Count { get; set; }
         }

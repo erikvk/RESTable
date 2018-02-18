@@ -25,7 +25,19 @@ namespace RESTar.Deflection
                     case var _ when p.GetIndexParameters().Any(): return null;
                     default:
                         var getter = p.GetGetMethod()?.CreateDelegate(typeof(Func<,>).MakeGenericType(p.DeclaringType, p.PropertyType));
-                        return getter != null ? obj => ((dynamic) getter)((dynamic) obj) : default(Getter);
+                        return getter != null
+                            ? obj =>
+                            {
+                                try
+                                {
+                                    return ((dynamic) getter)((dynamic) obj);
+                                }
+                                catch
+                                {
+                                    return p.GetValue(obj);
+                                }
+                            }
+                            : default(Getter);
                 }
             }
             catch
@@ -47,7 +59,19 @@ namespace RESTar.Deflection
                     case var _ when p.GetIndexParameters().Any(): return null;
                     default:
                         var setter = p.GetSetMethod()?.CreateDelegate(typeof(Action<,>).MakeGenericType(p.DeclaringType, p.PropertyType));
-                        return setter != null ? (obj, value) => ((dynamic) setter)((dynamic) obj, value) : default(Setter);
+                        return setter != null
+                            ? (obj, value) =>
+                            {
+                                try
+                                {
+                                    ((dynamic) setter)((dynamic) obj, value);
+                                }
+                                catch
+                                {
+                                    p.SetValue(obj, value);
+                                }
+                            }
+                            : default(Setter);
                 }
             }
             catch

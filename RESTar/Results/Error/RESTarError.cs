@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
+using Microsoft.CSharp.RuntimeBinder;
 using Newtonsoft.Json;
 using RESTar.Internal;
 using RESTar.Logging;
@@ -100,6 +101,7 @@ namespace RESTar.Results.Error
                 case JsonReaderException _: return new FailedJsonDeserialization(exception);
                 case Starcounter.DbException _ when exception.Message.Contains("SCERR4034"): return new AbortedByCommitHook(exception);
                 case Starcounter.DbException _: return new StarcounterDatabaseError(exception);
+                case RuntimeBinderException _: return new BinderPermissions(exception);
                 default: return new Unknown(exception);
             }
         }

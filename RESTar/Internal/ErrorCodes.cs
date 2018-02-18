@@ -59,6 +59,7 @@ namespace RESTar.Internal
         UnknownProperty = 110,
         AmbiguousProperty = 111,
         UnknownPropertyOfGeneratedObject = 112,
+        FailedBinding = 113,
 
         // 120-129: Resource registration errors
         VirtualResourceMissingInterfaceImplementation = 120,
