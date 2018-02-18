@@ -43,6 +43,8 @@ namespace RESTar.Internal
         public bool RequiresAuthentication => Authenticate != null;
         public bool GETAvailableToAll { get; }
         public IReadOnlyDictionary<string, DeclaredProperty> Members { get; }
+        public void SetAlias(string alias) => Alias = alias;
+        public Type InterfaceType { get; }
 
         /// <inheritdoc />
         /// <summary>
@@ -81,7 +83,7 @@ namespace RESTar.Internal
         public string Alias
         {
             get => Admin.ResourceAlias.GetByResource(Name)?.Alias;
-            set
+            private set
             {
                 var existingAssignment = Admin.ResourceAlias.GetByResource(Name);
                 if (value == null)
@@ -128,6 +130,7 @@ namespace RESTar.Internal
             AvailableMethods = attribute.AvailableMethods;
             IsSingleton = attribute.Singleton;
             IsInternal = attribute is RESTarInternalAttribute;
+            InterfaceType = attribute.Interface;
             DynamicConditionsAllowed = typeof(T).IsDDictionary() || attribute.AllowDynamicConditions;
             DeclaredPropertiesFlagged = typeof(T).IsDDictionary() || attribute.FlagStaticMembers;
             GETAvailableToAll = attribute.GETAvailableToAll;

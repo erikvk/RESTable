@@ -16,7 +16,7 @@ namespace RESTar.Internal
         /// <summary>
         /// The alias of this resource (if any)
         /// </summary>
-        string Alias { get; set; }
+        string Alias { get; }
 
         /// <summary>
         /// Is this resource only available for internal requests?
@@ -42,6 +42,12 @@ namespace RESTar.Internal
         /// Is this resource declared as available to all, regardless of API keys?
         /// </summary>
         bool GETAvailableToAll { get; }
+
+        /// <summary>
+        /// An interface type to use instead of this type when determing the public instance 
+        /// members of this resource type. The resource type must implement this interface.
+        /// </summary>
+        Type InterfaceType { get; }
     }
 
     /// <summary>

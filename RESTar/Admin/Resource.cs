@@ -171,7 +171,8 @@ namespace RESTar.Admin
                 var iresource = resource.IResource;
                 if (resource.Alias != iresource.Alias)
                 {
-                    iresource.Alias = resource.Alias;
+                    var iresourceInternal = (IResourceInternal) iresource;
+                    iresourceInternal.SetAlias(resource.Alias);
                     updated = true;
                 }
 

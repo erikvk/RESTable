@@ -1,3 +1,4 @@
-﻿namespace RESTar {
+﻿namespace RESTar
+{
     internal class DynamicTableAttribute : ResourceProviderAttribute { }
 }

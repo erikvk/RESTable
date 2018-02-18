@@ -122,11 +122,10 @@ namespace RESTar.Internal
 
         internal static bool IsValid(IEntityResource resource, out string reason)
         {
-            var item = resource.Type;
-            if (item.HasAttribute<RESTarAttribute>(out var a) && a.Interface is Type i)
+            if (resource.InterfaceType != null)
             {
-                var interfaceName = i.FullName?.Replace('+', '.');
-                var members = i.GetDeclaredProperties();
+                var interfaceName = resource.InterfaceType.FullName?.Replace('+', '.');
+                var members = resource.InterfaceType.GetDeclaredProperties();
                 if (members.ContainsKey("objectno"))
                 {
                     reason = $"Invalid Interface '{interfaceName}' assigned to resource '{resource.Name}'. " +

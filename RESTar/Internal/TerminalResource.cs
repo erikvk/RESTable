@@ -20,7 +20,7 @@ namespace RESTar.Internal
         public string Name { get; }
         public Type Type { get; }
         public IReadOnlyList<Methods> AvailableMethods { get; set; }
-        public string Alias { get; set; }
+        public string Alias { get; private set; }
         public bool IsInternal { get; }
         public bool IsGlobal { get; }
         public bool IsInnerResource { get; }
@@ -38,6 +38,8 @@ namespace RESTar.Internal
         public Selector<ITerminal> Select { get; }
         public IReadOnlyDictionary<string, DeclaredProperty> Members { get; }
         private Constructor<ITerminal> Constructor { get; }
+        public void SetAlias(string alias) => Alias = alias;
+        public Type InterfaceType { get; }
 
         internal void InstantiateFor(IWebSocketInternal webSocket, IEnumerable<UriCondition> assignments = null)
         {
@@ -86,6 +88,7 @@ namespace RESTar.Internal
             IsInternal = false;
             IsGlobal = true;
             var attribute = type.GetAttribute<RESTarAttribute>();
+            InterfaceType = attribute?.Interface;
             ConditionBindingRule = type.Implements(typeof(IDynamicTerminal))
                 ? DeclaredWithDynamicFallback
                 : OnlyDeclared;
