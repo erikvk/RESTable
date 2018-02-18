@@ -4,7 +4,7 @@ namespace RESTar.Deflection.IL
 {
     internal sealed class MatchContext
     {
-        internal Instruction instruction;
+        internal Instruction Instruction;
         private readonly Dictionary<object, object> data = new Dictionary<object, object>();
         internal bool success;
 
@@ -20,10 +20,10 @@ namespace RESTar.Deflection.IL
 
         internal void Reset(Instruction instruction)
         {
-            this.instruction = instruction;
+            Instruction = instruction;
             success = true;
         }
 
-        internal void Advance() => instruction = instruction.Next;
+        internal void Advance() => Instruction = Instruction.Next;
     }
 }

@@ -73,12 +73,12 @@ namespace RESTar.Deflection.IL
 
             public override void Match(MatchContext context)
             {
-                if (context.instruction == null)
+                if (context.Instruction == null)
                 {
                     context.success = false;
                     return;
                 }
-                context.success = context.instruction.OpCode == opcode;
+                context.success = context.Instruction.OpCode == opcode;
                 context.Advance();
             }
         }
@@ -104,11 +104,11 @@ namespace RESTar.Deflection.IL
         }
 
         public abstract void Match(MatchContext context);
-        protected static Instruction GetLastMatchingInstruction(MatchContext context) => context.instruction?.Previous;
+        protected static Instruction GetLastMatchingInstruction(MatchContext context) => context.Instruction?.Previous;
 
         public bool TryMatch(MatchContext context)
         {
-            var instruction = context.instruction;
+            var instruction = context.Instruction;
             Match(context);
             if (context.success)
                 return true;

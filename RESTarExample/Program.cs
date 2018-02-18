@@ -107,7 +107,7 @@ namespace RESTarExample
             set => MyDateTime = value;
         }
 
-        bool IVersion1.Objectbo => !objo;
+        public bool Objectbo => !objo;
 
         #endregion
     }

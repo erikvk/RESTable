@@ -95,10 +95,14 @@ namespace RESTar.Deflection.Dynamic
                             .TargetMethods
                             .GroupBy(m =>
                             {
-                                if (m.Name.StartsWith($"{interfaceName}.get_"))
+                                if (m.IsPrivate && m.Name.StartsWith($"{interfaceName}.get_"))
                                     return m.Name.Split(interfaceName + ".get_")[1];
-                                if (m.Name.StartsWith($"{interfaceName}.set_"))
+                                if (m.IsPrivate && m.Name.StartsWith($"{interfaceName}.set_"))
                                     return m.Name.Split(interfaceName + ".set_")[1];
+                                if (m.Name.StartsWith("get_"))
+                                    return m.Name.Split("get_")[1];
+                                if (m.Name.StartsWith("set_"))
+                                    return m.Name.Split("set_")[1];
                                 throw new Exception("Invalid interface");
                             })
                             .ToDictionary(m => m.Key, m => (
