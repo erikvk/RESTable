@@ -125,16 +125,17 @@ namespace RESTar.Internal
             var item = resource.Type;
             if (item.HasAttribute<RESTarAttribute>(out var a) && a.Interface is Type i)
             {
+                var interfaceName = i.FullName?.Replace('+', '.');
                 var members = i.GetDeclaredProperties();
                 if (members.ContainsKey("objectno"))
                 {
-                    reason = $"Invalid Interface '{i.FullName}' assigned to resource '{resource.Name}'. " +
+                    reason = $"Invalid Interface '{interfaceName}' assigned to resource '{resource.Name}'. " +
                              "Interface contained a property with a reserved name: 'ObjectNo'";
                     return false;
                 }
                 if (members.ContainsKey("objectid"))
                 {
-                    reason = $"Invalid Interface '{i.FullName}' assigned to resource '{resource.Name}'. " +
+                    reason = $"Invalid Interface '{interfaceName}' assigned to resource '{resource.Name}'. " +
                              "Interface contained a property with a reserved name: 'ObjectID'";
                     return false;
                 }

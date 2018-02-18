@@ -83,7 +83,7 @@ namespace RESTarExample
             string _ICanCallThisWhateverString { get; }
             int __ThisIsMyINt { get; set; }
             DateTime AndTheDateTime_ffs { get; set; }
-            bool ObjectNo { get; }
+            bool Objectbo { get; }
         }
 
         string IVersion1._ICanCallThisWhateverString
@@ -107,7 +107,7 @@ namespace RESTarExample
             set => MyDateTime = value;
         }
 
-        bool IVersion1.ObjectNo => !objo;
+        bool IVersion1.Objectbo => !objo;
 
         #endregion
     }
