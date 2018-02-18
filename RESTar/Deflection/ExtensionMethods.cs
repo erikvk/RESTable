@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using Microsoft.CSharp.RuntimeBinder;
 using RESTar.Deflection.Dynamic;
 using Starcounter;
 
@@ -32,7 +33,7 @@ namespace RESTar.Deflection
                                 {
                                     return ((dynamic) getter)((dynamic) obj);
                                 }
-                                catch
+                                catch (RuntimeBinderException)
                                 {
                                     return p.GetValue(obj);
                                 }
@@ -66,7 +67,7 @@ namespace RESTar.Deflection
                                 {
                                     ((dynamic) setter)((dynamic) obj, value);
                                 }
-                                catch
+                                catch (RuntimeBinderException)
                                 {
                                     p.SetValue(obj, value);
                                 }
