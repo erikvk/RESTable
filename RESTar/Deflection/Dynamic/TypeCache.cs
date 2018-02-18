@@ -128,7 +128,7 @@ namespace RESTar.Deflection.Dynamic
                                     .Name;
                             }
                             return p;
-                        });
+                        }).If(_type.IsStarcounterDbClass, ps => ps.Union(GetObjectNoAndObjectID(false)));
                     case var _ when _type.Implements(typeof(ITerminal)):
                         return _type.GetProperties(Instance | Public)
                             .ParseDeclaredProperties(flag: false)
@@ -155,7 +155,7 @@ namespace RESTar.Deflection.Dynamic
 
             if (type?.FullName == null) return null;
             if (!DeclaredPropertyCache.TryGetValue(type, out var props))
-                props = DeclaredPropertyCache[type] = make(type).ToDictionary(p => p.Name, OrdinalIgnoreCase);
+                props = DeclaredPropertyCache[type] = make(type).SafeToDictionary(p => p.Name, OrdinalIgnoreCase);
             return props;
         }
 

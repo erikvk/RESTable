@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Linq;
 using RESTar.Admin;
+using RESTar.Deflection.Dynamic;
 using RESTar.Linq;
 using RESTar.Operations;
 using Starcounter;
 using Starcounter.Metadata;
-using static System.Reflection.BindingFlags;
 using static System.StringComparison;
 using static RESTar.Operators;
 
@@ -115,9 +115,39 @@ namespace RESTar.Internal
             {
                 var resourceSQLName = typeof(T).FullName;
                 var scColumns = Db.SQL<Column>(ColumnByTable, resourceSQLName).Select(c => c.Name).ToList();
-                var columns = typeof(T).GetProperties(Instance | Public).Where(p => scColumns.Contains(p.Name)).ToList();
+                var columns = r.Members.Values.Where(p => scColumns.Contains(p.Name)).ToList();
                 return rows.Sum(e => columns.Sum(p => p.ByteCount(e)) + 16);
             });
+        }
+
+        internal static bool IsValid(IEntityResource resource, out string reason)
+        {
+            var item = resource.Type;
+            if (item.HasAttribute<RESTarAttribute>(out var a) && a.Interface is Type i)
+            {
+                var members = i.GetDeclaredProperties();
+                if (members.ContainsKey("objectno"))
+                {
+                    reason = $"Invalid Interface '{i.FullName}' assigned to resource '{resource.Name}'. " +
+                             "Interface contained a property with a reserved name: 'ObjectNo'";
+                    return false;
+                }
+                if (members.ContainsKey("objectid"))
+                {
+                    reason = $"Invalid Interface '{i.FullName}' assigned to resource '{resource.Name}'. " +
+                             "Interface contained a property with a reserved name: 'ObjectID'";
+                    return false;
+                }
+            }
+
+            if (resource.Type.Implements(typeof(IProfiler<>)))
+            {
+                reason = $"Invalid IProfiler interface implementation for resource type '{resource.Name}'. " +
+                         "Starcounter database resources use their default profilers, and cannot implement IProfiler";
+                return false;
+            }
+            reason = null;
+            return true;
         }
     }
 }

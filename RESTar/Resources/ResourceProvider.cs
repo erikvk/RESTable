@@ -31,7 +31,8 @@ namespace RESTar.Resources
 
         /// <summary>
         /// The ReceiveClaimed method is called by RESTar once the resources provided
-        /// by this ResourceProvider have been added.
+        /// by this ResourceProvider have been added. Override this to provide additional 
+        /// logic once resources have been validated and set up.
         /// </summary>
         public virtual void ReceiveClaimed(ICollection<IEntityResource> claimedResources) { }
     }
@@ -97,13 +98,10 @@ namespace RESTar.Resources
 
         /// <summary>
         /// Override this method to add a validation step to the resource claim process. 
-        /// This validation will be run for all claimed types before their resources are 
-        /// created.
         /// </summary>
-        /// <param name="type">The type to check validity for</param>
+        /// <param name="resource">The resource to check validity for</param>
         /// <param name="reason">Return the reason for this Type not being valid</param>
-        /// <returns>True if and only if the resource type is valid</returns>
-        public virtual bool IsValid(Type type, out string reason)
+        public virtual bool IsValid(IEntityResource resource, out string reason)
         {
             reason = null;
             return true;
@@ -134,21 +132,21 @@ namespace RESTar.Resources
 
         internal override void MakeClaimRegular(IEnumerable<Type> types) => types.ForEach(type =>
         {
-            if (!IsValid(type, out var reason))
+            var resource = (IEntityResource) BuildRegularMethod.MakeGenericMethod(type).Invoke(this, null);
+            if (!IsValid(resource, out var reason))
                 throw new InvalidResourceDeclaration("An error was found in the declaration for resource " +
                                                      $"type '{type.FullName}': " + reason);
-            BuildRegularMethod.MakeGenericMethod(type).Invoke(this, null);
         });
 
         internal override void MakeClaimWrapped(IEnumerable<Type> types) => types.ForEach(type =>
         {
-            if (!IsValid(type, out var reason))
+            var resource = (IEntityResource) BuildWrapperMethod.MakeGenericMethod(type, type.GetWrappedType()).Invoke(this, null);
+            if (!IsValid(resource, out var reason))
                 throw new InvalidResourceDeclaration("An error was found in the declaration for wrapper resource " +
                                                      $"type '{type.FullName}': " + reason);
-            BuildWrapperMethod.MakeGenericMethod(type, type.GetWrappedType()).Invoke(this, null);
         });
 
-        private void BuildRegularResource<TResource>()
+        private IEntityResource BuildRegularResource<TResource>()
             where TResource : class, TBase => new Internal.EntityResource<TResource>
         (
             fullName: typeof(TResource).FullName,
@@ -164,7 +162,7 @@ namespace RESTar.Resources
             provider: this
         );
 
-        private void BuildWrapperResource<TWrapper, TWrapped>()
+        private IEntityResource BuildWrapperResource<TWrapper, TWrapped>()
             where TWrapper : ResourceWrapper<TWrapped>
             where TWrapped : class, TBase => new Internal.EntityResource<TWrapped>
         (

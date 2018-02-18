@@ -21,7 +21,7 @@ namespace RESTar.Resources
         public override Deleter<T> GetDefaultDeleter<T>() => throw new NotImplementedException();
         public override Counter<T> GetDefaultCounter<T>() => throw new NotImplementedException();
         public override Profiler<T> GetProfiler<T>() => throw new NotImplementedException();
-
+        
         private readonly MethodInfo DynamicBuilderMethod;
 
         internal DynamicResourceProvider()

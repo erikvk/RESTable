@@ -27,8 +27,6 @@ namespace RESTar.Requests
         /// <inheritdoc />
         public string ProtocolIdentifier { get; } = "restar";
 
-        internal DefaultProtocolProvider() { }
-
         /// <inheritdoc />
         public void ParseQuery(string query, URI uri)
         {

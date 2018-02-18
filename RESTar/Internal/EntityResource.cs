@@ -42,6 +42,7 @@ namespace RESTar.Internal
         public TermBindingRules OutputBindingRule { get; }
         public bool RequiresAuthentication => Authenticate != null;
         public bool GETAvailableToAll { get; }
+        public IReadOnlyDictionary<string, DeclaredProperty> Members { get; }
 
         /// <inheritdoc />
         /// <summary>
@@ -142,6 +143,7 @@ namespace RESTar.Internal
             IsDDictionary = typeof(T).IsDDictionary();
             IsDynamic = IsDDictionary || typeof(T).IsSubclassOf(typeof(JObject)) || typeof(IDictionary).IsAssignableFrom(typeof(T));
             Provider = provider.GetProviderId();
+            Members = typeof(T).GetDeclaredProperties();
             Select = selector;
             Insert = inserter;
             Update = updater;
@@ -152,11 +154,7 @@ namespace RESTar.Internal
             if (views?.Any() == true)
             {
                 ViewDictionaryInternal = views.ToDictionary(v => v.Name, OrdinalIgnoreCase);
-                views.ForEach(view =>
-                {
-                    view.EntityResource = this;
-                    view.Type.GetDeclaredProperties();
-                });
+                views.ForEach(view => view.EntityResource = this);
             }
             CheckOperationsSupport();
             RESTarConfig.AddResource(this);

@@ -26,16 +26,7 @@ namespace RESTar.Resources
         public override Counter<T> GetDefaultCounter<T>() => DDictionaryOperations<T>.Count;
         public override Profiler<T> GetProfiler<T>() => DDictionaryOperations<T>.Profile;
 
-        public override bool IsValid(Type type, out string reason)
-        {
-            if (type.Implements(typeof(IProfiler<>)))
-            {
-                reason = $"Invalid IProfiler interface implementation for resource type '{type.FullName}'. " +
-                         "Starcounter resources use their default profilers, and cannot implement IProfiler";
-                return false;
-            }
-            reason = null;
-            return true;
-        }
+        public override bool IsValid(IEntityResource resource, out string reason) =>
+            StarcounterOperations<object>.IsValid(resource, out reason);
     }
 }

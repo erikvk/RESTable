@@ -74,6 +74,8 @@ namespace RESTarExample
         public int MyInt { get; set; }
         public DateTime MyDateTime { get; set; }
 
+        public bool objo { get; }
+
         #region Version1 interface
 
         public interface IVersion1
@@ -81,6 +83,7 @@ namespace RESTarExample
             string _ICanCallThisWhateverString { get; }
             int __ThisIsMyINt { get; set; }
             DateTime AndTheDateTime_ffs { get; set; }
+            bool ObjectNo { get; }
         }
 
         string IVersion1._ICanCallThisWhateverString
@@ -95,7 +98,6 @@ namespace RESTarExample
             {
                 MyDateTime = DateTime.MaxValue;
                 MyInt = value;
-                MyString = "ASDO";
             }
         }
 
@@ -104,6 +106,8 @@ namespace RESTarExample
             get => MyDateTime;
             set => MyDateTime = value;
         }
+
+        bool IVersion1.ObjectNo => !objo;
 
         #endregion
     }

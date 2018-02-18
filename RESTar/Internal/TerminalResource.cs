@@ -36,28 +36,24 @@ namespace RESTar.Internal
         public override int GetHashCode() => Name.GetHashCode();
         public IReadOnlyList<IEntityResource> InnerResources { get; set; }
         public Selector<ITerminal> Select { get; }
-
+        public IReadOnlyDictionary<string, DeclaredProperty> Members { get; }
         private Constructor<ITerminal> Constructor { get; }
 
         internal void InstantiateFor(IWebSocketInternal webSocket, IEnumerable<UriCondition> assignments = null)
         {
             var newTerminal = Constructor();
-            if (assignments != null)
+            assignments?.ForEach(assignment =>
             {
-                var properties = Type.GetDeclaredProperties();
-                assignments.ForEach(assignment =>
+                if (assignment.Operator.OpCode != EQUALS)
+                    throw new BadConditionOperator(this, assignment.Operator);
+                if (!Members.TryGetValue(assignment.Key, out var property))
                 {
-                    if (assignment.Operator.OpCode != EQUALS)
-                        throw new BadConditionOperator(this, assignment.Operator);
-                    if (!properties.TryGetValue(assignment.Key, out var property))
-                    {
-                        if (newTerminal is IDynamicTerminal dynTerminal)
-                            dynTerminal[assignment.Key] = assignment.ValueLiteral.ParseConditionValue();
-                        else throw new UnknownProperty(Type, assignment.Key);
-                    }
-                    else property.SetValue(newTerminal, assignment.ValueLiteral.ParseConditionValue(property));
-                });
-            }
+                    if (newTerminal is IDynamicTerminal dynTerminal)
+                        dynTerminal[assignment.Key] = assignment.ValueLiteral.ParseConditionValue();
+                    else throw new UnknownProperty(Type, assignment.Key);
+                }
+                else property.SetValue(newTerminal, assignment.ValueLiteral.ParseConditionValue(property));
+            });
             newTerminal.WebSocket = webSocket;
             webSocket.Terminal = newTerminal;
             webSocket.TerminalResource = this;
@@ -95,6 +91,7 @@ namespace RESTar.Internal
                 : OnlyDeclared;
             Description = attribute?.Description;
             Select = null;
+            Members = type.GetDeclaredProperties();
             Constructor = type.MakeStaticConstructor<ITerminal>();
             GETAvailableToAll = attribute?.GETAvailableToAll == true;
             if (Name.Contains('+'))

@@ -128,12 +128,10 @@ namespace RESTar.Resources
                                 throw new InvalidResourceDeclaration(
                                     $"Invalid implementation of interface '{interfaceType.FullName}' assigned to resource '{type.FullName}'. " +
                                     "All interface-implemented properties must have explicit implementations in the resource type.");
-
                             var interfaceProperty = interfaceType
                                 .GetProperties()
                                 .First(p => p.GetGetMethod()?.Name is string getname && method.Name.EndsWith(getname) ||
                                             p.GetSetMethod()?.Name is string setname && method.Name.EndsWith(setname));
-
                             Type propertyType = null;
                             if (method.Name.StartsWith($"{interfaceName}.get_"))
                                 propertyType = method.ReturnType;

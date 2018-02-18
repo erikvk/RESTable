@@ -7,19 +7,16 @@ namespace RESTar.Resources
 {
     internal class StarcounterProvider : ResourceProvider<object>
     {
+        public override Type AttributeType => null;
+        internal StarcounterProvider() => DatabaseIndexer = new StarcounterIndexer();
+        internal override void Validate() { }
+        
         internal override bool Include(Type type)
         {
             if (type.IsWrapper())
                 return type.GetWrappedType().HasAttribute<DatabaseAttribute>() && !type.HasResourceProviderAttribute();
             return type.HasAttribute<DatabaseAttribute>() && !type.HasResourceProviderAttribute();
         }
-
-        internal override void Validate() { }
-
-        internal StarcounterProvider() => DatabaseIndexer = new StarcounterIndexer();
-
-        // ReSharper disable once UnassignedGetOnlyAutoProperty
-        public override Type AttributeType { get; }
 
         public override Selector<T> GetDefaultSelector<T>() => StarcounterOperations<T>.Select;
         public override Inserter<T> GetDefaultInserter<T>() => StarcounterOperations<T>.Insert;
@@ -28,16 +25,7 @@ namespace RESTar.Resources
         public override Counter<T> GetDefaultCounter<T>() => StarcounterOperations<T>.Count;
         public override Profiler<T> GetProfiler<T>() => StarcounterOperations<T>.Profile;
 
-        public override bool IsValid(Type type, out string reason)
-        {
-            if (type.Implements(typeof(IProfiler<>)))
-            {
-                reason = $"Invalid IProfiler interface implementation for resource type '{type.FullName}'. " +
-                         "Starcounter database resources use their default profilers, and cannot implement IProfiler";
-                return false;
-            }
-            reason = null;
-            return true;
-        }
+        public override bool IsValid(IEntityResource resource, out string reason) =>
+            StarcounterOperations<object>.IsValid(resource, out reason);
     }
 }

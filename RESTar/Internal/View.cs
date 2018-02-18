@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using RESTar.Deflection;
+using RESTar.Deflection.Dynamic;
 using RESTar.Operations;
 using static RESTar.Deflection.TermBindingRules;
 
@@ -44,12 +46,16 @@ namespace RESTar.Internal
         /// <inheritdoc />
         public IEntityResource EntityResource { get; internal set; }
 
+        /// <inheritdoc />
+        public IReadOnlyDictionary<string, DeclaredProperty> Members { get; }
+
         internal View(Type type)
         {
             Type = type;
             Name = type.Name;
             Select = DelegateMaker.GetDelegate<Selector<T>>(type);
             var viewAttribute = type.GetAttribute<RESTarViewAttribute>();
+            Members = type.GetDeclaredProperties();
             Description = viewAttribute.Description;
             ConditionBindingRule = viewAttribute.AllowDynamicConditions
                 ? DeclaredWithDynamicFallback

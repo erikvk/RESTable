@@ -512,6 +512,15 @@ namespace RESTar
             return dict.Contains(key) ? dict[key] : null;
         }
 
+        internal static Dictionary<TKey, T> SafeToDictionary<T, TKey>(this IEnumerable<T> source, Func<T, TKey> keySelector,
+            IEqualityComparer<TKey> equalityComparer)
+        {
+            var dictionary = new Dictionary<TKey, T>(equalityComparer);
+            foreach (var item in source)
+                dictionary[keySelector(item)] = item;
+            return dictionary;
+        }
+
         /// <summary>
         /// Gets the value of a key from an IDictionary, without case sensitivity, or null if the dictionary does 
         /// not contain the key. The actual key is returned in the actualKey out parameter.
@@ -789,9 +798,7 @@ namespace RESTar
                     }
                     return table;
                 default:
-                    var properties = resource.Type.GetDeclaredProperties().Values
-                        .Where(p => !p.Hidden)
-                        .ToList();
+                    var properties = resource.Members.Values.Where(p => !p.Hidden).ToList();
                     properties.ForEach(prop => table.Columns.Add(prop.MakeColumn()));
                     entities.ForEach(item =>
                     {
@@ -868,7 +875,7 @@ namespace RESTar
         internal static Dictionary<string, dynamic> MakeViewModelTemplate(this IEntityResource resource)
         {
             if (resource.IsDDictionary) return new Dictionary<string, dynamic>();
-            return resource.Type.GetDeclaredProperties().Values
+            return resource.Members.Values
                 .Where(p => !p.Hidden || p is SpecialProperty)
                 .ToDictionary(p => p.ViewModelName, p => p.Type.MakeViewModelDefault(p));
         }

@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using Newtonsoft.Json.Linq;
-using RESTar.Deflection.Dynamic;
 using RESTar.Internal;
 using RESTar.Linq;
 using static RESTar.Methods;
@@ -33,7 +32,7 @@ namespace RESTar.Admin
             var res = RESTar.Resource.Find(resourceName) as IEntityResource;
             if (res?.IsDynamic != false) return null;
             var schema = new Schema();
-            res.Type.GetDeclaredProperties().Values.ForEach(p => schema[p.Name] = p.Type.FullName);
+            res.Members.Values.ForEach(p => schema[p.Name] = p.Type.FullName);
             return new[] {schema};
         }
     }
