@@ -113,6 +113,7 @@
     <Compile Include="Logging\HTTPEvent.cs" />
     <Compile Include="Logging\WebSocketEvent.cs" />
     <Compile Include="Operations\Search.cs" />
+    <Compile Include="ResourceTemplates\Options.cs" />
     <Compile Include="Results\Error\InvalidProtocolProvider.cs" />
     <Compile Include="Results\Error\InvalidReferencedEnumDeclaration.cs" />
     <Compile Include="Results\Error\NotFound\UnknownEntityResource.cs" />

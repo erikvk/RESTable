@@ -35,7 +35,7 @@ namespace RESTar.Requests
                     if (result is WebSocketResult webSocketResult)
                     {
                         if (!webSocketResult.LeaveOpen)
-                            connection.WebSocket.Disconnect();
+                            connection.WebSocketInternal.Disconnect();
                         return HandlerStatus.Handled;
                     }
                     return result.ToResponse();

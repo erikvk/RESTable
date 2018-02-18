@@ -32,7 +32,6 @@ namespace RESTar.Admin
 
         private IWebSocketInternal WebSocketInternal;
         
-
         #region Terminal
 
         public void Open()
@@ -71,7 +70,7 @@ namespace RESTar.Admin
                 case "DISCONNECT":
                 case "CLOSE":
                     WebSocket.SendText("Status: CLOSED\n");
-                    WebSocket.Disconnect();
+                    WebSocket.SendToShell();
                     break;
                 case var unrecognized:
                     WebSocket.SendText($"Unknown command '{unrecognized}'");

@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using RESTar.Internal;
 using RESTar.Requests;
 
 namespace RESTar
@@ -51,9 +52,16 @@ namespace RESTar
         Headers Headers { get; }
 
         /// <summary>
-        /// Disconnects the WebSocket
+        /// Closes the current terminal (if any) and sends the WebSocket to the Shell terminal. Use this to quit from a 
+        /// terminal resource.
         /// </summary>
-        void Disconnect();
+        void SendToShell();
+
+        /// <summary>
+        /// Closes the current terminal (if any) and sends the WebSocket to the provided terminal. Use this to quit from a 
+        /// terminal resource and open another terminal instead.
+        /// </summary>
+        void SendTo(ITerminalResource terminalResource);
 
         /// <summary>
         /// The current status of this WebSocket

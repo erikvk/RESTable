@@ -80,7 +80,7 @@ namespace RESTar.Internal
             Shell.TerminalResource = (TerminalResource) TerminalResource<Shell>.Get;
         }
 
-        public TerminalResource(Type type)
+        private TerminalResource(Type type)
         {
             Name = type.FullName ?? throw new Exception();
             Type = type;

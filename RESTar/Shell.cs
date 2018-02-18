@@ -58,7 +58,8 @@ namespace RESTar
         private System.Action OnConfirm;
         private IEntitiesMetadata PreviousResultMetadata;
 
-        public IWebSocket WebSocket { get; set; }
+        public IWebSocket WebSocket { private get; set; }
+        private IWebSocketInternal WebSocketInternal => (IWebSocketInternal) WebSocket;
         public void HandleBinaryInput(byte[] input) => throw new NotImplementedException();
         public bool SupportsTextInput { get; } = true;
         public bool SupportsBinaryInput { get; } = false;
@@ -306,8 +307,7 @@ namespace RESTar
 
         private void SendResult(IFinalizedResult result)
         {
-            var webSocketInternal = (IWebSocketInternal) WebSocket;
-            webSocketInternal.SendResult(result, WriteStatusBeforeContent);
+            WebSocketInternal.SendResult(result, WriteStatusBeforeContent);
             if (!WriteQueryAfterContent) return;
             switch (result)
             {
@@ -338,7 +338,7 @@ namespace RESTar
         {
             if (!WriteInfoTexts) return;
             WebSocket.SendText("### Closing the RESTar WebSocket shell... ###");
-            WebSocket.Disconnect();
+            WebSocketInternal.Disconnect();
         }
 
         private void SendHelp() => WebSocket.SendText(

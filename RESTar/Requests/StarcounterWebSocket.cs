@@ -46,6 +46,15 @@ namespace RESTar.Requests
         public Headers Headers { get; }
         public WebSocketStatus Status { get; private set; }
         public ConnectionProfile GetConnectionProfile() => new ConnectionProfile(this);
+        public void SendToShell() => Shell.TerminalResource.InstantiateFor(this);
+
+        public void SendTo(ITerminalResource terminalResource)
+        {
+            if (terminalResource == null)
+                throw new ArgumentNullException(nameof(terminalResource));
+            var _terminalResource = (TerminalResource) terminalResource;
+            _terminalResource.InstantiateFor(this);
+        }
 
         #region Interface
 

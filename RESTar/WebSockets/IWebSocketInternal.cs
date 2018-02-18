@@ -16,6 +16,7 @@ namespace RESTar.WebSockets
         void HandleTextInput(string textData);
         void HandleBinaryInput(byte[] binaryData);
         void SendTextRaw(string textData);
+        void Disconnect();
 
         /// <summary>
         /// Sends a result over the WebSocket. Send calls to a closed WebSocket will be queued and sent 

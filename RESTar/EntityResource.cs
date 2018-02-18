@@ -178,13 +178,13 @@ namespace RESTar
         /// Gets the terminal resource for a given type, and throws an UnknownResource exception 
         /// if there is no such resource
         /// </summary>
-        public static IResource<ITerminal> Get => Resource.Get(typeof(T).FullName) as IResource<ITerminal>
-                                                  ?? throw new UnknownResource(typeof(T).FullName);
+        public static ITerminalResource Get => Resource.Get(typeof(T).FullName) as ITerminalResource
+                                               ?? throw new UnknownResource(typeof(T).FullName);
 
         /// <summary>
         /// Gets the terminal resource for a given type or null if there is no such resource
         /// </summary>
-        public static IResource<ITerminal> SafeGet => Resource.SafeGet(typeof(T).FullName) as IResource<ITerminal>;
+        public static ITerminalResource SafeGet => Resource.SafeGet(typeof(T).FullName) as ITerminalResource;
 
         /// <summary>
         /// Gets the resource specifier for a given terminal resource
