@@ -347,7 +347,7 @@ namespace RESTar
                     foreach (DictionaryEntry pair in idict)
                         _jobj[pair.Key.ToString()] = pair.Value == null
                             ? null
-                            : JToken.FromObject(pair.Value, Serializer.Json);
+                            : JToken.FromObject(pair.Value, Serializers.Json);
                     return _jobj;
             }
 
@@ -359,7 +359,7 @@ namespace RESTar
                 .ForEach(prop =>
                 {
                     object val = prop.GetValue(entity);
-                    jobj[prop.Name] = val?.ToJToken();
+                    jobj[prop.Name] = val == null ? null : JToken.FromObject(val, Serializers.Json);
                 });
             return jobj;
         }

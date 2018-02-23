@@ -10,7 +10,7 @@ using RESTar.Results.Error;
 using RESTar.Results.Error.BadRequest;
 using RESTar.Results.Error.BadRequest.Aborted;
 using RESTar.Results.Success;
-using static RESTar.Serialization.Serializer;
+using RESTar.Serialization;
 
 namespace RESTar.Operations
 {
@@ -337,7 +337,7 @@ namespace RESTar.Operations
                 {
                     var updated = items.Select(item =>
                     {
-                        Populate(item.json, item.source);
+                        Serializers.Json.Populate(item.json, item.source);
                         return item.source;
                     }).ToList();
                     if (request.Resource.RequiresValidation)
@@ -510,9 +510,9 @@ namespace RESTar.Operations
 
         internal static class View
         {
-//            internal static int POST(ViewRequest<T> request) => INSERT_ONE(request);
-//            internal static int PATCH(ViewRequest<T> request, T item) => UPDATE_ONE(request, item);
-//            internal static int DELETE(ViewRequest<T> request, T item) => OP_DELETE_ONE(request, item);
+            //            internal static int POST(ViewRequest<T> request) => INSERT_ONE(request);
+            //            internal static int PATCH(ViewRequest<T> request, T item) => UPDATE_ONE(request, item);
+            //            internal static int DELETE(ViewRequest<T> request, T item) => OP_DELETE_ONE(request, item);
         }
 
         internal static class App

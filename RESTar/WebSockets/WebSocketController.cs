@@ -30,7 +30,7 @@ namespace RESTar.WebSockets
                         try
                         {
                             var profile = webSocket.GetConnectionProfile();
-                            Serializer.Populate(json, profile);
+                            Serializers.Json.Populate(json, profile);
                             webSocket.SendText("Profile updated");
                             webSocket.SendJson(webSocket.GetConnectionProfile());
                         }
@@ -45,7 +45,7 @@ namespace RESTar.WebSockets
                     case "#TERMINAL" when tail is string json:
                         try
                         {
-                            Serializer.Populate(json, webSocket.Terminal);
+                            Serializers.Json.Populate(json, webSocket.Terminal);
                             webSocket.SendText("Terminal updated");
                             webSocket.SendJson(webSocket.Terminal);
                         }

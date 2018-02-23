@@ -63,7 +63,7 @@ namespace RESTar.Requests
             get => uri;
             private set
             {
-                Body = Body.HasContent ? Body : new Body(value?.Macro?.BodyBinary.ToArray(), "application/json", Serializer.JsonProvider);
+                Body = Body.HasContent ? Body : new Body(value?.Macro?.BodyBinary.ToArray(), "application/json", Serializers.Json);
                 value?.Macro?.HeadersDictionary?.ForEach(pair =>
                 {
                     var currentValue = Headers.SafeGet(pair.Key);

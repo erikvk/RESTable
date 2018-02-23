@@ -1,10 +1,4 @@
-﻿using System.IO;
-using Newtonsoft.Json;
-using RESTar.Admin;
-using RESTar.Serialization;
-using RESTar.Serialization.NativeProtocol;
-
-namespace RESTar.Results.Success
+﻿namespace RESTar.Results.Success
 {
     internal class ReportBody
     {
@@ -24,15 +18,6 @@ namespace RESTar.Results.Success
         {
             Request = request;
             ReportBody = new ReportBody {Count = count};
-            Headers["RESTar-count"] = count.ToString();
-            Body = new MemoryStream();
-            using (var swr = new StreamWriter(Body, Serializer.UTF8, 1024, true))
-            using (var jwr = new RESTarJsonWriter(swr, 0))
-            {
-                Serializer.Json.Formatting = Settings._PrettyPrint ? Formatting.Indented : Formatting.None;
-                Serializer.Json.Serialize(jwr, new ReportBody {Count = count});
-            }
-            Body.Seek(0, SeekOrigin.Begin);
         }
     }
 }

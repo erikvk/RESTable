@@ -321,7 +321,7 @@
     <Compile Include="Serialization\NativeProtocol\FormatWriter.cs" />
     <Compile Include="Serialization\NativeProtocol\RESTarFromExcelJsonWriter.cs" />
     <Compile Include="Serialization\NativeProtocol\RESTarJsonWriter.cs" />
-    <Compile Include="Serialization\Serializer.cs" />
+    <Compile Include="Serialization\Serializers.cs" />
     <Compile Include="SetOperations.cs" />
     <Compile Include="Internal\StarcounterOperations.cs" />
     <Compile Include="Operations\Select.cs" />

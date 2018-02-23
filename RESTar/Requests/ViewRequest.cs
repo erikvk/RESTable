@@ -5,17 +5,11 @@ using System.Text.RegularExpressions;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using RESTar.Internal;
-using RESTar.Linq;
-using RESTar.Operations;
 using RESTar.Results.Error.Forbidden;
 using RESTar.Results.Error.NotFound;
-using RESTar.Serialization;
 using RESTar.View;
 using Starcounter;
 using static RESTar.Methods;
-using static RESTar.Internal.ErrorCodes;
-using static RESTar.View.MessageTypes;
-using static Starcounter.Templates.Template;
 
 namespace RESTar.Requests
 {
@@ -74,42 +68,42 @@ namespace RESTar.Requests
 
         internal void Evaluate()
         {
-            if (MetaConditions.New)
-            {
-                IsTemplate = true;
-                var itemView = new Item {Request = this};
-                var itemTemplate = Resource.MakeViewModelTemplate().Serialize();
-                itemView.Entity = new Json {Template = CreateFromJson(itemTemplate)};
-                DataView = itemView;
-                return;
-            }
+            // if (MetaConditions.New)
+            // {
+            //     IsTemplate = true;
+            //     var itemView = new Item {Request = this};
+            //     var itemTemplate = Resource.MakeViewModelTemplate().Serialize();
+            //     itemView.Entity = new Json {Template = CreateFromJson(itemTemplate)};
+            //     DataView = itemView;
+            //     return;
+            // }
 
-            var domain = Operations<T>.SELECT_VIEW(this)?.ToList();
-            Entities = domain?.Filter(MetaConditions.Offset).Filter(MetaConditions.Limit).ToList();
-            if (Entities?.Any() != true || domain == null)
-            {
-                DataView?.SetMessage("No entities found", NoError, warning);
-                return;
-            }
-
-            if (Resource.IsSingleton || Entities.Count == 1 && !Home)
-            {
-                Entity = Entities?[0];
-                var itemView = new Item {Request = this};
-                var itemTemplate = Resource.MakeViewModelTemplate().Serialize();
-                itemView.Entity = new Json {Template = CreateFromJson(itemTemplate)};
-                itemView.Entity.PopulateFromJson(Entity.SerializeToViewModel());
-                DataView = itemView;
-            }
-            else
-            {
-                var listView = new List {Request = this};
-                CanInsert = Resource.AvailableMethods.Contains(POST);
-                var listTemplate = Resource.MakeViewModelTemplate();
-                listView.Entities = new Arr<Json> {Template = CreateFromJson($"[{listTemplate.Serialize()}]")};
-                Entities.ForEach(e => listView.Entities.Add().PopulateFromJson(e.SerializeToViewModel()));
-                DataView = listView;
-            }
+            // var domain = Operations<T>.SELECT_VIEW(this)?.ToList();
+            // Entities = domain?.Filter(MetaConditions.Offset).Filter(MetaConditions.Limit).ToList();
+            // if (Entities?.Any() != true || domain == null)
+            // {
+            //     DataView?.SetMessage("No entities found", NoError, warning);
+            //     return;
+            // }
+            // 
+            // if (Resource.IsSingleton || Entities.Count == 1 && !Home)
+            // {
+            //     Entity = Entities?[0];
+            //     var itemView = new Item {Request = this};
+            //     var itemTemplate = Resource.MakeViewModelTemplate().Serialize();
+            //     itemView.Entity = new Json {Template = CreateFromJson(itemTemplate)};
+            //     itemView.Entity.PopulateFromJson(Entity.SerializeToViewModel());
+            //     DataView = itemView;
+            // }
+            // else
+            // {
+            //     var listView = new List {Request = this};
+            //     CanInsert = Resource.AvailableMethods.Contains(POST);
+            //     var listTemplate = Resource.MakeViewModelTemplate();
+            //     listView.Entities = new Arr<Json> {Template = CreateFromJson($"[{listTemplate.Serialize()}]")};
+            //     Entities.ForEach(e => listView.Entities.Add().PopulateFromJson(e.SerializeToViewModel()));
+            //     DataView = listView;
+            // }
 
             // TODO: Add pager here
         }

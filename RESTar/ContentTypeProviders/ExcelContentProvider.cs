@@ -7,7 +7,6 @@ using RESTar.Internal;
 using RESTar.Results.Error.BadRequest;
 using RESTar.Serialization.NativeProtocol;
 using static System.Linq.Enumerable;
-using static RESTar.Serialization.Serializer;
 
 namespace RESTar.ContentTypeProviders
 {
@@ -17,8 +16,6 @@ namespace RESTar.ContentTypeProviders
         private const string ExcelMimeType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
         private const string RESTarSpecific = "application/restar-excel";
         private const string Brief = "excel";
-
-        private JsonContentProvider JsonProvider = new JsonContentProvider();
 
         /// <inheritdoc />
         public override ContentType[] CanWrite() => new ContentType[] {ExcelMimeType, RESTarSpecific, Brief};

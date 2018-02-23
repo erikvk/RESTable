@@ -127,8 +127,8 @@ namespace RESTar.Requests
             OutputContentTypeProviders = new Dictionary<string, IContentTypeProvider>(StringComparer.OrdinalIgnoreCase);
             contentTypeProviders = contentTypeProviders ?? new List<IContentTypeProvider>();
             contentTypeProviders.Insert(0, new XMLWriter());
-            contentTypeProviders.Insert(0, Serializer.ExcelProvider);
-            contentTypeProviders.Insert(0, Serializer.JsonProvider);
+            contentTypeProviders.Insert(0, Serializers.Excel);
+            contentTypeProviders.Insert(0, Serializers.Json);
             foreach (var provider in contentTypeProviders)
             {
                 ValidateContentTypeProvider(provider);

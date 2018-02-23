@@ -7,13 +7,10 @@ using RESTar.Operations;
 using RESTar.Results.Error;
 using RESTar.Results.Success;
 using RESTar.Serialization;
-using RESTar.Serialization.NativeProtocol;
 using RESTar.WebSockets;
 using Starcounter;
 using static Newtonsoft.Json.Formatting;
-using static RESTar.Admin.Settings;
 using static RESTar.Logging.LogEventType;
-using static RESTar.Serialization.Serializer;
 using Console = RESTar.Admin.Console;
 
 namespace RESTar.Requests
@@ -195,15 +192,7 @@ namespace RESTar.Requests
 
         public void SendJson(object item, bool? prettyPrint = null)
         {
-            var stream = new MemoryStream();
-            using (var swr = new StreamWriter(stream, UTF8, 1024, true))
-            using (var jwr = new RESTarJsonWriter(swr, 0))
-            {
-                var _prettyPrint = prettyPrint ?? _PrettyPrint;
-                Serializer.Json.Formatting = _prettyPrint ? Indented : None;
-                Serializer.Json.Serialize(jwr, item);
-            }
-            stream.Seek(0, SeekOrigin.Begin);
+            var stream = Serializers.Json.SerializeStream(item, prettyPrint != null ? Indented : default(Newtonsoft.Json.Formatting?));
             _SendBinary(stream.ToArray(), true);
         }
 

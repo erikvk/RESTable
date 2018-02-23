@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using RESTar.Results.Error.BadRequest;
 
 namespace RESTar.ContentTypeProviders
@@ -15,6 +16,11 @@ namespace RESTar.ContentTypeProviders
     public abstract class JsonAdapterProvider : IContentTypeProvider
     {
         private readonly JsonContentProvider JsonProvider = new JsonContentProvider();
+
+        /// <summary>
+        /// The RESTar default UTF8 encoding. An UTF8 encoding without BOM.
+        /// </summary>
+        protected static readonly Encoding UTF8 = RESTarConfig.DefaultEncoding;
 
         /// <inheritdoc />
         public abstract ContentType[] CanWrite();

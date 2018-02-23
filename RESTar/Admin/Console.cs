@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Linq;
 using System.Text;
-using Newtonsoft.Json;
 using RESTar.Linq;
 using RESTar.Logging;
 using RESTar.Serialization;
@@ -31,7 +30,7 @@ namespace RESTar.Admin
         public bool ShowWelcomeText { get; set; } = true;
 
         private IWebSocketInternal WebSocketInternal;
-        
+
         #region Terminal
 
         public void Open()
@@ -126,7 +125,7 @@ namespace RESTar.Admin
                                 item.In.Content = initial.LogContent;
                                 item.Out.Content = final.LogContent;
                             }
-                            var json = JsonConvert.SerializeObject(item, Indented, Serializer.Settings);
+                            var json = Serializers.Json.Serialize(item, Indented);
                             c.WebSocketInternal.SendTextRaw(json);
                         });
                         break;
@@ -163,7 +162,7 @@ namespace RESTar.Admin
                                 item.CustomHeaders = logable.Headers;
                             if (c.IncludeContent)
                                 item.Content = logable.LogContent;
-                            var json = JsonConvert.SerializeObject(item, Indented, Serializer.Settings);
+                            var json = Serializers.Json.Serialize(item, Indented);
                             c.WebSocketInternal.SendTextRaw(json);
                         });
                         break;

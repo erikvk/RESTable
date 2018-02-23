@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml;
 using Dynamit;
@@ -42,6 +43,7 @@ namespace RESTar
         private static string ConfigFilePath { get; set; }
         internal static bool Initialized { get; private set; }
         internal static readonly Methods[] Methods = {GET, POST, PATCH, PUT, DELETE, REPORT, HEAD};
+        internal static readonly Encoding DefaultEncoding = new UTF8Encoding(false);
 
         static RESTarConfig() => NewState();
 

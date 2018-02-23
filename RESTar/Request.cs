@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using RESTar.ContentTypeProviders;
 using RESTar.Deflection.Dynamic;
 using RESTar.Internal;
 using RESTar.Linq;
@@ -103,7 +102,7 @@ namespace RESTar
         /// </summary>
         public object Body
         {
-            set => _body = new Body(JsonContentProvider.SerializeToBytes(value), "application/json", Serializer.JsonProvider);
+            set => _body = new Body(Serializers.Json.SerializeToBytes(value), "application/json", Serializers.Json);
         }
 
         /// <inheritdoc />
@@ -216,7 +215,7 @@ namespace RESTar
         /// <returns></returns>
         public (Stream excel, ulong nrOfRows) GETExcel()
         {
-            var stream = Serializer.ExcelProvider.SerializeCollection("excel", GET(), this, out var count);
+            var stream = Serializers.Excel.SerializeCollection("excel", GET(), this, out var count);
             return (stream, count);
         }
 
