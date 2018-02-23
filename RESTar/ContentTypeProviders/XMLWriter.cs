@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using Newtonsoft.Json;
 
 namespace RESTar.ContentTypeProviders
@@ -21,31 +22,35 @@ namespace RESTar.ContentTypeProviders
         /// <inheritdoc />
         public string GetContentDispositionFileExtension(ContentType contentType) => ".xml";
 
-        private readonly JsonContentProvider JsonProvider = new JsonContentProvider();
+        private static readonly JsonContentProvider JsonProvider;
+        private static readonly byte[] XMLHeader;
+
+        static XMLWriter()
+        {
+            JsonProvider = new JsonContentProvider();
+            XMLHeader = Encoding.UTF8.GetBytes("<?xml version=\"1.0\" encoding=\"utf-8\"?>");
+        }
 
         /// <inheritdoc />
         public Stream SerializeEntity<T>(ContentType accept, T entity, IRequest request) where T : class
         {
-            using (var stream = JsonProvider.SerializeEntity("application/json", entity, request))
-            using (var streamReader = new StreamReader(stream))
-            {
-                var json = streamReader.ReadToEnd();
-                var xml = JsonConvert.DeserializeXmlNode(json, "root", true);
-                var xmlStream = new MemoryStream();
-                xml.Save(xmlStream);
-                return xmlStream;
-            }
+            return XmlSerializeJsonStream(JsonProvider.SerializeEntity("application/json", entity, request));
         }
 
         /// <inheritdoc />
         public Stream SerializeCollection<T>(ContentType accept, IEnumerable<T> entities, IRequest request, out ulong entityCount) where T : class
         {
-            using (var stream = JsonProvider.SerializeCollection("application/json", entities, request, out entityCount))
-            using (var streamReader = new StreamReader(stream))
+            return XmlSerializeJsonStream(JsonProvider.SerializeCollection("application/json", entities, request, out entityCount));
+        }
+
+        private static Stream XmlSerializeJsonStream(Stream jsonStream)
+        {
+            using (var streamReader = new StreamReader(jsonStream))
             {
                 var json = $"{{\"entity\":{streamReader.ReadToEnd()}}}";
                 var xml = JsonConvert.DeserializeXmlNode(json, "root", true);
                 var xmlStream = new MemoryStream();
+                xmlStream.Write(XMLHeader, 0, XMLHeader.Length);
                 xml.Save(xmlStream);
                 xmlStream.Seek(0, SeekOrigin.Begin);
                 return xmlStream;
