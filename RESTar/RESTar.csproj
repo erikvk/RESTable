@@ -98,6 +98,7 @@
     <Compile Include="Admin\DbMacro.cs" />
     <Compile Include="ContentTypeProviders\ExcelContentProvider.cs" />
     <Compile Include="ContentTypeProviders\JsonAdapterProvider.cs" />
+    <Compile Include="ContentTypeProviders\XMLWriter.cs" />
     <Compile Include="Deflection\Dynamic\Field.cs" />
     <Compile Include="Deflection\Dynamic\Member.cs" />
     <Compile Include="Deflection\IL\ByteBuffer.cs" />

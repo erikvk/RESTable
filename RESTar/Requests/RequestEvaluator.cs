@@ -4,6 +4,7 @@ using System.Linq;
 using System.Net;
 using System.Text.RegularExpressions;
 using System.Web;
+using RESTar.ContentTypeProviders;
 using RESTar.Internal;
 using RESTar.Linq;
 using RESTar.Operations;
@@ -125,6 +126,7 @@ namespace RESTar.Requests
             InputContentTypeProviders = new Dictionary<string, IContentTypeProvider>(StringComparer.OrdinalIgnoreCase);
             OutputContentTypeProviders = new Dictionary<string, IContentTypeProvider>(StringComparer.OrdinalIgnoreCase);
             contentTypeProviders = contentTypeProviders ?? new List<IContentTypeProvider>();
+            contentTypeProviders.Insert(0, new XMLWriter());
             contentTypeProviders.Insert(0, Serializer.ExcelProvider);
             contentTypeProviders.Insert(0, Serializer.JsonProvider);
             foreach (var provider in contentTypeProviders)
