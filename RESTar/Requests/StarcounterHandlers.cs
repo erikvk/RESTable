@@ -93,11 +93,11 @@ namespace RESTar.Requests
             var response = new Response
             {
                 StatusCode = (ushort) result.StatusCode,
-                StatusDescription = result.StatusDescription,
-                ContentType = result.ContentType.ToString()
+                StatusDescription = result.StatusDescription
             };
             if (result.Body != null)
             {
+                response.ContentType = result.ContentType.ToString();
                 if (result.Body.CanSeek && result.Body.Length > 0)
                     response.StreamedBody = result.Body;
                 else
