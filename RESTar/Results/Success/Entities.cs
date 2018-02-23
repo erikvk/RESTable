@@ -24,7 +24,7 @@ namespace RESTar.Results.Success
         /// <summary>
         /// The number of entities in the result
         /// </summary>
-        public ulong EntityCount { get; internal set; }
+        public ulong EntityCount { get; set; }
 
         string IEntitiesMetadata.ResourceFullName => Request.Resource.Name;
         internal string ExternalDestination { get; set; }
