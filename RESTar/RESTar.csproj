@@ -96,6 +96,8 @@
     <Compile Include="Admin\Utilities.cs" />
     <Compile Include="Admin\Console.cs" />
     <Compile Include="Admin\DbMacro.cs" />
+    <Compile Include="ContentTypeProviders\ExcelContentProvider.cs" />
+    <Compile Include="ContentTypeProviders\JsonAdapterProvider.cs" />
     <Compile Include="Deflection\Dynamic\Field.cs" />
     <Compile Include="Deflection\Dynamic\Member.cs" />
     <Compile Include="Deflection\IL\ByteBuffer.cs" />
@@ -105,7 +107,9 @@
     <Compile Include="Deflection\IL\MatchContext.cs" />
     <Compile Include="Deflection\IL\MethodBodyReader.cs" />
     <Compile Include="Help.cs" />
+    <Compile Include="IContentTypeProvider.cs" />
     <Compile Include="IProtocolProvider.cs" />
+    <Compile Include="ContentTypeProviders\JsonContentProvider.cs" />
     <Compile Include="Logging\ConsoleFormat.cs" />
     <Compile Include="Logging\ConsoleStatus.cs" />
     <Compile Include="Logging\ILogable.cs" />
@@ -114,9 +118,11 @@
     <Compile Include="Logging\HTTPEvent.cs" />
     <Compile Include="Logging\WebSocketEvent.cs" />
     <Compile Include="Operations\Search.cs" />
+    <Compile Include="Requests\Body.cs" />
     <Compile Include="Resources\TerminalResourceProvider.cs" />
     <Compile Include="ResourceTemplates\Options.cs" />
     <Compile Include="Results\Error\InvalidProtocolProvider.cs" />
+    <Compile Include="Results\Error\InvalidContentTypeProvider.cs" />
     <Compile Include="Results\Error\InvalidReferencedEnumDeclaration.cs" />
     <Compile Include="Results\Error\NotFound\UnknownEntityResource.cs" />
     <Compile Include="Results\Error\NotFound\UnknownProtocol.cs" />
@@ -193,8 +199,8 @@
     <Compile Include="Resources\IResourceWrapper.cs" />
     <Compile Include="Resources\ResourceFactory.cs" />
     <Compile Include="Resources\ResourceProvider.cs" />
-    <Compile Include="Resources\DDictionaryProvider.cs" />
-    <Compile Include="Resources\StarcounterProvider.cs" />
+    <Compile Include="Resources\DDictResourceProvider.cs" />
+    <Compile Include="Resources\StarcounterResourceProvider.cs" />
     <Compile Include="Resources\VirtualResourceProvider.cs" />
     <Compile Include="Resources\ResourceWrapper.cs" />
     <Compile Include="ResourceKind.cs" />
@@ -214,7 +220,7 @@
     <Compile Include="IValidatable.cs" />
     <Compile Include="Operations\Limit.cs" />
     <Compile Include="Requests\MetaConditions.cs" />
-    <Compile Include="MimeTypes.cs" />
+    <Compile Include="ContentType.cs" />
     <Compile Include="Counter.cs" />
     <Compile Include="Internal\DynamicResource.cs" />
     <Compile Include="DynamitControl.cs" />
@@ -260,8 +266,6 @@
     <Compile Include="Results\Error\UnsupportedWebSocketInput.cs" />
     <Compile Include="Results\Error\UpgradeRequired.cs" />
     <Compile Include="Results\Error\NotFound\AmbiguousResource.cs" />
-    <Compile Include="Results\Error\BadRequest\ExcelFormatError.cs" />
-    <Compile Include="Results\Error\BadRequest\ExcelInputError.cs" />
     <Compile Include="Results\Error\InvalidExternalResourceProvider.cs" />
     <Compile Include="Results\Error\FeatureNotImplemented.cs" />
     <Compile Include="Results\Error\Forbidden\Forbidden.cs" />

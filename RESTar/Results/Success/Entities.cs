@@ -4,10 +4,12 @@ using RESTar.Requests;
 
 namespace RESTar.Results.Success
 {
+    /// <inheritdoc cref="OK" />
+    /// <inheritdoc cref="IEntitiesMetadata" />
     /// <summary>
     /// A result that contains a set of entities
     /// </summary>
-    public class Entities : OK, IEntitiesMetadata
+    public sealed class Entities : OK, IEntitiesMetadata
     {
         /// <summary>
         /// The request that this result was generated for
@@ -22,7 +24,7 @@ namespace RESTar.Results.Success
         /// <summary>
         /// The number of entities in the result
         /// </summary>
-        public ulong EntityCount { get; set; }
+        public ulong EntityCount { get; internal set; }
 
         string IEntitiesMetadata.ResourceFullName => Request.Resource.Name;
         internal string ExternalDestination { get; set; }

@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Web;
 using RESTar.Internal;
 using RESTar.Linq;
 using RESTar.Logging;
 using RESTar.Results.Error;
+using RESTar.Serialization;
 using IResource = RESTar.Internal.IResource;
 
 namespace RESTar.Requests
@@ -36,6 +38,8 @@ namespace RESTar.Requests
         List<UriCondition> MetaConditions { get; }
     }
 
+    /// <inheritdoc cref="ILogable" />
+    /// <inheritdoc cref="ITraceable" />
     /// <summary>
     /// A RESTar class that defines the arguments that are used when creating a RESTar request to evaluate 
     /// an incoming call. Arguments is a unified way to talk about the input to request evaluation, 
@@ -59,7 +63,7 @@ namespace RESTar.Requests
             get => uri;
             private set
             {
-                BodyBytes = BodyBytes ?? value?.Macro?.BodyBinary.ToArray();
+                Body = Body.HasContent ? Body : new Body(value?.Macro?.BodyBinary.ToArray(), "application/json", Serializer.JsonProvider);
                 value?.Macro?.HeadersDictionary?.ForEach(pair =>
                 {
                     var currentValue = Headers.SafeGet(pair.Key);
@@ -79,7 +83,7 @@ namespace RESTar.Requests
         /// <summary>
         /// The body as byte array
         /// </summary>
-        public byte[] BodyBytes { get; private set; }
+        public Body Body { get; private set; }
 
         /// <inheritdoc />
         public Headers Headers { get; }
@@ -87,16 +91,28 @@ namespace RESTar.Requests
         /// <summary>
         /// The content type registered in the Content-Type header
         /// </summary>
-        public MimeType ContentType { get; }
+        public ContentType ContentType { get; }
 
         /// <summary>
-        /// The content type registered in the Accept header
+        /// The content type provider to use when deserializing input
         /// </summary>
-        public MimeType Accept { get; }
+        public IContentTypeProvider InputContentTypeProvider { get; }
+
+        /// <summary>
+        /// The content types registered in the Accept header
+        /// </summary>
+        public ContentType Accept { get; }
+
+        /// <summary>
+        /// The content type provider to use when serializing output
+        /// </summary>
+        public IContentTypeProvider OutputContentTypeProvider { get; }
 
         internal ResultFinalizer ResultFinalizer { get; }
         internal string AuthToken { get; set; }
         internal Exception Error { get; set; }
+
+        internal CachedProtocolProvider CachedProtocolProvider { get; }
 
         /// <inheritdoc />
         public string TraceId { get; }
@@ -105,15 +121,15 @@ namespace RESTar.Requests
         public bool ExcludeHeaders => IResource is IEntityResource e && e.RequiresAuthentication;
 
         LogEventType ILogable.LogEventType { get; } = LogEventType.HttpInput;
-        string ILogable.LogMessage => $"{Action} {UnparsedUri}{(BodyBytes?.Length > 0 ? $" ({BodyBytes.Length} bytes)" : "")}";
+        string ILogable.LogMessage => $"{Action} {UnparsedUri}{(Body.HasContent ? $" ({Body.Bytes.Length} bytes)" : "")}";
         private string _contentString;
 
         string ILogable.LogContent
         {
             get
             {
-                if (BodyBytes == null) return null;
-                return _contentString ?? (_contentString = Encoding.UTF8.GetString(BodyBytes));
+                if (!Body.HasContent) return null;
+                return _contentString ?? (_contentString = Encoding.UTF8.GetString(Body.Bytes));
             }
         }
 
@@ -135,24 +151,77 @@ namespace RESTar.Requests
             return uriKey != null ? HttpUtility.UrlDecode(uriKey).Substring(1, uriKey.Length - 2) : null;
         }
 
-        internal Arguments(Action action, ref string query, byte[] body, Headers headers, TCPConnection tcpConnection)
+        internal Arguments(Action action, ref string query, byte[] body, Headers headers, ITraceable trace)
         {
-            TraceId = tcpConnection.TraceId;
+            TraceId = trace.TraceId;
             Action = action;
             Headers = headers ?? new Headers();
-            BodyBytes = body;
-            Uri = URI.ParseInternal(ref query, PercentCharsEscaped(headers), out var key);
+            Uri = URI.ParseInternal(ref query, PercentCharsEscaped(headers), out var key, out var cachedProtocolProvider);
+            CachedProtocolProvider = cachedProtocolProvider;
             if (key != null)
                 Headers["Authorization"] = $"apikey {UnpackUriKey(key)}";
             UnparsedUri = query;
-            TcpConnection = tcpConnection;
-            ContentType = MimeType.Parse(Headers["Content-Type"]);
-            Accept = MimeType.ParseMany(Headers["Accept"]);
-            if (Uri.Protocol != null)
-                ResultFinalizer = Uri.Protocol.FinalizeResult;
+            TcpConnection = trace.TcpConnection;
+            var contentType = ContentType.ParseInput(Headers["Content-Type"]);
+            var accepts = ContentType.ParseManyOutput(Headers["Accept"]);
+
+            if (cachedProtocolProvider != null)
+            {
+                ResultFinalizer = cachedProtocolProvider.ProtocolProvider.FinalizeResult;
+                if (contentType.MimeType == null)
+                {
+                    ContentType = cachedProtocolProvider.DefaultInputContentType;
+                    InputContentTypeProvider = cachedProtocolProvider.DefaultInputProvider;
+                }
+                else
+                {
+                    if (!cachedProtocolProvider.InputContentTypeProviders.TryGetValue(contentType.MimeType, out var provider))
+                        Error = new UnsupportedContent(Headers["Content-Type"]);
+                    else
+                    {
+                        ContentType = contentType;
+                        InputContentTypeProvider = provider;
+                    }
+                }
+
+                if (accepts == null)
+                {
+                    Accept = cachedProtocolProvider.DefaultOutputContentType;
+                    OutputContentTypeProvider = cachedProtocolProvider.DefaultOutputProvider;
+                }
+                else
+                {
+                    IContentTypeProvider acceptProvider = null;
+                    var containedWildcard = false;
+                    var accept = accepts.FirstOrDefault(a =>
+                    {
+                        if (a.MimeType == "*/*")
+                        {
+                            containedWildcard = true;
+                            return false;
+                        }
+                        return cachedProtocolProvider.OutputContentTypeProviders.TryGetValue(a.MimeType, out acceptProvider);
+                    });
+                    if (acceptProvider == null)
+                    {
+                        if (containedWildcard)
+                        {
+                            Accept = cachedProtocolProvider.DefaultOutputContentType;
+                            OutputContentTypeProvider = cachedProtocolProvider.DefaultOutputProvider;
+                        }
+                        else Error = new NotAcceptable(Headers["Accept"]);
+                    }
+                    else
+                    {
+                        Accept = accept;
+                        OutputContentTypeProvider = acceptProvider;
+                    }
+                }
+            }
+            Body = new Body(body, ContentType, InputContentTypeProvider);
             try
             {
-                Uri.Protocol?.CheckCompliance(Headers);
+                cachedProtocolProvider?.ProtocolProvider.CheckCompliance(this);
             }
             catch (NotImplementedException) { }
             catch (Exception e)
@@ -160,10 +229,6 @@ namespace RESTar.Requests
                 Error = e;
                 return;
             }
-            if (ContentType.TypeCode == MimeTypeCode.Unsupported && action < Action.OPTIONS)
-                Error = new UnsupportedContent(ContentType);
-            if (Accept.TypeCode == MimeTypeCode.Unsupported)
-                Error = new NotAcceptable(Accept);
             if (uri.HasError)
                 Error = uri.Error;
         }

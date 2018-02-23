@@ -3,6 +3,7 @@ using RESTar.Internal;
 
 namespace RESTar.Results.Error
 {
+    /// <inheritdoc />
     /// <summary>
     /// Thrown when RESTar encounters an unkown error
     /// </summary>

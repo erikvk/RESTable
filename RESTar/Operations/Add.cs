@@ -8,6 +8,8 @@ using RESTar.Serialization;
 
 namespace RESTar.Operations
 {
+    /// <inheritdoc cref="List{T}" />
+    /// <inheritdoc cref="IProcessor" />
     /// <summary>
     /// Adds properties to entities in an IEnumerable
     /// </summary>

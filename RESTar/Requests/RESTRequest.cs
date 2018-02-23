@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Net;
 using RESTar.Admin;
 using RESTar.Http;
 using RESTar.Internal;
@@ -9,7 +10,6 @@ using RESTar.Results.Error;
 using RESTar.Results.Error.BadRequest;
 using RESTar.Results.Error.Forbidden;
 using RESTar.Results.Error.NotFound;
-using RESTar.Serialization;
 using static RESTar.Internal.ErrorCodes;
 using static RESTar.RESTarConfig;
 using static RESTar.Methods;
@@ -22,7 +22,7 @@ namespace RESTar.Requests
         public IEntityResource<T> Resource { get; }
         public Condition<T>[] Conditions { get; }
         public MetaConditions MetaConditions { get; }
-        public byte[] Body { get; private set; }
+        public Body Body { get; private set; }
         public string AuthToken { get; }
         public Headers ResponseHeaders { get; }
         public ICollection<string> Cookies { get; }
@@ -33,8 +33,7 @@ namespace RESTar.Requests
         private Func<RESTRequest<T>, Result> Evaluator { get; }
         internal string Source { get; }
         internal string Destination { get; }
-        private MimeTypeCode ContentType { get; }
-        public MimeType Accept { get; }
+        internal ResultFinalizer Finalizer { get; }
         private string CORSOrigin { get; }
         private DataConfig InputDataConfig { get; }
         private DataConfig OutputDataConfig { get; }
@@ -52,7 +51,6 @@ namespace RESTar.Requests
                 Result.Headers["Access-Control-Allow-Origin"] = allowedOrigin;
         }
 
-        public T1 BodyObject<T1>() where T1 : class => Body?.Deserialize<T1>();
         public Headers Headers { get; }
 
         internal RESTRequest(IEntityResource<T> resource, Arguments arguments)
@@ -62,6 +60,7 @@ namespace RESTar.Requests
             TraceId = arguments.TraceId;
             TcpConnection = arguments.TcpConnection;
 
+            Finalizer = arguments.ResultFinalizer;
             Resource = resource;
             Target = resource;
             Headers = arguments.Headers;
@@ -82,8 +81,6 @@ namespace RESTar.Requests
             Source = arguments.Headers.SafeGet("Source");
             Destination = arguments.Headers.SafeGet("Destination");
             CORSOrigin = arguments.Headers.SafeGet("Origin");
-            ContentType = arguments.ContentType.TypeCode;
-            Accept = arguments.Accept;
             InputDataConfig = Source != null ? DataConfig.External : DataConfig.Client;
             OutputDataConfig = Destination != null ? DataConfig.External : DataConfig.Client;
             Conditions = Condition<T>.Parse(arguments.Uri.Conditions, Target) ?? Conditions;
@@ -95,52 +92,45 @@ namespace RESTar.Requests
             }
             if (TcpConnection.IsInternal) MetaConditions.Formatter = DbOutputFormat.Raw;
             this.MethodCheck();
-            SetRequestData(arguments.BodyBytes);
+            SetRequestData(arguments);
         }
 
-        internal void SetRequestData(byte[] bodyBytes)
+        internal void SetRequestData(Arguments arguments)
         {
             switch (InputDataConfig)
             {
                 case DataConfig.Client:
-                    if (bodyBytes == null && (Method == PATCH || Method == POST || Method == PUT))
-                        throw new InvalidSyntax(NoDataSource, "Missing data source for method " + Method);
-                    if (bodyBytes == null) return;
-                    Body = bodyBytes;
+                    if (!arguments.Body.HasContent)
+                    {
+                        if (Method == PATCH || Method == POST || Method == PUT)
+                            throw new InvalidSyntax(NoDataSource, "Missing data source for method " + Method);
+                        return;
+                    }
+                    Body = arguments.Body;
                     break;
                 case DataConfig.External:
                     try
                     {
                         var request = new HttpRequest(Source)
                         {
-                            Accept = ContentType.ToMimeString(),
+                            Accept = arguments.ContentType.ToString(),
                             AuthToken = AuthToken
                         };
                         if (request.Method != GET)
                             throw new InvalidSyntax(InvalidSource, "Only GET is allowed in Source headers");
                         var response = request.GetResponse(this) ?? throw new InvalidExternalSource(request, "No response");
-                        if (!response.IsSuccessStatusCode)
+                        if (response.StatusCode >= HttpStatusCode.BadRequest)
                             throw new InvalidExternalSource(request,
                                 $"Status: {response.StatusCode.ToCode()} - {response.StatusDescription}. {response.Headers.SafeGet("RESTar-info")}");
                         if (response.Body.CanSeek && response.Body.Length == 0)
                             throw new InvalidExternalSource(request, "Response was empty");
-                        Body = response.Body.ToByteArray();
+                        Body = new Body(response.Body.ToByteArray(), arguments.ContentType, arguments.InputContentTypeProvider);
                         break;
                     }
                     catch (HttpRequestException re)
                     {
                         throw new InvalidSyntax(InvalidSource, $"{re.Message} in the Source header");
                     }
-            }
-
-            switch (ContentType)
-            {
-                case MimeTypeCode.Json: break;
-                case MimeTypeCode.Excel:
-                    Body = Body.SerializeInputExcel(Method);
-                    break;
-                case MimeTypeCode.Unsupported:
-                    break;
             }
         }
 

@@ -100,6 +100,7 @@ namespace RESTar.Internal
         NotImplemented = 405,
         MissingConfigurationFile = 407,
         InvalidProtocolProvider = 408,
+        InvalidContentTypeProvider = 408,
 
         // 500-600: Protocol errors
         NotCompliantWithProtocol = 500

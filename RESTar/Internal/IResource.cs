@@ -3,6 +3,9 @@ using System.Collections.Generic;
 
 namespace RESTar.Internal
 {
+    /// <inheritdoc cref="ITarget" />
+    /// <inheritdoc cref="IEqualityComparer{T}" />
+    /// <inheritdoc cref="IComparable{T}" />
     /// <summary>
     /// The common non-generic interface for all resources used by RESTar
     /// </summary>
@@ -50,6 +53,8 @@ namespace RESTar.Internal
         Type InterfaceType { get; }
     }
 
+    /// <inheritdoc cref="IResource" />
+    /// <inheritdoc cref="ITarget{T}" />
     /// <summary>
     /// The common generic interface for all resources used by RESTar
     /// </summary>

@@ -5,7 +5,7 @@ using RESTar.Operations;
 
 namespace RESTar.Resources
 {
-    internal class DDictionaryProvider : ResourceProvider<DDictionary>
+    internal class DDictResourceProvider : ResourceProvider<DDictionary>
     {
         internal override bool Include(Type type)
         {

@@ -10,6 +10,10 @@ using RESTar.Results.Error.BadRequest;
 
 namespace RESTar.Admin
 {
+    /// <inheritdoc cref="ISelector{T}" />
+    /// <inheritdoc cref="IInserter{T}" />
+    /// <inheritdoc cref="IUpdater{T}" />
+    /// <inheritdoc cref="IDeleter{T}" />
     /// <summary>
     /// A meta-resource that provides representations of all resources in a RESTar instance
     /// </summary>

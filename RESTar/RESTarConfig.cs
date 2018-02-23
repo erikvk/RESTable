@@ -143,6 +143,7 @@ namespace RESTar
         /// <param name="lineEndings">The line endings to use when writing JSON</param>
         /// <param name="resourceProviders">External resource providers for the RESTar instance</param>
         /// <param name="protocolProviders">External protocol providers for the RESTar instance</param>
+        /// <param name="contentTypeProviders">External content type providers for the RESTar instance</param>
         public static void Init
         (
             ushort port = 8282,
@@ -156,7 +157,8 @@ namespace RESTar
             ushort daysToSaveErrors = 30,
             LineEndings lineEndings = LineEndings.Windows,
             IEnumerable<ResourceProvider> resourceProviders = null,
-            IEnumerable<IProtocolProvider> protocolProviders = null
+            IEnumerable<IProtocolProvider> protocolProviders = null,
+            IEnumerable<IContentTypeProvider> contentTypeProviders = null
         )
         {
             try
@@ -166,7 +168,8 @@ namespace RESTar
                 Log.Init();
                 DynamitConfig.Init(true, true);
                 ResourceFactory.MakeResources(resourceProviders?.ToArray());
-                RequestEvaluator.SetupProtocolProviders(protocolProviders?.ToArray());
+                RequestEvaluator.SetupContentTypeProviders(contentTypeProviders?.ToList());
+                RequestEvaluator.SetupProtocolProviders(protocolProviders?.ToList());
                 RequireApiKey = requireApiKey;
                 AllowAllOrigins = allowAllOrigins;
                 ConfigFilePath = configFilePath;
@@ -305,7 +308,7 @@ namespace RESTar
                             accessRights.Add(resource, new[] {GET, REPORT, HEAD});
                         else
                             accessRights[resource] = methods
-                                .Union(new[] { GET, REPORT, HEAD })
+                                .Union(new[] {GET, REPORT, HEAD})
                                 .OrderBy(i => i, MethodComparer.Instance)
                                 .ToArray();
                     }

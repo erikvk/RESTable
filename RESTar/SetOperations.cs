@@ -1,13 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using System.Net;
 using System.Text.RegularExpressions;
 using Newtonsoft.Json.Linq;
-using RESTar.Http;
 using RESTar.Serialization;
-using static System.Net.HttpStatusCode;
+using RESTar.Linq;
+using RESTar.Requests;
+using RESTar.Results.Success;
 using static System.StringComparison;
 using static RESTar.Methods;
 using JTokens = System.Collections.Generic.IEnumerable<Newtonsoft.Json.Linq.JToken>;
@@ -16,6 +16,8 @@ using JTokens = System.Collections.Generic.IEnumerable<Newtonsoft.Json.Linq.JTok
 
 namespace RESTar
 {
+    /// <inheritdoc cref="JObject" />
+    /// <inheritdoc cref="ISelector{T}" />
     /// <summary>
     /// The SetOperations resource can perform advanced operations on entities in one
     /// or more RESTar resources. See the RESTar Specification for details.
@@ -34,49 +36,33 @@ namespace RESTar
         public IEnumerable<SetOperations> Select(IRequest<SetOperations> request)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
-            if (request.Body == null)
-                throw new Exception("Missing data source for operation");
-            var jobject = request.BodyObject<JObject>();
+            if (!request.Body.HasContent)
+                throw new Exception("Missing data source for SetOperations request");
+            var jobject = request.Body.ToList<JObject>().FirstOrDefault();
 
             JTokens recursor(JToken token)
             {
                 switch (token)
                 {
-                    case JValue value:
-                        if (value.Type != JTokenType.String)
-                            throw new Exception($"Invalid type '{value.Type}' for set operation argument " +
-                                                $"'{value.ToString(CultureInfo.InvariantCulture)}'. Must be string.");
-                        var str = value.Value<string>();
-                        if (string.IsNullOrEmpty(str))
-                            throw new Exception("Operation arguments cannot be empty strings");
-                        string json;
-                        var first = str[0];
-                        if (first == '[')
-                            json = str;
-                        else if (char.IsDigit(first) || first == '/')
+                    case JValue value when value.Type == JTokenType.String:
+                        var argument = value.Value<string>();
+                        switch (argument?.FirstOrDefault())
                         {
-                            var uri = str;
-                            var response = HttpRequest.Internal(request, GET, new Uri(uri, UriKind.Relative), request.AuthToken);
-                            if (response?.IsSuccessStatusCode != true)
-                                throw new Exception($"Could not get source data from '{uri}'. {response?.StatusCode.ToCode()}: " +
-                                                    $"{response?.StatusDescription}. {response?.Headers.SafeGet("RESTar-info")}");
-                            if (response.StatusCode == NoContent || !(response.Body?.Length > 2))
-                                json = "[]";
-                            else json = response.Body.GetString();
+                            case null: throw new Exception("Invalid operation expression. Expected string, found null");
+                            case default(char): throw new Exception("Operation expressions cannot be empty strings");
+                            case '[': return JArray.Parse(argument);
+                            case '/':
+                                switch (RequestEvaluator.Evaluate(request, GET, ref argument))
+                                {
+                                    case NoContent _: return new JArray();
+                                    case Entities entities: return JArray.FromObject(entities.Content, Serializer.Json);
+                                    case var other: throw new Exception($"Could not get source data from '{argument}'. {other.LogMessage}");
+                                }
+                            default:
+                                throw new Exception($"Invalid string '{argument}'. Must be a relative REST request URI " +
+                                                    "beginning with '/<resource locator>' or a JSON array.");
                         }
-                        else
-                            throw new Exception($"Invalid string '{str}'. Must be a relative REST request URI " +
-                                                "beginning with '/<resource locator>' or a JSON array.");
-
-                        return json.Deserialize<JArray>();
-                    case JObject obj:
-                        var prop = obj.Properties().FirstOrDefault();
-                        if (obj.Count != 1 || prop?.Value?.Type != JTokenType.Array)
-                            throw new Exception("Set operation objects must contain one and only one property where " +
-                                                "the name is a set operation and the value is a list of strings and/or " +
-                                                "objects.");
-                        var arr = prop.Value.Value<JArray>();
-
+                    case JObject obj when obj.Count == 1 && obj.First is JProperty prop && prop.Value is JArray arr:
                         switch (prop.Name.ToLower())
                         {
                             case "distinct":
@@ -100,11 +86,14 @@ namespace RESTar
                                     throw new Exception("Map takes two and only two arguments");
                                 return Map(recursor(arr[0]), (string) arr[1], request);
                             default:
-                                throw new ArgumentOutOfRangeException($"Unknown operation '{prop.Name}'. " +
-                                                                      "Avaliable operations: distinct, except, " +
-                                                                      "intersect, union.");
+                                throw new ArgumentOutOfRangeException(
+                                    $"Unknown operation '{prop.Name}'. Avaliable operations: distinct, except, " +
+                                    "intersect, union.");
                         }
-                    default: throw new ArgumentException($"Invalid type '{token.Type}' in operations tree");
+                    default:
+                        throw new ArgumentException(
+                            $"Invalid type '{token.Type}' in operations tree. Expected object with single array " +
+                            "property, or string");
                 }
             }
 
@@ -116,7 +105,7 @@ namespace RESTar
                     case JObject @object: return new SetOperations(@object);
                     default: throw new Exception("Invalid entity type in set operation");
                 }
-            });
+            }).Where(request.Conditions);
         }
 
         private static JTokens Distinct(JTokens array) => array?.Distinct(EqualityComparer);
@@ -126,48 +115,53 @@ namespace RESTar
 
         private static JTokens Map(JTokens set, string mapper, IRequest request)
         {
-            if (set == null)
-                throw new ArgumentException(nameof(set));
-            if (string.IsNullOrEmpty(mapper))
-                throw new ArgumentException(nameof(mapper));
+            if (set == null) throw new ArgumentException(nameof(set));
+            if (string.IsNullOrEmpty(mapper)) throw new ArgumentException(nameof(mapper));
 
             var mapped = new HashSet<JToken>(EqualityComparer);
-            foreach (var item in Distinct(set))
+            var keys = Regex
+                .Matches(mapper, RegEx.MapMacro)
+                .Cast<Match>()
+                .Select(match => match.Value.Substring(2, match.Length - 3))
+                .ToArray();
+
+            Distinct(set).ForEach(item =>
             {
                 var obj = item as JObject ?? throw new Exception("JSON syntax error in map set. Set must be of objects");
                 var skip = false;
                 var localMapper = mapper;
-                foreach (Match match in Regex.Matches(mapper, RegEx.MapMacro))
+                foreach (var key in keys)
                 {
-                    var matchValue = match.Value;
-                    var key = matchValue.Substring(2, matchValue.Length - 3);
-                    var token = obj.GetValue(key, OrdinalIgnoreCase);
-                    if (token == null || token is JValue)
+                    switch (obj.GetValue(key, OrdinalIgnoreCase))
                     {
-                        var value = token?.Value<string>();
-                        if (value == "") value = "\"\"";
-                        localMapper = localMapper.Replace(matchValue, WebUtility.UrlEncode(value ?? "null"));
+                        case null:
+                            localMapper = localMapper.Replace(key, "null");
+                            break;
+                        case JValue value when value.Value<string>() is string stringValue:
+                            var replaceWith = stringValue != "" ? stringValue : "\"\"";
+                            localMapper = localMapper.Replace(key, WebUtility.UrlEncode(replaceWith));
+                            break;
+                        default:
+                            skip = true;
+                            break;
                     }
-                    else skip = true;
                 }
-
-                if (!skip)
+                if (skip) return;
+                switch (RequestEvaluator.Evaluate(request, GET, ref localMapper))
                 {
-                    var response = HttpRequest.Internal(request, GET, new Uri(localMapper, UriKind.Relative), request.AuthToken);
-                    if (response?.IsSuccessStatusCode != true)
-                        throw new Exception($"Could not get source data from '{localMapper}'. {response?.StatusCode.ToCode()}: " +
-                                            $"{response?.StatusDescription}. {response?.Headers.SafeGet("RESTar-info")}");
-                    if (response.StatusCode == NoContent) mapped.Add(new JObject());
-                    else Serializer.Populate(response.Body.GetString(), mapped);
+                    case NoContent _: break;
+                    case Entities entities:
+                        mapped.UnionWith(entities.Content.Cast<object>().Select(e => e.ToJObject()));
+                        break;
+                    case var other:
+                        throw new Exception($"Could not get source data from '{localMapper}'. {other.LogMessage}");
                 }
-            }
-
+            });
             return mapped;
         }
 
-        private static JTokens[] Checked(JTokens[] arrays) =>
-            arrays == null || arrays.Length < 2 || arrays.Any(a => a == null)
-                ? throw new ArgumentException(nameof(arrays))
-                : arrays;
+        private static JTokens[] Checked(JTokens[] arrays) => arrays == null || arrays.Length < 2 || arrays.Any(a => a == null)
+            ? throw new ArgumentException(nameof(arrays))
+            : arrays;
     }
 }

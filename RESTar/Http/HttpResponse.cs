@@ -17,7 +17,7 @@ namespace RESTar.Http
         public HttpStatusCode StatusCode { get; }
         public string StatusDescription { get; }
         public long ContentLength { get; }
-        public string ContentType { get; }
+        public ContentType ContentType { get; }
         public Stream Body { get; }
         public Headers Headers { get; }
         public ICollection<string> Cookies { get; }

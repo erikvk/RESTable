@@ -5,15 +5,16 @@ using RESTar.Logging;
 using RESTar.Operations;
 using RESTar.Requests;
 
-namespace RESTar.Results.Success {
+namespace RESTar.Results.Success
+{
     internal struct WebSocketResult : IFinalizedResult
     {
         internal bool LeaveOpen { get; }
-        HttpStatusCode IFinalizedResult.StatusCode => default;
-        string IFinalizedResult.StatusDescription => default;
+        HttpStatusCode IResult.StatusCode => default;
+        string IResult.StatusDescription => default;
         Stream IFinalizedResult.Body => default;
-        string IFinalizedResult.ContentType => default;
-        ICollection<string> IFinalizedResult.Cookies => default;
+        public ContentType ContentType => default;
+        ICollection<string> IResult.Cookies => default;
         Headers ILogable.Headers => default;
         public string TraceId { get; }
         public TCPConnection TcpConnection { get; }
@@ -22,7 +23,8 @@ namespace RESTar.Results.Success {
         public string LogContent => default;
         public string HeadersStringCache { get; set; }
         public bool ExcludeHeaders => default;
-        
+
+
         public WebSocketResult(bool leaveOpen, ITraceable trace) : this()
         {
             LeaveOpen = leaveOpen;

@@ -8,10 +8,12 @@ using RESTar.Serialization;
 
 namespace RESTar.Operations
 {
+    /// <inheritdoc cref="List{T}" />
+    /// <inheritdoc cref="IProcessor" /> 
     /// <summary>
     /// Selects a set of properties from an IEnumerable of entities
     /// </summary>
-    public class Select : List<Term>, ICollection<Term>, IProcessor
+    public class Select : List<Term>, IProcessor
     {
         internal Select(IEntityResource resource, string keys, ICollection<string> dynDomain) => keys
             .Split(',')

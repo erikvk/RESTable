@@ -27,9 +27,9 @@ namespace RESTar.Requests
         internal DbMacro Macro { get; set; }
         internal Exception Error { get; private set; }
         internal bool HasError => Error != null;
-        internal IProtocolProvider Protocol { get; private set; }
+        private IProtocolProvider ProtocolProvider { get; set; }
 
-        internal static URI ParseInternal(ref string query, bool percentCharsEscaped, out string key)
+        internal static URI ParseInternal(ref string query, bool percentCharsEscaped, out string key, out CachedProtocolProvider cachedProtocolProvider)
         {
             var uri = new URI();
             key = null;
@@ -43,15 +43,15 @@ namespace RESTar.Requests
                 key = _key;
                 query = protocolString + tail;
             }
-            uri.Protocol = RequestEvaluator.ProtocolProviders.SafeGet(protocolString);
-            if (uri.Protocol == null)
+            if (!RequestEvaluator.ProtocolProviders.TryGetValue(protocolString, out cachedProtocolProvider))
             {
                 uri.Error = new UnknownProtocol(protocolString);
                 return uri;
             }
+            uri.ProtocolProvider = cachedProtocolProvider.ProtocolProvider;
             try
             {
-                uri.Protocol.ParseQuery(tail, uri);
+                cachedProtocolProvider.ProtocolProvider.ParseQuery(tail, uri);
             }
             catch (Exception e)
             {
@@ -62,7 +62,7 @@ namespace RESTar.Requests
 
         internal static URI Parse(string uriString)
         {
-            var uri = ParseInternal(ref uriString, false, out var _);
+            var uri = ParseInternal(ref uriString, false, out var _, out var _);
             if (uri.HasError) throw uri.Error;
             return uri;
         }
@@ -74,6 +74,6 @@ namespace RESTar.Requests
         }
 
         /// <inheritdoc />
-        public override string ToString() => Protocol?.MakeRelativeUri(this) ?? "";
+        public override string ToString() => ProtocolProvider?.MakeRelativeUri(this) ?? "";
     }
 }

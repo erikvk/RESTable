@@ -5,10 +5,10 @@ using Starcounter;
 
 namespace RESTar.Resources
 {
-    internal class StarcounterProvider : ResourceProvider<object>
+    internal class StarcounterResourceProvider : ResourceProvider<object>
     {
         public override Type AttributeType => null;
-        internal StarcounterProvider() => DatabaseIndexer = new StarcounterIndexer();
+        internal StarcounterResourceProvider() => DatabaseIndexer = new StarcounterIndexer();
         internal override void Validate() { }
         
         internal override bool Include(Type type)

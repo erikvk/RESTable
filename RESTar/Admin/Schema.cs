@@ -8,6 +8,8 @@ using static RESTar.Operators;
 
 namespace RESTar.Admin
 {
+    /// <inheritdoc cref="ISelector{T}" />
+    /// <inheritdoc cref="JObject" />
     /// <summary>
     /// The Schema resource provides schemas for non-dynamic RESTar resources
     /// </summary>

@@ -1,6 +1,7 @@
 ﻿using RESTar.Requests;
 
-namespace RESTar.Results.Success {
+namespace RESTar.Results.Success
+{
     internal interface IEntitiesMetadata
     {
         ulong EntityCount { get; }

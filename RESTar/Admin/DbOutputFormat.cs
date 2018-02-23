@@ -125,6 +125,11 @@ namespace RESTar.Admin
         }
     }
 
+    /// <inheritdoc cref="ISelector{T}" />
+    /// <inheritdoc cref="IInserter{T}" />
+    /// <inheritdoc cref="IUpdater{T}" />
+    /// <inheritdoc cref="IDeleter{T}" />
+    /// <inheritdoc cref="IValidatable" />
     /// <summary>
     /// A resource for all available output formats for this RESTar instance.
     /// </summary>

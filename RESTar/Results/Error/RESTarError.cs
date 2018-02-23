@@ -13,10 +13,13 @@ using RESTar.Results.Error.Forbidden;
 
 namespace RESTar.Results.Error
 {
+    /// <inheritdoc cref="Exception" />
+    /// <inheritdoc cref="ITraceable" />
+    /// <inheritdoc cref="IFinalizedResult" />
     /// <summary>
     /// A super class for all custom RESTar exceptions
     /// </summary>
-    public abstract class RESTarError : Exception, IFinalizedResult, ILogable
+    public abstract class RESTarError : Exception, ITraceable, IFinalizedResult
     {
         /// <summary>
         /// The error code for this error
@@ -34,9 +37,6 @@ namespace RESTar.Results.Error
 
         /// <inheritdoc />
         public ICollection<string> Cookies { get; } = new List<string>();
-
-        Stream IFinalizedResult.Body { get; } = null;
-        string IFinalizedResult.ContentType { get; } = null;
 
         /// <inheritdoc />
         public string HeadersStringCache { get; set; }
@@ -92,6 +92,12 @@ namespace RESTar.Results.Error
             Headers["RESTar-info"] = Message;
         }
 
+        /// <inheritdoc />
+        public Stream Body { get; } = null;
+
+        /// <inheritdoc />
+        public ContentType ContentType { get; } = null;
+
         internal static RESTarError GetError(Exception exception)
         {
             switch (exception)
@@ -105,5 +111,8 @@ namespace RESTar.Results.Error
                 default: return new Unknown(exception);
             }
         }
+
+        /// <inheritdoc />
+        public override string ToString() => LogMessage;
     }
 }

@@ -29,10 +29,10 @@ namespace RESTar.Requests
         public Headers ResponseHeaders { get; }
         public ICollection<string> Cookies { get; }
         public IUriParameters UriParameters { get; }
-        public byte[] Body { get; private set; }
+        public Body Body { get; }
         Methods IRequest.Method => GET;
         IEntityResource IRequest.Resource => Resource;
-        public MimeType Accept => MimeType.Default;
+        public ContentType Accept => default;
         public ITarget<T> Target { get; }
         public bool Home => MetaConditions.Empty && Conditions == null;
         internal bool IsTemplate { get; set; }
@@ -41,11 +41,10 @@ namespace RESTar.Requests
         internal IList<T> Entities { get; set; }
         internal T Entity { get; set; }
         internal Json GetView() => DataView.MakeCurrentView();
-        public T1 BodyObject<T1>() where T1 : class => Body?.Deserialize<T1>();
         public Headers Headers { get; }
         public string TraceId { get; }
         public Func<IEnumerable<T>> EntitiesGenerator { private get; set; }
-        public IEnumerable<T> GetEntities() => EntitiesGenerator?.Invoke() ?? new T[0];
+        public IEnumerable<T> GetEntities() => EntitiesGenerator();
 
         internal ViewRequest(IEntityResource<T> resource, Arguments arguments)
         {
@@ -54,6 +53,7 @@ namespace RESTar.Requests
             TraceId = arguments.TraceId;
             TcpConnection = arguments.TcpConnection;
 
+            Body = arguments.Body;
             Resource = resource;
             Target = resource;
             Headers = arguments.Headers;
@@ -116,32 +116,32 @@ namespace RESTar.Requests
 
         public void DeleteFromList(string id)
         {
-            Authenticator.CheckUser();
-            var list = (List) DataView;
-            var conditions = Condition<T>.Parse(id, Resource);
-            var item = Entities.Where(conditions).First();
-            CheckMethod(DELETE, $"You are not allowed to delete from the '{Resource}' resource");
-            Operations<T>.View.DELETE(this, item);
-            if (string.IsNullOrWhiteSpace(list.RedirectUrl))
-                list.RedirectUrl = list.ResourcePath;
+            //    Authenticator.CheckUser();
+            //    var list = (List) DataView;
+            //    var conditions = Condition<T>.Parse(id, Resource);
+            //    var item = Entities.Where(conditions).First();
+            //    CheckMethod(DELETE, $"You are not allowed to delete from the '{Resource}' resource");
+            //    // Operations<T>.View.DELETE(this, item);
+            //    if (string.IsNullOrWhiteSpace(list.RedirectUrl))
+            //        list.RedirectUrl = list.ResourcePath;
         }
 
         public void SaveItem()
         {
-            Authenticator.CheckUser();
-            var item = (Item) DataView;
-            var entityJson = item.Entity.ToJson().Replace(@"$"":", @""":");
-            Body = Regex.Replace(entityJson, RegEx.ViewMacro, "${content}").ToBytes();
-            if (IsTemplate)
-            {
-                CheckMethod(POST, $"You are not allowed to insert into the '{Resource}' resource");
-                Operations<T>.View.POST(this);
-                if (string.IsNullOrWhiteSpace(item.RedirectUrl))
-                    item.RedirectUrl = item.ResourcePath;
-            }
-
-            CheckMethod(PATCH, $"You are not allowed to update the '{Resource}' resource");
-            Operations<T>.View.PATCH(this, Entity);
+            //  Authenticator.CheckUser();
+            //  var item = (Item) DataView;
+            //  var entityJson = item.Entity.ToJson().Replace(@"$"":", @""":");
+            //  Body = Regex.Replace(entityJson, RegEx.ViewMacro, "${content}").ToBytes();
+            //  if (IsTemplate)
+            //  {
+            //      CheckMethod(POST, $"You are not allowed to insert into the '{Resource}' resource");
+            //      Operations<T>.View.POST(this);
+            //      if (string.IsNullOrWhiteSpace(item.RedirectUrl))
+            //          item.RedirectUrl = item.ResourcePath;
+            //  }
+            //
+            //  CheckMethod(PATCH, $"You are not allowed to update the '{Resource}' resource");
+            //  Operations<T>.View.PATCH(this, Entity);
         }
 
         public void CloseItem()

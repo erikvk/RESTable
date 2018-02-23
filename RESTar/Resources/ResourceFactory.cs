@@ -17,8 +17,8 @@ namespace RESTar.Resources
 {
     internal static class ResourceFactory
     {
-        internal static DDictionaryProvider DDictProvider { get; }
-        internal static StarcounterProvider ScProvider { get; }
+        internal static DDictResourceProvider DDictProvider { get; }
+        internal static StarcounterResourceProvider ScProvider { get; }
         internal static VirtualResourceProvider VrProvider { get; }
         internal static DynamicResourceProvider DynProvider { get; }
         internal static TerminalResourceProvider TerminalProvider { get; }
@@ -26,8 +26,8 @@ namespace RESTar.Resources
 
         static ResourceFactory()
         {
-            ScProvider = new StarcounterProvider();
-            DDictProvider = new DDictionaryProvider {DatabaseIndexer = ScProvider.DatabaseIndexer};
+            ScProvider = new StarcounterResourceProvider();
+            DDictProvider = new DDictResourceProvider {DatabaseIndexer = ScProvider.DatabaseIndexer};
             VrProvider = new VirtualResourceProvider();
             ResourceProviders = new List<ResourceProvider> {DDictProvider, ScProvider, VrProvider};
             DynProvider = new DynamicResourceProvider();

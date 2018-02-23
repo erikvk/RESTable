@@ -10,8 +10,8 @@ namespace RESTar.Results.Error
     public class NotAcceptable : RESTarError
     {
         /// <inheritdoc />
-        public NotAcceptable(MimeType unsupported) : base(ErrorCodes.NotAcceptable,
-            $"Unsupported accept format: '{unsupported.TypeCodeString}'")
+        public NotAcceptable(string headerValue) : base(ErrorCodes.NotAcceptable,
+            $"No supported content types in Accept header: {headerValue}")
         {
             StatusCode = HttpStatusCode.NotAcceptable;
             StatusDescription = "Not acceptable";

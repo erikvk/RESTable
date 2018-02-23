@@ -17,5 +17,6 @@ namespace RESTar.WebSockets
         void SendTextRaw(string textData);
         void Disconnect();
         ConnectionProfile GetConnectionProfile();
+        string AuthToken { get; set; }
     }
 }

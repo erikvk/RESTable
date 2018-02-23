@@ -3,6 +3,7 @@ using RESTar.Internal;
 
 namespace RESTar.Results.Error
 {
+    /// <inheritdoc />
     /// <summary>
     /// Thrown when RESTar encounters an error with permissions for binding 
     /// against, for example, properties of resources.

@@ -1,74 +1,200 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Net;
 using System.Text.RegularExpressions;
 using System.Web;
-using RESTar.Admin;
 using RESTar.Internal;
 using RESTar.Linq;
 using RESTar.Operations;
 using RESTar.Results.Error;
-using RESTar.Results.Error.BadRequest.Aborted;
 using RESTar.Results.Error.Forbidden;
 using RESTar.Results.Success;
+using RESTar.Serialization;
 using static RESTar.Operations.Transact;
 using static RESTar.Requests.Action;
 using static RESTar.RESTarConfig;
 using Console = RESTar.Admin.Console;
+using Error = RESTar.Admin.Error;
 using Response = RESTar.Http.HttpResponse;
 
 namespace RESTar.Requests
 {
+    internal class CachedProtocolProvider
+    {
+        internal IProtocolProvider ProtocolProvider { get; }
+        internal IDictionary<string, IContentTypeProvider> InputContentTypeProviders { get; }
+        internal IDictionary<string, IContentTypeProvider> OutputContentTypeProviders { get; }
+        internal ContentType DefaultInputContentType { get; set; }
+        internal ContentType DefaultOutputContentType { get; set; }
+        internal IContentTypeProvider DefaultInputProvider { get; set; }
+        internal IContentTypeProvider DefaultOutputProvider { get; set; }
+
+        public CachedProtocolProvider(IProtocolProvider protocolProvider)
+        {
+            ProtocolProvider = protocolProvider;
+            InputContentTypeProviders = new Dictionary<string, IContentTypeProvider>(StringComparer.OrdinalIgnoreCase);
+            OutputContentTypeProviders = new Dictionary<string, IContentTypeProvider>(StringComparer.OrdinalIgnoreCase);
+        }
+    }
+
     /// <summary>
     /// Evaluates requests
     /// </summary>
     internal static class RequestEvaluator
     {
-        internal static IDictionary<string, IProtocolProvider> ProtocolProviders { get; private set; }
+        internal static IDictionary<string, CachedProtocolProvider> ProtocolProviders { get; private set; }
+        internal static IDictionary<string, IContentTypeProvider> InputContentTypeProviders { get; private set; }
+        internal static IDictionary<string, IContentTypeProvider> OutputContentTypeProviders { get; private set; }
 
-        private static void AddProtocolProvider(IProtocolProvider provider)
+        private static CachedProtocolProvider GetCachedProtocolProvider(IProtocolProvider provider)
         {
-            var protocolId = "-" + provider.ProtocolIdentifier;
-            if (ProtocolProviders.TryGetValue(protocolId, out var existing))
-                throw new InvalidProtocolProvider($"Protocol identifier '{existing.ProtocolIdentifier}' already claimed by a protocol provider");
-            ProtocolProviders[protocolId] = provider;
+            var cachedProvider = new CachedProtocolProvider(provider);
+            var contentTypeProviders = provider.GetContentTypeProviders()?.ToList();
+            contentTypeProviders?.ForEach(contentTypeProvider =>
+            {
+                contentTypeProvider.CanRead().ForEach(contentType => cachedProvider
+                    .InputContentTypeProviders[contentType.MimeType] = contentTypeProvider);
+                contentTypeProvider.CanWrite().ForEach(contentType => cachedProvider
+                    .OutputContentTypeProviders[contentType.MimeType] = contentTypeProvider);
+            });
+            if (provider.AllowExternalContentProviders)
+            {
+                InputContentTypeProviders.ForEach(externalProvider =>
+                {
+                    if (!cachedProvider.InputContentTypeProviders.ContainsKey(externalProvider.Key))
+                        cachedProvider.InputContentTypeProviders.Add(externalProvider);
+                });
+                OutputContentTypeProviders.ForEach(externalProvider =>
+                {
+                    if (!cachedProvider.OutputContentTypeProviders.ContainsKey(externalProvider.Key))
+                        cachedProvider.OutputContentTypeProviders.Add(externalProvider);
+                });
+            }
+
+            cachedProvider.DefaultInputProvider = cachedProvider.InputContentTypeProviders.Values.FirstOrDefault(p =>
+            {
+                if (!p.CanRead().Any()) return false;
+                cachedProvider.DefaultInputContentType = p.CanRead().First();
+                return true;
+            });
+            cachedProvider.DefaultOutputProvider = cachedProvider.OutputContentTypeProviders.Values.FirstOrDefault(p =>
+            {
+                if (!p.CanWrite().Any()) return false;
+                cachedProvider.DefaultOutputContentType = p.CanWrite().First();
+                return true;
+            });
+
+            return cachedProvider;
         }
 
         private static void ValidateProtocolProvider(IProtocolProvider provider)
         {
+            if (provider == null)
+                throw new InvalidProtocolProvider("External protocol provider cannot be null");
             if (string.IsNullOrWhiteSpace(provider.ProtocolIdentifier))
                 throw new InvalidProtocolProvider($"Invalid protocol provider '{provider.GetType().FullName}'. " +
                                                   "ProtocolIdentifier cannot be null or whitespace");
             if (!Regex.IsMatch(provider.ProtocolIdentifier, "^[a-zA-Z]+$"))
                 throw new InvalidProtocolProvider($"Invalid protocol provider '{provider.GetType().FullName}'. " +
                                                   "ProtocolIdentifier can only contain letters a-z and A-Z");
+            if (!provider.AllowExternalContentProviders)
+            {
+                var contentProviders = provider.GetContentTypeProviders()?.ToList();
+                if (contentProviders?.Any() != true)
+                    throw new InvalidProtocolProvider($"Invalid protocol provider '{provider.GetType().FullName}'. " +
+                                                      "The protocol provider allows no external content type providers " +
+                                                      "and does not provide any content type providers of its own.");
+                if (contentProviders.All(p => !p.CanRead().Any()) && contentProviders.All(p => !p.CanWrite().Any()))
+                    throw new InvalidProtocolProvider($"Invalid protocol provider '{provider.GetType().FullName}'. " +
+                                                      "The protocol provider allows no external content type providers " +
+                                                      "and none of the provided content type providers can read or write.");
+            }
         }
 
-        internal static void SetupProtocolProviders(IProtocolProvider[] protocolProviders)
+        private static void ValidateContentTypeProvider(IContentTypeProvider provider)
         {
-            ProtocolProviders = new Dictionary<string, IProtocolProvider>(StringComparer.OrdinalIgnoreCase);
-            var defaultProvider = new DefaultProtocolProvider();
-            ProtocolProviders[""] = defaultProvider;
-            AddProtocolProvider(defaultProvider);
-            protocolProviders?.ForEach(provider =>
+            if (provider == null)
+                throw new InvalidContentTypeProvider("External content type provider cannot be null");
+            if (!provider.CanRead().Any() && !provider.CanWrite().Any())
+                throw new InvalidContentTypeProvider($"Provider '{provider.GetType().FullName}' cannot read or write to any formats");
+        }
+
+        internal static void SetupContentTypeProviders(List<IContentTypeProvider> contentTypeProviders)
+        {
+            InputContentTypeProviders = new Dictionary<string, IContentTypeProvider>(StringComparer.OrdinalIgnoreCase);
+            OutputContentTypeProviders = new Dictionary<string, IContentTypeProvider>(StringComparer.OrdinalIgnoreCase);
+
+            contentTypeProviders = contentTypeProviders ?? new List<IContentTypeProvider>();
+            contentTypeProviders.Insert(0, Serializer.ExcelProvider);
+            contentTypeProviders.Insert(0, Serializer.JsonProvider);
+            foreach (var provider in contentTypeProviders)
+            {
+                ValidateContentTypeProvider(provider);
+                foreach (var contentType in provider.CanRead())
+                    InputContentTypeProviders[contentType.MimeType] = provider;
+                foreach (var contentType in provider.CanWrite())
+                    OutputContentTypeProviders[contentType.MimeType] = provider;
+            }
+        }
+
+        internal static void SetupProtocolProviders(List<IProtocolProvider> protocolProviders)
+        {
+            ProtocolProviders = new Dictionary<string, CachedProtocolProvider>(StringComparer.OrdinalIgnoreCase);
+            protocolProviders = protocolProviders ?? new List<IProtocolProvider>();
+            protocolProviders.Add(new DefaultProtocolProvider());
+            protocolProviders.ForEach(provider =>
             {
                 ValidateProtocolProvider(provider);
-                AddProtocolProvider(provider);
+                var cachedProvider = GetCachedProtocolProvider(provider);
+                if (provider is DefaultProtocolProvider)
+                    ProtocolProviders[""] = cachedProvider;
+                var protocolId = "-" + provider.ProtocolIdentifier;
+                if (ProtocolProviders.TryGetValue(protocolId, out var existing))
+                {
+                    if (existing.GetType() == provider.GetType())
+                        throw new InvalidProtocolProvider(
+                            $"A protocol provider of type '{existing.GetType()}' has already been added");
+                    throw new InvalidProtocolProvider(
+                        $"Protocol identifier '{protocolId}' already claimed by a protocol provider of type '{existing.GetType()}'");
+                }
+                ProtocolProviders[protocolId] = cachedProvider;
             });
         }
 
         private static int StackDepth;
 
-        internal static IFinalizedResult Evaluate
-        (
-            Action action,
-            ref string query,
-            byte[] body,
-            Headers headers,
-            TCPConnection tcpConnection
-        )
+        internal static IFinalizedResult EvaluateAndFinalize(IRequest originator, Methods method, ref string query, byte[] body = null,
+            Headers headers = null)
+        {
+            headers = headers ?? new Headers();
+            headers["RESTar-AuthToken"] = originator.AuthToken;
+            var (arguments, result) = RunEvaluation((Action) method, ref query, body, headers, TCPConnection.Internal);
+            if (result.StatusCode == (HttpStatusCode) 508)
+                throw new InfiniteLoop(result.Headers["RESTar-Info"]);
+            return arguments.ResultFinalizer(result, arguments.Accept, arguments.OutputContentTypeProvider);
+        }
+
+        internal static IResult Evaluate(IRequest originator, Methods method, ref string query, byte[] body = null, Headers headers = null)
+        {
+            headers = headers ?? new Headers();
+            headers["RESTar-AuthToken"] = originator.AuthToken;
+            var (_, result) = RunEvaluation((Action) method, ref query, body, headers, TCPConnection.Internal);
+            if (result.StatusCode == (HttpStatusCode) 508)
+                throw new InfiniteLoop(result.Headers["RESTar-Info"]);
+            return result;
+        }
+
+        public static IFinalizedResult Evaluate(Action action, ref string query, byte[] body, Headers headers, TCPConnection tcpConnection)
+        {
+            var (arguments, result) = RunEvaluation(action, ref query, body, headers, tcpConnection);
+            return arguments.ResultFinalizer(result, arguments.Accept, arguments.OutputContentTypeProvider);
+        }
+
+        private static (Arguments, IResult) RunEvaluation(Action action, ref string query, byte[] body, Headers headers, TCPConnection tcpConnection)
         {
             if (StackDepth++ > 300) throw new InfiniteLoop();
-            var (arguments, result) = (default(Arguments), default(IFinalizedResult));
+            var o = (arguments: default(Arguments), result: default(IResult));
 
             try
             {
@@ -81,34 +207,45 @@ namespace RESTar.Requests
                     case DELETE:
                     case REPORT:
                     case HEAD:
-                        arguments = new Arguments(action, ref query, body, headers, tcpConnection);
-                        arguments.Authenticate();
-                        arguments.ThrowIfError();
-                        var requestedResource = arguments.IResource;
-                        if (tcpConnection.HasWebSocket
-                            && tcpConnection.Origin != OriginType.Shell
-                            && requestedResource.Equals(EntityResource<AvailableResource>.Get)
-                            && query.Length < nameof(AvailableResource).Length)
-                            requestedResource = Shell.TerminalResource;
+                        o.arguments = new Arguments(action, ref query, body, headers, tcpConnection);
+                        o.arguments.Authenticate();
+                        o.arguments.ThrowIfError();
+                        var requestedResource = o.arguments.IResource;
+                        if (tcpConnection.HasWebSocket)
+                        {
+                            if (tcpConnection.WebSocketInternal.AuthToken == null)
+                                tcpConnection.WebSocketInternal.AuthToken = o.arguments.AuthToken;
+                            if (tcpConnection.Origin != OriginType.Shell
+                                && requestedResource.Equals(EntityResource<AvailableResource>.Get)
+                                && query.Length < nameof(AvailableResource).Length)
+                                requestedResource = Shell.TerminalResource;
+                        }
                         switch (requestedResource)
                         {
                             case ITerminalResourceInternal terminal:
                                 if (!tcpConnection.HasWebSocket)
-                                    return result = new UpgradeRequired(terminal.Name);
-                                terminal.InstantiateFor(tcpConnection.WebSocketInternal, arguments.Uri.Conditions);
-                                return result = new WebSocketResult(leaveOpen: true, trace: arguments);
+                                {
+                                    o.result = new UpgradeRequired(terminal.Name);
+                                    return o;
+                                }
+                                terminal.InstantiateFor(tcpConnection.WebSocketInternal, o.arguments.Uri.Conditions);
+                                o.result = new WebSocketResult(leaveOpen: true, trace: o.arguments);
+                                return o;
 
                             case var entityResource:
-                                result = HandleREST((dynamic) entityResource, arguments);
+                                o.result = HandleREST((dynamic) entityResource, o.arguments);
                                 if (!tcpConnection.HasWebSocket || tcpConnection.Origin == OriginType.Shell)
-                                    return result;
-                                tcpConnection.WebSocket.SendResult(result);
-                                return result = new WebSocketResult(leaveOpen: false, trace: arguments);
+                                    return o;
+                                var finalized = o.arguments.ResultFinalizer(o.result, o.arguments.Accept, o.arguments.OutputContentTypeProvider);
+                                tcpConnection.WebSocket.SendResult(finalized);
+                                o.result = new WebSocketResult(leaveOpen: false, trace: o.arguments);
+                                return o;
                         }
                     case OPTIONS:
-                        arguments = new Arguments(action, ref query, body, headers, tcpConnection);
-                        arguments.ThrowIfError();
-                        return result = HandleOptions(arguments.IResource, arguments);
+                        o.arguments = new Arguments(action, ref query, body, headers, tcpConnection);
+                        o.arguments.ThrowIfError();
+                        o.result = HandleOptions(o.arguments.IResource, o.arguments);
+                        return o;
 
                     // case VIEW: return HandleView((dynamic) resource, arguments);
                     // case PAGE:
@@ -132,12 +269,13 @@ namespace RESTar.Requests
                 if (!(error is Forbidden))
                 {
                     Error.ClearOld();
-                    errorId = Trans(() => Error.Create(error, arguments)).Id;
+                    errorId = Trans(() => Error.Create(error, o.arguments)).Id;
                 }
                 if (tcpConnection.HasWebSocket && tcpConnection.Origin != OriginType.Shell)
                 {
                     tcpConnection.WebSocket.SendResult(error);
-                    return result = new WebSocketResult(false, error);
+                    o.result = new WebSocketResult(false, error);
+                    return o;
                 }
                 switch (action)
                 {
@@ -150,8 +288,11 @@ namespace RESTar.Requests
                     case HEAD:
                         if (errorId != null)
                             error.Headers["ErrorInfo"] = $"/{typeof(Error).FullName}/id={HttpUtility.UrlEncode(errorId)}";
-                        return result = error;
-                    case OPTIONS: return result = new InvalidOrigin();
+                        o.result = error;
+                        return o;
+                    case OPTIONS:
+                        o.result = new InvalidOrigin();
+                        return o;
                     // case VIEW:
                     // case PAGE:
                     // case MENU:
@@ -165,8 +306,8 @@ namespace RESTar.Requests
             }
             finally
             {
-                if (!(result is WebSocketResult) && tcpConnection.Origin != OriginType.Shell)
-                    Console.Log(arguments, result);
+                if (!(o.result is WebSocketResult) && tcpConnection.Origin != OriginType.Shell)
+                    Console.Log(o.arguments, o.result);
                 StackDepth--;
             }
         }
@@ -180,25 +321,18 @@ namespace RESTar.Requests
             return null; //request.GetView();
         }
 
-        private static IFinalizedResult HandleREST<T>(IEntityResource<T> resource, Arguments arguments)
+        private static IResult HandleREST<T>(IEntityResource<T> resource, Arguments arguments)
             where T : class
         {
             using (var request = new RESTRequest<T>(resource, arguments))
             {
                 request.RunResourceAuthentication();
                 request.Evaluate();
-                try
-                {
-                    return arguments.ResultFinalizer.Invoke(request.Result);
-                }
-                catch (Exception e)
-                {
-                    throw new AbortedSelect<T>(e, request);
-                }
+                return request.Result;
             }
         }
 
-        private static IFinalizedResult HandleOptions(IResource resource, Arguments arguments)
+        private static IResult HandleOptions(IResource resource, Arguments arguments)
         {
             var origin = arguments.Headers["Origin"];
             if (origin != null && origin != "null" && (AllowAllOrigins || AllowedOrigins.Contains(new Uri(origin))))

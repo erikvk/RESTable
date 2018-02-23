@@ -6,33 +6,40 @@ using RESTar.Requests;
 
 namespace RESTar.Operations
 {
-    /// <inheritdoc />
+    /// <inheritdoc cref="IFinalizedResult" />
+    /// <inheritdoc cref="IResult" />
     /// <summary>
     /// The result of a RESTar request operation
     /// </summary>
-    public abstract class Result : IFinalizedResult
+    public abstract class Result : IFinalizedResult, IResult
     {
+        #region IResult
+
         /// <inheritdoc />
         public HttpStatusCode StatusCode { get; set; }
 
         /// <inheritdoc />
         public string StatusDescription { get; set; }
 
-        /// <summary>
-        /// The body to use in HTTP responses based on this result
-        /// </summary>
-        public MemoryStream Body { get; set; }
-
-        Stream IFinalizedResult.Body => Body;
-
-        /// <inheritdoc />
-        public string ContentType { get; set; }
-
         /// <inheritdoc />
         public Headers Headers { get; }
 
         /// <inheritdoc />
         public ICollection<string> Cookies { get; internal set; }
+
+        #endregion
+
+        #region Finalized
+
+        /// <inheritdoc />
+        public Stream Body { get; set; }
+
+        /// <inheritdoc />
+        public ContentType ContentType { get; set; }
+
+        #endregion
+
+        #region Trace and log
 
         /// <inheritdoc />
         public LogEventType LogEventType => LogEventType.HttpOutput;
@@ -54,6 +61,8 @@ namespace RESTar.Operations
 
         /// <inheritdoc />
         public bool ExcludeHeaders { get; }
+
+        #endregion
 
         internal Result(ITraceable trace)
         {

@@ -68,6 +68,12 @@ namespace RESTar.Internal
             if (!RequireApiKey)
                 return AssignAuthtoken(AccessRights.Root);
             AccessRights accessRights;
+            if (arguments.TcpConnection.WebSocketInternal?.AuthToken is string wsAuthToken)
+            {
+                if (!AuthTokens.TryGetValue(wsAuthToken, out accessRights))
+                    return null;
+                return wsAuthToken;
+            }
             if (arguments.TcpConnection.IsInternal)
             {
                 var authToken = arguments.Headers["RESTar-AuthToken"];
@@ -90,6 +96,7 @@ namespace RESTar.Internal
             }
             if (!ApiKeys.TryGetValue(key.SHA256(), out accessRights))
                 return null;
+            arguments.Headers["Authorization"] = "*******";
             return AssignAuthtoken(accessRights);
         }
 

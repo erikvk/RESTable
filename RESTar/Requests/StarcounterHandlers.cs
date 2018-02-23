@@ -10,7 +10,6 @@ using RESTar.WebSockets;
 using Starcounter;
 using static RESTar.Admin.Settings;
 using static RESTar.Requests.Action;
-using static RESTar.Requests.RequestEvaluator;
 
 namespace RESTar.Requests
 {
@@ -31,7 +30,7 @@ namespace RESTar.Requests
                     var headers = new Headers(request.HeadersDictionary);
                     if (request.WebSocketUpgrade)
                         connection.WebSocket = new StarcounterWebSocket(WsGroupName, request, headers, connection);
-                    var result = Evaluate(action, ref query, request.BodyBytes, headers, connection);
+                    var result = RequestEvaluator.Evaluate(action, ref query, request.BodyBytes, headers, connection);
                     if (result is WebSocketResult webSocketResult)
                     {
                         if (!webSocketResult.LeaveOpen)
@@ -95,7 +94,7 @@ namespace RESTar.Requests
             {
                 StatusCode = (ushort) result.StatusCode,
                 StatusDescription = result.StatusDescription,
-                ContentType = result.ContentType ?? MimeTypes.JSON
+                ContentType = result.ContentType.ToString()
             };
             if (result.Body != null)
             {

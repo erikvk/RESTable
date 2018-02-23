@@ -377,7 +377,6 @@ namespace RESTarTester
             Debug.Assert(jsonResponse4extreme?.IsSuccessStatusCode == true);
             Debug.Assert(jsonResponse5format?.IsSuccessStatusCode == true);
 
-
             #endregion
 
             #region GET Excel
@@ -495,6 +494,8 @@ namespace RESTarTester
                     }
                 };
             });
+            var byInternalSource = Http.POST("http://localhost:9000/rest/resource3", default(string),
+                new Dictionary<string, string> {["Source"] = "GET /resource3"});
 
             #endregion
 

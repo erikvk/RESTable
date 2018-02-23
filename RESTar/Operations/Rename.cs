@@ -8,6 +8,8 @@ using static System.StringComparison;
 
 namespace RESTar.Operations
 {
+    /// <inheritdoc cref="Dictionary{TKey,TValue}" />
+    /// /// <inheritdoc cref="IProcessor" />
     /// <summary>
     /// Renames properties in an IEnumerable
     /// </summary>

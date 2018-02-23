@@ -8,6 +8,11 @@ using RESTar.Internal;
 
 namespace RESTar.Admin
 {
+    /// <inheritdoc cref="ISelector{T}" />
+    /// <inheritdoc cref="IInserter{T}" />
+    /// <inheritdoc cref="IUpdater{T}" />
+    /// <inheritdoc cref="IDeleter{T}" />
+    /// <inheritdoc cref="IValidatable" />
     /// <summary>
     /// The DatabaseIndex resource lets an administrator set indexes for RESTar database resources.
     /// </summary>

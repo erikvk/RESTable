@@ -17,8 +17,8 @@ namespace RESTar.Results.Error
         }
 
         /// <inheritdoc />
-        public UnsupportedContent(MimeType unsupported) : base(ErrorCodes.UnsupportedContent,
-            $"Unsupported content type: '{unsupported.TypeCodeString}'")
+        public UnsupportedContent(string headerValue) : base(ErrorCodes.UnsupportedContent,
+            $"Unsupported content type in Content-Type header: {headerValue}")
         {
             StatusCode = HttpStatusCode.UnsupportedMediaType;
             StatusDescription = "Unsupported media type";

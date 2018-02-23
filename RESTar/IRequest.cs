@@ -54,11 +54,6 @@ namespace RESTar
         Methods Method { get; }
 
         /// <summary>
-        /// The media type accepted by the client
-        /// </summary>
-        MimeType Accept { get; }
-
-        /// <summary>
         /// The resource of the request
         /// </summary>
         IEntityResource Resource { get; }
@@ -69,14 +64,9 @@ namespace RESTar
         MetaConditions MetaConditions { get; }
 
         /// <summary>
-        /// The body of the request
+        /// Gets the request body
         /// </summary>
-        byte[] Body { get; }
-
-        /// <summary>
-        /// Gets the request body, deserialized to the given type
-        /// </summary>
-        T BodyObject<T>() where T : class;
+        Body Body { get; }
 
         /// <summary>
         /// The auth token assigned to this request

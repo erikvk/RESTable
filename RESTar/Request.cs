@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using RESTar.ContentTypeProviders;
 using RESTar.Deflection.Dynamic;
 using RESTar.Internal;
 using RESTar.Linq;
@@ -25,9 +26,7 @@ namespace RESTar
         #region Private and explicit members
 
         private Condition<T>[] _conditions;
-        private byte[] _body { get; set; }
-        byte[] IRequest.Body => _body;
-        T1 IRequest.BodyObject<T1>() => ((IRequest<T>)this).Body.Deserialize<T1>();
+        Body IRequest.Body => _body;
         internal string AuthToken { get; set; }
         string IRequest.AuthToken => AuthToken;
         Headers IRequest.ResponseHeaders { get; } = new Headers();
@@ -37,11 +36,10 @@ namespace RESTar
         TCPConnection ITraceable.TcpConnection { get; } = TCPConnection.Internal;
         Methods IRequest.Method => 0;
         Headers IRequest.Headers => RequestHeaders;
-        MimeType IRequest.Accept => MimeType.Default;
         string ITraceable.TraceId => null;
         private Func<IEnumerable<T>> EntitiesGenerator { get; set; }
         IEnumerable<T> IRequest<T>.GetEntities() => EntitiesGenerator?.Invoke() ?? new T[0];
-        
+
         Func<IEnumerable<T>> IRequestInternal<T>.EntitiesGenerator
         {
             set => EntitiesGenerator = value;
@@ -58,6 +56,7 @@ namespace RESTar
         private bool PATCHAllowed;
         private bool PUTAllowed;
         private bool DELETEAllowed;
+        private Body _body;
 
         internal void Prep()
         {
@@ -104,7 +103,7 @@ namespace RESTar
         /// </summary>
         public object Body
         {
-            set => _body = value.SerializeToBytes();
+            set => _body = new Body(JsonContentProvider.SerializeToBytes(value), "application/json", Serializer.JsonProvider);
         }
 
         /// <inheritdoc />
@@ -145,7 +144,7 @@ namespace RESTar
             MetaConditions = new MetaConditions {Unsafe = true};
             Conditions = conditions;
             this.Authenticate();
-            ScSql = Resource.Provider == typeof(StarcounterProvider).GetProviderId();
+            ScSql = Resource.Provider == typeof(StarcounterResourceProvider).GetProviderId();
             Resource.AvailableMethods.ForEach(m =>
             {
                 switch (m)
@@ -215,10 +214,10 @@ namespace RESTar
         /// the excel file as Stream and the number of non-header rows in the excel workbook.
         /// </summary>
         /// <returns></returns>
-        public (Stream excel, long nrOfRows) GETExcel()
+        public (Stream excel, ulong nrOfRows) GETExcel()
         {
-            GET().SerializeOutputExcel(Resource, out var excel, out var nrOfRows);
-            return (excel, nrOfRows);
+            var stream = Serializer.ExcelProvider.SerializeCollection("excel", GET(), this, out var count);
+            return (stream, count);
         }
 
         /// <summary>

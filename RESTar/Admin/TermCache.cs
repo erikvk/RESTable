@@ -8,6 +8,8 @@ using static RESTar.Methods;
 
 namespace RESTar.Admin
 {
+    /// <inheritdoc cref="ISelector{T}" />
+    /// <inheritdoc cref="IDeleter{T}" />
     /// <summary>
     /// The TermCache resource contains all the terms that RESTar has encountered 
     /// for a given resource type, for example in conditions.

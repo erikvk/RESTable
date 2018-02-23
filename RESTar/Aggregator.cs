@@ -1,101 +1,97 @@
 ﻿using System;
 using System.Collections.Generic;
-using Newtonsoft.Json.Linq;
-using RESTar.Http;
+using System.Linq;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 using RESTar.Linq;
-using RESTar.Serialization;
-using static System.Net.HttpStatusCode;
+using RESTar.Requests;
+using RESTar.Results.Error;
+using RESTar.Results.Success;
+using static Newtonsoft.Json.JsonToken;
 
 namespace RESTar
 {
+    internal class AggregatorTemplateConverter : CustomCreationConverter<Aggregator>
+    {
+        public override Aggregator Create(Type objectType) => new Aggregator();
+        public override bool CanConvert(Type objectType) => objectType == typeof(object) || base.CanConvert(objectType);
+
+        public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
+        {
+            switch (reader.TokenType)
+            {
+                case Null:
+                case StartObject:
+                    return base.ReadJson(reader, objectType, existingValue, serializer);
+                case StartArray:
+                    var list = new List<object>();
+                    while (reader.Read() && reader.TokenType != EndArray)
+                        list.Add(ReadJson(reader, objectType, existingValue, serializer));
+                    return list;
+                default: return serializer.Deserialize(reader);
+            }
+        }
+    }
+
+    /// <inheritdoc cref="ISelector{T}" />
+    /// <inheritdoc cref="Dictionary{TKey,TValue}" />
     /// <summary>
     /// A resource for creating arbitrary aggregated reports from multiple
     /// internal requests.
     /// </summary>
-    [RESTar(Methods.GET, Description = description)]
-    public class Aggregator : JObject, ISelector<Aggregator>
+    [RESTar(Methods.GET, Description = description), JsonConverter(typeof(AggregatorTemplateConverter))]
+    public class Aggregator : Dictionary<string, object>, ISelector<Aggregator>
     {
         private const string description = "A resource for creating arbitrary aggregated reports from multiple internal requests";
-
-        private Aggregator(JObject token) : base(token) { }
 
         /// <inheritdoc />
         public IEnumerable<Aggregator> Select(IRequest<Aggregator> request)
         {
-            JObject getTemplate(JToken token)
+            object populator(object node)
             {
-                switch (token)
+                switch (node)
                 {
-                    case JObject obj: return obj;
-                    case JArray arr when arr.Count == 1: return getTemplate(arr[0]);
-                    default: throw new Exception("Invalid Aggregator template. Expected a single object");
+                    case Aggregator obj:
+                        obj.ToList().ForEach(pair => obj[pair.Key] = populator(pair.Value));
+                        return obj;
+                    case List<object> array:
+                        return array.Select(populator).ToList();
+
+                    case string empty when string.IsNullOrWhiteSpace(empty): return empty;
+
+                    case string stringValue:
+                        Methods method;
+                        string uri;
+                        if (stringValue.StartsWith("GET "))
+                        {
+                            method = Methods.GET;
+                            uri = stringValue.Substring(4);
+                        }
+                        else if (stringValue.StartsWith("REPORT "))
+                        {
+                            method = Methods.REPORT;
+                            uri = stringValue.Substring(7);
+                        }
+                        else return stringValue;
+                        if (string.IsNullOrWhiteSpace(uri))
+                            throw new Exception($"Invalid URI in aggregator template. Expected relative uri after '{method.ToString()}'.");
+                        switch (RequestEvaluator.Evaluate(request, method, ref uri, null, request.Headers))
+                        {
+                            case RESTarError error: throw new Exception($"Could not get source data from '{uri}'. {error}");
+                            case NoContent _: return null;
+                            case Report report: return report.ReportBody.Count;
+                            case Entities entities: return entities.Content;
+                            case var other:
+                                throw new Exception($"Unexpected result from {method.ToString()} query inside " +
+                                                    $"Aggregator: {other.LogMessage}");
+                        }
+                    case var other: return other;
                 }
             }
 
-            void populator(JToken token)
-            {
-                switch (token)
-                {
-                    case JProperty property:
-                        var jvalue = property.Value;
-                        if (jvalue.Type == JTokenType.Object)
-                        {
-                            populator(jvalue);
-                            break;
-                        }
-                        if (jvalue.Type != JTokenType.String) break;
-                        var stringValue = jvalue.Value<string>();
-                        if (string.IsNullOrWhiteSpace(stringValue)) break;
-                        Methods method = default;
-                        string uriString;
-                        var method_uri = stringValue.Split(' ');
-                        if (method_uri.Length > 1)
-                        {
-                            uriString = method_uri[1];
-                            switch (method_uri[0])
-                            {
-                                case "GET":
-                                    method = Methods.GET;
-                                    break;
-                                case "REPORT":
-                                    method = Methods.REPORT;
-                                    break;
-                                default:
-                                    throw new Exception("Invalid method in template URI. " +
-                                                        "Only GET and REPORT are allowed");
-                            }
-                        }
-                        else uriString = method_uri[0];
-                        if (uriString[0] != '@') break;
-
-                        var response = HttpRequest.Internal(request, method, new Uri(uriString.Substring(1), UriKind.Relative), request.AuthToken);
-                        if (response?.IsSuccessStatusCode != true)
-                            throw new Exception(
-                                $"Could not get source data from '{uriString}'. {response?.StatusCode.ToCode()}: " +
-                                $"{response?.StatusDescription}. {response?.Headers?.SafeGet("RESTar-info")}");
-                        switch (method)
-                        {
-                            case Methods.GET:
-                                if (response.StatusCode == NoContent || !(response.Body?.Length > 2))
-                                    property.Value = null;
-                                else property.Value = response.Body.Deserialize<JToken>();
-                                break;
-                            case Methods.REPORT:
-                                if (response.StatusCode == NoContent || !(response.Body?.Length > 2))
-                                    property.Value = 0;
-                                else property.Value = response.Body.Deserialize<JObject>()["Count"];
-                                break;
-                        }
-                        break;
-                    case JObject obj:
-                        obj.Properties().ForEach(populator);
-                        break;
-                }
-            }
-
-            var tree = getTemplate(request.BodyObject<JToken>());
-            populator(tree);
-            return new[] {new Aggregator(tree)}.Where(request.Conditions);
+            var _template = request.Body.ToList<Aggregator>().FirstOrDefault();
+            populator(_template);
+            return new[] {_template}.Where(request.Conditions);
         }
     }
 }

@@ -94,8 +94,8 @@ namespace RESTar.Admin
                                (resource?.Alias != null ? $" ({resource.Alias})" : ""),
                 Action = arguments.Action,
                 ErrorCode = error.ErrorCode,
-                Body = arguments.BodyBytes != null
-                    ? Encoding.UTF8.GetString(arguments.BodyBytes.Take(5000).ToArray())
+                Body = arguments.Body.HasContent
+                    ? Encoding.UTF8.GetString(arguments.Body.Bytes.Take(5000).ToArray())
                     : null,
                 StackTrace = stackTrace.Length > MaxStringLength ? stackTrace.Substring(0, MaxStringLength) : stackTrace,
                 Message = totalMessage.Length > MaxStringLength ? totalMessage.Substring(0, MaxStringLength) : totalMessage,

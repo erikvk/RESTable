@@ -10,7 +10,6 @@ using RESTar.Results.Error;
 using RESTar.Results.Error.BadRequest;
 using RESTar.Results.Error.BadRequest.Aborted;
 using RESTar.Results.Success;
-using RESTar.Serialization;
 using static RESTar.Serialization.Serializer;
 
 namespace RESTar.Operations
@@ -131,7 +130,7 @@ namespace RESTar.Operations
             {
                 request.EntitiesGenerator = () =>
                 {
-                    var entities = request.Body.DeserializeList<T>();
+                    var entities = request.Body.ToList<T>();
                     if (request.Resource.RequiresValidation)
                         entities.OfType<IValidatable>().ForEach(item => item.Validate());
                     return entities;
@@ -172,7 +171,9 @@ namespace RESTar.Operations
             {
                 request.EntitiesGenerator = () =>
                 {
-                    var result = request.Body.Deserialize<T>();
+                    var results = request.Body.ToList<T>();
+                    if (results.Count > 1) throw new InvalidInputCount();
+                    var result = results.FirstOrDefault();
                     if (result is IValidatable i) i.Validate();
                     return new[] {result};
                 };
@@ -253,7 +254,7 @@ namespace RESTar.Operations
             {
                 request.EntitiesGenerator = () =>
                 {
-                    var updatedSource = source.Populate(request.Body.GetJsonUpdateString());
+                    var updatedSource = request.Body.PopulateTo(source);
                     if (request.Resource.RequiresValidation)
                         source.OfType<IValidatable>().ForEach(item => item.Validate());
                     return updatedSource;
@@ -289,15 +290,16 @@ namespace RESTar.Operations
             }
         }
 
-        private static int UPDATE_ONE(IRequestInternal<T> request, T source)
+        private static int UPDATE_ONE(IRequestInternal<T> request, List<T> source)
         {
             try
             {
                 request.EntitiesGenerator = () =>
                 {
-                    Populate(request.Body.GetJsonUpdateString(), source);
-                    if (source is IValidatable i) i.Validate();
-                    return new[] {source};
+                    request.Body.PopulateTo(source);
+                    var item = source[0];
+                    if (item is IValidatable i) i.Validate();
+                    return source;
                 };
                 return request.Resource.Update(request);
             }
@@ -442,7 +444,7 @@ namespace RESTar.Operations
                 {
                     case null:
                     case 0: return new InsertedEntities(INSERT_ONE(request), request);
-                    case 1: return new UpdatedEntities(UPDATE_ONE(request, source[0]), request);
+                    case 1: return new UpdatedEntities(UPDATE_ONE(request, source), request);
                     default: throw new AmbiguousMatch(request.Resource);
                 }
             }
@@ -473,7 +475,7 @@ namespace RESTar.Operations
                         .Split(',')
                         .Select(s => new Condition<T>(s, Operators.EQUALS, null))
                         .ToArray();
-                    foreach (var entity in request.Body.DeserializeList<JObject>())
+                    foreach (var entity in request.Body.ToList<JObject>())
                     {
                         conditions.ForEach(cond => cond.Value = cond.Term.Evaluate(entity));
                         var results = innerRequest.WithConditions(conditions).GET().ToList();
@@ -508,9 +510,9 @@ namespace RESTar.Operations
 
         internal static class View
         {
-            internal static int POST(ViewRequest<T> request) => INSERT_ONE(request);
-            internal static int PATCH(ViewRequest<T> request, T item) => UPDATE_ONE(request, item);
-            internal static int DELETE(ViewRequest<T> request, T item) => OP_DELETE_ONE(request, item);
+//            internal static int POST(ViewRequest<T> request) => INSERT_ONE(request);
+//            internal static int PATCH(ViewRequest<T> request, T item) => UPDATE_ONE(request, item);
+//            internal static int DELETE(ViewRequest<T> request, T item) => OP_DELETE_ONE(request, item);
         }
 
         internal static class App

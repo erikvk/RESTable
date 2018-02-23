@@ -101,6 +101,11 @@ namespace RESTar.Admin
         internal static DbMacro Get(string macroName) => Db.SQL<DbMacro>(ByName, macroName).FirstOrDefault();
     }
 
+    /// <inheritdoc cref="ISelector{T}" />
+    /// <inheritdoc cref="IInserter{T}" />
+    /// <inheritdoc cref="IUpdater{T}" />
+    /// <inheritdoc cref="IDeleter{T}" />
+    /// <inheritdoc cref="IValidatable" />
     /// <summary>
     /// A resource for all macros available for this RESTar instance
     /// </summary>

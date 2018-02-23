@@ -2,6 +2,7 @@
 
 namespace RESTar.Admin
 {
+    /// <inheritdoc cref="Options" />
     /// <summary>
     /// Provides access to commmon admin tasks
     /// </summary>
