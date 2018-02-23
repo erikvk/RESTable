@@ -149,7 +149,7 @@ namespace RESTar.Resources
         private IEntityResource BuildRegularResource<TResource>()
             where TResource : class, TBase => new Internal.EntityResource<TResource>
         (
-            fullName: typeof(TResource).RESTarTypeName(),
+            fullName: typeof(TResource).FullName,
             attribute: typeof(TResource).GetAttribute<RESTarAttribute>(),
             selector: GetDelegate<Selector<TResource>>(typeof(TResource)) ?? GetDefaultSelector<TResource>(),
             inserter: GetDelegate<Inserter<TResource>>(typeof(TResource)) ?? GetDefaultInserter<TResource>(),
@@ -166,7 +166,7 @@ namespace RESTar.Resources
             where TWrapper : ResourceWrapper<TWrapped>
             where TWrapped : class, TBase => new Internal.EntityResource<TWrapped>
         (
-            fullName: typeof(TWrapper).RESTarTypeName(),
+            fullName: typeof(TWrapper).FullName,
             attribute: typeof(TWrapper).GetAttribute<RESTarAttribute>(),
             selector: GetDelegate<Selector<TWrapped>>(typeof(TWrapper)) ?? GetDefaultSelector<TWrapped>(),
             inserter: GetDelegate<Inserter<TWrapped>>(typeof(TWrapper)) ?? GetDefaultInserter<TWrapped>(),

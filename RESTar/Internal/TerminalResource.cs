@@ -74,7 +74,7 @@ namespace RESTar.Internal
 
         internal TerminalResource()
         {
-            Name = typeof(T).RESTarTypeName() ?? throw new Exception();
+            Name = typeof(T).FullName ?? throw new Exception();
             Type = typeof(T);
             AvailableMethods = new[] {Methods.GET};
             IsInternal = false;

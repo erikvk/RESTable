@@ -124,7 +124,7 @@ namespace RESTar.Resources
                                 $"Invalid Interface of type '{interfaceType.RESTarTypeName()}' assigned to resource '{type.RESTarTypeName()}'. " +
                                 $"Interface contained properties with duplicate names matching '{interfacePropDupe}' (case insensitive).");
 
-                        var interfaceName = interfaceType.RESTarTypeName()?.Replace('+', '.');
+                        var interfaceName = interfaceType.RESTarTypeName();
                         type.GetInterfaceMap(interfaceType).TargetMethods.ForEach(method =>
                         {
                             if (!method.IsSpecialName) return;
