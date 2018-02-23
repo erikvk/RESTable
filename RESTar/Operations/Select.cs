@@ -1,10 +1,10 @@
 using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json.Linq;
+using RESTar.ContentTypeProviders;
 using RESTar.Deflection.Dynamic;
 using RESTar.Internal;
 using RESTar.Linq;
-using RESTar.Serialization;
 
 namespace RESTar.Operations
 {
@@ -31,7 +31,7 @@ namespace RESTar.Operations
             {
                 if (jobj[term.Key] != null) return;
                 object val = term.Evaluate(entity, out var actualKey);
-                jobj[actualKey] = val == null ? null : JToken.FromObject(val, Serializers.Json);
+                jobj[actualKey] = val == null ? null : JToken.FromObject(val, JsonContentProvider.Serializer);
             });
             return jobj;
         });

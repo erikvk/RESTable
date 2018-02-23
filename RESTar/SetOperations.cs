@@ -4,7 +4,7 @@ using System.Linq;
 using System.Net;
 using System.Text.RegularExpressions;
 using Newtonsoft.Json.Linq;
-using RESTar.Serialization;
+using RESTar.ContentTypeProviders;
 using RESTar.Linq;
 using RESTar.Requests;
 using RESTar.Results.Success;
@@ -55,7 +55,7 @@ namespace RESTar
                                 switch (RequestEvaluator.Evaluate(request, GET, ref argument))
                                 {
                                     case NoContent _: return new JArray();
-                                    case Entities entities: return JArray.FromObject(entities.Content, Serializers.Json);
+                                    case Entities entities: return JArray.FromObject(entities.Content, JsonContentProvider.Serializer);
                                     case var other: throw new Exception($"Could not get source data from '{argument}'. {other.LogMessage}");
                                 }
                             default:

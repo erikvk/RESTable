@@ -13,6 +13,7 @@ using Dynamit;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using RESTar.Auth;
+using RESTar.ContentTypeProviders;
 using RESTar.Deflection.Dynamic;
 using RESTar.Internal;
 using RESTar.Linq;
@@ -20,7 +21,6 @@ using RESTar.Operations;
 using RESTar.Resources;
 using RESTar.Results.Error.BadRequest;
 using RESTar.Results.Error.Forbidden;
-using RESTar.Serialization;
 using RESTar.View;
 using Starcounter;
 using static System.Globalization.DateTimeStyles;
@@ -347,7 +347,7 @@ namespace RESTar
                     foreach (DictionaryEntry pair in idict)
                         _jobj[pair.Key.ToString()] = pair.Value == null
                             ? null
-                            : JToken.FromObject(pair.Value, Serializers.Json);
+                            : JToken.FromObject(pair.Value, JsonContentProvider.Serializer);
                     return _jobj;
             }
 
@@ -359,7 +359,7 @@ namespace RESTar
                 .ForEach(prop =>
                 {
                     object val = prop.GetValue(entity);
-                    jobj[prop.Name] = val == null ? null : JToken.FromObject(val, Serializers.Json);
+                    jobj[prop.Name] = val == null ? null : JToken.FromObject(val, JsonContentProvider.Serializer);
                 });
             return jobj;
         }

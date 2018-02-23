@@ -29,7 +29,7 @@ namespace RESTar.ContentTypeProviders
         /// <summary>
         /// The JSON serializer
         /// </summary>
-        private static JsonSerializer Serializer { get; }
+        internal static JsonSerializer Serializer { get; }
 
         private const string JsonMimeType = "application/json";
         private const string RESTarSpecific = "application/restar-json";
@@ -70,12 +70,6 @@ namespace RESTar.ContentTypeProviders
             }
         }
 
-        internal string Serialize(object value, Formatting? formatting = null, Type type = null)
-        {
-            var _formatting = formatting ?? (_PrettyPrint ? Indented : None);
-            return JsonConvert.SerializeObject(value, type, _formatting, Settings);
-        }
-
         internal void Populate(JToken value, object target)
         {
             if (value == null || target == null) return;
@@ -99,6 +93,32 @@ namespace RESTar.ContentTypeProviders
 
         #endregion
 
+        /// <summary>
+        /// Serializes the value to the given JsonTextWriter
+        /// </summary>
+        public void Serialize(JsonTextWriter jsonWriter, object value)
+        {
+            Serializer.Serialize(jsonWriter, value);
+        }
+
+        /// <summary>
+        /// Serializes the given value using the formatting, and optionally - a type. If no 
+        /// formatting is given, the formatting defined in Settings is used.
+        /// </summary>
+        public string Serialize(object value, Formatting? formatting = null, Type type = null)
+        {
+            var _formatting = formatting ?? (_PrettyPrint ? Indented : None);
+            return JsonConvert.SerializeObject(value, type, _formatting, Settings);
+        }
+
+        /// <summary>
+        /// Serializes the given value using the formatting, and optionally - a type. If no 
+        /// formatting is given, the formatting defined in Settings is used.
+        /// </summary>
+        public T Deserialize<T>(string json, Formatting? formatting = null, Type type = null)
+        {
+            return JsonConvert.DeserializeObject<T>(json, Settings);
+        }
 
         #region IContentTypeProvider
 
@@ -197,11 +217,6 @@ namespace RESTar.ContentTypeProviders
                 return Serializer.Deserialize<List<T>>(jsonReader);
             }
         }
-
-        /// <summary>
-        /// Handle this JsonContentProvider as a JSON.net JsonSerializer
-        /// </summary>
-        public static implicit operator JsonSerializer(JsonContentProvider jsonContentProvider) => Serializer;
 
         #endregion
     }

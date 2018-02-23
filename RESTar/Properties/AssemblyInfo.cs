@@ -32,7 +32,7 @@ using Starcounter.Internal;
 // You can specify all the values or you can default the Build and Revision Numbers
 // by using the '*' as shown below:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion("0.3.49")]
+[assembly: AssemblyVersion("0.3.50")]
 [assembly: AssemblyFileVersion("0.3.49")]
 
 // Assures the current assembly has a reference to the Starcounter
