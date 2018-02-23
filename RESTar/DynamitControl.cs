@@ -13,11 +13,11 @@ namespace RESTar
         internal static readonly IList<Type> DynamitTypes = typeof(DDictionary)
             .GetConcreteSubclasses()
             .Where(c => c.HasAttribute<DynamicTableAttribute>())
-            .OrderBy(i => i.FullName)
+            .OrderBy(i => i.RESTarTypeName())
             .ToList();
 
         internal static Type GetByTableName(string tableId) => DynamitTypes
-            .FirstOrDefault(t => t.FullName == tableId);
+            .FirstOrDefault(t => t.RESTarTypeName() == tableId);
 
         internal static void ClearTable(string tableId) => Db
             .SQL<DDictionary>($"SELECT t FROM {tableId} t")

@@ -145,7 +145,8 @@ namespace RESTar.Deflection.Dynamic
             catch
             {
                 throw new Exception($"Invalid or unknown excel reduce function '{methodName}' for property '{p.Name}' in type '" +
-                                    $"{p.DeclaringType.FullName}'. Must be public instance method with signature 'public string <insert-name-here>()'");
+                                    $"{p.DeclaringType.RESTarTypeName()}'. Must be public instance method with signature 'public " +
+                                    $"string <insert-name-here>()'");
             }
         }
 
@@ -224,7 +225,7 @@ namespace RESTar.Deflection.Dynamic
         }
 
         /// <inheritdoc />
-        public override string ToString() => $"{Type.FullName}.{Name}";
+        public override string ToString() => $"{Type.RESTarTypeName()}.{Name}";
 
         /// <inheritdoc />
         public override bool Equals(object obj) => obj is DeclaredProperty p && p.MetadataToken == MetadataToken;
@@ -235,7 +236,7 @@ namespace RESTar.Deflection.Dynamic
         /// <summary>
         /// Compares properties by name
         /// </summary>
-        public static IEqualityComparer<DeclaredProperty> NameComparer = new _NameComparer();
+        public static readonly IEqualityComparer<DeclaredProperty> NameComparer = new _NameComparer();
 
         /// <summary>
         /// Compares properties by identity

@@ -49,7 +49,7 @@ namespace RESTar.Deflection
                         attributes: t.GetCustomAttributes<Attribute>()
                     ))
                     .ToArray()
-                : throw new ArgumentException($"Type must be enum, found '{enumType.FullName}'");
+                : throw new ArgumentException($"Type must be enum, found '{enumType.RESTarTypeName()}'");
         }
 
         /// <summary>
@@ -121,7 +121,7 @@ namespace RESTar.Deflection
                         attributes: t.GetCustomAttributes<Attribute>()
                     ))
                     .ToArray()
-                : throw new ArgumentException($"Type must be enum, found '{typeof(T).FullName}'");
+                : throw new ArgumentException($"Type must be enum, found '{typeof(T).RESTarTypeName()}'");
         }
 
         /// <summary>

@@ -97,7 +97,7 @@ namespace RESTar
 
         private void PrintOptions()
         {
-            var stringBuilder = new StringBuilder($"### {GetType().FullName} ###\n\n");
+            var stringBuilder = new StringBuilder($"### {GetType().RESTarTypeName()} ###\n\n");
             if (!_options.Any())
             {
                 stringBuilder.Append("  No available options.\n\n");

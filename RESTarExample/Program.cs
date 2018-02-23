@@ -28,6 +28,25 @@ namespace RESTarExample
         }
     }
 
+    [RESTar(Methods.GET)]
+    public class Thing : ISelector<Thing>
+    {
+        public IEnumerable<Thing> Select(IRequest<Thing> request)
+        {
+            throw new NotImplementedException();
+        }
+
+        [RESTar]
+        public class MyOptions : Options
+        {
+            protected override IEnumerable<Option> GetOptions()
+            {
+                return new[] { new Option("Foo", "a foo", strings => { }) };
+            }
+        }
+    }
+
+
     #region Stuff
 
     #region Solution 1

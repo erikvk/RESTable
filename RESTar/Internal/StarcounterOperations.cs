@@ -17,8 +17,8 @@ namespace RESTar.Internal
     internal static class StarcounterOperations<T> where T : class
     {
         internal const string ColumnByTable = "SELECT t FROM Starcounter.Metadata.Column t WHERE t.Table.Fullname =?";
-        internal static readonly string SELECT = $"SELECT t FROM {typeof(T).FullName.Fnuttify()} t ";
-        internal static readonly string COUNT = $"SELECT COUNT(t) FROM {typeof(T).FullName.Fnuttify()} t ";
+        internal static readonly string SELECT = $"SELECT t FROM {typeof(T).RESTarTypeName().Fnuttify()} t ";
+        internal static readonly string COUNT = $"SELECT COUNT(t) FROM {typeof(T).RESTarTypeName().Fnuttify()} t ";
 
         internal static readonly Selector<T> Select;
         internal static readonly Inserter<T> Insert;
@@ -113,7 +113,7 @@ namespace RESTar.Internal
             };
             Profile = r => ResourceProfile.Make(r, rows =>
             {
-                var resourceSQLName = typeof(T).FullName;
+                var resourceSQLName = typeof(T).RESTarTypeName();
                 var scColumns = Db.SQL<Column>(ColumnByTable, resourceSQLName).Select(c => c.Name).ToList();
                 var columns = r.Members.Values.Where(p => scColumns.Contains(p.Name)).ToList();
                 return rows.Sum(e => columns.Sum(p => p.ByteCount(e)) + 16);
@@ -124,7 +124,7 @@ namespace RESTar.Internal
         {
             if (resource.InterfaceType != null)
             {
-                var interfaceName = resource.InterfaceType.FullName?.Replace('+', '.');
+                var interfaceName = resource.InterfaceType.RESTarTypeName();
                 var members = resource.InterfaceType.GetDeclaredProperties();
                 if (members.ContainsKey("objectno"))
                 {

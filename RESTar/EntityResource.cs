@@ -41,7 +41,7 @@ namespace RESTar
         /// </summary>
         public static IResource ByTypeName(string typeName)
         {
-            return All.FirstOrDefault(r => string.Equals(r.Type.FullName, typeName, CurrentCultureIgnoreCase));
+            return All.FirstOrDefault(r => string.Equals(r.Type.RESTarTypeName(), typeName, CurrentCultureIgnoreCase));
         }
 
         /// <summary>
@@ -134,7 +134,7 @@ namespace RESTar
         /// if no resource is found.
         /// </summary>
         public static IEntityResource Get(Type type) => RESTarConfig.ResourceByType.SafeGet(type) as IEntityResource
-                                                        ?? throw new UnknownResource(type.FullName);
+                                                        ?? throw new UnknownResource(type.RESTarTypeName());
 
         /// <summary>
         /// Finds a resource by target type and throws an UnknownResource exception
@@ -156,7 +156,7 @@ namespace RESTar
         /// if there is no such resource
         /// </summary>
         public static IEntityResource<T> Get => RESTarConfig.ResourceByType.SafeGet(typeof(T)) as IEntityResource<T>
-                                                ?? throw new UnknownResource(typeof(T).FullName);
+                                                ?? throw new UnknownResource(typeof(T).RESTarTypeName());
 
         /// <summary>
         /// Gets the entity resource for a given type or null if there is no such resource
@@ -178,13 +178,19 @@ namespace RESTar
         /// Gets the terminal resource for a given type, and throws an UnknownResource exception 
         /// if there is no such resource
         /// </summary>
-        public static ITerminalResource Get => Resource.Get(typeof(T).FullName) as ITerminalResource
-                                               ?? throw new UnknownResource(typeof(T).FullName);
+        public static ITerminalResource Get
+        {
+            get
+            {
+                var typeName = typeof(T).RESTarTypeName();
+                return Resource.Get(typeName) as ITerminalResource ?? throw new UnknownResource(typeName);
+            }
+        }
 
         /// <summary>
         /// Gets the terminal resource for a given type or null if there is no such resource
         /// </summary>
-        public static ITerminalResource SafeGet => Resource.SafeGet(typeof(T).FullName) as ITerminalResource;
+        public static ITerminalResource SafeGet => Resource.SafeGet(typeof(T).RESTarTypeName()) as ITerminalResource;
 
         /// <summary>
         /// Gets the resource specifier for a given terminal resource

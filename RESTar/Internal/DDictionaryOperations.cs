@@ -63,7 +63,7 @@ namespace RESTar.Internal
                     return r.MetaConditions.Distinct.Apply(Select(r))?.LongCount() ?? 0L;
                 switch (r.Conditions.Length)
                 {
-                    case 0: return Db.SQL<long>($"SELECT COUNT(t) FROM {typeof(T).FullName} t").FirstOrDefault();
+                    case 0: return Db.SQL<long>($"SELECT COUNT(t) FROM {typeof(T).RESTarTypeName()} t").FirstOrDefault();
                     default: return Select(r)?.LongCount() ?? 0;
                 }
             };

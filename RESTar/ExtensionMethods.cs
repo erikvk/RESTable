@@ -56,6 +56,8 @@ namespace RESTar
 
         #region Type reflection
 
+        internal static string RESTarTypeName(this Type type) => type?.FullName?.Replace('+', '.');
+
         /// <summary>
         /// Can this type hold dynamic members? Defined as implementing the IDictionary`2 interface
         /// </summary>
@@ -150,7 +152,7 @@ namespace RESTar
                 case TypeCode.Object:
                     if (type.IsNullable(out var baseType)) return CountBytes(baseType);
                     if (type.IsStarcounterDbClass()) return 16;
-                    throw new Exception($"Unknown type encountered: '{type.FullName}'");
+                    throw new Exception($"Unknown type encountered: '{type.RESTarTypeName()}'");
                 case TypeCode.Boolean: return 4;
                 case TypeCode.Char: return 2;
                 case TypeCode.SByte: return 1;
@@ -381,7 +383,7 @@ namespace RESTar
         /// If the type is represented by some RESTar resource in the current instance,
         /// returns this resource. Else null.
         /// </summary>
-        public static Internal.IResource GetResource(this Type type) => Resource.ByTypeName(type.FullName);
+        public static Internal.IResource GetResource(this Type type) => Resource.ByTypeName(type.RESTarTypeName());
 
         /// <summary>
         /// If the type is represented by some RESTar resource in the current instance,
@@ -831,7 +833,7 @@ namespace RESTar
                 case DateTime other: return other.ToString("O");
                 case JObject _: return typeof(JObject).FullName;
                 case DDictionary _: return $"$(ObjectNo: {value.GetObjectNo()})";
-                case IDictionary other: return other.GetType().FullName;
+                case IDictionary other: return other.GetType().RESTarTypeName();
                 case IEnumerable<object> other: return string.Join(", ", other.Select(o => o.ToString()));
                 case DBNull _:
                 case null: return DBNull.Value;

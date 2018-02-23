@@ -56,19 +56,17 @@ namespace RESTar.Internal
         public bool IsStarcounterResource { get; }
         public bool RequiresValidation { get; }
         public string Provider { get; }
-        public IReadOnlyList<IEntityResource> InnerResources { get; set; }
+        public IReadOnlyList<IResource> InnerResources { get; set; }
         public ResourceProfile ResourceProfile => Profile?.Invoke(this);
         public bool ClaimedBy<T1>() where T1 : ResourceProvider => Provider == typeof(T1).GetProviderId();
 
         string IResourceInternal.Description
         {
-            get => Description;
             set => Description = value;
         }
 
         IReadOnlyList<Methods> IResourceInternal.AvailableMethods
         {
-            get => AvailableMethods;
             set => AvailableMethods = value;
         }
 

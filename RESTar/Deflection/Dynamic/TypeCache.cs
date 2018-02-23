@@ -49,14 +49,14 @@ namespace RESTar.Deflection.Dynamic
 
         internal static Term MakeOrGetCachedTerm(this Type resource, string key, TermBindingRules bindingRule)
         {
-            var tuple = (resource.FullName, key.ToLower(), bindingRule);
+            var tuple = (resource.RESTarTypeName(), key.ToLower(), bindingRule);
             if (!TermCache.TryGetValue(tuple, out var term))
                 term = TermCache[tuple] = Term.Parse(resource, key, bindingRule, null);
             return term;
         }
 
         internal static void ClearTermsFor<T>() => TermCache
-            .Where(pair => pair.Key.Type == typeof(T).FullName)
+            .Where(pair => pair.Key.Type == typeof(T).RESTarTypeName())
             .Select(pair => pair.Key)
             .ToList()
             .ForEach(key => TermCache.TryRemove(key, out var _));
@@ -89,7 +89,7 @@ namespace RESTar.Deflection.Dynamic
                             .SelectMany(i => i.GetProperties(Instance | Public))
                             .ParseDeclaredProperties(false);
                     case var _ when _type.HasAttribute<RESTarAttribute>(out var attr) && attr.Interface is Type t:
-                        var interfaceName = t.FullName?.Replace('+', '.');
+                        var interfaceName = t.RESTarTypeName();
                         var targetsByProp = _type
                             .GetInterfaceMap(t)
                             .TargetMethods
@@ -157,7 +157,7 @@ namespace RESTar.Deflection.Dynamic
                 }
             }
 
-            if (type?.FullName == null) return null;
+            if (type.RESTarTypeName() == null) return null;
             if (!DeclaredPropertyCache.TryGetValue(type, out var props))
                 props = DeclaredPropertyCache[type] = make(type).SafeToDictionary(p => p.Name, OrdinalIgnoreCase);
             return props;
@@ -169,7 +169,7 @@ namespace RESTar.Deflection.Dynamic
         public static DeclaredProperty GetDeclaredProperty(this PropertyInfo member)
         {
             var declaringType = member.DeclaringType;
-            if (declaringType?.FullName == null)
+            if (declaringType.RESTarTypeName() == null)
                 throw new Exception($"Cannot get declared property for member '{member}' of unknown type");
             return declaringType.GetDeclaredProperties().FirstOrDefault(p => p.Value.ActualName == member.Name).Value;
         }
@@ -180,7 +180,7 @@ namespace RESTar.Deflection.Dynamic
         public static DeclaredProperty GetDeclaredProperty(this JsonProperty member)
         {
             var declaringType = member.DeclaringType;
-            if (declaringType?.FullName == null)
+            if (declaringType.RESTarTypeName() == null)
                 throw new Exception($"Cannot get declared property for member '{member}' of unknown type");
             return declaringType.GetDeclaredProperties().FirstOrDefault(p => p.Value.Name == member.PropertyName).Value;
         }

@@ -94,20 +94,20 @@ namespace RESTar.Requests
             if (provider == null)
                 throw new InvalidProtocolProvider("External protocol provider cannot be null");
             if (string.IsNullOrWhiteSpace(provider.ProtocolIdentifier))
-                throw new InvalidProtocolProvider($"Invalid protocol provider '{provider.GetType().FullName}'. " +
+                throw new InvalidProtocolProvider($"Invalid protocol provider '{provider.GetType().RESTarTypeName()}'. " +
                                                   "ProtocolIdentifier cannot be null or whitespace");
             if (!Regex.IsMatch(provider.ProtocolIdentifier, "^[a-zA-Z]+$"))
-                throw new InvalidProtocolProvider($"Invalid protocol provider '{provider.GetType().FullName}'. " +
+                throw new InvalidProtocolProvider($"Invalid protocol provider '{provider.GetType().RESTarTypeName()}'. " +
                                                   "ProtocolIdentifier can only contain letters a-z and A-Z");
             if (!provider.AllowExternalContentProviders)
             {
                 var contentProviders = provider.GetContentTypeProviders()?.ToList();
                 if (contentProviders?.Any() != true)
-                    throw new InvalidProtocolProvider($"Invalid protocol provider '{provider.GetType().FullName}'. " +
+                    throw new InvalidProtocolProvider($"Invalid protocol provider '{provider.GetType().RESTarTypeName()}'. " +
                                                       "The protocol provider allows no external content type providers " +
                                                       "and does not provide any content type providers of its own.");
                 if (contentProviders.All(p => p.CanRead()?.Any() != true) && contentProviders.All(p => p.CanWrite()?.Any() != true))
-                    throw new InvalidProtocolProvider($"Invalid protocol provider '{provider.GetType().FullName}'. " +
+                    throw new InvalidProtocolProvider($"Invalid protocol provider '{provider.GetType().RESTarTypeName()}'. " +
                                                       "The protocol provider allows no external content type providers " +
                                                       "and none of the provided content type providers can read or write.");
             }
@@ -118,7 +118,7 @@ namespace RESTar.Requests
             if (provider == null)
                 throw new InvalidContentTypeProvider("External content type provider cannot be null");
             if (provider.CanRead()?.Any() != true && provider.CanWrite()?.Any() != true)
-                throw new InvalidContentTypeProvider($"Provider '{provider.GetType().FullName}' cannot read or write to any formats");
+                throw new InvalidContentTypeProvider($"Provider '{provider.GetType().RESTarTypeName()}' cannot read or write to any formats");
         }
 
         internal static void SetupContentTypeProviders(List<IContentTypeProvider> contentTypeProviders)

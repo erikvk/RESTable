@@ -108,7 +108,7 @@ namespace RESTar.Admin
                 EnabledMethods = iresource.AvailableMethods.ToArray(),
                 Editable = entityResource?.Editable == true,
                 IsInternal = iresource.IsInternal,
-                Type = iresource.Type.FullName,
+                Type = iresource.Type.RESTarTypeName(),
                 Views = entityResource != null
                     ? (entityResource.Views?.Select(v => new ViewInfo(v.Name, v.Description ?? "No description")).ToArray()
                        ?? new ViewInfo[0])

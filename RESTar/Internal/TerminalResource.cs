@@ -34,7 +34,7 @@ namespace RESTar.Internal
         public override string ToString() => Name;
         public override bool Equals(object obj) => obj is TerminalResource<T> t && t.Name == Name;
         public override int GetHashCode() => Name.GetHashCode();
-        public IReadOnlyList<IEntityResource> InnerResources { get; set; }
+        public IReadOnlyList<IResource> InnerResources { get; set; }
         public Selector<T> Select { get; }
         public IReadOnlyDictionary<string, DeclaredProperty> Members { get; }
         private Constructor<ITerminal> Constructor { get; }
@@ -74,7 +74,7 @@ namespace RESTar.Internal
 
         internal TerminalResource()
         {
-            Name = typeof(T).FullName ?? throw new Exception();
+            Name = typeof(T).RESTarTypeName() ?? throw new Exception();
             Type = typeof(T);
             AvailableMethods = new[] {Methods.GET};
             IsInternal = false;

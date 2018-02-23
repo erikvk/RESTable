@@ -72,7 +72,7 @@ namespace RESTar.Admin
         {
             if (type.IsDDictionary()) return GetDDict(type);
             if (type.IsStarcounterDbClass()) return GetSC(type);
-            throw new Exception($"Cannot profile '{type.FullName}'. No profiler implemented for type");
+            throw new Exception($"Cannot profile '{type.RESTarTypeName()}'. No profiler implemented for type");
         }
 
         /// <summary>
@@ -82,7 +82,7 @@ namespace RESTar.Admin
 
         internal static ResourceProfile Make<T>(IEntityResource<T> resource, Func<IEnumerable<T>, long> byteCounter) where T : class
         {
-            var sqlName = typeof(T).FullName.Fnuttify();
+            var sqlName = typeof(T).RESTarTypeName().Fnuttify();
             var domain = SELECT<T>(sqlName);
             var domainCount = COUNT(sqlName);
             long totalBytes, sampleSize;

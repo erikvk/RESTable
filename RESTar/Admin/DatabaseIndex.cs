@@ -111,7 +111,7 @@ namespace RESTar.Admin
         private static void Register<T>(string indexName, params ColumnInfo[] columns) where T : class
         {
             SelectionCondition.Value = indexName;
-            SelectionRequest.PUT(() => new DatabaseIndex(typeof(T).FullName)
+            SelectionRequest.PUT(() => new DatabaseIndex(typeof(T).RESTarTypeName())
             {
                 Name = indexName,
                 Columns = columns

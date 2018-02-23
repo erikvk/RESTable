@@ -27,7 +27,7 @@ namespace RESTar.Admin
             .DeclaredPropertyCache
             .Select(item => new PropertyCache
             {
-                Type = item.Key.FullName,
+                Type = item.Key.RESTarTypeName(),
                 Properties = item.Value.Values
             })
             .Where(request.Conditions);

@@ -45,7 +45,7 @@ namespace RESTar.Resources
                     throw new Exception("Found no resource to register index on");
                 try
                 {
-                    Db.SQL($"CREATE INDEX {index.Name.Fnuttify()} ON {index.IResource.Type.FullName.Fnuttify()} " +
+                    Db.SQL($"CREATE INDEX {index.Name.Fnuttify()} ON {index.IResource.Type.RESTarTypeName().Fnuttify()} " +
                            $"({string.Join(", ", index.Columns.Select(c => $"{c.Name.Fnuttify()}{(c.Descending ? " DESC" : "")}"))})");
                     count += 1;
                 }
@@ -66,10 +66,10 @@ namespace RESTar.Resources
             var count = 0;
             foreach (var index in request.GetEntities())
             {
-                Db.SQL($"DROP INDEX {index.Name.Fnuttify()} ON {index.IResource.Type.FullName.Fnuttify()}");
+                Db.SQL($"DROP INDEX {index.Name.Fnuttify()} ON {index.IResource.Type.RESTarTypeName().Fnuttify()}");
                 try
                 {
-                    Db.SQL($"CREATE INDEX {index.Name.Fnuttify()} ON {index.IResource.Type.FullName.Fnuttify()} " +
+                    Db.SQL($"CREATE INDEX {index.Name.Fnuttify()} ON {index.IResource.Type.RESTarTypeName().Fnuttify()} " +
                            $"({string.Join(", ", index.Columns.Select(c => $"{c.Name.Fnuttify()} {(c.Descending ? "DESC" : "")}"))})");
                     count += 1;
                 }
@@ -90,7 +90,7 @@ namespace RESTar.Resources
             var count = 0;
             foreach (var index in request.GetEntities())
             {
-                Db.SQL($"DROP INDEX {index.Name.Fnuttify()} ON {index.IResource.Type.FullName.Fnuttify()}");
+                Db.SQL($"DROP INDEX {index.Name.Fnuttify()} ON {index.IResource.Type.RESTarTypeName().Fnuttify()}");
                 count += 1;
             }
             return count;
