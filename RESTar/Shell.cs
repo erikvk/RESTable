@@ -176,7 +176,7 @@ namespace RESTar
                             Close();
                             break;
                         case "?":
-                            WebSocket.SendText($"{(Query.Any() ? Query : "/")}");
+                            WebSocket.SendText($"{(Query.Any() ? Query : "<empty>")}");
                             break;
                         case "RELOAD":
                             SafeOperation(Action.GET);
