@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text.RegularExpressions;
@@ -100,7 +99,6 @@ namespace RESTar.Requests
                 case Report report:
                     result.Headers["RESTar-count"] = report.ReportBody.Count.ToString();
                     report.Body = contentTypeProvider.SerializeEntity(accept, report.ReportBody, report.Request);
-                    report.Body.Seek(0, SeekOrigin.Begin);
                     report.ContentType = accept;
                     return report;
 
@@ -108,7 +106,6 @@ namespace RESTar.Requests
                     entities.Body = contentTypeProvider.SerializeCollection(accept, entities.Content, entities.Request, out var entityCount);
                     if (entityCount == 0) return new NoContent(result);
                     entities.ContentType = accept;
-                    entities.Body.Seek(0, SeekOrigin.Begin);
                     entities.Headers["RESTar-count"] = entityCount.ToString();
                     entities.EntityCount = entityCount;
                     if (entities.IsPaged)

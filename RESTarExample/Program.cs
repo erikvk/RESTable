@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using Dynamit;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using RESTar;
+using RESTar.ContentTypeProviders;
 using RESTar.Resources;
 using Starcounter;
 
@@ -13,6 +15,47 @@ using Starcounter;
 
 namespace RESTarExample
 {
+    public class XMLSerializer : IContentTypeProvider
+    {
+        public ContentType[] CanWrite() => new ContentType[] {"application/xml"};
+        public ContentType[] CanRead() => null;
+        public string GetContentDispositionFileExtension(ContentType contentType) => ".xml";
+        private JsonContentProvider JsonProvider = new JsonContentProvider();
+
+        public Stream SerializeEntity<T>(ContentType accept, T entity, IRequest request) where T : class
+        {
+            using (var stream = JsonProvider.SerializeEntity("application/json", entity, request))
+            using (var streamReader = new StreamReader(stream))
+            {
+                var json = streamReader.ReadToEnd();
+                var xml = JsonConvert.DeserializeXmlNode(json, "root", true);
+                var xmlStream = new MemoryStream();
+                xml.Save(xmlStream);
+                return xmlStream;
+            }
+        }
+
+        public Stream SerializeCollection<T>(ContentType accept, IEnumerable<T> entities, IRequest request, out ulong entityCount) where T : class
+        {
+            using (var stream = JsonProvider.SerializeCollection("application/json", entities, request, out entityCount))
+            using (var streamReader = new StreamReader(stream))
+            {
+                var json = $"{{\"entity\":{streamReader.ReadToEnd()}}}";
+                var xml = JsonConvert.DeserializeXmlNode(json, "root", true);
+                var xmlStream = new MemoryStream();
+                xml.Save(xmlStream);
+                xmlStream.Seek(0, SeekOrigin.Begin);
+                return xmlStream;
+            }
+        }
+
+        public T DeserializeEntity<T>(ContentType contentType, byte[] body) where T : class => throw new NotImplementedException();
+        public List<T> DeserializeCollection<T>(ContentType contentType, byte[] body) where T : class => throw new NotImplementedException();
+
+        public IEnumerable<T> Populate<T>(ContentType contentType, IEnumerable<T> entities, byte[] body) where T : class =>
+            throw new NotImplementedException();
+    }
+
     public static class Program
     {
         public static void Main()
@@ -23,7 +66,8 @@ namespace RESTarExample
                 requireApiKey: true,
                 allowAllOrigins: false,
                 configFilePath: @"C:\Mopedo\mopedo\Mopedo.config",
-                lineEndings: LineEndings.Linux
+                lineEndings: LineEndings.Linux,
+                contentTypeProviders: new[] {new XMLSerializer()}
             );
         }
     }

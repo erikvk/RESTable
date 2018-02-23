@@ -53,9 +53,9 @@ namespace RESTar.Requests
             var contentTypeProviders = provider.GetContentTypeProviders()?.ToList();
             contentTypeProviders?.ForEach(contentTypeProvider =>
             {
-                contentTypeProvider.CanRead().ForEach(contentType => cachedProvider
+                contentTypeProvider.CanRead()?.ForEach(contentType => cachedProvider
                     .InputContentTypeProviders[contentType.MimeType] = contentTypeProvider);
-                contentTypeProvider.CanWrite().ForEach(contentType => cachedProvider
+                contentTypeProvider.CanWrite()?.ForEach(contentType => cachedProvider
                     .OutputContentTypeProviders[contentType.MimeType] = contentTypeProvider);
             });
             if (provider.AllowExternalContentProviders)
@@ -74,13 +74,13 @@ namespace RESTar.Requests
 
             cachedProvider.DefaultInputProvider = cachedProvider.InputContentTypeProviders.Values.FirstOrDefault(p =>
             {
-                if (!p.CanRead().Any()) return false;
+                if (p.CanRead()?.Any() != true) return false;
                 cachedProvider.DefaultInputContentType = p.CanRead().First();
                 return true;
             });
             cachedProvider.DefaultOutputProvider = cachedProvider.OutputContentTypeProviders.Values.FirstOrDefault(p =>
             {
-                if (!p.CanWrite().Any()) return false;
+                if (p.CanWrite()?.Any() != true) return false;
                 cachedProvider.DefaultOutputContentType = p.CanWrite().First();
                 return true;
             });
@@ -105,7 +105,7 @@ namespace RESTar.Requests
                     throw new InvalidProtocolProvider($"Invalid protocol provider '{provider.GetType().FullName}'. " +
                                                       "The protocol provider allows no external content type providers " +
                                                       "and does not provide any content type providers of its own.");
-                if (contentProviders.All(p => !p.CanRead().Any()) && contentProviders.All(p => !p.CanWrite().Any()))
+                if (contentProviders.All(p => p.CanRead()?.Any() != true) && contentProviders.All(p => p.CanWrite()?.Any() != true))
                     throw new InvalidProtocolProvider($"Invalid protocol provider '{provider.GetType().FullName}'. " +
                                                       "The protocol provider allows no external content type providers " +
                                                       "and none of the provided content type providers can read or write.");
@@ -116,7 +116,7 @@ namespace RESTar.Requests
         {
             if (provider == null)
                 throw new InvalidContentTypeProvider("External content type provider cannot be null");
-            if (!provider.CanRead().Any() && !provider.CanWrite().Any())
+            if (provider.CanRead()?.Any() != true && provider.CanWrite()?.Any() != true)
                 throw new InvalidContentTypeProvider($"Provider '{provider.GetType().FullName}' cannot read or write to any formats");
         }
 
@@ -124,17 +124,14 @@ namespace RESTar.Requests
         {
             InputContentTypeProviders = new Dictionary<string, IContentTypeProvider>(StringComparer.OrdinalIgnoreCase);
             OutputContentTypeProviders = new Dictionary<string, IContentTypeProvider>(StringComparer.OrdinalIgnoreCase);
-
             contentTypeProviders = contentTypeProviders ?? new List<IContentTypeProvider>();
             contentTypeProviders.Insert(0, Serializer.ExcelProvider);
             contentTypeProviders.Insert(0, Serializer.JsonProvider);
             foreach (var provider in contentTypeProviders)
             {
                 ValidateContentTypeProvider(provider);
-                foreach (var contentType in provider.CanRead())
-                    InputContentTypeProviders[contentType.MimeType] = provider;
-                foreach (var contentType in provider.CanWrite())
-                    OutputContentTypeProviders[contentType.MimeType] = provider;
+                provider.CanRead()?.ForEach(contentType => InputContentTypeProviders[contentType.MimeType] = provider);
+                provider.CanWrite()?.ForEach(contentType => OutputContentTypeProviders[contentType.MimeType] = provider);
             }
         }
 

@@ -66,6 +66,7 @@ namespace RESTar.ContentTypeProviders
                 entityCount = jwr.ObjectsWritten;
                 swr.Write(formatter.Post);
             }
+            stream.Seek(0, SeekOrigin.Begin);
             return entityCount > 0 ? stream : null;
         }
 
@@ -84,6 +85,7 @@ namespace RESTar.ContentTypeProviders
                 entityCount = jwr.ObjectsWritten;
                 swr.Write(formatter.Post);
             }
+            stream.Seek(0, SeekOrigin.Begin);
             return entityCount > 0 ? stream : null;
         }
 
