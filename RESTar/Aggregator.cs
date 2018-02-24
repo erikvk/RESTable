@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
+using Newtonsoft.Json.Linq;
 using RESTar.Linq;
 using RESTar.Requests;
 using RESTar.Results.Error;
@@ -23,11 +24,6 @@ namespace RESTar
                 case Null:
                 case StartObject:
                     return base.ReadJson(reader, objectType, existingValue, serializer);
-                case StartArray:
-                    var list = new List<object>();
-                    while (reader.Read() && reader.TokenType != EndArray)
-                        list.Add(ReadJson(reader, objectType, existingValue, serializer));
-                    return list;
                 default: return serializer.Deserialize(reader);
             }
         }
@@ -54,8 +50,8 @@ namespace RESTar
                     case Aggregator obj:
                         obj.ToList().ForEach(pair => obj[pair.Key] = populator(pair.Value));
                         return obj;
-                    case List<object> array:
-                        return array.Select(populator).ToList();
+                    case JArray array:
+                        return array.Select(item => item.ToObject<object>()).Select(populator);
 
                     case string empty when string.IsNullOrWhiteSpace(empty): return empty;
 

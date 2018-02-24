@@ -107,7 +107,8 @@ namespace RESTar
                 SafeOperation(Action.GET);
                 return;
             }
-            switch (input.Trim().FirstOrDefault())
+            input = input.Trim();
+            switch (input.FirstOrDefault())
             {
                 case '\0':
                 case '\n': break;
