@@ -4,6 +4,7 @@ using System.Linq;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
+using RESTar.ContentTypeProviders;
 using RESTar.Linq;
 using RESTar.Requests;
 using RESTar.Results.Error;
@@ -52,6 +53,8 @@ namespace RESTar
                         return obj;
                     case JArray array:
                         return array.Select(item => item.ToObject<object>()).Select(populator);
+                    case JObject jobj:
+                        return populator(jobj.ToObject<Aggregator>(JsonContentProvider.Serializer));
 
                     case string empty when string.IsNullOrWhiteSpace(empty): return empty;
 
