@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
 using System.Text.RegularExpressions;
+using System.Web;
 using Newtonsoft.Json.Linq;
 using RESTar.ContentTypeProviders;
 using RESTar.Linq;
@@ -119,34 +119,40 @@ namespace RESTar
             if (string.IsNullOrEmpty(mapper)) throw new ArgumentException(nameof(mapper));
 
             var mapped = new HashSet<JToken>(EqualityComparer);
-            var keys = Regex
-                .Matches(mapper, RegEx.MapMacro)
-                .Cast<Match>()
-                .Select(match => match.Value.Substring(2, match.Length - 3))
-                .ToArray();
+            var index = 0;
+            var keys = new List<string>();
+            mapper = Regex.Replace(mapper, RegEx.MapMacro, match =>
+            {
+                keys.Add(match.Groups["value"].Value);
+                return $"{{{index++}}}";
+            });
+            var argumentCount = keys.Count;
+            var valueBuffer = new object[argumentCount];
 
             Distinct(set).ForEach(item =>
             {
                 var obj = item as JObject ?? throw new Exception("JSON syntax error in map set. Set must be of objects");
-                var skip = false;
                 var localMapper = mapper;
-                foreach (var key in keys)
+                for (var i = 0; i < argumentCount; i += 1)
                 {
-                    switch (obj.GetValue(key, OrdinalIgnoreCase))
+                    string value;
+                    switch (obj.GetValue(keys[i], OrdinalIgnoreCase))
                     {
+                        case JValue jvalue when jvalue.Type == JTokenType.Null:
                         case null:
-                            localMapper = localMapper.Replace(key, "null");
+                            value = "null";
                             break;
-                        case JValue value when value.Value<string>() is string stringValue:
-                            var replaceWith = stringValue != "" ? stringValue : "\"\"";
-                            localMapper = localMapper.Replace(key, WebUtility.UrlEncode(replaceWith));
+                        case JValue jvalue when jvalue.Type == JTokenType.Date:
+                            value = jvalue.Value<DateTime>().ToString("O");
                             break;
-                        default:
-                            skip = true;
+                        case JValue jvalue when jvalue.Value<string>() is string stringValue:
+                            value = stringValue == "" ? "\"\"" : stringValue;
                             break;
+                        default: return;
                     }
+                    valueBuffer[i] = HttpUtility.UrlEncode(value);
                 }
-                if (skip) return;
+                localMapper = string.Format(localMapper, valueBuffer);
                 switch (RequestEvaluator.Evaluate(request, GET, ref localMapper))
                 {
                     case NoContent _: break;

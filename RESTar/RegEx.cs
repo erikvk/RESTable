@@ -48,9 +48,8 @@
         /// <summary>
         /// Used in setoperations when mapping object data to function parameters
         /// </summary>
-        internal const string MapMacro = @"\$\([^\)]+\)";
-
-
+        internal const string MapMacro = @"\$\((?<value>[^\)]+)\)";
+        
         /// <summary>
         /// Matches condition literals sorrounded with double quotes
         /// </summary>
