@@ -26,7 +26,7 @@ namespace RESTar.ResourceTemplates
     /// receive the commands OPEN, PAUSE and CLOSE, and that regurarly push messages 
     /// to all open terminals.
     /// </summary>
-    public abstract class Console : ITerminal
+    public abstract class ConsoleTerminal : ITerminal
     {
         /// <summary>
         /// The status of the console
@@ -59,7 +59,7 @@ namespace RESTar.ResourceTemplates
             if (welcomeBody != null)
                 welcomeBody = welcomeBody + "\n\n";
             return $"### {WelcomeHeader ?? GetType().RESTarTypeName()} ###\n\n{welcomeBody}> Status: {Status}\n\n" +
-                   (Status == ConsoleStatus.Open ? "" : "> To open the console, type OPEN\n") +
+                   (IsOpen ? "" : "> To open the console, type OPEN\n") +
                    "> To pause, type PAUSE\n> To close, type CLOSE\n";
         }
 

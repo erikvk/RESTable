@@ -38,7 +38,7 @@ namespace RESTarExample
         }
 
         [RESTar]
-        public class MyOptions : Options
+        public class MyOptionsTerminal : OptionsTerminal
         {
             protected override IEnumerable<Option> GetOptions()
             {

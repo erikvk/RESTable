@@ -11,7 +11,7 @@ using static Newtonsoft.Json.Formatting;
 namespace RESTar.Admin
 {
     [RESTar(Description = description)]
-    internal sealed class NetworkConsole : ResourceTemplates.Console
+    internal sealed class NetworkConsole : ConsoleTerminal
     {
         private const string description = "The console is a terminal resource that allows a WebSocket client to receive " +
                                            "pushed updates when the REST API receives requests and WebSocket events.";
@@ -47,7 +47,7 @@ namespace RESTar.Admin
 
         internal static void Log(ILogable initial, ILogable final) => Consoles
             .AsParallel()
-            .Where(c => c.Status == ConsoleStatus.Open)
+            .Where(c => c.IsOpen)
             .GroupBy(c => c.Format)
             .ForEach(group =>
             {
@@ -99,7 +99,7 @@ namespace RESTar.Admin
 
         internal static void Log(ILogable logable) => Consoles
             .AsParallel()
-            .Where(c => c.Status == ConsoleStatus.Open)
+            .Where(c => c.IsOpen)
             .GroupBy(c => c.Format)
             .ForEach(group =>
             {

@@ -123,8 +123,8 @@
     <Compile Include="Requests\ITraceable.cs" />
     <Compile Include="Requests\OriginType.cs" />
     <Compile Include="Resources\TerminalResourceProvider.cs" />
-    <Compile Include="ResourceTemplates\Console.cs" />
-    <Compile Include="ResourceTemplates\Options.cs" />
+    <Compile Include="ResourceTemplates\ConsoleTerminal.cs" />
+    <Compile Include="ResourceTemplates\OptionsTerminal.cs" />
     <Compile Include="Results\Error\InvalidProtocolProvider.cs" />
     <Compile Include="Results\Error\InvalidContentTypeProvider.cs" />
     <Compile Include="Results\Error\InvalidReferencedEnumDeclaration.cs" />

@@ -47,19 +47,17 @@ namespace RESTar.ResourceTemplates
 
     /// <inheritdoc />
     /// <summary>
-    /// An ITerminal class that displays a number of options and lets the consumer trigger them 
+    /// A simple resource template for creating terminal resources that expose a set of options. 
+    /// To use, simply define the GetOptions() method that returns the options that should be 
+    /// exposed by this resource. Input and output cannot be handled by the implementing class.
     /// using commands.
     /// </summary>
-    public abstract class Options : ITerminal
+    public abstract class OptionsTerminal : ITerminal
     {
-        private IWebSocket WebSocket { get; set; }
+        /// <inheritdoc />
+        public IWebSocket WebSocket { protected get; set; }
 
         private IReadOnlyDictionary<string, Option> _options { get; set; }
-
-        IWebSocket ITerminal.WebSocket
-        {
-            set => WebSocket = value;
-        }
 
         void ITerminal.Open()
         {
