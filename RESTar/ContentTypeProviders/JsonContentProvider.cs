@@ -34,6 +34,7 @@ namespace RESTar.ContentTypeProviders
         private const string JsonMimeType = "application/json";
         private const string RESTarSpecific = "application/restar-json";
         private const string Brief = "json";
+        private const string TextPlain = "text/plain";
 
         static JsonContentProvider()
         {
@@ -70,11 +71,17 @@ namespace RESTar.ContentTypeProviders
             }
         }
 
-        internal void Populate(JToken value, object target)
+        internal void PopulateJToken(JToken value, object target)
         {
             if (value == null || target == null) return;
             using (var sr = value.CreateReader())
                 Serializer.Populate(sr, target);
+        }
+
+        internal void Populate(string json, object target)
+        {
+            if (string.IsNullOrWhiteSpace(json)) return;
+            JsonConvert.PopulateObject(json, target, Settings);
         }
 
         internal MemoryStream SerializeStream(object entity, Formatting? formatting = null, Type type = null)
@@ -137,10 +144,10 @@ namespace RESTar.ContentTypeProviders
         }
 
         /// <inheritdoc />
-        public ContentType[] CanWrite() => new ContentType[] {JsonMimeType, RESTarSpecific, Brief};
+        public ContentType[] CanWrite() => new ContentType[] {JsonMimeType, RESTarSpecific, Brief, TextPlain};
 
         /// <inheritdoc />
-        public ContentType[] CanRead() => new ContentType[] {JsonMimeType, RESTarSpecific, Brief};
+        public ContentType[] CanRead() => new ContentType[] {JsonMimeType, RESTarSpecific, Brief, TextPlain};
 
         /// <summary>
         /// Serializes the given object to a byte array

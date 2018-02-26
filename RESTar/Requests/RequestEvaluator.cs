@@ -164,8 +164,6 @@ namespace RESTar.Requests
 
         #endregion
 
-        private static int StackDepth;
-
         /// <summary>
         /// Evaluates a request through the RESTar request engine. The return is a 2-tuple containing function delegates.
         /// Invoking the first one gets a raw view of the request result. It is preferable when we want to work with the 
@@ -200,7 +198,7 @@ namespace RESTar.Requests
 
         private static (Context, IResult) RunEvaluation(Methods method, ref string uri, byte[] body, Headers headers, TCPConnection tcpConnection)
         {
-            if (StackDepth++ > 300) throw new InfiniteLoop();
+            if (tcpConnection.StackDepth++ > 300) throw new InfiniteLoop();
             var o = (context: default(Context), result: default(IResult));
 
             try
@@ -313,7 +311,9 @@ namespace RESTar.Requests
             {
                 if (!(o.result is WebSocketResult) && tcpConnection.Origin != OriginType.Shell)
                     NetworkConsole.Log(o.context, o.result);
-                StackDepth--;
+                o.context.TcpConnection.StackDepth--;
+                if (o.context.TcpConnection.StackDepth == 0 && !o.context.TcpConnection.HasWebSocket)
+                    Authenticator.AuthTokens.TryRemove(o.context.TcpConnection.AuthToken, out var _);
             }
         }
 
@@ -329,12 +329,10 @@ namespace RESTar.Requests
         private static IResult HandleREST<T>(IEntityResource<T> resource, Context context)
             where T : class
         {
-            using (var request = new RESTRequest<T>(resource, context))
-            {
-                request.RunResourceAuthentication();
-                request.Evaluate();
-                return request.Result;
-            }
+            var request = new RESTRequest<T>(resource, context);
+            request.RunResourceAuthentication();
+            request.Evaluate();
+            return request.Result;
         }
 
         private static IResult HandleOptions(IResource resource, Context context)

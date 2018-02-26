@@ -16,7 +16,7 @@ using static RESTar.Methods;
 
 namespace RESTar.Requests
 {
-    internal class RESTRequest<T> : IRequest<T>, IRequestInternal<T>, IDisposable where T : class
+    internal class RESTRequest<T> : IRequest<T>, IRequestInternal<T> where T : class
     {
         public Methods Method { get; }
         public IEntityResource<T> Resource { get; }
@@ -126,12 +126,6 @@ namespace RESTar.Requests
                         throw new InvalidSyntax(InvalidSource, $"{re.Message} in the Source header");
                     }
             }
-        }
-
-        public void Dispose()
-        {
-            if (TcpConnection.IsExternal && TcpConnection.AuthToken != null)
-                Authenticator.AuthTokens.TryRemove(TcpConnection.AuthToken, out var _);
         }
     }
 }

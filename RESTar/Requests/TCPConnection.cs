@@ -93,6 +93,8 @@ namespace RESTar.Requests
 
         internal string AuthToken { get; set; }
 
+        internal int StackDepth { get; set; }
+
         /// <summary>
         /// Does this TCP connection have a WebSocket?
         /// </summary>
@@ -103,6 +105,7 @@ namespace RESTar.Requests
             OpenedAt = DateTime.Now;
             TraceId = ConnectionId.Next;
             Origin = origin;
+            StackDepth = 0;
         }
     }
 }

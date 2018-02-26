@@ -85,9 +85,9 @@ namespace RESTar.Internal
             request.AuthToken = AppToken;
         }
 
-        private static string AssignAuthtoken(AccessRights rights, string token = null)
+        private static string AssignAuthtoken(AccessRights rights)
         {
-            token = token ?? Guid.NewGuid().ToString();
+            var token = Guid.NewGuid().ToString();
             AuthTokens[token] = rights;
             return token;
         }

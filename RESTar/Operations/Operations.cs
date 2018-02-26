@@ -337,7 +337,7 @@ namespace RESTar.Operations
                 {
                     var updated = items.Select(item =>
                     {
-                        Serializers.Json.Populate(item.json, item.source);
+                        Serializers.Json.PopulateJToken(item.json, item.source);
                         return item.source;
                     }).ToList();
                     if (request.Resource.RequiresValidation)
