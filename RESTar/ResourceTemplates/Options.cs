@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace RESTar
+namespace RESTar.ResourceTemplates
 {
     /// <summary>
     /// Encodes an option for use in OptionsTerminal subclasses

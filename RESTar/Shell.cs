@@ -8,7 +8,7 @@ using RESTar.Results.Error.BadRequest;
 using RESTar.Results.Success;
 using RESTar.WebSockets;
 using static RESTar.Internal.ErrorCodes;
-using Action = RESTar.Requests.Action;
+using static RESTar.Methods;
 
 namespace RESTar
 {
@@ -55,7 +55,7 @@ namespace RESTar
         public bool WriteInfoTexts { get; set; } = true;
 
         private Func<int, IUriParameters> GetNextPageLink;
-        private System.Action OnConfirm;
+        private Action OnConfirm;
         private IEntitiesMetadata PreviousResultMetadata;
 
         public IWebSocket WebSocket { private get; set; }
@@ -75,7 +75,7 @@ namespace RESTar
         {
             WebSocket.TcpConnection.Origin = OriginType.Shell;
             if (Query != "")
-                SafeOperation(Action.GET);
+                SafeOperation(GET);
             else SendShellInit();
         }
 
@@ -104,7 +104,7 @@ namespace RESTar
             }
             if (input == " ")
             {
-                SafeOperation(Action.GET);
+                SafeOperation(GET);
                 return;
             }
             input = input.Trim();
@@ -115,11 +115,11 @@ namespace RESTar
                 case '-':
                 case '/':
                     Query = input;
-                    SafeOperation(Action.GET);
+                    SafeOperation(GET);
                     break;
                 case '[':
                 case '{':
-                    SafeOperation(Action.POST, input.ToBytes());
+                    SafeOperation(POST, input.ToBytes());
                     break;
                 case var _ when input.Length > 2000:
                     SendBadRequest();
@@ -136,24 +136,24 @@ namespace RESTar
                                 Query = q;
                                 body = b?.ToBytes();
                             }
-                            SafeOperation(Action.GET, body);
+                            SafeOperation(GET, body);
                             break;
                         case "POST":
-                            SafeOperation(Action.POST, tail.ToBytes());
+                            SafeOperation(POST, tail.ToBytes());
                             break;
                         case "PUT":
                             SendBadRequest("PUT is not available in the WebSocket interface");
                             break;
                         case "PATCH":
-                            UnsafeOperation(Action.PATCH, tail.ToBytes());
+                            UnsafeOperation(PATCH, tail.ToBytes());
                             break;
                         case "DELETE":
-                            UnsafeOperation(Action.DELETE);
+                            UnsafeOperation(DELETE);
                             break;
                         case "REPORT":
                             if (!string.IsNullOrWhiteSpace(tail))
                                 Query = tail;
-                            SafeOperation(Action.REPORT);
+                            SafeOperation(REPORT);
                             break;
                         case "@":
                         case "NAVIGATE":
@@ -161,7 +161,7 @@ namespace RESTar
                         case "HEAD":
                             if (!string.IsNullOrWhiteSpace(tail))
                                 Query = tail;
-                            var result = WsEvaluate(Action.HEAD, null);
+                            var result = WsEvaluate(HEAD, null);
                             if (!(result is Head))
                                 SendResult(result);
                             else if (WriteQueryAfterContent)
@@ -180,7 +180,7 @@ namespace RESTar
                             WebSocket.SendText($"{(Query.Any() ? Query : "<empty>")}");
                             break;
                         case "RELOAD":
-                            SafeOperation(Action.GET);
+                            SafeOperation(GET);
                             break;
                         case "NEXT":
                             if (tail == null || !int.TryParse(tail, out var count))
@@ -191,7 +191,7 @@ namespace RESTar
                             else
                             {
                                 Query = link;
-                                SafeOperation(Action.GET);
+                                SafeOperation(GET);
                             }
                             break;
                         case "HI":
@@ -259,11 +259,13 @@ namespace RESTar
             WriteQueryAfterContent = true;
         }
 
-        private IFinalizedResult WsEvaluate(Action action, byte[] body)
+        private IFinalizedResult WsEvaluate(Methods method, byte[] body)
         {
             if (query.Length == 0) return new NoQuery(WebSocket);
             var localQuery = query;
-            var result = RequestEvaluator.Evaluate(action, ref localQuery, body, WebSocket.Headers, WebSocket.TcpConnection);
+            var result = RequestEvaluator
+                .Evaluate(WebSocket, method, ref localQuery, body, WebSocket.Headers)
+                .GetFinalizedResult();
             if (result is RESTarError _)
                 GoToPrevious();
             else Query = localQuery;
@@ -275,21 +277,21 @@ namespace RESTar
             return result;
         }
 
-        private void SafeOperation(Action action, byte[] body = null) => SendResult(WsEvaluate(action, body));
+        private void SafeOperation(Methods method, byte[] body = null) => SendResult(WsEvaluate(method, body));
 
-        private void UnsafeOperation(Action action, byte[] body = null)
+        private void UnsafeOperation(Methods method, byte[] body = null)
         {
             void operate()
             {
                 WebSocket.Headers.UnsafeOverride = true;
-                SendResult(WsEvaluate(action, body));
+                SendResult(WsEvaluate(method, body));
             }
 
             switch (PreviousResultMetadata?.EntityCount)
             {
                 case null:
                 case 0:
-                    SendBadRequest($". No entities for {action} operation. Make a selecting request before running {action}");
+                    SendBadRequest($". No entities for {method} operation. Make a selecting request before running {method}");
                     break;
                 case 1:
                     operate();
@@ -301,7 +303,7 @@ namespace RESTar
                         break;
                     }
                     OnConfirm = operate;
-                    SendConfirmationRequest($"This will run {action} on {many} entities in resource '{PreviousResultMetadata.ResourceFullName}'. ");
+                    SendConfirmationRequest($"This will run {method} on {many} entities in resource '{PreviousResultMetadata.ResourceFullName}'. ");
                     break;
             }
         }

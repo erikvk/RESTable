@@ -150,8 +150,6 @@ namespace RESTar
         (
             ushort port = 8282,
             string uri = "/rest",
-            // bool viewEnabled = false,
-            // bool setupMenu = false,
             bool requireApiKey = false,
             bool allowAllOrigins = true,
             string configFilePath = null,
@@ -175,7 +173,7 @@ namespace RESTar
                 RequireApiKey = requireApiKey;
                 AllowAllOrigins = allowAllOrigins;
                 ConfigFilePath = configFilePath;
-                RegisterRESTHandlers(setupMenu: false);
+                RegisterRESTHandlers();
                 Initialized = true;
                 DatabaseIndex.Init();
                 DbOutputFormat.Init();

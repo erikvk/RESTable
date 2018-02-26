@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Text;
+using RESTar.Admin;
 using RESTar.Internal;
 using RESTar.Logging;
 using RESTar.Operations;
@@ -11,7 +12,7 @@ using RESTar.WebSockets;
 using Starcounter;
 using static Newtonsoft.Json.Formatting;
 using static RESTar.Logging.LogEventType;
-using Console = RESTar.Admin.Console;
+using WebSocket = Starcounter.WebSocket;
 
 namespace RESTar.Requests
 {
@@ -64,8 +65,8 @@ namespace RESTar.Requests
                 SendResult(new UnsupportedWebSocketInput($"Terminal '{TerminalResource.Name}' does not support text input"));
                 return;
             }
-            if (TerminalResource?.Name != Console.TypeName)
-                Console.Log(new WebSocketEvent(WebSocketInput, this, textData, Encoding.UTF8.GetByteCount(textData)));
+            if (TerminalResource?.Name != NetworkConsole.TypeName)
+                NetworkConsole.Log(new WebSocketEvent(WebSocketInput, this, textData, Encoding.UTF8.GetByteCount(textData)));
             Terminal.HandleTextInput(textData);
             BytesReceived += (ulong) Encoding.UTF8.GetByteCount(textData);
         }
@@ -78,8 +79,8 @@ namespace RESTar.Requests
                 SendResult(new UnsupportedWebSocketInput($"Terminal '{TerminalResource.Name}' does not support binary input"));
                 return;
             }
-            if (TerminalResource?.Name != Console.TypeName)
-                Console.Log(new WebSocketEvent(WebSocketInput, this, Encoding.UTF8.GetString(binaryData), binaryData.Length));
+            if (TerminalResource?.Name != NetworkConsole.TypeName)
+                NetworkConsole.Log(new WebSocketEvent(WebSocketInput, this, Encoding.UTF8.GetString(binaryData), binaryData.Length));
             Terminal.HandleBinaryInput(binaryData);
             BytesSent += (ulong) binaryData.Length;
         }
@@ -108,8 +109,8 @@ namespace RESTar.Requests
             TerminalResource = null;
             Status = WebSocketStatus.Closed;
             Closed = DateTime.Now;
-            if (terminalName != Console.TypeName)
-                Console.Log(new WebSocketEvent(WebSocketClose, this));
+            if (terminalName != NetworkConsole.TypeName)
+                NetworkConsole.Log(new WebSocketEvent(WebSocketClose, this));
             disposed = true;
         }
 
@@ -128,8 +129,8 @@ namespace RESTar.Requests
                 case WebSocketStatus.Open:
                     WebSocket.Send(textData);
                     BytesSent += (ulong) Encoding.UTF8.GetByteCount(textData);
-                    if (TerminalResource?.Name != Console.TypeName)
-                        Console.Log(new WebSocketEvent(WebSocketOutput, this, textData, Encoding.UTF8.GetByteCount(textData)));
+                    if (TerminalResource?.Name != NetworkConsole.TypeName)
+                        NetworkConsole.Log(new WebSocketEvent(WebSocketOutput, this, textData, Encoding.UTF8.GetByteCount(textData)));
                     break;
             }
         }
@@ -142,8 +143,8 @@ namespace RESTar.Requests
                 case WebSocketStatus.Open:
                     WebSocket.Send(binaryData, isText);
                     BytesSent += (ulong) binaryData.Length;
-                    if (TerminalResource?.Name != Console.TypeName)
-                        Console.Log(new WebSocketEvent(WebSocketOutput, this, Encoding.UTF8.GetString(binaryData), binaryData.Length));
+                    if (TerminalResource?.Name != NetworkConsole.TypeName)
+                        NetworkConsole.Log(new WebSocketEvent(WebSocketOutput, this, Encoding.UTF8.GetString(binaryData), binaryData.Length));
                     break;
             }
         }
@@ -212,8 +213,8 @@ namespace RESTar.Requests
                     WebSocket = ScRequest.SendUpgrade(GroupName);
                     Status = WebSocketStatus.Open;
                     Opened = DateTime.Now;
-                    if (TerminalResource?.Name != Console.TypeName)
-                        Console.Log(new WebSocketEvent(WebSocketOpen, this));
+                    if (TerminalResource?.Name != NetworkConsole.TypeName)
+                        NetworkConsole.Log(new WebSocketEvent(WebSocketOpen, this));
                     break;
                 default: throw new InvalidOperationException($"Unable to open WebSocket with status '{Status}'");
             }

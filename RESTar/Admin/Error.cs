@@ -9,7 +9,6 @@ using RESTar.Results.Error;
 using Starcounter;
 using static RESTar.Admin.Settings;
 using static RESTar.Methods;
-using Action = RESTar.Requests.Action;
 
 namespace RESTar.Admin
 {
@@ -45,7 +44,7 @@ namespace RESTar.Admin
         /// <summary>
         /// The method used when the error was created
         /// </summary>
-        public Action Action;
+        public Methods Method;
 
         /// <summary>
         /// The error code of the error
@@ -81,10 +80,10 @@ namespace RESTar.Admin
 
         private const int MaxStringLength = 10000;
 
-        internal static Error Create(RESTarError error, Arguments arguments)
+        internal static Error Create(RESTarError error, Context context)
         {
-            var resource = arguments.SafeGet(a => a.IResource);
-            var uri = arguments.Uri.ToString();
+            var resource = context.SafeGet(a => a.IResource);
+            var uri = context.Uri.ToString();
             var stackTrace = $"{error.StackTrace} §§§ INNER: {error.InnerException?.StackTrace}";
             var totalMessage = error.TotalMessage();
             return new Error
@@ -92,17 +91,17 @@ namespace RESTar.Admin
                 Time = DateTime.Now,
                 ResourceName = (resource?.Name ?? "<unknown>") +
                                (resource?.Alias != null ? $" ({resource.Alias})" : ""),
-                Action = arguments.Action,
+                Method = context.Method,
                 ErrorCode = error.ErrorCode,
-                Body = arguments.Body.HasContent
-                    ? Encoding.UTF8.GetString(arguments.Body.Bytes.Take(5000).ToArray())
+                Body = context.Body.HasContent
+                    ? Encoding.UTF8.GetString(context.Body.Bytes.Take(5000).ToArray())
                     : null,
                 StackTrace = stackTrace.Length > MaxStringLength ? stackTrace.Substring(0, MaxStringLength) : stackTrace,
                 Message = totalMessage.Length > MaxStringLength ? totalMessage.Substring(0, MaxStringLength) : totalMessage,
                 Uri = uri,
                 Headers = resource is IEntityResource e && e.RequiresAuthentication
                     ? null
-                    : arguments.Headers.StringJoin(" | ", dict => dict.Select(header =>
+                    : context.Headers.StringJoin(" | ", dict => dict.Select(header =>
                     {
                         switch (header.Key.ToLower())
                         {

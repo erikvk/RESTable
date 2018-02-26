@@ -43,6 +43,11 @@ namespace RESTar
         /// Performs a GET request, but excludes the response body. Enabling GET 
         /// for a resource automatically enables HEAD for that resource.
         /// </summary>
-        HEAD
+        HEAD,
+
+        /// <summary>
+        /// Used by RESTar internally and for CORS preflight requests. Cannot be assigned to RESTarAttributes
+        /// </summary>
+        OPTIONS
     }
 }

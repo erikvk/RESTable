@@ -45,12 +45,12 @@ namespace RESTar.Requests
     /// an incoming call. Arguments is a unified way to talk about the input to request evaluation, 
     /// regardless of protocol and web technologies.
     /// </summary>
-    public class Arguments : ILogable, ITraceable
+    public class Context : ILogable, ITraceable
     {
         /// <summary>
-        /// The action to perform
+        /// The method to perform
         /// </summary>
-        public Action Action { get; }
+        public Methods Method { get; }
 
         private URI uri;
         private string UnparsedUri { get; }
@@ -109,7 +109,6 @@ namespace RESTar.Requests
         public IContentTypeProvider OutputContentTypeProvider { get; }
 
         internal ResultFinalizer ResultFinalizer { get; }
-        internal string AuthToken { get; set; }
         internal Exception Error { get; set; }
 
         internal CachedProtocolProvider CachedProtocolProvider { get; }
@@ -121,7 +120,7 @@ namespace RESTar.Requests
         public bool ExcludeHeaders => IResource is IEntityResource e && e.RequiresAuthentication;
 
         LogEventType ILogable.LogEventType { get; } = LogEventType.HttpInput;
-        string ILogable.LogMessage => $"{Action} {UnparsedUri}{(Body.HasContent ? $" ({Body.Bytes.Length} bytes)" : "")}";
+        string ILogable.LogMessage => $"{Method} {UnparsedUri}{(Body.HasContent ? $" ({Body.Bytes.Length} bytes)" : "")}";
         private string _contentString;
 
         string ILogable.LogContent
@@ -151,16 +150,16 @@ namespace RESTar.Requests
             return uriKey != null ? HttpUtility.UrlDecode(uriKey).Substring(1, uriKey.Length - 2) : null;
         }
 
-        internal Arguments(Action action, ref string query, byte[] body, Headers headers, ITraceable trace)
+        internal Context(Methods method, ref string uri, byte[] body, Headers headers, ITraceable trace)
         {
             TraceId = trace.TraceId;
-            Action = action;
+            Method = method;
             Headers = headers ?? new Headers();
-            Uri = URI.ParseInternal(ref query, PercentCharsEscaped(headers), out var key, out var cachedProtocolProvider);
+            Uri = URI.ParseInternal(ref uri, PercentCharsEscaped(headers), out var key, out var cachedProtocolProvider);
             CachedProtocolProvider = cachedProtocolProvider;
             if (key != null)
                 Headers["Authorization"] = $"apikey {UnpackUriKey(key)}";
-            UnparsedUri = query;
+            UnparsedUri = uri;
             TcpConnection = trace.TcpConnection;
             var contentType = ContentType.ParseInput(Headers["Content-Type"]);
             var accepts = ContentType.ParseManyOutput(Headers["Accept"]);
@@ -229,8 +228,8 @@ namespace RESTar.Requests
                 Error = e;
                 return;
             }
-            if (uri.HasError)
-                Error = uri.Error;
+            if (this.uri.HasError)
+                Error = this.uri.Error;
         }
     }
 }

@@ -69,11 +69,6 @@ namespace RESTar
         Body Body { get; }
 
         /// <summary>
-        /// The auth token assigned to this request
-        /// </summary>
-        string AuthToken { get; }
-
-        /// <summary>
         /// The headers included in the request. Headers reserved by RESTar,
         /// for example the Source header, will not be included here.
         /// </summary>

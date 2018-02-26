@@ -40,30 +40,30 @@ namespace RESTar.Requests
         public Func<IEnumerable<T>> EntitiesGenerator { private get; set; }
         public IEnumerable<T> GetEntities() => EntitiesGenerator();
 
-        internal ViewRequest(IEntityResource<T> resource, Arguments arguments)
+        internal ViewRequest(IEntityResource<T> resource, Context context)
         {
             if (resource.IsInternal) throw new ResourceIsInternal(resource);
 
-            TraceId = arguments.TraceId;
-            TcpConnection = arguments.TcpConnection;
+            TraceId = context.TraceId;
+            TcpConnection = context.TcpConnection;
 
-            Body = arguments.Body;
+            Body = context.Body;
             Resource = resource;
             Target = resource;
-            Headers = arguments.Headers;
+            Headers = context.Headers;
             ResponseHeaders = new Headers();
             Cookies = new List<string>();
             MetaConditions = new MetaConditions();
             Conditions = new Condition<T>[0];
-            if (arguments.Uri.ViewName != null)
+            if (context.Uri.ViewName != null)
             {
-                if (!Resource.ViewDictionary.TryGetValue(arguments.Uri.ViewName, out var view))
-                    throw new UnknownView(arguments.Uri.ViewName, Resource);
+                if (!Resource.ViewDictionary.TryGetValue(context.Uri.ViewName, out var view))
+                    throw new UnknownView(context.Uri.ViewName, Resource);
                 Target = view;
             }
-            UriParameters = arguments.Uri;
-            Conditions = Condition<T>.Parse(arguments.Uri.Conditions, Resource) ?? Conditions;
-            MetaConditions = MetaConditions.Parse(arguments.Uri.MetaConditions, Resource, false) ?? MetaConditions;
+            UriParameters = context.Uri;
+            Conditions = Condition<T>.Parse(context.Uri.Conditions, Resource) ?? Conditions;
+            MetaConditions = MetaConditions.Parse(context.Uri.MetaConditions, Resource, false) ?? MetaConditions;
         }
 
         internal void Evaluate()

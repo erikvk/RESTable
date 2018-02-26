@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using RESTar.ResourceTemplates;
 
 namespace RESTar.Admin
 {

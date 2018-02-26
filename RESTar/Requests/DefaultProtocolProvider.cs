@@ -118,13 +118,12 @@ namespace RESTar.Requests
                     {
                         try
                         {
-                            var request = new HttpRequest(entities.ExternalDestination)
+                            var request = new HttpRequest(entities, entities.ExternalDestination)
                             {
                                 ContentType = entities.ContentType.ToString(),
-                                AuthToken = entities.Request.AuthToken,
                                 Body = entities.Body
                             };
-                            var response = request.GetResponse(entities.Request) ?? throw new InvalidExternalDestination(request, "No response");
+                            var response = request.GetResponse() ?? throw new InvalidExternalDestination(request, "No response");
                             if (response.StatusCode >= HttpStatusCode.BadRequest)
                                 throw new InvalidExternalDestination(request,
                                     $"Received {response.StatusCode.ToCode()} - {response.StatusDescription}. {response.Headers.SafeGet("RESTar-info")}");
@@ -145,6 +144,6 @@ namespace RESTar.Requests
         }
 
         /// <inheritdoc />
-        public void CheckCompliance(Arguments arguments) { }
+        public void CheckCompliance(Context context) { }
     }
 }

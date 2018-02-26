@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
 using System.Text.RegularExpressions;
 using System.Web;
+using RESTar.Admin;
 using RESTar.ContentTypeProviders;
 using RESTar.Internal;
 using RESTar.Linq;
@@ -13,9 +13,8 @@ using RESTar.Results.Error.Forbidden;
 using RESTar.Results.Success;
 using RESTar.Serialization;
 using static RESTar.Operations.Transact;
-using static RESTar.Requests.Action;
+using static RESTar.Methods;
 using static RESTar.RESTarConfig;
-using Console = RESTar.Admin.Console;
 using Error = RESTar.Admin.Error;
 using Response = RESTar.Http.HttpResponse;
 
@@ -42,11 +41,13 @@ namespace RESTar.Requests
     /// <summary>
     /// Evaluates requests
     /// </summary>
-    internal static class RequestEvaluator
+    public static class RequestEvaluator
     {
+        #region Handle addons
+
         internal static IDictionary<string, CachedProtocolProvider> ProtocolProviders { get; private set; }
-        internal static IDictionary<string, IContentTypeProvider> InputContentTypeProviders { get; private set; }
-        internal static IDictionary<string, IContentTypeProvider> OutputContentTypeProviders { get; private set; }
+        private static IDictionary<string, IContentTypeProvider> InputContentTypeProviders { get; set; }
+        private static IDictionary<string, IContentTypeProvider> OutputContentTypeProviders { get; set; }
 
         private static CachedProtocolProvider GetCachedProtocolProvider(IProtocolProvider provider)
         {
@@ -161,43 +162,50 @@ namespace RESTar.Requests
             });
         }
 
+        #endregion
+
         private static int StackDepth;
 
-        internal static IFinalizedResult EvaluateAndFinalize(IRequest originator, Methods method, ref string query, byte[] body = null,
-            Headers headers = null)
+        /// <summary>
+        /// Evaluates a request through the RESTar request engine. The return is a 2-tuple containing function delegates.
+        /// Invoking the first one gets a raw view of the request result. It is preferable when we want to work with the 
+        /// generated result as .NET types, and when there is no intention to create an output stream from the result.
+        /// Invoking the second one gets a finalized view of the request result, where entities are serialized to output 
+        /// streams (where applicable). Use this if an output stream is needed for the result content.
+        /// </summary>
+        /// <param name="trace">Include a trace, for example a TCPConnection (cannot be null)</param>
+        /// <param name="method">The method to perform</param>
+        /// <param name="uri">The URI of the request (cannot be null)</param>
+        /// <param name="body">The body of the request (can be null)</param>
+        /// <param name="headers">The headers of the request (can be null)</param>
+        /// <returns></returns>
+        public static (Func<IResult> GetRawResult, Func<IFinalizedResult> GetFinalizedResult) Evaluate(ITraceable trace, Methods method, ref string uri,
+            byte[] body = null, Headers headers = null)
         {
-            headers = headers ?? new Headers();
-            headers["RESTar-AuthToken"] = originator.AuthToken;
-            var (arguments, result) = RunEvaluation((Action) method, ref query, body, headers, TCPConnection.Internal);
-            if (result.StatusCode == (HttpStatusCode) 508)
-                throw new InfiniteLoop(result.Headers["RESTar-Info"]);
-            return arguments.ResultFinalizer(result, arguments.Accept, arguments.OutputContentTypeProvider);
+            if (uri == null) throw new MissingUri();
+
+            var (context, result) = RunEvaluation
+            (
+                method: method,
+                uri: ref uri,
+                body: body,
+                headers: headers ?? new Headers(),
+                tcpConnection: trace?.TcpConnection ?? throw new Untraceable()
+            );
+
+            if (result is InfiniteLoop loop) throw loop;
+
+            return (() => result, () => context.ResultFinalizer(result, context.Accept, context.OutputContentTypeProvider));
         }
 
-        internal static IResult Evaluate(IRequest originator, Methods method, ref string query, byte[] body = null, Headers headers = null)
-        {
-            headers = headers ?? new Headers();
-            headers["RESTar-AuthToken"] = originator.AuthToken;
-            var (_, result) = RunEvaluation((Action) method, ref query, body, headers, TCPConnection.Internal);
-            if (result.StatusCode == (HttpStatusCode) 508)
-                throw new InfiniteLoop(result.Headers["RESTar-Info"]);
-            return result;
-        }
-
-        public static IFinalizedResult Evaluate(Action action, ref string query, byte[] body, Headers headers, TCPConnection tcpConnection)
-        {
-            var (arguments, result) = RunEvaluation(action, ref query, body, headers, tcpConnection);
-            return arguments.ResultFinalizer(result, arguments.Accept, arguments.OutputContentTypeProvider);
-        }
-
-        private static (Arguments, IResult) RunEvaluation(Action action, ref string query, byte[] body, Headers headers, TCPConnection tcpConnection)
+        private static (Context, IResult) RunEvaluation(Methods method, ref string uri, byte[] body, Headers headers, TCPConnection tcpConnection)
         {
             if (StackDepth++ > 300) throw new InfiniteLoop();
-            var o = (arguments: default(Arguments), result: default(IResult));
+            var o = (context: default(Context), result: default(IResult));
 
             try
             {
-                switch (action)
+                switch (method)
                 {
                     case GET:
                     case POST:
@@ -206,17 +214,15 @@ namespace RESTar.Requests
                     case DELETE:
                     case REPORT:
                     case HEAD:
-                        o.arguments = new Arguments(action, ref query, body, headers, tcpConnection);
-                        o.arguments.Authenticate();
-                        o.arguments.ThrowIfError();
-                        var requestedResource = o.arguments.IResource;
+                        o.context = new Context(method, ref uri, body, headers, tcpConnection);
+                        o.context.Authenticate();
+                        o.context.ThrowIfError();
+                        var requestedResource = o.context.IResource;
                         if (tcpConnection.HasWebSocket)
                         {
-                            if (tcpConnection.WebSocketInternal.AuthToken == null)
-                                tcpConnection.WebSocketInternal.AuthToken = o.arguments.AuthToken;
                             if (tcpConnection.Origin != OriginType.Shell
                                 && requestedResource.Equals(EntityResource<AvailableResource>.Get)
-                                && query.Length < nameof(AvailableResource).Length)
+                                && uri.Length < nameof(AvailableResource).Length)
                                 requestedResource = Shell.TerminalResource;
                         }
                         switch (requestedResource)
@@ -227,23 +233,23 @@ namespace RESTar.Requests
                                     o.result = new UpgradeRequired(terminal.Name);
                                     return o;
                                 }
-                                terminal.InstantiateFor(tcpConnection.WebSocketInternal, o.arguments.Uri.Conditions);
-                                o.result = new WebSocketResult(leaveOpen: true, trace: o.arguments);
+                                terminal.InstantiateFor(tcpConnection.WebSocketInternal, o.context.Uri.Conditions);
+                                o.result = new WebSocketResult(leaveOpen: true, trace: o.context);
                                 return o;
 
                             case var entityResource:
-                                o.result = HandleREST((dynamic) entityResource, o.arguments);
+                                o.result = HandleREST((dynamic) entityResource, o.context);
                                 if (!tcpConnection.HasWebSocket || tcpConnection.Origin == OriginType.Shell)
                                     return o;
-                                var finalized = o.arguments.ResultFinalizer(o.result, o.arguments.Accept, o.arguments.OutputContentTypeProvider);
+                                var finalized = o.context.ResultFinalizer(o.result, o.context.Accept, o.context.OutputContentTypeProvider);
                                 tcpConnection.WebSocket.SendResult(finalized);
-                                o.result = new WebSocketResult(leaveOpen: false, trace: o.arguments);
+                                o.result = new WebSocketResult(leaveOpen: false, trace: o.context);
                                 return o;
                         }
                     case OPTIONS:
-                        o.arguments = new Arguments(action, ref query, body, headers, tcpConnection);
-                        o.arguments.ThrowIfError();
-                        o.result = HandleOptions(o.arguments.IResource, o.arguments);
+                        o.context = new Context(method, ref uri, body, headers, tcpConnection);
+                        o.context.ThrowIfError();
+                        o.result = HandleOptions(o.context.IResource, o.context);
                         return o;
 
                     // case VIEW: return HandleView((dynamic) resource, arguments);
@@ -268,7 +274,7 @@ namespace RESTar.Requests
                 if (!(error is Forbidden))
                 {
                     Error.ClearOld();
-                    errorId = Trans(() => Error.Create(error, o.arguments)).Id;
+                    errorId = Trans(() => Error.Create(error, o.context)).Id;
                 }
                 if (tcpConnection.HasWebSocket && tcpConnection.Origin != OriginType.Shell)
                 {
@@ -276,7 +282,7 @@ namespace RESTar.Requests
                     o.result = new WebSocketResult(false, error);
                     return o;
                 }
-                switch (action)
+                switch (method)
                 {
                     case GET:
                     case POST:
@@ -306,24 +312,24 @@ namespace RESTar.Requests
             finally
             {
                 if (!(o.result is WebSocketResult) && tcpConnection.Origin != OriginType.Shell)
-                    Console.Log(o.arguments, o.result);
+                    NetworkConsole.Log(o.context, o.result);
                 StackDepth--;
             }
         }
 
-        private static Response HandleView<T>(IEntityResource<T> resource, Arguments arguments) where T : class
+        private static Response HandleView<T>(IEntityResource<T> resource, Context context) where T : class
         {
-            var request = new ViewRequest<T>(resource, arguments);
-            request.Authenticate();
+            var request = new ViewRequest<T>(resource, context);
+            // request.Authenticate();
             request.MethodCheck();
             request.Evaluate();
             return null; //request.GetView();
         }
 
-        private static IResult HandleREST<T>(IEntityResource<T> resource, Arguments arguments)
+        private static IResult HandleREST<T>(IEntityResource<T> resource, Context context)
             where T : class
         {
-            using (var request = new RESTRequest<T>(resource, arguments))
+            using (var request = new RESTRequest<T>(resource, context))
             {
                 request.RunResourceAuthentication();
                 request.Evaluate();
@@ -331,11 +337,11 @@ namespace RESTar.Requests
             }
         }
 
-        private static IResult HandleOptions(IResource resource, Arguments arguments)
+        private static IResult HandleOptions(IResource resource, Context context)
         {
-            var origin = arguments.Headers["Origin"];
+            var origin = context.Headers["Origin"];
             if (origin != null && origin != "null" && (AllowAllOrigins || AllowedOrigins.Contains(new Uri(origin))))
-                return new AcceptOrigin(origin, resource, arguments);
+                return new AcceptOrigin(origin, resource, context);
             return new InvalidOrigin();
         }
     }

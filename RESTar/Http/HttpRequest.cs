@@ -10,7 +10,7 @@ using RESTar.Results.Error;
 
 namespace RESTar.Http
 {
-    internal class HttpRequest
+    internal class HttpRequest : ITraceable
     {
         internal Methods Method { get; private set; }
         internal string URI { get; private set; }
@@ -20,22 +20,28 @@ namespace RESTar.Http
         private bool IsInternal { get; set; }
         private static readonly Regex HeaderRegex = new Regex(RegEx.RequestHeader);
         internal Stream Body;
-        internal string AuthToken;
 
-        internal IFinalizedResult GetResponse(IRequest trace)
+        public string TraceId { get; }
+        public TCPConnection TcpConnection { get; }
+
+        internal IFinalizedResult GetResponse()
         {
             if (IsInternal)
             {
                 Headers["Content-Type"] = ContentType;
                 Headers["Accept"] = Accept;
                 var uri = URI;
-                return RequestEvaluator.EvaluateAndFinalize(trace, Method, ref uri, Body.ToByteArray(), new Headers(Headers));
+                return RequestEvaluator
+                    .Evaluate(this, Method, ref uri, Body.ToByteArray(), new Headers(Headers))
+                    .GetFinalizedResult();
             }
-            return External(trace, Method, new Uri(URI), Body, ContentType, Accept, Headers);
+            return External(this, Method, new Uri(URI), Body, ContentType, Accept, Headers);
         }
 
-        internal HttpRequest(string uriString)
+        internal HttpRequest(ITraceable trace, string uriString)
         {
+            TraceId = trace.TraceId;
+            TcpConnection = trace.TcpConnection;
             Headers = new Dictionary<string, string>();
             uriString.Trim().Split(new[] {' '}, 3).ForEach((part, index) =>
             {
@@ -85,8 +91,8 @@ namespace RESTar.Http
         /// <summary>
         /// Makes an external HTTP or HTTPS request
         /// </summary>
-        internal static HttpResponse External(ITraceable trace, Methods method, Uri uri, Stream body = null, string contentType = null,
-            string accept = null, Dictionary<string, string> headers = null)
+        private static HttpResponse External(ITraceable trace, Methods method, Uri uri, Stream body = null, string contentType = null,
+            string accept = null, IDictionary<string, string> headers = null)
         {
             return MakeExternalRequest(trace, method.ToString(), uri, body, contentType, accept, headers);
         }

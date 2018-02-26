@@ -1,66 +1,10 @@
 ﻿using System;
-using System.Linq;
+using System.Diagnostics;
 using System.Net;
 using RESTar.WebSockets;
-using Starcounter;
 
 namespace RESTar.Requests
 {
-    /// <summary>
-    /// Describes the origin type of a request
-    /// </summary>
-    public enum OriginType
-    {
-        /// <summary>
-        /// The request originated from within the RESTar application
-        /// </summary>
-        Internal,
-
-        /// <summary>
-        /// The request originated from outside the RESTar application
-        /// </summary>
-        External,
-
-        /// <summary>
-        /// The request originated from a WebSocket
-        /// </summary>
-        Shell
-    }
-
-    /// <summary>
-    /// An ID, generated when a new connection is set up
-    /// </summary>
-    [Database]
-    public class ConnectionId
-    {
-        private const string All = "SELECT t FROM RESTar.Requests.ConnectionId t";
-
-        /// <summary>
-        /// The number stored in the database
-        /// </summary>
-        public ulong _number { get; private set; }
-
-        private ConnectionId() { }
-        internal static string Next => DbHelper.Base64EncodeObjectNo(Db.Transact(() => Get._number += 1));
-        private static ConnectionId Get => Db.SQL<ConnectionId>(All).FirstOrDefault() ?? Db.Transact(() => new ConnectionId());
-    }
-
-    /// <summary>
-    /// Defines something that can be traced from a TCP connection
-    /// </summary>
-    public interface ITraceable
-    {
-        /// <summary>
-        /// A unique ID
-        /// </summary>
-        string TraceId { get; }
-
-        /// <summary>
-        /// The initial TCP connection
-        /// </summary>
-        TCPConnection TcpConnection { get; }
-    }
-
     /// <inheritdoc />
     /// <summary>
     /// Describes the origin and basic TCP connection parameters of a request
@@ -116,7 +60,7 @@ namespace RESTar.Requests
         /// <summary>
         /// The internal location
         /// </summary>
-        public static readonly TCPConnection Internal = new TCPConnection {Host = $"localhost:{Admin.Settings._Port}"};
+        public static readonly TCPConnection Internal = new TCPConnection(OriginType.Internal) {Host = $"localhost:{Admin.Settings._Port}"};
 
         /// <summary>
         /// Is the origin internal?
@@ -145,15 +89,20 @@ namespace RESTar.Requests
 
         internal IWebSocketInternal WebSocketInternal => (IWebSocketInternal) WebSocket;
 
+        internal Stopwatch Stopwatch { get; set; }
+
+        internal string AuthToken { get; set; }
+
         /// <summary>
         /// Does this TCP connection have a WebSocket?
         /// </summary>
         public bool HasWebSocket => WebSocket != null;
 
-        internal TCPConnection()
+        internal TCPConnection(OriginType origin)
         {
             OpenedAt = DateTime.Now;
             TraceId = ConnectionId.Next;
+            Origin = origin;
         }
     }
 }

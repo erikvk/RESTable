@@ -86,6 +86,8 @@ namespace RESTar.Internal
         NoMatchingHtml = 212,
         FailedResourceAuthentication = 213,
         MethodNotAllowed = 214,
+        Untraceable = 215,
+        MissingUri = 216,
 
         // 300-400: Database errors
         DatabaseError = 300,

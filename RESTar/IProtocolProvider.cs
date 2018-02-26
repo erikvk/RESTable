@@ -41,7 +41,7 @@ namespace RESTar
         /// protocolprovider to throw an exception and abort a request if the request is not 
         /// in compliance with the protocol.
         /// </summary>
-        void CheckCompliance(Arguments arguments);
+        void CheckCompliance(Context context);
 
         /// <summary>
         /// The protocol needs to be able to generate a relative URI string from an IUriParameters instance. 

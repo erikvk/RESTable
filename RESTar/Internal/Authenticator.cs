@@ -39,15 +39,6 @@ namespace RESTar.Internal
                 throw new UserNotSignedIn();
         }
 
-        internal static void Authenticate<T>(this ViewRequest<T> request) where T : class
-        {
-            var user = GetCurrentSystemUser() ?? throw new UserNotSignedIn();
-            var token = user.GetObjectID().SHA256();
-            if (AuthTokens.ContainsKey(token))
-                request.AuthToken = token;
-            request.AuthToken = AssignAuthtoken(AccessRights.Root, token);
-        }
-
         internal static void RunResourceAuthentication<T>(this IRequest<T> request) where T : class
         {
             if (!request.Resource.RequiresAuthentication) return;
@@ -56,32 +47,21 @@ namespace RESTar.Internal
                 throw new FailedResourceAuthentication(authResults.Reason);
         }
 
-        internal static void Authenticate(this Arguments arguments)
+        internal static void Authenticate(this Context context)
         {
-            arguments.AuthToken = GetAuthToken(arguments);
-            if (arguments.AuthToken == null)
-                arguments.Error = new NotAuthorized();
+            context.TcpConnection.AuthToken = GetAuthToken(context);
+            if (context.TcpConnection.AuthToken == null)
+                context.Error = new NotAuthorized();
         }
 
-        private static string GetAuthToken(Arguments arguments)
+        private static string GetAuthToken(Context context)
         {
             if (!RequireApiKey)
                 return AssignAuthtoken(AccessRights.Root);
-            AccessRights accessRights;
-            if (arguments.TcpConnection.WebSocketInternal?.AuthToken is string wsAuthToken)
-            {
-                if (!AuthTokens.TryGetValue(wsAuthToken, out accessRights))
-                    return null;
-                return wsAuthToken;
-            }
-            if (arguments.TcpConnection.IsInternal)
-            {
-                var authToken = arguments.Headers["RESTar-AuthToken"];
-                if (authToken == null || !AuthTokens.TryGetValue(authToken, out accessRights))
-                    return null;
-                return authToken;
-            }
-            var authorizationHeader = arguments.Headers.SafeGet("Authorization");
+            if (context.TcpConnection.AuthToken is string existing)
+                return AuthTokens.TryGetValue(existing, out _) ? existing : null;
+
+            var authorizationHeader = context.Headers.SafeGet("Authorization");
             if (string.IsNullOrWhiteSpace(authorizationHeader)) return null;
             var (method, key) = authorizationHeader.TSplit(' ');
             if (key == null) return null;
@@ -94,9 +74,9 @@ namespace RESTar.Internal
                     break;
                 default: return null;
             }
-            if (!ApiKeys.TryGetValue(key.SHA256(), out accessRights))
+            if (!ApiKeys.TryGetValue(key.SHA256(), out var accessRights))
                 return null;
-            arguments.Headers["Authorization"] = "*******";
+            context.Headers["Authorization"] = "*******";
             return AssignAuthtoken(accessRights);
         }
 

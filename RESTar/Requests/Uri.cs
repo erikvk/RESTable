@@ -29,19 +29,19 @@ namespace RESTar.Requests
         internal bool HasError => Error != null;
         private IProtocolProvider ProtocolProvider { get; set; }
 
-        internal static URI ParseInternal(ref string query, bool percentCharsEscaped, out string key, out CachedProtocolProvider cachedProtocolProvider)
+        internal static URI ParseInternal(ref string uriString, bool percentCharsEscaped, out string key, out CachedProtocolProvider cachedProtocolProvider)
         {
             var uri = new URI();
             key = null;
-            if (percentCharsEscaped) query = query.Replace("%25", "%");
-            var groups = Regex.Match(query, RegEx.Protocol).Groups;
+            if (percentCharsEscaped) uriString = uriString.Replace("%25", "%");
+            var groups = Regex.Match(uriString, RegEx.Protocol).Groups;
             var protocolString = groups["proto"].Value;
             var _key = groups["key"].Value;
             var tail = groups["tail"].Value;
             if (_key.Length > 0)
             {
                 key = _key;
-                query = protocolString + tail;
+                uriString = protocolString + tail;
             }
             if (!RequestEvaluator.ProtocolProviders.TryGetValue(protocolString, out cachedProtocolProvider))
             {

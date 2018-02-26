@@ -26,6 +26,9 @@ namespace RESTar.WebSockets
                     case "#HOME":
                         Shell.TerminalResource.InstantiateFor(webSocket);
                         break;
+                    case "#DISCONNECT":
+                        webSocket.Disconnect();
+                        break;
                     case "#INFO" when tail is string json:
                         try
                         {

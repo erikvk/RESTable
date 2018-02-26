@@ -27,7 +27,6 @@ namespace RESTar
         private Condition<T>[] _conditions;
         Body IRequest.Body => _body;
         internal string AuthToken { get; set; }
-        string IRequest.AuthToken => AuthToken;
         Headers IRequest.ResponseHeaders { get; } = new Headers();
         ICollection<string> IRequest.Cookies { get; } = new List<string>();
         IUriParameters IRequest.UriParameters => throw new InvalidOperationException();

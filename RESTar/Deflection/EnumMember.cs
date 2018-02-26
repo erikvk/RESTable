@@ -125,6 +125,24 @@ namespace RESTar.Deflection
         }
 
         /// <summary>
+        /// Gets all values for named constants of an enumeration
+        /// </summary>
+        public static T[] Values => typeof(T).IsEnum
+            ? typeof(T).GetFields()
+                .Where(t => t.FieldType.IsEnum)
+                .Select(t => t.GetValue(null))
+                .Cast<T>()
+                .ToArray()
+            : throw new ArgumentException($"Type must be enum, found '{typeof(T).RESTarTypeName()}'");
+
+        /// <summary>
+        /// Gets all names for named constants of an enumeration
+        /// </summary>
+        public static string[] Names => typeof(T).IsEnum
+            ? Enum.GetNames(typeof(T))
+            : throw new ArgumentException($"Type must be enum, found '{typeof(T).RESTarTypeName()}'");
+
+        /// <summary>
         /// Returns true if and only if the enumeration member has an attribute
         /// of the given attribute type
         /// </summary>

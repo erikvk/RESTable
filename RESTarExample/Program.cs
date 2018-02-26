@@ -6,6 +6,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using RESTar;
 using RESTar.Resources;
+using RESTar.ResourceTemplates;
 using Starcounter;
 
 #pragma warning disable 1591
