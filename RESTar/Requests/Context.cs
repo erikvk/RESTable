@@ -155,7 +155,7 @@ namespace RESTar.Requests
             TraceId = trace.TraceId;
             Method = method;
             Headers = headers ?? new Headers();
-            Uri = URI.ParseInternal(ref uri, PercentCharsEscaped(headers), out var key, out var cachedProtocolProvider);
+            Uri = URI.ParseInternal(ref uri, PercentCharsEscaped(headers), trace, out var key, out var cachedProtocolProvider);
             CachedProtocolProvider = cachedProtocolProvider;
             if (key != null)
                 Headers["Authorization"] = $"apikey {UnpackUriKey(key)}";

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
+using System.Web;
 using Microsoft.CSharp.RuntimeBinder;
 using Newtonsoft.Json;
 using RESTar.Internal;
@@ -10,6 +11,9 @@ using RESTar.Operations;
 using RESTar.Requests;
 using RESTar.Results.Error.BadRequest;
 using RESTar.Results.Error.Forbidden;
+using RESTar.Results.Success;
+using static RESTar.Operations.Transact;
+using static RESTar.Methods;
 
 namespace RESTar.Results.Error
 {
@@ -109,6 +113,39 @@ namespace RESTar.Results.Error
                 case Starcounter.DbException _: return new StarcounterDatabaseError(exception);
                 case RuntimeBinderException _: return new BinderPermissions(exception);
                 default: return new Unknown(exception);
+            }
+        }
+
+        internal static IFinalizedResult GetResult(Exception exs, Methods method, Context context, TCPConnection tcpConnection, bool isWebSocketUpgrade)
+        {
+            var error = GetError(exs);
+            error.SetTrace(tcpConnection);
+            string errorId = null;
+            if (!(error is Forbidden.Forbidden))
+            {
+                Admin.Error.ClearOld();
+                errorId = Trans(() => Admin.Error.Create(error, context)).Id;
+            }
+            if (isWebSocketUpgrade)
+            {
+                tcpConnection.WebSocket?.SendResult(error);
+                return new WebSocketResult(leaveOpen: false, trace: error);
+            }
+            switch (method)
+            {
+                case GET:
+                case POST:
+                case PATCH:
+                case PUT:
+                case DELETE:
+                case REPORT:
+                case HEAD:
+                    if (errorId != null)
+                        error.Headers["ErrorInfo"] = $"/{typeof(Admin.Error).FullName}/id={HttpUtility.UrlEncode(errorId)}";
+                    return error;
+                case OPTIONS:
+                    return new InvalidOrigin();
+                default: throw new Exception();
             }
         }
 

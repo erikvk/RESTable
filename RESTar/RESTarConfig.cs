@@ -34,7 +34,6 @@ namespace RESTar
         internal static IDictionary<string, IResource> ResourceByName { get; private set; }
         internal static IDictionary<Type, IResource> ResourceByType { get; private set; }
         internal static ICollection<IResource> Resources => ResourceByName.Values;
-        internal static IEnumerable<IEntityResource> EntityResources => ResourceByName.Values.OfType<IEntityResource>();
         internal static List<Uri> AllowedOrigins { get; private set; }
         internal static string[] ReservedNamespaces { get; private set; }
         internal static bool RequireApiKey { get; private set; }

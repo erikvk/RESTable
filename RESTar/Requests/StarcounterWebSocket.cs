@@ -45,7 +45,7 @@ namespace RESTar.Requests
         public WebSocketStatus Status { get; private set; }
         public ConnectionProfile GetConnectionProfile() => new ConnectionProfile(this);
         public void SendToShell() => Shell.TerminalResource.InstantiateFor(this);
-        
+
         public void SendTo(ITerminalResource terminalResource)
         {
             if (terminalResource == null)
@@ -88,11 +88,7 @@ namespace RESTar.Requests
 
         public void Dispose()
         {
-            if (TcpConnection.AuthToken != null)
-            {
-                Authenticator.AuthTokens.TryRemove(TcpConnection.AuthToken, out var _);
-                TcpConnection.AuthToken = null;
-            }
+            TcpConnection.Dispose();
             if (disposed) return;
             var terminalName = TerminalResource?.Name;
             if (!WebSocket.IsDead())

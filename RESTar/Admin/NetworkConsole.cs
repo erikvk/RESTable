@@ -4,6 +4,7 @@ using System.Text;
 using RESTar.Linq;
 using RESTar.Logging;
 using RESTar.ResourceTemplates;
+using RESTar.Results.Success;
 using RESTar.Serialization;
 using RESTar.WebSockets;
 using static Newtonsoft.Json.Formatting;
@@ -45,17 +46,16 @@ namespace RESTar.Admin
 
         #region Console
 
-        internal static void Log(ILogable initial, ILogable final) => Consoles
-            .AsParallel()
-            .Where(c => c.IsOpen)
-            .GroupBy(c => c.Format)
-            .ForEach(group =>
+        internal static void Log(ILogable initial, ILogable final, double milliseconds)
+        {
+            if (final is WebSocketResult) return;
+            Consoles.AsParallel().Where(c => c.IsOpen).GroupBy(c => c.Format).ForEach(group =>
             {
                 switch (group.Key)
                 {
                     case ConsoleFormat.Line:
                         var requestStub = GetLogLineStub(initial);
-                        var responseStub = GetLogLineStub(final);
+                        var responseStub = GetLogLineStub(final, milliseconds);
                         group.AsParallel().ForEach(c => c.PrintLines(
                             new StringBuilder(requestStub), initial,
                             new StringBuilder(responseStub), final)
@@ -68,7 +68,8 @@ namespace RESTar.Admin
                             {
                                 Type = "HTTPRequestResponse",
                                 In = new LogItem {Id = initial.TraceId, Message = initial.LogMessage},
-                                Out = new LogItem {Id = final.TraceId, Message = final.LogMessage}
+                                Out = new LogItem {Id = final.TraceId, Message = final.LogMessage},
+                                ElapsedMilliseconds = milliseconds
                             };
                             if (c.IncludeConnection)
                                 item.Connection = new Connection(initial.TcpConnection);
@@ -96,6 +97,7 @@ namespace RESTar.Admin
                     default: throw new ArgumentOutOfRangeException();
                 }
             });
+        }
 
         internal static void Log(ILogable logable) => Consoles
             .AsParallel()
@@ -196,7 +198,7 @@ namespace RESTar.Admin
             WebSocketInternal.SendTextRaw(builder2.ToString());
         }
 
-        private static string GetLogLineStub(ILogable logable)
+        private static string GetLogLineStub(ILogable logable, double? milliseconds = null)
         {
             var builder = new StringBuilder();
             switch (logable.LogEventType)
@@ -220,6 +222,8 @@ namespace RESTar.Admin
             builder.Append(dateTimeString);
             builder.Append($"[{logable.TraceId}] ");
             builder.Append(logable.LogMessage);
+            if (milliseconds != null)
+                builder.Append($" ({milliseconds} ms)");
             return builder.ToString();
         }
 

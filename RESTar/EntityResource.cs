@@ -52,9 +52,7 @@ namespace RESTar
         /// </summary>
         public static IResource Find(string searchString)
         {
-            if (searchString == null)
-                throw new UnknownResource("null");
-            searchString = searchString.ToLower();
+            if (searchString == null) throw new UnknownResource("null");
             var resource = Admin.ResourceAlias.GetByAlias(searchString)?.IResource;
             if (resource != null) return resource;
             if (!RESTarConfig.ResourceFinder.TryGetValue(searchString, out resource))

@@ -52,7 +52,7 @@ namespace RESTar
                         obj.ToList().ForEach(pair => obj[pair.Key] = populator(pair.Value));
                         return obj;
                     case JArray array:
-                        return array.Select(item => item.ToObject<object>()).Select(populator);
+                        return array.Select(item => item.ToObject<object>()).Select(populator).ToList();
                     case JObject jobj:
                         return populator(jobj.ToObject<Aggregator>(JsonContentProvider.Serializer));
 

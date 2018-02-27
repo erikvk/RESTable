@@ -20,6 +20,8 @@ namespace RESTar
                                            "rights assigned to its API key. It is the default resource " +
                                            "used when no resource is specified in the request URI.";
 
+        internal static IEntityResource<AvailableResource> Resource = EntityResource<AvailableResource>.Get;
+
         /// <summary>
         /// The name of the resource
         /// </summary>

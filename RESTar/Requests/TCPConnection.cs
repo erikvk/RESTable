@@ -1,15 +1,16 @@
 ﻿using System;
-using System.Diagnostics;
 using System.Net;
+using RESTar.Internal;
 using RESTar.WebSockets;
 
 namespace RESTar.Requests
 {
-    /// <inheritdoc />
+    /// <inheritdoc cref="ITraceable" />
+    /// <inheritdoc cref="IDisposable" />
     /// <summary>
     /// Describes the origin and basic TCP connection parameters of a request
     /// </summary>
-    public class TCPConnection : ITraceable
+    public class TCPConnection : ITraceable, IDisposable
     {
         /// <inheritdoc />
         public string TraceId { get; }
@@ -72,6 +73,11 @@ namespace RESTar.Requests
         /// </summary>
         public bool IsExternal => Origin == OriginType.External;
 
+        /// <summary>
+        /// Is this connection currently waiting on a upgrade to the WebSocket protocol.
+        /// </summary>
+        public bool IsWebSocketUpgrade => WebSocket?.Status == WebSocketStatus.Waiting;
+
         private IWebSocket webSocket;
 
         /// <summary>
@@ -89,11 +95,11 @@ namespace RESTar.Requests
 
         internal IWebSocketInternal WebSocketInternal => (IWebSocketInternal) WebSocket;
 
-        internal Stopwatch Stopwatch { get; set; }
-
         internal string AuthToken { get; set; }
 
         internal int StackDepth { get; set; }
+
+        internal bool IsInShell => Origin == OriginType.Shell;
 
         /// <summary>
         /// Does this TCP connection have a WebSocket?
@@ -106,6 +112,13 @@ namespace RESTar.Requests
             TraceId = ConnectionId.Next;
             Origin = origin;
             StackDepth = 0;
+        }
+
+        /// <inheritdoc />
+        public void Dispose()
+        {
+            if (AuthToken == null) return;
+            Authenticator.AuthTokens.TryRemove(AuthToken, out var _);
         }
     }
 }

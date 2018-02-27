@@ -13,6 +13,7 @@ namespace RESTar.Logging
 
         public LogItem In;
         public LogItem Out;
+        public double ElapsedMilliseconds;
     }
 
     internal struct Connection
@@ -43,11 +44,8 @@ namespace RESTar.Logging
         public string Message;
 
         [JsonProperty(NullValueHandling = Ignore)] public Connection? Connection;
-
         [JsonProperty(NullValueHandling = Ignore)] public string Content;
-
         [JsonProperty(NullValueHandling = Ignore)] public Headers CustomHeaders;
-
         [JsonProperty(NullValueHandling = Ignore)] public DateTime? Time;
     }
 }

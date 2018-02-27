@@ -29,7 +29,8 @@ namespace RESTar.Requests
         internal bool HasError => Error != null;
         private IProtocolProvider ProtocolProvider { get; set; }
 
-        internal static URI ParseInternal(ref string uriString, bool percentCharsEscaped, out string key, out CachedProtocolProvider cachedProtocolProvider)
+        internal static URI ParseInternal(ref string uriString, bool percentCharsEscaped, ITraceable trace, out string key,
+            out CachedProtocolProvider cachedProtocolProvider)
         {
             var uri = new URI();
             key = null;
@@ -51,7 +52,7 @@ namespace RESTar.Requests
             uri.ProtocolProvider = cachedProtocolProvider.ProtocolProvider;
             try
             {
-                cachedProtocolProvider.ProtocolProvider.ParseQuery(tail, uri);
+                cachedProtocolProvider.ProtocolProvider.ParseQuery(tail, uri, trace.TcpConnection);
             }
             catch (Exception e)
             {
@@ -62,7 +63,7 @@ namespace RESTar.Requests
 
         internal static URI Parse(string uriString)
         {
-            var uri = ParseInternal(ref uriString, false, out var _, out var _);
+            var uri = ParseInternal(ref uriString, false, TCPConnection.Internal, out var _, out var _);
             if (uri.HasError) throw uri.Error;
             return uri;
         }
