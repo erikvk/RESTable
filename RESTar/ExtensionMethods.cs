@@ -228,9 +228,9 @@ namespace RESTar
 
         private static object DEFAULT<T>() => default(T);
 
-        internal static AccessRights ToAccessRights(this List<AccessRight> accessRights)
+        internal static AccessRights ToAccessRights(this List<AccessRight> accessRights, string key)
         {
-            var ar = new AccessRights();
+            var ar = new AccessRights(key);
             foreach (var right in accessRights)
             foreach (var resource in right.Resources)
                 ar[resource] = ar.ContainsKey(resource)

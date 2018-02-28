@@ -18,7 +18,9 @@ namespace RESTar.Requests
         /// <summary>
         /// Deserializes the body to a list of entitites of the given type
         /// </summary>
-        public List<T> ToList<T>() where T : class => ContentTypeProvider.DeserializeCollection<T>(ContentType, Bytes);
+        public List<T> ToList<T>() where T : class => HasContent
+            ? ContentTypeProvider.DeserializeCollection<T>(ContentType, Bytes)
+            : null;
 
         /// <summary>
         /// Populates the body onto each entity in a source collection

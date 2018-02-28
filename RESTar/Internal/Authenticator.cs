@@ -7,6 +7,7 @@ using RESTar.Auth;
 using RESTar.Requests;
 using RESTar.Results.Error.Forbidden;
 using Starcounter;
+using static RESTar.Auth.AccessRights;
 using static RESTar.RESTarConfig;
 
 namespace RESTar.Internal
@@ -18,13 +19,11 @@ namespace RESTar.Internal
 
         internal static IDictionary<string, AccessRights> ApiKeys { get; private set; }
         internal static ConcurrentDictionary<string, AccessRights> AuthTokens { get; private set; }
-        internal static readonly string AppToken = Guid.NewGuid().ToString();
 
         internal static void NewState()
         {
             ApiKeys = new Dictionary<string, AccessRights>();
             AuthTokens = new ConcurrentDictionary<string, AccessRights>();
-            AuthTokens.TryAdd(AppToken, AccessRights.Root);
         }
 
         private static object GetCurrentSystemUser()
@@ -57,7 +56,7 @@ namespace RESTar.Internal
         private static string GetAuthToken(Context context)
         {
             if (!RequireApiKey)
-                return AssignAuthtoken(AccessRights.Root);
+                return AssignAuthtoken(Root);
             if (context.TcpConnection.AuthToken is string existing)
                 return AuthTokens.TryGetValue(existing, out _) ? existing : null;
 
@@ -80,10 +79,10 @@ namespace RESTar.Internal
             return AssignAuthtoken(accessRights);
         }
 
-        internal static void Authenticate<T>(this Request<T> request) where T : class
-        {
-            request.AuthToken = AppToken;
-        }
+        // internal static void Authenticate<T>(this Request<T> request) where T : class
+        // {
+        //     request.AuthToken = AppToken;
+        // }
 
         private static string AssignAuthtoken(AccessRights rights)
         {

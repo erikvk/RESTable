@@ -136,6 +136,9 @@ namespace RESTar.Admin
                 if (entity.EnabledMethods?.Any() != true)
                     entity.EnabledMethods = RESTarConfig.Methods;
                 DynamicResource.MakeTable(entity);
+
+
+
                 count += 1;
             }
             return count;

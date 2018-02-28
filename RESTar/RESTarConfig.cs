@@ -76,9 +76,7 @@ namespace RESTar
                                                    "See the specification for more info.");
             }
             if (NeedsConfiguration) ReadConfig();
-            AccessRights.Root = Resources
-                .ToDictionary(r => r, r => Methods)
-                .CollectDict(dict => new AccessRights(dict));
+            AccessRights.ReloadRoot();
         }
 
         internal static void AddResource(IResource toAdd)
@@ -300,7 +298,7 @@ namespace RESTar
                     }
 
                     recurseAllowAccess(apiKeyToken["AllowAccess"]);
-                    var accessRights = accessRightList.ToAccessRights();
+                    var accessRights = accessRightList.ToAccessRights(key);
                     foreach (var resource in Resources.Where(r => r.GETAvailableToAll))
                     {
                         if (!accessRights.TryGetValue(resource, out var methods))
@@ -313,6 +311,11 @@ namespace RESTar
                     }
 
                     Authenticator.ApiKeys[key] = accessRights;
+                    Authenticator.AuthTokens
+                        .Where(pair => pair.Value.Key == key)
+                        .ToList()
+                        .ForEach(pair => Authenticator.AuthTokens[pair.Key] = accessRights);
+
                     break;
                 case JArray apiKeys:
                     apiKeys.ForEach(ReadApiKeys);

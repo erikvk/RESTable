@@ -21,6 +21,11 @@ namespace RESTar
         private string query = "";
         private string previousQuery = "";
 
+        /// <summary>
+        /// Signals that there are changes to the query that have been made pre evaluation
+        /// </summary>
+        private bool queryChangedPreEval;
+
         public string Query
         {
             get => query;
@@ -34,6 +39,7 @@ namespace RESTar
                         throw new InvalidSyntax(InvalidUriSyntax, "Shell queries must begin with '/' or '-'");
                 }
                 previousQuery = query;
+                queryChangedPreEval = true;
                 query = value;
             }
         }
@@ -64,12 +70,6 @@ namespace RESTar
         public bool SupportsTextInput { get; } = true;
         public bool SupportsBinaryInput { get; } = false;
         internal static ITerminalResourceInternal TerminalResource { get; set; }
-
-        internal void GoToPrevious()
-        {
-            query = previousQuery;
-            previousQuery = "";
-        }
 
         public void Open()
         {
@@ -261,14 +261,15 @@ namespace RESTar
 
         private IFinalizedResult WsEvaluate(Methods method, byte[] body)
         {
-            if (query.Length == 0) return new NoQuery(WebSocket);
-            var localQuery = query;
+            if (Query.Length == 0) return new NoQuery(WebSocket);
+            var localQuery = Query;
             var result = RequestEvaluator
                 .Evaluate(WebSocket, method, ref localQuery, body, WebSocket.Headers)
                 .GetFinalizedResult();
-            if (result is RESTarError _)
-                GoToPrevious();
-            else Query = localQuery;
+            if (result is RESTarError _ && queryChangedPreEval)
+                query = previousQuery;
+            else query = localQuery;
+            queryChangedPreEval = false;
             if (result is IEntitiesMetadata entitiesMetaData)
             {
                 PreviousResultMetadata = entitiesMetaData;

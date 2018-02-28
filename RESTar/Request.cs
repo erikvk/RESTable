@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using RESTar.Auth;
 using RESTar.Deflection.Dynamic;
 using RESTar.Internal;
 using RESTar.Linq;
@@ -26,17 +27,19 @@ namespace RESTar
 
         private Condition<T>[] _conditions;
         Body IRequest.Body => _body;
-        internal string AuthToken { get; set; }
         Headers IRequest.ResponseHeaders { get; } = new Headers();
         ICollection<string> IRequest.Cookies { get; } = new List<string>();
         IUriParameters IRequest.UriParameters => throw new InvalidOperationException();
         IEntityResource IRequest.Resource => Resource;
-        TCPConnection ITraceable.TcpConnection { get; } = TCPConnection.Internal;
+
         Methods IRequest.Method => 0;
         Headers IRequest.Headers => RequestHeaders;
         string ITraceable.TraceId => null;
         private Func<IEnumerable<T>> EntitiesGenerator { get; set; }
         IEnumerable<T> IRequest<T>.GetEntities() => EntitiesGenerator?.Invoke() ?? new T[0];
+
+        /// <inheritdoc />
+        public TCPConnection TcpConnection { get; }
 
         Func<IEnumerable<T>> IRequestInternal<T>.EntitiesGenerator
         {
@@ -141,7 +144,10 @@ namespace RESTar
             Target = Resource;
             MetaConditions = new MetaConditions {Unsafe = true};
             Conditions = conditions;
-            this.Authenticate();
+            TcpConnection = TCPConnection.Internal;
+            TcpConnection.AuthToken = AccessRights.RootToken;
+
+            // this.Authenticate();
             ScSql = Resource.Provider == typeof(StarcounterResourceProvider).GetProviderId();
             Resource.AvailableMethods.ForEach(m =>
             {
