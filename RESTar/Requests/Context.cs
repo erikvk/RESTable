@@ -51,26 +51,12 @@ namespace RESTar.Requests
         /// </summary>
         public Methods Method { get; }
 
-        private URI uri;
         private string UnparsedUri { get; }
 
         /// <summary>
         /// The URI contained in the arguments
         /// </summary>
-        public URI Uri
-        {
-            get => uri;
-            private set
-            {
-                value?.Macro?.HeadersDictionary?.ForEach(pair =>
-                {
-                    var currentValue = Headers.SafeGet(pair.Key);
-                    if (string.IsNullOrWhiteSpace(currentValue) || currentValue == "*/*")
-                        Headers[pair.Key] = pair.Value;
-                });
-                uri = value;
-            }
-        }
+        public URI Uri { get; }
 
         private IResource iresource;
         internal IResource IResource => iresource ?? (iresource = Resource.Find(Uri.ResourceSpecifier));
@@ -154,6 +140,23 @@ namespace RESTar.Requests
             Method = method;
             Headers = headers ?? new Headers();
             Uri = URI.ParseInternal(ref uri, PercentCharsEscaped(headers), trace, out var key, out var cachedProtocolProvider);
+            var hasMacro = Uri?.Macro != null;
+
+            if (hasMacro)
+            {
+                Uri.Macro.HeadersDictionary?.ForEach(pair =>
+                {
+                    if (Uri.Macro.OverWriteHeaders)
+                        Headers[pair.Key] = pair.Value;
+                    else
+                    {
+                        var currentValue = Headers.SafeGet(pair.Key);
+                        if (string.IsNullOrWhiteSpace(currentValue) || currentValue == "*/*")
+                            Headers[pair.Key] = pair.Value;
+                    }
+                });
+            }
+
             CachedProtocolProvider = cachedProtocolProvider;
             if (key != null)
                 Headers["Authorization"] = $"apikey {UnpackUriKey(key)}";
@@ -161,7 +164,7 @@ namespace RESTar.Requests
             TcpConnection = trace.TcpConnection;
             var contentType = ContentType.ParseInput(Headers["Content-Type"]);
             var accepts = ContentType.ParseManyOutput(Headers["Accept"]);
-            
+
             if (cachedProtocolProvider != null)
             {
                 ResultFinalizer = cachedProtocolProvider.ProtocolProvider.FinalizeResult;
@@ -216,9 +219,21 @@ namespace RESTar.Requests
                 }
             }
 
-            Body = new Body(body, ContentType, InputContentTypeProvider);
-            if (!Body.HasContent && Uri?.Macro?.HasBody == true)
-                Body = Uri.Macro.GetBody();
+            if (hasMacro)
+            {
+                if (Uri.Macro.OverWriteBody)
+                {
+                    if (Uri.Macro.HasBody)
+                        Body = Uri.Macro.GetBody();
+                }
+                else
+                {
+                    if (!(body?.Length > 0) && Uri.Macro.HasBody)
+                        Body = Uri.Macro.GetBody();
+                    else Body = new Body(body, ContentType, InputContentTypeProvider);
+                }
+            }
+            else Body = new Body(body, ContentType, InputContentTypeProvider);
 
             try
             {
@@ -230,8 +245,8 @@ namespace RESTar.Requests
                 Error = e;
                 return;
             }
-            if (this.uri.HasError)
-                Error = this.uri.Error;
+            if (Uri.HasError)
+                Error = Uri.Error;
         }
     }
 }
