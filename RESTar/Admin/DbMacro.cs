@@ -8,6 +8,7 @@ using Newtonsoft.Json.Linq;
 using RESTar.Linq;
 using RESTar.Operations;
 using RESTar.Requests;
+using RESTar.Serialization;
 using Starcounter;
 
 namespace RESTar.Admin
@@ -96,6 +97,8 @@ namespace RESTar.Admin
 
         internal IEnumerable<UriCondition> UriConditions => UriConditionsString?.Split('&').Select(c => new UriCondition(c));
         internal IEnumerable<UriCondition> UriMetaConditions => UriMetaConditionsString?.Split('&').Select(c => new UriCondition(c));
+        internal bool HasBody => BodyBinary.Length > 0;
+        internal Body GetBody() => new Body(BodyBinary.ToArray(), "application/json", Serializers.Json);
 
         internal static IEnumerable<DbMacro> GetAll() => Db.SQL<DbMacro>(All);
         internal static DbMacro Get(string macroName) => Db.SQL<DbMacro>(ByName, macroName).FirstOrDefault();

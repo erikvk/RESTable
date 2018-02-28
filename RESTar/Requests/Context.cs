@@ -7,7 +7,6 @@ using RESTar.Internal;
 using RESTar.Linq;
 using RESTar.Logging;
 using RESTar.Results.Error;
-using RESTar.Serialization;
 using IResource = RESTar.Internal.IResource;
 
 namespace RESTar.Requests
@@ -82,7 +81,7 @@ namespace RESTar.Requests
         /// <summary>
         /// The body as byte array
         /// </summary>
-        public Body Body { get; private set; }
+        public Body Body { get; }
 
         /// <inheritdoc />
         public Headers Headers { get; }
@@ -162,7 +161,7 @@ namespace RESTar.Requests
             TcpConnection = trace.TcpConnection;
             var contentType = ContentType.ParseInput(Headers["Content-Type"]);
             var accepts = ContentType.ParseManyOutput(Headers["Accept"]);
-
+            
             if (cachedProtocolProvider != null)
             {
                 ResultFinalizer = cachedProtocolProvider.ProtocolProvider.FinalizeResult;
@@ -216,8 +215,11 @@ namespace RESTar.Requests
                     }
                 }
             }
+
             Body = new Body(body, ContentType, InputContentTypeProvider);
-            Body = Body.HasContent ? Body : new Body(Uri?.Macro?.BodyBinary.ToArray(), "application/json", Serializers.Json);
+            if (!Body.HasContent && Uri?.Macro?.HasBody == true)
+                Body = Uri.Macro.GetBody();
+
             try
             {
                 cachedProtocolProvider?.ProtocolProvider.CheckCompliance(this);
