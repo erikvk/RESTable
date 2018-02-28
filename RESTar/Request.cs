@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using RESTar.Auth;
 using RESTar.Deflection.Dynamic;
 using RESTar.Internal;
 using RESTar.Linq;
@@ -145,9 +144,6 @@ namespace RESTar
             MetaConditions = new MetaConditions {Unsafe = true};
             Conditions = conditions;
             TcpConnection = TCPConnection.Internal;
-            TcpConnection.AuthToken = AccessRights.RootToken;
-
-            // this.Authenticate();
             ScSql = Resource.Provider == typeof(StarcounterResourceProvider).GetProviderId();
             Resource.AvailableMethods.ForEach(m =>
             {

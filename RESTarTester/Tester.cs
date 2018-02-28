@@ -453,6 +453,7 @@ namespace RESTarTester
             var r2 = new Request<Resource2>();
             var r3 = new Request<Resource3>();
             var r4 = new Request<Resource4>();
+            var r6 = new Request<Aggregator>();
             var r5 = new Request<MyDict>();
             var cond = new Condition<MyDict>("Goo", EQUALS, false);
             r5.Conditions = new[] {cond};

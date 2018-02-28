@@ -56,7 +56,7 @@ namespace RESTar.Internal
         private static string GetAuthToken(Context context)
         {
             if (!RequireApiKey)
-                return AssignAuthtoken(Root);
+                return NewRootToken();
             if (context.TcpConnection.AuthToken is string existing)
                 return AuthTokens.TryGetValue(existing, out _) ? existing : null;
 
@@ -76,19 +76,7 @@ namespace RESTar.Internal
             if (!ApiKeys.TryGetValue(key.SHA256(), out var accessRights))
                 return null;
             context.Headers["Authorization"] = "*******";
-            return AssignAuthtoken(accessRights);
-        }
-
-        // internal static void Authenticate<T>(this Request<T> request) where T : class
-        // {
-        //     request.AuthToken = AppToken;
-        // }
-
-        private static string AssignAuthtoken(AccessRights rights)
-        {
-            var token = Guid.NewGuid().ToString("N");
-            AuthTokens[token] = rights;
-            return token;
+            return NewAuthToken(accessRights);
         }
 
         internal static bool MethodCheck(Methods requestedMethod, IEntityResource resource, string authToken, out bool failedAuth)

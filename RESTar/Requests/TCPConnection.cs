@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Net;
+using RESTar.Auth;
 using RESTar.Internal;
 using RESTar.WebSockets;
 
@@ -59,9 +60,13 @@ namespace RESTar.Requests
         public DateTime? ClosedAt { get; internal set; }
 
         /// <summary>
-        /// The internal location
+        /// The internal location, has root access to all resources
         /// </summary>
-        public static readonly TCPConnection Internal = new TCPConnection(OriginType.Internal) {Host = $"localhost:{Admin.Settings._Port}"};
+        public static readonly TCPConnection Internal = new TCPConnection(OriginType.Internal)
+        {
+            Host = $"localhost:{Admin.Settings._Port}",
+            AuthToken = AccessRights.NewRootToken()
+        };
 
         /// <summary>
         /// Is the origin internal?
