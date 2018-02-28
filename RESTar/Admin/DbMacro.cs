@@ -196,7 +196,7 @@ namespace RESTar.Admin
             {
                 Name = m.Name,
                 Uri = m.Uri,
-                Body = m.BodyBinary != default ? JToken.Parse(m.BodyUTF8) : null,
+                Body = m.BodyBinary.Length > 0 ? JToken.Parse(m.BodyUTF8) : null,
                 Headers = m.Headers != null ? m.HeadersDictionary : null
             })
             .Where(request.Conditions);
