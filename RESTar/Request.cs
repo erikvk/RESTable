@@ -216,7 +216,7 @@ namespace RESTar
         /// <returns></returns>
         public (Stream excel, ulong nrOfRows) GETExcel()
         {
-            var stream = Serializers.Excel.SerializeCollection("excel", GET(), this, out var count);
+            var stream = Serializers.Excel.SerializeCollection(GET(), this, out var count);
             return (stream, count);
         }
 

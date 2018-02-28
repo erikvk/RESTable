@@ -112,6 +112,7 @@ namespace RESTar.Results.Error
                 case Starcounter.DbException _ when exception.Message.Contains("SCERR4034"): return new AbortedByCommitHook(exception);
                 case Starcounter.DbException _: return new StarcounterDatabaseError(exception);
                 case RuntimeBinderException _: return new BinderPermissions(exception);
+                case NotImplementedException _: return new FeatureNotImplemented("RESTar encountered a call to a non-implemented method");
                 default: return new Unknown(exception);
             }
         }

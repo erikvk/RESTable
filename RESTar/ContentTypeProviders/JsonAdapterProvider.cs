@@ -23,13 +23,19 @@ namespace RESTar.ContentTypeProviders
         protected static readonly Encoding UTF8 = RESTarConfig.DefaultEncoding;
 
         /// <inheritdoc />
-        public abstract ContentType[] CanWrite();
+        public abstract ContentType ContentType { get; }
 
         /// <inheritdoc />
-        public abstract ContentType[] CanRead();
+        public abstract string[] MatchStrings { get; }
 
         /// <inheritdoc />
-        public abstract string GetContentDispositionFileExtension(ContentType contentType);
+        public abstract bool CanRead { get; }
+
+        /// <inheritdoc />
+        public abstract bool CanWrite { get; }
+
+        /// <inheritdoc />
+        public abstract string ContentDispositionFileExtension { get; }
 
         /// <summary>
         /// Produces JSON that is then used to deserialize to entities of the resource type.
@@ -39,36 +45,36 @@ namespace RESTar.ContentTypeProviders
         protected abstract byte[] ProduceJson(byte[] body, out bool isSingularEntity);
 
         /// <inheritdoc />
-        public T DeserializeEntity<T>(ContentType contentType, byte[] body) where T : class
+        public T DeserializeEntity<T>(byte[] body) where T : class
         {
             var jsonbytes = ProduceJson(body, out var singular);
             if (singular)
-                return JsonProvider.DeserializeEntity<T>("application/json", jsonbytes);
+                return JsonProvider.DeserializeEntity<T>(jsonbytes);
             throw new InvalidInputCount();
         }
 
         /// <inheritdoc />
-        public abstract Stream SerializeEntity<T>(ContentType accept, T entity, IRequest request) where T : class;
+        public abstract Stream SerializeEntity<T>(T entity, IRequest request) where T : class;
 
         /// <inheritdoc />
-        public abstract Stream SerializeCollection<T>(ContentType accept, IEnumerable<T> entities, IRequest request, out ulong entityCount)
+        public abstract Stream SerializeCollection<T>(IEnumerable<T> entities, IRequest request, out ulong entityCount)
             where T : class;
 
         /// <inheritdoc />
-        public List<T> DeserializeCollection<T>(ContentType contentType, byte[] body) where T : class
+        public List<T> DeserializeCollection<T>(byte[] body) where T : class
         {
             var jsonbytes = ProduceJson(body, out var singular);
             if (singular)
-                return new List<T> {JsonProvider.DeserializeEntity<T>("application/json", jsonbytes)};
-            return JsonProvider.DeserializeCollection<T>("application/json", jsonbytes);
+                return new List<T> {JsonProvider.DeserializeEntity<T>(jsonbytes)};
+            return JsonProvider.DeserializeCollection<T>(jsonbytes);
         }
 
         /// <inheritdoc />
-        public IEnumerable<T> Populate<T>(ContentType contentType, IEnumerable<T> entities, byte[] body) where T : class
+        public IEnumerable<T> Populate<T>(IEnumerable<T> entities, byte[] body) where T : class
         {
             var json = ProduceJson(body, out var singular);
             if (!singular) throw new InvalidInputCount();
-            return JsonProvider.Populate("application/json", entities, json);
+            return JsonProvider.Populate(entities, json);
         }
     }
 }

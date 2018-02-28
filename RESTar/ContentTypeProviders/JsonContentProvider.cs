@@ -130,10 +130,19 @@ namespace RESTar.ContentTypeProviders
         #region IContentTypeProvider
 
         /// <inheritdoc />
-        public string GetContentDispositionFileExtension(ContentType contentType) => ".json";
+        public ContentType ContentType { get; } = new ContentType("application/json; charset=utf-8");
 
         /// <inheritdoc />
-        public IEnumerable<T> Populate<T>(ContentType contentType, IEnumerable<T> entities, byte[] body) where T : class
+        public bool CanRead => true;
+
+        /// <inheritdoc />
+        public bool CanWrite => true;
+
+        /// <inheritdoc />
+        public string ContentDispositionFileExtension => ".json";
+
+        /// <inheritdoc />
+        public IEnumerable<T> Populate<T>(IEnumerable<T> entities, byte[] body) where T : class
         {
             var json = Encoding.UTF8.GetString(body);
             return entities.Select(item =>
@@ -144,10 +153,7 @@ namespace RESTar.ContentTypeProviders
         }
 
         /// <inheritdoc />
-        public ContentType[] CanWrite() => new ContentType[] {JsonMimeType, RESTarSpecific, Brief, TextPlain};
-
-        /// <inheritdoc />
-        public ContentType[] CanRead() => new ContentType[] {JsonMimeType, RESTarSpecific, Brief, TextPlain};
+        public string[] MatchStrings => new[] {JsonMimeType, RESTarSpecific, Brief, TextPlain};
 
         /// <summary>
         /// Serializes the given object to a byte array
@@ -165,7 +171,7 @@ namespace RESTar.ContentTypeProviders
         }
 
         /// <inheritdoc />
-        public Stream SerializeEntity<T>(ContentType accept, T entity, IRequest request) where T : class
+        public Stream SerializeEntity<T>(T entity, IRequest request) where T : class
         {
             ulong entityCount;
             var stream = new MemoryStream();
@@ -184,7 +190,7 @@ namespace RESTar.ContentTypeProviders
         }
 
         /// <inheritdoc />
-        public Stream SerializeCollection<T>(ContentType accept, IEnumerable<T> entities, IRequest request, out ulong entityCount) where T : class
+        public Stream SerializeCollection<T>(IEnumerable<T> entities, IRequest request, out ulong entityCount) where T : class
         {
             entityCount = 0;
             var stream = new MemoryStream();
@@ -203,7 +209,7 @@ namespace RESTar.ContentTypeProviders
         }
 
         /// <inheritdoc />
-        public T DeserializeEntity<T>(ContentType contentType, byte[] body) where T : class
+        public T DeserializeEntity<T>(byte[] body) where T : class
         {
             using (var jsonStream = new MemoryStream(body))
             using (var streamReader = new StreamReader(jsonStream, UTF8))
@@ -212,7 +218,7 @@ namespace RESTar.ContentTypeProviders
         }
 
         /// <inheritdoc />
-        public List<T> DeserializeCollection<T>(ContentType contentType, byte[] body) where T : class
+        public List<T> DeserializeCollection<T>(byte[] body) where T : class
         {
             using (var jsonStream = new MemoryStream(body))
             using (var streamReader = new StreamReader(jsonStream, UTF8))

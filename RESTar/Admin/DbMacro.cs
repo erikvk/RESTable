@@ -220,7 +220,9 @@ namespace RESTar.Admin
                 Name = m.Name,
                 Uri = m.Uri,
                 Body = m.BodyBinary.Length > 0 ? JToken.Parse(m.BodyUTF8) : null,
-                Headers = m.Headers != null ? m.HeadersDictionary : null
+                Headers = m.Headers != null ? m.HeadersDictionary : null,
+                OverWriteBody = m.OverWriteBody,
+                OverWriteHeaders = m.OverWriteHeaders
             })
             .Where(request.Conditions);
 

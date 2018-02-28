@@ -42,7 +42,7 @@ namespace RESTarExample
         {
             protected override IEnumerable<Option> GetOptions()
             {
-                return new[] { new Option("Foo", "a foo", strings => { }) };
+                return new[] {new Option("Foo", "a foo", strings => { })};
             }
         }
     }

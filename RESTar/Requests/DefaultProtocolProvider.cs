@@ -21,6 +21,9 @@ namespace RESTar.Requests
     internal sealed class DefaultProtocolProvider : IProtocolProvider
     {
         /// <inheritdoc />
+        public string ProtocolName { get; } = "RESTar";
+
+        /// <inheritdoc />
         public string ProtocolIdentifier { get; } = "restar";
 
         /// <inheritdoc />
@@ -94,20 +97,20 @@ namespace RESTar.Requests
         }
 
         /// <inheritdoc />
-        public IFinalizedResult FinalizeResult(IResult result, ContentType accept, IContentTypeProvider contentTypeProvider)
+        public IFinalizedResult FinalizeResult(IResult result, IContentTypeProvider contentTypeProvider)
         {
             switch (result)
             {
                 case Report report:
                     result.Headers["RESTar-count"] = report.ReportBody.Count.ToString();
-                    report.Body = contentTypeProvider.SerializeEntity(accept, report.ReportBody, report.Request);
-                    report.ContentType = accept;
+                    report.Body = contentTypeProvider.SerializeEntity(report.ReportBody, report.Request);
+                    report.ContentType = contentTypeProvider.ContentType;
                     return report;
 
                 case Entities entities:
-                    entities.Body = contentTypeProvider.SerializeCollection(accept, entities.Content, entities.Request, out var entityCount);
+                    entities.Body = contentTypeProvider.SerializeCollection(entities.Content, entities.Request, out var entityCount);
                     if (entityCount == 0) return new NoContent(result);
-                    entities.ContentType = accept;
+                    entities.ContentType = contentTypeProvider.ContentType;
                     entities.Headers["RESTar-count"] = entityCount.ToString();
                     entities.EntityCount = entityCount;
                     if (entities.IsPaged)
@@ -115,7 +118,7 @@ namespace RESTar.Requests
                         var pager = entities.GetNextPageLink();
                         entities.Headers["RESTar-pager"] = MakeRelativeUri(pager);
                     }
-                    entities.SetContentDisposition(contentTypeProvider.GetContentDispositionFileExtension(accept));
+                    entities.SetContentDisposition(contentTypeProvider.ContentDispositionFileExtension);
                     if (entities.ExternalDestination != null)
                     {
                         try

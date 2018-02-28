@@ -21,18 +21,16 @@ namespace RESTar.Requests
     internal class CachedProtocolProvider
     {
         internal IProtocolProvider ProtocolProvider { get; }
-        internal IDictionary<string, IContentTypeProvider> InputContentTypeProviders { get; }
-        internal IDictionary<string, IContentTypeProvider> OutputContentTypeProviders { get; }
-        internal ContentType DefaultInputContentType { get; set; }
-        internal ContentType DefaultOutputContentType { get; set; }
-        internal IContentTypeProvider DefaultInputProvider { get; set; }
-        internal IContentTypeProvider DefaultOutputProvider { get; set; }
+        internal IDictionary<string, IContentTypeProvider> InputMimeBindings { get; }
+        internal IDictionary<string, IContentTypeProvider> OutputMimeBindings { get; }
+        internal IContentTypeProvider DefaultInputProvider => InputMimeBindings.FirstOrDefault().Value;
+        internal IContentTypeProvider DefaultOutputProvider => OutputMimeBindings.FirstOrDefault().Value;
 
         public CachedProtocolProvider(IProtocolProvider protocolProvider)
         {
             ProtocolProvider = protocolProvider;
-            InputContentTypeProviders = new Dictionary<string, IContentTypeProvider>(StringComparer.OrdinalIgnoreCase);
-            OutputContentTypeProviders = new Dictionary<string, IContentTypeProvider>(StringComparer.OrdinalIgnoreCase);
+            InputMimeBindings = new Dictionary<string, IContentTypeProvider>(StringComparer.OrdinalIgnoreCase);
+            OutputMimeBindings = new Dictionary<string, IContentTypeProvider>(StringComparer.OrdinalIgnoreCase);
         }
     }
 
@@ -49,43 +47,19 @@ namespace RESTar.Requests
 
         private static CachedProtocolProvider GetCachedProtocolProvider(IProtocolProvider provider)
         {
-            var cachedProvider = new CachedProtocolProvider(provider);
+            var cProvider = new CachedProtocolProvider(provider);
             var contentTypeProviders = provider.GetContentTypeProviders()?.ToList();
             contentTypeProviders?.ForEach(contentTypeProvider =>
             {
-                contentTypeProvider.CanRead()?.ForEach(contentType => cachedProvider
-                    .InputContentTypeProviders[contentType.MimeType] = contentTypeProvider);
-                contentTypeProvider.CanWrite()?.ForEach(contentType => cachedProvider
-                    .OutputContentTypeProviders[contentType.MimeType] = contentTypeProvider);
+                if (contentTypeProvider.CanRead)
+                    contentTypeProvider.MatchStrings?.ForEach(mimeType => cProvider.InputMimeBindings[mimeType] = contentTypeProvider);
+                if (contentTypeProvider.CanWrite)
+                    contentTypeProvider.MatchStrings?.ForEach(mimeType => cProvider.OutputMimeBindings[mimeType] = contentTypeProvider);
             });
-            if (provider.AllowExternalContentProviders)
-            {
-                InputContentTypeProviders.ForEach(externalProvider =>
-                {
-                    if (!cachedProvider.InputContentTypeProviders.ContainsKey(externalProvider.Key))
-                        cachedProvider.InputContentTypeProviders.Add(externalProvider);
-                });
-                OutputContentTypeProviders.ForEach(externalProvider =>
-                {
-                    if (!cachedProvider.OutputContentTypeProviders.ContainsKey(externalProvider.Key))
-                        cachedProvider.OutputContentTypeProviders.Add(externalProvider);
-                });
-            }
-
-            cachedProvider.DefaultInputProvider = cachedProvider.InputContentTypeProviders.Values.FirstOrDefault(p =>
-            {
-                if (p.CanRead()?.Any() != true) return false;
-                cachedProvider.DefaultInputContentType = p.CanRead().First();
-                return true;
-            });
-            cachedProvider.DefaultOutputProvider = cachedProvider.OutputContentTypeProviders.Values.FirstOrDefault(p =>
-            {
-                if (p.CanWrite()?.Any() != true) return false;
-                cachedProvider.DefaultOutputContentType = p.CanWrite().First();
-                return true;
-            });
-
-            return cachedProvider;
+            if (!provider.AllowExternalContentProviders) return cProvider;
+            InputContentTypeProviders.Where(p => !cProvider.InputMimeBindings.ContainsKey(p.Key)).ForEach(cProvider.InputMimeBindings.Add);
+            OutputContentTypeProviders.Where(p => !cProvider.OutputMimeBindings.ContainsKey(p.Key)).ForEach(cProvider.OutputMimeBindings.Add);
+            return cProvider;
         }
 
         private static void ValidateProtocolProvider(IProtocolProvider provider)
@@ -105,7 +79,7 @@ namespace RESTar.Requests
                     throw new InvalidProtocolProvider($"Invalid protocol provider '{provider.GetType().RESTarTypeName()}'. " +
                                                       "The protocol provider allows no external content type providers " +
                                                       "and does not provide any content type providers of its own.");
-                if (contentProviders.All(p => p.CanRead()?.Any() != true) && contentProviders.All(p => p.CanWrite()?.Any() != true))
+                if (contentProviders.All(p => !p.CanRead) && contentProviders.All(p => !p.CanWrite))
                     throw new InvalidProtocolProvider($"Invalid protocol provider '{provider.GetType().RESTarTypeName()}'. " +
                                                       "The protocol provider allows no external content type providers " +
                                                       "and none of the provided content type providers can read or write.");
@@ -116,8 +90,8 @@ namespace RESTar.Requests
         {
             if (provider == null)
                 throw new InvalidContentTypeProvider("External content type provider cannot be null");
-            if (provider.CanRead()?.Any() != true && provider.CanWrite()?.Any() != true)
-                throw new InvalidContentTypeProvider($"Provider '{provider.GetType().RESTarTypeName()}' cannot read or write to any formats");
+            if (!provider.CanRead && !provider.CanWrite)
+                throw new InvalidContentTypeProvider($"Provider '{provider.GetType().RESTarTypeName()}' cannot read or write");
         }
 
         internal static void SetupContentTypeProviders(List<IContentTypeProvider> contentTypeProviders)
@@ -131,8 +105,10 @@ namespace RESTar.Requests
             foreach (var provider in contentTypeProviders)
             {
                 ValidateContentTypeProvider(provider);
-                provider.CanRead()?.ForEach(contentType => InputContentTypeProviders[contentType.MimeType] = provider);
-                provider.CanWrite()?.ForEach(contentType => OutputContentTypeProviders[contentType.MimeType] = provider);
+                if (provider.CanRead)
+                    provider.MatchStrings?.ForEach(mimeType => InputContentTypeProviders[mimeType] = provider);
+                if (provider.CanWrite)
+                    provider.MatchStrings?.ForEach(mimeType => OutputContentTypeProviders[mimeType] = provider);
             }
         }
 
@@ -219,7 +195,7 @@ namespace RESTar.Requests
                     IFinalizedResult finalized;
                     try
                     {
-                        finalized = context.ResultFinalizer(result, context.Accept, context.OutputContentTypeProvider);
+                        finalized = context.ResultFinalizer(result, context.OutputContentTypeProvider);
                     }
                     catch (Exception exs)
                     {
@@ -263,7 +239,7 @@ namespace RESTar.Requests
                             case var entityResource:
                                 var result = HandleREST((dynamic) entityResource, context);
                                 if (!isWebSocketUpgrade) return result;
-                                var finalized = context.ResultFinalizer(result, context.Accept, context.OutputContentTypeProvider);
+                                var finalized = context.ResultFinalizer(result, context.OutputContentTypeProvider);
                                 tcpConnection.WebSocket.SendResult(finalized);
                                 return new WebSocketResult(leaveOpen: false, trace: context);
                         }

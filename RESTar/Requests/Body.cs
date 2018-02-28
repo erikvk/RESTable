@@ -18,14 +18,12 @@ namespace RESTar.Requests
         /// <summary>
         /// Deserializes the body to a list of entitites of the given type
         /// </summary>
-        public List<T> ToList<T>() where T : class => HasContent
-            ? ContentTypeProvider.DeserializeCollection<T>(ContentType, Bytes)
-            : null;
+        public List<T> ToList<T>() where T : class => HasContent ? ContentTypeProvider.DeserializeCollection<T>(Bytes) : null;
 
         /// <summary>
         /// Populates the body onto each entity in a source collection
         /// </summary>
-        public IEnumerable<T> PopulateTo<T>(IEnumerable<T> source) where T : class => ContentTypeProvider.Populate(ContentType, source, Bytes);
+        public IEnumerable<T> PopulateTo<T>(IEnumerable<T> source) where T : class => ContentTypeProvider.Populate(source, Bytes);
 
         /// <summary>
         /// Does this Body have content?

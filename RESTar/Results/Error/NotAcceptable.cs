@@ -11,7 +11,7 @@ namespace RESTar.Results.Error
     {
         /// <inheritdoc />
         public NotAcceptable(string headerValue) : base(ErrorCodes.NotAcceptable,
-            $"No supported media types in Accept header: {headerValue}")
+            $"No supported media types were found in the Accept header. Found '{headerValue}'")
         {
             StatusCode = HttpStatusCode.NotAcceptable;
             StatusDescription = "Not acceptable";

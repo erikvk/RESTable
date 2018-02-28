@@ -18,20 +18,25 @@ namespace RESTar.ContentTypeProviders
         private const string Brief = "excel";
 
         /// <inheritdoc />
-        public override ContentType[] CanWrite() => new ContentType[] {ExcelMimeType, RESTarSpecific, Brief};
+        public override ContentType ContentType { get; } = new ContentType(ExcelMimeType);
 
         /// <inheritdoc />
-        public override ContentType[] CanRead() => new ContentType[] {ExcelMimeType, RESTarSpecific, Brief};
+        public override string[] MatchStrings => new[] {ExcelMimeType, RESTarSpecific, Brief};
 
         /// <inheritdoc />
-        public override string GetContentDispositionFileExtension(ContentType contentType) => ".xlsx";
+        public override bool CanRead => true;
 
         /// <inheritdoc />
-        public override Stream SerializeEntity<T>(ContentType accept, T entity, IRequest request) =>
-            SerializeCollection(accept, new[] {entity}, request, out var _);
+        public override bool CanWrite => true;
 
         /// <inheritdoc />
-        public override Stream SerializeCollection<T>(ContentType contentType, IEnumerable<T> entities, IRequest request, out ulong entityCount)
+        public override string ContentDispositionFileExtension => ".xlsx";
+
+        /// <inheritdoc />
+        public override Stream SerializeEntity<T>(T entity, IRequest request) => SerializeCollection(new[] {entity}, request, out var _);
+
+        /// <inheritdoc />
+        public override Stream SerializeCollection<T>(IEnumerable<T> entities, IRequest request, out ulong entityCount)
         {
             try
             {

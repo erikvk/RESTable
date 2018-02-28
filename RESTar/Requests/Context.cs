@@ -144,17 +144,17 @@ namespace RESTar.Requests
 
             if (hasMacro)
             {
-                Uri.Macro.HeadersDictionary?.ForEach(pair =>
+                if (Uri.Macro.OverWriteHeaders)
+                    Uri.Macro.HeadersDictionary?.ForEach(pair => Headers[pair.Key] = pair.Value);
+                else
                 {
-                    if (Uri.Macro.OverWriteHeaders)
-                        Headers[pair.Key] = pair.Value;
-                    else
+                    Uri.Macro.HeadersDictionary?.ForEach(pair =>
                     {
                         var currentValue = Headers.SafeGet(pair.Key);
                         if (string.IsNullOrWhiteSpace(currentValue) || currentValue == "*/*")
                             Headers[pair.Key] = pair.Value;
-                    }
-                });
+                    });
+                }
             }
 
             CachedProtocolProvider = cachedProtocolProvider;
@@ -170,12 +170,12 @@ namespace RESTar.Requests
                 ResultFinalizer = cachedProtocolProvider.ProtocolProvider.FinalizeResult;
                 if (contentType.MimeType == null)
                 {
-                    ContentType = cachedProtocolProvider.DefaultInputContentType;
+                    ContentType = cachedProtocolProvider.DefaultInputProvider.ContentType;
                     InputContentTypeProvider = cachedProtocolProvider.DefaultInputProvider;
                 }
                 else
                 {
-                    if (!cachedProtocolProvider.InputContentTypeProviders.TryGetValue(contentType.MimeType, out var provider))
+                    if (!cachedProtocolProvider.InputMimeBindings.TryGetValue(contentType.MimeType, out var provider))
                         Error = new UnsupportedContent(Headers["Content-Type"]);
                     else
                     {
@@ -186,7 +186,7 @@ namespace RESTar.Requests
 
                 if (accepts == null)
                 {
-                    Accept = cachedProtocolProvider.DefaultOutputContentType;
+                    Accept = cachedProtocolProvider.DefaultOutputProvider.ContentType;
                     OutputContentTypeProvider = cachedProtocolProvider.DefaultOutputProvider;
                 }
                 else
@@ -200,13 +200,13 @@ namespace RESTar.Requests
                             containedWildcard = true;
                             return false;
                         }
-                        return cachedProtocolProvider.OutputContentTypeProviders.TryGetValue(a.MimeType, out acceptProvider);
+                        return cachedProtocolProvider.OutputMimeBindings.TryGetValue(a.MimeType, out acceptProvider);
                     });
                     if (acceptProvider == null)
                     {
                         if (containedWildcard)
                         {
-                            Accept = cachedProtocolProvider.DefaultOutputContentType;
+                            Accept = cachedProtocolProvider.DefaultOutputProvider.ContentType;
                             OutputContentTypeProvider = cachedProtocolProvider.DefaultOutputProvider;
                         }
                         else Error = new NotAcceptable(Headers["Accept"]);

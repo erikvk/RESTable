@@ -11,6 +11,11 @@ namespace RESTar
     public interface IProtocolProvider
     {
         /// <summary>
+        /// The name of the protocol
+        /// </summary>
+        string ProtocolName { get; }
+
+        /// <summary>
         /// The identifier is used in request URIs to indicate the protocol to use. If the ProtocolIdentifer 
         /// is 'OData', for example, and RESTar runs locally, on port 8282 and with root URI "/rest" requests 
         /// can trigger the OData protocol by "127.0.0.1:8282/rest-odata",
@@ -53,6 +58,6 @@ namespace RESTar
         /// Takes a result and generates an IFinalizedResult entity from it, that can be returned 
         /// to the network component.
         /// </summary>
-        IFinalizedResult FinalizeResult(IResult result, ContentType accept, IContentTypeProvider contentTypeProvider);
+        IFinalizedResult FinalizeResult(IResult result, IContentTypeProvider contentTypeProvider);
     }
 }

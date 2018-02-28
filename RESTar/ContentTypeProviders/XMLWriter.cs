@@ -13,14 +13,24 @@ namespace RESTar.ContentTypeProviders
     /// </summary>
     public class XMLWriter : IContentTypeProvider
     {
-        /// <inheritdoc />
-        public ContentType[] CanWrite() => new ContentType[] {"application/xml"};
+        private const string XMLMimeType = "application/xml";
+        private const string RESTarSpecific = "application/restar-xml";
+        private const string Brief = "xml";
 
         /// <inheritdoc />
-        public ContentType[] CanRead() => null;
+        public ContentType ContentType { get; } = new ContentType("application/xml; charset=utf-8");
 
         /// <inheritdoc />
-        public string GetContentDispositionFileExtension(ContentType contentType) => ".xml";
+        public string[] MatchStrings => new[] {XMLMimeType, RESTarSpecific, Brief};
+
+        /// <inheritdoc />
+        public bool CanRead => false;
+
+        /// <inheritdoc />
+        public bool CanWrite => true;
+
+        /// <inheritdoc />
+        public string ContentDispositionFileExtension => ".xml";
 
         private static readonly JsonContentProvider JsonProvider;
         private static readonly byte[] XMLHeader;
@@ -32,15 +42,15 @@ namespace RESTar.ContentTypeProviders
         }
 
         /// <inheritdoc />
-        public Stream SerializeEntity<T>(ContentType accept, T entity, IRequest request) where T : class
+        public Stream SerializeEntity<T>(T entity, IRequest request) where T : class
         {
-            return XmlSerializeJsonStream(JsonProvider.SerializeEntity("application/json", entity, request));
+            return XmlSerializeJsonStream(JsonProvider.SerializeEntity(entity, request));
         }
 
         /// <inheritdoc />
-        public Stream SerializeCollection<T>(ContentType accept, IEnumerable<T> entities, IRequest request, out ulong entityCount) where T : class
+        public Stream SerializeCollection<T>(IEnumerable<T> entities, IRequest request, out ulong entityCount) where T : class
         {
-            return XmlSerializeJsonStream(JsonProvider.SerializeCollection("application/json", entities, request, out entityCount));
+            return XmlSerializeJsonStream(JsonProvider.SerializeCollection(entities, request, out entityCount));
         }
 
         private static Stream XmlSerializeJsonStream(Stream jsonStream)
@@ -58,13 +68,13 @@ namespace RESTar.ContentTypeProviders
         }
 
         /// <inheritdoc />
-        public T DeserializeEntity<T>(ContentType contentType, byte[] body) where T : class => throw new NotImplementedException();
+        public T DeserializeEntity<T>(byte[] body) where T : class => throw new NotImplementedException();
 
         /// <inheritdoc />
-        public List<T> DeserializeCollection<T>(ContentType contentType, byte[] body) where T : class => throw new NotImplementedException();
+        public List<T> DeserializeCollection<T>(byte[] body) where T : class => throw new NotImplementedException();
 
         /// <inheritdoc />
-        public IEnumerable<T> Populate<T>(ContentType contentType, IEnumerable<T> entities, byte[] body) where T : class =>
+        public IEnumerable<T> Populate<T>(IEnumerable<T> entities, byte[] body) where T : class =>
             throw new NotImplementedException();
     }
 }
