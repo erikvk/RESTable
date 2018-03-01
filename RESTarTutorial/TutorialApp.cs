@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using RESTar.Linq;
+using RESTar.OData;
 using RESTar.SQLite;
 using static RESTar.Methods;
 
@@ -24,7 +25,8 @@ namespace RESTarTutorial
                 uri: "/api",
                 requireApiKey: true,
                 configFilePath: projectFolder + "/Config.xml",
-                resourceProviders: new[] {new SQLiteProvider(projectFolder, "data")}
+                resourceProviders: new[] {new SQLiteProvider(projectFolder, "data")},
+                protocolProviders: new[] {new ODataProtocolProvider()}
             );
 
             // The 'port' argument sets the HTTP port on which to register the REST handlers
