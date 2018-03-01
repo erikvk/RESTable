@@ -23,10 +23,13 @@ namespace RESTar.ContentTypeProviders
         protected static readonly Encoding UTF8 = RESTarConfig.DefaultEncoding;
 
         /// <inheritdoc />
+        public abstract string Name { get; }
+
+        /// <inheritdoc />
         public abstract ContentType ContentType { get; }
 
         /// <inheritdoc />
-        public abstract string[] MatchStrings { get; }
+        public abstract string[] MatchStrings { get; set; }
 
         /// <inheritdoc />
         public abstract bool CanRead { get; }

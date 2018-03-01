@@ -10,6 +10,12 @@ namespace RESTar
     public interface IContentTypeProvider
     {
         /// <summary>
+        /// The name of the content type, used when listing available content types.
+        /// For example, JSON.
+        /// </summary>
+        string Name { get; }
+
+        /// <summary>
         /// The content type that is handled by this content type provider
         /// </summary>
         /// <returns></returns>
@@ -17,9 +23,10 @@ namespace RESTar
 
         /// <summary>
         /// The strings that should be registered as match strings for this content type provider. When 
-        /// these are used as MIME types in request headers, they will map to this content type provider. 
+        /// these are used as MIME types in request headers, they will map to this content type provider.
+        /// Protocol providers can change these in order to make custom mappings to content types.
         /// </summary>
-        string[] MatchStrings { get; }
+        string[] MatchStrings { get; set; }
 
         /// <summary>
         /// Can this content type provider read data?

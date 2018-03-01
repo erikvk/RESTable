@@ -18,10 +18,13 @@ namespace RESTar.ContentTypeProviders
         private const string Brief = "excel";
 
         /// <inheritdoc />
+        public override string Name => "Microsoft Excel";
+
+        /// <inheritdoc />
         public override ContentType ContentType { get; } = new ContentType(ExcelMimeType);
 
         /// <inheritdoc />
-        public override string[] MatchStrings => new[] {ExcelMimeType, RESTarSpecific, Brief};
+        public override string[] MatchStrings { get; set; } = {ExcelMimeType, RESTarSpecific, Brief};
 
         /// <inheritdoc />
         public override bool CanRead => true;

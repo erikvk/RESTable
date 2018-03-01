@@ -130,6 +130,9 @@ namespace RESTar.ContentTypeProviders
         #region IContentTypeProvider
 
         /// <inheritdoc />
+        public string Name => "JSON";
+
+        /// <inheritdoc />
         public ContentType ContentType { get; } = new ContentType("application/json; charset=utf-8");
 
         /// <inheritdoc />
@@ -153,7 +156,7 @@ namespace RESTar.ContentTypeProviders
         }
 
         /// <inheritdoc />
-        public string[] MatchStrings => new[] {JsonMimeType, RESTarSpecific, Brief, TextPlain};
+        public string[] MatchStrings { get; set; } = {JsonMimeType, RESTarSpecific, Brief, TextPlain};
 
         /// <summary>
         /// Serializes the given object to a byte array

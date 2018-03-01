@@ -18,10 +18,13 @@ namespace RESTar.ContentTypeProviders
         private const string Brief = "xml";
 
         /// <inheritdoc />
+        public string Name => "XML";
+
+        /// <inheritdoc />
         public ContentType ContentType { get; } = new ContentType("application/xml; charset=utf-8");
 
         /// <inheritdoc />
-        public string[] MatchStrings => new[] {XMLMimeType, RESTarSpecific, Brief};
+        public string[] MatchStrings { get; set; } = {XMLMimeType, RESTarSpecific, Brief};
 
         /// <inheritdoc />
         public bool CanRead => false;

@@ -10,6 +10,11 @@ namespace RESTar.Admin
     public class ContentType
     {
         /// <summary>
+        /// The name of the content type
+        /// </summary>
+        public string Name { get; }
+
+        /// <summary>
         /// The MIME type of this content type
         /// </summary>
         public string MimeType { get; }
@@ -29,8 +34,9 @@ namespace RESTar.Admin
         /// </summary>
         public string[] Bindings { get; }
 
-        internal ContentType(string mimeType, bool canRead, bool canWrite, string[] bindings)
+        internal ContentType(string name, string mimeType, bool canRead, bool canWrite, string[] bindings)
         {
+            Name = name;
             MimeType = mimeType;
             CanRead = canRead;
             CanWrite = canWrite;
@@ -77,6 +83,7 @@ namespace RESTar.Admin
                     .Distinct()
                     .Select(provider => new ContentType
                     (
+                        name: provider.Name,
                         mimeType: provider.ContentType.MimeType,
                         canRead: cachedProvider.InputMimeBindings.Values.Contains(provider),
                         canWrite: cachedProvider.OutputMimeBindings.Values.Contains(provider),
