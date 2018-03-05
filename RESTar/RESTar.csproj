@@ -95,7 +95,7 @@
     <Compile Include="Admin\PropertyCache.cs" />
     <Compile Include="Admin\WebSocket.cs" />
     <Compile Include="Admin\Utilities.cs" />
-    <Compile Include="Admin\NetworkConsole.cs" />
+    <Compile Include="Admin\Console.cs" />
     <Compile Include="Admin\DbMacro.cs" />
     <Compile Include="ContentTypeProviders\ExcelContentProvider.cs" />
     <Compile Include="ContentTypeProviders\JsonAdapterProvider.cs" />
@@ -124,7 +124,7 @@
     <Compile Include="Requests\ITraceable.cs" />
     <Compile Include="Requests\OriginType.cs" />
     <Compile Include="Resources\TerminalResourceProvider.cs" />
-    <Compile Include="ResourceTemplates\ConsoleTerminal.cs" />
+    <Compile Include="ResourceTemplates\FeedTerminal.cs" />
     <Compile Include="ResourceTemplates\OptionsTerminal.cs" />
     <Compile Include="Results\Error\InvalidProtocolProvider.cs" />
     <Compile Include="Results\Error\InvalidContentTypeProvider.cs" />

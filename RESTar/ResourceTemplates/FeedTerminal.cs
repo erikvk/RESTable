@@ -3,40 +3,40 @@
 namespace RESTar.ResourceTemplates
 {
     /// <summary>
-    /// The status of a console terminal
+    /// The status of a feed terminal
     /// </summary>
-    public enum ConsoleStatus
+    public enum FeedStatus
     {
         /// <summary>
-        /// The Console is connected to a WebSocket, but 
-        /// currently marked as paued.
+        /// The Feed is connected to a WebSocket, but 
+        /// currently marked as paused.
         /// </summary>
         Paused,
 
         /// <summary>
-        /// The Console is connected to a WebSocket and open,
-        /// ready to receive console messages.
+        /// The Feed is connected to a WebSocket and open,
+        /// ready to receive messages.
         /// </summary>
         Open
     }
 
     /// <inheritdoc />
     /// <summary>
-    /// A resource template for a console. Consoles are simple terminal resources that 
+    /// A resource template for feeds. Feeds are simple terminal resources that 
     /// receive the commands OPEN, PAUSE and CLOSE, and that regurarly push messages 
     /// to all open terminals.
     /// </summary>
-    public abstract class ConsoleTerminal : ITerminal
+    public abstract class FeedTerminal : ITerminal
     {
         /// <summary>
-        /// The status of the console
+        /// The status of the feed
         /// </summary>
-        public ConsoleStatus Status { get; set; }
+        public FeedStatus Status { get; set; }
 
         /// <summary>
-        /// Is this console status currently open?
+        /// Is this feed's status currently Open?
         /// </summary>
-        protected bool IsOpen => Status == ConsoleStatus.Open;
+        protected bool IsOpen => Status == FeedStatus.Open;
 
         /// <summary>
         /// Should the welcome text be shown when the terminal launces?
@@ -59,7 +59,7 @@ namespace RESTar.ResourceTemplates
             if (welcomeBody != null)
                 welcomeBody = welcomeBody + "\n\n";
             return $"### {WelcomeHeader ?? GetType().RESTarTypeName()} ###\n\n{welcomeBody}> Status: {Status}\n\n" +
-                   (IsOpen ? "" : "> To open the console, type OPEN\n") +
+                   (IsOpen ? "" : "> To open the feed, type OPEN\n") +
                    "> To pause, type PAUSE\n> To close, type CLOSE\n";
         }
 
@@ -92,11 +92,11 @@ namespace RESTar.ResourceTemplates
             {
                 case "": break;
                 case "OPEN":
-                    Status = ConsoleStatus.Open;
+                    Status = FeedStatus.Open;
                     WebSocket.SendText("> Status: ACTIVE\n");
                     break;
                 case "PAUSE":
-                    Status = ConsoleStatus.Paused;
+                    Status = FeedStatus.Paused;
                     WebSocket.SendText("> Status: PAUSED\n");
                     break;
                 case "CLOSE":

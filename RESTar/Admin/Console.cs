@@ -12,15 +12,15 @@ using static Newtonsoft.Json.Formatting;
 namespace RESTar.Admin
 {
     [RESTar(Description = description)]
-    internal sealed class NetworkConsole : ConsoleTerminal
+    internal sealed class Console : FeedTerminal
     {
-        private const string description = "The console is a terminal resource that allows a WebSocket client to receive " +
+        private const string description = "The Console is a terminal resource that allows a WebSocket client to receive " +
                                            "pushed updates when the REST API receives requests and WebSocket events.";
 
-        internal const string TypeName = "RESTar.Admin.NetworkConsole";
+        internal const string TypeName = "RESTar.Admin.Console";
 
-        private static readonly TerminalSet<NetworkConsole> Consoles;
-        static NetworkConsole() => Consoles = new TerminalSet<NetworkConsole>();
+        private static readonly TerminalSet<Console> Consoles;
+        static Console() => Consoles = new TerminalSet<Console>();
 
         public ConsoleFormat Format { get; set; }
         public bool IncludeConnection { get; set; } = true;
@@ -31,7 +31,7 @@ namespace RESTar.Admin
         protected override string WelcomeHeader { get; } = "RESTar network console";
 
         /// <inheritdoc />
-        protected override string WelcomeBody { get; } = "Use the network console to receive pushed updates when the \n" +
+        protected override string WelcomeBody { get; } = "Use the console to receive pushed updates when the \n" +
                                                          "REST API receives requests and WebSocket events.";
 
         public override void Open()

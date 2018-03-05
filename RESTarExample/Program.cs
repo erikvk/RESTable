@@ -5,6 +5,7 @@ using Dynamit;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using RESTar;
+using RESTar.Linq;
 using RESTar.Resources;
 using RESTar.ResourceTemplates;
 using Starcounter;
@@ -45,6 +46,83 @@ namespace RESTarExample
                 return new[] {new Option("Foo", "a foo", strings => { })};
             }
         }
+    }
+
+    [Database, RESTar]
+    public class MyStarcounterResource
+    {
+        public string MyString { get; set; }
+        public int MyInteger { get; set; }
+        public DateTime MyDateTime { get; set; }
+        public MyStarcounterResource MyOtherStarcounterResource { get; set; }
+    }
+
+    [RESTar]
+    public class MyEntityResource : ISelector<MyEntityResource>, IInserter<MyEntityResource>,
+        IUpdater<MyEntityResource>, IDeleter<MyEntityResource>
+    {
+        public string TheString { get; set; }
+        public int TheInteger { get; set; }
+        public DateTime TheDateTime { get; set; }
+        public MyEntityResource TheOtherEntityResource { get; set; }
+
+        /// <summary>
+        /// Private properties are not includeded in output and cannot be set in input. 
+        /// This property is only used internally to determine DB object identity.
+        /// </summary>
+        private ulong? ObjectNo { get; set; }
+
+        private static MyEntityResource FromDbObject(MyStarcounterResource dbObject)
+        {
+            if (dbObject == null) return null;
+            return new MyEntityResource
+            {
+                TheString = dbObject.MyString,
+                TheInteger = dbObject.MyInteger,
+                TheDateTime = dbObject.MyDateTime,
+                TheOtherEntityResource = FromDbObject(dbObject.MyOtherStarcounterResource),
+                ObjectNo = dbObject.GetObjectNo()
+            };
+        }
+
+        private static MyStarcounterResource ToDbObject(MyEntityResource _object)
+        {
+            if (_object == null) return null;
+            var dbObject = _object.ObjectNo is ulong objectNo
+                ? Db.FromId<MyStarcounterResource>(objectNo)
+                : new MyStarcounterResource();
+            dbObject.MyString = _object.TheString;
+            dbObject.MyInteger = _object.TheInteger;
+            dbObject.MyDateTime = _object.TheDateTime;
+            dbObject.MyOtherStarcounterResource = ToDbObject(_object.TheOtherEntityResource);
+            return dbObject;
+        }
+
+        public IEnumerable<MyEntityResource> Select(IRequest<MyEntityResource> request) => Db
+            .SQL<MyStarcounterResource>($"SELECT t FROM {typeof(MyStarcounterResource).FullName} t")
+            .Select(FromDbObject)
+            .Where(request.Conditions);
+
+        public int Insert(IRequest<MyEntityResource> request) => Db.Transact(() => request
+            .GetEntities()
+            .Select(ToDbObject)
+            .Count());
+
+        public int Update(IRequest<MyEntityResource> request) => Db.Transact(() => request
+            .GetEntities()
+            .Select(ToDbObject)
+            .Count());
+
+        public int Delete(IRequest<MyEntityResource> request) => Db.Transact(() =>
+        {
+            var i = 0;
+            foreach (var item in request.GetEntities())
+            {
+                item.Delete();
+                i += 1;
+            }
+            return i;
+        });
     }
 
 

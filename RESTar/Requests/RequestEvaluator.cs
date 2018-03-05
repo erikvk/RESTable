@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text.RegularExpressions;
-using RESTar.Admin;
 using RESTar.ContentTypeProviders;
 using RESTar.Internal;
 using RESTar.Linq;
@@ -15,6 +14,7 @@ using RESTar.Results.Success;
 using RESTar.Serialization;
 using static RESTar.Methods;
 using static RESTar.RESTarConfig;
+using Console = RESTar.Admin.Console;
 
 namespace RESTar.Requests
 {
@@ -179,7 +179,7 @@ namespace RESTar.Requests
                 stopwatch.Stop();
                 if (logged) return;
                 if (!trace.TcpConnection.IsInShell)
-                    NetworkConsole.Log(context, tolog, stopwatch.Elapsed.TotalMilliseconds);
+                    Console.Log(context, tolog, stopwatch.Elapsed.TotalMilliseconds);
                 logged = true;
             }
 

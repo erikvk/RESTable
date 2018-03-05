@@ -30,7 +30,7 @@ namespace RESTar
 
         /// <summary>
         /// Gets the content type providers associated with this protocol provider. If this is the exclusive list 
-        /// of content type providers to use with this protocol, set the AllowExternalContentProviders to false.
+        /// of content type providers to use with this protocol, set the AllowExternalContentProviders property to false.
         /// </summary>
         /// <returns></returns>
         IEnumerable<IContentTypeProvider> GetContentTypeProviders();
