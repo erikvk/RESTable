@@ -90,7 +90,7 @@ namespace RESTar.Admin
                                 item.In.Content = initial.LogContent;
                                 item.Out.Content = final.LogContent;
                             }
-                            var json = Serializers.Json.Serialize(item, Indented);
+                            var json = Serializers.Json.Serialize(item, Indented, ignoreNulls: true);
                             c.WebSocketInternal.SendTextRaw(json);
                         });
                         break;
@@ -127,7 +127,7 @@ namespace RESTar.Admin
                                 item.CustomHeaders = logable.Headers;
                             if (c.IncludeContent)
                                 item.Content = logable.LogContent;
-                            var json = Serializers.Json.Serialize(item, Indented);
+                            var json = Serializers.Json.Serialize(item, Indented, ignoreNulls: true);
                             c.WebSocketInternal.SendTextRaw(json);
                         });
                         break;

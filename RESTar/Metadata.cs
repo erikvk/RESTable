@@ -71,7 +71,7 @@ namespace RESTar
         /// Generates metadata according to a given metadata level
         /// </summary>
         public static Metadata Get(MetadataLevel level) => Make(level, null);
-
+        
         internal static Metadata Make(MetadataLevel level, AccessRights rights)
         {
             if (!RESTarConfig.Initialized) throw new NotInitialized();

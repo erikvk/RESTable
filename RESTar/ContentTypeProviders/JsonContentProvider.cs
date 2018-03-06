@@ -21,6 +21,8 @@ namespace RESTar.ContentTypeProviders
         /// </summary>
         private static JsonSerializerSettings Settings { get; }
 
+        private static JsonSerializerSettings SettingsIgnoreNulls { get; }
+
         /// <summary>
         /// UTF 8 encoding without byte order mark (BOM)
         /// </summary>
@@ -38,23 +40,33 @@ namespace RESTar.ContentTypeProviders
 
         static JsonContentProvider()
         {
+            UTF8 = RESTarConfig.DefaultEncoding;
+            var enumConverter = new StringEnumConverter();
+            var headersConverter = new HeadersConverter();
+            var ddictionaryConverter = new DDictionaryConverter();
+
             Settings = new JsonSerializerSettings
             {
+                NullValueHandling = NullValueHandling.Include,
                 DateParseHandling = DateParseHandling.DateTime,
                 DateFormatHandling = DateFormatHandling.IsoDateFormat,
                 DateTimeZoneHandling = DateTimeZoneHandling.Utc,
                 ContractResolver = new DefaultResolver(),
-                NullValueHandling = NullValueHandling.Include,
                 FloatParseHandling = FloatParseHandling.Decimal,
+                Converters = {enumConverter, headersConverter, ddictionaryConverter}
             };
-            var enumConverter = new StringEnumConverter();
-            var headersConverter = new HeadersConverter();
-            var ddictionaryConverter = new DDictionaryConverter();
-            Settings.Converters.Add(enumConverter);
-            Settings.Converters.Add(headersConverter);
-            Settings.Converters.Add(ddictionaryConverter);
-            UTF8 = RESTarConfig.DefaultEncoding;
             Serializer = JsonSerializer.Create(Settings);
+
+            SettingsIgnoreNulls = new JsonSerializerSettings
+            {
+                NullValueHandling = NullValueHandling.Ignore,
+                DateParseHandling = Settings.DateParseHandling,
+                DateFormatHandling = Settings.DateFormatHandling,
+                DateTimeZoneHandling = Settings.DateTimeZoneHandling,
+                ContractResolver = Settings.ContractResolver,
+                FloatParseHandling = Settings.FloatParseHandling,
+                Converters = Settings.Converters
+            };
         }
 
         #region Internals
@@ -112,17 +124,17 @@ namespace RESTar.ContentTypeProviders
         /// Serializes the given value using the formatting, and optionally - a type. If no 
         /// formatting is given, the formatting defined in Settings is used.
         /// </summary>
-        public string Serialize(object value, Formatting? formatting = null, Type type = null)
+        public string Serialize(object value, Formatting? formatting = null, Type type = null, bool ignoreNulls = false)
         {
             var _formatting = formatting ?? (_PrettyPrint ? Indented : None);
-            return JsonConvert.SerializeObject(value, type, _formatting, Settings);
+            var settings = ignoreNulls ? SettingsIgnoreNulls : Settings;
+            return JsonConvert.SerializeObject(value, type, _formatting, settings);
         }
 
         /// <summary>
-        /// Serializes the given value using the formatting, and optionally - a type. If no 
-        /// formatting is given, the formatting defined in Settings is used.
+        /// Deserializes the given json string to the given type.
         /// </summary>
-        public T Deserialize<T>(string json, Formatting? formatting = null, Type type = null)
+        public T Deserialize<T>(string json)
         {
             return JsonConvert.DeserializeObject<T>(json, Settings);
         }
