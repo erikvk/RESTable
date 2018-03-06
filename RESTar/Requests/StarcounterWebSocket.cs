@@ -186,9 +186,10 @@ namespace RESTar.Requests
         public void SendBinary(byte[] data) => _SendBinary(data, false);
         public void SendBinary(Stream data) => _SendBinary(data.ToByteArray(), false);
 
-        public void SendJson(object item, bool? prettyPrint = null)
+        public void SendJson(object item, bool? prettyPrint = null, bool ignoreNulls = false)
         {
-            var stream = Serializers.Json.SerializeStream(item, prettyPrint != null ? Indented : default(Newtonsoft.Json.Formatting?));
+            var _prettyPrint = prettyPrint != null ? Indented : default(Newtonsoft.Json.Formatting?);
+            var stream = Serializers.Json.SerializeStream(item, _prettyPrint, ignoreNulls);
             _SendBinary(stream.ToArray(), true);
         }
 

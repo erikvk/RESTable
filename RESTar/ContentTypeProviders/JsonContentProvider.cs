@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -32,6 +31,8 @@ namespace RESTar.ContentTypeProviders
         /// The JSON serializer
         /// </summary>
         internal static JsonSerializer Serializer { get; }
+
+        private static JsonSerializer SerializerIgnoreNulls { get; }
 
         private const string JsonMimeType = "application/json";
         private const string RESTarSpecific = "application/restar-json";
@@ -67,6 +68,7 @@ namespace RESTar.ContentTypeProviders
                 FloatParseHandling = Settings.FloatParseHandling,
                 Converters = Settings.Converters
             };
+            SerializerIgnoreNulls = JsonSerializer.Create(SettingsIgnoreNulls);
         }
 
         #region Internals
@@ -96,15 +98,16 @@ namespace RESTar.ContentTypeProviders
             JsonConvert.PopulateObject(json, target, Settings);
         }
 
-        internal MemoryStream SerializeStream(object entity, Formatting? formatting = null, Type type = null)
+        internal MemoryStream SerializeStream(object entity, Formatting? formatting = null, bool ignoreNulls = false)
         {
             var _formatting = formatting ?? (_PrettyPrint ? Indented : None);
+            var serializer = ignoreNulls ? SerializerIgnoreNulls : Serializer;
             var stream = new MemoryStream();
             using (var swr = new StreamWriter(stream, UTF8, 1024, true))
             using (var jwr = new RESTarJsonWriter(swr, 0))
             {
                 jwr.Formatting = _formatting;
-                Serializer.Serialize(jwr, entity);
+                serializer.Serialize(jwr, entity);
             }
             stream.Seek(0, SeekOrigin.Begin);
             return stream;
@@ -124,11 +127,11 @@ namespace RESTar.ContentTypeProviders
         /// Serializes the given value using the formatting, and optionally - a type. If no 
         /// formatting is given, the formatting defined in Settings is used.
         /// </summary>
-        public string Serialize(object value, Formatting? formatting = null, Type type = null, bool ignoreNulls = false)
+        public string Serialize(object value, Formatting? formatting = null, bool ignoreNulls = false)
         {
             var _formatting = formatting ?? (_PrettyPrint ? Indented : None);
             var settings = ignoreNulls ? SettingsIgnoreNulls : Settings;
-            return JsonConvert.SerializeObject(value, type, _formatting, settings);
+            return JsonConvert.SerializeObject(value, _formatting, settings);
         }
 
         /// <summary>

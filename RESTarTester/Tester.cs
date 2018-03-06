@@ -458,7 +458,7 @@ namespace RESTarTester
                 Body = new
                 {
                     A = "REPORT /resource",
-                    B = new[] { "REPORT /resource", "REPORT /resource" }
+                    B = new[] {"REPORT /resource", "REPORT /resource"}
                 }
             };
             var r5 = new Request<MyDict>();
