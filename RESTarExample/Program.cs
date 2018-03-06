@@ -234,6 +234,13 @@ namespace RESTarExample
         public int Int { get; set; }
     }
 
+    [Database, RESTar]
+    public class MyStatic3
+    {
+        public EE E { get; set; }
+        public string Foo { get; set; }
+    }
+
     [RESTar(Methods.GET)]
     public class SemiDynamic : JObject, ISelector<SemiDynamic>
     {

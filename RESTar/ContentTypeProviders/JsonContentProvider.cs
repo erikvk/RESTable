@@ -3,9 +3,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
-using RESTar.Serialization;
 using RESTar.Serialization.NativeProtocol;
 using static Newtonsoft.Json.Formatting;
 using static RESTar.Admin.Settings;
@@ -42,9 +40,6 @@ namespace RESTar.ContentTypeProviders
         static JsonContentProvider()
         {
             UTF8 = RESTarConfig.DefaultEncoding;
-            var enumConverter = new StringEnumConverter();
-            var headersConverter = new HeadersConverter();
-            var ddictionaryConverter = new DDictionaryConverter();
 
             Settings = new JsonSerializerSettings
             {
@@ -54,7 +49,6 @@ namespace RESTar.ContentTypeProviders
                 DateTimeZoneHandling = DateTimeZoneHandling.Utc,
                 ContractResolver = new DefaultResolver(),
                 FloatParseHandling = FloatParseHandling.Decimal,
-                Converters = {enumConverter, headersConverter, ddictionaryConverter}
             };
             Serializer = JsonSerializer.Create(Settings);
 
@@ -66,7 +60,6 @@ namespace RESTar.ContentTypeProviders
                 DateTimeZoneHandling = Settings.DateTimeZoneHandling,
                 ContractResolver = Settings.ContractResolver,
                 FloatParseHandling = Settings.FloatParseHandling,
-                Converters = Settings.Converters
             };
             SerializerIgnoreNulls = JsonSerializer.Create(SettingsIgnoreNulls);
         }

@@ -2,7 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using Dynamit;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Serialization;
 using RESTar.Deflection.Dynamic;
 using RESTar.Linq;
@@ -11,6 +13,31 @@ namespace RESTar.Serialization.NativeProtocol
 {
     internal class DefaultResolver : DefaultContractResolver
     {
+        private static readonly DDictionaryConverter DDictionaryConverter;
+        private static readonly StringEnumConverter StringEnumConverter;
+
+        static DefaultResolver()
+        {
+            DDictionaryConverter = new DDictionaryConverter();
+            StringEnumConverter = new StringEnumConverter();
+        }
+
+
+        protected override JsonContract CreateContract(Type objectType)
+        {
+            var contract = base.CreateContract(objectType);
+            switch (objectType)
+            {
+                case var _ when objectType.IsSubclassOf(typeof(DDictionary)):
+                    contract.Converter = DDictionaryConverter;
+                    break;
+                case var _ when objectType.IsEnum:
+                    contract.Converter = StringEnumConverter;
+                    break;
+            }
+            return contract;
+        }
+
         protected override JsonProperty CreateProperty(MemberInfo member, MemberSerialization memberSerialization)
         {
             switch (member)
@@ -25,7 +52,6 @@ namespace RESTar.Serialization.NativeProtocol
                     p.ObjectCreationHandling = property.ReplaceOnUpdate ? ObjectCreationHandling.Replace : ObjectCreationHandling.Auto;
                     p.PropertyName = property.Name;
                     p.Order = property.Order;
-                    p.ValueProvider = new DefaultValueProvider(property);
                     return p;
                 case FieldInfo fieldInfo:
                     if (fieldInfo.RESTarIgnored()) return null;
