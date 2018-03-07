@@ -38,6 +38,8 @@ namespace RESTar.Internal
                 throw new UserNotSignedIn();
         }
 
+
+
         internal static void RunResourceAuthentication<T>(this IRequest<T> request) where T : class
         {
             if (!request.Resource.RequiresAuthentication) return;

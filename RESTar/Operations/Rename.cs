@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json.Linq;
+using RESTar.ContentTypeProviders;
 using RESTar.Deflection.Dynamic;
 using RESTar.Internal;
 using RESTar.Linq;
@@ -27,16 +28,21 @@ namespace RESTar.Operations
 
         private JObject Renamed(JObject entity)
         {
-            foreach (var pair in this)
+            this.ForEach(pair =>
             {
                 var value = entity.GetValue(pair.Key.Key, OrdinalIgnoreCase);
+                if (value == null)
+                {
+                    value = pair.Key.Evaluate(entity, out var _);
+                    entity[pair.Value] = value == null ? null : JToken.FromObject(value, JsonContentProvider.Serializer);
+                    return;
+                }
                 var property = (JProperty) value.Parent;
                 var actualKey = property.Name;
                 if (actualKey != null)
                     entity.Remove(actualKey);
                 entity[pair.Value] = value;
-            }
-
+            });
             return entity;
         }
 
