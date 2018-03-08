@@ -83,7 +83,8 @@ namespace RESTar.Operations
         {
             try
             {
-                if (request.Resource.Count is Counter<T> counter)
+                if (request.Resource.Count is Counter<T> counter &&
+                    request.MetaConditions.CanUseExternalCounter)
                     return counter(request);
                 if (!request.MetaConditions.HasProcessors)
                     return SELECT_FILTER(request)?.Count() ?? 0L;

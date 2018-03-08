@@ -63,7 +63,7 @@ namespace RESTar.Requests
             }
             UriParameters = context.Uri;
             Conditions = Condition<T>.Parse(context.Uri.Conditions, Resource) ?? Conditions;
-            MetaConditions = MetaConditions.Parse(context.Uri.MetaConditions, Resource, false) ?? MetaConditions;
+            MetaConditions = MetaConditions.Parse(context.Uri.MetaConditions, Resource) ?? MetaConditions;
         }
 
         internal void Evaluate()
