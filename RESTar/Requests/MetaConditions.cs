@@ -123,7 +123,7 @@ namespace RESTar.Requests
 
         internal IProcessor[] Processors { get; private set; }
         internal bool HasProcessors { get; private set; }
-        internal bool CanUseExternalCounter { get; private set; }
+        internal bool CanUseExternalCounter { get; private set; } = true;
 
         private static string AllMetaConditions =>
             $"{string.Join(", ", Enum.GetNames(typeof(RESTarMetaConditions)).Except(new[] {"New", "Delete"}))}";
