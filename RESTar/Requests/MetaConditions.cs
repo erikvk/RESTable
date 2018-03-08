@@ -219,7 +219,7 @@ namespace RESTar.Requests
 
             if (processors)
             {
-                mc.Processors = new IProcessor[] {mc.Add, mc.Rename, mc.Select, mc.Distinct}.Where(p => p != null).ToArray();
+                mc.Processors = new IProcessor[] {mc.Add, mc.Rename, mc.Select}.Where(p => p != null).ToArray();
                 mc.HasProcessors = mc.Processors.Any();
             }
 

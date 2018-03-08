@@ -1,4 +1,5 @@
-﻿namespace RESTar.Requests {
+﻿namespace RESTar.Requests
+{
     /// <summary>
     /// Defines something that can be traced from a TCP connection
     /// </summary>

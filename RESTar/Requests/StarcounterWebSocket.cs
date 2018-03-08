@@ -45,7 +45,7 @@ namespace RESTar.Requests
         public WebSocketStatus Status { get; private set; }
         public ConnectionProfile GetConnectionProfile() => new ConnectionProfile(this);
         public void SendToShell() => Shell.TerminalResource.InstantiateFor(this);
-
+        
         public void SendTo(ITerminalResource terminalResource)
         {
             if (terminalResource == null)
@@ -144,7 +144,7 @@ namespace RESTar.Requests
             }
         }
 
-        public void SendResult(IFinalizedResult result, bool includeStatusWithContent = true)
+        public void SendResult(IFinalizedResult result, bool includeStatusWithContent = true, TimeSpan? timeElapsed = null)
         {
             switch (Status)
             {
@@ -161,12 +161,15 @@ namespace RESTar.Requests
             {
                 var info = result.Headers["RESTar-Info"];
                 var errorInfo = result.Headers["ErrorInfo"];
+                var timeInfo = "";
+                if (timeElapsed != null)
+                    timeInfo = $" ({timeElapsed.Value.TotalMilliseconds} ms)";
                 var tail = "";
                 if (info != null)
                     tail += $". {info}";
                 if (errorInfo != null)
                     tail += $" (see {errorInfo})";
-                _SendText($"{result.StatusCode.ToCode()}: {result.StatusDescription}{tail}");
+                _SendText($"{result.StatusCode.ToCode()}: {result.StatusDescription}{timeInfo}{tail}");
             }
 
             if (result.Body != null && (!result.Body.CanSeek || result.Body.Length > 0))

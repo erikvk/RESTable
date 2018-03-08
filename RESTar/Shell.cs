@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Linq;
 using RESTar.Internal;
 using RESTar.Operations;
@@ -46,10 +47,11 @@ namespace RESTar
 
         public bool Silent
         {
-            get => !WriteStatusBeforeContent && !WriteQueryAfterContent && !WriteInfoTexts;
+            get => !WriteStatusBeforeContent && !WriteTimeElapsed && !WriteQueryAfterContent && !WriteInfoTexts;
             set
             {
                 WriteStatusBeforeContent = !value;
+                WriteTimeElapsed = !value;
                 WriteQueryAfterContent = !value;
                 WriteInfoTexts = !value;
             }
@@ -57,6 +59,7 @@ namespace RESTar
 
         public bool Unsafe { get; set; } = false;
         public bool WriteStatusBeforeContent { get; set; } = true;
+        public bool WriteTimeElapsed { get; set; } = true;
         public bool WriteQueryAfterContent { get; set; } = true;
         public bool WriteInfoTexts { get; set; } = true;
 
@@ -163,7 +166,7 @@ namespace RESTar
                                 Query = tail;
                             var result = WsEvaluate(HEAD, null);
                             if (!(result is Head))
-                                SendResult(result);
+                                SendResult(result, null);
                             else if (WriteQueryAfterContent)
                                 WebSocket.SendText("? " + Query);
                             break;
@@ -187,7 +190,7 @@ namespace RESTar
                                 count = -1;
                             var link = GetNextPageLink?.Invoke(count)?.ToString();
                             if (link == null)
-                                SendResult(new NoContent(WebSocket));
+                                SendResult(new NoContent(WebSocket), null);
                             else
                             {
                                 Query = link;
@@ -255,7 +258,9 @@ namespace RESTar
             GetNextPageLink = null;
             query = "";
             previousQuery = "";
+            WriteInfoTexts = true;
             WriteStatusBeforeContent = true;
+            WriteTimeElapsed = true;
             WriteQueryAfterContent = true;
         }
 
@@ -278,14 +283,30 @@ namespace RESTar
             return result;
         }
 
-        private void SafeOperation(Methods method, byte[] body = null) => SendResult(WsEvaluate(method, body));
+        private void SafeOperation(Methods method, byte[] body = null)
+        {
+            var sw = Stopwatch.StartNew();
+            switch (WsEvaluate(method, body))
+            {
+                case Entities entities:
+                    SendResult(entities, sw.Elapsed);
+                    break;
+                case Report report:
+                    SendResult(report, sw.Elapsed);
+                    break;
+                case var other:
+                    SendResult(other, null);
+                    break;
+            }
+            sw.Stop();
+        }
 
         private void UnsafeOperation(Methods method, byte[] body = null)
         {
             void operate()
             {
                 WebSocket.Headers.UnsafeOverride = true;
-                SendResult(WsEvaluate(method, body));
+                SafeOperation(method, body);
             }
 
             switch (PreviousResultMetadata?.EntityCount)
@@ -309,9 +330,9 @@ namespace RESTar
             }
         }
 
-        private void SendResult(IFinalizedResult result)
+        private void SendResult(IFinalizedResult result, TimeSpan? elapsed)
         {
-            WebSocket.SendResult(result, WriteStatusBeforeContent);
+            WebSocket.SendResult(result, WriteStatusBeforeContent, elapsed);
             if (!WriteQueryAfterContent) return;
             switch (result)
             {

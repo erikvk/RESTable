@@ -24,7 +24,6 @@ namespace RESTar.Results.Success
         public string HeadersStringCache { get; set; }
         public bool ExcludeHeaders => default;
 
-
         public WebSocketResult(bool leaveOpen, ITraceable trace) : this()
         {
             LeaveOpen = leaveOpen;

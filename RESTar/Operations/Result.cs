@@ -68,8 +68,8 @@ namespace RESTar.Operations
         {
             Headers = new Headers();
             ExcludeHeaders = false;
-            TcpConnection = trace?.TcpConnection;
-            TraceId = trace?.TraceId;
+            TcpConnection = trace.TcpConnection;
+            TraceId = trace.TraceId;
         }
     }
 }

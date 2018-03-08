@@ -32,13 +32,28 @@ namespace RESTar.Operations
             }
         }
 
-        internal static IEnumerable<T> SELECT_VIEW(ViewRequest<T> request)
+        private static IEnumerable<T> SELECT_FILTER(IRequest<T> request) => request.Target
+            .Select(request)?
+            .Filter(request.MetaConditions.Distinct)
+            .Filter(request.MetaConditions.Search)
+            .Filter(request.MetaConditions.OrderBy)
+            .Filter(request.MetaConditions.Offset)
+            .Filter(request.MetaConditions.Limit);
+
+        private static IEnumerable<dynamic> SELECT_FILTER_PROCESS(IRequest<T> request) => request.Target
+            .Select(request)?
+            .Process(request.MetaConditions.Processors)
+            .Filter(request.MetaConditions.Distinct)
+            .Filter(request.MetaConditions.Search)
+            .Filter(request.MetaConditions.OrderBy)
+            .Filter(request.MetaConditions.Offset)
+            .Filter(request.MetaConditions.Limit);
+
+        private static IEnumerable<T> TRY_SELECT_FILTER(IRequest<T> request)
         {
             try
             {
-                if (!request.MetaConditions.Unsafe && request.MetaConditions.Limit == -1)
-                    request.MetaConditions.Limit = (Limit) 100;
-                return request.Target.Select(request)?.Filter(request.MetaConditions.OrderBy);
+                return SELECT_FILTER(request);
             }
             catch (Exception e)
             {
@@ -46,45 +61,13 @@ namespace RESTar.Operations
             }
         }
 
-
-        internal static IEnumerable<T> SELECT_FILTER(IRequest<T> request)
+        private static IEnumerable<dynamic> TRY_SELECT_FILTER_PROCESS(IRequest<T> request)
         {
             try
             {
-                if (!request.MetaConditions.Unsafe && request.MetaConditions.Limit == -1)
-                    request.MetaConditions.Limit = (Limit) 1000;
-                return request.Target.Select(request)?
-                    .Filter(request.MetaConditions.Search)
-                    .Filter(request.MetaConditions.OrderBy)
-                    .Filter(request.MetaConditions.Offset)
-                    .Filter(request.MetaConditions.Limit);
-            }
-            catch (Exception e)
-            {
-                throw new AbortedSelect<T>(e, request);
-            }
-        }
-
-        internal static IEnumerable<dynamic> SELECT_FILTER_PROCESS(IRequest<T> request)
-        {
-            try
-            {
-                if (!request.MetaConditions.Unsafe && request.MetaConditions.Limit == -1)
-                    request.MetaConditions.Limit = (Limit) 1000;
-                var results = request.Target.Select(request);
-                if (results == null) return null;
                 if (!request.MetaConditions.HasProcessors)
-                    return results
-                        .Filter(request.MetaConditions.Search)
-                        .Filter(request.MetaConditions.OrderBy)
-                        .Filter(request.MetaConditions.Offset)
-                        .Filter(request.MetaConditions.Limit);
-                return results
-                    .Process(request.MetaConditions.Processors)
-                    .Filter(request.MetaConditions.Search)
-                    .Filter(request.MetaConditions.OrderBy)
-                    .Filter(request.MetaConditions.Offset)
-                    .Filter(request.MetaConditions.Limit);
+                    return SELECT_FILTER(request);
+                return SELECT_FILTER_PROCESS(request);
             }
             catch (InfiniteLoop)
             {
@@ -96,11 +79,15 @@ namespace RESTar.Operations
             }
         }
 
-        internal static long OP_COUNT(IRequest<T> request)
+        internal static long TRY_COUNT(IRequest<T> request)
         {
             try
             {
-                return request.Resource.Count?.Invoke(request) ?? request.Target.Select(request)?.LongCount() ?? 0L;
+                if (request.Resource.Count is Counter<T> counter)
+                    return counter(request);
+                if (!request.MetaConditions.HasProcessors)
+                    return SELECT_FILTER(request)?.Count() ?? 0L;
+                return SELECT_FILTER_PROCESS(request)?.Count() ?? 0L;
             }
             catch (Exception e)
             {
@@ -406,17 +393,19 @@ namespace RESTar.Operations
 
             private static Entities GET(RESTRequest<T> request)
             {
-                return Entities.Create(request, SELECT_FILTER_PROCESS(request));
+                if (!request.MetaConditions.Unsafe && request.MetaConditions.Limit == -1)
+                    request.MetaConditions.Limit = (Limit) 1000;
+                return Entities.Create(request, TRY_SELECT_FILTER_PROCESS(request));
             }
 
             private static Report REPORT(RESTRequest<T> request)
             {
-                return new Report(request, OP_COUNT(request));
+                return new Report(request, TRY_COUNT(request));
             }
 
             private static Result HEAD(RESTRequest<T> request)
             {
-                var count = OP_COUNT(request);
+                var count = TRY_COUNT(request);
                 if (count > 0)
                     return new Head(request, count);
                 return new NoContent(request);
@@ -430,7 +419,7 @@ namespace RESTar.Operations
 
             private static Result PATCH(RESTRequest<T> request)
             {
-                var source = SELECT_FILTER(request)?.ToList();
+                var source = TRY_SELECT_FILTER(request)?.ToList();
                 if (source?.Any() != true) return new UpdatedEntities(0, request);
                 if (!request.MetaConditions.Unsafe && source.Count > 1)
                     throw new AmbiguousMatch(request.Resource);
@@ -439,7 +428,7 @@ namespace RESTar.Operations
 
             private static Result PUT(RESTRequest<T> request)
             {
-                var source = SELECT_FILTER(request)?.ToList();
+                var source = TRY_SELECT_FILTER(request)?.ToList();
                 switch (source?.Count)
                 {
                     case null:
@@ -451,7 +440,7 @@ namespace RESTar.Operations
 
             private static Result DELETE(RESTRequest<T> request)
             {
-                var source = SELECT_FILTER(request);
+                var source = TRY_SELECT_FILTER(request);
                 if (source == null) return new DeletedEntities(0, request);
                 if (!request.MetaConditions.Unsafe)
                 {

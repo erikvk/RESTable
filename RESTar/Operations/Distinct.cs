@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
 using Newtonsoft.Json.Linq;
 
 namespace RESTar.Operations
@@ -7,14 +6,23 @@ namespace RESTar.Operations
     /// <summary>
     /// Applies a distinct filtering to the inputted entities
     /// </summary>
-    public class Distinct : IProcessor
+    public class Distinct : IFilter
     {
         /// <summary>
         /// Applies the distinct filtering
         /// </summary>
-        public IEnumerable<JObject> Apply<T>(IEnumerable<T> entities) => entities?
-            .Select(entity => entity.ToJObject())
-            .Distinct(JToken.EqualityComparer)
-            .Cast<JObject>();
+        public IEnumerable<T> Apply<T>(IEnumerable<T> entities)
+        {
+            if (entities == null) return null;
+            return DistinctIterator(entities);
+        }
+
+        private static IEnumerable<TSource> DistinctIterator<TSource>(IEnumerable<TSource> source)
+        {
+            var set = new HashSet<JObject>(JToken.EqualityComparer);
+            foreach (var element in source)
+                if (set.Add(element.ToJObject()))
+                    yield return element;
+        }
     }
 }

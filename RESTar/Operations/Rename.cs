@@ -49,7 +49,6 @@ namespace RESTar.Operations
         /// <summary>
         /// Renames properties in an IEnumerable
         /// </summary>
-        public IEnumerable<JObject> Apply<T>(IEnumerable<T> entities) => entities?
-            .Select(entity => Renamed(entity.ToJObject()));
+        public IEnumerable<JObject> Apply<T>(IEnumerable<T> entities) => entities?.Select(entity => Renamed(entity.ToJObject()));
     }
 }

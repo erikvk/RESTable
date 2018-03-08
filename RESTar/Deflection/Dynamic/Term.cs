@@ -194,7 +194,6 @@ namespace RESTar.Deflection.Dynamic
                     actualKey = property.Name;
                     return property.Value.ToObject<dynamic>();
                 }
-
                 MakeDynamic();
             }
 

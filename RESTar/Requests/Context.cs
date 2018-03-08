@@ -243,9 +243,8 @@ namespace RESTar.Requests
             catch (Exception e)
             {
                 Error = e;
-                return;
             }
-            if (Uri.HasError)
+            if (Error == null && Uri.HasError)
                 Error = Uri.Error;
         }
     }

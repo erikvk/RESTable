@@ -20,7 +20,7 @@ namespace RESTar.Http
         private bool IsInternal { get; set; }
         private static readonly Regex HeaderRegex = new Regex(RegEx.RequestHeader);
         internal Stream Body;
-
+        
         public string TraceId { get; }
         public TCPConnection TcpConnection { get; }
 

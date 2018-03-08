@@ -30,7 +30,7 @@ namespace RESTar
         ICollection<string> IRequest.Cookies { get; } = new List<string>();
         IUriParameters IRequest.UriParameters => throw new InvalidOperationException();
         IEntityResource IRequest.Resource => Resource;
-
+        
         Methods IRequest.Method => 0;
         Headers IRequest.Headers => RequestHeaders;
         string ITraceable.TraceId => null;
@@ -247,7 +247,7 @@ namespace RESTar
         {
             Prep();
             if (!GETAllowed) throw new MethodUnavailable(Methods.GET, Resource);
-            return Operations<T>.OP_COUNT(this);
+            return Operations<T>.TRY_COUNT(this);
         }
 
         /// <summary>

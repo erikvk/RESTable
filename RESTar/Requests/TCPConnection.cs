@@ -62,7 +62,7 @@ namespace RESTar.Requests
         /// <summary>
         /// The internal location, has root access to all resources
         /// </summary>
-        public static readonly TCPConnection Internal = new TCPConnection(OriginType.Internal)
+        public static TCPConnection Internal => new TCPConnection(OriginType.Internal)
         {
             Host = $"localhost:{Admin.Settings._Port}",
             AuthToken = AccessRights.NewRootToken()
