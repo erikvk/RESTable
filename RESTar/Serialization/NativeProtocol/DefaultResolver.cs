@@ -22,7 +22,6 @@ namespace RESTar.Serialization.NativeProtocol
             StringEnumConverter = new StringEnumConverter();
         }
 
-
         protected override JsonContract CreateContract(Type objectType)
         {
             var contract = base.CreateContract(objectType);

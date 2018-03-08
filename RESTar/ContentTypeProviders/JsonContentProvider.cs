@@ -48,7 +48,7 @@ namespace RESTar.ContentTypeProviders
                 DateFormatHandling = DateFormatHandling.IsoDateFormat,
                 DateTimeZoneHandling = DateTimeZoneHandling.Utc,
                 ContractResolver = new DefaultResolver(),
-                FloatParseHandling = FloatParseHandling.Decimal,
+                FloatParseHandling = FloatParseHandling.Decimal
             };
             Serializer = JsonSerializer.Create(Settings);
 
@@ -59,7 +59,7 @@ namespace RESTar.ContentTypeProviders
                 DateFormatHandling = Settings.DateFormatHandling,
                 DateTimeZoneHandling = Settings.DateTimeZoneHandling,
                 ContractResolver = Settings.ContractResolver,
-                FloatParseHandling = Settings.FloatParseHandling,
+                FloatParseHandling = Settings.FloatParseHandling
             };
             SerializerIgnoreNulls = JsonSerializer.Create(SettingsIgnoreNulls);
         }
