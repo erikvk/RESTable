@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Text;
+using Newtonsoft.Json;
 using RESTar.Internal;
 using RESTar.Logging;
 using RESTar.Operations;
@@ -45,7 +46,7 @@ namespace RESTar.Requests
         public WebSocketStatus Status { get; private set; }
         public ConnectionProfile GetConnectionProfile() => new ConnectionProfile(this);
         public void SendToShell() => Shell.TerminalResource.InstantiateFor(this);
-        
+
         public void SendTo(ITerminalResource terminalResource)
         {
             if (terminalResource == null)
@@ -191,7 +192,10 @@ namespace RESTar.Requests
 
         public void SendJson(object item, bool? prettyPrint = null, bool ignoreNulls = false)
         {
-            var _prettyPrint = prettyPrint != null ? Indented : default(Newtonsoft.Json.Formatting?);
+            Formatting _prettyPrint;
+            if (prettyPrint == null)
+                _prettyPrint = Admin.Settings._PrettyPrint ? Indented : None;
+            else _prettyPrint = prettyPrint.Value ? Indented : None;
             var stream = Serializers.Json.SerializeStream(item, _prettyPrint, ignoreNulls);
             _SendBinary(stream.ToArray(), true);
         }
