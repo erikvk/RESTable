@@ -1,6 +1,10 @@
 ﻿namespace RESTar.Results.Success
 {
-    internal class DeletedEntities : OK
+    /// <inheritdoc />
+    /// <summary>
+    /// Returned to the client on successful deletion of entities
+    /// </summary>
+    public class DeletedEntities : OK
     {
         internal DeletedEntities(int count, IRequest request) : base(request)
         {

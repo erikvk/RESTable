@@ -3,39 +3,39 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using RESTar.Deflection;
 using RESTar.Linq;
 using RESTar.Operations;
 using RESTar.Results.Success;
 using RESTar.WebSockets;
 using Starcounter;
 using static RESTar.Admin.Settings;
-using static RESTar.Requests.Action;
-using static RESTar.Requests.RequestEvaluator;
 
 namespace RESTar.Requests
 {
     internal static class StarcounterHandlers
     {
-        private static readonly Action[] Actions = {GET, POST, PATCH, PUT, DELETE, REPORT, OPTIONS};
         private const string WsGroupName = "restar_ws";
 
-        internal static void RegisterRESTHandlers(bool setupMenu)
+        internal static void RegisterRESTHandlers()
         {
-            Actions.ForEach(action => Handle.CUSTOM
+            EnumMember<Methods>.Values.ForEach(method => Handle.CUSTOM
             (
                 port: _Port,
-                methodSpaceUri: $"{action} {_Uri}{{?}}",
+                methodSpaceUri: $"{method} {_Uri}{{?}}",
                 handler: (Request request, string query) =>
                 {
                     var connection = GetTCPConnection(request);
                     var headers = new Headers(request.HeadersDictionary);
                     if (request.WebSocketUpgrade)
                         connection.WebSocket = new StarcounterWebSocket(WsGroupName, request, headers, connection);
-                    var result = Evaluate(action, ref query, request.BodyBytes, headers, connection);
+                    var result = RequestEvaluator
+                        .Evaluate(connection, method, ref query, request.BodyBytes, headers)
+                        .GetFinalizedResult();
                     if (result is WebSocketResult webSocketResult)
                     {
                         if (!webSocketResult.LeaveOpen)
-                            connection.WebSocket.Disconnect();
+                            connection.WebSocketInternal.Disconnect();
                         return HandlerStatus.Handled;
                     }
                     return result.ToResponse();
@@ -94,11 +94,11 @@ namespace RESTar.Requests
             var response = new Response
             {
                 StatusCode = (ushort) result.StatusCode,
-                StatusDescription = result.StatusDescription,
-                ContentType = result.ContentType ?? MimeTypes.JSON
+                StatusDescription = result.StatusDescription
             };
             if (result.Body != null)
             {
+                response.ContentType = result.ContentType.ToString();
                 if (result.Body.CanSeek && result.Body.Length > 0)
                     response.StreamedBody = result.Body;
                 else
@@ -119,29 +119,28 @@ namespace RESTar.Requests
 
         private static TCPConnection GetTCPConnection(Request request)
         {
-            var origin = new TCPConnection
+            var tcpConnection = new TCPConnection(origin: request.IsExternal ? OriginType.External : OriginType.Internal)
             {
                 Host = request.Host,
-                Origin = request.IsExternal ? OriginType.External : OriginType.Internal,
                 ClientIP = request.ClientIpAddress,
                 UserAgent = request.Headers["User-Agent"]
             };
-            if (origin.IsExternal && request.HeadersDictionary != null)
+            if (tcpConnection.IsExternal && request.HeadersDictionary != null)
             {
-                origin.HTTPS = request.HeadersDictionary.ContainsKey("X-ARR-SSL") || request.HeadersDictionary.ContainsKey("X-HTTPS");
+                tcpConnection.HTTPS = request.HeadersDictionary.ContainsKey("X-ARR-SSL") || request.HeadersDictionary.ContainsKey("X-HTTPS");
                 if (request.HeadersDictionary.TryGetValue("X-Forwarded-For", out var ip))
                 {
-                    origin.ClientIP = IPAddress.Parse(ip.Split(':')[0]);
-                    origin.ProxyIP = request.ClientIpAddress;
+                    tcpConnection.ClientIP = IPAddress.Parse(ip.Split(':')[0]);
+                    tcpConnection.ProxyIP = request.ClientIpAddress;
                 }
             }
-            return origin;
+            return tcpConnection;
         }
 
         internal static void UnregisterRESTHandlers()
         {
-            void UnregisterREST(Action action) => Handle.UnregisterHttpHandler(_Port, $"{action}", $"{_Uri}{{?}}");
-            Actions.ForEach(action => Do.Try(() => UnregisterREST(action)));
+            void UnregisterREST(Methods method) => Handle.UnregisterHttpHandler(_Port, $"{method}", $"{_Uri}{{?}}");
+            EnumMember<Methods>.Values.ForEach(method => Do.Try(() => UnregisterREST(method)));
             var appName = Application.Current.Name;
             Do.Try(() => Handle.UnregisterHttpHandler(_Port, "GET", $"/{appName}{{?}}"));
             Do.Try(() => Handle.UnregisterHttpHandler(_Port, "GET", "/__restar/__page"));

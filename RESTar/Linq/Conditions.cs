@@ -28,7 +28,7 @@ namespace RESTar.Linq
         internal static bool HasPost<T>(this IEnumerable<Condition<T>> conds, out IEnumerable<Condition<T>> post)
             where T : class
         {
-            post = conds.Where(c => !c.ScQueryable || c.IsOfType<string>()).ToList();
+            post = conds.Where(c => !c.ScQueryable || c.IsOfType<string>() && c.Value != null).ToList();
             return post.Any();
         }
 

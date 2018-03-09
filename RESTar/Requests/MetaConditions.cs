@@ -5,7 +5,7 @@ using RESTar.Admin;
 using RESTar.Internal;
 using RESTar.Linq;
 using RESTar.Operations;
-using RESTar.Results.Fail.BadRequest;
+using RESTar.Results.Error.BadRequest;
 using static RESTar.Internal.ErrorCodes;
 using static RESTar.Operators;
 
@@ -123,12 +123,12 @@ namespace RESTar.Requests
 
         internal IProcessor[] Processors { get; private set; }
         internal bool HasProcessors { get; private set; }
+        internal bool CanUseExternalCounter { get; private set; } = true;
 
         private static string AllMetaConditions =>
             $"{string.Join(", ", Enum.GetNames(typeof(RESTarMetaConditions)).Except(new[] {"New", "Delete"}))}";
 
-        internal static MetaConditions Parse(List<UriCondition> uriMetaConditions, IEntityResource resource,
-            bool processors = true)
+        internal static MetaConditions Parse(List<UriCondition> uriMetaConditions, IEntityResource resource)
         {
             if (!uriMetaConditions.Any()) return null;
             var renames = uriMetaConditions.Where(c => c.Key.EqualsNoCase("rename"));
@@ -175,19 +175,15 @@ namespace RESTar.Requests
                         mc.OrderBy = new OrderBy(resource, true, (string) value, dynamicDomain);
                         break;
                     case RESTarMetaConditions.Select:
-                        if (!processors) break;
                         mc.Select = new Select(resource, (string) value, dynamicDomain);
                         break;
                     case RESTarMetaConditions.Add:
-                        if (!processors) break;
                         mc.Add = new Add(resource, (string) value, dynamicDomain);
                         break;
                     case RESTarMetaConditions.Rename:
-                        if (!processors) break;
                         mc.Rename = new Rename(resource, (string) value, out dynamicDomain);
                         break;
                     case RESTarMetaConditions.Distinct:
-                        if (!processors) break;
                         if ((bool) value)
                             mc.Distinct = new Distinct();
                         break;
@@ -217,11 +213,9 @@ namespace RESTar.Requests
             make(renames);
             make(regular);
 
-            if (processors)
-            {
-                mc.Processors = new IProcessor[] {mc.Add, mc.Rename, mc.Select, mc.Distinct}.Where(p => p != null).ToArray();
-                mc.HasProcessors = mc.Processors.Any();
-            }
+            mc.Processors = new IProcessor[] {mc.Add, mc.Rename, mc.Select}.Where(p => p != null).ToArray();
+            mc.HasProcessors = mc.Processors.Any();
+            mc.CanUseExternalCounter = mc.Search == null && mc.Distinct == null && mc.Limit.Number == -1 && mc.Offset.Number == 0;
 
             if (mc.OrderBy != null)
             {

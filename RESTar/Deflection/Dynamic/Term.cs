@@ -5,7 +5,7 @@ using System.Reflection;
 using Newtonsoft.Json.Linq;
 using RESTar.Internal;
 using RESTar.Linq;
-using RESTar.Results.Fail.BadRequest;
+using RESTar.Results.Error.BadRequest;
 using static RESTar.Deflection.TermBindingRules;
 using static System.StringComparison;
 
@@ -194,7 +194,6 @@ namespace RESTar.Deflection.Dynamic
                     actualKey = property.Name;
                     return property.Value.ToObject<dynamic>();
                 }
-
                 MakeDynamic();
             }
 

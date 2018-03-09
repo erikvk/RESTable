@@ -8,6 +8,11 @@ using RESTar.Internal;
 
 namespace RESTar.Admin
 {
+    /// <inheritdoc cref="ISelector{T}" />
+    /// <inheritdoc cref="IInserter{T}" />
+    /// <inheritdoc cref="IUpdater{T}" />
+    /// <inheritdoc cref="IDeleter{T}" />
+    /// <inheritdoc cref="IValidatable" />
     /// <summary>
     /// The DatabaseIndex resource lets an administrator set indexes for RESTar database resources.
     /// </summary>
@@ -106,7 +111,7 @@ namespace RESTar.Admin
         private static void Register<T>(string indexName, params ColumnInfo[] columns) where T : class
         {
             SelectionCondition.Value = indexName;
-            SelectionRequest.PUT(() => new DatabaseIndex(typeof(T).FullName)
+            SelectionRequest.PUT(() => new DatabaseIndex(typeof(T).RESTarTypeName())
             {
                 Name = indexName,
                 Columns = columns

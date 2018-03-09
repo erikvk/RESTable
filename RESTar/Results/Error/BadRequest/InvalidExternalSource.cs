@@ -1,9 +1,13 @@
 ﻿using RESTar.Http;
 using RESTar.Internal;
 
-namespace RESTar.Results.Fail.BadRequest
+namespace RESTar.Results.Error.BadRequest
 {
-    internal class InvalidExternalSource : BadRequest
+    /// <inheritdoc />
+    /// <summary>
+    /// Thrown when RESTar cannot get entities from an external source
+    /// </summary>
+    public class InvalidExternalSource : BadRequest
     {
         internal InvalidExternalSource(HttpRequest request, string message) : base(ErrorCodes.InvalidSourceData,
             $"RESTar could not get entities from source at '{request.URI}'. {message}") { }

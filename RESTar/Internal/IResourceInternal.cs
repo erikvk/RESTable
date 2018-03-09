@@ -4,8 +4,9 @@ namespace RESTar.Internal
 {
     internal interface IResourceInternal
     {
-        IReadOnlyList<IEntityResource> InnerResources { get; set; }
-        string Description { get; set; }
-        IReadOnlyList<Methods> AvailableMethods { get; set; }
+        IReadOnlyList<IResource> InnerResources { get; set; }
+        string Description { set; }
+        IReadOnlyList<Methods> AvailableMethods { set; }
+        void SetAlias(string alias);
     }
 }

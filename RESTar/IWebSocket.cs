@@ -1,8 +1,12 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
+using RESTar.Internal;
+using RESTar.Operations;
 using RESTar.Requests;
 
 namespace RESTar
 {
+    /// <inheritdoc />
     /// <summary>
     /// WebSockets support sending continuous data over a single TCP connection
     /// </summary>
@@ -42,7 +46,20 @@ namespace RESTar
         /// Sends an object over the WebSocket, serialized as JSON text. The output pretty print setting is controlled by
         /// the prettyPrint parameter. If null, the global pretty print setting is used.
         /// </summary>
-        void SendJson(object item, bool? prettyPrint = null);
+        void SendJson(object item, bool? prettyPrint = null, bool ignoreNulls = false);
+
+        /// <summary>
+        /// Sends a result over a WebSocket.
+        /// </summary>
+        /// <param name="result">The result to send</param>
+        /// <param name="includeStatusWithContent">Should the result status code and description be included before the result content?</param>
+        /// <param name="timeElapsed">The elapsed time to include, or null if no time should be included</param>
+        void SendResult(IFinalizedResult result, bool includeStatusWithContent = true, TimeSpan? timeElapsed = null);
+
+        /// <summary>
+        /// Sends an exception over the WebSocket.
+        /// </summary>
+        void SendException(Exception exception);
 
         /// <summary>
         /// The headers included in the initial HTTP request
@@ -50,9 +67,16 @@ namespace RESTar
         Headers Headers { get; }
 
         /// <summary>
-        /// Disconnects the WebSocket
+        /// Closes the current terminal (if any) and sends the WebSocket to the Shell terminal. Use this to quit from a 
+        /// terminal resource.
         /// </summary>
-        void Disconnect();
+        void SendToShell();
+
+        /// <summary>
+        /// Closes the current terminal (if any) and sends the WebSocket to the provided terminal. Use this to quit from a 
+        /// terminal resource and open another terminal instead.
+        /// </summary>
+        void SendTo(ITerminalResource terminalResource);
 
         /// <summary>
         /// The current status of this WebSocket

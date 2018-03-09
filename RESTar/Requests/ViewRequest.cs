@@ -1,22 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using RESTar.Internal;
-using RESTar.Linq;
-using RESTar.Operations;
-using RESTar.Results.Fail.Forbidden;
-using RESTar.Results.Fail.NotFound;
-using RESTar.Serialization;
+using RESTar.Results.Error.Forbidden;
+using RESTar.Results.Error.NotFound;
 using RESTar.View;
 using Starcounter;
 using static RESTar.Methods;
-using static RESTar.Internal.ErrorCodes;
-using static RESTar.View.MessageTypes;
-using static Starcounter.Templates.Template;
 
 namespace RESTar.Requests
 {
@@ -30,10 +23,10 @@ namespace RESTar.Requests
         public Headers ResponseHeaders { get; }
         public ICollection<string> Cookies { get; }
         public IUriParameters UriParameters { get; }
-        public Stream Body { get; private set; }
+        public Body Body { get; }
         Methods IRequest.Method => GET;
         IEntityResource IRequest.Resource => Resource;
-        public MimeType Accept => MimeType.Default;
+        public ContentType Accept => default;
         public ITarget<T> Target { get; }
         public bool Home => MetaConditions.Empty && Conditions == null;
         internal bool IsTemplate { get; set; }
@@ -42,107 +35,107 @@ namespace RESTar.Requests
         internal IList<T> Entities { get; set; }
         internal T Entity { get; set; }
         internal Json GetView() => DataView.MakeCurrentView();
-        public T1 BodyObject<T1>() where T1 : class => Body?.Deserialize<T1>();
         public Headers Headers { get; }
         public string TraceId { get; }
         public Func<IEnumerable<T>> EntitiesGenerator { private get; set; }
-        public IEnumerable<T> GetEntities() => EntitiesGenerator?.Invoke() ?? new T[0];
+        public IEnumerable<T> GetEntities() => EntitiesGenerator();
 
-        internal ViewRequest(IEntityResource<T> resource, Arguments arguments)
+        internal ViewRequest(IEntityResource<T> resource, Context context)
         {
             if (resource.IsInternal) throw new ResourceIsInternal(resource);
 
-            TraceId = arguments.TraceId;
-            TcpConnection = arguments.TcpConnection;
+            TraceId = context.TraceId;
+            TcpConnection = context.TcpConnection;
 
+            Body = context.Body;
             Resource = resource;
             Target = resource;
-            Headers = arguments.Headers;
+            Headers = context.Headers;
             ResponseHeaders = new Headers();
             Cookies = new List<string>();
             MetaConditions = new MetaConditions();
             Conditions = new Condition<T>[0];
-            if (arguments.Uri.ViewName != null)
+            if (context.Uri.ViewName != null)
             {
-                if (!Resource.ViewDictionary.TryGetValue(arguments.Uri.ViewName, out var view))
-                    throw new UnknownView(arguments.Uri.ViewName, Resource);
+                if (!Resource.ViewDictionary.TryGetValue(context.Uri.ViewName, out var view))
+                    throw new UnknownView(context.Uri.ViewName, Resource);
                 Target = view;
             }
-            UriParameters = arguments.Uri;
-            Conditions = Condition<T>.Parse(arguments.Uri.Conditions, Resource) ?? Conditions;
-            MetaConditions = MetaConditions.Parse(arguments.Uri.MetaConditions, Resource, false) ?? MetaConditions;
+            UriParameters = context.Uri;
+            Conditions = Condition<T>.Parse(context.Uri.Conditions, Resource) ?? Conditions;
+            MetaConditions = MetaConditions.Parse(context.Uri.MetaConditions, Resource) ?? MetaConditions;
         }
 
         internal void Evaluate()
         {
-            if (MetaConditions.New)
-            {
-                IsTemplate = true;
-                var itemView = new Item {Request = this};
-                var itemTemplate = Resource.MakeViewModelTemplate().Serialize();
-                itemView.Entity = new Json {Template = CreateFromJson(itemTemplate)};
-                DataView = itemView;
-                return;
-            }
+            // if (MetaConditions.New)
+            // {
+            //     IsTemplate = true;
+            //     var itemView = new Item {Request = this};
+            //     var itemTemplate = Resource.MakeViewModelTemplate().Serialize();
+            //     itemView.Entity = new Json {Template = CreateFromJson(itemTemplate)};
+            //     DataView = itemView;
+            //     return;
+            // }
 
-            var domain = Operations<T>.SELECT_VIEW(this)?.ToList();
-            Entities = domain?.Filter(MetaConditions.Offset).Filter(MetaConditions.Limit).ToList();
-            if (Entities?.Any() != true || domain == null)
-            {
-                DataView?.SetMessage("No entities found", NoError, warning);
-                return;
-            }
-
-            if (Resource.IsSingleton || Entities.Count == 1 && !Home)
-            {
-                Entity = Entities?[0];
-                var itemView = new Item {Request = this};
-                var itemTemplate = Resource.MakeViewModelTemplate().Serialize();
-                itemView.Entity = new Json {Template = CreateFromJson(itemTemplate)};
-                itemView.Entity.PopulateFromJson(Entity.SerializeToViewModel());
-                DataView = itemView;
-            }
-            else
-            {
-                var listView = new List {Request = this};
-                CanInsert = Resource.AvailableMethods.Contains(POST);
-                var listTemplate = Resource.MakeViewModelTemplate();
-                listView.Entities = new Arr<Json> {Template = CreateFromJson($"[{listTemplate.Serialize()}]")};
-                Entities.ForEach(e => listView.Entities.Add().PopulateFromJson(e.SerializeToViewModel()));
-                DataView = listView;
-            }
+            // var domain = Operations<T>.SELECT_VIEW(this)?.ToList();
+            // Entities = domain?.Filter(MetaConditions.Offset).Filter(MetaConditions.Limit).ToList();
+            // if (Entities?.Any() != true || domain == null)
+            // {
+            //     DataView?.SetMessage("No entities found", NoError, warning);
+            //     return;
+            // }
+            // 
+            // if (Resource.IsSingleton || Entities.Count == 1 && !Home)
+            // {
+            //     Entity = Entities?[0];
+            //     var itemView = new Item {Request = this};
+            //     var itemTemplate = Resource.MakeViewModelTemplate().Serialize();
+            //     itemView.Entity = new Json {Template = CreateFromJson(itemTemplate)};
+            //     itemView.Entity.PopulateFromJson(Entity.SerializeToViewModel());
+            //     DataView = itemView;
+            // }
+            // else
+            // {
+            //     var listView = new List {Request = this};
+            //     CanInsert = Resource.AvailableMethods.Contains(POST);
+            //     var listTemplate = Resource.MakeViewModelTemplate();
+            //     listView.Entities = new Arr<Json> {Template = CreateFromJson($"[{listTemplate.Serialize()}]")};
+            //     Entities.ForEach(e => listView.Entities.Add().PopulateFromJson(e.SerializeToViewModel()));
+            //     DataView = listView;
+            // }
 
             // TODO: Add pager here
         }
 
         public void DeleteFromList(string id)
         {
-            Authenticator.CheckUser();
-            var list = (List) DataView;
-            var conditions = Condition<T>.Parse(id, Resource);
-            var item = Entities.Where(conditions).First();
-            CheckMethod(DELETE, $"You are not allowed to delete from the '{Resource}' resource");
-            Operations<T>.View.DELETE(this, item);
-            if (string.IsNullOrWhiteSpace(list.RedirectUrl))
-                list.RedirectUrl = list.ResourcePath;
+            //    Authenticator.CheckUser();
+            //    var list = (List) DataView;
+            //    var conditions = Condition<T>.Parse(id, Resource);
+            //    var item = Entities.Where(conditions).First();
+            //    CheckMethod(DELETE, $"You are not allowed to delete from the '{Resource}' resource");
+            //    // Operations<T>.View.DELETE(this, item);
+            //    if (string.IsNullOrWhiteSpace(list.RedirectUrl))
+            //        list.RedirectUrl = list.ResourcePath;
         }
 
         public void SaveItem()
         {
-            Authenticator.CheckUser();
-            var item = (Item) DataView;
-            var entityJson = item.Entity.ToJson().Replace(@"$"":", @""":");
-            Body = new MemoryStream(Regex.Replace(entityJson, RegEx.ViewMacro, "${content}").ToBytes());
-            if (IsTemplate)
-            {
-                CheckMethod(POST, $"You are not allowed to insert into the '{Resource}' resource");
-                Operations<T>.View.POST(this);
-                if (string.IsNullOrWhiteSpace(item.RedirectUrl))
-                    item.RedirectUrl = item.ResourcePath;
-            }
-
-            CheckMethod(PATCH, $"You are not allowed to update the '{Resource}' resource");
-            Operations<T>.View.PATCH(this, Entity);
+            //  Authenticator.CheckUser();
+            //  var item = (Item) DataView;
+            //  var entityJson = item.Entity.ToJson().Replace(@"$"":", @""":");
+            //  Body = Regex.Replace(entityJson, RegEx.ViewMacro, "${content}").ToBytes();
+            //  if (IsTemplate)
+            //  {
+            //      CheckMethod(POST, $"You are not allowed to insert into the '{Resource}' resource");
+            //      Operations<T>.View.POST(this);
+            //      if (string.IsNullOrWhiteSpace(item.RedirectUrl))
+            //          item.RedirectUrl = item.ResourcePath;
+            //  }
+            //
+            //  CheckMethod(PATCH, $"You are not allowed to update the '{Resource}' resource");
+            //  Operations<T>.View.PATCH(this, Entity);
         }
 
         public void CloseItem()

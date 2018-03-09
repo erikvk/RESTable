@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using RESTar.Internal;
 using RESTar.Requests;
 
@@ -43,6 +42,7 @@ namespace RESTar
         IEnumerable<T> GetEntities();
     }
 
+    /// <inheritdoc />
     /// <summary>
     /// A non-generic common interface for all request classes used in RESTar
     /// </summary>
@@ -52,11 +52,6 @@ namespace RESTar
         /// The method of the request
         /// </summary>
         Methods Method { get; }
-
-        /// <summary>
-        /// The media type accepted by the client
-        /// </summary>
-        MimeType Accept { get; }
 
         /// <summary>
         /// The resource of the request
@@ -69,19 +64,9 @@ namespace RESTar
         MetaConditions MetaConditions { get; }
 
         /// <summary>
-        /// The body of the request
+        /// Gets the request body
         /// </summary>
-        Stream Body { get; }
-
-        /// <summary>
-        /// Gets the request body, deserialized to the given type
-        /// </summary>
-        T BodyObject<T>() where T : class;
-
-        /// <summary>
-        /// The auth token assigned to this request
-        /// </summary>
-        string AuthToken { get; }
+        Body Body { get; }
 
         /// <summary>
         /// The headers included in the request. Headers reserved by RESTar,

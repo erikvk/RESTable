@@ -2,14 +2,17 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Newtonsoft.Json;
+using RESTar.Serialization.NativeProtocol;
 using static System.StringComparison;
 
 namespace RESTar.Requests
 {
     /// <inheritdoc cref="IDictionary{TKey,TValue}" />
     /// <summary>
-    /// A collection of request headers
+    /// A collection of request headers. Key comparison is case insensitive.
     /// </summary>
+    [JsonConverter(typeof(HeadersConverter))]
     public class Headers : IDictionary<string, string>, IReadOnlyDictionary<string, string>
     {
         /// <inheritdoc cref="IDictionary{TKey,TValue}" />

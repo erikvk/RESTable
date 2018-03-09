@@ -6,6 +6,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using RESTar.Deflection.Dynamic;
 using System.Linq;
+using RESTar.Linq;
 
 namespace RESTar.Serialization.NativeProtocol
 {
@@ -43,11 +44,12 @@ namespace RESTar.Serialization.NativeProtocol
         protected override IList<JsonProperty> CreateProperties(Type type, MemberSerialization memberSerialization)
         {
             var properties = base.CreateProperties(type, memberSerialization);
-            foreach (var specialProperty in type.GetDeclaredProperties().Values.OfType<SpecialProperty>())
-            {
-                if (specialProperty.IsKey || !specialProperty.Hidden)
-                    properties.Add(specialProperty.JsonProperty);
-            }
+            type.GetDeclaredProperties()
+                .Values
+                .OfType<SpecialProperty>()
+                .Where(p => !p.Hidden)
+                .Select(p => p.JsonProperty)
+                .ForEach(properties.Add);
             return properties;
         }
 

@@ -6,10 +6,14 @@ using Newtonsoft.Json;
 using RESTar.Internal;
 using RESTar.Linq;
 using RESTar.Resources;
-using RESTar.Results.Fail.BadRequest;
+using RESTar.Results.Error.BadRequest;
 
 namespace RESTar.Admin
 {
+    /// <inheritdoc cref="ISelector{T}" />
+    /// <inheritdoc cref="IInserter{T}" />
+    /// <inheritdoc cref="IUpdater{T}" />
+    /// <inheritdoc cref="IDeleter{T}" />
     /// <summary>
     /// A meta-resource that provides representations of all resources in a RESTar instance
     /// </summary>
@@ -104,7 +108,7 @@ namespace RESTar.Admin
                 EnabledMethods = iresource.AvailableMethods.ToArray(),
                 Editable = entityResource?.Editable == true,
                 IsInternal = iresource.IsInternal,
-                Type = iresource.Type.FullName,
+                Type = iresource.Type.RESTarTypeName(),
                 Views = entityResource != null
                     ? (entityResource.Views?.Select(v => new ViewInfo(v.Name, v.Description ?? "No description")).ToArray()
                        ?? new ViewInfo[0])
@@ -132,6 +136,9 @@ namespace RESTar.Admin
                 if (entity.EnabledMethods?.Any() != true)
                     entity.EnabledMethods = RESTarConfig.Methods;
                 DynamicResource.MakeTable(entity);
+
+
+
                 count += 1;
             }
             return count;
@@ -171,7 +178,8 @@ namespace RESTar.Admin
                 var iresource = resource.IResource;
                 if (resource.Alias != iresource.Alias)
                 {
-                    iresource.Alias = resource.Alias;
+                    var iresourceInternal = (IResourceInternal) iresource;
+                    iresourceInternal.SetAlias(resource.Alias);
                     updated = true;
                 }
 

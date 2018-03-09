@@ -41,6 +41,8 @@ namespace RESTar.Internal
         InvalidSource = 021,
         InvalidDestination = 022,
 
+        UnknownProtocol = 030,
+
         // - - - - - - - - - 
         // 100-199: Resource errors
         // 100-109: Resource locator errors
@@ -57,6 +59,7 @@ namespace RESTar.Internal
         UnknownProperty = 110,
         AmbiguousProperty = 111,
         UnknownPropertyOfGeneratedObject = 112,
+        FailedBinding = 113,
 
         // 120-129: Resource registration errors
         VirtualResourceMissingInterfaceImplementation = 120,
@@ -72,7 +75,7 @@ namespace RESTar.Internal
         AliasAlreadyInUse = 130,
         AliasEqualToResourceName = 131,
 
-        // 200-399: Handler errors
+        // 200-300: Handler errors
         AbortedSelect = 201,
         AbortedInsert = 202,
         AbortedUpdate = 203,
@@ -83,16 +86,25 @@ namespace RESTar.Internal
         NoMatchingHtml = 212,
         FailedResourceAuthentication = 213,
         MethodNotAllowed = 214,
+        Untraceable = 215,
+        MissingUri = 216,
 
+        // 300-400: Database errors
         DatabaseError = 300,
         AbortedByCommitHook = 301,
+
+        // 400-500: Initialization errors
         NotInitialized = 400,
         AddOnError = 401,
         ResourceProviderError = 402,
         ResourceWrapperError = 403,
         InfiniteLoopDetected = 404,
         NotImplemented = 405,
-        UnsupportedODataProtocolVersion = 406,
         MissingConfigurationFile = 407,
+        InvalidProtocolProvider = 408,
+        InvalidContentTypeProvider = 408,
+
+        // 500-600: Protocol errors
+        NotCompliantWithProtocol = 500
     }
 }

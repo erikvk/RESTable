@@ -4,7 +4,7 @@ using System.Linq;
 using System.Net;
 using System.Text.RegularExpressions;
 using RESTar.Internal;
-using RESTar.Results.Fail.BadRequest;
+using RESTar.Results.Error.BadRequest;
 using static System.StringComparison;
 
 namespace RESTar.Requests
@@ -14,9 +14,22 @@ namespace RESTar.Requests
     /// </summary>
     public struct UriCondition
     {
-        internal string Key { get; }
+        /// <summary>
+        /// The key of the condition. Denotes a property in a resource.
+        /// </summary>
+        public string Key { get; }
+
+        /// <summary>
+        /// The operator used for determining the comparison operation
+        /// </summary>
+        public Operators OperatorCode => Operator.OpCode;
+
         internal Operator Operator { get; }
-        internal string ValueLiteral { get; }
+
+        /// <summary>
+        /// The value literal that encodes the value to compare against
+        /// </summary>
+        public string ValueLiteral { get; }
 
         internal static IEnumerable<UriCondition> ParseMany(string conditionsString, bool check = false) =>
             conditionsString.Split('&').Select(s => new UriCondition(s, check));

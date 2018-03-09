@@ -1,10 +1,13 @@
 ﻿using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using RESTar.Auth;
 using RESTar.Requests;
-using RESTar.Results.Fail.Forbidden;
+using RESTar.Results.Error.Forbidden;
 using Starcounter;
+using static RESTar.Auth.AccessRights;
 using static RESTar.RESTarConfig;
 
 namespace RESTar.Internal
@@ -14,7 +17,14 @@ namespace RESTar.Internal
         internal const string CurrentUser = "SELECT t.Token.User FROM Simplified.Ring5.SystemUserSession t " +
                                             "WHERE t.SessionIdString =? AND t.Token.User IS NOT NULL";
 
-        internal static readonly string AppToken = Guid.NewGuid().ToString();
+        internal static IDictionary<string, AccessRights> ApiKeys { get; private set; }
+        internal static ConcurrentDictionary<string, AccessRights> AuthTokens { get; private set; }
+
+        internal static void NewState()
+        {
+            ApiKeys = new Dictionary<string, AccessRights>();
+            AuthTokens = new ConcurrentDictionary<string, AccessRights>();
+        }
 
         private static object GetCurrentSystemUser()
         {
@@ -28,14 +38,7 @@ namespace RESTar.Internal
                 throw new UserNotSignedIn();
         }
 
-        internal static void Authenticate<T>(this ViewRequest<T> request) where T : class
-        {
-            var user = GetCurrentSystemUser() ?? throw new UserNotSignedIn();
-            var token = user.GetObjectID().SHA256();
-            if (AuthTokens.ContainsKey(token))
-                request.AuthToken = token;
-            request.AuthToken = AssignAuthtoken(AccessRights.Root, token);
-        }
+
 
         internal static void RunResourceAuthentication<T>(this IRequest<T> request) where T : class
         {
@@ -45,26 +48,21 @@ namespace RESTar.Internal
                 throw new FailedResourceAuthentication(authResults.Reason);
         }
 
-        internal static void Authenticate(this Arguments arguments)
+        internal static void Authenticate(this Context context)
         {
-            arguments.AuthToken = GetAuthToken(arguments);
-            if (arguments.AuthToken == null)
-                arguments.Error = new NotAuthorized();
+            context.TcpConnection.AuthToken = GetAuthToken(context);
+            if (context.TcpConnection.AuthToken == null)
+                context.Error = new NotAuthorized();
         }
 
-        private static string GetAuthToken(Arguments arguments)
+        private static string GetAuthToken(Context context)
         {
             if (!RequireApiKey)
-                return AssignAuthtoken(AccessRights.Root);
-            AccessRights accessRights;
-            if (arguments.TcpConnection.IsInternal)
-            {
-                var authToken = arguments.Headers["RESTar-AuthToken"];
-                if (authToken == null || !AuthTokens.TryGetValue(authToken, out accessRights))
-                    return null;
-                return authToken;
-            }
-            var authorizationHeader = arguments.Headers.SafeGet("Authorization");
+                return NewRootToken();
+            if (context.TcpConnection.AuthToken is string existing)
+                return AuthTokens.TryGetValue(existing, out _) ? existing : null;
+
+            var authorizationHeader = context.Headers.SafeGet("Authorization");
             if (string.IsNullOrWhiteSpace(authorizationHeader)) return null;
             var (method, key) = authorizationHeader.TSplit(' ');
             if (key == null) return null;
@@ -77,21 +75,10 @@ namespace RESTar.Internal
                     break;
                 default: return null;
             }
-            if (!ApiKeys.TryGetValue(key.SHA256(), out accessRights))
+            if (!ApiKeys.TryGetValue(key.SHA256(), out var accessRights))
                 return null;
-            return AssignAuthtoken(accessRights);
-        }
-
-        internal static void Authenticate<T>(this Request<T> request) where T : class
-        {
-            request.AuthToken = AppToken;
-        }
-
-        private static string AssignAuthtoken(AccessRights rights, string token = null)
-        {
-            token = token ?? Guid.NewGuid().ToString();
-            AuthTokens[token] = rights;
-            return token;
+            context.Headers["Authorization"] = "*******";
+            return NewAuthToken(accessRights);
         }
 
         internal static bool MethodCheck(Methods requestedMethod, IEntityResource resource, string authToken, out bool failedAuth)

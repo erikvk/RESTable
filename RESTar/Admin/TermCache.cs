@@ -8,6 +8,8 @@ using static RESTar.Methods;
 
 namespace RESTar.Admin
 {
+    /// <inheritdoc cref="ISelector{T}" />
+    /// <inheritdoc cref="IDeleter{T}" />
     /// <summary>
     /// The TermCache resource contains all the terms that RESTar has encountered 
     /// for a given resource type, for example in conditions.
@@ -26,9 +28,9 @@ namespace RESTar.Admin
             if (request == null) throw new ArgumentNullException(nameof(request));
             return RESTarConfig.Resources.Select(r => new TermCache
             {
-                Type = r.Type.FullName,
+                Type = r.Type.RESTarTypeName(),
                 Terms = Deflection.Dynamic.TypeCache.TermCache
-                    .Where(pair => pair.Key.Type == r.Type.FullName)
+                    .Where(pair => pair.Key.Type == r.Type.RESTarTypeName())
                     .Select(pair => pair.Value.Key)
                     .ToArray()
             }).Where(request.Conditions);

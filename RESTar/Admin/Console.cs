@@ -1,97 +1,61 @@
 ﻿using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using Newtonsoft.Json;
 using RESTar.Linq;
 using RESTar.Logging;
+using RESTar.ResourceTemplates;
+using RESTar.Results.Success;
 using RESTar.Serialization;
 using RESTar.WebSockets;
 using static Newtonsoft.Json.Formatting;
-using static RESTar.Logging.ConsoleStatus;
 
 namespace RESTar.Admin
 {
     [RESTar(Description = description)]
-    internal class Console : ITerminal
+    internal sealed class Console : FeedTerminal
     {
-        private const string description = "The console is a terminal resource that allows a WebSocket client to receive " +
+        private const string description = "The Console is a terminal resource that allows a WebSocket client to receive " +
                                            "pushed updates when the REST API receives requests and WebSocket events.";
 
         internal const string TypeName = "RESTar.Admin.Console";
 
-        public ConsoleStatus Status { get; set; }
+        private static readonly TerminalSet<Console> Consoles;
+        static Console() => Consoles = new TerminalSet<Console>();
+
         public ConsoleFormat Format { get; set; }
         public bool IncludeConnection { get; set; } = true;
-        public bool IncludeTime { get; set; } = true;
         public bool IncludeHeaders { get; set; } = false;
         public bool IncludeContent { get; set; } = false;
-        public bool ShowWelcomeText { get; set; } = true;
 
-        private IWebSocketInternal WebSocketInternal;
+        /// <inheritdoc />
+        protected override string WelcomeHeader { get; } = "RESTar network console";
 
-        #region Terminal
+        /// <inheritdoc />
+        protected override string WelcomeBody { get; } = "Use the console to receive pushed updates when the \n" +
+                                                         "REST API receives requests and WebSocket events.";
 
-        public void Open()
+        public override void Open()
         {
-            Consoles[this] = default;
-            if (ShowWelcomeText)
-                SendConsoleInit();
+            base.Open();
+            Consoles.Add(this);
         }
 
-        public IWebSocket WebSocket
-        {
-            private get => WebSocketInternal;
-            set => WebSocketInternal = (IWebSocketInternal) value;
-        }
+        public override void Dispose() => Consoles.Remove(this);
 
-        public void Dispose() => Consoles.Remove(this);
-        public void HandleBinaryInput(byte[] input) => throw new NotImplementedException();
-        public bool SupportsTextInput { get; } = true;
-        public bool SupportsBinaryInput { get; } = false;
-
-        public void HandleTextInput(string input)
-        {
-            switch (input.ToUpperInvariant().Trim())
-            {
-                case "": break;
-                case "BEGIN":
-                    Status = Active;
-                    WebSocket.SendText("Status: ACTIVE\n");
-                    break;
-                case "PAUSE":
-                    Status = Paused;
-                    WebSocket.SendText("Status: PAUSED\n");
-                    break;
-                case "EXIT":
-                case "QUIT":
-                case "DISCONNECT":
-                case "CLOSE":
-                    WebSocket.SendText("Status: CLOSED\n");
-                    WebSocket.Disconnect();
-                    break;
-                case var unrecognized:
-                    WebSocket.SendText($"Unknown command '{unrecognized}'");
-                    break;
-            }
-        }
-
-        #endregion
+        private IWebSocketInternal WebSocketInternal => (IWebSocketInternal) WebSocket;
 
         #region Console
 
-        internal static void Log(ILogable initial, ILogable final) => Consoles.Keys
-            .AsParallel()
-            .Where(c => c.Status == Active)
-            .GroupBy(c => c.Format)
-            .ForEach(group =>
+        internal static void Log(ILogable initial, ILogable final, double milliseconds)
+        {
+            if (final is WebSocketResult) return;
+            Consoles.AsParallel().Where(c => c.IsOpen).GroupBy(c => c.Format).ForEach(group =>
             {
                 switch (group.Key)
                 {
                     case ConsoleFormat.Line:
                         var requestStub = GetLogLineStub(initial);
-                        var responseStub = GetLogLineStub(final);
+                        var responseStub = GetLogLineStub(final, milliseconds);
                         group.AsParallel().ForEach(c => c.PrintLines(
                             new StringBuilder(requestStub), initial,
                             new StringBuilder(responseStub), final)
@@ -104,11 +68,12 @@ namespace RESTar.Admin
                             {
                                 Type = "HTTPRequestResponse",
                                 In = new LogItem {Id = initial.TraceId, Message = initial.LogMessage},
-                                Out = new LogItem {Id = final.TraceId, Message = final.LogMessage}
+                                Out = new LogItem {Id = final.TraceId, Message = final.LogMessage},
+                                ElapsedMilliseconds = milliseconds
                             };
                             if (c.IncludeConnection)
-                                item.Connection = new Connection(initial.TcpConnection, c.IncludeTime);
-                            else if (c.IncludeTime)
+                                item.Connection = new Connection(initial.TcpConnection);
+                            else
                             {
                                 item.In.Time = initial.TcpConnection.OpenedAt;
                                 item.Out.Time = initial.TcpConnection.ClosedAt;
@@ -125,17 +90,18 @@ namespace RESTar.Admin
                                 item.In.Content = initial.LogContent;
                                 item.Out.Content = final.LogContent;
                             }
-                            var json = JsonConvert.SerializeObject(item, Indented, Serializer.Settings);
+                            var json = Serializers.Json.Serialize(item, Indented, ignoreNulls: true);
                             c.WebSocketInternal.SendTextRaw(json);
                         });
                         break;
                     default: throw new ArgumentOutOfRangeException();
                 }
             });
+        }
 
-        internal static void Log(ILogable logable) => Consoles.Keys
+        internal static void Log(ILogable logable) => Consoles
             .AsParallel()
-            .Where(c => c.Status == Active)
+            .Where(c => c.IsOpen)
             .GroupBy(c => c.Format)
             .ForEach(group =>
             {
@@ -155,14 +121,13 @@ namespace RESTar.Admin
                                 Message = logable.LogMessage
                             };
                             if (c.IncludeConnection)
-                                item.Connection = new Connection(logable.TcpConnection, c.IncludeTime);
-                            else if (c.IncludeTime)
-                                item.Time = logable.TcpConnection.OpenedAt;
+                                item.Connection = new Connection(logable.TcpConnection);
+                            else item.Time = logable.TcpConnection.OpenedAt;
                             if (c.IncludeHeaders && !logable.ExcludeHeaders)
                                 item.CustomHeaders = logable.Headers;
                             if (c.IncludeContent)
                                 item.Content = logable.LogContent;
-                            var json = JsonConvert.SerializeObject(item, Indented, Serializer.Settings);
+                            var json = Serializers.Json.Serialize(item, Indented, ignoreNulls: true);
                             c.WebSocketInternal.SendTextRaw(json);
                         });
                         break;
@@ -170,15 +135,7 @@ namespace RESTar.Admin
             });
 
 
-        private void SendConsoleInit() => WebSocket
-            .SendText("### Welcome to the RESTar WebSocket console! ###\n\n" +
-                      $">>> Status: {Status}\n\n" +
-                      (Status == Active ? "" : "> To begin, type BEGIN\n") +
-                      "> To pause, type PAUSE\n" +
-                      "> To close, type CLOSE\n");
-
         private const string connection = " | Connection: ";
-        private const string time = " | Time: ";
         private const string headers = " | Custom headers: ";
         private const string content = " | Content: ";
 
@@ -188,12 +145,6 @@ namespace RESTar.Admin
             {
                 builder.Append(connection);
                 builder.Append(logable.TcpConnection.ClientIP);
-            }
-            if (IncludeTime)
-            {
-                var dateTimeString = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.ff");
-                builder.Append(time);
-                builder.Append(dateTimeString);
             }
             if (IncludeHeaders && !logable.ExcludeHeaders)
             {
@@ -218,14 +169,6 @@ namespace RESTar.Admin
                 builder2.Append(connection);
                 builder1.Append(logable1.TcpConnection.ClientIP);
                 builder2.Append(logable2.TcpConnection.ClientIP);
-            }
-            if (IncludeTime)
-            {
-                var dateTimeString = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.ff");
-                builder1.Append(time);
-                builder2.Append(time);
-                builder1.Append(dateTimeString);
-                builder2.Append(dateTimeString);
             }
             if (IncludeHeaders)
             {
@@ -255,7 +198,7 @@ namespace RESTar.Admin
             WebSocketInternal.SendTextRaw(builder2.ToString());
         }
 
-        private static string GetLogLineStub(ILogable logable)
+        private static string GetLogLineStub(ILogable logable, double? milliseconds = null)
         {
             var builder = new StringBuilder();
             switch (logable.LogEventType)
@@ -275,13 +218,14 @@ namespace RESTar.Admin
                     builder.Append("-- ");
                     break;
             }
+            var dateTimeString = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff ");
+            builder.Append(dateTimeString);
             builder.Append($"[{logable.TraceId}] ");
             builder.Append(logable.LogMessage);
+            if (milliseconds != null)
+                builder.Append($" ({milliseconds} ms)");
             return builder.ToString();
         }
-
-        private static readonly IDictionary<Console, byte> Consoles;
-        static Console() => Consoles = new ConcurrentDictionary<Console, byte>();
 
         #endregion
     }

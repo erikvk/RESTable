@@ -3,9 +3,12 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Reflection.Emit;
 using Newtonsoft.Json.Serialization;
+using RESTar.Deflection.IL;
 using RESTar.Internal;
 using RESTar.Linq;
+using Starcounter;
 using static System.Reflection.BindingFlags;
 using static System.StringComparer;
 using static RESTar.Deflection.Dynamic.SpecialProperty;
@@ -46,14 +49,14 @@ namespace RESTar.Deflection.Dynamic
 
         internal static Term MakeOrGetCachedTerm(this Type resource, string key, TermBindingRules bindingRule)
         {
-            var tuple = (resource.FullName, key.ToLower(), bindingRule);
+            var tuple = (resource.RESTarTypeName(), key.ToLower(), bindingRule);
             if (!TermCache.TryGetValue(tuple, out var term))
                 term = TermCache[tuple] = Term.Parse(resource, key, bindingRule, null);
             return term;
         }
 
         internal static void ClearTermsFor<T>() => TermCache
-            .Where(pair => pair.Key.Type == typeof(T).FullName)
+            .Where(pair => pair.Key.Type == typeof(T).RESTarTypeName())
             .Select(pair => pair.Key)
             .ToList()
             .ForEach(key => TermCache.TryRemove(key, out var _));
@@ -62,25 +65,13 @@ namespace RESTar.Deflection.Dynamic
 
         #region Declared properties
 
-        private static readonly ConcurrentDictionary<Type, IReadOnlyDictionary<string, DeclaredProperty>> DeclaredPropertyCache;
+        internal static readonly ConcurrentDictionary<Type, IReadOnlyDictionary<string, DeclaredProperty>> DeclaredPropertyCache;
 
-        private static IEnumerable<DeclaredProperty> ParseDeclaredProperties(this IEnumerable<PropertyInfo> props, bool flag)
-        {
-            var properties = props
-                .Where(p => !p.RESTarIgnored())
-                .Where(p => !p.GetIndexParameters().Any())
-                .Select(p => new DeclaredProperty(p, flag))
-                .OrderBy(p => p.Order)
-                .ToList();
-            var keyIndex = properties.FindIndex(p => p.IsKey);
-            if (keyIndex > 0)
-                properties.ForEach((property, index) =>
-                {
-                    if (index != keyIndex)
-                        property.IsKey = false;
-                });
-            return properties;
-        }
+        private static IEnumerable<DeclaredProperty> ParseDeclaredProperties(this IEnumerable<PropertyInfo> props, bool flag) => props
+            .Where(p => !p.RESTarIgnored())
+            .Where(p => !p.GetIndexParameters().Any())
+            .Select(p => new DeclaredProperty(p, flag))
+            .OrderBy(p => p.Order);
 
         /// <summary>
         /// Gets the declared properties for a given type
@@ -97,6 +88,51 @@ namespace RESTar.Deflection.Dynamic
                             .Concat(_type.GetInterfaces())
                             .SelectMany(i => i.GetProperties(Instance | Public))
                             .ParseDeclaredProperties(false);
+                    case var _ when _type.HasAttribute<RESTarAttribute>(out var attr) && attr.Interface is Type t:
+                        var interfaceName = t.RESTarTypeName();
+                        var targetsByProp = _type
+                            .GetInterfaceMap(t)
+                            .TargetMethods
+                            .GroupBy(m =>
+                            {
+                                if (m.IsPrivate && m.Name.StartsWith($"{interfaceName}.get_"))
+                                    return m.Name.Split(interfaceName + ".get_")[1];
+                                if (m.IsPrivate && m.Name.StartsWith($"{interfaceName}.set_"))
+                                    return m.Name.Split(interfaceName + ".set_")[1];
+                                if (m.Name.StartsWith("get_"))
+                                    return m.Name.Split("get_")[1];
+                                if (m.Name.StartsWith("set_"))
+                                    return m.Name.Split("set_")[1];
+                                throw new Exception("Invalid interface");
+                            })
+                            .ToDictionary(m => m.Key, m => (
+                                getter: m.FirstOrDefault(p => p.GetParameters().Length == 0),
+                                setter: m.FirstOrDefault(p => p.GetParameters().Length == 1)
+                            ));
+                        return make(t).Select(p =>
+                        {
+                            p.ScQueryable = _type.HasAttribute<DatabaseAttribute>() && p.Type.IsStarcounterCompatible();
+                            var (getter, setter) = targetsByProp.SafeGet(p.Name);
+                            if (p.Readable)
+                            {
+                                p.ActualName = getter.GetInstructions()
+                                    .Select(i => i.OpCode == OpCodes.Call && i.Operand is MethodInfo calledMethod && getter.IsSpecialName
+                                        ? type.GetProperties(Public | Instance).FirstOrDefault(prop => prop.GetGetMethod() == calledMethod)
+                                        : null)
+                                    .LastOrDefault(prop => prop != null)?
+                                    .Name;
+                            }
+                            else if (p.Writable)
+                            {
+                                p.ActualName = setter.GetInstructions()
+                                    .Select(i => i.OpCode == OpCodes.Call && i.Operand is MethodInfo calledMethod && setter.IsSpecialName
+                                        ? type.GetProperties(Public | Instance).FirstOrDefault(prop => prop.GetSetMethod() == calledMethod)
+                                        : null)
+                                    .LastOrDefault(prop => prop != null)?
+                                    .Name;
+                            }
+                            return p;
+                        }).If(_type.IsStarcounterDbClass, ps => ps.Union(GetObjectNoAndObjectID(false)));
                     case var _ when _type.Implements(typeof(ITerminal)):
                         return _type.GetProperties(Instance | Public)
                             .ParseDeclaredProperties(flag: false)
@@ -121,9 +157,9 @@ namespace RESTar.Deflection.Dynamic
                 }
             }
 
-            if (type?.FullName == null) return null;
+            if (type.RESTarTypeName() == null) return null;
             if (!DeclaredPropertyCache.TryGetValue(type, out var props))
-                props = DeclaredPropertyCache[type] = make(type).ToDictionary(p => p.Name, OrdinalIgnoreCase);
+                props = DeclaredPropertyCache[type] = make(type).SafeToDictionary(p => p.Name, OrdinalIgnoreCase);
             return props;
         }
 
@@ -133,7 +169,7 @@ namespace RESTar.Deflection.Dynamic
         public static DeclaredProperty GetDeclaredProperty(this PropertyInfo member)
         {
             var declaringType = member.DeclaringType;
-            if (declaringType?.FullName == null)
+            if (declaringType.RESTarTypeName() == null)
                 throw new Exception($"Cannot get declared property for member '{member}' of unknown type");
             return declaringType.GetDeclaredProperties().FirstOrDefault(p => p.Value.ActualName == member.Name).Value;
         }
@@ -144,7 +180,7 @@ namespace RESTar.Deflection.Dynamic
         public static DeclaredProperty GetDeclaredProperty(this JsonProperty member)
         {
             var declaringType = member.DeclaringType;
-            if (declaringType?.FullName == null)
+            if (declaringType.RESTarTypeName() == null)
                 throw new Exception($"Cannot get declared property for member '{member}' of unknown type");
             return declaringType.GetDeclaredProperties().FirstOrDefault(p => p.Value.Name == member.PropertyName).Value;
         }

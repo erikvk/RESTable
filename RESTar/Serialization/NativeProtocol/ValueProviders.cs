@@ -28,6 +28,7 @@ namespace RESTar.Serialization.NativeProtocol
         public void SetValue(object target, object value) => Property.SetValue(target, value);
     }
 
+    /// <inheritdoc />
     /// <summary>
     /// Wraps an object in the RESTar macro for delivery to the view model
     /// </summary>
@@ -48,6 +49,7 @@ namespace RESTar.Serialization.NativeProtocol
         }
     }
     
+    /// <inheritdoc />
     /// <summary>
     /// Reduces a nullable type to its underlying value type, for use in view models
     /// </summary>
@@ -60,6 +62,7 @@ namespace RESTar.Serialization.NativeProtocol
         public NullableValueProvider(MemberInfo m, Type t) => (Provider, Default) = (new DynamicValueProvider(m), Activator.CreateInstance(t));
     }
 
+    /// <inheritdoc />
     /// <summary>
     /// Makes the empty string act as the default for strings in view models
     /// </summary>

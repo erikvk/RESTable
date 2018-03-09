@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using static RESTar.Methods;
 
 namespace RESTar
 {
@@ -51,11 +52,26 @@ namespace RESTar
         /// </summary>
         public string Description { get; set; }
 
+        /// <summary>
+        /// Should this resource, with methods GET and REPORT, be included in all access scopes, 
+        /// regardless of API keys in the configuration file? This is useful for global resources 
+        /// in foreign assemblies. The API will still require API key if requireApiKey is set to 
+        /// true in the call to RESTarConfig.Init(), but this resource will be included in each 
+        /// key's scope.
+        /// </summary>
+        public bool GETAvailableToAll { get; set; }
+
+        /// <summary>
+        /// An interface type to use instead of this type when determing the public instance 
+        /// members of this resource type. The resource type must implement this interface.
+        /// </summary>
+        public Type Interface { get; set; }
+
         /// <inheritdoc />
         internal RESTarAttribute(IReadOnlyList<Methods> methods)
         {
-            if (methods.Contains(Methods.GET))
-                AvailableMethods = methods.Union(new[] {Methods.REPORT}).ToList();
+            if (methods.Contains(GET))
+                AvailableMethods = methods.Union(new[] {REPORT, HEAD}).ToList();
             else AvailableMethods = methods;
         }
 
@@ -69,8 +85,10 @@ namespace RESTar
             if (!methodRestrictions.Any())
                 methodRestrictions = RESTarConfig.Methods;
             var restrictions = methodRestrictions.OrderBy(i => i, MethodComparer.Instance).ToList();
-            if (methodRestrictions.Contains(Methods.GET) && !methodRestrictions.Contains(Methods.REPORT))
-                restrictions.Add(Methods.REPORT);
+            if (methodRestrictions.Contains(GET) && !methodRestrictions.Contains(REPORT))
+                restrictions.Add(REPORT);
+            if (methodRestrictions.Contains(GET) && !methodRestrictions.Contains(HEAD))
+                restrictions.Add(HEAD);
             AvailableMethods = restrictions;
         }
     }

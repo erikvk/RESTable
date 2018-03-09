@@ -40,6 +40,7 @@ namespace RESTar.Deflection.Dynamic
             Name = ActualName = name;
             ScQueryable = false;
             DeclaredFallback = declaredFallback;
+            Type = typeof(object);
 
             Getter = obj =>
             {

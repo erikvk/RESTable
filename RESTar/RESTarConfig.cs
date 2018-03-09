@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml;
 using Dynamit;
@@ -13,6 +14,7 @@ using RESTar.Auth;
 using RESTar.Deflection.Dynamic;
 using RESTar.Internal;
 using RESTar.Linq;
+using RESTar.Requests;
 using RESTar.Resources;
 using RESTar.Results.Error;
 using Starcounter;
@@ -31,10 +33,7 @@ namespace RESTar
         internal static IDictionary<string, IResource> ResourceFinder { get; private set; }
         internal static IDictionary<string, IResource> ResourceByName { get; private set; }
         internal static IDictionary<Type, IResource> ResourceByType { get; private set; }
-        internal static IDictionary<string, AccessRights> ApiKeys { get; private set; }
-        internal static ConcurrentDictionary<string, AccessRights> AuthTokens { get; private set; }
         internal static ICollection<IResource> Resources => ResourceByName.Values;
-        internal static IEnumerable<IEntityResource> EntityResources => ResourceByName.Values.OfType<IEntityResource>();
         internal static List<Uri> AllowedOrigins { get; private set; }
         internal static string[] ReservedNamespaces { get; private set; }
         internal static bool RequireApiKey { get; private set; }
@@ -42,25 +41,24 @@ namespace RESTar
         internal static bool NeedsConfiguration => RequireApiKey || !AllowAllOrigins;
         private static string ConfigFilePath { get; set; }
         internal static bool Initialized { get; private set; }
-        internal static readonly Methods[] Methods = {GET, POST, PATCH, PUT, DELETE, REPORT};
+        internal static readonly Methods[] Methods = {GET, POST, PATCH, PUT, DELETE, REPORT, HEAD};
+        internal static readonly Encoding DefaultEncoding = new UTF8Encoding(false);
 
         static RESTarConfig() => NewState();
 
         private static void NewState()
         {
-            ApiKeys = new Dictionary<string, AccessRights>();
             ResourceByType = new Dictionary<Type, IResource>();
             ResourceByName = new Dictionary<string, IResource>(StringComparer.OrdinalIgnoreCase);
             ResourceFinder = new ConcurrentDictionary<string, IResource>(StringComparer.OrdinalIgnoreCase);
-            AuthTokens = new ConcurrentDictionary<string, AccessRights>();
             AllowedOrigins = new List<Uri>();
-            AuthTokens.TryAdd(Authenticator.AppToken, AccessRights.Root);
             ReservedNamespaces = typeof(RESTarConfig).Assembly
                 .GetTypes()
                 .Select(type => type.Namespace?.ToLower())
                 .Where(ns => ns != null)
                 .Distinct()
                 .ToArray();
+            Authenticator.NewState();
         }
 
         internal static void UpdateConfiguration()
@@ -68,19 +66,17 @@ namespace RESTar
             if (!Initialized) return;
             if (NeedsConfiguration && ConfigFilePath == null)
             {
-                var (task, measure) = RequireApiKey
-                    ? ("require API keys", "read keys and assign access rights")
-                    : !AllowAllOrigins
-                        ? ("only allow some CORS origins", "know what origins to deny")
-                        : ("publish an OData service", "generate context URLs");
+                var (task, measure) = default((string, string));
+                if (RequireApiKey)
+                    (task, measure) = ("require API keys", "read keys and assign access rights");
+                else if (!AllowAllOrigins)
+                    (task, measure) = ("only allow some CORS origins", "know what origins to deny");
                 throw new MissingConfigurationFile($"RESTar was set up to {task}, but needs to read settings from a configuration file in " +
                                                    $"order to {measure}. Provide a configuration file path in the call to RESTarConfig.Init. " +
                                                    "See the specification for more info.");
             }
             if (NeedsConfiguration) ReadConfig();
-            AccessRights.Root = Resources
-                .ToDictionary(r => r, r => Methods)
-                .CollectDict(dict => new AccessRights(dict));
+            AccessRights.ReloadRoot();
         }
 
         internal static void AddResource(IResource toAdd)
@@ -141,42 +137,45 @@ namespace RESTar
         /// <param name="prettyPrint">Should JSON output be pretty print formatted as default?
         ///  (can be changed in settings during runtime)</param>
         /// <param name="daysToSaveErrors">The number of days to save errors in the Error resource</param>
-        /// <param name="viewEnabled">Should the view be enabled?</param>
-        /// <param name="setupMenu">Shoud a menu be setup automatically in the view?</param>
         /// <param name="requireApiKey">Should the REST API require an API key?</param>
         /// <param name="allowAllOrigins">Should any origin be allowed to make CORS requests?</param>
         /// <param name="lineEndings">The line endings to use when writing JSON</param>
         /// <param name="resourceProviders">External resource providers for the RESTar instance</param>
+        /// <param name="protocolProviders">External protocol providers for the RESTar instance</param>
+        /// <param name="contentTypeProviders">External content type providers for the RESTar instance</param>
         public static void Init
         (
             ushort port = 8282,
             string uri = "/rest",
-            bool viewEnabled = false,
-            bool setupMenu = false,
             bool requireApiKey = false,
             bool allowAllOrigins = true,
             string configFilePath = null,
             bool prettyPrint = true,
             ushort daysToSaveErrors = 30,
             LineEndings lineEndings = LineEndings.Windows,
-            IEnumerable<ResourceProvider> resourceProviders = null)
+            IEnumerable<ResourceProvider> resourceProviders = null,
+            IEnumerable<IProtocolProvider> protocolProviders = null,
+            IEnumerable<IContentTypeProvider> contentTypeProviders = null
+        )
         {
             try
             {
                 uri = ProcessUri(uri);
-                Settings.Init(port, uri, viewEnabled, prettyPrint, daysToSaveErrors, lineEndings);
+                Settings.Init(port, uri, false, prettyPrint, daysToSaveErrors, lineEndings);
                 Log.Init();
                 DynamitConfig.Init(true, true);
-                var externalProviders = resourceProviders?.Where(r => r != null).ToList();
-                ResourceFactory.MakeResources(externalProviders);
+                ResourceFactory.MakeResources(resourceProviders?.ToArray());
+                RequestEvaluator.SetupContentTypeProviders(contentTypeProviders?.ToList());
+                RequestEvaluator.SetupProtocolProviders(protocolProviders?.ToList());
                 RequireApiKey = requireApiKey;
                 AllowAllOrigins = allowAllOrigins;
                 ConfigFilePath = configFilePath;
-                RegisterRESTHandlers(setupMenu);
+                RegisterRESTHandlers();
                 Initialized = true;
                 DatabaseIndex.Init();
                 DbOutputFormat.Init();
                 UpdateConfiguration();
+                ResourceFactory.FinalCheck();
             }
             catch
             {
@@ -251,8 +250,10 @@ namespace RESTar
             {
                 case JObject apiKey:
                     var keyString = apiKey["Key"].Value<string>();
-                    if (keyString == null || !Regex.IsMatch(keyString, RegEx.ApiKey))
-                        throw new Exception("An API key was invalid. Must be a non-empty string, not containing whitespace or parentheses");
+                    if (keyString == null || Regex.IsMatch(keyString, @"[\(\)]") || !Regex.IsMatch(keyString, RegEx.ApiKey))
+                        throw new Exception(
+                            "An API key contained invalid characters. Must be a non-empty string, not containing whitespace or parentheses, " +
+                            "and only containing ASCII characters from 33 to 126");
                     var key = keyString.SHA256();
                     var accessRightList = new List<AccessRight>();
 
@@ -297,11 +298,24 @@ namespace RESTar
                     }
 
                     recurseAllowAccess(apiKeyToken["AllowAccess"]);
-                    var accessRights = accessRightList.ToAccessRights();
-                    var availableResources = Resource<AvailableResource>.Get;
-                    if (!accessRights.ContainsKey(availableResources))
-                        accessRights.Add(availableResources, new[] {GET});
-                    ApiKeys[key] = accessRights;
+                    var accessRights = accessRightList.ToAccessRights(key);
+                    foreach (var resource in Resources.Where(r => r.GETAvailableToAll))
+                    {
+                        if (!accessRights.TryGetValue(resource, out var methods))
+                            accessRights.Add(resource, new[] {GET, REPORT, HEAD});
+                        else
+                            accessRights[resource] = methods
+                                .Union(new[] {GET, REPORT, HEAD})
+                                .OrderBy(i => i, MethodComparer.Instance)
+                                .ToArray();
+                    }
+
+                    Authenticator.ApiKeys[key] = accessRights;
+                    Authenticator.AuthTokens
+                        .Where(pair => pair.Value.Key == key)
+                        .ToList()
+                        .ForEach(pair => Authenticator.AuthTokens[pair.Key] = accessRights);
+
                     break;
                 case JArray apiKeys:
                     apiKeys.ForEach(ReadApiKeys);

@@ -1,6 +1,5 @@
-﻿using System.Collections.Generic;
-using System.IO;
-using System.Net;
+﻿using System;
+using RESTar;
 using Starcounter;
 
 // ReSharper disable All
@@ -11,24 +10,50 @@ namespace TestProject
     {
         public static void Main()
         {
-            Handle.GET("/test", (Request request) => request.ContentType ?? "was null");
-            var response1 = Http.GET
-            (
-                uri: "http://localhost:8080/test",
-                headersDictionary: new Dictionary<string, string> {["Content-Type"] = "application/json"}
-            );
-            var body1 = response1.Body;
-            // "was null"
+            RESTarConfig.Init();
 
-            var webrequest = (HttpWebRequest) WebRequest.Create("http://localhost:8080/test");
-            webrequest.Method = "GET";
-            webrequest.ContentType = "application/json";
-            var webResponse = (HttpWebResponse) webrequest.GetResponse();
-            string _body;
-            using (var reader = new StreamReader(webResponse.GetResponseStream()))
-                _body = reader.ReadToEnd();
-            var body2 = body1;
-            // "was null"
+            var request = new Request<DbCustomer>
+                {Conditions = new[] {new Condition<DbCustomer>("Name", Operators.EQUALS, "Foo")}};
+
+            var customers = request.GET();
+
+            var s = request
+                .WithConditions("Name", Operators.EQUALS, "SomeName")
+                .GET();
+        }
+
+        public interface IDbCustomerInterface
+        {
+            string myname { get; set; }
+            DateTime datetime { get; set; }
+        }
+
+        [Database, RESTar(Interface = typeof(IDbCustomerInterface))]
+        public class DbCustomer : IDbCustomerInterface
+        {
+            public string Name { get; set; }
+            public int MyInt { get; set; }
+            public DateTime MyDateTime { get; set; }
+
+            string IDbCustomerInterface.myname
+            {
+                get => Name;
+                set => Name = value;
+            }
+
+            DateTime IDbCustomerInterface.datetime
+            {
+                get => MyDateTime;
+                set => MyDateTime = value;
+            }
+        }
+
+        [Database]
+        public class DbOrder
+        {
+            public string Name { get; set; }
+            public int MyInt { get; set; }
+            public DateTime MyDateTime { get; set; }
         }
     }
 }

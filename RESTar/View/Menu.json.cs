@@ -1,8 +1,4 @@
-using System.Linq;
-using Starcounter;
 using RESTar.Internal;
-using RESTar.Linq;
-using RESTar.Serialization;
 
 #pragma warning disable 1591
 
@@ -20,17 +16,18 @@ namespace RESTar.View
 
         public Menu Populate()
         {
-            Html = "/menu.html";
-            MetaResourcePath = $"/{Application.Current.Name}/{typeof(Resource).FullName}";
-            RESTarConfig
-                .Resources
-                .Select(r => new
-                {
-                    r.Name,
-                    Url = $"/{Application.Current.Name}/{r.Name}"
-                }.Serialize())
-                .ForEach(str => Resources.Add(new Json(str)));
-            return this;
+            return null;
+            // Html = "/menu.html";
+            // MetaResourcePath = $"/{Application.Current.Name}/{typeof(Resource).FullName}";
+            // RESTarConfig
+            //     .Resources
+            //     .Select(r => new
+            //     {
+            //         r.Name,
+            //         Url = $"/{Application.Current.Name}/{r.Name}"
+            //     }.Serialize())
+            //     .ForEach(str => Resources.Add(new Json(str)));
+            // return this;
         }
     }
 }

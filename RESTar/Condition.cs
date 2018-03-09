@@ -8,7 +8,7 @@ using RESTar.Deflection.Dynamic;
 using RESTar.Internal;
 using RESTar.Operations;
 using RESTar.Requests;
-using RESTar.Results.Fail.BadRequest;
+using RESTar.Results.Error.BadRequest;
 using static System.StringComparison;
 using static RESTar.Operators;
 
@@ -125,7 +125,7 @@ namespace RESTar
         {
             return new Condition<T1>
             (
-                term: Resource<T1>.SafeGet?.MakeConditionTerm(newKey ?? Key)
+                term: EntityResource<T1>.SafeGet?.MakeConditionTerm(newKey ?? Key)
                       ?? typeof(T1).MakeOrGetCachedTerm(newKey ?? Key, TermBindingRules.DeclaredWithDynamicFallback),
                 op: Operator,
                 value: Value
@@ -139,7 +139,7 @@ namespace RESTar
         /// <param name="op">The operator denoting the operation to evaluate for the property</param>
         /// <param name="value">The value to compare the property referenced by the key with</param>
         public Condition(string key, Operators op, object value) : this(
-            term: Resource<T>.SafeGet?.MakeConditionTerm(key)
+            term: EntityResource<T>.SafeGet?.MakeConditionTerm(key)
                   ?? typeof(T).MakeOrGetCachedTerm(key, TermBindingRules.DeclaredWithDynamicFallback),
             op: op,
             value: value

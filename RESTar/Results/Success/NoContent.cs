@@ -4,7 +4,11 @@ using RESTar.Requests;
 
 namespace RESTar.Results.Success
 {
-    internal class NoContent : Result
+    /// <inheritdoc />
+    /// <summary>
+    /// Returned to the client when no content was selected in a request
+    /// </summary>
+    public class NoContent : Result
     {
         internal NoContent(ITraceable trace) : base(trace)
         {

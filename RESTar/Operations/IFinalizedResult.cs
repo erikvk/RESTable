@@ -5,11 +5,11 @@ using RESTar.Logging;
 
 namespace RESTar.Operations
 {
+    /// <inheritdoc />
     /// <summary>
-    /// Describes a result that is ready to be sent back to the client, for example 
-    /// using an HTTP response
+    /// A RESTar result
     /// </summary>
-    internal interface IFinalizedResult : ILogable
+    public interface IResult : ILogable
     {
         /// <summary>
         /// The status code of the result
@@ -22,6 +22,19 @@ namespace RESTar.Operations
         string StatusDescription { get; }
 
         /// <summary>
+        /// The cookies to set in the response
+        /// </summary>
+        ICollection<string> Cookies { get; }
+    }
+
+    /// <inheritdoc />
+    /// <summary>
+    /// Describes a result that is ready to be sent back to the client, for example 
+    /// using an HTTP response.
+    /// </summary>
+    public interface IFinalizedResult : IResult
+    {
+        /// <summary>
         /// The body contained in the result
         /// </summary>
         Stream Body { get; }
@@ -29,11 +42,6 @@ namespace RESTar.Operations
         /// <summary>
         /// The content type of the result body
         /// </summary>
-        string ContentType { get; }
-        
-        /// <summary>
-        /// The cookies to set in the response
-        /// </summary>
-        ICollection<string> Cookies { get; }
+        ContentType ContentType { get; }
     }
 }

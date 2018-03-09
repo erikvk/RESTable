@@ -4,9 +4,13 @@ using RESTar.Internal;
 
 namespace RESTar.Results.Error
 {
-    internal abstract class Internal : RESTarError
+    /// <inheritdoc />
+    /// <summary>
+    /// Internal errors used in RESTar
+    /// </summary>
+    public abstract class Internal : RESTarError
     {
-        public Internal(ErrorCodes code, string message, Exception ie) : base(code, message, ie)
+        internal Internal(ErrorCodes code, string message, Exception ie) : base(code, message, ie)
         {
             StatusCode = HttpStatusCode.InternalServerError;
             StatusDescription = "Internal server error";

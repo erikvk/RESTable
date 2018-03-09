@@ -8,15 +8,37 @@ using static RESTar.Methods;
 
 namespace RESTar.Admin
 {
+    /// <inheritdoc cref="ISelector{T}" />
+    /// <inheritdoc cref="IDeleter{T}" />
+    /// <summary>
+    /// An entity resource containing all the currently open WebSockets
+    /// </summary>
     [RESTar(GET, DELETE)]
-    internal class WebSocket : ISelector<WebSocket>, IDeleter<WebSocket>
+    public class WebSocket : ISelector<WebSocket>, IDeleter<WebSocket>
     {
+        /// <summary>
+        /// The unique WebSocket ID
+        /// </summary>
         public string Id { get; private set; }
+
+        /// <summary>
+        /// The type name of the terminal currently connected to the WebSocket 
+        /// </summary>
         public string TerminalType { get; private set; }
+
+        /// <summary>
+        /// An object describing the terminal
+        /// </summary>
         public JObject Terminal { get; private set; }
+
+        /// <summary>
+        /// An object describing the client
+        /// </summary>
         public JObject Client { get; private set; }
+
         private IWebSocketInternal WebSocketInternal { get; set; }
 
+        /// <inheritdoc />
         public IEnumerable<WebSocket> Select(IRequest<WebSocket> request) => WebSocketController
             .AllSockets
             .Values
@@ -24,12 +46,13 @@ namespace RESTar.Admin
             {
                 Id = socket.TraceId,
                 TerminalType = socket.TerminalResource.Name,
-                Client = JObject.Parse(socket.GetConnectionProfile().Serialize()),
-                Terminal = JObject.Parse(socket.Terminal.Serialize()),
+                Client = JObject.Parse(Serializers.Json.Serialize(socket.GetConnectionProfile())),
+                Terminal = JObject.Parse(Serializers.Json.Serialize(socket.Terminal)),
                 WebSocketInternal = socket
             })
             .Where(request.Conditions);
 
+        /// <inheritdoc />
         public int Delete(IRequest<WebSocket> request)
         {
             var count = 0;

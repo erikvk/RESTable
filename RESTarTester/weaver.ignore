@@ -4,3 +4,4 @@ DocumentFormat.OpenXML
 ClosedXml.dll
 Excel
 System.ValueTuple
+FastMember.Signed

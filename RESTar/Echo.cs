@@ -6,6 +6,8 @@ using static RESTar.Methods;
 
 namespace RESTar
 {
+    /// <inheritdoc cref="ISelector{T}" />
+    /// <inheritdoc cref="JObject" />
     /// <summary>
     /// The Echo resource is a test and utility resource that returns the 
     /// request conditions as an object.

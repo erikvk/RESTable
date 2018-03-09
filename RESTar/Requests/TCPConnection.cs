@@ -1,71 +1,17 @@
 ﻿using System;
-using System.Linq;
 using System.Net;
+using RESTar.Auth;
+using RESTar.Internal;
 using RESTar.WebSockets;
-using Starcounter;
 
 namespace RESTar.Requests
 {
-    /// <summary>
-    /// Describes the origin type of a request
-    /// </summary>
-    public enum OriginType
-    {
-        /// <summary>
-        /// The request originated from within the RESTar application
-        /// </summary>
-        Internal,
-
-        /// <summary>
-        /// The request originated from outside the RESTar application
-        /// </summary>
-        External,
-
-        /// <summary>
-        /// The request originated from a WebSocket
-        /// </summary>
-        Shell
-    }
-
-    /// <summary>
-    /// An ID, generated when a new connection is set up
-    /// </summary>
-    [Database]
-    public class ConnectionId
-    {
-        private const string All = "SELECT t FROM RESTar.Requests.ConnectionId t";
-
-        /// <summary>
-        /// The number stored in the database
-        /// </summary>
-        public ulong _number { get; private set; }
-
-        private ConnectionId() { }
-        internal static string Next => DbHelper.Base64EncodeObjectNo(Db.Transact(() => Get._number += 1));
-        private static ConnectionId Get => Db.SQL<ConnectionId>(All).FirstOrDefault() ?? Db.Transact(() => new ConnectionId());
-    }
-
-    /// <summary>
-    /// Defines something that can be traced from a TCP connection
-    /// </summary>
-    public interface ITraceable
-    {
-        /// <summary>
-        /// A unique ID
-        /// </summary>
-        string TraceId { get; }
-
-        /// <summary>
-        /// The initial TCP connection
-        /// </summary>
-        TCPConnection TcpConnection { get; }
-    }
-
-    /// <inheritdoc />
+    /// <inheritdoc cref="ITraceable" />
+    /// <inheritdoc cref="IDisposable" />
     /// <summary>
     /// Describes the origin and basic TCP connection parameters of a request
     /// </summary>
-    public class TCPConnection : ITraceable
+    public class TCPConnection : ITraceable, IDisposable
     {
         /// <inheritdoc />
         public string TraceId { get; }
@@ -114,9 +60,13 @@ namespace RESTar.Requests
         public DateTime? ClosedAt { get; internal set; }
 
         /// <summary>
-        /// The internal location
+        /// The internal location, has root access to all resources
         /// </summary>
-        public static readonly TCPConnection Internal = new TCPConnection {Host = $"localhost:{Admin.Settings._Port}"};
+        public static TCPConnection Internal => new TCPConnection(OriginType.Internal)
+        {
+            Host = $"localhost:{Admin.Settings._Port}",
+            AuthToken = AccessRights.NewRootToken()
+        };
 
         /// <summary>
         /// Is the origin internal?
@@ -127,6 +77,11 @@ namespace RESTar.Requests
         /// Is the origin external?
         /// </summary>
         public bool IsExternal => Origin == OriginType.External;
+
+        /// <summary>
+        /// Is this connection currently waiting on a upgrade to the WebSocket protocol.
+        /// </summary>
+        public bool IsWebSocketUpgrade => WebSocket?.Status == WebSocketStatus.Waiting;
 
         private IWebSocket webSocket;
 
@@ -145,15 +100,30 @@ namespace RESTar.Requests
 
         internal IWebSocketInternal WebSocketInternal => (IWebSocketInternal) WebSocket;
 
+        internal string AuthToken { get; set; }
+
+        internal int StackDepth { get; set; }
+
+        internal bool IsInShell => Origin == OriginType.Shell;
+
         /// <summary>
         /// Does this TCP connection have a WebSocket?
         /// </summary>
         public bool HasWebSocket => WebSocket != null;
 
-        internal TCPConnection()
+        internal TCPConnection(OriginType origin)
         {
             OpenedAt = DateTime.Now;
             TraceId = ConnectionId.Next;
+            Origin = origin;
+            StackDepth = 0;
+        }
+
+        /// <inheritdoc />
+        public void Dispose()
+        {
+            if (AuthToken == null) return;
+            Authenticator.AuthTokens.TryRemove(AuthToken, out var _);
         }
     }
 }

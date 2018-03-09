@@ -1,8 +1,12 @@
 ﻿using RESTar.Internal;
 
-namespace RESTar.Results.Fail.BadRequest
+namespace RESTar.Results.Error.BadRequest
 {
-    internal class FailedValidation : BadRequest
+    /// <inheritdoc />
+    /// <summary>
+    /// Thrown when entity validation failed for some resource
+    /// </summary>
+    public class FailedValidation : BadRequest
     {
         internal FailedValidation(string message) : base(ErrorCodes.InvalidResourceEntity, message) { }
     }

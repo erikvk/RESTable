@@ -37,9 +37,8 @@ namespace RESTar.Admin
             {
                 _regularPattern = value;
                 (RegularPre, RegularPost) = value.TSplit(macro);
-                var prettyPrintPattern = JToken
-                    .Parse(RegularPre + placeholder + RegularPost)
-                    .SerializeFormatter(out var indents);
+                var prettyPrintPattern = Serializers.Json.SerializeFormatter(
+                    JToken.Parse(RegularPre + placeholder + RegularPost), out var indents);
                 (PrettyPrintPre, PrettyPrintPost) = prettyPrintPattern.TSplit(placeholder);
                 StartIndent = indents;
             }
@@ -125,6 +124,11 @@ namespace RESTar.Admin
         }
     }
 
+    /// <inheritdoc cref="ISelector{T}" />
+    /// <inheritdoc cref="IInserter{T}" />
+    /// <inheritdoc cref="IUpdater{T}" />
+    /// <inheritdoc cref="IDeleter{T}" />
+    /// <inheritdoc cref="IValidatable" />
     /// <summary>
     /// A resource for all available output formats for this RESTar instance.
     /// </summary>
@@ -160,9 +164,7 @@ namespace RESTar.Admin
         /// </summary>
         public JToken Example { get; private set; }
 
-        /// <summary>
-        /// Validates a output format
-        /// </summary>
+        /// <inheritdoc />
         public bool IsValid(out string invalidReason)
         {
             if (string.IsNullOrWhiteSpace(Name))

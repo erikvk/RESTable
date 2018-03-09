@@ -8,6 +8,7 @@ using Newtonsoft.Json.Linq;
 using RESTar.Linq;
 using RESTar.Operations;
 using RESTar.Requests;
+using RESTar.Serialization;
 using Starcounter;
 
 namespace RESTar.Admin
@@ -81,6 +82,16 @@ namespace RESTar.Admin
         public string Headers { get; set; }
 
         /// <summary>
+        /// Should the macro overwrite matching headers in the calling request?
+        /// </summary>
+        public bool OverWriteHeaders { get; set; }
+
+        /// <summary>
+        /// Should the macro overwrite the body of the calling request?
+        /// </summary>
+        public bool OverWriteBody { get; set; }
+
+        /// <summary>
         /// A dictionary representation of the headers for this macro
         /// </summary>
         internal Headers HeadersDictionary
@@ -96,11 +107,18 @@ namespace RESTar.Admin
 
         internal IEnumerable<UriCondition> UriConditions => UriConditionsString?.Split('&').Select(c => new UriCondition(c));
         internal IEnumerable<UriCondition> UriMetaConditions => UriMetaConditionsString?.Split('&').Select(c => new UriCondition(c));
+        internal bool HasBody => BodyBinary.Length > 0;
+        internal Body GetBody() => new Body(BodyBinary.ToArray(), "application/json", Serializers.Json);
 
         internal static IEnumerable<DbMacro> GetAll() => Db.SQL<DbMacro>(All);
         internal static DbMacro Get(string macroName) => Db.SQL<DbMacro>(ByName, macroName).FirstOrDefault();
     }
 
+    /// <inheritdoc cref="ISelector{T}" />
+    /// <inheritdoc cref="IInserter{T}" />
+    /// <inheritdoc cref="IUpdater{T}" />
+    /// <inheritdoc cref="IDeleter{T}" />
+    /// <inheritdoc cref="IValidatable" />
     /// <summary>
     /// A resource for all macros available for this RESTar instance
     /// </summary>
@@ -128,6 +146,16 @@ namespace RESTar.Admin
         /// The headers of the macro
         /// </summary>
         [RESTarMember(replaceOnUpdate: true)] public Headers Headers { get; set; }
+
+        /// <summary>
+        /// Should the macro overwrite matching headers in the calling request?
+        /// </summary>
+        public bool OverWriteHeaders { get; set; }
+
+        /// <summary>
+        /// Should the macro overwrite the body of the calling request?
+        /// </summary>
+        public bool OverWriteBody { get; set; }
 
         /// <inheritdoc />
         /// <summary>
@@ -191,8 +219,10 @@ namespace RESTar.Admin
             {
                 Name = m.Name,
                 Uri = m.Uri,
-                Body = m.BodyBinary != default ? JToken.Parse(m.BodyUTF8) : null,
-                Headers = m.Headers != null ? m.HeadersDictionary : null
+                Body = m.BodyBinary.Length > 0 ? JToken.Parse(m.BodyUTF8) : null,
+                Headers = m.Headers != null ? m.HeadersDictionary : null,
+                OverWriteBody = m.OverWriteBody,
+                OverWriteHeaders = m.OverWriteHeaders
             })
             .Where(request.Conditions);
 
@@ -210,6 +240,8 @@ namespace RESTar.Admin
                     Name = entity.Name,
                     ResourceSpecifier = args.ResourceSpecifier,
                     ViewName = args.ViewName,
+                    OverWriteBody = entity.OverWriteBody,
+                    OverWriteHeaders = entity.OverWriteHeaders,
                     UriConditionsString = args.Conditions.Any() ? string.Join("&", args.Conditions) : null,
                     UriMetaConditionsString = args.MetaConditions.Any() ? string.Join("&", args.MetaConditions) : null,
                     BodyBinary = entity.Body != null ? new Binary(Encoding.UTF8.GetBytes(entity.Body?.ToString())) : default,
@@ -234,6 +266,8 @@ namespace RESTar.Admin
                 {
                     dbEntity.ResourceSpecifier = args.ResourceSpecifier;
                     dbEntity.ViewName = args.ViewName;
+                    dbEntity.OverWriteBody = entity.OverWriteBody;
+                    dbEntity.OverWriteHeaders = entity.OverWriteHeaders;
                     dbEntity.UriConditionsString = args.Conditions.Any() ? string.Join("&", args.Conditions) : null;
                     dbEntity.UriMetaConditionsString = args.MetaConditions.Any() ? string.Join("&", args.MetaConditions) : null;
                     dbEntity.BodyBinary = entity.Body != null ? new Binary(Encoding.UTF8.GetBytes(entity.Body?.ToString())) : default;

@@ -9,46 +9,41 @@ using RESTar.Operations;
 using RESTar.Requests;
 using RESTar.Resources;
 using RESTar.Results.Error;
-using RESTar.Results.Fail.BadRequest;
-using RESTar.Results.Fail.Forbidden;
+using RESTar.Results.Error.BadRequest;
+using RESTar.Results.Error.Forbidden;
 using RESTar.Serialization;
-
-#pragma warning disable 1591
 
 namespace RESTar
 {
+    /// <inheritdoc cref="IRequest{T}" />
+    /// <summary>
+    /// An internal RESTar request for entity resources, that bypasses all network and authentication components
+    /// </summary>
+    /// <typeparam name="T">The entity resource type</typeparam>
     public class Request<T> : IRequest<T>, IRequestInternal<T> where T : class
     {
-        public IEntityResource<T> Resource { get; }
+        #region Private and explicit members
+
         private Condition<T>[] _conditions;
-
-        public Condition<T>[] Conditions
-        {
-            get => _conditions;
-            set
-            {
-                _conditions = value ?? new Condition<T>[0];
-                if (ScSql) BuildSQL();
-            }
-        }
-
-        public Stream Body { get; set; }
-        public string AuthToken { get; internal set; }
-        public Headers ResponseHeaders { get; }
-        public ICollection<string> Cookies { get; }
-        public IUriParameters UriParameters => throw new InvalidOperationException();
+        Body IRequest.Body => _body;
+        Headers IRequest.ResponseHeaders { get; } = new Headers();
+        ICollection<string> IRequest.Cookies { get; } = new List<string>();
+        IUriParameters IRequest.UriParameters => throw new InvalidOperationException();
         IEntityResource IRequest.Resource => Resource;
-        public MetaConditions MetaConditions { get; }
-        public TCPConnection TcpConnection { get; }
+        
         Methods IRequest.Method => 0;
-        public ITarget<T> Target { get; }
-        public T1 BodyObject<T1>() where T1 : class => Body?.Deserialize<T1>();
-        public Headers RequestHeaders { get; set; }
         Headers IRequest.Headers => RequestHeaders;
-        MimeType IRequest.Accept => MimeType.Default;
         string ITraceable.TraceId => null;
-        public Func<IEnumerable<T>> EntitiesGenerator { private get; set; }
-        public IEnumerable<T> GetEntities() => EntitiesGenerator?.Invoke() ?? new T[0];
+        private Func<IEnumerable<T>> EntitiesGenerator { get; set; }
+        IEnumerable<T> IRequest<T>.GetEntities() => EntitiesGenerator?.Invoke() ?? new T[0];
+
+        /// <inheritdoc />
+        public TCPConnection TcpConnection { get; }
+
+        Func<IEnumerable<T>> IRequestInternal<T>.EntitiesGenerator
+        {
+            set => EntitiesGenerator = value;
+        }
 
         private readonly bool ScSql;
         internal string SelectQuery { get; private set; }
@@ -61,6 +56,7 @@ namespace RESTar
         private bool PATCHAllowed;
         private bool PUTAllowed;
         private bool DELETEAllowed;
+        private Body _body;
 
         internal void Prep()
         {
@@ -100,19 +96,55 @@ namespace RESTar
             }
         }
 
+        #endregion
+
+        /// <summary>
+        /// The body to include in the request. Set as .NET object, for example an anonymous type.
+        /// </summary>
+        public object Body
+        {
+            set => _body = new Body(Serializers.Json.SerializeToBytes(value), "application/json", Serializers.Json);
+        }
+
+        /// <inheritdoc />
+        public IEntityResource<T> Resource { get; }
+
+        /// <inheritdoc />
+        public ITarget<T> Target { get; }
+
+        /// <inheritdoc />
+        public Condition<T>[] Conditions
+        {
+            get => _conditions;
+            set
+            {
+                _conditions = value ?? new Condition<T>[0];
+                if (ScSql) BuildSQL();
+            }
+        }
+
+        /// <inheritdoc />
+        public MetaConditions MetaConditions { get; }
+
+        /// <summary>
+        /// The headers to include in the request
+        /// </summary>
+        public Headers RequestHeaders { get; set; }
+
+        /// <summary>
+        /// Creates a new instance of the <see cref="RESTar.Request{T}"/> class
+        /// </summary>
+        /// <param name="conditions"></param>
         public Request(params Condition<T>[] conditions)
         {
             if (!RESTarConfig.Initialized)
                 throw new NotInitialized();
-            Resource = Resource<T>.GetEntityResource;
+            Resource = EntityResource<T>.Get;
             Target = Resource;
-            ResponseHeaders = new Headers();
-            Cookies = new List<string>();
             MetaConditions = new MetaConditions {Unsafe = true};
-            TcpConnection = TCPConnection.Internal;
             Conditions = conditions;
-            this.Authenticate();
-            ScSql = Resource.Provider == typeof(StarcounterProvider).GetProviderId();
+            TcpConnection = TCPConnection.Internal;
+            ScSql = Resource.Provider == typeof(StarcounterResourceProvider).GetProviderId();
             Resource.AvailableMethods.ForEach(m =>
             {
                 switch (m)
@@ -137,6 +169,9 @@ namespace RESTar
             if (ScSql) BuildSQL();
         }
 
+        /// <summary>
+        /// Uses the given conditions, and returns a reference to the request.
+        /// </summary>
         public Request<T> WithConditions(IEnumerable<Condition<T>> conditions)
         {
             if (conditions is Condition<T>[] arr)
@@ -145,12 +180,18 @@ namespace RESTar
             return this;
         }
 
+        /// <summary>
+        /// Uses the given conditions, and returns a reference to the request.
+        /// </summary>
         public Request<T> WithConditions(params Condition<T>[] conditions)
         {
             Conditions = conditions;
             return this;
         }
 
+        /// <summary>
+        /// Uses the given conditions, and returns a reference to the request.
+        /// </summary>
         public Request<T> WithConditions(params (string key, Operators op, object value)[] conditions)
         {
             Conditions = conditions?.Any() != true
@@ -163,6 +204,9 @@ namespace RESTar
             return this;
         }
 
+        /// <summary>
+        /// Uses the given conditions, and returns a reference to the request.
+        /// </summary>
         public Request<T> WithConditions(string key, Operators op, object value) => WithConditions((key, op, value));
 
         /// <summary>
@@ -170,12 +214,15 @@ namespace RESTar
         /// the excel file as Stream and the number of non-header rows in the excel workbook.
         /// </summary>
         /// <returns></returns>
-        public (Stream excel, long nrOfRows) GETExcel()
+        public (Stream excel, ulong nrOfRows) GETExcel()
         {
-            GET().SerializeOutputExcel(Resource, out var excel, out var nrOfRows);
-            return (excel, nrOfRows);
+            var stream = Serializers.Excel.SerializeCollection(GET(), this, out var count);
+            return (stream, count);
         }
 
+        /// <summary>
+        /// Gets all entities in the resource for which the condition(s) hold.
+        /// </summary>
         public IEnumerable<T> GET()
         {
             Prep();
@@ -183,6 +230,9 @@ namespace RESTar
             return Operations<T>.SELECT(this) ?? new T[0];
         }
 
+        /// <summary>
+        /// Returns true if and only if there is at least one entity in the resource for which the condition(s) hold.
+        /// </summary>
         public bool ANY()
         {
             Prep();
@@ -190,25 +240,40 @@ namespace RESTar
             return Operations<T>.SELECT(this)?.Any() == true;
         }
 
+        /// <summary>
+        /// Returns the number of entities in the resource for which the condition(s) hold.
+        /// </summary>
         public long COUNT()
         {
             Prep();
             if (!GETAllowed) throw new MethodUnavailable(Methods.GET, Resource);
-            return Operations<T>.OP_COUNT(this);
+            return Operations<T>.TRY_COUNT(this);
         }
 
+        /// <summary>
+        /// Inserts an entity into the resource
+        /// </summary>
+        /// <returns>The number of entities affected</returns>
         public int POST(Func<T> inserter)
         {
             if (!POSTAllowed) throw new MethodUnavailable(Methods.POST, Resource);
             return Operations<T>.App.POST(inserter, this);
         }
 
+        /// <summary>
+        /// Inserts a collection of entities into the resource
+        /// </summary>
+        /// <returns>The number of entities affected</returns>
         public int POST(Func<IEnumerable<T>> inserter)
         {
             if (!POSTAllowed) throw new MethodUnavailable(Methods.POST, Resource);
             return Operations<T>.App.POST(inserter, this);
         }
 
+        /// <summary>
+        /// Updates an entity in the resource
+        /// </summary>
+        /// <returns>The number of entities affected</returns>
         public int PATCH(Func<T, T> updater)
         {
             Prep();
@@ -223,6 +288,10 @@ namespace RESTar
             }
         }
 
+        /// <summary>
+        /// Updates a collection of entities in the resource
+        /// </summary>
+        /// <returns>The number of entities affected</returns>
         public int PATCH(Func<IEnumerable<T>, IEnumerable<T>> updater)
         {
             Prep();
@@ -232,6 +301,10 @@ namespace RESTar
             return Operations<T>.App.PATCH(updater, source, this);
         }
 
+        /// <summary>
+        /// Inserts an entity into the resource if the conditions do not match any existing entities
+        /// </summary>
+        /// <returns>The number of entities affected</returns>
         public int PUT(Func<T> inserter)
         {
             Prep();
@@ -240,6 +313,11 @@ namespace RESTar
             return Operations<T>.App.PUT(inserter, source, this);
         }
 
+        /// <summary>
+        /// Inserts an entity into the resource if the conditions do not match any single existing entity. 
+        /// Otherwise updates the matched entity. If many entities are matched, throws an <see cref="AmbiguousMatch"/> exception.
+        /// </summary>
+        /// <returns>The number of entities affected</returns>
         public int PUT(Func<T> inserter, Func<T, T> updater)
         {
             Prep();
@@ -248,6 +326,12 @@ namespace RESTar
             return Operations<T>.App.PUT(inserter, updater, source, this);
         }
 
+        /// <summary>
+        /// Deletes the selected entity or entities. To enable deletion of multiple entities, set the 
+        /// unsafe parameter to true.
+        /// </summary>
+        /// <param name="unsafe">Should deletion of multiple entities be allowed?</param>
+        /// <returns>The number of entities affected</returns>
         public int DELETE(bool @unsafe = false)
         {
             Prep();

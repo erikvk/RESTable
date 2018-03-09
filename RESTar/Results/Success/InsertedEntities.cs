@@ -3,7 +3,11 @@ using RESTar.Operations;
 
 namespace RESTar.Results.Success
 {
-    internal class InsertedEntities : Result
+    /// <inheritdoc />
+    /// <summary>
+    /// Returned to the client on successful insertion of entities
+    /// </summary>
+    public class InsertedEntities : Result
     {
         internal InsertedEntities(int count, IRequest request) : base(request)
         {

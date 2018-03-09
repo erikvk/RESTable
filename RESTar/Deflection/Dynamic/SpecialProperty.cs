@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using Newtonsoft.Json.Serialization;
 using RESTar.Operations;
 using RESTar.Serialization;
@@ -23,31 +24,30 @@ namespace RESTar.Deflection.Dynamic
             PropertyName = Name,
             Readable = Readable,
             Writable = Writable,
-            ValueProvider = new GetterSetterProvider(Getter, Setter),
+            ValueProvider = new DefaultValueProvider(this),
             ObjectCreationHandling = ReplaceOnUpdate ? Replace : Reuse,
             NullValueHandling = HiddenIfNull ? Ignore : Include,
             Order = Order
         };
 
-        private SpecialProperty(int metadataToken, string name, string actualName, Type type, int? order, bool isKey, bool scQueryable,
+        private SpecialProperty(int metadataToken, string name, string actualName, Type type, int? order, bool scQueryable,
             bool hidden, bool hiddenIfNull, Getter getter) : base
-            (
-                metadataToken: metadataToken,
-                name: name,
-                actualName: actualName,
-                type: type,
-                order: order,
-                isKey: isKey,
-                scQueryable: scQueryable,
-                attributes: null,
-                skipConditions: false,
-                hidden: hidden,
-                hiddenIfNull: hiddenIfNull,
-                isEnum: false,
-                allowedConditionOperators: Operators.All,
-                getter: getter,
-                setter: null
-            ) { }
+        (
+            metadataToken: metadataToken,
+            name: name,
+            actualName: actualName,
+            type: type,
+            order: order,
+            scQueryable: scQueryable,
+            attributes: new[] {new KeyAttribute()},
+            skipConditions: false,
+            hidden: hidden,
+            hiddenIfNull: hiddenIfNull,
+            isEnum: false,
+            allowedConditionOperators: Operators.All,
+            getter: getter,
+            setter: null
+        ) { }
 
         internal static IEnumerable<SpecialProperty> GetObjectNoAndObjectID(bool flag) =>
             flag ? new[] {FlaggedObjectNo, FlaggedObjectID} : new[] {ObjectNo, ObjectID};
@@ -72,7 +72,6 @@ namespace RESTar.Deflection.Dynamic
             actualName: "ObjectNo",
             type: typeof(ulong),
             order: int.MaxValue - 1,
-            isKey: true,
             scQueryable: true,
             hidden: false,
             hiddenIfNull: false,
@@ -89,7 +88,6 @@ namespace RESTar.Deflection.Dynamic
             actualName: "ObjectNo",
             type: typeof(ulong),
             order: int.MaxValue - 1,
-            isKey: true,
             scQueryable: true,
             hidden: false,
             hiddenIfNull: false,
@@ -106,7 +104,6 @@ namespace RESTar.Deflection.Dynamic
             actualName: "ObjectID",
             type: typeof(string),
             order: int.MaxValue,
-            isKey: false,
             scQueryable: true,
             hidden: true,
             hiddenIfNull: false,
@@ -123,7 +120,6 @@ namespace RESTar.Deflection.Dynamic
             actualName: "ObjectID",
             type: typeof(string),
             order: int.MaxValue,
-            isKey: false,
             scQueryable: true,
             hidden: true,
             hiddenIfNull: false,

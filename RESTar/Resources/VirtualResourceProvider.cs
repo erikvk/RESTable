@@ -7,7 +7,7 @@ namespace RESTar.Resources
     {
         internal override bool Include(Type type) => !type.HasResourceProviderAttribute();
         internal override void Validate() { }
-
+        
         // ReSharper disable once UnassignedGetOnlyAutoProperty
         public override Type AttributeType { get; }
 

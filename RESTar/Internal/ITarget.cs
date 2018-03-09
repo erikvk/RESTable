@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using RESTar.Deflection;
+using RESTar.Deflection.Dynamic;
 using RESTar.Operations;
 
 namespace RESTar.Internal
@@ -28,6 +30,11 @@ namespace RESTar.Internal
         /// The binding rule to use when binding condition terms for this target
         /// </summary>
         TermBindingRules ConditionBindingRule { get; }
+
+        /// <summary>
+        /// The members of this target, in a case insensitive dictionary.
+        /// </summary>
+        IReadOnlyDictionary<string, DeclaredProperty> Members { get; }
     }
 
     /// <inheritdoc />

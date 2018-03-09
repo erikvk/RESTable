@@ -1,8 +1,13 @@
 ﻿using RESTar.Internal;
 
-namespace RESTar.Results.Fail.BadRequest
+namespace RESTar.Results.Error.BadRequest
 {
-    internal class InvalidOperator : InvalidSyntax
+    /// <inheritdoc />
+    /// <summary>
+    /// Thrown when an alias cannot be inserted because RESTar cannot locate a resource by some
+    /// search string.
+    /// </summary>
+    public class InvalidOperator : InvalidSyntax
     {
         internal InvalidOperator(string c) : base(ErrorCodes.InvalidConditionOperator,
             $"Invalid or missing operator or separator ('&') for condition '{c}'. Always URI encode all equals ('=' -> '%3D') " +

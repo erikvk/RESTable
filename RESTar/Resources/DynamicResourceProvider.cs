@@ -21,34 +21,28 @@ namespace RESTar.Resources
         public override Deleter<T> GetDefaultDeleter<T>() => throw new NotImplementedException();
         public override Counter<T> GetDefaultCounter<T>() => throw new NotImplementedException();
         public override Profiler<T> GetProfiler<T>() => throw new NotImplementedException();
-
         private readonly MethodInfo DynamicBuilderMethod;
 
-        internal DynamicResourceProvider()
-        {
-            DynamicBuilderMethod = typeof(DynamicResourceProvider).GetMethod(nameof(_BuildDynamicResource), NonPublic | Instance);
-        }
+        internal DynamicResourceProvider() => DynamicBuilderMethod =
+            typeof(DynamicResourceProvider).GetMethod(nameof(_BuildDynamicResource), NonPublic | Instance);
 
         internal void BuildDynamicResource(DynamicResource resource) => DynamicBuilderMethod
             .MakeGenericMethod(resource.Table)
             .Invoke(this, new object[] {resource});
 
-        private void _BuildDynamicResource<T>(DynamicResource resource) where T : DDictionary
-        {
-            new EntityResource<T>
-            (
-                fullName: resource.Name,
-                attribute: resource.Attribute,
-                selector: DDictionaryOperations<T>.Select,
-                inserter: DDictionaryOperations<T>.Insert,
-                updater: DDictionaryOperations<T>.Update,
-                deleter: DDictionaryOperations<T>.Delete,
-                counter: DDictionaryOperations<T>.Count,
-                profiler: DDictionaryOperations<T>.Profile,
-                authenticator: null,
-                views: null,
-                provider: this
-            );
-        }
+        private void _BuildDynamicResource<T>(DynamicResource resource) where T : DDictionary => new Internal.EntityResource<T>
+        (
+            fullName: resource.Name,
+            attribute: resource.Attribute,
+            selector: DDictionaryOperations<T>.Select,
+            inserter: DDictionaryOperations<T>.Insert,
+            updater: DDictionaryOperations<T>.Update,
+            deleter: DDictionaryOperations<T>.Delete,
+            counter: DDictionaryOperations<T>.Count,
+            profiler: DDictionaryOperations<T>.Profile,
+            authenticator: null,
+            views: null,
+            provider: this
+        );
     }
 }

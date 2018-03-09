@@ -1,8 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using Newtonsoft.Json;
 using RESTar.Serialization;
+using static System.StringComparison;
 
 namespace RESTar.Operations
 {
@@ -21,11 +20,7 @@ namespace RESTar.Operations
         public IEnumerable<T> Apply<T>(IEnumerable<T> entities)
         {
             if (string.IsNullOrWhiteSpace(Pattern)) return entities;
-            return entities.Where(e =>
-            {
-                var json = JsonConvert.SerializeObject(e, Formatting.None, Serializer.Settings);
-                return json.IndexOf(Pattern, StringComparison.OrdinalIgnoreCase) >= 0;
-            });
+            return entities.Where(e => Serializers.Json.Serialize(e).IndexOf(Pattern, OrdinalIgnoreCase) >= 0);
         }
     }
 }

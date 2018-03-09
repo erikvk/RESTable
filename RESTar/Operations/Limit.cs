@@ -5,6 +5,7 @@ using System.Linq;
 
 namespace RESTar.Operations
 {
+    /// <inheritdoc cref="IFilter" />
     /// <summary>
     /// Encodes a numeric limit used in requests. Can be implicitly converted from int.
     /// </summary>
@@ -35,6 +36,7 @@ namespace RESTar.Operations
         public IEnumerable<T> Apply<T>(IEnumerable<T> entities) => Number > -1 ? entities.Take((int) Number) : entities;
     }
 
+    /// <inheritdoc cref="IFilter" />
     /// <summary>
     /// Encodes a numeric offset used in requests. Can be implicitly converted from int.    
     /// </summary>

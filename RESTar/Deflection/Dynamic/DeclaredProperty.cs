@@ -5,7 +5,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using Newtonsoft.Json;
-using RESTar.Results.Fail.NotFound;
+using RESTar.Results.Error.NotFound;
 using Starcounter;
 using static System.Reflection.BindingFlags;
 using static Newtonsoft.Json.NullValueHandling;
@@ -23,18 +23,8 @@ namespace RESTar.Deflection.Dynamic
         /// </summary>
         private int MetadataToken { get; }
 
-        /// <summary>
-        /// The property type for this property
-        /// </summary>
-        public Type Type { get; }
-
         /// <inheritdoc />
         public override bool Dynamic => false;
-
-        /// <summary>
-        /// Is this property a unique identifier for its type?
-        /// </summary>
-        public bool IsKey { get; internal set; }
 
         /// <summary>
         /// The order at which this property appears when all properties are enumerated
@@ -68,16 +58,6 @@ namespace RESTar.Deflection.Dynamic
         public bool ReplaceOnUpdate { get; }
 
         /// <summary>
-        /// Is this property nullable?
-        /// </summary>
-        public bool Nullable { get; }
-
-        /// <summary>
-        /// Is the type an enum type?
-        /// </summary>
-        public bool IsEnum { get; }
-
-        /// <summary>
         /// The attributes that this property has been decorated with
         /// </summary>  
         private ICollection<Attribute> Attributes { get; }
@@ -104,16 +84,15 @@ namespace RESTar.Deflection.Dynamic
         /// <summary>
         /// Used in SpecialProperty
         /// </summary>
-        internal DeclaredProperty(int metadataToken, string name, string actualName, Type type, bool isKey, int? order, bool scQueryable,
+        internal DeclaredProperty(int metadataToken, string name, string actualName, Type type, int? order, bool scQueryable,
             ICollection<Attribute> attributes, bool skipConditions, bool hidden, bool hiddenIfNull, bool isEnum, Operators allowedConditionOperators,
             Getter getter, Setter setter)
         {
             MetadataToken = metadataToken;
             Name = name;
-            ActualName = actualName;
             Type = type;
+            ActualName = actualName;
             Order = order;
-            IsKey = isKey;
             ScQueryable = scQueryable;
             Attributes = attributes;
             SkipConditions = skipConditions;
@@ -134,13 +113,12 @@ namespace RESTar.Deflection.Dynamic
             if (p == null) return;
             MetadataToken = p.MetadataToken;
             Name = p.RESTarMemberName(flagName);
-            ActualName = p.Name;
             Type = p.PropertyType;
+            ActualName = p.Name;
             Attributes = p.GetCustomAttributes().ToList();
             var memberAttribute = GetAttribute<RESTarMemberAttribute>();
             var jsonAttribute = GetAttribute<JsonPropertyAttribute>();
             Order = memberAttribute?.Order ?? jsonAttribute?.Order;
-            IsKey = memberAttribute?.IsKey == true;
             ScQueryable = p.DeclaringType?.HasAttribute<DatabaseAttribute>() == true && p.PropertyType.IsStarcounterCompatible();
             SkipConditions = memberAttribute?.SkipConditions == true || p.DeclaringType.HasAttribute<RESTarViewAttribute>();
             Hidden = memberAttribute?.Hidden == true;
@@ -167,7 +145,8 @@ namespace RESTar.Deflection.Dynamic
             catch
             {
                 throw new Exception($"Invalid or unknown excel reduce function '{methodName}' for property '{p.Name}' in type '" +
-                                    $"{p.DeclaringType.FullName}'. Must be public instance method with signature 'public string <name>()'");
+                                    $"{p.DeclaringType.RESTarTypeName()}'. Must be public instance method with signature 'public " +
+                                    $"string <insert-name-here>()'");
             }
         }
 
@@ -246,7 +225,7 @@ namespace RESTar.Deflection.Dynamic
         }
 
         /// <inheritdoc />
-        public override string ToString() => $"{Type.FullName}.{Name}";
+        public override string ToString() => $"{Type.RESTarTypeName()}.{Name}";
 
         /// <inheritdoc />
         public override bool Equals(object obj) => obj is DeclaredProperty p && p.MetadataToken == MetadataToken;
@@ -257,7 +236,7 @@ namespace RESTar.Deflection.Dynamic
         /// <summary>
         /// Compares properties by name
         /// </summary>
-        public static IEqualityComparer<DeclaredProperty> NameComparer = new _NameComparer();
+        public static readonly IEqualityComparer<DeclaredProperty> NameComparer = new _NameComparer();
 
         /// <summary>
         /// Compares properties by identity

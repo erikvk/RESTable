@@ -8,6 +8,7 @@ using static RESTar.Methods;
 
 namespace RESTar.Admin
 {
+    /// <inheritdoc />
     /// <summary>
     /// Gets all error codes used by RESTar
     /// </summary>

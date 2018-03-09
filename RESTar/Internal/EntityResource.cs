@@ -10,7 +10,7 @@ using RESTar.Linq;
 using RESTar.Operations;
 using RESTar.Resources;
 using RESTar.Results.Error;
-using RESTar.Results.Fail.BadRequest;
+using RESTar.Results.Error.BadRequest;
 using Starcounter;
 using static System.StringComparer;
 using static RESTar.Methods;
@@ -41,6 +41,10 @@ namespace RESTar.Internal
         public TermBindingRules ConditionBindingRule { get; }
         public TermBindingRules OutputBindingRule { get; }
         public bool RequiresAuthentication => Authenticate != null;
+        public bool GETAvailableToAll { get; }
+        public IReadOnlyDictionary<string, DeclaredProperty> Members { get; }
+        public void SetAlias(string alias) => Alias = alias;
+        public Type InterfaceType { get; }
 
         /// <inheritdoc />
         /// <summary>
@@ -52,19 +56,17 @@ namespace RESTar.Internal
         public bool IsStarcounterResource { get; }
         public bool RequiresValidation { get; }
         public string Provider { get; }
-        public IReadOnlyList<IEntityResource> InnerResources { get; set; }
+        public IReadOnlyList<IResource> InnerResources { get; set; }
         public ResourceProfile ResourceProfile => Profile?.Invoke(this);
         public bool ClaimedBy<T1>() where T1 : ResourceProvider => Provider == typeof(T1).GetProviderId();
 
         string IResourceInternal.Description
         {
-            get => Description;
             set => Description = value;
         }
 
         IReadOnlyList<Methods> IResourceInternal.AvailableMethods
         {
-            get => AvailableMethods;
             set => AvailableMethods = value;
         }
 
@@ -79,7 +81,7 @@ namespace RESTar.Internal
         public string Alias
         {
             get => Admin.ResourceAlias.GetByResource(Name)?.Alias;
-            set
+            private set
             {
                 var existingAssignment = Admin.ResourceAlias.GetByResource(Name);
                 if (value == null)
@@ -126,8 +128,10 @@ namespace RESTar.Internal
             AvailableMethods = attribute.AvailableMethods;
             IsSingleton = attribute.Singleton;
             IsInternal = attribute is RESTarInternalAttribute;
+            InterfaceType = attribute.Interface;
             DynamicConditionsAllowed = typeof(T).IsDDictionary() || attribute.AllowDynamicConditions;
             DeclaredPropertiesFlagged = typeof(T).IsDDictionary() || attribute.FlagStaticMembers;
+            GETAvailableToAll = attribute.GETAvailableToAll;
             ConditionBindingRule = DynamicConditionsAllowed ? DeclaredWithDynamicFallback : OnlyDeclared;
             if (DeclaredPropertiesFlagged)
                 OutputBindingRule = DeclaredWithDynamicFallback;
@@ -140,6 +144,7 @@ namespace RESTar.Internal
             IsDDictionary = typeof(T).IsDDictionary();
             IsDynamic = IsDDictionary || typeof(T).IsSubclassOf(typeof(JObject)) || typeof(IDictionary).IsAssignableFrom(typeof(T));
             Provider = provider.GetProviderId();
+            Members = typeof(T).GetDeclaredProperties();
             Select = selector;
             Insert = inserter;
             Update = updater;
@@ -150,7 +155,7 @@ namespace RESTar.Internal
             if (views?.Any() == true)
             {
                 ViewDictionaryInternal = views.ToDictionary(v => v.Name, OrdinalIgnoreCase);
-                views.ForEach(view => view.Type.GetDeclaredProperties());
+                views.ForEach(view => view.EntityResource = this);
             }
             CheckOperationsSupport();
             RESTarConfig.AddResource(this);
@@ -170,6 +175,7 @@ namespace RESTar.Internal
             {
                 switch (method)
                 {
+                    case HEAD:
                     case REPORT:
                     case GET: return new[] {RESTarOperations.Select};
                     case POST: return new[] {RESTarOperations.Insert};

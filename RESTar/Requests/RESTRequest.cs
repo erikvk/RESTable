@@ -1,30 +1,28 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
+using System.Net;
 using RESTar.Admin;
 using RESTar.Http;
 using RESTar.Internal;
 using RESTar.Linq;
 using RESTar.Operations;
 using RESTar.Results.Error;
-using RESTar.Results.Fail.BadRequest;
-using RESTar.Results.Fail.Forbidden;
-using RESTar.Results.Fail.NotFound;
-using RESTar.Serialization;
+using RESTar.Results.Error.BadRequest;
+using RESTar.Results.Error.Forbidden;
+using RESTar.Results.Error.NotFound;
 using static RESTar.Internal.ErrorCodes;
 using static RESTar.RESTarConfig;
 using static RESTar.Methods;
 
 namespace RESTar.Requests
 {
-    internal class RESTRequest<T> : IRequest<T>, IRequestInternal<T>, IDisposable where T : class
+    internal class RESTRequest<T> : IRequest<T>, IRequestInternal<T> where T : class
     {
         public Methods Method { get; }
         public IEntityResource<T> Resource { get; }
         public Condition<T>[] Conditions { get; }
         public MetaConditions MetaConditions { get; }
-        public Stream Body { get; private set; }
-        public string AuthToken { get; }
+        public Body Body { get; private set; }
         public Headers ResponseHeaders { get; }
         public ICollection<string> Cookies { get; }
         public IUriParameters UriParameters { get; }
@@ -34,8 +32,7 @@ namespace RESTar.Requests
         private Func<RESTRequest<T>, Result> Evaluator { get; }
         internal string Source { get; }
         internal string Destination { get; }
-        private MimeTypeCode ContentType { get; }
-        public MimeType Accept { get; }
+        internal ResultFinalizer Finalizer { get; }
         private string CORSOrigin { get; }
         private DataConfig InputDataConfig { get; }
         private DataConfig OutputDataConfig { get; }
@@ -53,79 +50,75 @@ namespace RESTar.Requests
                 Result.Headers["Access-Control-Allow-Origin"] = allowedOrigin;
         }
 
-        public T1 BodyObject<T1>() where T1 : class => Body?.Deserialize<T1>();
         public Headers Headers { get; }
 
-        internal RESTRequest(IEntityResource<T> resource, Arguments arguments)
+        internal RESTRequest(IEntityResource<T> resource, Context context)
         {
             if (resource.IsInternal) throw new ResourceIsInternal(resource);
 
-            TraceId = arguments.TraceId;
-            TcpConnection = arguments.TcpConnection;
+            TraceId = context.TraceId;
+            TcpConnection = context.TcpConnection;
 
+            Finalizer = context.ResultFinalizer;
             Resource = resource;
             Target = resource;
-            Headers = arguments.Headers;
+            Headers = context.Headers;
             ResponseHeaders = new Headers();
             Cookies = new List<string>();
             Conditions = new Condition<T>[0];
             MetaConditions = new MetaConditions();
-            AuthToken = arguments.AuthToken;
-            UriParameters = arguments.Uri;
-            Method = (Methods) arguments.Action;
-            if (arguments.Uri.ViewName != null)
+            UriParameters = context.Uri;
+            Method = context.Method;
+            if (context.Uri.ViewName != null)
             {
-                if (!Resource.ViewDictionary.TryGetValue(arguments.Uri.ViewName, out var view))
-                    throw new UnknownView(arguments.Uri.ViewName, Resource);
+                if (!Resource.ViewDictionary.TryGetValue(context.Uri.ViewName, out var view))
+                    throw new UnknownView(context.Uri.ViewName, Resource);
                 Target = view;
             }
             Evaluator = Operations<T>.REST.GetEvaluator(Method);
-            Source = arguments.Headers.SafeGet("Source");
-            Destination = arguments.Headers.SafeGet("Destination");
-            CORSOrigin = arguments.Headers.SafeGet("Origin");
-            ContentType = arguments.ContentType.TypeCode;
-            Accept = arguments.Accept;
+            Source = context.Headers.SafeGet("Source");
+            Destination = context.Headers.SafeGet("Destination");
+            CORSOrigin = context.Headers.SafeGet("Origin");
             InputDataConfig = Source != null ? DataConfig.External : DataConfig.Client;
             OutputDataConfig = Destination != null ? DataConfig.External : DataConfig.Client;
-            Conditions = Condition<T>.Parse(arguments.Uri.Conditions, Target) ?? Conditions;
-            MetaConditions = MetaConditions.Parse(arguments.Uri.MetaConditions, Resource) ?? MetaConditions;
-            if (arguments.Headers.UnsafeOverride)
+            Conditions = Condition<T>.Parse(context.Uri.Conditions, Target) ?? Conditions;
+            MetaConditions = MetaConditions.Parse(context.Uri.MetaConditions, Resource) ?? MetaConditions;
+            if (context.Headers.UnsafeOverride)
             {
                 MetaConditions.Unsafe = true;
-                arguments.Headers.UnsafeOverride = false;
+                context.Headers.UnsafeOverride = false;
             }
             if (TcpConnection.IsInternal) MetaConditions.Formatter = DbOutputFormat.Raw;
             this.MethodCheck();
-            SetRequestData(arguments.BodyBytes);
+            SetRequestData(context);
         }
 
-        internal void SetRequestData(byte[] bodyBytes)
+        internal void SetRequestData(Context context)
         {
             switch (InputDataConfig)
             {
                 case DataConfig.Client:
-                    if (bodyBytes == null && (Method == PATCH || Method == POST || Method == PUT))
-                        throw new InvalidSyntax(NoDataSource, "Missing data source for method " + Method);
-                    if (bodyBytes == null) return;
-                    Body = new MemoryStream(bodyBytes);
+                    if (!context.Body.HasContent)
+                    {
+                        if (Method == PATCH || Method == POST || Method == PUT)
+                            throw new InvalidSyntax(NoDataSource, "Missing data source for method " + Method);
+                        return;
+                    }
+                    Body = context.Body;
                     break;
                 case DataConfig.External:
                     try
                     {
-                        var request = new HttpRequest(Source)
-                        {
-                            Accept = ContentType.ToMimeString(),
-                            AuthToken = AuthToken
-                        };
+                        var request = new HttpRequest(this, Source) {Accept = context.ContentType.ToString()};
                         if (request.Method != GET)
                             throw new InvalidSyntax(InvalidSource, "Only GET is allowed in Source headers");
-                        var response = request.GetResponse(this) ?? throw new InvalidExternalSource(request, "No response");
-                        if (!response.IsSuccessStatusCode)
+                        var response = request.GetResponse() ?? throw new InvalidExternalSource(request, "No response");
+                        if (response.StatusCode >= HttpStatusCode.BadRequest)
                             throw new InvalidExternalSource(request,
                                 $"Status: {response.StatusCode.ToCode()} - {response.StatusDescription}. {response.Headers.SafeGet("RESTar-info")}");
                         if (response.Body.CanSeek && response.Body.Length == 0)
                             throw new InvalidExternalSource(request, "Response was empty");
-                        Body = response.Body;
+                        Body = new Body(response.Body.ToByteArray(), context.ContentType, context.InputContentTypeProvider);
                         break;
                     }
                     catch (HttpRequestException re)
@@ -133,23 +126,6 @@ namespace RESTar.Requests
                         throw new InvalidSyntax(InvalidSource, $"{re.Message} in the Source header");
                     }
             }
-
-            switch (ContentType)
-            {
-                case MimeTypeCode.Json: break;
-                case MimeTypeCode.Excel:
-                    Body.SerializeInputExcel(Method, out var json);
-                    Body = json;
-                    break;
-                case MimeTypeCode.Unsupported:
-                    break;
-            }
-        }
-
-        public void Dispose()
-        {
-            if (TcpConnection.IsExternal && AuthToken != null)
-                AuthTokens.TryRemove(AuthToken, out var _);
         }
     }
 }

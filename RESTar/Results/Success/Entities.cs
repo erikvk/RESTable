@@ -4,29 +4,34 @@ using RESTar.Requests;
 
 namespace RESTar.Results.Success
 {
-    internal interface IEntitiesMetadata
+    /// <inheritdoc cref="OK" />
+    /// <inheritdoc cref="IEntitiesMetadata" />
+    /// <summary>
+    /// A result that contains a set of entities
+    /// </summary>
+    public sealed class Entities : OK, IEntitiesMetadata
     {
-        ulong EntityCount { get; }
-        string ResourceFullName { get; }
+        /// <summary>
+        /// The request that this result was generated for
+        /// </summary>
+        public IRequest Request { get; private set; }
 
         /// <summary>
-        /// Gets a link to the next set of entities, with a given number of entities to include
+        /// The entities contained in the result
         /// </summary>
-        IUriParameters GetNextPageLink(int count);
+        public IEnumerable<dynamic> Content { get; set; }
 
         /// <summary>
-        /// Gets a link to the next set of entities, with the same amount of entities as in the last one
+        /// The number of entities in the result
         /// </summary>
-        IUriParameters GetNextPageLink();
-    }
-
-    internal class Entities : OK, IEntitiesMetadata
-    {
-        internal IRequest Request { get; private set; }
-        internal IEnumerable<dynamic> Content { get; set; }
         public ulong EntityCount { get; set; }
+
         string IEntitiesMetadata.ResourceFullName => Request.Resource.Name;
         internal string ExternalDestination { get; set; }
+
+        /// <summary>
+        /// Is the result paged?
+        /// </summary>
         public bool IsPaged => Content != null && EntityCount > 0 && (long) EntityCount == Request.MetaConditions.Limit;
 
         private Entities(ITraceable trace) : base(trace) { }

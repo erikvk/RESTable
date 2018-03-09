@@ -2,59 +2,57 @@
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using RESTar.Admin;
-using RESTar.Internal;
-using RESTar.OData;
-using RESTar.Results.Fail.BadRequest;
+using RESTar.Results.Error.NotFound;
 
 namespace RESTar.Requests
 {
-    internal class URI : IUriParameters
+    /// <inheritdoc />
+    /// <summary>
+    /// Encodes a URI that is used in a request
+    /// </summary>
+    public class URI : IUriParameters
     {
-        public string ResourceSpecifier { get; internal set; }
-        public string ViewName { get; internal set; }
+        /// <inheritdoc />
+        public string ResourceSpecifier { get; set; }
+
+        /// <inheritdoc />
+        public string ViewName { get; set; }
+
+        /// <inheritdoc />
         public List<UriCondition> Conditions { get; }
+
+        /// <inheritdoc />
         public List<UriCondition> MetaConditions { get; }
-        public DbMacro Macro { get; internal set; }
+
+        internal DbMacro Macro { get; set; }
         internal Exception Error { get; private set; }
         internal bool HasError => Error != null;
-        internal static readonly string DefaultResourceSpecifier = typeof(AvailableResource).FullName;
-        internal static readonly string MetadataResourceSpecifier = typeof(Metadata).FullName;
-        internal RESTProtocols Protocol { get; private set; }
+        private IProtocolProvider ProtocolProvider { get; set; }
 
-        internal static URI ParseInternal(ref string query, bool percentCharsEscaped, out string key)
+        internal static URI ParseInternal(ref string uriString, bool percentCharsEscaped, ITraceable trace, out string key,
+            out CachedProtocolProvider cachedProtocolProvider)
         {
             var uri = new URI();
             key = null;
-            if (percentCharsEscaped) query = query.Replace("%25", "%");
-            Action<URI, string> populator;
-            var groups = Regex.Match(query, RegEx.Protocol).Groups;
+            if (percentCharsEscaped) uriString = uriString.Replace("%25", "%");
+            var groups = Regex.Match(uriString, RegEx.Protocol).Groups;
             var protocolString = groups["proto"].Value;
             var _key = groups["key"].Value;
             var tail = groups["tail"].Value;
             if (_key.Length > 0)
             {
                 key = _key;
-                query = protocolString + tail;
+                uriString = protocolString + tail;
             }
-            switch (protocolString)
+            if (!RequestEvaluator.ProtocolProviders.TryGetValue(protocolString, out cachedProtocolProvider))
             {
-                case "":
-                case "-restar":
-                    populator = RESTarProtocolProvider.PopulateUri;
-                    uri.Protocol = RESTProtocols.RESTar;
-                    break;
-                case "-odata":
-                    populator = ODataProtocolProvider.PopulateUri;
-                    uri.Protocol = RESTProtocols.OData;
-                    break;
-                default:
-                    uri.Protocol = default;
-                    uri.Error = new InvalidSyntax(ErrorCodes.InvalidUriSyntax, $"Unknown protocol '{protocolString}'");
-                    return uri;
+                uri.Error = new UnknownProtocol(protocolString);
+                return uri;
             }
+            uri.ProtocolProvider = cachedProtocolProvider.ProtocolProvider;
             try
             {
-                populator(uri, tail);
+                cachedProtocolProvider.ProtocolProvider.ParseQuery(tail, uri, trace.TcpConnection);
             }
             catch (Exception e)
             {
@@ -65,26 +63,18 @@ namespace RESTar.Requests
 
         internal static URI Parse(string uriString)
         {
-            var uri = ParseInternal(ref uriString, false, out var _);
+            var uri = ParseInternal(ref uriString, false, TCPConnection.Internal, out var _, out var _);
             if (uri.HasError) throw uri.Error;
             return uri;
         }
 
-        internal URI()
+        private URI()
         {
-            ResourceSpecifier = DefaultResourceSpecifier;
             Conditions = new List<UriCondition>();
             MetaConditions = new List<UriCondition>();
         }
 
-        public override string ToString()
-        {
-            switch (Protocol)
-            {
-                case RESTProtocols.RESTar: return RESTarProtocolProvider.MakeRelativeUri(this);
-                case RESTProtocols.OData: return ODataProtocolProvider.MakeRelativeUri(this);
-                default: throw new ArgumentOutOfRangeException();
-            }
-        }
+        /// <inheritdoc />
+        public override string ToString() => ProtocolProvider?.MakeRelativeUri(this) ?? "";
     }
 }

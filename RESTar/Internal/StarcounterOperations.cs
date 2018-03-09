@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Linq;
 using RESTar.Admin;
+using RESTar.Deflection.Dynamic;
 using RESTar.Linq;
 using RESTar.Operations;
 using Starcounter;
 using Starcounter.Metadata;
-using static System.Reflection.BindingFlags;
 using static System.StringComparison;
 using static RESTar.Operators;
 
@@ -17,8 +17,8 @@ namespace RESTar.Internal
     internal static class StarcounterOperations<T> where T : class
     {
         internal const string ColumnByTable = "SELECT t FROM Starcounter.Metadata.Column t WHERE t.Table.Fullname =?";
-        internal static readonly string SELECT = $"SELECT t FROM {typeof(T).FullName.Fnuttify()} t ";
-        internal static readonly string COUNT = $"SELECT COUNT(t) FROM {typeof(T).FullName.Fnuttify()} t ";
+        internal static readonly string SELECT = $"SELECT t FROM {typeof(T).RESTarTypeName().Fnuttify()} t ";
+        internal static readonly string COUNT = $"SELECT COUNT(t) FROM {typeof(T).RESTarTypeName().Fnuttify()} t ";
 
         internal static readonly Selector<T> Select;
         internal static readonly Inserter<T> Insert;
@@ -96,28 +96,44 @@ namespace RESTar.Internal
                 }));
                 return count;
             };
-            Count = r =>
-            {
-                switch (r)
-                {
-                    case Request<T> @internal when @internal.Conditions.HasPost(out var _): return Select(r)?.LongCount() ?? 0L;
-                    case Request<T> @internal: return Db.SQL<long>(@internal.CountQuery, @internal.SqlValues).FirstOrDefault();
-                    case var external when external.MetaConditions.Distinct != null:
-                        return external.MetaConditions.Distinct.Apply(Select(r))?.LongCount() ?? 0L;
-                    case var external when !external.Conditions.Any(): return Db.SQL<long>(COUNT).FirstOrDefault();
-                    case var external when external.Conditions.HasPost(out var _): return Select(r)?.LongCount() ?? 0L;
-                    case var external:
-                        var (whereString, values) = external.Conditions.GetSQL().MakeWhereClause();
-                        return Db.SQL<long>($"{COUNT}{whereString}", values).FirstOrDefault();
-                }
-            };
+            Count = null;
             Profile = r => ResourceProfile.Make(r, rows =>
             {
-                var resourceSQLName = typeof(T).FullName;
+                var resourceSQLName = typeof(T).RESTarTypeName();
                 var scColumns = Db.SQL<Column>(ColumnByTable, resourceSQLName).Select(c => c.Name).ToList();
-                var columns = typeof(T).GetProperties(Instance | Public).Where(p => scColumns.Contains(p.Name)).ToList();
+                var columns = r.Members.Values.Where(p => scColumns.Contains(p.Name)).ToList();
                 return rows.Sum(e => columns.Sum(p => p.ByteCount(e)) + 16);
             });
+        }
+
+        internal static bool IsValid(IEntityResource resource, out string reason)
+        {
+            if (resource.InterfaceType != null)
+            {
+                var interfaceName = resource.InterfaceType.RESTarTypeName();
+                var members = resource.InterfaceType.GetDeclaredProperties();
+                if (members.ContainsKey("objectno"))
+                {
+                    reason = $"Invalid Interface '{interfaceName}' assigned to resource '{resource.Name}'. " +
+                             "Interface contained a property with a reserved name: 'ObjectNo'";
+                    return false;
+                }
+                if (members.ContainsKey("objectid"))
+                {
+                    reason = $"Invalid Interface '{interfaceName}' assigned to resource '{resource.Name}'. " +
+                             "Interface contained a property with a reserved name: 'ObjectID'";
+                    return false;
+                }
+            }
+
+            if (resource.Type.Implements(typeof(IProfiler<>)))
+            {
+                reason = $"Invalid IProfiler interface implementation for resource type '{resource.Name}'. " +
+                         "Starcounter database resources use their default profilers, and cannot implement IProfiler";
+                return false;
+            }
+            reason = null;
+            return true;
         }
     }
 }

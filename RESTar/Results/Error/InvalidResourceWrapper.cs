@@ -2,7 +2,11 @@
 
 namespace RESTar.Results.Error
 {
-    internal class InvalidResourceWrapper : RESTarError
+    /// <inheritdoc />
+    /// <summary>
+    /// Thrown when RESTar encounters an invalid resource wrapper declaration
+    /// </summary>
+    public class InvalidResourceWrapper : RESTarError
     {
         internal InvalidResourceWrapper(string message) : base(ErrorCodes.ResourceWrapperError, message) { }
     }

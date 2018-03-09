@@ -4,7 +4,11 @@ using RESTar.Internal;
 
 namespace RESTar.Results.Error
 {
-    internal class UnsupportedContent : RESTarError
+    /// <inheritdoc />
+    /// <summary>
+    /// Thrown when RESTar encounters an unknown or unsupported media type in request contents
+    /// </summary>
+    public class UnsupportedContent : RESTarError
     {
         internal UnsupportedContent(Exception ie) : base(ErrorCodes.UnsupportedContent, ie.Message, ie)
         {
@@ -12,8 +16,9 @@ namespace RESTar.Results.Error
             StatusDescription = "Unsupported media type";
         }
 
-        internal UnsupportedContent(MimeType unsupported) : base(ErrorCodes.UnsupportedContent,
-            $"Unsupported content type: '{unsupported.TypeCodeString}'")
+        /// <inheritdoc />
+        public UnsupportedContent(string headerValue) : base(ErrorCodes.UnsupportedContent,
+            $"An unsupported media type, '{headerValue}', was specified in the Content-Type header.")
         {
             StatusCode = HttpStatusCode.UnsupportedMediaType;
             StatusDescription = "Unsupported media type";

@@ -7,11 +7,10 @@ using RESTar.Admin;
 using RESTar.Linq;
 using RESTar.Requests;
 using RESTar.Results.Error;
-using RESTar.Results.Fail.BadRequest;
-using RESTar.Results.Fail.BadRequest.Aborted;
+using RESTar.Results.Error.BadRequest;
+using RESTar.Results.Error.BadRequest.Aborted;
 using RESTar.Results.Success;
 using RESTar.Serialization;
-using static RESTar.Serialization.Serializer;
 
 namespace RESTar.Operations
 {
@@ -33,13 +32,28 @@ namespace RESTar.Operations
             }
         }
 
-        internal static IEnumerable<T> SELECT_VIEW(ViewRequest<T> request)
+        private static IEnumerable<T> SELECT_FILTER(IRequest<T> request) => request.Target
+            .Select(request)?
+            .Filter(request.MetaConditions.Distinct)
+            .Filter(request.MetaConditions.Search)
+            .Filter(request.MetaConditions.OrderBy)
+            .Filter(request.MetaConditions.Offset)
+            .Filter(request.MetaConditions.Limit);
+
+        private static IEnumerable<dynamic> SELECT_FILTER_PROCESS(IRequest<T> request) => request.Target
+            .Select(request)?
+            .Process(request.MetaConditions.Processors)
+            .Filter(request.MetaConditions.Distinct)
+            .Filter(request.MetaConditions.Search)
+            .Filter(request.MetaConditions.OrderBy)
+            .Filter(request.MetaConditions.Offset)
+            .Filter(request.MetaConditions.Limit);
+
+        private static IEnumerable<T> TRY_SELECT_FILTER(IRequest<T> request)
         {
             try
             {
-                if (!request.MetaConditions.Unsafe && request.MetaConditions.Limit == -1)
-                    request.MetaConditions.Limit = (Limit) 100;
-                return request.Target.Select(request)?.Filter(request.MetaConditions.OrderBy);
+                return SELECT_FILTER(request);
             }
             catch (Exception e)
             {
@@ -47,45 +61,13 @@ namespace RESTar.Operations
             }
         }
 
-
-        internal static IEnumerable<T> SELECT_FILTER(IRequest<T> request)
+        private static IEnumerable<dynamic> TRY_SELECT_FILTER_PROCESS(IRequest<T> request)
         {
             try
             {
-                if (!request.MetaConditions.Unsafe && request.MetaConditions.Limit == -1)
-                    request.MetaConditions.Limit = (Limit) 1000;
-                return request.Target.Select(request)?
-                    .Filter(request.MetaConditions.Search)
-                    .Filter(request.MetaConditions.OrderBy)
-                    .Filter(request.MetaConditions.Offset)
-                    .Filter(request.MetaConditions.Limit);
-            }
-            catch (Exception e)
-            {
-                throw new AbortedSelect<T>(e, request);
-            }
-        }
-
-        internal static IEnumerable<dynamic> SELECT_FILTER_PROCESS(IRequest<T> request)
-        {
-            try
-            {
-                if (!request.MetaConditions.Unsafe && request.MetaConditions.Limit == -1)
-                    request.MetaConditions.Limit = (Limit) 1000;
-                var results = request.Target.Select(request);
-                if (results == null) return null;
                 if (!request.MetaConditions.HasProcessors)
-                    return results
-                        .Filter(request.MetaConditions.Search)
-                        .Filter(request.MetaConditions.OrderBy)
-                        .Filter(request.MetaConditions.Offset)
-                        .Filter(request.MetaConditions.Limit);
-                return results
-                    .Process(request.MetaConditions.Processors)
-                    .Filter(request.MetaConditions.Search)
-                    .Filter(request.MetaConditions.OrderBy)
-                    .Filter(request.MetaConditions.Offset)
-                    .Filter(request.MetaConditions.Limit);
+                    return SELECT_FILTER(request);
+                return SELECT_FILTER_PROCESS(request);
             }
             catch (InfiniteLoop)
             {
@@ -97,11 +79,16 @@ namespace RESTar.Operations
             }
         }
 
-        internal static long OP_COUNT(IRequest<T> request)
+        internal static long TRY_COUNT(IRequest<T> request)
         {
             try
             {
-                return request.Resource.Count?.Invoke(request) ?? request.Target.Select(request)?.LongCount() ?? 0L;
+                if (request.Resource.Count is Counter<T> counter &&
+                    request.MetaConditions.CanUseExternalCounter)
+                    return counter(request);
+                if (!request.MetaConditions.HasProcessors)
+                    return SELECT_FILTER(request)?.Count() ?? 0L;
+                return SELECT_FILTER_PROCESS(request)?.Count() ?? 0L;
             }
             catch (Exception e)
             {
@@ -131,7 +118,7 @@ namespace RESTar.Operations
             {
                 request.EntitiesGenerator = () =>
                 {
-                    var entities = request.Body.DeserializeList<T>();
+                    var entities = request.Body.ToList<T>();
                     if (request.Resource.RequiresValidation)
                         entities.OfType<IValidatable>().ForEach(item => item.Validate());
                     return entities;
@@ -145,7 +132,7 @@ namespace RESTar.Operations
             }
         }
 
-        private static int INSERT(Request<T> request, Func<IEnumerable<T>> inserter)
+        private static int INSERT(IRequestInternal<T> request, Func<IEnumerable<T>> inserter)
         {
             try
             {
@@ -172,7 +159,9 @@ namespace RESTar.Operations
             {
                 request.EntitiesGenerator = () =>
                 {
-                    var result = request.Body.Deserialize<T>();
+                    var results = request.Body.ToList<T>();
+                    if (results.Count > 1) throw new InvalidInputCount();
+                    var result = results.FirstOrDefault();
                     if (result is IValidatable i) i.Validate();
                     return new[] {result};
                 };
@@ -185,7 +174,7 @@ namespace RESTar.Operations
             }
         }
 
-        private static int INSERT_ONE(Request<T> request, Func<T> inserter)
+        private static int INSERT_ONE(IRequestInternal<T> request, Func<T> inserter)
         {
             try
             {
@@ -253,7 +242,7 @@ namespace RESTar.Operations
             {
                 request.EntitiesGenerator = () =>
                 {
-                    var updatedSource = source.Populate(request.Body.GetJsonUpdateString());
+                    var updatedSource = request.Body.PopulateTo(source);
                     if (request.Resource.RequiresValidation)
                         source.OfType<IValidatable>().ForEach(item => item.Validate());
                     return updatedSource;
@@ -267,7 +256,7 @@ namespace RESTar.Operations
             }
         }
 
-        private static int UPDATE(Request<T> request, Func<IEnumerable<T>, IEnumerable<T>> updater,
+        private static int UPDATE(IRequestInternal<T> request, Func<IEnumerable<T>, IEnumerable<T>> updater,
             ICollection<T> source)
         {
             try
@@ -289,15 +278,16 @@ namespace RESTar.Operations
             }
         }
 
-        private static int UPDATE_ONE(IRequestInternal<T> request, T source)
+        private static int UPDATE_ONE(IRequestInternal<T> request, List<T> source)
         {
             try
             {
                 request.EntitiesGenerator = () =>
                 {
-                    Populate(request.Body.GetJsonUpdateString(), source);
-                    if (source is IValidatable i) i.Validate();
-                    return new[] {source};
+                    request.Body.PopulateTo(source);
+                    var item = source[0];
+                    if (item is IValidatable i) i.Validate();
+                    return source;
                 };
                 return request.Resource.Update(request);
             }
@@ -308,7 +298,7 @@ namespace RESTar.Operations
             }
         }
 
-        private static int UPDATE_ONE(Request<T> request, Func<T, T> updater, T source)
+        private static int UPDATE_ONE(IRequestInternal<T> request, Func<T, T> updater, T source)
         {
             try
             {
@@ -335,7 +325,7 @@ namespace RESTar.Operations
                 {
                     var updated = items.Select(item =>
                     {
-                        Populate(item.json, item.source);
+                        Serializers.Json.PopulateJToken(item.json, item.source);
                         return item.source;
                     }).ToList();
                     if (request.Resource.RequiresValidation)
@@ -397,18 +387,29 @@ namespace RESTar.Operations
                     case Methods.PUT: return PUT;
                     case Methods.DELETE: return DELETE;
                     case Methods.REPORT: return REPORT;
+                    case Methods.HEAD: return HEAD;
                     default: return null;
                 }
             }
 
             private static Entities GET(RESTRequest<T> request)
             {
-                return Entities.Create(request, SELECT_FILTER_PROCESS(request));
+                if (!request.MetaConditions.Unsafe && request.MetaConditions.Limit == -1)
+                    request.MetaConditions.Limit = (Limit) 1000;
+                return Entities.Create(request, TRY_SELECT_FILTER_PROCESS(request));
             }
 
             private static Report REPORT(RESTRequest<T> request)
             {
-                return new Report(OP_COUNT(request), request);
+                return new Report(request, TRY_COUNT(request));
+            }
+
+            private static Result HEAD(RESTRequest<T> request)
+            {
+                var count = TRY_COUNT(request);
+                if (count > 0)
+                    return new Head(request, count);
+                return new NoContent(request);
             }
 
             private static Result POST(RESTRequest<T> request)
@@ -419,7 +420,7 @@ namespace RESTar.Operations
 
             private static Result PATCH(RESTRequest<T> request)
             {
-                var source = SELECT_FILTER(request)?.ToList();
+                var source = TRY_SELECT_FILTER(request)?.ToList();
                 if (source?.Any() != true) return new UpdatedEntities(0, request);
                 if (!request.MetaConditions.Unsafe && source.Count > 1)
                     throw new AmbiguousMatch(request.Resource);
@@ -428,19 +429,19 @@ namespace RESTar.Operations
 
             private static Result PUT(RESTRequest<T> request)
             {
-                var source = SELECT_FILTER(request)?.ToList();
+                var source = TRY_SELECT_FILTER(request)?.ToList();
                 switch (source?.Count)
                 {
                     case null:
                     case 0: return new InsertedEntities(INSERT_ONE(request), request);
-                    case 1: return new UpdatedEntities(UPDATE_ONE(request, source[0]), request);
+                    case 1: return new UpdatedEntities(UPDATE_ONE(request, source), request);
                     default: throw new AmbiguousMatch(request.Resource);
                 }
             }
 
             private static Result DELETE(RESTRequest<T> request)
             {
-                var source = SELECT_FILTER(request);
+                var source = TRY_SELECT_FILTER(request);
                 if (source == null) return new DeletedEntities(0, request);
                 if (!request.MetaConditions.Unsafe)
                 {
@@ -464,7 +465,7 @@ namespace RESTar.Operations
                         .Split(',')
                         .Select(s => new Condition<T>(s, Operators.EQUALS, null))
                         .ToArray();
-                    foreach (var entity in request.Body.DeserializeList<JObject>())
+                    foreach (var entity in request.Body.ToList<JObject>())
                     {
                         conditions.ForEach(cond => cond.Value = cond.Term.Evaluate(entity));
                         var results = innerRequest.WithConditions(conditions).GET().ToList();
@@ -499,9 +500,9 @@ namespace RESTar.Operations
 
         internal static class View
         {
-            internal static int POST(ViewRequest<T> request) => INSERT_ONE(request);
-            internal static int PATCH(ViewRequest<T> request, T item) => UPDATE_ONE(request, item);
-            internal static int DELETE(ViewRequest<T> request, T item) => OP_DELETE_ONE(request, item);
+            //            internal static int POST(ViewRequest<T> request) => INSERT_ONE(request);
+            //            internal static int PATCH(ViewRequest<T> request, T item) => UPDATE_ONE(request, item);
+            //            internal static int DELETE(ViewRequest<T> request, T item) => OP_DELETE_ONE(request, item);
         }
 
         internal static class App

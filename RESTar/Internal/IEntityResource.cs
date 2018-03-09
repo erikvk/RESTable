@@ -2,10 +2,25 @@ using System.Collections.Generic;
 using RESTar.Admin;
 using RESTar.Deflection;
 using RESTar.Operations;
+using RESTar.Requests;
 using RESTar.Resources;
+using RESTar.WebSockets;
 
 namespace RESTar.Internal
 {
+    internal interface ITerminalResourceInternal : ITerminalResource
+    {
+        void InstantiateFor(IWebSocketInternal webSocket, IEnumerable<UriCondition> assignments = null);
+    }
+ 
+    /// <inheritdoc />
+    /// <summary>
+    /// A common non-generic interface for terminal resources
+    /// </summary>
+    public interface ITerminalResource : IResource
+    {
+    }
+
     /// <inheritdoc cref="ITarget" />
     /// <summary>
     /// The common non-generic interface for all entity resource entities used by RESTar

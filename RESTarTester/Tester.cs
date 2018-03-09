@@ -364,6 +364,10 @@ namespace RESTarTester
             var jsonResponse5format = Http.GET
                 ("http://localhost:9000/rest/resource4//add=datetime.day&select=datetime.day,datetime.month,string,string.length&order_desc=string.length&format=jsend&distinct=true");
 
+            var head = Http.CustomRESTRequest("HEAD", "http://localhost:9000/rest/resource1//distinct=true", default(string), null);
+            var report = Http.CustomRESTRequest("REPORT", "http://localhost:9000/rest/resource1//distinct=true", default(string), null);
+
+
             Debug.Assert(jsonResponse1?.IsSuccessStatusCode == true);
             Debug.Assert(jsonResponse1view?.IsSuccessStatusCode == true);
             Debug.Assert(jsonResponse2?.IsSuccessStatusCode == true);
@@ -398,12 +402,24 @@ namespace RESTarTester
                 headersDictionary: headers2);
             Debug.Assert(excelPostResponse1?.IsSuccessStatusCode == true);
 
+            var webrequest = (HttpWebRequest) WebRequest.Create("http://localhost:9000/rest/resource1");
+            webrequest.Method = "POST";
+            webrequest.ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+            using (var str = webrequest.GetRequestStream())
+            using (var stream = new MemoryStream(excelResponse1.BodyBytes))
+                stream.CopyTo(str);
+            var webResponse = (HttpWebResponse) webrequest.GetResponse();
+            string _body;
+            using (var reader = new StreamReader(webResponse.GetResponseStream()))
+                _body = reader.ReadToEnd();
+            Debug.Assert(webResponse.StatusCode < HttpStatusCode.BadRequest);
+
             #endregion
 
             #region With conditions
 
-            var conditionResponse1 = Http.GET("http://localhost:9000/rest/resource1/sbyte>0&byte!=200&datetime>2001-01-01");
-            var conditionResponse2 = Http.GET("http://localhost:9000/rest/resource2/sbyte>0&byte!=200&datetime>2001-01-01");
+            var conditionResponse1 = Http.GET("http://localhost:9000/rest/resource1/sbyte>=0&byte!=200&datetime>2001-01-01");
+            var conditionResponse2 = Http.GET("http://localhost:9000/rest/resource2/sbyte<=10&byte!=200&datetime>2001-01-01");
             var conditionResponse3 = Http.GET("http://localhost:9000/rest/resource3/sbyte>0&byte!=200&datetime>2001-01-01");
             var conditionResponse4 = Http.GET("http://localhost:9000/rest/resource4/resource1.string!=aboo&resource2!=null");
 
@@ -437,6 +453,14 @@ namespace RESTarTester
             var r2 = new Request<Resource2>();
             var r3 = new Request<Resource3>();
             var r4 = new Request<Resource4>();
+            var r6 = new Request<Aggregator>
+            {
+                Body = new
+                {
+                    A = "REPORT /resource",
+                    B = new[] {"REPORT /resource", "REPORT /resource"}
+                }
+            };
             var r5 = new Request<MyDict>();
             var cond = new Condition<MyDict>("Goo", EQUALS, false);
             r5.Conditions = new[] {cond};
@@ -447,6 +471,7 @@ namespace RESTarTester
             var res4 = r4.GET();
             var res5 = r5.GET();
             var (excel, nrOfRows) = r5.GETExcel();
+            var res6 = r6.GET();
 
             Db.TransactAsync(() =>
             {
@@ -478,6 +503,8 @@ namespace RESTarTester
                     }
                 };
             });
+            var byInternalSource = Http.POST("http://localhost:9000/rest/resource3", default(string),
+                new Dictionary<string, string> {["Source"] = "GET /resource3"});
 
             #endregion
 
@@ -660,6 +687,16 @@ namespace RESTarTester
     [Database]
     public abstract class Base { }
 
+    public enum MyEnum
+    {
+        A,
+        B,
+        C,
+        D,
+        E,
+        F
+    }
+
     [Database, RESTar]
     public class Resource1 : Base
     {
@@ -697,6 +734,11 @@ namespace RESTarTester
     [Database, RESTar]
     public class Resource2 : Base
     {
+        public MyEnum Enum => MyEnum.B;
+        public MyEnum[] Enums => new[] {MyEnum.B, MyEnum.A, MyEnum.E, MyEnum.C};
+        public DateTime[] Dts => new[] {System.DateTime.Now, System.DateTime.MaxValue, System.DateTime.MinValue};
+        public decimal[] Dcs => new[] {1M, 123.321M, 32123.123321M, -123321.12321M};
+
         public sbyte? Sbyte;
         public byte? Byte;
         public short? Short;

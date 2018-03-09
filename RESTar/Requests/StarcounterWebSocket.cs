@@ -1,20 +1,19 @@
 ﻿using System;
 using System.IO;
 using System.Text;
+using Newtonsoft.Json;
 using RESTar.Internal;
 using RESTar.Logging;
 using RESTar.Operations;
 using RESTar.Results.Error;
 using RESTar.Results.Success;
 using RESTar.Serialization;
-using RESTar.Serialization.NativeProtocol;
 using RESTar.WebSockets;
 using Starcounter;
 using static Newtonsoft.Json.Formatting;
-using static RESTar.Admin.Settings;
 using static RESTar.Logging.LogEventType;
-using static RESTar.Serialization.Serializer;
 using Console = RESTar.Admin.Console;
+using WebSocket = Starcounter.WebSocket;
 
 namespace RESTar.Requests
 {
@@ -37,7 +36,7 @@ namespace RESTar.Requests
             }
         }
 
-        public TerminalResource TerminalResource { get; set; }
+        public ITerminalResource TerminalResource { get; set; }
         public DateTime Opened { get; private set; }
         public DateTime Closed { get; private set; }
         public ulong BytesReceived { get; internal set; }
@@ -46,6 +45,15 @@ namespace RESTar.Requests
         public Headers Headers { get; }
         public WebSocketStatus Status { get; private set; }
         public ConnectionProfile GetConnectionProfile() => new ConnectionProfile(this);
+        public void SendToShell() => Shell.TerminalResource.InstantiateFor(this);
+
+        public void SendTo(ITerminalResource terminalResource)
+        {
+            if (terminalResource == null)
+                throw new ArgumentNullException(nameof(terminalResource));
+            var _terminalResource = (ITerminalResourceInternal) terminalResource;
+            _terminalResource.InstantiateFor(this);
+        }
 
         #region Interface
 
@@ -78,8 +86,10 @@ namespace RESTar.Requests
         }
 
         private bool disposed;
+
         public void Dispose()
         {
+            TcpConnection.Dispose();
             if (disposed) return;
             var terminalName = TerminalResource?.Name;
             if (!WebSocket.IsDead())
@@ -135,7 +145,7 @@ namespace RESTar.Requests
             }
         }
 
-        public void SendResult(IFinalizedResult result)
+        public void SendResult(IFinalizedResult result, bool includeStatusWithContent = true, TimeSpan? timeElapsed = null)
         {
             switch (Status)
             {
@@ -146,25 +156,33 @@ namespace RESTar.Requests
                 case var closed:
                     throw new InvalidOperationException($"Unable to send results to a WebSocket with status '{closed}'");
             }
-            switch (result)
+            if (result is WebSocketResult) return;
+
+            void sendStatus()
             {
-                case WebSocketResult _: break;
-                case Report _:
-                case Entities _:
-                    SendText(result.Body);
-                    break;
-                default:
-                    var info = result.Headers["RESTar-Info"];
-                    var errorInfo = result.Headers["ErrorInfo"];
-                    var tail = "";
-                    if (info != null)
-                        tail += $". {info}";
-                    if (errorInfo != null)
-                        tail += $" (see {errorInfo})";
-                    _SendText($"{result.StatusCode.ToCode()}: {result.StatusDescription}{tail}");
-                    break;
+                var info = result.Headers["RESTar-Info"];
+                var errorInfo = result.Headers["ErrorInfo"];
+                var timeInfo = "";
+                if (timeElapsed != null)
+                    timeInfo = $" ({timeElapsed.Value.TotalMilliseconds} ms)";
+                var tail = "";
+                if (info != null)
+                    tail += $". {info}";
+                if (errorInfo != null)
+                    tail += $" (see {errorInfo})";
+                _SendText($"{result.StatusCode.ToCode()}: {result.StatusDescription}{timeInfo}{tail}");
             }
+
+            if (result.Body != null && (!result.Body.CanSeek || result.Body.Length > 0))
+            {
+                if (includeStatusWithContent)
+                    sendStatus();
+                SendText(result.Body);
+            }
+            else sendStatus();
         }
+
+        public void SendException(Exception exception) => SendResult(RESTarError.GetError(exception));
 
         public void SendText(string data) => _SendText(data);
         public void SendText(byte[] data) => _SendBinary(data, true);
@@ -172,17 +190,13 @@ namespace RESTar.Requests
         public void SendBinary(byte[] data) => _SendBinary(data, false);
         public void SendBinary(Stream data) => _SendBinary(data.ToByteArray(), false);
 
-        public void SendJson(object item, bool? prettyPrint = null)
+        public void SendJson(object item, bool? prettyPrint = null, bool ignoreNulls = false)
         {
-            var stream = new MemoryStream();
-            using (var swr = new StreamWriter(stream, UTF8, 1024, true))
-            using (var jwr = new RESTarJsonWriter(swr, 0))
-            {
-                var _prettyPrint = prettyPrint ?? _PrettyPrint;
-                Serializer.Json.Formatting = _prettyPrint ? Indented : None;
-                Serializer.Json.Serialize(jwr, item);
-            }
-            stream.Seek(0, SeekOrigin.Begin);
+            Formatting _prettyPrint;
+            if (prettyPrint == null)
+                _prettyPrint = Admin.Settings._PrettyPrint ? Indented : None;
+            else _prettyPrint = prettyPrint.Value ? Indented : None;
+            var stream = Serializers.Json.SerializeStream(item, _prettyPrint, ignoreNulls);
             _SendBinary(stream.ToArray(), true);
         }
 

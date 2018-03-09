@@ -2,7 +2,11 @@
 
 namespace RESTar.Results.Error
 {
-    internal class NotInitialized : RESTarError
+    /// <inheritdoc />
+    /// <summary>
+    /// Thrown when RESTar receives requests or other operations before it's properly initialized
+    /// </summary>
+    public class NotInitialized : RESTarError
     {
         internal NotInitialized() : base(ErrorCodes.NotInitialized,
             "A RESTar request was created before RESTarConfig.Init() was called. Always " +

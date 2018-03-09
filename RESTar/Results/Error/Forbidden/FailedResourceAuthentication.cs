@@ -1,9 +1,15 @@
 ﻿using RESTar.Internal;
 
-namespace RESTar.Results.Fail.Forbidden
+namespace RESTar.Results.Error.Forbidden
 {
-    internal class FailedResourceAuthentication : Forbidden
+    /// <inheritdoc />
+    /// <summary>
+    /// Thrown when a request failed resource-specific authentication
+    /// search string.
+    /// </summary>
+    public class FailedResourceAuthentication : Forbidden
     {
-        public FailedResourceAuthentication(string message) : base(ErrorCodes.FailedResourceAuthentication, message) { }
+        /// <inheritdoc />
+        internal FailedResourceAuthentication(string message) : base(ErrorCodes.FailedResourceAuthentication, message) { }
     }
 }

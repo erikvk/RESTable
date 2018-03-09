@@ -3,10 +3,15 @@ using RESTar.Internal;
 
 namespace RESTar.Results.Error
 {
-    internal class NotAcceptable : RESTarError
+    /// <inheritdoc />
+    /// <summary>
+    /// Thrown when RESTar encounters an invalid or unsupported content type in the Accept header of a request.
+    /// </summary>
+    public class NotAcceptable : RESTarError
     {
-        internal NotAcceptable(MimeType unsupported) : base(ErrorCodes.NotAcceptable,
-            $"Unsupported accept format: '{unsupported.TypeCodeString}'")
+        /// <inheritdoc />
+        public NotAcceptable(string headerValue) : base(ErrorCodes.NotAcceptable,
+            $"No supported media types were found in the Accept header. Found '{headerValue}'")
         {
             StatusCode = HttpStatusCode.NotAcceptable;
             StatusDescription = "Not acceptable";

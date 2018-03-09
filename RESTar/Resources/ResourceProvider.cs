@@ -31,7 +31,8 @@ namespace RESTar.Resources
 
         /// <summary>
         /// The ReceiveClaimed method is called by RESTar once the resources provided
-        /// by this ResourceProvider have been added.
+        /// by this ResourceProvider have been added. Override this to provide additional 
+        /// logic once resources have been validated and set up.
         /// </summary>
         public virtual void ReceiveClaimed(ICollection<IEntityResource> claimedResources) { }
     }
@@ -97,13 +98,10 @@ namespace RESTar.Resources
 
         /// <summary>
         /// Override this method to add a validation step to the resource claim process. 
-        /// This validation will be run for all claimed types before their resources are 
-        /// created.
         /// </summary>
-        /// <param name="type">The type to check validity for</param>
+        /// <param name="resource">The resource to check validity for</param>
         /// <param name="reason">Return the reason for this Type not being valid</param>
-        /// <returns>True if and only if the resource type is valid</returns>
-        public virtual bool IsValid(Type type, out string reason)
+        public virtual bool IsValid(IEntityResource resource, out string reason)
         {
             reason = null;
             return true;
@@ -117,9 +115,9 @@ namespace RESTar.Resources
         {
             if (!typeof(TBase).IsAssignableFrom(type))
                 throw new InvalidResourceDeclaration(
-                    $"Invalid resource declaration for type '{type.FullName}'. Expected type to " +
-                    $"inherit from base type '{typeof(TBase).FullName}' as required by resource " +
-                    $"provider of type '{GetType().FullName}'.");
+                    $"Invalid resource declaration for type '{type.RESTarTypeName()}'. Expected type to " +
+                    $"inherit from base type '{typeof(TBase).RESTarTypeName()}' as required by resource " +
+                    $"provider of type '{GetType().RESTarTypeName()}'.");
             return type.HasAttribute(AttributeType);
         }
 
@@ -134,22 +132,22 @@ namespace RESTar.Resources
 
         internal override void MakeClaimRegular(IEnumerable<Type> types) => types.ForEach(type =>
         {
-            if (!IsValid(type, out var reason))
+            var resource = (IEntityResource) BuildRegularMethod.MakeGenericMethod(type).Invoke(this, null);
+            if (!IsValid(resource, out var reason))
                 throw new InvalidResourceDeclaration("An error was found in the declaration for resource " +
-                                                     $"type '{type.FullName}': " + reason);
-            BuildRegularMethod.MakeGenericMethod(type).Invoke(this, null);
+                                                     $"type '{type.RESTarTypeName()}': " + reason);
         });
 
         internal override void MakeClaimWrapped(IEnumerable<Type> types) => types.ForEach(type =>
         {
-            if (!IsValid(type, out var reason))
+            var resource = (IEntityResource) BuildWrapperMethod.MakeGenericMethod(type, type.GetWrappedType()).Invoke(this, null);
+            if (!IsValid(resource, out var reason))
                 throw new InvalidResourceDeclaration("An error was found in the declaration for wrapper resource " +
-                                                     $"type '{type.FullName}': " + reason);
-            BuildWrapperMethod.MakeGenericMethod(type, type.GetWrappedType()).Invoke(this, null);
+                                                     $"type '{type.RESTarTypeName()}': " + reason);
         });
 
-        private void BuildRegularResource<TResource>()
-            where TResource : class, TBase => new EntityResource<TResource>
+        private IEntityResource BuildRegularResource<TResource>()
+            where TResource : class, TBase => new Internal.EntityResource<TResource>
         (
             fullName: typeof(TResource).FullName,
             attribute: typeof(TResource).GetAttribute<RESTarAttribute>(),
@@ -164,9 +162,9 @@ namespace RESTar.Resources
             provider: this
         );
 
-        private void BuildWrapperResource<TWrapper, TWrapped>()
+        private IEntityResource BuildWrapperResource<TWrapper, TWrapped>()
             where TWrapper : ResourceWrapper<TWrapped>
-            where TWrapped : class, TBase => new EntityResource<TWrapped>
+            where TWrapped : class, TBase => new Internal.EntityResource<TWrapped>
         (
             fullName: typeof(TWrapper).FullName,
             attribute: typeof(TWrapper).GetAttribute<RESTarAttribute>(),
@@ -188,7 +186,7 @@ namespace RESTar.Resources
             if (!AttributeType.IsSubclassOf(typeof(Attribute)))
                 throw new InvalidExternalResourceProvider("Provided AttributeType is not an attribute type");
             if (!AttributeType.IsSubclassOf(typeof(ResourceProviderAttribute)))
-                throw new InvalidExternalResourceProvider($"Provided AttributeType '{AttributeType.FullName}' " +
+                throw new InvalidExternalResourceProvider($"Provided AttributeType '{AttributeType.RESTarTypeName()}' " +
                                                           $"does not inherit from RESTar.ResourceProviderAttribute");
         }
 

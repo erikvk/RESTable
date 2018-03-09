@@ -4,7 +4,11 @@ using static RESTar.RESTarConfig;
 
 namespace RESTar.Results.Success
 {
-    internal class AcceptOrigin : OK
+    /// <inheritdoc />
+    /// <summary>
+    /// Returned to the client on a successful CORS preflight
+    /// </summary>
+    public class AcceptOrigin : OK
     {
         internal AcceptOrigin(string origin, IResource resource, ITraceable trace) : base(trace)
         {

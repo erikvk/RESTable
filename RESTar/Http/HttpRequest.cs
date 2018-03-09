@@ -3,32 +3,45 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Text.RegularExpressions;
-using RESTar.Admin;
 using RESTar.Linq;
+using RESTar.Operations;
 using RESTar.Requests;
 using RESTar.Results.Error;
-using Starcounter;
 
 namespace RESTar.Http
 {
-    internal class HttpRequest
+    internal class HttpRequest : ITraceable
     {
         internal Methods Method { get; private set; }
-        internal Uri URI { get; private set; }
+        internal string URI { get; private set; }
         private Dictionary<string, string> Headers { get; }
         internal string Accept;
         internal string ContentType;
         private bool IsInternal { get; set; }
         private static readonly Regex HeaderRegex = new Regex(RegEx.RequestHeader);
         internal Stream Body;
-        internal string AuthToken;
+        
+        public string TraceId { get; }
+        public TCPConnection TcpConnection { get; }
 
-        internal HttpResponse GetResponse(ITraceable trace) => IsInternal
-            ? Internal(trace, Method, URI, AuthToken, Body, ContentType, Accept, Headers)
-            : External(trace, Method, URI, Body, ContentType, Accept, Headers);
-
-        internal HttpRequest(string uriString)
+        internal IFinalizedResult GetResponse()
         {
+            if (IsInternal)
+            {
+                Headers["Content-Type"] = ContentType;
+                Headers["Accept"] = Accept;
+                var uri = URI;
+                return RequestEvaluator
+                    .Evaluate(this, Method, ref uri, Body.ToByteArray(), new Headers(Headers))
+                    .GetFinalizedResult();
+            }
+            return External(this, Method, new Uri(URI), Body, ContentType, Accept, Headers);
+        }
+
+        internal HttpRequest(ITraceable trace, string uriString)
+        {
+            TraceId = trace.TraceId;
+            TcpConnection = trace.TcpConnection;
             Headers = new Dictionary<string, string>();
             uriString.Trim().Split(new[] {' '}, 3).ForEach((part, index) =>
             {
@@ -43,16 +56,12 @@ namespace RESTar.Http
                         if (!part.StartsWith("/"))
                         {
                             IsInternal = false;
-                            if (!Uri.TryCreate(part, UriKind.Absolute, out var uri))
-                                throw new HttpRequestException($"Invalid uri '{part}'");
-                            URI = uri;
+                            URI = part;
                         }
                         else
                         {
                             IsInternal = true;
-                            if (!Uri.TryCreate(part, UriKind.Relative, out var uri))
-                                throw new HttpRequestException($"Invalid uri '{part}'");
-                            URI = uri;
+                            URI = part;
                         }
                         break;
                     case 2:
@@ -79,51 +88,11 @@ namespace RESTar.Http
             });
         }
 
-
-        /// <summary>
-        /// Makes an internal request. Make sure to include the original Request's
-        /// AuthToken if you're sending internal RESTar requests.
-        /// </summary>
-        internal static HttpResponse Internal
-        (
-            ITraceable trace,
-            Methods method,
-            Uri relativeUri,
-            string authToken,
-            Stream body = null,
-            string contentType = null,
-            string accept = null,
-            Dictionary<string, string> headers = null
-        )
-        {
-            headers = headers ?? new Dictionary<string, string>();
-            if (contentType != null || accept != null)
-            {
-                if (contentType != null)
-                    headers["Content-Type"] = contentType;
-                if (accept != null)
-                    headers["Accept"] = accept;
-            }
-            headers["RESTar-AuthToken"] = authToken;
-            var response = Self.CustomRESTRequest
-            (
-                method: method.ToString(),
-                uri: Settings._Uri + relativeUri,
-                body: null,
-                bodyBytes: body?.ToByteArray(),
-                headersDictionary: headers,
-                port: Settings._Port
-            );
-            if (response.StatusCode == 508)
-                throw new InfiniteLoop(response.Headers["RESTar-Info"]);
-            return new HttpResponse(trace, response);
-        }
-
         /// <summary>
         /// Makes an external HTTP or HTTPS request
         /// </summary>
-        internal static HttpResponse External(ITraceable trace, Methods method, Uri uri, Stream body = null, string contentType = null,
-            string accept = null, Dictionary<string, string> headers = null)
+        private static HttpResponse External(ITraceable trace, Methods method, Uri uri, Stream body = null, string contentType = null,
+            string accept = null, IDictionary<string, string> headers = null)
         {
             return MakeExternalRequest(trace, method.ToString(), uri, body, contentType, accept, headers);
         }

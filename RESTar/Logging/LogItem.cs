@@ -8,55 +8,40 @@ namespace RESTar.Logging
     internal struct InputOutput
     {
         public string Type;
-
-        [JsonProperty(NullValueHandling = Ignore)]
         public Connection? Connection;
-
         public LogItem In;
         public LogItem Out;
+        public double ElapsedMilliseconds;
     }
 
     internal struct Connection
     {
         public string ClientIP;
 
-        [JsonProperty(NullValueHandling = Ignore)]
-        public string ProxyIP;
+        [JsonProperty(NullValueHandling = Ignore)] public string ProxyIP;
 
         public string Protocol;
         public string UserAgent;
         public DateTime? OpenedAt;
 
-        internal Connection(TCPConnection tcpConnection, bool includeTimes)
+        internal Connection(TCPConnection tcpConnection)
         {
             ClientIP = tcpConnection.ClientIP.ToString();
             ProxyIP = tcpConnection.ProxyIP?.ToString();
             Protocol = tcpConnection.HTTPS ? "HTTPS" : "HTTP";
             UserAgent = tcpConnection.UserAgent;
-            if (includeTimes)
-                OpenedAt = tcpConnection.OpenedAt;
-            else OpenedAt = null;
+            OpenedAt = tcpConnection.OpenedAt;
         }
     }
 
     internal struct LogItem
     {
-        [JsonProperty(NullValueHandling = Ignore)]
         public string Type;
-
         public string Id;
         public string Message;
-
-        [JsonProperty(NullValueHandling = Ignore)]
         public Connection? Connection;
-
-        [JsonProperty(NullValueHandling = Ignore)]
         public string Content;
-
-        [JsonProperty(NullValueHandling = Ignore)]
         public Headers CustomHeaders;
-
-        [JsonProperty(NullValueHandling = Ignore)]
         public DateTime? Time;
     }
 }

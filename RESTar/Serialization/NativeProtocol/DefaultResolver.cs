@@ -2,21 +2,48 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using Dynamit;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Serialization;
 using RESTar.Deflection.Dynamic;
+using RESTar.Linq;
 
 namespace RESTar.Serialization.NativeProtocol
 {
     internal class DefaultResolver : DefaultContractResolver
     {
+        private static readonly DDictionaryConverter DDictionaryConverter;
+        private static readonly StringEnumConverter StringEnumConverter;
+
+        static DefaultResolver()
+        {
+            DDictionaryConverter = new DDictionaryConverter();
+            StringEnumConverter = new StringEnumConverter();
+        }
+
+        protected override JsonContract CreateContract(Type objectType)
+        {
+            var contract = base.CreateContract(objectType);
+            switch (objectType)
+            {
+                case var _ when objectType.IsSubclassOf(typeof(DDictionary)):
+                    contract.Converter = DDictionaryConverter;
+                    break;
+                case var _ when objectType.IsEnum:
+                    contract.Converter = StringEnumConverter;
+                    break;
+            }
+            return contract;
+        }
+
         protected override JsonProperty CreateProperty(MemberInfo member, MemberSerialization memberSerialization)
         {
             switch (member)
             {
                 case PropertyInfo propertyInfo:
                     var property = propertyInfo.GetDeclaredProperty();
-                    if (property == null || !property.IsKey && property.Hidden)
+                    if (property == null || property.Hidden)
                         return null;
                     var p = base.CreateProperty(propertyInfo, memberSerialization);
                     p.Writable = property.Writable;
@@ -37,11 +64,12 @@ namespace RESTar.Serialization.NativeProtocol
         protected override IList<JsonProperty> CreateProperties(Type type, MemberSerialization memberSerialization)
         {
             var properties = base.CreateProperties(type, memberSerialization);
-            foreach (var specialProperty in type.GetDeclaredProperties().Values.OfType<SpecialProperty>())
-            {
-                if (specialProperty.IsKey || !specialProperty.Hidden)
-                    properties.Add(specialProperty.JsonProperty);
-            }
+            type.GetDeclaredProperties()
+                .Values
+                .OfType<SpecialProperty>()
+                .Where(p => !p.Hidden)
+                .Select(p => p.JsonProperty)
+                .ForEach(properties.Add);
             return properties;
         }
     }
