@@ -57,10 +57,10 @@ namespace RESTar.ContentTypeProviders
         }
 
         /// <inheritdoc />
-        public abstract Stream SerializeEntity<T>(T entity, IRequest request) where T : class;
+        public abstract void SerializeEntity<T>(T entity, Stream stream, IRequest request, out ulong entityCount) where T : class;
 
         /// <inheritdoc />
-        public abstract Stream SerializeCollection<T>(IEnumerable<T> entities, IRequest request, out ulong entityCount)
+        public abstract void SerializeCollection<T>(IEnumerable<T> entities, Stream stream, IRequest request, out ulong entityCount)
             where T : class;
 
         /// <inheritdoc />

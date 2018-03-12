@@ -41,32 +41,33 @@ namespace RESTar.ContentTypeProviders
         static XMLWriter()
         {
             JsonProvider = new JsonContentProvider();
-            XMLHeader = Encoding.UTF8.GetBytes("<?xml version=\"1.0\" encoding=\"utf-8\"?>");
+            XMLHeader = Encoding.UTF8.GetBytes("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n");
         }
 
         /// <inheritdoc />
-        public Stream SerializeEntity<T>(T entity, IRequest request) where T : class
+        public void SerializeEntity<T>(T entity, Stream stream, IRequest request, out ulong entityCount) where T : class
         {
-            return XmlSerializeJsonStream(JsonProvider.SerializeEntity(entity, request));
+            JsonProvider.SerializeEntity(entity, stream, request, out entityCount);
+            XmlSerializeJsonStream(stream);
         }
 
         /// <inheritdoc />
-        public Stream SerializeCollection<T>(IEnumerable<T> entities, IRequest request, out ulong entityCount) where T : class
+        public void SerializeCollection<T>(IEnumerable<T> entities, Stream stream, IRequest request, out ulong entityCount) where T : class
         {
-            return XmlSerializeJsonStream(JsonProvider.SerializeCollection(entities, request, out entityCount));
+            JsonProvider.SerializeCollection(entities, stream, request, out entityCount);
+            XmlSerializeJsonStream(stream);
         }
 
-        private static Stream XmlSerializeJsonStream(Stream jsonStream)
+        private static void XmlSerializeJsonStream(Stream stream)
         {
-            using (var streamReader = new StreamReader(jsonStream))
+            using (var streamReader = new StreamReader(stream, RESTarConfig.DefaultEncoding, false, 1024, true))
             {
                 var json = $"{{\"entity\":{streamReader.ReadToEnd()}}}";
                 var xml = JsonConvert.DeserializeXmlNode(json, "root", true);
-                var xmlStream = new MemoryStream();
-                xmlStream.Write(XMLHeader, 0, XMLHeader.Length);
-                xml.Save(xmlStream);
-                xmlStream.Seek(0, SeekOrigin.Begin);
-                return xmlStream;
+                stream.Seek(0, SeekOrigin.Begin);
+                stream.Write(XMLHeader, 0, XMLHeader.Length);
+                xml.Save(stream);
+                stream.Seek(0, SeekOrigin.Begin);
             }
         }
 

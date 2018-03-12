@@ -36,22 +36,25 @@ namespace RESTar.ContentTypeProviders
         public override string ContentDispositionFileExtension => ".xlsx";
 
         /// <inheritdoc />
-        public override Stream SerializeEntity<T>(T entity, IRequest request) => SerializeCollection(new[] {entity}, request, out var _);
+        public override void SerializeEntity<T>(T entity, Stream stream, IRequest request, out ulong entityCount) =>
+            SerializeCollection(new[] {entity}, stream, request, out entityCount);
 
         /// <inheritdoc />
-        public override Stream SerializeCollection<T>(IEnumerable<T> entities, IRequest request, out ulong entityCount)
+        public override void SerializeCollection<T>(IEnumerable<T> entities, Stream stream, IRequest request, out ulong entityCount)
         {
+            if (entities == null)
+            {
+                entityCount = 0;
+                return;
+            }
             try
             {
                 entityCount = 0;
                 var excel = entities.ToExcel(request.Resource);
                 entityCount = (ulong) (excel?.Worksheet(1)?.RowsUsed().Count() - 1 ?? 0L);
-                if (excel == null || entityCount == 0)
-                    return null;
-                var stream = new MemoryStream();
+                if (excel == null || entityCount == 0) return;
                 excel.SaveAs(stream);
                 stream.Seek(0, SeekOrigin.Begin);
-                return stream;
             }
             catch (Exception e)
             {

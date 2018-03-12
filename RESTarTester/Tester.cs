@@ -471,6 +471,7 @@ namespace RESTarTester
             var res4 = r4.GET();
             var res5 = r5.GET();
             var (excel, nrOfRows) = r5.GETExcel();
+            excel.Dispose();
             var res6 = r6.GET();
 
             Db.TransactAsync(() =>

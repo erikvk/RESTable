@@ -30,7 +30,7 @@ namespace RESTar
         ICollection<string> IRequest.Cookies { get; } = new List<string>();
         IUriParameters IRequest.UriParameters => throw new InvalidOperationException();
         IEntityResource IRequest.Resource => Resource;
-        
+
         Methods IRequest.Method => 0;
         Headers IRequest.Headers => RequestHeaders;
         string ITraceable.TraceId => null;
@@ -214,10 +214,19 @@ namespace RESTar
         /// the excel file as Stream and the number of non-header rows in the excel workbook.
         /// </summary>
         /// <returns></returns>
-        public (Stream excel, ulong nrOfRows) GETExcel()
+        public (Stream excelStream, ulong nrOfRows) GETExcel()
         {
-            var stream = Serializers.Excel.SerializeCollection(GET(), this, out var count);
-            return (stream, count);
+            var streamController = new RESTarOutputStreamController();
+            try
+            {
+                Serializers.Excel.SerializeCollection(GET(), streamController, this, out var nrOfRows);
+                return (streamController.Stream, nrOfRows);
+            }
+            catch
+            {
+                streamController.Dispose();
+                throw;
+            }
         }
 
         /// <summary>

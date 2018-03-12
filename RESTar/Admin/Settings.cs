@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System.IO;
+using System.Linq;
 using System.Runtime.Serialization;
 using RESTar.Linq;
 using RESTar.Operations;
@@ -51,7 +52,7 @@ namespace RESTar.Admin
         /// <summary>
         /// Use long running transactions instead of regular transact calls
         /// </summary>
-        [RESTarMember(ignore:true)] public bool DontUseLRT { get; set; }
+        [RESTarMember(ignore: true)] public bool DontUseLRT { get; set; }
 
         /// <summary>
         /// The line endings to use when writing JSON
@@ -73,6 +74,11 @@ namespace RESTar.Admin
         /// </summary>
         public int DaysToSaveErrors { get; private set; }
 
+        /// <summary>
+        /// The path where temporary files are created
+        /// </summary>
+        [RESTarMember(hide: true)] public string TempFilePath { get; private set; }
+
         internal static void Init(ushort port, string uri, bool viewEnabled, bool prettyPrint,
             int daysToSaveErrors, LineEndings lineEndings) => Transact.Trans(() =>
         {
@@ -84,7 +90,8 @@ namespace RESTar.Admin
                 ViewEnabled = viewEnabled,
                 PrettyPrint = prettyPrint,
                 DaysToSaveErrors = daysToSaveErrors,
-                LineEndings = lineEndings
+                LineEndings = lineEndings,
+                TempFilePath = Path.GetTempPath()
             };
         });
 

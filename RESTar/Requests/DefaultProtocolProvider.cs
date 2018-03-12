@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text.RegularExpressions;
@@ -103,24 +104,33 @@ namespace RESTar.Requests
             {
                 case Report report:
                     result.Headers["RESTar-count"] = report.ReportBody.Count.ToString();
-                    report.Body = contentTypeProvider.SerializeEntity(report.ReportBody, report.Request);
+                    report.Body = new MemoryStream();
+                    contentTypeProvider.SerializeEntity(report.ReportBody, report.Body, report.Request, out var _);
                     report.ContentType = contentTypeProvider.ContentType;
                     return report;
 
                 case Entities entities:
-                    entities.Body = contentTypeProvider.SerializeCollection(entities.Content, entities.Request, out var entityCount);
-                    if (entityCount == 0) return new NoContent(result);
-                    entities.ContentType = contentTypeProvider.ContentType;
-                    entities.Headers["RESTar-count"] = entityCount.ToString();
-                    entities.EntityCount = entityCount;
-                    if (entities.IsPaged)
+                    var streamController = new RESTarOutputStreamController();
+                    try
                     {
-                        var pager = entities.GetNextPageLink();
-                        entities.Headers["RESTar-pager"] = MakeRelativeUri(pager);
-                    }
-                    entities.SetContentDisposition(contentTypeProvider.ContentDispositionFileExtension);
-                    if (entities.ExternalDestination != null)
-                    {
+                        contentTypeProvider.SerializeCollection(entities.Content, streamController, entities.Request, out var entityCount);
+                        if (entityCount == 0)
+                        {
+                            streamController.Dispose();
+                            return new NoContent(result);
+                        }
+                        entities.Body = streamController.Stream;
+                        entities.ContentType = contentTypeProvider.ContentType;
+                        entities.Headers["RESTar-count"] = entityCount.ToString();
+                        entities.EntityCount = entityCount;
+                        if (entities.IsPaged)
+                        {
+                            var pager = entities.GetNextPageLink();
+                            entities.Headers["RESTar-pager"] = MakeRelativeUri(pager);
+                        }
+                        entities.SetContentDisposition(contentTypeProvider.ContentDispositionFileExtension);
+                        if (entities.ExternalDestination == null)
+                            return entities;
                         try
                         {
                             var request = new HttpRequest(entities, entities.ExternalDestination)
@@ -141,8 +151,12 @@ namespace RESTar.Requests
                             throw new InvalidSyntax(ErrorCodes.InvalidDestination, $"{re.Message} in the Destination header");
                         }
                     }
-                    return entities;
-
+                    catch
+                    {
+                        streamController.Dispose();
+                        entities.Body?.Dispose();
+                        throw;
+                    }
                 case RESTarError error: return error;
                 case var other: return (IFinalizedResult) other;
             }
