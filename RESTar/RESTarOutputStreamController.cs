@@ -19,11 +19,11 @@ namespace RESTar
 
         private void Swap()
         {
-            var tempFile = CreateTempFile();
             Position = 0;
-            Stream.CopyTo(tempFile, MaxMemoryContentLength);
-            Stream.Dispose();
-            Stream = tempFile;
+            var fileStream = CreateTempFile();
+            using (var memoryStream = (MemoryStream) Stream)
+                memoryStream.WriteTo(fileStream);
+            Stream = fileStream;
             Swapped = true;
         }
 
