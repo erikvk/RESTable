@@ -16,7 +16,7 @@ namespace RESTar
         string Name { get; }
 
         /// <summary>
-        /// The content type that is handled by this content type provider
+        /// The content type that is handled by this content type provider.
         /// </summary>
         /// <returns></returns>
         ContentType ContentType { get; }
