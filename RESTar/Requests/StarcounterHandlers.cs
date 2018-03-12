@@ -38,6 +38,7 @@ namespace RESTar.Requests
                             connection.WebSocketInternal.Disconnect();
                         return HandlerStatus.Handled;
                     }
+
                     return result.ToResponse();
                 }
             ));

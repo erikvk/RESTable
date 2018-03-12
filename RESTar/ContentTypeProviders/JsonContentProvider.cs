@@ -182,12 +182,15 @@ namespace RESTar.ContentTypeProviders
         }
 
         /// <inheritdoc />
-        public Stream SerializeEntity<T>(T entity, IRequest request) where T : class
+        public void SerializeEntity<T>(T entity, Stream stream, IRequest request, out ulong entityCount) where T : class
         {
-            ulong entityCount;
-            var stream = new MemoryStream();
+            if (entity == null)
+            {
+                entityCount = 0;
+                return;
+            }
             var formatter = request.MetaConditions.Formatter;
-            using (var swr = new StreamWriter(stream, UTF8, 1024, true))
+            using (var swr = new StreamWriter(stream, UTF8, 2048, true))
             using (var jwr = new RESTarJsonWriter(swr, formatter.StartIndent))
             {
                 jwr.Formatting = _PrettyPrint ? Indented : None;
@@ -197,16 +200,18 @@ namespace RESTar.ContentTypeProviders
                 swr.Write(formatter.Post);
             }
             stream.Seek(0, SeekOrigin.Begin);
-            return entityCount > 0 ? stream : null;
         }
 
         /// <inheritdoc />
-        public Stream SerializeCollection<T>(IEnumerable<T> entities, IRequest request, out ulong entityCount) where T : class
+        public void SerializeCollection<T>(IEnumerable<T> entities, Stream stream, IRequest request, out ulong entityCount) where T : class
         {
-            entityCount = 0;
-            var stream = new MemoryStream();
+            if (entities == null)
+            {
+                entityCount = 0;
+                return;
+            }
             var formatter = request.MetaConditions.Formatter;
-            using (var swr = new StreamWriter(stream, UTF8, 1024, true))
+            using (var swr = new StreamWriter(stream, UTF8, 2048, true))
             using (var jwr = new RESTarJsonWriter(swr, formatter.StartIndent))
             {
                 jwr.Formatting = _PrettyPrint ? Indented : None;
@@ -216,7 +221,6 @@ namespace RESTar.ContentTypeProviders
                 swr.Write(formatter.Post);
             }
             stream.Seek(0, SeekOrigin.Begin);
-            return entityCount > 0 ? stream : null;
         }
 
         /// <inheritdoc />

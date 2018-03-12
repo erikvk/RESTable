@@ -12,11 +12,16 @@ namespace RESTar.Serialization.NativeProtocol
         private int BaseIndentation;
         private int CurrentDepth;
         public ulong ObjectsWritten { get; private set; }
-        
+        private TextWriter Writer { get; }
+
         public override void WriteStartObject()
         {
             if (CurrentDepth == 0)
+            {
                 ObjectsWritten += 1;
+                if (ObjectsWritten % 15000 == 0)
+                    Flush();
+            }
             CurrentDepth += 1;
             base.WriteStartObject();
         }
@@ -29,6 +34,7 @@ namespace RESTar.Serialization.NativeProtocol
 
         public RESTarJsonWriter(TextWriter textWriter, int baseIndentation) : base(textWriter)
         {
+            Writer = textWriter;
             BaseIndentation = baseIndentation;
             switch (Settings._LineEndings)
             {

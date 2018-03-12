@@ -91,6 +91,7 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Admin\OutputMonitor.cs" />
     <Compile Include="Admin\Protocol.cs" />
     <Compile Include="Admin\PropertyCache.cs" />
     <Compile Include="Admin\WebSocket.cs" />
@@ -126,6 +127,7 @@
     <Compile Include="Resources\TerminalResourceProvider.cs" />
     <Compile Include="ResourceTemplates\FeedTerminal.cs" />
     <Compile Include="ResourceTemplates\OptionsTerminal.cs" />
+    <Compile Include="RESTarOutputStreamController.cs" />
     <Compile Include="Results\Error\InvalidProtocolProvider.cs" />
     <Compile Include="Results\Error\InvalidContentTypeProvider.cs" />
     <Compile Include="Results\Error\InvalidReferencedEnumDeclaration.cs" />
