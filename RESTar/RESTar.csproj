@@ -72,6 +72,9 @@
       <Private>False</Private>
     </Reference>
     <Reference Include="Starcounter.Internal, Version=2.0.0.0, Culture=neutral, PublicKeyToken=d2df1e81d0ca3abf, processorArchitecture=MSIL" />
+    <Reference Include="Starcounter.Linq, Version=1.0.0.0, Culture=neutral, processorArchitecture=AMD64">
+      <HintPath>..\packages\Mopedo.Starcounter.Linq.0.1.0\lib\net452\Starcounter.Linq.dll</HintPath>
+    </Reference>
     <Reference Include="Starcounter.Logging, Version=2.0.0.0, Culture=neutral, PublicKeyToken=d2df1e81d0ca3abf, processorArchitecture=MSIL" />
     <Reference Include="Starcounter.XSON, Version=2.0.0.0, Culture=neutral, PublicKeyToken=d2df1e81d0ca3abf, processorArchitecture=MSIL" />
     <Reference Include="System" />
@@ -119,6 +122,7 @@
     <Compile Include="Logging\HTTPEvent.cs" />
     <Compile Include="Logging\WebSocketEvent.cs" />
     <Compile Include="Operations\Search.cs" />
+    <Compile Include="NewRequest.cs" />
     <Compile Include="Requests\Body.cs" />
     <Compile Include="Requests\ConnectionId.cs" />
     <Compile Include="Requests\ITraceable.cs" />
