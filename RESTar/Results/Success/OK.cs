@@ -14,4 +14,9 @@ namespace RESTar.Results.Success
             StatusDescription = "OK";
         }
     }
+
+    internal class Valid : OK
+    {
+        public Valid(ITraceable trace) : base(trace) { }
+    }
 }

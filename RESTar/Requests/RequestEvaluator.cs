@@ -260,6 +260,22 @@ namespace RESTar.Requests
             }
         }
 
+        internal static IResult Validate(ITraceable trace, ref string uri)
+        {
+            Context context = null;
+            var isWebSocketUpgrade = trace.TcpConnection.IsWebSocketUpgrade;
+            try
+            {
+                context = new Context(OPTIONS, ref uri, null, null, trace.TcpConnection);
+                context.ThrowIfError();
+                return new Valid(trace);
+            }
+            catch (Exception e)
+            {
+                return RESTarError.GetResult(e, OPTIONS, context, trace.TcpConnection, isWebSocketUpgrade);
+            }
+        }
+
         private static IResult HandleREST<T>(IEntityResource<T> resource, Context context) where T : class
         {
             var request = new RESTRequest<T>(resource, context);

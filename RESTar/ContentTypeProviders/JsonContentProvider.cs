@@ -40,7 +40,6 @@ namespace RESTar.ContentTypeProviders
         static JsonContentProvider()
         {
             UTF8 = RESTarConfig.DefaultEncoding;
-
             Settings = new JsonSerializerSettings
             {
                 NullValueHandling = NullValueHandling.Include,
@@ -51,7 +50,7 @@ namespace RESTar.ContentTypeProviders
                 FloatParseHandling = FloatParseHandling.Decimal
             };
             Serializer = JsonSerializer.Create(Settings);
-
+            
             SettingsIgnoreNulls = new JsonSerializerSettings
             {
                 NullValueHandling = NullValueHandling.Ignore,

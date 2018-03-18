@@ -114,6 +114,7 @@ namespace RESTar
             switch (input.FirstOrDefault())
             {
                 case '\0':
+                case '\r':
                 case '\n': break;
                 case '-':
                 case '/':
@@ -281,6 +282,29 @@ namespace RESTar
                 GetNextPageLink = entitiesMetaData.GetNextPageLink;
             }
             return result;
+        }
+
+        private void ValidateNavigation()
+        {
+            //IResult Validate()
+            //{
+            //    if (Query.Length == 0) return new NoQuery(WebSocket);
+            //    var localQuery = Query;
+            //    var result = RequestEvaluator.Validate()
+            //        .Evaluate(WebSocket, method, ref localQuery, body, WebSocket.Headers)
+            //        .GetFinalizedResult();
+            //    if (result is RESTarError _ && queryChangedPreEval)
+            //        query = previousQuery;
+            //    else query = localQuery;
+            //    queryChangedPreEval = false;
+            //    if (result is IEntitiesMetadata entitiesMetaData)
+            //    {
+            //        PreviousResultMetadata = entitiesMetaData;
+            //        GetNextPageLink = entitiesMetaData.GetNextPageLink;
+            //    }
+            //    return result;
+
+            //}
         }
 
         private void SafeOperation(Methods method, byte[] body = null)

@@ -11,7 +11,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RESTarTester", "RESTarTeste
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestProject", "TestProject\TestProject.csproj", "{83B376F6-73DF-484B-9CEA-6F1722681838}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RESTarTutorial", "RESTarTutorial\RESTarTutorial.csproj", "{7E58A3E7-0D1A-46A8-8708-B652198BC8A9}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RESTarTutorial", "..\RESTar.Tutorial\RESTarTutorial\RESTarTutorial\RESTarTutorial.csproj", "{7E58A3E7-0D1A-46A8-8708-B652198BC8A9}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
