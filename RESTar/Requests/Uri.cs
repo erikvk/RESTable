@@ -52,7 +52,7 @@ namespace RESTar.Requests
             uri.ProtocolProvider = cachedProtocolProvider.ProtocolProvider;
             try
             {
-                cachedProtocolProvider.ProtocolProvider.ParseQuery(tail, uri, trace.TcpConnection);
+                cachedProtocolProvider.ProtocolProvider.ParseQuery(tail, uri, trace.Client);
             }
             catch (Exception e)
             {
@@ -63,7 +63,7 @@ namespace RESTar.Requests
 
         internal static URI Parse(string uriString)
         {
-            var uri = ParseInternal(ref uriString, false, TCPConnection.Internal, out var _, out var _);
+            var uri = ParseInternal(ref uriString, false, Client.Internal, out var _, out var _);
             if (uri.HasError) throw uri.Error;
             return uri;
         }

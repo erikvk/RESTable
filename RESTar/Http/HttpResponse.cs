@@ -23,21 +23,24 @@ namespace RESTar.Http
         public ICollection<string> Cookies { get; }
         internal bool IsSuccessStatusCode => StatusCode >= (HttpStatusCode) 200 && StatusCode < (HttpStatusCode) 300;
         public string TraceId { get; }
-        public TCPConnection TcpConnection { get; }
+        public Client Client { get; }
 
         public LogEventType LogEventType { get; } = LogEventType.HttpOutput;
         public string LogMessage => $"{StatusCode.ToCode()}: {StatusDescription} ({ContentLength} bytes)";
         public string LogContent { get; } = null;
         public string HeadersStringCache { get; set; }
         public bool ExcludeHeaders { get; }
+        public IFinalizedResult FinalizeResult() => this;
+        public DateTime LogTime { get; }
 
         private HttpResponse(ITraceable trace)
         {
             ExcludeHeaders = false;
             TraceId = trace.TraceId;
-            TcpConnection = trace.TcpConnection;
+            Client = trace.Client;
             Headers = new Headers();
             Cookies = new List<string>();
+            LogTime = DateTime.Now;
         }
 
         internal HttpResponse(ITraceable trace, HttpStatusCode statusCode, string statusDescription) : this(trace)

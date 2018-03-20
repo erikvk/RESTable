@@ -33,7 +33,7 @@ namespace RESTar.Internal
             {
                 switch (r)
                 {
-                    case Request<T> @internal:
+                    case InternalRequest<T> @internal:
                         var r1 = Db.SQL<T>(@internal.SelectQuery, @internal.SqlValues);
                         return !@internal.Conditions.HasPost(out var _post) ? r1 : r1.Where(_post);
                     case var external:

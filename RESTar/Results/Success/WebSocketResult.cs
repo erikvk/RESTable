@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using RESTar.Logging;
@@ -17,18 +18,21 @@ namespace RESTar.Results.Success
         ICollection<string> IResult.Cookies => default;
         Headers ILogable.Headers => default;
         public string TraceId { get; }
-        public TCPConnection TcpConnection { get; }
+        public Client Client { get; }
         public LogEventType LogEventType => default;
         public string LogMessage => default;
         public string LogContent => default;
         public string HeadersStringCache { get; set; }
         public bool ExcludeHeaders => default;
+        public IFinalizedResult FinalizeResult() => this;
+        public DateTime LogTime { get; }
 
         public WebSocketResult(bool leaveOpen, ITraceable trace) : this()
         {
             LeaveOpen = leaveOpen;
             TraceId = trace.TraceId;
-            TcpConnection = trace.TcpConnection;
+            Client = trace.Client;
+            LogTime = DateTime.Now;
         }
     }
 }

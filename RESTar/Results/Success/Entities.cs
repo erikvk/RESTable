@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using RESTar.Operations;
 using RESTar.Requests;
 
 namespace RESTar.Results.Success
@@ -9,12 +10,12 @@ namespace RESTar.Results.Success
     /// <summary>
     /// A result that contains a set of entities
     /// </summary>
-    public sealed class Entities : OK, IEntitiesMetadata
+    public sealed class Entities : Content, IEntitiesMetadata
     {
         /// <summary>
         /// The request that this result was generated for
         /// </summary>
-        public IRequest Request { get; private set; }
+        private IRequestInternal Request { get; set; }
 
         /// <summary>
         /// The entities contained in the result
@@ -34,7 +35,7 @@ namespace RESTar.Results.Success
         /// </summary>
         public bool IsPaged => Content != null && EntityCount > 0 && (long) EntityCount == Request.MetaConditions.Limit;
 
-        private Entities(ITraceable trace) : base(trace) { }
+        private Entities(IRequest request) : base(request) { }
 
         internal void SetContentDisposition(string extension) => Headers["Content-Disposition"] =
             $"attachment;filename={Request.Resource.Name}_{DateTime.Now:yyMMddHHmmssfff}{extension}";
@@ -57,7 +58,7 @@ namespace RESTar.Results.Success
             return existing;
         }
 
-        internal static Entities Create<T>(RESTRequest<T> request, IEnumerable<dynamic> content) where T : class => new Entities(request)
+        internal static Entities Create<T>(IRequestInternal<T> request, IEnumerable<dynamic> content) where T : class => new Entities(request)
         {
             Content = content,
             Request = request,

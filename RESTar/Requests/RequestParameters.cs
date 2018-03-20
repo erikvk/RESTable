@@ -40,11 +40,10 @@ namespace RESTar.Requests
     /// <inheritdoc cref="ILogable" />
     /// <inheritdoc cref="ITraceable" />
     /// <summary>
-    /// A RESTar class that defines the arguments that are used when creating a RESTar request to evaluate 
-    /// an incoming call. Arguments is a unified way to talk about the input to request evaluation, 
-    /// regardless of protocol and web technologies.
+    /// A class that defines the parameters of a call to a RESTar API. APICall is a unified 
+    /// way to talk about the input to request evaluation, regardless of protocol and web technologies.
     /// </summary>
-    public class Context : ILogable, ITraceable
+    public class RequestParameters : ILogable, ITraceable
     {
         /// <summary>
         /// The method to perform
@@ -62,7 +61,7 @@ namespace RESTar.Requests
         internal IResource IResource => iresource ?? (iresource = Resource.Find(Uri.ResourceSpecifier));
 
         /// <inheritdoc />
-        public TCPConnection TcpConnection { get; }
+        public Client Client { get; }
 
         /// <summary>
         /// The body as byte array
@@ -117,12 +116,20 @@ namespace RESTar.Requests
         }
 
         /// <inheritdoc />
+        public DateTime LogTime { get; } = DateTime.Now;
+
+        /// <inheritdoc />
         public string HeadersStringCache { get; set; }
 
-        internal void ThrowIfError()
-        {
-            if (Error != null) throw Error;
-        }
+        /// <summary>
+        /// Are these request parameters valid?
+        /// </summary>
+        public bool IsValid => Error == null;
+
+        /// <summary>
+        /// Has the client requested a WebSocket upgrade for this request?
+        /// </summary>
+        public bool IsWebSocketUpgrade { get; }
 
         private static bool PercentCharsEscaped(IDictionary<string, string> headers)
         {
@@ -134,11 +141,14 @@ namespace RESTar.Requests
             return uriKey != null ? HttpUtility.UrlDecode(uriKey).Substring(1, uriKey.Length - 2) : null;
         }
 
-        internal Context(Methods method, ref string uri, byte[] body, Headers headers, ITraceable trace)
+        internal RequestParameters(ITraceable trace, Methods method, ref string uri, byte[] body, Headers headers)
         {
             TraceId = trace.TraceId;
             Method = method;
             Headers = headers ?? new Headers();
+            Client = trace.Client;
+            IsWebSocketUpgrade = Client.WebSocket?.Status == WebSocketStatus.Waiting;
+
             Uri = URI.ParseInternal(ref uri, PercentCharsEscaped(headers), trace, out var key, out var cachedProtocolProvider);
             var hasMacro = Uri?.Macro != null;
 
@@ -161,7 +171,6 @@ namespace RESTar.Requests
             if (key != null)
                 Headers["Authorization"] = $"apikey {UnpackUriKey(key)}";
             UnparsedUri = uri;
-            TcpConnection = trace.TcpConnection;
             var contentType = ContentType.ParseInput(Headers["Content-Type"]);
             var accepts = ContentType.ParseManyOutput(Headers["Accept"]);
 

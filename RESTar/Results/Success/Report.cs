@@ -1,4 +1,8 @@
-﻿namespace RESTar.Results.Success
+﻿using System;
+using RESTar.Operations;
+using RESTar.Results.Error;
+
+namespace RESTar.Results.Success
 {
     internal class ReportBody
     {
@@ -7,14 +11,50 @@
 
     /// <inheritdoc />
     /// <summary>
+    /// A 200 result that encodes a content
+    /// </summary>
+    public class Content : OK
+    {
+        /// <summary>
+        /// The request that requested this content
+        /// </summary>
+        public IRequest Request => RequestInternal;
+
+        private IRequestInternal RequestInternal { get; }
+
+        /// <inheritdoc />
+        public Content(IRequest request) : base(request) => RequestInternal = (IRequestInternal) request;
+
+        /// <inheritdoc />
+        public override IFinalizedResult FinalizeResult()
+        {
+            try
+            {
+                return RequestInternal
+                    .RequestParameters
+                    .CachedProtocolProvider
+                    .ProtocolProvider
+                    .FinalizeResult(this, RequestInternal
+                        .RequestParameters
+                        .OutputContentTypeProvider);
+            }
+            catch (Exception exs)
+            {
+                return RequestInternal.HandleError(exs);
+            }
+        }
+    }
+
+    /// <inheritdoc />
+    /// <summary>
     /// Returned to the client on successful REPORT requests
     /// </summary>
-    public class Report : OK
+    public class Report : Content
     {
-        internal IRequest Request { get; }
+        internal IRequestInternal Request { get; }
         internal ReportBody ReportBody { get; }
 
-        internal Report(IRequest request, long count) : base(request)
+        internal Report(IRequestInternal request, long count) : base(request)
         {
             Request = request;
             ReportBody = new ReportBody {Count = count};

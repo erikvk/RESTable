@@ -1,11 +1,21 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using RESTar.Internal;
+using RESTar.Logging;
+using RESTar.Operations;
 using RESTar.Requests;
 
 namespace RESTar
 {
-    internal interface IRequestInternal<T> : IRequest<T> where T : class
+    internal interface IRequestInternal : IRequest
+    {
+        string Destination { get; }
+        RequestParameters RequestParameters { get; }
+        IFinalizedResult HandleError(Exception exception);
+    }
+
+    internal interface IRequestInternal<T> : IRequestInternal, IRequest<T> where T : class
     {
         Func<IEnumerable<T>> EntitiesGenerator { set; }
     }
@@ -25,7 +35,7 @@ namespace RESTar
         /// <summary>
         /// The conditions of the request
         /// </summary>
-        Condition<T>[] Conditions { get; }
+        Condition<T>[] Conditions { get; set; }
 
         /// <summary>
         /// The target to use when binding conditions and selecting entities for this request
@@ -42,11 +52,13 @@ namespace RESTar
         IEnumerable<T> GetEntities();
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc cref="ITraceable" />
+    /// <inheritdoc cref="IDisposable" />
+    /// <inheritdoc cref="ILogable" />
     /// <summary>
     /// A non-generic common interface for all request classes used in RESTar
     /// </summary>
-    public interface IRequest : ITraceable
+    public interface IRequest : ITraceable, ILogable
     {
         /// <summary>
         /// The method of the request
@@ -66,13 +78,7 @@ namespace RESTar
         /// <summary>
         /// Gets the request body
         /// </summary>
-        Body Body { get; }
-
-        /// <summary>
-        /// The headers included in the request. Headers reserved by RESTar,
-        /// for example the Source header, will not be included here.
-        /// </summary>
-        Headers Headers { get; }
+        Body Body { get; set; }
 
         /// <summary>
         /// To include additional HTTP headers in the response, add them to 
@@ -93,5 +99,15 @@ namespace RESTar
         /// The URI parameters that was used to construct this request
         /// </summary>
         IUriParameters UriParameters { get; }
+
+        /// <summary>
+        /// Gets the result of the request
+        /// </summary>
+        IResult GetResult();
+
+        /// <summary>
+        /// Is this request valid?
+        /// </summary>
+        bool IsValid { get; }
     }
 }

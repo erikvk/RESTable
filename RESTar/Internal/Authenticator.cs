@@ -38,8 +38,6 @@ namespace RESTar.Internal
                 throw new UserNotSignedIn();
         }
 
-
-
         internal static void RunResourceAuthentication<T>(this IRequest<T> request) where T : class
         {
             if (!request.Resource.RequiresAuthentication) return;
@@ -48,21 +46,28 @@ namespace RESTar.Internal
                 throw new FailedResourceAuthentication(authResults.Reason);
         }
 
-        internal static void Authenticate(this Context context)
+        internal static void Authenticate(this RequestParameters requestParameters)
         {
-            context.TcpConnection.AuthToken = GetAuthToken(context);
-            if (context.TcpConnection.AuthToken == null)
-                context.Error = new NotAuthorized();
+            requestParameters.Client.AuthToken = GetAuthToken(requestParameters);
+            if (requestParameters.Client.AuthToken == null)
+                requestParameters.Error = new NotAuthorized();
         }
 
-        private static string GetAuthToken(Context context)
+        internal static string CloneAuthToken(string authToken)
+        {
+            if (authToken != null && AuthTokens.TryGetValue(authToken, out var accessRights))
+                return NewAuthToken(accessRights);
+            return null;
+        }
+
+        private static string GetAuthToken(RequestParameters requestParameters)
         {
             if (!RequireApiKey)
                 return NewRootToken();
-            if (context.TcpConnection.AuthToken is string existing)
-                return AuthTokens.TryGetValue(existing, out _) ? existing : null;
+            if (requestParameters.Client.AuthToken is string existing)
+                return AuthTokens.ContainsKey(existing) ? existing : null;
 
-            var authorizationHeader = context.Headers.SafeGet("Authorization");
+            var authorizationHeader = requestParameters.Headers.SafeGet("Authorization");
             if (string.IsNullOrWhiteSpace(authorizationHeader)) return null;
             var (method, key) = authorizationHeader.TSplit(' ');
             if (key == null) return null;
@@ -77,7 +82,7 @@ namespace RESTar.Internal
             }
             if (!ApiKeys.TryGetValue(key.SHA256(), out var accessRights))
                 return null;
-            context.Headers["Authorization"] = "*******";
+            requestParameters.Headers["Authorization"] = "*******";
             return NewAuthToken(accessRights);
         }
 

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using RESTar.Logging;
@@ -27,6 +28,9 @@ namespace RESTar.Operations
         /// <inheritdoc />
         public ICollection<string> Cookies { get; internal set; }
 
+        /// <inheritdoc />
+        public virtual IFinalizedResult FinalizeResult() => this;
+
         #endregion
 
         #region Finalized
@@ -54,7 +58,7 @@ namespace RESTar.Operations
         public string LogContent { get; } = null;
 
         /// <inheritdoc />
-        public TCPConnection TcpConnection { get; }
+        public Client Client { get; }
 
         /// <inheritdoc />
         public string HeadersStringCache { get; set; }
@@ -62,13 +66,16 @@ namespace RESTar.Operations
         /// <inheritdoc />
         public bool ExcludeHeaders { get; }
 
+        /// <inheritdoc />
+        public DateTime LogTime { get; } = DateTime.Now;
+
         #endregion
 
         internal Result(ITraceable trace)
         {
             Headers = new Headers();
             ExcludeHeaders = false;
-            TcpConnection = trace.TcpConnection;
+            Client = trace.Client;
             TraceId = trace.TraceId;
         }
     }

@@ -13,6 +13,6 @@
         /// <summary>
         /// The initial TCP connection
         /// </summary>
-        TCPConnection TcpConnection { get; }
+        Client Client { get; }
     }
 }

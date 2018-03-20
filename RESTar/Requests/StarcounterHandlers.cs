@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -19,29 +20,46 @@ namespace RESTar.Requests
 
         internal static void RegisterRESTHandlers()
         {
-            EnumMember<Methods>.Values.ForEach(method => Handle.CUSTOM
+            RESTarConfig.Methods.ForEach(method => Handle.CUSTOM
             (
                 port: _Port,
                 methodSpaceUri: $"{method} {_Uri}{{?}}",
-                handler: (Request request, string query) =>
+                handler: (Starcounter.Request scRequest, string query) =>
                 {
-                    var connection = GetTCPConnection(request);
-                    var headers = new Headers(request.HeadersDictionary);
-                    if (request.WebSocketUpgrade)
-                        connection.WebSocket = new StarcounterWebSocket(WsGroupName, request, headers, connection);
-                    var result = RequestEvaluator
-                        .Evaluate(connection, method, ref query, request.BodyBytes, headers)
-                        .GetFinalizedResult();
-                    if (result is WebSocketResult webSocketResult)
+                    using (var client = GetClient(scRequest))
                     {
-                        if (!webSocketResult.LeaveOpen)
-                            connection.WebSocketInternal.Disconnect();
-                        return HandlerStatus.Handled;
+                        var headers = new Headers(scRequest.HeadersDictionary);
+                        if (scRequest.WebSocketUpgrade)
+                            client.WebSocket = new StarcounterWebSocket(WsGroupName, scRequest, headers, client);
+                        var stopwatch = Stopwatch.StartNew();
+                        var request = Request.Create(client, method, ref query, scRequest.BodyBytes, headers);
+                        var result = request.GetResult().FinalizeResult();
+                        stopwatch.Stop();
+                        if (result is WebSocketResult webSocketResult)
+                        {
+                            if (!webSocketResult.LeaveOpen)
+                                client.WebSocketInternal.Disconnect();
+                            return HandlerStatus.Handled;
+                        }
+                        Admin.Console.Log(request, result, stopwatch.Elapsed.TotalMilliseconds);
+                        return result.ToResponse();
                     }
-
-                    return result.ToResponse();
                 }
             ));
+
+            Handle.OPTIONS
+            (
+                port: _Port,
+                uriTemplate: $"{_Uri}{{?}}",
+                handler: (Starcounter.Request scRequest, string query) =>
+                {
+                    using (var client = GetClient(scRequest))
+                    {
+                        var headers = new Headers(scRequest.HeadersDictionary);
+                        return Request.CheckOrigin(client, ref query, headers).ToResponse();
+                    }
+                }
+            );
 
             Handle.WebSocket(_Port, WsGroupName, (text, ws) =>
             {
@@ -118,24 +136,23 @@ namespace RESTar.Requests
             return response;
         }
 
-        private static TCPConnection GetTCPConnection(Request request)
+        private static Client GetClient(Starcounter.Request request)
         {
-            var tcpConnection = new TCPConnection(origin: request.IsExternal ? OriginType.External : OriginType.Internal)
+            var clientIP = request.ClientIpAddress;
+            var proxyIP = default(IPAddress);
+            var host = request.Host;
+            var userAgent = request.Headers["User-Agent"];
+            var https = false;
+            if (request.HeadersDictionary != null)
             {
-                Host = request.Host,
-                ClientIP = request.ClientIpAddress,
-                UserAgent = request.Headers["User-Agent"]
-            };
-            if (tcpConnection.IsExternal && request.HeadersDictionary != null)
-            {
-                tcpConnection.HTTPS = request.HeadersDictionary.ContainsKey("X-ARR-SSL") || request.HeadersDictionary.ContainsKey("X-HTTPS");
+                https = request.HeadersDictionary.ContainsKey("X-ARR-SSL") || request.HeadersDictionary.ContainsKey("X-HTTPS");
                 if (request.HeadersDictionary.TryGetValue("X-Forwarded-For", out var ip))
                 {
-                    tcpConnection.ClientIP = IPAddress.Parse(ip.Split(':')[0]);
-                    tcpConnection.ProxyIP = request.ClientIpAddress;
+                    clientIP = IPAddress.Parse(ip.Split(':')[0]);
+                    proxyIP = request.ClientIpAddress;
                 }
             }
-            return tcpConnection;
+            return Client.External(clientIP, proxyIP, userAgent, host, https);
         }
 
         internal static void UnregisterRESTHandlers()

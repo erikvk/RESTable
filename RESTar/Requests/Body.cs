@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using RESTar.Serialization;
 
 namespace RESTar.Requests
 {
@@ -7,7 +8,6 @@ namespace RESTar.Requests
     /// </summary>
     public struct Body
     {
-        private ContentType ContentType { get; }
         private IContentTypeProvider ContentTypeProvider { get; }
 
         /// <summary>
@@ -32,10 +32,20 @@ namespace RESTar.Requests
 
         internal Body(byte[] bytes, ContentType contentType, IContentTypeProvider contentTypeProvider)
         {
-            ContentType = contentType;
             ContentTypeProvider = contentTypeProvider;
             Bytes = bytes;
             HasContent = bytes?.Length > 0;
+        }
+
+        /// <summary>
+        /// Creates a new Body instance from a JSON serializable .NET object.
+        /// </summary>
+        /// <param name="content"></param>
+        public Body(object content)
+        {
+            Bytes = content != null ? Serializers.Json.SerializeToBytes(content) : new byte[0];
+            ContentTypeProvider = Serializers.Json;
+            HasContent = Bytes?.Length > 0;
         }
     }
 }

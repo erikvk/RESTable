@@ -72,12 +72,7 @@ namespace RESTar.Admin
                                 ElapsedMilliseconds = milliseconds
                             };
                             if (c.IncludeConnection)
-                                item.Connection = new Connection(initial.TcpConnection);
-                            else
-                            {
-                                item.In.Time = initial.TcpConnection.OpenedAt;
-                                item.Out.Time = initial.TcpConnection.ClosedAt;
-                            }
+                                item.ClientInfo = new ClientInfo(initial.Client);
                             if (c.IncludeHeaders)
                             {
                                 if (!initial.ExcludeHeaders)
@@ -121,8 +116,8 @@ namespace RESTar.Admin
                                 Message = logable.LogMessage
                             };
                             if (c.IncludeConnection)
-                                item.Connection = new Connection(logable.TcpConnection);
-                            else item.Time = logable.TcpConnection.OpenedAt;
+                                item.Client = new ClientInfo(logable.Client);
+                            else item.Time = logable.LogTime;
                             if (c.IncludeHeaders && !logable.ExcludeHeaders)
                                 item.CustomHeaders = logable.Headers;
                             if (c.IncludeContent)
@@ -144,7 +139,7 @@ namespace RESTar.Admin
             if (IncludeConnection)
             {
                 builder.Append(connection);
-                builder.Append(logable.TcpConnection.ClientIP);
+                builder.Append(logable.Client.ClientIP);
             }
             if (IncludeHeaders && !logable.ExcludeHeaders)
             {
@@ -167,8 +162,8 @@ namespace RESTar.Admin
             {
                 builder1.Append(connection);
                 builder2.Append(connection);
-                builder1.Append(logable1.TcpConnection.ClientIP);
-                builder2.Append(logable2.TcpConnection.ClientIP);
+                builder1.Append(logable1.Client.ClientIP);
+                builder2.Append(logable2.Client.ClientIP);
             }
             if (IncludeHeaders)
             {

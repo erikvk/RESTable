@@ -25,6 +25,11 @@ namespace RESTar.Operations
         /// The cookies to set in the response
         /// </summary>
         ICollection<string> Cookies { get; }
+
+        /// <summary>
+        /// Finalizes the result and prepares output streams and content types
+        /// </summary>
+        IFinalizedResult FinalizeResult();
     }
 
     /// <inheritdoc />

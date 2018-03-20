@@ -46,7 +46,7 @@ namespace RESTar
         HEAD,
 
         /// <summary>
-        /// Used by RESTar internally and for CORS preflight requests. Cannot be assigned to RESTarAttributes
+        /// Used by RESTar internally and for CORS preflight requests. Should not be assigned to RESTarAttributes
         /// </summary>
         OPTIONS
     }

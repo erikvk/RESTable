@@ -377,7 +377,7 @@ namespace RESTar.Operations
 
         internal static class REST
         {
-            internal static Func<RESTRequest<T>, Result> GetEvaluator(Methods method)
+            internal static Func<IRequestInternal<T>, Result> GetEvaluator(Methods method)
             {
                 switch (method)
                 {
@@ -392,19 +392,19 @@ namespace RESTar.Operations
                 }
             }
 
-            private static Entities GET(RESTRequest<T> request)
+            private static Entities GET(IRequestInternal<T> request)
             {
                 if (!request.MetaConditions.Unsafe && request.MetaConditions.Limit == -1)
                     request.MetaConditions.Limit = (Limit) 1000;
                 return Entities.Create(request, TRY_SELECT_FILTER_PROCESS(request));
             }
 
-            private static Report REPORT(RESTRequest<T> request)
+            private static Report REPORT(IRequestInternal<T> request)
             {
                 return new Report(request, TRY_COUNT(request));
             }
 
-            private static Result HEAD(RESTRequest<T> request)
+            private static Result HEAD(IRequestInternal<T> request)
             {
                 var count = TRY_COUNT(request);
                 if (count > 0)
@@ -412,13 +412,13 @@ namespace RESTar.Operations
                 return new NoContent(request);
             }
 
-            private static Result POST(RESTRequest<T> request)
+            private static Result POST(IRequestInternal<T> request)
             {
                 if (request.MetaConditions.SafePost != null) return SafePOST(request);
                 return new InsertedEntities(INSERT(request), request);
             }
 
-            private static Result PATCH(RESTRequest<T> request)
+            private static Result PATCH(IRequestInternal<T> request)
             {
                 var source = TRY_SELECT_FILTER(request)?.ToList();
                 if (source?.Any() != true) return new UpdatedEntities(0, request);
@@ -427,7 +427,7 @@ namespace RESTar.Operations
                 return new UpdatedEntities(UPDATE(request, source), request);
             }
 
-            private static Result PUT(RESTRequest<T> request)
+            private static Result PUT(IRequestInternal<T> request)
             {
                 var source = TRY_SELECT_FILTER(request)?.ToList();
                 switch (source?.Count)
@@ -439,7 +439,7 @@ namespace RESTar.Operations
                 }
             }
 
-            private static Result DELETE(RESTRequest<T> request)
+            private static Result DELETE(IRequestInternal<T> request)
             {
                 var source = TRY_SELECT_FILTER(request);
                 if (source == null) return new DeletedEntities(0, request);
@@ -453,10 +453,10 @@ namespace RESTar.Operations
                 return new DeletedEntities(OP_DELETE(request, source), request);
             }
 
-            private static (Request<T> InnerRequest, JArray ToInsert, IList<(JObject json, T source)> ToUpdate)
-                GetSafePostTasks(RESTRequest<T> request)
+            private static (InternalRequest<T> InnerRequest, JArray ToInsert, IList<(JObject json, T source)> ToUpdate)
+                GetSafePostTasks(IRequestInternal<T> request)
             {
-                var innerRequest = new Request<T>();
+                var innerRequest = new InternalRequest<T>();
                 var toInsert = new JArray();
                 var toUpdate = new List<(JObject json, T source)>();
                 try
@@ -488,7 +488,7 @@ namespace RESTar.Operations
                 }
             }
 
-            private static Result SafePOST(RESTRequest<T> request)
+            private static Result SafePOST(IRequestInternal<T> request)
             {
                 var (innerRequest, toInsert, toUpdate) = GetSafePostTasks(request);
                 var (updatedCount, insertedCount) = (0, 0);
@@ -507,41 +507,41 @@ namespace RESTar.Operations
 
         internal static class App
         {
-            internal static int POST(Func<T> inserter, Request<T> request) => INSERT_ONE(request, inserter);
-            internal static int POST(Func<IEnumerable<T>> inserter, Request<T> request) => INSERT(request, inserter);
-            internal static int PATCH(Func<T, T> updater, T source, Request<T> request) => UPDATE_ONE(request, updater, source);
+            internal static int POST(Func<T> inserter, InternalRequest<T> internalRequest) => INSERT_ONE(internalRequest, inserter);
+            internal static int POST(Func<IEnumerable<T>> inserter, InternalRequest<T> internalRequest) => INSERT(internalRequest, inserter);
+            internal static int PATCH(Func<T, T> updater, T source, InternalRequest<T> internalRequest) => UPDATE_ONE(internalRequest, updater, source);
 
-            internal static int PATCH(Func<IEnumerable<T>, IEnumerable<T>> updater, ICollection<T> source, Request<T> request)
-                => UPDATE(request, updater, source);
+            internal static int PATCH(Func<IEnumerable<T>, IEnumerable<T>> updater, ICollection<T> source, InternalRequest<T> internalRequest)
+                => UPDATE(internalRequest, updater, source);
 
-            internal static int PUT(Func<T> inserter, IEnumerable<T> source, Request<T> request)
+            internal static int PUT(Func<T> inserter, IEnumerable<T> source, InternalRequest<T> internalRequest)
             {
                 var list = source?.ToList();
                 switch (list?.Count)
                 {
                     case null:
-                    case 0: return INSERT_ONE(request, inserter);
+                    case 0: return INSERT_ONE(internalRequest, inserter);
                     case 1: return 0;
-                    default: throw new AmbiguousMatch(request.Resource);
+                    default: throw new AmbiguousMatch(internalRequest.Resource);
                 }
             }
 
             internal static int PUT(Func<T> inserter, Func<T, T> updater, IEnumerable<T> source,
-                Request<T> request)
+                InternalRequest<T> internalRequest)
             {
                 var list = source?.ToList();
                 switch (list?.Count)
                 {
                     case null:
-                    case 0: return INSERT_ONE(request, inserter);
-                    case 1: return UPDATE_ONE(request, updater, list[0]);
-                    default: throw new AmbiguousMatch(request.Resource);
+                    case 0: return INSERT_ONE(internalRequest, inserter);
+                    case 1: return UPDATE_ONE(internalRequest, updater, list[0]);
+                    default: throw new AmbiguousMatch(internalRequest.Resource);
                 }
             }
 
-            internal static int DELETE(T item, Request<T> request) => OP_DELETE_ONE(request, item);
+            internal static int DELETE(T item, InternalRequest<T> internalRequest) => OP_DELETE_ONE(internalRequest, item);
 
-            internal static int DELETE(IEnumerable<T> items, Request<T> request) => OP_DELETE(request, items);
+            internal static int DELETE(IEnumerable<T> items, InternalRequest<T> internalRequest) => OP_DELETE(internalRequest, items);
         }
     }
 }

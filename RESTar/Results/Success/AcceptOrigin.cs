@@ -10,10 +10,10 @@ namespace RESTar.Results.Success
     /// </summary>
     public class AcceptOrigin : OK
     {
-        internal AcceptOrigin(string origin, IResource resource, ITraceable trace) : base(trace)
+        internal AcceptOrigin(string origin, RequestParameters parameters) : base(parameters)
         {
             Headers["Access-Control-Allow-Origin"] = AllowAllOrigins ? "*" : origin;
-            Headers["Access-Control-Allow-Methods"] = string.Join(", ", resource.AvailableMethods);
+            Headers["Access-Control-Allow-Methods"] = string.Join(", ", parameters.IResource.AvailableMethods);
             Headers["Access-Control-Max-Age"] = "120";
             Headers["Access-Control-Allow-Credentials"] = "true";
             Headers["Access-Control-Allow-Headers"] = "origin, content-type, accept, authorization, source, destination";

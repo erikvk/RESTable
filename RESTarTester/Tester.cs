@@ -1,4 +1,5 @@
-﻿using System;
+﻿#if RELEASE
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -432,7 +433,7 @@ namespace RESTarTester
 
             #region Internal requests
 
-            var g = new Request<MyDict>().POST(() =>
+            var g = new OldRequest<MyDict>().POST(() =>
             {
                 dynamic d = new MyDict();
                 d.Hej = "123";
@@ -449,11 +450,11 @@ namespace RESTarTester
                 return new MyDict[] {d, v, x};
             });
 
-            var r1 = new Request<Resource1>(new Condition<Resource1>(nameof(Resource1.Sbyte), GREATER_THAN, 1));
-            var r2 = new Request<Resource2>();
-            var r3 = new Request<Resource3>();
-            var r4 = new Request<Resource4>();
-            var r6 = new Request<Aggregator>
+            var r1 = new OldRequest<Resource1>(new Condition<Resource1>(nameof(Resource1.Sbyte), GREATER_THAN, 1));
+            var r2 = new OldRequest<Resource2>();
+            var r3 = new OldRequest<Resource3>();
+            var r4 = new OldRequest<Resource4>();
+            var r6 = new OldRequest<Aggregator>
             {
                 Body = new
                 {
@@ -461,7 +462,7 @@ namespace RESTarTester
                     B = new[] {"REPORT /resource", "REPORT /resource"}
                 }
             };
-            var r5 = new Request<MyDict>();
+            var r5 = new OldRequest<MyDict>();
             var cond = new Condition<MyDict>("Goo", EQUALS, false);
             r5.Conditions = new[] {cond};
 
@@ -798,3 +799,5 @@ namespace RESTarTester
         public Resource2 Resource2;
     }
 }
+
+#endif

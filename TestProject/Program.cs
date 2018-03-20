@@ -11,15 +11,6 @@ namespace TestProject
         public static void Main()
         {
             RESTarConfig.Init();
-
-            var request = new Request<DbCustomer>
-                {Conditions = new[] {new Condition<DbCustomer>("Name", Operators.EQUALS, "Foo")}};
-
-            var customers = request.GET();
-
-            var s = request
-                .WithConditions("Name", Operators.EQUALS, "SomeName")
-                .GET();
         }
 
         public interface IDbCustomerInterface

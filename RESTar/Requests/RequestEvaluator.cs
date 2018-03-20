@@ -151,129 +151,129 @@ namespace RESTar.Requests
         /// <param name="body">The body of the request (can be null)</param>
         /// <param name="headers">The headers of the request (can be null)</param>
         /// <returns></returns>
-        public static (Func<IResult> GetRawResult, Func<IFinalizedResult> GetFinalizedResult) Evaluate(ITraceable trace, Methods method, ref string uri,
-            byte[] body = null, Headers headers = null)
-        {
-            if (uri == null) throw new MissingUri();
-            var stopwatch = Stopwatch.StartNew();
-            var tcpConnection = trace?.TcpConnection ?? throw new Untraceable();
+        // public static (Func<IResult> GetRawResult, Func<IFinalizedResult> GetFinalizedResult) Evaluate(ITraceable trace, Methods method, ref string uri,
+        //     byte[] body = null, Headers headers = null)
+        // {
+        //     if (uri == null) throw new MissingUri();
+        //     var stopwatch = Stopwatch.StartNew();
+        //     var tcpConnection = trace?.Client ?? throw new Untraceable();
+        // 
+        //     var result = RunEvaluation
+        //     (
+        //         method: method,
+        //         uri: ref uri,
+        //         body: body,
+        //         headers: headers ?? new Headers(),
+        //         client: tcpConnection,
+        //         isWebSocketUpgrade: out var isWebSocketUpgrade,
+        //         requestParameters: out var context
+        //     );
+        // 
+        //     if (result is InfiniteLoop loop) throw loop;
+        //     var logged = false;
+        // 
+        //     void post(ILogable tolog)
+        //     {
+        //         if (tcpConnection.StackDepth == 0 && !tcpConnection.HasWebSocket)
+        //             tcpConnection.Dispose();
+        //         stopwatch.Stop();
+        //         if (logged) return;
+        //         if (!trace.Client.IsInShell)
+        //             Console.Log(context, tolog, stopwatch.Elapsed.TotalMilliseconds);
+        //         logged = true;
+        //     }
+        // 
+        //     return
+        //     (
+        //         GetRawResult: () =>
+        //         {
+        //             post(result);
+        //             return result;
+        //         },
+        //         GetFinalizedResult: () =>
+        //         {
+        //             IFinalizedResult finalized;
+        //             try
+        //             {
+        //                 finalized = context.ResultFinalizer(result, context.OutputContentTypeProvider);
+        //             }
+        //             catch (Exception exs)
+        //             {
+        //                 finalized = RESTarError.GetResult(exs, method, context, trace.Client, isWebSocketUpgrade);
+        //             }
+        //             post(finalized);
+        //             return finalized;
+        //         }
+        //     );
+        // }
 
-            var result = RunEvaluation
-            (
-                method: method,
-                uri: ref uri,
-                body: body,
-                headers: headers ?? new Headers(),
-                tcpConnection: tcpConnection,
-                isWebSocketUpgrade: out var isWebSocketUpgrade,
-                context: out var context
-            );
-
-            if (result is InfiniteLoop loop) throw loop;
-            var logged = false;
-
-            void post(ILogable tolog)
-            {
-                if (tcpConnection.StackDepth == 0 && !tcpConnection.HasWebSocket)
-                    tcpConnection.Dispose();
-                stopwatch.Stop();
-                if (logged) return;
-                if (!trace.TcpConnection.IsInShell)
-                    Console.Log(context, tolog, stopwatch.Elapsed.TotalMilliseconds);
-                logged = true;
-            }
-
-            return
-            (
-                GetRawResult: () =>
-                {
-                    post(result);
-                    return result;
-                },
-                GetFinalizedResult: () =>
-                {
-                    IFinalizedResult finalized;
-                    try
-                    {
-                        finalized = context.ResultFinalizer(result, context.OutputContentTypeProvider);
-                    }
-                    catch (Exception exs)
-                    {
-                        finalized = RESTarError.GetResult(exs, method, context, trace.TcpConnection, isWebSocketUpgrade);
-                    }
-                    post(finalized);
-                    return finalized;
-                }
-            );
-        }
-
-        private static IResult RunEvaluation(Methods method, ref string uri, byte[] body, Headers headers, TCPConnection tcpConnection,
-            out bool isWebSocketUpgrade, out Context context)
-        {
-            tcpConnection.StackDepth += 1;
-            if (tcpConnection.StackDepth > 300) throw new InfiniteLoop();
-            context = null;
-            isWebSocketUpgrade = tcpConnection.IsWebSocketUpgrade;
-
-            try
-            {
-                switch (method)
-                {
-                    case GET:
-                    case POST:
-                    case PUT:
-                    case PATCH:
-                    case DELETE:
-                    case REPORT:
-                    case HEAD:
-                        context = new Context(method, ref uri, body, headers, tcpConnection);
-                        context.Authenticate();
-                        context.ThrowIfError();
-                        switch (context.IResource)
-                        {
-                            case ITerminalResourceInternal terminal:
-                                if (!tcpConnection.HasWebSocket)
-                                    return new UpgradeRequired(terminal.Name);
-                                terminal.InstantiateFor(tcpConnection.WebSocketInternal, context.Uri.Conditions);
-                                return new WebSocketResult(leaveOpen: true, trace: context);
-                            case var entityResource:
-                                var result = HandleREST((dynamic) entityResource, context);
-                                if (!isWebSocketUpgrade) return result;
-                                var finalized = context.ResultFinalizer(result, context.OutputContentTypeProvider);
-                                tcpConnection.WebSocket.SendResult(finalized);
-                                return new WebSocketResult(leaveOpen: false, trace: context);
-                        }
-                    case OPTIONS:
-                        context = new Context(method, ref uri, body, headers, tcpConnection);
-                        context.ThrowIfError();
-                        return HandleOptions(context.IResource, context);
-                    default: throw new ArgumentOutOfRangeException(nameof(method), method, null);
-                }
-            }
-            catch (Exception exs)
-            {
-                return RESTarError.GetResult(exs, method, context, tcpConnection, isWebSocketUpgrade);
-            }
-            finally
-            {
-                tcpConnection.StackDepth -= 1;
-            }
-        }
-
-        private static IResult HandleREST<T>(IEntityResource<T> resource, Context context) where T : class
-        {
-            var request = new RESTRequest<T>(resource, context);
-            request.RunResourceAuthentication();
-            request.Evaluate();
-            return request.Result;
-        }
-
-        private static IResult HandleOptions(IResource resource, Context context)
-        {
-            var origin = context.Headers["Origin"];
-            if (origin != null && origin != "null" && (AllowAllOrigins || AllowedOrigins.Contains(new Uri(origin))))
-                return new AcceptOrigin(origin, resource, context);
-            return new InvalidOrigin();
-        }
+        // private static IResult RunEvaluation(Methods method, ref string uri, byte[] body, Headers headers, Client client,
+        //     out bool isWebSocketUpgrade, out RequestParameters requestParameters)
+        // {
+        //     client.StackDepth += 1;
+        //     if (client.StackDepth > 300) throw new InfiniteLoop();
+        //     requestParameters = null;
+        //     isWebSocketUpgrade = client.IsWebSocketUpgrade;
+        // 
+        //     try
+        //     {
+        //         switch (method)
+        //         {
+        //             case GET:
+        //             case POST:
+        //             case PUT:
+        //             case PATCH:
+        //             case DELETE:
+        //             case REPORT:
+        //             case HEAD:
+        //                 requestParameters = new RequestParameters(method, ref uri, body, headers, client);
+        //                 requestParameters.Authenticate();
+        //                 requestParameters.ThrowIfError();
+        //                 switch (requestParameters.IResource)
+        //                 {
+        //                     case ITerminalResourceInternal terminal:
+        //                         if (!client.HasWebSocket)
+        //                             return new UpgradeRequired(terminal.Name);
+        //                         terminal.InstantiateFor(client.WebSocketInternal, requestParameters.Uri.Conditions);
+        //                         return new WebSocketResult(leaveOpen: true, trace: requestParameters);
+        //                     case var entityResource:
+        //                         var result = HandleREST((dynamic) entityResource, requestParameters);
+        //                         if (!isWebSocketUpgrade) return result;
+        //                         var finalized = requestParameters.ResultFinalizer(result, requestParameters.OutputContentTypeProvider);
+        //                         client.WebSocket.SendResult(finalized);
+        //                         return new WebSocketResult(leaveOpen: false, trace: requestParameters);
+        //                 }
+        //             case OPTIONS:
+        //                 requestParameters = new RequestParameters(method, ref uri, body, headers, client);
+        //                 requestParameters.ThrowIfError();
+        //                 return HandleOptions(requestParameters.IResource, requestParameters);
+        //             default: throw new ArgumentOutOfRangeException(nameof(method), method, null);
+        //         }
+        //     }
+        //     catch (Exception exs)
+        //     {
+        //         return RESTarError.GetResult(exs, method, requestParameters, client, isWebSocketUpgrade);
+        //     }
+        //     finally
+        //     {
+        //         client.StackDepth -= 1;
+        //     }
+        // }
+        // 
+        // private static IResult HandleREST<T>(IEntityResource<T> resource, RequestParameters requestParameters) where T : class
+        // {
+        //     var request = new RESTRequest<T>(resource, requestParameters);
+        //     request.RunResourceAuthentication();
+        //     request.Evaluate();
+        //     return request.Result;
+        // }
+        // 
+        // private static IResult HandleOptions(IResource resource, RequestParameters requestParameters)
+        // {
+        //     var origin = requestParameters.Headers["Origin"];
+        //     if (origin != null && origin != "null" && (AllowAllOrigins || AllowedOrigins.Contains(new Uri(origin))))
+        //         return new AcceptOrigin(origin, resource, requestParameters);
+        //     return new InvalidOrigin();
+        // }
     }
 }

@@ -111,7 +111,7 @@ namespace RESTar.Admin
         private static void Register<T>(string indexName, params ColumnInfo[] columns) where T : class
         {
             SelectionCondition.Value = indexName;
-            SelectionRequest.PUT(() => new DatabaseIndex(typeof(T).RESTarTypeName())
+            SelectionInternalRequest.PUT(() => new DatabaseIndex(typeof(T).RESTarTypeName())
             {
                 Name = indexName,
                 Columns = columns
@@ -121,14 +121,14 @@ namespace RESTar.Admin
         #endregion
 
         private static Condition<DatabaseIndex> SelectionCondition { get; set; }
-        private static Request<DatabaseIndex> SelectionRequest { get; set; }
+        private static InternalRequest<DatabaseIndex> SelectionInternalRequest { get; set; }
         internal static readonly Dictionary<string, IDatabaseIndexer> Indexers;
         static DatabaseIndex() => Indexers = new Dictionary<string, IDatabaseIndexer>();
 
         internal static void Init()
         {
             SelectionCondition = new Condition<DatabaseIndex>(nameof(Name), Operators.EQUALS, null);
-            SelectionRequest = new Request<DatabaseIndex>(SelectionCondition);
+            SelectionInternalRequest = new InternalRequest<DatabaseIndex>(SelectionCondition);
         }
 
         /// <inheritdoc />

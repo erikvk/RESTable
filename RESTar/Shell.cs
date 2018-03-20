@@ -76,7 +76,6 @@ namespace RESTar
 
         public void Open()
         {
-            WebSocket.TcpConnection.Origin = OriginType.Shell;
             if (Query != "")
                 SafeOperation(GET);
             else SendShellInit();
@@ -252,7 +251,6 @@ namespace RESTar
 
         public void Dispose()
         {
-            WebSocket.TcpConnection.Origin = OriginType.External;
             OnConfirm = null;
             PreviousResultMetadata = null;
             GetNextPageLink = null;
@@ -268,9 +266,7 @@ namespace RESTar
         {
             if (Query.Length == 0) return new NoQuery(WebSocket);
             var localQuery = Query;
-            var result = RequestEvaluator
-                .Evaluate(WebSocket, method, ref localQuery, body, WebSocket.Headers)
-                .GetFinalizedResult();
+            var result = Request.Custom(WebSocket, method, ref localQuery, body, WebSocket.Headers).FinalizeResult();
             if (result is RESTarError _ && queryChangedPreEval)
                 query = previousQuery;
             else query = localQuery;

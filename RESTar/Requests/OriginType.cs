@@ -17,6 +17,6 @@
         /// <summary>
         /// The request originated from a WebSocket
         /// </summary>
-        Shell
+        WebSocket
     }
 }

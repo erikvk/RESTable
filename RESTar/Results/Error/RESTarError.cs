@@ -51,14 +51,14 @@ namespace RESTar.Results.Error
         internal void SetTrace(ITraceable trace)
         {
             TraceId = trace.TraceId;
-            TcpConnection = trace.TcpConnection;
+            Client = trace.Client;
         }
 
         /// <inheritdoc />
         public string TraceId { get; private set; }
 
         /// <inheritdoc />
-        public TCPConnection TcpConnection { get; private set; }
+        public Client Client { get; private set; }
 
         /// <inheritdoc />
         public LogEventType LogEventType => LogEventType.HttpOutput;
@@ -82,6 +82,9 @@ namespace RESTar.Results.Error
         /// <inheritdoc />
         public string LogContent { get; } = null;
 
+        /// <inheritdoc />
+        public DateTime LogTime { get; } = DateTime.Now;
+
         internal RESTarError(ErrorCodes code, string message) : base(message)
         {
             ExcludeHeaders = false;
@@ -102,6 +105,9 @@ namespace RESTar.Results.Error
         /// <inheritdoc />
         public ContentType ContentType { get; } = null;
 
+        /// <inheritdoc />
+        public virtual IFinalizedResult FinalizeResult() => this;
+
         internal static RESTarError GetError(Exception exception)
         {
             switch (exception)
@@ -117,22 +123,22 @@ namespace RESTar.Results.Error
             }
         }
 
-        internal static IFinalizedResult GetResult(Exception exs, Methods method, Context context, TCPConnection tcpConnection, bool isWebSocketUpgrade)
+        internal static IFinalizedResult GetResult(Exception exs, RequestParameters requestParameters)
         {
             var error = GetError(exs);
-            error.SetTrace(tcpConnection);
+            error.SetTrace(requestParameters.Client);
             string errorId = null;
             if (!(error is Forbidden.Forbidden))
             {
                 Admin.Error.ClearOld();
-                errorId = Trans(() => Admin.Error.Create(error, context)).Id;
+                errorId = Trans(() => Admin.Error.Create(error, requestParameters)).Id;
             }
-            if (isWebSocketUpgrade)
+            if (requestParameters.IsWebSocketUpgrade)
             {
-                tcpConnection.WebSocket?.SendResult(error);
+                requestParameters.Client.WebSocket?.SendResult(error);
                 return new WebSocketResult(leaveOpen: false, trace: error);
             }
-            switch (method)
+            switch (requestParameters.Method)
             {
                 case GET:
                 case POST:
@@ -144,8 +150,6 @@ namespace RESTar.Results.Error
                     if (errorId != null)
                         error.Headers["ErrorInfo"] = $"/{typeof(Admin.Error).FullName}/id={HttpUtility.UrlEncode(errorId)}";
                     return error;
-                case OPTIONS:
-                    return new InvalidOrigin();
                 default: throw new Exception();
             }
         }

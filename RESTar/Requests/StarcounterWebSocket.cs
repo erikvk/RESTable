@@ -20,7 +20,7 @@ namespace RESTar.Requests
     internal class StarcounterWebSocket : IWebSocket, IWebSocketInternal
     {
         private WebSocket WebSocket;
-        private readonly Request ScRequest;
+        private readonly Starcounter.Request ScRequest;
         private readonly string GroupName;
         public string TraceId { get; }
 
@@ -41,7 +41,7 @@ namespace RESTar.Requests
         public DateTime Closed { get; private set; }
         public ulong BytesReceived { get; internal set; }
         public ulong BytesSent { get; private set; }
-        public TCPConnection TcpConnection { get; }
+        public Client Client { get; }
         public Headers Headers { get; }
         public WebSocketStatus Status { get; private set; }
         public ConnectionProfile GetConnectionProfile() => new ConnectionProfile(this);
@@ -89,7 +89,7 @@ namespace RESTar.Requests
 
         public void Dispose()
         {
-            TcpConnection.Dispose();
+            Client.Dispose();
             if (disposed) return;
             var terminalName = TerminalResource?.Name;
             if (!WebSocket.IsDead())
@@ -223,13 +223,13 @@ namespace RESTar.Requests
             }
         }
 
-        internal StarcounterWebSocket(string groupName, Request scRequest, Headers headers, TCPConnection tcpConnection)
+        internal StarcounterWebSocket(string groupName, Starcounter.Request scRequest, Headers headers, Client client)
         {
             GroupName = groupName;
             ScRequest = scRequest;
             TraceId = DbHelper.Base64EncodeObjectNo(scRequest.GetWebSocketId());
             Headers = headers;
-            TcpConnection = tcpConnection;
+            Client = client.MakeWebSocketClient();
             Status = WebSocketStatus.Waiting;
         }
     }

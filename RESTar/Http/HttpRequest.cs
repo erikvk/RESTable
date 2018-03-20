@@ -20,9 +20,9 @@ namespace RESTar.Http
         private bool IsInternal { get; set; }
         private static readonly Regex HeaderRegex = new Regex(RegEx.RequestHeader);
         internal Stream Body;
-        
+
         public string TraceId { get; }
-        public TCPConnection TcpConnection { get; }
+        public Client Client { get; }
 
         internal IFinalizedResult GetResponse()
         {
@@ -31,17 +31,15 @@ namespace RESTar.Http
                 Headers["Content-Type"] = ContentType;
                 Headers["Accept"] = Accept;
                 var uri = URI;
-                return RequestEvaluator
-                    .Evaluate(this, Method, ref uri, Body.ToByteArray(), new Headers(Headers))
-                    .GetFinalizedResult();
+                return Request.Custom(this, Method, ref uri, Body.ToByteArray(), new Headers(Headers)).FinalizeResult();
             }
-            return External(this, Method, new Uri(URI), Body, ContentType, Accept, Headers);
+            return MakeExternalRequest(this, Method.ToString(), new Uri(URI), Body, ContentType, Accept, Headers);
         }
 
         internal HttpRequest(ITraceable trace, string uriString)
         {
             TraceId = trace.TraceId;
-            TcpConnection = trace.TcpConnection;
+            Client = trace.Client;
             Headers = new Dictionary<string, string>();
             uriString.Trim().Split(new[] {' '}, 3).ForEach((part, index) =>
             {
@@ -88,17 +86,8 @@ namespace RESTar.Http
             });
         }
 
-        /// <summary>
-        /// Makes an external HTTP or HTTPS request
-        /// </summary>
-        private static HttpResponse External(ITraceable trace, Methods method, Uri uri, Stream body = null, string contentType = null,
+        private static HttpResponse MakeExternalRequest(ITraceable trace, string method, Uri uri, Stream body = null, string contentType = null,
             string accept = null, IDictionary<string, string> headers = null)
-        {
-            return MakeExternalRequest(trace, method.ToString(), uri, body, contentType, accept, headers);
-        }
-
-        private static HttpResponse MakeExternalRequest(ITraceable trace, string method, Uri uri, Stream body = null,
-            string contentType = null, string accept = null, IDictionary<string, string> headers = null)
         {
             try
             {
@@ -111,11 +100,11 @@ namespace RESTar.Http
                 if (body != null)
                 {
                     request.ContentLength = body.Length;
-                    using (var requestStream = request.GetRequestStream())
+                    using (var requestStream = request.GetRequestStreamAsync().Result)
                     using (body)
                         body.CopyTo(requestStream);
                 }
-                var webResponse = (HttpWebResponse) request.GetResponse();
+                var webResponse = (HttpWebResponse) request.GetResponseAsync().Result;
                 var respLoc = webResponse.Headers["Location"];
                 if (webResponse.StatusCode == HttpStatusCode.MovedPermanently && respLoc != null)
                     return MakeExternalRequest(trace, method, new Uri(respLoc), body, contentType, accept, headers);

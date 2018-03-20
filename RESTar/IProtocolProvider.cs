@@ -39,14 +39,14 @@ namespace RESTar
         /// Reads a query string, which is everyting after the root URI in the full request URI, parses 
         /// its content according to some protocol and populates the URI object.
         /// </summary>
-        void ParseQuery(string query, URI uri, TCPConnection connection);
+        void ParseQuery(string query, URI uri, Client connection);
 
         /// <summary>
         /// If headers are used to check protocol versions, for example, this method allows the 
-        /// protocolprovider to throw an exception and abort a request if the request is not 
+        /// protocolprovider to throw an exception and abort a request if the API call is not 
         /// in compliance with the protocol.
         /// </summary>
-        void CheckCompliance(Context context);
+        void CheckCompliance(RequestParameters requestParameters);
 
         /// <summary>
         /// The protocol needs to be able to generate a relative URI string from an IUriParameters instance. 
