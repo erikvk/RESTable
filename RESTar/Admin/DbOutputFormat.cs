@@ -100,8 +100,8 @@ namespace RESTar.Admin
         private const string ByName = All + " WHERE t.Name =?";
 
         internal Formatter Format => _PrettyPrint
-            ? new Formatter(PrettyPrintPre, PrettyPrintPost, StartIndent)
-            : new Formatter(RegularPre, RegularPost, StartIndent);
+            ? new Formatter(Name, PrettyPrintPre, PrettyPrintPost, StartIndent)
+            : new Formatter(Name, RegularPre, RegularPost, StartIndent);
 
         internal static Formatter Default => Db.SQL<DbOutputFormat>(ByDefault, true).FirstOrDefault()?.Format ?? default;
         internal static Formatter Raw => default;

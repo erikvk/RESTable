@@ -4,6 +4,22 @@ using System.Linq;
 
 namespace RESTar
 {
+    /// <inheritdoc />
+    /// <summary>
+    /// A collection of ContentType instances
+    /// </summary>
+    public class ContentTypes : List<ContentType>
+    {
+        /// <inheritdoc />
+        public override string ToString() => string.Join(",", this);
+
+        /// <inheritdoc />
+        public ContentTypes() { }
+
+        /// <inheritdoc />
+        public ContentTypes(IEnumerable<ContentType> collection) : base(collection) { }
+    }
+
     /// <summary>
     /// Describes a content type
     /// </summary>
@@ -23,6 +39,11 @@ namespace RESTar
         /// The Q value for the MIME type
         /// </summary>
         public decimal Q { get; }
+
+        /// <summary>
+        /// Is this content type defined as */* ?
+        /// </summary>
+        public bool AnyType => MimeType == "*/*";
 
         /// <summary>
         /// The default input content type (application/json)
@@ -56,14 +77,16 @@ namespace RESTar
         /// Parses an Accept header, possibly with multiple content types, an returnes an 
         /// array of ContentTypes describing it
         /// </summary>
-        public static ContentType[] ParseManyOutput(string headerValue)
+        public static ContentTypes ParseManyOutput(string headerValue)
         {
-            if (string.IsNullOrWhiteSpace(headerValue)) return new[] {DefaultOutput};
-            return headerValue
+            if (string.IsNullOrWhiteSpace(headerValue))
+                return new ContentTypes {DefaultOutput};
+            return new ContentTypes(headerValue
                 .Split(new[] {','}, StringSplitOptions.RemoveEmptyEntries)
                 .Select(s => new ContentType(s))
                 .OrderByDescending(m => m.Q)
-                .ToArray();
+                .ToArray()
+            );
         }
 
         /// <summary>

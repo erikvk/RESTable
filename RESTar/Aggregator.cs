@@ -6,7 +6,6 @@ using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
 using RESTar.ContentTypeProviders;
 using RESTar.Linq;
-using RESTar.Requests;
 using RESTar.Results.Error;
 using RESTar.Results.Success;
 using static Newtonsoft.Json.JsonToken;
@@ -74,7 +73,7 @@ namespace RESTar
                         else return stringValue;
                         if (string.IsNullOrWhiteSpace(uri))
                             throw new Exception($"Invalid URI in aggregator template. Expected relative uri after '{method.ToString()}'.");
-                        switch (Request.Custom(request, method, ref uri, null, request.Headers))
+                        switch (Request.Create(request, method, ref uri, null, request.Headers).GetResult())
                         {
                             case RESTarError error: throw new Exception($"Could not get source data from '{uri}'. {error}");
                             case NoContent _: return null;

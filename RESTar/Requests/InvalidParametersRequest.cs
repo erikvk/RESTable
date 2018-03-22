@@ -23,10 +23,6 @@ namespace RESTar.Requests
         /// <inheritdoc />
         public DateTime LogTime { get; } = DateTime.Now;
 
-        public string Destination { get; }
-
-        public IFinalizedResult HandleError(Exception exception) => throw new NotImplementedException();
-
         string ILogable.HeadersStringCache
         {
             get => LogItem.HeadersStringCache;
@@ -43,15 +39,8 @@ namespace RESTar.Requests
         public Methods Method => RequestParameters.Method;
         public string TraceId => RequestParameters.TraceId;
         public Client Client => RequestParameters.Client;
-
-        public IUriComponents UriComponents
-        {
-            get
-            {
-                //return RequestParameters.Uri;
-            }
-        }
-
+        public CachedProtocolProvider ProtocolProvider => RequestParameters.CachedProtocolProvider;
+        public IUriComponents UriComponents => RequestParameters.Uri;
         public Headers Headers => RequestParameters.Headers;
         public IEntityResource Resource => RequestParameters.IResource as IEntityResource;
         public bool IsWebSocketUpgrade => RequestParameters.IsWebSocketUpgrade;
@@ -69,10 +58,15 @@ namespace RESTar.Requests
             RequestParameters = parameters;
             Error = parameters.Error;
             MetaConditions = null;
-            Body = parameters.Body;
+            Body = new Body
+            (
+                bytes: parameters.BodyBytes,
+                contentType: Headers.ContentType
+                             ?? ProtocolProvider?.DefaultInputProvider.ContentType
+                             ?? Serialization.Serializers.Json.ContentType
+            );
             ResponseHeaders = null;
             Cookies = null;
-            Destination = null;
         }
     }
 }

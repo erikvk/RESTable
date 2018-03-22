@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using RESTar.Admin;
 using RESTar.Serialization.NativeProtocol;
 using static Newtonsoft.Json.Formatting;
 using static RESTar.Admin.Settings;
@@ -189,7 +190,7 @@ namespace RESTar.ContentTypeProviders
                 entityCount = 0;
                 return;
             }
-            var formatter = request.MetaConditions.Formatter;
+            var formatter = request.MetaConditions.Formatter ?? DbOutputFormat.Default;
             using (var swr = new StreamWriter(stream, UTF8, 2048, true))
             using (var jwr = new RESTarJsonWriter(swr, formatter.StartIndent))
             {
@@ -210,7 +211,7 @@ namespace RESTar.ContentTypeProviders
                 entityCount = 0;
                 return;
             }
-            var formatter = request.MetaConditions.Formatter;
+            var formatter = request.MetaConditions.Formatter ?? DbOutputFormat.Default;
             using (var swr = new StreamWriter(stream, UTF8, 2048, true))
             using (var jwr = new RESTarJsonWriter(swr, formatter.StartIndent))
             {

@@ -10,12 +10,20 @@ namespace RESTar.Operations
     /// </summary>
     public class Search : IFilter
     {
-        private string Pattern { get; }
-        internal Search(string pattern) => Pattern = pattern;
+        /// <summary>
+        /// The case insensitive pattern to search for
+        /// </summary>
+        public string Pattern { get; }
 
         /// <summary>
-        /// Searches the entities for a given string pattern, and returns only 
-        /// those that contains the pattern.
+        /// Creates a new Search filter based on a given case insensitive search pattern
+        /// </summary>
+        /// <param name="pattern"></param>
+        public Search(string pattern) => Pattern = pattern;
+
+        /// <summary>
+        /// Searches the entities for a given case insensitive string pattern, and returns only 
+        /// those that contain the pattern.
         /// </summary>
         public IEnumerable<T> Apply<T>(IEnumerable<T> entities)
         {

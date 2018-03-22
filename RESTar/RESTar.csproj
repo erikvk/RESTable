@@ -114,6 +114,8 @@
     <Compile Include="Help.cs" />
     <Compile Include="IContentTypeProvider.cs" />
     <Compile Include="InternalRequest.cs" />
+    <Compile Include="Requests\CachedProtocolProvider.cs" />
+    <Compile Include="Requests\ContentTypeController.cs" />
     <Compile Include="Requests\InvalidParametersRequest.cs" />
     <Compile Include="IProtocolProvider.cs" />
     <Compile Include="ContentTypeProviders\JsonContentProvider.cs" />
@@ -129,7 +131,7 @@
     <Compile Include="Requests\ConnectionId.cs" />
     <Compile Include="Requests\ITraceable.cs" />
     <Compile Include="Requests\OriginType.cs" />
-    <Compile Include="Requests\ParsedRequest.cs" />
+    <Compile Include="Requests\Request.cs" />
     <Compile Include="Resources\TerminalResourceProvider.cs" />
     <Compile Include="ResourceTemplates\FeedTerminal.cs" />
     <Compile Include="ResourceTemplates\OptionsTerminal.cs" />
@@ -142,6 +144,7 @@
     <Compile Include="Results\Error\NotFound\UnknownProtocol.cs" />
     <Compile Include="Results\Error\BinderPermissions.cs" />
     <Compile Include="Results\Error\Untraceable.cs" />
+    <Compile Include="Results\Success\Content.cs" />
     <Compile Include="Results\Success\Head.cs" />
     <Compile Include="Results\Success\IEntitiesMetadata.cs" />
     <Compile Include="Results\Success\NoQuery.cs" />
@@ -172,7 +175,7 @@
     <Compile Include="Requests\DefaultProtocolProvider.cs" />
     <Compile Include="Requests\ResultFinalizer.cs" />
     <Compile Include="RegEx.cs" />
-    <Compile Include="Requests\RequestEvaluator.cs" />
+    <Compile Include="Requests\ProtocolController.cs" />
     <Compile Include="Requests\Headers.cs" />
     <Compile Include="Requests\StarcounterWebSocket.cs" />
     <Compile Include="Requests\Uri.cs" />

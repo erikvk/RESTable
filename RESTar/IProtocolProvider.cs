@@ -5,6 +5,33 @@ using RESTar.Requests;
 namespace RESTar
 {
     /// <summary>
+    /// Enumeration used to configure how a RESTar protocol provider works with external 
+    /// content type providers.
+    /// </summary>
+    public enum ExternalContentTypeProviderSettings
+    {
+        /// <summary>
+        /// Allow all external content type providers
+        /// </summary>
+        AllowAll,
+
+        /// <summary>
+        /// Allow external content type providers only when deserializing request bodies
+        /// </summary>
+        AllowInput,
+
+        /// <summary>
+        /// Allow external content type providers only when serializing response bodies
+        /// </summary>
+        AllowOutput,
+
+        /// <summary>
+        /// Do not allow any external content type providers
+        /// </summary>
+        DontAllow
+    }
+
+    /// <summary>
     /// Interface for RESTar protocol providers. Protocol providers provide the logic for 
     /// parsing requests according to some protocol.
     /// </summary>
@@ -23,14 +50,15 @@ namespace RESTar
         string ProtocolIdentifier { get; }
 
         /// <summary>
-        /// Should the protocol provider allow external content type providers, or only the ones specified in the 
-        /// GetContentTypeProviders method?
+        /// Configures how this protocol provider works with external content type providers, or if it should 
+        /// only work with the ones specified in the GetContentTypeProviders method.
         /// </summary>
-        bool AllowExternalContentProviders { get; }
+        ExternalContentTypeProviderSettings ExternalContentTypeProviderSettings { get; }
 
         /// <summary>
         /// Gets the content type providers associated with this protocol provider. If this is the exclusive list 
         /// of content type providers to use with this protocol, set the AllowExternalContentProviders property to false.
+        /// If only external content type providers should be used, return null.
         /// </summary>
         /// <returns></returns>
         IEnumerable<IContentTypeProvider> GetContentTypeProviders();

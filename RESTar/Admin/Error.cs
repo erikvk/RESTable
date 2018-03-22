@@ -4,7 +4,6 @@ using System.Text;
 using RESTar.Internal;
 using RESTar.Linq;
 using RESTar.Operations;
-using RESTar.Requests;
 using RESTar.Results.Error;
 using Starcounter;
 using static RESTar.Admin.Settings;

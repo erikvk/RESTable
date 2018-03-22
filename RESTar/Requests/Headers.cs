@@ -19,7 +19,7 @@ namespace RESTar.Requests
         /// <summary>
         /// The Accept header
         /// </summary>
-        public ContentType[] Accept { get; set; }
+        public ContentTypes Accept { get; set; }
 
         /// <summary>
         /// The Content-Type header

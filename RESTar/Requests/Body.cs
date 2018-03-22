@@ -1,4 +1,6 @@
 ﻿using System.Collections.Generic;
+using RESTar.Results.Error;
+using RESTar.Results.Error.NotFound;
 using RESTar.Serialization;
 
 namespace RESTar.Requests
@@ -8,9 +10,12 @@ namespace RESTar.Requests
     /// </summary>
     public struct Body
     {
+        /// <summary>
+        /// The content type of the body
+        /// </summary>
         public ContentType ContentType { get; }
 
-        internal IContentTypeProvider ContentTypeProvider { get; set; }
+        private CachedProtocolProvider ProtocolProvider { get; }
 
         /// <summary>
         /// The body's bytes
@@ -20,24 +25,36 @@ namespace RESTar.Requests
         /// <summary>
         /// Deserializes the body to a list of entitites of the given type
         /// </summary>
-        public List<T> ToList<T>() where T : class => HasContent ? ContentTypeProvider.DeserializeCollection<T>(Bytes) : null;
+        public List<T> ToList<T>() where T : class
+        {
+            if (!HasContent) return null;
+            var contentTypeProvider = ProtocolProvider.InputMimeBindings.SafeGet(ContentType.MimeType) ??
+                                      throw new UnsupportedContent(ContentType.MimeType);
+            return contentTypeProvider.DeserializeCollection<T>(Bytes);
+        }
 
         /// <summary>
         /// Populates the body onto each entity in a source collection
         /// </summary>
-        public IEnumerable<T> PopulateTo<T>(IEnumerable<T> source) where T : class => ContentTypeProvider.Populate(source, Bytes);
+        public IEnumerable<T> PopulateTo<T>(IEnumerable<T> source) where T : class
+        {
+            if (!HasContent) return source;
+            var contentTypeProvider = ProtocolProvider.InputMimeBindings.SafeGet(ContentType.MimeType) ??
+                                      throw new UnsupportedContent(ContentType.MimeType);
+            return contentTypeProvider.Populate(source, Bytes);
+        }
 
         /// <summary>
         /// Does this Body have content?
         /// </summary>
         public bool HasContent { get; }
 
-        internal Body(byte[] bytes, ContentType contentType)
+        internal Body(byte[] bytes, ContentType contentType, CachedProtocolProvider protocolProvider)
         {
             ContentType = contentType;
             Bytes = bytes;
             HasContent = bytes?.Length > 0;
-            ContentTypeProvider = null;
+            ProtocolProvider = protocolProvider;
         }
 
         /// <summary>
@@ -49,7 +66,26 @@ namespace RESTar.Requests
             Bytes = content != null ? Serializers.Json.SerializeToBytes(content) : new byte[0];
             ContentType = Serializers.Json.ContentType;
             HasContent = Bytes?.Length > 0;
-            ContentTypeProvider = null;
+            ProtocolProvider = ProtocolController.DefaultProtocolProvider;
+        }
+
+        /// <summary>
+        /// Creates a new body from a byte array
+        /// </summary>
+        /// <param name="bytes">The bytes that constitute the body</param>
+        /// <param name="protocolIdentifer">An optional protocol provider identifier used for specifying a protocol.
+        /// If null, the default protocol is used.</param>
+        /// <param name="contentType">An optional content type to use when deserializing the body. If null, the default 
+        /// content type of the protocol is used.</param>
+        public Body(byte[] bytes, string protocolIdentifer = null, ContentType? contentType = null)
+        {
+            Bytes = bytes;
+            ProtocolProvider = protocolIdentifer == null
+                ? ProtocolController.DefaultProtocolProvider
+                : ProtocolController.ProtocolProviders.SafeGet(protocolIdentifer)
+                  ?? throw new UnknownProtocol(protocolIdentifer);
+            ContentType = contentType ?? ProtocolProvider.DefaultInputProvider.ContentType;
+            HasContent = bytes?.Length > 0;
         }
     }
 }

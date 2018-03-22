@@ -14,22 +14,25 @@ using static RESTar.Operators;
 
 namespace RESTar
 {
-    /// <inheritdoc />
+    /// <inheritdoc cref="ICondition" />
+    /// <inheritdoc cref="IUriCondition" />
     /// <summary>
     /// A condition encodes a predicate that is either true or false of an entity
     /// in a resource. It is used to match entities in resources while selecting 
     /// entities to include in a GET, PUT, PATCH or DELETE request.
     /// </summary>
-    public class Condition<T> : ICondition where T : class
+    public class Condition<T> : ICondition, IUriCondition where T : class
     {
         private static readonly IDictionary<UriCondition, Condition<T>> ConditionCache;
         static Condition() => ConditionCache = new ConcurrentDictionary<UriCondition, Condition<T>>(UriCondition.EqualityComparer);
 
-        /// <inheritdoc />
+        /// <inheritdoc cref="ICondition" />
+        /// <inheritdoc cref="IUriCondition" />
         public string Key => Term.Key;
 
         private Operators _operator;
 
+        /// <inheritdoc />
         /// <summary>
         /// The operator of the condition, specifies the operation of the truth
         /// evaluation. Should the condition check for equality, for example?
@@ -50,6 +53,10 @@ namespace RESTar
                 HasChanged = true;
             }
         }
+
+        string IUriCondition.ValueLiteral => Value is DateTime
+            ? $"{Key}{InternalOperator.Common}{Value:O}"
+            : $"{Key}{InternalOperator.Common}{Value}";
 
         internal Operator InternalOperator => Operator;
 

@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net;
 using RESTar.Logging;
 using RESTar.Requests;
+using RESTar.Results.Success;
 
 namespace RESTar.Operations
 {
@@ -30,6 +32,16 @@ namespace RESTar.Operations
 
         /// <inheritdoc />
         public virtual IFinalizedResult FinalizeResult(ContentType? contentType = null) => this;
+
+        /// <inheritdoc />
+        public IEnumerable<T> ToEntities<T>()
+        {
+            var entities = (Entities) this;
+            return entities.Cast<T>();
+        }
+
+        /// <inheritdoc />
+        public void ThrowIfError() { }
 
         #endregion
 

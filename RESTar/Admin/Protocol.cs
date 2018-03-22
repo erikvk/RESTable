@@ -76,7 +76,7 @@ namespace RESTar.Admin
         /// <inheritdoc />
         public IEnumerable<Protocol> Select(IRequest<Protocol> request)
         {
-            return RequestEvaluator.ProtocolProviders.Values.Distinct().Select(cachedProvider =>
+            return ProtocolController.ProtocolProviders.Values.Distinct().Select(cachedProvider =>
             {
                 var contentTypes = cachedProvider.InputMimeBindings.Values
                     .Union(cachedProvider.OutputMimeBindings.Values)

@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using RESTar.Operations;
 using RESTar.Requests;
+using UriComponents = RESTar.Requests.UriComponents;
 
 namespace RESTar.Results.Success
 {
@@ -47,7 +47,7 @@ namespace RESTar.Results.Success
         /// <inheritdoc />
         public IUriComponents GetNextPageLink(int count)
         {
-            var existing = Request.UriComponents;
+            var existing = new UriComponents(Request.UriComponents);
             if (count > -1)
             {
                 existing.MetaConditions.RemoveAll(c => c.Key.EqualsNoCase("limit"));
@@ -63,7 +63,7 @@ namespace RESTar.Results.Success
             where TResource : class => new Entities(request)
         {
             Content = content,
-            ExternalDestination = request.Destination
+            ExternalDestination = request.Headers.Destination
         };
     }
 }

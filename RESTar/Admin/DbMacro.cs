@@ -8,7 +8,6 @@ using Newtonsoft.Json.Linq;
 using RESTar.Linq;
 using RESTar.Operations;
 using RESTar.Requests;
-using RESTar.Serialization;
 using Starcounter;
 
 namespace RESTar.Admin

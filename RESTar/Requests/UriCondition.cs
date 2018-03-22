@@ -9,14 +9,13 @@ using static System.StringComparison;
 
 namespace RESTar.Requests
 {
+    /// <inheritdoc cref="IUriCondition" />
     /// <summary>
     /// Describes the syntactic components of a RESTar uri condition
     /// </summary>
-    public struct UriCondition
+    public struct UriCondition : IUriCondition
     {
-        /// <summary>
-        /// The key of the condition. Denotes a property in a resource.
-        /// </summary>
+        /// <inheritdoc />
         public string Key { get; }
 
         /// <summary>
@@ -24,20 +23,17 @@ namespace RESTar.Requests
         /// </summary>
         public Operators OperatorCode => Operator.OpCode;
 
+        Operators IUriCondition.Operator => OperatorCode;
+
         internal Operator Operator { get; }
 
-        /// <summary>
-        /// The value literal that encodes the value to compare against
-        /// </summary>
+        /// <inheritdoc />
         public string ValueLiteral { get; }
 
         internal static List<UriCondition> ParseMany(string conditionsString, bool check = false) => conditionsString
             .Split('&')
             .Select(s => new UriCondition(s, check))
             .ToList();
-
-        /// <inheritdoc />
-        public override string ToString() => $"{Key}{Operator.Common}{ValueLiteral}";
 
         /// <summary>
         /// Creates a new custom UriCondition

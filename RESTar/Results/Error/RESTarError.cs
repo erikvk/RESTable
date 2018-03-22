@@ -108,6 +108,12 @@ namespace RESTar.Results.Error
         /// <inheritdoc />
         public IFinalizedResult FinalizeResult(ContentType? contentType = null) => this;
 
+        /// <inheritdoc />
+        public IEnumerable<T> ToEntities<T>() => throw this;
+
+        /// <inheritdoc />
+        public void ThrowIfError() => throw this;
+
         internal static RESTarError GetError(Exception exception)
         {
             switch (exception)

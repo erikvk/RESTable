@@ -5,6 +5,7 @@ using System.Runtime.Serialization;
 using System.Text.RegularExpressions;
 using Newtonsoft.Json;
 using RESTar.Internal;
+using RESTar.Requests;
 
 namespace RESTar.Admin
 {
@@ -111,24 +112,29 @@ namespace RESTar.Admin
         private static void Register<T>(string indexName, params ColumnInfo[] columns) where T : class
         {
             SelectionCondition.Value = indexName;
-            SelectionInternalRequest.PUT(() => new DatabaseIndex(typeof(T).RESTarTypeName())
+            SelectionInternalRequest.Inserter = () => new[]
             {
-                Name = indexName,
-                Columns = columns
-            });
+                new DatabaseIndex(typeof(T).RESTarTypeName())
+                {
+                    Name = indexName,
+                    Columns = columns
+                }
+            };
+            SelectionInternalRequest.GetResult();
         }
 
         #endregion
 
         private static Condition<DatabaseIndex> SelectionCondition { get; set; }
-        private static InternalRequest<DatabaseIndex> SelectionInternalRequest { get; set; }
+        private static IRequest<DatabaseIndex> SelectionInternalRequest { get; set; }
         internal static readonly Dictionary<string, IDatabaseIndexer> Indexers;
         static DatabaseIndex() => Indexers = new Dictionary<string, IDatabaseIndexer>();
 
         internal static void Init()
         {
             SelectionCondition = new Condition<DatabaseIndex>(nameof(Name), Operators.EQUALS, null);
-            // SelectionInternalRequest = new InternalRequest<DatabaseIndex>(SelectionCondition);
+            SelectionInternalRequest = Request<DatabaseIndex>.Create(Client.Internal, Methods.PUT);
+            SelectionInternalRequest.Conditions.Add(SelectionCondition);
         }
 
         /// <inheritdoc />

@@ -4,19 +4,20 @@ using RESTar.Internal;
 using RESTar.Logging;
 using RESTar.Operations;
 using RESTar.Requests;
-using RESTar.Results.Error;
 
 namespace RESTar
 {
     internal interface IRequestInternal : IRequest
     {
         bool IsWebSocketUpgrade { get; }
-        // RequestParameters RequestParameters { get; }
+        CachedProtocolProvider ProtocolProvider { get; }
     }
 
     internal interface IRequestInternal<T> : IRequestInternal, IRequest<T> where T : class
     {
-        Func<IEnumerable<T>> EntitiesGenerator { set; }
+        EntitiesInserter<T> EntitiesGenerator { set; }
+        EntitiesInserter<T> GetInserter();
+        EntitiesUpdater<T> GetUpdater();
     }
 
     /// <inheritdoc />
@@ -37,7 +38,7 @@ namespace RESTar
         bool HasConditions { get; }
 
         /// <summary>
-        /// The conditions of the request
+        /// The conditions of the request. Cannot be changed while the request is being evaluated
         /// </summary>
         List<Condition<T>> Conditions { get; set; }
 
@@ -54,7 +55,33 @@ namespace RESTar
         /// The returned value from GetEntities() is never null, but may contain zero entities.
         /// </summary>
         IEnumerable<T> GetEntities();
+
+        /// <summary>
+        /// The method used when inserting new entities. Set this property to override the default behavior.
+        /// By default RESTar will deserialize the request body to an <see cref="IEnumerable{T}"/> using the 
+        /// content type provided in the Content-Type header.
+        /// </summary>
+        EntitiesInserter<T> Inserter { set; }
+
+        /// <summary>
+        /// The method used when updating existing entities. Set this property to override the default behavior.
+        /// By default RESTar will populate the existing entities with content from the request body, using the 
+        /// content type provided in the Content-Type header.
+        /// </summary>
+        EntitiesUpdater<T> Updater { set; }
     }
+
+    /// <summary>
+    /// Defines a function that generates a collection of resource entities.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    public delegate IEnumerable<T> EntitiesInserter<out T>() where T : class;
+
+    /// <summary>
+    /// Defines a function that updates a collection of resource entities.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    public delegate IEnumerable<T> EntitiesUpdater<T>(IEnumerable<T> source);
 
     /// <inheritdoc cref="ITraceable" />
     /// <inheritdoc cref="IDisposable" />
@@ -80,7 +107,7 @@ namespace RESTar
         MetaConditions MetaConditions { get; }
 
         /// <summary>
-        /// Gets the request body
+        /// Gets the request body. Cannot be changed while the request is being evaluated
         /// </summary>
         Body Body { get; set; }
 

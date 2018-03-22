@@ -165,8 +165,8 @@ namespace RESTar
                 Log.Init();
                 DynamitConfig.Init(true, true);
                 ResourceFactory.MakeResources(resourceProviders?.ToArray());
-                RequestEvaluator.SetupContentTypeProviders(contentTypeProviders?.ToList());
-                RequestEvaluator.SetupProtocolProviders(protocolProviders?.ToList());
+                ContentTypeController.SetupContentTypeProviders(contentTypeProviders?.ToList());
+                ProtocolController.SetupProtocolProviders(protocolProviders?.ToList());
                 RequireApiKey = requireApiKey;
                 AllowAllOrigins = allowAllOrigins;
                 ConfigFilePath = configFilePath;

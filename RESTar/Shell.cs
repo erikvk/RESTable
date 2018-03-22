@@ -266,7 +266,10 @@ namespace RESTar
         {
             if (Query.Length == 0) return new NoQuery(WebSocket);
             var localQuery = Query;
-            var result = Request.Custom(WebSocket, method, ref localQuery, body, WebSocket.Headers).FinalizeResult();
+            var result = Request
+                .Create(WebSocket, method, ref localQuery, body, WebSocket.Headers)
+                .GetResult()
+                .FinalizeResult();
             if (result is RESTarError _ && queryChangedPreEval)
                 query = previousQuery;
             else query = localQuery;

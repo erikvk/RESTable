@@ -34,6 +34,18 @@ namespace RESTar.Operations
         /// type for the protocol is used.
         /// </summary>
         IFinalizedResult FinalizeResult(ContentType? contentType = null);
+
+        /// <summary>
+        /// If the result is non-successful, invoking this method will throw an 
+        /// exception containing the erroneous result.
+        /// </summary>
+        void ThrowIfError();
+
+        /// <summary>
+        /// Tries to convert the result to an Entities instance, or throws an 
+        /// Exception if the result is non-successful.
+        /// </summary>
+        IEnumerable<T> ToEntities<T>();
     }
 
     /// <inheritdoc />

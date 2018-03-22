@@ -1,11 +1,45 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.RegularExpressions;
 using RESTar.Admin;
 using RESTar.Results.Error.NotFound;
 
 namespace RESTar.Requests
 {
+    internal struct UriComponents : IUriComponents
+    {
+        public string ResourceSpecifier { get; }
+        public string ViewName { get; }
+        public List<IUriCondition> Conditions { get; }
+        public List<IUriCondition> MetaConditions { get; }
+
+        IEnumerable<IUriCondition> IUriComponents.Conditions => Conditions;
+        IEnumerable<IUriCondition> IUriComponents.MetaConditions => MetaConditions;
+
+        public string ToUriString(string protocolIdentifier = null)
+        {
+            var cachedProvider = ProtocolController.ResolveProtocolProvider(protocolIdentifier);
+            return cachedProvider.ProtocolProvider.MakeRelativeUri(this);
+        }
+
+        public UriComponents(string resourceSpecifier, string viewName, IEnumerable<IUriCondition> conditions, IEnumerable<IUriCondition> metaConditions)
+        {
+            ResourceSpecifier = resourceSpecifier;
+            ViewName = viewName;
+            Conditions = conditions.ToList();
+            MetaConditions = metaConditions.ToList();
+        }
+
+        public UriComponents(IUriComponents existing)
+        {
+            ResourceSpecifier = existing.ResourceSpecifier;
+            ViewName = existing.ViewName;
+            Conditions = existing.Conditions.ToList();
+            MetaConditions = existing.MetaConditions.ToList();
+        }
+    }
+
     /// <inheritdoc />
     /// <summary>
     /// Encodes a URI that is used in a request
@@ -18,10 +52,17 @@ namespace RESTar.Requests
         /// <inheritdoc />
         public string ViewName { get; set; }
 
-        /// <inheritdoc />
+        IEnumerable<IUriCondition> IUriComponents.Conditions => Conditions.Cast<IUriCondition>();
+        IEnumerable<IUriCondition> IUriComponents.MetaConditions => MetaConditions.Cast<IUriCondition>();
+
+        /// <summary>
+        /// The conditions contained in the URI
+        /// </summary>
         public List<UriCondition> Conditions { get; }
 
-        /// <inheritdoc />
+        /// <summary>
+        /// The MetaConditions contained in the URI
+        /// </summary>
         public List<UriCondition> MetaConditions { get; }
 
         internal DbMacro Macro { get; set; }
@@ -44,7 +85,7 @@ namespace RESTar.Requests
                 key = _key;
                 uriString = protocolString + tail;
             }
-            if (!RequestEvaluator.ProtocolProviders.TryGetValue(protocolString, out cachedProtocolProvider))
+            if (!ProtocolController.ProtocolProviders.TryGetValue(protocolString, out cachedProtocolProvider))
             {
                 uri.Error = new UnknownProtocol(protocolString);
                 return uri;
@@ -75,6 +116,15 @@ namespace RESTar.Requests
         }
 
         /// <inheritdoc />
-        public override string ToString() => ProtocolProvider?.MakeRelativeUri(this) ?? "";
+        public string ToUriString(string protocolIdentifier = null)
+        {
+            var protocolProvider = protocolIdentifier == null
+                ? ProtocolProvider
+                : ProtocolController.ResolveProtocolProvider(protocolIdentifier).ProtocolProvider;
+            return protocolProvider.MakeRelativeUri(this);
+        }
+
+        /// <inheritdoc />
+        public override string ToString() => ToUriString();
     }
 }

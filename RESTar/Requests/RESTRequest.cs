@@ -1,21 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Net;
-using RESTar.Admin;
-using RESTar.Http;
-using RESTar.Internal;
-using RESTar.Linq;
-using RESTar.Operations;
-using RESTar.Results.Error;
-using RESTar.Results.Error.BadRequest;
-using RESTar.Results.Error.Forbidden;
-using RESTar.Results.Error.NotFound;
-using static RESTar.Internal.ErrorCodes;
-using static RESTar.RESTarConfig;
-using static RESTar.Methods;
-
-namespace RESTar.Requests
-{
+﻿// namespace RESTar.Requests
+// {
     //internal class RESTRequest<T> : IRequest<T>, IRequestInternal<T> where T : class
     //{
     //    public Methods Method { get; }
@@ -127,4 +111,4 @@ namespace RESTar.Requests
     //              }
     //      }
     //  }
-}
+// }

@@ -1,5 +1,4 @@
-﻿using RESTar.Internal;
-using RESTar.Requests;
+﻿using RESTar.Requests;
 using static RESTar.RESTarConfig;
 
 namespace RESTar.Results.Success

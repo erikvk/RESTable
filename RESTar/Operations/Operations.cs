@@ -5,7 +5,6 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using RESTar.Admin;
 using RESTar.Linq;
-using RESTar.Requests;
 using RESTar.Results.Error;
 using RESTar.Results.Error.BadRequest;
 using RESTar.Results.Error.BadRequest.Aborted;
@@ -116,13 +115,11 @@ namespace RESTar.Operations
         {
             try
             {
-                request.EntitiesGenerator = () =>
+                request.EntitiesGenerator = () => request.GetInserter().Invoke().Select(entity =>
                 {
-                    var entities = request.Body.ToList<T>();
-                    if (request.Resource.RequiresValidation)
-                        entities.OfType<IValidatable>().ForEach(item => item.Validate());
-                    return entities;
-                };
+                    (entity as IValidatable).Validate();
+                    return entity;
+                });
                 return request.Resource.Insert(request);
             }
             catch (Exception e)
@@ -132,6 +129,7 @@ namespace RESTar.Operations
             }
         }
 
+        [Obsolete]
         private static int INSERT(IRequestInternal<T> request, Func<IEnumerable<T>> inserter)
         {
             try
@@ -153,27 +151,7 @@ namespace RESTar.Operations
             }
         }
 
-        private static int INSERT_ONE(IRequestInternal<T> request)
-        {
-            try
-            {
-                request.EntitiesGenerator = () =>
-                {
-                    var results = request.Body.ToList<T>();
-                    if (results.Count > 1) throw new InvalidInputCount();
-                    var result = results.FirstOrDefault();
-                    if (result is IValidatable i) i.Validate();
-                    return new[] {result};
-                };
-                return request.Resource.Insert(request);
-            }
-            catch (Exception e)
-            {
-                var jsonMessage = e is JsonSerializationException jse ? jse.TotalMessage() : null;
-                throw new AbortedInsert<T>(e, request, jsonMessage);
-            }
-        }
-
+        [Obsolete]
         private static int INSERT_ONE(IRequestInternal<T> request, Func<T> inserter)
         {
             try
@@ -193,6 +171,7 @@ namespace RESTar.Operations
             }
         }
 
+        [Obsolete]
         private static int INSERT_ONE_JOBJECT(IRequestInternal<T> request, JObject json)
         {
             try
@@ -212,6 +191,7 @@ namespace RESTar.Operations
             }
         }
 
+        [Obsolete]
         private static int INSERT_JARRAY(IRequestInternal<T> request, JArray json)
         {
             try
@@ -236,17 +216,15 @@ namespace RESTar.Operations
 
         #region UPDATE
 
-        private static int UPDATE(IRequestInternal<T> request, ICollection<T> source)
+        private static int UPDATE(IRequestInternal<T> request, IEnumerable<T> source)
         {
             try
             {
-                request.EntitiesGenerator = () =>
+                request.EntitiesGenerator = () => request.GetUpdater().Invoke(source).Select(entity =>
                 {
-                    var updatedSource = request.Body.PopulateTo(source);
-                    if (request.Resource.RequiresValidation)
-                        source.OfType<IValidatable>().ForEach(item => item.Validate());
-                    return updatedSource;
-                };
+                    (entity as IValidatable)?.Validate();
+                    return entity;
+                });
                 return request.Resource.Update(request);
             }
             catch (Exception e)
@@ -256,6 +234,7 @@ namespace RESTar.Operations
             }
         }
 
+        [Obsolete]
         private static int UPDATE(IRequestInternal<T> request, Func<IEnumerable<T>, IEnumerable<T>> updater,
             ICollection<T> source)
         {
@@ -278,6 +257,7 @@ namespace RESTar.Operations
             }
         }
 
+        [Obsolete]
         private static int UPDATE_ONE(IRequestInternal<T> request, List<T> source)
         {
             try
@@ -298,6 +278,7 @@ namespace RESTar.Operations
             }
         }
 
+        [Obsolete]
         private static int UPDATE_ONE(IRequestInternal<T> request, Func<T, T> updater, T source)
         {
             try
@@ -317,21 +298,16 @@ namespace RESTar.Operations
             }
         }
 
-        private static int UPDATE_MANY(IRequestInternal<T> request, ICollection<(JObject json, T source)> items)
+        private static int UPDATE_SAFEPOST(IRequestInternal<T> request, ICollection<(JObject json, T source)> items)
         {
             try
             {
-                request.EntitiesGenerator = () =>
+                request.EntitiesGenerator = () => items.Select(item =>
                 {
-                    var updated = items.Select(item =>
-                    {
-                        Serializers.Json.PopulateJToken(item.json, item.source);
-                        return item.source;
-                    }).ToList();
-                    if (request.Resource.RequiresValidation)
-                        updated.OfType<IValidatable>().ForEach(item => item.Validate());
-                    return updated;
-                };
+                    Serializers.Json.PopulateJToken(item.json, item.source);
+                    (item.source as IValidatable)?.Validate();
+                    return item.source;
+                });
                 return request.Resource.Update(request);
             }
             catch (Exception e)
@@ -358,6 +334,7 @@ namespace RESTar.Operations
             }
         }
 
+        [Obsolete]
         private static int OP_DELETE_ONE(IRequestInternal<T> request, T source)
         {
             try
@@ -433,8 +410,16 @@ namespace RESTar.Operations
                 switch (source?.Count)
                 {
                     case null:
-                    case 0: return new InsertedEntities(INSERT_ONE(request), request);
-                    case 1: return new UpdatedEntities(UPDATE_ONE(request, source), request);
+                    case 0:
+                        request.Inserter = () =>
+                        {
+                            var results = request.Body.ToList<T>();
+                            if (results.Count > 1) throw new InvalidInputCount();
+                            return results;
+                        };
+                        return new InsertedEntities(INSERT(request), request);
+                    case 1:
+                        return new UpdatedEntities(UPDATE(request, source), request);
                     default: throw new AmbiguousMatch(request.Resource);
                 }
             }
@@ -453,10 +438,10 @@ namespace RESTar.Operations
                 return new DeletedEntities(OP_DELETE(request, source), request);
             }
 
-            private static (InternalRequest<T> InnerRequest, JArray ToInsert, IList<(JObject json, T source)> ToUpdate)
-                GetSafePostTasks(IRequestInternal<T> request)
+            private static (IRequestInternal<T> InnerRequest, JArray ToInsert, IList<(JObject json, T source)> ToUpdate) GetSafePostTasks(
+                IRequest<T> request)
             {
-                var innerRequest = new InternalRequest<T>();
+                var innerRequest = (IRequestInternal<T>) Request<T>.Create(request, Methods.GET);
                 var toInsert = new JArray();
                 var toUpdate = new List<(JObject json, T source)>();
                 try
@@ -464,11 +449,12 @@ namespace RESTar.Operations
                     var conditions = request.MetaConditions.SafePost
                         .Split(',')
                         .Select(s => new Condition<T>(s, Operators.EQUALS, null))
-                        .ToArray();
+                        .ToList();
                     foreach (var entity in request.Body.ToList<JObject>())
                     {
                         conditions.ForEach(cond => cond.Value = cond.Term.Evaluate(entity));
-                        var results = innerRequest.WithConditions(conditions).GET().ToList();
+                        request.Conditions = conditions;
+                        var results = innerRequest.GetResult().ToEntities<T>().ToList();
                         switch (results.Count)
                         {
                             case 0:
@@ -488,22 +474,21 @@ namespace RESTar.Operations
                 }
             }
 
-            private static Result SafePOST(IRequestInternal<T> request)
+            private static Result SafePOST(IRequest<T> request)
             {
                 var (innerRequest, toInsert, toUpdate) = GetSafePostTasks(request);
                 var (updatedCount, insertedCount) = (0, 0);
-                if (toUpdate.Any()) updatedCount = UPDATE_MANY(innerRequest, toUpdate);
-                if (toInsert.Any()) insertedCount = INSERT_JARRAY(innerRequest, toInsert);
+                if (toUpdate.Any())
+                    updatedCount = UPDATE_SAFEPOST(innerRequest, toUpdate);
+                if (toInsert.Any())
+                {
+                    innerRequest.Inserter = () => toInsert.Select(item => item.ToObject<T>());
+                    insertedCount = INSERT(innerRequest);
+                }
                 return new SafePostedEntities(updatedCount, insertedCount, request);
             }
         }
 
-        internal static class View
-        {
-            //            internal static int POST(ViewRequest<T> request) => INSERT_ONE(request);
-            //            internal static int PATCH(ViewRequest<T> request, T item) => UPDATE_ONE(request, item);
-            //            internal static int DELETE(ViewRequest<T> request, T item) => OP_DELETE_ONE(request, item);
-        }
 
         //        internal static class App
         //        {

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Net;
 using RESTar.Logging;
 using RESTar.Admin;
@@ -18,9 +17,9 @@ using RESTar.Results.Success;
 
 namespace RESTar.Requests
 {
-    internal class ParsedRequest<T> : IRequest<T>, IRequestInternal<T>, ITraceable where T : class
+    internal class Request<T> : IRequest<T>, IRequestInternal<T>, ITraceable where T : class
     {
-        public Func<IEnumerable<T>> EntitiesGenerator { private get; set; }
+        public EntitiesInserter<T> EntitiesGenerator { private get; set; }
         public ITarget<T> Target { get; }
 
         public bool HasConditions => !(_conditions?.Count > 0);
@@ -30,13 +29,7 @@ namespace RESTar.Requests
         public List<Condition<T>> Conditions
         {
             get => _conditions ?? (_conditions = new List<Condition<T>>());
-            set
-            {
-                if (IsEvaluating)
-                    throw new InvalidOperationException(
-                        "Cannot set resource conditions while the request is evaluating");
-                _conditions = value;
-            }
+            set => _conditions = value;
         }
 
         private MetaConditions _metaConditions;
@@ -66,12 +59,14 @@ namespace RESTar.Requests
         public Methods Method => RequestParameters.Method;
         public string TraceId => RequestParameters.TraceId;
         public Client Client => RequestParameters.Client;
+        public CachedProtocolProvider ProtocolProvider => RequestParameters.CachedProtocolProvider;
 
         public IUriComponents UriComponents
         {
             get
             {
-                // return RequestParameters.Uri;
+                var viewName = Target is IView ? Target.Name : null;
+                return new UriComponents(IResource.Name, viewName, Conditions, MetaConditions.AsConditionList());
             }
         }
 
@@ -114,6 +109,11 @@ namespace RESTar.Requests
 
         #endregion
 
+        public EntitiesInserter<T> Inserter { private get; set; }
+        public EntitiesUpdater<T> Updater { private get; set; }
+        public EntitiesInserter<T> GetInserter() => Inserter ?? (() => Body.ToList<T>());
+        public EntitiesUpdater<T> GetUpdater() => Updater ?? (source => Body.PopulateTo(source));
+
         private Exception Error { get; }
 
         public bool IsValid => Error == null;
@@ -126,46 +126,6 @@ namespace RESTar.Requests
             var result = RunEvaluation();
             if (result is InfiniteLoop loop) throw loop;
             return result;
-        }
-
-        private void ResolveContentTypes()
-        {
-            // Gör det så sent det går. Man ska kunna köra request utan att ange content types om de inte behövs
-
-            if (cachedProtocolProvider != null)
-            {
-                if (Headers.ContentType == null)
-                    Headers.ContentType = cachedProtocolProvider.DefaultInputProvider.ContentType;
-                if (Headers.Accept == null)
-                    Headers.Accept = new[] {cachedProtocolProvider.DefaultOutputProvider.ContentType};
-                else
-                {
-                    if (!cachedProtocolProvider.InputMimeBindings.TryGetValue(Headers.ContentType.MimeType, out var provider))
-                        Error = new UnsupportedContent(Headers["Content-Type"]);
-                    else InputContentTypeProvider = provider;
-                }
-
-                if (Headers.Accept == null)
-                    OutputContentTypeProvider = cachedProtocolProvider.DefaultOutputProvider;
-                else
-                {
-                    IContentTypeProvider acceptProvider = null;
-                    var containedWildcard = false;
-                    var foundProvider = Headers.Accept.Any(a =>
-                    {
-                        if (a.MimeType != "*/*")
-                            return cachedProtocolProvider.OutputMimeBindings.TryGetValue(a.MimeType, out acceptProvider);
-                        containedWildcard = true;
-                        return false;
-                    });
-                    if (!foundProvider)
-                        if (containedWildcard)
-                            OutputContentTypeProvider = cachedProtocolProvider.DefaultOutputProvider;
-                        else
-                            Error = new NotAcceptable(Headers["Accept"]);
-                    else OutputContentTypeProvider = acceptProvider;
-                }
-            }
         }
 
         private IResult RunEvaluation()
@@ -208,7 +168,7 @@ namespace RESTar.Requests
 
         public IEnumerable<T> GetEntities() => EntitiesGenerator?.Invoke() ?? new T[0];
 
-        private ParsedRequest(IResource<T> resource, RequestParameters requestParameters)
+        private Request(IResource<T> resource, RequestParameters requestParameters)
         {
             RequestParameters = requestParameters;
             IResource = resource;
@@ -236,22 +196,26 @@ namespace RESTar.Requests
                 }
                 if (Client.IsInternal) MetaConditions.Formatter = DbOutputFormat.Raw;
                 this.MethodCheck();
+                var defaultContentType = ProtocolProvider.DefaultInputProvider.ContentType;
                 switch (InputDataConfig)
                 {
                     case DataConfig.Client:
-                        if (!RequestParameters.Body.HasContent)
+                        if (!RequestParameters.HasBody)
                         {
                             if (Method == PATCH || Method == POST || Method == PUT)
                                 throw new InvalidSyntax(NoDataSource, "Missing data source for method " + Method);
                             return;
                         }
-                        Body = RequestParameters.Body;
+                        Body = new Body(RequestParameters.BodyBytes, Headers.ContentType ?? defaultContentType, ProtocolProvider);
                         break;
                     case DataConfig.External:
                         try
                         {
                             var request = new HttpRequest(this, Headers.Source)
-                                {Accept = RequestParameters.InputContentTypeProvider.ContentType.ToString()};
+                            {
+                                Accept = Headers.ContentType?.ToString()
+                                         ?? defaultContentType.ToString()
+                            };
                             if (request.Method != GET)
                                 throw new InvalidSyntax(InvalidSource, "Only GET is allowed in Source headers");
                             var response = request.GetResponse() ?? throw new InvalidExternalSource(request, "No response");
@@ -260,7 +224,7 @@ namespace RESTar.Requests
                                     $"Status: {response.StatusCode.ToCode()} - {response.StatusDescription}. {response.Headers.SafeGet("RESTar-info")}");
                             if (response.Body.CanSeek && response.Body.Length == 0)
                                 throw new InvalidExternalSource(request, "Response was empty");
-                            Body = new Body(response.Body.ToByteArray(), RequestParameters.InputContentTypeProvider);
+                            Body = new Body(response.Body.ToByteArray(), Headers.ContentType ?? defaultContentType, ProtocolProvider);
                             break;
                         }
                         catch (HttpRequestException re)
@@ -276,6 +240,6 @@ namespace RESTar.Requests
         }
 
         internal static IRequest<T> Create(IResource<T> resource, RequestParameters requestParameters) =>
-            new ParsedRequest<T>(resource, requestParameters);
+            new Request<T>(resource, requestParameters);
     }
 }

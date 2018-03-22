@@ -190,4 +190,28 @@ namespace RESTar
         /// </summary>
         public static string ResourceSpecifier => Get.Name;
     }
+
+    /// <summary>
+    /// A static generic class for manually getting RESTar resources by type
+    /// </summary>
+    public static class Resource<T> where T : class
+    {
+        /// <summary>
+        /// Gets the terminal resource for a given type, and throws an UnknownResource exception 
+        /// if there is no such resource
+        /// </summary>
+        public static IResource<T> Get => RESTarConfig.ResourceByType.SafeGet(typeof(T)) as IResource<T>
+                                          ?? throw new UnknownResource(typeof(T).RESTarTypeName());
+
+
+        /// <summary>
+        /// Gets the terminal resource for a given type or null if there is no such resource
+        /// </summary>
+        public static IResource<T> SafeGet => RESTarConfig.ResourceByType.SafeGet(typeof(T)) as IResource<T>;
+
+        /// <summary>
+        /// Gets the resource specifier for a given terminal resource
+        /// </summary>
+        public static string ResourceSpecifier => Get.Name;
+    }
 }

@@ -31,6 +31,8 @@ namespace RESTar.Http
         public string HeadersStringCache { get; set; }
         public bool ExcludeHeaders { get; }
         public IFinalizedResult FinalizeResult(ContentType? contentType = null) => this;
+        public void ThrowIfError() { }
+        public IEnumerable<T> ToEntities<T>() => throw new InvalidCastException($"Cannot convert {nameof(HttpResponse)} to Entities");
 
         public DateTime LogTime { get; }
 

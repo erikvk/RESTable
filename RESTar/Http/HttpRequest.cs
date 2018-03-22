@@ -31,7 +31,10 @@ namespace RESTar.Http
                 Headers["Content-Type"] = ContentType;
                 Headers["Accept"] = Accept;
                 var uri = URI;
-                return Request.Custom(this, Method, ref uri, Body.ToByteArray(), new Headers(Headers)).FinalizeResult();
+                return Request
+                    .Create(this, Method, ref uri, Body.ToByteArray(), new Headers(Headers))
+                    .GetResult()
+                    .FinalizeResult();
             }
             return MakeExternalRequest(this, Method.ToString(), new Uri(URI), Body, ContentType, Accept, Headers);
         }

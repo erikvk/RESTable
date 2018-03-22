@@ -10,6 +10,7 @@ using RESTar.Results.Error;
 using RESTar.Results.Error.BadRequest;
 using RESTar.Results.Error.NotFound;
 using RESTar.Results.Success;
+using static RESTar.ExternalContentTypeProviderSettings;
 using HttpRequest = RESTar.Http.HttpRequest;
 
 namespace RESTar.Requests
@@ -84,17 +85,31 @@ namespace RESTar.Requests
             }
         }
 
-        public bool AllowExternalContentProviders { get; } = true;
+        public ExternalContentTypeProviderSettings ExternalContentTypeProviderSettings { get; } = AllowAll;
 
         public IEnumerable<IContentTypeProvider> GetContentTypeProviders() => null;
 
         /// <inheritdoc />
-        public string MakeRelativeUri(IUriComponents components)
+        public string MakeRelativeUri(IUriComponents components) => ToUriString(components);
+
+        private static string ToUriString(IUriComponents components)
         {
-            string JoinConditions(List<UriCondition> c) => c.Count > 0 ? string.Join("&", c) : null;
-            return $"/{components.ResourceSpecifier}" +
-                   $"/{JoinConditions(components.Conditions) ?? "_"}" +
-                   $"/{JoinConditions(components.MetaConditions) ?? "_"}";
+            var view = components.ViewName != null ? $"-{components.ViewName}" : null;
+            return $"/{components.ResourceSpecifier}{view}/{ToUriString(components.Conditions)}/{ToUriString(components.MetaConditions)}";
+        }
+
+        private static string ToUriString(IEnumerable<IUriCondition> conditions)
+        {
+            if (conditions == null) return "_";
+            var uriString = string.Join("&", conditions.Select(ToUriString));
+            if (uriString.Length == 0) return "_";
+            return uriString;
+        }
+
+        private static string ToUriString(IUriCondition condition)
+        {
+            if (condition == null) return "";
+            return $"{WebUtility.UrlEncode(condition.Key)}{((Operator) condition.Operator).Common}{WebUtility.UrlEncode(condition.ValueLiteral)}";
         }
 
         /// <inheritdoc />

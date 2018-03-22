@@ -25,6 +25,8 @@ namespace RESTar.Results.Success
         public string HeadersStringCache { get; set; }
         public bool ExcludeHeaders => default;
         public IFinalizedResult FinalizeResult(ContentType? contentType = null) => this;
+        public void ThrowIfError() { }
+        public IEnumerable<T> ToEntities<T>() => throw new InvalidCastException($"Cannot convert {nameof(WebSocketResult)} to Entities");
 
         public DateTime LogTime { get; }
 

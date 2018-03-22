@@ -1,17 +1,36 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using System.Web;
 using RESTar.Internal;
 using RESTar.Linq;
 using RESTar.Logging;
-using RESTar.Results.Error;
 using RESTar.Serialization;
 using IResource = RESTar.Internal.IResource;
 
 namespace RESTar.Requests
 {
+    /// <summary>
+    /// A common interface for URI conditions in RESTar
+    /// </summary>
+    public interface IUriCondition
+    {
+        /// <summary>
+        /// The key of the condition
+        /// </summary>
+        string Key { get; }
+
+        /// <summary>
+        /// The operator of the condition
+        /// </summary>
+        Operators Operator { get; }
+
+        /// <summary>
+        /// A string describing the value encoded in the condition
+        /// </summary>
+        string ValueLiteral { get; }
+    }
+
     /// <summary>
     /// Contains parameters for a RESTar URI
     /// </summary>
@@ -30,12 +49,18 @@ namespace RESTar.Requests
         /// <summary>
         /// Specifies the conditions for the request
         /// </summary>
-        List<UriCondition> Conditions { get; }
+        IEnumerable<IUriCondition> Conditions { get; }
 
         /// <summary>
         /// Specifies the meta-conditions for the request
         /// </summary>
-        List<UriCondition> MetaConditions { get; }
+        IEnumerable<IUriCondition> MetaConditions { get; }
+
+        /// <summary>
+        /// Generates a URI string from these components, according to some protocol.
+        /// If null, the default protocol is used.
+        /// </summary>
+        string ToUriString(string protocolIdentifier = null);
     }
 
     /// <inheritdoc cref="ILogable" />
@@ -63,9 +88,14 @@ namespace RESTar.Requests
         public URI Uri { get; }
 
         /// <summary>
-        /// The body of the request
+        /// Did the request contain a body?
         /// </summary>
-        public Body Body => new Body(BodyBytes, Headers.ContentType ?? Serializers.Json.ContentType);
+        public bool HasBody { get; }
+
+        /// <summary>
+        /// The byte array of the request body
+        /// </summary>
+        public byte[] BodyBytes { get; }
 
         /// <inheritdoc />
         public Headers Headers { get; }
@@ -82,7 +112,6 @@ namespace RESTar.Requests
 
         #region Private and internal
 
-        private byte[] BodyBytes { get; set; }
         internal CachedProtocolProvider CachedProtocolProvider { get; }
         private string UnparsedUri { get; }
         private IResource iresource;
@@ -92,7 +121,7 @@ namespace RESTar.Requests
         private static string UnpackUriKey(string uriKey) => uriKey != null ? HttpUtility.UrlDecode(uriKey).Substring(1, uriKey.Length - 2) : null;
         bool ILogable.ExcludeHeaders => IResource is IEntityResource e && e.RequiresAuthentication;
         LogEventType ILogable.LogEventType { get; } = LogEventType.HttpInput;
-        string ILogable.LogMessage => $"{Method} {UnparsedUri}{(Body.HasContent ? $" ({Body.Bytes.Length} bytes)" : "")}";
+        string ILogable.LogMessage => $"{Method} {UnparsedUri}{(HasBody ? $" ({BodyBytes.Length} bytes)" : "")}";
         DateTime ILogable.LogTime { get; } = DateTime.Now;
         string ILogable.HeadersStringCache { get; set; }
         private string _contentString;
@@ -101,23 +130,22 @@ namespace RESTar.Requests
         {
             get
             {
-                if (!Body.HasContent) return null;
-                return _contentString ?? (_contentString = Encoding.UTF8.GetString(Body.Bytes));
+                if (!HasBody) return null;
+                return _contentString ?? (_contentString = Encoding.UTF8.GetString(BodyBytes));
             }
         }
 
         #endregion
 
-        internal RequestParameters(ITraceable trace, Methods method, IResource resource, string protocolId = null)
+        internal RequestParameters(ITraceable trace, Methods method, IResource resource, string protocolIdentifier = null)
         {
             TraceId = trace.TraceId;
             Client = trace.Client;
             Method = method;
             Headers = new Headers();
+            iresource = resource;
             IsWebSocketUpgrade = Client.WebSocket?.Status == WebSocketStatus.Waiting;
-            if (protocolId != null && RequestEvaluator.ProtocolProviders.TryGetValue(protocolId, out var provider))
-                CachedProtocolProvider = provider;
-            else CachedProtocolProvider = RequestEvaluator.DefaultProtocolProvider;
+            CachedProtocolProvider = ProtocolController.ResolveProtocolProvider(protocolIdentifier);
         }
 
         internal RequestParameters(ITraceable trace, Methods method, ref string uri, byte[] body, Headers headers)
@@ -172,6 +200,8 @@ namespace RESTar.Requests
                 }
             }
             else BodyBytes = body;
+
+            HasBody = BodyBytes?.Length > 0;
 
             try
             {

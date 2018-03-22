@@ -2,40 +2,21 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
-using RESTar.ContentTypeProviders;
 using RESTar.Linq;
 using RESTar.Results.Error;
-using RESTar.Serialization;
+using RESTar.Results.Error.NotFound;
+using static RESTar.Requests.ContentTypeController;
 
 namespace RESTar.Requests
 {
-    internal class CachedProtocolProvider
+    internal static class ProtocolController
     {
-        internal IProtocolProvider ProtocolProvider { get; }
-        internal IDictionary<string, IContentTypeProvider> InputMimeBindings { get; }
-        internal IDictionary<string, IContentTypeProvider> OutputMimeBindings { get; }
-        internal IContentTypeProvider DefaultInputProvider => InputMimeBindings.FirstOrDefault().Value;
-        internal IContentTypeProvider DefaultOutputProvider => OutputMimeBindings.FirstOrDefault().Value;
-
-        public CachedProtocolProvider(IProtocolProvider protocolProvider)
-        {
-            ProtocolProvider = protocolProvider;
-            InputMimeBindings = new Dictionary<string, IContentTypeProvider>(StringComparer.OrdinalIgnoreCase);
-            OutputMimeBindings = new Dictionary<string, IContentTypeProvider>(StringComparer.OrdinalIgnoreCase);
-        }
-    }
-
-    /// <summary>
-    /// Evaluates requests
-    /// </summary>
-    public static class RequestEvaluator
-    {
-        #region Handle addons
-
         internal static IDictionary<string, CachedProtocolProvider> ProtocolProviders { get; private set; }
-        private static IDictionary<string, IContentTypeProvider> InputContentTypeProviders { get; set; }
-        private static IDictionary<string, IContentTypeProvider> OutputContentTypeProviders { get; set; }
         internal static CachedProtocolProvider DefaultProtocolProvider { get; private set; }
+
+        internal static CachedProtocolProvider ResolveProtocolProvider(string protocolIdentifier) => protocolIdentifier == null
+            ? DefaultProtocolProvider
+            : ProtocolProviders.SafeGet(protocolIdentifier) ?? throw new UnknownProtocol(protocolIdentifier);
 
         private static CachedProtocolProvider GetCachedProtocolProvider(IProtocolProvider provider)
         {
@@ -48,9 +29,19 @@ namespace RESTar.Requests
                 if (contentTypeProvider.CanWrite)
                     contentTypeProvider.MatchStrings?.ForEach(mimeType => cProvider.OutputMimeBindings[mimeType] = contentTypeProvider);
             });
-            if (!provider.AllowExternalContentProviders) return cProvider;
-            InputContentTypeProviders.Where(p => !cProvider.InputMimeBindings.ContainsKey(p.Key)).ForEach(cProvider.InputMimeBindings.Add);
-            OutputContentTypeProviders.Where(p => !cProvider.OutputMimeBindings.ContainsKey(p.Key)).ForEach(cProvider.OutputMimeBindings.Add);
+            switch (provider.ExternalContentTypeProviderSettings)
+            {
+                case ExternalContentTypeProviderSettings.AllowAll:
+                    InputContentTypeProviders.Where(p => !cProvider.InputMimeBindings.ContainsKey(p.Key)).ForEach(cProvider.InputMimeBindings.Add);
+                    OutputContentTypeProviders.Where(p => !cProvider.OutputMimeBindings.ContainsKey(p.Key)).ForEach(cProvider.OutputMimeBindings.Add);
+                    break;
+                case ExternalContentTypeProviderSettings.AllowInput:
+                    InputContentTypeProviders.Where(p => !cProvider.InputMimeBindings.ContainsKey(p.Key)).ForEach(cProvider.InputMimeBindings.Add);
+                    break;
+                case ExternalContentTypeProviderSettings.AllowOutput:
+                    OutputContentTypeProviders.Where(p => !cProvider.OutputMimeBindings.ContainsKey(p.Key)).ForEach(cProvider.OutputMimeBindings.Add);
+                    break;
+            }
             return cProvider;
         }
 
@@ -64,7 +55,7 @@ namespace RESTar.Requests
             if (!Regex.IsMatch(provider.ProtocolIdentifier, "^[a-zA-Z]+$"))
                 throw new InvalidProtocolProvider($"Invalid protocol provider '{provider.GetType().RESTarTypeName()}'. " +
                                                   "ProtocolIdentifier can only contain letters a-z and A-Z");
-            if (!provider.AllowExternalContentProviders)
+            if (provider.ExternalContentTypeProviderSettings == ExternalContentTypeProviderSettings.DontAllow)
             {
                 var contentProviders = provider.GetContentTypeProviders()?.ToList();
                 if (contentProviders?.Any() != true)
@@ -75,32 +66,6 @@ namespace RESTar.Requests
                     throw new InvalidProtocolProvider($"Invalid protocol provider '{provider.GetType().RESTarTypeName()}'. " +
                                                       "The protocol provider allows no external content type providers " +
                                                       "and none of the provided content type providers can read or write.");
-            }
-        }
-
-        private static void ValidateContentTypeProvider(IContentTypeProvider provider)
-        {
-            if (provider == null)
-                throw new InvalidContentTypeProvider("External content type provider cannot be null");
-            if (!provider.CanRead && !provider.CanWrite)
-                throw new InvalidContentTypeProvider($"Provider '{provider.GetType().RESTarTypeName()}' cannot read or write");
-        }
-
-        internal static void SetupContentTypeProviders(List<IContentTypeProvider> contentTypeProviders)
-        {
-            InputContentTypeProviders = new Dictionary<string, IContentTypeProvider>(StringComparer.OrdinalIgnoreCase);
-            OutputContentTypeProviders = new Dictionary<string, IContentTypeProvider>(StringComparer.OrdinalIgnoreCase);
-            contentTypeProviders = contentTypeProviders ?? new List<IContentTypeProvider>();
-            contentTypeProviders.Insert(0, new XMLWriter());
-            contentTypeProviders.Insert(0, Serializers.Excel);
-            contentTypeProviders.Insert(0, Serializers.Json);
-            foreach (var provider in contentTypeProviders)
-            {
-                ValidateContentTypeProvider(provider);
-                if (provider.CanRead)
-                    provider.MatchStrings?.ForEach(mimeType => InputContentTypeProviders[mimeType] = provider);
-                if (provider.CanWrite)
-                    provider.MatchStrings?.ForEach(mimeType => OutputContentTypeProviders[mimeType] = provider);
             }
         }
 
@@ -131,21 +96,21 @@ namespace RESTar.Requests
             });
         }
 
-        #endregion
+        #region es
 
-        /// <summary>
-        /// Evaluates a request through the RESTar request engine. The return is a 2-tuple containing function delegates.
-        /// Invoking the first one gets a raw view of the request result. It is preferable when we want to work with the 
-        /// generated result as .NET types, and when there is no intention to create an output stream from the result.
-        /// Invoking the second one gets a finalized view of the request result, where entities are serialized to output 
-        /// streams (where applicable). Use this if an output stream is needed for the result content.
-        /// </summary>
-        /// <param name="trace">Include a trace, for example a TCPConnection (cannot be null)</param>
-        /// <param name="method">The method to perform</param>
-        /// <param name="uri">The URI of the request (cannot be null)</param>
-        /// <param name="body">The body of the request (can be null)</param>
-        /// <param name="headers">The headers of the request (can be null)</param>
-        /// <returns></returns>
+        // /// <summary>
+        // /// Evaluates a request through the RESTar request engine. The return is a 2-tuple containing function delegates.
+        // /// Invoking the first one gets a raw view of the request result. It is preferable when we want to work with the 
+        // /// generated result as .NET types, and when there is no intention to create an output stream from the result.
+        // /// Invoking the second one gets a finalized view of the request result, where entities are serialized to output 
+        // /// streams (where applicable). Use this if an output stream is needed for the result content.
+        // /// </summary>
+        // /// <param name="trace">Include a trace, for example a TCPConnection (cannot be null)</param>
+        // /// <param name="method">The method to perform</param>
+        // /// <param name="uri">The URI of the request (cannot be null)</param>
+        // /// <param name="body">The body of the request (can be null)</param>
+        // /// <param name="headers">The headers of the request (can be null)</param>
+        // /// <returns></returns>
         // public static (Func<IResult> GetRawResult, Func<IFinalizedResult> GetFinalizedResult) Evaluate(ITraceable trace, Methods method, ref string uri,
         //     byte[] body = null, Headers headers = null)
         // {
@@ -270,5 +235,7 @@ namespace RESTar.Requests
         //         return new AcceptOrigin(origin, resource, requestParameters);
         //     return new InvalidOrigin();
         // }
+
+        #endregion
     }
 }
