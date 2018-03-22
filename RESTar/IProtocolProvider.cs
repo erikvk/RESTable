@@ -74,7 +74,7 @@ namespace RESTar
         /// protocolprovider to throw an exception and abort a request if the API call is not 
         /// in compliance with the protocol.
         /// </summary>
-        void CheckCompliance(RequestParameters requestParameters);
+        bool IsCompliant(IRequest request, out string invalidReason);
 
         /// <summary>
         /// The protocol needs to be able to generate a relative URI string from an IUriParameters instance. 

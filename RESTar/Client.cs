@@ -2,9 +2,10 @@
 using System.Net;
 using RESTar.Auth;
 using RESTar.Internal;
+using RESTar.Requests;
 using RESTar.WebSockets;
 
-namespace RESTar.Requests
+namespace RESTar
 {
     /// <inheritdoc cref="ITraceable" />
     /// <inheritdoc cref="IDisposable" />

@@ -136,6 +136,7 @@
     <Compile Include="ResourceTemplates\FeedTerminal.cs" />
     <Compile Include="ResourceTemplates\OptionsTerminal.cs" />
     <Compile Include="RESTarOutputStreamController.cs" />
+    <Compile Include="Results\Error\BadRequest\NotCompliantWithProtocol.cs" />
     <Compile Include="Results\Error\InvalidProtocolProvider.cs" />
     <Compile Include="Results\Error\InvalidContentTypeProvider.cs" />
     <Compile Include="Results\Error\InvalidReferencedEnumDeclaration.cs" />
@@ -205,7 +206,7 @@
     <Compile Include="Requests\DataConfig.cs" />
     <Compile Include="Internal\ErrorCodes.cs" />
     <Compile Include="Operators.cs" />
-    <Compile Include="Requests\Client.cs" />
+    <Compile Include="Client.cs" />
     <Compile Include="EntityResource.cs" />
     <Compile Include="ResourceAlias.cs" />
     <Compile Include="Admin\ResourceProfile.cs" />

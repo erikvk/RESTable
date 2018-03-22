@@ -18,6 +18,18 @@ namespace RESTar
 
         /// <inheritdoc />
         public ContentTypes(IEnumerable<ContentType> collection) : base(collection) { }
+
+        /// <summary>
+        /// Creates a ContentTypes from a single ContentType instance
+        /// </summary>
+        /// <param name="contentType"></param>
+        public static implicit operator ContentTypes(ContentType contentType) => new ContentTypes {contentType};
+
+        /// <summary>
+        /// Creates a ContentTypes from an array of ContentType instances
+        /// </summary>
+        /// <param name="contentTypes"></param>
+        public static implicit operator ContentTypes(ContentType[] contentTypes) => new ContentTypes(contentTypes);
     }
 
     /// <summary>
@@ -46,14 +58,30 @@ namespace RESTar
         public bool AnyType => MimeType == "*/*";
 
         /// <summary>
+        /// application/json
+        /// </summary>
+        public static readonly ContentType JSON = new ContentType("application/json");
+
+        /// <summary>
+        /// application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+        /// </summary>
+        public static readonly ContentType Excel = new ContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+
+        /// <summary>
+        /// application/xml
+        /// </summary>
+        public static readonly ContentType XML = new ContentType("application/xml");
+
+        /// <summary>
         /// The default input content type (application/json)
         /// </summary>
-        public static readonly ContentType DefaultInput = new ContentType("application/json");
+        public static readonly ContentType DefaultInput = JSON;
 
         /// <summary>
         /// The default output content type (*/*)
         /// </summary>
         public static readonly ContentType DefaultOutput = new ContentType("*/*");
+
 
         /// <summary>
         /// Parses a Content-Type header an returnes a ContentType instance describing it
@@ -134,9 +162,34 @@ namespace RESTar
             return $"{MimeType}{(dataString?.Length > 0 ? ";" + dataString : "")}";
         }
 
+        /// <inheritdoc />
+        public override bool Equals(object obj) => obj is ContentType ct && ct == this;
+
         /// <summary>
         /// Converts a header value string to a ContenType
         /// </summary>
         public static implicit operator ContentType(string headerValue) => new ContentType(headerValue);
+
+        /// <summary>
+        /// Compares two content types for equality
+        /// </summary>
+        public static bool operator ==(ContentType first, ContentType second) => first.MimeType.EqualsNoCase(second.MimeType);
+
+        /// <summary>
+        /// Compares two content types for non-equality
+        /// </summary>
+        public static bool operator !=(ContentType first, ContentType second) => !first.MimeType.EqualsNoCase(second.MimeType);
+
+        /// <inheritdoc />
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                var hashCode = MimeType != null ? MimeType.GetHashCode() : 0;
+                hashCode = (hashCode * 397) ^ (Data != null ? Data.GetHashCode() : 0);
+                hashCode = (hashCode * 397) ^ Q.GetHashCode();
+                return hashCode;
+            }
+        }
     }
 }

@@ -11,7 +11,7 @@
         string TraceId { get; }
 
         /// <summary>
-        /// The initial TCP connection
+        /// Client to which this trace can be led
         /// </summary>
         Client Client { get; }
     }

@@ -140,5 +140,6 @@ namespace RESTar
         /// Is this request valid?
         /// </summary>
         bool IsValid { get; }
+
     }
 }

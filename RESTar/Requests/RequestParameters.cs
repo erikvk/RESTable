@@ -200,18 +200,7 @@ namespace RESTar.Requests
                 }
             }
             else BodyBytes = body;
-
             HasBody = BodyBytes?.Length > 0;
-
-            try
-            {
-                cachedProtocolProvider?.ProtocolProvider.CheckCompliance(this);
-            }
-            catch (NotImplementedException) { }
-            catch (Exception e)
-            {
-                Error = e;
-            }
             if (Error == null && Uri?.HasError == true)
                 Error = Uri.Error;
         }

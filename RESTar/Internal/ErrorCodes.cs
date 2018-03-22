@@ -42,7 +42,7 @@ namespace RESTar.Internal
         InvalidDestination = 022,
 
         UnknownProtocol = 030,
-
+        
         // - - - - - - - - - 
         // 100-199: Resource errors
         // 100-109: Resource locator errors

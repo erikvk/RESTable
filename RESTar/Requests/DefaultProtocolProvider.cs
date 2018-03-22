@@ -177,7 +177,10 @@ namespace RESTar.Requests
             }
         }
 
-        /// <inheritdoc />
-        public void CheckCompliance(RequestParameters requestParameters) { }
+        public bool IsCompliant(IRequest request, out string invalidReason)
+        {
+            invalidReason = null;
+            return true;
+        }
     }
 }

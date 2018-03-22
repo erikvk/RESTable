@@ -60,6 +60,10 @@ namespace RESTar.Requests
         public string TraceId => RequestParameters.TraceId;
         public Client Client => RequestParameters.Client;
         public CachedProtocolProvider ProtocolProvider => RequestParameters.CachedProtocolProvider;
+        public Headers Headers => RequestParameters.Headers;
+        public bool IsWebSocketUpgrade => RequestParameters.IsWebSocketUpgrade;
+
+        #endregion
 
         public IUriComponents UriComponents
         {
@@ -69,11 +73,6 @@ namespace RESTar.Requests
                 return new UriComponents(IResource.Name, viewName, Conditions, MetaConditions.AsConditionList());
             }
         }
-
-        public Headers Headers => RequestParameters.Headers;
-        public bool IsWebSocketUpgrade => RequestParameters.IsWebSocketUpgrade;
-
-        #endregion
 
         #region ILogable
 
@@ -122,6 +121,13 @@ namespace RESTar.Requests
         {
             if (!IsValid)
                 return RESTarError.GetResult(Error, this);
+            try
+            {
+                if (!ProtocolProvider.ProtocolProvider.IsCompliant(this, out var reason))
+                    return RESTarError.GetResult(new NotCompliantWithProtocol(ProtocolProvider.ProtocolProvider, reason), this);
+            }
+            catch (NotImplementedException) { }
+
             if (IsEvaluating || StackDepth > 300) throw new InfiniteLoop();
             var result = RunEvaluation();
             if (result is InfiniteLoop loop) throw loop;

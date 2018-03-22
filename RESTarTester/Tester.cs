@@ -1,5 +1,4 @@
-﻿
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -13,7 +12,9 @@ using RESTar;
 using RESTar.Admin;
 using RESTar.Linq;
 using RESTar.Operations;
+using RESTar.Requests;
 using RESTar.Resources;
+using RESTar.Results.Success;
 using Starcounter;
 using static RESTar.Methods;
 using static RESTar.Operators;
@@ -433,47 +434,53 @@ namespace RESTarTester
 
             #region Internal requests
 
-            // var g = new OldRequest<MyDict>().POST(() =>
-            // {
-            //     dynamic d = new MyDict();
-            //     d.Hej = "123";
-            //     d.Foo = 3213M;
-            //     d.Goo = true;
-            //     dynamic v = new MyDict();
-            //     v.Hej = "123";
-            //     v.Foo = 3213M;
-            //     v.Goo = false;
-            //     dynamic x = new MyDict();
-            //     x.Hej = "123";
-            //     x.Foo = 3213M;
-            //     x.Goo = false;
-            //     return new MyDict[] {d, v, x};
-            // });
-            // 
-            // var r1 = new OldRequest<Resource1>(new Condition<Resource1>(nameof(Resource1.Sbyte), GREATER_THAN, 1));
-            // var r2 = new OldRequest<Resource2>();
-            // var r3 = new OldRequest<Resource3>();
-            // var r4 = new OldRequest<Resource4>();
-            // var r6 = new OldRequest<Aggregator>
-            // {
-            //     Body = new
-            //     {
-            //         A = "REPORT /resource",
-            //         B = new[] {"REPORT /resource", "REPORT /resource"}
-            //     }
-            // };
-            // var r5 = new OldRequest<MyDict>();
-            // var cond = new Condition<MyDict>("Goo", EQUALS, false);
-            // r5.Conditions = new[] {cond};
-            // 
-            // var res1 = r1.GET();
-            // var res2 = r2.GET();
-            // var res3 = r3.GET();
-            // var res4 = r4.GET();
-            // var res5 = r5.GET();
-            // var (excel, nrOfRows) = r5.GETExcel();
-            // excel.Dispose();
-            // var res6 = r6.GET();
+            var g = Request<MyDict>.Create(Client.Internal, POST);
+            g.Inserter = () =>
+            {
+                dynamic d = new MyDict();
+                d.Hej = "123";
+                d.Foo = 3213M;
+                d.Goo = true;
+                dynamic v = new MyDict();
+                v.Hej = "123";
+                v.Foo = 3213M;
+                v.Goo = false;
+                dynamic x = new MyDict();
+                x.Hej = "123";
+                x.Foo = 3213M;
+                x.Goo = false;
+                return new MyDict[] {d, v, x};
+            };
+            var result = g.GetResult();
+            Debug.Assert(result is InsertedEntities ie && ie.InsertedCount == 3);
+
+            var r1Cond = new Condition<Resource1>(nameof(Resource1.Sbyte), GREATER_THAN, 1);
+            var r1 = Request<Resource1>.Create(Client.Internal, GET);
+            r1.Conditions.Add(r1Cond);
+
+            var r2 = Request<Resource2>.Create(Client.Internal, GET);
+            var r3 = Request<Resource3>.Create(Client.Internal, GET);
+            var r4 = Request<Resource4>.Create(Client.Internal, GET);
+            var r6 = Request<Aggregator>.Create(Client.Internal, GET);
+            r6.Body = new Body(new
+            {
+                A = "REPORT /resource",
+                B = new[] {"REPORT /resource", "REPORT /resource"}
+            });
+            var r5 = Request<MyDict>.Create(Client.Internal, GET);
+            var cond = new Condition<MyDict>("Goo", EQUALS, false);
+            r5.Conditions.Add(cond);
+            r5.Headers.Accept = RESTar.ContentType.Excel;
+
+            var res1 = r1.GetResult().FinalizeResult();
+            var res2 = r2.GetResult().FinalizeResult();
+            var res3 = r3.GetResult().FinalizeResult();
+            var res4 = r4.GetResult().FinalizeResult();
+            var res5 = r5.GetResult().FinalizeResult();
+            var res6 = r6.GetResult().FinalizeResult();
+
+            Debug.Assert(res5.ContentType == RESTar.ContentType.Excel);
+            Debug.Assert(res5.Body.Length > 1);
 
             Db.TransactAsync(() =>
             {
@@ -799,5 +806,3 @@ namespace RESTarTester
         public Resource2 Resource2;
     }
 }
-
-#endif

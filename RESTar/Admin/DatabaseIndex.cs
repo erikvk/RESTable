@@ -5,7 +5,6 @@ using System.Runtime.Serialization;
 using System.Text.RegularExpressions;
 using Newtonsoft.Json;
 using RESTar.Internal;
-using RESTar.Requests;
 
 namespace RESTar.Admin
 {
