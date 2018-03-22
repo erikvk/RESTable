@@ -37,6 +37,11 @@ namespace RESTar.Requests
         public string Destination { get; set; }
 
         /// <summary>
+        /// The Origin header
+        /// </summary>
+        public string Origin { get; set; }
+
+        /// <summary>
         /// The Authorization header
         /// </summary>
         public string Authorization { internal get; set; }
@@ -59,6 +64,7 @@ namespace RESTar.Requests
                     case var _ when key.EqualsNoCase(nameof(Source)): return Source;
                     case var _ when key.EqualsNoCase(nameof(Destination)): return Destination;
                     case var _ when key.EqualsNoCase(nameof(Authorization)): return Authorization;
+                    case var _ when key.EqualsNoCase(nameof(Origin)): return Origin;
                     case var _ when _dict.TryGetValue(key, out var value): return value;
                     default: return default;
                 }
@@ -81,6 +87,9 @@ namespace RESTar.Requests
                         break;
                     case var _ when key.EqualsNoCase(nameof(Authorization)):
                         Authorization = value;
+                        break;
+                    case var _ when key.EqualsNoCase(nameof(Origin)):
+                        Origin = value;
                         break;
                     default:
                         _dict[key] = value;

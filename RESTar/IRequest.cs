@@ -10,15 +10,13 @@ namespace RESTar
 {
     internal interface IRequestInternal : IRequest
     {
-        string Destination { get; }
         bool IsWebSocketUpgrade { get; }
         // RequestParameters RequestParameters { get; }
     }
-    
+
     internal interface IRequestInternal<T> : IRequestInternal, IRequest<T> where T : class
     {
         Func<IEnumerable<T>> EntitiesGenerator { set; }
-        
     }
 
     /// <inheritdoc />
@@ -32,6 +30,11 @@ namespace RESTar
         /// The resource of the request
         /// </summary>
         new IEntityResource<T> Resource { get; }
+
+        /// <summary>
+        /// Does this request have conditions?
+        /// </summary>
+        bool HasConditions { get; }
 
         /// <summary>
         /// The conditions of the request

@@ -23,6 +23,8 @@ namespace RESTar.Requests
         public Func<IEnumerable<T>> EntitiesGenerator { private get; set; }
         public ITarget<T> Target { get; }
 
+        public bool HasConditions => !(_conditions?.Count > 0);
+
         private List<Condition<T>> _conditions;
 
         public List<Condition<T>> Conditions
@@ -37,8 +39,8 @@ namespace RESTar.Requests
             }
         }
 
-        private readonly MetaConditions _metaConditions;
-        public MetaConditions MetaConditions => _metaConditions;
+        private MetaConditions _metaConditions;
+        public MetaConditions MetaConditions => _metaConditions ?? (_metaConditions = new MetaConditions());
 
         public Body Body
         {
@@ -57,9 +59,6 @@ namespace RESTar.Requests
 
         private ICollection<string> _cookies;
         public ICollection<string> Cookies => _cookies ?? (_cookies = new List<string>());
-
-        public string Source { get; }
-        public string Destination { get; }
 
         #region Parameter bindings
 
@@ -107,7 +106,6 @@ namespace RESTar.Requests
         private ITerminalResourceInternal TerminalResource => IResource as ITerminalResourceInternal;
         private IResource<T> IResource { get; }
 
-        private string CORSOrigin { get; }
         private DataConfig InputDataConfig { get; }
         private DataConfig OutputDataConfig { get; }
         private bool IsEvaluating;
@@ -188,7 +186,7 @@ namespace RESTar.Requests
                         var result = Operations<T>.REST.GetEvaluator(Method)(this);
                         result.Cookies = Cookies;
                         ResponseHeaders.ForEach(h => result.Headers[h.Key.StartsWith("X-") ? h.Key : "X-" + h.Key] = h.Value);
-                        if ((RESTarConfig.AllowAllOrigins ? "*" : CORSOrigin) is string allowedOrigin)
+                        if ((RESTarConfig.AllowAllOrigins ? "*" : Headers.Origin) is string allowedOrigin)
                             result.Headers["Access-Control-Allow-Origin"] = allowedOrigin;
                         if (!IsWebSocketUpgrade) return result;
                         var finalized = result.FinalizeResult();
@@ -215,11 +213,8 @@ namespace RESTar.Requests
             RequestParameters = requestParameters;
             IResource = resource;
             Target = resource;
-            Source = requestParameters.Headers.SafeGet("Source");
-            Destination = requestParameters.Headers.SafeGet("Destination");
-            CORSOrigin = requestParameters.Headers.SafeGet("Origin");
-            InputDataConfig = Source != null ? DataConfig.External : DataConfig.Client;
-            OutputDataConfig = Destination != null ? DataConfig.External : DataConfig.Client;
+            InputDataConfig = Headers.Source != null ? DataConfig.External : DataConfig.Client;
+            OutputDataConfig = Headers.Destination != null ? DataConfig.External : DataConfig.Client;
 
             try
             {
@@ -231,10 +226,9 @@ namespace RESTar.Requests
                         throw new UnknownView(requestParameters.Uri.ViewName, EntityResource);
                     Target = view;
                 }
-
-                Conditions = Condition<T>.Parse(requestParameters.Uri.Conditions, Target) ?? Conditions;
+                Conditions = Condition<T>.Parse(requestParameters.Uri.Conditions, Target);
                 if (EntityResource != null)
-                    _metaConditions = MetaConditions.Parse(requestParameters.Uri.MetaConditions, EntityResource) ?? MetaConditions;
+                    _metaConditions = MetaConditions.Parse(requestParameters.Uri.MetaConditions, EntityResource);
                 if (requestParameters.Headers.UnsafeOverride)
                 {
                     MetaConditions.Unsafe = true;
@@ -256,7 +250,8 @@ namespace RESTar.Requests
                     case DataConfig.External:
                         try
                         {
-                            var request = new HttpRequest(this, Source) {Accept = RequestParameters.InputContentTypeProvider.ContentType.ToString()};
+                            var request = new HttpRequest(this, Headers.Source)
+                                {Accept = RequestParameters.InputContentTypeProvider.ContentType.ToString()};
                             if (request.Method != GET)
                                 throw new InvalidSyntax(InvalidSource, "Only GET is allowed in Source headers");
                             var response = request.GetResponse() ?? throw new InvalidExternalSource(request, "No response");
