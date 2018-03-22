@@ -40,7 +40,7 @@ namespace RESTar.Operations
             .Filter(request.MetaConditions.Offset)
             .Filter(request.MetaConditions.Limit);
 
-        private static IEnumerable<dynamic> SELECT_FILTER_PROCESS(IRequest<T> request) => request.Target
+        private static IEnumerable<object> SELECT_FILTER_PROCESS(IRequest<T> request) => request.Target
             .Select(request)?
             .Process(request.MetaConditions.Processors)
             .Filter(request.MetaConditions.Distinct)
@@ -61,7 +61,7 @@ namespace RESTar.Operations
             }
         }
 
-        private static IEnumerable<dynamic> TRY_SELECT_FILTER_PROCESS(IRequest<T> request)
+        private static IEnumerable<object> TRY_SELECT_FILTER_PROCESS(IRequest<T> request)
         {
             try
             {
@@ -505,43 +505,43 @@ namespace RESTar.Operations
             //            internal static int DELETE(ViewRequest<T> request, T item) => OP_DELETE_ONE(request, item);
         }
 
-        internal static class App
-        {
-            internal static int POST(Func<T> inserter, InternalRequest<T> internalRequest) => INSERT_ONE(internalRequest, inserter);
-            internal static int POST(Func<IEnumerable<T>> inserter, InternalRequest<T> internalRequest) => INSERT(internalRequest, inserter);
-            internal static int PATCH(Func<T, T> updater, T source, InternalRequest<T> internalRequest) => UPDATE_ONE(internalRequest, updater, source);
-
-            internal static int PATCH(Func<IEnumerable<T>, IEnumerable<T>> updater, ICollection<T> source, InternalRequest<T> internalRequest)
-                => UPDATE(internalRequest, updater, source);
-
-            internal static int PUT(Func<T> inserter, IEnumerable<T> source, InternalRequest<T> internalRequest)
-            {
-                var list = source?.ToList();
-                switch (list?.Count)
-                {
-                    case null:
-                    case 0: return INSERT_ONE(internalRequest, inserter);
-                    case 1: return 0;
-                    default: throw new AmbiguousMatch(internalRequest.Resource);
-                }
-            }
-
-            internal static int PUT(Func<T> inserter, Func<T, T> updater, IEnumerable<T> source,
-                InternalRequest<T> internalRequest)
-            {
-                var list = source?.ToList();
-                switch (list?.Count)
-                {
-                    case null:
-                    case 0: return INSERT_ONE(internalRequest, inserter);
-                    case 1: return UPDATE_ONE(internalRequest, updater, list[0]);
-                    default: throw new AmbiguousMatch(internalRequest.Resource);
-                }
-            }
-
-            internal static int DELETE(T item, InternalRequest<T> internalRequest) => OP_DELETE_ONE(internalRequest, item);
-
-            internal static int DELETE(IEnumerable<T> items, InternalRequest<T> internalRequest) => OP_DELETE(internalRequest, items);
-        }
+        //        internal static class App
+        //        {
+        //            internal static int POST(Func<T> inserter, InternalRequest<T> internalRequest) => INSERT_ONE(internalRequest, inserter);
+        //            internal static int POST(Func<IEnumerable<T>> inserter, InternalRequest<T> internalRequest) => INSERT(internalRequest, inserter);
+        //            internal static int PATCH(Func<T, T> updater, T source, InternalRequest<T> internalRequest) => UPDATE_ONE(internalRequest, updater, source);
+        //
+        //            internal static int PATCH(Func<IEnumerable<T>, IEnumerable<T>> updater, ICollection<T> source, InternalRequest<T> internalRequest)
+        //                => UPDATE(internalRequest, updater, source);
+        //
+        //            internal static int PUT(Func<T> inserter, IEnumerable<T> source, InternalRequest<T> internalRequest)
+        //            {
+        //                var list = source?.ToList();
+        //                switch (list?.Count)
+        //                {
+        //                    case null:
+        //                    case 0: return INSERT_ONE(internalRequest, inserter);
+        //                    case 1: return 0;
+        //                    default: throw new AmbiguousMatch(internalRequest.Resource);
+        //                }
+        //            }
+        //
+        //            internal static int PUT(Func<T> inserter, Func<T, T> updater, IEnumerable<T> source,
+        //                InternalRequest<T> internalRequest)
+        //            {
+        //                var list = source?.ToList();
+        //                switch (list?.Count)
+        //                {
+        //                    case null:
+        //                    case 0: return INSERT_ONE(internalRequest, inserter);
+        //                    case 1: return UPDATE_ONE(internalRequest, updater, list[0]);
+        //                    default: throw new AmbiguousMatch(internalRequest.Resource);
+        //                }
+        //            }
+        //
+        //            internal static int DELETE(T item, InternalRequest<T> internalRequest) => OP_DELETE_ONE(internalRequest, item);
+        //
+        //            internal static int DELETE(IEnumerable<T> items, InternalRequest<T> internalRequest) => OP_DELETE(internalRequest, items);
+        //        }
     }
 }

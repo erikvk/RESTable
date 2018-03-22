@@ -94,7 +94,7 @@ namespace RESTar.Requests
         /// <summary>
         /// EqualityComparer for UriCondition objects
         /// </summary>
-        public static IEqualityComparer<UriCondition> EqualityComparer = new _EqualityComparer();
+        public static readonly IEqualityComparer<UriCondition> EqualityComparer = new _EqualityComparer();
 
         private class _EqualityComparer : IEqualityComparer<UriCondition>
         {

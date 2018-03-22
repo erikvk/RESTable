@@ -17,7 +17,7 @@ namespace RESTar.Resources
                 var resource = (IResource) BuildTerminalMethod.MakeGenericMethod(type).Invoke(this, null);
                 RESTarConfig.AddResource(resource);
             });
-            Shell.TerminalResource = (ITerminalResourceInternal) TerminalResource<Shell>.Get;
+            Shell.TerminalResource = (ITerminalResourceInternal<Shell>) TerminalResource<Shell>.Get;
         }
 
         internal TerminalResourceProvider() => BuildTerminalMethod =

@@ -113,6 +113,8 @@
     <Compile Include="Deflection\IL\MethodBodyReader.cs" />
     <Compile Include="Help.cs" />
     <Compile Include="IContentTypeProvider.cs" />
+    <Compile Include="InternalRequest.cs" />
+    <Compile Include="Requests\InvalidParametersRequest.cs" />
     <Compile Include="IProtocolProvider.cs" />
     <Compile Include="ContentTypeProviders\JsonContentProvider.cs" />
     <Compile Include="Logging\ConsoleFormat.cs" />
@@ -127,7 +129,7 @@
     <Compile Include="Requests\ConnectionId.cs" />
     <Compile Include="Requests\ITraceable.cs" />
     <Compile Include="Requests\OriginType.cs" />
-    <Compile Include="Requests\Request.cs" />
+    <Compile Include="Requests\ParsedRequest.cs" />
     <Compile Include="Resources\TerminalResourceProvider.cs" />
     <Compile Include="ResourceTemplates\FeedTerminal.cs" />
     <Compile Include="ResourceTemplates\OptionsTerminal.cs" />
@@ -200,7 +202,6 @@
     <Compile Include="Requests\DataConfig.cs" />
     <Compile Include="Internal\ErrorCodes.cs" />
     <Compile Include="Operators.cs" />
-    <Compile Include="InternalRequest.cs" />
     <Compile Include="Requests\Client.cs" />
     <Compile Include="EntityResource.cs" />
     <Compile Include="ResourceAlias.cs" />

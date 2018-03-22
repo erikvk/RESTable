@@ -63,7 +63,7 @@ namespace RESTar
         public bool WriteQueryAfterContent { get; set; } = true;
         public bool WriteInfoTexts { get; set; } = true;
 
-        private Func<int, IUriParameters> GetNextPageLink;
+        private Func<int, IUriComponents> GetNextPageLink;
         private Action OnConfirm;
         private IEntitiesMetadata PreviousResultMetadata;
 
@@ -72,7 +72,7 @@ namespace RESTar
         public void HandleBinaryInput(byte[] input) => throw new NotImplementedException();
         public bool SupportsTextInput { get; } = true;
         public bool SupportsBinaryInput { get; } = false;
-        internal static ITerminalResourceInternal TerminalResource { get; set; }
+        internal static ITerminalResourceInternal<Shell> TerminalResource { get; set; }
 
         public void Open()
         {

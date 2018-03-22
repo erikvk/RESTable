@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json;
+using RESTar.Linq;
 using RESTar.Serialization.NativeProtocol;
 using static System.StringComparison;
 
@@ -15,6 +16,33 @@ namespace RESTar.Requests
     [JsonConverter(typeof(HeadersConverter))]
     public class Headers : IDictionary<string, string>, IReadOnlyDictionary<string, string>
     {
+        /// <summary>
+        /// The Accept header
+        /// </summary>
+        public ContentType[] Accept { get; set; }
+
+        /// <summary>
+        /// The Content-Type header
+        /// </summary>
+        public ContentType? ContentType { get; set; }
+
+        /// <summary>
+        /// The Source header
+        /// </summary>
+        public string Source { get; set; }
+
+        /// <summary>
+        /// The Destination header
+        /// </summary>
+        public string Destination { get; set; }
+
+        /// <summary>
+        /// The Authorization header
+        /// </summary>
+        public string Authorization { internal get; set; }
+
+        internal bool UnsafeOverride { get; set; }
+
         /// <inheritdoc cref="IDictionary{TKey,TValue}" />
         /// <summary>
         /// Gets the header with the given name, or null if there is 
@@ -24,17 +52,58 @@ namespace RESTar.Requests
         {
             get
             {
-                _dict.TryGetValue(key, out var value);
-                return value;
+                switch (key)
+                {
+                    case var _ when key.EqualsNoCase(nameof(Accept)): return Accept.ToString();
+                    case var _ when key.EqualsNoCase(nameof(ContentType)): return ContentType.ToString();
+                    case var _ when key.EqualsNoCase(nameof(Source)): return Source;
+                    case var _ when key.EqualsNoCase(nameof(Destination)): return Destination;
+                    case var _ when key.EqualsNoCase(nameof(Authorization)): return Authorization;
+                    case var _ when _dict.TryGetValue(key, out var value): return value;
+                    default: return default;
+                }
             }
-            set => _dict[key] = value;
+            set
+            {
+                switch (key)
+                {
+                    case var _ when key.EqualsNoCase(nameof(Accept)):
+                        Accept = RESTar.ContentType.ParseManyOutput(value);
+                        break;
+                    case var _ when key.EqualsNoCase(nameof(ContentType)):
+                        ContentType = RESTar.ContentType.ParseInput(value);
+                        break;
+                    case var _ when key.EqualsNoCase(nameof(Source)):
+                        Source = value;
+                        break;
+                    case var _ when key.EqualsNoCase(nameof(Destination)):
+                        Destination = value;
+                        break;
+                    case var _ when key.EqualsNoCase(nameof(Authorization)):
+                        Authorization = value;
+                        break;
+                    default:
+                        _dict[key] = value;
+                        break;
+                }
+            }
         }
 
-        internal bool UnsafeOverride { get; set; }
-
         private Dictionary<string, string> _dict { get; }
-        internal void Put(KeyValuePair<string, string> kvp) => _dict[kvp.Key] = kvp.Value;
-        internal IEnumerable<KeyValuePair<string, string>> CustomHeaders => this.Where(pair => IsCustom(pair.Key));
+        private void Put(KeyValuePair<string, string> kvp) => _dict[kvp.Key] = kvp.Value;
+
+        private IEnumerable<KeyValuePair<string, string>> ReservedHeaders => new[]
+        {
+            new KeyValuePair<string, string>(nameof(Accept), Accept.ToString()),
+            new KeyValuePair<string, string>(nameof(ContentType), Accept.ToString()),
+            new KeyValuePair<string, string>(nameof(Source), Source),
+            new KeyValuePair<string, string>(nameof(Destination), Destination),
+            new KeyValuePair<string, string>(nameof(Authorization), Authorization)
+        };
+
+        internal IEnumerable<KeyValuePair<string, string>> CustomHeaders => this
+            .Union(ReservedHeaders)
+            .Where(pair => IsCustom(pair.Key));
 
         internal static bool IsCustom(string key)
         {
@@ -42,14 +111,11 @@ namespace RESTar.Requests
             {
                 case var _ when string.Equals(key, "host", OrdinalIgnoreCase):
                 case var _ when string.Equals(key, "authorization", OrdinalIgnoreCase):
-                case var _ when string.Equals(key, "restar-authtoken", OrdinalIgnoreCase):
                 case var _ when string.Equals(key, "connection", OrdinalIgnoreCase):
                 case var _ when string.Equals(key, "upgrade", OrdinalIgnoreCase):
                 case var _ when string.Equals(key, "sec-websocket-version", OrdinalIgnoreCase):
                 case var _ when string.Equals(key, "sec-websocket-key", OrdinalIgnoreCase):
                 case var _ when string.Equals(key, "sec-websocket-extensions", OrdinalIgnoreCase):
-                case var _ when string.Equals(key, "source", OrdinalIgnoreCase):
-                case var _ when string.Equals(key, "destination", OrdinalIgnoreCase): return false;
                 default: return true;
             }
         }
@@ -61,19 +127,12 @@ namespace RESTar.Requests
         public Headers()
         {
             _dict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            ContentType = RESTar.ContentType.DefaultInput;
+            Accept = null;
         }
 
-        internal Headers(Dictionary<string, string> dictToUse)
-        {
-            if (dictToUse == null)
-            {
-                _dict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-                return;
-            }
-            _dict = dictToUse.Comparer.Equals(StringComparer.OrdinalIgnoreCase)
-                ? dictToUse
-                : new Dictionary<string, string>(dictToUse, StringComparer.OrdinalIgnoreCase);
-        }
+        /// <inheritdoc />
+        public Headers(Dictionary<string, string> dictToUse) : this() => dictToUse?.ForEach(Put);
 
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 

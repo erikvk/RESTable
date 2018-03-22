@@ -24,7 +24,8 @@ namespace RESTar.Results.Success
         public string LogContent => default;
         public string HeadersStringCache { get; set; }
         public bool ExcludeHeaders => default;
-        public IFinalizedResult FinalizeResult() => this;
+        public IFinalizedResult FinalizeResult(ContentType? contentType = null) => this;
+
         public DateTime LogTime { get; }
 
         public WebSocketResult(bool leaveOpen, ITraceable trace) : this()

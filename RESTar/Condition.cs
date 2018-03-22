@@ -53,7 +53,7 @@ namespace RESTar
 
         internal Operator InternalOperator => Operator;
 
-        private dynamic _value;
+        private object _value;
 
         /// <summary>
         /// The second operand for the operation defined by the operator. Defines
@@ -64,7 +64,7 @@ namespace RESTar
             get => _value;
             set
             {
-                if (Do.Try<bool>(() => value == _value, false))
+                if (Do.Try(() => value == _value, false))
                     return;
                 var oldValue = _value;
                 _value = value;

@@ -26,14 +26,15 @@ namespace RESTar
         #region Private and explicit members
 
         private Condition<T>[] _conditions;
-        Body IRequest.Body => _body;
+        //Body IRequest.Body => _body;
         Headers IRequest.ResponseHeaders { get; } = new Headers();
         ICollection<string> IRequest.Cookies { get; } = new List<string>();
-        IUriParameters IRequest.UriParameters => throw new InvalidOperationException();
+        IUriComponents IRequest.UriComponents => throw new InvalidOperationException();
         IEntityResource IRequest.Resource => Resource;
+        public bool IsWebSocketUpgrade { get; }
 
         Methods IRequest.Method => 0;
-        Headers IRequest.Headers => RequestHeaders;
+        //Headers IRequest.Headers => RequestHeaders;
         string ITraceable.TraceId => null;
         private Func<IEnumerable<T>> EntitiesGenerator { get; set; }
         IEnumerable<T> IRequest<T>.GetEntities() => EntitiesGenerator?.Invoke() ?? new T[0];
@@ -105,7 +106,7 @@ namespace RESTar
         /// </summary>
         public object Body
         {
-            set => _body = new Body(Serializers.Json.SerializeToBytes(value), "application/json", Serializers.Json);
+            set => _body = new Body(Serializers.Json.SerializeToBytes(value), Serializers.Json.ContentType);
         }
 
         public void Dispose()

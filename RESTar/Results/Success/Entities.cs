@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using RESTar.Operations;
 using RESTar.Requests;
@@ -10,17 +11,17 @@ namespace RESTar.Results.Success
     /// <summary>
     /// A result that contains a set of entities
     /// </summary>
-    public sealed class Entities : Content, IEntitiesMetadata
+    public sealed class Entities : Content, IEntitiesMetadata, IEnumerable<object>
     {
-        /// <summary>
-        /// The request that this result was generated for
-        /// </summary>
-        private IRequestInternal Request { get; set; }
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+        /// <inheritdoc />
+        public IEnumerator<object> GetEnumerator() => Content.GetEnumerator();
 
         /// <summary>
         /// The entities contained in the result
         /// </summary>
-        public IEnumerable<dynamic> Content { get; set; }
+        private IEnumerable<object> Content { get; set; }
 
         /// <summary>
         /// The number of entities in the result
@@ -41,12 +42,12 @@ namespace RESTar.Results.Success
             $"attachment;filename={Request.Resource.Name}_{DateTime.Now:yyMMddHHmmssfff}{extension}";
 
         /// <inheritdoc />
-        public IUriParameters GetNextPageLink() => GetNextPageLink(-1);
+        public IUriComponents GetNextPageLink() => GetNextPageLink(-1);
 
         /// <inheritdoc />
-        public IUriParameters GetNextPageLink(int count)
+        public IUriComponents GetNextPageLink(int count)
         {
-            var existing = Request.UriParameters;
+            var existing = Request.UriComponents;
             if (count > -1)
             {
                 existing.MetaConditions.RemoveAll(c => c.Key.EqualsNoCase("limit"));
@@ -58,10 +59,10 @@ namespace RESTar.Results.Success
             return existing;
         }
 
-        internal static Entities Create<T>(IRequestInternal<T> request, IEnumerable<dynamic> content) where T : class => new Entities(request)
+        internal static Entities Create<TResource>(IRequestInternal<TResource> request, IEnumerable<object> content)
+            where TResource : class => new Entities(request)
         {
             Content = content,
-            Request = request,
             ExternalDestination = request.Destination
         };
     }

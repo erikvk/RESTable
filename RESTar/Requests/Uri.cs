@@ -10,7 +10,7 @@ namespace RESTar.Requests
     /// <summary>
     /// Encodes a URI that is used in a request
     /// </summary>
-    public class URI : IUriParameters
+    public class URI : IUriComponents
     {
         /// <inheritdoc />
         public string ResourceSpecifier { get; set; }

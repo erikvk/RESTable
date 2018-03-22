@@ -106,7 +106,7 @@ namespace RESTar.Results.Error
         public ContentType ContentType { get; } = null;
 
         /// <inheritdoc />
-        public virtual IFinalizedResult FinalizeResult() => this;
+        public IFinalizedResult FinalizeResult(ContentType? contentType = null) => this;
 
         internal static RESTarError GetError(Exception exception)
         {
@@ -123,22 +123,22 @@ namespace RESTar.Results.Error
             }
         }
 
-        internal static IFinalizedResult GetResult(Exception exs, RequestParameters requestParameters)
+        internal static IFinalizedResult GetResult(Exception exs, IRequestInternal request)
         {
             var error = GetError(exs);
-            error.SetTrace(requestParameters.Client);
+            error.SetTrace(request.Client);
             string errorId = null;
             if (!(error is Forbidden.Forbidden))
             {
                 Admin.Error.ClearOld();
-                errorId = Trans(() => Admin.Error.Create(error, requestParameters)).Id;
+                errorId = Trans(() => Admin.Error.Create(error, request)).Id;
             }
-            if (requestParameters.IsWebSocketUpgrade)
+            if (request.IsWebSocketUpgrade)
             {
-                requestParameters.Client.WebSocket?.SendResult(error);
+                request.Client.WebSocket?.SendResult(error);
                 return new WebSocketResult(leaveOpen: false, trace: error);
             }
-            switch (requestParameters.Method)
+            switch (request.Method)
             {
                 case GET:
                 case POST:

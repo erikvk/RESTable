@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using RESTar.Internal;
-using RESTar.Logging;
 using RESTar.Operations;
 using RESTar.Requests;
 using RESTar.Results.Error;
@@ -12,84 +10,29 @@ using static RESTar.RESTarConfig;
 
 namespace RESTar
 {
-    internal class InvalidParametersRequest : IRequest, IRequestInternal
+    public static class Request<T> where T : class
     {
-        private Exception Error { get; }
-
-        public void Dispose() { }
-
-        #region Logable
-
-        private ILogable LogItem => RequestParameters;
-        LogEventType ILogable.LogEventType => LogItem.LogEventType;
-        string ILogable.LogMessage => LogItem.LogMessage;
-        string ILogable.LogContent => LogItem.LogContent;
-
-        /// <inheritdoc />
-        public DateTime LogTime { get; } = DateTime.Now;
-
-        public string Destination { get; }
-
-        public IFinalizedResult HandleError(Exception exception) => throw new NotImplementedException();
-
-        string ILogable.HeadersStringCache
+        public static IRequest<T> Create(ITraceable trace, Methods method, string protocolId = null)
         {
-            get => LogItem.HeadersStringCache;
-            set => LogItem.HeadersStringCache = value;
-        }
-
-        bool ILogable.ExcludeHeaders => LogItem.ExcludeHeaders;
-
-        #endregion
-
-        public RequestParameters RequestParameters { get; }
-        public Methods Method => RequestParameters.Method;
-        public string TraceId => RequestParameters.TraceId;
-        public Client Client => RequestParameters.Client;
-        public IUriParameters UriParameters => RequestParameters.Uri;
-        public Headers Headers => RequestParameters.Headers;
-
-        public IEntityResource Resource => RequestParameters.IResource as IEntityResource;
-        public MetaConditions MetaConditions { get; }
-        public Body Body { get; set; }
-        public Headers ResponseHeaders { get; }
-        public ICollection<string> Cookies { get; }
-
-        public IResult GetResult() => RESTarError.GetResult(Error, RequestParameters);
-
-        public bool IsValid { get; }
-
-        internal InvalidParametersRequest(ITraceable trace, RequestParameters parameters)
-        {
-            IsValid = false;
-            RequestParameters = parameters;
-            Error = parameters.Error;
-            MetaConditions = null;
-            Body = parameters.Body;
-            ResponseHeaders = null;
-            Cookies = null;
+            var parameters = new RequestParameters(trace, method, protocolId);
         }
     }
-
 
     public static class Request
     {
         private static IRequest MakeRequest<T>(IResource<T> resource, RequestParameters requestParameters) where T : class
         {
-            return Request<T>.Create(resource, requestParameters);
+            return Requests.ParsedRequest<T>.Create(resource, requestParameters);
         }
-
-        private static bool ValidateRequest<T>(IResource<T> resource, RequestParameters requestParameters) where T : class
-        {
-            return Request<T>.Validate(resource, requestParameters);
-        }
-
+        
         public static IRequest Create(ITraceable trace, Methods method, ref string uri, byte[] body = null, Headers headers = null)
         {
             if (uri == null) throw new MissingUri();
             if (trace == null) throw new Untraceable();
             var parameters = new RequestParameters(trace, method, ref uri, body, headers);
             parameters.Authenticate();
+            if (!parameters.IsValid)
+                return new InvalidParametersRequest(parameters);
             return MakeRequest((dynamic) parameters.IResource, parameters);
         }
 

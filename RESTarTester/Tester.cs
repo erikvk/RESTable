@@ -1,4 +1,4 @@
-﻿#if RELEASE
+﻿
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -433,47 +433,47 @@ namespace RESTarTester
 
             #region Internal requests
 
-            var g = new OldRequest<MyDict>().POST(() =>
-            {
-                dynamic d = new MyDict();
-                d.Hej = "123";
-                d.Foo = 3213M;
-                d.Goo = true;
-                dynamic v = new MyDict();
-                v.Hej = "123";
-                v.Foo = 3213M;
-                v.Goo = false;
-                dynamic x = new MyDict();
-                x.Hej = "123";
-                x.Foo = 3213M;
-                x.Goo = false;
-                return new MyDict[] {d, v, x};
-            });
-
-            var r1 = new OldRequest<Resource1>(new Condition<Resource1>(nameof(Resource1.Sbyte), GREATER_THAN, 1));
-            var r2 = new OldRequest<Resource2>();
-            var r3 = new OldRequest<Resource3>();
-            var r4 = new OldRequest<Resource4>();
-            var r6 = new OldRequest<Aggregator>
-            {
-                Body = new
-                {
-                    A = "REPORT /resource",
-                    B = new[] {"REPORT /resource", "REPORT /resource"}
-                }
-            };
-            var r5 = new OldRequest<MyDict>();
-            var cond = new Condition<MyDict>("Goo", EQUALS, false);
-            r5.Conditions = new[] {cond};
-
-            var res1 = r1.GET();
-            var res2 = r2.GET();
-            var res3 = r3.GET();
-            var res4 = r4.GET();
-            var res5 = r5.GET();
-            var (excel, nrOfRows) = r5.GETExcel();
-            excel.Dispose();
-            var res6 = r6.GET();
+            // var g = new OldRequest<MyDict>().POST(() =>
+            // {
+            //     dynamic d = new MyDict();
+            //     d.Hej = "123";
+            //     d.Foo = 3213M;
+            //     d.Goo = true;
+            //     dynamic v = new MyDict();
+            //     v.Hej = "123";
+            //     v.Foo = 3213M;
+            //     v.Goo = false;
+            //     dynamic x = new MyDict();
+            //     x.Hej = "123";
+            //     x.Foo = 3213M;
+            //     x.Goo = false;
+            //     return new MyDict[] {d, v, x};
+            // });
+            // 
+            // var r1 = new OldRequest<Resource1>(new Condition<Resource1>(nameof(Resource1.Sbyte), GREATER_THAN, 1));
+            // var r2 = new OldRequest<Resource2>();
+            // var r3 = new OldRequest<Resource3>();
+            // var r4 = new OldRequest<Resource4>();
+            // var r6 = new OldRequest<Aggregator>
+            // {
+            //     Body = new
+            //     {
+            //         A = "REPORT /resource",
+            //         B = new[] {"REPORT /resource", "REPORT /resource"}
+            //     }
+            // };
+            // var r5 = new OldRequest<MyDict>();
+            // var cond = new Condition<MyDict>("Goo", EQUALS, false);
+            // r5.Conditions = new[] {cond};
+            // 
+            // var res1 = r1.GET();
+            // var res2 = r2.GET();
+            // var res3 = r3.GET();
+            // var res4 = r4.GET();
+            // var res5 = r5.GET();
+            // var (excel, nrOfRows) = r5.GETExcel();
+            // excel.Dispose();
+            // var res6 = r6.GET();
 
             Db.TransactAsync(() =>
             {

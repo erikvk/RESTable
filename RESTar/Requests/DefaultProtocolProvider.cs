@@ -89,12 +89,12 @@ namespace RESTar.Requests
         public IEnumerable<IContentTypeProvider> GetContentTypeProviders() => null;
 
         /// <inheritdoc />
-        public string MakeRelativeUri(IUriParameters parameters)
+        public string MakeRelativeUri(IUriComponents components)
         {
             string JoinConditions(List<UriCondition> c) => c.Count > 0 ? string.Join("&", c) : null;
-            return $"/{parameters.ResourceSpecifier}" +
-                   $"/{JoinConditions(parameters.Conditions) ?? "_"}" +
-                   $"/{JoinConditions(parameters.MetaConditions) ?? "_"}";
+            return $"/{components.ResourceSpecifier}" +
+                   $"/{JoinConditions(components.Conditions) ?? "_"}" +
+                   $"/{JoinConditions(components.MetaConditions) ?? "_"}";
         }
 
         /// <inheritdoc />
@@ -113,7 +113,7 @@ namespace RESTar.Requests
                     var streamController = new RESTarOutputStreamController();
                     try
                     {
-                        contentTypeProvider.SerializeCollection(entities.Content, streamController, entities.Request, out var entityCount);
+                        contentTypeProvider.SerializeCollection(entities, streamController, entities.Request, out var entityCount);
                         if (entityCount == 0)
                         {
                             streamController.Dispose();

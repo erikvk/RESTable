@@ -27,9 +27,13 @@ namespace RESTar.Operations
         ICollection<string> Cookies { get; }
 
         /// <summary>
-        /// Finalizes the result and prepares output streams and content types
+        /// Finalizes the result and prepares output streams and content types.
+        /// Optionally, provide a content type to finalize the result using.
+        /// If null, the content type specified in the request will be used.
+        /// If no content type is specified in the request, the default content 
+        /// type for the protocol is used.
         /// </summary>
-        IFinalizedResult FinalizeResult();
+        IFinalizedResult FinalizeResult(ContentType? contentType = null);
     }
 
     /// <inheritdoc />

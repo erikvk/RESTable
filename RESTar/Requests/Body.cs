@@ -8,7 +8,9 @@ namespace RESTar.Requests
     /// </summary>
     public struct Body
     {
-        private IContentTypeProvider ContentTypeProvider { get; }
+        public ContentType ContentType { get; }
+
+        internal IContentTypeProvider ContentTypeProvider { get; set; }
 
         /// <summary>
         /// The body's bytes
@@ -30,11 +32,12 @@ namespace RESTar.Requests
         /// </summary>
         public bool HasContent { get; }
 
-        internal Body(byte[] bytes, ContentType contentType, IContentTypeProvider contentTypeProvider)
+        internal Body(byte[] bytes, ContentType contentType)
         {
-            ContentTypeProvider = contentTypeProvider;
+            ContentType = contentType;
             Bytes = bytes;
             HasContent = bytes?.Length > 0;
+            ContentTypeProvider = null;
         }
 
         /// <summary>
@@ -44,8 +47,9 @@ namespace RESTar.Requests
         public Body(object content)
         {
             Bytes = content != null ? Serializers.Json.SerializeToBytes(content) : new byte[0];
-            ContentTypeProvider = Serializers.Json;
+            ContentType = Serializers.Json.ContentType;
             HasContent = Bytes?.Length > 0;
+            ContentTypeProvider = null;
         }
     }
 }

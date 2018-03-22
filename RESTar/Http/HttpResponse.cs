@@ -30,7 +30,8 @@ namespace RESTar.Http
         public string LogContent { get; } = null;
         public string HeadersStringCache { get; set; }
         public bool ExcludeHeaders { get; }
-        public IFinalizedResult FinalizeResult() => this;
+        public IFinalizedResult FinalizeResult(ContentType? contentType = null) => this;
+
         public DateTime LogTime { get; }
 
         private HttpResponse(ITraceable trace)

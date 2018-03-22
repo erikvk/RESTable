@@ -55,7 +55,7 @@ namespace RESTar
                                 switch (Request.GET(request, ref argument))
                                 {
                                     case NoContent _: return new JArray();
-                                    case Entities entities: return JArray.FromObject(entities.Content, JsonContentProvider.Serializer);
+                                    case Entities entities: return JArray.FromObject(entities, JsonContentProvider.Serializer);
                                     case var other: throw new Exception($"Could not get source data from '{argument}'. {other.LogMessage}");
                                 }
                             default:
@@ -157,7 +157,7 @@ namespace RESTar
                 {
                     case NoContent _: break;
                     case Entities entities:
-                        mapped.UnionWith(entities.Content.Cast<object>().Select(e => e.ToJObject()));
+                        mapped.UnionWith(entities.Select(e => e.ToJObject()));
                         break;
                     case var other:
                         throw new Exception($"Could not get source data from '{localMapper}'. {other.LogMessage}");

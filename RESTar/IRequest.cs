@@ -1,23 +1,24 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 using RESTar.Internal;
 using RESTar.Logging;
 using RESTar.Operations;
 using RESTar.Requests;
+using RESTar.Results.Error;
 
 namespace RESTar
 {
     internal interface IRequestInternal : IRequest
     {
         string Destination { get; }
-        RequestParameters RequestParameters { get; }
-        IFinalizedResult HandleError(Exception exception);
+        bool IsWebSocketUpgrade { get; }
+        // RequestParameters RequestParameters { get; }
     }
-
+    
     internal interface IRequestInternal<T> : IRequestInternal, IRequest<T> where T : class
     {
         Func<IEnumerable<T>> EntitiesGenerator { set; }
+        
     }
 
     /// <inheritdoc />
@@ -98,7 +99,7 @@ namespace RESTar
         /// <summary>
         /// The URI parameters that was used to construct this request
         /// </summary>
-        IUriParameters UriParameters { get; }
+        IUriComponents UriComponents { get; }
 
         /// <summary>
         /// Gets the result of the request

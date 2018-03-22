@@ -26,10 +26,14 @@ namespace RESTar.Results.Success
         public Content(IRequest request) : base(request) => RequestInternal = (IRequestInternal) request;
 
         /// <inheritdoc />
-        public override IFinalizedResult FinalizeResult()
+        public override IFinalizedResult FinalizeResult(ContentType? contentType = null)
         {
             try
             {
+                // Error is thrown here if content types cannot be resolved properly
+                // This means that .NET generated requests can do GetResult without 
+                // knowing content types or protocols.
+
                 return RequestInternal
                     .RequestParameters
                     .CachedProtocolProvider
@@ -38,9 +42,9 @@ namespace RESTar.Results.Success
                         .RequestParameters
                         .OutputContentTypeProvider);
             }
-            catch (Exception exs)
+            catch (Exception exception)
             {
-                return RequestInternal.HandleError(exs);
+                return RESTarError.GetResult(exception, RequestInternal);
             }
         }
     }

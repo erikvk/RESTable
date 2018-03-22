@@ -128,7 +128,7 @@ namespace RESTar.Admin
         internal static void Init()
         {
             SelectionCondition = new Condition<DatabaseIndex>(nameof(Name), Operators.EQUALS, null);
-            SelectionInternalRequest = new InternalRequest<DatabaseIndex>(SelectionCondition);
+            // SelectionInternalRequest = new InternalRequest<DatabaseIndex>(SelectionCondition);
         }
 
         /// <inheritdoc />

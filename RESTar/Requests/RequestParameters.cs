@@ -7,6 +7,7 @@ using RESTar.Internal;
 using RESTar.Linq;
 using RESTar.Logging;
 using RESTar.Results.Error;
+using RESTar.Serialization;
 using IResource = RESTar.Internal.IResource;
 
 namespace RESTar.Requests
@@ -14,7 +15,7 @@ namespace RESTar.Requests
     /// <summary>
     /// Contains parameters for a RESTar URI
     /// </summary>
-    public interface IUriParameters
+    public interface IUriComponents
     {
         /// <summary>
         /// Specifies the resource for the request
@@ -45,81 +46,29 @@ namespace RESTar.Requests
     /// </summary>
     public class RequestParameters : ILogable, ITraceable
     {
+        /// <inheritdoc />
+        public string TraceId { get; }
+
+        /// <inheritdoc />
+        public Client Client { get; }
+
         /// <summary>
         /// The method to perform
         /// </summary>
         public Methods Method { get; }
-
-        private string UnparsedUri { get; }
 
         /// <summary>
         /// The URI contained in the arguments
         /// </summary>
         public URI Uri { get; }
 
-        private IResource iresource;
-        internal IResource IResource => iresource ?? (iresource = Resource.Find(Uri.ResourceSpecifier));
-
-        /// <inheritdoc />
-        public Client Client { get; }
-
         /// <summary>
-        /// The body as byte array
+        /// The body of the request
         /// </summary>
-        public Body Body { get; }
+        public Body Body => new Body(BodyBytes, Headers.ContentType ?? Serializers.Json.ContentType);
 
         /// <inheritdoc />
         public Headers Headers { get; }
-
-        /// <summary>
-        /// The content type registered in the Content-Type header
-        /// </summary>
-        public ContentType ContentType { get; }
-
-        /// <summary>
-        /// The content type provider to use when deserializing input
-        /// </summary>
-        public IContentTypeProvider InputContentTypeProvider { get; }
-
-        /// <summary>
-        /// The content types registered in the Accept header
-        /// </summary>
-        public ContentType Accept { get; }
-
-        /// <summary>
-        /// The content type provider to use when serializing output
-        /// </summary>
-        public IContentTypeProvider OutputContentTypeProvider { get; }
-
-        internal ResultFinalizer ResultFinalizer { get; }
-        internal Exception Error { get; set; }
-
-        internal CachedProtocolProvider CachedProtocolProvider { get; }
-
-        /// <inheritdoc />
-        public string TraceId { get; }
-
-        /// <inheritdoc />
-        public bool ExcludeHeaders => IResource is IEntityResource e && e.RequiresAuthentication;
-
-        LogEventType ILogable.LogEventType { get; } = LogEventType.HttpInput;
-        string ILogable.LogMessage => $"{Method} {UnparsedUri}{(Body.HasContent ? $" ({Body.Bytes.Length} bytes)" : "")}";
-        private string _contentString;
-
-        string ILogable.LogContent
-        {
-            get
-            {
-                if (!Body.HasContent) return null;
-                return _contentString ?? (_contentString = Encoding.UTF8.GetString(Body.Bytes));
-            }
-        }
-
-        /// <inheritdoc />
-        public DateTime LogTime { get; } = DateTime.Now;
-
-        /// <inheritdoc />
-        public string HeadersStringCache { get; set; }
 
         /// <summary>
         /// Are these request parameters valid?
@@ -131,22 +80,52 @@ namespace RESTar.Requests
         /// </summary>
         public bool IsWebSocketUpgrade { get; }
 
-        private static bool PercentCharsEscaped(IDictionary<string, string> headers)
+        #region Private and internal
+
+        private byte[] BodyBytes { get; set; }
+        internal CachedProtocolProvider CachedProtocolProvider { get; }
+        private string UnparsedUri { get; }
+        private IResource iresource;
+        internal IResource IResource => iresource ?? (iresource = Resource.Find(Uri.ResourceSpecifier));
+        internal Exception Error { get; set; }
+        private static bool PercentCharsEscaped(IDictionary<string, string> headers) => headers?.ContainsKey("X-ARR-LOG-ID") == true;
+        private static string UnpackUriKey(string uriKey) => uriKey != null ? HttpUtility.UrlDecode(uriKey).Substring(1, uriKey.Length - 2) : null;
+        bool ILogable.ExcludeHeaders => IResource is IEntityResource e && e.RequiresAuthentication;
+        LogEventType ILogable.LogEventType { get; } = LogEventType.HttpInput;
+        string ILogable.LogMessage => $"{Method} {UnparsedUri}{(Body.HasContent ? $" ({Body.Bytes.Length} bytes)" : "")}";
+        DateTime ILogable.LogTime { get; } = DateTime.Now;
+        string ILogable.HeadersStringCache { get; set; }
+        private string _contentString;
+
+        string ILogable.LogContent
         {
-            return headers?.ContainsKey("X-ARR-LOG-ID") == true;
+            get
+            {
+                if (!Body.HasContent) return null;
+                return _contentString ?? (_contentString = Encoding.UTF8.GetString(Body.Bytes));
+            }
         }
 
-        private static string UnpackUriKey(string uriKey)
+        #endregion
+
+        internal RequestParameters(ITraceable trace, Methods method, IResource resource, string protocolId = null)
         {
-            return uriKey != null ? HttpUtility.UrlDecode(uriKey).Substring(1, uriKey.Length - 2) : null;
+            TraceId = trace.TraceId;
+            Client = trace.Client;
+            Method = method;
+            Headers = new Headers();
+            IsWebSocketUpgrade = Client.WebSocket?.Status == WebSocketStatus.Waiting;
+            if (protocolId != null && RequestEvaluator.ProtocolProviders.TryGetValue(protocolId, out var provider))
+                CachedProtocolProvider = provider;
+            else CachedProtocolProvider = RequestEvaluator.DefaultProtocolProvider;
         }
 
         internal RequestParameters(ITraceable trace, Methods method, ref string uri, byte[] body, Headers headers)
         {
             TraceId = trace.TraceId;
+            Client = trace.Client;
             Method = method;
             Headers = headers ?? new Headers();
-            Client = trace.Client;
             IsWebSocketUpgrade = Client.WebSocket?.Status == WebSocketStatus.Waiting;
 
             Uri = URI.ParseInternal(ref uri, PercentCharsEscaped(headers), trace, out var key, out var cachedProtocolProvider);
@@ -171,78 +150,28 @@ namespace RESTar.Requests
             if (key != null)
                 Headers["Authorization"] = $"apikey {UnpackUriKey(key)}";
             UnparsedUri = uri;
-            var contentType = ContentType.ParseInput(Headers["Content-Type"]);
-            var accepts = ContentType.ParseManyOutput(Headers["Accept"]);
-
-            if (cachedProtocolProvider != null)
-            {
-                ResultFinalizer = cachedProtocolProvider.ProtocolProvider.FinalizeResult;
-                if (contentType.MimeType == null)
-                {
-                    ContentType = cachedProtocolProvider.DefaultInputProvider.ContentType;
-                    InputContentTypeProvider = cachedProtocolProvider.DefaultInputProvider;
-                }
-                else
-                {
-                    if (!cachedProtocolProvider.InputMimeBindings.TryGetValue(contentType.MimeType, out var provider))
-                        Error = new UnsupportedContent(Headers["Content-Type"]);
-                    else
-                    {
-                        ContentType = contentType;
-                        InputContentTypeProvider = provider;
-                    }
-                }
-
-                if (accepts == null)
-                {
-                    Accept = cachedProtocolProvider.DefaultOutputProvider.ContentType;
-                    OutputContentTypeProvider = cachedProtocolProvider.DefaultOutputProvider;
-                }
-                else
-                {
-                    IContentTypeProvider acceptProvider = null;
-                    var containedWildcard = false;
-                    var accept = accepts.FirstOrDefault(a =>
-                    {
-                        if (a.MimeType == "*/*")
-                        {
-                            containedWildcard = true;
-                            return false;
-                        }
-                        return cachedProtocolProvider.OutputMimeBindings.TryGetValue(a.MimeType, out acceptProvider);
-                    });
-                    if (acceptProvider == null)
-                    {
-                        if (containedWildcard)
-                        {
-                            Accept = cachedProtocolProvider.DefaultOutputProvider.ContentType;
-                            OutputContentTypeProvider = cachedProtocolProvider.DefaultOutputProvider;
-                        }
-                        else Error = new NotAcceptable(Headers["Accept"]);
-                    }
-                    else
-                    {
-                        Accept = accept;
-                        OutputContentTypeProvider = acceptProvider;
-                    }
-                }
-            }
 
             if (hasMacro)
             {
                 if (Uri.Macro.OverWriteBody)
                 {
                     if (Uri.Macro.HasBody)
-                        Body = Uri.Macro.GetBody();
+                    {
+                        BodyBytes = Uri.Macro.GetBody();
+                        Headers.ContentType = Serializers.Json.ContentType;
+                    }
                 }
                 else
                 {
                     if (!(body?.Length > 0) && Uri.Macro.HasBody)
-                        Body = Uri.Macro.GetBody();
-                    else Body = new Body(body, ContentType, InputContentTypeProvider);
+                    {
+                        BodyBytes = Uri.Macro.GetBody();
+                        Headers.ContentType = Serializers.Json.ContentType;
+                    }
+                    else BodyBytes = body;
                 }
             }
-            else Body = new Body(body, ContentType, InputContentTypeProvider);
+            else BodyBytes = body;
 
             try
             {
@@ -253,7 +182,7 @@ namespace RESTar.Requests
             {
                 Error = e;
             }
-            if (Error == null && Uri.HasError)
+            if (Error == null && Uri?.HasError == true)
                 Error = Uri.Error;
         }
     }

@@ -15,7 +15,7 @@ using static RESTar.WebSocketStatus;
 
 namespace RESTar.Internal
 {
-    internal class TerminalResource<T> : IResource<T>, IResourceInternal, ITerminalResource, ITerminalResourceInternal where T : class, ITerminal
+    internal class TerminalResource<T> : IResource<T>, IResourceInternal, ITerminalResource<T>, ITerminalResourceInternal<T> where T : class, ITerminal
     {
         public string Name { get; }
         public Type Type { get; }
@@ -41,20 +41,22 @@ namespace RESTar.Internal
         public void SetAlias(string alias) => Alias = alias;
         public Type InterfaceType { get; }
 
-        public void InstantiateFor(IWebSocketInternal webSocket, IEnumerable<UriCondition> assignments = null)
+        public void InstantiateFor(IWebSocketInternal webSocket) => InstantiateFor(webSocket, null);
+
+        public void InstantiateFor(IWebSocketInternal webSocket, IEnumerable<Condition<T>> assignments)
         {
             var newTerminal = Constructor();
             assignments?.ForEach(assignment =>
             {
-                if (assignment.Operator.OpCode != EQUALS)
+                if (assignment.Operator != EQUALS)
                     throw new BadConditionOperator(this, assignment.Operator);
                 if (!Members.TryGetValue(assignment.Key, out var property))
                 {
                     if (newTerminal is IDynamicTerminal dynTerminal)
-                        dynTerminal[assignment.Key] = assignment.ValueLiteral.ParseConditionValue();
+                        dynTerminal[assignment.Key] = assignment.Value;
                     else throw new UnknownProperty(Type, assignment.Key);
                 }
-                else property.SetValue(newTerminal, assignment.ValueLiteral.ParseConditionValue(property));
+                else property.SetValue(newTerminal, assignment.Value);
             });
             newTerminal.WebSocket = webSocket;
             webSocket.Terminal = newTerminal;

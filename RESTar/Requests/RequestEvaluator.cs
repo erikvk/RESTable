@@ -1,20 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Text.RegularExpressions;
 using RESTar.ContentTypeProviders;
-using RESTar.Internal;
 using RESTar.Linq;
-using RESTar.Logging;
-using RESTar.Operations;
 using RESTar.Results.Error;
-using RESTar.Results.Error.Forbidden;
-using RESTar.Results.Success;
 using RESTar.Serialization;
-using static RESTar.Methods;
-using static RESTar.RESTarConfig;
-using Console = RESTar.Admin.Console;
 
 namespace RESTar.Requests
 {
@@ -44,6 +35,7 @@ namespace RESTar.Requests
         internal static IDictionary<string, CachedProtocolProvider> ProtocolProviders { get; private set; }
         private static IDictionary<string, IContentTypeProvider> InputContentTypeProviders { get; set; }
         private static IDictionary<string, IContentTypeProvider> OutputContentTypeProviders { get; set; }
+        internal static CachedProtocolProvider DefaultProtocolProvider { get; private set; }
 
         private static CachedProtocolProvider GetCachedProtocolProvider(IProtocolProvider provider)
         {
@@ -122,7 +114,10 @@ namespace RESTar.Requests
                 ValidateProtocolProvider(provider);
                 var cachedProvider = GetCachedProtocolProvider(provider);
                 if (provider is DefaultProtocolProvider)
+                {
+                    DefaultProtocolProvider = cachedProvider;
                     ProtocolProviders[""] = cachedProvider;
+                }
                 var protocolId = "-" + provider.ProtocolIdentifier;
                 if (ProtocolProviders.TryGetValue(protocolId, out var existing))
                 {

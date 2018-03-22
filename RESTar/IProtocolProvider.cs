@@ -52,7 +52,7 @@ namespace RESTar
         /// The protocol needs to be able to generate a relative URI string from an IUriParameters instance. 
         /// Note that only components added to a URI in ParseQuery can be present in the IUriParameters instance.
         /// </summary>
-        string MakeRelativeUri(IUriParameters parameters);
+        string MakeRelativeUri(IUriComponents components);
 
         /// <summary>
         /// Takes a result and generates an IFinalizedResult entity from it, that can be returned 

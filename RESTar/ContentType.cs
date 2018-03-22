@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using ClosedXML.Excel;
 
 namespace RESTar
 {
@@ -25,24 +24,43 @@ namespace RESTar
         /// </summary>
         public decimal Q { get; }
 
-        private static readonly ContentType DefaultInput = new ContentType("application/json");
-        private static readonly ContentType DefaultOutput = new ContentType("*/*");
+        /// <summary>
+        /// The default input content type (application/json)
+        /// </summary>
+        public static readonly ContentType DefaultInput = new ContentType("application/json");
 
-        internal static ContentType ParseInput(string contentTypeHeaderValue)
+        /// <summary>
+        /// The default output content type (*/*)
+        /// </summary>
+        public static readonly ContentType DefaultOutput = new ContentType("*/*");
+
+        /// <summary>
+        /// Parses a Content-Type header an returnes a ContentType instance describing it
+        /// </summary>
+        public static ContentType ParseInput(string contentTypeHeaderValue)
         {
-            if (string.IsNullOrEmpty(contentTypeHeaderValue)) return DefaultInput;
+            if (string.IsNullOrWhiteSpace(contentTypeHeaderValue)) return DefaultInput;
             return new ContentType(contentTypeHeaderValue);
         }
 
-        internal static ContentType ParseOutput(string headerValue)
+        /// <summary>
+        /// Parses an Accept header an returnes a ContentType instance describing it
+        /// </summary>
+        public static ContentType ParseOutput(string headerValue)
         {
-            if (string.IsNullOrEmpty(headerValue)) return DefaultOutput;
+            if (string.IsNullOrWhiteSpace(headerValue)) return DefaultOutput;
             return new ContentType(headerValue);
         }
 
-        internal static ContentType[] ParseManyOutput(string headerValue)
+        /// <summary>
+        /// Parses an Accept header, possibly with multiple content types, an returnes an 
+        /// array of ContentTypes describing it
+        /// </summary>
+        public static ContentType[] ParseManyOutput(string headerValue)
         {
-            return headerValue?.Split(new[] {','}, StringSplitOptions.RemoveEmptyEntries)
+            if (string.IsNullOrWhiteSpace(headerValue)) return new[] {DefaultOutput};
+            return headerValue
+                .Split(new[] {','}, StringSplitOptions.RemoveEmptyEntries)
                 .Select(s => new ContentType(s))
                 .OrderByDescending(m => m.Q)
                 .ToArray();
@@ -56,11 +74,29 @@ namespace RESTar
         {
             if (string.IsNullOrWhiteSpace(headerValue))
                 headerValue = "*/*";
-            var data = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            if (headerValue.Contains(','))
+            {
+                var preferred = ParseManyOutput(headerValue)[0];
+                MimeType = preferred.MimeType;
+                Data = preferred.Data;
+                Q = preferred.Q;
+                return;
+            }
             Q = 1;
             var parts = headerValue.ToLower().Split(';');
             MimeType = parts[0].Trim();
-            parts.Skip(1).Select(i => i.TSplit('=')).ForEach(data.TPut);
+            var data = default(Dictionary<string, string>);
+            foreach (var pair in parts.Skip(1).Select(i => i.TSplit('=')))
+            {
+                if (data == null)
+                    data = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                data.TPut(pair);
+            }
+            if (data == null)
+            {
+                Data = null;
+                return;
+            }
             if (data.TryGetValue("q", out var qs) && decimal.TryParse(qs, out var q))
                 Q = q;
             Data = data;

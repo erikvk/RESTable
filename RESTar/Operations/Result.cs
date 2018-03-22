@@ -29,7 +29,7 @@ namespace RESTar.Operations
         public ICollection<string> Cookies { get; internal set; }
 
         /// <inheritdoc />
-        public virtual IFinalizedResult FinalizeResult() => this;
+        public virtual IFinalizedResult FinalizeResult(ContentType? contentType = null) => this;
 
         #endregion
 
