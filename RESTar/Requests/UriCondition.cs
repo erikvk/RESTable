@@ -31,8 +31,10 @@ namespace RESTar.Requests
         /// </summary>
         public string ValueLiteral { get; }
 
-        internal static IEnumerable<UriCondition> ParseMany(string conditionsString, bool check = false) =>
-            conditionsString.Split('&').Select(s => new UriCondition(s, check));
+        internal static List<UriCondition> ParseMany(string conditionsString, bool check = false) => conditionsString
+            .Split('&')
+            .Select(s => new UriCondition(s, check))
+            .ToList();
 
         /// <inheritdoc />
         public override string ToString() => $"{Key}{Operator.Common}{ValueLiteral}";

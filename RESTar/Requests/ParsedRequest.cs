@@ -23,9 +23,11 @@ namespace RESTar.Requests
         public Func<IEnumerable<T>> EntitiesGenerator { private get; set; }
         public ITarget<T> Target { get; }
 
-        public Condition<T>[] Conditions
+        private List<Condition<T>> _conditions;
+
+        public List<Condition<T>> Conditions
         {
-            get => _conditions;
+            get => _conditions ?? (_conditions = new List<Condition<T>>());
             set
             {
                 if (IsEvaluating)
@@ -35,7 +37,8 @@ namespace RESTar.Requests
             }
         }
 
-        public MetaConditions MetaConditions { get; }
+        private readonly MetaConditions _metaConditions;
+        public MetaConditions MetaConditions => _metaConditions;
 
         public Body Body
         {
@@ -49,8 +52,12 @@ namespace RESTar.Requests
             }
         }
 
-        public Headers ResponseHeaders { get; }
-        public ICollection<string> Cookies { get; }
+        private Headers _responseHeaders;
+        public Headers ResponseHeaders => _responseHeaders ?? (_responseHeaders = new Headers());
+
+        private ICollection<string> _cookies;
+        public ICollection<string> Cookies => _cookies ?? (_cookies = new List<string>());
+
         public string Source { get; }
         public string Destination { get; }
 
@@ -106,7 +113,6 @@ namespace RESTar.Requests
         private bool IsEvaluating;
         private int StackDepth;
         private Body _body;
-        private Condition<T>[] _conditions;
 
         #endregion
 
@@ -209,16 +215,11 @@ namespace RESTar.Requests
             RequestParameters = requestParameters;
             IResource = resource;
             Target = resource;
-            ResponseHeaders = new Headers();
-            Cookies = new List<string>();
-            Conditions = new Condition<T>[0];
-            MetaConditions = new MetaConditions();
             Source = requestParameters.Headers.SafeGet("Source");
             Destination = requestParameters.Headers.SafeGet("Destination");
             CORSOrigin = requestParameters.Headers.SafeGet("Origin");
             InputDataConfig = Source != null ? DataConfig.External : DataConfig.Client;
             OutputDataConfig = Destination != null ? DataConfig.External : DataConfig.Client;
-
 
             try
             {
@@ -233,7 +234,7 @@ namespace RESTar.Requests
 
                 Conditions = Condition<T>.Parse(requestParameters.Uri.Conditions, Target) ?? Conditions;
                 if (EntityResource != null)
-                    MetaConditions = MetaConditions.Parse(requestParameters.Uri.MetaConditions, EntityResource) ?? MetaConditions;
+                    _metaConditions = MetaConditions.Parse(requestParameters.Uri.MetaConditions, EntityResource) ?? MetaConditions;
                 if (requestParameters.Headers.UnsafeOverride)
                 {
                     MetaConditions.Unsafe = true;

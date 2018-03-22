@@ -37,7 +37,7 @@ namespace RESTar.Internal
                     //     var r1 = Db.SQL<T>(@internal.SelectQuery, @internal.SqlValues);
                     //     return !@internal.Conditions.HasPost(out var _post) ? r1 : r1.Where(_post);
                     case var external:
-                        switch (external.Conditions.Length)
+                        switch (external.Conditions.Count)
                         {
                             case 0: return Db.SQL<T>($"{SELECT}{external.MetaConditions.OrderBy?.SQL}");
                             case 1 when external.Conditions[0] is var only && only.Operator == EQUALS:

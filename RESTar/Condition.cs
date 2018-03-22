@@ -199,26 +199,30 @@ namespace RESTar
             }
         }
 
-        internal static Condition<T>[] Parse(string conditionsString, ITarget<T> target) =>
-            Parse(UriCondition.ParseMany(conditionsString), target);
+        internal static List<Condition<T>> Parse(string conditionsString, ITarget<T> target) => Parse(UriCondition.ParseMany(conditionsString), target);
 
         /// <summary>
         /// Parses and checks the semantics of Conditions object from a conditions of a REST request URI
         /// </summary>
-        public static Condition<T>[] Parse(IEnumerable<UriCondition> uriConditions, ITarget<T> target) => uriConditions.Select(c =>
+        public static List<Condition<T>> Parse(ICollection<UriCondition> uriConditions, ITarget<T> target)
         {
-            if (ConditionCache.TryGetValue(c, out var cond))
-                return cond;
-            var term = target.MakeConditionTerm(c.Key);
-            var last = term.Last;
-            if (!last.AllowedConditionOperators.HasFlag(c.Operator.OpCode))
-                throw new BadConditionOperator(c.Key, target, c.Operator, term, last.AllowedConditionOperators.ToOperators());
-            return ConditionCache[c] = new Condition<T>
-            (
-                term: term,
-                op: c.Operator.OpCode,
-                value: c.ValueLiteral.ParseConditionValue(last as DeclaredProperty)
-            );
-        }).ToArray();
+            var list = new List<Condition<T>>(uriConditions.Count);
+            list.AddRange(uriConditions.Select(c =>
+            {
+                if (ConditionCache.TryGetValue(c, out var cond))
+                    return cond;
+                var term = target.MakeConditionTerm(c.Key);
+                var last = term.Last;
+                if (!last.AllowedConditionOperators.HasFlag(c.Operator.OpCode))
+                    throw new BadConditionOperator(c.Key, target, c.Operator, term, last.AllowedConditionOperators.ToOperators());
+                return ConditionCache[c] = new Condition<T>
+                (
+                    term: term,
+                    op: c.Operator.OpCode,
+                    value: c.ValueLiteral.ParseConditionValue(last as DeclaredProperty)
+                );
+            }));
+            return list;
+        }
     }
 }

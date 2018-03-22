@@ -36,7 +36,7 @@ namespace RESTar
         /// <summary>
         /// The conditions of the request
         /// </summary>
-        Condition<T>[] Conditions { get; set; }
+        List<Condition<T>> Conditions { get; set; }
 
         /// <summary>
         /// The target to use when binding conditions and selecting entities for this request

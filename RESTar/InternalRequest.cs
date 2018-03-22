@@ -1,4 +1,6 @@
-﻿using System;
+﻿#if RELEASE
+
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -25,7 +27,7 @@ namespace RESTar
     {
         #region Private and explicit members
 
-        private Condition<T>[] _conditions;
+        private List<Condition<T>> _conditions;
         //Body IRequest.Body => _body;
         Headers IRequest.ResponseHeaders { get; } = new Headers();
         ICollection<string> IRequest.Cookies { get; } = new List<string>();
@@ -154,12 +156,12 @@ namespace RESTar
         public ITarget<T> Target { get; }
 
         /// <inheritdoc />
-        public Condition<T>[] Conditions
+        public List<Condition<T>> Conditions
         {
             get => _conditions;
             set
             {
-                _conditions = value ?? new Condition<T>[0];
+                _conditions = value ?? new List<Condition<T>>();
                 if (ScSql) BuildSQL();
             }
         }
@@ -400,3 +402,5 @@ namespace RESTar
         }
     }
 }
+
+#endif
