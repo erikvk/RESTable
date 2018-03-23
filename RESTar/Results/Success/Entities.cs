@@ -18,10 +18,16 @@ namespace RESTar.Results.Success
         /// <inheritdoc />
         public IEnumerator<object> GetEnumerator() => Content.GetEnumerator();
 
+        private IEnumerable<object> _content;
+
         /// <summary>
         /// The entities contained in the result
         /// </summary>
-        private IEnumerable<object> Content { get; set; }
+        private IEnumerable<object> Content
+        {
+            get => _content ?? new object[0];
+            set => _content = value;
+        }
 
         /// <summary>
         /// The number of entities in the result

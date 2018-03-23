@@ -18,7 +18,6 @@ namespace RESTar.Results.Success
         ICollection<string> IResult.Cookies => default;
         Headers ILogable.Headers => default;
         public string TraceId { get; }
-        public Client Client { get; }
         public LogEventType LogEventType => default;
         public string LogMessage => default;
         public string LogContent => default;
@@ -27,6 +26,7 @@ namespace RESTar.Results.Success
         public IFinalizedResult FinalizeResult(ContentType? contentType = null) => this;
         public void ThrowIfError() { }
         public IEnumerable<T> ToEntities<T>() => throw new InvalidCastException($"Cannot convert {nameof(WebSocketResult)} to Entities");
+        public Context Context { get; }
 
         public DateTime LogTime { get; }
 
@@ -34,7 +34,7 @@ namespace RESTar.Results.Success
         {
             LeaveOpen = leaveOpen;
             TraceId = trace.TraceId;
-            Client = trace.Client;
+            Context = trace.Context;
             LogTime = DateTime.Now;
         }
     }

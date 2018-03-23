@@ -60,7 +60,7 @@ namespace RESTar.Requests
                 switch (key)
                 {
                     case var _ when key.EqualsNoCase(nameof(Accept)): return Accept.ToString();
-                    case var _ when key.EqualsNoCase(nameof(ContentType)): return ContentType.ToString();
+                    case var _ when key.EqualsNoCase("Content-Type"): return ContentType.ToString();
                     case var _ when key.EqualsNoCase(nameof(Source)): return Source;
                     case var _ when key.EqualsNoCase(nameof(Destination)): return Destination;
                     case var _ when key.EqualsNoCase(nameof(Authorization)): return Authorization;
@@ -76,7 +76,7 @@ namespace RESTar.Requests
                     case var _ when key.EqualsNoCase(nameof(Accept)):
                         Accept = RESTar.ContentType.ParseManyOutput(value);
                         break;
-                    case var _ when key.EqualsNoCase(nameof(ContentType)):
+                    case var _ when key.EqualsNoCase("Content-Type"):
                         ContentType = RESTar.ContentType.ParseInput(value);
                         break;
                     case var _ when key.EqualsNoCase(nameof(Source)):
@@ -99,7 +99,8 @@ namespace RESTar.Requests
         }
 
         private Dictionary<string, string> _dict { get; }
-        private void Put(KeyValuePair<string, string> kvp) => _dict[kvp.Key] = kvp.Value;
+        private void Put(KeyValuePair<string, string> kvp) => this[kvp.Key] = kvp.Value;
+        private void Put(string key, string value) => this[key] = value;
 
         private IEnumerable<KeyValuePair<string, string>> ReservedHeaders => new[]
         {
@@ -109,6 +110,12 @@ namespace RESTar.Requests
             new KeyValuePair<string, string>(nameof(Destination), Destination),
             new KeyValuePair<string, string>(nameof(Authorization), Authorization)
         };
+
+        private readonly string[] ReservedHeaderKeys =
+            {nameof(Accept), "Content-Type", nameof(Source), nameof(Destination), nameof(Authorization), nameof(Origin)};
+
+        private IEnumerable<string> ReservedHeaderValues => new[]
+            {Accept.ToString(), ContentType.ToString(), Source, Destination, Authorization, Origin};
 
         internal IEnumerable<KeyValuePair<string, string>> CustomHeaders => this
             .Union(ReservedHeaders)
@@ -133,12 +140,7 @@ namespace RESTar.Requests
         IEnumerable<string> IReadOnlyDictionary<string, string>.Values => Values;
 
         /// <inheritdoc />
-        public Headers()
-        {
-            _dict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            ContentType = RESTar.ContentType.DefaultInput;
-            Accept = null;
-        }
+        public Headers() => _dict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
         /// <inheritdoc />
         public Headers(Dictionary<string, string> dictToUse) : this() => dictToUse?.ForEach(Put);
@@ -146,45 +148,126 @@ namespace RESTar.Requests
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
         /// <inheritdoc />
-        public IEnumerator<KeyValuePair<string, string>> GetEnumerator() => _dict.GetEnumerator();
+        public IEnumerator<KeyValuePair<string, string>> GetEnumerator() => _dict.Union(ReservedHeaders).GetEnumerator();
 
         /// <inheritdoc />
         void ICollection<KeyValuePair<string, string>>.Add(KeyValuePair<string, string> item) => Put(item);
 
         /// <inheritdoc />
-        public void Clear() => throw new InvalidOperationException();
+        public void Clear()
+        {
+            Accept = null;
+            ContentType = null;
+            Source = null;
+            Destination = null;
+            Authorization = null;
+            Origin = null;
+            _dict.Clear();
+        }
 
         /// <inheritdoc />
-        public bool Contains(KeyValuePair<string, string> item) => ((IDictionary<string, string>) _dict).Contains(item);
+        public bool Contains(KeyValuePair<string, string> item)
+        {
+            switch (item.Key)
+            {
+                case var _ when item.Key.EqualsNoCase(nameof(Accept)): return Accept.ToString().EqualsNoCase(item.Value);
+                case var _ when item.Key.EqualsNoCase("Content-Type"): return ContentType.ToString().EqualsNoCase(item.Value);
+                case var _ when item.Key.EqualsNoCase(nameof(Source)): return Source.EqualsNoCase(item.Value);
+                case var _ when item.Key.EqualsNoCase(nameof(Destination)): return Destination.EqualsNoCase(item.Value);
+                case var _ when item.Key.EqualsNoCase(nameof(Authorization)): return Authorization.EqualsNoCase(item.Value);
+                case var _ when item.Key.EqualsNoCase(nameof(Origin)): return Origin.EqualsNoCase(item.Value);
+                default: return _dict.Contains(item);
+            }
+        }
 
         /// <inheritdoc />
         public void CopyTo(KeyValuePair<string, string>[] array, int arrayIndex) => ((IDictionary<string, string>) _dict).CopyTo(array, arrayIndex);
 
         /// <inheritdoc />
-        public bool Remove(KeyValuePair<string, string> item) => throw new InvalidOperationException();
+        public bool Remove(KeyValuePair<string, string> item) => Remove(item.Key);
 
         /// <inheritdoc cref="IDictionary{TKey,TValue}" />
-        public int Count => _dict.Count;
+        public int Count => _dict.Count + ReservedHeaderKeys.Length;
 
         /// <inheritdoc />
-        public bool IsReadOnly => ((IDictionary<string, string>) _dict).IsReadOnly;
+        public bool IsReadOnly => false;
 
         /// <inheritdoc cref="IDictionary{TKey,TValue}" />
-        public bool ContainsKey(string key) => _dict.ContainsKey(key);
+        public bool ContainsKey(string key)
+        {
+            switch (key)
+            {
+                case var _ when key.EqualsNoCase(nameof(Accept)):
+                case var _ when key.EqualsNoCase("Content-Type"):
+                case var _ when key.EqualsNoCase(nameof(Source)):
+                case var _ when key.EqualsNoCase(nameof(Destination)):
+                case var _ when key.EqualsNoCase(nameof(Authorization)):
+                case var _ when key.EqualsNoCase(nameof(Origin)): return true;
+                default: return _dict.ContainsKey(key);
+            }
+        }
 
         /// <inheritdoc />
-        public void Add(string key, string value) => _dict.Add(key, value);
+        public void Add(string key, string value) => Put(key, value);
 
         /// <inheritdoc />
-        public bool Remove(string key) => throw new InvalidOperationException();
+        public bool Remove(string key)
+        {
+            switch (key)
+            {
+                case var _ when key.EqualsNoCase(nameof(Accept)):
+                    Accept = null;
+                    return true;
+                case var _ when key.EqualsNoCase("Content-Type"):
+                    ContentType = null;
+                    return true;
+                case var _ when key.EqualsNoCase(nameof(Source)):
+                    Source = null;
+                    return true;
+                case var _ when key.EqualsNoCase(nameof(Destination)):
+                    Destination = null;
+                    return true;
+                case var _ when key.EqualsNoCase(nameof(Authorization)):
+                    Authorization = null;
+                    return true;
+                case var _ when key.EqualsNoCase(nameof(Origin)):
+                    Origin = null;
+                    return true;
+                default: return _dict.Remove(key);
+            }
+        }
 
         /// <inheritdoc cref="IDictionary{TKey,TValue}" />
-        public bool TryGetValue(string key, out string value) => _dict.TryGetValue(key, out value);
+        public bool TryGetValue(string key, out string value)
+        {
+            switch (key)
+            {
+                case var _ when key.EqualsNoCase(nameof(Accept)):
+                    value = Accept.ToString();
+                    return true;
+                case var _ when key.EqualsNoCase("Content-Type"):
+                    value = ContentType.ToString();
+                    return true;
+                case var _ when key.EqualsNoCase(nameof(Source)):
+                    value = Source;
+                    return true;
+                case var _ when key.EqualsNoCase(nameof(Destination)):
+                    value = Destination;
+                    return true;
+                case var _ when key.EqualsNoCase(nameof(Authorization)):
+                    value = Authorization;
+                    return true;
+                case var _ when key.EqualsNoCase(nameof(Origin)):
+                    value = ContentType.ToString();
+                    return true;
+                default: return _dict.TryGetValue(key, out value);
+            }
+        }
 
         /// <inheritdoc />
-        public ICollection<string> Keys => _dict.Keys;
+        public ICollection<string> Keys => _dict.Keys.Union(ReservedHeaderKeys).ToList();
 
         /// <inheritdoc />
-        public ICollection<string> Values => _dict.Values;
+        public ICollection<string> Values => _dict.Values.Union(ReservedHeaderValues).ToList();
     }
 }

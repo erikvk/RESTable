@@ -3,18 +3,17 @@ using RESTar.Admin;
 using RESTar.Deflection;
 using RESTar.Operations;
 using RESTar.Resources;
-using RESTar.WebSockets;
 
 namespace RESTar.Internal
 {
     internal interface ITerminalResourceInternal<T> : ITerminalResourceInternal where T : class
     {
-        void InstantiateFor(IWebSocketInternal webSocket, IEnumerable<Condition<T>> assignments);
+        void InstantiateFor(WebSocket webSocket, IRequest<T> assignments);
     }
 
     internal interface ITerminalResourceInternal : ITerminalResource
     {
-        void InstantiateFor(IWebSocketInternal webSocket);
+        void InstantiateFor(WebSocket webSocket);
     }
 
     /// <inheritdoc />

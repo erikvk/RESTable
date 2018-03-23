@@ -38,7 +38,7 @@ namespace RESTar.Requests
         public RequestParameters RequestParameters { get; }
         public Methods Method => RequestParameters.Method;
         public string TraceId => RequestParameters.TraceId;
-        public Client Client => RequestParameters.Client;
+        public Context Context => RequestParameters.Context;
         public CachedProtocolProvider ProtocolProvider => RequestParameters.CachedProtocolProvider;
         public IUriComponents UriComponents => RequestParameters.Uri;
         public Headers Headers => RequestParameters.Headers;

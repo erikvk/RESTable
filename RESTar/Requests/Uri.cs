@@ -23,7 +23,8 @@ namespace RESTar.Requests
             return cachedProvider.ProtocolProvider.MakeRelativeUri(this);
         }
 
-        public UriComponents(string resourceSpecifier, string viewName, IEnumerable<IUriCondition> conditions, IEnumerable<IUriCondition> metaConditions)
+        public UriComponents(string resourceSpecifier, string viewName, IEnumerable<IUriCondition> conditions,
+            IEnumerable<IUriCondition> metaConditions)
         {
             ResourceSpecifier = resourceSpecifier;
             ViewName = viewName;
@@ -70,7 +71,7 @@ namespace RESTar.Requests
         internal bool HasError => Error != null;
         private IProtocolProvider ProtocolProvider { get; set; }
 
-        internal static URI ParseInternal(ref string uriString, bool percentCharsEscaped, ITraceable trace, out string key,
+        internal static URI ParseInternal(ref string uriString, bool percentCharsEscaped, Context context, out string key,
             out CachedProtocolProvider cachedProtocolProvider)
         {
             var uri = new URI();
@@ -93,7 +94,7 @@ namespace RESTar.Requests
             uri.ProtocolProvider = cachedProtocolProvider.ProtocolProvider;
             try
             {
-                cachedProtocolProvider.ProtocolProvider.ParseQuery(tail, uri, trace.Client);
+                cachedProtocolProvider.ProtocolProvider.ParseQuery(tail, uri, context);
             }
             catch (Exception e)
             {
@@ -104,12 +105,15 @@ namespace RESTar.Requests
 
         internal static URI Parse(string uriString)
         {
-            var uri = ParseInternal(ref uriString, false, Client.Internal, out var _, out var _);
-            if (uri.HasError) throw uri.Error;
-            return uri;
+            using (var context = new InternalContext())
+            {
+                var uri = ParseInternal(ref uriString, false, context, out var _, out var _);
+                if (uri.HasError) throw uri.Error;
+                return uri;
+            }
         }
 
-        private URI()
+        internal URI()
         {
             Conditions = new List<UriCondition>();
             MetaConditions = new List<UriCondition>();

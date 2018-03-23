@@ -18,23 +18,39 @@ namespace RESTar
     public static class Request<T> where T : class
     {
         /// <summary>
-        /// Creates a generic request using the given trace, method and optional protocol id. If the 
+        /// Creates a generic request using an internal trace, with a given method and optional protocol id. If the 
         /// protocol ID is null, the default protocol will be used.
         /// </summary>
-        /// <param name="trace">A trace to use for this request, for example a Client (or another request 
-        /// if this is a nested request). If this is the first request in the trace chain, use the 
-        /// factory methods of Client to create a new Client object to use as trace.</param>
         /// <param name="method">The method to perfor, for example GET</param>
         /// <param name="protocolId">An optional protocol ID, defining the protocol to use for the request. If the 
         /// protocol ID is null, the default protocol will be used.</param>
+        /// <param name="viewName">An optional view name to use when selecting entities from the resource</param>
         /// <returns>A generic request instance</returns>
-        public static IRequest<T> Create(ITraceable trace, Methods method, string protocolId = null)
+        public static IRequest<T> Create(Methods method, string protocolId = null, string viewName = null)
         {
+            return Create(new InternalContext(), method, protocolId, viewName);
+        }
+
+        /// <summary>
+        /// Creates a generic request using the given trace, method and optional protocol id. If the 
+        /// protocol ID is null, the default protocol will be used.
+        /// </summary>
+        /// <param name="trace">A trace to use for this request, for example a Context (or another request 
+        /// if this is a nested request).</param>
+        /// <param name="method">The method to perfor, for example GET</param>
+        /// <param name="protocolId">An optional protocol ID, defining the protocol to use for the request. If the 
+        /// protocol ID is null, the default protocol will be used.</param>
+        /// <param name="viewName">An optional view name to use when selecting entities from the resource</param>
+        /// <returns>A generic request instance</returns>
+        public static IRequest<T> Create(ITraceable trace, Methods method, string protocolId = null, string viewName = null)
+        {
+            if (trace is Client client)
+                trace = new InternalContext(client, false);
             var resource = Resource<T>.SafeGet;
             if (resource == null)
                 throw new UnknownResource(typeof(T).RESTarTypeName());
             var parameters = new RequestParameters(trace, method, resource, protocolId);
-            return Requests.Request<T>.Create(resource, parameters);
+            return new Requests.Request<T>(resource, parameters);
         }
     }
 
@@ -43,10 +59,10 @@ namespace RESTar
     /// </summary>
     public static class Request
     {
-        private static IRequest MakeRequest<T>(IResource<T> resource, RequestParameters requestParameters) where T : class
-        {
-            return Requests.Request<T>.Create(resource, requestParameters);
-        }
+        /// <summary>
+        /// Directs the call to the Request class constructor, from a dynamic binding for the generic IResource parameter.
+        /// </summary>
+        private static IRequest Construct<T>(IResource<T> r, RequestParameters p) where T : class => new Requests.Request<T>(r, p);
 
         /// <summary>
         /// Creates a new request instance.
@@ -66,7 +82,7 @@ namespace RESTar
             parameters.Authenticate();
             if (!parameters.IsValid)
                 return new InvalidParametersRequest(parameters);
-            return MakeRequest((dynamic) parameters.IResource, parameters);
+            return Construct((dynamic) parameters.IResource, parameters);
         }
 
         /// <summary>
@@ -110,7 +126,7 @@ namespace RESTar
                 error = RESTarError.GetError(parameters.Error);
                 return false;
             }
-            IRequest request = MakeRequest((dynamic) parameters.IResource, parameters);
+            IRequest request = Construct((dynamic) parameters.IResource, parameters);
             if (request.IsValid)
             {
                 error = null;

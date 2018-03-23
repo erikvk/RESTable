@@ -51,14 +51,14 @@ namespace RESTar.Results.Error
         internal void SetTrace(ITraceable trace)
         {
             TraceId = trace.TraceId;
-            Client = trace.Client;
+            Context = trace.Context;
         }
 
         /// <inheritdoc />
         public string TraceId { get; private set; }
 
         /// <inheritdoc />
-        public Client Client { get; private set; }
+        public Context Context { get; private set; }
 
         /// <inheritdoc />
         public LogEventType LogEventType => LogEventType.HttpOutput;
@@ -132,7 +132,7 @@ namespace RESTar.Results.Error
         internal static IFinalizedResult GetResult(Exception exs, IRequestInternal request)
         {
             var error = GetError(exs);
-            error.SetTrace(request.Client);
+            error.SetTrace(request.Context);
             string errorId = null;
             if (!(error is Forbidden.Forbidden))
             {
@@ -141,7 +141,7 @@ namespace RESTar.Results.Error
             }
             if (request.IsWebSocketUpgrade)
             {
-                request.Client.WebSocket?.SendResult(error);
+                request.Context.WebSocket?.SendResult(error);
                 return new WebSocketResult(leaveOpen: false, trace: error);
             }
             switch (request.Method)

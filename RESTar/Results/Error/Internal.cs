@@ -10,6 +10,8 @@ namespace RESTar.Results.Error
     /// </summary>
     public abstract class Internal : RESTarError
     {
+        internal Internal(ErrorCodes code, string message) : base(code, message) { }
+
         internal Internal(ErrorCodes code, string message, Exception ie) : base(code, message, ie)
         {
             StatusCode = HttpStatusCode.InternalServerError;

@@ -19,12 +19,20 @@ namespace RESTar.Requests
 {
     internal class Request<T> : IRequest<T>, IRequestInternal<T>, ITraceable where T : class
     {
-        public EntitiesInserter<T> EntitiesGenerator { private get; set; }
+        private IEntityResource<T> EntityResource => _iresource as IEntityResource<T>;
+        private ITerminalResourceInternal TerminalResource => _iresource as ITerminalResourceInternal;
         public ITarget<T> Target { get; }
-
         public bool HasConditions => !(_conditions?.Count > 0);
+        public Headers ResponseHeaders => _responseHeaders ?? (_responseHeaders = new Headers());
+        public ICollection<string> Cookies => _cookies ?? (_cookies = new List<string>());
+        private Exception Error { get; }
+        public bool IsValid => Error == null;
 
-        private List<Condition<T>> _conditions;
+        public EntitiesInserter<T> EntitiesGenerator { private get; set; }
+        public EntitiesInserter<T> Inserter { private get; set; }
+        public EntitiesUpdater<T> Updater { private get; set; }
+        public EntitiesInserter<T> GetInserter() => Inserter ?? (() => Body.ToList<T>());
+        public EntitiesUpdater<T> GetUpdater() => Updater ?? (source => Body.PopulateTo(source));
 
         public List<Condition<T>> Conditions
         {
@@ -32,8 +40,11 @@ namespace RESTar.Requests
             set => _conditions = value;
         }
 
-        private MetaConditions _metaConditions;
-        public MetaConditions MetaConditions => _metaConditions ?? (_metaConditions = new MetaConditions());
+        public MetaConditions MetaConditions
+        {
+            get => _metaConditions ?? (_metaConditions = new MetaConditions());
+            set => _metaConditions = value;
+        }
 
         public Body Body
         {
@@ -47,32 +58,42 @@ namespace RESTar.Requests
             }
         }
 
-        private Headers _responseHeaders;
-        public Headers ResponseHeaders => _responseHeaders ?? (_responseHeaders = new Headers());
+        public IUriComponents UriComponents
+        {
+            get
+            {
+                var viewName = Target is IView ? Target.Name : null;
+                return new UriComponents(_iresource.Name, viewName, Conditions, MetaConditions.AsConditionList());
+            }
+        }
 
+        #region Private
+
+        private List<Condition<T>> _conditions;
+        private MetaConditions _metaConditions;
+        private Headers _responseHeaders;
         private ICollection<string> _cookies;
-        public ICollection<string> Cookies => _cookies ?? (_cookies = new List<string>());
+        private Body _body;
+        private IResource<T> _iresource { get; }
+        IEntityResource IRequest.Resource => EntityResource;
+        IEntityResource<T> IRequest<T>.Resource => EntityResource;
+        private DataConfig InputDataConfig { get; }
+        private DataConfig OutputDataConfig { get; }
+        private bool IsEvaluating;
+
+        #endregion
 
         #region Parameter bindings
 
         public RequestParameters RequestParameters { get; }
         public Methods Method => RequestParameters.Method;
         public string TraceId => RequestParameters.TraceId;
-        public Client Client => RequestParameters.Client;
+        public Context Context => RequestParameters.Context;
         public CachedProtocolProvider ProtocolProvider => RequestParameters.CachedProtocolProvider;
         public Headers Headers => RequestParameters.Headers;
         public bool IsWebSocketUpgrade => RequestParameters.IsWebSocketUpgrade;
 
         #endregion
-
-        public IUriComponents UriComponents
-        {
-            get
-            {
-                var viewName = Target is IView ? Target.Name : null;
-                return new UriComponents(IResource.Name, viewName, Conditions, MetaConditions.AsConditionList());
-            }
-        }
 
         #region ILogable
 
@@ -92,43 +113,17 @@ namespace RESTar.Requests
 
         #endregion
 
-        #region Private and explicit
-
-        IEntityResource IRequest.Resource => EntityResource;
-        IEntityResource<T> IRequest<T>.Resource => EntityResource;
-        private IEntityResource<T> EntityResource => IResource as IEntityResource<T>;
-        private ITerminalResourceInternal TerminalResource => IResource as ITerminalResourceInternal;
-        private IResource<T> IResource { get; }
-
-        private DataConfig InputDataConfig { get; }
-        private DataConfig OutputDataConfig { get; }
-        private bool IsEvaluating;
-        private int StackDepth;
-        private Body _body;
-
-        #endregion
-
-        public EntitiesInserter<T> Inserter { private get; set; }
-        public EntitiesUpdater<T> Updater { private get; set; }
-        public EntitiesInserter<T> GetInserter() => Inserter ?? (() => Body.ToList<T>());
-        public EntitiesUpdater<T> GetUpdater() => Updater ?? (source => Body.PopulateTo(source));
-
-        private Exception Error { get; }
-
-        public bool IsValid => Error == null;
-
         public IResult GetResult()
         {
-            if (!IsValid)
-                return RESTarError.GetResult(Error, this);
+            if (!IsValid) return RESTarError.GetResult(Error, this);
             try
             {
                 if (!ProtocolProvider.ProtocolProvider.IsCompliant(this, out var reason))
                     return RESTarError.GetResult(new NotCompliantWithProtocol(ProtocolProvider.ProtocolProvider, reason), this);
             }
             catch (NotImplementedException) { }
+            if (IsEvaluating) throw new InfiniteLoop();
 
-            if (IsEvaluating || StackDepth > 300) throw new InfiniteLoop();
             var result = RunEvaluation();
             if (result is InfiniteLoop loop) throw loop;
             return result;
@@ -136,16 +131,16 @@ namespace RESTar.Requests
 
         private IResult RunEvaluation()
         {
-            StackDepth += 1;
-            IsEvaluating = true;
             try
             {
-                switch (IResource)
+                Context.IncreaseDepth();
+                IsEvaluating = true;
+                switch (_iresource)
                 {
                     case ITerminalResourceInternal<T> terminal:
-                        if (!Client.HasWebSocket)
+                        if (!Context.HasWebSocket)
                             return new UpgradeRequired(terminal.Name);
-                        terminal.InstantiateFor(Client.WebSocketInternal, Conditions);
+                        terminal.InstantiateFor(Context.WebSocket, this);
                         return new WebSocketResult(leaveOpen: true, trace: this);
                     case IEntityResource<T> _:
                         this.RunResourceAuthentication();
@@ -156,9 +151,9 @@ namespace RESTar.Requests
                             result.Headers["Access-Control-Allow-Origin"] = allowedOrigin;
                         if (!IsWebSocketUpgrade) return result;
                         var finalized = result.FinalizeResult();
-                        Client.WebSocket.SendResult(finalized);
+                        Context.WebSocket.SendResult(finalized);
                         return new WebSocketResult(leaveOpen: false, trace: this);
-                    default: throw new UnknownResource(IResource.Name);
+                    default: throw new UnknownResource(_iresource.Name);
                 }
             }
             catch (Exception exs)
@@ -167,24 +162,24 @@ namespace RESTar.Requests
             }
             finally
             {
-                StackDepth -= 1;
+                Context.DecreaseDepth();
                 IsEvaluating = false;
             }
         }
 
         public IEnumerable<T> GetEntities() => EntitiesGenerator?.Invoke() ?? new T[0];
 
-        private Request(IResource<T> resource, RequestParameters requestParameters)
+        internal Request(IResource<T> resource, RequestParameters requestParameters)
         {
             RequestParameters = requestParameters;
-            IResource = resource;
+            _iresource = resource;
             Target = resource;
             InputDataConfig = Headers.Source != null ? DataConfig.External : DataConfig.Client;
             OutputDataConfig = Headers.Destination != null ? DataConfig.External : DataConfig.Client;
 
             try
             {
-                if (resource.IsInternal && !requestParameters.Client.IsInternal)
+                if (resource.IsInternal && Context.Client.Origin != OriginType.Internal)
                     throw new ResourceIsInternal(resource);
                 if (requestParameters.Uri.ViewName != null && EntityResource != null)
                 {
@@ -192,26 +187,24 @@ namespace RESTar.Requests
                         throw new UnknownView(requestParameters.Uri.ViewName, EntityResource);
                     Target = view;
                 }
-                Conditions = Condition<T>.Parse(requestParameters.Uri.Conditions, Target);
+                if (requestParameters.Uri.Conditions.Count > 0)
+                    Conditions = Condition<T>.Parse(requestParameters.Uri.Conditions, Target);
                 if (EntityResource != null)
-                    _metaConditions = MetaConditions.Parse(requestParameters.Uri.MetaConditions, EntityResource);
+                    MetaConditions = MetaConditions.Parse(requestParameters.Uri.MetaConditions, EntityResource);
                 if (requestParameters.Headers.UnsafeOverride)
                 {
                     MetaConditions.Unsafe = true;
                     requestParameters.Headers.UnsafeOverride = false;
                 }
-                if (Client.IsInternal) MetaConditions.Formatter = DbOutputFormat.Raw;
+                if (Context.Client.Origin == OriginType.Internal && Method == GET)
+                    MetaConditions.Formatter = DbOutputFormat.Raw;
                 this.MethodCheck();
                 var defaultContentType = ProtocolProvider.DefaultInputProvider.ContentType;
                 switch (InputDataConfig)
                 {
                     case DataConfig.Client:
                         if (!RequestParameters.HasBody)
-                        {
-                            if (Method == PATCH || Method == POST || Method == PUT)
-                                throw new InvalidSyntax(NoDataSource, "Missing data source for method " + Method);
                             return;
-                        }
                         Body = new Body(RequestParameters.BodyBytes, Headers.ContentType ?? defaultContentType, ProtocolProvider);
                         break;
                     case DataConfig.External:
@@ -244,8 +237,5 @@ namespace RESTar.Requests
                 Error = e;
             }
         }
-
-        internal static IRequest<T> Create(IResource<T> resource, RequestParameters requestParameters) =>
-            new Request<T>(resource, requestParameters);
     }
 }

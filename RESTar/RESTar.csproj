@@ -103,6 +103,7 @@
     <Compile Include="ContentTypeProviders\ExcelContentProvider.cs" />
     <Compile Include="ContentTypeProviders\JsonAdapterProvider.cs" />
     <Compile Include="ContentTypeProviders\XMLWriter.cs" />
+    <Compile Include="Context.cs" />
     <Compile Include="Deflection\Dynamic\Field.cs" />
     <Compile Include="Deflection\Dynamic\Member.cs" />
     <Compile Include="Deflection\IL\ByteBuffer.cs" />
@@ -132,10 +133,14 @@
     <Compile Include="Requests\ITraceable.cs" />
     <Compile Include="Requests\OriginType.cs" />
     <Compile Include="Requests\Request.cs" />
+    <Compile Include="WebSocket.cs" />
+    <Compile Include="WebSocketConnection.cs" />
+    <Compile Include="WebSocketNotConnected.cs" />
     <Compile Include="Resources\TerminalResourceProvider.cs" />
     <Compile Include="ResourceTemplates\FeedTerminal.cs" />
     <Compile Include="ResourceTemplates\OptionsTerminal.cs" />
     <Compile Include="RESTarOutputStreamController.cs" />
+    <Compile Include="Results\Error\BadRequest\InvalidSyntax - Copy.cs" />
     <Compile Include="Results\Error\BadRequest\NotCompliantWithProtocol.cs" />
     <Compile Include="Results\Error\InvalidProtocolProvider.cs" />
     <Compile Include="Results\Error\InvalidContentTypeProvider.cs" />

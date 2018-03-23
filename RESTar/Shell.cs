@@ -68,7 +68,6 @@ namespace RESTar
         private IEntitiesMetadata PreviousResultMetadata;
 
         public IWebSocket WebSocket { private get; set; }
-        private IWebSocketInternal WebSocketInternal => (IWebSocketInternal) WebSocket;
         public void HandleBinaryInput(byte[] input) => throw new NotImplementedException();
         public bool SupportsTextInput { get; } = true;
         public bool SupportsBinaryInput { get; } = false;
@@ -362,7 +361,8 @@ namespace RESTar
         {
             if (!WriteInfoTexts) return;
             WebSocket.SendText("### Closing the RESTar WebSocket shell... ###");
-            WebSocketInternal.Disconnect();
+            var connection = (WebSocketConnection) WebSocket;
+            connection.WebSocket.Disconnect();
         }
 
         private void SendHelp() => WebSocket.SendText(

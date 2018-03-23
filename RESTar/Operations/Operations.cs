@@ -4,7 +4,6 @@ using System.Linq;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using RESTar.Admin;
-using RESTar.Linq;
 using RESTar.Results.Error;
 using RESTar.Results.Error.BadRequest;
 using RESTar.Results.Error.BadRequest.Aborted;
@@ -15,8 +14,6 @@ namespace RESTar.Operations
 {
     internal static class Operations<T> where T : class
     {
-        #region Operations
-
         #region SELECT, COUNT and PROFILE
 
         internal static IEnumerable<T> SELECT(IRequest<T> request)
@@ -109,38 +106,20 @@ namespace RESTar.Operations
 
         #endregion
 
-        #region INSERT
+        // if (Method == PATCH || Method == POST || Method == PUT)
+        //        throw new InvalidSyntax(NoDataSource, "Missing data source for method " + Method);
 
         private static int INSERT(IRequestInternal<T> request)
         {
             try
             {
-                request.EntitiesGenerator = () => request.GetInserter().Invoke().Select(entity =>
-                {
-                    (entity as IValidatable).Validate();
-                    return entity;
-                });
-                return request.Resource.Insert(request);
-            }
-            catch (Exception e)
-            {
-                var jsonMessage = e is JsonSerializationException jse ? jse.TotalMessage() : null;
-                throw new AbortedInsert<T>(e, request, jsonMessage);
-            }
-        }
-
-        [Obsolete]
-        private static int INSERT(IRequestInternal<T> request, Func<IEnumerable<T>> inserter)
-        {
-            try
-            {
                 request.EntitiesGenerator = () =>
                 {
-                    var ienum = inserter.Invoke();
-                    var results = ienum as ICollection<T> ?? ienum.ToList();
-                    if (request.Resource.RequiresValidation)
-                        results.OfType<IValidatable>().ForEach(item => item.Validate());
-                    return results;
+                    return request.GetInserter().Invoke()?.Select(entity =>
+                    {
+                        (entity as IValidatable)?.Validate();
+                        return entity;
+                    }) ?? throw new MissingDataSource(request);
                 };
                 return request.Resource.Insert(request);
             }
@@ -150,145 +129,16 @@ namespace RESTar.Operations
                 throw new AbortedInsert<T>(e, request, jsonMessage);
             }
         }
-
-        [Obsolete]
-        private static int INSERT_ONE(IRequestInternal<T> request, Func<T> inserter)
-        {
-            try
-            {
-                request.EntitiesGenerator = () =>
-                {
-                    var result = inserter.Invoke();
-                    if (result is IValidatable i) i.Validate();
-                    return new[] {result};
-                };
-                return request.Resource.Insert(request);
-            }
-            catch (Exception e)
-            {
-                var jsonMessage = e is JsonSerializationException jse ? jse.TotalMessage() : null;
-                throw new AbortedInsert<T>(e, request, jsonMessage);
-            }
-        }
-
-        [Obsolete]
-        private static int INSERT_ONE_JOBJECT(IRequestInternal<T> request, JObject json)
-        {
-            try
-            {
-                request.EntitiesGenerator = () =>
-                {
-                    var result = json.ToObject<T>();
-                    if (result is IValidatable i) i.Validate();
-                    return new[] {result};
-                };
-                return request.Resource.Insert(request);
-            }
-            catch (Exception e)
-            {
-                var jsonMessage = e is JsonSerializationException jse ? jse.TotalMessage() : null;
-                throw new AbortedInsert<T>(e, request, jsonMessage);
-            }
-        }
-
-        [Obsolete]
-        private static int INSERT_JARRAY(IRequestInternal<T> request, JArray json)
-        {
-            try
-            {
-                request.EntitiesGenerator = () =>
-                {
-                    var results = json.ToObject<List<T>>();
-                    if (request.Resource.RequiresValidation)
-                        results.OfType<IValidatable>().ForEach(item => item.Validate());
-                    return results;
-                };
-                return request.Resource.Insert(request);
-            }
-            catch (Exception e)
-            {
-                var jsonMessage = e is JsonSerializationException jse ? jse.TotalMessage() : null;
-                throw new AbortedInsert<T>(e, request, jsonMessage);
-            }
-        }
-
-        #endregion
-
-        #region UPDATE
 
         private static int UPDATE(IRequestInternal<T> request, IEnumerable<T> source)
         {
             try
             {
-                request.EntitiesGenerator = () => request.GetUpdater().Invoke(source).Select(entity =>
+                request.EntitiesGenerator = () => request.GetUpdater().Invoke(source)?.Select(entity =>
                 {
                     (entity as IValidatable)?.Validate();
                     return entity;
-                });
-                return request.Resource.Update(request);
-            }
-            catch (Exception e)
-            {
-                var jsonMessage = e is JsonSerializationException jse ? jse.TotalMessage() : null;
-                throw new AbortedUpdate<T>(e, request, jsonMessage);
-            }
-        }
-
-        [Obsolete]
-        private static int UPDATE(IRequestInternal<T> request, Func<IEnumerable<T>, IEnumerable<T>> updater,
-            ICollection<T> source)
-        {
-            try
-            {
-                request.EntitiesGenerator = () =>
-                {
-                    var ienum = updater.Invoke(source);
-                    var results = ienum as ICollection<T> ?? ienum.ToList();
-                    if (request.Resource.RequiresValidation)
-                        results.OfType<IValidatable>().ForEach(item => item.Validate());
-                    return results;
-                };
-                return request.Resource.Update(request);
-            }
-            catch (Exception e)
-            {
-                var jsonMessage = e is JsonSerializationException jse ? jse.TotalMessage() : null;
-                throw new AbortedUpdate<T>(e, request, jsonMessage);
-            }
-        }
-
-        [Obsolete]
-        private static int UPDATE_ONE(IRequestInternal<T> request, List<T> source)
-        {
-            try
-            {
-                request.EntitiesGenerator = () =>
-                {
-                    request.Body.PopulateTo(source);
-                    var item = source[0];
-                    if (item is IValidatable i) i.Validate();
-                    return source;
-                };
-                return request.Resource.Update(request);
-            }
-            catch (Exception e)
-            {
-                var jsonMessage = e is JsonSerializationException jse ? jse.TotalMessage() : null;
-                throw new AbortedUpdate<T>(e, request, jsonMessage);
-            }
-        }
-
-        [Obsolete]
-        private static int UPDATE_ONE(IRequestInternal<T> request, Func<T, T> updater, T source)
-        {
-            try
-            {
-                request.EntitiesGenerator = () =>
-                {
-                    var result = updater.Invoke(source);
-                    if (result is IValidatable i) i.Validate();
-                    return new[] {result};
-                };
+                }) ?? throw new MissingDataSource(request);
                 return request.Resource.Update(request);
             }
             catch (Exception e)
@@ -317,10 +167,6 @@ namespace RESTar.Operations
             }
         }
 
-        #endregion
-
-        #region DELETE
-
         private static int OP_DELETE(IRequestInternal<T> request, IEnumerable<T> source)
         {
             try
@@ -333,24 +179,6 @@ namespace RESTar.Operations
                 throw new AbortedDelete<T>(e, request);
             }
         }
-
-        [Obsolete]
-        private static int OP_DELETE_ONE(IRequestInternal<T> request, T source)
-        {
-            try
-            {
-                request.EntitiesGenerator = () => new[] {source};
-                return request.Resource.Delete(request);
-            }
-            catch (Exception e)
-            {
-                throw new AbortedDelete<T>(e, request);
-            }
-        }
-
-        #endregion
-
-        #endregion
 
         internal static class REST
         {

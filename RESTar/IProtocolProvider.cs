@@ -67,7 +67,7 @@ namespace RESTar
         /// Reads a query string, which is everyting after the root URI in the full request URI, parses 
         /// its content according to some protocol and populates the URI object.
         /// </summary>
-        void ParseQuery(string query, URI uri, Client connection);
+        void ParseQuery(string query, URI uri, Context context);
 
         /// <summary>
         /// If headers are used to check protocol versions, for example, this method allows the 

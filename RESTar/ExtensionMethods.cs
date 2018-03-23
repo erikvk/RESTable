@@ -671,7 +671,7 @@ namespace RESTar
         internal static void MethodCheck(this IRequest request)
         {
             if (request.Method < 0) return;
-            if (!Authenticator.MethodCheck(request.Method, request.Resource, request.Client.AuthToken, out var failedAuth))
+            if (!Authenticator.MethodCheck(request.Method, request.Resource, request.Context.Client.AuthToken, out var failedAuth))
                 throw new MethodNotAllowed(request.Method, request.Resource, failedAuth);
         }
 

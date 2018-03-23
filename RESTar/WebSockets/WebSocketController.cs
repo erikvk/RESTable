@@ -2,6 +2,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using RESTar.Requests;
 using RESTar.Results.Error;
 using RESTar.Serialization;
 
@@ -9,9 +10,9 @@ namespace RESTar.WebSockets
 {
     internal static class WebSocketController
     {
-        internal static readonly IDictionary<string, IWebSocketInternal> AllSockets;
-        static WebSocketController() => AllSockets = new ConcurrentDictionary<string, IWebSocketInternal>();
-        internal static void Add(IWebSocketInternal webSocket) => AllSockets[webSocket.TraceId] = webSocket;
+        internal static readonly IDictionary<string, WebSocket> AllSockets;
+        static WebSocketController() => AllSockets = new ConcurrentDictionary<string, WebSocket>();
+        internal static void Add(WebSocket webSocket) => AllSockets[webSocket.TraceId] = webSocket;
 
         internal static void HandleTextInput(string wsId, string textInput)
         {
@@ -24,7 +25,8 @@ namespace RESTar.WebSockets
                 {
                     case "#SHELL":
                     case "#HOME":
-                        Shell.TerminalResource.InstantiateFor(webSocket);
+                        webSocket.TerminalConnection?.Dispose();
+                        webSocket.SendToShell();
                         break;
                     case "#DISCONNECT":
                         webSocket.Disconnect();
@@ -48,9 +50,9 @@ namespace RESTar.WebSockets
                     case "#TERMINAL" when tail is string json:
                         try
                         {
-                            Serializers.Json.Populate(json, webSocket.Terminal);
+                            Serializers.Json.Populate(json, webSocket.TerminalConnection?.Terminal);
                             webSocket.SendText("Terminal updated");
-                            webSocket.SendJson(webSocket.Terminal);
+                            webSocket.SendJson(webSocket.TerminalConnection?.Terminal);
                         }
                         catch (Exception e)
                         {
@@ -58,7 +60,7 @@ namespace RESTar.WebSockets
                         }
                         break;
                     case "#TERMINAL":
-                        webSocket.SendJson(webSocket.Terminal);
+                        webSocket.SendJson(webSocket.TerminalConnection?.Terminal);
                         break;
                     default:
                         webSocket.SendText($"Unknown global command '{command}'");

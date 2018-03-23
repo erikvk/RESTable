@@ -42,7 +42,7 @@ namespace RESTar.Internal
         InvalidDestination = 022,
 
         UnknownProtocol = 030,
-        
+
         // - - - - - - - - - 
         // 100-199: Resource errors
         // 100-109: Resource locator errors
@@ -104,7 +104,8 @@ namespace RESTar.Internal
         InvalidProtocolProvider = 408,
         InvalidContentTypeProvider = 408,
 
-        // 500-600: Protocol errors
-        NotCompliantWithProtocol = 500
+        // 500-600: Other errors
+        NotCompliantWithProtocol = 500,
+        WebSocketNotConnected = 501
     }
 }

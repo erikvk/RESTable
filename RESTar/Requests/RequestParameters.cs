@@ -75,7 +75,7 @@ namespace RESTar.Requests
         public string TraceId { get; }
 
         /// <inheritdoc />
-        public Client Client { get; }
+        public Context Context { get; }
 
         /// <summary>
         /// The method to perform
@@ -137,26 +137,31 @@ namespace RESTar.Requests
 
         #endregion
 
-        internal RequestParameters(ITraceable trace, Methods method, IResource resource, string protocolIdentifier = null)
+        internal RequestParameters(ITraceable trace, Methods method, IResource resource, string protocolIdentifier = null, string viewName = null)
         {
             TraceId = trace.TraceId;
-            Client = trace.Client;
+            Context = trace.Context;
             Method = method;
             Headers = new Headers();
             iresource = resource;
-            IsWebSocketUpgrade = Client.WebSocket?.Status == WebSocketStatus.Waiting;
+            IsWebSocketUpgrade = Context.WebSocket?.Status == WebSocketStatus.Waiting;
+            Uri = new URI
+            {
+                ResourceSpecifier = resource.Name,
+                ViewName = viewName
+            };
             CachedProtocolProvider = ProtocolController.ResolveProtocolProvider(protocolIdentifier);
         }
 
         internal RequestParameters(ITraceable trace, Methods method, ref string uri, byte[] body, Headers headers)
         {
             TraceId = trace.TraceId;
-            Client = trace.Client;
+            Context = trace.Context;
             Method = method;
             Headers = headers ?? new Headers();
-            IsWebSocketUpgrade = Client.WebSocket?.Status == WebSocketStatus.Waiting;
+            IsWebSocketUpgrade = Context.WebSocket?.Status == WebSocketStatus.Waiting;
 
-            Uri = URI.ParseInternal(ref uri, PercentCharsEscaped(headers), trace, out var key, out var cachedProtocolProvider);
+            Uri = URI.ParseInternal(ref uri, PercentCharsEscaped(headers), trace.Context, out var key, out var cachedProtocolProvider);
             var hasMacro = Uri?.Macro != null;
 
             if (hasMacro)

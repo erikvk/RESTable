@@ -27,22 +27,29 @@ namespace RESTar.Requests
                 handler: (Starcounter.Request scRequest, string query) =>
                 {
                     using (var client = GetClient(scRequest))
+                    using (var context = new StarcounterContext(client))
                     {
                         var headers = new Headers(scRequest.HeadersDictionary);
                         if (scRequest.WebSocketUpgrade)
-                            client.WebSocket = new StarcounterWebSocket(WsGroupName, scRequest, headers, client);
-                        var stopwatch = Stopwatch.StartNew();
-                        var request = Request.Create(client, method, ref query, scRequest.BodyBytes, headers);
-                        var result = request.GetResult().FinalizeResult();
-                        stopwatch.Stop();
-                        if (result is WebSocketResult webSocketResult)
                         {
-                            if (!webSocketResult.LeaveOpen)
-                                client.WebSocketInternal.Disconnect();
-                            return HandlerStatus.Handled;
+                            var c = new StarcounterWebSocket(WsGroupName, scRequest, client);
+                            context.SetWebSocket(c);
                         }
-                        Admin.Console.Log(request, result, stopwatch.Elapsed.TotalMilliseconds);
-                        return result.ToResponse();
+                        var stopwatch = Stopwatch.StartNew();
+
+                        var request = Request.Create(context, method, ref query, scRequest.BodyBytes, headers);
+                        var result = request.GetResult().FinalizeResult();
+
+                        stopwatch.Stop();
+                        switch (result)
+                        {
+                            case WebSocketResult wsresult:
+                                if (!wsresult.LeaveOpen) context.GetScWebSocket().Disconnect();
+                                return HandlerStatus.Handled;
+                            default:
+                                Admin.Console.Log(request, result, stopwatch.Elapsed.TotalMilliseconds);
+                                return result.ToResponse();
+                        }
                     }
                 }
             ));
@@ -55,8 +62,9 @@ namespace RESTar.Requests
                 {
                     using (var client = GetClient(scRequest))
                     {
+                        var context = new StarcounterContext(client);
                         var headers = new Headers(scRequest.HeadersDictionary);
-                        return Request.CheckOrigin(client, ref query, headers).ToResponse();
+                        return Request.CheckOrigin(context, ref query, headers).ToResponse();
                     }
                 }
             );

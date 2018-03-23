@@ -22,7 +22,7 @@ namespace RESTar.Http
         internal Stream Body;
 
         public string TraceId { get; }
-        public Client Client { get; }
+        public Context Context { get; }
 
         internal IFinalizedResult GetResponse()
         {
@@ -42,7 +42,7 @@ namespace RESTar.Http
         internal HttpRequest(ITraceable trace, string uriString)
         {
             TraceId = trace.TraceId;
-            Client = trace.Client;
+            Context = trace.Context;
             Headers = new Dictionary<string, string>();
             uriString.Trim().Split(new[] {' '}, 3).ForEach((part, index) =>
             {

@@ -23,7 +23,7 @@ namespace RESTar.Http
         public ICollection<string> Cookies { get; }
         internal bool IsSuccessStatusCode => StatusCode >= (HttpStatusCode) 200 && StatusCode < (HttpStatusCode) 300;
         public string TraceId { get; }
-        public Client Client { get; }
+        public Context Context { get; }
 
         public LogEventType LogEventType { get; } = LogEventType.HttpOutput;
         public string LogMessage => $"{StatusCode.ToCode()}: {StatusDescription} ({ContentLength} bytes)";
@@ -40,7 +40,7 @@ namespace RESTar.Http
         {
             ExcludeHeaders = false;
             TraceId = trace.TraceId;
-            Client = trace.Client;
+            Context = trace.Context;
             Headers = new Headers();
             Cookies = new List<string>();
             LogTime = DateTime.Now;

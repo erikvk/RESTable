@@ -5,6 +5,7 @@ using RESTar.Deflection;
 using RESTar.Deflection.Dynamic;
 using RESTar.Linq;
 using RESTar.Operations;
+using RESTar.Requests;
 using RESTar.Results.Error.BadRequest;
 using RESTar.Results.Error.NotFound;
 using RESTar.WebSockets;
@@ -40,12 +41,12 @@ namespace RESTar.Internal
         public void SetAlias(string alias) => Alias = alias;
         public Type InterfaceType { get; }
 
-        public void InstantiateFor(IWebSocketInternal webSocket) => InstantiateFor(webSocket, null);
+        public void InstantiateFor(WebSocket webSocket) => InstantiateFor(webSocket, null);
 
-        public void InstantiateFor(IWebSocketInternal webSocket, IEnumerable<Condition<T>> assignments)
+        public void InstantiateFor(WebSocket webSocket, IRequest<T> upgradeRequest)
         {
             var newTerminal = Constructor();
-            assignments?.ForEach(assignment =>
+            upgradeRequest.Conditions?.ForEach(assignment =>
             {
                 if (assignment.Operator != EQUALS)
                     throw new BadConditionOperator(this, assignment.Operator);
@@ -57,18 +58,17 @@ namespace RESTar.Internal
                 }
                 else property.SetValue(newTerminal, assignment.Value);
             });
-            newTerminal.WebSocket = webSocket;
-            webSocket.Terminal = newTerminal;
-            webSocket.TerminalResource = this;
+            webSocket.ReleaseTerminal();
+            webSocket.TerminalConnection = new WebSocketConnection(webSocket, this, newTerminal);
             switch (webSocket.Status)
             {
                 case Waiting:
-                    webSocket.Open();
+                    webSocket.Open(upgradeRequest);
                     break;
                 case Open: break;
-                case var closed:
+                case var other:
                     throw new InvalidOperationException($"Unable to instantiate terminal '{Name}' " +
-                                                        $"for a WebSocket with status '{closed}'");
+                                                        $"for a WebSocket with status '{other}'");
             }
             newTerminal.Open();
         }

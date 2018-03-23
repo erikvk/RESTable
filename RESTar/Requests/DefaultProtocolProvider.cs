@@ -29,7 +29,7 @@ namespace RESTar.Requests
         public string ProtocolIdentifier { get; } = "restar";
 
         /// <inheritdoc />
-        public void ParseQuery(string query, URI uri, Client client)
+        public void ParseQuery(string query, URI uri, Context context)
         {
             var match = Regex.Match(query, RegEx.RESTarRequestUri);
             if (!match.Success) throw new InvalidSyntax(ErrorCodes.InvalidUriSyntax, "Check URI syntax");
@@ -63,7 +63,7 @@ namespace RESTar.Requests
             {
                 case "":
                 case "_":
-                    uri.ResourceSpecifier = client.WebSocket.Status == WebSocketStatus.Waiting
+                    uri.ResourceSpecifier = context.WebSocket?.Status == WebSocketStatus.Waiting
                         ? Shell.TerminalResource.Name
                         : EntityResource<AvailableResource>.ResourceSpecifier;
                     break;

@@ -48,8 +48,8 @@ namespace RESTar.Internal
 
         internal static void Authenticate(this RequestParameters requestParameters)
         {
-            requestParameters.Client.AuthToken = GetAuthToken(requestParameters);
-            if (requestParameters.Client.AuthToken == null)
+            requestParameters.Context.Client.AuthToken = GetAuthToken(requestParameters);
+            if (requestParameters.Context.Client.AuthToken == null)
                 requestParameters.Error = new NotAuthorized();
         }
 
@@ -64,7 +64,7 @@ namespace RESTar.Internal
         {
             if (!RequireApiKey)
                 return NewRootToken();
-            if (requestParameters.Client.AuthToken is string existing)
+            if (requestParameters.Context.Client.AuthToken is string existing)
                 return AuthTokens.ContainsKey(existing) ? existing : null;
 
             var authorizationHeader = requestParameters.Headers.SafeGet("Authorization");

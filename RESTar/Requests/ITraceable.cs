@@ -11,8 +11,8 @@
         string TraceId { get; }
 
         /// <summary>
-        /// Client to which this trace can be led
+        /// The context to which this trace can be led
         /// </summary>
-        Client Client { get; }
+        Context Context { get; }
     }
 }

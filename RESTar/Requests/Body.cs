@@ -34,11 +34,12 @@ namespace RESTar.Requests
         }
 
         /// <summary>
-        /// Populates the body onto each entity in a source collection
+        /// Populates the body onto each entity in a source collection. If the body is empty,
+        /// returns null.
         /// </summary>
         public IEnumerable<T> PopulateTo<T>(IEnumerable<T> source) where T : class
         {
-            if (!HasContent) return source;
+            if (!HasContent) return null;
             var contentTypeProvider = ProtocolProvider.InputMimeBindings.SafeGet(ContentType.MimeType) ??
                                       throw new UnsupportedContent(ContentType.MimeType);
             return contentTypeProvider.Populate(source, Bytes);

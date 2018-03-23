@@ -70,7 +70,7 @@ namespace RESTar.Operations
         public string LogContent { get; } = null;
 
         /// <inheritdoc />
-        public Client Client { get; }
+        public Context Context { get; }
 
         /// <inheritdoc />
         public string HeadersStringCache { get; set; }
@@ -87,7 +87,7 @@ namespace RESTar.Operations
         {
             Headers = new Headers();
             ExcludeHeaders = false;
-            Client = trace.Client;
+            Context = trace.Context;
             TraceId = trace.TraceId;
         }
     }

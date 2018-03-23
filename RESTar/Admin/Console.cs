@@ -3,6 +3,7 @@ using System.Linq;
 using System.Text;
 using RESTar.Linq;
 using RESTar.Logging;
+using RESTar.Requests;
 using RESTar.ResourceTemplates;
 using RESTar.Results.Success;
 using RESTar.Serialization;
@@ -27,6 +28,8 @@ namespace RESTar.Admin
         public bool IncludeHeaders { get; set; } = false;
         public bool IncludeContent { get; set; } = false;
 
+        private RESTar.WebSocket ActualSocket => (WebSocket as WebSocketConnection)?.WebSocket;
+
         /// <inheritdoc />
         protected override string WelcomeHeader { get; } = "RESTar network console";
 
@@ -41,8 +44,6 @@ namespace RESTar.Admin
         }
 
         public override void Dispose() => Consoles.Remove(this);
-
-        private IWebSocketInternal WebSocketInternal => (IWebSocketInternal) WebSocket;
 
         #region Console
 
@@ -72,7 +73,7 @@ namespace RESTar.Admin
                                 ElapsedMilliseconds = milliseconds
                             };
                             if (c.IncludeConnection)
-                                item.ClientInfo = new ClientInfo(initial.Client);
+                                item.ClientInfo = new ClientInfo(initial.Context.Client);
                             if (c.IncludeHeaders)
                             {
                                 if (!initial.ExcludeHeaders)
@@ -86,7 +87,7 @@ namespace RESTar.Admin
                                 item.Out.Content = final.LogContent;
                             }
                             var json = Serializers.Json.Serialize(item, Indented, ignoreNulls: true);
-                            c.WebSocketInternal.SendTextRaw(json);
+                            c.ActualSocket.SendTextRaw(json);
                         });
                         break;
                     default: throw new ArgumentOutOfRangeException();
@@ -116,14 +117,14 @@ namespace RESTar.Admin
                                 Message = logable.LogMessage
                             };
                             if (c.IncludeConnection)
-                                item.Client = new ClientInfo(logable.Client);
+                                item.Client = new ClientInfo(logable.Context.Client);
                             else item.Time = logable.LogTime;
                             if (c.IncludeHeaders && !logable.ExcludeHeaders)
                                 item.CustomHeaders = logable.Headers;
                             if (c.IncludeContent)
                                 item.Content = logable.LogContent;
                             var json = Serializers.Json.Serialize(item, Indented, ignoreNulls: true);
-                            c.WebSocketInternal.SendTextRaw(json);
+                            c.ActualSocket.SendTextRaw(json);
                         });
                         break;
                 }
@@ -139,7 +140,7 @@ namespace RESTar.Admin
             if (IncludeConnection)
             {
                 builder.Append(connection);
-                builder.Append(logable.Client.ClientIP);
+                builder.Append(logable.Context.Client.ClientIP);
             }
             if (IncludeHeaders && !logable.ExcludeHeaders)
             {
@@ -153,7 +154,7 @@ namespace RESTar.Admin
                 builder.Append(content);
                 builder.Append(logable.LogContent ?? "null");
             }
-            WebSocketInternal.SendTextRaw(builder.ToString());
+            ActualSocket.SendTextRaw(builder.ToString());
         }
 
         private void PrintLines(StringBuilder builder1, ILogable logable1, StringBuilder builder2, ILogable logable2)
@@ -162,8 +163,8 @@ namespace RESTar.Admin
             {
                 builder1.Append(connection);
                 builder2.Append(connection);
-                builder1.Append(logable1.Client.ClientIP);
-                builder2.Append(logable2.Client.ClientIP);
+                builder1.Append(logable1.Context.Client.ClientIP);
+                builder2.Append(logable2.Context.Client.ClientIP);
             }
             if (IncludeHeaders)
             {
@@ -189,8 +190,8 @@ namespace RESTar.Admin
                 builder1.Append(logable1.LogContent ?? "null");
                 builder2.Append(logable2.LogContent ?? "null");
             }
-            WebSocketInternal.SendTextRaw(builder1.ToString());
-            WebSocketInternal.SendTextRaw(builder2.ToString());
+            ActualSocket.SendTextRaw(builder1.ToString());
+            ActualSocket.SendTextRaw(builder2.ToString());
         }
 
         private static string GetLogLineStub(ILogable logable, double? milliseconds = null)
