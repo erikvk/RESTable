@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Dynamit;
 using RESTar.Linq;
-using RESTar.Operations;
+using RESTar.Starcounter;
 using Starcounter;
 
 namespace RESTar

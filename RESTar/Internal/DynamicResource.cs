@@ -5,7 +5,7 @@ using System.Runtime.Serialization;
 using RESTar.Resources;
 using RESTar.Results.Error.BadRequest;
 using Starcounter;
-using static RESTar.Operations.Transact;
+using static RESTar.Starcounter.Transact;
 
 namespace RESTar.Internal
 {

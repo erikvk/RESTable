@@ -72,9 +72,6 @@
       <Private>False</Private>
     </Reference>
     <Reference Include="Starcounter.Internal, Version=2.0.0.0, Culture=neutral, PublicKeyToken=d2df1e81d0ca3abf, processorArchitecture=MSIL" />
-    <Reference Include="Starcounter.Linq, Version=1.0.0.0, Culture=neutral, processorArchitecture=AMD64">
-      <HintPath>..\packages\Mopedo.Starcounter.Linq.0.1.0\lib\net452\Starcounter.Linq.dll</HintPath>
-    </Reference>
     <Reference Include="Starcounter.Logging, Version=2.0.0.0, Culture=neutral, PublicKeyToken=d2df1e81d0ca3abf, processorArchitecture=MSIL" />
     <Reference Include="Starcounter.XSON, Version=2.0.0.0, Culture=neutral, PublicKeyToken=d2df1e81d0ca3abf, processorArchitecture=MSIL" />
     <Reference Include="System" />
@@ -193,7 +190,7 @@
     <Compile Include="Requests\Uri.cs" />
     <Compile Include="Requests\UriCondition.cs" />
     <Compile Include="ResourceProviderAttribute.cs" />
-    <Compile Include="Resources\StarcounterIndexer.cs" />
+    <Compile Include="Starcounter\StarcounterIndexer.cs" />
     <Compile Include="AvailableResource.cs" />
     <Compile Include="Auth\AccessRight.cs" />
     <Compile Include="Auth\AccessRights.cs" />
@@ -212,7 +209,7 @@
     <Compile Include="Linq\Conditions.cs" />
     <Compile Include="Linq\Enumerable.cs" />
     <Compile Include="Operations\IProcessor.cs" />
-    <Compile Include="Operations\Transact.cs" />
+    <Compile Include="Starcounter\Transact.cs" />
     <Compile Include="Requests\RequestParameters.cs" />
     <Compile Include="Requests\DataConfig.cs" />
     <Compile Include="Internal\ErrorCodes.cs" />
@@ -226,7 +223,7 @@
     <Compile Include="Resources\ResourceFactory.cs" />
     <Compile Include="Resources\ResourceProvider.cs" />
     <Compile Include="Resources\DDictResourceProvider.cs" />
-    <Compile Include="Resources\StarcounterResourceProvider.cs" />
+    <Compile Include="Starcounter\StarcounterResourceProvider.cs" />
     <Compile Include="Resources\VirtualResourceProvider.cs" />
     <Compile Include="Resources\ResourceWrapper.cs" />
     <Compile Include="ResourceKind.cs" />
@@ -281,7 +278,7 @@
     <Compile Include="Results\Error\BadRequest\InvalidConditionValueType.cs" />
     <Compile Include="Results\Error\BadRequest\BadRequest.cs" />
     <Compile Include="Results\Error\BadRequest\FailedJsonDeserialization.cs" />
-    <Compile Include="Results\Error\StarcounterDatabaseError.cs" />
+    <Compile Include="Starcounter\StarcounterDatabaseError.cs" />
     <Compile Include="Results\Error\Forbidden\AbortedByCommitHook.cs" />
     <Compile Include="Results\Error\Forbidden\FailedResourceAuthentication.cs" />
     <Compile Include="Results\Error\Forbidden\MethodUnavailable.cs" />
@@ -356,22 +353,6 @@
     <Compile Include="Serialization\NativeProtocol\CreateViewModelResolver.cs" />
     <Compile Include="Serialization\NativeProtocol\DefaultResolver.cs" />
     <Compile Include="ITerminal.cs" />
-    <Compile Include="View\Menu.json.cs">
-      <DependentUpon>Menu.json</DependentUpon>
-    </Compile>
-    <Compile Include="View\MessageWindow.json.cs">
-      <DependentUpon>MessageWindow.json</DependentUpon>
-    </Compile>
-    <Compile Include="View\Page.json.cs">
-      <DependentUpon>Page.json</DependentUpon>
-    </Compile>
-    <Compile Include="View\List.json.cs">
-      <DependentUpon>List.json</DependentUpon>
-    </Compile>
-    <Compile Include="View\Item.json.cs">
-      <DependentUpon>Item.json</DependentUpon>
-    </Compile>
-    <Compile Include="View\RESTarDataView.cs" />
     <Compile Include="WebSocketStatus.cs" />
     <Compile Include="WebSockets\ConnectionProfile.cs" />
     <Compile Include="Shell.cs" />
@@ -385,21 +366,6 @@
     <None Include="RESTar.nuspec">
       <SubType>Designer</SubType>
     </None>
-    <TypedJSON Include="View\Item.json">
-      <Generator>MsBuild:Compile</Generator>
-    </TypedJSON>
-    <TypedJSON Include="View\Page.json">
-      <Generator>MsBuild:Compile</Generator>
-    </TypedJSON>
-    <TypedJSON Include="View\List.json">
-      <Generator>MsBuild:Compile</Generator>
-    </TypedJSON>
-    <TypedJSON Include="View\Menu.json">
-      <Generator>MsBuild:Compile</Generator>
-    </TypedJSON>
-    <TypedJSON Include="View\MessageWindow.json">
-      <Generator>MsBuild:Compile</Generator>
-    </TypedJSON>
     <None Include="weaver.ignore" />
   </ItemGroup>
   <ItemGroup />

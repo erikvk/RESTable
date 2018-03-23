@@ -21,7 +21,6 @@ using RESTar.Operations;
 using RESTar.Resources;
 using RESTar.Results.Error.BadRequest;
 using RESTar.Results.Error.Forbidden;
-using RESTar.View;
 using Starcounter;
 using static System.Globalization.DateTimeStyles;
 using static System.Reflection.BindingFlags;
@@ -866,60 +865,5 @@ namespace RESTar
 
         #endregion
 
-        #region View models
-
-        internal static Json MakeCurrentView(this RESTarView view)
-        {
-            var master = Self.GET<View.Page>("/__restar/__page");
-            master.CurrentPage = view ?? master.CurrentPage;
-            return master;
-        }
-
-        internal static Dictionary<string, dynamic> MakeViewModelTemplate(this IEntityResource resource)
-        {
-            if (resource.IsDDictionary) return new Dictionary<string, dynamic>();
-            return resource.Members.Values
-                .Where(p => !p.Hidden || p is SpecialProperty)
-                .ToDictionary(p => p.ViewModelName, p => p.Type.MakeViewModelDefault(p));
-        }
-
-        internal static dynamic MakeViewModelDefault(this Type type, DeclaredProperty property = null)
-        {
-            dynamic DefaultValueRecurser(Type propType)
-            {
-                if (propType == typeof(string))
-                    return "";
-                var ienumImplementation = propType.GetInterfaces()
-                    .FirstOrDefault(t => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(IEnumerable<>));
-                if (ienumImplementation != null)
-                {
-                    var elementType = ienumImplementation.GenericTypeArguments[0];
-                    return new object[] {DefaultValueRecurser(elementType)};
-                }
-
-                if (propType.IsClass)
-                {
-                    if (propType == typeof(object))
-                        return "@RESTar()";
-                    var props = propType.GetDeclaredProperties().Values;
-                    return props.ToDictionary(
-                        p => p.ViewModelName,
-                        p => DefaultValueRecurser(p.Type));
-                }
-
-                if (propType.IsValueType)
-                {
-                    if (propType.IsGenericType && propType.GetGenericTypeDefinition() == typeof(Nullable<>))
-                        return propType.GetGenericArguments()[0].GetDefault();
-                    return propType.GetDefault();
-                }
-
-                throw new ArgumentOutOfRangeException();
-            }
-
-            return DefaultValueRecurser(type);
-        }
-
-        #endregion
     }
 }

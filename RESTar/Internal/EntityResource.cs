@@ -16,7 +16,7 @@ using static System.StringComparer;
 using static RESTar.Method;
 using static RESTar.Deflection.TermBindingRules;
 using static RESTar.Operations.DelegateMaker;
-using static RESTar.Operations.Transact;
+using static RESTar.Starcounter.Transact;
 
 namespace RESTar.Internal
 {

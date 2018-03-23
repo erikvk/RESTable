@@ -12,7 +12,8 @@ using RESTar.Requests;
 using RESTar.Results.Error.BadRequest;
 using RESTar.Results.Error.Forbidden;
 using RESTar.Results.Success;
-using static RESTar.Operations.Transact;
+using RESTar.Starcounter;
+using static RESTar.Starcounter.Transact;
 using static RESTar.Method;
 
 namespace RESTar.Results.Error

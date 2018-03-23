@@ -1,14 +1,14 @@
 ﻿using System;
 using RESTar.Internal;
 
-namespace RESTar.Results.Error
+namespace RESTar.Starcounter
 {
     /// <inheritdoc />
     /// <summary>
     /// Thrown when RESTar encounters an error with the Starcounter database
     /// search string.
     /// </summary>
-    public class StarcounterDatabaseError : Internal
+    public class StarcounterDatabaseError : Results.Error.Internal
     {
         internal StarcounterDatabaseError(Exception e) : base(ErrorCodes.DatabaseError, e.Message, e)
         {

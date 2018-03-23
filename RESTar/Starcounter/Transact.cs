@@ -1,7 +1,7 @@
 ﻿using System;
 using Starcounter;
 
-namespace RESTar.Operations
+namespace RESTar.Starcounter
 {
     internal static class Transact
     {
