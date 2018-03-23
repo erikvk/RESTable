@@ -27,12 +27,12 @@ namespace RESTar
         {
             TraceId = webSocket.Id;
             Context = webSocket.Context;
-
             if (webSocket == null || webSocket.Status == WebSocketStatus.Closed)
                 throw new WebSocketNotConnected();
             WebSocket = webSocket;
             TerminalResource = terminalResource;
             Terminal = terminal;
+            Terminal.WebSocket = this;
             IsOpen = true;
         }
 

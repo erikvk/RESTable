@@ -88,6 +88,7 @@ namespace RESTar.Internal
         MethodNotAllowed = 214,
         Untraceable = 215,
         MissingUri = 216,
+        ReusedContext = 217,
 
         // 300-400: Database errors
         DatabaseError = 300,

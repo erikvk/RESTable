@@ -6,7 +6,7 @@ namespace RESTar
     /// <summary>
     /// Prints a link to the RESTar documentation
     /// </summary>
-    [RESTar(Methods.GET, Description = "Prints a link to the RESTar documentation")]
+    [RESTar(Method.GET, Description = "Prints a link to the RESTar documentation")]
     public class Help : ISelector<Help>
     {
         /// <summary>

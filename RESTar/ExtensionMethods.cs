@@ -190,7 +190,7 @@ namespace RESTar
         public static T GetReference<T>(this ulong objectNo) where T : class => FromID(objectNo) as T;
 
         internal static bool EqualsNoCase(this string s1, string s2) => string.Equals(s1, s2, CurrentCultureIgnoreCase);
-        internal static string ToMethodsString(this IEnumerable<Methods> ie) => string.Join(", ", ie);
+        internal static string ToMethodsString(this IEnumerable<Method> ie) => string.Join(", ", ie);
 
         internal static string ReplaceFirst(this string text, string search, string replace, out bool replaced)
         {
@@ -205,14 +205,14 @@ namespace RESTar
             return $"{text.Substring(0, pos)}{replace}{text.Substring(pos + search.Length)}";
         }
 
-        internal static Methods[] ToMethodsArray(this string methodsString)
+        internal static Method[] ToMethodsArray(this string methodsString)
         {
             if (methodsString == null) return null;
             if (methodsString.Trim() == "*")
                 return RESTarConfig.Methods;
             return methodsString.Split(',')
                 .Where(s => s != "")
-                .Select(s => (Methods) Enum.Parse(typeof(Methods), s))
+                .Select(s => (Method) Enum.Parse(typeof(Method), s))
                 .ToArray();
         }
 

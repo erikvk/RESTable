@@ -94,7 +94,7 @@ namespace RESTar
         /// <summary>
         /// The method of the request
         /// </summary>
-        Methods Method { get; }
+        Method Method { get; }
 
         /// <summary>
         /// The resource of the request

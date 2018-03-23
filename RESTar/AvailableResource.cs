@@ -4,7 +4,7 @@ using System.Linq;
 using RESTar.Auth;
 using RESTar.Internal;
 using RESTar.Linq;
-using static RESTar.Methods;
+using static RESTar.Method;
 
 namespace RESTar
 {
@@ -40,7 +40,7 @@ namespace RESTar
         /// <summary>
         /// The methods that have been enabled for this resource
         /// </summary>
-        public Methods[] Methods { get; set; }
+        public Method[] Methods { get; set; }
 
         /// <summary>
         /// The resource type, entity resource or terminal resource
@@ -76,7 +76,7 @@ namespace RESTar
             Description = iresource.Description ?? "No description",
             Methods = rights.SafeGet(iresource)?
                           .Intersect(iresource.AvailableMethods)
-                          .ToArray() ?? new Methods[0],
+                          .ToArray() ?? new Method[0],
             Kind = iresource is IEntityResource ? ResourceKind.EntityResource : ResourceKind.TerminalResource,
             Views = iresource is IEntityResource er
                 ? er.Views?.Select(v => new ViewInfo(v.Name, v.Description ?? "No description")).ToArray()

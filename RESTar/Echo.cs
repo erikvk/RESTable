@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json.Linq;
-using static RESTar.Methods;
+using static RESTar.Method;
 
 namespace RESTar
 {

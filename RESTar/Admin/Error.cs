@@ -7,7 +7,7 @@ using RESTar.Operations;
 using RESTar.Results.Error;
 using Starcounter;
 using static RESTar.Admin.Settings;
-using static RESTar.Methods;
+using static RESTar.Method;
 
 namespace RESTar.Admin
 {
@@ -43,7 +43,7 @@ namespace RESTar.Admin
         /// <summary>
         /// The method used when the error was created
         /// </summary>
-        public Methods Method;
+        public Method Method;
 
         /// <summary>
         /// The error code of the error

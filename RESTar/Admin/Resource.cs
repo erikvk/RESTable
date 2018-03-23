@@ -41,7 +41,7 @@ namespace RESTar.Admin
         /// <summary>
         /// The methods that have been enabled for this resource
         /// </summary>
-        public Methods[] EnabledMethods { get; set; }
+        public Method[] EnabledMethods { get; set; }
 
         /// <summary>
         /// Is this resource editable?

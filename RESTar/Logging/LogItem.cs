@@ -25,8 +25,8 @@ namespace RESTar.Logging
 
         internal ClientInfo(Client client)
         {
-            ClientIP = client.ClientIP.ToString();
-            ProxyIP = client.ProxyIP?.ToString();
+            ClientIP = client.ClientIP;
+            ProxyIP = client.ProxyIP;
             Protocol = client.HTTPS ? "HTTPS" : "HTTP";
             UserAgent = client.UserAgent;
         }

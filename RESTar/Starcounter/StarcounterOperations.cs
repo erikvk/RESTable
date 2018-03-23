@@ -2,14 +2,13 @@
 using System.Linq;
 using RESTar.Admin;
 using RESTar.Deflection.Dynamic;
+using RESTar.Internal;
 using RESTar.Linq;
 using RESTar.Operations;
 using Starcounter;
 using Starcounter.Metadata;
-using static System.StringComparison;
-using static RESTar.Operators;
 
-namespace RESTar.Internal
+namespace RESTar.Starcounter
 {
     /// <summary>
     /// The default operations for static Starcounter database resources
@@ -40,8 +39,8 @@ namespace RESTar.Internal
                         switch (external.Conditions.Count)
                         {
                             case 0: return Db.SQL<T>($"{SELECT}{external.MetaConditions.OrderBy?.SQL}");
-                            case 1 when external.Conditions[0] is var only && only.Operator == EQUALS:
-                                if (string.Equals("objectno", only.Key, OrdinalIgnoreCase))
+                            case 1 when external.Conditions[0] is var only && only.Operator == Operators.EQUALS:
+                                if (string.Equals("objectno", only.Key, StringComparison.OrdinalIgnoreCase))
                                 {
                                     try
                                     {
@@ -54,7 +53,7 @@ namespace RESTar.Internal
                                         throw new Exception("Invalid ObjectNo format. Should be positive integer");
                                     }
                                 }
-                                if (string.Equals("objectid", only.Key, OrdinalIgnoreCase))
+                                if (string.Equals("objectid", only.Key, StringComparison.OrdinalIgnoreCase))
                                 {
                                     try
                                     {

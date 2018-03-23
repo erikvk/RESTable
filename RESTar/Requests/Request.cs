@@ -9,7 +9,7 @@ using RESTar.Results.Error;
 using RESTar.Results.Error.BadRequest;
 using RESTar.Results.Error.Forbidden;
 using RESTar.Results.Error.NotFound;
-using static RESTar.Methods;
+using static RESTar.Method;
 using static RESTar.Internal.ErrorCodes;
 using RESTar.Http;
 using RESTar.Linq;
@@ -19,8 +19,6 @@ namespace RESTar.Requests
 {
     internal class Request<T> : IRequest<T>, IRequestInternal<T>, ITraceable where T : class
     {
-        private IEntityResource<T> EntityResource => _iresource as IEntityResource<T>;
-        private ITerminalResourceInternal TerminalResource => _iresource as ITerminalResourceInternal;
         public ITarget<T> Target { get; }
         public bool HasConditions => !(_conditions?.Count > 0);
         public Headers ResponseHeaders => _responseHeaders ?? (_responseHeaders = new Headers());
@@ -63,7 +61,7 @@ namespace RESTar.Requests
             get
             {
                 var viewName = Target is IView ? Target.Name : null;
-                return new UriComponents(_iresource.Name, viewName, Conditions, MetaConditions.AsConditionList());
+                return new UriComponents(IResource.Name, viewName, Conditions, MetaConditions.AsConditionList());
             }
         }
 
@@ -74,9 +72,9 @@ namespace RESTar.Requests
         private Headers _responseHeaders;
         private ICollection<string> _cookies;
         private Body _body;
-        private IResource<T> _iresource { get; }
-        IEntityResource IRequest.Resource => EntityResource;
-        IEntityResource<T> IRequest<T>.Resource => EntityResource;
+        private IResource<T> IResource { get; }
+        IEntityResource IRequest.Resource => IResource as IEntityResource;
+        IEntityResource<T> IRequest<T>.Resource => IResource as IEntityResource<T>;
         private DataConfig InputDataConfig { get; }
         private DataConfig OutputDataConfig { get; }
         private bool IsEvaluating;
@@ -86,7 +84,7 @@ namespace RESTar.Requests
         #region Parameter bindings
 
         public RequestParameters RequestParameters { get; }
-        public Methods Method => RequestParameters.Method;
+        public Method Method => RequestParameters.Method;
         public string TraceId => RequestParameters.TraceId;
         public Context Context => RequestParameters.Context;
         public CachedProtocolProvider ProtocolProvider => RequestParameters.CachedProtocolProvider;
@@ -135,7 +133,7 @@ namespace RESTar.Requests
             {
                 Context.IncreaseDepth();
                 IsEvaluating = true;
-                switch (_iresource)
+                switch (IResource)
                 {
                     case ITerminalResourceInternal<T> terminal:
                         if (!Context.HasWebSocket)
@@ -153,7 +151,7 @@ namespace RESTar.Requests
                         var finalized = result.FinalizeResult();
                         Context.WebSocket.SendResult(finalized);
                         return new WebSocketResult(leaveOpen: false, trace: this);
-                    default: throw new UnknownResource(_iresource.Name);
+                    default: throw new UnknownResource(IResource.Name);
                 }
             }
             catch (Exception exs)
@@ -172,7 +170,7 @@ namespace RESTar.Requests
         internal Request(IResource<T> resource, RequestParameters requestParameters)
         {
             RequestParameters = requestParameters;
-            _iresource = resource;
+            IResource = resource;
             Target = resource;
             InputDataConfig = Headers.Source != null ? DataConfig.External : DataConfig.Client;
             OutputDataConfig = Headers.Destination != null ? DataConfig.External : DataConfig.Client;
@@ -181,16 +179,19 @@ namespace RESTar.Requests
             {
                 if (resource.IsInternal && Context.Client.Origin != OriginType.Internal)
                     throw new ResourceIsInternal(resource);
-                if (requestParameters.Uri.ViewName != null && EntityResource != null)
+                if (IResource is IEntityResource<T> entityResource)
                 {
-                    if (!EntityResource.ViewDictionary.TryGetValue(requestParameters.Uri.ViewName, out var view))
-                        throw new UnknownView(requestParameters.Uri.ViewName, EntityResource);
-                    Target = view;
+                    this.MethodCheck();
+                    MetaConditions = MetaConditions.Parse(requestParameters.Uri.MetaConditions, entityResource);
+                    if (requestParameters.Uri.ViewName != null)
+                    {
+                        if (!entityResource.ViewDictionary.TryGetValue(requestParameters.Uri.ViewName, out var view))
+                            throw new UnknownView(requestParameters.Uri.ViewName, entityResource);
+                        Target = view;
+                    }
                 }
                 if (requestParameters.Uri.Conditions.Count > 0)
                     Conditions = Condition<T>.Parse(requestParameters.Uri.Conditions, Target);
-                if (EntityResource != null)
-                    MetaConditions = MetaConditions.Parse(requestParameters.Uri.MetaConditions, EntityResource);
                 if (requestParameters.Headers.UnsafeOverride)
                 {
                     MetaConditions.Unsafe = true;
@@ -198,7 +199,6 @@ namespace RESTar.Requests
                 }
                 if (Context.Client.Origin == OriginType.Internal && Method == GET)
                     MetaConditions.Formatter = DbOutputFormat.Raw;
-                this.MethodCheck();
                 var defaultContentType = ProtocolProvider.DefaultInputProvider.ContentType;
                 switch (InputDataConfig)
                 {

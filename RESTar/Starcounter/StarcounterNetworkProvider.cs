@@ -4,51 +4,47 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
-using RESTar.Deflection;
 using RESTar.Linq;
 using RESTar.Operations;
+using RESTar.Requests;
 using RESTar.Results.Success;
 using RESTar.WebSockets;
 using Starcounter;
-using static RESTar.Admin.Settings;
 
-namespace RESTar.Requests
+//using static RESTar.Admin.Settings;
+
+namespace RESTar.Starcounter
 {
-    internal static class StarcounterHandlers
+    internal class StarcounterNetworkProvider : INetworkProvider
     {
-        private const string WsGroupName = "restar_ws";
+        internal const string WsGroupName = "restar_ws";
 
-        internal static void RegisterRESTHandlers()
+        public void AddBindings(Method[] methods, string rootUri, ushort port)
         {
-            RESTarConfig.Methods.ForEach(method => Handle.CUSTOM
+            methods.ForEach(method => Handle.CUSTOM
             (
-                port: _Port,
-                methodSpaceUri: $"{method} {_Uri}{{?}}",
-                handler: (Starcounter.Request scRequest, string query) =>
+                port: port,
+                methodSpaceUri: $"{method} {rootUri}{{?}}",
+                handler: (global::Starcounter.Request scRequest, string query) =>
                 {
                     using (var client = GetClient(scRequest))
-                    using (var context = new StarcounterContext(client))
+                    using (var context = new ScContext(client, scRequest))
                     {
                         var headers = new Headers(scRequest.HeadersDictionary);
-                        if (scRequest.WebSocketUpgrade)
-                        {
-                            var c = new StarcounterWebSocket(WsGroupName, scRequest, client);
-                            context.SetWebSocket(c);
-                        }
                         var stopwatch = Stopwatch.StartNew();
 
-                        var request = Request.Create(context, method, ref query, scRequest.BodyBytes, headers);
+                        var request = context.MakeRequest(method, ref query, scRequest.BodyBytes, headers);
                         var result = request.GetResult().FinalizeResult();
 
                         stopwatch.Stop();
                         switch (result)
                         {
                             case WebSocketResult wsresult:
-                                if (!wsresult.LeaveOpen) context.GetScWebSocket().Disconnect();
+                                if (!wsresult.LeaveOpen) context.WebSocket.Disconnect();
                                 return HandlerStatus.Handled;
                             default:
                                 Admin.Console.Log(request, result, stopwatch.Elapsed.TotalMilliseconds);
-                                return result.ToResponse();
+                                return ToResponse(result);
                         }
                     }
                 }
@@ -56,20 +52,20 @@ namespace RESTar.Requests
 
             Handle.OPTIONS
             (
-                port: _Port,
-                uriTemplate: $"{_Uri}{{?}}",
-                handler: (Starcounter.Request scRequest, string query) =>
+                port: port,
+                uriTemplate: $"{rootUri}{{?}}",
+                handler: (global::Starcounter.Request scRequest, string query) =>
                 {
                     using (var client = GetClient(scRequest))
+                    using (var context = new ScContext(client, scRequest))
                     {
-                        var context = new StarcounterContext(client);
                         var headers = new Headers(scRequest.HeadersDictionary);
-                        return Request.CheckOrigin(context, ref query, headers).ToResponse();
+                        return ToResponse(context.CheckOrigin(ref query, headers));
                     }
                 }
             );
 
-            Handle.WebSocket(_Port, WsGroupName, (text, ws) =>
+            Handle.WebSocket(port, WsGroupName, (text, ws) =>
             {
                 try
                 {
@@ -81,7 +77,7 @@ namespace RESTar.Requests
                     ws.Disconnect();
                 }
             });
-            Handle.WebSocket(_Port, WsGroupName, (binary, ws) =>
+            Handle.WebSocket(port, WsGroupName, (binary, ws) =>
             {
                 try
                 {
@@ -93,7 +89,7 @@ namespace RESTar.Requests
                     ws.Disconnect();
                 }
             });
-            Handle.WebSocketDisconnect(_Port, WsGroupName, ws =>
+            Handle.WebSocketDisconnect(port, WsGroupName, ws =>
             {
                 try
                 {
@@ -101,22 +97,12 @@ namespace RESTar.Requests
                 }
                 catch { }
             });
-
-            #region View
-
-            // if (!_ViewEnabled) return;
-            // Application.Current.Use(new HtmlFromJsonProvider());
-            // Application.Current.Use(new PartialToStandaloneHtmlProvider());
-            // var appName = Application.Current.Name;
-            // Handle.GET($"/{appName}{{?}}", (Request request, string query) => Evaluate(VIEW, () => MakeArgs(request, query)).ToResponse());
-            // Handle.GET("/__restar/__page", () => Evaluate(PAGE).ToResponse());
-            // if (!setupMenu) return;
-            // Handle.GET($"/{appName}", () => Evaluate(MENU).ToResponse());
-
-            #endregion
         }
 
-        private static Response ToResponse(this IFinalizedResult result)
+        public void RemoveBindings(Method[] methods, string rootUri, ushort port) => methods
+            .ForEach(method => Do.Try(() => Handle.UnregisterHttpHandler(port, $"{method}", $"{rootUri}{{?}}")));
+
+        private Response ToResponse(IFinalizedResult result)
         {
             var response = new Response
             {
@@ -144,7 +130,7 @@ namespace RESTar.Requests
             return response;
         }
 
-        private static Client GetClient(Starcounter.Request request)
+        private static Client GetClient(global::Starcounter.Request request)
         {
             var clientIP = request.ClientIpAddress;
             var proxyIP = default(IPAddress);
@@ -161,16 +147,6 @@ namespace RESTar.Requests
                 }
             }
             return Client.External(clientIP, proxyIP, userAgent, host, https);
-        }
-
-        internal static void UnregisterRESTHandlers()
-        {
-            void UnregisterREST(Methods method) => Handle.UnregisterHttpHandler(_Port, $"{method}", $"{_Uri}{{?}}");
-            EnumMember<Methods>.Values.ForEach(method => Do.Try(() => UnregisterREST(method)));
-            var appName = Application.Current.Name;
-            Do.Try(() => Handle.UnregisterHttpHandler(_Port, "GET", $"/{appName}{{?}}"));
-            Do.Try(() => Handle.UnregisterHttpHandler(_Port, "GET", "/__restar/__page"));
-            Do.Try(() => Handle.UnregisterHttpHandler(_Port, "GET", $"/{appName}"));
         }
     }
 }

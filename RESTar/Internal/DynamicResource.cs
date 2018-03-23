@@ -22,7 +22,7 @@ namespace RESTar.Internal
         /// <summary>
         /// The available methods for this resource
         /// </summary>
-        public IReadOnlyList<Methods> AvailableMethods
+        public IReadOnlyList<Method> AvailableMethods
         {
             get => AvailableMethodsString.ToMethodsArray();
             set => AvailableMethodsString = value.ToMethodsString();
@@ -64,7 +64,7 @@ namespace RESTar.Internal
         internal static IEnumerable<DynamicResource> GetAll() => Db.SQL<DynamicResource>(All);
         private static bool Exists(string tableName) => Db.SQL<DynamicResource>(ByTableName, tableName).FirstOrDefault() != null;
 
-        private DynamicResource(string name, Type table, IEnumerable<Methods> availableMethods,
+        private DynamicResource(string name, Type table, IEnumerable<Method> availableMethods,
             string description = null)
         {
             Name = name;

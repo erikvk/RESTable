@@ -35,7 +35,7 @@ namespace RESTar
     /// A resource for creating arbitrary aggregated reports from multiple
     /// internal requests.
     /// </summary>
-    [RESTar(Methods.GET, Description = description), JsonConverter(typeof(AggregatorTemplateConverter))]
+    [RESTar(Method.GET, Description = description), JsonConverter(typeof(AggregatorTemplateConverter))]
     public class Aggregator : Dictionary<string, object>, ISelector<Aggregator>
     {
         private const string description = "A resource for creating arbitrary aggregated reports from multiple internal requests";
@@ -58,16 +58,16 @@ namespace RESTar
                     case string empty when string.IsNullOrWhiteSpace(empty): return empty;
 
                     case string stringValue:
-                        Methods method;
+                        Method method;
                         string uri;
                         if (stringValue.StartsWith("GET "))
                         {
-                            method = Methods.GET;
+                            method = Method.GET;
                             uri = stringValue.Substring(4);
                         }
                         else if (stringValue.StartsWith("REPORT "))
                         {
-                            method = Methods.REPORT;
+                            method = Method.REPORT;
                             uri = stringValue.Substring(7);
                         }
                         else return stringValue;

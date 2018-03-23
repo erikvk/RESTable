@@ -8,7 +8,7 @@ using RESTar.ContentTypeProviders;
 using RESTar.Linq;
 using RESTar.Results.Success;
 using static System.StringComparison;
-using static RESTar.Methods;
+using static RESTar.Method;
 using JTokens = System.Collections.Generic.IEnumerable<Newtonsoft.Json.Linq.JToken>;
 
 #pragma warning disable 1591

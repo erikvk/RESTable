@@ -7,7 +7,7 @@ using static RESTar.Internal.Authenticator;
 
 namespace RESTar.Auth
 {
-    internal class AccessRights : Dictionary<IResource, Methods[]>
+    internal class AccessRights : Dictionary<IResource, Method[]>
     {
         internal string Key { get; }
         internal static AccessRights Root { get; private set; }
@@ -37,7 +37,7 @@ namespace RESTar.Auth
 
         internal AccessRights(string key) => Key = key;
 
-        internal new Methods[] this[IResource resource]
+        internal new Method[] this[IResource resource]
         {
             get => TryGetValue(resource, out var r) ? r : null;
             set => base[resource] = value;

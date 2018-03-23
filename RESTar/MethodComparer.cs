@@ -3,11 +3,11 @@ using System.Collections.Generic;
 
 namespace RESTar
 {
-    internal class MethodComparer : Comparer<Methods>
+    internal class MethodComparer : Comparer<Method>
     {
         internal static readonly MethodComparer Instance = new MethodComparer();
 
-        public override int Compare(Methods a, Methods b)
+        public override int Compare(Method a, Method b)
         {
             var indexA = Array.IndexOf(RESTarConfig.Methods, a);
             var indexB = Array.IndexOf(RESTarConfig.Methods, b);

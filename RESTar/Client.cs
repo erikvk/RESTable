@@ -11,11 +11,8 @@ namespace RESTar
     /// <summary>
     /// Describes the origin and basic TCP connection parameters of a request
     /// </summary>
-    public class Client : IDisposable, ITraceable
+    public class Client : IDisposable
     {
-        public string TraceId { get; internal set; }
-        public Context Context { get; internal set; }
-
         /// <summary>
         /// The origin type
         /// </summary>
@@ -57,8 +54,8 @@ namespace RESTar
         {
             Origin = origin;
             Host = host;
-            ClientIP = clientIP.ToString();
-            ProxyIP = proxyIP.ToString();
+            ClientIP = clientIP?.ToString();
+            ProxyIP = proxyIP?.ToString();
             UserAgent = userAgent;
             HTTPS = https;
         }

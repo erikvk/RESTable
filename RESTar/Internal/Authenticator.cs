@@ -86,7 +86,7 @@ namespace RESTar.Internal
             return NewAuthToken(accessRights);
         }
 
-        internal static bool MethodCheck(Methods requestedMethod, IEntityResource resource, string authToken, out bool failedAuth)
+        internal static bool MethodCheck(Method requestedMethod, IEntityResource resource, string authToken, out bool failedAuth)
         {
             failedAuth = false;
             if (!resource.AvailableMethods.Contains(requestedMethod)) return false;

@@ -36,7 +36,7 @@ namespace RESTar.Requests
         #region Parameter bindings
 
         public RequestParameters RequestParameters { get; }
-        public Methods Method => RequestParameters.Method;
+        public Method Method => RequestParameters.Method;
         public string TraceId => RequestParameters.TraceId;
         public Context Context => RequestParameters.Context;
         public CachedProtocolProvider ProtocolProvider => RequestParameters.CachedProtocolProvider;

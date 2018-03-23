@@ -1,6 +1,7 @@
 using System;
 using RESTar.Internal;
 using RESTar.Operations;
+using RESTar.Starcounter;
 using Starcounter;
 
 namespace RESTar.Resources

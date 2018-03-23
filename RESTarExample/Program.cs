@@ -30,7 +30,7 @@ namespace RESTarExample
         }
     }
 
-    [RESTar(Methods.GET)]
+    [RESTar(Method.GET)]
     public class Thing : ISelector<Thing>
     {
         public IEnumerable<Thing> Select(IRequest<Thing> request)
@@ -241,7 +241,7 @@ namespace RESTarExample
         public string Foo { get; set; }
     }
 
-    [RESTar(Methods.GET)]
+    [RESTar(Method.GET)]
     public class SemiDynamic : JObject, ISelector<SemiDynamic>
     {
         public string InputStr { get; set; } = "Goo";
@@ -273,7 +273,7 @@ namespace RESTarExample
         }
     }
 
-    [RESTar(Methods.GET)]
+    [RESTar(Method.GET)]
     public class SemiDynamic2 : Dictionary<string, object>, ISelector<SemiDynamic2>
     {
         public IEnumerable<SemiDynamic2> Select(IRequest<SemiDynamic2> request)
@@ -296,7 +296,7 @@ namespace RESTarExample
         }
     }
 
-    [RESTar(Methods.GET, AllowDynamicConditions = true)]
+    [RESTar(Method.GET, AllowDynamicConditions = true)]
     public class AllDynamic : JObject, ISelector<AllDynamic>
     {
         public string Str { get; set; }
@@ -344,7 +344,7 @@ namespace RESTarExample
         public DateTime DT2;
     }
 
-    [RESTar(Methods.GET, Singleton = true)]
+    [RESTar(Method.GET, Singleton = true)]
     public class MyTestResource : Dictionary<string, dynamic>, ISelector<MyTestResource>
     {
         public IEnumerable<MyTestResource> Select(IRequest<MyTestResource> request)
@@ -389,7 +389,7 @@ namespace RESTarExample
         public string MyMember;
         public string SomeMember;
 
-        [RESTar(Methods.GET, Description = "Returns a fine object")]
+        [RESTar(Method.GET, Description = "Returns a fine object")]
         public class Get : JObject, ISelector<Get>
         {
             public IEnumerable<Get> Select(IRequest<Get> request) => new[] {new Get {["Soo"] = 123}};
@@ -480,7 +480,7 @@ namespace RESTarExample
         public MyElement(DList list, int index, object value = null) : base(list, index, value) { }
     }
 
-    [RESTar(Methods.GET)]
+    [RESTar(Method.GET)]
     public class MyDynamicTable : DDictionary, IDDictionary<MyDynamicTable, MyDynamicTableKvp>
     {
         public MyDynamicTableKvp NewKeyPair(MyDynamicTable dict, string key, object value = null) =>

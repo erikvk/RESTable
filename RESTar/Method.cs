@@ -3,7 +3,7 @@ namespace RESTar
     /// <summary>
     /// The REST methods available in RESTar
     /// </summary>
-    public enum Methods
+    public enum Method
     {
         /// <summary>
         /// GET, returns entities from a resource

@@ -2,6 +2,7 @@
 using Dynamit;
 using RESTar.Internal;
 using RESTar.Operations;
+using RESTar.Starcounter;
 
 namespace RESTar.Resources
 {

@@ -4,7 +4,7 @@ using System.Linq;
 using System.Runtime.Serialization;
 using RESTar.Results.Error.BadRequest;
 using Starcounter;
-using static RESTar.Methods;
+using static RESTar.Method;
 using IResource = RESTar.Internal.IResource;
 
 namespace RESTar.Admin

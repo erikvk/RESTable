@@ -14,7 +14,7 @@ namespace RESTar.Internal
         /// <summary>
         /// The available methods for this resource
         /// </summary>
-        IReadOnlyList<Methods> AvailableMethods { get; }
+        IReadOnlyList<Method> AvailableMethods { get; }
 
         /// <summary>
         /// The alias of this resource (if any)

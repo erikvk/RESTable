@@ -9,6 +9,7 @@ using RESTar.Requests;
 using RESTar.Results.Error;
 using RESTar.Results.Success;
 using RESTar.Serialization;
+using RESTar.Starcounter;
 using RESTar.WebSockets;
 using Console = RESTar.Admin.Console;
 
@@ -20,14 +21,46 @@ namespace RESTar
     /// </summary>
     public abstract class WebSocket : IWebSocket, ITraceable, IDisposable
     {
+        /// <summary>
+        /// The ID of the WebSocket
+        /// </summary>
         public string Id { get; }
+
+        /// <summary>
+        /// The date and time when this WebSocket was opened
+        /// </summary>
         public DateTime Opened { get; private set; }
+
+        /// <summary>
+        /// The date and time when this WebSocket was closed
+        /// </summary>
         public DateTime Closed { get; private set; }
+
+        /// <summary>
+        /// The client connected to this WebSocket
+        /// </summary>
         public Client Client { get; }
+
+        /// <inheritdoc />
+        /// <summary>
+        /// The status of the WebSocket
+        /// </summary>
         public WebSocketStatus Status { get; private set; }
+
+        /// <inheritdoc />
+        /// <summary>
+        /// The headers contained in the WebSocket upgrade request
+        /// </summary>
         public Headers Headers { get; internal set; }
-        public Context Context { get; private set; }
+
+        /// <inheritdoc />
         public string TraceId => Id;
+
+        /// <inheritdoc />
+        /// <summary>
+        /// The context in which this WebSocket was opened
+        /// </summary>
+        public Context Context { get; private set; }
 
         private ulong BytesReceived { get; set; }
         private ulong BytesSent { get; set; }
@@ -59,10 +92,17 @@ namespace RESTar
             }
         }
 
+        /// <summary>
+        /// Disposes the WebSocket. Same as Dispose()
+        /// </summary>
         public void Disconnect() => Dispose();
 
         private bool disposed;
 
+        /// <inheritdoc />
+        /// <summary>
+        /// Disposes the WebSocket. Same as Disconnect()
+        /// </summary>
         public void Dispose()
         {
             Client.Dispose();
@@ -70,7 +110,7 @@ namespace RESTar
             Status = WebSocketStatus.PendingClose;
             var terminalName = TerminalConnection?.TerminalResource?.Name;
             ReleaseTerminal();
-            if (IsConnected) Disconnect();
+            if (IsConnected) DisconnectWebSocket();
             Status = WebSocketStatus.Closed;
             Closed = DateTime.Now;
             if (terminalName != Console.TypeName)
@@ -78,16 +118,37 @@ namespace RESTar
             disposed = true;
         }
 
+        /// <summary>
+        /// Sends text data to the client over the WebSocket
+        /// </summary>
         protected abstract void Send(string text);
+
+        /// <summary>
+        /// Sends binary or text data to the client over the WebSocket
+        /// </summary>
         protected abstract void Send(byte[] data, bool isText);
+
+        /// <summary>
+        /// Is the WebSocket currently connected?
+        /// </summary>
         protected abstract bool IsConnected { get; }
+
+        /// <summary>
+        /// Sends the WebSocket upgrade and initiates the actual underlying WebSocket connection
+        /// </summary>
         protected abstract void SendUpgrade();
+
+        /// <summary>
+        /// Disconnects the actual underlying WebSocket connection
+        /// </summary>
         protected abstract void DisconnectWebSocket();
 
         #region IWebSocket
 
+        /// <inheritdoc />
         public void SendToShell() => Shell.TerminalResource.InstantiateFor(this);
 
+        /// <inheritdoc />
         public void SendTo(ITerminalResource terminalResource)
         {
             if (terminalResource == null)
@@ -96,7 +157,7 @@ namespace RESTar
             _terminalResource.InstantiateFor(this);
         }
 
-        public void HandleTextInput(string textData)
+        internal void HandleTextInput(string textData)
         {
             if (TerminalConnection == null) return;
             if (!TerminalConnection.Terminal.SupportsTextInput)
@@ -110,7 +171,7 @@ namespace RESTar
             BytesReceived += (ulong) Encoding.UTF8.GetByteCount(textData);
         }
 
-        public void HandleBinaryInput(byte[] binaryData)
+        internal void HandleBinaryInput(byte[] binaryData)
         {
             if (TerminalConnection == null) return;
             if (!TerminalConnection.Terminal.SupportsBinaryInput)
@@ -124,7 +185,7 @@ namespace RESTar
             BytesSent += (ulong) binaryData.Length;
         }
 
-        public void SendTextRaw(string textData)
+        internal void SendTextRaw(string textData)
         {
             if (Status != WebSocketStatus.Open) return;
             Send(textData);
@@ -159,6 +220,7 @@ namespace RESTar
             }
         }
 
+        /// <inheritdoc />
         public void SendResult(IFinalizedResult result, bool includeStatusWithContent = true, TimeSpan? timeElapsed = null)
         {
             switch (Status)
@@ -193,13 +255,25 @@ namespace RESTar
             else sendStatus();
         }
 
+        /// <inheritdoc />
         public void SendException(Exception exception) => SendResult(RESTarError.GetError(exception));
+
+        /// <inheritdoc />
         public void SendText(string data) => _SendText(data);
+
+        /// <inheritdoc />
         public void SendText(byte[] data) => _SendBinary(data, true);
+
+        /// <inheritdoc />
         public void SendText(Stream data) => _SendBinary(data.ToByteArray(), true);
+
+        /// <inheritdoc />
         public void SendBinary(byte[] data) => _SendBinary(data, false);
+
+        /// <inheritdoc />
         public void SendBinary(Stream data) => _SendBinary(data.ToByteArray(), false);
 
+        /// <inheritdoc />
         public void SendJson(object item, bool? prettyPrint = null, bool ignoreNulls = false)
         {
             Formatting _prettyPrint;
@@ -212,8 +286,13 @@ namespace RESTar
 
         #endregion
 
+        /// <inheritdoc />
         public override string ToString() => Id;
-        public override bool Equals(object obj) => obj is StarcounterWebSocket sws && sws.Id == Id;
+
+        /// <inheritdoc />
+        public override bool Equals(object obj) => obj is ScWebSocket sws && sws.Id == Id;
+
+        /// <inheritdoc />
         public override int GetHashCode() => Id.GetHashCode();
 
         /// <inheritdoc />

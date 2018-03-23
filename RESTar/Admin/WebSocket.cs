@@ -4,7 +4,7 @@ using Newtonsoft.Json.Linq;
 using RESTar.Linq;
 using RESTar.Serialization;
 using RESTar.WebSockets;
-using static RESTar.Methods;
+using static RESTar.Method;
 
 namespace RESTar.Admin
 {

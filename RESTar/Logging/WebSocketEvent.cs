@@ -1,6 +1,5 @@
 ﻿using System;
 using RESTar.Requests;
-using RESTar.WebSockets;
 
 namespace RESTar.Logging
 {
@@ -10,7 +9,6 @@ namespace RESTar.Logging
         public string TraceId { get; }
         public string LogMessage { get; }
         public string LogContent { get; }
-        public Client Client { get; }
         public Headers Headers { get; }
         public string HeadersStringCache { get; set; }
         private WebSocket WebSocket { get; }

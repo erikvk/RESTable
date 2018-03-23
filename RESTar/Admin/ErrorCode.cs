@@ -4,7 +4,7 @@ using System.Linq;
 using RESTar.Deflection;
 using RESTar.Internal;
 using RESTar.Linq;
-using static RESTar.Methods;
+using static RESTar.Method;
 
 namespace RESTar.Admin
 {

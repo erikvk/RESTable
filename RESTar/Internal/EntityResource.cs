@@ -13,7 +13,7 @@ using RESTar.Results.Error;
 using RESTar.Results.Error.BadRequest;
 using Starcounter;
 using static System.StringComparer;
-using static RESTar.Methods;
+using static RESTar.Method;
 using static RESTar.Deflection.TermBindingRules;
 using static RESTar.Operations.DelegateMaker;
 using static RESTar.Operations.Transact;
@@ -24,7 +24,7 @@ namespace RESTar.Internal
     {
         public string Name { get; }
         public bool Editable { get; }
-        public IReadOnlyList<Methods> AvailableMethods { get; internal set; }
+        public IReadOnlyList<Method> AvailableMethods { get; internal set; }
         public string Description { get; internal set; }
         public Type Type => typeof(T);
         public bool IsDDictionary { get; }
@@ -65,7 +65,7 @@ namespace RESTar.Internal
             set => Description = value;
         }
 
-        IReadOnlyList<Methods> IResourceInternal.AvailableMethods
+        IReadOnlyList<Method> IResourceInternal.AvailableMethods
         {
             set => AvailableMethods = value;
         }
@@ -161,7 +161,7 @@ namespace RESTar.Internal
             RESTarConfig.AddResource(this);
         }
 
-        private static IReadOnlyList<Methods> GetAvailableMethods(Type resource)
+        private static IReadOnlyList<Method> GetAvailableMethods(Type resource)
         {
             if (resource == null)
                 return null;
@@ -170,7 +170,7 @@ namespace RESTar.Internal
             return resource.GetAttribute<RESTarAttribute>()?.AvailableMethods;
         }
 
-        private static RESTarOperations[] NecessaryOpDefs(IEnumerable<Methods> restMethods) => restMethods
+        private static RESTarOperations[] NecessaryOpDefs(IEnumerable<Method> restMethods) => restMethods
             .SelectMany(method =>
             {
                 switch (method)

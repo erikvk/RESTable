@@ -16,7 +16,7 @@ using RESTar.Requests;
 using RESTar.Resources;
 using RESTar.Results.Success;
 using Starcounter;
-using static RESTar.Methods;
+using static RESTar.Method;
 using static RESTar.Operators;
 
 #pragma warning disable 219
@@ -434,7 +434,7 @@ namespace RESTarTester
 
             #region Internal requests
 
-            var g = Request<MyDict>.Create(Client.Internal, POST);
+            var g = Request<MyDict>.Create(POST);
             g.Inserter = () =>
             {
                 dynamic d = new MyDict();
@@ -455,19 +455,19 @@ namespace RESTarTester
             Debug.Assert(result is InsertedEntities ie && ie.InsertedCount == 3);
 
             var r1Cond = new Condition<Resource1>(nameof(Resource1.Sbyte), GREATER_THAN, 1);
-            var r1 = Request<Resource1>.Create(Client.Internal, GET);
+            var r1 = Request<Resource1>.Create(GET);
             r1.Conditions.Add(r1Cond);
 
-            var r2 = Request<Resource2>.Create(Client.Internal, GET);
-            var r3 = Request<Resource3>.Create(Client.Internal, GET);
-            var r4 = Request<Resource4>.Create(Client.Internal, GET);
-            var r6 = Request<Aggregator>.Create(Client.Internal, GET);
+            var r2 = Request<Resource2>.Create(GET);
+            var r3 = Request<Resource3>.Create(GET);
+            var r4 = Request<Resource4>.Create(GET);
+            var r6 = Request<Aggregator>.Create(GET);
             r6.Body = new Body(new
             {
                 A = "REPORT /resource",
                 B = new[] {"REPORT /resource", "REPORT /resource"}
             });
-            var r5 = Request<MyDict>.Create(Client.Internal, GET);
+            var r5 = Request<MyDict>.Create(GET);
             var cond = new Condition<MyDict>("Goo", EQUALS, false);
             r5.Conditions.Add(cond);
             r5.Headers.Accept = RESTar.ContentType.Excel;

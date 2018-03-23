@@ -3,11 +3,9 @@ using System.Linq;
 using System.Text;
 using RESTar.Linq;
 using RESTar.Logging;
-using RESTar.Requests;
 using RESTar.ResourceTemplates;
 using RESTar.Results.Success;
 using RESTar.Serialization;
-using RESTar.WebSockets;
 using static Newtonsoft.Json.Formatting;
 
 namespace RESTar.Admin

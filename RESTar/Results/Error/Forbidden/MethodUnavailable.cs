@@ -10,7 +10,7 @@ namespace RESTar.Results.Error.Forbidden
     public class MethodUnavailable : Forbidden
     {
         /// <inheritdoc />
-        public MethodUnavailable(Methods method, IEntityResource resource) : base(ErrorCodes.NotAuthorized,
+        public MethodUnavailable(Method method, IEntityResource resource) : base(ErrorCodes.NotAuthorized,
             $"{method} is not available for resource '{resource.Name}'") { }
     }
 }

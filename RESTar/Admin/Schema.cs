@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using Newtonsoft.Json.Linq;
 using RESTar.Internal;
 using RESTar.Linq;
-using static RESTar.Methods;
+using static RESTar.Method;
 using static RESTar.Operators;
 
 namespace RESTar.Admin

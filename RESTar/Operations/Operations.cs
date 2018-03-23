@@ -182,17 +182,17 @@ namespace RESTar.Operations
 
         internal static class REST
         {
-            internal static Func<IRequestInternal<T>, Result> GetEvaluator(Methods method)
+            internal static Func<IRequestInternal<T>, Result> GetEvaluator(Method method)
             {
                 switch (method)
                 {
-                    case Methods.GET: return GET;
-                    case Methods.POST: return POST;
-                    case Methods.PATCH: return PATCH;
-                    case Methods.PUT: return PUT;
-                    case Methods.DELETE: return DELETE;
-                    case Methods.REPORT: return REPORT;
-                    case Methods.HEAD: return HEAD;
+                    case Method.GET: return GET;
+                    case Method.POST: return POST;
+                    case Method.PATCH: return PATCH;
+                    case Method.PUT: return PUT;
+                    case Method.DELETE: return DELETE;
+                    case Method.REPORT: return REPORT;
+                    case Method.HEAD: return HEAD;
                     default: return null;
                 }
             }
@@ -269,7 +269,7 @@ namespace RESTar.Operations
             private static (IRequestInternal<T> InnerRequest, JArray ToInsert, IList<(JObject json, T source)> ToUpdate) GetSafePostTasks(
                 IRequest<T> request)
             {
-                var innerRequest = (IRequestInternal<T>) Request<T>.Create(request, Methods.GET);
+                var innerRequest = (IRequestInternal<T>) Request<T>.Create(request, Method.GET);
                 var toInsert = new JArray();
                 var toUpdate = new List<(JObject json, T source)>();
                 try

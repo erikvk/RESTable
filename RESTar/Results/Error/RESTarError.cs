@@ -13,7 +13,7 @@ using RESTar.Results.Error.BadRequest;
 using RESTar.Results.Error.Forbidden;
 using RESTar.Results.Success;
 using static RESTar.Operations.Transact;
-using static RESTar.Methods;
+using static RESTar.Method;
 
 namespace RESTar.Results.Error
 {
@@ -121,8 +121,8 @@ namespace RESTar.Results.Error
                 case RESTarError re: return re;
                 case FormatException _: return new UnsupportedContent(exception);
                 case JsonReaderException _: return new FailedJsonDeserialization(exception);
-                case Starcounter.DbException _ when exception.Message.Contains("SCERR4034"): return new AbortedByCommitHook(exception);
-                case Starcounter.DbException _: return new StarcounterDatabaseError(exception);
+                case global::Starcounter.DbException _ when exception.Message.Contains("SCERR4034"): return new AbortedByCommitHook(exception);
+                case global::Starcounter.DbException _: return new StarcounterDatabaseError(exception);
                 case RuntimeBinderException _: return new BinderPermissions(exception);
                 case NotImplementedException _: return new FeatureNotImplemented("RESTar encountered a call to a non-implemented method");
                 default: return new Unknown(exception);
@@ -132,7 +132,7 @@ namespace RESTar.Results.Error
         internal static IFinalizedResult GetResult(Exception exs, IRequestInternal request)
         {
             var error = GetError(exs);
-            error.SetTrace(request.Context);
+            error.SetTrace(request);
             string errorId = null;
             if (!(error is Forbidden.Forbidden))
             {

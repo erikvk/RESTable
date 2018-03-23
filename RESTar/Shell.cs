@@ -7,9 +7,8 @@ using RESTar.Requests;
 using RESTar.Results.Error;
 using RESTar.Results.Error.BadRequest;
 using RESTar.Results.Success;
-using RESTar.WebSockets;
 using static RESTar.Internal.ErrorCodes;
-using static RESTar.Methods;
+using static RESTar.Method;
 
 namespace RESTar
 {
@@ -261,7 +260,7 @@ namespace RESTar
             WriteQueryAfterContent = true;
         }
 
-        private IFinalizedResult WsEvaluate(Methods method, byte[] body)
+        private IFinalizedResult WsEvaluate(Method method, byte[] body)
         {
             if (Query.Length == 0) return new NoQuery(WebSocket);
             var localQuery = Query;
@@ -281,7 +280,7 @@ namespace RESTar
             return result;
         }
 
-        private void SafeOperation(Methods method, byte[] body = null)
+        private void SafeOperation(Method method, byte[] body = null)
         {
             var sw = Stopwatch.StartNew();
             switch (WsEvaluate(method, body))
@@ -299,7 +298,7 @@ namespace RESTar
             sw.Stop();
         }
 
-        private void UnsafeOperation(Methods method, byte[] body = null)
+        private void UnsafeOperation(Method method, byte[] body = null)
         {
             void operate()
             {

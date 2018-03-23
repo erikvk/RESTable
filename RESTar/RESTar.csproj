@@ -114,6 +114,7 @@
     <Compile Include="Deflection\IL\MethodBodyReader.cs" />
     <Compile Include="Help.cs" />
     <Compile Include="IContentTypeProvider.cs" />
+    <Compile Include="InternalContext.cs" />
     <Compile Include="InternalRequest.cs" />
     <Compile Include="Requests\CachedProtocolProvider.cs" />
     <Compile Include="Requests\ContentTypeController.cs" />
@@ -131,10 +132,15 @@
     <Compile Include="Requests\Body.cs" />
     <Compile Include="Requests\ConnectionId.cs" />
     <Compile Include="Requests\ITraceable.cs" />
+    <Compile Include="Requests\NetworkController.cs" />
     <Compile Include="Requests\OriginType.cs" />
     <Compile Include="Requests\Request.cs" />
+    <Compile Include="Results\Error\Untraceable - Copy.cs" />
+    <Compile Include="INetworkProvider.cs" />
+    <Compile Include="Starcounter\ScContext.cs" />
     <Compile Include="WebSocket.cs" />
     <Compile Include="WebSocketConnection.cs" />
+    <Compile Include="WebSocketContext.cs" />
     <Compile Include="WebSocketNotConnected.cs" />
     <Compile Include="Resources\TerminalResourceProvider.cs" />
     <Compile Include="ResourceTemplates\FeedTerminal.cs" />
@@ -173,7 +179,7 @@
     <Compile Include="Internal\View.cs" />
     <Compile Include="IWebSocket.cs" />
     <Compile Include="LineEndings.cs" />
-    <Compile Include="Methods.cs" />
+    <Compile Include="Method.cs" />
     <Compile Include="Operations\AuthResults.cs" />
     <Compile Include="Operations\Distinct.cs" />
     <Compile Include="Operations\IFinalizedResult.cs" />
@@ -183,7 +189,7 @@
     <Compile Include="RegEx.cs" />
     <Compile Include="Requests\ProtocolController.cs" />
     <Compile Include="Requests\Headers.cs" />
-    <Compile Include="Requests\StarcounterWebSocket.cs" />
+    <Compile Include="Starcounter\ScWebSocket.cs" />
     <Compile Include="Requests\Uri.cs" />
     <Compile Include="Requests\UriCondition.cs" />
     <Compile Include="ResourceProviderAttribute.cs" />
@@ -235,7 +241,7 @@
     <Compile Include="Operations\IFilter.cs" />
     <Compile Include="Interfaces.cs" />
     <Compile Include="Deflection\Dynamic\DynamicProperty.cs" />
-    <Compile Include="Requests\StarcounterHandlers.cs" />
+    <Compile Include="Starcounter\StarcounterNetworkProvider.cs" />
     <Compile Include="Http\HttpRequest.cs" />
     <Compile Include="IValidatable.cs" />
     <Compile Include="Operations\Limit.cs" />
@@ -342,7 +348,7 @@
     <Compile Include="Serialization\NativeProtocol\RESTarJsonWriter.cs" />
     <Compile Include="Serialization\Serializers.cs" />
     <Compile Include="SetOperations.cs" />
-    <Compile Include="Internal\StarcounterOperations.cs" />
+    <Compile Include="Starcounter\StarcounterOperations.cs" />
     <Compile Include="Operations\Select.cs" />
     <Compile Include="Admin\Settings.cs" />
     <Compile Include="Deflection\Dynamic\DeclaredProperty.cs" />
@@ -368,7 +374,6 @@
     <Compile Include="View\RESTarDataView.cs" />
     <Compile Include="WebSocketStatus.cs" />
     <Compile Include="WebSockets\ConnectionProfile.cs" />
-    <Compile Include="WebSockets\IWebSocketInternal.cs" />
     <Compile Include="Shell.cs" />
     <Compile Include="WebSockets\UnknownWebSocket.cs" />
     <Compile Include="WebSockets\WebSocketComparer.cs" />

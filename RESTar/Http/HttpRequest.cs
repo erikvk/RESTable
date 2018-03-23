@@ -12,7 +12,7 @@ namespace RESTar.Http
 {
     internal class HttpRequest : ITraceable
     {
-        internal Methods Method { get; private set; }
+        internal Method Method { get; private set; }
         internal string URI { get; private set; }
         private Dictionary<string, string> Headers { get; }
         internal string Accept;
@@ -49,7 +49,7 @@ namespace RESTar.Http
                 switch (index)
                 {
                     case 0:
-                        if (!Enum.TryParse(part, true, out Methods method))
+                        if (!Enum.TryParse(part, true, out Method method))
                             throw new HttpRequestException("Invalid or missing method");
                         Method = method;
                         break;

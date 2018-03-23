@@ -80,7 +80,7 @@ namespace RESTar.Requests
         /// <summary>
         /// The method to perform
         /// </summary>
-        public Methods Method { get; }
+        public Method Method { get; }
 
         /// <summary>
         /// The URI contained in the arguments
@@ -137,10 +137,10 @@ namespace RESTar.Requests
 
         #endregion
 
-        internal RequestParameters(ITraceable trace, Methods method, IResource resource, string protocolIdentifier = null, string viewName = null)
+        internal RequestParameters(Context context, Method method, IResource resource, string protocolIdentifier = null, string viewName = null)
         {
-            TraceId = trace.TraceId;
-            Context = trace.Context;
+            TraceId = context.InitialTraceId;
+            Context = context;
             Method = method;
             Headers = new Headers();
             iresource = resource;
@@ -153,15 +153,15 @@ namespace RESTar.Requests
             CachedProtocolProvider = ProtocolController.ResolveProtocolProvider(protocolIdentifier);
         }
 
-        internal RequestParameters(ITraceable trace, Methods method, ref string uri, byte[] body, Headers headers)
+        internal RequestParameters(Context context, Method method, ref string uri, byte[] body, Headers headers)
         {
-            TraceId = trace.TraceId;
-            Context = trace.Context;
+            TraceId = context.InitialTraceId;
+            Context = context;
             Method = method;
             Headers = headers ?? new Headers();
             IsWebSocketUpgrade = Context.WebSocket?.Status == WebSocketStatus.Waiting;
 
-            Uri = URI.ParseInternal(ref uri, PercentCharsEscaped(headers), trace.Context, out var key, out var cachedProtocolProvider);
+            Uri = URI.ParseInternal(ref uri, PercentCharsEscaped(headers), context, out var key, out var cachedProtocolProvider);
             var hasMacro = Uri?.Macro != null;
 
             if (hasMacro)

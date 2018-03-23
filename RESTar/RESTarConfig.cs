@@ -17,9 +17,9 @@ using RESTar.Linq;
 using RESTar.Requests;
 using RESTar.Resources;
 using RESTar.Results.Error;
+using RESTar.Starcounter;
 using Starcounter;
-using static RESTar.Methods;
-using static RESTar.Requests.StarcounterHandlers;
+using static RESTar.Method;
 using IResource = RESTar.Internal.IResource;
 
 namespace RESTar
@@ -41,7 +41,7 @@ namespace RESTar
         internal static bool NeedsConfiguration => RequireApiKey || !AllowAllOrigins;
         private static string ConfigFilePath { get; set; }
         internal static bool Initialized { get; private set; }
-        internal static readonly Methods[] Methods = {GET, POST, PATCH, PUT, DELETE, REPORT, HEAD};
+        internal static readonly Method[] Methods = {GET, POST, PATCH, PUT, DELETE, REPORT, HEAD};
         internal static readonly Encoding DefaultEncoding = new UTF8Encoding(false);
 
         static RESTarConfig() => NewState();
@@ -170,7 +170,8 @@ namespace RESTar
                 RequireApiKey = requireApiKey;
                 AllowAllOrigins = allowAllOrigins;
                 ConfigFilePath = configFilePath;
-                RegisterRESTHandlers();
+                var networkProviders = new INetworkProvider[] {new StarcounterNetworkProvider()};
+                NetworkController.AddNetworkBindings(networkProviders);
                 Initialized = true;
                 DatabaseIndex.Init();
                 DbOutputFormat.Init();
@@ -183,7 +184,7 @@ namespace RESTar
                 RequireApiKey = default;
                 AllowAllOrigins = default;
                 ConfigFilePath = default;
-                UnregisterRESTHandlers();
+                NetworkController.RemoveNetworkBindings();
                 Settings.Clear();
                 NewState();
                 throw;

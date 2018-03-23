@@ -3,12 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using RESTar.Deflection;
 using RESTar.Deflection.Dynamic;
-using RESTar.Linq;
 using RESTar.Operations;
-using RESTar.Requests;
 using RESTar.Results.Error.BadRequest;
 using RESTar.Results.Error.NotFound;
-using RESTar.WebSockets;
 using static RESTar.Deflection.TermBindingRules;
 using static RESTar.Operators;
 using static RESTar.WebSocketStatus;
@@ -19,7 +16,7 @@ namespace RESTar.Internal
     {
         public string Name { get; }
         public Type Type { get; }
-        public IReadOnlyList<Methods> AvailableMethods { get; set; }
+        public IReadOnlyList<Method> AvailableMethods { get; set; }
         public string Alias { get; private set; }
         public bool IsInternal { get; }
         public bool IsGlobal { get; }
@@ -77,7 +74,7 @@ namespace RESTar.Internal
         {
             Name = typeof(T).FullName ?? throw new Exception();
             Type = typeof(T);
-            AvailableMethods = new[] {Methods.GET};
+            AvailableMethods = new[] {Method.GET};
             IsInternal = false;
             IsGlobal = true;
             var attribute = typeof(T).GetAttribute<RESTarAttribute>();

@@ -31,13 +31,13 @@ namespace RESTar
     /// <summary>
     /// Creates metadata for the types and resources of the RESTar instance
     /// </summary>
-    [RESTar(Methods.GET, GETAvailableToAll = true)]
+    [RESTar(Method.GET, GETAvailableToAll = true)]
     public class Metadata : ISelector<Metadata>
     {
         /// <summary>
         /// The access scope for the current client
         /// </summary>
-        public IDictionary<IResource, Methods[]> CurrentAccessScope { get; private set; }
+        public IDictionary<IResource, Method[]> CurrentAccessScope { get; private set; }
 
         /// <summary>
         /// The entity resources within the access scope
@@ -88,7 +88,7 @@ namespace RESTar
             if (level == MetadataLevel.OnlyResources)
                 return new Metadata
                 {
-                    CurrentAccessScope = new Dictionary<IResource, Methods[]>(rights ?? AccessRights.Root),
+                    CurrentAccessScope = new Dictionary<IResource, Method[]>(rights ?? AccessRights.Root),
                     EntityResources = entityResources.ToArray(),
                     TerminalResources = terminalResources.ToArray()
                 };
@@ -139,7 +139,7 @@ namespace RESTar
 
             return new Metadata
             {
-                CurrentAccessScope = new Dictionary<IResource, Methods[]>(rights ?? AccessRights.Root),
+                CurrentAccessScope = new Dictionary<IResource, Method[]>(rights ?? AccessRights.Root),
                 EntityResources = entityResources.ToArray(),
                 TerminalResources = terminalResources.ToArray(),
                 EntityResourceTypes = entityTypes

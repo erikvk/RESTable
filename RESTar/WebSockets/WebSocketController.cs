@@ -2,7 +2,6 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using RESTar.Requests;
 using RESTar.Results.Error;
 using RESTar.Serialization;
 

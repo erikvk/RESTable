@@ -1,44 +1,39 @@
 ﻿using System;
+using RESTar.Internal;
+using RESTar.Operations;
 using RESTar.Requests;
 using RESTar.Results.Error;
+using RESTar.Results.Error.Forbidden;
+using RESTar.Results.Success;
 using RESTar.WebSockets;
 
 namespace RESTar
 {
-    internal sealed class StarcounterContext : Context
-    {
-        public StarcounterContext(Client client) : base(client) { }
-        internal StarcounterWebSocket GetScWebSocket() => (StarcounterWebSocket) GetWebSocket();
-        internal void SetWebSocket(StarcounterWebSocket value) => base.SetWebSocket(value);
-    }
-
-    internal class WebSocketContext : Context
-    {
-        internal WebSocketContext(Client client) : base(client, false) => Client.IsInWebSocket = true;
-    }
-
-    internal class InternalContext : Context
-    {
-        internal InternalContext(Client client = null, bool autoDisposeClient = true) : base(client ?? Client.Internal, autoDisposeClient) { }
-    }
-
     /// <inheritdoc cref="ITraceable" />
     /// <inheritdoc cref="IDisposable" />
     /// <summary>
     /// Requests are run from inside contexts. Contexts trace requests and responses and 
     /// keep track of internal requests and guards against infinite recursion.
     /// </summary>
-    public abstract class Context : ITraceable, IDisposable
+    public abstract class Context : IDisposable
     {
-        /// <inheritdoc />
-        public string TraceId { get; }
-
-        Context ITraceable.Context => this;
+        internal string InitialTraceId { get; }
+        internal bool Used { get; set; }
 
         /// <summary>
         /// Does this context have a WebSocket?
         /// </summary>
         public bool HasWebSocket => GetWebSocket() != null;
+
+        /// <summary>
+        /// Should return true if and only if the request is a WebSocket upgrade request
+        /// </summary>
+        protected abstract bool IsWebSocketUpgrade { get; }
+
+        /// <summary>
+        /// Creates a WebSocket instance for a given Context
+        /// </summary>
+        protected abstract WebSocket CreateWebSocket();
 
         /// <summary>
         /// The client of the context
@@ -71,10 +66,6 @@ namespace RESTar
             set => SetWebSocket(value);
         }
 
-        internal WebSocket WebSocketInternal => GetWebSocket();
-
-        internal bool IsInWebSocket => GetWebSocket().Status == WebSocketStatus.Open;
-
         internal void IncreaseDepth()
         {
             if (StackDepth == MaximumStackDepth)
@@ -90,15 +81,54 @@ namespace RESTar
         }
 
         /// <summary>
+        /// Creates a new request instance
+        /// </summary>
+        /// <param name="method"></param>
+        /// <param name="uri"></param>
+        /// <param name="body"></param>
+        /// <param name="headers"></param>
+        /// <returns></returns>
+        public IRequest MakeRequest(Method method, ref string uri, byte[] body = null, Headers headers = null)
+        {
+            if (uri == null) throw new MissingUri();
+            if (Used) throw new ReusedContext();
+            Used = true;
+            var parameters = new RequestParameters(this, method, ref uri, body, headers);
+            parameters.Authenticate();
+            if (!parameters.IsValid)
+                return new InvalidParametersRequest(parameters);
+            return Request.Construct((dynamic) parameters.IResource, parameters);
+        }
+
+        /// <summary>
+        /// Use this method to check the origin of an incoming OPTIONS request. This will check the contents
+        /// of the Origin header against allowed CORS origins.
+        /// </summary>
+        /// <param name="uri">The URI if the request</param>
+        /// <param name="headers">The headers contained in the request</param>
+        /// <returns></returns>
+        public IFinalizedResult CheckOrigin(ref string uri, Headers headers)
+        {
+            if (uri == null) throw new MissingUri();
+            var parameters = new RequestParameters(this, Method.OPTIONS, ref uri, null, headers);
+            var origin = parameters.Headers.Origin;
+            if (!parameters.IsValid || !Uri.TryCreate(origin, UriKind.Absolute, out var originUri))
+                return new InvalidOrigin();
+            if (RESTarConfig.AllowAllOrigins || RESTarConfig.AllowedOrigins.Contains(originUri))
+                return new AcceptOrigin(origin, parameters);
+            return new InvalidOrigin();
+        }
+
+        /// <summary>
         /// Creates a new context for a client
         /// </summary>
         /// <param name="client">The client of the context</param>
         /// <param name="autoDisposeClient">Should RESTar automatically dispose the client when the context
-        /// stack depth reaches zero?</param>
-        public Context(Client client, bool autoDisposeClient = true)
+        /// is disposed?</param>
+        protected Context(Client client, bool autoDisposeClient = true)
         {
             Client = client ?? throw new ArgumentNullException(nameof(client));
-            TraceId = ConnectionId.Next;
+            InitialTraceId = ConnectionId.Next;
             StackDepth = 0;
             AutoDisposeClient = autoDisposeClient;
         }
@@ -106,8 +136,8 @@ namespace RESTar
         /// <inheritdoc />
         public void Dispose()
         {
-            Client?.Dispose();
-            WebSocketInternal?.Dispose();
+            if (AutoDisposeClient)
+                Client.Dispose();
         }
     }
 }

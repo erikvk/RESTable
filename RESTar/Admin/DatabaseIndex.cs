@@ -132,7 +132,7 @@ namespace RESTar.Admin
         internal static void Init()
         {
             SelectionCondition = new Condition<DatabaseIndex>(nameof(Name), Operators.EQUALS, null);
-            SelectionInternalRequest = Request<DatabaseIndex>.Create(Client.Internal, Methods.PUT);
+            SelectionInternalRequest = Request<DatabaseIndex>.Create(Method.PUT);
             SelectionInternalRequest.Conditions.Add(SelectionCondition);
         }
 
