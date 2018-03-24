@@ -12,8 +12,13 @@ using static RESTar.Method;
 
 namespace RESTar
 {
+    /// <inheritdoc />
+    /// <summary>
+    /// The WebSocket shell, used to navigate and execute commands against RESTar resources
+    /// from a connected WebSocket. 
+    /// </summary>
     [RESTar(Description = description, GETAvailableToAll = true)]
-    internal class Shell : ITerminal
+    public class Shell : ITerminal
     {
         private const string description = "The RESTar WebSocket shell lets the client navigate around the resources of the " +
                                            "RESTar application, perform CRUD operations and enter terminal resources.";
@@ -26,6 +31,9 @@ namespace RESTar
         /// </summary>
         private bool queryChangedPreEval;
 
+        /// <summary>
+        /// The query to perform in the shell
+        /// </summary>
         public string Query
         {
             get => query;
@@ -44,6 +52,10 @@ namespace RESTar
             }
         }
 
+        /// <summary>
+        /// Should the shell be silent in output? Sets WriteStatusBeforeContent, WriteTimeElapsed, WriteQueryAfterContent
+        /// and WriteInfoTexts to false.
+        /// </summary>
         public bool Silent
         {
             get => !WriteStatusBeforeContent && !WriteTimeElapsed && !WriteQueryAfterContent && !WriteInfoTexts;
@@ -56,22 +68,50 @@ namespace RESTar
             }
         }
 
+        /// <summary>
+        /// Should unsafe commands be allowed?
+        /// </summary>
         public bool Unsafe { get; set; } = false;
+
+        /// <summary>
+        /// Should the shell output the result status before included content?
+        /// </summary>
         public bool WriteStatusBeforeContent { get; set; } = true;
+
+        /// <summary>
+        /// Should the shell output the time elapsed in evaluating the command?
+        /// </summary>
         public bool WriteTimeElapsed { get; set; } = true;
+
+        /// <summary>
+        /// Should the shell output the current query after writing content?
+        /// </summary>
         public bool WriteQueryAfterContent { get; set; } = true;
+
+        /// <summary>
+        /// Should the shell output info texts?
+        /// </summary>
         public bool WriteInfoTexts { get; set; } = true;
 
         private Func<int, IUriComponents> GetNextPageLink;
         private Action OnConfirm;
         private IEntitiesMetadata PreviousResultMetadata;
 
+        /// <inheritdoc />
         public IWebSocket WebSocket { private get; set; }
-        public void HandleBinaryInput(byte[] input) => throw new NotImplementedException();
-        public bool SupportsTextInput { get; } = true;
-        public bool SupportsBinaryInput { get; } = false;
-        internal static ITerminalResourceInternal<Shell> TerminalResource { get; set; }
 
+        /// <inheritdoc />
+        public void HandleBinaryInput(byte[] input) => throw new NotImplementedException();
+
+        /// <inheritdoc />
+        public bool SupportsTextInput { get; } = true;
+
+        /// <inheritdoc />
+        public bool SupportsBinaryInput { get; } = false;
+
+        internal static ITerminalResource<Shell> TerminalResource { get; set; }
+
+        /// <inheritdoc />
         public void Open()
         {
             if (Query != "")
@@ -79,6 +119,7 @@ namespace RESTar
             else SendShellInit();
         }
 
+        /// <inheritdoc />
         public void HandleTextInput(string input)
         {
             var stopwatch = Stopwatch.StartNew();
@@ -248,6 +289,7 @@ namespace RESTar
             }
         }
 
+        /// <inheritdoc />
         public void Dispose()
         {
             OnConfirm = null;

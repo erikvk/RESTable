@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using RESTar.Internal;
 using RESTar.Operations;
@@ -70,13 +71,13 @@ namespace RESTar
         /// Closes the current terminal (if any) and sends the WebSocket to the Shell terminal. Use this to quit from a 
         /// terminal resource.
         /// </summary>
-        void SendToShell();
+        void SendToShell(IEnumerable<Condition<Shell>> assignments = null);
 
         /// <summary>
         /// Closes the current terminal (if any) and sends the WebSocket to the provided terminal. Use this to quit from a 
         /// terminal resource and open another terminal instead.
         /// </summary>
-        void SendTo(ITerminalResource terminalResource);
+        void SendTo<T>(ITerminalResource<T> terminalResource, IEnumerable<Condition<T>> assignments = null) where T : class, ITerminal;
 
         /// <summary>
         /// The current status of this WebSocket

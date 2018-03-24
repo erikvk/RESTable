@@ -39,6 +39,11 @@ namespace RESTar
         private int StackDepth;
         private readonly bool AutoDisposeClient;
 
+        /// <summary>
+        /// Does this context have a WebSocket connected?
+        /// </summary>
+        public bool HasWebSocket => WebSocket != null;
+
         private WebSocket webSocket;
 
         /// <summary>

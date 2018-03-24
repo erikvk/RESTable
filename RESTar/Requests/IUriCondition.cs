@@ -1,4 +1,5 @@
-﻿namespace RESTar.Requests {
+﻿namespace RESTar.Requests
+{
     /// <summary>
     /// A common interface for URI conditions in RESTar
     /// </summary>

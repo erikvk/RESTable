@@ -6,16 +6,6 @@ using RESTar.Resources;
 
 namespace RESTar.Internal
 {
-    internal interface ITerminalResourceInternal<T> : ITerminalResourceInternal where T : class
-    {
-        void InstantiateFor(WebSocket webSocket, IRequest<T> assignments);
-    }
-
-    internal interface ITerminalResourceInternal : ITerminalResource
-    {
-        void InstantiateFor(WebSocket webSocket);
-    }
-
     /// <inheritdoc />
     /// <summary>
     /// A common non-generic interface for terminal resources

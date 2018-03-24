@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using Newtonsoft.Json;
@@ -65,9 +66,15 @@ namespace RESTar
         private ulong BytesReceived { get; set; }
         private ulong BytesSent { get; set; }
 
-        internal WebSocketConnection TerminalConnection { get; set; }
+        internal WebSocketConnection TerminalConnection { get; private set; }
 
         internal ConnectionProfile GetConnectionProfile() => new ConnectionProfile(this);
+
+        internal void ConnectTo(ITerminal terminal, ITerminalResource resource)
+        {
+            ReleaseTerminal();
+            TerminalConnection = new WebSocketConnection(this, terminal, resource);
+        }
 
         internal void ReleaseTerminal()
         {
@@ -75,17 +82,21 @@ namespace RESTar
             TerminalConnection = null;
         }
 
-        internal void Open(IRequest upgradeRequest)
+        internal void SetContext(IRequest upgradeRequest)
         {
             Context = new WebSocketContext(Client);
             Headers = upgradeRequest.Headers;
+        }
+
+        internal void Open()
+        {
             switch (Status)
             {
                 case WebSocketStatus.Waiting:
                     SendUpgrade();
                     Status = WebSocketStatus.Open;
                     Opened = DateTime.Now;
-                    if (TerminalConnection?.TerminalResource.Name != Console.TypeName)
+                    if (TerminalConnection?.Resource.Name != Console.TypeName)
                         Console.Log(new WebSocketEvent(LogEventType.WebSocketOpen, this));
                     break;
                 default: throw new InvalidOperationException($"Unable to open WebSocket with status '{Status}'");
@@ -108,7 +119,7 @@ namespace RESTar
             Client.Dispose();
             if (disposed) return;
             Status = WebSocketStatus.PendingClose;
-            var terminalName = TerminalConnection?.TerminalResource?.Name;
+            var terminalName = TerminalConnection?.Resource?.Name;
             ReleaseTerminal();
             if (IsConnected) DisconnectWebSocket();
             Status = WebSocketStatus.Closed;
@@ -146,15 +157,19 @@ namespace RESTar
         #region IWebSocket
 
         /// <inheritdoc />
-        public void SendToShell() => Shell.TerminalResource.InstantiateFor(this);
+        public void SendToShell(IEnumerable<Condition<Shell>> assignments = null) => SendTo(Shell.TerminalResource);
 
         /// <inheritdoc />
-        public void SendTo(ITerminalResource terminalResource)
+        public void SendTo<T>(ITerminalResource<T> resource, IEnumerable<Condition<T>> assignments = null) where T : class, ITerminal
         {
-            if (terminalResource == null)
-                throw new ArgumentNullException(nameof(terminalResource));
-            var _terminalResource = (ITerminalResourceInternal) terminalResource;
-            _terminalResource.InstantiateFor(this);
+            if (Status != WebSocketStatus.Open)
+                throw new InvalidOperationException($"Unable to send WebSocket with status '{Status}' to terminal '{resource.Name}'");
+            if (resource == null)
+                throw new ArgumentNullException(nameof(resource));
+            var _resource = (Internal.TerminalResource<T>) resource;
+            var newTerminal = _resource.MakeTerminal(assignments);
+            Context.WebSocket.ConnectTo(newTerminal, _resource);
+            newTerminal.Open();
         }
 
         internal void HandleTextInput(string textData)
@@ -162,10 +177,10 @@ namespace RESTar
             if (TerminalConnection == null) return;
             if (!TerminalConnection.Terminal.SupportsTextInput)
             {
-                SendResult(new UnsupportedWebSocketInput($"Terminal '{TerminalConnection.TerminalResource.Name}' does not support text input"));
+                SendResult(new UnsupportedWebSocketInput($"Terminal '{TerminalConnection.Resource.Name}' does not support text input"));
                 return;
             }
-            if (TerminalConnection.TerminalResource?.Name != Console.TypeName)
+            if (TerminalConnection.Resource?.Name != Console.TypeName)
                 Console.Log(new WebSocketEvent(LogEventType.WebSocketInput, this, textData, Encoding.UTF8.GetByteCount(textData)));
             TerminalConnection.Terminal.HandleTextInput(textData);
             BytesReceived += (ulong) Encoding.UTF8.GetByteCount(textData);
@@ -176,10 +191,10 @@ namespace RESTar
             if (TerminalConnection == null) return;
             if (!TerminalConnection.Terminal.SupportsBinaryInput)
             {
-                SendResult(new UnsupportedWebSocketInput($"Terminal '{TerminalConnection.TerminalResource.Name}' does not support binary input"));
+                SendResult(new UnsupportedWebSocketInput($"Terminal '{TerminalConnection.Resource.Name}' does not support binary input"));
                 return;
             }
-            if (TerminalConnection.TerminalResource?.Name != Console.TypeName)
+            if (TerminalConnection.Resource?.Name != Console.TypeName)
                 Console.Log(new WebSocketEvent(LogEventType.WebSocketInput, this, Encoding.UTF8.GetString(binaryData), binaryData.Length));
             TerminalConnection.Terminal.HandleBinaryInput(binaryData);
             BytesSent += (ulong) binaryData.Length;
@@ -200,7 +215,7 @@ namespace RESTar
                 case WebSocketStatus.Open:
                     Send(textData);
                     BytesSent += (ulong) Encoding.UTF8.GetByteCount(textData);
-                    if (TerminalConnection?.TerminalResource.Name != Console.TypeName)
+                    if (TerminalConnection?.Resource.Name != Console.TypeName)
                         Console.Log(new WebSocketEvent(LogEventType.WebSocketOutput, this, textData, Encoding.UTF8.GetByteCount(textData)));
                     break;
             }
@@ -214,7 +229,7 @@ namespace RESTar
                 case WebSocketStatus.Open:
                     Send(binaryData, isText);
                     BytesSent += (ulong) binaryData.Length;
-                    if (TerminalConnection?.TerminalResource.Name != Console.TypeName)
+                    if (TerminalConnection?.Resource.Name != Console.TypeName)
                         Console.Log(new WebSocketEvent(LogEventType.WebSocketOutput, this, Encoding.UTF8.GetString(binaryData), binaryData.Length));
                     break;
             }

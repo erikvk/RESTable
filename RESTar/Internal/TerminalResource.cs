@@ -3,16 +3,16 @@ using System.Collections.Generic;
 using System.Linq;
 using RESTar.Deflection;
 using RESTar.Deflection.Dynamic;
+using RESTar.Linq;
 using RESTar.Operations;
 using RESTar.Results.Error.BadRequest;
 using RESTar.Results.Error.NotFound;
 using static RESTar.Deflection.TermBindingRules;
 using static RESTar.Operators;
-using static RESTar.WebSocketStatus;
 
 namespace RESTar.Internal
 {
-    internal class TerminalResource<T> : IResource<T>, IResourceInternal, ITerminalResource<T>, ITerminalResourceInternal<T> where T : class, ITerminal
+    internal class TerminalResource<T> : IResource<T>, IResourceInternal, ITerminalResource<T> where T : class
     {
         public string Name { get; }
         public Type Type { get; }
@@ -38,12 +38,10 @@ namespace RESTar.Internal
         public void SetAlias(string alias) => Alias = alias;
         public Type InterfaceType { get; }
 
-        public void InstantiateFor(WebSocket webSocket) => InstantiateFor(webSocket, null);
-
-        public void InstantiateFor(WebSocket webSocket, IRequest<T> upgradeRequest)
+        internal ITerminal MakeTerminal(IEnumerable<Condition<T>> assignments = null)
         {
             var newTerminal = Constructor();
-            upgradeRequest?.Conditions?.ForEach(assignment =>
+            assignments?.ForEach(assignment =>
             {
                 if (assignment.Operator != EQUALS)
                     throw new BadConditionOperator(this, assignment.Operator);
@@ -55,20 +53,7 @@ namespace RESTar.Internal
                 }
                 else property.SetValue(newTerminal, assignment.Value);
             });
-            
-            webSocket.ReleaseTerminal();
-            webSocket.TerminalConnection = new WebSocketConnection(webSocket, this, newTerminal);
-            switch (webSocket.Status)
-            {
-                case Waiting:
-                    webSocket.Open(upgradeRequest);
-                    break;
-                case Open: break;
-                case var other:
-                    throw new InvalidOperationException($"Unable to instantiate terminal '{Name}' " +
-                                                        $"for a WebSocket with status '{other}'");
-            }
-            newTerminal.Open();
+            return newTerminal;
         }
 
         internal TerminalResource()

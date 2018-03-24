@@ -45,7 +45,7 @@ namespace RESTar.Admin
             .Select(socket => new WebSocket
             {
                 Id = socket.TraceId,
-                TerminalType = socket.TerminalConnection?.TerminalResource.Name,
+                TerminalType = socket.TerminalConnection?.Resource.Name,
                 Client = JObject.Parse(Serializers.Json.Serialize(socket.GetConnectionProfile())),
                 Terminal = JObject.Parse(Serializers.Json.Serialize(socket.TerminalConnection?.Terminal)),
                 _WebSocket = socket

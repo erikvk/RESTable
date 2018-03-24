@@ -136,10 +136,11 @@ namespace RESTar.Requests
                 IsEvaluating = true;
                 switch (IResource)
                 {
-                    case ITerminalResourceInternal<T> terminal:
-                        if (!IsWebSocketUpgrade) return new UpgradeRequired(terminal.Name);
-                        terminal.InstantiateFor(Context.WebSocket, this);
-                        return new WebSocketUpgradeSuccessful(trace: this);
+                    case Internal.TerminalResource<T> terminal:
+                        if (!Context.HasWebSocket) return new UpgradeRequired(terminal.Name);
+                        if (IsWebSocketUpgrade)
+                            return MakeWebSocketUpgrade(terminal);
+                        return SwitchTerminal(terminal);
                     case IEntityResource<T> _:
                         this.RunResourceAuthentication();
                         var result = Operations<T>.REST.GetEvaluator(Method)(this);
@@ -164,6 +165,24 @@ namespace RESTar.Requests
                 Context.DecreaseDepth();
                 IsEvaluating = false;
             }
+        }
+
+        private IFinalizedResult SwitchTerminal(Internal.TerminalResource<T> resource)
+        {
+            var newTerminal = resource.MakeTerminal(Conditions);
+            Context.WebSocket.ConnectTo(newTerminal, resource);
+            newTerminal.Open();
+            return new WebSocketUpgradeSuccessful(this);
+        }
+
+        private IFinalizedResult MakeWebSocketUpgrade(Internal.TerminalResource<T> resource)
+        {
+            var terminal = resource.MakeTerminal(Conditions);
+            Context.WebSocket.SetContext(this);
+            Context.WebSocket.ConnectTo(terminal, resource);
+            Context.WebSocket.Open();
+            terminal.Open();
+            return new WebSocketUpgradeSuccessful(this);
         }
 
         public IEnumerable<T> GetEntities() => EntitiesGenerator?.Invoke() ?? new T[0];

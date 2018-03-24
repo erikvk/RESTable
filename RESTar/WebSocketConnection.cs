@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using RESTar.Internal;
 using RESTar.Operations;
@@ -16,21 +17,21 @@ namespace RESTar
             private set => _webSocket = value;
         }
 
-        internal ITerminalResource TerminalResource { get; }
-        internal ITerminal Terminal { get; }
+        internal ITerminalResource Resource { get; private set; }
+        internal ITerminal Terminal { get; private set; }
         internal bool IsOpen { get; private set; }
 
         public string TraceId { get; }
-        public Context Context { get; }
+        public Context Context { get; private set; }
 
-        internal WebSocketConnection(WebSocket webSocket, ITerminalResource terminalResource, ITerminal terminal)
+        internal WebSocketConnection(WebSocket webSocket, ITerminal terminal, ITerminalResource resource)
         {
             TraceId = webSocket.Id;
             Context = webSocket.Context;
             if (webSocket == null || webSocket.Status == WebSocketStatus.Closed)
                 throw new WebSocketNotConnected();
             WebSocket = webSocket;
-            TerminalResource = terminalResource;
+            Resource = resource;
             Terminal = terminal;
             Terminal.WebSocket = this;
         }
@@ -39,6 +40,9 @@ namespace RESTar
         {
             WebSocket = null;
             Terminal.Dispose();
+            Resource = null;
+            Terminal = null;
+            Context = null;
             IsOpen = false;
         }
 
@@ -72,10 +76,11 @@ namespace RESTar
         public Headers Headers => WebSocket.Headers;
 
         /// <inheritdoc />
-        public void SendToShell() => WebSocket.SendToShell();
+        public void SendToShell(IEnumerable<Condition<Shell>> assignments = null) => WebSocket.SendToShell(assignments);
 
         /// <inheritdoc />
-        public void SendTo(ITerminalResource terminalResource) => WebSocket.SendTo(terminalResource);
+        public void SendTo<T>(ITerminalResource<T> terminalResource, IEnumerable<Condition<T>> assignments = null) where T : class, ITerminal =>
+            WebSocket.SendTo(terminalResource, assignments);
 
         /// <inheritdoc />
         public WebSocketStatus Status => WebSocket.Status;

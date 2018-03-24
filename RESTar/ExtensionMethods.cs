@@ -646,12 +646,12 @@ namespace RESTar
             }
             switch (valueLiteral)
             {
-                case "true":
-                case "True":
-                case "TRUE": return true;
                 case "false":
                 case "False":
                 case "FALSE": return false;
+                case "true":
+                case "True":
+                case "TRUE": return true;
             }
             if (char.IsDigit(first))
             {
@@ -864,6 +864,5 @@ namespace RESTar
         internal static ushort? ToCode(this HttpStatusCode statusCode) => (ushort) statusCode;
 
         #endregion
-
     }
 }
