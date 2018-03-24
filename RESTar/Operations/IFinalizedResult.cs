@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using RESTar.Logging;
@@ -64,5 +65,10 @@ namespace RESTar.Operations
         /// The content type of the result body
         /// </summary>
         ContentType ContentType { get; }
+
+        /// <summary>
+        /// Gets the time elapsed from request evaluation began to the result was finalized
+        /// </summary>
+        TimeSpan TimeElapsed { get; }
     }
 }

@@ -90,6 +90,7 @@ namespace RESTar.Requests
         public CachedProtocolProvider ProtocolProvider => RequestParameters.CachedProtocolProvider;
         public Headers Headers => RequestParameters.Headers;
         public bool IsWebSocketUpgrade => RequestParameters.IsWebSocketUpgrade;
+        public TimeSpan TimeElapsed => RequestParameters.Stopwatch.Elapsed;
 
         #endregion
 
@@ -114,14 +115,14 @@ namespace RESTar.Requests
         public IResult GetResult()
         {
             if (!IsValid) return RESTarError.GetResult(Error, this);
-            try
-            {
-                if (!ProtocolProvider.ProtocolProvider.IsCompliant(this, out var reason))
-                    return RESTarError.GetResult(new NotCompliantWithProtocol(ProtocolProvider.ProtocolProvider, reason), this);
-            }
-            catch (NotImplementedException) { }
+            if (IsWebSocketUpgrade)
+                try
+                {
+                    if (!ProtocolProvider.ProtocolProvider.IsCompliant(this, out var reason))
+                        return RESTarError.GetResult(new NotCompliantWithProtocol(ProtocolProvider.ProtocolProvider, reason), this);
+                }
+                catch (NotImplementedException) { }
             if (IsEvaluating) throw new InfiniteLoop();
-
             var result = RunEvaluation();
             if (result is InfiniteLoop loop) throw loop;
             return result;
@@ -136,21 +137,21 @@ namespace RESTar.Requests
                 switch (IResource)
                 {
                     case ITerminalResourceInternal<T> terminal:
-                        if (!Context.HasWebSocket)
-                            return new UpgradeRequired(terminal.Name);
+                        if (!IsWebSocketUpgrade) return new UpgradeRequired(terminal.Name);
                         terminal.InstantiateFor(Context.WebSocket, this);
-                        return new WebSocketResult(leaveOpen: true, trace: this);
+                        return new WebSocketUpgradeSuccessful(trace: this);
                     case IEntityResource<T> _:
                         this.RunResourceAuthentication();
                         var result = Operations<T>.REST.GetEvaluator(Method)(this);
                         result.Cookies = Cookies;
                         ResponseHeaders.ForEach(h => result.Headers[h.Key.StartsWith("X-") ? h.Key : "X-" + h.Key] = h.Value);
-                        if ((RESTarConfig.AllowAllOrigins ? "*" : Headers.Origin) is string allowedOrigin)
-                            result.Headers["Access-Control-Allow-Origin"] = allowedOrigin;
+                        if ((RESTarConfig.AllowAllOrigins ? "*" : Headers.Origin) is string origin)
+                            result.Headers["Access-Control-Allow-Origin"] = origin;
                         if (!IsWebSocketUpgrade) return result;
                         var finalized = result.FinalizeResult();
                         Context.WebSocket.SendResult(finalized);
-                        return new WebSocketResult(leaveOpen: false, trace: this);
+                        Context.WebSocket.Disconnect();
+                        return new WebSocketUpgradeSuccessful(this);
                     default: throw new UnknownResource(IResource.Name);
                 }
             }

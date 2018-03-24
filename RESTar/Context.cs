@@ -21,19 +21,14 @@ namespace RESTar
         internal bool Used { get; set; }
 
         /// <summary>
-        /// Does this context have a WebSocket?
-        /// </summary>
-        public bool HasWebSocket => GetWebSocket() != null;
-
-        /// <summary>
         /// Should return true if and only if the request is a WebSocket upgrade request
         /// </summary>
         protected abstract bool IsWebSocketUpgrade { get; }
 
         /// <summary>
-        /// Creates a WebSocket instance for a given Context
+        /// Gets a WebSocket instance for a given Context
         /// </summary>
-        protected abstract WebSocket CreateWebSocket();
+        protected abstract WebSocket GetWebSocket();
 
         /// <summary>
         /// The client of the context
@@ -47,23 +42,16 @@ namespace RESTar
         private WebSocket webSocket;
 
         /// <summary>
-        /// The ID of the websocket connected with this TCP connection
+        /// The websocket connected with this context
         /// </summary>
-        protected WebSocket GetWebSocket() => webSocket;
-
-        /// <summary>
-        /// The ID of the websocket connected with this TCP connection
-        /// </summary>
-        protected void SetWebSocket(WebSocket value)
-        {
-            WebSocketController.Add(value);
-            webSocket = value;
-        }
-
         internal WebSocket WebSocket
         {
-            get => GetWebSocket();
-            set => SetWebSocket(value);
+            get => webSocket;
+            set
+            {
+                WebSocketController.Add(value);
+                webSocket = value;
+            }
         }
 
         internal void IncreaseDepth()
@@ -93,6 +81,8 @@ namespace RESTar
             if (uri == null) throw new MissingUri();
             if (Used) throw new ReusedContext();
             Used = true;
+            if (IsWebSocketUpgrade)
+                WebSocket = GetWebSocket();
             var parameters = new RequestParameters(this, method, ref uri, body, headers);
             parameters.Authenticate();
             if (!parameters.IsValid)

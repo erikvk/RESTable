@@ -49,10 +49,11 @@ namespace RESTar.Results.Error
         /// <inheritdoc />
         public bool ExcludeHeaders { get; }
 
-        internal void SetTrace(ITraceable trace)
+        internal void SetTrace(IRequest request)
         {
-            TraceId = trace.TraceId;
-            Context = trace.Context;
+            TraceId = request.TraceId;
+            Context = request.Context;
+            Request = request;
         }
 
         /// <inheritdoc />
@@ -143,7 +144,8 @@ namespace RESTar.Results.Error
             if (request.IsWebSocketUpgrade)
             {
                 request.Context.WebSocket?.SendResult(error);
-                return new WebSocketResult(leaveOpen: false, trace: error);
+                request.Context.WebSocket?.Disconnect();
+                return new WebSocketUpgradeSuccessful(error);
             }
             switch (request.Method)
             {
@@ -156,10 +158,22 @@ namespace RESTar.Results.Error
                 case HEAD:
                     if (errorId != null)
                         error.Headers["ErrorInfo"] = $"/{typeof(Admin.Error).FullName}/id={HttpUtility.UrlEncode(errorId)}";
+                    error.TimeElapsed = request.TimeElapsed;
                     return error;
                 default: throw new Exception();
             }
         }
+
+        /// <summary>
+        /// The request that generated the error
+        /// </summary>
+        public IRequest Request { get; private set; }
+
+        /// <inheritdoc />
+        /// <summary>
+        /// The time elapsed from the start of reqeust evaluation
+        /// </summary>
+        public TimeSpan TimeElapsed { get; private set; }
 
         /// <inheritdoc />
         public override string ToString() => LogMessage;

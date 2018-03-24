@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -10,8 +9,7 @@ using RESTar.Requests;
 using RESTar.Results.Success;
 using RESTar.WebSockets;
 using Starcounter;
-
-//using static RESTar.Admin.Settings;
+using ScRequest = Starcounter.Request;
 
 namespace RESTar.Starcounter
 {
@@ -25,25 +23,20 @@ namespace RESTar.Starcounter
             (
                 port: port,
                 methodSpaceUri: $"{method} {rootUri}{{?}}",
-                handler: (global::Starcounter.Request scRequest, string query) =>
+                handler: (ScRequest scRequest, string query) =>
                 {
                     using (var client = GetClient(scRequest))
                     using (var context = new ScContext(client, scRequest))
                     {
                         var headers = new Headers(scRequest.HeadersDictionary);
-                        var stopwatch = Stopwatch.StartNew();
-
                         var request = context.MakeRequest(method, ref query, scRequest.BodyBytes, headers);
                         var result = request.GetResult().FinalizeResult();
 
-                        stopwatch.Stop();
                         switch (result)
                         {
-                            case WebSocketResult wsresult:
-                                if (!wsresult.LeaveOpen) context.WebSocket.Disconnect();
-                                return HandlerStatus.Handled;
+                            case WebSocketUpgradeSuccessful _: return HandlerStatus.Handled;
                             default:
-                                Admin.Console.Log(request, result, stopwatch.Elapsed.TotalMilliseconds);
+                                Admin.Console.Log(request, result);
                                 return ToResponse(result);
                         }
                     }
@@ -54,7 +47,7 @@ namespace RESTar.Starcounter
             (
                 port: port,
                 uriTemplate: $"{rootUri}{{?}}",
-                handler: (global::Starcounter.Request scRequest, string query) =>
+                handler: (ScRequest scRequest, string query) =>
                 {
                     using (var client = GetClient(scRequest))
                     using (var context = new ScContext(client, scRequest))
@@ -102,7 +95,7 @@ namespace RESTar.Starcounter
         public void RemoveBindings(Method[] methods, string rootUri, ushort port) => methods
             .ForEach(method => Do.Try(() => Handle.UnregisterHttpHandler(port, $"{method}", $"{rootUri}{{?}}")));
 
-        private Response ToResponse(IFinalizedResult result)
+        private static Response ToResponse(IFinalizedResult result)
         {
             var response = new Response
             {
@@ -130,7 +123,7 @@ namespace RESTar.Starcounter
             return response;
         }
 
-        private static Client GetClient(global::Starcounter.Request request)
+        private static Client GetClient(ScRequest request)
         {
             var clientIP = request.ClientIpAddress;
             var proxyIP = default(IPAddress);

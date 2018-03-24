@@ -8,9 +8,8 @@ using RESTar.Requests;
 
 namespace RESTar.Results.Success
 {
-    internal struct WebSocketResult : IFinalizedResult
+    internal class WebSocketUpgradeSuccessful : IFinalizedResult
     {
-        internal bool LeaveOpen { get; }
         HttpStatusCode IResult.StatusCode => default;
         string IResult.StatusDescription => default;
         Stream IFinalizedResult.Body => default;
@@ -25,17 +24,17 @@ namespace RESTar.Results.Success
         public bool ExcludeHeaders => default;
         public IFinalizedResult FinalizeResult(ContentType? contentType = null) => this;
         public void ThrowIfError() { }
-        public IEnumerable<T> ToEntities<T>() => throw new InvalidCastException($"Cannot convert {nameof(WebSocketResult)} to Entities");
+        public IEnumerable<T> ToEntities<T>() => throw new InvalidCastException($"Cannot convert {nameof(WebSocketUpgradeSuccessful)} to Entities");
         public Context Context { get; }
-
+        public TimeSpan TimeElapsed { get; }
         public DateTime LogTime { get; }
 
-        public WebSocketResult(bool leaveOpen, ITraceable trace) : this()
+        public WebSocketUpgradeSuccessful(ITraceable trace)
         {
-            LeaveOpen = leaveOpen;
             TraceId = trace.TraceId;
             Context = trace.Context;
             LogTime = DateTime.Now;
+            TimeElapsed = default;
         }
     }
 }

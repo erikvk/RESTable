@@ -81,6 +81,7 @@ namespace RESTar
 
         public void HandleTextInput(string input)
         {
+            var stopwatch = Stopwatch.StartNew();
             if (OnConfirm != null)
             {
                 switch (input.FirstOrDefault())
@@ -187,7 +188,7 @@ namespace RESTar
                                 count = -1;
                             var link = GetNextPageLink?.Invoke(count)?.ToString();
                             if (link == null)
-                                SendResult(new NoContent(WebSocket), null);
+                                SendResult(new NoContent(WebSocket, stopwatch.Elapsed), null);
                             else
                             {
                                 Query = link;
@@ -262,7 +263,7 @@ namespace RESTar
 
         private IFinalizedResult WsEvaluate(Method method, byte[] body)
         {
-            if (Query.Length == 0) return new NoQuery(WebSocket);
+            if (Query.Length == 0) return new NoQuery(WebSocket, default);
             var localQuery = Query;
             var result = Request
                 .Create(WebSocket, method, ref localQuery, body, WebSocket.Headers)
@@ -333,7 +334,7 @@ namespace RESTar
             if (!WriteQueryAfterContent) return;
             switch (result)
             {
-                case WebSocketResult _: return;
+                case WebSocketUpgradeSuccessful _: return;
                 case NoQuery _:
                     WebSocket.SendText("? <empty>");
                     break;

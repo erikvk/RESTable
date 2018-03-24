@@ -15,6 +15,7 @@
         {
             UpdatedCount = count;
             Headers["RESTar-info"] = $"{count} entities updated in '{request.Resource.Name}'";
+            TimeElapsed = request.TimeElapsed;
         }
     }
 }

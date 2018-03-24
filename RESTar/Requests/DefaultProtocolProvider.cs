@@ -132,7 +132,7 @@ namespace RESTar.Requests
                         if (entityCount == 0)
                         {
                             streamController.Dispose();
-                            return new NoContent(result);
+                            return new NoContent(result, entities.Request.TimeElapsed);
                         }
                         entities.Body = streamController.Stream;
                         entities.ContentType = contentTypeProvider.ContentType;

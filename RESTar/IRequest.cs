@@ -141,5 +141,9 @@ namespace RESTar
         /// </summary>
         bool IsValid { get; }
 
+        /// <summary>
+        /// The time elapsed since request evaluation began
+        /// </summary>
+        TimeSpan TimeElapsed { get; }
     }
 }

@@ -214,7 +214,7 @@ namespace RESTar.Operations
                 var count = TRY_COUNT(request);
                 if (count > 0)
                     return new Head(request, count);
-                return new NoContent(request);
+                return new NoContent(request, request.TimeElapsed);
             }
 
             private static Result POST(IRequestInternal<T> request)

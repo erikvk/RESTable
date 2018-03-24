@@ -1,6 +1,4 @@
-﻿using RESTar.Requests;
-
-namespace RESTar.Results.Success
+﻿namespace RESTar.Results.Success
 {
     /// <inheritdoc />
     /// <summary>
@@ -8,9 +6,10 @@ namespace RESTar.Results.Success
     /// </summary>
     public class Head : OK
     {
-        internal Head(ITraceable trace, long count) : base(trace)
+        internal Head(IRequest request, long count) : base(request)
         {
             Headers["RESTar-count"] = count.ToString();
+            TimeElapsed = request.TimeElapsed;
         }
     }
 }

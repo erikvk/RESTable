@@ -3,6 +3,7 @@ using System.Linq;
 using System.Text;
 using RESTar.Linq;
 using RESTar.Logging;
+using RESTar.Operations;
 using RESTar.ResourceTemplates;
 using RESTar.Results.Success;
 using RESTar.Serialization;
@@ -45,19 +46,20 @@ namespace RESTar.Admin
 
         #region Console
 
-        internal static void Log(ILogable initial, ILogable final, double milliseconds)
+        internal static void Log(IRequest request, IFinalizedResult result)
         {
-            if (final is WebSocketResult) return;
+            var milliseconds = result.TimeElapsed.TotalMilliseconds;
+            if (result is WebSocketUpgradeSuccessful) return;
             Consoles.AsParallel().Where(c => c.IsOpen).GroupBy(c => c.Format).ForEach(group =>
             {
                 switch (group.Key)
                 {
                     case ConsoleFormat.Line:
-                        var requestStub = GetLogLineStub(initial);
-                        var responseStub = GetLogLineStub(final, milliseconds);
+                        var requestStub = GetLogLineStub(request);
+                        var responseStub = GetLogLineStub(result, milliseconds);
                         group.AsParallel().ForEach(c => c.PrintLines(
-                            new StringBuilder(requestStub), initial,
-                            new StringBuilder(responseStub), final)
+                            new StringBuilder(requestStub), request,
+                            new StringBuilder(responseStub), result)
                         );
                         break;
                     case ConsoleFormat.JSON:
@@ -66,23 +68,23 @@ namespace RESTar.Admin
                             var item = new InputOutput
                             {
                                 Type = "HTTPRequestResponse",
-                                In = new LogItem {Id = initial.TraceId, Message = initial.LogMessage},
-                                Out = new LogItem {Id = final.TraceId, Message = final.LogMessage},
+                                In = new LogItem {Id = request.TraceId, Message = request.LogMessage},
+                                Out = new LogItem {Id = result.TraceId, Message = result.LogMessage},
                                 ElapsedMilliseconds = milliseconds
                             };
                             if (c.IncludeConnection)
-                                item.ClientInfo = new ClientInfo(initial.Context.Client);
+                                item.ClientInfo = new ClientInfo(request.Context.Client);
                             if (c.IncludeHeaders)
                             {
-                                if (!initial.ExcludeHeaders)
-                                    item.In.CustomHeaders = initial.Headers;
-                                if (!final.ExcludeHeaders)
-                                    item.Out.CustomHeaders = final.Headers;
+                                if (!request.ExcludeHeaders)
+                                    item.In.CustomHeaders = request.Headers;
+                                if (!result.ExcludeHeaders)
+                                    item.Out.CustomHeaders = result.Headers;
                             }
                             if (c.IncludeContent)
                             {
-                                item.In.Content = initial.LogContent;
-                                item.Out.Content = final.LogContent;
+                                item.In.Content = request.LogContent;
+                                item.Out.Content = result.LogContent;
                             }
                             var json = Serializers.Json.Serialize(item, Indented, ignoreNulls: true);
                             c.ActualSocket.SendTextRaw(json);

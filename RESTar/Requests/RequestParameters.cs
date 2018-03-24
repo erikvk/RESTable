@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text;
 using System.Web;
 using RESTar.Internal;
@@ -10,59 +11,6 @@ using IResource = RESTar.Internal.IResource;
 
 namespace RESTar.Requests
 {
-    /// <summary>
-    /// A common interface for URI conditions in RESTar
-    /// </summary>
-    public interface IUriCondition
-    {
-        /// <summary>
-        /// The key of the condition
-        /// </summary>
-        string Key { get; }
-
-        /// <summary>
-        /// The operator of the condition
-        /// </summary>
-        Operators Operator { get; }
-
-        /// <summary>
-        /// A string describing the value encoded in the condition
-        /// </summary>
-        string ValueLiteral { get; }
-    }
-
-    /// <summary>
-    /// Contains parameters for a RESTar URI
-    /// </summary>
-    public interface IUriComponents
-    {
-        /// <summary>
-        /// Specifies the resource for the request
-        /// </summary>
-        string ResourceSpecifier { get; }
-
-        /// <summary>
-        /// Specifies the view for the request
-        /// </summary>
-        string ViewName { get; }
-
-        /// <summary>
-        /// Specifies the conditions for the request
-        /// </summary>
-        IEnumerable<IUriCondition> Conditions { get; }
-
-        /// <summary>
-        /// Specifies the meta-conditions for the request
-        /// </summary>
-        IEnumerable<IUriCondition> MetaConditions { get; }
-
-        /// <summary>
-        /// Generates a URI string from these components, according to some protocol.
-        /// If null, the default protocol is used.
-        /// </summary>
-        string ToUriString(string protocolIdentifier = null);
-    }
-
     /// <inheritdoc cref="ILogable" />
     /// <inheritdoc cref="ITraceable" />
     /// <summary>
@@ -109,6 +57,8 @@ namespace RESTar.Requests
         /// Has the client requested a WebSocket upgrade for this request?
         /// </summary>
         public bool IsWebSocketUpgrade { get; }
+
+        internal Stopwatch Stopwatch { get; } = Stopwatch.StartNew();
 
         #region Private and internal
 
@@ -160,10 +110,8 @@ namespace RESTar.Requests
             Method = method;
             Headers = headers ?? new Headers();
             IsWebSocketUpgrade = Context.WebSocket?.Status == WebSocketStatus.Waiting;
-
             Uri = URI.ParseInternal(ref uri, PercentCharsEscaped(headers), context, out var key, out var cachedProtocolProvider);
             var hasMacro = Uri?.Macro != null;
-
             if (hasMacro)
             {
                 if (Uri.Macro.OverWriteHeaders)

@@ -229,7 +229,7 @@ namespace RESTar
                 case var closed:
                     throw new InvalidOperationException($"Unable to send results to a WebSocket with status '{closed}'");
             }
-            if (result is WebSocketResult) return;
+            if (result is WebSocketUpgradeSuccessful) return;
 
             void sendStatus()
             {

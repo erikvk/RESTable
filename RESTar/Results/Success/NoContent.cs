@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using System;
+using System.Net;
 using RESTar.Operations;
 using RESTar.Requests;
 
@@ -10,11 +11,15 @@ namespace RESTar.Results.Success
     /// </summary>
     public class NoContent : Result
     {
-        internal NoContent(ITraceable trace) : base(trace)
+        /// <inheritdoc />
+        public override TimeSpan TimeElapsed { get; protected set; }
+
+        internal NoContent(ITraceable trace, TimeSpan elapsed) : base(trace)
         {
             StatusCode = HttpStatusCode.NoContent;
             StatusDescription = "No content";
             Headers["RESTar-info"] = "No entities found matching request.";
+            TimeElapsed = elapsed;
         }
     }
 }

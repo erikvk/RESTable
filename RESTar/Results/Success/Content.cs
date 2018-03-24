@@ -12,7 +12,7 @@ namespace RESTar.Results.Success
     public class Content : OK
     {
         /// <summary>
-        /// The request that requested this content
+        /// The request that generated this content
         /// </summary>
         public IRequest Request => RequestInternal;
 
@@ -58,6 +58,10 @@ namespace RESTar.Results.Success
             catch (Exception exception)
             {
                 return RESTarError.GetResult(exception, RequestInternal);
+            }
+            finally
+            {
+                TimeElapsed = Request.TimeElapsed;
             }
         }
     }

@@ -16,6 +16,7 @@ namespace RESTar.Results.Success
             Headers["Access-Control-Max-Age"] = "120";
             Headers["Access-Control-Allow-Credentials"] = "true";
             Headers["Access-Control-Allow-Headers"] = "origin, content-type, accept, authorization, source, destination";
+            TimeElapsed = parameters.Stopwatch.Elapsed;
         }
     }
 }

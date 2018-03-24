@@ -44,6 +44,7 @@ namespace RESTar.Requests
         public Headers Headers => RequestParameters.Headers;
         public IEntityResource Resource => RequestParameters.IResource as IEntityResource;
         public bool IsWebSocketUpgrade => RequestParameters.IsWebSocketUpgrade;
+        public TimeSpan TimeElapsed => RequestParameters.Stopwatch.Elapsed;
 
         #endregion
 
@@ -51,6 +52,7 @@ namespace RESTar.Requests
         public Body Body { get; set; }
         public Headers ResponseHeaders { get; }
         public ICollection<string> Cookies { get; }
+
 
         internal InvalidParametersRequest(RequestParameters parameters)
         {

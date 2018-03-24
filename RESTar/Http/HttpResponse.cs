@@ -24,6 +24,7 @@ namespace RESTar.Http
         internal bool IsSuccessStatusCode => StatusCode >= (HttpStatusCode) 200 && StatusCode < (HttpStatusCode) 300;
         public string TraceId { get; }
         public Context Context { get; }
+        public TimeSpan TimeElapsed { get; } = default;
 
         public LogEventType LogEventType { get; } = LogEventType.HttpOutput;
         public string LogMessage => $"{StatusCode.ToCode()}: {StatusDescription} ({ContentLength} bytes)";

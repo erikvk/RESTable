@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using System;
+using System.Net;
 using RESTar.Operations;
 
 namespace RESTar.Results.Success
@@ -14,12 +15,16 @@ namespace RESTar.Results.Success
         /// </summary>
         public int InsertedCount { get; }
 
+        /// <inheritdoc />
+        public override TimeSpan TimeElapsed { get; protected set; }
+
         internal InsertedEntities(int count, IRequest request) : base(request)
         {
             InsertedCount = count;
             StatusCode = count < 1 ? HttpStatusCode.OK : HttpStatusCode.Created;
             StatusDescription = StatusCode.ToString();
             Headers["RESTar-info"] = $"{count} entities inserted into '{request.Resource.Name}'";
+            TimeElapsed = request.TimeElapsed;
         }
     }
 }

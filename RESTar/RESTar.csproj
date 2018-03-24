@@ -129,6 +129,8 @@
     <Compile Include="Requests\Body.cs" />
     <Compile Include="Requests\ConnectionId.cs" />
     <Compile Include="Requests\ITraceable.cs" />
+    <Compile Include="Requests\IUriComponents.cs" />
+    <Compile Include="Requests\IUriCondition.cs" />
     <Compile Include="Requests\NetworkController.cs" />
     <Compile Include="Requests\OriginType.cs" />
     <Compile Include="Requests\Request.cs" />
@@ -157,7 +159,7 @@
     <Compile Include="Results\Success\Head.cs" />
     <Compile Include="Results\Success\IEntitiesMetadata.cs" />
     <Compile Include="Results\Success\NoQuery.cs" />
-    <Compile Include="Results\Success\WebSocketResult.cs" />
+    <Compile Include="Results\Success\WebSocketUpgradeSuccessful.cs" />
     <Compile Include="Serialization\DDictionaryConverter.cs" />
     <Compile Include="Serialization\DefaultValueProvider.cs" />
     <Compile Include="Serialization\NativeProtocol\HeadersConverter.cs" />

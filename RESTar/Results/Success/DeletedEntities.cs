@@ -15,6 +15,7 @@
         {
             DeletedCount = count;
             Headers["RESTar-info"] = $"{count} entities deleted from '{request.Resource.Name}'";
+            TimeElapsed = request.TimeElapsed;
         }
     }
 }

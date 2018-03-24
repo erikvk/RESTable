@@ -81,14 +81,17 @@ namespace RESTar.Operations
         /// <inheritdoc />
         public DateTime LogTime { get; } = DateTime.Now;
 
+        /// <inheritdoc />
+        public abstract TimeSpan TimeElapsed { get; protected set; }
+
         #endregion
 
-        internal Result(ITraceable trace)
+        internal Result(ITraceable request)
         {
             Headers = new Headers();
             ExcludeHeaders = false;
-            Context = trace.Context;
-            TraceId = trace.TraceId;
+            Context = request.Context;
+            TraceId = request.TraceId;
         }
     }
 }
