@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Linq;
 using RESTar.Operations;
 using RESTar.Results.Error;
@@ -9,7 +10,7 @@ namespace RESTar.Results.Success
     /// <summary>
     /// A 200 result that encodes a content
     /// </summary>
-    public class Content : OK
+    public abstract class Content : OK
     {
         /// <summary>
         /// The request that generated this content
@@ -19,11 +20,12 @@ namespace RESTar.Results.Success
         private IRequestInternal RequestInternal { get; }
 
         /// <inheritdoc />
-        public Content(IRequest request) : base(request) => RequestInternal = (IRequestInternal) request;
+        protected Content(IRequest request) : base(request) => RequestInternal = (IRequestInternal) request;
 
         /// <inheritdoc />
         public override IFinalizedResult FinalizeResult(ContentType? contentType = null)
         {
+            var stopwatch = Stopwatch.StartNew();
             try
             {
                 var protocolProvider = RequestInternal.ProtocolProvider;
@@ -61,7 +63,8 @@ namespace RESTar.Results.Success
             }
             finally
             {
-                TimeElapsed = Request.TimeElapsed;
+                stopwatch.Stop();
+                TimeElapsed = TimeElapsed + stopwatch.Elapsed;
             }
         }
     }

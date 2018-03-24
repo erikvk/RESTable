@@ -7,7 +7,11 @@
     public class Report : Content
     {
         internal ReportBody ReportBody { get; }
-        internal Report(IRequest request, long count) : base(request) => ReportBody = new ReportBody(count);
+        internal Report(IRequest request, long count) : base(request)
+        {
+            ReportBody = new ReportBody(count);
+            TimeElapsed = request.TimeElapsed;
+        }
     };
 
     internal class ReportBody

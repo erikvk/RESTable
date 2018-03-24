@@ -44,7 +44,7 @@ namespace RESTar.Operations
 
         /// <summary>
         /// Tries to convert the result to an Entities instance, or throws an 
-        /// Exception if the result is non-successful.
+        /// Exception if the result is non-successful or cannot be cast to the given type.
         /// </summary>
         IEnumerable<T> ToEntities<T>();
     }
@@ -67,7 +67,7 @@ namespace RESTar.Operations
         ContentType ContentType { get; }
 
         /// <summary>
-        /// Gets the time elapsed from request evaluation began to the result was finalized
+        /// The time it took for RESTar to generate the response.
         /// </summary>
         TimeSpan TimeElapsed { get; }
     }

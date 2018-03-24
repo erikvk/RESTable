@@ -33,7 +33,6 @@ namespace RESTar
             TerminalResource = terminalResource;
             Terminal = terminal;
             Terminal.WebSocket = this;
-            IsOpen = true;
         }
 
         public void Dispose()

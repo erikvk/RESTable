@@ -43,7 +43,7 @@ namespace RESTar.Internal
         public void InstantiateFor(WebSocket webSocket, IRequest<T> upgradeRequest)
         {
             var newTerminal = Constructor();
-            upgradeRequest.Conditions?.ForEach(assignment =>
+            upgradeRequest?.Conditions?.ForEach(assignment =>
             {
                 if (assignment.Operator != EQUALS)
                     throw new BadConditionOperator(this, assignment.Operator);
@@ -55,6 +55,7 @@ namespace RESTar.Internal
                 }
                 else property.SetValue(newTerminal, assignment.Value);
             });
+            
             webSocket.ReleaseTerminal();
             webSocket.TerminalConnection = new WebSocketConnection(webSocket, this, newTerminal);
             switch (webSocket.Status)

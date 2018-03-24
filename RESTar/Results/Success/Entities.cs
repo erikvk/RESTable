@@ -18,16 +18,12 @@ namespace RESTar.Results.Success
         /// <inheritdoc />
         public IEnumerator<object> GetEnumerator() => Content.GetEnumerator();
 
-        private IEnumerable<object> _content;
+        private readonly IEnumerable<object> _content;
 
         /// <summary>
         /// The entities contained in the result
         /// </summary>
-        private IEnumerable<object> Content
-        {
-            get => _content ?? new object[0];
-            set => _content = value;
-        }
+        private IEnumerable<object> Content => _content ?? new object[0];
 
         /// <summary>
         /// The number of entities in the result
@@ -35,14 +31,19 @@ namespace RESTar.Results.Success
         public ulong EntityCount { get; set; }
 
         string IEntitiesMetadata.ResourceFullName => Request.Resource.Name;
-        internal string ExternalDestination { get; set; }
+        internal string ExternalDestination { get; }
 
         /// <summary>
         /// Is the result paged?
         /// </summary>
         public bool IsPaged => Content != null && EntityCount > 0 && (long) EntityCount == Request.MetaConditions.Limit;
 
-        private Entities(IRequest request) : base(request) { }
+        private Entities(IRequest request, IEnumerable<object> content) : base(request)
+        {
+            _content = content;
+            ExternalDestination = request.Headers.Destination;
+            TimeElapsed = request.TimeElapsed;
+        }
 
         internal void SetContentDisposition(string extension) => Headers["Content-Disposition"] =
             $"attachment;filename={Request.Resource.Name}_{DateTime.Now:yyMMddHHmmssfff}{extension}";
@@ -66,10 +67,6 @@ namespace RESTar.Results.Success
         }
 
         internal static Entities Create<TResource>(IRequestInternal<TResource> request, IEnumerable<object> content)
-            where TResource : class => new Entities(request)
-        {
-            Content = content,
-            ExternalDestination = request.Headers.Destination
-        };
+            where TResource : class => new Entities(request, content);
     }
 }
