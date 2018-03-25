@@ -34,7 +34,7 @@ namespace RESTarExample
     [RESTar(Method.GET)]
     public class Thing : ISelector<Thing>
     {
-        public IEnumerable<Thing> Select(IRequest<Thing> request)
+        public IEnumerable<Thing> Select(IQuery<Thing> query)
         {
             throw new NotImplementedException();
         }
@@ -99,25 +99,25 @@ namespace RESTarExample
             return dbObject;
         }
 
-        public IEnumerable<MyEntityResource> Select(IRequest<MyEntityResource> request) => Db
+        public IEnumerable<MyEntityResource> Select(IQuery<MyEntityResource> query) => Db
             .SQL<MyStarcounterResource>($"SELECT t FROM {typeof(MyStarcounterResource).FullName} t")
             .Select(FromDbObject)
-            .Where(request.Conditions);
+            .Where(query.Conditions);
 
-        public int Insert(IRequest<MyEntityResource> request) => Db.Transact(() => request
+        public int Insert(IQuery<MyEntityResource> query) => Db.Transact(() => query
             .GetEntities()
             .Select(ToDbObject)
             .Count());
 
-        public int Update(IRequest<MyEntityResource> request) => Db.Transact(() => request
+        public int Update(IQuery<MyEntityResource> query) => Db.Transact(() => query
             .GetEntities()
             .Select(ToDbObject)
             .Count());
 
-        public int Delete(IRequest<MyEntityResource> request) => Db.Transact(() =>
+        public int Delete(IQuery<MyEntityResource> query) => Db.Transact(() =>
         {
             var i = 0;
-            foreach (var item in request.GetEntities())
+            foreach (var item in query.GetEntities())
             {
                 item.Delete();
                 i += 1;
@@ -248,7 +248,7 @@ namespace RESTarExample
         public string InputStr { get; set; } = "Goo";
         public int Int { get; set; } = 100;
 
-        public IEnumerable<SemiDynamic> Select(IRequest<SemiDynamic> request)
+        public IEnumerable<SemiDynamic> Select(IQuery<SemiDynamic> query)
         {
             return new[]
             {
@@ -277,7 +277,7 @@ namespace RESTarExample
     [RESTar(Method.GET)]
     public class SemiDynamic2 : Dictionary<string, object>, ISelector<SemiDynamic2>
     {
-        public IEnumerable<SemiDynamic2> Select(IRequest<SemiDynamic2> request)
+        public IEnumerable<SemiDynamic2> Select(IQuery<SemiDynamic2> query)
         {
             return new[]
             {
@@ -303,7 +303,7 @@ namespace RESTarExample
         public string Str { get; set; }
         public int Int { get; set; }
 
-        public IEnumerable<AllDynamic> Select(IRequest<AllDynamic> request)
+        public IEnumerable<AllDynamic> Select(IQuery<AllDynamic> query)
         {
             return new[]
             {
@@ -348,7 +348,7 @@ namespace RESTarExample
     [RESTar(Method.GET, Singleton = true)]
     public class MyTestResource : Dictionary<string, dynamic>, ISelector<MyTestResource>
     {
-        public IEnumerable<MyTestResource> Select(IRequest<MyTestResource> request)
+        public IEnumerable<MyTestResource> Select(IQuery<MyTestResource> query)
         {
             return new[]
             {
@@ -393,7 +393,7 @@ namespace RESTarExample
         [RESTar(Method.GET, Description = "Returns a fine object")]
         public class Get : JObject, ISelector<Get>
         {
-            public IEnumerable<Get> Select(IRequest<Get> request) => new[] {new Get {["Soo"] = 123}};
+            public IEnumerable<Get> Select(IQuery<Get> query) => new[] {new Get {["Soo"] = 123}};
         }
     }
 
@@ -430,26 +430,26 @@ namespace RESTarExample
         public string S { get; set; }
         public string[] Ss { get; set; }
 
-        public int Insert(IRequest<R> request)
+        public int Insert(IQuery<R> query)
         {
-            var entities = request.GetEntities();
+            var entities = query.GetEntities();
             return entities.Count();
         }
 
-        public IEnumerable<R> Select(IRequest<R> request)
+        public IEnumerable<R> Select(IQuery<R> query)
         {
             return new[] {new R {S = "Swoo", Ss = new[] {"S", "Sd"}}};
         }
 
-        public int Update(IRequest<R> request)
+        public int Update(IQuery<R> query)
         {
-            var entities = request.GetEntities();
+            var entities = query.GetEntities();
             return entities.Count();
         }
 
-        public int Delete(IRequest<R> request)
+        public int Delete(IQuery<R> query)
         {
-            var entities = request.GetEntities();
+            var entities = query.GetEntities();
             return entities.Count();
         }
     }

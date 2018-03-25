@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using RESTar.Internal;
 using RESTar.Operations;
-using RESTar.Requests;
+using RESTar.Queries;
 
 namespace RESTar
 {

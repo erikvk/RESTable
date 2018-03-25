@@ -13,7 +13,7 @@ using RESTar.Results.Success;
 using static RESTar.ExternalContentTypeProviderSettings;
 using HttpRequest = RESTar.Http.HttpRequest;
 
-namespace RESTar.Requests
+namespace RESTar.Queries
 {
     /// <inheritdoc />
     /// <summary>
@@ -120,7 +120,7 @@ namespace RESTar.Requests
                 case Report report:
                     result.Headers["RESTar-count"] = report.ReportBody.Count.ToString();
                     report.Body = new MemoryStream();
-                    contentTypeProvider.SerializeEntity(report.ReportBody, report.Body, report.Request, out var _);
+                    contentTypeProvider.SerializeEntity(report.ReportBody, report.Body, report.Query, out var _);
                     report.ContentType = contentTypeProvider.ContentType;
                     return report;
 
@@ -128,11 +128,11 @@ namespace RESTar.Requests
                     var streamController = new RESTarOutputStreamController();
                     try
                     {
-                        contentTypeProvider.SerializeCollection(entities, streamController, entities.Request, out var entityCount);
+                        contentTypeProvider.SerializeCollection(entities, streamController, entities.Query, out var entityCount);
                         if (entityCount == 0)
                         {
                             streamController.Dispose();
-                            return new NoContent(result, entities.Request.TimeElapsed);
+                            return new NoContent(result, entities.Query.TimeElapsed);
                         }
                         entities.Body = streamController.Stream;
                         entities.ContentType = contentTypeProvider.ContentType;
@@ -177,7 +177,7 @@ namespace RESTar.Requests
             }
         }
 
-        public bool IsCompliant(IRequest request, out string invalidReason)
+        public bool IsCompliant(IQuery query, out string invalidReason)
         {
             invalidReason = null;
             return true;

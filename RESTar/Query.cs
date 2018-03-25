@@ -1,5 +1,5 @@
 ﻿using RESTar.Internal;
-using RESTar.Requests;
+using RESTar.Queries;
 using RESTar.Results.Error;
 using RESTar.Results.Error.NotFound;
 
@@ -10,7 +10,7 @@ namespace RESTar
     /// </summary>
     /// <typeparam name="T">The resource type to create a request against. This must be a registered RESTar 
     /// resource type, otherwise Create() will throw an UnknownResource exception</typeparam>
-    public static class Request<T> where T : class
+    public static class Query<T> where T : class
     {
         /// <summary>
         /// Creates a generic request using an internal trace, with a given method and optional protocol id. If the 
@@ -21,13 +21,13 @@ namespace RESTar
         /// protocol ID is null, the default protocol will be used.</param>
         /// <param name="viewName">An optional view name to use when selecting entities from the resource</param>
         /// <returns>A generic request instance</returns>
-        public static IRequest<T> Create(Method method, string protocolId = null, string viewName = null)
+        public static IQuery<T> Create(Method method, string protocolId = null, string viewName = null)
         {
             var resource = Resource<T>.SafeGet;
             if (resource == null)
                 throw new UnknownResource(typeof(T).RESTarTypeName());
-            var parameters = new RequestParameters(new InternalContext(), method, resource, protocolId);
-            return new Requests.Request<T>(resource, parameters);
+            var parameters = new QueryParameters(new InternalContext(), method, resource, protocolId);
+            return new Queries.Query<T>(resource, parameters);
         }
 
         /// <summary>
@@ -41,25 +41,25 @@ namespace RESTar
         /// protocol ID is null, the default protocol will be used.</param>
         /// <param name="viewName">An optional view name to use when selecting entities from the resource</param>
         /// <returns>A generic request instance</returns>
-        public static IRequest<T> Create(ITraceable trace, Method method, string protocolId = null, string viewName = null)
+        public static IQuery<T> Create(ITraceable trace, Method method, string protocolId = null, string viewName = null)
         {
             var resource = Resource<T>.SafeGet;
             if (resource == null)
                 throw new UnknownResource(typeof(T).RESTarTypeName());
-            var parameters = new RequestParameters(trace.Context, method, resource, protocolId);
-            return new Requests.Request<T>(resource, parameters);
+            var parameters = new QueryParameters(trace.Context, method, resource, protocolId);
+            return new Queries.Query<T>(resource, parameters);
         }
     }
 
     /// <summary>
     /// A factory class for non-generic request instances
     /// </summary>
-    public static class Request
+    public static class Query
     {
         /// <summary>
         /// Directs the call to the Request class constructor, from a dynamic binding for the generic IResource parameter.
         /// </summary>
-        internal static IRequest Construct<T>(IResource<T> r, RequestParameters p) where T : class => new Requests.Request<T>(r, p);
+        internal static IQuery Construct<T>(IResource<T> r, QueryParameters p) where T : class => new Queries.Query<T>(r, p);
 
         /// <summary>
         /// Creates a new request instance.
@@ -71,14 +71,14 @@ namespace RESTar
         /// <param name="uri">The URI if the request</param>
         /// <param name="body">A body to use in the request</param>
         /// <param name="headers">The headers to use in the request</param>
-        public static IRequest Create(ITraceable trace, Method method, ref string uri, byte[] body = null, Headers headers = null)
+        public static IQuery Create(ITraceable trace, Method method, ref string uri, byte[] body = null, Headers headers = null)
         {
             if (uri == null) throw new MissingUri();
             if (trace == null) throw new Untraceable();
-            var parameters = new RequestParameters(trace.Context, method, ref uri, body, headers);
+            var parameters = new QueryParameters(trace.Context, method, ref uri, body, headers);
             parameters.Authenticate();
             if (!parameters.IsValid)
-                return new InvalidParametersRequest(parameters);
+                return new InvalidParametersQuery(parameters);
             return Construct((dynamic) parameters.IResource, parameters);
         }
 
@@ -93,20 +93,20 @@ namespace RESTar
         /// <param name="error">A RESTarError describing the error, or null if valid</param>
         public static bool IsValid(ITraceable trace, ref string uri, out RESTarError error)
         {
-            var parameters = new RequestParameters(trace.Context, Method.OPTIONS, ref uri, null, null);
+            var parameters = new QueryParameters(trace.Context, Method.OPTIONS, ref uri, null, null);
             parameters.Authenticate();
             if (parameters.Error != null)
             {
                 error = RESTarError.GetError(parameters.Error);
                 return false;
             }
-            IRequest request = Construct((dynamic) parameters.IResource, parameters);
-            if (request.IsValid)
+            IQuery query = Construct((dynamic) parameters.IResource, parameters);
+            if (query.IsValid)
             {
                 error = null;
                 return true;
             }
-            error = request.GetResult() as RESTarError;
+            error = query.Result as RESTarError;
             return false;
         }
     }

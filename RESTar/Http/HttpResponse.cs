@@ -6,7 +6,7 @@ using System.Linq;
 using RESTar.Linq;
 using RESTar.Logging;
 using RESTar.Operations;
-using RESTar.Requests;
+using RESTar.Queries;
 using Starcounter;
 using static System.StringSplitOptions;
 
@@ -33,7 +33,7 @@ namespace RESTar.Http
         public bool ExcludeHeaders { get; }
         public ISerializedResult Serialize(ContentType? contentType = null) => this;
         public void ThrowIfError() { }
-        public IEnumerable<T> ToEntities<T>() => throw new InvalidCastException($"Cannot convert {nameof(HttpResponse)} to Entities");
+        public IEnumerable<T> ToEntities<T>() where T : class => throw new InvalidCastException($"Cannot convert {nameof(HttpResponse)} to Entities");
 
         public DateTime LogTime { get; }
 

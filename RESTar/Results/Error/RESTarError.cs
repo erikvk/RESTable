@@ -8,7 +8,7 @@ using Newtonsoft.Json;
 using RESTar.Internal;
 using RESTar.Logging;
 using RESTar.Operations;
-using RESTar.Requests;
+using RESTar.Queries;
 using RESTar.Results.Error.BadRequest;
 using RESTar.Results.Error.Forbidden;
 using RESTar.Results.Success;
@@ -48,11 +48,11 @@ namespace RESTar.Results.Error
         /// <inheritdoc />
         public bool ExcludeHeaders { get; }
 
-        internal void SetTrace(IRequest request)
+        internal void SetTrace(IQuery query)
         {
-            TraceId = request.TraceId;
-            Context = request.Context;
-            Request = request;
+            TraceId = query.TraceId;
+            Context = query.Context;
+            Query = query;
         }
 
         /// <inheritdoc />
@@ -110,7 +110,7 @@ namespace RESTar.Results.Error
         public ISerializedResult Serialize(ContentType? contentType = null) => this;
 
         /// <inheritdoc />
-        public IEnumerable<T> ToEntities<T>() => throw this;
+        public IEnumerable<T> ToEntities<T>() where T : class => throw this;
 
         /// <inheritdoc />
         public void ThrowIfError() => throw this;
@@ -130,32 +130,32 @@ namespace RESTar.Results.Error
             }
         }
 
-        internal static ISerializedResult GetResult(Exception exs, IRequestInternal request)
+        internal static ISerializedResult GetResult(Exception exs, IQueryInternal query)
         {
             var error = GetError(exs);
-            error.SetTrace(request);
+            error.SetTrace(query);
             string errorId = null;
             if (!(error is Forbidden.Forbidden))
             {
                 Admin.Error.ClearOld();
-                errorId = Trans(() => Admin.Error.Create(error, request)).Id;
+                errorId = Trans(() => Admin.Error.Create(error, query)).Id;
             }
-            if (request.IsWebSocketUpgrade)
+            if (query.IsWebSocketUpgrade)
             {
-                request.Context.WebSocket?.SendResult(error);
-                request.Context.WebSocket?.Disconnect();
-                return new WebSocketUpgradeSuccessful(request);
+                query.Context.WebSocket?.SendResult(error);
+                query.Context.WebSocket?.Disconnect();
+                return new WebSocketUpgradeSuccessful(query);
             }
             if (errorId != null)
                 error.Headers["ErrorInfo"] = $"/{typeof(Admin.Error).FullName}/id={HttpUtility.UrlEncode(errorId)}";
-            error.TimeElapsed = request.TimeElapsed;
+            error.TimeElapsed = query.TimeElapsed;
             return error;
         }
 
         /// <summary>
         /// The request that generated the error
         /// </summary>
-        public IRequest Request { get; private set; }
+        public IQuery Query { get; private set; }
 
         /// <inheritdoc />
         /// <summary>

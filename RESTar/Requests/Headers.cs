@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using RESTar.Linq;
 
-namespace RESTar.Requests
+namespace RESTar.Queries
 {
     internal class HeadersEnumerator : IEnumerator<KeyValuePair<string, string>>
     {

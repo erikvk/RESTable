@@ -1,4 +1,4 @@
-﻿using RESTar.Requests;
+﻿using RESTar.Queries;
 using static RESTar.RESTarConfig;
 
 namespace RESTar.Results.Success
@@ -9,7 +9,7 @@ namespace RESTar.Results.Success
     /// </summary>
     public class AcceptOrigin : OK
     {
-        internal AcceptOrigin(string origin, RequestParameters parameters) : base(parameters)
+        internal AcceptOrigin(string origin, QueryParameters parameters) : base(parameters)
         {
             Headers["Access-Control-Allow-Origin"] = AllowAllOrigins ? "*" : origin;
             Headers["Access-Control-Allow-Methods"] = string.Join(", ", parameters.IResource.AvailableMethods);

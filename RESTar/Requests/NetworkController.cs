@@ -4,7 +4,7 @@ using RESTar.Linq;
 using RESTar.Starcounter;
 using static RESTar.Admin.Settings;
 
-namespace RESTar.Requests
+namespace RESTar.Queries
 {
     internal static class NetworkController
     {

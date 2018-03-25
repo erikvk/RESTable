@@ -123,7 +123,7 @@
     <Compile Include="Logging\LogItem.cs" />
     <Compile Include="Logging\WebSocketEvent.cs" />
     <Compile Include="Operations\Search.cs" />
-    <Compile Include="Request.cs" />
+    <Compile Include="Query.cs" />
     <Compile Include="Requests\Body.cs" />
     <Compile Include="Requests\ConnectionId.cs" />
     <Compile Include="Requests\ITraceable.cs" />
@@ -131,9 +131,10 @@
     <Compile Include="Requests\IUriCondition.cs" />
     <Compile Include="Requests\NetworkController.cs" />
     <Compile Include="Requests\OriginType.cs" />
-    <Compile Include="Requests\Request.cs" />
+    <Compile Include="Requests\Query.cs" />
     <Compile Include="Results\Error\Untraceable - Copy.cs" />
     <Compile Include="INetworkProvider.cs" />
+    <Compile Include="Results\Success\ImATeapot.cs" />
     <Compile Include="Starcounter\ScContext.cs" />
     <Compile Include="WebSocket.cs" />
     <Compile Include="WebSocketConnection.cs" />
@@ -204,12 +205,11 @@
     <Compile Include="Admin\ErrorCode.cs" />
     <Compile Include="ICondition.cs" />
     <Compile Include="IDatabaseIndexer.cs" />
-    <Compile Include="Requests\IViewRequest.cs" />
     <Compile Include="Linq\Conditions.cs" />
     <Compile Include="Linq\Enumerable.cs" />
     <Compile Include="Operations\IProcessor.cs" />
     <Compile Include="Starcounter\Transact.cs" />
-    <Compile Include="Requests\RequestParameters.cs" />
+    <Compile Include="Requests\QueryParameters.cs" />
     <Compile Include="Requests\DataConfig.cs" />
     <Compile Include="Internal\ErrorCodes.cs" />
     <Compile Include="Operators.cs" />
@@ -255,7 +255,7 @@
     <Compile Include="Operations\Rename.cs" />
     <Compile Include="Condition.cs" />
     <Compile Include="ExtensionMethods.cs" />
-    <Compile Include="IRequest.cs" />
+    <Compile Include="IQuery.cs" />
     <Compile Include="Internal\EntityResource.cs" />
     <Compile Include="Log.cs" />
     <Compile Include="Operator.cs" />

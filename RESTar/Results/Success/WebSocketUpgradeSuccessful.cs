@@ -4,7 +4,7 @@ using System.IO;
 using System.Net;
 using RESTar.Logging;
 using RESTar.Operations;
-using RESTar.Requests;
+using RESTar.Queries;
 
 namespace RESTar.Results.Success
 {
@@ -65,7 +65,7 @@ namespace RESTar.Results.Success
         public void ThrowIfError() { }
 
         /// <inheritdoc />
-        public IEnumerable<T> ToEntities<T>() => throw new InvalidCastException($"Cannot convert {nameof(WebSocketUpgradeSuccessful)} to Entities");
+        public IEnumerable<T> ToEntities<T>() where T : class => throw new InvalidCastException($"Cannot convert {nameof(WebSocketUpgradeSuccessful)} to Entities");
 
         /// <inheritdoc />
         public TimeSpan TimeElapsed { get; }
@@ -74,12 +74,12 @@ namespace RESTar.Results.Success
         public DateTime LogTime { get; }
 
         /// <inheritdoc />
-        public WebSocketUpgradeSuccessful(IRequest request)
+        public WebSocketUpgradeSuccessful(IQuery query)
         {
-            TraceId = request.TraceId;
-            Context = request.Context;
+            TraceId = query.TraceId;
+            Context = query.Context;
             LogTime = DateTime.Now;
-            TimeElapsed = request.TimeElapsed;
+            TimeElapsed = query.TimeElapsed;
         }
     }
 }

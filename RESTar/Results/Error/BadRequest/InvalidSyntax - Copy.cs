@@ -6,6 +6,6 @@ namespace RESTar.Results.Error.BadRequest
     public class MissingDataSource : BadRequest
     {
         /// <inheritdoc />
-        public MissingDataSource(IRequest request) : base(ErrorCodes.NoDataSource, $"Missing data source for method {request.Method.ToString()}") { }
+        public MissingDataSource(IQuery query) : base(ErrorCodes.NoDataSource, $"Missing data source for method {query.Method.ToString()}") { }
     }
 }

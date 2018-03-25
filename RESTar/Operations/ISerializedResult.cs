@@ -46,7 +46,7 @@ namespace RESTar.Operations
         /// Tries to convert the result to an Entities instance, or throws an 
         /// Exception if the result is non-successful or cannot be cast to the given type.
         /// </summary>
-        IEnumerable<T> ToEntities<T>();
+        IEnumerable<T> ToEntities<T>() where T : class;
     }
 
     /// <inheritdoc />

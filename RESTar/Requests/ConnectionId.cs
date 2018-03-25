@@ -1,7 +1,7 @@
 ﻿using System.Linq;
 using Starcounter;
 
-namespace RESTar.Requests {
+namespace RESTar.Queries {
     /// <summary>
     /// An ID, generated when a new connection is set up
     /// </summary>

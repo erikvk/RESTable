@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using RESTar.Results.Error.BadRequest;
 
 namespace RESTar.Linq
 {
@@ -229,6 +230,23 @@ namespace RESTar.Linq
                 else falses.Add(item);
             }
             return (trues, falses);
+        }
+
+        internal static IEnumerable<T> HardLimit<T>(this IEnumerable<T> source, int limit = -1)
+        {
+            if (limit == -1 || source == null) return source;
+            return ApplyHardLimiting(source, limit);
+        }
+
+        private static IEnumerable<T> ApplyHardLimiting<T>(IEnumerable<T> source, int limit)
+        {
+            var i = 1;
+            foreach (var entity in source)
+            {
+                if (i > limit) throw new InvalidInputCount(limit);
+                i += 1;
+                yield return entity;
+            }
         }
     }
 }

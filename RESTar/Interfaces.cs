@@ -19,7 +19,7 @@ namespace RESTar
         /// The select method for this ISelector instance. Defines the Select
         /// operation for a given resource.
         /// </summary>
-        IEnumerable<T> Select(IRequest<T> request);
+        IEnumerable<T> Select(IQuery<T> query);
     }
 
     /// <inheritdoc />
@@ -32,7 +32,7 @@ namespace RESTar
         /// The insert method for this IInserter instance. Defines the Insert
         /// operation for a given resource.
         /// </summary>
-        int Insert(IRequest<T> request);
+        int Insert(IQuery<T> query);
     }
 
     /// <inheritdoc />
@@ -45,7 +45,7 @@ namespace RESTar
         /// The update method for this IUpdater instance. Defines the Update
         /// operation for a given resource.
         /// </summary>
-        int Update(IRequest<T> request);
+        int Update(IQuery<T> query);
     }
 
     /// <inheritdoc />
@@ -58,7 +58,7 @@ namespace RESTar
         /// The delete method for this IDeleter instance. Defines the Delete
         /// operation for a given resource.
         /// </summary>
-        int Delete(IRequest<T> request);
+        int Delete(IQuery<T> query);
     }
 
     /// <inheritdoc />
@@ -71,7 +71,7 @@ namespace RESTar
         /// The delete method for this IDeleter instance. Defines the Delete
         /// operation for a given resource.
         /// </summary>
-        long Count(IRequest<T> request);
+        long Count(IQuery<T> query);
     }
 
     /// <inheritdoc />
@@ -84,7 +84,7 @@ namespace RESTar
         /// The delete method for this IDeleter instance. Defines the Delete
         /// operation for a given resource.
         /// </summary>
-        ResourceProfile Profile(IRequest<T> request);
+        ResourceProfile Profile(IQuery<T> query);
     }
 
     /// <inheritdoc />
@@ -98,6 +98,6 @@ namespace RESTar
         /// The delete method for this IDeleter instance. Defines the Delete
         /// operation for a given resource.
         /// </summary>
-        AuthResults Authenticate(IRequest<T> request);
+        AuthResults Authenticate(IQuery<T> query);
     }
 }

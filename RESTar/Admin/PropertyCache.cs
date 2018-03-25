@@ -23,13 +23,13 @@ namespace RESTar.Admin
         public IEnumerable<DeclaredProperty> Properties { get; private set; }
 
         /// <inheritdoc />
-        public IEnumerable<PropertyCache> Select(IRequest<PropertyCache> request) => TypeCache
+        public IEnumerable<PropertyCache> Select(IQuery<PropertyCache> query) => TypeCache
             .DeclaredPropertyCache
             .Select(item => new PropertyCache
             {
                 Type = item.Key.RESTarTypeName(),
                 Properties = item.Value.Values
             })
-            .Where(request.Conditions);
+            .Where(query.Conditions);
     }
 }

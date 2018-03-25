@@ -79,10 +79,10 @@ namespace RESTar.Admin
 
         private const int MaxStringLength = 10000;
 
-        internal static Error Create(RESTarError error, IRequest request)
+        internal static Error Create(RESTarError error, IQuery query)
         {
-            var resource = request.SafeGet(a => a.Resource);
-            var uri = request.UriComponents.ToString();
+            var resource = query.SafeGet(a => a.Resource);
+            var uri = query.UriComponents.ToString();
             var stackTrace = $"{error.StackTrace} §§§ INNER: {error.InnerException?.StackTrace}";
             var totalMessage = error.TotalMessage();
             return new Error
@@ -90,17 +90,17 @@ namespace RESTar.Admin
                 Time = DateTime.Now,
                 ResourceName = (resource?.Name ?? "<unknown>") +
                                (resource?.Alias != null ? $" ({resource.Alias})" : ""),
-                Method = request.Method,
+                Method = query.Method,
                 ErrorCode = error.ErrorCode,
-                Body = request.Body.HasContent
-                    ? Encoding.UTF8.GetString(request.Body.Bytes.Take(5000).ToArray())
+                Body = query.Body.HasContent
+                    ? Encoding.UTF8.GetString(query.Body.Bytes.Take(5000).ToArray())
                     : null,
                 StackTrace = stackTrace.Length > MaxStringLength ? stackTrace.Substring(0, MaxStringLength) : stackTrace,
                 Message = totalMessage.Length > MaxStringLength ? totalMessage.Substring(0, MaxStringLength) : totalMessage,
                 Uri = uri,
                 Headers = resource is IEntityResource e && e.RequiresAuthentication
                     ? null
-                    : request.Headers.StringJoin(" | ", dict => dict.Select(header =>
+                    : query.Headers.StringJoin(" | ", dict => dict.Select(header =>
                     {
                         switch (header.Key.ToLower())
                         {

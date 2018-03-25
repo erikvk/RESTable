@@ -61,9 +61,9 @@ namespace RESTar
         public (Type Type, Member[] Members)[] PeripheralTypes { get; private set; }
 
         /// <inheritdoc />
-        public IEnumerable<Metadata> Select(IRequest<Metadata> request)
+        public IEnumerable<Metadata> Select(IQuery<Metadata> query)
         {
-            var accessrights = Authenticator.AuthTokens[request.Context.Client.AuthToken];
+            var accessrights = Authenticator.AuthTokens[query.Context.Client.AuthToken];
             return new[] {Make(MetadataLevel.Full, accessrights)};
         }
 

@@ -1,4 +1,4 @@
-﻿using RESTar.Requests;
+﻿using RESTar.Queries;
 
 namespace RESTar.WebSockets
 {

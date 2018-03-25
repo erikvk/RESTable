@@ -32,12 +32,12 @@ namespace RESTar
         private SetOperations(JObject other) : base(other) { }
 
         /// <inheritdoc />
-        public IEnumerable<SetOperations> Select(IRequest<SetOperations> request)
+        public IEnumerable<SetOperations> Select(IQuery<SetOperations> query)
         {
-            if (request == null) throw new ArgumentNullException(nameof(request));
-            if (!request.Body.HasContent)
+            if (query == null) throw new ArgumentNullException(nameof(query));
+            if (!query.Body.HasContent)
                 throw new Exception("Missing data source for SetOperations request");
-            var jobject = request.Body.ToList<JObject>().FirstOrDefault();
+            var jobject = query.Body.ToList<JObject>().FirstOrDefault();
 
             JTokens recursor(JToken token)
             {
@@ -51,7 +51,7 @@ namespace RESTar
                             case default(char): throw new Exception("Operation expressions cannot be empty strings");
                             case '[': return JArray.Parse(argument);
                             case '/':
-                                switch (Request.Create(request, GET, ref argument).GetResult())
+                                switch (Query.Create(query, GET, ref argument).Result)
                                 {
                                     case NoContent _: return new JArray();
                                     case Entities entities: return JArray.FromObject(entities, JsonContentProvider.Serializer);
@@ -83,7 +83,7 @@ namespace RESTar
                             case "map":
                                 if (arr.Count != 2)
                                     throw new Exception("Map takes two and only two arguments");
-                                return Map(recursor(arr[0]), (string) arr[1], request);
+                                return Map(recursor(arr[0]), (string) arr[1], query);
                             default:
                                 throw new ArgumentOutOfRangeException(
                                     $"Unknown operation '{prop.Name}'. Avaliable operations: distinct, except, " +
@@ -104,7 +104,7 @@ namespace RESTar
                     case JObject @object: return new SetOperations(@object);
                     default: throw new Exception("Invalid entity type in set operation");
                 }
-            }).Where(request.Conditions);
+            }).Where(query.Conditions);
         }
 
         private static JTokens Distinct(JTokens array) => array?.Distinct(EqualityComparer);
@@ -112,7 +112,7 @@ namespace RESTar
         private static JTokens Union(params JTokens[] arrays) => Checked(arrays).Aggregate((x, y) => x.Union(y, EqualityComparer));
         private static JTokens Except(params JTokens[] arrays) => Checked(arrays).Aggregate((x, y) => x.Except(y, EqualityComparer));
 
-        private static JTokens Map(JTokens set, string mapper, IRequest request)
+        private static JTokens Map(JTokens set, string mapper, IQuery query)
         {
             if (set == null) throw new ArgumentException(nameof(set));
             if (string.IsNullOrEmpty(mapper)) throw new ArgumentException(nameof(mapper));
@@ -152,7 +152,7 @@ namespace RESTar
                     valueBuffer[i] = HttpUtility.UrlEncode(value);
                 }
                 localMapper = string.Format(localMapper, valueBuffer);
-                switch (Request.Create(request, GET, ref localMapper).GetResult())
+                switch (Query.Create(query, GET, ref localMapper).Result)
                 {
                     case NoContent _: break;
                     case Entities entities:

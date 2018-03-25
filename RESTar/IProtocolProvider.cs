@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 using RESTar.Operations;
-using RESTar.Requests;
+using RESTar.Queries;
 
 namespace RESTar
 {
@@ -74,7 +74,7 @@ namespace RESTar
         /// protocolprovider to throw an exception and abort a request if the API call is not 
         /// in compliance with the protocol.
         /// </summary>
-        bool IsCompliant(IRequest request, out string invalidReason);
+        bool IsCompliant(IQuery query, out string invalidReason);
 
         /// <summary>
         /// The protocol needs to be able to generate a relative URI string from an IUriParameters instance. 

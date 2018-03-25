@@ -5,9 +5,9 @@ using System.Text.RegularExpressions;
 using RESTar.Linq;
 using RESTar.Results.Error;
 using RESTar.Results.Error.NotFound;
-using static RESTar.Requests.ContentTypeController;
+using static RESTar.Queries.ContentTypeController;
 
-namespace RESTar.Requests
+namespace RESTar.Queries
 {
     internal static class ProtocolController
     {

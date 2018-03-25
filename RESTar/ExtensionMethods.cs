@@ -667,11 +667,11 @@ namespace RESTar
             return valueLiteral;
         }
 
-        internal static void MethodCheck(this IRequest request)
+        internal static void MethodCheck(this IQuery query)
         {
-            if (request.Method == Method.OPTIONS) return;
-            if (!Authenticator.MethodCheck(request.Method, request.Resource, request.Context.Client.AuthToken, out var failedAuth))
-                throw new MethodNotAllowed(request.Method, request.Resource, failedAuth);
+            if (query.Method == Method.OPTIONS) return;
+            if (!Authenticator.MethodCheck(query.Method, query.Resource, query.Context.Client.AuthToken, out var failedAuth))
+                throw new MethodNotAllowed(query.Method, query.Resource, failedAuth);
         }
 
         /// <summary>
@@ -679,10 +679,10 @@ namespace RESTar
         /// operator (case insensitive). If true, the out Condition parameter will contain a reference to the found
         /// condition.
         /// </summary>
-        public static bool TryGetCondition<T>(this IRequest<T> request, string key, Operators op,
+        public static bool TryGetCondition<T>(this IQuery<T> query, string key, Operators op,
             out Condition<T> condition) where T : class
         {
-            condition = request.Conditions?.Get(key, op);
+            condition = query.Conditions?.Get(key, op);
             return condition != null;
         }
 
@@ -691,10 +691,10 @@ namespace RESTar
         /// If true, the out Conditions parameter will contain all the matching conditions
         /// </summary>
         /// <returns></returns>
-        public static bool TryGetConditions<T>(this IRequest<T> request, string key,
+        public static bool TryGetConditions<T>(this IQuery<T> query, string key,
             out ICollection<Condition<T>> conditions) where T : class
         {
-            conditions = request.Conditions.Get(key).ToList();
+            conditions = query.Conditions.Get(key).ToList();
             return !conditions.Any() != true;
         }
 

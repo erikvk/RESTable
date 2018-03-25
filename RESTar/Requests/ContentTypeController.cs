@@ -5,7 +5,7 @@ using RESTar.Linq;
 using RESTar.Results.Error;
 using RESTar.Serialization;
 
-namespace RESTar.Requests
+namespace RESTar.Queries
 {
     internal static class ContentTypeController
     {

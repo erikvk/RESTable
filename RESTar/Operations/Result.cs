@@ -4,7 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using RESTar.Logging;
-using RESTar.Requests;
+using RESTar.Queries;
 using RESTar.Results.Success;
 
 namespace RESTar.Operations
@@ -34,7 +34,7 @@ namespace RESTar.Operations
         public virtual ISerializedResult Serialize(ContentType? contentType = null) => this;
 
         /// <inheritdoc />
-        public IEnumerable<T> ToEntities<T>()
+        public IEnumerable<T> ToEntities<T>() where T : class
         {
             var entities = (Entities) this;
             return entities.Cast<T>();
@@ -86,12 +86,12 @@ namespace RESTar.Operations
 
         #endregion
 
-        internal Result(ITraceable request)
+        internal Result(ITraceable query)
         {
             Headers = new Headers();
             ExcludeHeaders = false;
-            Context = request.Context;
-            TraceId = request.TraceId;
+            Context = query.Context;
+            TraceId = query.TraceId;
         }
     }
 }

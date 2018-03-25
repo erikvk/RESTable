@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using RESTar.Requests;
+using RESTar.Queries;
 
 namespace RESTar.Admin
 {
@@ -74,7 +74,7 @@ namespace RESTar.Admin
         public ContentType[] ContentTypes { get; private set; }
 
         /// <inheritdoc />
-        public IEnumerable<Protocol> Select(IRequest<Protocol> request)
+        public IEnumerable<Protocol> Select(IQuery<Protocol> query)
         {
             return ProtocolController.ProtocolProviders.Values.Distinct().Select(cachedProvider =>
             {

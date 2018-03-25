@@ -5,7 +5,7 @@ using System.Net;
 using System.Text.RegularExpressions;
 using RESTar.Linq;
 using RESTar.Operations;
-using RESTar.Requests;
+using RESTar.Queries;
 using RESTar.Results.Error;
 
 namespace RESTar.Http
@@ -31,10 +31,9 @@ namespace RESTar.Http
                 Headers["Content-Type"] = ContentType;
                 Headers["Accept"] = Accept;
                 var uri = URI;
-                return Request
+                return Query
                     .Create(this, Method, ref uri, Body.ToByteArray(), new Headers(Headers))
-                    .GetResult()
-                    .Serialize();
+                    .Result                    .Serialize();
             }
             return MakeExternalRequest(this, Method.ToString(), new Uri(URI), Body, ContentType, Accept, Headers);
         }

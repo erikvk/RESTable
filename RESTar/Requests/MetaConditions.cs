@@ -11,7 +11,7 @@ using static RESTar.Operators;
 
 #pragma warning disable 612
 
-namespace RESTar.Requests
+namespace RESTar.Queries
 {
     internal enum RESTarMetaConditions
     {

@@ -5,7 +5,7 @@ using System.Text.RegularExpressions;
 using RESTar.Admin;
 using RESTar.Results.Error.NotFound;
 
-namespace RESTar.Requests
+namespace RESTar.Queries
 {
     internal class UriComponents : IUriComponents
     {

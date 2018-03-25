@@ -25,10 +25,10 @@ namespace RESTar.Admin
         public string Resource { private get; set; }
 
         /// <inheritdoc />
-        public IEnumerable<Schema> Select(IRequest<Schema> request)
+        public IEnumerable<Schema> Select(IQuery<Schema> query)
         {
-            if (request == null) throw new ArgumentNullException(nameof(request));
-            if (!(request.Conditions.Get("resource", EQUALS)?.Value is string resourceName))
+            if (query == null) throw new ArgumentNullException(nameof(query));
+            if (!(query.Conditions.Get("resource", EQUALS)?.Value is string resourceName))
                 throw new Exception("Invalid syntax in request to RESTar.Schema. Format: " +
                                     "/schema/resource=insert_resource_name_here");
             var res = RESTar.Resource.Find(resourceName) as IEntityResource;

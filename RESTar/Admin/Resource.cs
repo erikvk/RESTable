@@ -87,14 +87,14 @@ namespace RESTar.Admin
         public Resource() => Provider = "undefined";
 
         /// <inheritdoc />
-        public IEnumerable<Resource> Select(IRequest<Resource> request)
+        public IEnumerable<Resource> Select(IQuery<Resource> query)
         {
-            if (request == null) throw new ArgumentNullException(nameof(request));
+            if (query == null) throw new ArgumentNullException(nameof(query));
             return RESTarConfig.Resources
                 .Where(r => r.IsGlobal)
                 .OrderBy(r => r.Name)
                 .Select(Make)
-                .Where(request.Conditions);
+                .Where(query.Conditions);
         }
 
         internal static Resource Make(IResource iresource)
@@ -121,11 +121,11 @@ namespace RESTar.Admin
         }
 
         /// <inheritdoc />
-        public int Insert(IRequest<Resource> request)
+        public int Insert(IQuery<Resource> query)
         {
-            if (request == null) throw new ArgumentNullException(nameof(request));
+            if (query == null) throw new ArgumentNullException(nameof(query));
             var count = 0;
-            foreach (var entity in request.GetEntities())
+            foreach (var entity in query.GetEntities())
             {
                 if (string.IsNullOrWhiteSpace(entity.Name))
                     throw new Exception("Missing or invalid name for new resource");
@@ -163,11 +163,11 @@ namespace RESTar.Admin
         }
 
         /// <inheritdoc />
-        public int Update(IRequest<Resource> request)
+        public int Update(IQuery<Resource> query)
         {
-            if (request == null) throw new ArgumentNullException(nameof(request));
+            if (query == null) throw new ArgumentNullException(nameof(query));
             var count = 0;
-            foreach (var resource in request.GetEntities())
+            foreach (var resource in query.GetEntities())
             {
                 #region Edit alias (available for all resources)
 
@@ -224,10 +224,10 @@ namespace RESTar.Admin
         }
 
         /// <inheritdoc />
-        public int Delete(IRequest<Resource> request)
+        public int Delete(IQuery<Resource> query)
         {
-            if (request == null) throw new ArgumentNullException(nameof(request));
-            return request.GetEntities().Count(DynamicResource.DeleteTable);
+            if (query == null) throw new ArgumentNullException(nameof(query));
+            return query.GetEntities().Count(DynamicResource.DeleteTable);
         }
     }
 }

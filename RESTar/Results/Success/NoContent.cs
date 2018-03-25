@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Net;
 using RESTar.Operations;
-using RESTar.Requests;
+using RESTar.Queries;
 
 namespace RESTar.Results.Success
 {

@@ -4,7 +4,7 @@ namespace RESTar.Starcounter
 {
     internal class ScWebSocket : WebSocket
     {
-        private readonly global::Starcounter.Request UpgradeRequest;
+        private readonly Request UpgradeRequest;
         private readonly string GroupName;
         private global::Starcounter.WebSocket WebSocket;
 
@@ -14,7 +14,7 @@ namespace RESTar.Starcounter
         protected override void DisconnectWebSocket() => WebSocket.Disconnect();
         protected override void SendUpgrade() => WebSocket = UpgradeRequest.SendUpgrade(GroupName);
 
-        internal ScWebSocket(string groupName, global::Starcounter.Request upgradeRequest, Client client)
+        internal ScWebSocket(string groupName, Request upgradeRequest, Client client)
             : base(DbHelper.Base64EncodeObjectNo(upgradeRequest.GetWebSocketId()), client)
         {
             GroupName = groupName;

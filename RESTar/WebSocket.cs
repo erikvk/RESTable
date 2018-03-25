@@ -6,7 +6,7 @@ using Newtonsoft.Json;
 using RESTar.Internal;
 using RESTar.Logging;
 using RESTar.Operations;
-using RESTar.Requests;
+using RESTar.Queries;
 using RESTar.Results.Error;
 using RESTar.Results.Success;
 using RESTar.Serialization;
@@ -85,10 +85,10 @@ namespace RESTar
             TerminalConnection = null;
         }
 
-        internal void SetContext(IRequest upgradeRequest)
+        internal void SetContext(IQuery upgradeQuery)
         {
             Context = new WebSocketContext(this, Client);
-            Headers = upgradeRequest.Headers;
+            Headers = upgradeQuery.Headers;
         }
 
         internal void Open()

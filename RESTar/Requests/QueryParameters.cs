@@ -10,7 +10,7 @@ using RESTar.Results.Error;
 using RESTar.Serialization;
 using IResource = RESTar.Internal.IResource;
 
-namespace RESTar.Requests
+namespace RESTar.Queries
 {
     /// <inheritdoc cref="ILogable" />
     /// <inheritdoc cref="ITraceable" />
@@ -18,7 +18,7 @@ namespace RESTar.Requests
     /// A class that defines the parameters of a call to a RESTar API. APICall is a unified 
     /// way to talk about the input to request evaluation, regardless of protocol and web technologies.
     /// </summary>
-    public class RequestParameters : ILogable, ITraceable
+    public class QueryParameters : ILogable, ITraceable
     {
         /// <inheritdoc />
         public string TraceId { get; }
@@ -88,7 +88,7 @@ namespace RESTar.Requests
 
         #endregion
 
-        internal RequestParameters(Context context, Method method, IResource resource, string protocolIdentifier = null, string viewName = null)
+        internal QueryParameters(Context context, Method method, IResource resource, string protocolIdentifier = null, string viewName = null)
         {
             TraceId = context.InitialTraceId;
             Context = context;
@@ -104,7 +104,7 @@ namespace RESTar.Requests
             CachedProtocolProvider = ProtocolController.ResolveProtocolProvider(protocolIdentifier);
         }
 
-        internal RequestParameters(Context context, Method method, ref string uri, byte[] body, Headers headers)
+        internal QueryParameters(Context context, Method method, ref string uri, byte[] body, Headers headers)
         {
             TraceId = context.InitialTraceId;
             Context = context;

@@ -3,20 +3,20 @@ using System.Collections.Generic;
 using RESTar.Internal;
 using RESTar.Logging;
 using RESTar.Operations;
-using RESTar.Requests;
+using RESTar.Queries;
 
 namespace RESTar
 {
-    internal interface IRequestInternal : IRequest
+    internal interface IQueryInternal : IQuery
     {
         bool IsWebSocketUpgrade { get; }
         CachedProtocolProvider CachedProtocolProvider { get; }
     }
 
-    internal interface IRequestInternal<T> : IRequestInternal, IRequest<T> where T : class
+    internal interface IQueryInternal<T> : IQueryInternal, IQuery<T> where T : class
     {
-        EntitiesInserter<T> EntitiesGenerator { set; }
-        EntitiesInserter<T> GetInserter();
+        EntitiesSelector<T> EntitiesProducer { set; }
+        EntitiesSelector<T> GetSelector();
         EntitiesUpdater<T> GetUpdater();
     }
 
@@ -25,7 +25,7 @@ namespace RESTar
     /// A RESTar request for a resource T. This is a common generic interface for all
     /// request types.
     /// </summary>
-    public interface IRequest<T> : IRequest where T : class
+    public interface IQuery<T> : IQuery where T : class
     {
         /// <summary>
         /// The resource of the request
@@ -61,7 +61,7 @@ namespace RESTar
         /// By default RESTar will deserialize the request body to an <see cref="IEnumerable{T}"/> using the 
         /// content type provided in the Content-Type header.
         /// </summary>
-        EntitiesInserter<T> Inserter { set; }
+        EntitiesSelector<T> Selector { set; }
 
         /// <summary>
         /// The method used when updating existing entities. Set this property to override the default behavior.
@@ -75,7 +75,7 @@ namespace RESTar
     /// Defines a function that generates a collection of resource entities.
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public delegate IEnumerable<T> EntitiesInserter<out T>() where T : class;
+    public delegate IEnumerable<T> EntitiesSelector<out T>() where T : class;
 
     /// <summary>
     /// Defines a function that updates a collection of resource entities.
@@ -89,12 +89,12 @@ namespace RESTar
     /// <summary>
     /// A non-generic common interface for all request classes used in RESTar
     /// </summary>
-    public interface IRequest : ITraceable, ILogable
+    public interface IQuery : ITraceable, ILogable
     {
         /// <summary>
         /// The method of the request
         /// </summary>
-        Method Method { get; }
+        Method Method { get; set; }
 
         /// <summary>
         /// The resource of the request
@@ -132,9 +132,9 @@ namespace RESTar
         IUriComponents UriComponents { get; }
 
         /// <summary>
-        /// Gets the result of the request
+        /// Evaluates the request and returns the result
         /// </summary>
-        IResult GetResult();
+        IResult Result { get; }
 
         /// <summary>
         /// Is this request valid?

@@ -14,7 +14,7 @@ using RESTar.Auth;
 using RESTar.Deflection.Dynamic;
 using RESTar.Internal;
 using RESTar.Linq;
-using RESTar.Requests;
+using RESTar.Queries;
 using RESTar.Resources;
 using RESTar.Results.Error;
 using RESTar.Starcounter;

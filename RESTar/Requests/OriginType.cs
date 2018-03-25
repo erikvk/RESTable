@@ -1,4 +1,4 @@
-﻿namespace RESTar.Requests
+﻿namespace RESTar.Queries
 {
     /// <summary>
     /// Describes the origin type of a request

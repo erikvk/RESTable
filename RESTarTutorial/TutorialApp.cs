@@ -63,7 +63,7 @@ namespace RESTarTutorial
         /// This method returns an IEnumerable of the resource type. RESTar will call this 
         /// on GET requests and send the results back to the client as e.g. JSON.
         /// </summary>
-        public IEnumerable<SuperheroReport> Select(IRequest<SuperheroReport> request)
+        public IEnumerable<SuperheroReport> Select(IRequest<SuperheroReport> query)
         {
             var superHeroesOrdered = Db
                 .SQL<Superhero>("SELECT t FROM RESTarTutorial.Superhero t")

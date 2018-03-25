@@ -1,4 +1,4 @@
-namespace RESTar.Requests
+namespace RESTar.Queries
 {
     internal enum DataConfig
     {

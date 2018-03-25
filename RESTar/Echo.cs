@@ -27,12 +27,12 @@ namespace RESTar
         }
 
         /// <inheritdoc />
-        public IEnumerable<Echo> Select(IRequest<Echo> request)
+        public IEnumerable<Echo> Select(IQuery<Echo> query)
         {
-            if (request == null) throw new ArgumentNullException(nameof(request));
+            if (query == null) throw new ArgumentNullException(nameof(query));
             var echo = new[]
             {
-                new Echo(request.Conditions.Select(c => new JProperty(c.Key, c.Value)))
+                new Echo(query.Conditions.Select(c => new JProperty(c.Key, c.Value)))
             };
             Deflection.Dynamic.TypeCache.ClearTermsFor<Echo>();
             return echo;

@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using RESTar.Requests;
-using UriComponents = RESTar.Requests.UriComponents;
+using RESTar.Queries;
+using UriComponents = RESTar.Queries.UriComponents;
 
 namespace RESTar.Results.Success
 {
@@ -30,23 +30,23 @@ namespace RESTar.Results.Success
         /// </summary>
         public ulong EntityCount { get; set; }
 
-        string IEntitiesMetadata.ResourceFullName => Request.Resource.Name;
+        string IEntitiesMetadata.ResourceFullName => Query.Resource.Name;
         internal string ExternalDestination { get; }
 
         /// <summary>
         /// Is the result paged?
         /// </summary>
-        public bool IsPaged => Content != null && EntityCount > 0 && (long) EntityCount == Request.MetaConditions.Limit;
+        public bool IsPaged => Content != null && EntityCount > 0 && (long) EntityCount == Query.MetaConditions.Limit;
 
-        private Entities(IRequest request, IEnumerable<object> content) : base(request)
+        private Entities(IQuery query, IEnumerable<object> content) : base(query)
         {
             _content = content;
-            ExternalDestination = request.Headers.Destination;
-            TimeElapsed = request.TimeElapsed;
+            ExternalDestination = query.Headers.Destination;
+            TimeElapsed = query.TimeElapsed;
         }
 
         internal void SetContentDisposition(string extension) => Headers["Content-Disposition"] =
-            $"attachment;filename={Request.Resource.Name}_{DateTime.Now:yyMMddHHmmssfff}{extension}";
+            $"attachment;filename={Query.Resource.Name}_{DateTime.Now:yyMMddHHmmssfff}{extension}";
 
         /// <inheritdoc />
         public IUriComponents GetNextPageLink() => GetNextPageLink(-1);
@@ -54,7 +54,7 @@ namespace RESTar.Results.Success
         /// <inheritdoc />
         public IUriComponents GetNextPageLink(int count)
         {
-            var components = new UriComponents(Request.UriComponents);
+            var components = new UriComponents(Query.UriComponents);
             if (count > -1)
             {
                 components.MetaConditions.RemoveAll(c => c.Key.EqualsNoCase("limit"));
@@ -62,11 +62,11 @@ namespace RESTar.Results.Success
             }
             components.MetaConditions.RemoveAll(c => c.Key.EqualsNoCase("offset"));
             components.MetaConditions.Add(new UriCondition("offset", Operators.EQUALS,
-                (Request.MetaConditions.Offset + (long) EntityCount).ToString()));
+                (Query.MetaConditions.Offset + (long) EntityCount).ToString()));
             return components;
         }
 
-        internal static Entities Create<TResource>(IRequestInternal<TResource> request, IEnumerable<object> content)
-            where TResource : class => new Entities(request, content);
+        internal static Entities Create<TResource>(IQueryInternal<TResource> query, IEnumerable<object> content)
+            where TResource : class => new Entities(query, content);
     }
 }

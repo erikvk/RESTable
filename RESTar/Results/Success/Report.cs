@@ -7,10 +7,10 @@
     public class Report : Content
     {
         internal ReportBody ReportBody { get; }
-        internal Report(IRequest request, long count) : base(request)
+        internal Report(IQuery query, long count) : base(query)
         {
             ReportBody = new ReportBody(count);
-            TimeElapsed = request.TimeElapsed;
+            TimeElapsed = query.TimeElapsed;
         }
     };
 

@@ -3,7 +3,7 @@ using RESTar.Results.Error;
 using RESTar.Results.Error.NotFound;
 using RESTar.Serialization;
 
-namespace RESTar.Requests
+namespace RESTar.Queries
 {
     /// <summary>
     /// Encodes a request body
