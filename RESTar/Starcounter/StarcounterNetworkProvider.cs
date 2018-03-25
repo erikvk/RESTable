@@ -25,20 +25,16 @@ namespace RESTar.Starcounter
                 methodSpaceUri: $"{method} {rootUri}{{?}}",
                 handler: (ScRequest scRequest, string query) =>
                 {
-                    using (var client = GetClient(scRequest))
-                    using (var context = new ScContext(client, scRequest))
+                    var context = new ScContext(GetClient(scRequest), scRequest, true);
+                    var headers = new Headers(scRequest.HeadersDictionary);
+                    var request = context.MakeRequest(method, ref query, scRequest.BodyBytes, headers);
+                    var result = request.GetResult().FinalizeResult();
+                    switch (result)
                     {
-                        var headers = new Headers(scRequest.HeadersDictionary);
-                        var request = context.MakeRequest(method, ref query, scRequest.BodyBytes, headers);
-                        var result = request.GetResult().FinalizeResult();
-
-                        switch (result)
-                        {
-                            case WebSocketUpgradeSuccessful _: return HandlerStatus.Handled;
-                            default:
-                                Admin.Console.Log(request, result);
-                                return ToResponse(result);
-                        }
+                        case WebSocketUpgradeSuccessful _: return HandlerStatus.Handled;
+                        default:
+                            Admin.Console.Log(request, result);
+                            return ToResponse(result);
                     }
                 }
             ));
@@ -49,12 +45,9 @@ namespace RESTar.Starcounter
                 uriTemplate: $"{rootUri}{{?}}",
                 handler: (ScRequest scRequest, string query) =>
                 {
-                    using (var client = GetClient(scRequest))
-                    using (var context = new ScContext(client, scRequest))
-                    {
-                        var headers = new Headers(scRequest.HeadersDictionary);
-                        return ToResponse(context.CheckOrigin(ref query, headers));
-                    }
+                    var context = new ScContext(GetClient(scRequest), scRequest, true);
+                    var headers = new Headers(scRequest.HeadersDictionary);
+                    return ToResponse(context.CheckOrigin(ref query, headers));
                 }
             );
 

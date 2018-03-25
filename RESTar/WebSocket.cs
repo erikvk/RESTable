@@ -84,7 +84,7 @@ namespace RESTar
 
         internal void SetContext(IRequest upgradeRequest)
         {
-            Context = new WebSocketContext(Client);
+            Context = new WebSocketContext(this, Client);
             Headers = upgradeRequest.Headers;
         }
 

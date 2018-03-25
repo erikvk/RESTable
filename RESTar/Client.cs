@@ -9,7 +9,7 @@ namespace RESTar
     /// <inheritdoc cref="ITraceable" />
     /// <inheritdoc cref="IDisposable" />
     /// <summary>
-    /// Describes the origin and basic TCP connection parameters of a request
+    /// Describes the origin and basic client parameters of a request
     /// </summary>
     public class Client : IDisposable
     {
@@ -82,7 +82,7 @@ namespace RESTar
         /// <summary>
         /// The internal location, has root access to all resources
         /// </summary>
-        public static Client Internal { get; } = new Client(OriginType.Internal, $"localhost:{Admin.Settings._Port}",
+        public static Client Internal => new Client(OriginType.Internal, $"localhost:{Admin.Settings._Port}",
             new IPAddress(new byte[] {127, 0, 0, 1}), null, null, false) {AuthToken = AccessRights.NewRootToken()};
 
         /// <inheritdoc />

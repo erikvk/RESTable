@@ -2,18 +2,74 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using Newtonsoft.Json;
 using RESTar.Linq;
-using RESTar.Serialization.NativeProtocol;
-using static System.StringComparison;
 
 namespace RESTar.Requests
 {
+    internal class HeadersEnumerator : IEnumerator<KeyValuePair<string, string>>
+    {
+        private HeadersMembers CurrentMember;
+        private readonly Headers Headers;
+        private readonly IEnumerator<KeyValuePair<string, string>> DictEnumerator;
+        public void Dispose() => Reset();
+        public void Reset() => CurrentMember = HeadersMembers.nil;
+        object IEnumerator.Current => Current;
+        public KeyValuePair<string, string> Current { get; private set; }
+
+        public bool MoveNext()
+        {
+            switch (CurrentMember += 1)
+            {
+                case HeadersMembers.Accept:
+                    Current = new KeyValuePair<string, string>(nameof(Headers.Accept), Headers.Accept?.ToString());
+                    break;
+                case HeadersMembers.ContentType:
+                    Current = new KeyValuePair<string, string>("Content-Type", Headers.ContentType?.ToString());
+                    break;
+                case HeadersMembers.Source:
+                    Current = new KeyValuePair<string, string>(nameof(Headers.Source), Headers.ContentType?.ToString());
+                    break;
+                case HeadersMembers.Destination:
+                    Current = new KeyValuePair<string, string>(nameof(Headers.Destination), Headers.ContentType?.ToString());
+                    break;
+                case HeadersMembers.Authorization:
+                    Current = new KeyValuePair<string, string>(nameof(Headers.Authorization), Headers.ContentType?.ToString());
+                    break;
+                case HeadersMembers.Origin:
+                    Current = new KeyValuePair<string, string>(nameof(Headers.Origin), Headers.ContentType?.ToString());
+                    break;
+                default:
+                    if (!DictEnumerator.MoveNext())
+                        return false;
+                    Current = DictEnumerator.Current;
+                    return true;
+            }
+            return Current.Value != null || MoveNext();
+        }
+
+        public HeadersEnumerator(Headers headers, IEnumerator<KeyValuePair<string, string>> dictEnumerator)
+        {
+            Headers = headers;
+            DictEnumerator = dictEnumerator;
+        }
+
+        private enum HeadersMembers
+        {
+            nil = 0,
+            Accept,
+            ContentType,
+            Source,
+            Destination,
+            Authorization,
+            Origin
+        }
+    }
+
     /// <inheritdoc cref="IDictionary{TKey,TValue}" />
     /// <summary>
     /// A collection of request headers. Key comparison is case insensitive.
     /// </summary>
-    [JsonConverter(typeof(HeadersConverter))]
+    //[JsonConverter(typeof(HeadersConverter))]
     public class Headers : IDictionary<string, string>, IReadOnlyDictionary<string, string>
     {
         /// <summary>
@@ -37,14 +93,14 @@ namespace RESTar.Requests
         public string Destination { get; set; }
 
         /// <summary>
-        /// The Origin header
-        /// </summary>
-        public string Origin { get; set; }
-
-        /// <summary>
         /// The Authorization header
         /// </summary>
         public string Authorization { internal get; set; }
+
+        /// <summary>
+        /// The Origin header
+        /// </summary>
+        public string Origin { get; set; }
 
         internal bool UnsafeOverride { get; set; }
 
@@ -59,8 +115,8 @@ namespace RESTar.Requests
             {
                 switch (key)
                 {
-                    case var _ when key.EqualsNoCase(nameof(Accept)): return Accept.ToString();
-                    case var _ when key.EqualsNoCase("Content-Type"): return ContentType.ToString();
+                    case var _ when key.EqualsNoCase(nameof(Accept)): return Accept?.ToString();
+                    case var _ when key.EqualsNoCase("Content-Type"): return ContentType?.ToString();
                     case var _ when key.EqualsNoCase(nameof(Source)): return Source;
                     case var _ when key.EqualsNoCase(nameof(Destination)): return Destination;
                     case var _ when key.EqualsNoCase(nameof(Authorization)): return Authorization;
@@ -102,36 +158,19 @@ namespace RESTar.Requests
         private void Put(KeyValuePair<string, string> kvp) => this[kvp.Key] = kvp.Value;
         private void Put(string key, string value) => this[key] = value;
 
-        private IEnumerable<KeyValuePair<string, string>> ReservedHeaders => new[]
-        {
-            new KeyValuePair<string, string>(nameof(Accept), Accept.ToString()),
-            new KeyValuePair<string, string>(nameof(ContentType), Accept.ToString()),
-            new KeyValuePair<string, string>(nameof(Source), Source),
-            new KeyValuePair<string, string>(nameof(Destination), Destination),
-            new KeyValuePair<string, string>(nameof(Authorization), Authorization)
-        };
-
-        private readonly string[] ReservedHeaderKeys =
-            {nameof(Accept), "Content-Type", nameof(Source), nameof(Destination), nameof(Authorization), nameof(Origin)};
-
-        private IEnumerable<string> ReservedHeaderValues => new[]
-            {Accept.ToString(), ContentType.ToString(), Source, Destination, Authorization, Origin};
-
-        internal IEnumerable<KeyValuePair<string, string>> CustomHeaders => this
-            .Union(ReservedHeaders)
-            .Where(pair => IsCustom(pair.Key));
+        internal IEnumerable<KeyValuePair<string, string>> CustomHeaders => this.Where(pair => IsCustom(pair.Key));
 
         internal static bool IsCustom(string key)
         {
             switch (key)
             {
-                case var _ when string.Equals(key, "host", OrdinalIgnoreCase):
-                case var _ when string.Equals(key, "authorization", OrdinalIgnoreCase):
-                case var _ when string.Equals(key, "connection", OrdinalIgnoreCase):
-                case var _ when string.Equals(key, "upgrade", OrdinalIgnoreCase):
-                case var _ when string.Equals(key, "sec-websocket-version", OrdinalIgnoreCase):
-                case var _ when string.Equals(key, "sec-websocket-key", OrdinalIgnoreCase):
-                case var _ when string.Equals(key, "sec-websocket-extensions", OrdinalIgnoreCase):
+                case var _ when key.EqualsNoCase("host"):
+                case var _ when key.EqualsNoCase("authorization"):
+                case var _ when key.EqualsNoCase("connection"):
+                case var _ when key.EqualsNoCase("upgrade"):
+                case var _ when key.EqualsNoCase("sec-websocket-version"):
+                case var _ when key.EqualsNoCase("sec-websocket-key"):
+                case var _ when key.EqualsNoCase("sec-websocket-extensions"):
                 default: return true;
             }
         }
@@ -148,7 +187,7 @@ namespace RESTar.Requests
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
         /// <inheritdoc />
-        public IEnumerator<KeyValuePair<string, string>> GetEnumerator() => _dict.Union(ReservedHeaders).GetEnumerator();
+        public IEnumerator<KeyValuePair<string, string>> GetEnumerator() => new HeadersEnumerator(this, _dict.GetEnumerator());
 
         /// <inheritdoc />
         void ICollection<KeyValuePair<string, string>>.Add(KeyValuePair<string, string> item) => Put(item);
@@ -170,8 +209,8 @@ namespace RESTar.Requests
         {
             switch (item.Key)
             {
-                case var _ when item.Key.EqualsNoCase(nameof(Accept)): return Accept.ToString().EqualsNoCase(item.Value);
-                case var _ when item.Key.EqualsNoCase("Content-Type"): return ContentType.ToString().EqualsNoCase(item.Value);
+                case var _ when item.Key.EqualsNoCase(nameof(Accept)): return Accept?.ToString().EqualsNoCase(item.Value) == true;
+                case var _ when item.Key.EqualsNoCase("Content-Type"): return ContentType?.ToString().EqualsNoCase(item.Value) == true;
                 case var _ when item.Key.EqualsNoCase(nameof(Source)): return Source.EqualsNoCase(item.Value);
                 case var _ when item.Key.EqualsNoCase(nameof(Destination)): return Destination.EqualsNoCase(item.Value);
                 case var _ when item.Key.EqualsNoCase(nameof(Authorization)): return Authorization.EqualsNoCase(item.Value);
@@ -187,7 +226,9 @@ namespace RESTar.Requests
         public bool Remove(KeyValuePair<string, string> item) => Remove(item.Key);
 
         /// <inheritdoc cref="IDictionary{TKey,TValue}" />
-        public int Count => _dict.Count + ReservedHeaderKeys.Length;
+        // ReSharper disable once UseCollectionCountProperty
+        // We must use the HeadersEnumerator for this to work properly
+        public int Count => this.Count();
 
         /// <inheritdoc />
         public bool IsReadOnly => false;
@@ -197,12 +238,12 @@ namespace RESTar.Requests
         {
             switch (key)
             {
-                case var _ when key.EqualsNoCase(nameof(Accept)):
-                case var _ when key.EqualsNoCase("Content-Type"):
-                case var _ when key.EqualsNoCase(nameof(Source)):
-                case var _ when key.EqualsNoCase(nameof(Destination)):
-                case var _ when key.EqualsNoCase(nameof(Authorization)):
-                case var _ when key.EqualsNoCase(nameof(Origin)): return true;
+                case var _ when key.EqualsNoCase(nameof(Accept)): return Accept != null;
+                case var _ when key.EqualsNoCase("Content-Type"): return ContentType != null;
+                case var _ when key.EqualsNoCase(nameof(Source)): return Source != null;
+                case var _ when key.EqualsNoCase(nameof(Destination)): return Destination != null;
+                case var _ when key.EqualsNoCase(nameof(Authorization)): return Authorization != null;
+                case var _ when key.EqualsNoCase(nameof(Origin)): return Origin != null;
                 default: return _dict.ContainsKey(key);
             }
         }
@@ -243,31 +284,31 @@ namespace RESTar.Requests
             switch (key)
             {
                 case var _ when key.EqualsNoCase(nameof(Accept)):
-                    value = Accept.ToString();
-                    return true;
+                    value = Accept?.ToString();
+                    return value != null;
                 case var _ when key.EqualsNoCase("Content-Type"):
-                    value = ContentType.ToString();
-                    return true;
+                    value = ContentType?.ToString();
+                    return value != null;
                 case var _ when key.EqualsNoCase(nameof(Source)):
                     value = Source;
-                    return true;
+                    return value != null;
                 case var _ when key.EqualsNoCase(nameof(Destination)):
                     value = Destination;
-                    return true;
+                    return value != null;
                 case var _ when key.EqualsNoCase(nameof(Authorization)):
                     value = Authorization;
-                    return true;
+                    return value != null;
                 case var _ when key.EqualsNoCase(nameof(Origin)):
-                    value = ContentType.ToString();
-                    return true;
+                    value = Origin;
+                    return value != null;
                 default: return _dict.TryGetValue(key, out value);
             }
         }
 
         /// <inheritdoc />
-        public ICollection<string> Keys => _dict.Keys.Union(ReservedHeaderKeys).ToList();
+        public ICollection<string> Keys => this.Select(kvp => kvp.Key).ToList();
 
         /// <inheritdoc />
-        public ICollection<string> Values => _dict.Values.Union(ReservedHeaderValues).ToList();
+        public ICollection<string> Values => this.Select(kvp => kvp.Value).ToList();
     }
 }

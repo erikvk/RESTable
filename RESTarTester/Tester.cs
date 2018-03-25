@@ -467,8 +467,8 @@ namespace RESTarTester
                 A = "REPORT /resource",
                 B = new[] {"REPORT /resource", "REPORT /resource"}
             });
-            var r5 = Request<MyDict>.Create(GET);
-            var cond = new Condition<MyDict>("Goo", EQUALS, false);
+            var r5 = Request<Resource1>.Create(GET);
+            var cond = new Condition<Resource1>("SByte", GREATER_THAN, 2);
             r5.Conditions.Add(cond);
             r5.Headers.Accept = RESTar.ContentType.Excel;
 

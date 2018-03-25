@@ -15,49 +15,15 @@ namespace RESTar
     /// Requests are run from inside contexts. Contexts trace requests and responses and 
     /// keep track of internal requests and guards against infinite recursion.
     /// </summary>
-    public abstract class Context : IDisposable
+    public abstract class Context
     {
         internal string InitialTraceId { get; }
-        internal bool Used { get; set; }
-
-        /// <summary>
-        /// Should return true if and only if the request is a WebSocket upgrade request
-        /// </summary>
-        protected abstract bool IsWebSocketUpgrade { get; }
-
-        /// <summary>
-        /// Gets a WebSocket instance for a given Context
-        /// </summary>
-        protected abstract WebSocket GetWebSocket();
-
-        /// <summary>
-        /// The client of the context
-        /// </summary>
-        public Client Client { get; }
-
+        private bool Used { get; set; }
         private const int MaximumStackDepth = 300;
-        private int StackDepth;
-        private readonly bool AutoDisposeClient;
-
-        /// <summary>
-        /// Does this context have a WebSocket connected?
-        /// </summary>
-        public bool HasWebSocket => WebSocket != null;
-
+        internal readonly bool AutoDisposeClient;
         private WebSocket webSocket;
 
-        /// <summary>
-        /// The websocket connected with this context
-        /// </summary>
-        internal WebSocket WebSocket
-        {
-            get => webSocket;
-            set
-            {
-                WebSocketController.Add(value);
-                webSocket = value;
-            }
-        }
+        private int StackDepth;
 
         internal void IncreaseDepth()
         {
@@ -74,6 +40,43 @@ namespace RESTar
         }
 
         /// <summary>
+        /// The websocket connected with this context
+        /// </summary>
+        internal WebSocket WebSocket
+        {
+            get => webSocket;
+            set
+            {
+                WebSocketController.Add(value);
+                webSocket = value;
+            }
+        }
+
+        #region Abstract
+
+        /// <summary>
+        /// Should return true if and only if the request is a WebSocket upgrade request
+        /// </summary>
+        protected abstract bool IsWebSocketUpgrade { get; }
+
+        /// <summary>
+        /// Gets a WebSocket instance for a given Context
+        /// </summary>
+        protected abstract WebSocket CreateWebSocket();
+
+        #endregion
+
+        /// <summary>
+        /// Does this context have a WebSocket connected?
+        /// </summary>
+        public bool HasWebSocket => WebSocket != null;
+
+        /// <summary>
+        /// The client of the context
+        /// </summary>
+        public Client Client { get; }
+
+        /// <summary>
         /// Creates a new request instance
         /// </summary>
         /// <param name="method"></param>
@@ -87,7 +90,7 @@ namespace RESTar
             if (Used) throw new ReusedContext();
             Used = true;
             if (IsWebSocketUpgrade)
-                WebSocket = GetWebSocket();
+                WebSocket = CreateWebSocket();
             var parameters = new RequestParameters(this, method, ref uri, body, headers);
             parameters.Authenticate();
             if (!parameters.IsValid)
@@ -118,21 +121,14 @@ namespace RESTar
         /// Creates a new context for a client
         /// </summary>
         /// <param name="client">The client of the context</param>
-        /// <param name="autoDisposeClient">Should RESTar automatically dispose the client when the context
-        /// is disposed?</param>
+        /// <param name="autoDisposeClient">Should RESTar automatically dispose the client when the 
+        /// request has been evaluated?</param>
         protected Context(Client client, bool autoDisposeClient = true)
         {
             Client = client ?? throw new ArgumentNullException(nameof(client));
             InitialTraceId = ConnectionId.Next;
             StackDepth = 0;
             AutoDisposeClient = autoDisposeClient;
-        }
-
-        /// <inheritdoc />
-        public void Dispose()
-        {
-            if (AutoDisposeClient)
-                Client.Dispose();
         }
     }
 }

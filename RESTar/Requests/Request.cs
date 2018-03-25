@@ -29,8 +29,8 @@ namespace RESTar.Requests
         public EntitiesInserter<T> EntitiesGenerator { private get; set; }
         public EntitiesInserter<T> Inserter { private get; set; }
         public EntitiesUpdater<T> Updater { private get; set; }
-        public EntitiesInserter<T> GetInserter() => Inserter ?? (() => Body.ToList<T>());
-        public EntitiesUpdater<T> GetUpdater() => Updater ?? (source => Body.PopulateTo(source));
+        public EntitiesUpdater<T> GetUpdater() => Updater;
+        public EntitiesInserter<T> GetInserter() => Inserter;
 
         public List<Condition<T>> Conditions
         {

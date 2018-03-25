@@ -135,7 +135,8 @@ namespace RESTar
             }
             Q = 1;
             var parts = headerValue.ToLower().Split(';');
-            MimeType = parts[0].Trim();
+            var mimeTypePart = parts[0].Trim();
+            MimeType = mimeTypePart;
             var data = default(Dictionary<string, string>);
             foreach (var pair in parts.Skip(1).Select(i => i.TSplit('=')))
             {

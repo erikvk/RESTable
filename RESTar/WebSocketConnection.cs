@@ -19,8 +19,7 @@ namespace RESTar
 
         internal ITerminalResource Resource { get; private set; }
         internal ITerminal Terminal { get; private set; }
-        internal bool IsOpen { get; private set; }
-
+        private bool IsOpen { get; set; }
         public string TraceId { get; }
         public Context Context { get; private set; }
 

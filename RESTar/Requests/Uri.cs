@@ -105,12 +105,10 @@ namespace RESTar.Requests
 
         internal static URI Parse(string uriString)
         {
-            using (var context = new InternalContext())
-            {
-                var uri = ParseInternal(ref uriString, false, context, out var _, out var _);
-                if (uri.HasError) throw uri.Error;
-                return uri;
-            }
+            var context = new InternalContext();
+            var uri = ParseInternal(ref uriString, false, context, out var _, out var _);
+            if (uri.HasError) throw uri.Error;
+            return uri;
         }
 
         internal URI()

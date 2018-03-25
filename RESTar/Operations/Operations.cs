@@ -113,14 +113,12 @@ namespace RESTar.Operations
         {
             try
             {
-                request.EntitiesGenerator = () =>
+                var inserter = request.GetInserter() ?? (() => request.Body.ToList<T>());
+                request.EntitiesGenerator = () => inserter()?.Select(entity =>
                 {
-                    return request.GetInserter().Invoke()?.Select(entity =>
-                    {
-                        (entity as IValidatable)?.Validate();
-                        return entity;
-                    }) ?? throw new MissingDataSource(request);
-                };
+                    (entity as IValidatable)?.Validate();
+                    return entity;
+                }) ?? throw new MissingDataSource(request);
                 return request.Resource.Insert(request);
             }
             catch (Exception e)
@@ -134,7 +132,13 @@ namespace RESTar.Operations
         {
             try
             {
-                request.EntitiesGenerator = () => request.GetUpdater().Invoke(source)?.Select(entity =>
+                var updater = request.GetUpdater();
+                if (updater == null)
+                {
+                    if (request.Method == Method.PUT && !request.Body.HasContent) return 0;
+                    updater = _source => request.Body.PopulateTo(_source);
+                }
+                request.EntitiesGenerator = () => updater(source)?.Select(entity =>
                 {
                     (entity as IValidatable)?.Validate();
                     return entity;
