@@ -83,9 +83,9 @@ namespace RESTar
         string MakeRelativeUri(IUriComponents components);
 
         /// <summary>
-        /// Takes a result and generates an IFinalizedResult entity from it, that can be returned 
+        /// Takes a result and generates an ISerializedResult entity from it, that can be returned 
         /// to the network component.
         /// </summary>
-        IFinalizedResult FinalizeResult(IResult result, IContentTypeProvider contentTypeProvider);
+        ISerializedResult Serialize(IResult result, IContentTypeProvider contentTypeProvider);
     }
 }

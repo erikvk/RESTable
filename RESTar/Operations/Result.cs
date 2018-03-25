@@ -9,12 +9,12 @@ using RESTar.Results.Success;
 
 namespace RESTar.Operations
 {
-    /// <inheritdoc cref="IFinalizedResult" />
+    /// <inheritdoc cref="ISerializedResult" />
     /// <inheritdoc cref="IResult" />
     /// <summary>
     /// The result of a RESTar request operation
     /// </summary>
-    public abstract class Result : IFinalizedResult, IResult
+    public abstract class Result : ISerializedResult, IResult
     {
         #region IResult
 
@@ -31,7 +31,7 @@ namespace RESTar.Operations
         public ICollection<string> Cookies { get; internal set; }
 
         /// <inheritdoc />
-        public virtual IFinalizedResult FinalizeResult(ContentType? contentType = null) => this;
+        public virtual ISerializedResult Serialize(ContentType? contentType = null) => this;
 
         /// <inheritdoc />
         public IEnumerable<T> ToEntities<T>()
@@ -45,7 +45,7 @@ namespace RESTar.Operations
 
         #endregion
 
-        #region Finalized
+        #region Serialized
 
         /// <inheritdoc />
         public Stream Body { get; set; }

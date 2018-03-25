@@ -12,7 +12,7 @@ using static System.StringSplitOptions;
 
 namespace RESTar.Http
 {
-    internal class HttpResponse : IFinalizedResult
+    internal class HttpResponse : ISerializedResult
     {
         public HttpStatusCode StatusCode { get; }
         public string StatusDescription { get; }
@@ -31,7 +31,7 @@ namespace RESTar.Http
         public string LogContent { get; } = null;
         public string HeadersStringCache { get; set; }
         public bool ExcludeHeaders { get; }
-        public IFinalizedResult FinalizeResult(ContentType? contentType = null) => this;
+        public ISerializedResult Serialize(ContentType? contentType = null) => this;
         public void ThrowIfError() { }
         public IEnumerable<T> ToEntities<T>() => throw new InvalidCastException($"Cannot convert {nameof(HttpResponse)} to Entities");
 

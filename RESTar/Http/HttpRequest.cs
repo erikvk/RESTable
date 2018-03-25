@@ -24,7 +24,7 @@ namespace RESTar.Http
         public string TraceId { get; }
         public Context Context { get; }
 
-        internal IFinalizedResult GetResponse()
+        internal ISerializedResult GetResponse()
         {
             if (IsInternal)
             {
@@ -34,7 +34,7 @@ namespace RESTar.Http
                 return Request
                     .Create(this, Method, ref uri, Body.ToByteArray(), new Headers(Headers))
                     .GetResult()
-                    .FinalizeResult();
+                    .Serialize();
             }
             return MakeExternalRequest(this, Method.ToString(), new Uri(URI), Body, ContentType, Accept, Headers);
         }

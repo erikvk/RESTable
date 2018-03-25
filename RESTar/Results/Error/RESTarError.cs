@@ -20,11 +20,11 @@ namespace RESTar.Results.Error
 {
     /// <inheritdoc cref="Exception" />
     /// <inheritdoc cref="ITraceable" />
-    /// <inheritdoc cref="IFinalizedResult" />
+    /// <inheritdoc cref="ISerializedResult" />
     /// <summary>
     /// A super class for all custom RESTar exceptions
     /// </summary>
-    public abstract class RESTarError : Exception, ITraceable, IFinalizedResult
+    public abstract class RESTarError : Exception, ITraceable, ISerializedResult
     {
         /// <summary>
         /// The error code for this error
@@ -108,7 +108,7 @@ namespace RESTar.Results.Error
         public ContentType? ContentType { get; } = null;
 
         /// <inheritdoc />
-        public IFinalizedResult FinalizeResult(ContentType? contentType = null) => this;
+        public ISerializedResult Serialize(ContentType? contentType = null) => this;
 
         /// <inheritdoc />
         public IEnumerable<T> ToEntities<T>() => throw this;
@@ -131,7 +131,7 @@ namespace RESTar.Results.Error
             }
         }
 
-        internal static IFinalizedResult GetResult(Exception exs, IRequestInternal request)
+        internal static ISerializedResult GetResult(Exception exs, IRequestInternal request)
         {
             var error = GetError(exs);
             error.SetTrace(request);

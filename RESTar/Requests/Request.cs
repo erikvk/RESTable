@@ -149,8 +149,8 @@ namespace RESTar.Requests
                         if ((RESTarConfig.AllowAllOrigins ? "*" : Headers.Origin) is string origin)
                             result.Headers["Access-Control-Allow-Origin"] = origin;
                         if (!IsWebSocketUpgrade) return result;
-                        var finalized = result.FinalizeResult();
-                        Context.WebSocket.SendResult(finalized);
+                        var serialized = result.Serialize();
+                        Context.WebSocket.SendResult(serialized);
                         Context.WebSocket.Disconnect();
                         return new WebSocketUpgradeSuccessful(this);
                     default: throw new UnknownResource(IResource.Name);
@@ -167,7 +167,7 @@ namespace RESTar.Requests
             }
         }
 
-        private IFinalizedResult SwitchTerminal(Internal.TerminalResource<T> resource)
+        private ISerializedResult SwitchTerminal(Internal.TerminalResource<T> resource)
         {
             var newTerminal = resource.MakeTerminal(Conditions);
             Context.WebSocket.ConnectTo(newTerminal, resource);
@@ -175,7 +175,7 @@ namespace RESTar.Requests
             return new SwitchedTerminal(this);
         }
 
-        private IFinalizedResult MakeWebSocketUpgrade(Internal.TerminalResource<T> resource)
+        private ISerializedResult MakeWebSocketUpgrade(Internal.TerminalResource<T> resource)
         {
             var terminal = resource.MakeTerminal(Conditions);
             Context.WebSocket.SetContext(this);

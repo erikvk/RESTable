@@ -28,7 +28,7 @@ namespace RESTar.Starcounter
                     var context = new ScContext(GetClient(scRequest), scRequest, true);
                     var headers = new Headers(scRequest.HeadersDictionary);
                     var request = context.MakeRequest(method, ref query, scRequest.BodyBytes, headers);
-                    var result = request.GetResult().FinalizeResult();
+                    var result = request.GetResult().Serialize();
                     switch (result)
                     {
                         case WebSocketUpgradeSuccessful _: return HandlerStatus.Handled;
@@ -88,7 +88,7 @@ namespace RESTar.Starcounter
         public void RemoveBindings(Method[] methods, string rootUri, ushort port) => methods
             .ForEach(method => Do.Try(() => Handle.UnregisterHttpHandler(port, $"{method}", $"{rootUri}{{?}}")));
 
-        private static Response ToResponse(IFinalizedResult result)
+        private static Response ToResponse(ISerializedResult result)
         {
             var response = new Response
             {

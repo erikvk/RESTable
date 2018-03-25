@@ -239,7 +239,7 @@ namespace RESTar
         }
 
         /// <inheritdoc />
-        public void SendResult(IFinalizedResult result, bool includeStatusWithContent = true, TimeSpan? timeElapsed = null)
+        public void SendResult(ISerializedResult result, bool includeStatusWithContent = true, TimeSpan? timeElapsed = null)
         {
             switch (Status)
             {

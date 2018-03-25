@@ -472,12 +472,12 @@ namespace RESTarTester
             r5.Conditions.Add(cond);
             r5.Headers.Accept = RESTar.ContentType.Excel;
 
-            var res1 = r1.GetResult().FinalizeResult();
-            var res2 = r2.GetResult().FinalizeResult();
-            var res3 = r3.GetResult().FinalizeResult();
-            var res4 = r4.GetResult().FinalizeResult();
-            var res5 = r5.GetResult().FinalizeResult();
-            var res6 = r6.GetResult().FinalizeResult();
+            var res1 = r1.GetResult().Serialize();
+            var res2 = r2.GetResult().Serialize();
+            var res3 = r3.GetResult().Serialize();
+            var res4 = r4.GetResult().Serialize();
+            var res5 = r5.GetResult().Serialize();
+            var res6 = r6.GetResult().Serialize();
 
             Debug.Assert(res5.ContentType == RESTar.ContentType.Excel);
             Debug.Assert(res5.Body.Length > 1);

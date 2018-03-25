@@ -46,7 +46,7 @@ namespace RESTar.Admin
 
         #region Console
 
-        internal static void Log(IRequest request, IFinalizedResult result)
+        internal static void Log(IRequest request, ISerializedResult result)
         {
             var milliseconds = result.TimeElapsed.TotalMilliseconds;
             if (result is WebSocketUpgradeSuccessful) return;

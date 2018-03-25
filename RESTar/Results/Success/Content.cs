@@ -23,7 +23,7 @@ namespace RESTar.Results.Success
         protected Content(IRequest request) : base(request) => RequestInternal = (IRequestInternal) request;
 
         /// <inheritdoc />
-        public override IFinalizedResult FinalizeResult(ContentType? contentType = null)
+        public override ISerializedResult Serialize(ContentType? contentType = null)
         {
             var stopwatch = Stopwatch.StartNew();
             try
@@ -55,7 +55,7 @@ namespace RESTar.Results.Success
                     if (!protocolProvider.OutputMimeBindings.TryGetValue(contentType.Value.MimeType, out acceptProvider))
                         throw new NotAcceptable(contentType.Value.ToString());
                 }
-                return protocolProvider.ProtocolProvider.FinalizeResult(this, acceptProvider);
+                return protocolProvider.ProtocolProvider.Serialize(this, acceptProvider);
             }
             catch (Exception exception)
             {

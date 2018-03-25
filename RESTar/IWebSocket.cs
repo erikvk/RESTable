@@ -55,7 +55,7 @@ namespace RESTar
         /// <param name="result">The result to send</param>
         /// <param name="includeStatusWithContent">Should the result status code and description be included before the result content?</param>
         /// <param name="timeElapsed">The elapsed time to include, or null if no time should be included</param>
-        void SendResult(IFinalizedResult result, bool includeStatusWithContent = true, TimeSpan? timeElapsed = null);
+        void SendResult(ISerializedResult result, bool includeStatusWithContent = true, TimeSpan? timeElapsed = null);
 
         /// <summary>
         /// Sends an exception over the WebSocket.

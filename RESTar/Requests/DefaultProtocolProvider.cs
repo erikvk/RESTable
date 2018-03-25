@@ -113,7 +113,7 @@ namespace RESTar.Requests
         }
 
         /// <inheritdoc />
-        public IFinalizedResult FinalizeResult(IResult result, IContentTypeProvider contentTypeProvider)
+        public ISerializedResult Serialize(IResult result, IContentTypeProvider contentTypeProvider)
         {
             switch (result)
             {
@@ -173,7 +173,7 @@ namespace RESTar.Requests
                         throw;
                     }
                 case RESTarError error: return error;
-                case var other: return (IFinalizedResult) other;
+                case var other: return (ISerializedResult) other;
             }
         }
 

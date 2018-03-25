@@ -303,14 +303,14 @@ namespace RESTar
             WriteQueryAfterContent = true;
         }
 
-        private IFinalizedResult WsEvaluate(Method method, byte[] body)
+        private ISerializedResult WsEvaluate(Method method, byte[] body)
         {
             if (Query.Length == 0) return new NoQuery(WebSocket, default);
             var localQuery = Query;
             var result = Request
                 .Create(WebSocket, method, ref localQuery, body, WebSocket.Headers)
                 .GetResult()
-                .FinalizeResult();
+                .Serialize();
             if (result is RESTarError _ && queryChangedPreEval)
                 query = previousQuery;
             else query = localQuery;
@@ -370,7 +370,7 @@ namespace RESTar
             }
         }
 
-        private void SendResult(IFinalizedResult result, TimeSpan? elapsed)
+        private void SendResult(ISerializedResult result, TimeSpan? elapsed)
         {
             if (result is SwitchedTerminal) return;
             WebSocket.SendResult(result, WriteStatusBeforeContent, elapsed);

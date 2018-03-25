@@ -105,7 +105,7 @@ namespace RESTar
         /// <param name="uri">The URI if the request</param>
         /// <param name="headers">The headers contained in the request</param>
         /// <returns></returns>
-        public IFinalizedResult CheckOrigin(ref string uri, Headers headers)
+        public ISerializedResult CheckOrigin(ref string uri, Headers headers)
         {
             if (uri == null) throw new MissingUri();
             var parameters = new RequestParameters(this, Method.OPTIONS, ref uri, null, headers);

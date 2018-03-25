@@ -28,13 +28,13 @@ namespace RESTar.Operations
         ICollection<string> Cookies { get; }
 
         /// <summary>
-        /// Finalizes the result and prepares output streams and content types.
-        /// Optionally, provide a content type to finalize the result using.
+        /// Serializes the result and prepares output streams and content types.
+        /// Optionally, provide a content type to serialize the result with.
         /// If null, the content type specified in the request will be used.
         /// If no content type is specified in the request, the default content 
         /// type for the protocol is used.
         /// </summary>
-        IFinalizedResult FinalizeResult(ContentType? contentType = null);
+        ISerializedResult Serialize(ContentType? contentType = null);
 
         /// <summary>
         /// If the result is non-successful, invoking this method will throw an 
@@ -52,12 +52,12 @@ namespace RESTar.Operations
     /// <inheritdoc />
     /// <summary>
     /// Describes a result that is ready to be sent back to the client, for example 
-    /// using an HTTP response.
+    /// in an HTTP response.
     /// </summary>
-    public interface IFinalizedResult : IResult
+    public interface ISerializedResult : IResult
     {
         /// <summary>
-        /// The body contained in the result
+        /// The serialized body contained in the result
         /// </summary>
         Stream Body { get; }
 
@@ -67,7 +67,8 @@ namespace RESTar.Operations
         ContentType? ContentType { get; }
 
         /// <summary>
-        /// The time it took for RESTar to generate the response.
+        /// The time it took for RESTar to generate the response. Calculated as the request 
+        /// evaluation time plus time for serialization.
         /// </summary>
         TimeSpan TimeElapsed { get; }
     }

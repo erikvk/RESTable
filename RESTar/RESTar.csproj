@@ -112,7 +112,6 @@
     <Compile Include="Help.cs" />
     <Compile Include="IContentTypeProvider.cs" />
     <Compile Include="InternalContext.cs" />
-    <Compile Include="InternalRequest.cs" />
     <Compile Include="Requests\CachedProtocolProvider.cs" />
     <Compile Include="Requests\ContentTypeController.cs" />
     <Compile Include="Requests\InvalidParametersRequest.cs" />
@@ -180,10 +179,9 @@
     <Compile Include="Method.cs" />
     <Compile Include="Operations\AuthResults.cs" />
     <Compile Include="Operations\Distinct.cs" />
-    <Compile Include="Operations\IFinalizedResult.cs" />
+    <Compile Include="Operations\ISerializedResult.cs" />
     <Compile Include="Operations\Result.cs" />
     <Compile Include="Requests\DefaultProtocolProvider.cs" />
-    <Compile Include="Requests\ResultFinalizer.cs" />
     <Compile Include="RegEx.cs" />
     <Compile Include="Requests\ProtocolController.cs" />
     <Compile Include="Requests\Headers.cs" />
@@ -255,7 +253,6 @@
     <Compile Include="Deflection\Dynamic\Term.cs" />
     <Compile Include="Operations\Delegates.cs" />
     <Compile Include="Operations\Rename.cs" />
-    <Compile Include="Requests\RESTRequest.cs" />
     <Compile Include="Condition.cs" />
     <Compile Include="ExtensionMethods.cs" />
     <Compile Include="IRequest.cs" />

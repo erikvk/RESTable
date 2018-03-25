@@ -5,7 +5,7 @@ namespace RESTar
 {
     /// <summary>
     /// Defines the operations ofa content type provider, that is used when 
-    /// finalizing results to a given content type.
+    /// serialize results to a given content type.
     /// </summary>
     public interface IContentTypeProvider
     {

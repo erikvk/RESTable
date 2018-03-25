@@ -17,7 +17,7 @@ namespace RESTar.Results.Success
     /// <summary>
     /// Returned when a WebSocket upgrade was performed successfully
     /// </summary>
-    public class WebSocketUpgradeSuccessful : IFinalizedResult
+    public class WebSocketUpgradeSuccessful : ISerializedResult
     {
         /// <inheritdoc />
         public string TraceId { get; }
@@ -59,7 +59,7 @@ namespace RESTar.Results.Success
         public bool ExcludeHeaders => false;
 
         /// <inheritdoc />
-        public IFinalizedResult FinalizeResult(ContentType? contentType = null) => this;
+        public ISerializedResult Serialize(ContentType? contentType = null) => this;
 
         /// <inheritdoc />
         public void ThrowIfError() { }
