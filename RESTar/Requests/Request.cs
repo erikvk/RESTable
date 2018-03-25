@@ -172,7 +172,7 @@ namespace RESTar.Requests
             var newTerminal = resource.MakeTerminal(Conditions);
             Context.WebSocket.ConnectTo(newTerminal, resource);
             newTerminal.Open();
-            return new WebSocketUpgradeSuccessful(this);
+            return new SwitchedTerminal(this);
         }
 
         private IFinalizedResult MakeWebSocketUpgrade(Internal.TerminalResource<T> resource)

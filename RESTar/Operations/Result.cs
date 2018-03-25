@@ -51,7 +51,7 @@ namespace RESTar.Operations
         public Stream Body { get; set; }
 
         /// <inheritdoc />
-        public ContentType ContentType { get; set; }
+        public ContentType? ContentType { get; set; }
 
         #endregion
 

@@ -66,7 +66,10 @@ namespace RESTar
         private ulong BytesReceived { get; set; }
         private ulong BytesSent { get; set; }
 
-        internal WebSocketConnection TerminalConnection { get; private set; }
+        internal ITerminalResource TerminalResource => TerminalConnection?.Resource;
+        internal ITerminal Terminal => TerminalConnection?.Terminal;
+
+        private WebSocketConnection TerminalConnection { get; set; }
 
         internal ConnectionProfile GetConnectionProfile() => new ConnectionProfile(this);
 

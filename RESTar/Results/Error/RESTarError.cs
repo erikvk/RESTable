@@ -105,7 +105,7 @@ namespace RESTar.Results.Error
         public Stream Body { get; } = null;
 
         /// <inheritdoc />
-        public ContentType ContentType { get; } = null;
+        public ContentType? ContentType { get; } = null;
 
         /// <inheritdoc />
         public IFinalizedResult FinalizeResult(ContentType? contentType = null) => this;
@@ -145,7 +145,7 @@ namespace RESTar.Results.Error
             {
                 request.Context.WebSocket?.SendResult(error);
                 request.Context.WebSocket?.Disconnect();
-                return new WebSocketUpgradeSuccessful(error);
+                return new WebSocketUpgradeSuccessful(request);
             }
             switch (request.Method)
             {

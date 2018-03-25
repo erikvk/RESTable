@@ -372,11 +372,11 @@ namespace RESTar
 
         private void SendResult(IFinalizedResult result, TimeSpan? elapsed)
         {
+            if (result is SwitchedTerminal) return;
             WebSocket.SendResult(result, WriteStatusBeforeContent, elapsed);
             if (!WriteQueryAfterContent) return;
             switch (result)
             {
-                case WebSocketUpgradeSuccessful _: return;
                 case NoQuery _:
                     WebSocket.SendText("? <empty>");
                     break;

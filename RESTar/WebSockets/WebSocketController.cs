@@ -24,7 +24,6 @@ namespace RESTar.WebSockets
                 {
                     case "#SHELL":
                     case "#HOME":
-                        webSocket.TerminalConnection?.Dispose();
                         webSocket.SendToShell();
                         break;
                     case "#DISCONNECT":
@@ -49,9 +48,9 @@ namespace RESTar.WebSockets
                     case "#TERMINAL" when tail is string json:
                         try
                         {
-                            Serializers.Json.Populate(json, webSocket.TerminalConnection?.Terminal);
+                            Serializers.Json.Populate(json, webSocket.Terminal);
                             webSocket.SendText("Terminal updated");
-                            webSocket.SendJson(webSocket.TerminalConnection?.Terminal);
+                            webSocket.SendJson(webSocket.Terminal);
                         }
                         catch (Exception e)
                         {
@@ -59,7 +58,7 @@ namespace RESTar.WebSockets
                         }
                         break;
                     case "#TERMINAL":
-                        webSocket.SendJson(webSocket.TerminalConnection?.Terminal);
+                        webSocket.SendJson(webSocket.Terminal);
                         break;
                     default:
                         webSocket.SendText($"Unknown global command '{command}'");

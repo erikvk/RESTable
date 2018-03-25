@@ -19,7 +19,6 @@ namespace RESTar
 
         internal ITerminalResource Resource { get; private set; }
         internal ITerminal Terminal { get; private set; }
-        private bool IsOpen { get; set; }
         public string TraceId { get; }
         public Context Context { get; private set; }
 
@@ -37,12 +36,11 @@ namespace RESTar
 
         public void Dispose()
         {
-            WebSocket = null;
             Terminal.Dispose();
+            WebSocket = null;
             Resource = null;
             Terminal = null;
             Context = null;
-            IsOpen = false;
         }
 
         #region IWebSocket

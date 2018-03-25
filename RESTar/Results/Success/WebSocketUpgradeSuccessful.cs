@@ -8,33 +8,78 @@ using RESTar.Requests;
 
 namespace RESTar.Results.Success
 {
-    internal class WebSocketUpgradeSuccessful : IFinalizedResult
+    internal class SwitchedTerminal : OK
     {
-        HttpStatusCode IResult.StatusCode => default;
-        string IResult.StatusDescription => default;
-        Stream IFinalizedResult.Body => default;
-        public ContentType ContentType => default;
-        ICollection<string> IResult.Cookies => default;
-        Headers ILogable.Headers => default;
+        public SwitchedTerminal(ITraceable trace) : base(trace) { }
+    }
+
+    /// <inheritdoc />
+    /// <summary>
+    /// Returned when a WebSocket upgrade was performed successfully
+    /// </summary>
+    public class WebSocketUpgradeSuccessful : IFinalizedResult
+    {
+        /// <inheritdoc />
         public string TraceId { get; }
-        public LogEventType LogEventType => default;
-        public string LogMessage => default;
-        public string LogContent => default;
-        public string HeadersStringCache { get; set; }
-        public bool ExcludeHeaders => default;
-        public IFinalizedResult FinalizeResult(ContentType? contentType = null) => this;
-        public void ThrowIfError() { }
-        public IEnumerable<T> ToEntities<T>() => throw new InvalidCastException($"Cannot convert {nameof(WebSocketUpgradeSuccessful)} to Entities");
+
+        /// <inheritdoc />
         public Context Context { get; }
+
+        /// <inheritdoc />
+        public HttpStatusCode StatusCode => HttpStatusCode.SwitchingProtocols;
+
+        /// <inheritdoc />
+        public string StatusDescription => "Switching protocols";
+
+        /// <inheritdoc />
+        public Stream Body => default;
+
+        /// <inheritdoc />
+        public ContentType? ContentType => default;
+
+        /// <inheritdoc />
+        public ICollection<string> Cookies => default;
+
+        /// <inheritdoc />
+        public Headers Headers => default;
+
+        /// <inheritdoc />
+        public LogEventType LogEventType => LogEventType.HttpOutput;
+
+        /// <inheritdoc />
+        public string LogMessage => $"{StatusCode.ToCode()}: {StatusDescription}";
+
+        /// <inheritdoc />
+        public string LogContent => default;
+
+        /// <inheritdoc />
+        public string HeadersStringCache { get; set; }
+
+        /// <inheritdoc />
+        public bool ExcludeHeaders => false;
+
+        /// <inheritdoc />
+        public IFinalizedResult FinalizeResult(ContentType? contentType = null) => this;
+
+        /// <inheritdoc />
+        public void ThrowIfError() { }
+
+        /// <inheritdoc />
+        public IEnumerable<T> ToEntities<T>() => throw new InvalidCastException($"Cannot convert {nameof(WebSocketUpgradeSuccessful)} to Entities");
+
+        /// <inheritdoc />
         public TimeSpan TimeElapsed { get; }
+
+        /// <inheritdoc />
         public DateTime LogTime { get; }
 
-        public WebSocketUpgradeSuccessful(ITraceable trace)
+        /// <inheritdoc />
+        public WebSocketUpgradeSuccessful(IRequest request)
         {
-            TraceId = trace.TraceId;
-            Context = trace.Context;
+            TraceId = request.TraceId;
+            Context = request.Context;
             LogTime = DateTime.Now;
-            TimeElapsed = default;
+            TimeElapsed = request.TimeElapsed;
         }
     }
 }

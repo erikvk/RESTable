@@ -19,7 +19,7 @@ namespace RESTar.WebSockets
             IsSSLEncrypted = webSocket.Context.Client.HTTPS;
             ClientIP = webSocket.Context.Client.ClientIP;
             ConnectedAt = webSocket.Opened.ToString("yyyy-MM-dd HH:mm:ss");
-            CurrentTerminal = webSocket.TerminalConnection?.Resource?.Name ?? "none";
+            CurrentTerminal = webSocket.TerminalResource?.Name ?? "none";
             CustomHeaders = webSocket.Headers;
         }
     }

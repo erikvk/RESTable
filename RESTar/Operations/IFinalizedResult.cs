@@ -62,9 +62,9 @@ namespace RESTar.Operations
         Stream Body { get; }
 
         /// <summary>
-        /// The content type of the result body
+        /// The content type of the result body, if any
         /// </summary>
-        ContentType ContentType { get; }
+        ContentType? ContentType { get; }
 
         /// <summary>
         /// The time it took for RESTar to generate the response.
