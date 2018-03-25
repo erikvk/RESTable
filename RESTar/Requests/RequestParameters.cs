@@ -6,6 +6,7 @@ using System.Web;
 using RESTar.Internal;
 using RESTar.Linq;
 using RESTar.Logging;
+using RESTar.Results.Error;
 using RESTar.Serialization;
 using IResource = RESTar.Internal.IResource;
 
@@ -131,6 +132,14 @@ namespace RESTar.Requests
             if (key != null)
                 Headers["Authorization"] = $"apikey {UnpackUriKey(key)}";
             UnparsedUri = uri;
+            try
+            {
+                var _ = IResource;
+            }
+            catch (Exception e)
+            {
+                Error = RESTarError.GetError(e);
+            }
 
             if (hasMacro)
             {

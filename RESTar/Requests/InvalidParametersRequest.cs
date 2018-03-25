@@ -39,7 +39,7 @@ namespace RESTar.Requests
         public Method Method => RequestParameters.Method;
         public string TraceId => RequestParameters.TraceId;
         public Context Context => RequestParameters.Context;
-        public CachedProtocolProvider ProtocolProvider => RequestParameters.CachedProtocolProvider;
+        public CachedProtocolProvider CachedProtocolProvider => RequestParameters.CachedProtocolProvider;
         public IUriComponents UriComponents => RequestParameters.Uri;
         public Headers Headers => RequestParameters.Headers;
         public IEntityResource Resource => RequestParameters.IResource as IEntityResource;
@@ -64,7 +64,7 @@ namespace RESTar.Requests
             (
                 bytes: parameters.BodyBytes,
                 contentType: Headers.ContentType
-                             ?? ProtocolProvider?.DefaultInputProvider.ContentType
+                             ?? CachedProtocolProvider?.DefaultInputProvider.ContentType
                              ?? Serialization.Serializers.Json.ContentType
             );
             ResponseHeaders = null;

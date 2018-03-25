@@ -54,16 +54,16 @@ namespace RESTar.Results.Success
         /// <inheritdoc />
         public IUriComponents GetNextPageLink(int count)
         {
-            var existing = new UriComponents(Request.UriComponents);
+            var components = new UriComponents(Request.UriComponents);
             if (count > -1)
             {
-                existing.MetaConditions.RemoveAll(c => c.Key.EqualsNoCase("limit"));
-                existing.MetaConditions.Add(new UriCondition("limit", Operators.EQUALS, count.ToString()));
+                components.MetaConditions.RemoveAll(c => c.Key.EqualsNoCase("limit"));
+                components.MetaConditions.Add(new UriCondition("limit", Operators.EQUALS, count.ToString()));
             }
-            existing.MetaConditions.RemoveAll(c => c.Key.EqualsNoCase("offset"));
-            existing.MetaConditions.Add(new UriCondition("offset", Operators.EQUALS,
+            components.MetaConditions.RemoveAll(c => c.Key.EqualsNoCase("offset"));
+            components.MetaConditions.Add(new UriCondition("offset", Operators.EQUALS,
                 (Request.MetaConditions.Offset + (long) EntityCount).ToString()));
-            return existing;
+            return components;
         }
 
         internal static Entities Create<TResource>(IRequestInternal<TResource> request, IEnumerable<object> content)

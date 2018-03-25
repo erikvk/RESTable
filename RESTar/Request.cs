@@ -8,7 +8,8 @@ namespace RESTar
     /// <summary>
     /// A factory class for generic request instances
     /// </summary>
-    /// <typeparam name="T"></typeparam>
+    /// <typeparam name="T">The resource type to create a request against. This must be a registered RESTar 
+    /// resource type, otherwise Create() will throw an UnknownResource exception</typeparam>
     public static class Request<T> where T : class
     {
         /// <summary>
@@ -92,7 +93,7 @@ namespace RESTar
         /// <param name="error">A RESTarError describing the error, or null if valid</param>
         public static bool IsValid(ITraceable trace, ref string uri, out RESTarError error)
         {
-            var parameters = new RequestParameters(trace.Context, (Method) (-1), ref uri, null, null);
+            var parameters = new RequestParameters(trace.Context, Method.OPTIONS, ref uri, null, null);
             parameters.Authenticate();
             if (parameters.Error != null)
             {

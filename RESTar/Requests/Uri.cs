@@ -7,29 +7,25 @@ using RESTar.Results.Error.NotFound;
 
 namespace RESTar.Requests
 {
-    internal struct UriComponents : IUriComponents
+    internal class UriComponents : IUriComponents
     {
         public string ResourceSpecifier { get; }
         public string ViewName { get; }
         public List<IUriCondition> Conditions { get; }
         public List<IUriCondition> MetaConditions { get; }
+        public Func<IUriComponents, string> StringMaker { get; }
 
         IEnumerable<IUriCondition> IUriComponents.Conditions => Conditions;
         IEnumerable<IUriCondition> IUriComponents.MetaConditions => MetaConditions;
 
-        public string ToUriString(string protocolIdentifier = null)
-        {
-            var cachedProvider = ProtocolController.ResolveProtocolProvider(protocolIdentifier);
-            return cachedProvider.ProtocolProvider.MakeRelativeUri(this);
-        }
-
         public UriComponents(string resourceSpecifier, string viewName, IEnumerable<IUriCondition> conditions,
-            IEnumerable<IUriCondition> metaConditions)
+            IEnumerable<IUriCondition> metaConditions, IProtocolProvider protocolProvider)
         {
             ResourceSpecifier = resourceSpecifier;
             ViewName = viewName;
             Conditions = conditions.ToList();
             MetaConditions = metaConditions.ToList();
+            StringMaker = protocolProvider.MakeRelativeUri;
         }
 
         public UriComponents(IUriComponents existing)
@@ -38,7 +34,10 @@ namespace RESTar.Requests
             ViewName = existing.ViewName;
             Conditions = existing.Conditions.ToList();
             MetaConditions = existing.MetaConditions.ToList();
+            StringMaker = existing.StringMaker;
         }
+
+        public override string ToString() => StringMaker(this);
     }
 
     /// <inheritdoc />
@@ -115,18 +114,17 @@ namespace RESTar.Requests
         {
             Conditions = new List<UriCondition>();
             MetaConditions = new List<UriCondition>();
+            StringMaker = c =>
+            {
+                var provider = ProtocolProvider ?? ProtocolController.DefaultProtocolProvider.ProtocolProvider;
+                return provider.MakeRelativeUri(c);
+            };
         }
 
         /// <inheritdoc />
-        public string ToUriString(string protocolIdentifier = null)
-        {
-            var protocolProvider = protocolIdentifier == null
-                ? ProtocolProvider
-                : ProtocolController.ResolveProtocolProvider(protocolIdentifier).ProtocolProvider;
-            return protocolProvider.MakeRelativeUri(this);
-        }
+        public Func<IUriComponents, string> StringMaker { get; }
 
         /// <inheritdoc />
-        public override string ToString() => ToUriString();
+        public override string ToString() => StringMaker(this);
     }
 }

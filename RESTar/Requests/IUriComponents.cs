@@ -1,6 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
-namespace RESTar.Requests {
+namespace RESTar.Requests
+{
     /// <summary>
     /// Contains parameters for a RESTar URI
     /// </summary>
@@ -27,9 +29,10 @@ namespace RESTar.Requests {
         IEnumerable<IUriCondition> MetaConditions { get; }
 
         /// <summary>
-        /// Generates a URI string from these components, according to some protocol.
-        /// If null, the default protocol is used.
+        /// A function that generates a string representation of the URI components,
+        /// according to some pre-defined protocol (for example, the protocol of a 
+        /// request).
         /// </summary>
-        string ToUriString(string protocolIdentifier = null);
+        Func<IUriComponents, string> StringMaker { get; }
     }
 }

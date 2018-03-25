@@ -56,14 +56,14 @@ namespace RESTar.Requests
             }
         }
 
-        public IUriComponents UriComponents
-        {
-            get
-            {
-                var viewName = Target is IView ? Target.Name : null;
-                return new UriComponents(IResource.Name, viewName, Conditions, MetaConditions.AsConditionList());
-            }
-        }
+        public IUriComponents UriComponents => new UriComponents
+        (
+            resourceSpecifier: IResource.Name,
+            viewName: Target is IView ? Target.Name : null,
+            conditions: Conditions,
+            metaConditions: MetaConditions.AsConditionList(),
+            protocolProvider: CachedProtocolProvider.ProtocolProvider
+        );
 
         #region Private
 
@@ -87,7 +87,7 @@ namespace RESTar.Requests
         public Method Method => RequestParameters.Method;
         public string TraceId => RequestParameters.TraceId;
         public Context Context => RequestParameters.Context;
-        public CachedProtocolProvider ProtocolProvider => RequestParameters.CachedProtocolProvider;
+        public CachedProtocolProvider CachedProtocolProvider => RequestParameters.CachedProtocolProvider;
         public Headers Headers => RequestParameters.Headers;
         public bool IsWebSocketUpgrade => RequestParameters.IsWebSocketUpgrade;
         public TimeSpan TimeElapsed => RequestParameters.Stopwatch.Elapsed;
@@ -118,8 +118,8 @@ namespace RESTar.Requests
             if (IsWebSocketUpgrade)
                 try
                 {
-                    if (!ProtocolProvider.ProtocolProvider.IsCompliant(this, out var reason))
-                        return RESTarError.GetResult(new NotCompliantWithProtocol(ProtocolProvider.ProtocolProvider, reason), this);
+                    if (!CachedProtocolProvider.ProtocolProvider.IsCompliant(this, out var reason))
+                        return RESTarError.GetResult(new NotCompliantWithProtocol(CachedProtocolProvider.ProtocolProvider, reason), this);
                 }
                 catch (NotImplementedException) { }
             if (IsEvaluating) throw new InfiniteLoop();
@@ -219,13 +219,13 @@ namespace RESTar.Requests
                 }
                 if (Context.Client.Origin == OriginType.Internal && Method == GET)
                     MetaConditions.Formatter = DbOutputFormat.Raw;
-                var defaultContentType = ProtocolProvider.DefaultInputProvider.ContentType;
+                var defaultContentType = CachedProtocolProvider.DefaultInputProvider.ContentType;
                 switch (InputDataConfig)
                 {
                     case DataConfig.Client:
                         if (!RequestParameters.HasBody)
                             return;
-                        Body = new Body(RequestParameters.BodyBytes, Headers.ContentType ?? defaultContentType, ProtocolProvider);
+                        Body = new Body(RequestParameters.BodyBytes, Headers.ContentType ?? defaultContentType, CachedProtocolProvider);
                         break;
                     case DataConfig.External:
                         try
@@ -243,7 +243,7 @@ namespace RESTar.Requests
                                     $"Status: {response.StatusCode.ToCode()} - {response.StatusDescription}. {response.Headers.SafeGet("RESTar-info")}");
                             if (response.Body.CanSeek && response.Body.Length == 0)
                                 throw new InvalidExternalSource(request, "Response was empty");
-                            Body = new Body(response.Body.ToByteArray(), Headers.ContentType ?? defaultContentType, ProtocolProvider);
+                            Body = new Body(response.Body.ToByteArray(), Headers.ContentType ?? defaultContentType, CachedProtocolProvider);
                             break;
                         }
                         catch (HttpRequestException re)

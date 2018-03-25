@@ -59,13 +59,7 @@ namespace RESTar
         public bool Silent
         {
             get => !WriteStatusBeforeContent && !WriteTimeElapsed && !WriteQueryAfterContent && !WriteInfoTexts;
-            set
-            {
-                WriteStatusBeforeContent = !value;
-                WriteTimeElapsed = !value;
-                WriteQueryAfterContent = !value;
-                WriteInfoTexts = !value;
-            }
+            set => WriteStatusBeforeContent = WriteTimeElapsed = WriteQueryAfterContent = WriteInfoTexts = !value;
         }
 
         /// <summary>
@@ -122,7 +116,6 @@ namespace RESTar
         /// <inheritdoc />
         public void HandleTextInput(string input)
         {
-            var stopwatch = Stopwatch.StartNew();
             if (OnConfirm != null)
             {
                 switch (input.FirstOrDefault())
@@ -149,21 +142,24 @@ namespace RESTar
                 SafeOperation(GET);
                 return;
             }
-            input = input.Trim();
             switch (input.FirstOrDefault())
             {
                 case '\0':
                 case '\n': break;
                 case '-':
                 case '/':
+                    if (input.Length == 1)
+                        input = "/restar.availableresource";
+                    if (input.StartsWith("//"))
+                        input = $"/restar.availableresource/{input.Substring(2)}";
                     Query = input;
-                    SafeOperation(GET);
+                    ValidateQuery();
                     break;
                 case '[':
                 case '{':
                     SafeOperation(POST, input.ToBytes());
                     break;
-                case var _ when input.Length > 2000:
+                case var _ when input.Length > 16_000_000:
                     SendBadRequest();
                     break;
                 default:
@@ -173,42 +169,28 @@ namespace RESTar
                         case "GET":
                             byte[] body = null;
                             if (!string.IsNullOrWhiteSpace(tail))
-                            {
-                                var (q, b) = tail.TSplit(' ');
-                                Query = q;
-                                body = b?.ToBytes();
-                            }
+                                body = tail.ToBytes();
                             SafeOperation(GET, body);
                             break;
                         case "POST":
                             SafeOperation(POST, tail.ToBytes());
                             break;
-                        case "PUT":
-                            SendBadRequest("PUT is not available in the WebSocket interface");
-                            break;
                         case "PATCH":
                             UnsafeOperation(PATCH, tail.ToBytes());
+                            break;
+                        case "PUT":
+                            SafeOperation(PUT, tail.ToBytes());
                             break;
                         case "DELETE":
                             UnsafeOperation(DELETE);
                             break;
                         case "REPORT":
-                            if (!string.IsNullOrWhiteSpace(tail))
-                                Query = tail;
                             SafeOperation(REPORT);
                             break;
-                        case "@":
-                        case "NAVIGATE":
-                        case "GO":
                         case "HEAD":
-                            if (!string.IsNullOrWhiteSpace(tail))
-                                Query = tail;
-                            var result = WsEvaluate(HEAD, null);
-                            if (!(result is Head))
-                                SendResult(result, null);
-                            else if (WriteQueryAfterContent)
-                                WebSocket.SendText("? " + Query);
+                            SafeOperation(HEAD);
                             break;
+
                         case "HELP":
                             SendHelp();
                             break;
@@ -221,21 +203,22 @@ namespace RESTar
                         case "?":
                             WebSocket.SendText($"{(Query.Any() ? Query : "<empty>")}");
                             break;
-                        case "RELOAD":
-                            SafeOperation(GET);
-                            break;
                         case "NEXT":
+                            var stopwatch = Stopwatch.StartNew();
                             if (tail == null || !int.TryParse(tail, out var count))
                                 count = -1;
                             var link = GetNextPageLink?.Invoke(count)?.ToString();
                             if (link == null)
-                                SendResult(new NoContent(WebSocket, stopwatch.Elapsed), null);
+                                SendResult(new NoContent(WebSocket, stopwatch.Elapsed));
                             else
                             {
                                 Query = link;
                                 SafeOperation(GET);
                             }
                             break;
+
+                        #region Nonsense
+
                         case "HI":
                         case "HELLO":
 
@@ -284,6 +267,8 @@ namespace RESTar
                         case var unknown:
                             SendUnknownCommand(unknown);
                             break;
+
+                        #endregion
                     }
                     break;
             }
@@ -306,14 +291,11 @@ namespace RESTar
         private ISerializedResult WsEvaluate(Method method, byte[] body)
         {
             if (Query.Length == 0) return new NoQuery(WebSocket, default);
-            var localQuery = Query;
-            var result = Request
-                .Create(WebSocket, method, ref localQuery, body, WebSocket.Headers)
-                .GetResult()
-                .Serialize();
+            var q = Query;
+            var result = Request.Create(WebSocket, method, ref q, body, WebSocket.Headers).GetResult().Serialize();
             if (result is RESTarError _ && queryChangedPreEval)
                 query = previousQuery;
-            else query = localQuery;
+            else query = q;
             queryChangedPreEval = false;
             if (result is IEntitiesMetadata entitiesMetaData)
             {
@@ -321,6 +303,22 @@ namespace RESTar
                 GetNextPageLink = entitiesMetaData.GetNextPageLink;
             }
             return result;
+        }
+
+        private void ValidateQuery()
+        {
+            var localQuery = Query;
+            if (!Request.IsValid(WebSocket, ref localQuery, out var error))
+            {
+                query = previousQuery;
+                SendResult(error);
+            }
+            else
+            {
+                query = localQuery;
+                WebSocket.SendText("? " + Query);
+            }
+            queryChangedPreEval = false;
         }
 
         private void SafeOperation(Method method, byte[] body = null)
@@ -335,7 +333,7 @@ namespace RESTar
                     SendResult(report, sw.Elapsed);
                     break;
                 case var other:
-                    SendResult(other, null);
+                    SendResult(other);
                     break;
             }
             sw.Stop();
@@ -370,7 +368,7 @@ namespace RESTar
             }
         }
 
-        private void SendResult(ISerializedResult result, TimeSpan? elapsed)
+        private void SendResult(ISerializedResult result, TimeSpan? elapsed = null)
         {
             if (result is SwitchedTerminal) return;
             WebSocket.SendResult(result, WriteStatusBeforeContent, elapsed);
@@ -413,18 +411,17 @@ namespace RESTar
             "  connection. Using commands, the client can navigate\n" +
             "  around the resources of the API, read, insert, update\n" +
             "  and/or delete entities, or enter terminals. To navigate\n" +
-            "  and select entities, simply send a request URI over this\n" +
-            "  WebSocket, e.g. '/availableresource//limit=3'. To insert\n" +
-            "  an entity into a resource, send the JSON representation\n" +
-            "  over the WebSocket. To update entities, send 'PATCH <json>',\n" +
-            "  where <json> is the JSON data to update entities from. To\n" +
-            "  delete selected entities, send 'DELETE'. For potentially\n" +
-            "  unsafe operations, you will be asked to confirm before\n" +
-            "  changes are applied.\n\n" +
+            "  to a resource, simply send a request URI over this WebSocket,\n" +
+            "  e.g. '/availableresource//limit=3'. To list the entities,\n" +
+            "  send 'GET'. To insert a new entity into a resource, send the\n" +
+            "  representation over the WebSocket, for example in JSON. To \n" +
+            "  update entities, send 'PATCH <json>',  where <json> is the \n" +
+            "  JSON data to update entities from. To delete selected entities,\n" +
+            "  send 'DELETE'. For potentially unsafe operations, you will be\n" +
+            "  asked to confirm before changes are applied.\n\n" +
             "  Some other simple commands:\n" +
             "  ?           Prints the current location\n" +
             "  REPORT      Counts the entities at the current location\n" +
-            "  RELOAD      Relods the current location\n" +
             "  HELP        Prints this help page\n" +
             "  CLOSE       Closes the WebSocket\n");
 

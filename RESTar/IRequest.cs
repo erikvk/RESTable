@@ -10,7 +10,7 @@ namespace RESTar
     internal interface IRequestInternal : IRequest
     {
         bool IsWebSocketUpgrade { get; }
-        CachedProtocolProvider ProtocolProvider { get; }
+        CachedProtocolProvider CachedProtocolProvider { get; }
     }
 
     internal interface IRequestInternal<T> : IRequestInternal, IRequest<T> where T : class

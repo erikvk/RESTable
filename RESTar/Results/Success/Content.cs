@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.Linq;
 using RESTar.Operations;
+using RESTar.Requests;
 using RESTar.Results.Error;
 
 namespace RESTar.Results.Success
@@ -19,6 +20,14 @@ namespace RESTar.Results.Success
 
         private IRequestInternal RequestInternal { get; }
 
+        /// <summary>
+        /// Generates a URI string from URI components, according to the protocol of this Content
+        /// </summary>
+        protected string GetUriString(IUriComponents components) => RequestInternal
+            .CachedProtocolProvider
+            .ProtocolProvider
+            .MakeRelativeUri(components);
+
         /// <inheritdoc />
         protected Content(IRequest request) : base(request) => RequestInternal = (IRequestInternal) request;
 
@@ -28,7 +37,7 @@ namespace RESTar.Results.Success
             var stopwatch = Stopwatch.StartNew();
             try
             {
-                var protocolProvider = RequestInternal.ProtocolProvider;
+                var protocolProvider = RequestInternal.CachedProtocolProvider;
                 if (contentType.HasValue)
                     contentType = contentType.Value;
                 else if (!(RequestInternal.Headers.Accept?.Count > 0))

@@ -14,7 +14,6 @@ using RESTar.Results.Error.Forbidden;
 using RESTar.Results.Success;
 using RESTar.Starcounter;
 using static RESTar.Starcounter.Transact;
-using static RESTar.Method;
 
 namespace RESTar.Results.Error
 {
@@ -147,21 +146,10 @@ namespace RESTar.Results.Error
                 request.Context.WebSocket?.Disconnect();
                 return new WebSocketUpgradeSuccessful(request);
             }
-            switch (request.Method)
-            {
-                case GET:
-                case POST:
-                case PATCH:
-                case PUT:
-                case DELETE:
-                case REPORT:
-                case HEAD:
-                    if (errorId != null)
-                        error.Headers["ErrorInfo"] = $"/{typeof(Admin.Error).FullName}/id={HttpUtility.UrlEncode(errorId)}";
-                    error.TimeElapsed = request.TimeElapsed;
-                    return error;
-                default: throw new Exception();
-            }
+            if (errorId != null)
+                error.Headers["ErrorInfo"] = $"/{typeof(Admin.Error).FullName}/id={HttpUtility.UrlEncode(errorId)}";
+            error.TimeElapsed = request.TimeElapsed;
+            return error;
         }
 
         /// <summary>
