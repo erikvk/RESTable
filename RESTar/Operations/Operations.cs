@@ -35,10 +35,11 @@ namespace RESTar.Operations
             .Filter(request.MetaConditions.Offset)
             .Filter(request.MetaConditions.Limit);
 
-        private static IEnumerable<T> TrySelectFilter(IRequest<T> request)
+        private static IEnumerable<T> TrySelectFilter(IRequestInternal<T> request)
         {
             try
             {
+                request.EntitiesProducer = () => new T[0];
                 return SelectFilter(request);
             }
             catch (InfiniteLoop)
@@ -51,10 +52,11 @@ namespace RESTar.Operations
             }
         }
 
-        private static IEnumerable<object> TrySelectFilterProcess(IRequest<T> request)
+        private static IEnumerable<object> TrySelectFilterProcess(IRequestInternal<T> request)
         {
             try
             {
+                request.EntitiesProducer = () => new T[0];
                 if (!request.MetaConditions.HasProcessors)
                     return SelectFilter(request);
                 return SelectFilterProcess(request);
@@ -69,10 +71,11 @@ namespace RESTar.Operations
             }
         }
 
-        private static long TryCount(IRequest<T> request)
+        private static long TryCount(IRequestInternal<T> request)
         {
             try
             {
+                request.EntitiesProducer = () => new T[0];
                 if (request.Resource.Count is Counter<T> counter &&
                     request.MetaConditions.CanUseExternalCounter)
                     return counter(request);
@@ -183,7 +186,7 @@ namespace RESTar.Operations
                     {
                         var sourceSelector = request.GetSelector() ?? (() => TrySelectFilter(request)?.ToList() ?? new List<T>());
                         var source = sourceSelector()?.InputLimit()?.ToList();
-                        request.InputSelector = () => source;
+                        request.Selector = () => source;
                         switch (source?.Count)
                         {
                             case null:
@@ -219,7 +222,7 @@ namespace RESTar.Operations
                 updatedCount = UpdateSafePost(innerRequest, toUpdate);
             if (toInsert.Any())
             {
-                innerRequest.InputSelector = () => toInsert.Select(item => item.ToObject<T>());
+                innerRequest.Selector = () => toInsert.Select(item => item.ToObject<T>());
                 insertedCount = Insert(innerRequest);
             }
             return new SafePostedEntities(updatedCount, insertedCount, request);

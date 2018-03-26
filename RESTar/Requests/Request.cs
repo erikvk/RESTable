@@ -27,11 +27,11 @@ namespace RESTar.Requests
         private Exception Error { get; }
         public bool IsValid => Error == null;
 
-        public EntitiesSelector<T> EntitiesProducer { private get; set; }
-        public EntitiesSelector<T> InputSelector { private get; set; }
-        public EntitiesUpdater<T> Updater { private get; set; }
-        public EntitiesUpdater<T> GetUpdater() => Updater;
-        public EntitiesSelector<T> GetSelector() => InputSelector;
+        public Func<IEnumerable<T>> EntitiesProducer { private get; set; }
+        public Func<IEnumerable<T>> Selector { private get; set; }
+        public Func<IEnumerable<T>, IEnumerable<T>> Updater { private get; set; }
+        public Func<IEnumerable<T>, IEnumerable<T>> GetUpdater() => Updater;
+        public Func<IEnumerable<T>> GetSelector() => Selector;
 
         public Method Method
         {

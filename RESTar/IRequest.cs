@@ -15,9 +15,9 @@ namespace RESTar
 
     internal interface IRequestInternal<T> : IRequestInternal, IRequest<T> where T : class
     {
-        EntitiesSelector<T> EntitiesProducer { set; }
-        EntitiesSelector<T> GetSelector();
-        EntitiesUpdater<T> GetUpdater();
+        Func<IEnumerable<T>> EntitiesProducer { set; }
+        Func<IEnumerable<T>> GetSelector();
+        Func<IEnumerable<T>, IEnumerable<T>> GetUpdater();
     }
 
     /// <inheritdoc />
@@ -48,40 +48,26 @@ namespace RESTar
         ITarget<T> Target { get; }
 
         /// <summary>
-        /// Returns the processed entities belonging to this request. If the request is an update request,
-        /// for example, this IEnumerable contains all the updated entities. For insert requests, all the 
-        /// requests to insert, and so on. For update and insert requests, if the resource type is a
-        /// Starcounter database class, make sure to call GetEntities() from inside a transaction scope.
-        /// The returned value from GetEntities() is never null, but may contain zero entities.
+        /// Returns the entities affected by this request. Use this in Inserters and Deleters to receive
+        /// the entities to insert or delete, and in Updaters to receive and update the entities selected 
+        /// by the request.
         /// </summary>
         IEnumerable<T> GetEntities();
 
         /// <summary>
         /// The method used when selecting entities for request input. Set this property to override the default behavior.
-        /// This delegate is used in  The default behavior varies between methods. For GET By default RESTar will deserialize the request body to an <see cref="IEnumerable{T}"/> using the 
-        /// content type provided in the Content-Type header.
+        /// This delegate is used in GetEntitites(). By default RESTar will generate entities by deserializing the request 
+        /// body to an <see cref="IEnumerable{T}"/> using the content type provided in the Content-Type header.
         /// </summary>
-        EntitiesSelector<T> InputSelector { set; }
+        Func<IEnumerable<T>> Selector { set; }
 
         /// <summary>
         /// The method used when updating existing entities. Set this property to override the default behavior.
         /// By default RESTar will populate the existing entities with content from the request body, using the 
         /// content type provided in the Content-Type header.
         /// </summary>
-        EntitiesUpdater<T> Updater { set; }
+        Func<IEnumerable<T>, IEnumerable<T>> Updater { set; }
     }
-
-    /// <summary>
-    /// Defines a function that generates a collection of resource entities.
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    public delegate IEnumerable<T> EntitiesSelector<out T>() where T : class;
-
-    /// <summary>
-    /// Defines a function that updates a collection of resource entities.
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    public delegate IEnumerable<T> EntitiesUpdater<T>(IEnumerable<T> source);
 
     /// <inheritdoc cref="ITraceable" />
     /// <inheritdoc cref="IDisposable" />
