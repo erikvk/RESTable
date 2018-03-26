@@ -4,7 +4,7 @@ using System.Linq;
 using System.Net;
 using System.Text.RegularExpressions;
 using RESTar.Admin;
-using RESTar.Queries;
+using RESTar.Requests;
 using RESTar.Results.Error;
 using RESTar.Results.Error.BadRequest;
 using RESTar.Results.Error.NotFound;
@@ -27,9 +27,9 @@ namespace RESTar.Internal
         public string ProtocolIdentifier { get; } = "restar";
 
         /// <inheritdoc />
-        public void ParseQuery(string query, URI uri, Context context)
+        public void PopulateURI(string uriString, URI uri, Context context)
         {
-            var match = Regex.Match(query, RegEx.RESTarRequestUri);
+            var match = Regex.Match(uriString, RegEx.RESTarRequestUri);
             if (!match.Success) throw new InvalidSyntax(ErrorCodes.InvalidUriSyntax, "Check URI syntax");
             var resourceOrMacro = match.Groups["res"].Value.TrimStart('/');
             var view = match.Groups["view"].Value.TrimStart('-');
@@ -118,7 +118,7 @@ namespace RESTar.Internal
                 case Report report:
                     result.Headers["RESTar-count"] = report.ReportBody.Count.ToString();
                     report.Body = new MemoryStream();
-                    contentTypeProvider.SerializeEntity(report.ReportBody, report.Body, report.Query, out var _);
+                    contentTypeProvider.SerializeEntity(report.ReportBody, report.Body, report.Request, out var _);
                     report.ContentType = contentTypeProvider.ContentType;
                     return report;
 
@@ -126,11 +126,11 @@ namespace RESTar.Internal
                     var streamController = new RESTarOutputStreamController();
                     try
                     {
-                        contentTypeProvider.SerializeCollection(entities, streamController, entities.Query, out var entityCount);
+                        contentTypeProvider.SerializeCollection(entities, streamController, entities.Request, out var entityCount);
                         if (entityCount == 0)
                         {
                             streamController.Dispose();
-                            return new NoContent(result, entities.Query.TimeElapsed);
+                            return new NoContent(result, entities.Request.TimeElapsed);
                         }
                         entities.Body = streamController.Stream;
                         entities.ContentType = contentTypeProvider.ContentType;
@@ -175,7 +175,7 @@ namespace RESTar.Internal
             }
         }
 
-        public bool IsCompliant(IQuery query, out string invalidReason)
+        public bool IsCompliant(IRequest request, out string invalidReason)
         {
             invalidReason = null;
             return true;

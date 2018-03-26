@@ -1,5 +1,5 @@
 ﻿using System.Collections.Generic;
-using RESTar.Queries;
+using RESTar.Requests;
 
 namespace RESTar
 {
@@ -63,21 +63,21 @@ namespace RESTar
         IEnumerable<IContentTypeProvider> GetContentTypeProviders();
 
         /// <summary>
-        /// Reads a query string, which is everyting after the root URI in the full request URI, parses 
+        /// Reads a uri string, which is everyting after the root URI in the full request URI, parses 
         /// its content according to some protocol and populates the URI object.
         /// </summary>
-        void ParseQuery(string query, URI uri, Context context);
+        void PopulateURI(string uriString, URI uri, Context context);
 
         /// <summary>
         /// If headers are used to check protocol versions, for example, this method allows the 
         /// protocolprovider to throw an exception and abort a request if the API call is not 
         /// in compliance with the protocol.
         /// </summary>
-        bool IsCompliant(IQuery query, out string invalidReason);
+        bool IsCompliant(IRequest request, out string invalidReason);
 
         /// <summary>
         /// The protocol needs to be able to generate a relative URI string from an IUriParameters instance. 
-        /// Note that only components added to a URI in ParseQuery can be present in the IUriParameters instance.
+        /// Note that only components added to a URI in PopulateURI can be present in the IUriParameters instance.
         /// </summary>
         string MakeRelativeUri(IUriComponents components);
 

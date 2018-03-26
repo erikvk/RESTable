@@ -4,7 +4,7 @@ using System.IO;
 using System.Net;
 using System.Text.RegularExpressions;
 using RESTar.Linq;
-using RESTar.Queries;
+using RESTar.Requests;
 using RESTar.Results.Error;
 
 namespace RESTar.Internal
@@ -30,7 +30,7 @@ namespace RESTar.Internal
                 Headers["Content-Type"] = ContentType;
                 Headers["Accept"] = Accept;
                 var uri = URI;
-                return Query
+                return Request
                     .Create(this, Method, ref uri, Body.ToByteArray(), new Headers(Headers))
                     .Result                    .Serialize();
             }

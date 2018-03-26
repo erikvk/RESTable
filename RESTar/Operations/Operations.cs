@@ -18,28 +18,28 @@ namespace RESTar.Operations
     {
         #region Select
 
-        private static IEnumerable<T> SelectFilter(IQuery<T> query) => query.Target
-            .Select(query)?
-            .Filter(query.MetaConditions.Distinct)
-            .Filter(query.MetaConditions.Search)
-            .Filter(query.MetaConditions.OrderBy)
-            .Filter(query.MetaConditions.Offset)
-            .Filter(query.MetaConditions.Limit);
+        private static IEnumerable<T> SelectFilter(IRequest<T> request) => request.Target
+            .Select(request)?
+            .Filter(request.MetaConditions.Distinct)
+            .Filter(request.MetaConditions.Search)
+            .Filter(request.MetaConditions.OrderBy)
+            .Filter(request.MetaConditions.Offset)
+            .Filter(request.MetaConditions.Limit);
 
-        private static IEnumerable<object> SelectFilterProcess(IQuery<T> query) => query.Target
-            .Select(query)?
-            .Process(query.MetaConditions.Processors)
-            .Filter(query.MetaConditions.Distinct)
-            .Filter(query.MetaConditions.Search)
-            .Filter(query.MetaConditions.OrderBy)
-            .Filter(query.MetaConditions.Offset)
-            .Filter(query.MetaConditions.Limit);
+        private static IEnumerable<object> SelectFilterProcess(IRequest<T> request) => request.Target
+            .Select(request)?
+            .Process(request.MetaConditions.Processors)
+            .Filter(request.MetaConditions.Distinct)
+            .Filter(request.MetaConditions.Search)
+            .Filter(request.MetaConditions.OrderBy)
+            .Filter(request.MetaConditions.Offset)
+            .Filter(request.MetaConditions.Limit);
 
-        private static IEnumerable<T> TrySelectFilter(IQuery<T> query)
+        private static IEnumerable<T> TrySelectFilter(IRequest<T> request)
         {
             try
             {
-                return SelectFilter(query);
+                return SelectFilter(request);
             }
             catch (InfiniteLoop)
             {
@@ -47,17 +47,17 @@ namespace RESTar.Operations
             }
             catch (Exception e)
             {
-                throw new AbortedSelect<T>(e, query);
+                throw new AbortedSelect<T>(e, request);
             }
         }
 
-        private static IEnumerable<object> TrySelectFilterProcess(IQuery<T> query)
+        private static IEnumerable<object> TrySelectFilterProcess(IRequest<T> request)
         {
             try
             {
-                if (!query.MetaConditions.HasProcessors)
-                    return SelectFilter(query);
-                return SelectFilterProcess(query);
+                if (!request.MetaConditions.HasProcessors)
+                    return SelectFilter(request);
+                return SelectFilterProcess(request);
             }
             catch (InfiniteLoop)
             {
@@ -65,20 +65,20 @@ namespace RESTar.Operations
             }
             catch (Exception e)
             {
-                throw new AbortedSelect<T>(e, query);
+                throw new AbortedSelect<T>(e, request);
             }
         }
 
-        private static long TryCount(IQuery<T> query)
+        private static long TryCount(IRequest<T> request)
         {
             try
             {
-                if (query.Resource.Count is Counter<T> counter &&
-                    query.MetaConditions.CanUseExternalCounter)
-                    return counter(query);
-                if (!query.MetaConditions.HasProcessors)
-                    return SelectFilter(query)?.Count() ?? 0L;
-                return SelectFilterProcess(query)?.Count() ?? 0L;
+                if (request.Resource.Count is Counter<T> counter &&
+                    request.MetaConditions.CanUseExternalCounter)
+                    return counter(request);
+                if (!request.MetaConditions.HasProcessors)
+                    return SelectFilter(request)?.Count() ?? 0L;
+                return SelectFilterProcess(request)?.Count() ?? 0L;
             }
             catch (InfiniteLoop)
             {
@@ -86,134 +86,134 @@ namespace RESTar.Operations
             }
             catch (Exception e)
             {
-                throw new AbortedReport<T>(e, query);
+                throw new AbortedReport<T>(e, request);
             }
         }
 
         #endregion
 
-        private static int Insert(IQueryInternal<T> query, bool limit = false)
+        private static int Insert(IRequestInternal<T> request, bool limit = false)
         {
             try
             {
-                var inserter = query.GetSelector() ?? (() => query.Body.ToList<T>());
+                var inserter = request.GetSelector() ?? (() => request.Body.ToList<T>());
                 if (limit)
                 {
                     var _inserter = inserter;
                     inserter = () => _inserter().InputLimit();
                 }
-                query.EntitiesProducer = () => inserter()?.Select(entity =>
+                request.EntitiesProducer = () => inserter()?.Select(entity =>
                 {
                     (entity as IValidatable)?.Validate();
                     return entity;
-                }) ?? throw new MissingDataSource(query);
-                return query.Resource.Insert(query);
+                }) ?? throw new MissingDataSource(request);
+                return request.Resource.Insert(request);
             }
             catch (Exception e)
             {
-                throw new AbortedInsert<T>(e, query);
+                throw new AbortedInsert<T>(e, request);
             }
         }
 
-        private static int Update(IQueryInternal<T> query)
+        private static int Update(IRequestInternal<T> request)
         {
             try
             {
-                var sourceSelector = query.GetSelector() ?? (() => TrySelectFilter(query)?.ToList() ?? new List<T>());
-                if (!query.MetaConditions.Unsafe)
+                var sourceSelector = request.GetSelector() ?? (() => TrySelectFilter(request)?.ToList() ?? new List<T>());
+                if (!request.MetaConditions.Unsafe)
                 {
                     var selector = sourceSelector;
                     sourceSelector = () => selector()?.UnsafeLimit();
                 }
-                var updater = query.GetUpdater() ?? (_source => query.Body.PopulateTo(_source));
-                query.EntitiesProducer = () => updater(sourceSelector())?.Select(entity =>
+                var updater = request.GetUpdater() ?? (_source => request.Body.PopulateTo(_source));
+                request.EntitiesProducer = () => updater(sourceSelector())?.Select(entity =>
                 {
                     (entity as IValidatable)?.Validate();
                     return entity;
-                }) ?? throw new MissingDataSource(query);
-                return query.Resource.Update(query);
+                }) ?? throw new MissingDataSource(request);
+                return request.Resource.Update(request);
             }
             catch (Exception e)
             {
-                throw new AbortedUpdate<T>(e, query);
+                throw new AbortedUpdate<T>(e, request);
             }
         }
 
-        private static int Delete(IQueryInternal<T> query)
+        private static int Delete(IRequestInternal<T> request)
         {
             try
             {
-                var sourceSelector = query.GetSelector() ?? (() => TrySelectFilter(query)?.ToList() ?? new List<T>());
-                if (!query.MetaConditions.Unsafe)
+                var sourceSelector = request.GetSelector() ?? (() => TrySelectFilter(request)?.ToList() ?? new List<T>());
+                if (!request.MetaConditions.Unsafe)
                 {
                     var selector = sourceSelector;
                     sourceSelector = () => selector()?.UnsafeLimit();
                 }
-                query.EntitiesProducer = () => sourceSelector() ?? new T[0];
-                return query.Resource.Delete(query);
+                request.EntitiesProducer = () => sourceSelector() ?? new T[0];
+                return request.Resource.Delete(request);
             }
             catch (Exception e)
             {
-                throw new AbortedDelete<T>(e, query);
+                throw new AbortedDelete<T>(e, request);
             }
         }
 
-        internal static Func<IQueryInternal<T>, Result> GetEvaluator(Method method)
+        internal static Func<IRequestInternal<T>, Result> GetEvaluator(Method method)
         {
             switch (method)
             {
                 case Method.GET:
-                    return query =>
+                    return request =>
                     {
-                        if (!query.MetaConditions.Unsafe && query.MetaConditions.Limit == -1)
-                            query.MetaConditions.Limit = (Limit) 1000;
-                        return new Entities(query, TrySelectFilterProcess(query));
+                        if (!request.MetaConditions.Unsafe && request.MetaConditions.Limit == -1)
+                            request.MetaConditions.Limit = (Limit) 1000;
+                        return new Entities(request, TrySelectFilterProcess(request));
                     };
 
                 case Method.POST:
-                    return query =>
+                    return request =>
                     {
-                        if (query.MetaConditions.SafePost != null)
-                            return SafePOST(query);
-                        return new InsertedEntities(Insert(query), query);
+                        if (request.MetaConditions.SafePost != null)
+                            return SafePOST(request);
+                        return new InsertedEntities(Insert(request), request);
                     };
 
                 case Method.PUT:
-                    return query =>
+                    return request =>
                     {
-                        var sourceSelector = query.GetSelector() ?? (() => TrySelectFilter(query)?.ToList() ?? new List<T>());
+                        var sourceSelector = request.GetSelector() ?? (() => TrySelectFilter(request)?.ToList() ?? new List<T>());
                         var source = sourceSelector()?.InputLimit()?.ToList();
-                        query.InputSelector = () => source;
+                        request.InputSelector = () => source;
                         switch (source?.Count)
                         {
                             case null:
-                            case 0: return new InsertedEntities(Insert(query), query);
-                            case 1 when query.GetUpdater() == null && !query.Body.HasContent:
-                                return new UpdatedEntities(0, query);
-                            default: return new UpdatedEntities(Update(query), query);
+                            case 0: return new InsertedEntities(Insert(request), request);
+                            case 1 when request.GetUpdater() == null && !request.Body.HasContent:
+                                return new UpdatedEntities(0, request);
+                            default: return new UpdatedEntities(Update(request), request);
                         }
                     };
 
                 case Method.HEAD:
-                    return query =>
+                    return request =>
                     {
-                        var count = TryCount(query);
-                        if (count > 0) return new Head(query, count);
-                        return new NoContent(query, query.TimeElapsed);
+                        var count = TryCount(request);
+                        if (count > 0) return new Head(request, count);
+                        return new NoContent(request, request.TimeElapsed);
                     };
 
-                case Method.PATCH: return query => new UpdatedEntities(Update(query), query);
-                case Method.DELETE: return query => new DeletedEntities(Delete(query), query);
-                case Method.REPORT: return query => new Report(query, TryCount(query));
-                default: return query => new ImATeapot(query);
+                case Method.PATCH: return request => new UpdatedEntities(Update(request), request);
+                case Method.DELETE: return request => new DeletedEntities(Delete(request), request);
+                case Method.REPORT: return request => new Report(request, TryCount(request));
+                default: return request => new ImATeapot(request);
             }
         }
 
         #region SafePost
 
-        private static Result SafePOST(IQuery<T> query)
+        private static Result SafePOST(IRequest<T> request)
         {
-            var (innerRequest, toInsert, toUpdate) = GetSafePostTasks(query);
+            var (innerRequest, toInsert, toUpdate) = GetSafePostTasks(request);
             var (updatedCount, insertedCount) = (0, 0);
             if (toUpdate.Any())
                 updatedCount = UpdateSafePost(innerRequest, toUpdate);
@@ -222,25 +222,25 @@ namespace RESTar.Operations
                 innerRequest.InputSelector = () => toInsert.Select(item => item.ToObject<T>());
                 insertedCount = Insert(innerRequest);
             }
-            return new SafePostedEntities(updatedCount, insertedCount, query);
+            return new SafePostedEntities(updatedCount, insertedCount, request);
         }
 
-        private static (IQueryInternal<T> InnerRequest, JArray ToInsert, IList<(JObject json, T source)> ToUpdate) GetSafePostTasks(
-            IQuery<T> query)
+        private static (IRequestInternal<T> InnerRequest, JArray ToInsert, IList<(JObject json, T source)> ToUpdate) GetSafePostTasks(
+            IRequest<T> request)
         {
-            var innerRequest = (IQueryInternal<T>) Query<T>.Create(query, Method.GET);
+            var innerRequest = (IRequestInternal<T>) Request<T>.Create(request, Method.GET);
             var toInsert = new JArray();
             var toUpdate = new List<(JObject json, T source)>();
             try
             {
-                var conditions = query.MetaConditions.SafePost
+                var conditions = request.MetaConditions.SafePost
                     .Split(',')
                     .Select(s => new Condition<T>(s, Operators.EQUALS, null))
                     .ToList();
-                foreach (var entity in query.Body.ToList<JObject>())
+                foreach (var entity in request.Body.ToList<JObject>())
                 {
                     conditions.ForEach(cond => cond.Value = cond.Term.Evaluate(entity));
-                    query.Conditions = conditions;
+                    request.Conditions = conditions;
                     var results = innerRequest.Result.ToEntities<T>().ToList();
                     switch (results.Count)
                     {
@@ -257,26 +257,26 @@ namespace RESTar.Operations
             }
             catch (Exception e)
             {
-                throw new AbortedInsert<T>(e, query, e.Message);
+                throw new AbortedInsert<T>(e, request, e.Message);
             }
         }
 
-        private static int UpdateSafePost(IQueryInternal<T> query, ICollection<(JObject json, T source)> items)
+        private static int UpdateSafePost(IRequestInternal<T> request, ICollection<(JObject json, T source)> items)
         {
             try
             {
-                query.EntitiesProducer = () => items.Select(item =>
+                request.EntitiesProducer = () => items.Select(item =>
                 {
                     Serializers.Json.PopulateJToken(item.json, item.source);
                     (item.source as IValidatable)?.Validate();
                     return item.source;
                 });
-                return query.Resource.Update(query);
+                return request.Resource.Update(request);
             }
             catch (Exception e)
             {
                 var jsonMessage = e is JsonSerializationException jse ? jse.TotalMessage() : null;
-                throw new AbortedUpdate<T>(e, query, jsonMessage);
+                throw new AbortedUpdate<T>(e, request, jsonMessage);
             }
         }
 

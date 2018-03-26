@@ -11,6 +11,6 @@ namespace RESTar.Operations {
         /// The select method for this ISelector instance. Defines the Select
         /// operation for a given resource.
         /// </summary>
-        IEnumerable<T> Select(IQuery<T> query);
+        IEnumerable<T> Select(IRequest<T> request);
     }
 }

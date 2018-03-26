@@ -5,7 +5,7 @@ using System.Linq;
 using System.Net;
 using RESTar.Linq;
 using RESTar.Logging;
-using RESTar.Queries;
+using RESTar.Requests;
 using Starcounter;
 
 namespace RESTar.Internal

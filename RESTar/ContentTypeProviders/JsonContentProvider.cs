@@ -183,14 +183,14 @@ namespace RESTar.ContentTypeProviders
         }
 
         /// <inheritdoc />
-        public void SerializeEntity<T>(T entity, Stream stream, IQuery query, out ulong entityCount) where T : class
+        public void SerializeEntity<T>(T entity, Stream stream, IRequest request, out ulong entityCount) where T : class
         {
             if (entity == null)
             {
                 entityCount = 0;
                 return;
             }
-            var formatter = query.MetaConditions.Formatter ?? DbOutputFormat.Default;
+            var formatter = request.MetaConditions.Formatter ?? DbOutputFormat.Default;
             using (var swr = new StreamWriter(stream, UTF8, 2048, true))
             using (var jwr = new RESTarJsonWriter(swr, formatter.StartIndent))
             {
@@ -204,14 +204,14 @@ namespace RESTar.ContentTypeProviders
         }
 
         /// <inheritdoc />
-        public void SerializeCollection<T>(IEnumerable<T> entities, Stream stream, IQuery query, out ulong entityCount) where T : class
+        public void SerializeCollection<T>(IEnumerable<T> entities, Stream stream, IRequest request, out ulong entityCount) where T : class
         {
             if (entities == null)
             {
                 entityCount = 0;
                 return;
             }
-            var formatter = query.MetaConditions.Formatter ?? DbOutputFormat.Default;
+            var formatter = request.MetaConditions.Formatter ?? DbOutputFormat.Default;
             using (var swr = new StreamWriter(stream, UTF8, 2048, true))
             using (var jwr = new RESTarJsonWriter(swr, formatter.StartIndent))
             {

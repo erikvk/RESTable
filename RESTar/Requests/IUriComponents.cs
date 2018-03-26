@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace RESTar.Queries
+namespace RESTar.Requests
 {
     /// <summary>
     /// Contains parameters for a RESTar URI

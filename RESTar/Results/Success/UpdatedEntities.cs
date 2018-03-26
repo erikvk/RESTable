@@ -11,11 +11,11 @@
         /// </summary>
         public int UpdatedCount { get; }
 
-        internal UpdatedEntities(int count, IQuery query) : base(query)
+        internal UpdatedEntities(int count, IRequest request) : base(request)
         {
             UpdatedCount = count;
-            Headers["RESTar-info"] = $"{count} entities updated in '{query.Resource.Name}'";
-            TimeElapsed = query.TimeElapsed;
+            Headers["RESTar-info"] = $"{count} entities updated in '{request.Resource.Name}'";
+            TimeElapsed = request.TimeElapsed;
         }
     }
 }

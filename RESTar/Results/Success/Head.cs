@@ -6,10 +6,10 @@
     /// </summary>
     public class Head : OK
     {
-        internal Head(IQuery query, long count) : base(query)
+        internal Head(IRequest request, long count) : base(request)
         {
             Headers["RESTar-count"] = count.ToString();
-            TimeElapsed = query.TimeElapsed;
+            TimeElapsed = request.TimeElapsed;
         }
     }
 }

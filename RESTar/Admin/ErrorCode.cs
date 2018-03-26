@@ -27,13 +27,13 @@ namespace RESTar.Admin
         public int Code { get; private set; }
 
         /// <inheritdoc />
-        public IEnumerable<ErrorCode> Select(IQuery<ErrorCode> query)
+        public IEnumerable<ErrorCode> Select(IRequest<ErrorCode> request)
         {
-            if (query == null) throw new ArgumentNullException(nameof(query));
+            if (request == null) throw new ArgumentNullException(nameof(request));
             return EnumMember<ErrorCodes>
                 .GetMembers()
                 .Select(m => new ErrorCode {Name = m.Name, Code = m.Value})
-                .Where(query.Conditions);
+                .Where(request.Conditions);
         }
     }
 }

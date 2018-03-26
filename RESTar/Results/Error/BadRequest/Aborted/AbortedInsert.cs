@@ -9,7 +9,7 @@ namespace RESTar.Results.Error.BadRequest.Aborted
     /// </summary>
     public class AbortedInsert<T> : AbortedOperation<T> where T : class
     {
-        internal AbortedInsert(Exception ie, IQuery<T> query, string message = null)
-            : base(ErrorCodes.AbortedInsert, ie, query, message) { }
+        internal AbortedInsert(Exception ie, IRequest<T> request, string message = null)
+            : base(ErrorCodes.AbortedInsert, ie, request, message) { }
     }
 }

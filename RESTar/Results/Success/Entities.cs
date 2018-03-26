@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using RESTar.Queries;
-using UriComponents = RESTar.Queries.UriComponents;
+using RESTar.Requests;
+using UriComponents = RESTar.Requests.UriComponents;
 
 namespace RESTar.Results.Success
 {
@@ -28,23 +28,23 @@ namespace RESTar.Results.Success
         /// </summary>
         public ulong EntityCount { get; set; }
 
-        string IEntitiesMetadata.ResourceFullName => Query.Resource.Name;
+        string IEntitiesMetadata.ResourceFullName => Request.Resource.Name;
         internal string ExternalDestination { get; }
 
         /// <summary>
         /// Is the result paged?
         /// </summary>
-        public bool IsPaged => Content != null && EntityCount > 0 && (long) EntityCount == Query.MetaConditions.Limit;
+        public bool IsPaged => Content != null && EntityCount > 0 && (long) EntityCount == Request.MetaConditions.Limit;
 
-        internal Entities(IQuery query, IEnumerable<object> content) : base(query)
+        internal Entities(IRequest request, IEnumerable<object> content) : base(request)
         {
             Content = content ?? new object[0];
-            ExternalDestination = query.Headers.Destination;
-            TimeElapsed = query.TimeElapsed;
+            ExternalDestination = request.Headers.Destination;
+            TimeElapsed = request.TimeElapsed;
         }
 
         internal void SetContentDisposition(string extension) => Headers["Content-Disposition"] =
-            $"attachment;filename={Query.Resource.Name}_{DateTime.Now:yyMMddHHmmssfff}{extension}";
+            $"attachment;filename={Request.Resource.Name}_{DateTime.Now:yyMMddHHmmssfff}{extension}";
 
         /// <inheritdoc />
         public IUriComponents GetNextPageLink() => GetNextPageLink(-1);
@@ -52,7 +52,7 @@ namespace RESTar.Results.Success
         /// <inheritdoc />
         public IUriComponents GetNextPageLink(int count)
         {
-            var components = new UriComponents(Query.UriComponents);
+            var components = new UriComponents(Request.UriComponents);
             if (count > -1)
             {
                 components.MetaConditions.RemoveAll(c => c.Key.EqualsNoCase("limit"));
@@ -60,7 +60,7 @@ namespace RESTar.Results.Success
             }
             components.MetaConditions.RemoveAll(c => c.Key.EqualsNoCase("offset"));
             components.MetaConditions.Add(new UriCondition("offset", Operators.EQUALS,
-                (Query.MetaConditions.Offset + (long) EntityCount).ToString()));
+                (Request.MetaConditions.Offset + (long) EntityCount).ToString()));
             return components;
         }
     }

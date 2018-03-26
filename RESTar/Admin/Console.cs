@@ -46,7 +46,7 @@ namespace RESTar.Admin
 
         #region Console
 
-        internal static void Log(IQuery query, ISerializedResult result)
+        internal static void Log(IRequest request, ISerializedResult result)
         {
             var milliseconds = result.TimeElapsed.TotalMilliseconds;
             if (result is WebSocketUpgradeSuccessful) return;
@@ -55,10 +55,10 @@ namespace RESTar.Admin
                 switch (group.Key)
                 {
                     case ConsoleFormat.Line:
-                        var requestStub = GetLogLineStub(query);
+                        var requestStub = GetLogLineStub(request);
                         var responseStub = GetLogLineStub(result, milliseconds);
                         group.AsParallel().ForEach(c => c.PrintLines(
-                            new StringBuilder(requestStub), query,
+                            new StringBuilder(requestStub), request,
                             new StringBuilder(responseStub), result)
                         );
                         break;
@@ -68,22 +68,22 @@ namespace RESTar.Admin
                             var item = new InputOutput
                             {
                                 Type = "HTTPRequestResponse",
-                                In = new LogItem {Id = query.TraceId, Message = query.LogMessage},
+                                In = new LogItem {Id = request.TraceId, Message = request.LogMessage},
                                 Out = new LogItem {Id = result.TraceId, Message = result.LogMessage},
                                 ElapsedMilliseconds = milliseconds
                             };
                             if (c.IncludeConnection)
-                                item.ClientInfo = new ClientInfo(query.Context.Client);
+                                item.ClientInfo = new ClientInfo(request.Context.Client);
                             if (c.IncludeHeaders)
                             {
-                                if (!query.ExcludeHeaders)
-                                    item.In.CustomHeaders = query.Headers;
+                                if (!request.ExcludeHeaders)
+                                    item.In.CustomHeaders = request.Headers;
                                 if (!result.ExcludeHeaders)
                                     item.Out.CustomHeaders = result.Headers;
                             }
                             if (c.IncludeContent)
                             {
-                                item.In.Content = query.LogContent;
+                                item.In.Content = request.LogContent;
                                 item.Out.Content = result.LogContent;
                             }
                             var json = Serializers.Json.Serialize(item, Indented, ignoreNulls: true);

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using RESTar.Logging;
-using RESTar.Queries;
+using RESTar.Requests;
 
 namespace RESTar.Results.Success
 {
@@ -73,12 +73,12 @@ namespace RESTar.Results.Success
         public DateTime LogTime { get; }
 
         /// <inheritdoc />
-        public WebSocketUpgradeSuccessful(IQuery query)
+        public WebSocketUpgradeSuccessful(IRequest request)
         {
-            TraceId = query.TraceId;
-            Context = query.Context;
+            TraceId = request.TraceId;
+            Context = request.Context;
             LogTime = DateTime.Now;
-            TimeElapsed = query.TimeElapsed;
+            TimeElapsed = request.TimeElapsed;
         }
     }
 }

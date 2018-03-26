@@ -24,9 +24,9 @@ namespace RESTar.Admin
         public string Type { get; set; }
         public string[] Terms { get; set; }
 
-        public IEnumerable<TermCache> Select(IQuery<TermCache> query)
+        public IEnumerable<TermCache> Select(IRequest<TermCache> request)
         {
-            if (query == null) throw new ArgumentNullException(nameof(query));
+            if (request == null) throw new ArgumentNullException(nameof(request));
             return RESTarConfig.Resources.Select(r => new TermCache
             {
                 Type = r.Type.RESTarTypeName(),
@@ -34,14 +34,14 @@ namespace RESTar.Admin
                     .Where(pair => pair.Key.Type == r.Type.RESTarTypeName())
                     .Select(pair => pair.Value.Key)
                     .ToArray()
-            }).Where(query.Conditions);
+            }).Where(request.Conditions);
         }
 
-        public int Delete(IQuery<TermCache> query)
+        public int Delete(IRequest<TermCache> request)
         {
-            if (query == null) throw new ArgumentNullException(nameof(query));
+            if (request == null) throw new ArgumentNullException(nameof(request));
             var count = 0;
-            query.GetEntities().ForEach(e =>
+            request.GetEntities().ForEach(e =>
             {
                 Reflection.Dynamic.TypeCache.TermCache
                     .Where(pair => pair.Key.Type == e.Type)

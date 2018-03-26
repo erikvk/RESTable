@@ -5,7 +5,7 @@ using System.Linq;
 using System.Net;
 using RESTar.Linq;
 using RESTar.Operations;
-using RESTar.Queries;
+using RESTar.Requests;
 using RESTar.Results.Success;
 using RESTar.WebSockets;
 using Starcounter;
@@ -27,7 +27,7 @@ namespace RESTar.Starcounter
                 {
                     var context = new ScContext(GetClient(scRequest), scRequest, true);
                     var headers = new Headers(scRequest.HeadersDictionary);
-                    var query = context.Query(method, ref uri, scRequest.BodyBytes, headers);
+                    var query = context.CreateRequest(method, ref uri, scRequest.BodyBytes, headers);
                     switch (query.Result.Serialize())
                     {
                         case WebSocketUpgradeSuccessful _: return HandlerStatus.Handled;

@@ -7,7 +7,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using RESTar.Linq;
 using RESTar.Operations;
-using RESTar.Queries;
+using RESTar.Requests;
 using RESTar.Starcounter;
 using Starcounter;
 
@@ -214,7 +214,7 @@ namespace RESTar.Admin
         }
 
         /// <inheritdoc />
-        public IEnumerable<Macro> Select(IQuery<Macro> query) => DbMacro.GetAll()
+        public IEnumerable<Macro> Select(IRequest<Macro> request) => DbMacro.GetAll()
             .Select(m => new Macro
             {
                 Name = m.Name,
@@ -224,13 +224,13 @@ namespace RESTar.Admin
                 OverWriteBody = m.OverWriteBody,
                 OverWriteHeaders = m.OverWriteHeaders
             })
-            .Where(query.Conditions);
+            .Where(request.Conditions);
 
         /// <inheritdoc />
-        public int Insert(IQuery<Macro> query)
+        public int Insert(IRequest<Macro> request)
         {
             var count = 0;
-            foreach (var entity in query.GetEntities())
+            foreach (var entity in request.GetEntities())
             {
                 if (DbMacro.Get(entity.Name) != null)
                     throw new Exception($"Invalid name. '{entity.Name}' is already in use.");
@@ -254,10 +254,10 @@ namespace RESTar.Admin
         }
 
         /// <inheritdoc />
-        public int Update(IQuery<Macro> query)
+        public int Update(IRequest<Macro> request)
         {
             var count = 0;
-            query.GetEntities().ForEach(entity =>
+            request.GetEntities().ForEach(entity =>
             {
                 var dbEntity = DbMacro.Get(entity.Name);
                 if (dbEntity == null) return;
@@ -279,10 +279,10 @@ namespace RESTar.Admin
         }
 
         /// <inheritdoc />
-        public int Delete(IQuery<Macro> query)
+        public int Delete(IRequest<Macro> request)
         {
             var count = 0;
-            query.GetEntities().ForEach(entity =>
+            request.GetEntities().ForEach(entity =>
             {
                 Transact.Trans(DbMacro.Get(entity.Name).Delete);
                 count += 1;

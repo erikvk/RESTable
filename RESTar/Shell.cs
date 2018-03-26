@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Linq;
-using RESTar.Queries;
+using RESTar.Requests;
 using RESTar.Resources;
 using RESTar.Results.Error;
 using RESTar.Results.Error.BadRequest;
@@ -292,7 +292,7 @@ namespace RESTar
         {
             if (Query.Length == 0) return new NoQuery(WebSocket, default);
             var local = Query;
-            var result = RESTar.Query.Create(WebSocket, method, ref local, body, WebSocket.Headers).Result.Serialize();
+            var result = Request.Create(WebSocket, method, ref local, body, WebSocket.Headers).Result.Serialize();
             switch (result)
             {
                 case RESTarError _ when queryChangedPreEval:
@@ -314,7 +314,7 @@ namespace RESTar
         private void ValidateQuery()
         {
             var localQuery = Query;
-            if (!RESTar.Query.IsValid(WebSocket, ref localQuery, out var error))
+            if (!Request.IsValid(WebSocket, ref localQuery, out var error))
             {
                 query = previousQuery;
                 SendResult(error);

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Linq;
-using RESTar.Queries;
+using RESTar.Requests;
 using RESTar.Results.Error;
 
 namespace RESTar.Results.Success
@@ -15,20 +15,20 @@ namespace RESTar.Results.Success
         /// <summary>
         /// The request that generated this content
         /// </summary>
-        public IQuery Query => QueryInternal;
+        public IRequest Request => RequestInternal;
 
-        private IQueryInternal QueryInternal { get; }
+        private IRequestInternal RequestInternal { get; }
 
         /// <summary>
         /// Generates a URI string from URI components, according to the protocol of this Content
         /// </summary>
-        protected string GetUriString(IUriComponents components) => QueryInternal
+        protected string GetUriString(IUriComponents components) => RequestInternal
             .CachedProtocolProvider
             .ProtocolProvider
             .MakeRelativeUri(components);
 
         /// <inheritdoc />
-        protected Content(IQuery query) : base(query) => QueryInternal = (IQueryInternal) query;
+        protected Content(IRequest request) : base(request) => RequestInternal = (IRequestInternal) request;
 
         /// <inheritdoc />
         public override ISerializedResult Serialize(ContentType? contentType = null)
@@ -36,16 +36,16 @@ namespace RESTar.Results.Success
             var stopwatch = Stopwatch.StartNew();
             try
             {
-                var protocolProvider = QueryInternal.CachedProtocolProvider;
+                var protocolProvider = RequestInternal.CachedProtocolProvider;
                 if (contentType.HasValue)
                     contentType = contentType.Value;
-                else if (!(QueryInternal.Headers.Accept?.Count > 0))
+                else if (!(RequestInternal.Headers.Accept?.Count > 0))
                     contentType = protocolProvider.DefaultOutputProvider.ContentType;
                 IContentTypeProvider acceptProvider = null;
                 if (!contentType.HasValue)
                 {
                     var containedWildcard = false;
-                    var foundProvider = QueryInternal.Headers.Accept.Any(a =>
+                    var foundProvider = RequestInternal.Headers.Accept.Any(a =>
                     {
                         if (!a.AnyType)
                             return protocolProvider.OutputMimeBindings.TryGetValue(a.MimeType, out acceptProvider);
@@ -56,7 +56,7 @@ namespace RESTar.Results.Success
                         if (containedWildcard)
                             acceptProvider = protocolProvider.DefaultOutputProvider;
                         else
-                            throw new NotAcceptable(QueryInternal.Headers.Accept.ToString());
+                            throw new NotAcceptable(RequestInternal.Headers.Accept.ToString());
                 }
                 else
                 {
@@ -67,7 +67,7 @@ namespace RESTar.Results.Success
             }
             catch (Exception exception)
             {
-                return RESTarError.GetResult(exception, QueryInternal);
+                return RESTarError.GetResult(exception, RequestInternal);
             }
             finally
             {

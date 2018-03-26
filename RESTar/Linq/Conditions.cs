@@ -30,27 +30,7 @@ namespace RESTar.Linq
             post = conds.Where(c => !c.ScQueryable || c.IsOfType<string>() && c.Value != null).ToList();
             return post.Any();
         }
-
-        internal static bool HasEquality<T>(
-            this IEnumerable<Condition<T>> conds,
-            out IEnumerable<Condition<T>> equality) where T : class
-        {
-            equality = conds.Where(c => c.InternalOperator.Equality).ToList();
-            return equality.Any();
-        }
-
-        internal static bool HasCompare<T>(this IEnumerable<Condition<T>> conds, out IEnumerable<Condition<T>> compare)
-            where T : class
-        {
-            compare = conds.Where(c => c.InternalOperator.Compare).ToList();
-            return compare.Any();
-        }
-
-        internal static void ResetStatus<T>(this IEnumerable<Condition<T>> conds) where T : class
-        {
-            conds.ForEach(c => c.HasChanged = c.ValueChanged = false);
-        }
-
+            
         #endregion
 
         /// <summary>

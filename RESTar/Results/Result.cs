@@ -4,7 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using RESTar.Logging;
-using RESTar.Queries;
+using RESTar.Requests;
 using RESTar.Results.Success;
 
 namespace RESTar.Results
@@ -86,12 +86,12 @@ namespace RESTar.Results
 
         #endregion
 
-        internal Result(ITraceable query)
+        internal Result(ITraceable request)
         {
             Headers = new Headers();
             ExcludeHeaders = false;
-            Context = query.Context;
-            TraceId = query.TraceId;
+            Context = request.Context;
+            TraceId = request.TraceId;
         }
     }
 }

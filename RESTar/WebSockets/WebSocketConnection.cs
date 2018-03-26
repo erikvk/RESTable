@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using RESTar.Queries;
+using RESTar.Requests;
 using RESTar.Resources;
 
 namespace RESTar.WebSockets

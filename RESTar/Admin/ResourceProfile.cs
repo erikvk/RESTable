@@ -43,12 +43,12 @@ namespace RESTar.Admin
         public long SampleSize { get; set; }
 
         /// <inheritdoc />
-        public IEnumerable<ResourceProfile> Select(IQuery<ResourceProfile> query)
+        public IEnumerable<ResourceProfile> Select(IRequest<ResourceProfile> request)
         {
-            if (query == null) throw new ArgumentNullException(nameof(query));
+            if (request == null) throw new ArgumentNullException(nameof(request));
             IEnumerable<ResourceProfile> profiles;
-            string input = query.Conditions.Get(nameof(Resource), Operators.EQUALS)?.Value;
-            query.Conditions.Get(nameof(Resource)).ForEach(c => c.Skip = true);
+            string input = request.Conditions.Get(nameof(Resource), Operators.EQUALS)?.Value;
+            request.Conditions.Get(nameof(Resource)).ForEach(c => c.Skip = true);
             if (input == null)
                 profiles = RESTarConfig.Resources.OfType<IEntityResource>().Select(r => r.ResourceProfile).Where(r => r != null);
             else
@@ -60,7 +60,7 @@ namespace RESTar.Admin
                 profiles = new[] {profile};
             }
             return profiles
-                .Where(query.Conditions)
+                .Where(request.Conditions)
                 .OrderByDescending(t => t.ApproximateSize.Bytes)
                 .ToList();
         }

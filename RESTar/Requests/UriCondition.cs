@@ -7,7 +7,7 @@ using RESTar.Internal;
 using RESTar.Results.Error.BadRequest;
 using static System.StringComparison;
 
-namespace RESTar.Queries
+namespace RESTar.Requests
 {
     /// <inheritdoc cref="IUriCondition" />
     /// <summary>

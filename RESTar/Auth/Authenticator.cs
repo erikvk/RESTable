@@ -3,7 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using RESTar.Queries;
+using RESTar.Requests;
 using RESTar.Resources;
 using RESTar.Results.Error.Forbidden;
 using Starcounter;
@@ -36,15 +36,15 @@ namespace RESTar.Auth
                 throw new UserNotSignedIn();
         }
 
-        internal static void RunResourceAuthentication<T>(this IQuery<T> query) where T : class
+        internal static void RunResourceAuthentication<T>(this IRequest<T> request) where T : class
         {
-            if (!query.Resource.RequiresAuthentication) return;
-            var authResults = query.Resource.Authenticate(query);
+            if (!request.Resource.RequiresAuthentication) return;
+            var authResults = request.Resource.Authenticate(request);
             if (!authResults.Success)
                 throw new FailedResourceAuthentication(authResults.Reason);
         }
 
-        internal static void Authenticate(this QueryParameters requestParameters)
+        internal static void Authenticate(this RequestParameters requestParameters)
         {
             requestParameters.Context.Client.AuthToken = GetAuthToken(requestParameters);
             if (requestParameters.Context.Client.AuthToken == null)
@@ -58,7 +58,7 @@ namespace RESTar.Auth
             return null;
         }
 
-        private static string GetAuthToken(QueryParameters requestParameters)
+        private static string GetAuthToken(RequestParameters requestParameters)
         {
             if (!RESTarConfig.RequireApiKey)
                 return AccessRights.NewRootToken();

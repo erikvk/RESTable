@@ -6,10 +6,10 @@
     /// </summary>
     public class SafePostedEntities : OK
     {   
-        internal SafePostedEntities(int upd, int ins, IQuery query) : base(query)
+        internal SafePostedEntities(int upd, int ins, IRequest request) : base(request)
         {
-            Headers["RESTar-info"] = $"Updated {upd} and then inserted {ins} entities in resource '{query.Resource.Name}'";
-            TimeElapsed = query.TimeElapsed;
+            Headers["RESTar-info"] = $"Updated {upd} and then inserted {ins} entities in resource '{request.Resource.Name}'";
+            TimeElapsed = request.TimeElapsed;
         }
     }
 }

@@ -7,7 +7,7 @@ using RESTar.Reflection;
 using RESTar.Reflection.Dynamic;
 using RESTar.Internal;
 using RESTar.Operations;
-using RESTar.Queries;
+using RESTar.Requests;
 using RESTar.Resources;
 using RESTar.Results.Error.BadRequest;
 using static System.StringComparison;
@@ -50,74 +50,28 @@ namespace RESTar
                     case None: throw new ArgumentException($"Invalid condition operator '{value}'");
                 }
                 _operator = value;
-                if (!ScQueryable) return;
-                HasChanged = true;
             }
         }
+
+        /// <summary>
+        /// The second operand for the operation defined by the operator. Defines
+        /// the object for comparison.
+        /// </summary>
+        public dynamic Value { get; set; }
+
+        /// <inheritdoc />
+        public Term Term { get; }
+
+        /// <summary>
+        /// Should this condition be skipped during evaluation?
+        /// </summary>
+        public bool Skip { get; set; }
 
         string IUriCondition.ValueLiteral => Value is DateTime
             ? $"{Key}{InternalOperator.Common}{Value:O}"
             : $"{Key}{InternalOperator.Common}{Value}";
 
         internal Operator InternalOperator => Operator;
-
-        private object _value;
-
-        /// <summary>
-        /// The second operand for the operation defined by the operator. Defines
-        /// the object for comparison.
-        /// </summary>
-        public dynamic Value
-        {
-            get => _value;
-            set
-            {
-                if (Do.Try(() => value == _value, false))
-                    return;
-                var oldValue = _value;
-                _value = value;
-                if (!ScQueryable) return;
-                if (value == null || oldValue == null)
-                    HasChanged = true;
-                else ValueChanged = true;
-            }
-        }
-
-        /// <inheritdoc />
-        public Term Term { get; }
-
-        /// <inheritdoc />
-        public override int GetHashCode() => typeof(T).GetHashCode() + Key.GetHashCode() + Operator.GetHashCode();
-
-        private bool _skip;
-
-        /// <summary>
-        /// Should this condition be skipped during evaluation?
-        /// </summary>
-        public bool Skip
-        {
-            get => _skip;
-            set
-            {
-                if (ScQueryable)
-                {
-                    if (value == _skip) return;
-                    _skip = value;
-                    HasChanged = true;
-                }
-                else _skip = value;
-            }
-        }
-
-        /// <summary>
-        /// If true, this condition needs to be written to new SQL
-        /// </summary>
-        internal bool HasChanged { get; set; }
-
-        /// <summary>
-        /// If true, a new value must be obtained from this condition before SQL
-        /// </summary>
-        internal bool ValueChanged { get; set; }
 
         /// <summary>
         /// Is this condition queryable using Starcounter SQL?
@@ -146,21 +100,20 @@ namespace RESTar
         /// <param name="key">The key of the property of T to target, e.g. "Name", "Name.Length"</param>
         /// <param name="op">The operator denoting the operation to evaluate for the property</param>
         /// <param name="value">The value to compare the property referenced by the key with</param>
-        public Condition(string key, Operators op, object value) : this(
+        public Condition(string key, Operators op, object value) : this
+        (
             term: EntityResource<T>.SafeGet?.MakeConditionTerm(key)
                   ?? typeof(T).MakeOrGetCachedTerm(key, TermBindingRules.DeclaredWithDynamicFallback),
             op: op,
             value: value
         ) { }
 
-        internal Condition(Term term, Operators op, object value)
+        private Condition(Term term, Operators op, object value)
         {
             Term = term;
             _operator = op;
-            _value = value;
-            _skip = term.ConditionSkip;
-            if (!ScQueryable) return;
-            HasChanged = true;
+            Value = value;
+            Skip = term.ConditionSkip;
         }
 
         /// <summary>

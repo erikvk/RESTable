@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Net;
-using RESTar.Queries;
+using RESTar.Requests;
 
 namespace RESTar.Results.Success
 {
@@ -11,7 +11,7 @@ namespace RESTar.Results.Success
     /// </summary>
     public class ImATeapot : Result
     {
-        internal ImATeapot(ITraceable query) : base(query)
+        internal ImATeapot(ITraceable trace) : base(trace)
         {
             StatusCode = (HttpStatusCode) 418;
             StatusDescription = "I'm a teapot";

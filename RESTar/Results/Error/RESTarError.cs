@@ -7,7 +7,7 @@ using Microsoft.CSharp.RuntimeBinder;
 using Newtonsoft.Json;
 using RESTar.Internal;
 using RESTar.Logging;
-using RESTar.Queries;
+using RESTar.Requests;
 using RESTar.Results.Error.BadRequest;
 using RESTar.Results.Error.Forbidden;
 using RESTar.Results.Success;
@@ -47,11 +47,11 @@ namespace RESTar.Results.Error
         /// <inheritdoc />
         public bool ExcludeHeaders { get; }
 
-        internal void SetTrace(IQuery query)
+        internal void SetTrace(IRequest request)
         {
-            TraceId = query.TraceId;
-            Context = query.Context;
-            Query = query;
+            TraceId = request.TraceId;
+            Context = request.Context;
+            Request = request;
         }
 
         /// <inheritdoc />
@@ -129,32 +129,32 @@ namespace RESTar.Results.Error
             }
         }
 
-        internal static ISerializedResult GetResult(Exception exs, IQueryInternal query)
+        internal static ISerializedResult GetResult(Exception exs, IRequestInternal request)
         {
             var error = GetError(exs);
-            error.SetTrace(query);
+            error.SetTrace(request);
             string errorId = null;
             if (!(error is Forbidden.Forbidden))
             {
                 Admin.Error.ClearOld();
-                errorId = Trans(() => Admin.Error.Create(error, query)).Id;
+                errorId = Trans(() => Admin.Error.Create(error, request)).Id;
             }
-            if (query.IsWebSocketUpgrade)
+            if (request.IsWebSocketUpgrade)
             {
-                query.Context.WebSocket?.SendResult(error);
-                query.Context.WebSocket?.Disconnect();
-                return new WebSocketUpgradeSuccessful(query);
+                request.Context.WebSocket?.SendResult(error);
+                request.Context.WebSocket?.Disconnect();
+                return new WebSocketUpgradeSuccessful(request);
             }
             if (errorId != null)
                 error.Headers["ErrorInfo"] = $"/{typeof(Admin.Error).FullName}/id={HttpUtility.UrlEncode(errorId)}";
-            error.TimeElapsed = query.TimeElapsed;
+            error.TimeElapsed = request.TimeElapsed;
             return error;
         }
 
         /// <summary>
         /// The request that generated the error
         /// </summary>
-        public IQuery Query { get; private set; }
+        public IRequest Request { get; private set; }
 
         /// <inheritdoc />
         /// <summary>

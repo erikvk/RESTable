@@ -42,7 +42,7 @@ namespace RESTar
         private const string description = "A resource for creating arbitrary aggregated reports from multiple internal requests";
 
         /// <inheritdoc />
-        public IEnumerable<Aggregator> Select(IQuery<Aggregator> query)
+        public IEnumerable<Aggregator> Select(IRequest<Aggregator> request)
         {
             object populator(object node)
             {
@@ -74,25 +74,25 @@ namespace RESTar
                         else return stringValue;
                         if (string.IsNullOrWhiteSpace(uri))
                             throw new Exception($"Invalid URI in aggregator template. Expected relative uri after '{method.ToString()}'.");
-                        switch (Query.Create(query, method, ref uri, null, query.Headers).Result)
+                        switch (Request.Create(request, method, ref uri, null, request.Headers).Result)
                         {
                             case RESTarError error: throw new Exception($"Could not get source data from '{uri}'. The resource returned: {error}");
                             case NoContent _: return null;
                             case Report report: return report.ReportBody.Count;
                             case Entities entities: return entities;
                             case var other:
-                                throw new Exception($"Unexpected result from {method.ToString()} query inside " +
+                                throw new Exception($"Unexpected result from {method.ToString()} request inside " +
                                                     $"Aggregator: {other.LogMessage}");
                         }
                     case var other: return other;
                 }
             }
 
-            if (!query.Body.HasContent)
+            if (!request.Body.HasContent)
                 throw new Exception("Missing data source for Aggregator request");
-            var _template = query.Body.ToList<Aggregator>().FirstOrDefault();
+            var _template = request.Body.ToList<Aggregator>().FirstOrDefault();
             populator(_template);
-            return new[] {_template}.Where(query.Conditions);
+            return new[] {_template}.Where(request.Conditions);
         }
     }
 }

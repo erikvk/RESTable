@@ -4,7 +4,7 @@ using System.Linq;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using RESTar.Linq;
-using RESTar.Queries;
+using RESTar.Requests;
 
 namespace RESTar.Serialization.NativeProtocol
 {

@@ -201,7 +201,7 @@ namespace RESTar.Admin
         internal bool IsBuiltIn => Name == "Raw" || Name == "Simple" || Name == "JSend";
 
         /// <inheritdoc />
-        public IEnumerable<OutputFormat> Select(IQuery<OutputFormat> query)
+        public IEnumerable<OutputFormat> Select(IRequest<OutputFormat> request)
         {
             DbOutputFormat.Init();
             return DbOutputFormat.GetAll()
@@ -212,14 +212,14 @@ namespace RESTar.Admin
                     IsDefault = f.IsDefault,
                     Example = JToken.Parse(f.RegularPattern.Replace("$data", ExampleArray.ToString()))
                 })
-                .Where(query.Conditions);
+                .Where(request.Conditions);
         }
 
         /// <inheritdoc />
-        public int Insert(IQuery<OutputFormat> query)
+        public int Insert(IRequest<OutputFormat> request)
         {
             var count = 0;
-            foreach (var entity in query.GetEntities())
+            foreach (var entity in request.GetEntities())
             {
                 if (DbOutputFormat.GetByName(entity.Name) != null)
                     throw new Exception($"Invalid name. '{entity.Name}' is already in use.");
@@ -230,10 +230,10 @@ namespace RESTar.Admin
         }
 
         /// <inheritdoc />
-        public int Update(IQuery<OutputFormat> query)
+        public int Update(IRequest<OutputFormat> request)
         {
             var count = 1;
-            query.GetEntities().ForEach(entity =>
+            request.GetEntities().ForEach(entity =>
             {
                 var dbEntity = DbOutputFormat.GetByName(entity.Name);
                 if (dbEntity == null) return;
@@ -250,10 +250,10 @@ namespace RESTar.Admin
         }
 
         /// <inheritdoc />
-        public int Delete(IQuery<OutputFormat> query)
+        public int Delete(IRequest<OutputFormat> request)
         {
             var count = 0;
-            query.GetEntities().ForEach(entity =>
+            request.GetEntities().ForEach(entity =>
             {
                 if (entity.IsBuiltIn) return;
                 Transact.Trans(DbOutputFormat.GetByName(entity.Name).Delete);

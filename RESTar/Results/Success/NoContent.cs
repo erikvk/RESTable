@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Net;
-using RESTar.Queries;
+using RESTar.Requests;
 
 namespace RESTar.Results.Success
 {

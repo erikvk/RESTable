@@ -6,7 +6,7 @@ using RESTar.Admin;
 using RESTar.Internal;
 using RESTar.Results.Error.NotFound;
 
-namespace RESTar.Queries
+namespace RESTar.Requests
 {
     internal class UriComponents : IUriComponents
     {
@@ -94,7 +94,7 @@ namespace RESTar.Queries
             uri.ProtocolProvider = cachedProtocolProvider.ProtocolProvider;
             try
             {
-                cachedProtocolProvider.ProtocolProvider.ParseQuery(tail, uri, context);
+                cachedProtocolProvider.ProtocolProvider.PopulateURI(tail, uri, context);
             }
             catch (Exception e)
             {

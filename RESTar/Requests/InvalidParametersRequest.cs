@@ -5,9 +5,9 @@ using RESTar.Logging;
 using RESTar.Resources;
 using RESTar.Results.Error;
 
-namespace RESTar.Queries
+namespace RESTar.Requests
 {
-    internal class InvalidParametersQuery : IQuery, IQueryInternal
+    internal class InvalidParametersRequest : IRequest, IRequestInternal
     {
         public bool IsValid { get; }
         private Exception Error { get; }
@@ -35,7 +35,7 @@ namespace RESTar.Queries
 
         #region Parameter bindings
 
-        public QueryParameters Parameters { get; }
+        public RequestParameters Parameters { get; }
         public string TraceId => Parameters.TraceId;
         public Context Context => Parameters.Context;
         public CachedProtocolProvider CachedProtocolProvider => Parameters.CachedProtocolProvider;
@@ -53,7 +53,7 @@ namespace RESTar.Queries
         public Headers ResponseHeaders { get; }
         public ICollection<string> Cookies { get; }
         
-        internal InvalidParametersQuery(QueryParameters parameters)
+        internal InvalidParametersRequest(RequestParameters parameters)
         {
             IsValid = false;
             Parameters = parameters;

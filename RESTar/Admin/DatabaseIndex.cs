@@ -112,7 +112,7 @@ namespace RESTar.Admin
         private static void Register<T>(string indexName, params ColumnInfo[] columns) where T : class
         {
             SelectionCondition.Value = indexName;
-            SelectionInternalQuery.InputSelector = () => new[]
+            SelectionRequest.InputSelector = () => new[]
             {
                 new DatabaseIndex(typeof(T).RESTarTypeName())
                 {
@@ -120,21 +120,21 @@ namespace RESTar.Admin
                     Columns = columns
                 }
             };
-            SelectionInternalQuery.Result.ThrowIfError();
+            SelectionRequest.Result.ThrowIfError();
         }
 
         #endregion
 
         private static Condition<DatabaseIndex> SelectionCondition { get; set; }
-        private static IQuery<DatabaseIndex> SelectionInternalQuery { get; set; }
+        private static IRequest<DatabaseIndex> SelectionRequest { get; set; }
         internal static readonly Dictionary<string, IDatabaseIndexer> Indexers;
         static DatabaseIndex() => Indexers = new Dictionary<string, IDatabaseIndexer>();
 
         internal static void Init()
         {
             SelectionCondition = new Condition<DatabaseIndex>(nameof(Name), Operators.EQUALS, null);
-            SelectionInternalQuery = Query<DatabaseIndex>.Create(Method.PUT);
-            SelectionInternalQuery.Conditions.Add(SelectionCondition);
+            SelectionRequest = Request<DatabaseIndex>.Create(Method.PUT);
+            SelectionRequest.Conditions.Add(SelectionCondition);
         }
 
         /// <inheritdoc />
@@ -161,39 +161,39 @@ namespace RESTar.Admin
         }
 
         /// <inheritdoc />
-        public IEnumerable<DatabaseIndex> Select(IQuery<DatabaseIndex> query) => Indexers
+        public IEnumerable<DatabaseIndex> Select(IRequest<DatabaseIndex> request) => Indexers
             .Values
             .Distinct()
-            .SelectMany(indexer => indexer.Select(query));
+            .SelectMany(indexer => indexer.Select(request));
 
         /// <inheritdoc />
-        public int Insert(IQuery<DatabaseIndex> query) => query.GetEntities()
+        public int Insert(IRequest<DatabaseIndex> request) => request.GetEntities()
             .GroupBy(index => index.IResource.Provider)
             .Sum(group =>
             {
                 if (!Indexers.TryGetValue(group.Key, out var indexer))
                     throw new Exception($"Unable to register index. Resource '{group.First().IResource.Name}' " +
                                         "is not a database resource.");
-                query.InputSelector = () => group;
-                return indexer.Insert(query);
+                request.InputSelector = () => group;
+                return indexer.Insert(request);
             });
 
         /// <inheritdoc />
-        public int Update(IQuery<DatabaseIndex> query) => query.GetEntities()
+        public int Update(IRequest<DatabaseIndex> request) => request.GetEntities()
             .GroupBy(index => index.IResource.Provider)
             .Sum(group =>
             {
-                query.Updater = _ => group;
-                return Indexers[group.Key].Update(query);
+                request.Updater = _ => group;
+                return Indexers[group.Key].Update(request);
             });
 
         /// <inheritdoc />
-        public int Delete(IQuery<DatabaseIndex> query) => query.GetEntities()
+        public int Delete(IRequest<DatabaseIndex> request) => request.GetEntities()
             .GroupBy(index => index.IResource.Provider)
             .Sum(group =>
             {
-                query.InputSelector = () => group;
-                return Indexers[group.Key].Delete(query);
+                request.InputSelector = () => group;
+                return Indexers[group.Key].Delete(request);
             });
     }
 

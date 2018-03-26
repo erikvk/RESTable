@@ -12,7 +12,7 @@ using RESTar;
 using RESTar.Admin;
 using RESTar.Linq;
 using RESTar.Operations;
-using RESTar.Queries;
+using RESTar.Requests;
 using RESTar.Results.Success;
 using Starcounter;
 using static RESTar.Method;
@@ -433,7 +433,7 @@ namespace RESTarTester
 
             #region Internal requests
 
-            var g = Query<MyDict>.Create(POST);
+            var g = Request<MyDict>.Create(POST);
             g.InputSelector = () =>
             {
                 dynamic d = new MyDict();
@@ -454,19 +454,19 @@ namespace RESTarTester
             Debug.Assert(result is InsertedEntities ie && ie.InsertedCount == 3);
 
             var r1Cond = new Condition<Resource1>(nameof(Resource1.Sbyte), GREATER_THAN, 1);
-            var r1 = Query<Resource1>.Create(GET);
+            var r1 = Request<Resource1>.Create(GET);
             r1.Conditions.Add(r1Cond);
 
-            var r2 = Query<Resource2>.Create(GET);
-            var r3 = Query<Resource3>.Create(GET);
-            var r4 = Query<Resource4>.Create(GET);
-            var r6 = Query<Aggregator>.Create(GET);
+            var r2 = Request<Resource2>.Create(GET);
+            var r3 = Request<Resource3>.Create(GET);
+            var r4 = Request<Resource4>.Create(GET);
+            var r6 = Request<Aggregator>.Create(GET);
             r6.Body = new Body(new
             {
                 A = "REPORT /resource",
                 B = new[] {"REPORT /resource", "REPORT /resource"}
             });
-            var r5 = Query<Resource1>.Create(GET);
+            var r5 = Request<Resource1>.Create(GET);
             var cond = new Condition<Resource1>("SByte", GREATER_THAN, 2);
             r5.Conditions.Add(cond);
             r5.Headers.Accept = RESTar.ContentType.Excel;
@@ -586,10 +586,10 @@ namespace RESTarTester
     {
         public Things T { get; set; }
 
-        public IEnumerable<MyRes> Select(IQuery<MyRes> query)
+        public IEnumerable<MyRes> Select(IRequest<MyRes> request)
         {
-            Things thing = query.Conditions.Get("$T", EQUALS).Value;
-            var other = query.Conditions.Get("V", EQUALS).Value;
+            Things thing = request.Conditions.Get("$T", EQUALS).Value;
+            var other = request.Conditions.Get("V", EQUALS).Value;
             return new[] {new MyRes {["T"] = thing, ["V"] = other}};
         }
     }
@@ -629,7 +629,7 @@ namespace RESTarTester
     {
         public bool Hej { get; set; }
 
-        public IEnumerable<AsyncTest> Select(IQuery<AsyncTest> query)
+        public IEnumerable<AsyncTest> Select(IRequest<AsyncTest> request)
         {
             async Task<AsyncTest> get()
             {
@@ -644,7 +644,7 @@ namespace RESTarTester
     [RESTar]
     public class Wrapper : ResourceWrapper<Base>, ISelector<Base>
     {
-        public IEnumerable<Base> Select(IQuery<Base> query)
+        public IEnumerable<Base> Select(IRequest<Base> request)
         {
             return Db.SQL<Resource1>("SELECT t FROM RESTarTester.Resource1 t");
         }
@@ -663,20 +663,20 @@ namespace RESTarTester
 
         private static List<AuthResource> Items = new List<AuthResource>();
 
-        public IEnumerable<AuthResource> Select(IQuery<AuthResource> query) => Items.Where(query.Conditions);
+        public IEnumerable<AuthResource> Select(IRequest<AuthResource> request) => Items.Where(request.Conditions);
 
-        public int Insert(IQuery<AuthResource> query) => query.GetEntities().Aggregate(0, (count, entity) =>
+        public int Insert(IRequest<AuthResource> request) => request.GetEntities().Aggregate(0, (count, entity) =>
         {
             Items.Add(entity);
             return count += 1;
         });
 
-        public int Delete(IQuery<AuthResource> query) => query.GetEntities()
+        public int Delete(IRequest<AuthResource> request) => request.GetEntities()
             .Aggregate(0, (count, entity) => count += Items.RemoveAll(i => i.Id == entity.Id));
 
-        public AuthResults Authenticate(IQuery<AuthResource> query)
+        public AuthResults Authenticate(IRequest<AuthResource> request)
         {
-            var password = query.Headers["password"];
+            var password = request.Headers["password"];
             return (password == "the password", "Invalid password!");
         }
 
@@ -713,11 +713,11 @@ namespace RESTarTester
         {
             public bool Active { get; set; }
 
-            public IEnumerable<Resource1> Select(IQuery<Resource1> query)
+            public IEnumerable<Resource1> Select(IRequest<Resource1> request)
             {
-                if (query.Conditions.Get("Active", EQUALS)?.Value == true)
+                if (request.Conditions.Get("Active", EQUALS)?.Value == true)
                     return Db.SQL<Resource1>("SELECT t FROM RESTarTester.Resource1 t")
-                        .Where(query.Conditions);
+                        .Where(request.Conditions);
                 return null;
             }
         }

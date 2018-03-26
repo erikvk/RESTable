@@ -11,6 +11,6 @@ namespace RESTar.Operations {
         /// The delete method for this IDeleter instance. Defines the Delete
         /// operation for a given resource.
         /// </summary>
-        ResourceProfile Profile(IQuery<T> query);
+        ResourceProfile Profile(IRequest<T> request);
     }
 }

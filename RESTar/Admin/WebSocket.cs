@@ -40,7 +40,7 @@ namespace RESTar.Admin
         private WebSockets.WebSocket _WebSocket { get; set; }
 
         /// <inheritdoc />
-        public IEnumerable<WebSocket> Select(IQuery<WebSocket> query) => WebSocketController
+        public IEnumerable<WebSocket> Select(IRequest<WebSocket> request) => WebSocketController
             .AllSockets
             .Values
             .Select(socket => new WebSocket
@@ -51,13 +51,13 @@ namespace RESTar.Admin
                 Terminal = JObject.Parse(Serializers.Json.Serialize(socket.Terminal)),
                 _WebSocket = socket
             })
-            .Where(query.Conditions);
+            .Where(request.Conditions);
 
         /// <inheritdoc />
-        public int Delete(IQuery<WebSocket> query)
+        public int Delete(IRequest<WebSocket> request)
         {
             var count = 0;
-            foreach (var entity in query.GetEntities())
+            foreach (var entity in request.GetEntities())
             {
                 entity._WebSocket.Disconnect();
                 count += 1;

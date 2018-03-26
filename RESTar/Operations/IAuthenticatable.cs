@@ -10,6 +10,6 @@
         /// The delete method for this IDeleter instance. Defines the Delete
         /// operation for a given resource.
         /// </summary>
-        AuthResults Authenticate(IQuery<T> query);
+        AuthResults Authenticate(IRequest<T> request);
     }
 }

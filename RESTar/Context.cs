@@ -1,6 +1,6 @@
 ﻿using System;
 using RESTar.Auth;
-using RESTar.Queries;
+using RESTar.Requests;
 using RESTar.Results.Error;
 using RESTar.Results.Error.Forbidden;
 using RESTar.Results.Success;
@@ -85,18 +85,18 @@ namespace RESTar
         /// <param name="body"></param>
         /// <param name="headers"></param>
         /// <returns></returns>
-        public IQuery Query(Method method, ref string uri, byte[] body = null, Headers headers = null)
+        public IRequest CreateRequest(Method method, ref string uri, byte[] body = null, Headers headers = null)
         {
             if (uri == null) throw new MissingUri();
             if (Used) throw new ReusedContext();
             Used = true;
             if (IsWebSocketUpgrade)
                 WebSocket = CreateWebSocket();
-            var parameters = new QueryParameters(this, method, ref uri, body, headers);
+            var parameters = new RequestParameters(this, method, ref uri, body, headers);
             parameters.Authenticate();
             if (!parameters.IsValid)
-                return new InvalidParametersQuery(parameters);
-            return RESTar.Query.Construct((dynamic) parameters.IResource, parameters);
+                return new InvalidParametersRequest(parameters);
+            return Request.Construct((dynamic) parameters.IResource, parameters);
         }
 
         /// <summary>
@@ -109,7 +109,7 @@ namespace RESTar
         public ISerializedResult CheckOrigin(ref string uri, Headers headers)
         {
             if (uri == null) throw new MissingUri();
-            var parameters = new QueryParameters(this, Method.OPTIONS, ref uri, null, headers);
+            var parameters = new RequestParameters(this, Method.OPTIONS, ref uri, null, headers);
             var origin = parameters.Headers.Origin;
             if (!parameters.IsValid || !Uri.TryCreate(origin, UriKind.Absolute, out var originUri))
                 return new InvalidOrigin();

@@ -9,6 +9,6 @@
         /// The delete method for this IDeleter instance. Defines the Delete
         /// operation for a given resource.
         /// </summary>
-        long Count(IQuery<T> query);
+        long Count(IRequest<T> request);
     }
 }

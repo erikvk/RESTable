@@ -21,6 +21,6 @@ namespace RESTar
         public string DocumentationAvailableAt { get; set; }
 
         /// <inheritdoc />
-        public IEnumerable<Help> Select(IQuery<Help> query) => new[] {new Help {DocumentationAvailableAt = DocumentationUrl}};
+        public IEnumerable<Help> Select(IRequest<Help> request) => new[] {new Help {DocumentationAvailableAt = DocumentationUrl}};
     }
 }

@@ -2,18 +2,18 @@
 using System.Collections.Generic;
 using RESTar.Internal;
 using RESTar.Logging;
-using RESTar.Queries;
+using RESTar.Requests;
 using RESTar.Resources;
 
 namespace RESTar
 {
-    internal interface IQueryInternal : IQuery
+    internal interface IRequestInternal : IRequest
     {
         bool IsWebSocketUpgrade { get; }
         CachedProtocolProvider CachedProtocolProvider { get; }
     }
 
-    internal interface IQueryInternal<T> : IQueryInternal, IQuery<T> where T : class
+    internal interface IRequestInternal<T> : IRequestInternal, IRequest<T> where T : class
     {
         EntitiesSelector<T> EntitiesProducer { set; }
         EntitiesSelector<T> GetSelector();
@@ -25,7 +25,7 @@ namespace RESTar
     /// A RESTar request for a resource T. This is a common generic interface for all
     /// request types.
     /// </summary>
-    public interface IQuery<T> : IQuery where T : class
+    public interface IRequest<T> : IRequest where T : class
     {
         /// <summary>
         /// The resource of the request
@@ -57,7 +57,7 @@ namespace RESTar
         IEnumerable<T> GetEntities();
 
         /// <summary>
-        /// The method used when selecting entities for query input. Set this property to override the default behavior.
+        /// The method used when selecting entities for request input. Set this property to override the default behavior.
         /// This delegate is used in  The default behavior varies between methods. For GET By default RESTar will deserialize the request body to an <see cref="IEnumerable{T}"/> using the 
         /// content type provided in the Content-Type header.
         /// </summary>
@@ -89,7 +89,7 @@ namespace RESTar
     /// <summary>
     /// A non-generic common interface for all request classes used in RESTar
     /// </summary>
-    public interface IQuery : ITraceable, ILogable
+    public interface IRequest : ITraceable, ILogable
     {
         /// <summary>
         /// The method of the request

@@ -11,11 +11,11 @@
         /// </summary>
         public int DeletedCount { get; }
 
-        internal DeletedEntities(int count, IQuery query) : base(query)
+        internal DeletedEntities(int count, IRequest request) : base(request)
         {
             DeletedCount = count;
-            Headers["RESTar-info"] = $"{count} entities deleted from '{query.Resource.Name}'";
-            TimeElapsed = query.TimeElapsed;
+            Headers["RESTar-info"] = $"{count} entities deleted from '{request.Resource.Name}'";
+            TimeElapsed = request.TimeElapsed;
         }
     }
 }

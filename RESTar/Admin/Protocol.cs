@@ -75,7 +75,7 @@ namespace RESTar.Admin
         public ContentType[] ContentTypes { get; private set; }
 
         /// <inheritdoc />
-        public IEnumerable<Protocol> Select(IQuery<Protocol> query)
+        public IEnumerable<Protocol> Select(IRequest<Protocol> request)
         {
             return ProtocolController.ProtocolProviders.Values.Distinct().Select(cachedProvider =>
             {

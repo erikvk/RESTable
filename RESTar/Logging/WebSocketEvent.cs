@@ -1,5 +1,5 @@
 ﻿using System;
-using RESTar.Queries;
+using RESTar.Requests;
 using RESTar.WebSockets;
 
 namespace RESTar.Logging

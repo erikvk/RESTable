@@ -1,6 +1,6 @@
 ﻿using System;
 using Newtonsoft.Json;
-using RESTar.Queries;
+using RESTar.Requests;
 using static Newtonsoft.Json.NullValueHandling;
 
 namespace RESTar.Logging

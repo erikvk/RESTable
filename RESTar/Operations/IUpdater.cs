@@ -9,6 +9,6 @@
         /// The update method for this IUpdater instance. Defines the Update
         /// operation for a given resource.
         /// </summary>
-        int Update(IQuery<T> query);
+        int Update(IRequest<T> request);
     }
 }

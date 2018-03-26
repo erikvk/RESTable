@@ -9,6 +9,6 @@
         /// The insert method for this IInserter instance. Defines the Insert
         /// operation for a given resource.
         /// </summary>
-        int Insert(IQuery<T> query);
+        int Insert(IRequest<T> request);
     }
 }

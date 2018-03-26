@@ -44,9 +44,9 @@ namespace RESTarExample
         [RESTarView]
         public class MyView : ISelector<DbClass>
         {
-            public IEnumerable<DbClass> Select(IQuery<DbClass> query)
+            public IEnumerable<DbClass> Select(IRequest<DbClass> request)
             {
-                return StarcounterOperations<DbClass>.Select(query);
+                return StarcounterOperations<DbClass>.Select(request);
             }
         }
     }
@@ -54,7 +54,7 @@ namespace RESTarExample
     [RESTar(Method.GET)]
     public class Thing : ISelector<Thing>
     {
-        public IEnumerable<Thing> Select(IQuery<Thing> query)
+        public IEnumerable<Thing> Select(IRequest<Thing> request)
         {
             throw new NotImplementedException();
         }
@@ -119,25 +119,25 @@ namespace RESTarExample
             return dbObject;
         }
 
-        public IEnumerable<MyEntityResource> Select(IQuery<MyEntityResource> query) => Db
+        public IEnumerable<MyEntityResource> Select(IRequest<MyEntityResource> request) => Db
             .SQL<MyStarcounterResource>($"SELECT t FROM {typeof(MyStarcounterResource).FullName} t")
             .Select(FromDbObject)
-            .Where(query.Conditions);
+            .Where(request.Conditions);
 
-        public int Insert(IQuery<MyEntityResource> query) => Db.Transact(() => query
+        public int Insert(IRequest<MyEntityResource> request) => Db.Transact(() => request
             .GetEntities()
             .Select(ToDbObject)
             .Count());
 
-        public int Update(IQuery<MyEntityResource> query) => Db.Transact(() => query
+        public int Update(IRequest<MyEntityResource> request) => Db.Transact(() => request
             .GetEntities()
             .Select(ToDbObject)
             .Count());
 
-        public int Delete(IQuery<MyEntityResource> query) => Db.Transact(() =>
+        public int Delete(IRequest<MyEntityResource> request) => Db.Transact(() =>
         {
             var i = 0;
-            foreach (var item in query.GetEntities())
+            foreach (var item in request.GetEntities())
             {
                 item.Delete();
                 i += 1;
@@ -268,7 +268,7 @@ namespace RESTarExample
         public string InputStr { get; set; } = "Goo";
         public int Int { get; set; } = 100;
 
-        public IEnumerable<SemiDynamic> Select(IQuery<SemiDynamic> query)
+        public IEnumerable<SemiDynamic> Select(IRequest<SemiDynamic> request)
         {
             return new[]
             {
@@ -297,7 +297,7 @@ namespace RESTarExample
     [RESTar(Method.GET)]
     public class SemiDynamic2 : Dictionary<string, object>, ISelector<SemiDynamic2>
     {
-        public IEnumerable<SemiDynamic2> Select(IQuery<SemiDynamic2> query)
+        public IEnumerable<SemiDynamic2> Select(IRequest<SemiDynamic2> request)
         {
             return new[]
             {
@@ -323,7 +323,7 @@ namespace RESTarExample
         public string Str { get; set; }
         public int Int { get; set; }
 
-        public IEnumerable<AllDynamic> Select(IQuery<AllDynamic> query)
+        public IEnumerable<AllDynamic> Select(IRequest<AllDynamic> request)
         {
             return new[]
             {
@@ -368,7 +368,7 @@ namespace RESTarExample
     [RESTar(Method.GET, Singleton = true)]
     public class MyTestResource : Dictionary<string, dynamic>, ISelector<MyTestResource>
     {
-        public IEnumerable<MyTestResource> Select(IQuery<MyTestResource> query)
+        public IEnumerable<MyTestResource> Select(IRequest<MyTestResource> request)
         {
             return new[]
             {
@@ -413,7 +413,7 @@ namespace RESTarExample
         [RESTar(Method.GET, Description = "Returns a fine object")]
         public class Get : JObject, ISelector<Get>
         {
-            public IEnumerable<Get> Select(IQuery<Get> query) => new[] {new Get {["Soo"] = 123}};
+            public IEnumerable<Get> Select(IRequest<Get> request) => new[] {new Get {["Soo"] = 123}};
         }
     }
 
@@ -450,26 +450,26 @@ namespace RESTarExample
         public string S { get; set; }
         public string[] Ss { get; set; }
 
-        public int Insert(IQuery<R> query)
+        public int Insert(IRequest<R> request)
         {
-            var entities = query.GetEntities();
+            var entities = request.GetEntities();
             return entities.Count();
         }
 
-        public IEnumerable<R> Select(IQuery<R> query)
+        public IEnumerable<R> Select(IRequest<R> request)
         {
             return new[] {new R {S = "Swoo", Ss = new[] {"S", "Sd"}}};
         }
 
-        public int Update(IQuery<R> query)
+        public int Update(IRequest<R> request)
         {
-            var entities = query.GetEntities();
+            var entities = request.GetEntities();
             return entities.Count();
         }
 
-        public int Delete(IQuery<R> query)
+        public int Delete(IRequest<R> request)
         {
-            var entities = query.GetEntities();
+            var entities = request.GetEntities();
             return entities.Count();
         }
     }

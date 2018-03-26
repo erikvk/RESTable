@@ -16,9 +16,9 @@ namespace RESTar.Starcounter
                                              "WHERE t.\"Index\" =? ORDER BY t.Position";
 
         /// <inheritdoc />
-        public IEnumerable<DatabaseIndex> Select(IQuery<DatabaseIndex> query)
+        public IEnumerable<DatabaseIndex> Select(IRequest<DatabaseIndex> request)
         {
-            if (query == null) throw new ArgumentNullException(nameof(query));
+            if (request == null) throw new ArgumentNullException(nameof(request));
             return Db.SQL<Index>(AllIndexes)
                 .Where(index => !index.Table.FullName.StartsWith("Starcounter."))
                 .Where(index => !index.Name.StartsWith("DYNAMIT_GENERATED_INDEX"))
@@ -31,15 +31,15 @@ namespace RESTar.Starcounter
                         .Select(c => new ColumnInfo(c.Column.Name, c.Ascending == 0))
                         .ToArray()
                 })
-                .Where(query.Conditions);
+                .Where(request.Conditions);
         }
 
         /// <inheritdoc />
-        public int Insert(IQuery<DatabaseIndex> query)
+        public int Insert(IRequest<DatabaseIndex> request)
         {
-            if (query == null) throw new ArgumentNullException(nameof(query));
+            if (request == null) throw new ArgumentNullException(nameof(request));
             var count = 0;
-            foreach (var index in query.GetEntities())
+            foreach (var index in request.GetEntities())
             {
                 if (index.IResource == null)
                     throw new Exception("Found no resource to register index on");
@@ -60,11 +60,11 @@ namespace RESTar.Starcounter
         }
 
         /// <inheritdoc />
-        public int Update(IQuery<DatabaseIndex> query)
+        public int Update(IRequest<DatabaseIndex> request)
         {
-            if (query == null) throw new ArgumentNullException(nameof(query));
+            if (request == null) throw new ArgumentNullException(nameof(request));
             var count = 0;
-            foreach (var index in query.GetEntities())
+            foreach (var index in request.GetEntities())
             {
                 Db.SQL($"DROP INDEX {index.Name.Fnuttify()} ON {index.IResource.Type.RESTarTypeName().Fnuttify()}");
                 try
@@ -84,11 +84,11 @@ namespace RESTar.Starcounter
         }
 
         /// <inheritdoc />
-        public int Delete(IQuery<DatabaseIndex> query)
+        public int Delete(IRequest<DatabaseIndex> request)
         {
-            if (query == null) throw new ArgumentNullException(nameof(query));
+            if (request == null) throw new ArgumentNullException(nameof(request));
             var count = 0;
-            foreach (var index in query.GetEntities())
+            foreach (var index in request.GetEntities())
             {
                 Db.SQL($"DROP INDEX {index.Name.Fnuttify()} ON {index.IResource.Type.RESTarTypeName().Fnuttify()}");
                 count += 1;

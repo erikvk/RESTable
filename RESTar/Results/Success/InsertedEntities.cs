@@ -17,13 +17,13 @@ namespace RESTar.Results.Success
         /// <inheritdoc />
         public override TimeSpan TimeElapsed { get; protected set; }
 
-        internal InsertedEntities(int count, IQuery query) : base(query)
+        internal InsertedEntities(int count, IRequest request) : base(request)
         {
             InsertedCount = count;
             StatusCode = count < 1 ? HttpStatusCode.OK : HttpStatusCode.Created;
             StatusDescription = StatusCode.ToString();
-            Headers["RESTar-info"] = $"{count} entities inserted into '{query.Resource.Name}'";
-            TimeElapsed = query.TimeElapsed;
+            Headers["RESTar-info"] = $"{count} entities inserted into '{request.Resource.Name}'";
+            TimeElapsed = request.TimeElapsed;
         }
     }
 }

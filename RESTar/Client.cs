@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Net;
 using RESTar.Auth;
-using RESTar.Queries;
+using RESTar.Requests;
 
 namespace RESTar
 {

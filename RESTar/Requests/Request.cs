@@ -16,9 +16,9 @@ using RESTar.Linq;
 using RESTar.Resources;
 using RESTar.Results.Success;
 
-namespace RESTar.Queries
+namespace RESTar.Requests
 {
-    internal class Query<T> : IQuery<T>, IQueryInternal<T>, ITraceable where T : class
+    internal class Request<T> : IRequest<T>, IRequestInternal<T>, ITraceable where T : class
     {
         public ITarget<T> Target { get; }
         public bool HasConditions => !(_conditions?.Count > 0);
@@ -93,8 +93,8 @@ namespace RESTar.Queries
         private ICollection<string> _cookies;
         private Body _body;
         private IResource<T> IResource { get; }
-        IEntityResource IQuery.Resource => IResource as IEntityResource;
-        IEntityResource<T> IQuery<T>.Resource => IResource as IEntityResource<T>;
+        IEntityResource IRequest.Resource => IResource as IEntityResource;
+        IEntityResource<T> IRequest<T>.Resource => IResource as IEntityResource<T>;
         private DataConfig InputDataConfig { get; }
         private DataConfig OutputDataConfig { get; }
         private bool IsEvaluating;
@@ -104,20 +104,20 @@ namespace RESTar.Queries
 
         #region Parameter bindings
 
-        public QueryParameters QueryParameters { get; }
+        public RequestParameters Parameters { get; }
 
-        public string TraceId => QueryParameters.TraceId;
-        public Context Context => QueryParameters.Context;
-        public CachedProtocolProvider CachedProtocolProvider => QueryParameters.CachedProtocolProvider;
-        public Headers Headers => QueryParameters.Headers;
-        public bool IsWebSocketUpgrade => QueryParameters.IsWebSocketUpgrade;
-        public TimeSpan TimeElapsed => QueryParameters.Stopwatch.Elapsed;
+        public string TraceId => Parameters.TraceId;
+        public Context Context => Parameters.Context;
+        public CachedProtocolProvider CachedProtocolProvider => Parameters.CachedProtocolProvider;
+        public Headers Headers => Parameters.Headers;
+        public bool IsWebSocketUpgrade => Parameters.IsWebSocketUpgrade;
+        public TimeSpan TimeElapsed => Parameters.Stopwatch.Elapsed;
 
         #endregion
 
         #region ILogable
 
-        private ILogable LogItem => QueryParameters;
+        private ILogable LogItem => Parameters;
         LogEventType ILogable.LogEventType => LogItem.LogEventType;
         string ILogable.LogMessage => LogItem.LogMessage;
         string ILogable.LogContent => LogItem.LogContent;
@@ -212,9 +212,9 @@ namespace RESTar.Queries
 
         public IEnumerable<T> GetEntities() => EntitiesProducer?.Invoke() ?? new T[0];
 
-        internal Query(IResource<T> resource, QueryParameters queryParameters)
+        internal Request(IResource<T> resource, RequestParameters parameters)
         {
-            QueryParameters = queryParameters;
+            Parameters = parameters;
             IResource = resource;
             Target = resource;
             InputDataConfig = Headers.Source != null ? DataConfig.External : DataConfig.Client;
@@ -226,21 +226,21 @@ namespace RESTar.Queries
                     throw new ResourceIsInternal(resource);
                 if (IResource is IEntityResource<T> entityResource)
                 {
-                    Method = queryParameters.Method;
-                    MetaConditions = MetaConditions.Parse(queryParameters.Uri.MetaConditions, entityResource);
-                    if (queryParameters.Uri.ViewName != null)
+                    Method = parameters.Method;
+                    MetaConditions = MetaConditions.Parse(parameters.Uri.MetaConditions, entityResource);
+                    if (parameters.Uri.ViewName != null)
                     {
-                        if (!entityResource.ViewDictionary.TryGetValue(queryParameters.Uri.ViewName, out var view))
-                            throw new UnknownView(queryParameters.Uri.ViewName, entityResource);
+                        if (!entityResource.ViewDictionary.TryGetValue(parameters.Uri.ViewName, out var view))
+                            throw new UnknownView(parameters.Uri.ViewName, entityResource);
                         Target = view;
                     }
                 }
-                if (queryParameters.Uri.Conditions.Count > 0)
-                    Conditions = Condition<T>.Parse(queryParameters.Uri.Conditions, Target);
-                if (queryParameters.Headers.UnsafeOverride)
+                if (parameters.Uri.Conditions.Count > 0)
+                    Conditions = Condition<T>.Parse(parameters.Uri.Conditions, Target);
+                if (parameters.Headers.UnsafeOverride)
                 {
                     MetaConditions.Unsafe = true;
-                    queryParameters.Headers.UnsafeOverride = false;
+                    parameters.Headers.UnsafeOverride = false;
                 }
                 if (Context.Client.Origin == OriginType.Internal && Method == GET)
                     MetaConditions.Formatter = DbOutputFormat.Raw;
@@ -248,9 +248,9 @@ namespace RESTar.Queries
                 switch (InputDataConfig)
                 {
                     case DataConfig.Client:
-                        if (!QueryParameters.HasBody)
+                        if (!Parameters.HasBody)
                             return;
-                        Body = new Body(QueryParameters.BodyBytes, Headers.ContentType ?? defaultContentType, CachedProtocolProvider);
+                        Body = new Body(Parameters.BodyBytes, Headers.ContentType ?? defaultContentType, CachedProtocolProvider);
                         break;
                     case DataConfig.External:
                         try

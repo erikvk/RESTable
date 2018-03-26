@@ -45,16 +45,16 @@ namespace RESTar.ContentTypeProviders
         }
 
         /// <inheritdoc />
-        public void SerializeEntity<T>(T entity, Stream stream, IQuery query, out ulong entityCount) where T : class
+        public void SerializeEntity<T>(T entity, Stream stream, IRequest request, out ulong entityCount) where T : class
         {
-            JsonProvider.SerializeEntity(entity, stream, query, out entityCount);
+            JsonProvider.SerializeEntity(entity, stream, request, out entityCount);
             XmlSerializeJsonStream(stream);
         }
 
         /// <inheritdoc />
-        public void SerializeCollection<T>(IEnumerable<T> entities, Stream stream, IQuery query, out ulong entityCount) where T : class
+        public void SerializeCollection<T>(IEnumerable<T> entities, Stream stream, IRequest request, out ulong entityCount) where T : class
         {
-            JsonProvider.SerializeCollection(entities, stream, query, out entityCount);
+            JsonProvider.SerializeCollection(entities, stream, request, out entityCount);
             XmlSerializeJsonStream(stream);
         }
 
