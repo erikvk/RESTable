@@ -232,18 +232,34 @@ namespace RESTar.Linq
             return (trues, falses);
         }
 
-        internal static IEnumerable<T> HardLimit<T>(this IEnumerable<T> source, int limit = -1)
+        internal static IEnumerable<T> UnsafeLimit<T>(this IEnumerable<T> source)
         {
-            if (limit == -1 || source == null) return source;
-            return ApplyHardLimiting(source, limit);
+            return source == null ? null : ApplyUnsafeLimiting(source);
         }
 
-        private static IEnumerable<T> ApplyHardLimiting<T>(IEnumerable<T> source, int limit)
+        private static IEnumerable<T> ApplyUnsafeLimiting<T>(IEnumerable<T> source)
         {
             var i = 1;
             foreach (var entity in source)
             {
-                if (i > limit) throw new InvalidInputCount(limit);
+                if (i > 1) throw new AmbiguousMatch();
+                i += 1;
+                yield return entity;
+            }
+        }
+
+        internal static IEnumerable<T> InputLimit<T>(this IEnumerable<T> source)
+        {
+            if (source == null) return null;
+            return ApplyInputLimiting(source);
+        }
+
+        private static IEnumerable<T> ApplyInputLimiting<T>(IEnumerable<T> source)
+        {
+            var i = 1;
+            foreach (var entity in source)
+            {
+                if (i > 1) throw new InvalidInputCount();
                 i += 1;
                 yield return entity;
             }

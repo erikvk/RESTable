@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Reflection;
 using RESTar.Operations;
 using RESTar.Reflection;
 using RESTar.Reflection.Dynamic;
@@ -53,7 +54,7 @@ namespace RESTar.Resources
             Type = type;
             Name = type.Name;
             Select = DelegateMaker.GetDelegate<Selector<T>>(type);
-            var viewAttribute = type.GetAttribute<RESTarViewAttribute>();
+            var viewAttribute = type.GetCustomAttribute<RESTarViewAttribute>();
             Members = type.GetDeclaredProperties();
             Description = viewAttribute.Description;
             ConditionBindingRule = viewAttribute.AllowDynamicConditions

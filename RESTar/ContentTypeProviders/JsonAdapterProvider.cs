@@ -53,7 +53,7 @@ namespace RESTar.ContentTypeProviders
             var jsonbytes = ProduceJson(body, out var singular);
             if (singular)
                 return JsonProvider.DeserializeEntity<T>(jsonbytes);
-            throw new InvalidInputCount(1);
+            throw new InvalidInputCount();
         }
 
         /// <inheritdoc />
@@ -76,7 +76,7 @@ namespace RESTar.ContentTypeProviders
         public IEnumerable<T> Populate<T>(IEnumerable<T> entities, byte[] body) where T : class
         {
             var json = ProduceJson(body, out var singular);
-            if (!singular) throw new InvalidInputCount(1);
+            if (!singular) throw new InvalidInputCount();
             return JsonProvider.Populate(entities, json);
         }
     }

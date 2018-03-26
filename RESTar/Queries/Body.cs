@@ -40,7 +40,7 @@ namespace RESTar.Queries
         /// </summary>
         public IEnumerable<T> PopulateTo<T>(IEnumerable<T> source) where T : class
         {
-            if (!HasContent) return null;
+            if (source == null || !HasContent) return null;
             var contentTypeProvider = ProtocolProvider.InputMimeBindings.SafeGet(ContentType.MimeType) ??
                                       throw new UnsupportedContent(ContentType.MimeType);
             return contentTypeProvider.Populate(source, Bytes);

@@ -18,12 +18,10 @@ namespace RESTar.Results.Success
         /// <inheritdoc />
         public IEnumerator<object> GetEnumerator() => Content.GetEnumerator();
 
-        private readonly IEnumerable<object> _content;
-
         /// <summary>
         /// The entities contained in the result
         /// </summary>
-        private IEnumerable<object> Content => _content ?? new object[0];
+        private IEnumerable<object> Content { get; }
 
         /// <summary>
         /// The number of entities in the result
@@ -38,9 +36,9 @@ namespace RESTar.Results.Success
         /// </summary>
         public bool IsPaged => Content != null && EntityCount > 0 && (long) EntityCount == Query.MetaConditions.Limit;
 
-        private Entities(IQuery query, IEnumerable<object> content) : base(query)
+        internal Entities(IQuery query, IEnumerable<object> content) : base(query)
         {
-            _content = content;
+            Content = content ?? new object[0];
             ExternalDestination = query.Headers.Destination;
             TimeElapsed = query.TimeElapsed;
         }
@@ -65,8 +63,5 @@ namespace RESTar.Results.Success
                 (Query.MetaConditions.Offset + (long) EntityCount).ToString()));
             return components;
         }
-
-        internal static Entities Create<TResource>(IQueryInternal<TResource> query, IEnumerable<object> content)
-            where TResource : class => new Entities(query, content);
     }
 }

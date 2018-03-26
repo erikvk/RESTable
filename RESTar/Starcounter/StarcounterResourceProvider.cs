@@ -10,7 +10,7 @@ namespace RESTar.Starcounter
         public override Type AttributeType => null;
         internal StarcounterResourceProvider() => DatabaseIndexer = new StarcounterIndexer();
         internal override void Validate() { }
-        
+
         internal override bool Include(Type type)
         {
             if (type.IsWrapper())
@@ -22,7 +22,7 @@ namespace RESTar.Starcounter
         public override Inserter<T> GetDefaultInserter<T>() => StarcounterOperations<T>.Insert;
         public override Updater<T> GetDefaultUpdater<T>() => StarcounterOperations<T>.Update;
         public override Deleter<T> GetDefaultDeleter<T>() => StarcounterOperations<T>.Delete;
-        public override Counter<T> GetDefaultCounter<T>() => StarcounterOperations<T>.Count;
+        public override Counter<T> GetDefaultCounter<T>() => null;
         public override Profiler<T> GetProfiler<T>() => StarcounterOperations<T>.Profile;
 
         public override bool IsValid(IEntityResource resource, out string reason) =>

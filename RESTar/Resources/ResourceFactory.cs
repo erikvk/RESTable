@@ -7,6 +7,7 @@ using System.Reflection.Emit;
 using Newtonsoft.Json.Linq;
 using RESTar.Linq;
 using RESTar.Admin;
+using RESTar.Internal;
 using RESTar.Reflection.IL;
 using RESTar.Operations;
 using RESTar.Results.Error;
@@ -329,7 +330,14 @@ namespace RESTar.Resources
                     if (type.IsSubclassOf(type))
                         throw new InvalidResourceViewDeclaration(type, "Views cannot inherit from their resource types");
 
-                    if (!type.Implements(typeof(ISelector<>), out var param) || param[0] != resource)
+                    if (resource.Implements(typeof(IResourceWrapper)))
+                    {
+                        var wrapped = resource.GetWrappedType();
+                        if (!type.Implements(typeof(ISelector<>), out var param) || param[0] != wrapped)
+                            throw new InvalidResourceViewDeclaration(type,
+                                $"Expected view type to implement ISelector<{wrapped.RESTarTypeName()}>");
+                    }
+                    else if (!type.Implements(typeof(ISelector<>), out var param) || param[0] != resource)
                         throw new InvalidResourceViewDeclaration(type,
                             $"Expected view type to implement ISelector<{resource.RESTarTypeName()}>");
                     var propertyUnion = resource.GetProperties(Public | Instance).Union(type.GetProperties(Public | Instance));

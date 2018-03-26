@@ -132,7 +132,7 @@ namespace RESTar.Reflection.Dynamic
                                     .Name;
                             }
                             return p;
-                        }).If(_type.IsStarcounterDbClass, ps => ps.Union(GetObjectNoAndObjectID(false)));
+                        }).If(_type.HasAttribute<DatabaseAttribute>(), ps => ps.Union(GetObjectNoAndObjectID(false)));
                     case var _ when _type.Implements(typeof(ITerminal)):
                         return _type.GetProperties(Instance | Public)
                             .ParseDeclaredProperties(flag: false)
@@ -153,7 +153,7 @@ namespace RESTar.Reflection.Dynamic
                     default:
                         return _type.GetProperties(Instance | Public)
                             .ParseDeclaredProperties(false)
-                            .If(_type.IsStarcounterDbClass, ps => ps.Union(GetObjectNoAndObjectID(false)));
+                            .If(_type.HasAttribute<DatabaseAttribute>(), ps => ps.Union(GetObjectNoAndObjectID(false)));
                 }
             }
 

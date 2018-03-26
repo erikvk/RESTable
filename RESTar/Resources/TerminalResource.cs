@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using RESTar.Linq;
 using RESTar.Operations;
 using RESTar.Reflection;
@@ -61,7 +62,7 @@ namespace RESTar.Resources
             AvailableMethods = new[] {Method.GET};
             IsInternal = false;
             IsGlobal = true;
-            var attribute = typeof(T).GetAttribute<RESTarAttribute>();
+            var attribute = typeof(T).GetCustomAttribute<RESTarAttribute>();
             InterfaceType = attribute?.Interface;
             ConditionBindingRule = typeof(T).Implements(typeof(IDynamicTerminal))
                 ? TermBindingRules.DeclaredWithDynamicFallback

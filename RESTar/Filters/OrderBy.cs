@@ -16,8 +16,6 @@ namespace RESTar.Filters
         internal bool Ascending => !Descending;
         internal IEntityResource Resource { get; }
         internal readonly Term Term;
-        internal bool IsSqlQueryable = true;
-        internal string SQL => !IsSqlQueryable ? null : $"ORDER BY {Term.DbKey.Fnuttify()} {(Descending ? "DESC" : "ASC")}";
         internal OrderBy(IEntityResource resource) => Resource = resource;
 
         internal OrderBy(IEntityResource resource, bool descending, string key, ICollection<string> dynamicMembers)
@@ -32,7 +30,6 @@ namespace RESTar.Filters
         /// </summary>
         public IEnumerable<T> Apply<T>(IEnumerable<T> entities)
         {
-            if (IsSqlQueryable) return entities;
             dynamic selector(T i) => Do.Try(() => Term.Evaluate(i), default(object));
             return Ascending ? entities.OrderBy(selector) : entities.OrderByDescending(selector);
         }

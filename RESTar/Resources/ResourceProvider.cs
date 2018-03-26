@@ -149,7 +149,7 @@ namespace RESTar.Resources
             where TResource : class, TBase => new EntityResource<TResource>
         (
             fullName: typeof(TResource).FullName,
-            attribute: typeof(TResource).GetAttribute<RESTarAttribute>(),
+            attribute: typeof(TResource).GetCustomAttribute<RESTarAttribute>(),
             selector: GetDelegate<Selector<TResource>>(typeof(TResource)) ?? GetDefaultSelector<TResource>(),
             inserter: GetDelegate<Inserter<TResource>>(typeof(TResource)) ?? GetDefaultInserter<TResource>(),
             updater: GetDelegate<Updater<TResource>>(typeof(TResource)) ?? GetDefaultUpdater<TResource>(),
@@ -166,7 +166,7 @@ namespace RESTar.Resources
             where TWrapped : class, TBase => new EntityResource<TWrapped>
         (
             fullName: typeof(TWrapper).FullName,
-            attribute: typeof(TWrapper).GetAttribute<RESTarAttribute>(),
+            attribute: typeof(TWrapper).GetCustomAttribute<RESTarAttribute>(),
             selector: GetDelegate<Selector<TWrapped>>(typeof(TWrapper)) ?? GetDefaultSelector<TWrapped>(),
             inserter: GetDelegate<Inserter<TWrapped>>(typeof(TWrapper)) ?? GetDefaultInserter<TWrapped>(),
             updater: GetDelegate<Updater<TWrapped>>(typeof(TWrapper)) ?? GetDefaultUpdater<TWrapped>(),
@@ -196,12 +196,11 @@ namespace RESTar.Resources
             .ToArray();
 
         private static View<TWrapped>[] GetWrappedViews<TWrapper, TWrapped>() where TWrapper : ResourceWrapper<TWrapped>
-            where TWrapped : class, TBase
-            => typeof(TWrapper)
-                .GetNestedTypes()
-                .Where(nested => nested.HasAttribute<RESTarViewAttribute>())
-                .Select(view => new View<TWrapped>(view))
-                .ToArray();
+            where TWrapped : class, TBase => typeof(TWrapper)
+            .GetNestedTypes()
+            .Where(nested => nested.HasAttribute<RESTarViewAttribute>())
+            .Select(view => new View<TWrapped>(view))
+            .ToArray();
 
         #endregion
     }

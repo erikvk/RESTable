@@ -57,11 +57,11 @@ namespace RESTar
         IEnumerable<T> GetEntities();
 
         /// <summary>
-        /// The method used when inserting new entities. Set this property to override the default behavior.
-        /// By default RESTar will deserialize the request body to an <see cref="IEnumerable{T}"/> using the 
+        /// The method used when selecting entities for query input. Set this property to override the default behavior.
+        /// This delegate is used in  The default behavior varies between methods. For GET By default RESTar will deserialize the request body to an <see cref="IEnumerable{T}"/> using the 
         /// content type provided in the Content-Type header.
         /// </summary>
-        EntitiesSelector<T> Selector { set; }
+        EntitiesSelector<T> InputSelector { set; }
 
         /// <summary>
         /// The method used when updating existing entities. Set this property to override the default behavior.

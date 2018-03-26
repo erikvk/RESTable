@@ -220,18 +220,12 @@ namespace RESTar.Queries
 
             if (mc.OrderBy != null)
             {
-                if (mc.Add?.Any(pc => pc.Key.EqualsNoCase(mc.OrderBy.Key)) == true)
-                    mc.OrderBy.IsSqlQueryable = false;
-                if (mc.Rename?.Any(pc => pc.Value.EqualsNoCase(mc.OrderBy.Key)) == true)
-                    mc.OrderBy.IsSqlQueryable = false;
                 if (mc.Rename?.Any(p => p.Key.Key.EqualsNoCase(mc.OrderBy.Key)) == true
                     && !mc.Rename.Any(p => p.Value.EqualsNoCase(mc.OrderBy.Key)))
                     throw new InvalidSyntax(InvalidMetaConditionSyntax,
                         $"The {(mc.OrderBy.Ascending ? "'Order_asc'" : "'Order_desc'")} " +
                         "meta-condition cannot refer to a property x that is to be renamed " +
                         "unless some other property is renamed to x");
-                if (mc.OrderBy.Term.ScQueryable == false)
-                    mc.OrderBy.IsSqlQueryable = false;
             }
 
             if (mc.Select != null && mc.Rename != null)

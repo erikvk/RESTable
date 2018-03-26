@@ -76,7 +76,7 @@ namespace RESTar
                             throw new Exception($"Invalid URI in aggregator template. Expected relative uri after '{method.ToString()}'.");
                         switch (Query.Create(query, method, ref uri, null, query.Headers).Result)
                         {
-                            case RESTarError error: throw new Exception($"Could not get source data from '{uri}'. {error}");
+                            case RESTarError error: throw new Exception($"Could not get source data from '{uri}'. The resource returned: {error}");
                             case NoContent _: return null;
                             case Report report: return report.ReportBody.Count;
                             case Entities entities: return entities;

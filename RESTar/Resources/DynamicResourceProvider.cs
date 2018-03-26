@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Reflection;
 using Dynamit;
+using RESTar.Internal;
 using RESTar.Operations;
 using RESTar.Starcounter;
 using static System.Reflection.BindingFlags;
@@ -38,7 +39,7 @@ namespace RESTar.Resources
             inserter: DDictionaryOperations<T>.Insert,
             updater: DDictionaryOperations<T>.Update,
             deleter: DDictionaryOperations<T>.Delete,
-            counter: DDictionaryOperations<T>.Count,
+            counter: null,
             profiler: DDictionaryOperations<T>.Profile,
             authenticator: null,
             views: null,

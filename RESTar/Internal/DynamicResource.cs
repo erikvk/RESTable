@@ -2,12 +2,12 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Serialization;
-using RESTar.Internal;
+using RESTar.Resources;
 using RESTar.Results.Error.BadRequest;
 using RESTar.Starcounter;
 using Starcounter;
 
-namespace RESTar.Resources
+namespace RESTar.Internal
 {
     /// <summary>
     /// Creates and structures all the dynamic resources for this RESTar instance

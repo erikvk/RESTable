@@ -13,18 +13,35 @@ namespace RESTar.Starcounter
     /// <summary>
     /// The default operations for static Starcounter database resources
     /// </summary>
-    internal static class StarcounterOperations<T> where T : class
+    public static class StarcounterOperations<T> where T : class
     {
         internal const string ColumnByTable = "SELECT t FROM Starcounter.Metadata.Column t WHERE t.Table.Fullname =?";
         internal static readonly string SELECT = $"SELECT t FROM {typeof(T).RESTarTypeName().Fnuttify()} t ";
-        internal static readonly string COUNT = $"SELECT COUNT(t) FROM {typeof(T).RESTarTypeName().Fnuttify()} t ";
 
-        internal static readonly Selector<T> Select;
-        internal static readonly Inserter<T> Insert;
-        internal static readonly Updater<T> Update;
-        internal static readonly Deleter<T> Delete;
-        internal static readonly Profiler<T> Profile;
-        internal static readonly Counter<T> Count;
+        /// <summary>
+        /// Selects entities from a Starcounter table
+        /// </summary>
+        public static Selector<T> Select { get; }
+
+        /// <summary>
+        /// Inserts entities into a Starcounter table. Since 
+        /// </summary>
+        public static Inserter<T> Insert { get; }
+
+        /// <summary>
+        /// Updates entities in a Starcounter table. 
+        /// </summary>
+        public static Updater<T> Update { get; }
+
+        /// <summary>
+        /// Deletes entities from a Starcounter table
+        /// </summary>
+        public static Deleter<T> Delete { get; }
+
+        /// <summary>
+        /// Creates profiles for Starcounter tables
+        /// </summary>
+        public static Profiler<T> Profile { get; }
 
         static StarcounterOperations()
         {
@@ -32,13 +49,10 @@ namespace RESTar.Starcounter
             {
                 switch (r)
                 {
-                    // case InternalRequest<T> @internal:
-                    //     var r1 = Db.SQL<T>(@internal.SelectQuery, @internal.SqlValues);
-                    //     return !@internal.Conditions.HasPost(out var _post) ? r1 : r1.Where(_post);
                     case var external:
                         switch (external.Conditions.Count)
                         {
-                            case 0: return Db.SQL<T>($"{SELECT}{external.MetaConditions.OrderBy?.SQL}");
+                            case 0: return Db.SQL<T>($"{SELECT}");
                             case 1 when external.Conditions[0] is var only && only.Operator == Operators.EQUALS:
                                 if (string.Equals("objectno", only.Key, StringComparison.OrdinalIgnoreCase))
                                 {
@@ -69,7 +83,7 @@ namespace RESTar.Starcounter
                                 break;
                         }
                         var (whereString, values) = external.Conditions.GetSQL().MakeWhereClause();
-                        var r2 = Db.SQL<T>($"{SELECT}{whereString} {external.MetaConditions.OrderBy?.SQL}", values);
+                        var r2 = Db.SQL<T>($"{SELECT}{whereString}", values);
                         return !external.Conditions.HasPost(out var post) ? r2 : r2.Where(post);
                 }
             };
@@ -95,7 +109,6 @@ namespace RESTar.Starcounter
                 }));
                 return count;
             };
-            Count = null;
             Profile = r => ResourceProfile.Make(r, rows =>
             {
                 var resourceSQLName = typeof(T).RESTarTypeName();

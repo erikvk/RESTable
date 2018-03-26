@@ -1,5 +1,4 @@
 ﻿using RESTar.Internal;
-using RESTar.Resources;
 
 namespace RESTar.Results.Error.BadRequest
 {
@@ -9,8 +8,8 @@ namespace RESTar.Results.Error.BadRequest
     /// </summary>
     public class AmbiguousMatch : BadRequest
     {
-        internal AmbiguousMatch(ITarget resource) : base(ErrorCodes.AmbiguousMatch,
-            $"Expected a uniquely matched entity in resource '{resource.Name}', but found multiple. " +
+        internal AmbiguousMatch() : base(ErrorCodes.AmbiguousMatch,
+            "Expected a uniquely matched entity for this operation, but found multiple. " +
             "Manipulating multiple entities is either unsupported or unsafe. Specify additional " +
             "conditions or use the 'unsafe' meta-condition") { }
     }

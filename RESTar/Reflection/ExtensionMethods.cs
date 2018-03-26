@@ -143,7 +143,7 @@ namespace RESTar.Reflection
                 case TypeCode.DBNull: return false;
                 case TypeCode.Object when type.IsNullable(out var t): return IsStarcounterCompatible(t);
                 case TypeCode.Object when type == typeof(Binary): return true;
-                case TypeCode.Object: return type.IsStarcounterDbClass();
+                case TypeCode.Object: return type.HasAttribute<DatabaseAttribute>();
             }
             return false;
         }

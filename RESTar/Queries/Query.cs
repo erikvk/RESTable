@@ -28,10 +28,10 @@ namespace RESTar.Queries
         public bool IsValid => Error == null;
 
         public EntitiesSelector<T> EntitiesProducer { private get; set; }
-        public EntitiesSelector<T> Selector { private get; set; }
+        public EntitiesSelector<T> InputSelector { private get; set; }
         public EntitiesUpdater<T> Updater { private get; set; }
         public EntitiesUpdater<T> GetUpdater() => Updater;
-        public EntitiesSelector<T> GetSelector() => Selector;
+        public EntitiesSelector<T> GetSelector() => InputSelector;
 
         public Method Method
         {
@@ -147,7 +147,8 @@ namespace RESTar.Queries
                     catch (NotImplementedException) { }
                 if (IsEvaluating) throw new InfiniteLoop();
                 var result = RunEvaluation();
-                if (result is InfiniteLoop loop) throw loop;
+                if (result is InfiniteLoop loop && !Context.IsBottomIfStack)
+                    throw loop;
                 return result;
             }
         }
@@ -218,7 +219,7 @@ namespace RESTar.Queries
             Target = resource;
             InputDataConfig = Headers.Source != null ? DataConfig.External : DataConfig.Client;
             OutputDataConfig = Headers.Destination != null ? DataConfig.External : DataConfig.Client;
-            
+
             try
             {
                 if (resource.IsInternal && Context.Client.Origin != OriginType.Internal)

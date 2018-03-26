@@ -16,6 +16,8 @@ namespace RESTar.Operations
 {
     internal static class Operations<T> where T : class
     {
+        #region Select
+
         private static IEnumerable<T> SelectFilter(IQuery<T> query) => query.Target
             .Select(query)?
             .Filter(query.MetaConditions.Distinct)
@@ -67,7 +69,7 @@ namespace RESTar.Operations
             }
         }
 
-        internal static long TryCount(IQuery<T> query)
+        private static long TryCount(IQuery<T> query)
         {
             try
             {
@@ -88,12 +90,19 @@ namespace RESTar.Operations
             }
         }
 
-        private static int INSERT(IQueryInternal<T> query, int hardLimit = -1)
+        #endregion
+
+        private static int Insert(IQueryInternal<T> query, bool limit = false)
         {
             try
             {
                 var inserter = query.GetSelector() ?? (() => query.Body.ToList<T>());
-                query.EntitiesProducer = () => inserter()?.HardLimit(hardLimit)?.Select(entity =>
+                if (limit)
+                {
+                    var _inserter = inserter;
+                    inserter = () => _inserter().InputLimit();
+                }
+                query.EntitiesProducer = () => inserter()?.Select(entity =>
                 {
                     (entity as IValidatable)?.Validate();
                     return entity;
@@ -102,17 +111,22 @@ namespace RESTar.Operations
             }
             catch (Exception e)
             {
-                var jsonMessage = e is JsonSerializationException jse ? jse.TotalMessage() : null;
-                throw new AbortedInsert<T>(e, query, jsonMessage);
+                throw new AbortedInsert<T>(e, query);
             }
         }
 
-        private static int UPDATE(IQueryInternal<T> query, IEnumerable<T> source)
+        private static int Update(IQueryInternal<T> query)
         {
             try
             {
+                var sourceSelector = query.GetSelector() ?? (() => TrySelectFilter(query)?.ToList() ?? new List<T>());
+                if (!query.MetaConditions.Unsafe)
+                {
+                    var selector = sourceSelector;
+                    sourceSelector = () => selector()?.UnsafeLimit();
+                }
                 var updater = query.GetUpdater() ?? (_source => query.Body.PopulateTo(_source));
-                query.EntitiesProducer = () => updater(source)?.Select(entity =>
+                query.EntitiesProducer = () => updater(sourceSelector())?.Select(entity =>
                 {
                     (entity as IValidatable)?.Validate();
                     return entity;
@@ -121,35 +135,21 @@ namespace RESTar.Operations
             }
             catch (Exception e)
             {
-                var jsonMessage = e is JsonSerializationException jse ? jse.TotalMessage() : null;
-                throw new AbortedUpdate<T>(e, query, jsonMessage);
+                throw new AbortedUpdate<T>(e, query);
             }
         }
 
-        private static int UPDATE_SAFEPOST(IQueryInternal<T> query, ICollection<(JObject json, T source)> items)
+        private static int Delete(IQueryInternal<T> query)
         {
             try
             {
-                query.EntitiesProducer = () => items.Select(item =>
+                var sourceSelector = query.GetSelector() ?? (() => TrySelectFilter(query)?.ToList() ?? new List<T>());
+                if (!query.MetaConditions.Unsafe)
                 {
-                    Serializers.Json.PopulateJToken(item.json, item.source);
-                    (item.source as IValidatable)?.Validate();
-                    return item.source;
-                });
-                return query.Resource.Update(query);
-            }
-            catch (Exception e)
-            {
-                var jsonMessage = e is JsonSerializationException jse ? jse.TotalMessage() : null;
-                throw new AbortedUpdate<T>(e, query, jsonMessage);
-            }
-        }
-
-        private static int OP_DELETE(IQueryInternal<T> query, IEnumerable<T> source)
-        {
-            try
-            {
-                query.EntitiesProducer = () => source;
+                    var selector = sourceSelector;
+                    sourceSelector = () => selector()?.UnsafeLimit();
+                }
+                query.EntitiesProducer = () => sourceSelector() ?? new T[0];
                 return query.Resource.Delete(query);
             }
             catch (Exception e)
@@ -167,58 +167,32 @@ namespace RESTar.Operations
                     {
                         if (!query.MetaConditions.Unsafe && query.MetaConditions.Limit == -1)
                             query.MetaConditions.Limit = (Limit) 1000;
-                        return Entities.Create(query, TrySelectFilterProcess(query));
+                        return new Entities(query, TrySelectFilterProcess(query));
                     };
 
                 case Method.POST:
-                    return query => query.MetaConditions.SafePost == null
-                        ? new InsertedEntities(INSERT(query), query)
-                        : SafePOST(query);
-
-                case Method.PATCH:
                     return query =>
                     {
-                        var source = TrySelectFilter(query)?.ToList();
-                        switch (source?.Count)
-                        {
-                            case null:
-                            case 0: return new UpdatedEntities(0, query);
-                            case var _ when query.MetaConditions.Unsafe:
-                            case 1: return new UpdatedEntities(UPDATE(query, source), query);
-                            default: throw new AmbiguousMatch(query.Resource);
-                        }
+                        if (query.MetaConditions.SafePost != null)
+                            return SafePOST(query);
+                        return new InsertedEntities(Insert(query), query);
                     };
 
                 case Method.PUT:
                     return query =>
                     {
-                        var source = TrySelectFilter(query)?.ToList();
+                        var sourceSelector = query.GetSelector() ?? (() => TrySelectFilter(query)?.ToList() ?? new List<T>());
+                        var source = sourceSelector()?.InputLimit()?.ToList();
+                        query.InputSelector = () => source;
                         switch (source?.Count)
                         {
                             case null:
-                            case 0: return new InsertedEntities(INSERT(query, 1), query);
+                            case 0: return new InsertedEntities(Insert(query), query);
                             case 1 when query.GetUpdater() == null && !query.Body.HasContent:
                                 return new UpdatedEntities(0, query);
-                            case 1: return new UpdatedEntities(UPDATE(query, source), query);
-                            default: throw new AmbiguousMatch(query.Resource);
+                            default: return new UpdatedEntities(Update(query), query);
                         }
                     };
-
-                case Method.DELETE:
-                    return query =>
-                    {
-                        var source = TrySelectFilter(query)?.ToList();
-                        switch (source?.Count)
-                        {
-                            case null:
-                            case 0: return new DeletedEntities(0, query);
-                            case var _ when query.MetaConditions.Unsafe:
-                            case 1: return new DeletedEntities(OP_DELETE(query, source), query);
-                            default: throw new AmbiguousMatch(query.Resource);
-                        }
-                    };
-
-                case Method.REPORT: return query => new Report(query, TryCount(query));
 
                 case Method.HEAD:
                     return query =>
@@ -228,20 +202,25 @@ namespace RESTar.Operations
                         return new NoContent(query, query.TimeElapsed);
                     };
 
+                case Method.PATCH: return query => new UpdatedEntities(Update(query), query);
+                case Method.DELETE: return query => new DeletedEntities(Delete(query), query);
+                case Method.REPORT: return query => new Report(query, TryCount(query));
                 default: return query => new ImATeapot(query);
             }
         }
+
+        #region SafePost
 
         private static Result SafePOST(IQuery<T> query)
         {
             var (innerRequest, toInsert, toUpdate) = GetSafePostTasks(query);
             var (updatedCount, insertedCount) = (0, 0);
             if (toUpdate.Any())
-                updatedCount = UPDATE_SAFEPOST(innerRequest, toUpdate);
+                updatedCount = UpdateSafePost(innerRequest, toUpdate);
             if (toInsert.Any())
             {
-                innerRequest.Selector = () => toInsert.Select(item => item.ToObject<T>());
-                insertedCount = INSERT(innerRequest);
+                innerRequest.InputSelector = () => toInsert.Select(item => item.ToObject<T>());
+                insertedCount = Insert(innerRequest);
             }
             return new SafePostedEntities(updatedCount, insertedCount, query);
         }
@@ -271,7 +250,7 @@ namespace RESTar.Operations
                         case 1:
                             toUpdate.Add((entity, results[0]));
                             break;
-                        default: throw new AmbiguousMatch(query.Resource);
+                        default: throw new AmbiguousMatch();
                     }
                 }
                 return (innerRequest, toInsert, toUpdate);
@@ -281,5 +260,26 @@ namespace RESTar.Operations
                 throw new AbortedInsert<T>(e, query, e.Message);
             }
         }
+
+        private static int UpdateSafePost(IQueryInternal<T> query, ICollection<(JObject json, T source)> items)
+        {
+            try
+            {
+                query.EntitiesProducer = () => items.Select(item =>
+                {
+                    Serializers.Json.PopulateJToken(item.json, item.source);
+                    (item.source as IValidatable)?.Validate();
+                    return item.source;
+                });
+                return query.Resource.Update(query);
+            }
+            catch (Exception e)
+            {
+                var jsonMessage = e is JsonSerializationException jse ? jse.TotalMessage() : null;
+                throw new AbortedUpdate<T>(e, query, jsonMessage);
+            }
+        }
+
+        #endregion
     }
 }

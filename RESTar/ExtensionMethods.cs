@@ -44,14 +44,20 @@ namespace RESTar
 
         internal static string RESTarMemberName(this MemberInfo m, bool flagged = false)
         {
-            var name = m.GetAttribute<RESTarMemberAttribute>()?.Name ??
-                       m.GetAttribute<DataMemberAttribute>()?.Name ??
-                       m.GetAttribute<JsonPropertyAttribute>()?.PropertyName ??
-                       m.Name;
-            return flagged ? "$" + name : name;
+            var name = m.GetCustomAttributes().Select(a =>
+            {
+                switch (a)
+                {
+                    case RESTarMemberAttribute rma: return rma.Name;
+                    case DataMemberAttribute dma: return dma.Name;
+                    case JsonPropertyAttribute jpa: return jpa.PropertyName;
+                    default: return null;
+                }
+            }).FirstOrDefault(a => a != null) ?? m.Name;
+            return flagged ? $"${name}" : name;
         }
 
-        internal static bool RESTarIgnored(this MemberInfo m) => m.GetAttribute<RESTarMemberAttribute>()?.Ignored == true ||
+        internal static bool RESTarIgnored(this MemberInfo m) => m.GetCustomAttribute<RESTarMemberAttribute>()?.Ignored == true ||
                                                                  m.HasAttribute<IgnoreDataMemberAttribute>();
 
         #endregion
@@ -68,8 +74,6 @@ namespace RESTar
         internal static bool IsDDictionary(this Type type) => type == typeof(DDictionary) ||
                                                               type.IsSubclassOf(typeof(DDictionary));
 
-        internal static bool IsStarcounterDbClass(this Type type) => type.HasAttribute<DatabaseAttribute>();
-
         internal static IList<Type> GetConcreteSubclasses(this Type baseType) => baseType.GetSubclasses()
             .Where(type => !type.IsAbstract)
             .ToList();
@@ -80,22 +84,24 @@ namespace RESTar
             where type.IsSubclassOf(baseType)
             select type;
 
-        internal static TAttribute GetAttribute<TAttribute>(this MemberInfo type) where TAttribute : Attribute =>
-            type?.GetCustomAttributes<TAttribute>().FirstOrDefault();
-
-        internal static bool HasAttribute(this MemberInfo type, Type attributeType) =>
-            (type?.GetCustomAttributes(attributeType).Any()).GetValueOrDefault();
-
-        internal static bool HasResourceProviderAttribute(this Type resource) =>
-            resource.GetCustomAttributes().OfType<ResourceProviderAttribute>().Any();
-
-        internal static bool HasAttribute<TAttribute>(this MemberInfo type)
-            where TAttribute : Attribute => (type?.GetCustomAttributes<TAttribute>().Any()).GetValueOrDefault();
-
-        internal static bool HasAttribute<TAttribute>(this MemberInfo type, out TAttribute attribute)
-            where TAttribute : Attribute
+        internal static bool HasAttribute(this MemberInfo type, Type attributeType)
         {
-            attribute = type?.GetCustomAttributes<TAttribute>().FirstOrDefault();
+            return (type?.GetCustomAttributes(attributeType).Any()).GetValueOrDefault();
+        }
+
+        internal static bool HasResourceProviderAttribute(this Type resource)
+        {
+            return resource.GetCustomAttributes().OfType<ResourceProviderAttribute>().Any();
+        }
+
+        internal static bool HasAttribute<TAttribute>(this MemberInfo type) where TAttribute : Attribute
+        {
+            return type?.GetCustomAttribute<TAttribute>() != null;
+        }
+
+        internal static bool HasAttribute<TAttribute>(this MemberInfo type, out TAttribute attribute) where TAttribute : Attribute
+        {
+            attribute = type?.GetCustomAttribute<TAttribute>();
             return attribute != null;
         }
 
@@ -153,7 +159,7 @@ namespace RESTar
             {
                 case TypeCode.Object:
                     if (type.IsNullable(out var baseType)) return CountBytes(baseType);
-                    if (type.IsStarcounterDbClass()) return 16;
+                    if (type.HasAttribute<DatabaseAttribute>()) return 16;
                     throw new Exception($"Unknown type encountered: '{type.RESTarTypeName()}'");
                 case TypeCode.Boolean: return 4;
                 case TypeCode.Char: return 2;

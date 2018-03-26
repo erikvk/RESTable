@@ -23,7 +23,7 @@ namespace RESTar.Starcounter
         public override Inserter<T> GetDefaultInserter<T>() => DDictionaryOperations<T>.Insert;
         public override Updater<T> GetDefaultUpdater<T>() => DDictionaryOperations<T>.Update;
         public override Deleter<T> GetDefaultDeleter<T>() => DDictionaryOperations<T>.Delete;
-        public override Counter<T> GetDefaultCounter<T>() => DDictionaryOperations<T>.Count;
+        public override Counter<T> GetDefaultCounter<T>() => null;
         public override Profiler<T> GetProfiler<T>() => DDictionaryOperations<T>.Profile;
 
         public override bool IsValid(IEntityResource resource, out string reason) =>

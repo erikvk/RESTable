@@ -112,7 +112,7 @@ namespace RESTar.Admin
         private static void Register<T>(string indexName, params ColumnInfo[] columns) where T : class
         {
             SelectionCondition.Value = indexName;
-            SelectionInternalQuery.Selector = () => new[]
+            SelectionInternalQuery.InputSelector = () => new[]
             {
                 new DatabaseIndex(typeof(T).RESTarTypeName())
                 {
@@ -174,7 +174,7 @@ namespace RESTar.Admin
                 if (!Indexers.TryGetValue(group.Key, out var indexer))
                     throw new Exception($"Unable to register index. Resource '{group.First().IResource.Name}' " +
                                         "is not a database resource.");
-                query.Selector = () => group;
+                query.InputSelector = () => group;
                 return indexer.Insert(query);
             });
 
@@ -192,7 +192,7 @@ namespace RESTar.Admin
             .GroupBy(index => index.IResource.Provider)
             .Sum(group =>
             {
-                query.Selector = () => group;
+                query.InputSelector = () => group;
                 return Indexers[group.Key].Delete(query);
             });
     }

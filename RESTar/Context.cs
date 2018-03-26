@@ -5,6 +5,8 @@ using RESTar.Results.Error;
 using RESTar.Results.Error.Forbidden;
 using RESTar.Results.Success;
 using RESTar.WebSockets;
+using Starcounter;
+using WebSocket = RESTar.WebSockets.WebSocket;
 
 namespace RESTar
 {
@@ -21,8 +23,8 @@ namespace RESTar
         private const int MaximumStackDepth = 300;
         internal readonly bool AutoDisposeClient;
         private WebSocket webSocket;
-
         private int StackDepth;
+        internal bool IsBottomIfStack => StackDepth < 1;
 
         internal void IncreaseDepth()
         {
@@ -125,9 +127,12 @@ namespace RESTar
         protected Context(Client client, bool autoDisposeClient = true)
         {
             Client = client ?? throw new ArgumentNullException(nameof(client));
-            InitialTraceId = ConnectionId.Next;
+            InitialTraceId = NextId;
             StackDepth = 0;
             AutoDisposeClient = autoDisposeClient;
         }
+
+        private static ulong IdNr;
+        private static string NextId => DbHelper.Base64EncodeObjectNo(IdNr += 1);
     }
 }

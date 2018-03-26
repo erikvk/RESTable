@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using Newtonsoft.Json.Linq;
 using RESTar.Admin;
 using RESTar.Linq;
@@ -17,10 +18,12 @@ namespace RESTar.Resources
 {
     internal class EntityResource<T> : IEntityResource<T>, IResourceInternal where T : class
     {
+        private Dictionary<string, View<T>> ViewDictionaryInternal { get; }
+
         public string Name { get; }
         public bool Editable { get; }
-        public IReadOnlyList<Method> AvailableMethods { get; internal set; }
-        public string Description { get; internal set; }
+        public IReadOnlyList<Method> AvailableMethods { get; private set; }
+        public string Description { get; private set; }
         public Type Type => typeof(T);
         public bool IsDDictionary { get; }
         public bool IsDynamic { get; }
@@ -30,7 +33,6 @@ namespace RESTar.Resources
         public string ParentResourceName { get; }
         public bool IsSingleton { get; }
         public bool DynamicConditionsAllowed { get; }
-        private Dictionary<string, View<T>> ViewDictionaryInternal { get; }
         public IReadOnlyDictionary<string, View<T>> ViewDictionary => ViewDictionaryInternal;
         public IEnumerable<IView> Views => ViewDictionaryInternal?.Values;
         public TermBindingRules ConditionBindingRule { get; }
@@ -40,15 +42,8 @@ namespace RESTar.Resources
         public IReadOnlyDictionary<string, DeclaredProperty> Members { get; }
         public void SetAlias(string alias) => Alias = alias;
         public Type InterfaceType { get; }
-
-        /// <inheritdoc />
-        /// <summary>
-        /// True for DDictionary resources and dynamic resources with DynamicConditionsAllowed
-        /// </summary>
         public bool DeclaredPropertiesFlagged { get; }
-
         public override string ToString() => Name;
-        public bool IsStarcounterResource { get; }
         public bool RequiresValidation { get; }
         public string Provider { get; }
         public IReadOnlyList<IResource> InnerResources { get; set; }
@@ -75,10 +70,10 @@ namespace RESTar.Resources
 
         public string Alias
         {
-            get => Admin.ResourceAlias.GetByResource(Name)?.Alias;
+            get => ResourceAlias.GetByResource(Name)?.Alias;
             private set
             {
-                var existingAssignment = Admin.ResourceAlias.GetByResource(Name);
+                var existingAssignment = ResourceAlias.GetByResource(Name);
                 if (value == null)
                 {
                     Transact.Trans(() => existingAssignment?.Delete());
@@ -86,7 +81,7 @@ namespace RESTar.Resources
                 }
                 if (value == "" || value.Any(char.IsWhiteSpace))
                     throw new Exception($"Invalid alias string '{value}'. Cannot be empty or contain whitespace");
-                var usedAliasMapping = Admin.ResourceAlias.GetByAlias(value);
+                var usedAliasMapping = ResourceAlias.GetByAlias(value);
                 if (usedAliasMapping != null)
                 {
                     if (usedAliasMapping.Resource == Name)
@@ -97,7 +92,7 @@ namespace RESTar.Resources
                     throw new AliasEqualToResourceName(value);
                 Transact.Trans(() =>
                 {
-                    existingAssignment = existingAssignment ?? new Admin.ResourceAlias {Resource = Name};
+                    existingAssignment = existingAssignment ?? new ResourceAlias {Resource = Name};
                     existingAssignment.Alias = value;
                 });
             }
@@ -132,10 +127,8 @@ namespace RESTar.Resources
                 OutputBindingRule = TermBindingRules.DeclaredWithDynamicFallback;
             else if (typeof(T).IsDynamic() && !DeclaredPropertiesFlagged)
                 OutputBindingRule = TermBindingRules.DynamicWithDeclaredFallback;
-            else
-                OutputBindingRule = TermBindingRules.OnlyDeclared;
+            else OutputBindingRule = TermBindingRules.OnlyDeclared;
             RequiresValidation = typeof(IValidatable).IsAssignableFrom(typeof(T));
-            IsStarcounterResource = typeof(T).HasAttribute<DatabaseAttribute>();
             IsDDictionary = typeof(T).IsDDictionary();
             IsDynamic = IsDDictionary || typeof(T).IsSubclassOf(typeof(JObject)) || typeof(IDictionary).IsAssignableFrom(typeof(T));
             Provider = provider.GetProviderId();
@@ -147,11 +140,12 @@ namespace RESTar.Resources
             Count = counter;
             Profile = profiler;
             Authenticate = authenticator;
-            if (views?.Any() == true)
+            ViewDictionaryInternal = new Dictionary<string, View<T>>(StringComparer.OrdinalIgnoreCase);
+            views?.ForEach(view =>
             {
-                ViewDictionaryInternal = views.ToDictionary(v => v.Name, StringComparer.OrdinalIgnoreCase);
-                views.ForEach(view => view.EntityResource = this);
-            }
+                ViewDictionaryInternal[view.Name] = view;
+                view.EntityResource = this;
+            });
             CheckOperationsSupport();
             RESTarConfig.AddResource(this);
         }
@@ -162,7 +156,7 @@ namespace RESTar.Resources
                 return null;
             if (resource.HasAttribute<DynamicTableAttribute>())
                 return RESTarConfig.Methods;
-            return resource.GetAttribute<RESTarAttribute>()?.AvailableMethods;
+            return resource.GetCustomAttribute<RESTarAttribute>()?.AvailableMethods;
         }
 
         private static RESTarOperations[] NecessaryOpDefs(IEnumerable<Method> restMethods) => restMethods

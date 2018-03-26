@@ -8,6 +8,7 @@ using RESTar;
 using RESTar.Linq;
 using RESTar.Operations;
 using RESTar.ResourceTemplates;
+using RESTar.Starcounter;
 using Starcounter;
 
 #pragma warning disable 1591
@@ -30,6 +31,25 @@ namespace RESTarExample
         }
     }
 
+    [Database]
+    public class DbClass
+    {
+        public string MyString;
+        public int MyInt;
+    }
+
+    [RESTar]
+    public class DbClassWrapper : ResourceWrapper<DbClass>
+    {
+        [RESTarView]
+        public class MyView : ISelector<DbClass>
+        {
+            public IEnumerable<DbClass> Select(IQuery<DbClass> query)
+            {
+                return StarcounterOperations<DbClass>.Select(query);
+            }
+        }
+    }
 
     [RESTar(Method.GET)]
     public class Thing : ISelector<Thing>

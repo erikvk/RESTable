@@ -132,7 +132,6 @@
     <Compile Include="Filters\Search.cs" />
     <Compile Include="Query.cs" />
     <Compile Include="Queries\Body.cs" />
-    <Compile Include="Queries\ConnectionId.cs" />
     <Compile Include="Queries\ITraceable.cs" />
     <Compile Include="Queries\IUriComponents.cs" />
     <Compile Include="Queries\IUriCondition.cs" />
@@ -224,7 +223,6 @@
     <Compile Include="Operators.cs" />
     <Compile Include="Client.cs" />
     <Compile Include="EntityResource.cs" />
-    <Compile Include="ResourceAlias.cs" />
     <Compile Include="Admin\ResourceProfile.cs" />
     <Compile Include="Resources\DynamicResourceProvider.cs" />
     <Compile Include="Resources\IResourceWrapper.cs" />
@@ -252,7 +250,7 @@
     <Compile Include="Filters\Limit.cs" />
     <Compile Include="Queries\MetaConditions.cs" />
     <Compile Include="ContentType.cs" />
-    <Compile Include="Resources\DynamicResource.cs" />
+    <Compile Include="Internal\DynamicResource.cs" />
     <Compile Include="Resources\DynamitControl.cs" />
     <Compile Include="Starcounter\DDictionaryOperations.cs" />
     <Compile Include="DynamicTables.cs" />

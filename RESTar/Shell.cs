@@ -291,17 +291,23 @@ namespace RESTar
         private ISerializedResult WsEvaluate(Method method, byte[] body)
         {
             if (Query.Length == 0) return new NoQuery(WebSocket, default);
-            var q = Query;
-            var result = RESTar.Query.Create(WebSocket, method, ref q, body, WebSocket.Headers).Result.Serialize();
-            if (result is RESTarError _ && queryChangedPreEval)
-                query = previousQuery;
-            else query = q;
-            queryChangedPreEval = false;
-            if (result is IEntitiesMetadata entitiesMetaData)
+            var local = Query;
+            var result = RESTar.Query.Create(WebSocket, method, ref local, body, WebSocket.Headers).Result.Serialize();
+            switch (result)
             {
-                PreviousResultMetadata = entitiesMetaData;
-                GetNextPageLink = entitiesMetaData.GetNextPageLink;
+                case RESTarError _ when queryChangedPreEval:
+                    query = previousQuery;
+                    break;
+                case IEntitiesMetadata entitiesMetaData:
+                    query = local;
+                    PreviousResultMetadata = entitiesMetaData;
+                    GetNextPageLink = entitiesMetaData.GetNextPageLink;
+                    break;
+                default:
+                    query = local;
+                    break;
             }
+            queryChangedPreEval = false;
             return result;
         }
 

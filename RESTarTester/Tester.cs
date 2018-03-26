@@ -434,7 +434,7 @@ namespace RESTarTester
             #region Internal requests
 
             var g = Query<MyDict>.Create(POST);
-            g.Selector = () =>
+            g.InputSelector = () =>
             {
                 dynamic d = new MyDict();
                 d.Hej = "123";
