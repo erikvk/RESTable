@@ -6,6 +6,7 @@ using System.Web;
 using Newtonsoft.Json.Linq;
 using RESTar.ContentTypeProviders;
 using RESTar.Linq;
+using RESTar.Operations;
 using RESTar.Results.Success;
 using static System.StringComparison;
 using static RESTar.Method;

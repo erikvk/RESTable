@@ -6,7 +6,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using RESTar;
 using RESTar.Linq;
-using RESTar.Resources;
+using RESTar.Operations;
 using RESTar.ResourceTemplates;
 using Starcounter;
 

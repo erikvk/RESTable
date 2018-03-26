@@ -6,6 +6,7 @@ using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
 using RESTar.ContentTypeProviders;
 using RESTar.Linq;
+using RESTar.Operations;
 using RESTar.Results.Error;
 using RESTar.Results.Success;
 using static Newtonsoft.Json.JsonToken;

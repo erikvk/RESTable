@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using RESTar.Queries;
+using RESTar.Internal;
+using RESTar.Operations;
 
 namespace RESTar.Admin
 {

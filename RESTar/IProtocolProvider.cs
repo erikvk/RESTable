@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using RESTar.Operations;
 using RESTar.Queries;
 
 namespace RESTar

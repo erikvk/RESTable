@@ -1,5 +1,4 @@
-﻿using RESTar.Http;
-using RESTar.Internal;
+﻿using RESTar.Internal;
 
 namespace RESTar.Results.Error.BadRequest
 {

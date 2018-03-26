@@ -2,8 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using RESTar.Auth;
-using RESTar.Internal;
 using RESTar.Linq;
+using RESTar.Operations;
+using RESTar.Resources;
 using static RESTar.Method;
 
 namespace RESTar

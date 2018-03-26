@@ -1,4 +1,5 @@
 ﻿using Dynamit;
+using RESTar.Resources;
 
 // ReSharper disable UnusedMember.Global
 #pragma warning disable 1591

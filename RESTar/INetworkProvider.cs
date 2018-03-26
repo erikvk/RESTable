@@ -1,4 +1,4 @@
-﻿namespace RESTar.Starcounter {
+﻿namespace RESTar {
     /// <summary>
     /// Specifies the operations of a RESTar network provider
     /// </summary>

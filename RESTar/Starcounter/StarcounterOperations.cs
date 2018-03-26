@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Linq;
 using RESTar.Admin;
-using RESTar.Deflection.Dynamic;
-using RESTar.Internal;
+using RESTar.Reflection.Dynamic;
 using RESTar.Linq;
 using RESTar.Operations;
+using RESTar.Resources;
 using Starcounter;
 using Starcounter.Metadata;
 

@@ -5,6 +5,7 @@ using System.Text.RegularExpressions;
 using Newtonsoft.Json;
 using RESTar.Internal;
 using RESTar.Linq;
+using RESTar.Operations;
 using RESTar.Resources;
 using RESTar.Results.Error.BadRequest;
 

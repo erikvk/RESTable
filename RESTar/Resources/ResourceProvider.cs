@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using RESTar.Internal;
 using RESTar.Linq;
 using RESTar.Operations;
 using RESTar.Results.Error;
@@ -147,7 +146,7 @@ namespace RESTar.Resources
         });
 
         private IEntityResource BuildRegularResource<TResource>()
-            where TResource : class, TBase => new Internal.EntityResource<TResource>
+            where TResource : class, TBase => new EntityResource<TResource>
         (
             fullName: typeof(TResource).FullName,
             attribute: typeof(TResource).GetAttribute<RESTarAttribute>(),
@@ -164,7 +163,7 @@ namespace RESTar.Resources
 
         private IEntityResource BuildWrapperResource<TWrapper, TWrapped>()
             where TWrapper : ResourceWrapper<TWrapped>
-            where TWrapped : class, TBase => new Internal.EntityResource<TWrapped>
+            where TWrapped : class, TBase => new EntityResource<TWrapped>
         (
             fullName: typeof(TWrapper).FullName,
             attribute: typeof(TWrapper).GetAttribute<RESTarAttribute>(),

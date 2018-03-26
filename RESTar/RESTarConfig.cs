@@ -11,16 +11,15 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using RESTar.Admin;
 using RESTar.Auth;
-using RESTar.Deflection.Dynamic;
+using RESTar.Reflection.Dynamic;
 using RESTar.Internal;
 using RESTar.Linq;
-using RESTar.Queries;
 using RESTar.Resources;
 using RESTar.Results.Error;
 using RESTar.Starcounter;
 using Starcounter;
 using static RESTar.Method;
-using IResource = RESTar.Internal.IResource;
+using IResource = RESTar.Resources.IResource;
 
 namespace RESTar
 {

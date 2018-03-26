@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Net;
-using RESTar.Operations;
 
 namespace RESTar.Results.Success
 {

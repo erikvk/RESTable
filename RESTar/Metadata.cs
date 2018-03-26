@@ -3,9 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using RESTar.Auth;
-using RESTar.Deflection.Dynamic;
-using RESTar.Internal;
+using RESTar.Reflection.Dynamic;
 using RESTar.Linq;
+using RESTar.Operations;
+using RESTar.Resources;
 using RESTar.Results.Error;
 
 namespace RESTar

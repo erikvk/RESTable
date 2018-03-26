@@ -6,6 +6,7 @@ using System.Text;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using RESTar.Linq;
+using RESTar.Operations;
 using RESTar.Queries;
 using RESTar.Starcounter;
 using Starcounter;

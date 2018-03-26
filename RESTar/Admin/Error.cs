@@ -3,6 +3,7 @@ using System.Linq;
 using System.Text;
 using RESTar.Internal;
 using RESTar.Linq;
+using RESTar.Resources;
 using RESTar.Results.Error;
 using RESTar.Starcounter;
 using Starcounter;

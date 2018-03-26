@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using RESTar.Linq;
+using RESTar.Operations;
 using static RESTar.Method;
 
 #pragma warning disable 1591
@@ -29,7 +30,7 @@ namespace RESTar.Admin
             return RESTarConfig.Resources.Select(r => new TermCache
             {
                 Type = r.Type.RESTarTypeName(),
-                Terms = Deflection.Dynamic.TypeCache.TermCache
+                Terms = Reflection.Dynamic.TypeCache.TermCache
                     .Where(pair => pair.Key.Type == r.Type.RESTarTypeName())
                     .Select(pair => pair.Value.Key)
                     .ToArray()
@@ -42,10 +43,10 @@ namespace RESTar.Admin
             var count = 0;
             query.GetEntities().ForEach(e =>
             {
-                Deflection.Dynamic.TypeCache.TermCache
+                Reflection.Dynamic.TypeCache.TermCache
                     .Where(pair => pair.Key.Type == e.Type)
                     .Select(pair => pair.Key).ToList()
-                    .ForEach(key => Deflection.Dynamic.TypeCache.TermCache.TryRemove(key, out var _));
+                    .ForEach(key => Reflection.Dynamic.TypeCache.TermCache.TryRemove(key, out var _));
                 count += 1;
             });
             return count;

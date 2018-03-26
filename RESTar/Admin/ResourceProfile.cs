@@ -2,8 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using Dynamit;
-using RESTar.Internal;
 using RESTar.Linq;
+using RESTar.Operations;
+using RESTar.Resources;
 using RESTar.Starcounter;
 using Starcounter;
 

@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using RESTar.Internal;
-using RESTar.Operations;
 using RESTar.Queries;
+using RESTar.Resources;
+using RESTar.WebSockets;
 
 namespace RESTar
 {

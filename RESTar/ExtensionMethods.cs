@@ -14,10 +14,11 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using RESTar.Auth;
 using RESTar.ContentTypeProviders;
-using RESTar.Deflection.Dynamic;
-using RESTar.Internal;
+using RESTar.Filters;
+using RESTar.Reflection.Dynamic;
 using RESTar.Linq;
 using RESTar.Operations;
+using RESTar.Processors;
 using RESTar.Resources;
 using RESTar.Results.Error.BadRequest;
 using RESTar.Results.Error.Forbidden;
@@ -28,6 +29,8 @@ using static System.StringComparison;
 using static RESTar.Internal.ErrorCodes;
 using static RESTar.Operators;
 using static Starcounter.DbHelper;
+using IResource = RESTar.Resources.IResource;
+using Operator = RESTar.Internal.Operator;
 
 
 namespace RESTar
@@ -382,7 +385,7 @@ namespace RESTar
         /// If the type is represented by some RESTar resource in the current instance,
         /// returns this resource. Else null.
         /// </summary>
-        public static Internal.IResource GetResource(this Type type) => Resource.ByTypeName(type.RESTarTypeName());
+        public static IResource GetResource(this Type type) => Resource.ByTypeName(type.RESTarTypeName());
 
         /// <summary>
         /// If the type is represented by some RESTar resource in the current instance,

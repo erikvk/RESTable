@@ -3,10 +3,10 @@ using System.Linq;
 using System.Text;
 using RESTar.Linq;
 using RESTar.Logging;
-using RESTar.Operations;
 using RESTar.ResourceTemplates;
 using RESTar.Results.Success;
 using RESTar.Serialization;
+using RESTar.WebSockets;
 using static Newtonsoft.Json.Formatting;
 
 namespace RESTar.Admin
@@ -27,7 +27,7 @@ namespace RESTar.Admin
         public bool IncludeHeaders { get; set; } = false;
         public bool IncludeContent { get; set; } = false;
 
-        private RESTar.WebSocket ActualSocket => (WebSocket as WebSocketConnection)?.WebSocket;
+        private WebSockets.WebSocket ActualSocket => (WebSocket as WebSocketConnection)?.WebSocket;
 
         /// <inheritdoc />
         protected override string WelcomeHeader { get; } = "RESTar network console";

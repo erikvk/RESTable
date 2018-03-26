@@ -1,4 +1,6 @@
-﻿namespace RESTar.Starcounter
+﻿using RESTar.WebSockets;
+
+namespace RESTar.Starcounter
 {
     internal sealed class ScContext : Context
     {

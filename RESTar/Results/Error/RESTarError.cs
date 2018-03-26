@@ -7,7 +7,6 @@ using Microsoft.CSharp.RuntimeBinder;
 using Newtonsoft.Json;
 using RESTar.Internal;
 using RESTar.Logging;
-using RESTar.Operations;
 using RESTar.Queries;
 using RESTar.Results.Error.BadRequest;
 using RESTar.Results.Error.Forbidden;

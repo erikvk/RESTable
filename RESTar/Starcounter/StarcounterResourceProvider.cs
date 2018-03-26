@@ -1,10 +1,9 @@
 using System;
-using RESTar.Internal;
 using RESTar.Operations;
-using RESTar.Starcounter;
+using RESTar.Resources;
 using Starcounter;
 
-namespace RESTar.Resources
+namespace RESTar.Starcounter
 {
     internal class StarcounterResourceProvider : ResourceProvider<object>
     {

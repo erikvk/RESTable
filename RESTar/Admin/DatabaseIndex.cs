@@ -4,7 +4,8 @@ using System.Linq;
 using System.Runtime.Serialization;
 using System.Text.RegularExpressions;
 using Newtonsoft.Json;
-using RESTar.Internal;
+using RESTar.Operations;
+using RESTar.Resources;
 
 namespace RESTar.Admin
 {

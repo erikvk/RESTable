@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using RESTar.Internal;
 using RESTar.Linq;
-using static RESTar.Internal.Authenticator;
+using RESTar.Resources;
+using static RESTar.Auth.Authenticator;
 
 namespace RESTar.Auth
 {

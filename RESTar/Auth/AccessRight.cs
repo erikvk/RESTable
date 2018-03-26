@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using RESTar.Internal;
+using RESTar.Resources;
 
 namespace RESTar.Auth
 {

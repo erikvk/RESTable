@@ -1,4 +1,5 @@
 ﻿using RESTar.Internal;
+using RESTar.Resources;
 
 namespace RESTar.Results.Error.Forbidden
 {

@@ -2,8 +2,8 @@
 using System.Collections.Generic;
 using RESTar.Internal;
 using RESTar.Logging;
-using RESTar.Operations;
 using RESTar.Queries;
+using RESTar.Resources;
 
 namespace RESTar
 {

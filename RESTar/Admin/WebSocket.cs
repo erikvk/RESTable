@@ -2,6 +2,7 @@
 using System.Linq;
 using Newtonsoft.Json.Linq;
 using RESTar.Linq;
+using RESTar.Operations;
 using RESTar.Serialization;
 using RESTar.WebSockets;
 using static RESTar.Method;
@@ -36,7 +37,7 @@ namespace RESTar.Admin
         /// </summary>
         public JObject Client { get; private set; }
 
-        private RESTar.WebSocket _WebSocket { get; set; }
+        private WebSockets.WebSocket _WebSocket { get; set; }
 
         /// <inheritdoc />
         public IEnumerable<WebSocket> Select(IQuery<WebSocket> query) => WebSocketController

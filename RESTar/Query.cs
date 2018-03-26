@@ -1,5 +1,7 @@
-﻿using RESTar.Internal;
+﻿using RESTar.Auth;
+using RESTar.Internal;
 using RESTar.Queries;
+using RESTar.Resources;
 using RESTar.Results.Error;
 using RESTar.Results.Error.NotFound;
 

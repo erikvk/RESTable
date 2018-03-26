@@ -6,7 +6,7 @@ using RESTar.Linq;
 using Starcounter;
 using Starcounter.Metadata;
 
-namespace RESTar.Resources
+namespace RESTar.Starcounter
 {
     internal class StarcounterIndexer : IDatabaseIndexer
     {

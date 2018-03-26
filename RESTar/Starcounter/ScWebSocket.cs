@@ -1,4 +1,5 @@
 ﻿using Starcounter;
+using WebSocket = RESTar.WebSockets.WebSocket;
 
 namespace RESTar.Starcounter
 {

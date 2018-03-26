@@ -1,6 +1,5 @@
 ﻿using System;
-using RESTar.Internal;
-using RESTar.Operations;
+using RESTar.Auth;
 using RESTar.Queries;
 using RESTar.Results.Error;
 using RESTar.Results.Error.Forbidden;

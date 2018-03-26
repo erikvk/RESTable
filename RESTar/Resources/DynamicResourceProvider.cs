@@ -2,8 +2,8 @@
 using System.Collections.Generic;
 using System.Reflection;
 using Dynamit;
-using RESTar.Internal;
 using RESTar.Operations;
+using RESTar.Starcounter;
 using static System.Reflection.BindingFlags;
 
 namespace RESTar.Resources
@@ -30,7 +30,7 @@ namespace RESTar.Resources
             .MakeGenericMethod(resource.Table)
             .Invoke(this, new object[] {resource});
 
-        private void _BuildDynamicResource<T>(DynamicResource resource) where T : DDictionary => new Internal.EntityResource<T>
+        private void _BuildDynamicResource<T>(DynamicResource resource) where T : DDictionary => new EntityResource<T>
         (
             fullName: resource.Name,
             attribute: resource.Attribute,
