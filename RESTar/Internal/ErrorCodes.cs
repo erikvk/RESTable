@@ -107,6 +107,7 @@ namespace RESTar.Internal
 
         // 500-600: Other errors
         NotCompliantWithProtocol = 500,
-        WebSocketNotConnected = 501
+        WebSocketNotConnected = 501,
+        InvalidShellHeaderAssignmentSyntax = 502
     }
 }

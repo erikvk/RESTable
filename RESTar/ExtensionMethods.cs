@@ -776,7 +776,7 @@ namespace RESTar
             return workbook;
         }
 
-        internal static DataTable MakeDataTable(this IEnumerable<object> entities, IEntityResource resource)
+        private static DataTable MakeDataTable<T>(this IEnumerable<T> entities, IEntityResource resource)
         {
             var table = new DataTable();
             switch (entities)

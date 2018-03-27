@@ -22,8 +22,7 @@ namespace RESTar
 
     /// <inheritdoc />
     /// <summary>
-    /// A RESTar request for a resource T. This is a common generic interface for all
-    /// request types.
+    /// An interface defining the operations for a RESTar request for a resource T.
     /// </summary>
     public interface IRequest<T> : IRequest where T : class
     {

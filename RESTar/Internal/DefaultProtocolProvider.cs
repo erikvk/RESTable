@@ -1,5 +1,5 @@
+using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text.RegularExpressions;
@@ -111,29 +111,24 @@ namespace RESTar.Internal
         }
 
         /// <inheritdoc />
-        public ISerializedResult Serialize(IResult result, IContentTypeProvider contentTypeProvider)
+        public ISerializedResult Serialize(Content content, IContentTypeProvider contentTypeProvider)
         {
-            switch (result)
+            switch (content)
             {
                 case Report report:
-                    result.Headers["RESTar-count"] = report.ReportBody.Count.ToString();
-                    report.Body = new MemoryStream();
+                    report.Headers["RESTar-count"] = report.ReportBody.Count.ToString();
                     contentTypeProvider.SerializeEntity(report.ReportBody, report.Body, report.Request, out var _);
-                    report.ContentType = contentTypeProvider.ContentType;
                     return report;
 
-                case Entities entities:
-                    var streamController = new RESTarOutputStreamController();
+                case IEntities<object> entities:
                     try
                     {
-                        contentTypeProvider.SerializeCollection(entities, streamController, entities.Request, out var entityCount);
+                        contentTypeProvider.SerializeCollection(entities, entities.Body, entities.Request, out var entityCount);
                         if (entityCount == 0)
                         {
-                            streamController.Dispose();
-                            return new NoContent(result, entities.Request.TimeElapsed);
+                            entities.Body.Dispose();
+                            return new NoContent(content, entities.Request.TimeElapsed);
                         }
-                        entities.Body = streamController.Stream;
-                        entities.ContentType = contentTypeProvider.ContentType;
                         entities.Headers["RESTar-count"] = entityCount.ToString();
                         entities.EntityCount = entityCount;
                         if (entities.IsPaged)
@@ -142,11 +137,10 @@ namespace RESTar.Internal
                             entities.Headers["RESTar-pager"] = MakeRelativeUri(pager);
                         }
                         entities.SetContentDisposition(contentTypeProvider.ContentDispositionFileExtension);
-                        if (entities.ExternalDestination == null)
-                            return entities;
+                        if (entities.Request.Headers.Destination == null) return entities;
                         try
                         {
-                            var request = new HttpRequest(entities, entities.ExternalDestination)
+                            var request = new HttpRequest(entities, entities.Request.Headers.Destination)
                             {
                                 ContentType = entities.ContentType.ToString(),
                                 Body = entities.Body
@@ -166,12 +160,11 @@ namespace RESTar.Internal
                     }
                     catch
                     {
-                        streamController.Dispose();
-                        entities.Body?.Dispose();
+                        entities.Body.Dispose();
                         throw;
                     }
-                case RESTarError error: return error;
-                case var other: return (ISerializedResult) other;
+
+                default: throw new Exception("Unknown result type " + content.GetType());
             }
         }
 

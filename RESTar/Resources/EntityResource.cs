@@ -11,7 +11,6 @@ using RESTar.Reflection;
 using RESTar.Reflection.Dynamic;
 using RESTar.Results.Error;
 using RESTar.Results.Error.BadRequest;
-using RESTar.Starcounter;
 using Starcounter;
 
 namespace RESTar.Resources
@@ -76,7 +75,7 @@ namespace RESTar.Resources
                 var existingAssignment = ResourceAlias.GetByResource(Name);
                 if (value == null)
                 {
-                    Transact.Trans(() => existingAssignment?.Delete());
+                    Db.TransactAsync(() => existingAssignment?.Delete());
                     return;
                 }
                 if (value == "" || value.Any(char.IsWhiteSpace))
@@ -90,7 +89,7 @@ namespace RESTar.Resources
                 }
                 if (RESTarConfig.Resources.Any(r => r.Name.EqualsNoCase(value)))
                     throw new AliasEqualToResourceName(value);
-                Transact.Trans(() =>
+                Db.TransactAsync(() =>
                 {
                     existingAssignment = existingAssignment ?? new ResourceAlias {Resource = Name};
                     existingAssignment.Alias = value;

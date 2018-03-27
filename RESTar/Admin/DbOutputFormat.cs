@@ -5,7 +5,6 @@ using Newtonsoft.Json.Linq;
 using RESTar.Linq;
 using RESTar.Operations;
 using RESTar.Serialization;
-using RESTar.Starcounter;
 using Starcounter;
 using static RESTar.Admin.Settings;
 
@@ -112,15 +111,15 @@ namespace RESTar.Admin
         internal static void Init()
         {
             if (GetAll().All(format => format.Name != "Raw"))
-                Transact.Trans(() => new DbOutputFormat {Name = "Raw", RegularPattern = RawPattern});
+                Db.TransactAsync(() => new DbOutputFormat {Name = "Raw", RegularPattern = RawPattern});
             if (GetAll().All(format => format.Name != "Simple"))
-                Transact.Trans(() => new DbOutputFormat {Name = "Simple", RegularPattern = SimplePattern});
+                Db.TransactAsync(() => new DbOutputFormat {Name = "Simple", RegularPattern = SimplePattern});
             if (GetAll().All(format => format.Name != "JSend"))
-                Transact.Trans(() => new DbOutputFormat {Name = "JSend", RegularPattern = JSendPattern});
+                Db.TransactAsync(() => new DbOutputFormat {Name = "JSend", RegularPattern = JSendPattern});
             if (GetAll().All(format => !format.IsDefault))
             {
                 var raw = Db.SQL<DbOutputFormat>(ByName, "Raw").First();
-                Transact.Trans(() => raw._isDefault = true);
+                Db.TransactAsync(() => raw._isDefault = true);
             }
         }
     }
@@ -223,7 +222,7 @@ namespace RESTar.Admin
             {
                 if (DbOutputFormat.GetByName(entity.Name) != null)
                     throw new Exception($"Invalid name. '{entity.Name}' is already in use.");
-                Transact.Trans(() => new DbOutputFormat {Name = entity.Name, RegularPattern = entity.Pattern});
+                Db.TransactAsync(() => new DbOutputFormat {Name = entity.Name, RegularPattern = entity.Pattern});
                 count += 1;
             }
             return count;
@@ -237,7 +236,7 @@ namespace RESTar.Admin
             {
                 var dbEntity = DbOutputFormat.GetByName(entity.Name);
                 if (dbEntity == null) return;
-                Transact.Trans(() =>
+                Db.TransactAsync(() =>
                 {
                     count += 1;
                     dbEntity.IsDefault = entity.IsDefault;
@@ -256,7 +255,7 @@ namespace RESTar.Admin
             request.GetEntities().ForEach(entity =>
             {
                 if (entity.IsBuiltIn) return;
-                Transact.Trans(DbOutputFormat.GetByName(entity.Name).Delete);
+                Db.TransactAsync(DbOutputFormat.GetByName(entity.Name).Delete);
                 count += 1;
             });
             return count;

@@ -141,6 +141,7 @@
     <Compile Include="Resource.cs" />
     <Compile Include="Results\Error\Untraceable - Copy.cs" />
     <Compile Include="INetworkProvider.cs" />
+    <Compile Include="Results\Success\IEntities.cs" />
     <Compile Include="Results\Success\ImATeapot.cs" />
     <Compile Include="Starcounter\ScContext.cs" />
     <Compile Include="TerminalResource.cs" />
@@ -164,7 +165,6 @@
     <Compile Include="Results\Error\Untraceable.cs" />
     <Compile Include="Results\Success\Content.cs" />
     <Compile Include="Results\Success\Head.cs" />
-    <Compile Include="Results\Success\IEntitiesMetadata.cs" />
     <Compile Include="Results\Success\NoQuery.cs" />
     <Compile Include="Results\Success\WebSocketUpgradeSuccessful.cs" />
     <Compile Include="Starcounter\DDictionaryConverter.cs" />

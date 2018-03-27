@@ -7,43 +7,35 @@ using UriComponents = RESTar.Requests.UriComponents;
 namespace RESTar.Results.Success
 {
     /// <inheritdoc cref="OK" />
-    /// <inheritdoc cref="IEntitiesMetadata" />
     /// <summary>
     /// A result that contains a set of entities
     /// </summary>
-    public sealed class Entities : Content, IEntitiesMetadata, IEnumerable<object>
+    internal sealed class Entities<T> : Content, IEntities<T> where T : class
     {
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
         /// <inheritdoc />
-        public IEnumerator<object> GetEnumerator() => Content.GetEnumerator();
+        public IEnumerator<T> GetEnumerator() => Content.GetEnumerator();
 
         /// <summary>
         /// The entities contained in the result
         /// </summary>
-        private IEnumerable<object> Content { get; }
+        private IEnumerable<T> Content { get; }
 
-        /// <summary>
-        /// The number of entities in the result
-        /// </summary>
+        /// <inheritdoc />
         public ulong EntityCount { get; set; }
 
-        string IEntitiesMetadata.ResourceFullName => Request.Resource.Name;
-        internal string ExternalDestination { get; }
-
-        /// <summary>
-        /// Is the result paged?
-        /// </summary>
+        /// <inheritdoc />
         public bool IsPaged => Content != null && EntityCount > 0 && (long) EntityCount == Request.MetaConditions.Limit;
 
-        internal Entities(IRequest request, IEnumerable<object> content) : base(request)
+        internal Entities(IRequest request, IEnumerable<T> content) : base(request)
         {
-            Content = content ?? new object[0];
-            ExternalDestination = request.Headers.Destination;
+            Content = content ?? new T[0];
             TimeElapsed = request.TimeElapsed;
         }
 
-        internal void SetContentDisposition(string extension) => Headers["Content-Disposition"] =
+        /// <inheritdoc />
+        public void SetContentDisposition(string extension) => Headers["Content-Disposition"] =
             $"attachment;filename={Request.Resource.Name}_{DateTime.Now:yyMMddHHmmssfff}{extension}";
 
         /// <inheritdoc />

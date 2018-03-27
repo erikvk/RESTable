@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Net;
 using RESTar.Logging;
 using RESTar.Admin;
@@ -147,6 +148,7 @@ namespace RESTar.Requests
                     catch (NotImplementedException) { }
                 if (IsEvaluating) throw new InfiniteLoop();
                 var result = RunEvaluation();
+                result.Headers["RESTar-elapsed-ms"] = TimeElapsed.TotalMilliseconds.ToString(CultureInfo.InvariantCulture);
                 if (result is InfiniteLoop loop && !Context.IsBottomIfStack)
                     throw loop;
                 return result;

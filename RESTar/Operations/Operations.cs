@@ -161,6 +161,11 @@ namespace RESTar.Operations
             }
         }
 
+        private static Entities<TEntityType> MakeEntities<TEntityType>(IRequest request, IEnumerable<TEntityType> content) where TEntityType : class
+        {
+            return new Entities<TEntityType>(request, content);
+        }
+
         internal static Func<IRequestInternal<T>, Result> GetEvaluator(Method method)
         {
             switch (method)
@@ -170,7 +175,10 @@ namespace RESTar.Operations
                     {
                         if (!request.MetaConditions.Unsafe && request.MetaConditions.Limit == -1)
                             request.MetaConditions.Limit = (Limit) 1000;
-                        return new Entities(request, TrySelectFilterProcess(request));
+                        var entities = TrySelectFilterProcess(request);
+                        if (entities == null)
+                            return MakeEntities(request, default(IEnumerable<T>));
+                        return MakeEntities(request, (dynamic) entities);
                     };
 
                 case Method.POST:

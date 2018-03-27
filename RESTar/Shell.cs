@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Linq;
+using System.Text;
+using RESTar.Linq;
 using RESTar.Requests;
 using RESTar.Resources;
 using RESTar.Results.Error;
@@ -89,7 +91,7 @@ namespace RESTar
 
         private Func<int, IUriComponents> GetNextPageLink;
         private Action OnConfirm;
-        private IEntitiesMetadata PreviousResultMetadata;
+        private IEntities<object> PreviousResultMetadata;
 
         /// <inheritdoc />
         public IWebSocket WebSocket { private get; set; }
@@ -167,30 +169,46 @@ namespace RESTar
                     switch (command.ToUpperInvariant())
                     {
                         case "GET":
-                            byte[] body = null;
-                            if (!string.IsNullOrWhiteSpace(tail))
-                                body = tail.ToBytes();
-                            SafeOperation(GET, body);
+                            SafeOperation(GET, tail?.ToBytes());
                             break;
                         case "POST":
-                            SafeOperation(POST, tail.ToBytes());
+                            SafeOperation(POST, tail?.ToBytes());
                             break;
                         case "PATCH":
-                            UnsafeOperation(PATCH, tail.ToBytes());
+                            UnsafeOperation(PATCH, tail?.ToBytes());
                             break;
                         case "PUT":
-                            SafeOperation(PUT, tail.ToBytes());
+                            SafeOperation(PUT, tail?.ToBytes());
                             break;
                         case "DELETE":
-                            UnsafeOperation(DELETE);
+                            UnsafeOperation(DELETE, tail?.ToBytes());
                             break;
                         case "REPORT":
-                            SafeOperation(REPORT);
+                            SafeOperation(REPORT, tail?.ToBytes());
                             break;
                         case "HEAD":
-                            SafeOperation(HEAD);
+                            SafeOperation(HEAD, tail?.ToBytes());
                             break;
 
+                        case "HEADER":
+                            if (tail == null)
+                            {
+                                SendHeaders();
+                                break;
+                            }
+                            var (key, value) = tail.TSplit('=');
+                            if (value == null)
+                            {
+                                var pair = WebSocket.Headers.FirstOrDefault(p => p.Key.EqualsNoCase(key));
+                                if (pair.Key == null)
+                                    SendHeader(key, "null");
+                                else SendHeader(pair.Key, pair.Value);
+                            }
+                            WebSocket.Headers[key] = value;
+                            var _pair = WebSocket.Headers.FirstOrDefault(p => p.Key.EqualsNoCase(key));
+                            var p = WebSocket.Headers[key];
+                            SendHeader(p.Key, p.Value);
+                            return;
                         case "HELP":
                             SendHelp();
                             break;
@@ -274,6 +292,18 @@ namespace RESTar
             }
         }
 
+        private void SendHeader(string key, string value)
+        {
+            WebSocket.SendText($"\n  {key}: {value}");
+        }
+
+        private void SendHeaders()
+        {
+            var output = new StringBuilder("### Headers ###\n");
+            WebSocket.Headers?.CustomHeaders.ForEach(pair => output.Append($"  {pair.Key}: {pair.Value}\n"));
+            WebSocket.SendText(output.ToString());
+        }
+
         /// <inheritdoc />
         public void Dispose()
         {
@@ -298,7 +328,7 @@ namespace RESTar
                 case RESTarError _ when queryChangedPreEval:
                     query = previousQuery;
                     break;
-                case IEntitiesMetadata entitiesMetaData:
+                case IEntities<object> entitiesMetaData:
                     query = local;
                     PreviousResultMetadata = entitiesMetaData;
                     GetNextPageLink = entitiesMetaData.GetNextPageLink;
@@ -332,7 +362,7 @@ namespace RESTar
             var sw = Stopwatch.StartNew();
             switch (WsEvaluate(method, body))
             {
-                case Entities entities:
+                case IEntities<object> entities:
                     SendResult(entities, sw.Elapsed);
                     break;
                 case Report report:
@@ -369,7 +399,8 @@ namespace RESTar
                         break;
                     }
                     OnConfirm = operate;
-                    SendConfirmationRequest($"This will run {method} on {many} entities in resource '{PreviousResultMetadata.ResourceFullName}'. ");
+                    SendConfirmationRequest($"This will run {method} on {many} entities in resource " +
+                                            $"'{PreviousResultMetadata.Request.Resource.Name}'. ");
                     break;
             }
         }

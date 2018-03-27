@@ -28,6 +28,10 @@ namespace RESTarExample
                 configFilePath: @"C:\Mopedo\mopedo\Mopedo.config",
                 lineEndings: LineEndings.Linux
             );
+
+            var r = Request<DbClassWrapper>.Create(Method.GET);
+            r.Conditions.Add(new Condition<DbClassWrapper>(nameof(DbClass.MyInt), Operators.EQUALS, 3));
+            var jsonStream = r.Result.Serialize("application/json").Body;
         }
     }
 
@@ -50,6 +54,32 @@ namespace RESTarExample
             }
         }
     }
+
+    [RESTar(Method.POST)]
+    public class OtherClass : IInserter<OtherClass>
+    {
+        public string MyString { get; set; }
+        public int MyInt { get; set; }
+
+        public int Insert(IRequest<OtherClass> request)
+        {
+            var k = 0;
+            Db.TransactAsync(() =>
+            {
+                foreach (var i in request.GetEntities())
+                {
+                    new DbClass
+                    {
+                        MyInt = i.MyInt,
+                        MyString = i.MyString
+                    };
+                    k += 1;
+                }
+            });
+            return k;
+        }
+    }
+
 
     [RESTar(Method.GET)]
     public class Thing : ISelector<Thing>

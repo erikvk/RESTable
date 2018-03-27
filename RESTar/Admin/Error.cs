@@ -5,7 +5,6 @@ using RESTar.Internal;
 using RESTar.Linq;
 using RESTar.Resources;
 using RESTar.Results.Error;
-using RESTar.Starcounter;
 using Starcounter;
 using static RESTar.Admin.Settings;
 using static RESTar.Method;
@@ -119,7 +118,7 @@ namespace RESTar.Admin
         {
             if (Checked >= DateTime.Now.Date) return;
             var matches = Db.SQL<Error>(ByTimeLessThan, DateTime.Now.AddDays(0 - _DaysToSaveErrors));
-            matches.ForEach(match => Transact.TransAsync(match.Delete));
+            matches.ForEach(match => Db.TransactAsync(match.Delete));
             Checked = DateTime.Now.Date;
         }
     }

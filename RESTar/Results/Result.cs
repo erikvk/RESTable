@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Net;
 using RESTar.Logging;
 using RESTar.Requests;
@@ -19,10 +18,10 @@ namespace RESTar.Results
         #region IResult
 
         /// <inheritdoc />
-        public HttpStatusCode StatusCode { get; set; }
+        public HttpStatusCode StatusCode { get; protected set; }
 
         /// <inheritdoc />
-        public string StatusDescription { get; set; }
+        public string StatusDescription { get; protected set; }
 
         /// <inheritdoc />
         public Headers Headers { get; }
@@ -34,11 +33,7 @@ namespace RESTar.Results
         public virtual ISerializedResult Serialize(ContentType? contentType = null) => this;
 
         /// <inheritdoc />
-        public IEnumerable<T> ToEntities<T>() where T : class
-        {
-            var entities = (Entities) this;
-            return entities.Cast<T>();
-        }
+        public IEnumerable<T> ToEntities<T>() where T : class => (Entities<T>) this;
 
         /// <inheritdoc />
         public void ThrowIfError() { }
@@ -48,10 +43,10 @@ namespace RESTar.Results
         #region Serialized
 
         /// <inheritdoc />
-        public Stream Body { get; set; }
+        public Stream Body { get; protected set; }
 
         /// <inheritdoc />
-        public ContentType? ContentType { get; set; }
+        public ContentType? ContentType { get; protected set; }
 
         #endregion
 
@@ -86,12 +81,12 @@ namespace RESTar.Results
 
         #endregion
 
-        internal Result(ITraceable request)
+        internal Result(ITraceable trace)
         {
             Headers = new Headers();
             ExcludeHeaders = false;
-            Context = request.Context;
-            TraceId = request.TraceId;
+            Context = trace.Context;
+            TraceId = trace.TraceId;
         }
     }
 }

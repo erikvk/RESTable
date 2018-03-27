@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
+using RESTar.Internal;
 using RESTar.Requests;
 using RESTar.Results.Error;
 
@@ -63,6 +65,8 @@ namespace RESTar.Results.Success
                     if (!protocolProvider.OutputMimeBindings.TryGetValue(contentType.Value.MimeType, out acceptProvider))
                         throw new NotAcceptable(contentType.Value.ToString());
                 }
+                Body = new RESTarOutputStreamController();
+                ContentType = acceptProvider.ContentType;
                 return protocolProvider.ProtocolProvider.Serialize(this, acceptProvider);
             }
             catch (Exception exception)
@@ -73,6 +77,7 @@ namespace RESTar.Results.Success
             {
                 stopwatch.Stop();
                 TimeElapsed = TimeElapsed + stopwatch.Elapsed;
+                Headers["RESTar-elapsed-ms"] = TimeElapsed.TotalMilliseconds.ToString(CultureInfo.InvariantCulture);
             }
         }
     }

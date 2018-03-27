@@ -12,7 +12,7 @@ using RESTar.Results.Error.BadRequest;
 using RESTar.Results.Error.Forbidden;
 using RESTar.Results.Success;
 using RESTar.Starcounter;
-using static RESTar.Starcounter.Transact;
+using Starcounter;
 
 namespace RESTar.Results.Error
 {
@@ -121,8 +121,8 @@ namespace RESTar.Results.Error
                 case RESTarError re: return re;
                 case FormatException _: return new UnsupportedContent(exception);
                 case JsonReaderException _: return new FailedJsonDeserialization(exception);
-                case global::Starcounter.DbException _ when exception.Message.Contains("SCERR4034"): return new AbortedByCommitHook(exception);
-                case global::Starcounter.DbException _: return new StarcounterDatabaseError(exception);
+                case DbException _ when exception.Message.Contains("SCERR4034"): return new AbortedByCommitHook(exception);
+                case DbException _: return new StarcounterDatabaseError(exception);
                 case RuntimeBinderException _: return new BinderPermissions(exception);
                 case NotImplementedException _: return new FeatureNotImplemented("RESTar encountered a call to a non-implemented method");
                 default: return new Unknown(exception);
@@ -137,7 +137,7 @@ namespace RESTar.Results.Error
             if (!(error is Forbidden.Forbidden))
             {
                 Admin.Error.ClearOld();
-                errorId = Trans(() => Admin.Error.Create(error, request)).Id;
+                Db.TransactAsync(() => errorId = Admin.Error.Create(error, request).Id);
             }
             if (request.IsWebSocketUpgrade)
             {

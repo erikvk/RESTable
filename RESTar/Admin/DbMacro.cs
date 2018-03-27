@@ -8,7 +8,6 @@ using Newtonsoft.Json.Linq;
 using RESTar.Linq;
 using RESTar.Operations;
 using RESTar.Requests;
-using RESTar.Starcounter;
 using Starcounter;
 
 namespace RESTar.Admin
@@ -235,7 +234,7 @@ namespace RESTar.Admin
                 if (DbMacro.Get(entity.Name) != null)
                     throw new Exception($"Invalid name. '{entity.Name}' is already in use.");
                 var args = URI.Parse(entity.Uri);
-                Transact.Trans(() => new DbMacro
+                Db.TransactAsync(() => new DbMacro
                 {
                     Name = entity.Name,
                     ResourceSpecifier = args.ResourceSpecifier,
@@ -262,7 +261,7 @@ namespace RESTar.Admin
                 var dbEntity = DbMacro.Get(entity.Name);
                 if (dbEntity == null) return;
                 var args = URI.Parse(entity.Uri);
-                Transact.Trans(() =>
+                Db.TransactAsync(() =>
                 {
                     dbEntity.ResourceSpecifier = args.ResourceSpecifier;
                     dbEntity.ViewName = args.ViewName;
@@ -284,7 +283,7 @@ namespace RESTar.Admin
             var count = 0;
             request.GetEntities().ForEach(entity =>
             {
-                Transact.Trans(DbMacro.Get(entity.Name).Delete);
+                Db.TransactAsync(DbMacro.Get(entity.Name).Delete);
                 count += 1;
             });
             return count;
