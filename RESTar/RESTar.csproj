@@ -144,6 +144,7 @@
     <Compile Include="Results\Success\IEntities.cs" />
     <Compile Include="Results\Success\ImATeapot.cs" />
     <Compile Include="Starcounter\ScContext.cs" />
+    <Compile Include="StreamManifest.cs" />
     <Compile Include="TerminalResource.cs" />
     <Compile Include="WebSockets\WebSocket.cs" />
     <Compile Include="WebSockets\WebSocketConnection.cs" />
@@ -166,7 +167,7 @@
     <Compile Include="Results\Success\Content.cs" />
     <Compile Include="Results\Success\Head.cs" />
     <Compile Include="Results\Success\NoQuery.cs" />
-    <Compile Include="Results\Success\WebSocketUpgradeSuccessful.cs" />
+    <Compile Include="Results\Success\WebSocketResult.cs" />
     <Compile Include="Starcounter\DDictionaryConverter.cs" />
     <Compile Include="Serialization\DefaultValueProvider.cs" />
     <Compile Include="Serialization\NativeProtocol\HeadersConverter.cs" />

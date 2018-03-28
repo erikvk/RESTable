@@ -79,7 +79,7 @@ namespace RESTar
                             case RESTarError error: throw new Exception($"Could not get source data from '{uri}'. The resource returned: {error}");
                             case NoContent _: return null;
                             case Report report: return report.ReportBody.Count;
-                            case IEntities<object> entities: return entities;
+                            case IEntities entities: return entities;
                             case var other:
                                 throw new Exception($"Unexpected result from {method.ToString()} request inside " +
                                                     $"Aggregator: {other.LogMessage}");

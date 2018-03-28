@@ -93,16 +93,19 @@ namespace RESTar
         /// factory methods of Client to create a new Client object to use as trace.</param>
         /// <param name="uri">The URI if the request</param>
         /// <param name="error">A RESTarError describing the error, or null if valid</param>
-        public static bool IsValid(ITraceable trace, ref string uri, out RESTarError error)
+        /// <param name="resource">The resource referenced in the URI</param>
+        public static bool IsValid(ITraceable trace, ref string uri, out RESTarError error, out IResource resource)
         {
             var parameters = new RequestParameters(trace.Context, Method.OPTIONS, ref uri, null, null);
             parameters.Authenticate();
             if (parameters.Error != null)
             {
                 error = RESTarError.GetError(parameters.Error);
+                resource = null;
                 return false;
             }
-            IRequest request = Construct((dynamic) parameters.IResource, parameters);
+            resource = parameters.IResource;
+            IRequest request = Construct((dynamic) resource, parameters);
             if (request.IsValid)
             {
                 error = null;

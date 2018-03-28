@@ -20,26 +20,22 @@ namespace RESTar
         void SendText(string data);
 
         /// <summary>
-        /// Sends the byte array data as text over the WebSocket. Send calls to a closed WebSocket will be queued and sent 
-        /// when the WebSocket is opened.
+        /// Sends the byte array data as text over the WebSocket.
         /// </summary>
-        void SendText(byte[] data);
+        void SendText(byte[] data, int offset, int length);
 
         /// <summary>
-        /// Sends the Stream data as text over the WebSocket. Send calls to a closed WebSocket will be queued and sent 
-        /// when the WebSocket is opened.
+        /// Sends the Stream data as text over the WebSocket.
         /// </summary>
         void SendText(Stream data);
 
         /// <summary>
-        /// Sends the byte array data as binary over the WebSocket. Send calls to a closed WebSocket will be queued and sent 
-        /// when the WebSocket is opened.
+        /// Sends the byte array data as binary over the WebSocket.
         /// </summary>
-        void SendBinary(byte[] data);
+        void SendBinary(byte[] data, int offset, int length);
 
         /// <summary>
-        /// Sends the Stream data as binary over the WebSocket. Send calls to a closed WebSocket will be queued and sent 
-        /// when the WebSocket is opened.
+        /// Sends the Stream data as binary over the WebSocket.
         /// </summary>
         void SendBinary(Stream data);
 

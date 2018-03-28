@@ -48,13 +48,13 @@ namespace RESTar.WebSockets
         public void SendText(string data) => WebSocket.SendText(data);
 
         /// <inheritdoc />
-        public void SendText(byte[] data) => WebSocket.SendText(data);
+        public void SendText(byte[] data, int offset, int length) => WebSocket.SendText(data, offset, length);
 
         /// <inheritdoc />
         public void SendText(Stream data) => WebSocket.SendText(data);
 
         /// <inheritdoc />
-        public void SendBinary(byte[] data) => WebSocket.SendBinary(data);
+        public void SendBinary(byte[] data, int offset, int length) => WebSocket.SendBinary(data, offset, length);
 
         /// <inheritdoc />
         public void SendBinary(Stream data) => WebSocket.SendBinary(data);

@@ -1,12 +1,16 @@
-﻿using System.Collections.Generic;
+﻿using System.Collections;
+using System.Collections.Generic;
 using RESTar.Requests;
 
 namespace RESTar.Results.Success
 {
-    /// <inheritdoc cref="IEnumerable{T}" />
+    /// <inheritdoc cref="IEnumerable" />
     /// <inheritdoc cref="IResult" />
     /// <inheritdoc cref="ISerializedResult" />
-    public interface IEntities<out T> : IEnumerable<T>, IResult, ISerializedResult where T : class
+    /// <summary>
+    /// A non-generic interface for a collection of result entities from a RESTar request
+    /// </summary>
+    public interface IEntities : IEnumerable, IResult, ISerializedResult
     {
         /// <summary>
         /// The number of entitites in the collection. Should be set by the serializer, since it is unknown
@@ -41,4 +45,13 @@ namespace RESTar.Results.Success
         /// </summary>
         IRequest Request { get; }
     }
+
+    /// <inheritdoc cref="IEnumerable{T}" />
+    /// <inheritdoc cref="IResult" />
+    /// <inheritdoc cref="ISerializedResult" />
+    /// <summary>
+    /// A generic interface for a collection of result entities from a RESTar request
+    /// </summary>
+    /// <typeparam name="T">The entity type contained in the entity collection</typeparam>
+    public interface IEntities<out T> : IEntities, IEnumerable<T>, IResult, ISerializedResult where T : class { }
 }

@@ -91,7 +91,10 @@ namespace RESTar
             if (Used) throw new ReusedContext();
             Used = true;
             if (IsWebSocketUpgrade)
+            {
                 WebSocket = CreateWebSocket();
+                WebSocket.Context = this;
+            }
             var parameters = new RequestParameters(this, method, ref uri, body, headers);
             parameters.Authenticate();
             if (!parameters.IsValid)

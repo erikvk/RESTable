@@ -59,7 +59,7 @@ namespace RESTar.WebSockets
         /// <summary>
         /// The context in which this WebSocket was opened
         /// </summary>
-        public Context Context { get; private set; }
+        public Context Context { get; internal set; }
 
         private ulong BytesReceived { get; set; }
         private ulong BytesSent { get; set; }
@@ -122,7 +122,8 @@ namespace RESTar.WebSockets
             Status = WebSocketStatus.PendingClose;
             var terminalName = TerminalConnection?.Resource?.Name;
             ReleaseTerminal();
-            if (IsConnected) DisconnectWebSocket();
+            if (IsConnected)
+                DisconnectWebSocket();
             Status = WebSocketStatus.Closed;
             Closed = DateTime.Now;
             if (terminalName != Console.TypeName)
@@ -138,7 +139,7 @@ namespace RESTar.WebSockets
         /// <summary>
         /// Sends binary or text data to the client over the WebSocket
         /// </summary>
-        protected abstract void Send(byte[] data, bool isText);
+        protected abstract void Send(byte[] data, bool isText, int offset, int length);
 
         /// <summary>
         /// Is the WebSocket currently connected?
@@ -153,7 +154,7 @@ namespace RESTar.WebSockets
         /// <summary>
         /// Disconnects the actual underlying WebSocket connection
         /// </summary>
-        protected abstract void DisconnectWebSocket();
+        protected abstract void DisconnectWebSocket(string message = null);
 
         #region IWebSocket
 
@@ -222,14 +223,14 @@ namespace RESTar.WebSockets
             }
         }
 
-        private void _SendBinary(byte[] binaryData, bool isText)
+        private void _SendBinary(byte[] binaryData, bool isText, int offset, int length)
         {
             switch (Status)
             {
                 case WebSocketStatus.Closed: throw new InvalidOperationException("Cannot send data to a closed WebSocket");
                 case WebSocketStatus.Open:
-                    Send(binaryData, isText);
-                    BytesSent += (ulong) binaryData.Length;
+                    Send(binaryData, isText, offset, length);
+                    BytesSent += (ulong) length;
                     if (TerminalConnection?.Resource.Name != Console.TypeName)
                         Console.Log(new WebSocketEvent(LogEventType.WebSocketOutput, this, Encoding.UTF8.GetString(binaryData), binaryData.Length));
                     break;
@@ -278,16 +279,16 @@ namespace RESTar.WebSockets
         public void SendText(string data) => _SendText(data);
 
         /// <inheritdoc />
-        public void SendText(byte[] data) => _SendBinary(data, true);
+        public void SendText(byte[] data, int offset, int length) => _SendBinary(data, true, offset, length);
 
         /// <inheritdoc />
-        public void SendText(Stream data) => _SendBinary(data.ToByteArray(), true);
+        public void SendText(Stream data) => _SendBinary(data.ToByteArray(), true, 0, (int) data.Length);
 
         /// <inheritdoc />
-        public void SendBinary(byte[] data) => _SendBinary(data, false);
+        public void SendBinary(byte[] data, int offset, int length) => _SendBinary(data, false, offset, length);
 
         /// <inheritdoc />
-        public void SendBinary(Stream data) => _SendBinary(data.ToByteArray(), false);
+        public void SendBinary(Stream data) => _SendBinary(data.ToByteArray(), false, 0, (int) data.Length);
 
         /// <inheritdoc />
         public void SendJson(object item, bool? prettyPrint = null, bool ignoreNulls = false)
@@ -297,7 +298,8 @@ namespace RESTar.WebSockets
                 _prettyPrint = Admin.Settings._PrettyPrint ? Formatting.Indented : Formatting.None;
             else _prettyPrint = prettyPrint.Value ? Formatting.Indented : Formatting.None;
             var stream = Serializers.Json.SerializeStream(item, _prettyPrint, ignoreNulls);
-            _SendBinary(stream.ToArray(), true);
+            var array = stream.ToArray();
+            _SendBinary(array, true, 0, array.Length);
         }
 
         #endregion

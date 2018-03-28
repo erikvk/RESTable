@@ -141,6 +141,11 @@ namespace RESTar.Results.Error
             }
             if (request.IsWebSocketUpgrade)
             {
+                if (error is Forbidden.Forbidden)
+                {
+                    request.Context.WebSocket.Disconnect();
+                    return new WebSocketUpgradeFailed(error, request);
+                }
                 request.Context.WebSocket?.SendResult(error);
                 request.Context.WebSocket?.Disconnect();
                 return new WebSocketUpgradeSuccessful(request);

@@ -2,7 +2,9 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Newtonsoft.Json;
 using RESTar.Linq;
+using RESTar.Serialization.NativeProtocol;
 
 namespace RESTar.Requests
 {
@@ -27,16 +29,16 @@ namespace RESTar.Requests
                     Current = new KeyValuePair<string, string>("Content-Type", Headers.ContentType?.ToString());
                     break;
                 case HeadersMembers.Source:
-                    Current = new KeyValuePair<string, string>(nameof(Headers.Source), Headers.ContentType?.ToString());
+                    Current = new KeyValuePair<string, string>(nameof(Headers.Source), Headers.Source);
                     break;
                 case HeadersMembers.Destination:
-                    Current = new KeyValuePair<string, string>(nameof(Headers.Destination), Headers.ContentType?.ToString());
+                    Current = new KeyValuePair<string, string>(nameof(Headers.Destination), Headers.Destination);
                     break;
                 case HeadersMembers.Authorization:
-                    Current = new KeyValuePair<string, string>(nameof(Headers.Authorization), Headers.ContentType?.ToString());
+                    Current = new KeyValuePair<string, string>(nameof(Headers.Authorization), Headers.Authorization);
                     break;
                 case HeadersMembers.Origin:
-                    Current = new KeyValuePair<string, string>(nameof(Headers.Origin), Headers.ContentType?.ToString());
+                    Current = new KeyValuePair<string, string>(nameof(Headers.Origin), Headers.Origin);
                     break;
                 default:
                     if (!DictEnumerator.MoveNext())
@@ -69,7 +71,7 @@ namespace RESTar.Requests
     /// <summary>
     /// A collection of request headers. Key comparison is case insensitive.
     /// </summary>
-    //[JsonConverter(typeof(HeadersConverter))]
+    [JsonConverter(typeof(HeadersConverter))]
     public class Headers : IDictionary<string, string>, IReadOnlyDictionary<string, string>
     {
         /// <summary>
@@ -170,7 +172,7 @@ namespace RESTar.Requests
                 case var _ when key.EqualsNoCase("upgrade"):
                 case var _ when key.EqualsNoCase("sec-websocket-version"):
                 case var _ when key.EqualsNoCase("sec-websocket-key"):
-                case var _ when key.EqualsNoCase("sec-websocket-extensions"):
+                case var _ when key.EqualsNoCase("sec-websocket-extensions"): return false;
                 default: return true;
             }
         }

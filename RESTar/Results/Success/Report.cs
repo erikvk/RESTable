@@ -1,4 +1,6 @@
-﻿namespace RESTar.Results.Success
+﻿using System;
+
+namespace RESTar.Results.Success
 {
     /// <inheritdoc />
     /// <summary>
@@ -11,8 +13,12 @@
         /// </summary>
         public ReportBody ReportBody { get; }
 
+        /// <inheritdoc />
+        public override Type EntityType => typeof(ReportBody);
+
         internal Report(IRequest request, long count) : base(request)
         {
+            EntityCount = 1;
             ReportBody = new ReportBody(count);
             TimeElapsed = request.TimeElapsed;
         }

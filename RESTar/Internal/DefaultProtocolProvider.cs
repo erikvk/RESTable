@@ -116,7 +116,7 @@ namespace RESTar.Internal
             switch (content)
             {
                 case Report report:
-                    report.Headers["RESTar-count"] = report.ReportBody.Count.ToString();
+                    report.Headers["RESTar-count"] = report.EntityCount.ToString();
                     contentTypeProvider.SerializeEntity(report.ReportBody, report.Body, report.Request, out var _);
                     return report;
 

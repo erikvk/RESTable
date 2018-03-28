@@ -19,6 +19,16 @@ namespace RESTar.Results.Success
         /// </summary>
         public IRequest Request => RequestInternal;
 
+        /// <summary>
+        /// The number of entities contained in this result
+        /// </summary>
+        public ulong EntityCount { get; set; }
+
+        /// <summary>
+        /// The type of entities contained in this result
+        /// </summary>
+        public abstract Type EntityType { get; }
+
         private IRequestInternal RequestInternal { get; }
 
         /// <summary>
@@ -60,14 +70,16 @@ namespace RESTar.Results.Success
                         else
                             throw new NotAcceptable(RequestInternal.Headers.Accept.ToString());
                 }
-                else
-                {
-                    if (!protocolProvider.OutputMimeBindings.TryGetValue(contentType.Value.MimeType, out acceptProvider))
-                        throw new NotAcceptable(contentType.Value.ToString());
-                }
-                Body = new RESTarOutputStreamController();
+                else if (!protocolProvider.OutputMimeBindings.TryGetValue(contentType.Value.MimeType, out acceptProvider))
+                    throw new NotAcceptable(contentType.Value.ToString());
+
+                var streamController = new RESTarOutputStreamController();
+                Body = streamController;
                 ContentType = acceptProvider.ContentType;
-                return protocolProvider.ProtocolProvider.Serialize(this, acceptProvider);
+                var serialized = protocolProvider.ProtocolProvider.Serialize(this, acceptProvider);
+                if (serialized is Content content && content.Body is RESTarOutputStreamController rsc)
+                    content.Body = rsc.Stream;
+                return serialized;
             }
             catch (Exception exception)
             {
