@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -111,9 +110,9 @@ namespace RESTar.Internal
         }
 
         /// <inheritdoc />
-        public ISerializedResult Serialize(Content content, IContentTypeProvider contentTypeProvider)
+        public ISerializedResult Serialize(IResult result, IContentTypeProvider contentTypeProvider)
         {
-            switch (content)
+            switch (result)
             {
                 case Report report:
                     report.Headers["RESTar-count"] = report.EntityCount.ToString();
@@ -121,13 +120,14 @@ namespace RESTar.Internal
                     return report;
 
                 case IEntities<object> entities:
-                    try
+
+                    ISerializedResult SerializeEntities()
                     {
                         contentTypeProvider.SerializeCollection(entities, entities.Body, entities.Request, out var entityCount);
                         if (entityCount == 0)
                         {
                             entities.Body.Dispose();
-                            return new NoContent(content, entities.Request.TimeElapsed);
+                            return new NoContent(result, entities.Request.TimeElapsed);
                         }
                         entities.Headers["RESTar-count"] = entityCount.ToString();
                         entities.EntityCount = entityCount;
@@ -137,19 +137,31 @@ namespace RESTar.Internal
                             entities.Headers["RESTar-pager"] = MakeRelativeUri(pager);
                         }
                         entities.SetContentDisposition(contentTypeProvider.ContentDispositionFileExtension);
-                        if (entities.Request.Headers.Destination == null) return entities;
+                        return entities;
+                    }
+
+
+                    try
+                    {
+                        if (entities.Request.Headers.Destination == null)
+                            return SerializeEntities();
                         try
                         {
-                            var request = new HttpRequest(entities, entities.Request.Headers.Destination)
+                            var destinationParameters = new HeaderRequestParameters(entities.Request.Headers.Destination);
+                            if (destinationParameters.IsInternal)
                             {
-                                ContentType = entities.ContentType.ToString(),
-                                Body = entities.Body
-                            };
+                                var uri = destinationParameters.URI;
+                                var _request = Request.Create(entities, destinationParameters.Method, ref uri, null, destinationParameters.Headers);
+
+
+                            }
+                            var serialized = SerializeEntities();
+                            var request = new HttpRequest(serialized, destinationParameters, serialized.Body);
                             var response = request.GetResponse() ?? throw new InvalidExternalDestination(request, "No response");
                             if (response.StatusCode >= HttpStatusCode.BadRequest)
                                 throw new InvalidExternalDestination(request,
                                     $"Received {response.StatusCode.ToCode()} - {response.StatusDescription}. {response.Headers.SafeGet("RESTar-info")}");
-                            if (entities.Headers.FirstOrDefault(pair => pair.Key.EqualsNoCase("Access-Control-Allow-Origin")).Value is string h)
+                            if (serialized.Headers.FirstOrDefault(pair => pair.Key.EqualsNoCase("Access-Control-Allow-Origin")).Value is string h)
                                 response.Headers["Access-Control-Allow-Origin"] = h;
                             return response;
                         }
@@ -164,7 +176,7 @@ namespace RESTar.Internal
                         throw;
                     }
 
-                default: throw new Exception("Unknown result type " + content.GetType());
+                default: return result as ISerializedResult;
             }
         }
 

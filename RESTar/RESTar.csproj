@@ -101,6 +101,7 @@
     <Compile Include="ContentTypeProviders\JsonAdapterProvider.cs" />
     <Compile Include="ContentTypeProviders\XMLWriter.cs" />
     <Compile Include="Context.cs" />
+    <Compile Include="Internal\DefaultProtocolProvider.cs" />
     <Compile Include="Operations\IAuthenticatable.cs" />
     <Compile Include="Operations\ICounter.cs" />
     <Compile Include="Operations\IDeleter.cs" />
@@ -142,7 +143,9 @@
     <Compile Include="Results\Error\Untraceable - Copy.cs" />
     <Compile Include="INetworkProvider.cs" />
     <Compile Include="Results\Success\IEntities.cs" />
-    <Compile Include="Results\Success\ImATeapot.cs" />
+    <Compile Include="Results\Error\ImATeapot.cs" />
+    <Compile Include="Results\Error\InvalidShellStateForBinaryInput.cs" />
+    <Compile Include="Results\Success\Success.cs" />
     <Compile Include="Starcounter\ScContext.cs" />
     <Compile Include="StreamManifest.cs" />
     <Compile Include="TerminalResource.cs" />
@@ -191,7 +194,7 @@
     <Compile Include="Filters\Distinct.cs" />
     <Compile Include="ISerializedResult.cs" />
     <Compile Include="Results\Result.cs" />
-    <Compile Include="Internal\DefaultProtocolProvider.cs" />
+    <Compile Include="Requests\HeaderRequestParameters.cs" />
     <Compile Include="RegEx.cs" />
     <Compile Include="Internal\ProtocolController.cs" />
     <Compile Include="Requests\Headers.cs" />

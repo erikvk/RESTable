@@ -8,7 +8,7 @@ namespace RESTar.Results.Error.BadRequest
     /// </summary>
     public class InvalidExternalSource : BadRequest
     {
-        internal InvalidExternalSource(HttpRequest request, string message) : base(ErrorCodes.InvalidSourceData,
-            $"RESTar could not get entities from source at '{request.URI}'. {message}") { }
+        internal InvalidExternalSource(string uri, string message) : base(ErrorCodes.InvalidSourceData,
+            $"RESTar could not get entities from source at '{uri}'. {message}") { }
     }
 }

@@ -2,7 +2,7 @@
 using System.Net;
 using RESTar.Requests;
 
-namespace RESTar.Results.Success
+namespace RESTar.Results.Error
 {
     /// <inheritdoc />
     /// <summary>

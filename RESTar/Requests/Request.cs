@@ -257,20 +257,33 @@ namespace RESTar.Requests
                     case DataConfig.External:
                         try
                         {
-                            var request = new HttpRequest(this, Headers.Source)
-                            {
-                                Accept = Headers.ContentType?.ToString()
-                                         ?? defaultContentType.ToString()
-                            };
-                            if (request.Method != GET)
+                            var sourceParameters = new HeaderRequestParameters(Headers.Source);
+                            if (sourceParameters.Method != GET)
                                 throw new InvalidSyntax(InvalidSource, "Only GET is allowed in Source headers");
-                            var response = request.GetResponse() ?? throw new InvalidExternalSource(request, "No response");
+                            if (sourceParameters.IsInternal)
+                            {
+                                var uri = sourceParameters.URI;
+                                var result = Request.Create(this, sourceParameters.Method, ref uri, null, sourceParameters.Headers).Result;
+                                if (!(result is IEntities<object> entities))
+                                    throw new InvalidExternalSource(uri, result.LogMessage);
+                                if (result is IEntities<T> entitiesOfSameType)
+                                    Selector = () => entitiesOfSameType;
+                                else
+                                {
+                                    var serialized = result.Serialize();
+                                    Body = new Body(serialized.Body.ToByteArray(), entities.ContentType, CachedProtocolProvider);
+                                }
+                                break;
+                            }
+                            if (sourceParameters.Headers.Accept == null)
+                                sourceParameters.Headers.Accept = defaultContentType;
+                            var request = new HttpRequest(this, sourceParameters, null);
+                            var response = request.GetResponse() ?? throw new InvalidExternalSource(sourceParameters.URI, "No response");
                             if (response.StatusCode >= HttpStatusCode.BadRequest)
-                                throw new InvalidExternalSource(request,
-                                    $"Status: {response.StatusCode.ToCode()} - {response.StatusDescription}. {response.Headers.SafeGet("RESTar-info")}");
+                                throw new InvalidExternalSource(sourceParameters.URI, response.LogMessage);
                             if (response.Body.CanSeek && response.Body.Length == 0)
-                                throw new InvalidExternalSource(request, "Response was empty");
-                            Body = new Body(response.Body.ToByteArray(), Headers.ContentType ?? defaultContentType, CachedProtocolProvider);
+                                throw new InvalidExternalSource(sourceParameters.URI, "Response was empty");
+                            Body = new Body(response.Body.ToByteArray(), response.Headers.ContentType ?? defaultContentType, CachedProtocolProvider);
                             break;
                         }
                         catch (HttpRequestException re)

@@ -16,6 +16,16 @@
         internal const string RESTarRequestUri = @"^\??((?<res>/[^/-]*)|((?<res>/[^/-]*)(?<view>-\w*)))?(?<cond>/[^/]*)?(?<meta>/[^/]*)?/?$";
 
         /// <summary>
+        /// Used when parsing header request parameters like Source and Destination
+        /// </summary>
+        internal const string HeaderRequestParameters = @"^(?<method>\w+) (?<uri>\S+) (?<headers>\[[^\]]+\])*$";
+
+        /// <summary>
+        /// Matches headers in source and destination header syntax
+        /// </summary>
+        internal const string HeaderRequestParametersRequestHeader = @"\[(?<header>.+):[\s]*(?<value>[^\]]+)\]";
+
+        /// <summary>
         /// Checks API keys for invalid characters. May only contain non-whitespace characters and non-parentheses
         /// </summary>
         internal const string ApiKey = @"^[!-~]+$";
@@ -34,12 +44,7 @@
         /// Matches only strings that are valid dynamic resource names
         /// </summary>
         internal const string DynamicResourceName = @"^[a-zA-Z0-9_\.]+$";
-
-        /// <summary>
-        /// Matches headers in source and destination header syntax
-        /// </summary>
-        internal const string RequestHeader = @"\[(?<header>.+):[\s]*(?<value>.+)\]";
-
+        
         /// <summary>
         /// Used when sending unescaped data through a RESTar view model
         /// </summary>

@@ -86,6 +86,6 @@ namespace RESTar
         /// Takes a result and generates an ISerializedResult entity from it, that can be returned 
         /// to the network component.
         /// </summary>
-        ISerializedResult Serialize(Content content, IContentTypeProvider contentTypeProvider);
+        ISerializedResult Serialize(IResult result, IContentTypeProvider contentTypeProvider);
     }
 }

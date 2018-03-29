@@ -29,6 +29,11 @@ namespace RESTar.Results.Success
         /// </summary>
         public abstract Type EntityType { get; }
 
+        /// <summary>
+        /// The content type of this result
+        /// </summary>
+        public new ContentType ContentType { get; private set; }
+
         private IRequestInternal RequestInternal { get; }
 
         /// <summary>
@@ -49,30 +54,7 @@ namespace RESTar.Results.Success
             try
             {
                 var protocolProvider = RequestInternal.CachedProtocolProvider;
-                if (contentType.HasValue)
-                    contentType = contentType.Value;
-                else if (!(RequestInternal.Headers.Accept?.Count > 0))
-                    contentType = protocolProvider.DefaultOutputProvider.ContentType;
-                IContentTypeProvider acceptProvider = null;
-                if (!contentType.HasValue)
-                {
-                    var containedWildcard = false;
-                    var foundProvider = RequestInternal.Headers.Accept.Any(a =>
-                    {
-                        if (!a.AnyType)
-                            return protocolProvider.OutputMimeBindings.TryGetValue(a.MimeType, out acceptProvider);
-                        containedWildcard = true;
-                        return false;
-                    });
-                    if (!foundProvider)
-                        if (containedWildcard)
-                            acceptProvider = protocolProvider.DefaultOutputProvider;
-                        else
-                            throw new NotAcceptable(RequestInternal.Headers.Accept.ToString());
-                }
-                else if (!protocolProvider.OutputMimeBindings.TryGetValue(contentType.Value.MimeType, out acceptProvider))
-                    throw new NotAcceptable(contentType.Value.ToString());
-
+                var acceptProvider = ContentTypeController.ResolveOutputContentTypeProvider(RequestInternal, contentType);
                 var streamController = new RESTarOutputStreamController();
                 Body = streamController;
                 ContentType = acceptProvider.ContentType;
@@ -83,7 +65,8 @@ namespace RESTar.Results.Success
             }
             catch (Exception exception)
             {
-                return RESTarError.GetResult(exception, RequestInternal);
+                var error = RESTarError.GetResult(exception, RequestInternal);
+                return error.Serialize();
             }
             finally
             {

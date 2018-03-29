@@ -24,7 +24,7 @@ namespace RESTar.Results
         public string StatusDescription { get; protected set; }
 
         /// <inheritdoc />
-        public Headers Headers { get; }
+        public Headers Headers { get; protected set; }
 
         /// <inheritdoc />
         public ICollection<string> Cookies { get; internal set; }

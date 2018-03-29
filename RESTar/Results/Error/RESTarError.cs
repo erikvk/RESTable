@@ -41,13 +41,12 @@ namespace RESTar.Results.Error
         /// <inheritdoc />
         public ICollection<string> Cookies { get; } = new List<string>();
 
-        /// <inheritdoc />
-        public string HeadersStringCache { get; set; }
+        private CachedProtocolProvider CachedProtocolProvider { get; set; }
+        private IContentTypeProvider ContentTypeProvider { get; set; }
 
-        /// <inheritdoc />
-        public bool ExcludeHeaders { get; }
+        #region ITraceable, ILogable
 
-        internal void SetTrace(IRequest request)
+        private void SetTrace(IRequest request)
         {
             TraceId = request.TraceId;
             Context = request.Context;
@@ -85,6 +84,14 @@ namespace RESTar.Results.Error
         /// <inheritdoc />
         public DateTime LogTime { get; } = DateTime.Now;
 
+        /// <inheritdoc />
+        public string HeadersStringCache { get; set; }
+
+        /// <inheritdoc />
+        public bool ExcludeHeaders { get; }
+
+        #endregion
+
         internal RESTarError(ErrorCodes code, string message) : base(message)
         {
             ExcludeHeaders = false;
@@ -104,9 +111,6 @@ namespace RESTar.Results.Error
 
         /// <inheritdoc />
         public ContentType? ContentType { get; } = null;
-
-        /// <inheritdoc />
-        public ISerializedResult Serialize(ContentType? contentType = null) => this;
 
         /// <inheritdoc />
         public IEnumerable<T> ToEntities<T>() where T : class => throw this;
@@ -129,10 +133,18 @@ namespace RESTar.Results.Error
             }
         }
 
-        internal static ISerializedResult GetResult(Exception exs, IRequestInternal request)
+        /// <inheritdoc />
+        public ISerializedResult Serialize(ContentType? contentType = null)
+        {
+            return null;  //return CachedProtocolProvider.ProtocolProvider.Serialize()
+        }
+
+        internal static IResult GetResult(Exception exs, IRequestInternal request)
         {
             var error = GetError(exs);
             error.SetTrace(request);
+            error.CachedProtocolProvider = request.CachedProtocolProvider;
+            error.ContentTypeProvider = ContentTypeController.ResolveOutputContentTypeProvider(request, null);
             string errorId = null;
             if (!(error is Forbidden.Forbidden))
             {

@@ -8,11 +8,8 @@ namespace RESTar.Results.Success
     /// <summary>
     /// Returned to the client when no content was selected in a request
     /// </summary>
-    public class NoContent : Result
+    public class NoContent : Success
     {
-        /// <inheritdoc />
-        public override TimeSpan TimeElapsed { get; protected set; }
-
         internal NoContent(ITraceable trace, TimeSpan elapsed) : base(trace)
         {
             StatusCode = HttpStatusCode.NoContent;

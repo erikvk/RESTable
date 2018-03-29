@@ -44,14 +44,15 @@ namespace RESTar.Results.Success
         /// The request that generated this result
         /// </summary>
         IRequest Request { get; }
+
+        ContentType ContentType { get; }
     }
 
+    /// <inheritdoc cref="IEntities" />
     /// <inheritdoc cref="IEnumerable{T}" />
-    /// <inheritdoc cref="IResult" />
-    /// <inheritdoc cref="ISerializedResult" />
     /// <summary>
     /// A generic interface for a collection of result entities from a RESTar request
     /// </summary>
     /// <typeparam name="T">The entity type contained in the entity collection</typeparam>
-    public interface IEntities<out T> : IEntities, IEnumerable<T>, IResult, ISerializedResult where T : class { }
+    public interface IEntities<out T> : IEntities, IEnumerable<T> where T : class { }
 }
