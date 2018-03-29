@@ -1,12 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
-using System.Text.RegularExpressions;
 using RESTar.Linq;
 using RESTar.Requests;
-using RESTar.Results.Error;
 
 namespace RESTar.Internal
 {

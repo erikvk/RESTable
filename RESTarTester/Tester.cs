@@ -12,7 +12,6 @@ using RESTar;
 using RESTar.Admin;
 using RESTar.Linq;
 using RESTar.Operations;
-using RESTar.Requests;
 using RESTar.Results.Success;
 using Starcounter;
 using static RESTar.Method;
@@ -461,7 +460,7 @@ namespace RESTarTester
             var r3 = Request<Resource3>.Create(GET);
             var r4 = Request<Resource4>.Create(GET);
             var r6 = Request<Aggregator>.Create(GET);
-            r6.Body = new Body(new
+            r6.SetBody(new
             {
                 A = "REPORT /resource",
                 B = new[] {"REPORT /resource", "REPORT /resource"}

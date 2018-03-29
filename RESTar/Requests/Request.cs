@@ -16,12 +16,15 @@ using static RESTar.Internal.ErrorCodes;
 using RESTar.Linq;
 using RESTar.Resources;
 using RESTar.Results.Success;
+using RESTar.Serialization;
 
 namespace RESTar.Requests
 {
     internal class Request<T> : IRequest<T>, IRequestInternal<T>, ITraceable where T : class
     {
         public ITarget<T> Target { get; }
+        public Type TargetType { get; }
+
         public bool HasConditions => !(_conditions?.Count > 0);
         public Headers ResponseHeaders => _responseHeaders ?? (_responseHeaders = new Headers());
         public ICollection<string> Cookies => _cookies ?? (_cookies = new List<string>());
@@ -75,6 +78,19 @@ namespace RESTar.Requests
                         "Cannot set the request body while the request is evaluating");
                 _body = value;
             }
+        }
+
+        public void SetBody(object content)
+        {
+            var bytes = content != null ? Serializers.Json.SerializeToBytes(content) : new byte[0];
+            var contentType = Serializers.Json.ContentType;
+            Body = new Body(bytes, contentType, CachedProtocolProvider);
+        }
+
+        public void SetBody(byte[] bytes, ContentType? contentType = null)
+        {
+            var _contentType = contentType ?? Headers.ContentType ?? CachedProtocolProvider.DefaultInputProvider.ContentType;
+            Body = new Body(bytes, _contentType, CachedProtocolProvider);
         }
 
         public IUriComponents UriComponents => new UriComponents
@@ -219,6 +235,7 @@ namespace RESTar.Requests
             Parameters = parameters;
             IResource = resource;
             Target = resource;
+            TargetType = typeof(T);
             InputDataConfig = Headers.Source != null ? DataConfig.External : DataConfig.Client;
             OutputDataConfig = Headers.Destination != null ? DataConfig.External : DataConfig.Client;
 

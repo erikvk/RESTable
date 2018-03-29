@@ -1,7 +1,6 @@
 ﻿using System;
 using System.IO;
 using System.Net;
-using RESTar.Logging;
 using RESTar.Requests;
 
 namespace RESTar.Internal

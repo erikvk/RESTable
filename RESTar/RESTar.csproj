@@ -142,6 +142,7 @@
     <Compile Include="Resource.cs" />
     <Compile Include="Results\Error\Untraceable - Copy.cs" />
     <Compile Include="INetworkProvider.cs" />
+    <Compile Include="Results\Success\ExternalDestinationResult.cs" />
     <Compile Include="Results\Success\IEntities.cs" />
     <Compile Include="Results\Error\ImATeapot.cs" />
     <Compile Include="Results\Error\InvalidShellStateForBinaryInput.cs" />

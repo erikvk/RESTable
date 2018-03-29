@@ -1,8 +1,6 @@
 ﻿using System.Collections.Generic;
 using RESTar.Internal;
 using RESTar.Results.Error;
-using RESTar.Results.Error.NotFound;
-using RESTar.Serialization;
 
 namespace RESTar.Requests
 {
@@ -59,35 +57,6 @@ namespace RESTar.Requests
             ProtocolProvider = protocolProvider;
         }
 
-        /// <summary>
-        /// Creates a new Body instance from a JSON serializable .NET object.
-        /// </summary>
-        /// <param name="content"></param>
-        public Body(object content)
-        {
-            Bytes = content != null ? Serializers.Json.SerializeToBytes(content) : new byte[0];
-            ContentType = Serializers.Json.ContentType;
-            HasContent = Bytes?.Length > 0;
-            ProtocolProvider = ProtocolController.DefaultProtocolProvider;
-        }
 
-        /// <summary>
-        /// Creates a new body from a byte array
-        /// </summary>
-        /// <param name="bytes">The bytes that constitute the body</param>
-        /// <param name="protocolIdentifer">An optional protocol provider identifier used for specifying a protocol.
-        /// If null, the default protocol is used.</param>
-        /// <param name="contentType">An optional content type to use when deserializing the body. If null, the default 
-        /// content type of the protocol is used.</param>
-        public Body(byte[] bytes, string protocolIdentifer = null, ContentType? contentType = null)
-        {
-            Bytes = bytes;
-            ProtocolProvider = protocolIdentifer == null
-                ? ProtocolController.DefaultProtocolProvider
-                : ProtocolController.ProtocolProviders.SafeGet(protocolIdentifer)
-                  ?? throw new UnknownProtocol(protocolIdentifer);
-            ContentType = contentType ?? ProtocolProvider.DefaultInputProvider.ContentType;
-            HasContent = bytes?.Length > 0;
-        }
     }
 }

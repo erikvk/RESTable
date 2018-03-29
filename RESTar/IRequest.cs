@@ -32,11 +32,6 @@ namespace RESTar
         new IEntityResource<T> Resource { get; }
 
         /// <summary>
-        /// Does this request have conditions?
-        /// </summary>
-        bool HasConditions { get; }
-
-        /// <summary>
         /// The conditions of the request. Cannot be changed while the request is being evaluated
         /// </summary>
         List<Condition<T>> Conditions { get; set; }
@@ -87,6 +82,16 @@ namespace RESTar
         IEntityResource Resource { get; }
 
         /// <summary>
+        /// The type of the request target
+        /// </summary>
+        Type TargetType { get; }
+
+        /// <summary>
+        /// Does this request have conditions?
+        /// </summary>
+        bool HasConditions { get; }
+
+        /// <summary>
         /// The meta-conditions of the request
         /// </summary>
         MetaConditions MetaConditions { get; }
@@ -94,7 +99,20 @@ namespace RESTar
         /// <summary>
         /// Gets the request body. Cannot be changed while the request is being evaluated
         /// </summary>
-        Body Body { get; set; }
+        Body Body { get; }
+
+        /// <summary>
+        /// Creates a new Body instance from a JSON serializable .NET object.
+        /// </summary>
+        /// <param name="content"></param>
+        void SetBody(object content);
+
+        /// <summary>
+        /// Creates a new body from a byte array
+        /// </summary>
+        /// <param name="bytes">The bytes that constitute the body</param>
+        /// <param name="contentType"></param>
+        void SetBody(byte[] bytes, ContentType? contentType = null);
 
         /// <summary>
         /// To include additional HTTP headers in the response, add them to 

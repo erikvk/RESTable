@@ -12,6 +12,8 @@ namespace RESTar.Requests
         public bool IsValid { get; }
         private Exception Error { get; }
         public IResult Result => RESTarError.GetResult(Error, this);
+        public Type TargetType => null;
+        public bool HasConditions => false;
 
         #region Logable
 
@@ -49,10 +51,13 @@ namespace RESTar.Requests
 
         public Method Method { get; set; }
         public MetaConditions MetaConditions { get; }
-        public Body Body { get; set; }
+        public Body Body { get; }
         public Headers ResponseHeaders { get; }
         public ICollection<string> Cookies { get; }
-        
+        public void SetBody(object content) => throw new InvalidOperationException("Cannot set body of an invalid request");
+
+        public void SetBody(byte[] bytes, ContentType? contentType) => throw new InvalidOperationException("Cannot set body of an invalid request");
+
         internal InvalidParametersRequest(RequestParameters parameters)
         {
             IsValid = false;
@@ -65,7 +70,8 @@ namespace RESTar.Requests
                 bytes: parameters.BodyBytes,
                 contentType: Headers.ContentType
                              ?? CachedProtocolProvider?.DefaultInputProvider.ContentType
-                             ?? Serialization.Serializers.Json.ContentType
+                             ?? Serialization.Serializers.Json.ContentType,
+                protocolProvider: parameters.CachedProtocolProvider
             );
             ResponseHeaders = null;
             Cookies = null;

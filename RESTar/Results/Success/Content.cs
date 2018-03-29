@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Globalization;
-using System.Linq;
 using RESTar.Internal;
 using RESTar.Requests;
 using RESTar.Results.Error;

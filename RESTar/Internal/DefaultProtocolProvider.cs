@@ -147,23 +147,31 @@ namespace RESTar.Internal
                             return SerializeEntities();
                         try
                         {
-                            var destinationParameters = new HeaderRequestParameters(entities.Request.Headers.Destination);
-                            if (destinationParameters.IsInternal)
+                            var parameters = new HeaderRequestParameters(entities.Request.Headers.Destination);
+                            if (parameters.IsInternal)
                             {
-                                var uri = destinationParameters.URI;
-                                var _request = Request.Create(entities, destinationParameters.Method, ref uri, null, destinationParameters.Headers);
-
-
+                                var uri = parameters.URI;
+                                var internalRequest = Request.Create(entities, parameters.Method, ref uri, null, parameters.Headers);
+                                if (internalRequest.TargetType.IsAssignableFrom(entities.EntityType))
+                                    SetSelector((dynamic) internalRequest, (dynamic) entities);
+                                else
+                                {
+                                    var serializedEntities = SerializeEntities();
+                                    if (!(serializedEntities is Content content))
+                                        return serializedEntities;
+                                    internalRequest.SetBody(content.Body.ToByteArray());
+                                }
+                                return internalRequest.Result.Serialize();
                             }
                             var serialized = SerializeEntities();
-                            var request = new HttpRequest(serialized, destinationParameters, serialized.Body);
-                            var response = request.GetResponse() ?? throw new InvalidExternalDestination(request, "No response");
+                            var externalRequest = new HttpRequest(serialized, parameters, serialized.Body);
+                            var response = externalRequest.GetResponse() ?? throw new InvalidExternalDestination(externalRequest, "No response");
                             if (response.StatusCode >= HttpStatusCode.BadRequest)
-                                throw new InvalidExternalDestination(request,
+                                throw new InvalidExternalDestination(externalRequest,
                                     $"Received {response.StatusCode.ToCode()} - {response.StatusDescription}. {response.Headers.SafeGet("RESTar-info")}");
                             if (serialized.Headers.FirstOrDefault(pair => pair.Key.EqualsNoCase("Access-Control-Allow-Origin")).Value is string h)
                                 response.Headers["Access-Control-Allow-Origin"] = h;
-                            return response;
+                            return new ExternalDestinationResult(serialized, response);
                         }
                         catch (HttpRequestException re)
                         {
@@ -178,6 +186,13 @@ namespace RESTar.Internal
 
                 default: return result as ISerializedResult;
             }
+        }
+
+        private static void SetSelector<TRequest, TEntity>(IRequest<TRequest> r, IEntities<TEntity> e)
+            where TRequest : class
+            where TEntity : class, TRequest
+        {
+            r.Selector = () => e;
         }
 
         public bool IsCompliant(IRequest request, out string invalidReason)

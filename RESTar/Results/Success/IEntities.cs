@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using RESTar.Requests;
 
@@ -45,7 +46,15 @@ namespace RESTar.Results.Success
         /// </summary>
         IRequest Request { get; }
 
-        ContentType ContentType { get; }
+        /// <summary>
+        /// The type of entities in the entity collection
+        /// </summary>
+        Type EntityType { get; }
+
+        /// <summary>
+        /// The content type used when serializing the entities
+        /// </summary>
+        new ContentType ContentType { get; }
     }
 
     /// <inheritdoc cref="IEntities" />

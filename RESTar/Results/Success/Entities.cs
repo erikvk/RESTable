@@ -22,7 +22,7 @@ namespace RESTar.Results.Success
         /// </summary>
         private IEnumerable<T> Content { get; }
 
-        /// <inheritdoc />
+        /// <inheritdoc cref="Results.Success.Content" />
         public override Type EntityType => typeof(T);
 
         /// <inheritdoc />

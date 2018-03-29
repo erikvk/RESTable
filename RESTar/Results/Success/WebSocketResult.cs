@@ -1,8 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Net;
-using RESTar.Logging;
 using RESTar.Requests;
 using RESTar.Results.Error;
 
