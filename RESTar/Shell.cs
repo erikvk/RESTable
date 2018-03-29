@@ -160,8 +160,6 @@ namespace RESTar
                     case 'N':
                     case 'n':
                         OnConfirm = null;
-                        CurrentStreamManifest.Dispose();
-                        CurrentStreamManifest = null;
                         SendCancel();
                         break;
                 }
@@ -185,9 +183,9 @@ namespace RESTar
                         StreamMessage(1);
                         break;
                     case "CLOSE":
-                        CurrentStreamManifest.Dispose();
                         WebSocket.SendText($"499: Client closed request. Streamed {CurrentStreamManifest.CurrentMessageIndex} " +
                                            $"of {CurrentStreamManifest.NrOfMessages} messages.");
+                        CurrentStreamManifest.Dispose();
                         CurrentStreamManifest = null;
                         break;
                 }
@@ -309,6 +307,25 @@ namespace RESTar
                             break;
 
                         #region Nonsense
+
+                        case "HELLO" when tail.EqualsNoCase("world"):
+
+                            string getHelloWorld()
+                            {
+                                switch (new Random().Next(0, 7))
+                                {
+                                    case 0: return "The world says: 'hi!'";
+                                    case 1: return "The world says: 'what's up?'";
+                                    case 2: return "The world says: 'greetings!'";
+                                    case 3: return "The world is currently busy";
+                                    case 4: return "The world cannot answer right now";
+                                    case 5: return "The world is currently out on lunch";
+                                    default: return "The world says: 'why do people keep saying that?'";
+                                }
+                            }
+
+                            WebSocket.SendText(getHelloWorld());
+                            break;
 
                         case "HI":
                         case "HELLO":
@@ -494,12 +511,15 @@ namespace RESTar
             switch (WsEvaluate(method, body))
             {
                 case Content tooLarge when tooLarge.Body is FileStream || tooLarge.Body.Length > 16_000_000:
-                    CurrentStreamManifest = new StreamManifest(tooLarge);
-                    OnConfirm = SetupStreamManifest;
+                    OnConfirm = () =>
+                    {
+                        CurrentStreamManifest = new StreamManifest(tooLarge);
+                        SetupStreamManifest();
+                    };
                     SendConfirmationRequest("426: The response message is too large. Do you wish to stream the response? ");
                     break;
-                case Content content:
-                    SendResult(content, sw.Elapsed);
+                case OK ok:
+                    SendResult(ok, sw.Elapsed);
                     break;
                 case var other:
                     SendResult(other);
