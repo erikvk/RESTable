@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using RESTar.Internal;
 using RESTar.Logging;
 using RESTar.Resources;
-using RESTar.Results.Error;
 
 namespace RESTar.Requests
 {
@@ -11,7 +10,7 @@ namespace RESTar.Requests
     {
         public bool IsValid { get; }
         private Exception Error { get; }
-        public IResult Result => RESTarError.GetResult(Error, this);
+        public IResult Result => Results.Error.GetResult(Error, this);
         public Type TargetType => null;
         public bool HasConditions => false;
 

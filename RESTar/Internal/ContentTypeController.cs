@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using RESTar.ContentTypeProviders;
 using RESTar.Linq;
-using RESTar.Results.Error;
+using RESTar.Results;
 using RESTar.Serialization;
 
 namespace RESTar.Internal

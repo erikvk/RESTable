@@ -1,0 +1,18 @@
+﻿using System.Net;
+
+namespace RESTar.Results
+{
+    /// <inheritdoc />
+    /// <summary>
+    /// Returned to the client when no content was selected in a request
+    /// </summary>
+    public class NoContent : RequestResult
+    {
+        internal NoContent(IRequest request) : base(request)
+        {
+            StatusCode = HttpStatusCode.NoContent;
+            StatusDescription = "No content";
+            Headers["RESTar-info"] = "No entities found matching request.";
+        }
+    }
+}

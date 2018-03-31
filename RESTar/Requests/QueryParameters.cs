@@ -7,7 +7,6 @@ using RESTar.Internal;
 using RESTar.Linq;
 using RESTar.Logging;
 using RESTar.Resources;
-using RESTar.Results.Error;
 using RESTar.Serialization;
 using RESTar.WebSockets;
 using IResource = RESTar.Resources.IResource;
@@ -140,7 +139,7 @@ namespace RESTar.Requests
             }
             catch (Exception e)
             {
-                Error = RESTarError.GetError(e);
+                Error = Results.Error.GetError(e);
             }
 
             if (hasMacro)

@@ -15,7 +15,7 @@ using RESTar.Reflection.Dynamic;
 using RESTar.Internal;
 using RESTar.Linq;
 using RESTar.Resources;
-using RESTar.Results.Error;
+using RESTar.Results;
 using RESTar.Starcounter;
 using Starcounter;
 using static RESTar.Method;

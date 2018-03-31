@@ -5,7 +5,7 @@ using System.Reflection;
 using Newtonsoft.Json.Linq;
 using RESTar.Internal;
 using RESTar.Linq;
-using RESTar.Results.Error.BadRequest;
+using RESTar.Results;
 using static RESTar.Reflection.TermBindingRules;
 using static System.StringComparison;
 

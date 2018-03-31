@@ -4,7 +4,7 @@ using System.Text;
 using RESTar.Linq;
 using RESTar.Logging;
 using RESTar.ResourceTemplates;
-using RESTar.Results.Success;
+using RESTar.Results;
 using RESTar.Serialization;
 using RESTar.WebSockets;
 using static Newtonsoft.Json.Formatting;

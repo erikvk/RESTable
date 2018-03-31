@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using RESTar.Results.Error.BadRequest;
+using RESTar.Results;
 
 namespace RESTar.Linq
 {

@@ -1,5 +1,5 @@
 ﻿using RESTar.Resources;
-using RESTar.Results.Error.NotFound;
+using RESTar.Results;
 
 namespace RESTar {
     /// <summary>

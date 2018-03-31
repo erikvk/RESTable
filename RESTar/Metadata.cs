@@ -7,7 +7,7 @@ using RESTar.Reflection.Dynamic;
 using RESTar.Linq;
 using RESTar.Operations;
 using RESTar.Resources;
-using RESTar.Results.Error;
+using RESTar.Results;
 
 namespace RESTar
 {

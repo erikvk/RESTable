@@ -1,5 +1,5 @@
 ﻿using System;
-using RESTar.Results.Success;
+using RESTar.Results;
 
 #pragma warning disable 414
 

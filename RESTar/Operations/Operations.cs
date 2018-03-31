@@ -6,10 +6,6 @@ using Newtonsoft.Json.Linq;
 using RESTar.Filters;
 using RESTar.Linq;
 using RESTar.Results;
-using RESTar.Results.Error;
-using RESTar.Results.Error.BadRequest;
-using RESTar.Results.Error.BadRequest.Aborted;
-using RESTar.Results.Success;
 using RESTar.Serialization;
 
 namespace RESTar.Operations
@@ -166,7 +162,7 @@ namespace RESTar.Operations
             return new Entities<TEntityType>(request, content);
         }
 
-        internal static Func<IRequestInternal<T>, Result> GetEvaluator(Method method)
+        internal static Func<IRequestInternal<T>, RequestResult> GetEvaluator(Method method)
         {
             switch (method)
             {
@@ -222,7 +218,7 @@ namespace RESTar.Operations
 
         #region SafePost
 
-        private static Result SafePOST(IRequest<T> request)
+        private static RequestResult SafePOST(IRequest<T> request)
         {
             var (innerRequest, toInsert, toUpdate) = GetSafePostTasks(request);
             var (updatedCount, insertedCount) = (0, 0);

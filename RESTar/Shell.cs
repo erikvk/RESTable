@@ -4,9 +4,7 @@ using System.IO;
 using System.Linq;
 using RESTar.Requests;
 using RESTar.Resources;
-using RESTar.Results.Error;
-using RESTar.Results.Error.BadRequest;
-using RESTar.Results.Success;
+using RESTar.Results;
 using RESTar.WebSockets;
 using static RESTar.Internal.ErrorCodes;
 using static RESTar.Method;
@@ -293,12 +291,11 @@ namespace RESTar
                             WebSocket.SendText($"{(Query.Any() ? Query : "< empty >")}");
                             break;
                         case "NEXT":
-                            var stopwatch = Stopwatch.StartNew();
                             if (tail == null || !int.TryParse(tail, out var count))
                                 count = -1;
                             var link = GetNextPageLink?.Invoke(count)?.ToString();
                             if (link == null)
-                                SendResult(new NoContent(WebSocket, stopwatch.Elapsed));
+                                SendResult(new NoContent(WebSocket));
                             else
                             {
                                 Query = link;
@@ -444,7 +441,7 @@ namespace RESTar
             var result = Request.Create(WebSocket, method, ref local, body, WebSocket.Headers).Result.Serialize();
             switch (result)
             {
-                case RESTarError _ when queryChangedPreEval:
+                case Error _ when queryChangedPreEval:
                     query = previousQuery;
                     break;
                 case IEntities entities:

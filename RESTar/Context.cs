@@ -1,9 +1,7 @@
 ﻿using System;
 using RESTar.Auth;
 using RESTar.Requests;
-using RESTar.Results.Error;
-using RESTar.Results.Error.Forbidden;
-using RESTar.Results.Success;
+using RESTar.Results;
 using RESTar.WebSockets;
 using Starcounter;
 using WebSocket = RESTar.WebSockets.WebSocket;

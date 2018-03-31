@@ -9,7 +9,7 @@ using RESTar.Internal;
 using RESTar.Operations;
 using RESTar.Requests;
 using RESTar.Resources;
-using RESTar.Results.Error.BadRequest;
+using RESTar.Results;
 using static System.StringComparison;
 using static RESTar.Operators;
 

@@ -2,7 +2,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using RESTar.Results.Error;
+using RESTar.Results;
 using RESTar.Serialization;
 
 namespace RESTar.WebSockets
@@ -39,7 +39,7 @@ namespace RESTar.WebSockets
                         }
                         catch (Exception e)
                         {
-                            webSocket.SendResult(RESTarError.GetError(e));
+                            webSocket.SendResult(Error.GetError(e));
                         }
                         break;
                     case "#INFO":
@@ -54,7 +54,7 @@ namespace RESTar.WebSockets
                         }
                         catch (Exception e)
                         {
-                            webSocket.SendResult(RESTarError.GetError(e));
+                            webSocket.SendResult(Error.GetError(e));
                         }
                         break;
                     case "#TERMINAL":

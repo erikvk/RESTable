@@ -10,7 +10,7 @@ using RESTar.Admin;
 using RESTar.Internal;
 using RESTar.Reflection.IL;
 using RESTar.Operations;
-using RESTar.Results.Error;
+using RESTar.Results;
 using RESTar.Starcounter;
 using Starcounter;
 using static System.Reflection.BindingFlags;

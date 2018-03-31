@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using RESTar.Admin;
 using RESTar.Internal;
-using RESTar.Results.Error.NotFound;
+using RESTar.Results;
 
 namespace RESTar.Requests
 {

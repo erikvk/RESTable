@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using RESTar.Requests;
 using RESTar.Resources;
-using RESTar.Results.Error.Forbidden;
+using RESTar.Results;
 using Starcounter;
 
 namespace RESTar.Auth

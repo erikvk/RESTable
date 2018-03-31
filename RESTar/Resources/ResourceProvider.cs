@@ -4,7 +4,7 @@ using System.Linq;
 using System.Reflection;
 using RESTar.Linq;
 using RESTar.Operations;
-using RESTar.Results.Error;
+using RESTar.Results;
 using static System.Reflection.BindingFlags;
 using static RESTar.Operations.DelegateMaker;
 

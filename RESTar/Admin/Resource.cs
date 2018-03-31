@@ -7,7 +7,7 @@ using RESTar.Internal;
 using RESTar.Linq;
 using RESTar.Operations;
 using RESTar.Resources;
-using RESTar.Results.Error.BadRequest;
+using RESTar.Results;
 
 namespace RESTar.Admin
 {

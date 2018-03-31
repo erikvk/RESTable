@@ -6,7 +6,7 @@ using RESTar.Filters;
 using RESTar.Linq;
 using RESTar.Processors;
 using RESTar.Resources;
-using RESTar.Results.Error.BadRequest;
+using RESTar.Results;
 using static RESTar.Internal.ErrorCodes;
 using static RESTar.Operators;
 

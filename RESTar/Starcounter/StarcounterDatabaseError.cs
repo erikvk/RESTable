@@ -8,7 +8,7 @@ namespace RESTar.Starcounter
     /// Thrown when RESTar encounters an error with the Starcounter database
     /// search string.
     /// </summary>
-    public class StarcounterDatabaseError : Results.Error.Internal
+    public class StarcounterDatabaseError : Results.Internal
     {
         internal StarcounterDatabaseError(Exception e) : base(ErrorCodes.DatabaseError, e.Message, e)
         {

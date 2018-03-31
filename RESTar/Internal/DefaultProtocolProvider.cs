@@ -4,10 +4,7 @@ using System.Net;
 using System.Text.RegularExpressions;
 using RESTar.Admin;
 using RESTar.Requests;
-using RESTar.Results.Error;
-using RESTar.Results.Error.BadRequest;
-using RESTar.Results.Error.NotFound;
-using RESTar.Results.Success;
+using RESTar.Results;
 using RESTar.WebSockets;
 
 namespace RESTar.Internal

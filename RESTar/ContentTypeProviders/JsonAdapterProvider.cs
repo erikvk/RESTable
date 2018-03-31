@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.IO;
 using System.Text;
-using RESTar.Results.Error.BadRequest;
+using RESTar.Results;
 
 namespace RESTar.ContentTypeProviders
 {

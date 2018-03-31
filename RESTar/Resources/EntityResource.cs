@@ -9,8 +9,7 @@ using RESTar.Linq;
 using RESTar.Operations;
 using RESTar.Reflection;
 using RESTar.Reflection.Dynamic;
-using RESTar.Results.Error;
-using RESTar.Results.Error.BadRequest;
+using RESTar.Results;
 using Starcounter;
 
 namespace RESTar.Resources

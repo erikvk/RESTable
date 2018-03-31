@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using RESTar.Resources;
-using RESTar.Results.Error.NotFound;
+using RESTar.Results;
 
 namespace RESTar
 {

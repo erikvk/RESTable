@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 using RESTar.Internal;
-using RESTar.Results.Error;
+using RESTar.Results;
 
 namespace RESTar.Requests
 {
@@ -56,7 +56,5 @@ namespace RESTar.Requests
             HasContent = bytes?.Length > 0;
             ProtocolProvider = protocolProvider;
         }
-
-
     }
 }

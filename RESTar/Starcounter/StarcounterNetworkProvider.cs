@@ -6,7 +6,7 @@ using System.Net;
 using RESTar.Linq;
 using RESTar.Operations;
 using RESTar.Requests;
-using RESTar.Results.Success;
+using RESTar.Results;
 using RESTar.WebSockets;
 using Starcounter;
 using ScRequest = Starcounter.Request;

@@ -4,7 +4,6 @@ using System.Text;
 using RESTar.Internal;
 using RESTar.Linq;
 using RESTar.Resources;
-using RESTar.Results.Error;
 using Starcounter;
 using static RESTar.Admin.Settings;
 using static RESTar.Method;
@@ -79,7 +78,7 @@ namespace RESTar.Admin
 
         private const int MaxStringLength = 10000;
 
-        internal static Error Create(RESTarError error, IRequest request)
+        internal static Error Create(Results.Error error, IRequest request)
         {
             var resource = request.SafeGet(a => a.Resource);
             var uri = request.UriComponents.ToString();

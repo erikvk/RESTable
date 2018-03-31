@@ -7,7 +7,7 @@ using Newtonsoft.Json.Linq;
 using RESTar.ContentTypeProviders;
 using RESTar.Linq;
 using RESTar.Operations;
-using RESTar.Results.Success;
+using RESTar.Results;
 using static System.StringComparison;
 using static RESTar.Method;
 using JTokens = System.Collections.Generic.IEnumerable<Newtonsoft.Json.Linq.JToken>;

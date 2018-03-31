@@ -12,7 +12,7 @@ using RESTar;
 using RESTar.Admin;
 using RESTar.Linq;
 using RESTar.Operations;
-using RESTar.Results.Success;
+using RESTar.Results;
 using Starcounter;
 using static RESTar.Method;
 using static RESTar.Operators;

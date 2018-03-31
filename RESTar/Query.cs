@@ -2,8 +2,7 @@
 using RESTar.Internal;
 using RESTar.Requests;
 using RESTar.Resources;
-using RESTar.Results.Error;
-using RESTar.Results.Error.NotFound;
+using RESTar.Results;
 
 namespace RESTar
 {
@@ -94,13 +93,13 @@ namespace RESTar
         /// <param name="uri">The URI if the request</param>
         /// <param name="error">A RESTarError describing the error, or null if valid</param>
         /// <param name="resource">The resource referenced in the URI</param>
-        public static bool IsValid(ITraceable trace, ref string uri, out RESTarError error, out IResource resource)
+        public static bool IsValid(ITraceable trace, ref string uri, out Error error, out IResource resource)
         {
             var parameters = new RequestParameters(trace.Context, Method.OPTIONS, ref uri, null, null);
             parameters.Authenticate();
             if (parameters.Error != null)
             {
-                error = RESTarError.GetError(parameters.Error);
+                error = Error.GetError(parameters.Error);
                 resource = null;
                 return false;
             }
@@ -111,7 +110,7 @@ namespace RESTar
                 error = null;
                 return true;
             }
-            error = request.Result as RESTarError;
+            error = request.Result as Error;
             return false;
         }
     }

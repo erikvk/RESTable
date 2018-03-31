@@ -6,8 +6,7 @@ using Newtonsoft.Json;
 using RESTar.Logging;
 using RESTar.Requests;
 using RESTar.Resources;
-using RESTar.Results.Error;
-using RESTar.Results.Success;
+using RESTar.Results;
 using RESTar.Serialization;
 using RESTar.Starcounter;
 using Console = RESTar.Admin.Console;
@@ -273,7 +272,7 @@ namespace RESTar.WebSockets
         }
 
         /// <inheritdoc />
-        public void SendException(Exception exception) => SendResult(RESTarError.GetError(exception));
+        public void SendException(Exception exception) => SendResult(Error.GetError(exception));
 
         /// <inheritdoc />
         public void SendText(string data) => _SendText(data);

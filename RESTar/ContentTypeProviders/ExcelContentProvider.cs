@@ -4,7 +4,7 @@ using System.IO;
 using System.Linq;
 using ExcelDataReader;
 using RESTar.Internal;
-using RESTar.Results.Error.BadRequest;
+using RESTar.Results;
 using RESTar.Serialization.NativeProtocol;
 using static System.Linq.Enumerable;
 

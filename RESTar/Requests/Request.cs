@@ -7,15 +7,11 @@ using RESTar.Admin;
 using RESTar.Auth;
 using RESTar.Internal;
 using RESTar.Operations;
-using RESTar.Results.Error;
-using RESTar.Results.Error.BadRequest;
-using RESTar.Results.Error.Forbidden;
-using RESTar.Results.Error.NotFound;
 using static RESTar.Method;
 using static RESTar.Internal.ErrorCodes;
 using RESTar.Linq;
 using RESTar.Resources;
-using RESTar.Results.Success;
+using RESTar.Results;
 using RESTar.Serialization;
 
 namespace RESTar.Requests
@@ -154,12 +150,12 @@ namespace RESTar.Requests
         {
             get
             {
-                if (!IsValid) return RESTarError.GetResult(Error, this);
+                if (!IsValid) return Results.Error.GetResult(Error, this);
                 if (IsWebSocketUpgrade)
                     try
                     {
                         if (!CachedProtocolProvider.ProtocolProvider.IsCompliant(this, out var reason))
-                            return RESTarError.GetResult(new NotCompliantWithProtocol(CachedProtocolProvider.ProtocolProvider, reason), this);
+                            return Results.Error.GetResult(new NotCompliantWithProtocol(CachedProtocolProvider.ProtocolProvider, reason), this);
                     }
                     catch (NotImplementedException) { }
                 if (IsEvaluating) throw new InfiniteLoop();
@@ -201,7 +197,7 @@ namespace RESTar.Requests
             }
             catch (Exception exs)
             {
-                return RESTarError.GetResult(exs, this);
+                return Results.Error.GetResult(exs, this);
             }
             finally
             {
