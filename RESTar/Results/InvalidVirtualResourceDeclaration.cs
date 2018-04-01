@@ -8,6 +8,6 @@ namespace RESTar.Results
     /// </summary>
     public class InvalidVirtualResourceDeclaration : Error
     {
-        internal InvalidVirtualResourceDeclaration(string message) : base(ErrorCodes.InvalidVirtualResourceDeclaration, message) { }
+        internal InvalidVirtualResourceDeclaration(string info) : base(ErrorCodes.InvalidVirtualResourceDeclaration, info) { }
     }
 }

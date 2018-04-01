@@ -6,7 +6,7 @@ namespace RESTar.Results
     /// <summary>
     /// Returned to the client when no content was selected in a request
     /// </summary>
-    public class NoContent : RequestResult
+    public class NoContent : RequestSuccess
     {
         internal NoContent(IRequest request) : base(request)
         {

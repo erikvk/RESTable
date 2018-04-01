@@ -12,9 +12,9 @@ namespace RESTar.Results
     public abstract class Forbidden : Error
     {
         /// <inheritdoc />
-        protected Forbidden(ErrorCodes code, string message, Exception ie) : base(code, message, ie) { }
+        protected Forbidden(ErrorCodes code, string info, Exception ie) : base(code, info, ie) { }
 
-        internal Forbidden(ErrorCodes code, string message) : base(code, message)
+        internal Forbidden(ErrorCodes code, string info) : base(code, info)
         {
             StatusCode = HttpStatusCode.Forbidden;
             StatusDescription = "Forbidden";

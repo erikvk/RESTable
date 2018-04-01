@@ -8,6 +8,6 @@ namespace RESTar.Results
     /// </summary>
     public class InvalidResourceWrapper : Error
     {
-        internal InvalidResourceWrapper(string message) : base(ErrorCodes.ResourceWrapperError, message) { }
+        internal InvalidResourceWrapper(string info) : base(ErrorCodes.ResourceWrapperError, info) { }
     }
 }

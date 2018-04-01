@@ -10,7 +10,7 @@ namespace RESTar.Results
     public class UnknownResource : NotFound
     {
         /// <inheritdoc />
-        public UnknownResource(ErrorCodes code, string message, Exception ie) : base(code, message, ie) { }
+        public UnknownResource(ErrorCodes code, string info, Exception ie) : base(code, info, ie) { }
 
         internal UnknownResource(string searchString) : base(ErrorCodes.UnknownResource,
             $"RESTar could not locate any resource by '{searchString}'.") { }

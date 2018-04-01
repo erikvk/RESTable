@@ -2,17 +2,15 @@
 using System.Net;
 using RESTar.Requests;
 
-namespace RESTar.Results {
+namespace RESTar.Results
+{
     /// <inheritdoc />
     /// <summary>
     /// Thrown from the WebSocket shell when the shell is in an invalid state to handle incoming
     /// binary data.
     /// </summary>
-    public class InvalidShellStateForBinaryInput : RequestResult
+    public class InvalidShellStateForBinaryInput : Error
     {
-        /// <inheritdoc />
-        public override TimeSpan TimeElapsed { get; protected set; }
-
         internal InvalidShellStateForBinaryInput(ITraceable trace) : base(trace)
         {
             StatusCode = HttpStatusCode.ServiceUnavailable;

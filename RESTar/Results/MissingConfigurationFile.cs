@@ -9,6 +9,6 @@ namespace RESTar.Results
     /// </summary>
     public class MissingConfigurationFile : Error
     {
-        internal MissingConfigurationFile(string message) : base(ErrorCodes.MissingConfigurationFile, message) { }
+        internal MissingConfigurationFile(string info) : base(ErrorCodes.MissingConfigurationFile, info) { }
     }
 }

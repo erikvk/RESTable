@@ -8,6 +8,6 @@ namespace RESTar.Results
     /// </summary>
     public class InvalidReferencedEnumDeclaration : Error
     {
-        internal InvalidReferencedEnumDeclaration(string message) : base(ErrorCodes.InvalidReferencedEnumDeclaration, message) { }
+        internal InvalidReferencedEnumDeclaration(string info) : base(ErrorCodes.InvalidReferencedEnumDeclaration, info) { }
     }
 }

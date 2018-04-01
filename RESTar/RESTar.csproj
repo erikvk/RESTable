@@ -193,7 +193,7 @@
     <Compile Include="AuthResults.cs" />
     <Compile Include="Filters\Distinct.cs" />
     <Compile Include="ISerializedResult.cs" />
-    <Compile Include="Results\RequestResult.cs" />
+    <Compile Include="Results\RequestSuccess.cs" />
     <Compile Include="Requests\HeaderRequestParameters.cs" />
     <Compile Include="RegEx.cs" />
     <Compile Include="Internal\ProtocolController.cs" />
@@ -287,7 +287,6 @@
     <Compile Include="Results\BadRequest.cs" />
     <Compile Include="Results\FailedJsonDeserialization.cs" />
     <Compile Include="Starcounter\StarcounterDatabaseError.cs" />
-    <Compile Include="Results\AbortedByCommitHook.cs" />
     <Compile Include="Results\FailedResourceAuthentication.cs" />
     <Compile Include="Results\MethodUnavailable.cs" />
     <Compile Include="Results\MethodNotAllowed.cs" />
@@ -376,7 +375,9 @@
     </None>
     <None Include="weaver.ignore" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Folder Include="Exceptions\" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="$(StarcounterBin)\Starcounter.MsBuild.targets" />
   <PropertyGroup>

@@ -124,7 +124,7 @@ namespace RESTar.Internal
                         if (entityCount == 0)
                         {
                             entities.Body.Dispose();
-                            return new NoContent(result, entities.Request.TimeElapsed);
+                            return new NoContent(entities.Request);
                         }
                         entities.Headers["RESTar-count"] = entityCount.ToString();
                         entities.EntityCount = entityCount;
@@ -168,7 +168,7 @@ namespace RESTar.Internal
                                     $"Received {response.StatusCode.ToCode()} - {response.StatusDescription}. {response.Headers.SafeGet("RESTar-info")}");
                             if (serialized.Headers.FirstOrDefault(pair => pair.Key.EqualsNoCase("Access-Control-Allow-Origin")).Value is string h)
                                 response.Headers["Access-Control-Allow-Origin"] = h;
-                            return new ExternalDestinationResult(serialized, response);
+                            return new ExternalDestinationResult(entities.Request, response);
                         }
                         catch (HttpRequestException re)
                         {

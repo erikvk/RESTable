@@ -24,14 +24,6 @@ namespace RESTar.Results
         /// </summary>
         public new ContentType ContentType { get; private set; }
 
-        /// <summary>
-        /// Generates a URI string from URI components, according to the protocol of this Content
-        /// </summary>
-        protected string GetUriString(IUriComponents components) => RequestInternal
-            .CachedProtocolProvider
-            .ProtocolProvider
-            .MakeRelativeUri(components);
-
         /// <inheritdoc />
         protected Content(IRequest request) : base(request) { }
     }

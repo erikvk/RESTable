@@ -11,9 +11,9 @@ namespace RESTar.Results
     public abstract class NotFound : Error
     {
         /// <inheritdoc />
-        protected NotFound(ErrorCodes code, string message, Exception ie) : base(code, message, ie) { }
+        protected NotFound(ErrorCodes code, string info, Exception ie) : base(code, info, ie) { }
 
-        internal NotFound(ErrorCodes code, string message) : base(code, message)
+        internal NotFound(ErrorCodes code, string info) : base(code, info)
         {
             StatusCode = HttpStatusCode.NotFound;
             StatusDescription = "Not found";

@@ -3,7 +3,7 @@
 namespace RESTar.Results
 {
     /// <inheritdoc />
-    public abstract class OK : RequestResult
+    public abstract class OK : RequestSuccess
     {
         /// <inheritdoc />
         protected OK(IRequest request) : base(request)

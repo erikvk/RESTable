@@ -8,6 +8,6 @@ namespace RESTar.Results
     /// </summary>
     public class NotAllowedViewAction : Forbidden
     {
-        internal NotAllowedViewAction(ErrorCodes code, string message) : base(code, message) { }
+        internal NotAllowedViewAction(ErrorCodes code, string info) : base(code, info) { }
     }
 }

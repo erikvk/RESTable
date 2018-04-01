@@ -291,11 +291,12 @@ namespace RESTar
                             WebSocket.SendText($"{(Query.Any() ? Query : "< empty >")}");
                             break;
                         case "NEXT":
+                            var stopwatch = Stopwatch.StartNew();
                             if (tail == null || !int.TryParse(tail, out var count))
                                 count = -1;
                             var link = GetNextPageLink?.Invoke(count)?.ToString();
                             if (link == null)
-                                SendResult(new NoContent(WebSocket));
+                                SendResult(new ShellNoContent(WebSocket, stopwatch.Elapsed));
                             else
                             {
                                 Query = link;
@@ -436,7 +437,7 @@ namespace RESTar
 
         private ISerializedResult WsEvaluate(Method method, byte[] body)
         {
-            if (Query.Length == 0) return new NoQuery(WebSocket, default);
+            if (Query.Length == 0) return new ShellNoQuery(WebSocket);
             var local = Query;
             var result = Request.Create(WebSocket, method, ref local, body, WebSocket.Headers).Result.Serialize();
             switch (result)
@@ -562,7 +563,7 @@ namespace RESTar
             if (!WriteQueryAfterContent) return;
             switch (result)
             {
-                case NoQuery _:
+                case ShellNoQuery _:
                     WebSocket.SendText("? <empty>");
                     break;
                 default:

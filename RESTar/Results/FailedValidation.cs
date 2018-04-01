@@ -8,6 +8,6 @@ namespace RESTar.Results
     /// </summary>
     public class FailedValidation : BadRequest
     {
-        internal FailedValidation(string message) : base(ErrorCodes.InvalidResourceEntity, message) { }
+        internal FailedValidation(string info) : base(ErrorCodes.InvalidResourceEntity, info) { }
     }
 }

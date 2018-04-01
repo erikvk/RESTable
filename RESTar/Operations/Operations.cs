@@ -44,7 +44,7 @@ namespace RESTar.Operations
             }
             catch (Exception e)
             {
-                throw new AbortedSelect<T>(e, request);
+                throw new AbortedSelect<T>(request, e);
             }
         }
 
@@ -63,7 +63,7 @@ namespace RESTar.Operations
             }
             catch (Exception e)
             {
-                throw new AbortedSelect<T>(e, request);
+                throw new AbortedSelect<T>(request, e);
             }
         }
 
@@ -85,7 +85,7 @@ namespace RESTar.Operations
             }
             catch (Exception e)
             {
-                throw new AbortedReport<T>(e, request);
+                throw new AbortedReport<T>(request, e);
             }
         }
 
@@ -110,7 +110,7 @@ namespace RESTar.Operations
             }
             catch (Exception e)
             {
-                throw new AbortedInsert<T>(e, request);
+                throw new AbortedInsert<T>(request, e);
             }
         }
 
@@ -134,7 +134,7 @@ namespace RESTar.Operations
             }
             catch (Exception e)
             {
-                throw new AbortedUpdate<T>(e, request);
+                throw new AbortedUpdate<T>(request, e);
             }
         }
 
@@ -162,7 +162,7 @@ namespace RESTar.Operations
             return new Entities<TEntityType>(request, content);
         }
 
-        internal static Func<IRequestInternal<T>, RequestResult> GetEvaluator(Method method)
+        internal static Func<IRequestInternal<T>, RequestSuccess> GetEvaluator(Method method)
         {
             switch (method)
             {
@@ -206,7 +206,7 @@ namespace RESTar.Operations
                     {
                         var count = TryCount(request);
                         if (count > 0) return new Head(request, count);
-                        return new NoContent(request, request.TimeElapsed);
+                        return new NoContent(request);
                     };
 
                 case Method.PATCH: return request => new UpdatedEntities(Update(request), request);
@@ -218,7 +218,7 @@ namespace RESTar.Operations
 
         #region SafePost
 
-        private static RequestResult SafePOST(IRequest<T> request)
+        private static RequestSuccess SafePOST(IRequest<T> request)
         {
             var (innerRequest, toInsert, toUpdate) = GetSafePostTasks(request);
             var (updatedCount, insertedCount) = (0, 0);
@@ -264,7 +264,7 @@ namespace RESTar.Operations
             }
             catch (Exception e)
             {
-                throw new AbortedInsert<T>(e, request, e.Message);
+                throw new AbortedInsert<T>(request, e, e.Message);
             }
         }
 
@@ -283,7 +283,7 @@ namespace RESTar.Operations
             catch (Exception e)
             {
                 var jsonMessage = e is JsonSerializationException jse ? jse.TotalMessage() : null;
-                throw new AbortedUpdate<T>(e, request, jsonMessage);
+                throw new AbortedUpdate<T>(request, e, jsonMessage);
             }
         }
 

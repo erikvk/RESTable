@@ -11,6 +11,6 @@
         /// </summary>
         public ulong EntityCount { get; }
 
-        internal Head(IRequest request, ulong count) : base(request) => EntityCount = count;
+        internal Head(IRequest request, long count) : base(request) => EntityCount = (ulong) count;
     }
 }

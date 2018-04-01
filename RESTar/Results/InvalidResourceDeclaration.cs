@@ -8,6 +8,6 @@ namespace RESTar.Results
     /// </summary>
     public class InvalidResourceDeclaration : Error
     {
-        internal InvalidResourceDeclaration(string message) : base(ErrorCodes.InvalidResourceDeclaration, message) { }
+        internal InvalidResourceDeclaration(string info) : base(ErrorCodes.InvalidResourceDeclaration, info) { }
     }
 }

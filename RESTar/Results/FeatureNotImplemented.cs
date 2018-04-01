@@ -7,7 +7,7 @@ namespace RESTar.Results
     public class FeatureNotImplemented : Error
     {
         /// <inheritdoc />
-        public FeatureNotImplemented(string message) : base(ErrorCodes.NotImplemented, message)
+        public FeatureNotImplemented(string info) : base(ErrorCodes.NotImplemented, info)
         {
             StatusCode = HttpStatusCode.NotImplemented;
             StatusDescription = "Not implemented";

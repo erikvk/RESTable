@@ -5,6 +5,6 @@ namespace RESTar.WebSockets
 {
     internal class UnknownWebSocketId : Error
     {
-        public UnknownWebSocketId(string message) : base(ErrorCodes.UnknownWebSocketId, message) { }
+        public UnknownWebSocketId(string info) : base(ErrorCodes.UnknownWebSocketId, info) { }
     }
 }

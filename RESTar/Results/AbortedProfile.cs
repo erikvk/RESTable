@@ -9,7 +9,7 @@ namespace RESTar.Results
     /// </summary>
     public class AbortedProfile<T> : AbortedOperation<T> where T : class
     {
-        internal AbortedProfile(Exception ie, IRequest<T> request, string message = null)
-            : base(ErrorCodes.AbortedCount, ie, request, message) { }
+        internal AbortedProfile(IRequest<T> request, Exception ie, string message = null)
+            : base(request, ErrorCodes.AbortedCount, ie, message) { }
     }
 }

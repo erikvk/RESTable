@@ -8,6 +8,6 @@ namespace RESTar.Results
     /// </summary>
     public class InvalidResourceMember : BadRequest
     {
-        internal InvalidResourceMember(string message) : base(ErrorCodes.InvalidResourceMember, message) { }
+        internal InvalidResourceMember(string info) : base(ErrorCodes.InvalidResourceMember, info) { }
     }
 }

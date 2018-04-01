@@ -8,6 +8,6 @@ namespace RESTar.Results
     /// </summary>
     public class InvalidTerminalDeclaration : Error
     {
-        internal InvalidTerminalDeclaration(string message) : base(ErrorCodes.InvalidTerminalDeclaration, message) { }
+        internal InvalidTerminalDeclaration(string info) : base(ErrorCodes.InvalidTerminalDeclaration, info) { }
     }
 }

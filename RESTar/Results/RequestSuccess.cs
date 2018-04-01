@@ -12,7 +12,7 @@ namespace RESTar.Results
     /// <summary>
     /// The result of a RESTar request operation
     /// </summary>
-    public abstract class RequestResult : Success
+    public abstract class RequestSuccess : Success
     {
         /// <summary>
         /// The request that generated this result
@@ -38,7 +38,7 @@ namespace RESTar.Results
                 var acceptProvider = ContentTypeController.ResolveOutputContentTypeProvider(RequestInternal, contentType);
                 ContentType = acceptProvider.ContentType;
                 var serialized = protocolProvider.ProtocolProvider.Serialize(this, acceptProvider);
-                if (serialized is RequestResult rr && rr._body is RESTarOutputStreamController rsc)
+                if (serialized is RequestSuccess rr && rr._body is RESTarOutputStreamController rsc)
                     _body = rsc.Stream;
                 return serialized;
             }
@@ -55,7 +55,15 @@ namespace RESTar.Results
             }
         }
 
-        internal RequestResult(IRequest request) : base(request)
+        /// <summary>
+        /// Generates a URI string from URI components, according to the protocol of this Content
+        /// </summary>
+        protected string GetUriString(IUriComponents components) => RequestInternal
+            .CachedProtocolProvider
+            .ProtocolProvider
+            .MakeRelativeUri(components);
+
+        internal RequestSuccess(IRequest request) : base(request)
         {
             Headers = new Headers();
             Request = request;

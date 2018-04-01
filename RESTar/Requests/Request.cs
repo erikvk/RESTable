@@ -153,7 +153,7 @@ namespace RESTar.Requests
                 if (!IsValid) return Results.Error.GetResult(Error, this);
                 if (IsWebSocketUpgrade)
                     try
-                    {
+                    {   
                         if (!CachedProtocolProvider.ProtocolProvider.IsCompliant(this, out var reason))
                             return Results.Error.GetResult(new NotCompliantWithProtocol(CachedProtocolProvider.ProtocolProvider, reason), this);
                     }

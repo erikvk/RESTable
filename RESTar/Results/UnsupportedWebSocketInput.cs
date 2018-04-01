@@ -9,7 +9,7 @@ namespace RESTar.Results
     /// </summary>
     public class UnsupportedWebSocketInput : Error
     {
-        internal UnsupportedWebSocketInput(string message) : base(ErrorCodes.UnsupportedContent, message)
+        internal UnsupportedWebSocketInput(string info) : base(ErrorCodes.UnsupportedContent, info)
         {
             StatusCode = HttpStatusCode.UnsupportedMediaType;
             StatusDescription = "Unsupported media type";

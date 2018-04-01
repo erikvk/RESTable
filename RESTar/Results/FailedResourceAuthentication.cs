@@ -10,6 +10,6 @@ namespace RESTar.Results
     public class FailedResourceAuthentication : Forbidden
     {
         /// <inheritdoc />
-        internal FailedResourceAuthentication(string message) : base(ErrorCodes.FailedResourceAuthentication, message) { }
+        internal FailedResourceAuthentication(string info) : base(ErrorCodes.FailedResourceAuthentication, info) { }
     }
 }
