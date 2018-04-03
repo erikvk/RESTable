@@ -25,9 +25,12 @@ namespace RESTar.Starcounter
                 methodSpaceUri: $"{method} {rootUri}{{?}}",
                 handler: (ScRequest scRequest, string uri) =>
                 {
-                    var context = new ScContext(GetClient(scRequest), scRequest, true);
                     var headers = new Headers(scRequest.HeadersDictionary);
-                    var query = context.CreateRequest(method, ref uri, scRequest.BodyBytes, headers);
+                    var client = GetClient(scRequest);
+                    if (!client.TryAuthenticate(ref uri, headers, out var error))
+                        return ToResponse(error);
+                    var context = new ScContext(client, scRequest, true);
+                    var query = context.CreateRequest(method, uri, scRequest.BodyBytes, headers);
                     switch (query.Result.Serialize())
                     {
                         case WebSocketUpgradeSuccessful _: return HandlerStatus.Handled;
@@ -46,7 +49,7 @@ namespace RESTar.Starcounter
                 {
                     var context = new ScContext(GetClient(scRequest), scRequest, true);
                     var headers = new Headers(scRequest.HeadersDictionary);
-                    return ToResponse(context.CheckOrigin(ref query, headers));
+                    return ToResponse(context.CheckOrigin(query, headers));
                 }
             );
 

@@ -3,18 +3,16 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
+using System.Web;
 using RESTar.Requests;
 using RESTar.Resources;
 using RESTar.Results;
-using Starcounter;
 
 namespace RESTar.Auth
 {
     internal static class Authenticator
     {
-        internal const string CurrentUser = "SELECT t.Token.User FROM Simplified.Ring5.SystemUserSession t " +
-                                            "WHERE t.SessionIdString =? AND t.Token.User IS NOT NULL";
-
         internal static IDictionary<string, AccessRights> ApiKeys { get; private set; }
         internal static ConcurrentDictionary<string, AccessRights> AuthTokens { get; private set; }
 
@@ -22,18 +20,6 @@ namespace RESTar.Auth
         {
             ApiKeys = new Dictionary<string, AccessRights>();
             AuthTokens = new ConcurrentDictionary<string, AccessRights>();
-        }
-
-        private static object GetCurrentSystemUser()
-        {
-            if (Session.Current == null) return null;
-            return Db.SQL(CurrentUser, Session.Current.SessionId).FirstOrDefault();
-        }
-
-        internal static void CheckUser()
-        {
-            if (GetCurrentSystemUser() == null)
-                throw new UserNotSignedIn();
         }
 
         internal static void RunResourceAuthentication<T>(this IRequest<T> request) where T : class
@@ -44,28 +30,27 @@ namespace RESTar.Auth
                 throw new FailedResourceAuthentication(authResults.Reason);
         }
 
-        internal static void Authenticate(this RequestParameters requestParameters)
+        internal static AccessRights GetAccessRights(Client client, ref string uri, Headers headers)
         {
-            requestParameters.Context.Client.AuthToken = GetAuthToken(requestParameters);
-            if (requestParameters.Context.Client.AuthToken == null)
-                requestParameters.Error = new NotAuthorized();
-        }
-
-        internal static string CloneAuthToken(string authToken)
-        {
-            if (authToken != null && AuthTokens.TryGetValue(authToken, out var accessRights))
-                return AccessRights.NewAuthToken(accessRights);
-            return null;
-        }
-
-        private static string GetAuthToken(RequestParameters requestParameters)
-        {
-            if (!RESTarConfig.RequireApiKey)
-                return AccessRights.NewRootToken();
-            if (requestParameters.Context.Client.AuthToken is string existing)
-                return AuthTokens.ContainsKey(existing) ? existing : null;
-
-            var authorizationHeader = requestParameters.Headers.SafeGet("Authorization");
+            if (client.AuthToken is string existing)
+                return AuthTokens.TryGetValue(existing, out var rights) ? rights : null;
+            string authorizationHeader = null;
+            var keyMatch = Regex.Match(uri, RegEx.UriKey);
+            if (keyMatch.Success)
+            {
+                var keypart = keyMatch.Groups["key"];
+                uri = uri.Remove(keypart.Index, keypart.Length);
+                authorizationHeader = $"apikey {HttpUtility.UrlDecode(keypart.Value.Substring(1, keypart.Length - 2))}";
+                headers.Authorization = "*******";
+            }
+            else
+            {
+                if (headers.Authorization is string authorization)
+                {
+                    authorizationHeader = authorization;
+                    headers.Authorization = "*******";
+                }
+            }
             if (string.IsNullOrWhiteSpace(authorizationHeader)) return null;
             var (method, key) = authorizationHeader.TSplit(' ');
             if (key == null) return null;
@@ -78,10 +63,7 @@ namespace RESTar.Auth
                     break;
                 default: return null;
             }
-            if (!ApiKeys.TryGetValue(key.SHA256(), out var accessRights))
-                return null;
-            requestParameters.Headers["Authorization"] = "*******";
-            return AccessRights.NewAuthToken(accessRights);
+            return ApiKeys.TryGetValue(key.SHA256(), out var _rights) ? _rights : null;
         }
 
         internal static bool MethodCheck(Method requestedMethod, IEntityResource resource, string authToken, out bool failedAuth)

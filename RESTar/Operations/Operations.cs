@@ -235,7 +235,7 @@ namespace RESTar.Operations
         private static (IRequestInternal<T> InnerRequest, JArray ToInsert, IList<(JObject json, T source)> ToUpdate) GetSafePostTasks(
             IRequest<T> request)
         {
-            var innerRequest = (IRequestInternal<T>) Request<T>.Create(request, Method.GET);
+            var innerRequest = (IRequestInternal<T>) request.Context.CreateRequest<T>(Method.GET);
             var toInsert = new JArray();
             var toUpdate = new List<(JObject json, T source)>();
             try

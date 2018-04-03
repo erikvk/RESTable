@@ -225,7 +225,7 @@ namespace RESTar.Requests
         }
 
         public IEnumerable<T> GetEntities() => EntitiesProducer?.Invoke() ?? new T[0];
-
+        
         internal Request(IResource<T> resource, RequestParameters parameters)
         {
             Parameters = parameters;
@@ -275,10 +275,9 @@ namespace RESTar.Requests
                                 throw new InvalidSyntax(InvalidSource, "Only GET is allowed in Source headers");
                             if (sourceParameters.IsInternal)
                             {
-                                var uri = sourceParameters.URI;
-                                var result = Request.Create(this, sourceParameters.Method, ref uri, null, sourceParameters.Headers).Result;
+                                var result = Context.CreateRequest(sourceParameters.Method, sourceParameters.URI, null, sourceParameters.Headers).Result;
                                 if (!(result is IEntities))
-                                    throw new InvalidExternalSource(uri, result.LogMessage);
+                                    throw new InvalidExternalSource(sourceParameters.URI, result.LogMessage);
                                 if (result is IEntities<T> entitiesOfSameType)
                                     Selector = () => entitiesOfSameType;
                                 else

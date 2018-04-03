@@ -71,21 +71,14 @@ namespace RESTar.Requests
         internal bool HasError => Error != null;
         private IProtocolProvider ProtocolProvider { get; set; }
 
-        internal static URI ParseInternal(ref string uriString, bool percentCharsEscaped, Context context, out string key,
+        internal static URI ParseInternal(string uriString, bool percentCharsEscaped, Context context,
             out CachedProtocolProvider cachedProtocolProvider)
         {
             var uri = new URI();
-            key = null;
             if (percentCharsEscaped) uriString = uriString.Replace("%25", "%");
             var groups = Regex.Match(uriString, RegEx.Protocol).Groups;
             var protocolString = groups["proto"].Value;
-            var _key = groups["key"].Value;
             var tail = groups["tail"].Value;
-            if (_key.Length > 0)
-            {
-                key = _key;
-                uriString = protocolString + tail;
-            }
             if (!ProtocolController.ProtocolProviders.TryGetValue(protocolString, out cachedProtocolProvider))
             {
                 uri.Error = new UnknownProtocol(protocolString);
@@ -106,7 +99,7 @@ namespace RESTar.Requests
         internal static URI Parse(string uriString)
         {
             var context = new InternalContext();
-            var uri = ParseInternal(ref uriString, false, context, out var _, out var _);
+            var uri = ParseInternal(uriString, false, context, out var _);
             if (uri.HasError) throw uri.Error;
             return uri;
         }

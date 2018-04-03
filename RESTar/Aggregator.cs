@@ -73,7 +73,7 @@ namespace RESTar
                         else return stringValue;
                         if (string.IsNullOrWhiteSpace(uri))
                             throw new Exception($"Invalid URI in aggregator template. Expected relative uri after '{method.ToString()}'.");
-                        switch (Request.Create(request, method, ref uri, null, request.Headers).Result)
+                        switch (request.Context.CreateRequest(method, uri, null, request.Headers).Result)
                         {
                             case Error error: throw new Exception($"Could not get source data from '{uri}'. The resource returned: {error}");
                             case NoContent _: return null;

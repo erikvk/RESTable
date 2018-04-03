@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
-using System.Web;
 using RESTar.Internal;
 using RESTar.Linq;
 using RESTar.Logging;
@@ -70,7 +69,6 @@ namespace RESTar.Requests
         internal IResource IResource => iresource ?? (iresource = Resource.Find(Uri.ResourceSpecifier));
         internal Exception Error { get; set; }
         private static bool PercentCharsEscaped(IDictionary<string, string> headers) => headers?.ContainsKey("X-ARR-LOG-ID") == true;
-        private static string UnpackUriKey(string uriKey) => uriKey != null ? HttpUtility.UrlDecode(uriKey).Substring(1, uriKey.Length - 2) : null;
         bool ILogable.ExcludeHeaders => IResource is IEntityResource e && e.RequiresAuthentication;
         LogEventType ILogable.LogEventType { get; } = LogEventType.HttpInput;
         string ILogable.LogMessage => $"{Method} {UnparsedUri}{(HasBody ? $" ({BodyBytes.Length} bytes)" : "")}";
@@ -113,7 +111,7 @@ namespace RESTar.Requests
         /// <summary>
         /// Used when creating parsed requests
         /// </summary>
-        internal RequestParameters(Context context, Method method, ref string uri, byte[] body, Headers headers)
+        internal RequestParameters(Context context, Method method, string uri, byte[] body, Headers headers)
         {
             TraceId = context.InitialTraceId;
             Context = context;
@@ -122,7 +120,7 @@ namespace RESTar.Requests
                 Method = Method.GET;
             Headers = headers ?? new Headers();
             IsWebSocketUpgrade = Context.WebSocket?.Status == WebSocketStatus.Waiting;
-            Uri = URI.ParseInternal(ref uri, PercentCharsEscaped(headers), context, out var key, out var cachedProtocolProvider);
+            Uri = URI.ParseInternal(uri, PercentCharsEscaped(headers), context, out var cachedProtocolProvider);
             var hasMacro = Uri?.Macro != null;
             if (hasMacro)
             {
@@ -139,8 +137,6 @@ namespace RESTar.Requests
                 }
             }
             CachedProtocolProvider = cachedProtocolProvider;
-            if (key != null)
-                Headers["Authorization"] = $"apikey {UnpackUriKey(key)}";
             UnparsedUri = uri;
             try
             {
@@ -180,12 +176,12 @@ namespace RESTar.Requests
         /// <summary>
         /// Used when performing CheckOrigin
         /// </summary>
-        internal RequestParameters(Context context, ref string uri, Headers headers)
+        internal RequestParameters(Context context, string uri, Headers headers)
         {
             TraceId = context.InitialTraceId;
             Context = context;
             Headers = headers ?? new Headers();
-            Uri = URI.ParseInternal(ref uri, PercentCharsEscaped(headers), context, out var key, out var cachedProtocolProvider);
+            Uri = URI.ParseInternal(uri, PercentCharsEscaped(headers), context, out var cachedProtocolProvider);
             var hasMacro = Uri?.Macro != null;
             if (hasMacro)
             {
@@ -202,8 +198,6 @@ namespace RESTar.Requests
                 }
             }
             CachedProtocolProvider = cachedProtocolProvider;
-            if (key != null)
-                Headers["Authorization"] = $"apikey {UnpackUriKey(key)}";
             UnparsedUri = uri;
             try
             {

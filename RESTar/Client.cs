@@ -2,6 +2,7 @@
 using System.Net;
 using RESTar.Auth;
 using RESTar.Requests;
+using RESTar.Results;
 
 namespace RESTar
 {
@@ -82,7 +83,42 @@ namespace RESTar
         /// The internal location, has root access to all resources
         /// </summary>
         public static Client Internal => new Client(OriginType.Internal, $"localhost:{Admin.Settings._Port}",
-            new IPAddress(new byte[] {127, 0, 0, 1}), null, null, false) {AuthToken = AccessRights.NewRootToken()};
+            new IPAddress(new byte[] {127, 0, 0, 1}), null, null, false) {AuthToken = NewRootToken};
+
+        private static string NewRootToken
+        {
+            get
+            {
+                var rootToken = Guid.NewGuid().ToString("N");
+                Authenticator.AuthTokens[rootToken] = AccessRights.Root;
+                return rootToken;
+            }
+        }
+
+        /// <summary>
+        /// Returns true if and only if this client is considered authenticated. This is a necessary precondition for 
+        /// being included in a context. If false, a NotAuthorized result object is returned in the out parameter, that 
+        /// can be returned to the client.
+        /// </summary>
+        /// <param name="uri">The URI of the request</param>
+        /// <param name="headers">The headers of the request</param>
+        /// <param name="error">The error result, if not authenticated</param>
+        /// <returns></returns>
+        public bool TryAuthenticate(ref string uri, Headers headers, out NotAuthorized error)
+        {
+            error = null;
+            var accessRights = Authenticator.GetAccessRights(this, ref uri, headers);
+            if (!RESTarConfig.RequireApiKey)
+                accessRights = AccessRights.Root;
+            if (accessRights == null)
+            {
+                error = new NotAuthorized();
+                return false;
+            }
+            AuthToken = Guid.NewGuid().ToString("N");
+            Authenticator.AuthTokens[AuthToken] = accessRights;
+            return true;
+        }
 
         /// <inheritdoc />
         public void Dispose()

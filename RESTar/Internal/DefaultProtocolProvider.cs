@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text.RegularExpressions;
@@ -107,20 +109,20 @@ namespace RESTar.Internal
         }
 
         /// <inheritdoc />
-        public ISerializedResult Serialize(IResult result, IContentTypeProvider contentTypeProvider)
+        public ISerializedResult Serialize(IResult result, Func<Stream> getOutputStream, IContentTypeProvider contentTypeProvider)
         {
             switch (result)
             {
                 case Report report:
                     report.Headers["RESTar-count"] = report.EntityCount.ToString();
-                    contentTypeProvider.SerializeEntity(report.ReportBody, report.Body, report.Request, out var _);
+                    contentTypeProvider.SerializeEntity(report.ReportBody, getOutputStream(), report.Request, out var _);
                     return report;
 
                 case IEntities<object> entities:
 
                     ISerializedResult SerializeEntities()
                     {
-                        contentTypeProvider.SerializeCollection(entities, entities.Body, entities.Request, out var entityCount);
+                        contentTypeProvider.SerializeCollection(entities, getOutputStream(), entities.Request, out var entityCount);
                         if (entityCount == 0) return new NoContent(entities.Request);
                         entities.Headers["RESTar-count"] = entityCount.ToString();
                         entities.EntityCount = entityCount;
@@ -140,8 +142,7 @@ namespace RESTar.Internal
                         var parameters = new HeaderRequestParameters(entities.Request.Headers.Destination);
                         if (parameters.IsInternal)
                         {
-                            var uri = parameters.URI;
-                            var internalRequest = Request.Create(entities, parameters.Method, ref uri, null, parameters.Headers);
+                            var internalRequest = entities.Context.CreateRequest(parameters.Method, parameters.URI, null, parameters.Headers);
                             if (internalRequest.TargetType.IsAssignableFrom(entities.EntityType))
                                 SetSelector((dynamic) internalRequest, (dynamic) entities);
                             else
@@ -173,11 +174,7 @@ namespace RESTar.Internal
         }
 
         private static void SetSelector<TRequest, TEntity>(IRequest<TRequest> r, IEntities<TEntity> e)
-            where TRequest : class
-            where TEntity : class, TRequest
-        {
-            r.Selector = () => e;
-        }
+            where TRequest : class where TEntity : class, TRequest => r.Selector = () => e;
 
         public bool IsCompliant(IRequest request, out string invalidReason)
         {

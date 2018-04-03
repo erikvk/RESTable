@@ -9,24 +9,21 @@ namespace RESTar.Auth
 {
     internal class AccessRights : Dictionary<IResource, Method[]>
     {
+        private static AccessRights _root;
         internal string Key { get; }
-        internal static AccessRights Root { get; private set; }
+
+        internal static AccessRights Root
+        {
+            get
+            {
+                if (_root == null)
+                    ReloadRoot();
+                return _root;
+            }
+            private set => _root = value;
+        }
+
         private static string RootKey { get; } = Guid.NewGuid().ToString("N");
-
-        internal static string NewRootToken()
-        {
-            if (Root == null) ReloadRoot();
-            var rootToken = Guid.NewGuid().ToString("N");
-            AuthTokens[rootToken] = Root;
-            return rootToken;
-        }
-
-        internal static string NewAuthToken(AccessRights rights)
-        {
-            var token = Guid.NewGuid().ToString("N");
-            AuthTokens[token] = rights;
-            return token;
-        }
 
         internal static void ReloadRoot()
         {

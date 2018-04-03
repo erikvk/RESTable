@@ -35,7 +35,14 @@ namespace RESTarTester
 
         public static void Main()
         {
-            RESTarConfig.Init(9000, lineEndings: LineEndings.Windows, prettyPrint: true);
+            RESTarConfig.Init
+            (
+                port: 9000,
+                lineEndings: LineEndings.Windows,
+                prettyPrint: true,
+                allowAllOrigins: false,
+                configFilePath: @"C:\Mopedo\mopedo\Mopedo.config"
+            );
             Db.SQL<Base>("SELECT t FROM RESTarTester.Base t").ForEach(b => Db.TransactAsync(b.Delete));
             Db.SQL<MyDict>("SELECT t FROM RESTarTester.MyDict t").ForEach(b => Db.TransactAsync(b.Delete));
             Db.SQL<MyDict2>("SELECT t FROM RESTarTester.MyDict2 t").ForEach(b => Db.TransactAsync(b.Delete));
@@ -432,7 +439,7 @@ namespace RESTarTester
 
             #region Internal requests
 
-            var g = Request<MyDict>.Create(POST);
+            var g = Context.Root.CreateRequest<MyDict>(POST);
             g.Selector = () =>
             {
                 dynamic d = new MyDict();
@@ -453,19 +460,19 @@ namespace RESTarTester
             Debug.Assert(result is InsertedEntities ie && ie.InsertedCount == 3);
 
             var r1Cond = new Condition<Resource1>(nameof(Resource1.Sbyte), GREATER_THAN, 1);
-            var r1 = Request<Resource1>.Create(GET);
+            var r1 = Context.Root.CreateRequest<Resource1>(GET);
             r1.Conditions.Add(r1Cond);
 
-            var r2 = Request<Resource2>.Create(GET);
-            var r3 = Request<Resource3>.Create(GET);
-            var r4 = Request<Resource4>.Create(GET);
-            var r6 = Request<Aggregator>.Create(GET);
+            var r2 = Context.Root.CreateRequest<Resource2>(GET);
+            var r3 = Context.Root.CreateRequest<Resource3>(GET);
+            var r4 = Context.Root.CreateRequest<Resource4>(GET);
+            var r6 = Context.Root.CreateRequest<Aggregator>(GET);
             r6.SetBody(new
             {
                 A = "REPORT /resource",
                 B = new[] {"REPORT /resource", "REPORT /resource"}
             });
-            var r5 = Request<Resource1>.Create(GET);
+            var r5 = Context.Root.CreateRequest<Resource1>(GET);
             var cond = new Condition<Resource1>("SByte", GREATER_THAN, 2);
             r5.Conditions.Add(cond);
             r5.Headers.Accept = RESTar.ContentType.Excel;
@@ -512,6 +519,17 @@ namespace RESTarTester
             });
             var byInternalSource = Http.POST("http://localhost:9000/rest/resource3", default(string),
                 new Dictionary<string, string> {["Source"] = "GET /resource3"});
+
+            #endregion
+
+            #region OPTIONS
+
+            var optionsResponse1 = Http.CustomRESTRequest("OPTIONS", "http://localhost:9000/rest/resource1", default(string),
+                new Dictionary<string, string> {["Origin"] = "https://fooboo.com/thingy"});
+            Debug.Assert(optionsResponse1?.IsSuccessStatusCode == true);
+            var optionsResponse2 = Http.CustomRESTRequest("OPTIONS", "http://localhost:9000/rest/resource1", default(string),
+                new Dictionary<string, string> {["Origin"] = "https://fooboo.com/invalid"});
+            Debug.Assert(optionsResponse2?.IsSuccessStatusCode == false);
 
             #endregion
 

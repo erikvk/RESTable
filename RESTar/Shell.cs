@@ -439,7 +439,7 @@ namespace RESTar
         {
             if (Query.Length == 0) return new ShellNoQuery(WebSocket);
             var local = Query;
-            var result = Request.Create(WebSocket, method, ref local, body, WebSocket.Headers).Result.Serialize();
+            var result = WebSocket.Context.CreateRequest(method, local, body, WebSocket.Headers).Result.Serialize();
             switch (result)
             {
                 case Error _ when queryChangedPreEval:
@@ -461,7 +461,7 @@ namespace RESTar
         private void ValidateQuery()
         {
             var localQuery = Query;
-            if (!Request.IsValid(WebSocket, ref localQuery, out var error, out var resource))
+            if (!WebSocket.Context.UriIsValid(localQuery, out var error, out var resource))
             {
                 query = previousQuery;
                 SendResult(error);

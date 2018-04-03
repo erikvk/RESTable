@@ -8,7 +8,12 @@
         /// <summary>
         /// Used when extracting the protocol from a URI
         /// </summary>
-        internal const string Protocol = @"^(?<proto>-[^\?/\(]*)?(?<key>\([^\)]+\))?(?<tail>.*)";
+        internal const string Protocol = @"^(?<proto>-[^\?/\(]*)?(?<tail>.*)";
+
+        /// <summary>
+        /// Used when extracting API keys from URIs
+        /// </summary>
+        internal const string UriKey = @"^[^\(]*(?<key>\([^\)]+\))";
 
         /// <summary>
         /// The main URI regex, used when parsing requests
@@ -44,7 +49,7 @@
         /// Matches only strings that are valid dynamic resource names
         /// </summary>
         internal const string DynamicResourceName = @"^[a-zA-Z0-9_\.]+$";
-        
+
         /// <summary>
         /// Used when sending unescaped data through a RESTar view model
         /// </summary>

@@ -133,7 +133,7 @@ namespace RESTar.Admin
         internal static void Init()
         {
             SelectionCondition = new Condition<DatabaseIndex>(nameof(Name), Operators.EQUALS, null);
-            SelectionRequest = Request<DatabaseIndex>.Create(Method.PUT);
+            SelectionRequest = Context.Root.CreateRequest<DatabaseIndex>(Method.PUT);
             SelectionRequest.Conditions.Add(SelectionCondition);
         }
 
