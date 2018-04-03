@@ -1,6 +1,5 @@
-﻿using System;
-using System.Net;
-using RESTar.Requests;
+﻿using System.Net;
+using RESTar.Internal;
 
 namespace RESTar.Results
 {
@@ -11,11 +10,10 @@ namespace RESTar.Results
     /// </summary>
     public class InvalidShellStateForBinaryInput : Error
     {
-        internal InvalidShellStateForBinaryInput(ITraceable trace) : base(trace)
+        internal InvalidShellStateForBinaryInput() : base(ErrorCodes.ShellError, "")
         {
             StatusCode = HttpStatusCode.ServiceUnavailable;
             StatusDescription = "Invalid shell state for binary input";
-            TimeElapsed = default;
         }
     }
 }

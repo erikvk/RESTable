@@ -121,11 +121,7 @@ namespace RESTar.Internal
                     ISerializedResult SerializeEntities()
                     {
                         contentTypeProvider.SerializeCollection(entities, entities.Body, entities.Request, out var entityCount);
-                        if (entityCount == 0)
-                        {
-                            entities.Body.Dispose();
-                            return new NoContent(entities.Request);
-                        }
+                        if (entityCount == 0) return new NoContent(entities.Request);
                         entities.Headers["RESTar-count"] = entityCount.ToString();
                         entities.EntityCount = entityCount;
                         if (entities.IsPaged)
@@ -137,48 +133,39 @@ namespace RESTar.Internal
                         return entities;
                     }
 
-
+                    if (entities.Request.Headers.Destination == null)
+                        return SerializeEntities();
                     try
                     {
-                        if (entities.Request.Headers.Destination == null)
-                            return SerializeEntities();
-                        try
+                        var parameters = new HeaderRequestParameters(entities.Request.Headers.Destination);
+                        if (parameters.IsInternal)
                         {
-                            var parameters = new HeaderRequestParameters(entities.Request.Headers.Destination);
-                            if (parameters.IsInternal)
+                            var uri = parameters.URI;
+                            var internalRequest = Request.Create(entities, parameters.Method, ref uri, null, parameters.Headers);
+                            if (internalRequest.TargetType.IsAssignableFrom(entities.EntityType))
+                                SetSelector((dynamic) internalRequest, (dynamic) entities);
+                            else
                             {
-                                var uri = parameters.URI;
-                                var internalRequest = Request.Create(entities, parameters.Method, ref uri, null, parameters.Headers);
-                                if (internalRequest.TargetType.IsAssignableFrom(entities.EntityType))
-                                    SetSelector((dynamic) internalRequest, (dynamic) entities);
-                                else
-                                {
-                                    var serializedEntities = SerializeEntities();
-                                    if (!(serializedEntities is Content content))
-                                        return serializedEntities;
-                                    internalRequest.SetBody(content.Body.ToByteArray());
-                                }
-                                return internalRequest.Result.Serialize();
+                                var serializedEntities = SerializeEntities();
+                                if (!(serializedEntities is Content content))
+                                    return serializedEntities;
+                                internalRequest.SetBody(content.Body.ToByteArray());
                             }
-                            var serialized = SerializeEntities();
-                            var externalRequest = new HttpRequest(serialized, parameters, serialized.Body);
-                            var response = externalRequest.GetResponse() ?? throw new InvalidExternalDestination(externalRequest, "No response");
-                            if (response.StatusCode >= HttpStatusCode.BadRequest)
-                                throw new InvalidExternalDestination(externalRequest,
-                                    $"Received {response.StatusCode.ToCode()} - {response.StatusDescription}. {response.Headers.SafeGet("RESTar-info")}");
-                            if (serialized.Headers.FirstOrDefault(pair => pair.Key.EqualsNoCase("Access-Control-Allow-Origin")).Value is string h)
-                                response.Headers["Access-Control-Allow-Origin"] = h;
-                            return new ExternalDestinationResult(entities.Request, response);
+                            return internalRequest.Result.Serialize();
                         }
-                        catch (HttpRequestException re)
-                        {
-                            throw new InvalidSyntax(ErrorCodes.InvalidDestination, $"{re.Message} in the Destination header");
-                        }
+                        var serialized = SerializeEntities();
+                        var externalRequest = new HttpRequest(serialized, parameters, serialized.Body);
+                        var response = externalRequest.GetResponse() ?? throw new InvalidExternalDestination(externalRequest, "No response");
+                        if (response.StatusCode >= HttpStatusCode.BadRequest)
+                            throw new InvalidExternalDestination(externalRequest,
+                                $"Received {response.StatusCode.ToCode()} - {response.StatusDescription}. {response.Headers.SafeGet("RESTar-info")}");
+                        if (serialized.Headers.FirstOrDefault(pair => pair.Key.EqualsNoCase("Access-Control-Allow-Origin")).Value is string h)
+                            response.Headers["Access-Control-Allow-Origin"] = h;
+                        return new ExternalDestinationResult(entities.Request, response);
                     }
-                    catch
+                    catch (HttpRequestException re)
                     {
-                        entities.Body.Dispose();
-                        throw;
+                        throw new InvalidSyntax(ErrorCodes.InvalidDestination, $"{re.Message} in the Destination header");
                     }
 
                 default: return result as ISerializedResult;

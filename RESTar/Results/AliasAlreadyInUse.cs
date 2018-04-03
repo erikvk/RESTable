@@ -1,5 +1,4 @@
 ﻿using RESTar.Internal;
-using RESTar.Requests;
 
 namespace RESTar.Results
 {
@@ -9,7 +8,7 @@ namespace RESTar.Results
     /// </summary>
     public class AliasAlreadyInUse : Error
     {
-        internal AliasAlreadyInUse(ITraceable trace, Admin.ResourceAlias alias) : base(trace, ErrorCodes.AliasAlreadyInUse,
+        internal AliasAlreadyInUse(Admin.ResourceAlias alias) : base(ErrorCodes.AliasAlreadyInUse,
             $"Invalid Alias: '{alias.Alias}' is already in use for resource '{alias.IResource.Name}'") { }
     }
 }

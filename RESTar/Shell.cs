@@ -121,7 +121,7 @@ namespace RESTar
         {
             if (!(input?.Length > 0)) return;
             if (Query.Length == 0 || OnConfirm != null)
-                WebSocket.SendResult(new InvalidShellStateForBinaryInput(WebSocket));
+                WebSocket.SendResult(new InvalidShellStateForBinaryInput());
             else SafeOperation(POST, input);
         }
 

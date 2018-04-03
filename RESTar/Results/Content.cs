@@ -1,5 +1,4 @@
 ﻿using System;
-using RESTar.Requests;
 
 namespace RESTar.Results
 {
@@ -18,11 +17,6 @@ namespace RESTar.Results
         /// The type of entities contained in this result
         /// </summary>
         public abstract Type EntityType { get; }
-
-        /// <summary>
-        /// The content type of this result
-        /// </summary>
-        public new ContentType ContentType { get; private set; }
 
         /// <inheritdoc />
         protected Content(IRequest request) : base(request) { }

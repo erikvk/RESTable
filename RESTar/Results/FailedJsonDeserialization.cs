@@ -9,7 +9,7 @@ namespace RESTar.Results
     /// </summary>
     public class FailedJsonDeserialization : BadRequest
     {
-        internal FailedJsonDeserialization(Exception ie) : base(ErrorCodes.FailedJsonDeserialization, ie)
+        internal FailedJsonDeserialization(Exception ie) : base(ErrorCodes.FailedJsonDeserialization, null, ie)
         {
             Headers["RESTar-info"] = "Error while deserializing JSON. Check JSON syntax.";
         }

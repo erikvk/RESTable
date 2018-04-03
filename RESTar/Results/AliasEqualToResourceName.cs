@@ -1,5 +1,4 @@
 ﻿using RESTar.Internal;
-using RESTar.Requests;
 
 namespace RESTar.Results
 {
@@ -9,7 +8,6 @@ namespace RESTar.Results
     /// </summary>
     public class AliasEqualToResourceName : Error
     {
-        internal AliasEqualToResourceName(ITraceable trace, string alias) : base(trace, ErrorCodes.AliasEqualToResourceName,
-            $"Invalid Alias: '{alias}' is a resource name") { }
+        internal AliasEqualToResourceName(string alias) : base(ErrorCodes.AliasEqualToResourceName, $"Invalid Alias: '{alias}' is a resource name") { }
     }
 }

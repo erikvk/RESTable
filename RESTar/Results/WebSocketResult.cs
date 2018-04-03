@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
-using RESTar.Internal;
 using RESTar.Logging;
 using RESTar.Requests;
 
@@ -104,9 +103,6 @@ namespace RESTar.Results
 
         /// <inheritdoc />
         public Stream Body => Result.Body;
-
-        /// <inheritdoc />
-        public ContentType? ContentType => Result.ContentType;
 
         /// <inheritdoc />
         public TimeSpan TimeElapsed => Result.TimeElapsed;

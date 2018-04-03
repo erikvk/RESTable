@@ -47,6 +47,11 @@ namespace RESTar
         /// Exception if the result is non-successful or cannot be cast to the given type.
         /// </summary>
         IEnumerable<T> ToEntities<T>() where T : class;
+
+        /// <summary>
+        /// The time it took for RESTar to generate the response.
+        /// </summary>
+        TimeSpan TimeElapsed { get; }
     }
 
     /// <inheritdoc />
@@ -60,16 +65,5 @@ namespace RESTar
         /// The serialized body contained in the result
         /// </summary>
         Stream Body { get; }
-
-        /// <summary>
-        /// The content type of the result body, if any
-        /// </summary>
-        ContentType? ContentType { get; }
-
-        /// <summary>
-        /// The time it took for RESTar to generate the response. Calculated as the request 
-        /// evaluation time plus time for serialization.
-        /// </summary>
-        TimeSpan TimeElapsed { get; }
     }
 }

@@ -50,11 +50,6 @@ namespace RESTar.Results
         /// The type of entities in the entity collection
         /// </summary>
         Type EntityType { get; }
-
-        /// <summary>
-        /// The content type used when serializing the entities
-        /// </summary>
-        new ContentType ContentType { get; }
     }
 
     /// <inheritdoc cref="IEntities" />

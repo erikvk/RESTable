@@ -23,8 +23,9 @@ namespace RESTar.Requests
             URI = matches.Groups["uri"].Value;
             IsInternal = URI[0] == '/';
             Headers = new Headers();
-            var headersString = matches.Groups["headers"].Value;
-            foreach (Match match in Regex.Matches(headersString, RegEx.HeaderRequestParametersRequestHeader))
+            var headersGroup = matches.Groups["headers"];
+            if (!headersGroup.Success) return;
+            foreach (Match match in Regex.Matches(headersGroup.Value, RegEx.HeaderRequestParametersRequestHeader))
             {
                 var header = match.Groups["header"].Value.Trim();
                 var value = match.Groups["value"].Value.Trim();

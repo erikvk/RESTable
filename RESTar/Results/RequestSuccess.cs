@@ -36,14 +36,22 @@ namespace RESTar.Results
             {
                 var protocolProvider = RequestInternal.CachedProtocolProvider;
                 var acceptProvider = ContentTypeController.ResolveOutputContentTypeProvider(RequestInternal, contentType);
-                ContentType = acceptProvider.ContentType;
                 var serialized = protocolProvider.ProtocolProvider.Serialize(this, acceptProvider);
                 if (serialized is RequestSuccess rr && rr._body is RESTarOutputStreamController rsc)
                     _body = rsc.Stream;
+                if (_body?.CanRead == true)
+                {
+                    if (_body.Length == 0)
+                        _body.Dispose();
+                    else if (Headers.ContentType == null)
+                        Headers.ContentType = acceptProvider.ContentType;
+                }
+                else _body = null;
                 return serialized;
             }
             catch (Exception exception)
             {
+                _body?.Dispose();
                 return Error.GetResult(exception, RequestInternal).Serialize();
             }
             finally

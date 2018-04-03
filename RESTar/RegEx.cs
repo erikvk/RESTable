@@ -18,7 +18,7 @@
         /// <summary>
         /// Used when parsing header request parameters like Source and Destination
         /// </summary>
-        internal const string HeaderRequestParameters = @"^(?<method>\w+) (?<uri>\S+) (?<headers>\[[^\]]+\])*$";
+        internal const string HeaderRequestParameters = @"^(?<method>\w+) (?<uri>\S+)\s?(?<headers>\[[^\]]+\])*$";
 
         /// <summary>
         /// Matches headers in source and destination header syntax

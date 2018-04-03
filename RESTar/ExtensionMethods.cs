@@ -15,7 +15,6 @@ using Newtonsoft.Json.Linq;
 using RESTar.Auth;
 using RESTar.ContentTypeProviders;
 using RESTar.Filters;
-using RESTar.Internal;
 using RESTar.Reflection.Dynamic;
 using RESTar.Linq;
 using RESTar.Operations;
@@ -678,7 +677,7 @@ namespace RESTar
 
         internal static void MethodCheck(this IRequest request)
         {
-            if (request.Method == Method.OPTIONS) return;
+            if (request.Method < 0) return;
             if (!Authenticator.MethodCheck(request.Method, request.Resource, request.Context.Client.AuthToken, out var failedAuth))
                 throw new MethodNotAllowed(request.Method, request.Resource, failedAuth);
         }

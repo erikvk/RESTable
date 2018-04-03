@@ -89,11 +89,16 @@ namespace RESTar.Requests
 
         #endregion
 
+        /// <summary>
+        /// Used when creating generic requests
+        /// </summary>
         internal RequestParameters(Context context, Method method, IResource resource, string protocolIdentifier = null, string viewName = null)
         {
             TraceId = context.InitialTraceId;
             Context = context;
             Method = method;
+            if (Method < Method.GET || Method > Method.HEAD)
+                Method = Method.GET;
             Headers = new Headers();
             iresource = resource;
             IsWebSocketUpgrade = Context.WebSocket?.Status == WebSocketStatus.Waiting;
@@ -105,11 +110,16 @@ namespace RESTar.Requests
             CachedProtocolProvider = ProtocolController.ResolveProtocolProvider(protocolIdentifier);
         }
 
+        /// <summary>
+        /// Used when creating parsed requests
+        /// </summary>
         internal RequestParameters(Context context, Method method, ref string uri, byte[] body, Headers headers)
         {
             TraceId = context.InitialTraceId;
             Context = context;
             Method = method;
+            if (Method < Method.GET || Method > Method.HEAD)
+                Method = Method.GET;
             Headers = headers ?? new Headers();
             IsWebSocketUpgrade = Context.WebSocket?.Status == WebSocketStatus.Waiting;
             Uri = URI.ParseInternal(ref uri, PercentCharsEscaped(headers), context, out var key, out var cachedProtocolProvider);
@@ -128,7 +138,6 @@ namespace RESTar.Requests
                     });
                 }
             }
-
             CachedProtocolProvider = cachedProtocolProvider;
             if (key != null)
                 Headers["Authorization"] = $"apikey {UnpackUriKey(key)}";
@@ -164,6 +173,46 @@ namespace RESTar.Requests
             }
             else BodyBytes = body;
             HasBody = BodyBytes?.Length > 0;
+            if (Error == null && Uri?.HasError == true)
+                Error = Uri.Error;
+        }
+
+        /// <summary>
+        /// Used when performing CheckOrigin
+        /// </summary>
+        internal RequestParameters(Context context, ref string uri, Headers headers)
+        {
+            TraceId = context.InitialTraceId;
+            Context = context;
+            Headers = headers ?? new Headers();
+            Uri = URI.ParseInternal(ref uri, PercentCharsEscaped(headers), context, out var key, out var cachedProtocolProvider);
+            var hasMacro = Uri?.Macro != null;
+            if (hasMacro)
+            {
+                if (Uri.Macro.OverWriteHeaders)
+                    Uri.Macro.HeadersDictionary?.ForEach(pair => Headers[pair.Key] = pair.Value);
+                else
+                {
+                    Uri.Macro.HeadersDictionary?.ForEach(pair =>
+                    {
+                        var currentValue = Headers.SafeGet(pair.Key);
+                        if (string.IsNullOrWhiteSpace(currentValue) || currentValue == "*/*")
+                            Headers[pair.Key] = pair.Value;
+                    });
+                }
+            }
+            CachedProtocolProvider = cachedProtocolProvider;
+            if (key != null)
+                Headers["Authorization"] = $"apikey {UnpackUriKey(key)}";
+            UnparsedUri = uri;
+            try
+            {
+                var _ = IResource;
+            }
+            catch (Exception e)
+            {
+                Error = Results.Error.GetError(e);
+            }
             if (Error == null && Uri?.HasError == true)
                 Error = Uri.Error;
         }

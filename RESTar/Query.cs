@@ -17,7 +17,7 @@ namespace RESTar
         /// Creates a generic request using an internal trace, with a given method and optional protocol id. If the 
         /// protocol ID is null, the default protocol will be used.
         /// </summary>
-        /// <param name="method">The method to perfor, for example GET</param>
+        /// <param name="method">The method to perform, for example GET</param>
         /// <param name="protocolId">An optional protocol ID, defining the protocol to use for the request. If the 
         /// protocol ID is null, the default protocol will be used.</param>
         /// <param name="viewName">An optional view name to use when selecting entities from the resource</param>
@@ -37,7 +37,7 @@ namespace RESTar
         /// </summary>
         /// <param name="trace">A trace to use for this request, for example a Context (or another request 
         /// if this is a nested request).</param>
-        /// <param name="method">The method to perfor, for example GET</param>
+        /// <param name="method">The method to perform, for example GET</param>
         /// <param name="protocolId">An optional protocol ID, defining the protocol to use for the request. If the 
         /// protocol ID is null, the default protocol will be used.</param>
         /// <param name="viewName">An optional view name to use when selecting entities from the resource</param>
@@ -68,7 +68,7 @@ namespace RESTar
         /// <param name="trace">A trace to use for this request, for example a Client (or another request 
         /// if this is a nested request). If this is the first request in the trace chain, use the 
         /// factory methods of Client to create a new Client object to use as trace.</param>
-        /// <param name="method">The method to perfor, for example GET</param>
+        /// <param name="method">The method to perform, for example GET</param>
         /// <param name="uri">The URI if the request</param>
         /// <param name="body">A body to use in the request</param>
         /// <param name="headers">The headers to use in the request</param>
@@ -95,7 +95,7 @@ namespace RESTar
         /// <param name="resource">The resource referenced in the URI</param>
         public static bool IsValid(ITraceable trace, ref string uri, out Error error, out IResource resource)
         {
-            var parameters = new RequestParameters(trace.Context, Method.OPTIONS, ref uri, null, null);
+            var parameters = new RequestParameters(trace.Context, (Method) (-1), ref uri, null, null);
             parameters.Authenticate();
             if (parameters.Error != null)
             {

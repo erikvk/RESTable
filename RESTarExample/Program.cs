@@ -75,8 +75,7 @@ namespace RESTarExample
             return k;
         }
     }
-
-
+    
     [RESTar(Method.GET)]
     public class Thing : ISelector<Thing>
     {

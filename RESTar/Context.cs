@@ -78,10 +78,10 @@ namespace RESTar
         /// <summary>
         /// Creates a new request instance
         /// </summary>
-        /// <param name="method"></param>
-        /// <param name="uri"></param>
-        /// <param name="body"></param>
-        /// <param name="headers"></param>
+        /// <param name="method">The method to perform</param>
+        /// <param name="uri">The URI of the request</param>
+        /// <param name="body">The body of the request</param>
+        /// <param name="headers">The headers of the request</param>
         /// <returns></returns>
         public IRequest CreateRequest(Method method, ref string uri, byte[] body = null, Headers headers = null)
         {
@@ -104,13 +104,13 @@ namespace RESTar
         /// Use this method to check the origin of an incoming OPTIONS request. This will check the contents
         /// of the Origin header against allowed CORS origins.
         /// </summary>
-        /// <param name="uri">The URI if the request</param>
-        /// <param name="headers">The headers contained in the request</param>
+        /// <param name="uri">The URI of the request</param>
+        /// <param name="headers">The headers of the request</param>
         /// <returns></returns>
         public ISerializedResult CheckOrigin(ref string uri, Headers headers)
         {
             if (uri == null) throw new MissingUri();
-            var parameters = new RequestParameters(this, Method.OPTIONS, ref uri, null, headers);
+            var parameters = new RequestParameters(this, ref uri, headers);
             var origin = parameters.Headers.Origin;
             if (!parameters.IsValid || !Uri.TryCreate(origin, UriKind.Absolute, out var originUri))
                 return new InvalidOrigin();

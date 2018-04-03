@@ -5,10 +5,10 @@ using RESTar.Internal;
 namespace RESTar.Results
 {
     /// <inheritdoc />
-    public abstract class BadRequest : RequestError
+    public abstract class BadRequest : Error
     {
         /// <inheritdoc />
-        protected BadRequest(IRequest request, ErrorCodes code, string info, Exception ie = null) : base(request, code, info, ie)
+        protected BadRequest(ErrorCodes code, string info, Exception ie = null) : base(code, info, ie)
         {
             StatusCode = HttpStatusCode.BadRequest;
             StatusDescription = "Bad request";

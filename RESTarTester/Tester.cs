@@ -477,7 +477,7 @@ namespace RESTarTester
             var res5 = r5.Result.Serialize();
             var res6 = r6.Result.Serialize();
 
-            Debug.Assert(res5.ContentType == RESTar.ContentType.Excel);
+            Debug.Assert(res5.Headers.ContentType == RESTar.ContentType.Excel);
             Debug.Assert(res5.Body.Length > 1);
 
             Db.TransactAsync(() =>

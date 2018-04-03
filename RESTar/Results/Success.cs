@@ -36,9 +36,6 @@ namespace RESTar.Results
         public virtual Stream Body { get; }
 
         /// <inheritdoc />
-        public ContentType? ContentType { get; protected set; }
-
-        /// <inheritdoc />
         public TimeSpan TimeElapsed { get; protected set; }
 
         /// <inheritdoc />

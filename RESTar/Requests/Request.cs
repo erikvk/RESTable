@@ -153,7 +153,7 @@ namespace RESTar.Requests
                 if (!IsValid) return Results.Error.GetResult(Error, this);
                 if (IsWebSocketUpgrade)
                     try
-                    {   
+                    {
                         if (!CachedProtocolProvider.ProtocolProvider.IsCompliant(this, out var reason))
                             return Results.Error.GetResult(new NotCompliantWithProtocol(CachedProtocolProvider.ProtocolProvider, reason), this);
                     }
@@ -277,14 +277,19 @@ namespace RESTar.Requests
                             {
                                 var uri = sourceParameters.URI;
                                 var result = Request.Create(this, sourceParameters.Method, ref uri, null, sourceParameters.Headers).Result;
-                                if (!(result is IEntities<object> entities))
+                                if (!(result is IEntities))
                                     throw new InvalidExternalSource(uri, result.LogMessage);
                                 if (result is IEntities<T> entitiesOfSameType)
                                     Selector = () => entitiesOfSameType;
                                 else
                                 {
-                                    var serialized = result.Serialize();
-                                    Body = new Body(serialized.Body.ToByteArray(), entities.ContentType, CachedProtocolProvider);
+                                    var serialized = (IEntities) result.Serialize();
+                                    Body = new Body
+                                    (
+                                        bytes: serialized.Body.ToByteArray(),
+                                        contentType: serialized.Headers.ContentType ?? CachedProtocolProvider.DefaultInputProvider.ContentType,
+                                        protocolProvider: CachedProtocolProvider
+                                    );
                                 }
                                 break;
                             }

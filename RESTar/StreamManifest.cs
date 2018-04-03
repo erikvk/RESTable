@@ -69,7 +69,7 @@ namespace RESTar
         internal StreamManifest(Content content)
         {
             Content = content;
-            ContentType = content.ContentType.ToString();
+            ContentType = content.Headers.ContentType?.ToString();
             EntityType = content.EntityType.FullName;
             EntityCount = content.EntityCount;
             TotalLength = content.Body.Length;
