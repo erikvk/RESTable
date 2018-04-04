@@ -67,8 +67,8 @@ namespace RESTar
         /// </summary>
         public bool Silent
         {
-            get => !WriteStatusBeforeContent && !WriteTimeElapsed && !WriteQueryAfterContent && !WriteInfoTexts;
-            set => WriteStatusBeforeContent = WriteTimeElapsed = WriteQueryAfterContent = WriteInfoTexts = !value;
+            get => !WriteStatusBeforeContent && !WriteTimeElapsed && !WriteQueryAfterContent && !WriteInfoTexts && !WriteOptions;
+            set => WriteStatusBeforeContent = WriteTimeElapsed = WriteQueryAfterContent = WriteInfoTexts = WriteOptions = !value;
         }
 
         /// <summary>
@@ -92,6 +92,16 @@ namespace RESTar
         public bool WriteQueryAfterContent { get; set; } = true;
 
         /// <summary>
+        /// Should the shell output info texts?
+        /// </summary>
+        public bool WriteInfoTexts { get; set; } = true;
+
+        /// <summary>
+        /// Should the shell write options after a succesful navigation?
+        /// </summary>
+        public bool WriteOptions { get; set; } = true;
+
+        /// <summary>
         /// The size of stream messages in bytes
         /// </summary>
         public long StreamBufferSize
@@ -106,12 +116,6 @@ namespace RESTar
                     SetupStreamManifest();
             }
         }
-
-        /// <summary>
-        /// Should the shell output info texts?
-        /// </summary>
-        public bool WriteInfoTexts { get; set; } = true;
-
 
         /// <inheritdoc />
         public IWebSocket WebSocket { private get; set; }
@@ -168,6 +172,7 @@ namespace RESTar
                 var (command, arg) = input.TSplit(' ');
                 switch (command.ToUpperInvariant())
                 {
+                    case "OPTIONS":
                     case "MANIFEST":
                         WebSocket.SendJson(CurrentStreamManifest);
                         break;
@@ -247,6 +252,9 @@ namespace RESTar
                                 SetupStreamManifest();
                             }
                             else SendResult(result);
+                            break;
+                        case "OPTIONS":
+                            ValidateQuery();
                             break;
 
                         case "HEADERS":
@@ -469,9 +477,11 @@ namespace RESTar
             else
             {
                 query = localQuery;
-                if (resource is ITerminalResource)
-                    SafeOperation(GET);
-                else WebSocket.SendText("? " + Query);
+                var availableResource = AvailableResource.Make(resource, WebSocket);
+                if (WriteOptions)
+                    WebSocket.SendJson(new {Resource = availableResource.Name, availableResource.Methods}, true);
+                if (WriteQueryAfterContent)
+                    WebSocket.SendText("? " + Query);
             }
             queryChangedPreEval = false;
         }

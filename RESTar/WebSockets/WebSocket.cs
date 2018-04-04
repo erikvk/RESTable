@@ -265,7 +265,7 @@ namespace RESTar.WebSockets
             {
                 if (includeStatusWithContent)
                     sendStatus();
-                SendText(result.Body);
+                SendBinary(result.Body);
             }
             else sendStatus();
         }
@@ -289,7 +289,7 @@ namespace RESTar.WebSockets
         public void SendBinary(Stream data) => _SendBinary(data.ToByteArray(), false, 0, (int) data.Length);
 
         /// <inheritdoc />
-        public void SendJson(object item, bool? prettyPrint = null, bool ignoreNulls = false)
+        public void SendJson(object item, bool asText = false, bool? prettyPrint = null, bool ignoreNulls = false)
         {
             Formatting _prettyPrint;
             if (prettyPrint == null)
@@ -297,7 +297,7 @@ namespace RESTar.WebSockets
             else _prettyPrint = prettyPrint.Value ? Formatting.Indented : Formatting.None;
             var stream = Serializers.Json.SerializeStream(item, _prettyPrint, ignoreNulls);
             var array = stream.ToArray();
-            _SendBinary(array, true, 0, array.Length);
+            _SendBinary(array, asText, 0, array.Length);
         }
 
         #endregion

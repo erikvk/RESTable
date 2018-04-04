@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using RESTar.Auth;
 using RESTar.Linq;
 using RESTar.Operations;
+using RESTar.Requests;
 using RESTar.Resources;
 using static RESTar.Method;
 
@@ -20,8 +20,6 @@ namespace RESTar
                                            "available for the current user, as defined by the access " +
                                            "rights assigned to its API key. It is the default resource " +
                                            "used when no resource is specified in the request URI.";
-
-        internal static IEntityResource<AvailableResource> Resource = EntityResource<AvailableResource>.Get;
 
         /// <summary>
         /// The name of the resource
@@ -62,20 +60,19 @@ namespace RESTar
         public IEnumerable<AvailableResource> Select(IRequest<AvailableResource> request)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
-            var _rights = request.Context.Client.AccessRights;
-            return _rights.Keys
+            return request.Context.Client.AccessRights.Keys
                 .Where(r => r.IsGlobal && !r.IsInnerResource)
                 .OrderBy(r => r.Name)
-                .Select(r => Make(r, _rights))
+                .Select(r => Make(r, request))
                 .Where(request.Conditions);
         }
 
-        private static AvailableResource Make(IResource iresource, AccessRights rights) => new AvailableResource
+        internal static AvailableResource Make(IResource iresource, ITraceable trace) => new AvailableResource
         {
             Name = iresource.Name,
             Alias = iresource.Alias,
             Description = iresource.Description ?? "No description",
-            Methods = rights.SafeGet(iresource)?
+            Methods = trace.Context.Client.AccessRights.SafeGet(iresource)?
                           .Intersect(iresource.AvailableMethods)
                           .ToArray() ?? new Method[0],
             Kind = iresource is IEntityResource ? ResourceKind.EntityResource : ResourceKind.TerminalResource,
@@ -83,7 +80,7 @@ namespace RESTar
                 ? er.Views?.Select(v => new ViewInfo(v.Name, v.Description ?? "No description")).ToArray()
                   ?? new ViewInfo[0]
                 : null,
-            InnerResources = ((IResourceInternal) iresource).InnerResources?.Select(r => Make(r, rights)).ToArray()
+            InnerResources = ((IResourceInternal) iresource).InnerResources?.Select(r => Make(r, trace)).ToArray()
         };
     }
 }

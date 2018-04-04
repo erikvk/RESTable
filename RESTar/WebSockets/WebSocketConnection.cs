@@ -60,7 +60,7 @@ namespace RESTar.WebSockets
         public void SendBinary(Stream data) => WebSocket.SendBinary(data);
 
         /// <inheritdoc />
-        public void SendJson(object i, bool? p = null, bool ig = false) => WebSocket.SendJson(i, p, ig);
+        public void SendJson(object i, bool at = false, bool? p = null, bool ig = false) => WebSocket.SendJson(i, at, p, ig);
 
         /// <inheritdoc />
         public void SendResult(ISerializedResult r, bool i = true, TimeSpan? t = null) => WebSocket.SendResult(r, i, t);
