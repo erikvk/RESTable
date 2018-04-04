@@ -11,7 +11,8 @@ namespace RESTar
 {
     /// <summary>
     /// Requests are run from inside contexts. Contexts guard against infinite recursion 
-    /// and define the root for each ITraceable tree.
+    /// and define the root for each ITraceable tree. They also hold WebSocket connections
+    /// and Client access rights.
     /// </summary>
     public abstract class Context
     {
@@ -71,14 +72,13 @@ namespace RESTar
         public Client Client { get; }
 
         /// <summary>
-        /// Creates a generic request using the given trace, method and optional protocol id. If the 
-        /// protocol ID is null, the default protocol will be used.
+        /// Creates a request in this context for a resource type, using the given method and optional protocol id and 
+        /// view name. If the protocol ID is null, the default protocol will be used. T must be a registered resource type.
         /// </summary>
         /// <param name="method">The method to perform, for example GET</param>
         /// <param name="protocolId">An optional protocol ID, defining the protocol to use for the request. If the 
         /// protocol ID is null, the default protocol will be used.</param>
         /// <param name="viewName">An optional view name to use when selecting entities from the resource</param>
-        /// <returns>A generic request instance</returns>
         public IRequest<T> CreateRequest<T>(Method method, string protocolId = null, string viewName = null) where T : class
         {
             var resource = Resource<T>.SafeGet ?? throw new UnknownResource(typeof(T).RESTarTypeName());
@@ -87,13 +87,12 @@ namespace RESTar
         }
 
         /// <summary>
-        /// Creates a new request instance
+        /// Creates a request in this context using the given parameters.
         /// </summary>
         /// <param name="method">The method to perform</param>
         /// <param name="uri">The URI of the request</param>
         /// <param name="body">The body of the request</param>
         /// <param name="headers">The headers of the request</param>
-        /// <returns></returns>
         public IRequest CreateRequest(Method method, string uri, byte[] body = null, Headers headers = null)
         {
             if (uri == null) throw new MissingUri();
@@ -135,9 +134,6 @@ namespace RESTar
             return false;
         }
 
-        /// <summary>
-        /// Directs the call to the Request class constructor, from a dynamic binding for the generic IResource parameter.
-        /// </summary>
         private static IRequest Construct<T>(IResource<T> r, RequestParameters p) where T : class => new Request<T>(r, p);
 
         /// <summary>
