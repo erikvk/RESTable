@@ -183,7 +183,7 @@ namespace RESTar.ContentTypeProviders
         }
 
         /// <inheritdoc />
-        public void SerializeEntity<T>(T entity, Stream stream, IRequest request, out ulong entityCount) where T : class
+        public void SerializeEntity(object entity, Stream stream, IRequest request, out ulong entityCount)
         {
             if (entity == null)
             {
@@ -204,7 +204,7 @@ namespace RESTar.ContentTypeProviders
         }
 
         /// <inheritdoc />
-        public void SerializeCollection<T>(IEnumerable<T> entities, Stream stream, IRequest request, out ulong entityCount) where T : class
+        public void SerializeCollection(IEnumerable<object> entities, Stream stream, IRequest request, out ulong entityCount)
         {
             if (entities == null)
             {

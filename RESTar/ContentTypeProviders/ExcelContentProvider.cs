@@ -34,11 +34,11 @@ namespace RESTar.ContentTypeProviders
         public override string ContentDispositionFileExtension => ".xlsx";
 
         /// <inheritdoc />
-        public override void SerializeEntity<T>(T entity, Stream stream, IRequest request, out ulong entityCount) =>
+        public override void SerializeEntity(object entity, Stream stream, IRequest request, out ulong entityCount) =>
             SerializeCollection(new[] {entity}, stream, request, out entityCount);
 
         /// <inheritdoc />
-        public override void SerializeCollection<T>(IEnumerable<T> entities, Stream stream, IRequest request, out ulong entityCount)
+        public override void SerializeCollection(IEnumerable<object> entities, Stream stream, IRequest request, out ulong entityCount)
         {
             if (entities == null)
             {

@@ -118,6 +118,10 @@ namespace RESTar.Internal
                     contentTypeProvider.SerializeEntity(report.ReportBody, getOutputStream(), report.Request, out var _);
                     return report;
 
+                case Head head:
+                    head.Headers["RESTar-count"] = head.EntityCount.ToString();
+                    return head;
+
                 case IEntities<object> entities:
 
                     ISerializedResult SerializeEntities()

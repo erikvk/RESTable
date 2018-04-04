@@ -8,6 +8,7 @@ using RESTar.ContentTypeProviders;
 using RESTar.Linq;
 using RESTar.Operations;
 using RESTar.Results;
+using static System.StringComparison;
 using static Newtonsoft.Json.JsonToken;
 
 namespace RESTar
@@ -54,18 +55,16 @@ namespace RESTar
                         return array.Select(item => item.ToObject<object>()).Select(populator).ToList();
                     case JObject jobj:
                         return populator(jobj.ToObject<Aggregator>(JsonContentProvider.Serializer));
-
                     case string empty when string.IsNullOrWhiteSpace(empty): return empty;
-
                     case string stringValue:
                         Method method;
                         string uri;
-                        if (stringValue.StartsWith("GET "))
+                        if (stringValue.StartsWith("GET ", OrdinalIgnoreCase))
                         {
                             method = Method.GET;
                             uri = stringValue.Substring(4);
                         }
-                        else if (stringValue.StartsWith("REPORT "))
+                        else if (stringValue.StartsWith("REPORT ", OrdinalIgnoreCase))
                         {
                             method = Method.REPORT;
                             uri = stringValue.Substring(7);
@@ -89,9 +88,9 @@ namespace RESTar
 
             if (!request.Body.HasContent)
                 throw new Exception("Missing data source for Aggregator request");
-            var _template = request.Body.ToList<Aggregator>().FirstOrDefault();
-            populator(_template);
-            return new[] {_template}.Where(request.Conditions);
+            var template = request.Body.ToList<Aggregator>().FirstOrDefault();
+            populator(template);
+            return new[] {template}.Where(request.Conditions);
         }
     }
 }
