@@ -93,13 +93,16 @@ namespace RESTar.Results
         public ICollection<string> Cookies => Result.Cookies;
 
         /// <inheritdoc />
+        public bool IsSerialized => Result.IsSerialized;
+
+        /// <inheritdoc />
         public ISerializedResult Serialize(ContentType? contentType = null) => Result.Serialize();
 
         /// <inheritdoc />
         public void ThrowIfError() => Result.ThrowIfError();
 
         /// <inheritdoc />
-        public IEnumerable<T> ToEntities<T>() where T : class => Result.ToEntities<T>();
+        public IEntities<T> ToEntities<T>() where T : class => Result.ToEntities<T>();
 
         /// <inheritdoc />
         public Stream Body => Result.Body;

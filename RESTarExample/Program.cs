@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Text;
 using Dynamit;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -28,6 +30,31 @@ namespace RESTarExample
                 configFilePath: @"C:\Mopedo\mopedo\Mopedo.config",
                 lineEndings: LineEndings.Linux
             );
+        }
+    }
+
+    [RESTar(Method.GET)]
+    public class MyBucket : IBucket<MyBucket>
+    {
+        public (Stream stream, ContentType contentType) Select(IRequest<MyBucket> request)
+        {
+            var stream = new MemoryStream();
+            using (var swr = new StreamWriter(stream, Encoding.UTF8, 1024, true))
+            {
+                swr.Write("This is my important binary data! I repeat: This is my important binary data! I repeat: " +
+                          "This is my important binary data! I repeat: This is my important binary data! I repeat: " +
+                          "This is my important binary data! I repeat: This is my important binary data! I repeat: " +
+                          "This is my important binary data! I repeat: This is my important binary data! I repeat: " +
+                          "This is my important binary data! I repeat: This is my important binary data! I repeat: " +
+                          "This is my important binary data! I repeat: This is my important binary data! I repeat: " +
+                          "This is my important binary data! I repeat: This is my important binary data! I repeat: " +
+                          "This is my important binary data! I repeat: This is my important binary data! I repeat: " +
+                          "This is my important binary data! I repeat: This is my important binary data! I repeat: " +
+                          "This is my important binary data! I repeat: This is my important binary data! I repeat: " +
+                          "This is my important binary data! I repeat: This is my important binary data! I repeat: ");
+            }
+            stream.Seek(0, SeekOrigin.Begin);
+            return (stream, "text/plain");
         }
     }
 
@@ -62,7 +89,7 @@ namespace RESTarExample
             var k = 0;
             Db.TransactAsync(() =>
             {
-                foreach (var i in request.GetEntities())
+                foreach (var i in request.GetInputEntities())
                 {
                     new DbClass
                     {
@@ -75,7 +102,7 @@ namespace RESTarExample
             return k;
         }
     }
-    
+
     [RESTar(Method.GET)]
     public class Thing : ISelector<Thing>
     {
@@ -150,19 +177,19 @@ namespace RESTarExample
             .Where(request.Conditions);
 
         public int Insert(IRequest<MyEntityResource> request) => Db.Transact(() => request
-            .GetEntities()
+            .GetInputEntities()
             .Select(ToDbObject)
             .Count());
 
         public int Update(IRequest<MyEntityResource> request) => Db.Transact(() => request
-            .GetEntities()
+            .GetInputEntities()
             .Select(ToDbObject)
             .Count());
 
         public int Delete(IRequest<MyEntityResource> request) => Db.Transact(() =>
         {
             var i = 0;
-            foreach (var item in request.GetEntities())
+            foreach (var item in request.GetInputEntities())
             {
                 item.Delete();
                 i += 1;
@@ -477,7 +504,7 @@ namespace RESTarExample
 
         public int Insert(IRequest<R> request)
         {
-            var entities = request.GetEntities();
+            var entities = request.GetInputEntities();
             return entities.Count();
         }
 
@@ -488,13 +515,13 @@ namespace RESTarExample
 
         public int Update(IRequest<R> request)
         {
-            var entities = request.GetEntities();
+            var entities = request.GetInputEntities();
             return entities.Count();
         }
 
         public int Delete(IRequest<R> request)
         {
-            var entities = request.GetEntities();
+            var entities = request.GetInputEntities();
             return entities.Count();
         }
     }

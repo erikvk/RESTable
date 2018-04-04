@@ -229,7 +229,7 @@ namespace RESTar.Admin
         public int Insert(IRequest<Macro> request)
         {
             var count = 0;
-            foreach (var entity in request.GetEntities())
+            foreach (var entity in request.GetInputEntities())
             {
                 if (DbMacro.Get(entity.Name) != null)
                     throw new Exception($"Invalid name. '{entity.Name}' is already in use.");
@@ -256,7 +256,7 @@ namespace RESTar.Admin
         public int Update(IRequest<Macro> request)
         {
             var count = 0;
-            request.GetEntities().ForEach(entity =>
+            request.GetInputEntities().ForEach(entity =>
             {
                 var dbEntity = DbMacro.Get(entity.Name);
                 if (dbEntity == null) return;
@@ -281,7 +281,7 @@ namespace RESTar.Admin
         public int Delete(IRequest<Macro> request)
         {
             var count = 0;
-            request.GetEntities().ForEach(entity =>
+            request.GetInputEntities().ForEach(entity =>
             {
                 Db.TransactAsync(DbMacro.Get(entity.Name).Delete);
                 count += 1;

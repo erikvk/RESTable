@@ -167,7 +167,7 @@ namespace RESTar.Admin
             .SelectMany(indexer => indexer.Select(request));
 
         /// <inheritdoc />
-        public int Insert(IRequest<DatabaseIndex> request) => request.GetEntities()
+        public int Insert(IRequest<DatabaseIndex> request) => request.GetInputEntities()
             .GroupBy(index => index.IResource.Provider)
             .Sum(group =>
             {
@@ -179,7 +179,7 @@ namespace RESTar.Admin
             });
 
         /// <inheritdoc />
-        public int Update(IRequest<DatabaseIndex> request) => request.GetEntities()
+        public int Update(IRequest<DatabaseIndex> request) => request.GetInputEntities()
             .GroupBy(index => index.IResource.Provider)
             .Sum(group =>
             {
@@ -188,7 +188,7 @@ namespace RESTar.Admin
             });
 
         /// <inheritdoc />
-        public int Delete(IRequest<DatabaseIndex> request) => request.GetEntities()
+        public int Delete(IRequest<DatabaseIndex> request) => request.GetInputEntities()
             .GroupBy(index => index.IResource.Provider)
             .Sum(group =>
             {

@@ -148,6 +148,8 @@ namespace RESTar.Requests
 
         #endregion
 
+        public IEntities<T> ResultEntities => Result.ToEntities<T>();
+
         public IResult Result
         {
             get
@@ -226,7 +228,7 @@ namespace RESTar.Requests
             return new WebSocketUpgradeSuccessful(this);
         }
 
-        public IEnumerable<T> GetEntities() => EntitiesProducer?.Invoke() ?? new T[0];
+        public IEnumerable<T> GetInputEntities() => EntitiesProducer?.Invoke() ?? new T[0];
 
         internal Request(IResource<T> resource, RequestParameters parameters)
         {

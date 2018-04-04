@@ -105,7 +105,7 @@ namespace RESTar.Results
         }
 
         /// <inheritdoc />
-        public IEnumerable<T> ToEntities<T>() where T : class => throw this;
+        public IEntities<T> ToEntities<T>() where T : class => throw this;
 
         /// <inheritdoc />
         public void ThrowIfError() => throw this;
@@ -133,6 +133,9 @@ namespace RESTar.Results
         public Stream Body => _body ?? (IsSerializing ? _body = new RESTarOutputStreamController() : null);
 
         private Stream GetStream() => Body;
+
+        /// <inheritdoc />
+        public bool IsSerialized { get; private set; }
 
         /// <inheritdoc />
         public ISerializedResult Serialize(ContentType? contentType = null)
@@ -167,6 +170,7 @@ namespace RESTar.Results
             finally
             {
                 IsSerializing = false;
+                IsSerialized = true;
                 stopwatch.Stop();
                 TimeElapsed = TimeElapsed + stopwatch.Elapsed;
                 Headers["RESTar-elapsed-ms"] = TimeElapsed.TotalMilliseconds.ToString(CultureInfo.InvariantCulture);

@@ -41,7 +41,7 @@ namespace RESTar.Admin
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
             var count = 0;
-            request.GetEntities().ForEach(e =>
+            request.GetInputEntities().ForEach(e =>
             {
                 Reflection.Dynamic.TypeCache.TermCache
                     .Where(pair => pair.Key.Type == e.Type)

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using RESTar.Logging;
+using RESTar.Results;
 
 namespace RESTar
 {
@@ -46,18 +47,23 @@ namespace RESTar
         /// Tries to convert the result to an Entities instance, or throws an 
         /// Exception if the result is non-successful or cannot be cast to the given type.
         /// </summary>
-        IEnumerable<T> ToEntities<T>() where T : class;
+        IEntities<T> ToEntities<T>() where T : class;
 
         /// <summary>
         /// The time it took for RESTar to generate the response.
         /// </summary>
         TimeSpan TimeElapsed { get; }
+
+        /// <summary>
+        /// Has this result been serialized?
+        /// </summary>
+        bool IsSerialized { get; }
     }
 
     /// <inheritdoc />
     /// <summary>
-    /// Describes a result that is ready to be sent back to the client, for example 
-    /// in an HTTP response.
+    /// Represents a result that is ready to be sent back to the client, for example 
+    /// in an HTTP response or a WebSocket message.
     /// </summary>
     public interface ISerializedResult : IResult
     {

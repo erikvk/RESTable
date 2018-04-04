@@ -56,19 +56,19 @@ namespace RESTar.Starcounter
             Insert = r =>
             {
                 var count = 0;
-                Db.TransactAsync(() => count = r.GetEntities().Count());
+                Db.TransactAsync(() => count = r.GetInputEntities().Count());
                 return count;
             };
             Update = r =>
             {
                 var count = 0;
-                Db.TransactAsync(() => count = r.GetEntities().Count());
+                Db.TransactAsync(() => count = r.GetInputEntities().Count());
                 return count;
             };
             Delete = r =>
             {
                 var count = 0;
-                Db.TransactAsync(() => r.GetEntities().ForEach(entity =>
+                Db.TransactAsync(() => r.GetInputEntities().ForEach(entity =>
                 {
                     entity.Delete();
                     count += 1;

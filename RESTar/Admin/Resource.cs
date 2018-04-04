@@ -126,7 +126,7 @@ namespace RESTar.Admin
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
             var count = 0;
-            foreach (var entity in request.GetEntities())
+            foreach (var entity in request.GetInputEntities())
             {
                 if (string.IsNullOrWhiteSpace(entity.Name))
                     throw new Exception("Missing or invalid name for new resource");
@@ -168,7 +168,7 @@ namespace RESTar.Admin
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
             var count = 0;
-            foreach (var resource in request.GetEntities())
+            foreach (var resource in request.GetInputEntities())
             {
                 #region Edit alias (available for all resources)
 
@@ -228,7 +228,7 @@ namespace RESTar.Admin
         public int Delete(IRequest<Resource> request)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
-            return request.GetEntities().Count(DynamicResource.DeleteTable);
+            return request.GetInputEntities().Count(DynamicResource.DeleteTable);
         }
     }
 }

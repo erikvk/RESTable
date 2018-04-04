@@ -57,7 +57,7 @@ namespace RESTar.Admin
         public int Delete(IRequest<WebSocket> request)
         {
             var count = 0;
-            foreach (var entity in request.GetEntities())
+            foreach (var entity in request.GetInputEntities())
             {
                 entity._WebSocket.Disconnect();
                 count += 1;

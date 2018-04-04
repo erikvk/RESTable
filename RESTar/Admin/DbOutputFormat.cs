@@ -218,7 +218,7 @@ namespace RESTar.Admin
         public int Insert(IRequest<OutputFormat> request)
         {
             var count = 0;
-            foreach (var entity in request.GetEntities())
+            foreach (var entity in request.GetInputEntities())
             {
                 if (DbOutputFormat.GetByName(entity.Name) != null)
                     throw new Exception($"Invalid name. '{entity.Name}' is already in use.");
@@ -232,7 +232,7 @@ namespace RESTar.Admin
         public int Update(IRequest<OutputFormat> request)
         {
             var count = 1;
-            request.GetEntities().ForEach(entity =>
+            request.GetInputEntities().ForEach(entity =>
             {
                 var dbEntity = DbOutputFormat.GetByName(entity.Name);
                 if (dbEntity == null) return;
@@ -252,7 +252,7 @@ namespace RESTar.Admin
         public int Delete(IRequest<OutputFormat> request)
         {
             var count = 0;
-            request.GetEntities().ForEach(entity =>
+            request.GetInputEntities().ForEach(entity =>
             {
                 if (entity.IsBuiltIn) return;
                 Db.TransactAsync(DbOutputFormat.GetByName(entity.Name).Delete);

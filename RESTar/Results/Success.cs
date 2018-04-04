@@ -30,7 +30,14 @@ namespace RESTar.Results
         public ICollection<string> Cookies { get; internal set; }
 
         /// <inheritdoc />
-        public virtual ISerializedResult Serialize(ContentType? contentType = null) => this;
+        public bool IsSerialized { get; protected set; }
+
+        /// <inheritdoc />
+        public virtual ISerializedResult Serialize(ContentType? contentType = null)
+        {
+            IsSerialized = true;
+            return this;
+        }
 
         /// <inheritdoc />
         public virtual Stream Body { get; }
@@ -57,7 +64,7 @@ namespace RESTar.Results
         public DateTime LogTime { get; }
 
         /// <inheritdoc />
-        public IEnumerable<T> ToEntities<T>() where T : class => (Entities<T>) this;
+        public IEntities<T> ToEntities<T>() where T : class => (Entities<T>) this;
 
         /// <inheritdoc />
         public void ThrowIfError() { }
@@ -68,6 +75,7 @@ namespace RESTar.Results
             Context = trace.Context;
             TraceId = trace.TraceId;
             ExcludeHeaders = false;
+            IsSerialized = false;
             LogTime = DateTime.Now;
             Body = null;
         }

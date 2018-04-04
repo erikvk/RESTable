@@ -39,7 +39,7 @@ namespace RESTar.Starcounter
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
             var count = 0;
-            foreach (var index in request.GetEntities())
+            foreach (var index in request.GetInputEntities())
             {
                 if (index.IResource == null)
                     throw new Exception("Found no resource to register index on");
@@ -64,7 +64,7 @@ namespace RESTar.Starcounter
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
             var count = 0;
-            foreach (var index in request.GetEntities())
+            foreach (var index in request.GetInputEntities())
             {
                 Db.SQL($"DROP INDEX {index.Name.Fnuttify()} ON {index.IResource.Type.RESTarTypeName().Fnuttify()}");
                 try
@@ -88,7 +88,7 @@ namespace RESTar.Starcounter
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
             var count = 0;
-            foreach (var index in request.GetEntities())
+            foreach (var index in request.GetInputEntities())
             {
                 Db.SQL($"DROP INDEX {index.Name.Fnuttify()} ON {index.IResource.Type.RESTarTypeName().Fnuttify()}");
                 count += 1;

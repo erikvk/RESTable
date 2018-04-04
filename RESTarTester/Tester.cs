@@ -683,13 +683,13 @@ namespace RESTarTester
 
         public IEnumerable<AuthResource> Select(IRequest<AuthResource> request) => Items.Where(request.Conditions);
 
-        public int Insert(IRequest<AuthResource> request) => request.GetEntities().Aggregate(0, (count, entity) =>
+        public int Insert(IRequest<AuthResource> request) => request.GetInputEntities().Aggregate(0, (count, entity) =>
         {
             Items.Add(entity);
             return count += 1;
         });
 
-        public int Delete(IRequest<AuthResource> request) => request.GetEntities()
+        public int Delete(IRequest<AuthResource> request) => request.GetInputEntities()
             .Aggregate(0, (count, entity) => count += Items.RemoveAll(i => i.Id == entity.Id));
 
         public AuthResults Authenticate(IRequest<AuthResource> request)

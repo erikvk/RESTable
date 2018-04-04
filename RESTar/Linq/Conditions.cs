@@ -30,7 +30,7 @@ namespace RESTar.Linq
             post = conds.Where(c => !c.ScQueryable || c.IsOfType<string>() && c.Value != null).ToList();
             return post.Any();
         }
-            
+
         #endregion
 
         /// <summary>
@@ -51,6 +51,29 @@ namespace RESTar.Linq
         {
             if (conditions == null) return true;
             return conditions.All(condition => condition.HoldsFor(subject));
+        }
+
+        /// <summary>
+        /// Adds a new condition to the condition collection
+        /// </summary>
+        /// <typeparam name="T">The resource type</typeparam>
+        /// <param name="conds">The condition collection</param>
+        /// <param name="key">The key of the new condition</param>
+        /// <param name="op">The operator of the new condition</param>
+        /// <param name="value">The value of the new condition</param>
+        public static void Add<T>(this List<Condition<T>> conds, string key, Operators op, object value) where T : class
+        {
+            conds.Add(new Condition<T>(key, op, value));
+        }
+
+        /// <summary>
+        /// Adds new conditions to the condition collection
+        /// </summary>
+        /// <typeparam name="T">The resource type</typeparam>
+        public static void AddRange<T>(this List<Condition<T>> conds, params (string key, Operators op, object value)[] conditions) where T : class
+        {
+            foreach (var (key, op, value) in conditions)
+                conds.Add(new Condition<T>(key, op, value));
         }
 
         /// <summary>

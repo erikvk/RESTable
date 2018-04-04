@@ -4,6 +4,7 @@ using RESTar.Internal;
 using RESTar.Logging;
 using RESTar.Requests;
 using RESTar.Resources;
+using RESTar.Results;
 
 namespace RESTar
 {
@@ -32,7 +33,7 @@ namespace RESTar
         new IEntityResource<T> Resource { get; }
 
         /// <summary>
-        /// The conditions of the request. Cannot be changed while the request is being evaluated
+        /// The conditions of the request
         /// </summary>
         List<Condition<T>> Conditions { get; set; }
 
@@ -42,11 +43,11 @@ namespace RESTar
         ITarget<T> Target { get; }
 
         /// <summary>
-        /// Returns the entities affected by this request. Use this in Inserters and Deleters to receive
+        /// Returns the input entities for this request. Use this in Inserters and Deleters to receive
         /// the entities to insert or delete, and in Updaters to receive and update the entities selected 
         /// by the request.
         /// </summary>
-        IEnumerable<T> GetEntities();
+        IEnumerable<T> GetInputEntities();
 
         /// <summary>
         /// The method used when selecting entities for request input. Set this property to override the default behavior.
@@ -61,6 +62,12 @@ namespace RESTar
         /// content type provided in the Content-Type header.
         /// </summary>
         Func<IEnumerable<T>, IEnumerable<T>> Updater { set; }
+
+        /// <summary>
+        /// Gets the result entities for this request, if it is a GET request. Use this as shorthand for 
+        /// <see cref="IResult.ToEntities{T}()"/> Result.ToEntities
+        /// </summary>
+        IEntities<T> ResultEntities { get; }
     }
 
     /// <inheritdoc cref="ITraceable" />
@@ -97,18 +104,18 @@ namespace RESTar
         MetaConditions MetaConditions { get; }
 
         /// <summary>
-        /// Gets the request body. Cannot be changed while the request is being evaluated
+        /// Gets the request body
         /// </summary>
         Body Body { get; }
 
         /// <summary>
-        /// Creates a new Body instance from a JSON serializable .NET object.
+        /// Assigns a new Body instance from a JSON serializable .NET object.
         /// </summary>
         /// <param name="content"></param>
         void SetBody(object content);
 
         /// <summary>
-        /// Creates a new body from a byte array
+        /// Assigns a new body from a byte array and optional content type
         /// </summary>
         /// <param name="bytes">The bytes that constitute the body</param>
         /// <param name="contentType"></param>
