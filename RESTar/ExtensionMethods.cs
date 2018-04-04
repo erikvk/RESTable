@@ -675,13 +675,6 @@ namespace RESTar
             return valueLiteral;
         }
 
-        internal static void MethodCheck(this IRequest request)
-        {
-            if (request.Method < 0) return;
-            if (!Authenticator.MethodCheck(request.Method, request.Resource, request.Context.Client.AuthToken, out var failedAuth))
-                throw new MethodNotAllowed(request.Method, request.Resource, failedAuth);
-        }
-
         /// <summary>
         /// Returns true if and only if the request contains a condition with the given key and 
         /// operator (case insensitive). If true, the out Condition parameter will contain a reference to the found

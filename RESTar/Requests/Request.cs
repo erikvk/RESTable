@@ -42,7 +42,9 @@ namespace RESTar.Requests
                 _method = value;
                 try
                 {
-                    this.MethodCheck();
+                    if (Method < 0) return;
+                    if (!Authenticator.MethodCheck(Method, IResource as IEntityResource, Context.Client.AuthToken, out var failedAuth))
+                        throw new MethodNotAllowed(Method, IResource, failedAuth);
                 }
                 catch
                 {
@@ -225,7 +227,7 @@ namespace RESTar.Requests
         }
 
         public IEnumerable<T> GetEntities() => EntitiesProducer?.Invoke() ?? new T[0];
-        
+
         internal Request(IResource<T> resource, RequestParameters parameters)
         {
             Parameters = parameters;
@@ -275,7 +277,8 @@ namespace RESTar.Requests
                                 throw new InvalidSyntax(InvalidSource, "Only GET is allowed in Source headers");
                             if (sourceParameters.IsInternal)
                             {
-                                var result = Context.CreateRequest(sourceParameters.Method, sourceParameters.URI, null, sourceParameters.Headers).Result;
+                                var result = Context.CreateRequest(sourceParameters.Method, sourceParameters.URI, null, sourceParameters.Headers)
+                                    .Result;
                                 if (!(result is IEntities))
                                     throw new InvalidExternalSource(sourceParameters.URI, result.LogMessage);
                                 if (result is IEntities<T> entitiesOfSameType)

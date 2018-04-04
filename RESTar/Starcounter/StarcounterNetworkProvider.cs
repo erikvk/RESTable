@@ -29,14 +29,16 @@ namespace RESTar.Starcounter
                     var client = GetClient(scRequest);
                     if (!client.TryAuthenticate(ref uri, headers, out var error))
                         return ToResponse(error);
-                    var context = new ScContext(client, scRequest, true);
-                    var query = context.CreateRequest(method, uri, scRequest.BodyBytes, headers);
-                    switch (query.Result.Serialize())
+                    using (var context = new ScContext(client, scRequest, true))
                     {
-                        case WebSocketUpgradeSuccessful _: return HandlerStatus.Handled;
-                        case var result:
-                            Admin.Console.Log(query, result);
-                            return ToResponse(result);
+                        var request = context.CreateRequest(method, uri, scRequest.BodyBytes, headers);
+                        switch (request.Result.Serialize())
+                        {
+                            case WebSocketUpgradeSuccessful _: return HandlerStatus.Handled;
+                            case var result:
+                                Admin.Console.Log(request, result);
+                                return ToResponse(result);
+                        }
                     }
                 }
             ));
@@ -47,9 +49,11 @@ namespace RESTar.Starcounter
                 uriTemplate: $"{rootUri}{{?}}",
                 handler: (ScRequest scRequest, string query) =>
                 {
-                    var context = new ScContext(GetClient(scRequest), scRequest, true);
-                    var headers = new Headers(scRequest.HeadersDictionary);
-                    return ToResponse(context.CheckOrigin(query, headers));
+                    using (var context = new ScContext(GetClient(scRequest), scRequest, true))
+                    {
+                        var headers = new Headers(scRequest.HeadersDictionary);
+                        return ToResponse(context.CheckOrigin(query, headers));
+                    }
                 }
             );
 

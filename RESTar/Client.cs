@@ -107,7 +107,7 @@ namespace RESTar
         public bool TryAuthenticate(ref string uri, Headers headers, out NotAuthorized error)
         {
             error = null;
-            var accessRights = Authenticator.GetAccessRights(this, ref uri, headers);
+            var accessRights = Authenticator.GetAccessRights(ref uri, headers);
             if (!RESTarConfig.RequireApiKey)
                 accessRights = AccessRights.Root;
             if (accessRights == null)

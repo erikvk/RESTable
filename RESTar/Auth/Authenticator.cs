@@ -30,10 +30,8 @@ namespace RESTar.Auth
                 throw new FailedResourceAuthentication(authResults.Reason);
         }
 
-        internal static AccessRights GetAccessRights(Client client, ref string uri, Headers headers)
+        internal static AccessRights GetAccessRights(ref string uri, Headers headers)
         {
-            if (client.AuthToken is string existing)
-                return AuthTokens.TryGetValue(existing, out var rights) ? rights : null;
             string authorizationHeader = null;
             var keyMatch = Regex.Match(uri, RegEx.UriKey);
             if (keyMatch.Success)

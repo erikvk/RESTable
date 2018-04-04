@@ -9,11 +9,12 @@ using WebSocket = RESTar.WebSockets.WebSocket;
 
 namespace RESTar
 {
+    /// <inheritdoc />
     /// <summary>
     /// Requests are run from inside contexts. Contexts guard against infinite recursion 
     /// and define the root for each ITraceable tree.
     /// </summary>
-    public abstract class Context
+    public abstract class Context : IDisposable
     {
         internal string InitialTraceId { get; }
         private const int MaximumStackDepth = 300;
@@ -32,8 +33,6 @@ namespace RESTar
         internal void DecreaseDepth()
         {
             StackDepth -= 1;
-            if (StackDepth == 0 && AutoDisposeClient)
-                Client.Dispose();
         }
 
         /// <summary>
@@ -163,8 +162,7 @@ namespace RESTar
         }
 
         /// <summary>
-        /// Creates a new context for a client. The client needs to be authenticated using Client.TryAuthenticate
-        /// before it is accepted as a parameter to this constructor.
+        /// Creates a new context for a client.
         /// </summary>
         /// <param name="client">The client of the context</param>
         /// <param name="autoDisposeClient">Should RESTar automatically dispose the client when the 
@@ -172,8 +170,6 @@ namespace RESTar
         protected Context(Client client, bool autoDisposeClient = true)
         {
             Client = client ?? throw new ArgumentNullException(nameof(client));
-            if (client.AuthToken == null)
-                throw new NotAuthorized();
             InitialTraceId = NextId;
             StackDepth = 0;
             AutoDisposeClient = autoDisposeClient;
@@ -186,5 +182,12 @@ namespace RESTar
 
         private static ulong IdNr;
         private static string NextId => DbHelper.Base64EncodeObjectNo(IdNr += 1);
+
+        /// <inheritdoc />
+        public void Dispose()
+        {
+            if (AutoDisposeClient)
+                Client.Dispose();
+        }
     }
 }
