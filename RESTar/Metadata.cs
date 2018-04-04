@@ -64,7 +64,7 @@ namespace RESTar
         /// <inheritdoc />
         public IEnumerable<Metadata> Select(IRequest<Metadata> request)
         {
-            var accessrights = Authenticator.AuthTokens[request.Context.Client.AuthToken];
+            var accessrights = request.Context.Client.AccessRights;
             return new[] {Make(MetadataLevel.Full, accessrights)};
         }
 

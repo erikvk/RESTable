@@ -9,16 +9,14 @@ using WebSocket = RESTar.WebSockets.WebSocket;
 
 namespace RESTar
 {
-    /// <inheritdoc />
     /// <summary>
     /// Requests are run from inside contexts. Contexts guard against infinite recursion 
     /// and define the root for each ITraceable tree.
     /// </summary>
-    public abstract class Context : IDisposable
+    public abstract class Context
     {
         internal string InitialTraceId { get; }
         private const int MaximumStackDepth = 300;
-        internal readonly bool AutoDisposeClient;
         private WebSocket webSocket;
         private int StackDepth;
         internal bool IsBottomIfStack => StackDepth < 1;
@@ -165,14 +163,11 @@ namespace RESTar
         /// Creates a new context for a client.
         /// </summary>
         /// <param name="client">The client of the context</param>
-        /// <param name="autoDisposeClient">Should RESTar automatically dispose the client when the 
-        /// request has been evaluated?</param>
-        protected Context(Client client, bool autoDisposeClient = true)
+        protected Context(Client client)
         {
             Client = client ?? throw new ArgumentNullException(nameof(client));
             InitialTraceId = NextId;
             StackDepth = 0;
-            AutoDisposeClient = autoDisposeClient;
         }
 
         /// <summary>
@@ -182,12 +177,5 @@ namespace RESTar
 
         private static ulong IdNr;
         private static string NextId => DbHelper.Base64EncodeObjectNo(IdNr += 1);
-
-        /// <inheritdoc />
-        public void Dispose()
-        {
-            if (AutoDisposeClient)
-                Client.Dispose();
-        }
     }
 }

@@ -403,7 +403,7 @@ namespace RESTar
                 }
                 if (endIndex == CurrentStreamManifest.NrOfMessages - 1 && WriteInfoTexts)
                 {
-                    WebSocket.SendText($"200: OK. Sucessfully streamed {CurrentStreamManifest.NrOfMessages} messages.");
+                    WebSocket.SendText($"200: OK. {CurrentStreamManifest.NrOfMessages} messages sucessfully streamed.");
                     CurrentStreamManifest.Dispose();
                     CurrentStreamManifest = null;
                 }
@@ -411,7 +411,7 @@ namespace RESTar
             catch (Exception e)
             {
                 WebSocket.SendException(e);
-                WebSocket.SendText("500: Error during streaming. Streamed " + $"{CurrentStreamManifest?.CurrentMessageIndex ?? 0} " +
+                WebSocket.SendText($"500: Error during streaming. Streamed {CurrentStreamManifest?.CurrentMessageIndex ?? 0} " +
                                    $"of {CurrentStreamManifest?.NrOfMessages ?? 1} messages.");
                 CurrentStreamManifest?.Dispose();
                 CurrentStreamManifest = null;

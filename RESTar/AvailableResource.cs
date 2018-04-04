@@ -62,8 +62,8 @@ namespace RESTar
         public IEnumerable<AvailableResource> Select(IRequest<AvailableResource> request)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
-            var _rights = Authenticator.AuthTokens.SafeGet(request.Context.Client.AuthToken);
-            return _rights?.Keys
+            var _rights = request.Context.Client.AccessRights;
+            return _rights.Keys
                 .Where(r => r.IsGlobal && !r.IsInnerResource)
                 .OrderBy(r => r.Name)
                 .Select(r => Make(r, _rights))

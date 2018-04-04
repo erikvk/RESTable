@@ -11,7 +11,7 @@ namespace RESTar
     /// <summary>
     /// Describes the origin and basic client parameters of a request
     /// </summary>
-    public class Client : IDisposable
+    public class Client
     {
         /// <summary>
         /// The origin type
@@ -43,7 +43,7 @@ namespace RESTar
         /// </summary>
         public bool HTTPS { get; }
 
-        internal string AuthToken { get; set; }
+        internal AccessRights AccessRights { get; set; }
 
         internal bool IsInWebSocket { get; set; }
 
@@ -83,17 +83,7 @@ namespace RESTar
         /// The internal location, has root access to all resources
         /// </summary>
         public static Client Internal => new Client(OriginType.Internal, $"localhost:{Admin.Settings._Port}",
-            new IPAddress(new byte[] {127, 0, 0, 1}), null, null, false) {AuthToken = NewRootToken};
-
-        private static string NewRootToken
-        {
-            get
-            {
-                var rootToken = Guid.NewGuid().ToString("N");
-                Authenticator.AuthTokens[rootToken] = AccessRights.Root;
-                return rootToken;
-            }
-        }
+            new IPAddress(new byte[] {127, 0, 0, 1}), null, null, false) {AccessRights = AccessRights.Root};
 
         /// <summary>
         /// Returns true if and only if this client is considered authenticated. This is a necessary precondition for 
@@ -107,24 +97,15 @@ namespace RESTar
         public bool TryAuthenticate(ref string uri, Headers headers, out NotAuthorized error)
         {
             error = null;
-            var accessRights = Authenticator.GetAccessRights(ref uri, headers);
+            AccessRights = Authenticator.GetAccessRights(ref uri, headers);
             if (!RESTarConfig.RequireApiKey)
-                accessRights = AccessRights.Root;
-            if (accessRights == null)
+                AccessRights = AccessRights.Root;
+            if (AccessRights == null)
             {
                 error = new NotAuthorized();
                 return false;
             }
-            AuthToken = Guid.NewGuid().ToString("N");
-            Authenticator.AuthTokens[AuthToken] = accessRights;
             return true;
-        }
-
-        /// <inheritdoc />
-        public void Dispose()
-        {
-            if (AuthToken == null || IsInWebSocket) return;
-            Authenticator.AuthTokens.TryRemove(AuthToken, out var _);
         }
     }
 }

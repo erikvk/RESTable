@@ -14,12 +14,12 @@ namespace RESTar.Auth
     internal static class Authenticator
     {
         internal static IDictionary<string, AccessRights> ApiKeys { get; private set; }
-        internal static ConcurrentDictionary<string, AccessRights> AuthTokens { get; private set; }
+        internal static IDictionary<AccessRights, byte> AccessRights { get; private set; }
 
         internal static void NewState()
         {
             ApiKeys = new Dictionary<string, AccessRights>();
-            AuthTokens = new ConcurrentDictionary<string, AccessRights>();
+            AccessRights = new ConcurrentDictionary<AccessRights, byte>();
         }
 
         internal static void RunResourceAuthentication<T>(this IRequest<T> request) where T : class
@@ -64,12 +64,12 @@ namespace RESTar.Auth
             return ApiKeys.TryGetValue(key.SHA256(), out var _rights) ? _rights : null;
         }
 
-        internal static bool MethodCheck(Method requestedMethod, IEntityResource resource, string authToken, out bool failedAuth)
+        internal static bool MethodCheck(Method requestedMethod, IEntityResource resource, Client client, out bool failedAuth)
         {
             failedAuth = false;
             if (!resource.AvailableMethods.Contains(requestedMethod)) return false;
-            var accessRights = AuthTokens[authToken];
-            var rights = accessRights?[resource];
+            var accessRights = client.AccessRights;
+            var rights = accessRights[resource];
             if (rights?.Contains(requestedMethod) == true)
                 return true;
             failedAuth = true;

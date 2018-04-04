@@ -7,6 +7,6 @@ namespace RESTar.Internal
     {
         protected override WebSocket CreateWebSocket() => throw new NotImplementedException();
         protected override bool IsWebSocketUpgrade { get; } = false;
-        internal InternalContext(Client client = null, bool autoDisposeClient = true) : base(client ?? Client.Internal, autoDisposeClient) { }
+        internal InternalContext(Client client = null) : base(client ?? Client.Internal) { }
     }
 }

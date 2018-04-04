@@ -43,7 +43,7 @@ namespace RESTar.Requests
                 try
                 {
                     if (Method < 0) return;
-                    if (!Authenticator.MethodCheck(Method, IResource as IEntityResource, Context.Client.AuthToken, out var failedAuth))
+                    if (!Authenticator.MethodCheck(Method, IResource as IEntityResource, Context.Client, out var failedAuth))
                         throw new MethodNotAllowed(Method, IResource, failedAuth);
                 }
                 catch

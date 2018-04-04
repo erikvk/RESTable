@@ -116,7 +116,6 @@ namespace RESTar.WebSockets
         /// </summary>
         public void Dispose()
         {
-            Client.Dispose();
             if (disposed) return;
             Status = WebSocketStatus.PendingClose;
             var terminalName = TerminalConnection?.Resource?.Name;

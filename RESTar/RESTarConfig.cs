@@ -172,9 +172,9 @@ namespace RESTar
                 var networkProviders = new INetworkProvider[] {new StarcounterNetworkProvider()};
                 NetworkController.AddNetworkBindings(networkProviders);
                 Initialized = true;
+                UpdateConfiguration();
                 DatabaseIndex.Init();
                 DbOutputFormat.Init();
-                UpdateConfiguration();
                 ResourceFactory.FinalCheck();
             }
             catch
@@ -298,7 +298,7 @@ namespace RESTar
                     }
 
                     recurseAllowAccess(apiKeyToken["AllowAccess"]);
-                    var accessRights = accessRightList.ToAccessRights(key);
+                    var accessRights = accessRightList.ToAccessRights();
                     foreach (var resource in Resources.Where(r => r.GETAvailableToAll))
                     {
                         if (!accessRights.TryGetValue(resource, out var methods))
@@ -309,13 +309,9 @@ namespace RESTar
                                 .OrderBy(i => i, MethodComparer.Instance)
                                 .ToArray();
                     }
-
-                    Authenticator.ApiKeys[key] = accessRights;
-                    Authenticator.AuthTokens
-                        .Where(pair => pair.Value.Key == key)
-                        .ToList()
-                        .ForEach(pair => Authenticator.AuthTokens[pair.Key] = accessRights);
-
+                    if (Authenticator.ApiKeys.TryGetValue(key, out var existing))
+                        accessRights.ForEach(existing.Put);
+                    else Authenticator.ApiKeys[key] = accessRights;
                     break;
                 case JArray apiKeys:
                     apiKeys.ForEach(ReadApiKeys);

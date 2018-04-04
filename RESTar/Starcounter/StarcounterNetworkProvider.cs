@@ -29,16 +29,14 @@ namespace RESTar.Starcounter
                     var client = GetClient(scRequest);
                     if (!client.TryAuthenticate(ref uri, headers, out var error))
                         return ToResponse(error);
-                    using (var context = new ScContext(client, scRequest, true))
+                    var context = new ScContext(client, scRequest);
+                    var request = context.CreateRequest(method, uri, scRequest.BodyBytes, headers);
+                    switch (request.Result.Serialize())
                     {
-                        var request = context.CreateRequest(method, uri, scRequest.BodyBytes, headers);
-                        switch (request.Result.Serialize())
-                        {
-                            case WebSocketUpgradeSuccessful _: return HandlerStatus.Handled;
-                            case var result:
-                                Admin.Console.Log(request, result);
-                                return ToResponse(result);
-                        }
+                        case WebSocketUpgradeSuccessful _: return HandlerStatus.Handled;
+                        case var result:
+                            Admin.Console.Log(request, result);
+                            return ToResponse(result);
                     }
                 }
             ));
@@ -49,11 +47,9 @@ namespace RESTar.Starcounter
                 uriTemplate: $"{rootUri}{{?}}",
                 handler: (ScRequest scRequest, string query) =>
                 {
-                    using (var context = new ScContext(GetClient(scRequest), scRequest, true))
-                    {
-                        var headers = new Headers(scRequest.HeadersDictionary);
-                        return ToResponse(context.CheckOrigin(query, headers));
-                    }
+                    var context = new ScContext(GetClient(scRequest), scRequest);
+                    var headers = new Headers(scRequest.HeadersDictionary);
+                    return ToResponse(context.CheckOrigin(query, headers));
                 }
             );
 
@@ -69,6 +65,7 @@ namespace RESTar.Starcounter
                     ws.Disconnect();
                 }
             });
+
             Handle.WebSocket(port, WsGroupName, (binary, ws) =>
             {
                 try
@@ -81,6 +78,7 @@ namespace RESTar.Starcounter
                     ws.Disconnect();
                 }
             });
+
             Handle.WebSocketDisconnect(port, WsGroupName, ws =>
             {
                 try

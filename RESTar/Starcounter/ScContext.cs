@@ -14,7 +14,7 @@ namespace RESTar.Starcounter
             return new ScWebSocket(StarcounterNetworkProvider.WsGroupName, Request, Client);
         }
 
-        public ScContext(Client client, global::Starcounter.Request request, bool autoDisposeClient) : base(client, autoDisposeClient)
+        public ScContext(Client client, global::Starcounter.Request request) : base(client)
         {
             Request = request;
             IsWebSocketUpgrade = request.WebSocketUpgrade;
