@@ -99,7 +99,9 @@ namespace RESTar.Results
         {
             ExcludeHeaders = false;
             ErrorCode = code;
-            Headers["RESTar-info"] = Message;
+            if (message == null)
+                Headers["RESTar-info"] = ie.Message;
+            else Headers["RESTar-info"] = message;
         }
 
         /// <inheritdoc />
@@ -114,7 +116,7 @@ namespace RESTar.Results
             {
                 case Error re: return re;
                 case FormatException _: return new UnsupportedContent(exception);
-                case JsonReaderException _: return new FailedJsonDeserialization(exception);
+                case JsonReaderException jre: return new FailedJsonDeserialization(jre);
                 case DbException _: return new StarcounterDatabaseError(exception);
                 case RuntimeBinderException _: return new BinderPermissions(exception);
                 case NotImplementedException _: return new FeatureNotImplemented("RESTar encountered a call to a non-implemented method");
@@ -129,6 +131,7 @@ namespace RESTar.Results
 
         /// <inheritdoc />
         public Stream Body => _body ?? (IsSerializing ? _body = new RESTarOutputStreamController() : null);
+
         private Stream GetStream() => Body;
 
         /// <inheritdoc />

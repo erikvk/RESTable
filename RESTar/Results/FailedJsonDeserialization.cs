@@ -1,4 +1,4 @@
-﻿using System;
+﻿using Newtonsoft.Json;
 using RESTar.Internal;
 
 namespace RESTar.Results
@@ -9,9 +9,7 @@ namespace RESTar.Results
     /// </summary>
     public class FailedJsonDeserialization : BadRequest
     {
-        internal FailedJsonDeserialization(Exception ie) : base(ErrorCodes.FailedJsonDeserialization, null, ie)
-        {
-            Headers["RESTar-info"] = "Error while deserializing JSON. Check JSON syntax.";
-        }
+        internal FailedJsonDeserialization(JsonReaderException ie) : base(ErrorCodes.FailedJsonDeserialization,
+            $"JSON syntax error: {ie.Message}", ie) { }
     }
 }

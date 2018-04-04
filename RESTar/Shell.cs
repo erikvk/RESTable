@@ -477,9 +477,16 @@ namespace RESTar
             else
             {
                 query = localQuery;
-                var availableResource = AvailableResource.Make(resource, WebSocket);
                 if (WriteOptions)
-                    WebSocket.SendJson(new {Resource = availableResource.Name, availableResource.Methods}, true);
+                {
+                    var availableResource = AvailableResource.Make(resource, WebSocket);
+                    WebSocket.SendJson(new
+                    {
+                        Resource = availableResource.Name,
+                        ResourceKind = availableResource.Kind,
+                        availableResource.Methods
+                    }, true);
+                }
                 if (WriteQueryAfterContent)
                     WebSocket.SendText("? " + Query);
             }
