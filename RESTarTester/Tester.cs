@@ -439,7 +439,8 @@ namespace RESTarTester
 
             #region Internal requests
 
-            var g = Context.Root.CreateRequest<MyDict>(POST);
+            var context = Context.Root;
+            var g = context.CreateRequest<MyDict>(POST);
             g.Selector = () =>
             {
                 dynamic d = new MyDict();
@@ -460,19 +461,19 @@ namespace RESTarTester
             Debug.Assert(result is InsertedEntities ie && ie.InsertedCount == 3);
 
             var r1Cond = new Condition<Resource1>(nameof(Resource1.Sbyte), GREATER_THAN, 1);
-            var r1 = Context.Root.CreateRequest<Resource1>(GET);
+            var r1 = context.CreateRequest<Resource1>(GET);
             r1.Conditions.Add(r1Cond);
 
-            var r2 = Context.Root.CreateRequest<Resource2>(GET);
-            var r3 = Context.Root.CreateRequest<Resource3>(GET);
-            var r4 = Context.Root.CreateRequest<Resource4>(GET);
-            var r6 = Context.Root.CreateRequest<Aggregator>(GET);
+            var r2 = context.CreateRequest<Resource2>(GET);
+            var r3 = context.CreateRequest<Resource3>(GET);
+            var r4 = context.CreateRequest<Resource4>(GET);
+            var r6 = context.CreateRequest<Aggregator>(GET);
             r6.SetBody(new
             {
                 A = "REPORT /resource",
                 B = new[] {"REPORT /resource", "REPORT /resource"}
             });
-            var r5 = Context.Root.CreateRequest<Resource1>(GET);
+            var r5 = context.CreateRequest<Resource1>(GET);
             var cond = new Condition<Resource1>("SByte", GREATER_THAN, 2);
             r5.Conditions.Add(cond);
             r5.Headers.Accept = RESTar.ContentType.Excel;

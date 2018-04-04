@@ -16,7 +16,7 @@ namespace RESTar
     public abstract class Context
     {
         internal string InitialTraceId { get; }
-        private const int MaximumStackDepth = 300;
+        private const int MaximumStackDepth = 500;
         private WebSocket webSocket;
         private int StackDepth;
         internal bool IsBottomIfStack => StackDepth < 1;
