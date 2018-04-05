@@ -186,7 +186,7 @@ namespace RESTar.Reflection.Dynamic
             {
                 case null: return 0;
                 case string str: return Encoding.UTF8.GetByteCount(str);
-                case Binary binary: return binary.ToArray().Length;
+                case global::Starcounter.Binary binary: return binary.ToArray().Length;
                 default: return Type.CountBytes();
             }
         }

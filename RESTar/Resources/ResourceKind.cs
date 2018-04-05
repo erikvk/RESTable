@@ -6,15 +6,18 @@
     public enum ResourceKind
     {
         /// <summary>
-        /// Holds a set of entities that can be manipulated using 
-        /// REST methods like GET and POST
+        /// Holds a set of entities that can be manipulated using REST methods like GET and POST
         /// </summary>
         EntityResource,
 
         /// <summary>
-        /// Small interactive applications that can be run over 
-        /// a WebSocket
+        /// Small interactive applications that can be run over a WebSocket
         /// </summary>
-        TerminalResource
+        TerminalResource,
+
+        /// <summary>
+        /// Holds raw binary data
+        /// </summary>
+        BucketResource
     }
 }

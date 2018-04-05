@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
+﻿using System.Collections.Generic;
 using RESTar.Requests;
 
 namespace RESTar
@@ -87,6 +85,6 @@ namespace RESTar
         /// Takes a result and generates an ISerializedResult entity from it, that can be returned 
         /// to the network component.
         /// </summary>
-        ISerializedResult Serialize(IResult result, Func<Stream> getOutputStream, IContentTypeProvider contentTypeProvider);
+        ISerializedResult Serialize(IResult result, IContentTypeProvider contentTypeProvider);
     }
 }

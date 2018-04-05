@@ -16,7 +16,7 @@ using RESTar.Serialization;
 
 namespace RESTar.Requests
 {
-    internal class Request<T> : IRequest<T>, IRequestInternal<T>, ITraceable where T : class
+    internal class Request<T> : IRequest, IRequest<T>, IRequestInternal<T>, ITraceable where T : class
     {
         public ITarget<T> Target { get; }
         public Type TargetType { get; }
@@ -184,9 +184,14 @@ namespace RESTar.Requests
                         if (IsWebSocketUpgrade)
                             return MakeWebSocketUpgrade(terminal);
                         return SwitchTerminal(terminal);
+
+                    case IBucketResource<T> bucket:
+                        var (stream, contentType ) = bucket.SelectBinary(this);
+                        return new Binary(this, stream, contentType);
+
                     case IEntityResource<T> _:
                         this.RunResourceAuthentication();
-                        var result = Operations<T>.GetEvaluator(Method)(this);
+                        var result = EntityOperations<T>.GetEvaluator(Method).Invoke(this);
                         result.Cookies = Cookies;
                         ResponseHeaders.ForEach(h => result.Headers[h.Key.StartsWith("X-") ? h.Key : "X-" + h.Key] = h.Value);
                         if ((RESTarConfig.AllowAllOrigins ? "*" : Headers.Origin) is string origin)
@@ -196,7 +201,8 @@ namespace RESTar.Requests
                         Context.WebSocket.SendResult(serialized);
                         Context.WebSocket.Disconnect();
                         return new WebSocketUpgradeSuccessful(this);
-                    default: throw new UnknownResource(IResource.Name);
+
+                    case var other: throw new UnknownResource(other.Name);
                 }
             }
             catch (Exception exs)

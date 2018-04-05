@@ -1,6 +1,4 @@
-using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text.RegularExpressions;
@@ -108,14 +106,19 @@ namespace RESTar.Internal
             return $"{WebUtility.UrlEncode(condition.Key)}{((Operator) condition.Operator).Common}{WebUtility.UrlEncode(condition.ValueLiteral)}";
         }
 
+        public class X : Content
+        {
+            public X(IRequest request) : base(request) { }
+            public string S;
+        }
+
         /// <inheritdoc />
-        public ISerializedResult Serialize(IResult result, Func<Stream> getOutputStream, IContentTypeProvider contentTypeProvider)
+        public ISerializedResult Serialize(IResult result, IContentTypeProvider contentTypeProvider)
         {
             switch (result)
             {
                 case Report report:
-                    report.Headers["RESTar-count"] = report.EntityCount.ToString();
-                    contentTypeProvider.SerializeEntity(report.ReportBody, getOutputStream(), report.Request, out var _);
+                    contentTypeProvider.SerializeEntity(report.ReportBody, report.Body, report.Request, out var _);
                     return report;
 
                 case Head head:
@@ -126,7 +129,7 @@ namespace RESTar.Internal
 
                     ISerializedResult SerializeEntities()
                     {
-                        contentTypeProvider.SerializeCollection(entities, getOutputStream(), entities.Request, out var entityCount);
+                        contentTypeProvider.SerializeCollection(entities, entities.Body, entities.Request, out var entityCount);
                         if (entityCount == 0) return new NoContent(entities.Request);
                         entities.Headers["RESTar-count"] = entityCount.ToString();
                         entities.EntityCount = entityCount;

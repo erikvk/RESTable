@@ -22,10 +22,10 @@ namespace RESTar
         private const string description = "The RESTar WebSocket shell lets the client navigate around the resources of the " +
                                            "RESTar application, perform CRUD operations and enter terminal resources.";
 
-        private string query = "";
-        private string previousQuery = "";
+        private string query;
+        private string previousQuery;
         private const long MaxStreamBufferSize = 16_000_000;
-        private long _streamBufferSize = 16_000_000;
+        private long _streamBufferSize;
         private Func<int, IUriComponents> GetNextPageLink;
         private Action OnConfirm;
         private IEntities PreviousResultMetadata;
@@ -38,7 +38,6 @@ namespace RESTar
         private bool queryChangedPreEval;
 
         internal static ITerminalResource<Shell> TerminalResource { get; set; }
-
 
         /// <summary>
         /// The query to perform in the shell
@@ -67,39 +66,39 @@ namespace RESTar
         /// </summary>
         public bool Silent
         {
-            get => !WriteStatusBeforeContent && !WriteTimeElapsed && !WriteQueryAfterContent && !WriteInfoTexts && !WriteOptions;
-            set => WriteStatusBeforeContent = WriteTimeElapsed = WriteQueryAfterContent = WriteInfoTexts = WriteOptions = !value;
+            get => !WriteHeaders && !WriteTimeElapsed && !WriteQueryAfterContent && !WriteInfoTexts && !WriteOptions;
+            set => WriteHeaders = WriteTimeElapsed = WriteQueryAfterContent = WriteInfoTexts = WriteOptions = !value;
         }
 
         /// <summary>
         /// Should unsafe commands be allowed?
         /// </summary>
-        public bool Unsafe { get; set; } = false;
+        public bool Unsafe { get; set; }
 
         /// <summary>
-        /// Should the shell output the result status before included content?
+        /// Should the shell write result headers?
         /// </summary>
-        public bool WriteStatusBeforeContent { get; set; } = true;
+        public bool WriteHeaders { get; set; }
 
         /// <summary>
         /// Should the shell output the time elapsed in evaluating the command?
         /// </summary>
-        public bool WriteTimeElapsed { get; set; } = true;
+        public bool WriteTimeElapsed { get; set; }
 
         /// <summary>
         /// Should the shell output the current query after writing content?
         /// </summary>
-        public bool WriteQueryAfterContent { get; set; } = true;
+        public bool WriteQueryAfterContent { get; set; }
 
         /// <summary>
         /// Should the shell output info texts?
         /// </summary>
-        public bool WriteInfoTexts { get; set; } = true;
+        public bool WriteInfoTexts { get; set; }
 
         /// <summary>
         /// Should the shell write options after a succesful navigation?
         /// </summary>
-        public bool WriteOptions { get; set; } = true;
+        public bool WriteOptions { get; set; }
 
         /// <summary>
         /// The size of stream messages in bytes
@@ -118,6 +117,22 @@ namespace RESTar
         }
 
         /// <inheritdoc />
+        public Shell()
+        {
+            Unsafe = false;
+            query = "";
+            previousQuery = "";
+            _streamBufferSize = 16_000_000;
+            WriteQueryAfterContent = true;
+            WriteInfoTexts = true;
+            WriteOptions = true;
+            SupportsTextInput = true;
+            SupportsBinaryInput = true;
+            WriteHeaders = false;
+            WriteTimeElapsed = true;
+        }
+
+        /// <inheritdoc />
         public IWebSocket WebSocket { private get; set; }
 
         /// <inheritdoc />
@@ -130,10 +145,10 @@ namespace RESTar
         }
 
         /// <inheritdoc />
-        public bool SupportsTextInput { get; } = true;
+        public bool SupportsTextInput { get; }
 
         /// <inheritdoc />
-        public bool SupportsBinaryInput { get; } = true;
+        public bool SupportsBinaryInput { get; }
 
         /// <inheritdoc />
         public void Open()
@@ -438,7 +453,7 @@ namespace RESTar
             previousQuery = "";
             CurrentStreamManifest?.Dispose();
             WriteInfoTexts = true;
-            WriteStatusBeforeContent = true;
+            WriteHeaders = false;
             WriteTimeElapsed = true;
             WriteQueryAfterContent = true;
         }
@@ -576,7 +591,7 @@ namespace RESTar
         private void SendResult(ISerializedResult result, TimeSpan? elapsed = null)
         {
             if (result is SwitchedTerminal) return;
-            WebSocket.SendResult(result, WriteStatusBeforeContent, elapsed);
+            WebSocket.SendResult(result, elapsed, WriteHeaders);
             if (!WriteQueryAfterContent) return;
             switch (result)
             {

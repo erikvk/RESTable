@@ -116,7 +116,7 @@ namespace RESTar.Admin
                     : null,
                 IResource = iresource,
                 Provider = entityResource?.Provider ?? "Terminal",
-                Kind = entityResource != null ? ResourceKind.EntityResource : ResourceKind.TerminalResource,
+                Kind = iresource.ResourceKind,
                 InnerResources = ((IResourceInternal) iresource).InnerResources?.Select(Make).ToArray()
             };
         }

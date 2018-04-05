@@ -48,10 +48,13 @@ namespace RESTar
         /// <summary>
         /// Sends a result over a WebSocket.
         /// </summary>
-        /// <param name="result">The result to send</param>
-        /// <param name="includeStatusWithContent">Should the result status code and description be included before the result content?</param>
-        /// <param name="timeElapsed">The elapsed time to include, or null if no time should be included</param>
-        void SendResult(ISerializedResult result, bool includeStatusWithContent = true, TimeSpan? timeElapsed = null);
+        /// <param name="result">The result to send. The body of the result will be sent as binary over the websocket.
+        /// Additional inforation can be included in separate text messages (see other parameters).</param>
+        /// <param name="timeElapsed">The elapsed time to include, or null if no time should be included. If not null, timeElapsed 
+        /// will be included in the status text message (see writeStatus)</param>
+        /// <param name="writeHeaders">Should headers be included as a text message? If true, headers are printed after the status
+        /// (if any) and before the content is sent.</param>
+        void SendResult(ISerializedResult result, TimeSpan? timeElapsed = null, bool writeHeaders = false);
 
         /// <summary>
         /// Sends an exception over the WebSocket.

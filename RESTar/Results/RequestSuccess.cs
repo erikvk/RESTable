@@ -25,38 +25,41 @@ namespace RESTar.Results
         private bool IsSerializing;
 
         /// <inheritdoc />
-        public override Stream Body => _body ?? (IsSerializing ? _body = new RESTarOutputStreamController() : null);
-
-        private Stream GetStream() => Body;
+        public override Stream Body
+        {
+            get => _body ?? (IsSerializing ? _body = new RESTarOutputStreamController() : null);
+            set => _body = value;
+        }
 
         /// <inheritdoc />
         public override ISerializedResult Serialize(ContentType? contentType = null)
         {
             IsSerializing = true;
             var stopwatch = Stopwatch.StartNew();
+            ISerializedResult result = this;
             try
             {
-                var protocolProvider = RequestInternal.CachedProtocolProvider;
+                var protocolProvider = RequestInternal.CachedProtocolProvider.ProtocolProvider;
                 var acceptProvider = ContentTypeController.ResolveOutputContentTypeProvider(RequestInternal, contentType);
-                var serialized = protocolProvider.ProtocolProvider.Serialize(this, GetStream, acceptProvider);
-                if (serialized is RequestSuccess rr && rr._body is RESTarOutputStreamController rsc)
-                    _body = rsc.Stream;
-                if (_body?.CanRead == true)
+                result = protocolProvider.Serialize(this, acceptProvider);
+                if (result.Body is RESTarOutputStreamController rsc)
+                    result.Body = rsc.Stream;
+                if (result.Body?.CanRead == true)
                 {
-                    if (_body.Length == 0)
+                    if (result.Body.Length == 0)
                     {
-                        _body.Dispose();
-                        _body = null;
+                        result.Body.Dispose();
+                        result.Body = null;
                     }
                     else if (Headers.ContentType == null)
                         Headers.ContentType = acceptProvider.ContentType;
                 }
-                else _body = null;
-                return serialized;
+                else result.Body = null;
+                return result;
             }
             catch (Exception exception)
             {
-                _body?.Dispose();
+                result.Body?.Dispose();
                 return Error.GetResult(exception, RequestInternal).Serialize();
             }
             finally

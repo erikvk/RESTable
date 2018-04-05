@@ -47,6 +47,7 @@ namespace RESTar.Resources
         public IReadOnlyList<IResource> InnerResources { get; set; }
         public ResourceProfile ResourceProfile => Profile?.Invoke(this);
         public bool ClaimedBy<T1>() where T1 : ResourceProvider => Provider == typeof(T1).GetProviderId();
+        public ResourceKind ResourceKind { get; }
 
         string IResourceInternal.Description
         {
@@ -120,6 +121,7 @@ namespace RESTar.Resources
             DynamicConditionsAllowed = typeof(T).IsDDictionary() || attribute.AllowDynamicConditions;
             DeclaredPropertiesFlagged = typeof(T).IsDDictionary() || attribute.FlagStaticMembers;
             GETAvailableToAll = attribute.GETAvailableToAll;
+            ResourceKind = ResourceKind.EntityResource;
             ConditionBindingRule = DynamicConditionsAllowed ? TermBindingRules.DeclaredWithDynamicFallback : TermBindingRules.OnlyDeclared;
             if (DeclaredPropertiesFlagged)
                 OutputBindingRule = TermBindingRules.DeclaredWithDynamicFallback;
@@ -202,9 +204,9 @@ namespace RESTar.Resources
         }
 
         public override bool Equals(object obj) => obj is EntityResource<T> resource && resource.Name == Name;
-        public bool Equals(IEntityResource x, IEntityResource y) => x?.Name == y?.Name;
-        public int GetHashCode(IEntityResource obj) => obj.Name.GetHashCode();
-        public int CompareTo(IEntityResource other) => string.Compare(Name, other.Name, StringComparison.Ordinal);
+        public bool Equals(IResource x, IResource y) => x?.Name == y?.Name;
+        public int GetHashCode(IResource obj) => obj.Name.GetHashCode();
+        public int CompareTo(IResource other) => string.Compare(Name, other.Name, StringComparison.Ordinal);
         public override int GetHashCode() => Name.GetHashCode();
     }
 }

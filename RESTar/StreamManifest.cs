@@ -1,4 +1,5 @@
 ﻿using System;
+using Newtonsoft.Json;
 using RESTar.Results;
 
 #pragma warning disable 414
@@ -32,8 +33,8 @@ namespace RESTar
         public int MessagesStreamed;
 
         public readonly string ContentType;
-        public readonly string EntityType;
-        public readonly ulong EntityCount;
+        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)] public readonly string EntityType;
+        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)] public readonly ulong EntityCount;
         public StreamManifestMessage[] Messages;
         public readonly StreamCommand[] Commands = _Commands;
 
@@ -70,10 +71,13 @@ namespace RESTar
         {
             Content = content;
             ContentType = content.Headers.ContentType?.ToString();
-            EntityType = content.EntityType.FullName;
-            EntityCount = content.EntityCount;
             TotalLength = content.Body.Length;
             BytesRemaining = content.Body.Length;
+            if (content is IEntities entities)
+            {
+                EntityType = entities.EntityType.FullName;
+                EntityCount = entities.EntityCount;
+            }
         }
 
         public void Dispose() => Content.Body.Dispose();

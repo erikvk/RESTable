@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 
-namespace RESTar.Operations {
+namespace RESTar.Operations
+{
     /// <inheritdoc />
     /// <summary>
     /// Interface used to register a Selector for a given resource type

@@ -236,7 +236,7 @@ namespace RESTar.WebSockets
         }
 
         /// <inheritdoc />
-        public void SendResult(ISerializedResult result, bool includeStatusWithContent = true, TimeSpan? timeElapsed = null)
+        public void SendResult(ISerializedResult result, TimeSpan? timeElapsed = null, bool writeHeaders = false)
         {
             switch (Status)
             {
@@ -261,13 +261,11 @@ namespace RESTar.WebSockets
                 _SendText($"{result.StatusCode.ToCode()}: {result.StatusDescription}{timeInfo}{tail}");
             }
 
+            sendStatus();
+            if (writeHeaders)
+                SendJson(result.Headers, true);
             if (result.Body != null && (!result.Body.CanSeek || result.Body.Length > 0))
-            {
-                if (includeStatusWithContent)
-                    sendStatus();
                 SendBinary(result.Body);
-            }
-            else sendStatus();
         }
 
         /// <inheritdoc />

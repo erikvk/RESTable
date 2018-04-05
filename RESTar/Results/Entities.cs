@@ -22,7 +22,13 @@ namespace RESTar.Results
         /// </summary>
         private IEnumerable<T> Content { get; }
 
-        public override Type EntityType => typeof(T);
+        public Type EntityType => typeof(T);
+
+        /// <inheritdoc />
+        /// <summary>
+        /// The number of entities contained in this result
+        /// </summary>
+        public ulong EntityCount { get; set; }
 
         /// <inheritdoc />
         public bool IsPaged => Content != null && EntityCount > 0 && (long) EntityCount == Request.MetaConditions.Limit;

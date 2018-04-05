@@ -40,7 +40,7 @@ namespace RESTar.Results
         }
 
         /// <inheritdoc />
-        public virtual Stream Body { get; }
+        public virtual Stream Body { get; set; }
 
         /// <inheritdoc />
         public TimeSpan TimeElapsed { get; protected set; }

@@ -1,5 +1,4 @@
-﻿using System;
-
+﻿
 namespace RESTar.Results
 {
     /// <inheritdoc />
@@ -8,16 +7,6 @@ namespace RESTar.Results
     /// </summary>
     public abstract class Content : OK
     {
-        /// <summary>
-        /// The number of entities contained in this result
-        /// </summary>
-        public ulong EntityCount { get; set; }
-
-        /// <summary>
-        /// The type of entities contained in this result
-        /// </summary>
-        public abstract Type EntityType { get; }
-
         /// <inheritdoc />
         protected Content(IRequest request) : base(request) { }
     }

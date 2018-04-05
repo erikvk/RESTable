@@ -1,6 +1,7 @@
 ﻿using RESTar.Admin;
 
-namespace RESTar.Operations {
+namespace RESTar.Operations
+{
     /// <inheritdoc />
     /// <summary>
     /// Interface used to register a Profiler for a given resource type

@@ -70,6 +70,6 @@ namespace RESTar
         /// <summary>
         /// The serialized body contained in the result
         /// </summary>
-        Stream Body { get; }
+        Stream Body { get; set; }
     }
 }

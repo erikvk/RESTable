@@ -9,7 +9,7 @@ namespace RESTar.Resources
     /// <summary>
     /// The common non-generic interface for all resources used by RESTar
     /// </summary>
-    public interface IResource : ITarget, IEqualityComparer<IEntityResource>, IComparable<IEntityResource>
+    public interface IResource : ITarget, IEqualityComparer<IResource>, IComparable<IResource>
     {
         /// <summary>
         /// The available methods for this resource
@@ -51,6 +51,11 @@ namespace RESTar.Resources
         /// members of this resource type. The resource type must implement this interface.
         /// </summary>
         Type InterfaceType { get; }
+
+        /// <summary>
+        /// The kind of resource, for example entity resource
+        /// </summary>
+        ResourceKind ResourceKind { get; }
     }
 
     /// <inheritdoc cref="IResource" />

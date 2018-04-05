@@ -75,7 +75,7 @@ namespace RESTar
             Methods = trace.Context.Client.AccessRights.SafeGet(iresource)?
                           .Intersect(iresource.AvailableMethods)
                           .ToArray() ?? new Method[0],
-            Kind = iresource is IEntityResource ? ResourceKind.EntityResource : ResourceKind.TerminalResource,
+            Kind = iresource.ResourceKind,
             Views = iresource is IEntityResource er
                 ? er.Views?.Select(v => new ViewInfo(v.Name, v.Description ?? "No description")).ToArray()
                   ?? new ViewInfo[0]

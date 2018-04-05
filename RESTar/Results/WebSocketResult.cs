@@ -105,7 +105,11 @@ namespace RESTar.Results
         public IEntities<T> ToEntities<T>() where T : class => Result.ToEntities<T>();
 
         /// <inheritdoc />
-        public Stream Body => Result.Body;
+        public Stream Body
+        {
+            get => Result.Body;
+            set => Result.Body = value;
+        }
 
         /// <inheritdoc />
         public TimeSpan TimeElapsed => Result.TimeElapsed;

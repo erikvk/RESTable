@@ -10,7 +10,7 @@ using RESTar.Serialization;
 
 namespace RESTar.Operations
 {
-    internal static class Operations<T> where T : class
+    internal static class EntityOperations<T> where T : class
     {
         #region Select
 

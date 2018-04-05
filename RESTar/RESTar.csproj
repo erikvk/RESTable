@@ -140,6 +140,9 @@
     <Compile Include="Requests\OriginType.cs" />
     <Compile Include="Requests\Request.cs" />
     <Compile Include="Resource.cs" />
+    <Compile Include="Resources\BucketResource.cs" />
+    <Compile Include="Resources\BucketResourceProvider.cs" />
+    <Compile Include="Results\Binary.cs" />
     <Compile Include="Results\Untraceable - Copy.cs" />
     <Compile Include="INetworkProvider.cs" />
     <Compile Include="Results\ExternalDestinationResult.cs" />
@@ -272,7 +275,7 @@
     <Compile Include="Admin\Resource.cs" />
     <Compile Include="Admin\ResourceAlias.cs" />
     <Compile Include="RESTarConfig.cs" />
-    <Compile Include="Operations\Operations.cs" />
+    <Compile Include="Operations\EntityOperations.cs" />
     <Compile Include="Results\AbortedReport.cs" />
     <Compile Include="Results\AbortedDelete.cs" />
     <Compile Include="Results\AbortedInsert.cs" />

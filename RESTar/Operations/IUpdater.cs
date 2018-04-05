@@ -1,4 +1,5 @@
-﻿namespace RESTar.Operations {
+﻿namespace RESTar.Operations
+{
     /// <inheritdoc />
     /// <summary>
     /// Interface used to register an Updater for a given resource type

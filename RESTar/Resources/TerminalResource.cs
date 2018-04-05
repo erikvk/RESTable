@@ -20,9 +20,9 @@ namespace RESTar.Resources
         public bool IsGlobal { get; }
         public bool IsInnerResource { get; }
         public string ParentResourceName { get; }
-        public bool Equals(IEntityResource x, IEntityResource y) => x?.Name == y?.Name;
-        public int GetHashCode(IEntityResource obj) => obj.Name.GetHashCode();
-        public int CompareTo(IEntityResource other) => string.Compare(Name, other.Name, StringComparison.Ordinal);
+        public bool Equals(IResource x, IResource y) => x?.Name == y?.Name;
+        public int GetHashCode(IResource obj) => obj.Name.GetHashCode();
+        public int CompareTo(IResource other) => string.Compare(Name, other.Name, StringComparison.Ordinal);
         public TermBindingRules ConditionBindingRule { get; }
         public string Description { get; set; }
         public bool GETAvailableToAll { get; }
@@ -35,6 +35,7 @@ namespace RESTar.Resources
         private Constructor<ITerminal> Constructor { get; }
         public void SetAlias(string alias) => Alias = alias;
         public Type InterfaceType { get; }
+        public ResourceKind ResourceKind { get; }
 
         internal ITerminal MakeTerminal(IEnumerable<Condition<T>> assignments = null)
         {
@@ -63,6 +64,7 @@ namespace RESTar.Resources
             IsGlobal = true;
             var attribute = typeof(T).GetCustomAttribute<RESTarAttribute>();
             InterfaceType = attribute?.Interface;
+            ResourceKind = ResourceKind.TerminalResource;
             ConditionBindingRule = typeof(T).Implements(typeof(IDynamicTerminal))
                 ? TermBindingRules.DeclaredWithDynamicFallback
                 : TermBindingRules.OnlyDeclared;
