@@ -1,14 +1,14 @@
 ﻿using System;
 using System.Linq;
 using RESTar.Admin;
-using RESTar.Reflection.Dynamic;
 using RESTar.Linq;
 using RESTar.Operations;
+using RESTar.Reflection.Dynamic;
 using RESTar.Resources;
 using Starcounter;
 using Starcounter.Metadata;
 
-namespace RESTar.Starcounter
+namespace RESTar
 {
     /// <summary>
     /// The default operations for static Starcounter database resources

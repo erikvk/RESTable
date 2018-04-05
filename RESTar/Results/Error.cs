@@ -10,7 +10,7 @@ using Newtonsoft.Json;
 using RESTar.Internal;
 using RESTar.Logging;
 using RESTar.Requests;
-using RESTar.Starcounter;
+using RESTar.Sc;
 using Starcounter;
 
 namespace RESTar.Results
@@ -117,7 +117,7 @@ namespace RESTar.Results
                 case Error re: return re;
                 case FormatException _: return new UnsupportedContent(exception);
                 case JsonReaderException jre: return new FailedJsonDeserialization(jre);
-                case DbException _: return new StarcounterDatabaseError(exception);
+                case DbException _: return new ScDatabaseError(exception);
                 case RuntimeBinderException _: return new BinderPermissions(exception);
                 case NotImplementedException _: return new FeatureNotImplemented("RESTar encountered a call to a non-implemented method");
                 default: return new Unknown(exception);

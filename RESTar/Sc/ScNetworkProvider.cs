@@ -9,11 +9,12 @@ using RESTar.Requests;
 using RESTar.Results;
 using RESTar.WebSockets;
 using Starcounter;
+using Console = RESTar.Admin.Console;
 using ScRequest = Starcounter.Request;
 
-namespace RESTar.Starcounter
+namespace RESTar.Sc
 {
-    internal class StarcounterNetworkProvider : INetworkProvider
+    internal class ScNetworkProvider : INetworkProvider
     {
         internal const string WsGroupName = "restar_ws";
 
@@ -35,7 +36,7 @@ namespace RESTar.Starcounter
                     {
                         case WebSocketUpgradeSuccessful _: return HandlerStatus.Handled;
                         case var result:
-                            Admin.Console.Log(request, result);
+                            Console.Log(request, result);
                             return ToResponse(result);
                     }
                 }

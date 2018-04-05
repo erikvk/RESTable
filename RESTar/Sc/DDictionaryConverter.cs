@@ -3,7 +3,7 @@ using Dynamit;
 using Newtonsoft.Json;
 using Starcounter;
 
-namespace RESTar.Starcounter
+namespace RESTar.Sc
 {
     internal class DDictionaryConverter : JsonConverter
     {

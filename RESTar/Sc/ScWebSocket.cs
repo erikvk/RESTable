@@ -2,13 +2,13 @@
 using Starcounter;
 using WebSocket = RESTar.WebSockets.WebSocket;
 
-namespace RESTar.Starcounter
+namespace RESTar.Sc
 {
     internal class ScWebSocket : WebSocket
     {
         private readonly Request UpgradeRequest;
         private readonly string GroupName;
-        private global::Starcounter.WebSocket WebSocket;
+        private Starcounter.WebSocket WebSocket;
 
         protected override void Send(string text) => WebSocket.Send(text);
 

@@ -16,7 +16,7 @@ using RESTar.Internal;
 using RESTar.Linq;
 using RESTar.Resources;
 using RESTar.Results;
-using RESTar.Starcounter;
+using RESTar.Sc;
 using Starcounter;
 using static RESTar.Method;
 using IResource = RESTar.Resources.IResource;
@@ -169,7 +169,7 @@ namespace RESTar
                 RequireApiKey = requireApiKey;
                 AllowAllOrigins = allowAllOrigins;
                 ConfigFilePath = configFilePath;
-                var networkProviders = new INetworkProvider[] {new StarcounterNetworkProvider()};
+                var networkProviders = new INetworkProvider[] {new ScNetworkProvider()};
                 NetworkController.AddNetworkBindings(networkProviders);
                 Initialized = true;
                 UpdateConfiguration();

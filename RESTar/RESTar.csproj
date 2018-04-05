@@ -150,7 +150,7 @@
     <Compile Include="Results\ImATeapot.cs" />
     <Compile Include="Results\InvalidShellStateForBinaryInput.cs" />
     <Compile Include="Results\Success.cs" />
-    <Compile Include="Starcounter\ScContext.cs" />
+    <Compile Include="Sc\ScContext.cs" />
     <Compile Include="StreamManifest.cs" />
     <Compile Include="TerminalResource.cs" />
     <Compile Include="WebSockets\WebSocket.cs" />
@@ -174,7 +174,7 @@
     <Compile Include="Results\Content.cs" />
     <Compile Include="Results\Head.cs" />
     <Compile Include="Results\WebSocketResult.cs" />
-    <Compile Include="Starcounter\DDictionaryConverter.cs" />
+    <Compile Include="Sc\DDictionaryConverter.cs" />
     <Compile Include="Serialization\DefaultValueProvider.cs" />
     <Compile Include="Serialization\NativeProtocol\HeadersConverter.cs" />
     <Compile Include="TerminalSet.cs" />
@@ -201,11 +201,11 @@
     <Compile Include="RegEx.cs" />
     <Compile Include="Internal\ProtocolController.cs" />
     <Compile Include="Requests\Headers.cs" />
-    <Compile Include="Starcounter\ScWebSocket.cs" />
+    <Compile Include="Sc\ScWebSocket.cs" />
     <Compile Include="Requests\Uri.cs" />
     <Compile Include="Requests\UriCondition.cs" />
     <Compile Include="ResourceProviderAttribute.cs" />
-    <Compile Include="Starcounter\StarcounterIndexer.cs" />
+    <Compile Include="Sc\ScIndexer.cs" />
     <Compile Include="AvailableResource.cs" />
     <Compile Include="Auth\AccessRight.cs" />
     <Compile Include="Auth\AccessRights.cs" />
@@ -223,7 +223,7 @@
     <Compile Include="Linq\Conditions.cs" />
     <Compile Include="Linq\Enumerable.cs" />
     <Compile Include="Processors\IProcessor.cs" />
-    <Compile Include="Starcounter\Transact.cs" />
+    <Compile Include="Sc\Transact.cs" />
     <Compile Include="Requests\RequestParameters.cs" />
     <Compile Include="Requests\DataConfig.cs" />
     <Compile Include="Internal\ErrorCodes.cs" />
@@ -235,8 +235,8 @@
     <Compile Include="Resources\IResourceWrapper.cs" />
     <Compile Include="Resources\ResourceFactory.cs" />
     <Compile Include="Resources\ResourceProvider.cs" />
-    <Compile Include="Starcounter\DDictResourceProvider.cs" />
-    <Compile Include="Starcounter\StarcounterResourceProvider.cs" />
+    <Compile Include="Sc\DDictResourceProvider.cs" />
+    <Compile Include="Sc\ScResourceProvider.cs" />
     <Compile Include="Resources\VirtualResourceProvider.cs" />
     <Compile Include="ResourceWrapper.cs" />
     <Compile Include="Resources\ResourceKind.cs" />
@@ -251,7 +251,7 @@
     <Compile Include="Filters\IFilter.cs" />
     <Compile Include="Operations\IOperationsInterface.cs" />
     <Compile Include="Reflection\Dynamic\DynamicProperty.cs" />
-    <Compile Include="Starcounter\StarcounterNetworkProvider.cs" />
+    <Compile Include="Sc\ScNetworkProvider.cs" />
     <Compile Include="Internal\HttpRequest.cs" />
     <Compile Include="IValidatable.cs" />
     <Compile Include="Filters\Limit.cs" />
@@ -259,7 +259,7 @@
     <Compile Include="ContentType.cs" />
     <Compile Include="Internal\DynamicResource.cs" />
     <Compile Include="Resources\DynamitControl.cs" />
-    <Compile Include="Starcounter\DDictionaryOperations.cs" />
+    <Compile Include="DDictionaryOperations.cs" />
     <Compile Include="DynamicTables.cs" />
     <Compile Include="Resources\IEntityResource.cs" />
     <Compile Include="Reflection\Dynamic\Property.cs" />
@@ -289,7 +289,7 @@
     <Compile Include="Results\InvalidConditionValueType.cs" />
     <Compile Include="Results\BadRequest.cs" />
     <Compile Include="Results\FailedJsonDeserialization.cs" />
-    <Compile Include="Starcounter\StarcounterDatabaseError.cs" />
+    <Compile Include="Sc\ScDatabaseError.cs" />
     <Compile Include="Results\FailedResourceAuthentication.cs" />
     <Compile Include="Results\MethodUnavailable.cs" />
     <Compile Include="Results\MethodNotAllowed.cs" />
@@ -355,7 +355,7 @@
     <Compile Include="Serialization\NativeProtocol\RESTarJsonWriter.cs" />
     <Compile Include="Serialization\Serializers.cs" />
     <Compile Include="SetOperations.cs" />
-    <Compile Include="Starcounter\StarcounterOperations.cs" />
+    <Compile Include="StarcounterOperations.cs" />
     <Compile Include="Processors\Select.cs" />
     <Compile Include="Admin\Settings.cs" />
     <Compile Include="Reflection\Dynamic\DeclaredProperty.cs" />

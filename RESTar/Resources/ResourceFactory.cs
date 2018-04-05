@@ -11,7 +11,7 @@ using RESTar.Internal;
 using RESTar.Reflection.IL;
 using RESTar.Operations;
 using RESTar.Results;
-using RESTar.Starcounter;
+using RESTar.Sc;
 using Starcounter;
 using static System.Reflection.BindingFlags;
 
@@ -20,7 +20,7 @@ namespace RESTar.Resources
     internal static class ResourceFactory
     {
         internal static DDictResourceProvider DDictProvider { get; }
-        internal static StarcounterResourceProvider ScProvider { get; }
+        internal static ScResourceProvider ScProvider { get; }
         internal static VirtualResourceProvider VrProvider { get; }
         internal static DynamicResourceProvider DynProvider { get; }
         internal static TerminalResourceProvider TerminalProvider { get; }
@@ -29,7 +29,7 @@ namespace RESTar.Resources
 
         static ResourceFactory()
         {
-            ScProvider = new StarcounterResourceProvider();
+            ScProvider = new ScResourceProvider();
             DDictProvider = new DDictResourceProvider {DatabaseIndexer = ScProvider.DatabaseIndexer};
             VrProvider = new VirtualResourceProvider();
             ResourceProviders = new List<ResourceProvider> {DDictProvider, ScProvider, VrProvider};

@@ -1,16 +1,16 @@
 ﻿using System;
 using RESTar.Internal;
 
-namespace RESTar.Starcounter
+namespace RESTar.Sc
 {
     /// <inheritdoc />
     /// <summary>
     /// Thrown when RESTar encounters an error with the Starcounter database
     /// search string.
     /// </summary>
-    public class StarcounterDatabaseError : Results.Internal
+    public class ScDatabaseError : Results.Internal
     {
-        internal StarcounterDatabaseError(Exception e) : base(ErrorCodes.DatabaseError, e.Message, e)
+        internal ScDatabaseError(Exception e) : base(ErrorCodes.DatabaseError, e.Message, e)
         {
             Headers["RESTar-info"] = "The Starcounter database encountered an error: " + (e.InnerException?.Message ?? e.Message);
         }

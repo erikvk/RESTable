@@ -146,7 +146,7 @@ namespace RESTar
             {
                 case null: return 0;
                 case string str: return Encoding.UTF8.GetByteCount(str);
-                case global::Starcounter.Binary binary: return binary.ToArray().Length;
+                case Starcounter.Binary binary: return binary.ToArray().Length;
                 default: return CountBytes(property.PropertyType);
             }
         }

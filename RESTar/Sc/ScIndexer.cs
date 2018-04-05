@@ -6,9 +6,9 @@ using RESTar.Linq;
 using Starcounter;
 using Starcounter.Metadata;
 
-namespace RESTar.Starcounter
+namespace RESTar.Sc
 {
-    internal class StarcounterIndexer : IDatabaseIndexer
+    internal class ScIndexer : IDatabaseIndexer
     {
         private const string AllIndexes = "SELECT t FROM Starcounter.Metadata.\"Index\" t";
 

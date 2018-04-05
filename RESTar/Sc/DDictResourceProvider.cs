@@ -3,7 +3,7 @@ using Dynamit;
 using RESTar.Operations;
 using RESTar.Resources;
 
-namespace RESTar.Starcounter
+namespace RESTar.Sc
 {
     internal class DDictResourceProvider : ResourceProvider<DDictionary>
     {

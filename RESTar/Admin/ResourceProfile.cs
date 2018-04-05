@@ -5,7 +5,6 @@ using Dynamit;
 using RESTar.Linq;
 using RESTar.Operations;
 using RESTar.Resources;
-using RESTar.Starcounter;
 using Starcounter;
 
 namespace RESTar.Admin

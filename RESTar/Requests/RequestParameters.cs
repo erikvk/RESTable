@@ -116,8 +116,6 @@ namespace RESTar.Requests
             TraceId = context.InitialTraceId;
             Context = context;
             Method = method;
-            if (Method < Method.GET || Method > Method.HEAD)
-                Method = Method.GET;
             Headers = headers ?? new Headers();
             IsWebSocketUpgrade = Context.WebSocket?.Status == WebSocketStatus.Waiting;
             Uri = URI.ParseInternal(uri, PercentCharsEscaped(headers), context, out var cachedProtocolProvider);

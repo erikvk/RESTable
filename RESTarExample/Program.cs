@@ -10,7 +10,6 @@ using RESTar;
 using RESTar.Linq;
 using RESTar.Operations;
 using RESTar.ResourceTemplates;
-using RESTar.Starcounter;
 using Starcounter;
 
 #pragma warning disable 1591
@@ -33,7 +32,7 @@ namespace RESTarExample
         }
     }
 
-    [RESTar(Method.GET)]
+    [RESTar]
     public class MyBucket : IBucket<MyBucket>
     {
         public (Stream stream, ContentType contentType) Select(IRequest<MyBucket> request)

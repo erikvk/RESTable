@@ -3,12 +3,12 @@ using RESTar.Operations;
 using RESTar.Resources;
 using Starcounter;
 
-namespace RESTar.Starcounter
+namespace RESTar.Sc
 {
-    internal class StarcounterResourceProvider : ResourceProvider<object>
+    internal class ScResourceProvider : ResourceProvider<object>
     {
         public override Type AttributeType => null;
-        internal StarcounterResourceProvider() => DatabaseIndexer = new StarcounterIndexer();
+        internal ScResourceProvider() => DatabaseIndexer = new ScIndexer();
         internal override void Validate() { }
 
         internal override bool Include(Type type)

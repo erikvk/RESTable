@@ -8,7 +8,7 @@ using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Serialization;
 using RESTar.Reflection.Dynamic;
 using RESTar.Linq;
-using RESTar.Starcounter;
+using RESTar.Sc;
 
 namespace RESTar.Serialization.NativeProtocol
 {

@@ -8,7 +8,7 @@ using RESTar.Requests;
 using RESTar.Resources;
 using RESTar.Results;
 using RESTar.Serialization;
-using RESTar.Starcounter;
+using RESTar.Sc;
 using Console = RESTar.Admin.Console;
 
 namespace RESTar.WebSockets

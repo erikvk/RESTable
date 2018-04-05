@@ -1,20 +1,21 @@
-﻿using RESTar.WebSockets;
+﻿using Starcounter;
+using WebSocket = RESTar.WebSockets.WebSocket;
 
-namespace RESTar.Starcounter
+namespace RESTar.Sc
 {
     internal sealed class ScContext : Context
     {
         private const string WsGroupName = "restar_ws";
 
-        internal global::Starcounter.Request Request { get; }
+        internal Request Request { get; }
         protected override bool IsWebSocketUpgrade { get; }
 
         protected override WebSocket CreateWebSocket()
         {
-            return new ScWebSocket(StarcounterNetworkProvider.WsGroupName, Request, Client);
+            return new ScWebSocket(ScNetworkProvider.WsGroupName, Request, Client);
         }
 
-        public ScContext(Client client, global::Starcounter.Request request) : base(client)
+        public ScContext(Client client, Request request) : base(client)
         {
             Request = request;
             IsWebSocketUpgrade = request.WebSocketUpgrade;

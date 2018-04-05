@@ -4,7 +4,6 @@ using System.Reflection;
 using Dynamit;
 using RESTar.Internal;
 using RESTar.Operations;
-using RESTar.Starcounter;
 using static System.Reflection.BindingFlags;
 
 namespace RESTar.Resources

@@ -6,7 +6,7 @@ using RESTar.Linq;
 using RESTar.Operations;
 using Starcounter;
 
-namespace RESTar.Starcounter
+namespace RESTar
 {
     /// <summary>
     /// The default operations for classes inheriting from DDictionary
