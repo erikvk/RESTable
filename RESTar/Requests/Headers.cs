@@ -132,10 +132,12 @@ namespace RESTar.Requests
                 switch (key)
                 {
                     case var _ when key.EqualsNoCase(nameof(Accept)):
-                        Accept = RESTar.ContentType.ParseManyOutput(value);
+                        if (!string.IsNullOrWhiteSpace(value))
+                            Accept = RESTar.ContentType.ParseMany(value);
                         break;
                     case var _ when key.EqualsNoCase("Content-Type"):
-                        ContentType = RESTar.ContentType.ParseInput(value);
+                        if (!string.IsNullOrWhiteSpace(value))
+                            ContentType = RESTar.ContentType.Parse(value);
                         break;
                     case var _ when key.EqualsNoCase(nameof(Source)):
                         Source = value;

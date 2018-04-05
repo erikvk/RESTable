@@ -19,7 +19,7 @@ namespace RESTar.ContentTypeProviders
         public override string Name => "Microsoft Excel";
 
         /// <inheritdoc />
-        public override ContentType ContentType { get; } = new ContentType(ExcelMimeType);
+        public override ContentType ContentType { get; } = ExcelMimeType;
 
         /// <inheritdoc />
         public override string[] MatchStrings { get; set; } = {ExcelMimeType, RESTarSpecific, Brief};

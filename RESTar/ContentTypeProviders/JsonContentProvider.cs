@@ -142,7 +142,7 @@ namespace RESTar.ContentTypeProviders
         public string Name => "JSON";
 
         /// <inheritdoc />
-        public ContentType ContentType { get; } = new ContentType("application/json; charset=utf-8");
+        public ContentType ContentType { get; } = "application/json; charset=utf-8";
 
         /// <inheritdoc />
         public bool CanRead => true;

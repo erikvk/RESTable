@@ -82,22 +82,13 @@ namespace RESTar
         /// </summary>
         public static readonly ContentType DefaultOutput = new ContentType("*/*");
 
-
         /// <summary>
         /// Parses a Content-Type header an returnes a ContentType instance describing it
         /// </summary>
-        public static ContentType ParseInput(string contentTypeHeaderValue)
+        internal static ContentType Parse(string headerValue)
         {
-            if (string.IsNullOrWhiteSpace(contentTypeHeaderValue)) return DefaultInput;
-            return new ContentType(contentTypeHeaderValue);
-        }
-
-        /// <summary>
-        /// Parses an Accept header an returnes a ContentType instance describing it
-        /// </summary>
-        public static ContentType ParseOutput(string headerValue)
-        {
-            if (string.IsNullOrWhiteSpace(headerValue)) return DefaultOutput;
+            if (string.IsNullOrWhiteSpace(headerValue))
+                throw new ArgumentException("Cannot be null or whitespace", nameof(headerValue));
             return new ContentType(headerValue);
         }
 
@@ -105,10 +96,10 @@ namespace RESTar
         /// Parses an Accept header, possibly with multiple content types, an returnes an 
         /// array of ContentTypes describing it
         /// </summary>
-        public static ContentTypes ParseManyOutput(string headerValue)
+        public static ContentTypes ParseMany(string headerValue)
         {
             if (string.IsNullOrWhiteSpace(headerValue))
-                return new ContentTypes {DefaultOutput};
+                throw new ArgumentException("Cannot be null or whitespace", nameof(headerValue));
             return new ContentTypes(headerValue
                 .Split(new[] {','}, StringSplitOptions.RemoveEmptyEntries)
                 .Select(s => new ContentType(s))
@@ -118,16 +109,16 @@ namespace RESTar
         }
 
         /// <summary>
-        /// Creates a new ContentType from a header value or MIME type, for example "application/json" or "application/json;charset=utf-8"
+        /// Creates a new ContentType from a header value or MIME type, for example "application/json" or "application/json; charset=utf-8"
         /// </summary>
         /// <param name="headerValue"></param>
-        public ContentType(string headerValue)
+        private ContentType(string headerValue)
         {
             if (string.IsNullOrWhiteSpace(headerValue))
                 headerValue = "*/*";
             if (headerValue.Contains(','))
             {
-                var preferred = ParseManyOutput(headerValue)[0];
+                var preferred = ParseMany(headerValue)[0];
                 MimeType = preferred.MimeType;
                 Data = preferred.Data;
                 Q = preferred.Q;
