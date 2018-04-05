@@ -6,7 +6,6 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Web;
 using RESTar.Requests;
-using RESTar.Resources;
 using RESTar.Results;
 
 namespace RESTar.Auth
@@ -62,18 +61,6 @@ namespace RESTar.Auth
                 default: return null;
             }
             return ApiKeys.TryGetValue(key.SHA256(), out var _rights) ? _rights : null;
-        }
-
-        internal static bool MethodCheck(Method requestedMethod, IEntityResource resource, Client client, out bool failedAuth)
-        {
-            failedAuth = false;
-            if (!resource.AvailableMethods.Contains(requestedMethod)) return false;
-            var accessRights = client.AccessRights;
-            var rights = accessRights[resource];
-            if (rights?.Contains(requestedMethod) == true)
-                return true;
-            failedAuth = true;
-            return false;
         }
     }
 }

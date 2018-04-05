@@ -60,7 +60,7 @@ namespace RESTar.Results
             catch (Exception exception)
             {
                 result.Body?.Dispose();
-                return Error.GetResult(exception, RequestInternal).Serialize();
+                return exception.AsResultOf(RequestInternal).Serialize();
             }
             finally
             {

@@ -4,14 +4,9 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Net;
-using System.Web;
-using Microsoft.CSharp.RuntimeBinder;
-using Newtonsoft.Json;
 using RESTar.Internal;
 using RESTar.Logging;
 using RESTar.Requests;
-using RESTar.Sc;
-using Starcounter;
 
 namespace RESTar.Results
 {
@@ -42,11 +37,10 @@ namespace RESTar.Results
 
         #region ITraceable, ILogable
 
-        private void SetTrace(IRequest request)
+        internal void SetTrace(ITraceable request)
         {
             TraceId = request.TraceId;
             Context = request.Context;
-            Request = request;
         }
 
         /// <inheritdoc />
@@ -110,21 +104,7 @@ namespace RESTar.Results
         /// <inheritdoc />
         public void ThrowIfError() => throw this;
 
-        internal static Error GetError(Exception exception)
-        {
-            switch (exception)
-            {
-                case Error re: return re;
-                case FormatException _: return new UnsupportedContent(exception);
-                case JsonReaderException jre: return new FailedJsonDeserialization(jre);
-                case DbException _: return new ScDatabaseError(exception);
-                case RuntimeBinderException _: return new BinderPermissions(exception);
-                case NotImplementedException _: return new FeatureNotImplemented("RESTar encountered a call to a non-implemented method");
-                default: return new Unknown(exception);
-            }
-        }
-
-        private IRequestInternal RequestInternal { get; set; }
+        internal IRequestInternal RequestInternal { get; set; }
 
         private Stream _body;
         private bool IsSerializing;
@@ -169,7 +149,7 @@ namespace RESTar.Results
             catch (Exception exception)
             {
                 result.Body?.Dispose();
-                return GetResult(exception, RequestInternal).Serialize();
+                return exception.AsResultOf(RequestInternal).Serialize();
             }
             finally
             {
@@ -181,44 +161,11 @@ namespace RESTar.Results
             }
         }
 
-        internal static IResult GetResult(Exception exs, IRequestInternal request)
-        {
-            var error = GetError(exs);
-            error.SetTrace(request);
-            error.RequestInternal = request;
-            string errorId = null;
-            if (!(error is Forbidden) && request.Method >= 0)
-            {
-                Admin.Error.ClearOld();
-                Db.TransactAsync(() => errorId = Admin.Error.Create(error, request).Id);
-            }
-            if (request.IsWebSocketUpgrade)
-            {
-                if (error is Forbidden)
-                {
-                    request.Context.WebSocket.Disconnect();
-                    return new WebSocketUpgradeFailed(error);
-                }
-                request.Context.WebSocket?.SendResult(error);
-                request.Context.WebSocket?.Disconnect();
-                return new WebSocketUpgradeSuccessful(request);
-            }
-            if (errorId != null)
-                error.Headers["ErrorInfo"] = $"/restar.admin.error/id={HttpUtility.UrlEncode(errorId)}";
-            error.TimeElapsed = request.TimeElapsed;
-            return error;
-        }
-
-        /// <summary>
-        /// The request that generated the error
-        /// </summary>
-        public IRequest Request { get; private set; }
-
         /// <inheritdoc />
         /// <summary>
         /// The time elapsed from the start of reqeust evaluation
         /// </summary>
-        public TimeSpan TimeElapsed { get; private set; }
+        public TimeSpan TimeElapsed { get; internal set; }
 
         /// <inheritdoc />
         public override string ToString() => LogMessage;

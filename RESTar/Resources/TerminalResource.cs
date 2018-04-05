@@ -14,7 +14,7 @@ namespace RESTar.Resources
     {
         public string Name { get; }
         public Type Type { get; }
-        public IReadOnlyList<Method> AvailableMethods { get; set; }
+        public IReadOnlyCollection<Method> AvailableMethods { get; set; }
         public string Alias { get; private set; }
         public bool IsInternal { get; }
         public bool IsGlobal { get; }

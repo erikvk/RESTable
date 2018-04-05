@@ -6,7 +6,7 @@ namespace RESTar.Resources
     {
         IReadOnlyList<IResource> InnerResources { get; set; }
         string Description { set; }
-        IReadOnlyList<Method> AvailableMethods { set; }
+        IReadOnlyCollection<Method> AvailableMethods { set; }
         void SetAlias(string alias);
     }
 }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Net;
 using RESTar.Logging;
 using RESTar.Admin;
@@ -33,26 +34,7 @@ namespace RESTar.Requests
         public Func<IEnumerable<T>, IEnumerable<T>> GetUpdater() => Updater;
         public Func<IEnumerable<T>> GetSelector() => Selector;
 
-        public Method Method
-        {
-            get => _method;
-            set
-            {
-                var previous = _method;
-                _method = value;
-                try
-                {
-                    if (Method < 0) return;
-                    if (!Authenticator.MethodCheck(Method, IResource as IEntityResource, Context.Client, out var failedAuth))
-                        throw new MethodNotAllowed(Method, IResource, failedAuth);
-                }
-                catch
-                {
-                    _method = previous;
-                    throw;
-                }
-            }
-        }
+        public Method Method { get; set; }
 
         public List<Condition<T>> Conditions
         {
@@ -113,7 +95,6 @@ namespace RESTar.Requests
         private DataConfig InputDataConfig { get; }
         private DataConfig OutputDataConfig { get; }
         private bool IsEvaluating;
-        private Method _method;
 
         #endregion
 
@@ -154,12 +135,14 @@ namespace RESTar.Requests
         {
             get
             {
-                if (!IsValid) return Results.Error.GetResult(Error, this);
+                if (!IsValid) return Error.AsResultOf(this);
+                if (!MethodCheck(out var _failedAuth))
+                    return new MethodNotAllowed(Method, IResource, _failedAuth).AsResultOf(this);
                 if (IsWebSocketUpgrade)
                     try
                     {
                         if (!CachedProtocolProvider.ProtocolProvider.IsCompliant(this, out var reason))
-                            return Results.Error.GetResult(new NotCompliantWithProtocol(CachedProtocolProvider.ProtocolProvider, reason), this);
+                            return new NotCompliantWithProtocol(CachedProtocolProvider.ProtocolProvider, reason).AsResultOf(this);
                     }
                     catch (NotImplementedException) { }
                 if (IsEvaluating) throw new InfiniteLoop();
@@ -169,6 +152,17 @@ namespace RESTar.Requests
                     throw loop;
                 return result;
             }
+        }
+
+        private bool MethodCheck(out bool failedAuth)
+        {
+            if (Method < GET || Method > HEAD)
+                throw new ArgumentException($"Invalid method value {Method} for request");
+            failedAuth = false;
+            if (IResource?.AvailableMethods.Contains(Method) != true) return false;
+            if (Context.Client.AccessRights[IResource]?.Contains(Method) == true) return true;
+            failedAuth = true;
+            return false;
         }
 
         private IResult RunEvaluation()
@@ -205,9 +199,9 @@ namespace RESTar.Requests
                     case var other: throw new UnknownResource(other.Name);
                 }
             }
-            catch (Exception exs)
+            catch (Exception exception)
             {
-                return Results.Error.GetResult(exs, this);
+                return exception.AsResultOf(this);
             }
             finally
             {
@@ -244,6 +238,7 @@ namespace RESTar.Requests
             TargetType = typeof(T);
             InputDataConfig = Headers.Source != null ? DataConfig.External : DataConfig.Client;
             OutputDataConfig = Headers.Destination != null ? DataConfig.External : DataConfig.Client;
+            Method = parameters.Method;
 
             try
             {
@@ -251,7 +246,6 @@ namespace RESTar.Requests
                     throw new ResourceIsInternal(resource);
                 if (IResource is IEntityResource<T> entityResource)
                 {
-                    Method = parameters.Method;
                     MetaConditions = MetaConditions.Parse(parameters.Uri.MetaConditions, entityResource);
                     if (parameters.Uri.ViewName != null)
                     {

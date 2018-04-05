@@ -10,7 +10,7 @@ namespace RESTar.Requests
     {
         public bool IsValid { get; }
         private Exception Error { get; }
-        public IResult Result => Results.Error.GetResult(Error, this);
+        public IResult Result => Error.AsResultOf(this);
         public Type TargetType => null;
         public bool HasConditions => false;
 

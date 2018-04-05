@@ -95,8 +95,6 @@ namespace RESTar.Requests
             TraceId = context.InitialTraceId;
             Context = context;
             Method = method;
-            if (Method < Method.GET || Method > Method.HEAD)
-                Method = Method.GET;
             Headers = new Headers();
             iresource = resource;
             IsWebSocketUpgrade = Context.WebSocket?.Status == WebSocketStatus.Waiting;
@@ -142,7 +140,7 @@ namespace RESTar.Requests
             }
             catch (Exception e)
             {
-                Error = Results.Error.GetError(e);
+                Error = e.AsError();
             }
 
             if (hasMacro)
@@ -203,7 +201,7 @@ namespace RESTar.Requests
             }
             catch (Exception e)
             {
-                Error = Results.Error.GetError(e);
+                Error = e.AsError();
             }
             if (Error == null && Uri?.HasError == true)
                 Error = Uri.Error;

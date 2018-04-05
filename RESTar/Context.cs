@@ -101,8 +101,6 @@ namespace RESTar
                 WebSocket = CreateWebSocket();
                 WebSocket.Context = this;
             }
-            if (method < Method.GET || method > Method.HEAD)
-                method = Method.GET;
             var parameters = new RequestParameters(this, method, uri, body, headers);
             if (!parameters.IsValid)
                 return new InvalidParametersRequest(parameters);
@@ -121,7 +119,7 @@ namespace RESTar
             var parameters = new RequestParameters(this, (Method) (-1), uri, null, null);
             if (parameters.Error != null)
             {
-                error = Results.Error.GetError(parameters.Error);
+                error = parameters.Error.AsError();
                 resource = null;
                 return false;
             }

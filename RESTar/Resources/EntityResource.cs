@@ -20,7 +20,7 @@ namespace RESTar.Resources
 
         public string Name { get; }
         public bool Editable { get; }
-        public IReadOnlyList<Method> AvailableMethods { get; private set; }
+        public IReadOnlyCollection<Method> AvailableMethods { get; private set; }
         public string Description { get; private set; }
         public Type Type => typeof(T);
         public bool IsDDictionary { get; }
@@ -54,7 +54,7 @@ namespace RESTar.Resources
             set => Description = value;
         }
 
-        IReadOnlyList<Method> IResourceInternal.AvailableMethods
+        IReadOnlyCollection<Method> IResourceInternal.AvailableMethods
         {
             set => AvailableMethods = value;
         }

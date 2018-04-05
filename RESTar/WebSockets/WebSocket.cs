@@ -269,7 +269,12 @@ namespace RESTar.WebSockets
         }
 
         /// <inheritdoc />
-        public void SendException(Exception exception) => SendResult(Error.GetError(exception));
+        public void SendException(Exception exception)
+        {
+            var error = exception.AsError();
+            error.SetTrace(this);
+            SendResult(error);
+        }
 
         /// <inheritdoc />
         public void SendText(string data) => _SendText(data);

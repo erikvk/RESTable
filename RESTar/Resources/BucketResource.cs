@@ -29,7 +29,7 @@ namespace RESTar.Resources
         public int GetHashCode(IResource obj) => obj.Name.GetHashCode();
         public int CompareTo(IResource other) => string.Compare(Name, other.Name, StringComparison.Ordinal);
 
-        public IReadOnlyList<Method> AvailableMethods { get; set; }
+        public IReadOnlyCollection<Method> AvailableMethods { get; set; }
         public string Alias { get; private set; }
         public bool IsInternal { get; }
         public bool IsGlobal { get; }

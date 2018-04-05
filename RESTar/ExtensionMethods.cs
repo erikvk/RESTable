@@ -9,7 +9,9 @@ using System.Net;
 using System.Reflection;
 using System.Runtime.Serialization;
 using System.Text;
+using System.Web;
 using Dynamit;
+using Microsoft.CSharp.RuntimeBinder;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using RESTar.Auth;
@@ -21,6 +23,7 @@ using RESTar.Operations;
 using RESTar.Processors;
 using RESTar.Resources;
 using RESTar.Results;
+using RESTar.Sc;
 using Starcounter;
 using static System.Globalization.DateTimeStyles;
 using static System.Reflection.BindingFlags;
@@ -608,6 +611,48 @@ namespace RESTar
         #region Requests
 
         private static readonly CultureInfo en_US = new CultureInfo("en-US");
+
+        internal static Results.Error AsError(this Exception exception)
+        {
+            switch (exception)
+            {
+                case Results.Error re: return re;
+                case FormatException _: return new UnsupportedContent(exception);
+                case JsonReaderException jre: return new FailedJsonDeserialization(jre);
+                case DbException _: return new ScDatabaseError(exception);
+                case RuntimeBinderException _: return new BinderPermissions(exception);
+                case NotImplementedException _: return new FeatureNotImplemented("RESTar encountered a call to a non-implemented method");
+                default: return new Unknown(exception);
+            }
+        }
+
+        internal static IResult AsResultOf(this Exception exception, IRequestInternal request)
+        {
+            var error = exception.AsError();
+            error.SetTrace(request);
+            error.RequestInternal = request;
+            string errorId = null;
+            if (!(error is Forbidden) && request.Method >= 0)
+            {
+                Admin.Error.ClearOld();
+                Db.TransactAsync(() => errorId = Admin.Error.Create(error, request).Id);
+            }
+            if (request.IsWebSocketUpgrade)
+            {
+                if (error is Forbidden)
+                {
+                    request.Context.WebSocket.Disconnect();
+                    return new WebSocketUpgradeFailed(error);
+                }
+                request.Context.WebSocket?.SendResult(error);
+                request.Context.WebSocket?.Disconnect();
+                return new WebSocketUpgradeSuccessful(request);
+            }
+            if (errorId != null)
+                error.Headers["ErrorInfo"] = $"/restar.admin.error/id={HttpUtility.UrlEncode(errorId)}";
+            error.TimeElapsed = request.TimeElapsed;
+            return error;
+        }
 
         /// <summary>
         /// Parses a condition value from a value literal, and performs an optional type check (non-optional for enums)
