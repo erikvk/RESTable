@@ -1,7 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using static RESTar.Methods;
+using RESTar.Internal;
+using static RESTar.Method;
 
 namespace RESTar
 {
@@ -17,7 +18,7 @@ namespace RESTar
         /// The methods declared as available for this RESTar resource. Not applicable for 
         /// terminal resources.
         /// </summary>
-        public IReadOnlyList<Methods> AvailableMethods { get; }
+        public IReadOnlyList<Method> AvailableMethods { get; }
 
         /// <summary>
         /// If true, unknown conditions encountered when handling incoming requests
@@ -68,7 +69,7 @@ namespace RESTar
         public Type Interface { get; set; }
 
         /// <inheritdoc />
-        internal RESTarAttribute(IReadOnlyList<Methods> methods)
+        internal RESTarAttribute(IReadOnlyList<Method> methods)
         {
             if (methods.Contains(GET))
                 AvailableMethods = methods.Union(new[] {REPORT, HEAD}).ToList();
@@ -80,7 +81,7 @@ namespace RESTar
         /// Registers a new RESTar resource and provides permissions. If no methods are 
         /// provided in the constructor, all methods are made available for this resource.
         /// </summary>
-        public RESTarAttribute(params Methods[] methodRestrictions)
+        public RESTarAttribute(params Method[] methodRestrictions)
         {
             if (!methodRestrictions.Any())
                 methodRestrictions = RESTarConfig.Methods;

@@ -1,9 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using Newtonsoft.Json.Linq;
-using RESTar.Internal;
 using RESTar.Linq;
-using static RESTar.Methods;
+using RESTar.Operations;
+using RESTar.Resources;
+using static RESTar.Method;
 using static RESTar.Operators;
 
 namespace RESTar.Admin

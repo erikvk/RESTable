@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using RESTar.Requests;
+using RESTar.Internal;
+using RESTar.Operations;
 
 namespace RESTar.Admin
 {
@@ -48,7 +49,7 @@ namespace RESTar.Admin
     /// <summary>
     /// Contains all the available protocols and content types for the current RESTar instance
     /// </summary>
-    [RESTar(Methods.GET)]
+    [RESTar(Method.GET)]
     public class Protocol : ISelector<Protocol>
     {
         private const string description = "Contains all the available protocols and content types for the current RESTar instance";
@@ -76,7 +77,7 @@ namespace RESTar.Admin
         /// <inheritdoc />
         public IEnumerable<Protocol> Select(IRequest<Protocol> request)
         {
-            return RequestEvaluator.ProtocolProviders.Values.Distinct().Select(cachedProvider =>
+            return ProtocolController.ProtocolProviders.Values.Distinct().Select(cachedProvider =>
             {
                 var contentTypes = cachedProvider.InputMimeBindings.Values
                     .Union(cachedProvider.OutputMimeBindings.Values)
@@ -84,7 +85,7 @@ namespace RESTar.Admin
                     .Select(provider => new ContentType
                     (
                         name: provider.Name,
-                        mimeType: provider.ContentType.MimeType,
+                        mimeType: provider.ContentType.MediaType,
                         canRead: cachedProvider.InputMimeBindings.Values.Contains(provider),
                         canWrite: cachedProvider.OutputMimeBindings.Values.Contains(provider),
                         bindings: cachedProvider.InputMimeBindings

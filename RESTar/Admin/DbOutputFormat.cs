@@ -100,8 +100,8 @@ namespace RESTar.Admin
         private const string ByName = All + " WHERE t.Name =?";
 
         internal Formatter Format => _PrettyPrint
-            ? new Formatter(PrettyPrintPre, PrettyPrintPost, StartIndent)
-            : new Formatter(RegularPre, RegularPost, StartIndent);
+            ? new Formatter(Name, PrettyPrintPre, PrettyPrintPost, StartIndent)
+            : new Formatter(Name, RegularPre, RegularPost, StartIndent);
 
         internal static Formatter Default => Db.SQL<DbOutputFormat>(ByDefault, true).FirstOrDefault()?.Format ?? default;
         internal static Formatter Raw => default;
@@ -111,15 +111,15 @@ namespace RESTar.Admin
         internal static void Init()
         {
             if (GetAll().All(format => format.Name != "Raw"))
-                Transact.Trans(() => new DbOutputFormat {Name = "Raw", RegularPattern = RawPattern});
+                Db.TransactAsync(() => new DbOutputFormat {Name = "Raw", RegularPattern = RawPattern});
             if (GetAll().All(format => format.Name != "Simple"))
-                Transact.Trans(() => new DbOutputFormat {Name = "Simple", RegularPattern = SimplePattern});
+                Db.TransactAsync(() => new DbOutputFormat {Name = "Simple", RegularPattern = SimplePattern});
             if (GetAll().All(format => format.Name != "JSend"))
-                Transact.Trans(() => new DbOutputFormat {Name = "JSend", RegularPattern = JSendPattern});
+                Db.TransactAsync(() => new DbOutputFormat {Name = "JSend", RegularPattern = JSendPattern});
             if (GetAll().All(format => !format.IsDefault))
             {
                 var raw = Db.SQL<DbOutputFormat>(ByName, "Raw").First();
-                Transact.Trans(() => raw._isDefault = true);
+                Db.TransactAsync(() => raw._isDefault = true);
             }
         }
     }
@@ -218,11 +218,11 @@ namespace RESTar.Admin
         public int Insert(IRequest<OutputFormat> request)
         {
             var count = 0;
-            foreach (var entity in request.GetEntities())
+            foreach (var entity in request.GetInputEntities())
             {
                 if (DbOutputFormat.GetByName(entity.Name) != null)
                     throw new Exception($"Invalid name. '{entity.Name}' is already in use.");
-                Transact.Trans(() => new DbOutputFormat {Name = entity.Name, RegularPattern = entity.Pattern});
+                Db.TransactAsync(() => new DbOutputFormat {Name = entity.Name, RegularPattern = entity.Pattern});
                 count += 1;
             }
             return count;
@@ -232,11 +232,11 @@ namespace RESTar.Admin
         public int Update(IRequest<OutputFormat> request)
         {
             var count = 1;
-            request.GetEntities().ForEach(entity =>
+            request.GetInputEntities().ForEach(entity =>
             {
                 var dbEntity = DbOutputFormat.GetByName(entity.Name);
                 if (dbEntity == null) return;
-                Transact.Trans(() =>
+                Db.TransactAsync(() =>
                 {
                     count += 1;
                     dbEntity.IsDefault = entity.IsDefault;
@@ -252,10 +252,10 @@ namespace RESTar.Admin
         public int Delete(IRequest<OutputFormat> request)
         {
             var count = 0;
-            request.GetEntities().ForEach(entity =>
+            request.GetInputEntities().ForEach(entity =>
             {
                 if (entity.IsBuiltIn) return;
-                Transact.Trans(DbOutputFormat.GetByName(entity.Name).Delete);
+                Db.TransactAsync(DbOutputFormat.GetByName(entity.Name).Delete);
                 count += 1;
             });
             return count;

@@ -3,9 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Serialization;
 using RESTar.Resources;
-using RESTar.Results.Error.BadRequest;
+using RESTar.Results;
 using Starcounter;
-using static RESTar.Operations.Transact;
 
 namespace RESTar.Internal
 {
@@ -22,7 +21,7 @@ namespace RESTar.Internal
         /// <summary>
         /// The available methods for this resource
         /// </summary>
-        public IReadOnlyList<Methods> AvailableMethods
+        public IReadOnlyList<Method> AvailableMethods
         {
             get => AvailableMethodsString.ToMethodsArray();
             set => AvailableMethodsString = value.ToMethodsString();
@@ -64,7 +63,7 @@ namespace RESTar.Internal
         internal static IEnumerable<DynamicResource> GetAll() => Db.SQL<DynamicResource>(All);
         private static bool Exists(string tableName) => Db.SQL<DynamicResource>(ByTableName, tableName).FirstOrDefault() != null;
 
-        private DynamicResource(string name, Type table, IEnumerable<Methods> availableMethods,
+        private DynamicResource(string name, Type table, IEnumerable<Method> availableMethods,
             string description = null)
         {
             Name = name;
@@ -75,18 +74,23 @@ namespace RESTar.Internal
             AvailableMethods = methods;
         }
 
-        internal static void MakeTable(Admin.Resource resource) => ResourceFactory.MakeDynamicResource(Trans(() =>
+        internal static void MakeTable(Admin.Resource resource)
         {
-            var newTable = DynamitControl.DynamitTypes.FirstOrDefault(type => !Exists(type.RESTarTypeName()))
-                           ?? throw new NoAvalailableDynamicTable();
-            if (!string.IsNullOrWhiteSpace(resource.Alias))
-                new Admin.ResourceAlias
-                {
-                    Alias = resource.Alias,
-                    Resource = resource.Name
-                };
-            return new DynamicResource(resource.Name, newTable, resource.EnabledMethods, resource.Description);
-        }));
+            DynamicResource dynamicResource = null;
+            Db.TransactAsync(() =>
+            {
+                var newTable = DynamitControl.DynamitTypes.FirstOrDefault(type => !Exists(type.RESTarTypeName()))
+                               ?? throw new NoAvalailableDynamicTable();
+                if (!string.IsNullOrWhiteSpace(resource.Alias))
+                    new Admin.ResourceAlias
+                    {
+                        Alias = resource.Alias,
+                        Resource = resource.Name
+                    };
+                dynamicResource = new DynamicResource(resource.Name, newTable, resource.EnabledMethods, resource.Description);
+            });
+            ResourceFactory.MakeDynamicResource(dynamicResource);
+        }
 
         internal static DynamicResource Get(string resourceName) => Db
             .SQL<DynamicResource>(ByName, resourceName).FirstOrDefault();
@@ -97,7 +101,7 @@ namespace RESTar.Internal
             if (dynamicResource == null) return false;
             DynamitControl.ClearTable(dynamicResource.TableName);
             var alias = Admin.ResourceAlias.GetByResource(dynamicResource.Name);
-            Trans(() =>
+            Db.TransactAsync(() =>
             {
                 alias?.Delete();
                 dynamicResource.Delete();

@@ -2,9 +2,10 @@
 using System.Linq;
 using Newtonsoft.Json.Linq;
 using RESTar.Linq;
+using RESTar.Operations;
 using RESTar.Serialization;
 using RESTar.WebSockets;
-using static RESTar.Methods;
+using static RESTar.Method;
 
 namespace RESTar.Admin
 {
@@ -36,7 +37,7 @@ namespace RESTar.Admin
         /// </summary>
         public JObject Client { get; private set; }
 
-        private IWebSocketInternal WebSocketInternal { get; set; }
+        private WebSockets.WebSocket _WebSocket { get; set; }
 
         /// <inheritdoc />
         public IEnumerable<WebSocket> Select(IRequest<WebSocket> request) => WebSocketController
@@ -45,10 +46,10 @@ namespace RESTar.Admin
             .Select(socket => new WebSocket
             {
                 Id = socket.TraceId,
-                TerminalType = socket.TerminalResource.Name,
+                TerminalType = socket.TerminalResource?.Name,
                 Client = JObject.Parse(Serializers.Json.Serialize(socket.GetConnectionProfile())),
                 Terminal = JObject.Parse(Serializers.Json.Serialize(socket.Terminal)),
-                WebSocketInternal = socket
+                _WebSocket = socket
             })
             .Where(request.Conditions);
 
@@ -56,9 +57,9 @@ namespace RESTar.Admin
         public int Delete(IRequest<WebSocket> request)
         {
             var count = 0;
-            foreach (var entity in request.GetEntities())
+            foreach (var entity in request.GetInputEntities())
             {
-                entity.WebSocketInternal.Disconnect();
+                entity._WebSocket.Disconnect();
                 count += 1;
             }
             return count;

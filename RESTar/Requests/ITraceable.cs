@@ -11,8 +11,8 @@
         string TraceId { get; }
 
         /// <summary>
-        /// The initial TCP connection
+        /// The context to which this trace can be led
         /// </summary>
-        TCPConnection TcpConnection { get; }
+        Context Context { get; }
     }
 }

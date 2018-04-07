@@ -12,12 +12,12 @@ namespace RESTar.WebSockets
         public string CurrentTerminal { get; }
         public Headers CustomHeaders { get; }
 
-        internal ConnectionProfile(IWebSocketInternal webSocket)
+        internal ConnectionProfile(WebSocket webSocket)
         {
             WebSocketId = webSocket.TraceId;
-            Host = webSocket.TcpConnection.Host;
-            IsSSLEncrypted = webSocket.TcpConnection.HTTPS;
-            ClientIP = webSocket.TcpConnection.ClientIP.ToString();
+            Host = webSocket.Context.Client.Host;
+            IsSSLEncrypted = webSocket.Context.Client.HTTPS;
+            ClientIP = webSocket.Context.Client.ClientIP;
             ConnectedAt = webSocket.Opened.ToString("yyyy-MM-dd HH:mm:ss");
             CurrentTerminal = webSocket.TerminalResource?.Name ?? "none";
             CustomHeaders = webSocket.Headers;

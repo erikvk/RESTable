@@ -88,6 +88,7 @@ namespace RESTar.Internal
         MethodNotAllowed = 214,
         Untraceable = 215,
         MissingUri = 216,
+        ReusedContext = 217,
 
         // 300-400: Database errors
         DatabaseError = 300,
@@ -104,7 +105,10 @@ namespace RESTar.Internal
         InvalidProtocolProvider = 408,
         InvalidContentTypeProvider = 408,
 
-        // 500-600: Protocol errors
-        NotCompliantWithProtocol = 500
+        // 500-600: Other errors
+        NotCompliantWithProtocol = 500,
+        WebSocketNotConnected = 501,
+        InvalidShellHeaderAssignmentSyntax = 502,
+        ShellError
     }
 }

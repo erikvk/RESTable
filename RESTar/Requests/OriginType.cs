@@ -1,4 +1,5 @@
-﻿namespace RESTar.Requests {
+﻿namespace RESTar.Requests
+{
     /// <summary>
     /// Describes the origin type of a request
     /// </summary>
@@ -12,11 +13,6 @@
         /// <summary>
         /// The request originated from outside the RESTar application
         /// </summary>
-        External,
-
-        /// <summary>
-        /// The request originated from a WebSocket
-        /// </summary>
-        Shell
+        External
     }
 }

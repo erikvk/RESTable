@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using ExcelDataReader;
-using RESTar.Internal;
-using RESTar.Results.Error.BadRequest;
 using RESTar.Serialization.NativeProtocol;
 using static System.Linq.Enumerable;
 
@@ -21,7 +19,7 @@ namespace RESTar.ContentTypeProviders
         public override string Name => "Microsoft Excel";
 
         /// <inheritdoc />
-        public override ContentType ContentType { get; } = new ContentType(ExcelMimeType);
+        public override ContentType ContentType { get; } = ExcelMimeType;
 
         /// <inheritdoc />
         public override string[] MatchStrings { get; set; } = {ExcelMimeType, RESTarSpecific, Brief};
@@ -36,11 +34,11 @@ namespace RESTar.ContentTypeProviders
         public override string ContentDispositionFileExtension => ".xlsx";
 
         /// <inheritdoc />
-        public override void SerializeEntity<T>(T entity, Stream stream, IRequest request, out ulong entityCount) =>
+        public override void SerializeEntity(object entity, Stream stream, IRequest request, out ulong entityCount) =>
             SerializeCollection(new[] {entity}, stream, request, out entityCount);
 
         /// <inheritdoc />
-        public override void SerializeCollection<T>(IEnumerable<T> entities, Stream stream, IRequest request, out ulong entityCount)
+        public override void SerializeCollection(IEnumerable<object> entities, Stream stream, IRequest request, out ulong entityCount)
         {
             if (entities == null)
             {
@@ -87,7 +85,6 @@ namespace RESTar.ContentTypeProviders
                             jwr.WritePropertyName(names[i]);
                             jwr.WriteValue(reader[i]);
                         }
-
                         jwr.WriteEndObject();
                         objectCount += 1;
                     }
@@ -107,19 +104,18 @@ namespace RESTar.ContentTypeProviders
     /// <summary>
     /// Thrown when RESTar encounters an error when writing to Excel
     /// </summary>
-    public class ExcelFormatError : BadRequest
+    public class ExcelFormatError : Exception
     {
-        internal ExcelFormatError(string message, Exception ie) : base(ErrorCodes.ExcelReaderError,
-            $"RESTar was unable to write entities to excel. {message}. ", ie) { }
+        internal ExcelFormatError(string message, Exception ie) : base($"RESTar was unable to write entities to excel. {message}. ", ie) { }
     }
 
     /// <inheritdoc />
     /// <summary>
     /// Thrown when RESTar encounters an error when reading from Excel
     /// </summary>
-    public class ExcelInputError : BadRequest
+    public class ExcelInputError : Exception
     {
-        internal ExcelInputError(string message) : base(ErrorCodes.ExcelReaderError,
+        internal ExcelInputError(string message) : base(
             "There was a format error in the excel input. Check that the file is being transmitted properly. In " +
             "curl, make sure the flag '--data-binary' is used and not '--data' or '-d'. Message: " + message) { }
     }

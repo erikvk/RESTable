@@ -21,7 +21,7 @@ namespace RESTar.ContentTypeProviders
         public string Name => "XML";
 
         /// <inheritdoc />
-        public ContentType ContentType { get; } = new ContentType("application/xml; charset=utf-8");
+        public ContentType ContentType { get; } = "application/xml; charset=utf-8";
 
         /// <inheritdoc />
         public string[] MatchStrings { get; set; } = {XMLMimeType, RESTarSpecific, Brief};
@@ -45,14 +45,14 @@ namespace RESTar.ContentTypeProviders
         }
 
         /// <inheritdoc />
-        public void SerializeEntity<T>(T entity, Stream stream, IRequest request, out ulong entityCount) where T : class
+        public void SerializeEntity(object entity, Stream stream, IRequest request, out ulong entityCount)
         {
             JsonProvider.SerializeEntity(entity, stream, request, out entityCount);
             XmlSerializeJsonStream(stream);
         }
 
         /// <inheritdoc />
-        public void SerializeCollection<T>(IEnumerable<T> entities, Stream stream, IRequest request, out ulong entityCount) where T : class
+        public void SerializeCollection(IEnumerable<object> entities, Stream stream, IRequest request, out ulong entityCount)
         {
             JsonProvider.SerializeCollection(entities, stream, request, out entityCount);
             XmlSerializeJsonStream(stream);

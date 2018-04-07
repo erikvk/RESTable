@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
-using RESTar.Deflection.Dynamic;
+using RESTar.Reflection.Dynamic;
 using System.Linq;
 using RESTar.Linq;
 

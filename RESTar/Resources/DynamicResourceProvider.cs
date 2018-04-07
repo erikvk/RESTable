@@ -30,7 +30,7 @@ namespace RESTar.Resources
             .MakeGenericMethod(resource.Table)
             .Invoke(this, new object[] {resource});
 
-        private void _BuildDynamicResource<T>(DynamicResource resource) where T : DDictionary => new Internal.EntityResource<T>
+        private void _BuildDynamicResource<T>(DynamicResource resource) where T : DDictionary => new EntityResource<T>
         (
             fullName: resource.Name,
             attribute: resource.Attribute,
@@ -38,7 +38,7 @@ namespace RESTar.Resources
             inserter: DDictionaryOperations<T>.Insert,
             updater: DDictionaryOperations<T>.Update,
             deleter: DDictionaryOperations<T>.Delete,
-            counter: DDictionaryOperations<T>.Count,
+            counter: null,
             profiler: DDictionaryOperations<T>.Profile,
             authenticator: null,
             views: null,

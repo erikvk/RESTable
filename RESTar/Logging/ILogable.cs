@@ -1,4 +1,5 @@
-﻿using RESTar.Requests;
+﻿using System;
+using RESTar.Requests;
 
 namespace RESTar.Logging
 {
@@ -37,5 +38,10 @@ namespace RESTar.Logging
         /// Should headers be excluded?
         /// </summary>
         bool ExcludeHeaders { get; }
+
+        /// <summary>
+        /// The date and time of this logable instance
+        /// </summary>
+        DateTime LogTime { get; }
     }
 }

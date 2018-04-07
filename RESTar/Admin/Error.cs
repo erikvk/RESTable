@@ -3,12 +3,10 @@ using System.Linq;
 using System.Text;
 using RESTar.Internal;
 using RESTar.Linq;
-using RESTar.Operations;
-using RESTar.Requests;
-using RESTar.Results.Error;
+using RESTar.Resources;
 using Starcounter;
 using static RESTar.Admin.Settings;
-using static RESTar.Methods;
+using static RESTar.Method;
 
 namespace RESTar.Admin
 {
@@ -44,7 +42,7 @@ namespace RESTar.Admin
         /// <summary>
         /// The method used when the error was created
         /// </summary>
-        public Methods Method;
+        public Method Method;
 
         /// <summary>
         /// The error code of the error
@@ -80,10 +78,10 @@ namespace RESTar.Admin
 
         private const int MaxStringLength = 10000;
 
-        internal static Error Create(RESTarError error, Context context)
+        internal static Error Create(Results.Error error, IRequest request)
         {
-            var resource = context.SafeGet(a => a.IResource);
-            var uri = context.Uri.ToString();
+            var resource = request.SafeGet(a => a.Resource);
+            var uri = request.UriComponents.ToString();
             var stackTrace = $"{error.StackTrace} §§§ INNER: {error.InnerException?.StackTrace}";
             var totalMessage = error.TotalMessage();
             return new Error
@@ -91,17 +89,17 @@ namespace RESTar.Admin
                 Time = DateTime.Now,
                 ResourceName = (resource?.Name ?? "<unknown>") +
                                (resource?.Alias != null ? $" ({resource.Alias})" : ""),
-                Method = context.Method,
+                Method = request.Method,
                 ErrorCode = error.ErrorCode,
-                Body = context.Body.HasContent
-                    ? Encoding.UTF8.GetString(context.Body.Bytes.Take(5000).ToArray())
+                Body = request.Body.HasContent
+                    ? Encoding.UTF8.GetString(request.Body.Bytes.Take(5000).ToArray())
                     : null,
                 StackTrace = stackTrace.Length > MaxStringLength ? stackTrace.Substring(0, MaxStringLength) : stackTrace,
                 Message = totalMessage.Length > MaxStringLength ? totalMessage.Substring(0, MaxStringLength) : totalMessage,
                 Uri = uri,
                 Headers = resource is IEntityResource e && e.RequiresAuthentication
                     ? null
-                    : context.Headers.StringJoin(" | ", dict => dict.Select(header =>
+                    : request.Headers.StringJoin(" | ", dict => dict.Select(header =>
                     {
                         switch (header.Key.ToLower())
                         {
@@ -119,7 +117,7 @@ namespace RESTar.Admin
         {
             if (Checked >= DateTime.Now.Date) return;
             var matches = Db.SQL<Error>(ByTimeLessThan, DateTime.Now.AddDays(0 - _DaysToSaveErrors));
-            matches.ForEach(match => Transact.TransAsync(match.Delete));
+            matches.ForEach(match => Db.TransactAsync(match.Delete));
             Checked = DateTime.Now.Date;
         }
     }

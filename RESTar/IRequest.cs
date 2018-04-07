@@ -1,19 +1,29 @@
 ﻿using System;
 using System.Collections.Generic;
 using RESTar.Internal;
+using RESTar.Logging;
 using RESTar.Requests;
+using RESTar.Resources;
+using RESTar.Results;
 
 namespace RESTar
 {
-    internal interface IRequestInternal<T> : IRequest<T> where T : class
+    internal interface IRequestInternal : IRequest
     {
-        Func<IEnumerable<T>> EntitiesGenerator { set; }
+        bool IsWebSocketUpgrade { get; }
+        CachedProtocolProvider CachedProtocolProvider { get; }
+    }
+
+    internal interface IRequestInternal<T> : IRequestInternal, IRequest<T> where T : class
+    {
+        Func<IEnumerable<T>> EntitiesProducer { set; }
+        Func<IEnumerable<T>> GetSelector();
+        Func<IEnumerable<T>, IEnumerable<T>> GetUpdater();
     }
 
     /// <inheritdoc />
     /// <summary>
-    /// A RESTar request for a resource T. This is a common generic interface for all
-    /// request types.
+    /// An interface defining the operations for a RESTar request for a resource T.
     /// </summary>
     public interface IRequest<T> : IRequest where T : class
     {
@@ -25,7 +35,7 @@ namespace RESTar
         /// <summary>
         /// The conditions of the request
         /// </summary>
-        Condition<T>[] Conditions { get; }
+        List<Condition<T>> Conditions { get; set; }
 
         /// <summary>
         /// The target to use when binding conditions and selecting entities for this request
@@ -33,30 +43,60 @@ namespace RESTar
         ITarget<T> Target { get; }
 
         /// <summary>
-        /// Returns the processed entities belonging to this request. If the request is an update request,
-        /// for example, this IEnumerable contains all the updated entities. For insert requests, all the 
-        /// requests to insert, and so on. For update and insert requests, if the resource type is a
-        /// Starcounter database class, make sure to call GetEntities() from inside a transaction scope.
-        /// The returned value from GetEntities() is never null, but may contain zero entities.
+        /// Returns the input entities for this request. Use this in Inserters and Deleters to receive
+        /// the entities to insert or delete, and in Updaters to receive and update the entities selected 
+        /// by the request.
         /// </summary>
-        IEnumerable<T> GetEntities();
+        IEnumerable<T> GetInputEntities();
+
+        /// <summary>
+        /// The method used when selecting entities for request input. Set this property to override the default behavior.
+        /// This delegate is used in GetEntitites(). By default RESTar will generate entities by deserializing the request 
+        /// body to an <see cref="IEnumerable{T}"/> using the content type provided in the Content-Type header.
+        /// </summary>
+        Func<IEnumerable<T>> Selector { set; }
+
+        /// <summary>
+        /// The method used when updating existing entities. Set this property to override the default behavior.
+        /// By default RESTar will populate the existing entities with content from the request body, using the 
+        /// content type provided in the Content-Type header.
+        /// </summary>
+        Func<IEnumerable<T>, IEnumerable<T>> Updater { set; }
+
+        /// <summary>
+        /// Gets the result entities for this request, if it is a GET request. Use this as shorthand for 
+        /// <see cref="IResult.ToEntities{T}()"/> Result.ToEntities
+        /// </summary>
+        IEntities<T> ResultEntities { get; }
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc cref="ITraceable" />
+    /// <inheritdoc cref="IDisposable" />
+    /// <inheritdoc cref="ILogable" />
     /// <summary>
     /// A non-generic common interface for all request classes used in RESTar
     /// </summary>
-    public interface IRequest : ITraceable
+    public interface IRequest : ITraceable, ILogable
     {
         /// <summary>
         /// The method of the request
         /// </summary>
-        Methods Method { get; }
+        Method Method { get; set; }
 
         /// <summary>
         /// The resource of the request
         /// </summary>
         IEntityResource Resource { get; }
+
+        /// <summary>
+        /// The type of the request target
+        /// </summary>
+        Type TargetType { get; }
+
+        /// <summary>
+        /// Does this request have conditions?
+        /// </summary>
+        bool HasConditions { get; }
 
         /// <summary>
         /// The meta-conditions of the request
@@ -69,10 +109,17 @@ namespace RESTar
         Body Body { get; }
 
         /// <summary>
-        /// The headers included in the request. Headers reserved by RESTar,
-        /// for example the Source header, will not be included here.
+        /// Assigns a new Body instance from a JSON serializable .NET object.
         /// </summary>
-        Headers Headers { get; }
+        /// <param name="content"></param>
+        void SetBody(object content);
+
+        /// <summary>
+        /// Assigns a new body from a byte array and optional content type
+        /// </summary>
+        /// <param name="bytes">The bytes that constitute the body</param>
+        /// <param name="contentType"></param>
+        void SetBody(byte[] bytes, ContentType? contentType = null);
 
         /// <summary>
         /// To include additional HTTP headers in the response, add them to 
@@ -92,6 +139,21 @@ namespace RESTar
         /// <summary>
         /// The URI parameters that was used to construct this request
         /// </summary>
-        IUriParameters UriParameters { get; }
+        IUriComponents UriComponents { get; }
+
+        /// <summary>
+        /// Evaluates the request and returns the result
+        /// </summary>
+        IResult Result { get; }
+
+        /// <summary>
+        /// Is this request valid?
+        /// </summary>
+        bool IsValid { get; }
+
+        /// <summary>
+        /// The time elapsed since request evaluation began
+        /// </summary>
+        TimeSpan TimeElapsed { get; }
     }
 }

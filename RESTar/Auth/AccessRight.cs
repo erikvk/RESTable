@@ -1,11 +1,11 @@
 using System.Collections.Generic;
-using RESTar.Internal;
+using RESTar.Resources;
 
 namespace RESTar.Auth
 {
     internal class AccessRight
     {
         internal ICollection<IResource> Resources;
-        internal Methods[] AllowedMethods;
+        internal Method[] AllowedMethods;
     }
 }

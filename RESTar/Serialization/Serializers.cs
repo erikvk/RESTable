@@ -7,8 +7,6 @@ namespace RESTar.Serialization
     /// </summary>
     public static class Serializers
     {
-        // private static readonly JsonSerializerSettings VmSettings;
-
         /// <summary>
         /// A statically accessable JsonContentProvider
         /// </summary>
@@ -21,27 +19,8 @@ namespace RESTar.Serialization
 
         static Serializers()
         {
-            // VmSettings = new JsonSerializerSettings
-            // {
-            //     ContractResolver = new CreateViewModelResolver(),
-            //     DateFormatHandling = DateFormatHandling.IsoDateFormat,
-            //     DateTimeZoneHandling = DateTimeZoneHandling.Utc
-            // };
-            // VmSettings.Converters.Add(enumConverter);
-            // VmSettings.Converters.Add(headersConverter);
-            // VmSettings.Converters.Add(ddictionaryConverter);
             Json = new JsonContentProvider();
             Excel = new ExcelContentProvider();
         }
-
-        #region Main serializers
-
-        #endregion
-
-
-        // internal static string SerializeToViewModel(this object value)
-        // {
-        //     return JsonConvert.SerializeObject(value, VmSettings);
-        // }
     }
 }

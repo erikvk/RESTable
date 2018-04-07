@@ -1,4 +1,5 @@
 ﻿using RESTar.Admin;
+using RESTar.Operations;
 
 namespace RESTar
 {

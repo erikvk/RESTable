@@ -1,4 +1,4 @@
-﻿using RESTar.Deflection.Dynamic;
+﻿using RESTar.Reflection.Dynamic;
 
 namespace RESTar
 {

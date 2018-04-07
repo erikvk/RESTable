@@ -6,8 +6,9 @@ using Dynamit;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Serialization;
-using RESTar.Deflection.Dynamic;
+using RESTar.Reflection.Dynamic;
 using RESTar.Linq;
+using RESTar.Sc;
 
 namespace RESTar.Serialization.NativeProtocol
 {

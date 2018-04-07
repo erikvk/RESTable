@@ -8,7 +8,6 @@ using Newtonsoft.Json.Linq;
 using RESTar.Linq;
 using RESTar.Operations;
 using RESTar.Requests;
-using RESTar.Serialization;
 using Starcounter;
 
 namespace RESTar.Admin
@@ -108,7 +107,7 @@ namespace RESTar.Admin
         internal IEnumerable<UriCondition> UriConditions => UriConditionsString?.Split('&').Select(c => new UriCondition(c));
         internal IEnumerable<UriCondition> UriMetaConditions => UriMetaConditionsString?.Split('&').Select(c => new UriCondition(c));
         internal bool HasBody => BodyBinary.Length > 0;
-        internal Body GetBody() => new Body(BodyBinary.ToArray(), "application/json", Serializers.Json);
+        internal byte[] GetBody() => BodyBinary.ToArray();
 
         internal static IEnumerable<DbMacro> GetAll() => Db.SQL<DbMacro>(All);
         internal static DbMacro Get(string macroName) => Db.SQL<DbMacro>(ByName, macroName).FirstOrDefault();
@@ -230,12 +229,12 @@ namespace RESTar.Admin
         public int Insert(IRequest<Macro> request)
         {
             var count = 0;
-            foreach (var entity in request.GetEntities())
+            foreach (var entity in request.GetInputEntities())
             {
                 if (DbMacro.Get(entity.Name) != null)
                     throw new Exception($"Invalid name. '{entity.Name}' is already in use.");
                 var args = URI.Parse(entity.Uri);
-                Transact.Trans(() => new DbMacro
+                Db.TransactAsync(() => new DbMacro
                 {
                     Name = entity.Name,
                     ResourceSpecifier = args.ResourceSpecifier,
@@ -257,12 +256,12 @@ namespace RESTar.Admin
         public int Update(IRequest<Macro> request)
         {
             var count = 0;
-            request.GetEntities().ForEach(entity =>
+            request.GetInputEntities().ForEach(entity =>
             {
                 var dbEntity = DbMacro.Get(entity.Name);
                 if (dbEntity == null) return;
                 var args = URI.Parse(entity.Uri);
-                Transact.Trans(() =>
+                Db.TransactAsync(() =>
                 {
                     dbEntity.ResourceSpecifier = args.ResourceSpecifier;
                     dbEntity.ViewName = args.ViewName;
@@ -282,9 +281,9 @@ namespace RESTar.Admin
         public int Delete(IRequest<Macro> request)
         {
             var count = 0;
-            request.GetEntities().ForEach(entity =>
+            request.GetInputEntities().ForEach(entity =>
             {
-                Transact.Trans(DbMacro.Get(entity.Name).Delete);
+                Db.TransactAsync(DbMacro.Get(entity.Name).Delete);
                 count += 1;
             });
             return count;

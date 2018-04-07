@@ -4,7 +4,8 @@ using System.Linq;
 using System.Runtime.Serialization;
 using System.Text.RegularExpressions;
 using Newtonsoft.Json;
-using RESTar.Internal;
+using RESTar.Operations;
+using RESTar.Resources;
 
 namespace RESTar.Admin
 {
@@ -111,24 +112,29 @@ namespace RESTar.Admin
         private static void Register<T>(string indexName, params ColumnInfo[] columns) where T : class
         {
             SelectionCondition.Value = indexName;
-            SelectionRequest.PUT(() => new DatabaseIndex(typeof(T).RESTarTypeName())
+            SelectionRequest.Selector = () => new[]
             {
-                Name = indexName,
-                Columns = columns
-            });
+                new DatabaseIndex(typeof(T).RESTarTypeName())
+                {
+                    Name = indexName,
+                    Columns = columns
+                }
+            };
+            SelectionRequest.Result.ThrowIfError();
         }
 
         #endregion
 
         private static Condition<DatabaseIndex> SelectionCondition { get; set; }
-        private static Request<DatabaseIndex> SelectionRequest { get; set; }
+        private static IRequest<DatabaseIndex> SelectionRequest { get; set; }
         internal static readonly Dictionary<string, IDatabaseIndexer> Indexers;
         static DatabaseIndex() => Indexers = new Dictionary<string, IDatabaseIndexer>();
 
         internal static void Init()
         {
             SelectionCondition = new Condition<DatabaseIndex>(nameof(Name), Operators.EQUALS, null);
-            SelectionRequest = new Request<DatabaseIndex>(SelectionCondition);
+            SelectionRequest = Context.Root.CreateRequest<DatabaseIndex>(Method.PUT);
+            SelectionRequest.Conditions.Add(SelectionCondition);
         }
 
         /// <inheritdoc />
@@ -161,36 +167,33 @@ namespace RESTar.Admin
             .SelectMany(indexer => indexer.Select(request));
 
         /// <inheritdoc />
-        public int Insert(IRequest<DatabaseIndex> request) => request.GetEntities()
+        public int Insert(IRequest<DatabaseIndex> request) => request.GetInputEntities()
             .GroupBy(index => index.IResource.Provider)
             .Sum(group =>
             {
-                var requestinternal = (IRequestInternal<DatabaseIndex>) request;
                 if (!Indexers.TryGetValue(group.Key, out var indexer))
                     throw new Exception($"Unable to register index. Resource '{group.First().IResource.Name}' " +
                                         "is not a database resource.");
-                requestinternal.EntitiesGenerator = () => group;
-                return indexer.Insert(requestinternal);
+                request.Selector = () => group;
+                return indexer.Insert(request);
             });
 
         /// <inheritdoc />
-        public int Update(IRequest<DatabaseIndex> request) => request.GetEntities()
+        public int Update(IRequest<DatabaseIndex> request) => request.GetInputEntities()
             .GroupBy(index => index.IResource.Provider)
             .Sum(group =>
             {
-                var requestinternal = (IRequestInternal<DatabaseIndex>) request;
-                requestinternal.EntitiesGenerator = () => group;
-                return Indexers[group.Key].Update(requestinternal);
+                request.Updater = _ => group;
+                return Indexers[group.Key].Update(request);
             });
 
         /// <inheritdoc />
-        public int Delete(IRequest<DatabaseIndex> request) => request.GetEntities()
+        public int Delete(IRequest<DatabaseIndex> request) => request.GetInputEntities()
             .GroupBy(index => index.IResource.Provider)
             .Sum(group =>
             {
-                var requestinternal = (IRequestInternal<DatabaseIndex>) request;
-                requestinternal.EntitiesGenerator = () => group;
-                return Indexers[group.Key].Delete(requestinternal);
+                request.Selector = () => group;
+                return Indexers[group.Key].Delete(request);
             });
     }
 

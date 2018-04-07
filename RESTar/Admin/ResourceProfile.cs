@@ -2,8 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using Dynamit;
-using RESTar.Internal;
 using RESTar.Linq;
+using RESTar.Operations;
+using RESTar.Resources;
 using Starcounter;
 
 namespace RESTar.Admin
@@ -12,7 +13,7 @@ namespace RESTar.Admin
     /// <summary>
     /// Provides a profile for a given resource
     /// </summary>
-    [RESTar(Methods.GET, Description = description)]
+    [RESTar(Method.GET, Description = description)]
     public class ResourceProfile : ISelector<ResourceProfile>
     {
         private const int singleSampleCutoff = 1_000;

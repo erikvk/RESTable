@@ -5,7 +5,7 @@ namespace RESTar
 {
     /// <summary>
     /// Defines the operations ofa content type provider, that is used when 
-    /// finalizing results to a given content type.
+    /// serialize results to a given content type.
     /// </summary>
     public interface IContentTypeProvider
     {
@@ -48,14 +48,13 @@ namespace RESTar
         /// Serializes the entity to the given Stream. Include the number of entitites serialized in the entityCount
         /// out parameter (should be 0 or 1).
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        void SerializeEntity<T>(T entity, Stream stream, IRequest request, out ulong entityCount) where T : class;
+        void SerializeEntity(object entity, Stream stream, IRequest request, out ulong entityCount);
 
         /// <summary>
         /// Serializes the entity collection to the given Stream. Include the number of entities serialized in the entityCount 
         /// out parameter.
         /// </summary>
-        void SerializeCollection<T>(IEnumerable<T> entities, Stream stream, IRequest request, out ulong entityCount) where T : class;
+        void SerializeCollection(IEnumerable<object> entities, Stream stream, IRequest request, out ulong entityCount);
 
         /// <summary>
         /// Deserializes the byte array to the given content entity type. Deserialize calls can only be made with 

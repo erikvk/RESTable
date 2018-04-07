@@ -13,9 +13,9 @@ namespace RESTar
     public class RESTarInternalAttribute : RESTarAttribute
     {
         /// <inheritdoc />
-        internal RESTarInternalAttribute(IReadOnlyList<Methods> methods) : base(methods) { }
+        internal RESTarInternalAttribute(IReadOnlyList<Method> methods) : base(methods) { }
 
         /// <inheritdoc />
-        public RESTarInternalAttribute(params Methods[] methodRestrictions) : base(methodRestrictions) { }
+        public RESTarInternalAttribute(params Method[] methodRestrictions) : base(methodRestrictions) { }
     }
 }

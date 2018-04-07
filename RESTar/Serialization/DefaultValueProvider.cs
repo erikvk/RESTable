@@ -1,5 +1,5 @@
 ﻿using Newtonsoft.Json.Serialization;
-using RESTar.Deflection.Dynamic;
+using RESTar.Reflection.Dynamic;
 
 namespace RESTar.Serialization
 {

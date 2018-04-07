@@ -2,16 +2,15 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using RESTar.Results.Error;
 using RESTar.Serialization;
 
 namespace RESTar.WebSockets
 {
     internal static class WebSocketController
     {
-        internal static readonly IDictionary<string, IWebSocketInternal> AllSockets;
-        static WebSocketController() => AllSockets = new ConcurrentDictionary<string, IWebSocketInternal>();
-        internal static void Add(IWebSocketInternal webSocket) => AllSockets[webSocket.TraceId] = webSocket;
+        internal static readonly IDictionary<string, WebSocket> AllSockets;
+        static WebSocketController() => AllSockets = new ConcurrentDictionary<string, WebSocket>();
+        internal static void Add(WebSocket webSocket) => AllSockets[webSocket.TraceId] = webSocket;
 
         internal static void HandleTextInput(string wsId, string textInput)
         {
@@ -24,7 +23,7 @@ namespace RESTar.WebSockets
                 {
                     case "#SHELL":
                     case "#HOME":
-                        Shell.TerminalResource.InstantiateFor(webSocket);
+                        webSocket.SendToShell();
                         break;
                     case "#DISCONNECT":
                         webSocket.Disconnect();
@@ -39,7 +38,7 @@ namespace RESTar.WebSockets
                         }
                         catch (Exception e)
                         {
-                            webSocket.SendResult(RESTarError.GetError(e));
+                            webSocket.SendException(e);
                         }
                         break;
                     case "#INFO":
@@ -54,7 +53,7 @@ namespace RESTar.WebSockets
                         }
                         catch (Exception e)
                         {
-                            webSocket.SendResult(RESTarError.GetError(e));
+                            webSocket.SendException(e);
                         }
                         break;
                     case "#TERMINAL":

@@ -1,4 +1,6 @@
 ﻿using System.Collections.Generic;
+using RESTar.Internal;
+using RESTar.Results;
 
 namespace RESTar.Requests
 {
@@ -7,8 +9,12 @@ namespace RESTar.Requests
     /// </summary>
     public struct Body
     {
-        private ContentType ContentType { get; }
-        private IContentTypeProvider ContentTypeProvider { get; }
+        /// <summary>
+        /// The content type of the body
+        /// </summary>
+        public ContentType ContentType { get; }
+
+        private CachedProtocolProvider ProtocolProvider { get; }
 
         /// <summary>
         /// The body's bytes
@@ -18,24 +24,37 @@ namespace RESTar.Requests
         /// <summary>
         /// Deserializes the body to a list of entitites of the given type
         /// </summary>
-        public List<T> ToList<T>() where T : class => HasContent ? ContentTypeProvider.DeserializeCollection<T>(Bytes) : null;
+        public List<T> ToList<T>() where T : class
+        {
+            if (!HasContent) return null;
+            var contentTypeProvider = ProtocolProvider.InputMimeBindings.SafeGet(ContentType.MediaType) ??
+                                      throw new UnsupportedContent(ContentType.MediaType);
+            return contentTypeProvider.DeserializeCollection<T>(Bytes);
+        }
 
         /// <summary>
-        /// Populates the body onto each entity in a source collection
+        /// Populates the body onto each entity in a source collection. If the body is empty,
+        /// returns null.
         /// </summary>
-        public IEnumerable<T> PopulateTo<T>(IEnumerable<T> source) where T : class => ContentTypeProvider.Populate(source, Bytes);
+        public IEnumerable<T> PopulateTo<T>(IEnumerable<T> source) where T : class
+        {
+            if (source == null || !HasContent) return null;
+            var contentTypeProvider = ProtocolProvider.InputMimeBindings.SafeGet(ContentType.MediaType) ??
+                                      throw new UnsupportedContent(ContentType.MediaType);
+            return contentTypeProvider.Populate(source, Bytes);
+        }
 
         /// <summary>
         /// Does this Body have content?
         /// </summary>
         public bool HasContent { get; }
 
-        internal Body(byte[] bytes, ContentType contentType, IContentTypeProvider contentTypeProvider)
+        internal Body(byte[] bytes, ContentType contentType, CachedProtocolProvider protocolProvider)
         {
             ContentType = contentType;
-            ContentTypeProvider = contentTypeProvider;
             Bytes = bytes;
             HasContent = bytes?.Length > 0;
+            ProtocolProvider = protocolProvider;
         }
     }
 }

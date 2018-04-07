@@ -5,8 +5,9 @@ using System.Text.RegularExpressions;
 using Newtonsoft.Json;
 using RESTar.Internal;
 using RESTar.Linq;
+using RESTar.Operations;
 using RESTar.Resources;
-using RESTar.Results.Error.BadRequest;
+using RESTar.Results;
 
 namespace RESTar.Admin
 {
@@ -41,7 +42,7 @@ namespace RESTar.Admin
         /// <summary>
         /// The methods that have been enabled for this resource
         /// </summary>
-        public Methods[] EnabledMethods { get; set; }
+        public Method[] EnabledMethods { get; set; }
 
         /// <summary>
         /// Is this resource editable?
@@ -115,7 +116,7 @@ namespace RESTar.Admin
                     : null,
                 IResource = iresource,
                 Provider = entityResource?.Provider ?? "Terminal",
-                Kind = entityResource != null ? ResourceKind.EntityResource : ResourceKind.TerminalResource,
+                Kind = iresource.ResourceKind,
                 InnerResources = ((IResourceInternal) iresource).InnerResources?.Select(Make).ToArray()
             };
         }
@@ -125,7 +126,7 @@ namespace RESTar.Admin
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
             var count = 0;
-            foreach (var entity in request.GetEntities())
+            foreach (var entity in request.GetInputEntities())
             {
                 if (string.IsNullOrWhiteSpace(entity.Name))
                     throw new Exception("Missing or invalid name for new resource");
@@ -136,9 +137,6 @@ namespace RESTar.Admin
                 if (entity.EnabledMethods?.Any() != true)
                     entity.EnabledMethods = RESTarConfig.Methods;
                 DynamicResource.MakeTable(entity);
-
-
-
                 count += 1;
             }
             return count;
@@ -170,7 +168,7 @@ namespace RESTar.Admin
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
             var count = 0;
-            foreach (var resource in request.GetEntities())
+            foreach (var resource in request.GetInputEntities())
             {
                 #region Edit alias (available for all resources)
 
@@ -230,7 +228,7 @@ namespace RESTar.Admin
         public int Delete(IRequest<Resource> request)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
-            return request.GetEntities().Count(DynamicResource.DeleteTable);
+            return request.GetInputEntities().Count(DynamicResource.DeleteTable);
         }
     }
 }

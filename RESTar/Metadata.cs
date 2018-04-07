@@ -3,10 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using RESTar.Auth;
-using RESTar.Deflection.Dynamic;
-using RESTar.Internal;
+using RESTar.Reflection.Dynamic;
 using RESTar.Linq;
-using RESTar.Results.Error;
+using RESTar.Operations;
+using RESTar.Resources;
+using RESTar.Results;
 
 namespace RESTar
 {
@@ -31,13 +32,13 @@ namespace RESTar
     /// <summary>
     /// Creates metadata for the types and resources of the RESTar instance
     /// </summary>
-    [RESTar(Methods.GET, GETAvailableToAll = true)]
+    [RESTar(Method.GET, GETAvailableToAll = true)]
     public class Metadata : ISelector<Metadata>
     {
         /// <summary>
         /// The access scope for the current client
         /// </summary>
-        public IDictionary<IResource, Methods[]> CurrentAccessScope { get; private set; }
+        public IDictionary<IResource, Method[]> CurrentAccessScope { get; private set; }
 
         /// <summary>
         /// The entity resources within the access scope
@@ -63,7 +64,7 @@ namespace RESTar
         /// <inheritdoc />
         public IEnumerable<Metadata> Select(IRequest<Metadata> request)
         {
-            var accessrights = Authenticator.AuthTokens[request.TcpConnection.AuthToken];
+            var accessrights = request.Context.Client.AccessRights;
             return new[] {Make(MetadataLevel.Full, accessrights)};
         }
 
@@ -88,7 +89,7 @@ namespace RESTar
             if (level == MetadataLevel.OnlyResources)
                 return new Metadata
                 {
-                    CurrentAccessScope = new Dictionary<IResource, Methods[]>(rights ?? AccessRights.Root),
+                    CurrentAccessScope = new Dictionary<IResource, Method[]>(rights ?? AccessRights.Root),
                     EntityResources = entityResources.ToArray(),
                     TerminalResources = terminalResources.ToArray()
                 };
@@ -139,7 +140,7 @@ namespace RESTar
 
             return new Metadata
             {
-                CurrentAccessScope = new Dictionary<IResource, Methods[]>(rights ?? AccessRights.Root),
+                CurrentAccessScope = new Dictionary<IResource, Method[]>(rights ?? AccessRights.Root),
                 EntityResources = entityResources.ToArray(),
                 TerminalResources = terminalResources.ToArray(),
                 EntityResourceTypes = entityTypes

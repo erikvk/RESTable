@@ -12,9 +12,9 @@ using RESTar;
 using RESTar.Admin;
 using RESTar.Linq;
 using RESTar.Operations;
-using RESTar.Resources;
+using RESTar.Results;
 using Starcounter;
-using static RESTar.Methods;
+using static RESTar.Method;
 using static RESTar.Operators;
 
 #pragma warning disable 219
@@ -35,7 +35,14 @@ namespace RESTarTester
 
         public static void Main()
         {
-            RESTarConfig.Init(9000, lineEndings: LineEndings.Windows, prettyPrint: true);
+            RESTarConfig.Init
+            (
+                port: 9000,
+                lineEndings: LineEndings.Windows,
+                prettyPrint: true,
+                allowAllOrigins: false,
+                configFilePath: @"C:\Mopedo\mopedo\Mopedo.config"
+            );
             Db.SQL<Base>("SELECT t FROM RESTarTester.Base t").ForEach(b => Db.TransactAsync(b.Delete));
             Db.SQL<MyDict>("SELECT t FROM RESTarTester.MyDict t").ForEach(b => Db.TransactAsync(b.Delete));
             Db.SQL<MyDict2>("SELECT t FROM RESTarTester.MyDict2 t").ForEach(b => Db.TransactAsync(b.Delete));
@@ -432,7 +439,9 @@ namespace RESTarTester
 
             #region Internal requests
 
-            var g = new Request<MyDict>().POST(() =>
+            var context = Context.Root;
+            var g = context.CreateRequest<MyDict>(POST);
+            g.Selector = () =>
             {
                 dynamic d = new MyDict();
                 d.Hej = "123";
@@ -447,32 +456,37 @@ namespace RESTarTester
                 x.Foo = 3213M;
                 x.Goo = false;
                 return new MyDict[] {d, v, x};
-            });
-
-            var r1 = new Request<Resource1>(new Condition<Resource1>(nameof(Resource1.Sbyte), GREATER_THAN, 1));
-            var r2 = new Request<Resource2>();
-            var r3 = new Request<Resource3>();
-            var r4 = new Request<Resource4>();
-            var r6 = new Request<Aggregator>
-            {
-                Body = new
-                {
-                    A = "REPORT /resource",
-                    B = new[] {"REPORT /resource", "REPORT /resource"}
-                }
             };
-            var r5 = new Request<MyDict>();
-            var cond = new Condition<MyDict>("Goo", EQUALS, false);
-            r5.Conditions = new[] {cond};
+            var result = g.Result;
+            Debug.Assert(result is InsertedEntities ie && ie.InsertedCount == 3);
 
-            var res1 = r1.GET();
-            var res2 = r2.GET();
-            var res3 = r3.GET();
-            var res4 = r4.GET();
-            var res5 = r5.GET();
-            var (excel, nrOfRows) = r5.GETExcel();
-            excel.Dispose();
-            var res6 = r6.GET();
+            var r1Cond = new Condition<Resource1>(nameof(Resource1.Sbyte), GREATER_THAN, 1);
+            var r1 = context.CreateRequest<Resource1>(GET);
+            r1.Conditions.Add(r1Cond);
+
+            var r2 = context.CreateRequest<Resource2>(GET);
+            var r3 = context.CreateRequest<Resource3>(GET);
+            var r4 = context.CreateRequest<Resource4>(GET);
+            var r6 = context.CreateRequest<Aggregator>(GET);
+            r6.SetBody(new
+            {
+                A = "REPORT /resource",
+                B = new[] {"REPORT /resource", "REPORT /resource"}
+            });
+            var r5 = context.CreateRequest<Resource1>(GET);
+            var cond = new Condition<Resource1>("SByte", GREATER_THAN, 2);
+            r5.Conditions.Add(cond);
+            r5.Headers.Accept = RESTar.ContentType.Excel;
+
+            var res1 = r1.Result.Serialize();
+            var res2 = r2.Result.Serialize();
+            var res3 = r3.Result.Serialize();
+            var res4 = r4.Result.Serialize();
+            var res5 = r5.Result.Serialize();
+            var res6 = r6.Result.Serialize();
+
+            Debug.Assert(res5.Headers.ContentType == RESTar.ContentType.Excel);
+            Debug.Assert(res5.Body.Length > 1);
 
             Db.TransactAsync(() =>
             {
@@ -509,6 +523,17 @@ namespace RESTarTester
 
             #endregion
 
+            #region OPTIONS
+
+            var optionsResponse1 = Http.CustomRESTRequest("OPTIONS", "http://localhost:9000/rest/resource1", default(string),
+                new Dictionary<string, string> {["Origin"] = "https://fooboo.com/thingy"});
+            Debug.Assert(optionsResponse1?.IsSuccessStatusCode == true);
+            var optionsResponse2 = Http.CustomRESTRequest("OPTIONS", "http://localhost:9000/rest/resource1", default(string),
+                new Dictionary<string, string> {["Origin"] = "https://fooboo.com/invalid"});
+            Debug.Assert(optionsResponse2?.IsSuccessStatusCode == false);
+
+            #endregion
+            
             var done = true;
         }
     }
@@ -658,13 +683,13 @@ namespace RESTarTester
 
         public IEnumerable<AuthResource> Select(IRequest<AuthResource> request) => Items.Where(request.Conditions);
 
-        public int Insert(IRequest<AuthResource> request) => request.GetEntities().Aggregate(0, (count, entity) =>
+        public int Insert(IRequest<AuthResource> request) => request.GetInputEntities().Aggregate(0, (count, entity) =>
         {
             Items.Add(entity);
             return count += 1;
         });
 
-        public int Delete(IRequest<AuthResource> request) => request.GetEntities()
+        public int Delete(IRequest<AuthResource> request) => request.GetInputEntities()
             .Aggregate(0, (count, entity) => count += Items.RemoveAll(i => i.Id == entity.Id));
 
         public AuthResults Authenticate(IRequest<AuthResource> request)

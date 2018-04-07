@@ -2,9 +2,8 @@
 using System.Linq;
 using System.Runtime.Serialization;
 using RESTar.Linq;
-using RESTar.Operations;
 using Starcounter;
-using static RESTar.Methods;
+using static RESTar.Method;
 
 namespace RESTar.Admin
 {
@@ -80,7 +79,7 @@ namespace RESTar.Admin
         [RESTarMember(hide: true)] public string TempFilePath { get; private set; }
 
         internal static void Init(ushort port, string uri, bool viewEnabled, bool prettyPrint,
-            int daysToSaveErrors, LineEndings lineEndings) => Transact.Trans(() =>
+            int daysToSaveErrors, LineEndings lineEndings) => Db.TransactAsync(() =>
         {
             Clear();
             new Settings
@@ -95,7 +94,7 @@ namespace RESTar.Admin
             };
         });
 
-        internal static void Clear() => Transact.Trans(() => Db.SQL<Settings>(All).ForEach(Db.Delete));
+        internal static void Clear() => Db.TransactAsync(() => Db.SQL<Settings>(All).ForEach(Db.Delete));
 
         /// <summary>
         /// Gets the only instance of the Settings resource

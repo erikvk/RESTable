@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using RESTar.Admin;
 using RESTar.Serialization.NativeProtocol;
 using static Newtonsoft.Json.Formatting;
 using static RESTar.Admin.Settings;
@@ -140,7 +141,7 @@ namespace RESTar.ContentTypeProviders
         public string Name => "JSON";
 
         /// <inheritdoc />
-        public ContentType ContentType { get; } = new ContentType("application/json; charset=utf-8");
+        public ContentType ContentType { get; } = "application/json; charset=utf-8";
 
         /// <inheritdoc />
         public bool CanRead => true;
@@ -181,14 +182,14 @@ namespace RESTar.ContentTypeProviders
         }
 
         /// <inheritdoc />
-        public void SerializeEntity<T>(T entity, Stream stream, IRequest request, out ulong entityCount) where T : class
+        public void SerializeEntity(object entity, Stream stream, IRequest request, out ulong entityCount)
         {
             if (entity == null)
             {
                 entityCount = 0;
                 return;
             }
-            var formatter = request.MetaConditions.Formatter;
+            var formatter = request.MetaConditions.Formatter ?? DbOutputFormat.Default;
             using (var swr = new StreamWriter(stream, UTF8, 2048, true))
             using (var jwr = new RESTarJsonWriter(swr, formatter.StartIndent))
             {
@@ -202,14 +203,14 @@ namespace RESTar.ContentTypeProviders
         }
 
         /// <inheritdoc />
-        public void SerializeCollection<T>(IEnumerable<T> entities, Stream stream, IRequest request, out ulong entityCount) where T : class
+        public void SerializeCollection(IEnumerable<object> entities, Stream stream, IRequest request, out ulong entityCount)
         {
             if (entities == null)
             {
                 entityCount = 0;
                 return;
             }
-            var formatter = request.MetaConditions.Formatter;
+            var formatter = request.MetaConditions.Formatter ?? DbOutputFormat.Default;
             using (var swr = new StreamWriter(stream, UTF8, 2048, true))
             using (var jwr = new RESTarJsonWriter(swr, formatter.StartIndent))
             {

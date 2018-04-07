@@ -1,8 +1,9 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
-using RESTar.Internal;
-using RESTar.Operations;
 using RESTar.Requests;
+using RESTar.Resources;
+using RESTar.WebSockets;
 
 namespace RESTar
 {
@@ -19,26 +20,22 @@ namespace RESTar
         void SendText(string data);
 
         /// <summary>
-        /// Sends the byte array data as text over the WebSocket. Send calls to a closed WebSocket will be queued and sent 
-        /// when the WebSocket is opened.
+        /// Sends the byte array data as text over the WebSocket.
         /// </summary>
-        void SendText(byte[] data);
+        void SendText(byte[] data, int offset, int length);
 
         /// <summary>
-        /// Sends the Stream data as text over the WebSocket. Send calls to a closed WebSocket will be queued and sent 
-        /// when the WebSocket is opened.
+        /// Sends the Stream data as text over the WebSocket.
         /// </summary>
         void SendText(Stream data);
 
         /// <summary>
-        /// Sends the byte array data as binary over the WebSocket. Send calls to a closed WebSocket will be queued and sent 
-        /// when the WebSocket is opened.
+        /// Sends the byte array data as binary over the WebSocket.
         /// </summary>
-        void SendBinary(byte[] data);
+        void SendBinary(byte[] data, int offset, int length);
 
         /// <summary>
-        /// Sends the Stream data as binary over the WebSocket. Send calls to a closed WebSocket will be queued and sent 
-        /// when the WebSocket is opened.
+        /// Sends the Stream data as binary over the WebSocket.
         /// </summary>
         void SendBinary(Stream data);
 
@@ -46,15 +43,18 @@ namespace RESTar
         /// Sends an object over the WebSocket, serialized as JSON text. The output pretty print setting is controlled by
         /// the prettyPrint parameter. If null, the global pretty print setting is used.
         /// </summary>
-        void SendJson(object item, bool? prettyPrint = null, bool ignoreNulls = false);
+        void SendJson(object item, bool asText = false, bool? prettyPrint = null, bool ignoreNulls = false);
 
         /// <summary>
         /// Sends a result over a WebSocket.
         /// </summary>
-        /// <param name="result">The result to send</param>
-        /// <param name="includeStatusWithContent">Should the result status code and description be included before the result content?</param>
-        /// <param name="timeElapsed">The elapsed time to include, or null if no time should be included</param>
-        void SendResult(IFinalizedResult result, bool includeStatusWithContent = true, TimeSpan? timeElapsed = null);
+        /// <param name="result">The result to send. The body of the result will be sent as binary over the websocket.
+        /// Additional inforation can be included in separate text messages (see other parameters).</param>
+        /// <param name="timeElapsed">The elapsed time to include, or null if no time should be included. If not null, timeElapsed 
+        /// will be included in the status text message (see writeStatus)</param>
+        /// <param name="writeHeaders">Should headers be included as a text message? If true, headers are printed after the status
+        /// (if any) and before the content is sent.</param>
+        void SendResult(ISerializedResult result, TimeSpan? timeElapsed = null, bool writeHeaders = false);
 
         /// <summary>
         /// Sends an exception over the WebSocket.
@@ -70,13 +70,13 @@ namespace RESTar
         /// Closes the current terminal (if any) and sends the WebSocket to the Shell terminal. Use this to quit from a 
         /// terminal resource.
         /// </summary>
-        void SendToShell();
+        void SendToShell(IEnumerable<Condition<Shell>> assignments = null);
 
         /// <summary>
         /// Closes the current terminal (if any) and sends the WebSocket to the provided terminal. Use this to quit from a 
         /// terminal resource and open another terminal instead.
         /// </summary>
-        void SendTo(ITerminalResource terminalResource);
+        void SendTo<T>(ITerminalResource<T> terminalResource, IEnumerable<Condition<T>> assignments = null) where T : class, ITerminal;
 
         /// <summary>
         /// The current status of this WebSocket

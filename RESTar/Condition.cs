@@ -3,33 +3,37 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Linq;
-using RESTar.Deflection;
-using RESTar.Deflection.Dynamic;
+using RESTar.Reflection;
+using RESTar.Reflection.Dynamic;
 using RESTar.Internal;
 using RESTar.Operations;
 using RESTar.Requests;
-using RESTar.Results.Error.BadRequest;
+using RESTar.Resources;
+using RESTar.Results;
 using static System.StringComparison;
 using static RESTar.Operators;
 
 namespace RESTar
 {
-    /// <inheritdoc />
+    /// <inheritdoc cref="ICondition" />
+    /// <inheritdoc cref="IUriCondition" />
     /// <summary>
     /// A condition encodes a predicate that is either true or false of an entity
     /// in a resource. It is used to match entities in resources while selecting 
     /// entities to include in a GET, PUT, PATCH or DELETE request.
     /// </summary>
-    public class Condition<T> : ICondition where T : class
+    public class Condition<T> : ICondition, IUriCondition where T : class
     {
         private static readonly IDictionary<UriCondition, Condition<T>> ConditionCache;
         static Condition() => ConditionCache = new ConcurrentDictionary<UriCondition, Condition<T>>(UriCondition.EqualityComparer);
 
-        /// <inheritdoc />
+        /// <inheritdoc cref="ICondition" />
+        /// <inheritdoc cref="IUriCondition" />
         public string Key => Term.Key;
 
         private Operators _operator;
 
+        /// <inheritdoc />
         /// <summary>
         /// The operator of the condition, specifies the operation of the truth
         /// evaluation. Should the condition check for equality, for example?
@@ -46,70 +50,28 @@ namespace RESTar
                     case None: throw new ArgumentException($"Invalid condition operator '{value}'");
                 }
                 _operator = value;
-                if (!ScQueryable) return;
-                HasChanged = true;
             }
         }
-
-        internal Operator InternalOperator => Operator;
-
-        private dynamic _value;
 
         /// <summary>
         /// The second operand for the operation defined by the operator. Defines
         /// the object for comparison.
         /// </summary>
-        public dynamic Value
-        {
-            get => _value;
-            set
-            {
-                if (Do.Try<bool>(() => value == _value, false))
-                    return;
-                var oldValue = _value;
-                _value = value;
-                if (!ScQueryable) return;
-                if (value == null || oldValue == null)
-                    HasChanged = true;
-                else ValueChanged = true;
-            }
-        }
+        public dynamic Value { get; set; }
 
         /// <inheritdoc />
         public Term Term { get; }
 
-        /// <inheritdoc />
-        public override int GetHashCode() => typeof(T).GetHashCode() + Key.GetHashCode() + Operator.GetHashCode();
-
-        private bool _skip;
-
         /// <summary>
         /// Should this condition be skipped during evaluation?
         /// </summary>
-        public bool Skip
-        {
-            get => _skip;
-            set
-            {
-                if (ScQueryable)
-                {
-                    if (value == _skip) return;
-                    _skip = value;
-                    HasChanged = true;
-                }
-                else _skip = value;
-            }
-        }
+        public bool Skip { get; set; }
 
-        /// <summary>
-        /// If true, this condition needs to be written to new SQL
-        /// </summary>
-        internal bool HasChanged { get; set; }
+        string IUriCondition.ValueLiteral => Value is DateTime
+            ? $"{Key}{InternalOperator.Common}{Value:O}"
+            : $"{Key}{InternalOperator.Common}{Value}";
 
-        /// <summary>
-        /// If true, a new value must be obtained from this condition before SQL
-        /// </summary>
-        internal bool ValueChanged { get; set; }
+        internal Operator InternalOperator => Operator;
 
         /// <summary>
         /// Is this condition queryable using Starcounter SQL?
@@ -138,21 +100,20 @@ namespace RESTar
         /// <param name="key">The key of the property of T to target, e.g. "Name", "Name.Length"</param>
         /// <param name="op">The operator denoting the operation to evaluate for the property</param>
         /// <param name="value">The value to compare the property referenced by the key with</param>
-        public Condition(string key, Operators op, object value) : this(
+        public Condition(string key, Operators op, object value) : this
+        (
             term: EntityResource<T>.SafeGet?.MakeConditionTerm(key)
                   ?? typeof(T).MakeOrGetCachedTerm(key, TermBindingRules.DeclaredWithDynamicFallback),
             op: op,
             value: value
         ) { }
 
-        internal Condition(Term term, Operators op, object value)
+        private Condition(Term term, Operators op, object value)
         {
             Term = term;
             _operator = op;
-            _value = value;
-            _skip = term.ConditionSkip;
-            if (!ScQueryable) return;
-            HasChanged = true;
+            Value = value;
+            Skip = term.ConditionSkip;
         }
 
         /// <summary>
@@ -199,26 +160,30 @@ namespace RESTar
             }
         }
 
-        internal static Condition<T>[] Parse(string conditionsString, ITarget<T> target) =>
-            Parse(UriCondition.ParseMany(conditionsString), target);
+        internal static List<Condition<T>> Parse(string conditionsString, ITarget<T> target) => Parse(UriCondition.ParseMany(conditionsString), target);
 
         /// <summary>
         /// Parses and checks the semantics of Conditions object from a conditions of a REST request URI
         /// </summary>
-        public static Condition<T>[] Parse(IEnumerable<UriCondition> uriConditions, ITarget<T> target) => uriConditions.Select(c =>
+        public static List<Condition<T>> Parse(ICollection<UriCondition> uriConditions, ITarget<T> target)
         {
-            if (ConditionCache.TryGetValue(c, out var cond))
-                return cond;
-            var term = target.MakeConditionTerm(c.Key);
-            var last = term.Last;
-            if (!last.AllowedConditionOperators.HasFlag(c.Operator.OpCode))
-                throw new BadConditionOperator(c.Key, target, c.Operator, term, last.AllowedConditionOperators.ToOperators());
-            return ConditionCache[c] = new Condition<T>
-            (
-                term: term,
-                op: c.Operator.OpCode,
-                value: c.ValueLiteral.ParseConditionValue(last as DeclaredProperty)
-            );
-        }).ToArray();
+            var list = new List<Condition<T>>(uriConditions.Count);
+            list.AddRange(uriConditions.Select(c =>
+            {
+                if (ConditionCache.TryGetValue(c, out var cond))
+                    return cond;
+                var term = target.MakeConditionTerm(c.Key);
+                var last = term.Last;
+                if (!last.AllowedConditionOperators.HasFlag(c.Operator.OpCode))
+                    throw new BadConditionOperator(c.Key, target, c.Operator, term, last.AllowedConditionOperators.ToOperators());
+                return ConditionCache[c] = new Condition<T>
+                (
+                    term: term,
+                    op: c.Operator.OpCode,
+                    value: c.ValueLiteral.ParseConditionValue(last as DeclaredProperty)
+                );
+            }));
+            return list;
+        }
     }
 }

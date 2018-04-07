@@ -8,12 +8,27 @@
         /// <summary>
         /// Used when extracting the protocol from a URI
         /// </summary>
-        internal const string Protocol = @"^(?<proto>-[^\?/\(]*)?(?<key>\([^\)]+\))?(?<tail>.*)";
+        internal const string Protocol = @"^(?<proto>-[^\?/\(]*)?(?<tail>.*)";
+
+        /// <summary>
+        /// Used when extracting API keys from URIs
+        /// </summary>
+        internal const string UriKey = @"^[^\(]*(?<key>\([^\)]+\))";
 
         /// <summary>
         /// The main URI regex, used when parsing requests
         /// </summary>
         internal const string RESTarRequestUri = @"^\??((?<res>/[^/-]*)|((?<res>/[^/-]*)(?<view>-\w*)))?(?<cond>/[^/]*)?(?<meta>/[^/]*)?/?$";
+
+        /// <summary>
+        /// Used when parsing header request parameters like Source and Destination
+        /// </summary>
+        internal const string HeaderRequestParameters = @"^(?<method>\w+) (?<uri>\S+)\s?(?<headers>\[[^\]]+\])*$";
+
+        /// <summary>
+        /// Matches headers in source and destination header syntax
+        /// </summary>
+        internal const string HeaderRequestParametersRequestHeader = @"\[(?<header>.+):[\s]*(?<value>[^\]]+)\]";
 
         /// <summary>
         /// Checks API keys for invalid characters. May only contain non-whitespace characters and non-parentheses
@@ -36,11 +51,6 @@
         internal const string DynamicResourceName = @"^[a-zA-Z0-9_\.]+$";
 
         /// <summary>
-        /// Matches headers in source and destination header syntax
-        /// </summary>
-        internal const string RequestHeader = @"\[(?<header>.+):[\s]*(?<value>.+)\]";
-
-        /// <summary>
         /// Used when sending unescaped data through a RESTar view model
         /// </summary>
         internal const string ViewMacro = @"\@RESTar\((?<content>[^\(\)]*)\)";
@@ -49,7 +59,7 @@
         /// Used in setoperations when mapping object data to function parameters
         /// </summary>
         internal const string MapMacro = @"\$\((?<value>[^\)]+)\)";
-        
+
         /// <summary>
         /// Matches condition literals sorrounded with double quotes
         /// </summary>

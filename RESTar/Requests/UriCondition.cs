@@ -4,19 +4,18 @@ using System.Linq;
 using System.Net;
 using System.Text.RegularExpressions;
 using RESTar.Internal;
-using RESTar.Results.Error.BadRequest;
+using RESTar.Results;
 using static System.StringComparison;
 
 namespace RESTar.Requests
 {
+    /// <inheritdoc cref="IUriCondition" />
     /// <summary>
     /// Describes the syntactic components of a RESTar uri condition
     /// </summary>
-    public struct UriCondition
+    public struct UriCondition : IUriCondition
     {
-        /// <summary>
-        /// The key of the condition. Denotes a property in a resource.
-        /// </summary>
+        /// <inheritdoc />
         public string Key { get; }
 
         /// <summary>
@@ -24,18 +23,17 @@ namespace RESTar.Requests
         /// </summary>
         public Operators OperatorCode => Operator.OpCode;
 
+        Operators IUriCondition.Operator => OperatorCode;
+
         internal Operator Operator { get; }
 
-        /// <summary>
-        /// The value literal that encodes the value to compare against
-        /// </summary>
+        /// <inheritdoc />
         public string ValueLiteral { get; }
 
-        internal static IEnumerable<UriCondition> ParseMany(string conditionsString, bool check = false) =>
-            conditionsString.Split('&').Select(s => new UriCondition(s, check));
-
-        /// <inheritdoc />
-        public override string ToString() => $"{Key}{Operator.Common}{ValueLiteral}";
+        internal static List<UriCondition> ParseMany(string conditionsString, bool check = false) => conditionsString
+            .Split('&')
+            .Select(s => new UriCondition(s, check))
+            .ToList();
 
         /// <summary>
         /// Creates a new custom UriCondition
@@ -94,7 +92,7 @@ namespace RESTar.Requests
         /// <summary>
         /// EqualityComparer for UriCondition objects
         /// </summary>
-        public static IEqualityComparer<UriCondition> EqualityComparer = new _EqualityComparer();
+        public static readonly IEqualityComparer<UriCondition> EqualityComparer = new _EqualityComparer();
 
         private class _EqualityComparer : IEqualityComparer<UriCondition>
         {

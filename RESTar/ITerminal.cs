@@ -44,6 +44,7 @@ namespace RESTar
         /// </summary>
         /// <returns></returns>
         bool SupportsBinaryInput { get; }
+
     }
 
     /// <inheritdoc />

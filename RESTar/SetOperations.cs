@@ -6,10 +6,10 @@ using System.Web;
 using Newtonsoft.Json.Linq;
 using RESTar.ContentTypeProviders;
 using RESTar.Linq;
-using RESTar.Requests;
-using RESTar.Results.Success;
+using RESTar.Operations;
+using RESTar.Results;
 using static System.StringComparison;
-using static RESTar.Methods;
+using static RESTar.Method;
 using JTokens = System.Collections.Generic.IEnumerable<Newtonsoft.Json.Linq.JToken>;
 
 #pragma warning disable 1591
@@ -52,10 +52,10 @@ namespace RESTar
                             case default(char): throw new Exception("Operation expressions cannot be empty strings");
                             case '[': return JArray.Parse(argument);
                             case '/':
-                                switch (RequestEvaluator.Evaluate(request, GET, ref argument).GetRawResult())
+                                switch (request.Context.CreateRequest(GET, argument).Result)
                                 {
                                     case NoContent _: return new JArray();
-                                    case Entities entities: return JArray.FromObject(entities.Content, JsonContentProvider.Serializer);
+                                    case IEntities entities: return JArray.FromObject(entities, JsonContentProvider.Serializer);
                                     case var other: throw new Exception($"Could not get source data from '{argument}'. {other.LogMessage}");
                                 }
                             default:
@@ -153,11 +153,11 @@ namespace RESTar
                     valueBuffer[i] = HttpUtility.UrlEncode(value);
                 }
                 localMapper = string.Format(localMapper, valueBuffer);
-                switch (RequestEvaluator.Evaluate(request, GET, ref localMapper).GetRawResult())
+                switch (request.Context.CreateRequest(GET, localMapper).Result)
                 {
                     case NoContent _: break;
-                    case Entities entities:
-                        mapped.UnionWith(entities.Content.Cast<object>().Select(e => e.ToJObject()));
+                    case IEntities<object> entities:
+                        mapped.UnionWith(entities.Select(e => e.ToJObject()));
                         break;
                     case var other:
                         throw new Exception($"Could not get source data from '{localMapper}'. {other.LogMessage}");

@@ -1,4 +1,5 @@
-﻿using RESTar.Requests;
+﻿using System;
+using RESTar.Requests;
 using RESTar.WebSockets;
 
 namespace RESTar.Logging
@@ -9,18 +10,20 @@ namespace RESTar.Logging
         public string TraceId { get; }
         public string LogMessage { get; }
         public string LogContent { get; }
-        public TCPConnection TcpConnection { get; }
         public Headers Headers { get; }
         public string HeadersStringCache { get; set; }
-        private IWebSocketInternal WebSocket { get; }
+        private WebSocket WebSocket { get; }
         public bool ExcludeHeaders { get; }
+        public DateTime LogTime { get; }
+        public Context Context { get; }
 
-        public WebSocketEvent(LogEventType direction, IWebSocketInternal webSocket, string content = null, int length = 0)
+        public WebSocketEvent(LogEventType direction, WebSocket webSocket, string content = null, int length = 0)
         {
             LogEventType = direction;
             TraceId = webSocket.TraceId;
             WebSocket = webSocket;
             ExcludeHeaders = false;
+            LogTime = DateTime.Now;
             switch (direction)
             {
                 case LogEventType.WebSocketInput:
@@ -37,7 +40,7 @@ namespace RESTar.Logging
                     break;
             }
             LogContent = content;
-            TcpConnection = webSocket.TcpConnection;
+            Context = webSocket.Context;
             Headers = webSocket.Headers;
         }
     }

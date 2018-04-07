@@ -11,16 +11,15 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using RESTar.Admin;
 using RESTar.Auth;
-using RESTar.Deflection.Dynamic;
+using RESTar.Reflection.Dynamic;
 using RESTar.Internal;
 using RESTar.Linq;
-using RESTar.Requests;
 using RESTar.Resources;
-using RESTar.Results.Error;
+using RESTar.Results;
+using RESTar.Sc;
 using Starcounter;
-using static RESTar.Methods;
-using static RESTar.Requests.StarcounterHandlers;
-using IResource = RESTar.Internal.IResource;
+using static RESTar.Method;
+using IResource = RESTar.Resources.IResource;
 
 namespace RESTar
 {
@@ -41,7 +40,7 @@ namespace RESTar
         internal static bool NeedsConfiguration => RequireApiKey || !AllowAllOrigins;
         private static string ConfigFilePath { get; set; }
         internal static bool Initialized { get; private set; }
-        internal static readonly Methods[] Methods = {GET, POST, PATCH, PUT, DELETE, REPORT, HEAD};
+        internal static readonly Method[] Methods = {GET, POST, PATCH, PUT, DELETE, REPORT, HEAD};
         internal static readonly Encoding DefaultEncoding = new UTF8Encoding(false);
 
         static RESTarConfig() => NewState();
@@ -165,16 +164,17 @@ namespace RESTar
                 Log.Init();
                 DynamitConfig.Init(true, true);
                 ResourceFactory.MakeResources(resourceProviders?.ToArray());
-                RequestEvaluator.SetupContentTypeProviders(contentTypeProviders?.ToList());
-                RequestEvaluator.SetupProtocolProviders(protocolProviders?.ToList());
+                ContentTypeController.SetupContentTypeProviders(contentTypeProviders?.ToList());
+                ProtocolController.SetupProtocolProviders(protocolProviders?.ToList());
                 RequireApiKey = requireApiKey;
                 AllowAllOrigins = allowAllOrigins;
                 ConfigFilePath = configFilePath;
-                RegisterRESTHandlers();
+                var networkProviders = new INetworkProvider[] {new ScNetworkProvider()};
+                NetworkController.AddNetworkBindings(networkProviders);
                 Initialized = true;
+                UpdateConfiguration();
                 DatabaseIndex.Init();
                 DbOutputFormat.Init();
-                UpdateConfiguration();
                 ResourceFactory.FinalCheck();
             }
             catch
@@ -183,7 +183,7 @@ namespace RESTar
                 RequireApiKey = default;
                 AllowAllOrigins = default;
                 ConfigFilePath = default;
-                UnregisterRESTHandlers();
+                NetworkController.RemoveNetworkBindings();
                 Settings.Clear();
                 NewState();
                 throw;
@@ -298,7 +298,7 @@ namespace RESTar
                     }
 
                     recurseAllowAccess(apiKeyToken["AllowAccess"]);
-                    var accessRights = accessRightList.ToAccessRights(key);
+                    var accessRights = accessRightList.ToAccessRights();
                     foreach (var resource in Resources.Where(r => r.GETAvailableToAll))
                     {
                         if (!accessRights.TryGetValue(resource, out var methods))
@@ -309,13 +309,9 @@ namespace RESTar
                                 .OrderBy(i => i, MethodComparer.Instance)
                                 .ToArray();
                     }
-
-                    Authenticator.ApiKeys[key] = accessRights;
-                    Authenticator.AuthTokens
-                        .Where(pair => pair.Value.Key == key)
-                        .ToList()
-                        .ForEach(pair => Authenticator.AuthTokens[pair.Key] = accessRights);
-
+                    if (Authenticator.ApiKeys.TryGetValue(key, out var existing))
+                        accessRights.ForEach(existing.Put);
+                    else Authenticator.ApiKeys[key] = accessRights;
                     break;
                 case JArray apiKeys:
                     apiKeys.ForEach(ReadApiKeys);
