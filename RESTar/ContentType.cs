@@ -20,6 +20,12 @@ namespace RESTar
         public ContentTypes(IEnumerable<ContentType> collection) : base(collection) { }
 
         /// <summary>
+        /// Parses an header value, possibly containing multiple content types, an returnes a 
+        /// ContentTypes collection describing them.
+        /// </summary>
+        public static ContentTypes Parse(string headerValue) => ContentType.ParseMany(headerValue);
+
+        /// <summary>
         /// Creates a ContentTypes from a single ContentType instance
         /// </summary>
         /// <param name="contentType"></param>
@@ -38,14 +44,19 @@ namespace RESTar
     public struct ContentType
     {
         /// <summary>
-        /// The MIME type string, for example "application/json"
+        /// The media type string, for example "application/json" 
         /// </summary>
-        public string MimeType { get; }
+        public string MediaType { get; }
 
         /// <summary>
         /// The additional data contained in the header
         /// </summary>
         public IReadOnlyDictionary<string, string> Data { get; }
+
+        /// <summary>
+        /// The character set defined in the content type
+        /// </summary>
+        public string CharSet => Data.TryGetValue("charset", out var charset) ? charset : null;
 
         /// <summary>
         /// The Q value for the MIME type
@@ -55,7 +66,7 @@ namespace RESTar
         /// <summary>
         /// Is this content type defined as */* ?
         /// </summary>
-        public bool AnyType => MimeType == "*/*";
+        public bool AnyType => MediaType == "*/*";
 
         /// <summary>
         /// application/json
@@ -83,7 +94,7 @@ namespace RESTar
         public static readonly ContentType DefaultOutput = new ContentType("*/*");
 
         /// <summary>
-        /// Parses a Content-Type header an returnes a ContentType instance describing it
+        /// Parses a header value an returnes a ContentType instance describing it
         /// </summary>
         internal static ContentType Parse(string headerValue)
         {
@@ -93,8 +104,8 @@ namespace RESTar
         }
 
         /// <summary>
-        /// Parses an Accept header, possibly with multiple content types, an returnes an 
-        /// array of ContentTypes describing it
+        /// Parses an header value, possibly containing multiple content types, an returnes a 
+        /// ContentTypes collection describing them.
         /// </summary>
         public static ContentTypes ParseMany(string headerValue)
         {
@@ -119,7 +130,7 @@ namespace RESTar
             if (headerValue.Contains(','))
             {
                 var preferred = ParseMany(headerValue)[0];
-                MimeType = preferred.MimeType;
+                MediaType = preferred.MediaType;
                 Data = preferred.Data;
                 Q = preferred.Q;
                 return;
@@ -127,7 +138,7 @@ namespace RESTar
             Q = 1;
             var parts = headerValue.ToLower().Split(';');
             var mimeTypePart = parts[0].Trim();
-            MimeType = mimeTypePart;
+            MediaType = mimeTypePart;
             var data = default(Dictionary<string, string>);
             foreach (var pair in parts.Skip(1).Select(i => i.TSplit('=')))
             {
@@ -151,7 +162,7 @@ namespace RESTar
         public override string ToString()
         {
             var dataString = Data != null ? string.Join(";", Data.Select(d => $"{d.Key}={d.Value}")) : null;
-            return $"{MimeType}{(dataString?.Length > 0 ? ";" + dataString : "")}";
+            return $"{MediaType}{(dataString?.Length > 0 ? ";" + dataString : "")}";
         }
 
         /// <inheritdoc />
@@ -163,21 +174,31 @@ namespace RESTar
         public static implicit operator ContentType(string headerValue) => new ContentType(headerValue);
 
         /// <summary>
+        /// Converts a header value string to a ContenType
+        /// </summary>
+        public static implicit operator ContentType(System.Net.Mime.ContentType mimeType) => new ContentType(mimeType.ToString());
+
+        /// <summary>
+        /// Converts a header value string to a ContenType
+        /// </summary>
+        public static implicit operator System.Net.Mime.ContentType(ContentType mimeType) => new System.Net.Mime.ContentType(mimeType.ToString());
+
+        /// <summary>
         /// Compares two content types for equality
         /// </summary>
-        public static bool operator ==(ContentType first, ContentType second) => first.MimeType.EqualsNoCase(second.MimeType);
+        public static bool operator ==(ContentType first, ContentType second) => first.MediaType.EqualsNoCase(second.MediaType);
 
         /// <summary>
         /// Compares two content types for non-equality
         /// </summary>
-        public static bool operator !=(ContentType first, ContentType second) => !first.MimeType.EqualsNoCase(second.MimeType);
+        public static bool operator !=(ContentType first, ContentType second) => !first.MediaType.EqualsNoCase(second.MediaType);
 
         /// <inheritdoc />
         public override int GetHashCode()
         {
             unchecked
             {
-                var hashCode = MimeType != null ? MimeType.GetHashCode() : 0;
+                var hashCode = MediaType != null ? MediaType.GetHashCode() : 0;
                 hashCode = (hashCode * 397) ^ (Data != null ? Data.GetHashCode() : 0);
                 hashCode = (hashCode * 397) ^ Q.GetHashCode();
                 return hashCode;

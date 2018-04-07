@@ -27,8 +27,8 @@ namespace RESTar.Requests
         public List<T> ToList<T>() where T : class
         {
             if (!HasContent) return null;
-            var contentTypeProvider = ProtocolProvider.InputMimeBindings.SafeGet(ContentType.MimeType) ??
-                                      throw new UnsupportedContent(ContentType.MimeType);
+            var contentTypeProvider = ProtocolProvider.InputMimeBindings.SafeGet(ContentType.MediaType) ??
+                                      throw new UnsupportedContent(ContentType.MediaType);
             return contentTypeProvider.DeserializeCollection<T>(Bytes);
         }
 
@@ -39,8 +39,8 @@ namespace RESTar.Requests
         public IEnumerable<T> PopulateTo<T>(IEnumerable<T> source) where T : class
         {
             if (source == null || !HasContent) return null;
-            var contentTypeProvider = ProtocolProvider.InputMimeBindings.SafeGet(ContentType.MimeType) ??
-                                      throw new UnsupportedContent(ContentType.MimeType);
+            var contentTypeProvider = ProtocolProvider.InputMimeBindings.SafeGet(ContentType.MediaType) ??
+                                      throw new UnsupportedContent(ContentType.MediaType);
             return contentTypeProvider.Populate(source, Bytes);
         }
 

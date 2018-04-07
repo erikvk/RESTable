@@ -35,7 +35,7 @@ namespace RESTar.Internal
                 var foundProvider = request.Headers.Accept.Any(a =>
                 {
                     if (!a.AnyType)
-                        return protocolProvider.OutputMimeBindings.TryGetValue(a.MimeType, out acceptProvider);
+                        return protocolProvider.OutputMimeBindings.TryGetValue(a.MediaType, out acceptProvider);
                     containedWildcard = true;
                     return false;
                 });
@@ -45,7 +45,7 @@ namespace RESTar.Internal
                     else
                         throw new NotAcceptable(request.Headers.Accept.ToString());
             }
-            else if (!protocolProvider.OutputMimeBindings.TryGetValue(providedContentType.Value.MimeType, out acceptProvider))
+            else if (!protocolProvider.OutputMimeBindings.TryGetValue(providedContentType.Value.MediaType, out acceptProvider))
                 throw new NotAcceptable(providedContentType.Value.ToString());
             return acceptProvider;
         }

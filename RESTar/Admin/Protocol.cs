@@ -85,7 +85,7 @@ namespace RESTar.Admin
                     .Select(provider => new ContentType
                     (
                         name: provider.Name,
-                        mimeType: provider.ContentType.MimeType,
+                        mimeType: provider.ContentType.MediaType,
                         canRead: cachedProvider.InputMimeBindings.Values.Contains(provider),
                         canWrite: cachedProvider.OutputMimeBindings.Values.Contains(provider),
                         bindings: cachedProvider.InputMimeBindings
