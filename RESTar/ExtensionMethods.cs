@@ -199,7 +199,7 @@ namespace RESTar
         /// <returns>The object with the specified ObjectNo</returns>
         public static T GetReference<T>(this ulong objectNo) where T : class => FromID(objectNo) as T;
 
-        internal static bool EqualsNoCase(this string s1, string s2) => string.Equals(s1, s2, CurrentCultureIgnoreCase);
+        internal static bool EqualsNoCase(this string s1, string s2) => string.Equals(s1, s2, OrdinalIgnoreCase);
         internal static string ToMethodsString(this IEnumerable<Method> ie) => string.Join(", ", ie);
 
         internal static string ReplaceFirst(this string text, string search, string replace, out bool replaced)

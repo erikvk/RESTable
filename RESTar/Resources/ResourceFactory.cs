@@ -24,7 +24,7 @@ namespace RESTar.Resources
         internal static VirtualResourceProvider VrProvider { get; }
         internal static DynamicResourceProvider DynProvider { get; }
         internal static TerminalResourceProvider TerminalProvider { get; }
-        internal static BucketResourceProvider BucketProvider { get; }
+        internal static BinaryResourceProvider BinaryProvider { get; }
         private static List<ResourceProvider> ResourceProviders { get; }
 
         static ResourceFactory()
@@ -35,7 +35,7 @@ namespace RESTar.Resources
             ResourceProviders = new List<ResourceProvider> {DDictProvider, ScProvider, VrProvider};
             DynProvider = new DynamicResourceProvider();
             TerminalProvider = new TerminalResourceProvider();
-            BucketProvider = new BucketResourceProvider();
+            BinaryProvider = new BinaryResourceProvider();
         }
 
         private static void ValidateResourceProviders(ICollection<ResourceProvider> externalProviders)
@@ -65,14 +65,14 @@ namespace RESTar.Resources
         ///     regular
         ///     wrapper
         ///   terminal
-        ///   bucket
+        ///   binary
         /// Views 
         /// 
         /// </summary>
         /// <returns></returns>
-        private static (List<Type> regularResources, List<Type> resourceWrappers, List<Type> terminals, List<Type> buckets) ValidateAndBuildTypeLists()
+        private static (List<Type> regularResources, List<Type> resourceWrappers, List<Type> terminals, List<Type> binaries) ValidateAndBuildTypeLists()
         {
-            (List<Type> regular, List<Type> wrappers, List<Type> terminals, List<Type> buckets) lists;
+            (List<Type> regular, List<Type> wrappers, List<Type> terminals, List<Type> binaries) lists;
             var allTypes = typeof(object).GetSubclasses().ToList();
             var resourceTypes = allTypes.Where(t => t.HasAttribute<RESTarAttribute>()).ToList();
             var viewTypes = allTypes.Where(t => t.HasAttribute<RESTarViewAttribute>()).ToList();
@@ -83,13 +83,13 @@ namespace RESTar.Resources
             void ValidateResourceTypes(List<Type> types)
             {
                 var entityTypes = types
-                    .Where(t => !t.Implements(typeof(ITerminal)) && !t.Implements(typeof(IBucket<>)))
+                    .Where(t => !t.Implements(typeof(ITerminal)) && !t.Implements(typeof(RESTar.IBinaryResource<>)))
                     .ToList();
                 var terminalTypes = types
                     .Where(t => t.Implements(typeof(ITerminal)))
                     .ToList();
-                var bucketTypes = types
-                    .Where(t => t.Implements(typeof(IBucket<>)))
+                var binaryTypes = types
+                    .Where(t => t.Implements(typeof(RESTar.IBinaryResource<>)))
                     .ToList();
 
                 var regularResourceTypes = entityTypes
@@ -307,52 +307,43 @@ namespace RESTar.Resources
                         ValidateCommon(terminal);
 
                         if (terminal.Implements(typeof(IEnumerable<>)))
-                            throw new InvalidTerminalDeclaration($"Invalid terminal declaration '{terminal.RESTarTypeName()}'. Terminal types " +
-                                                                 "must not be collections");
+                            throw new InvalidTerminalDeclaration(terminal, "must not be collections");
                         if (terminal.HasResourceProviderAttribute())
-                            throw new InvalidTerminalDeclaration($"Invalid terminal declaration '{terminal.RESTarTypeName()}'. Terminal types " +
-                                                                 "must not be decorated with a resource provider attribute");
+                            throw new InvalidTerminalDeclaration(terminal, "must not be decorated with a resource provider attribute");
                         if (terminal.HasAttribute<DatabaseAttribute>())
-                            throw new InvalidTerminalDeclaration($"Invalid terminal declaration '{terminal.RESTarTypeName()}'. Terminal types " +
-                                                                 "must not be decorated with the Starcounter.DatabaseAttribute attribute");
+                            throw new InvalidTerminalDeclaration(terminal, "must not be decorated with the Starcounter.DatabaseAttribute attribute");
                         if (typeof(IOperationsInterface).IsAssignableFrom(terminal))
-                            throw new InvalidTerminalDeclaration($"Invalid terminal declaration '{terminal.RESTarTypeName()}'. Terminal types " +
-                                                                 "must not implement any other RESTar operations interfaces");
+                            throw new InvalidTerminalDeclaration(terminal, "must not implement any other RESTar operations interfaces");
                         if (terminal.GetConstructor(Type.EmptyTypes) == null)
-                            throw new InvalidTerminalDeclaration($"Invalid terminal declaration '{terminal.RESTarTypeName()}'. Terminal types " +
-                                                                 "must define a public parameterless constructor");
+                            throw new InvalidTerminalDeclaration(terminal, "must define a public parameterless constructor");
                     }
                 }
 
-                void ValidateBucketDeclarations(List<Type> buckets)
+                void ValidateBinaryDeclarations(List<Type> binaries)
                 {
-                    foreach (var bucket in buckets)
+                    foreach (var binary in binaries)
                     {
-                        ValidateCommon(bucket);
-                        if (bucket.Implements(typeof(IEnumerable<>)))
-                            throw new InvalidTerminalDeclaration($"Invalid bucket declaration '{bucket.RESTarTypeName()}'. Bucket types " +
-                                                                 "must not be collections");
-                        if (bucket.HasResourceProviderAttribute())
-                            throw new InvalidTerminalDeclaration($"Invalid bucket declaration '{bucket.RESTarTypeName()}'. Bucket types " +
-                                                                 "must not be decorated with a resource provider attribute");
-                        if (bucket.HasAttribute<DatabaseAttribute>())
-                            throw new InvalidTerminalDeclaration($"Invalid bucket declaration '{bucket.RESTarTypeName()}'. Bucket types " +
-                                                                 "must not be decorated with the Starcounter.DatabaseAttribute attribute");
-                        if (typeof(IOperationsInterface).IsAssignableFrom(bucket))
-                            throw new InvalidTerminalDeclaration($"Invalid bucket declaration '{bucket.RESTarTypeName()}'. Bucket types " +
-                                                                 "must not implement any other RESTar operations interfaces");
+                        ValidateCommon(binary);
+                        if (binary.Implements(typeof(IEnumerable<>)))
+                            throw new InvalidBinaryDeclaration(binary, "must not be collections");
+                        if (binary.HasResourceProviderAttribute())
+                            throw new InvalidBinaryDeclaration(binary, "must not be decorated with a resource provider attribute");
+                        if (binary.HasAttribute<DatabaseAttribute>())
+                            throw new InvalidBinaryDeclaration(binary, "must not be decorated with the Starcounter.DatabaseAttribute attribute");
+                        if (typeof(IOperationsInterface).IsAssignableFrom(binary))
+                            throw new InvalidBinaryDeclaration(binary, "must not implement any other RESTar operations interfaces");
                     }
                 }
 
                 ValidateEntityDeclarations(entityTypes);
                 ValidateWrapperDeclaration(resourceWrapperTypes);
                 ValidateTerminalDeclarations(terminalTypes);
-                ValidateBucketDeclarations(bucketTypes);
+                ValidateBinaryDeclarations(binaryTypes);
 
                 lists.regular = regularResourceTypes;
                 lists.wrappers = resourceWrapperTypes;
                 lists.terminals = terminalTypes;
-                lists.buckets = bucketTypes;
+                lists.binaries = binaryTypes;
             }
 
             void ValidateViewTypes(List<Type> types)
@@ -408,7 +399,7 @@ namespace RESTar.Resources
         internal static void MakeResources(ResourceProvider[] externalProviders)
         {
             ValidateResourceProviders(externalProviders);
-            var (regularResources, resourceWrappers, terminals, buckets) = ValidateAndBuildTypeLists();
+            var (regularResources, resourceWrappers, terminals, binaries) = ValidateAndBuildTypeLists();
             foreach (var provider in ResourceProviders)
             {
                 var claim = provider.GetClaim(regularResources);
@@ -432,7 +423,7 @@ namespace RESTar.Resources
 
             DynamicResource.GetAll().ForEach(MakeDynamicResource);
             TerminalProvider.RegisterTerminalTypes(terminals);
-            BucketProvider.RegisterBucketTypes(buckets);
+            BinaryProvider.RegisterBinaryTypes(binaries);
             ValidateInnerResources();
         }
 

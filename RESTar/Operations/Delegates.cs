@@ -22,7 +22,7 @@ namespace RESTar.Operations
                 case var d when d == typeof(Counter<>).MakeGenericType(t): return typeof(ICounter<>).MakeGenericType(t);
                 case var d when d == typeof(Profiler<>).MakeGenericType(t): return typeof(IProfiler<>).MakeGenericType(t);
                 case var d when d == typeof(Authenticator<>).MakeGenericType(t): return typeof(IAuthenticatable<>).MakeGenericType(t);
-                case var d when d == typeof(BinarySelector<>).MakeGenericType(t): return typeof(IBucket<>).MakeGenericType(t);
+                case var d when d == typeof(BinarySelector<>).MakeGenericType(t): return typeof(IBinaryResource<>).MakeGenericType(t);
                 default: throw new ArgumentOutOfRangeException();
             }
         }
@@ -98,7 +98,7 @@ namespace RESTar.Operations
     public delegate AuthResults Authenticator<T>(IRequest<T> request) where T : class;
 
     /// <summary>
-    /// Selects a stream and content type for a bucket resource
+    /// Selects a stream and content type for a binary resource
     /// </summary>
     public delegate (Stream stream, ContentType contentType) BinarySelector<T>(IRequest<T> request) where T : class;
 }

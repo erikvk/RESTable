@@ -4,7 +4,7 @@ namespace RESTar.Results
 {
     /// <inheritdoc />
     /// <summary>
-    /// Holds a binary content, used as result from requests to bucket resources
+    /// Holds a binary content, used as result from requests to binary resources
     /// </summary>
     public class Binary : Content
     {

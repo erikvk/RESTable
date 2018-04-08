@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -13,13 +12,8 @@ namespace RESTar.Auth
     internal static class Authenticator
     {
         internal static IDictionary<string, AccessRights> ApiKeys { get; private set; }
-        internal static IDictionary<AccessRights, byte> AccessRights { get; private set; }
-
-        internal static void NewState()
-        {
-            ApiKeys = new Dictionary<string, AccessRights>();
-            AccessRights = new ConcurrentDictionary<AccessRights, byte>();
-        }
+        internal static void NewState() => ApiKeys = new Dictionary<string, AccessRights>();
+        private const string AuthHeaderMask = "*******";
 
         internal static void RunResourceAuthentication<T>(this IRequest<T> request) where T : class
         {
@@ -31,30 +25,23 @@ namespace RESTar.Auth
 
         internal static AccessRights GetAccessRights(ref string uri, Headers headers)
         {
-            string authorizationHeader = null;
-            var keyMatch = Regex.Match(uri, RegEx.UriKey);
-            if (keyMatch.Success)
+            string authorizationHeader;
+            if (Regex.Match(uri, RegEx.UriKey) is Match keyMatch && keyMatch.Success)
             {
-                var keypart = keyMatch.Groups["key"];
-                uri = uri.Remove(keypart.Index, keypart.Length);
-                authorizationHeader = $"apikey {HttpUtility.UrlDecode(keypart.Value.Substring(1, keypart.Length - 2))}";
-                headers.Authorization = "*******";
+                var keyGroup = keyMatch.Groups["key"];
+                uri = uri.Remove(keyGroup.Index, keyGroup.Length);
+                authorizationHeader = $"apikey {HttpUtility.UrlDecode(keyGroup.Value.Substring(1, keyGroup.Length - 2))}";
             }
-            else
-            {
-                if (headers.Authorization is string authorization)
-                {
-                    authorizationHeader = authorization;
-                    headers.Authorization = "*******";
-                }
-            }
-            if (string.IsNullOrWhiteSpace(authorizationHeader)) return null;
+            else if (headers.Authorization is string header && !string.IsNullOrWhiteSpace(header))
+                authorizationHeader = header;
+            else return null;
+            headers.Authorization = AuthHeaderMask;
             var (method, key) = authorizationHeader.TSplit(' ');
             if (key == null) return null;
-            switch (method.ToLower())
+            switch (method)
             {
-                case "apikey": break;
-                case "basic":
+                case var apikey when apikey.EqualsNoCase("apikey"): break;
+                case var basic when basic.EqualsNoCase("basic"):
                     key = Encoding.UTF8.GetString(Convert.FromBase64String(key)).Split(":").ElementAtOrDefault(1);
                     if (key == null) return null;
                     break;

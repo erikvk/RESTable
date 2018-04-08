@@ -1,7 +1,8 @@
 ﻿using RESTar.Resources;
 using RESTar.Results;
 
-namespace RESTar {
+namespace RESTar
+{
     /// <summary>
     /// A static generic class for manually getting RESTar terminal resources by type
     /// </summary>

@@ -8,17 +8,17 @@ using RESTar.Reflection.Dynamic;
 
 namespace RESTar.Resources
 {
-    internal interface IBucketResource : IResource { }
+    internal interface IBinaryResource : IResource { }
 
-    internal interface IBucketResource<T> : IBucketResource, IResource<T> where T : class
+    internal interface IBinaryResource<T> : IBinaryResource, IResource<T> where T : class
     {
         /// <summary>
-        /// Selects binary content from a bucket resource
+        /// Selects binary content from a binary resource
         /// </summary>
         BinarySelector<T> SelectBinary { get; }
     }
 
-    internal class BucketResource<T> : IResource<T>, IResourceInternal, IBucketResource<T> where T : class
+    internal class BinaryResource<T> : IResource<T>, IResourceInternal, IBinaryResource<T> where T : class
     {
         public string Name { get; }
         public string Description { get; set; }
@@ -43,7 +43,7 @@ namespace RESTar.Resources
         public ResourceKind ResourceKind { get; }
         public BinarySelector<T> SelectBinary { get; }
 
-        internal BucketResource(BinarySelector<T> binarySelector)
+        internal BinaryResource(BinarySelector<T> binarySelector)
         {
             Name = typeof(T).FullName ?? throw new Exception();
             Type = typeof(T);
@@ -52,7 +52,7 @@ namespace RESTar.Resources
             IsGlobal = true;
             var attribute = typeof(T).GetCustomAttribute<RESTarAttribute>();
             InterfaceType = attribute.Interface;
-            ResourceKind = ResourceKind.BucketResource;
+            ResourceKind = ResourceKind.BinaryResource;
             ConditionBindingRule = attribute.AllowDynamicConditions
                 ? TermBindingRules.DeclaredWithDynamicFallback
                 : TermBindingRules.OnlyDeclared;

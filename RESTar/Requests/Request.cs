@@ -179,8 +179,8 @@ namespace RESTar.Requests
                             return MakeWebSocketUpgrade(terminal);
                         return SwitchTerminal(terminal);
 
-                    case IBucketResource<T> bucket:
-                        var (stream, contentType ) = bucket.SelectBinary(this);
+                    case Resources.IBinaryResource<T> binary:
+                        var (stream, contentType ) = binary.SelectBinary(this);
                         return new Binary(this, stream, contentType);
 
                     case IEntityResource<T> _:

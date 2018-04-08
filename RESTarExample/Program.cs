@@ -33,9 +33,9 @@ namespace RESTarExample
     }
 
     [RESTar]
-    public class MyBucket : IBucket<MyBucket>
+    public class MyBinaryResource : IBinaryResource<MyBinaryResource>
     {
-        public (Stream stream, ContentType contentType) Select(IRequest<MyBucket> request)
+        public (Stream stream, ContentType contentType) Select(IRequest<MyBinaryResource> request)
         {
             var stream = new MemoryStream();
             using (var swr = new StreamWriter(stream, Encoding.UTF8, 1024, true))

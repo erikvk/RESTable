@@ -101,7 +101,7 @@
     <Compile Include="ContentTypeProviders\JsonAdapterProvider.cs" />
     <Compile Include="ContentTypeProviders\XMLWriter.cs" />
     <Compile Include="Context.cs" />
-    <Compile Include="IBucket.cs" />
+    <Compile Include="IBinaryResource.cs" />
     <Compile Include="Internal\DefaultProtocolProvider.cs" />
     <Compile Include="Operations\IAuthenticatable.cs" />
     <Compile Include="Operations\ICounter.cs" />
@@ -140,8 +140,8 @@
     <Compile Include="Requests\OriginType.cs" />
     <Compile Include="Requests\Request.cs" />
     <Compile Include="Resource.cs" />
-    <Compile Include="Resources\BucketResource.cs" />
-    <Compile Include="Resources\BucketResourceProvider.cs" />
+    <Compile Include="Resources\BinaryResource.cs" />
+    <Compile Include="Resources\BinaryResourceProvider.cs" />
     <Compile Include="Results\Binary.cs" />
     <Compile Include="Results\Untraceable - Copy.cs" />
     <Compile Include="INetworkProvider.cs" />

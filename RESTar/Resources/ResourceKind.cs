@@ -18,6 +18,6 @@
         /// <summary>
         /// Holds raw binary data
         /// </summary>
-        BucketResource
+        BinaryResource
     }
 }

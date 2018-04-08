@@ -20,7 +20,7 @@ namespace RESTar
         public ContentTypes(IEnumerable<ContentType> collection) : base(collection) { }
 
         /// <summary>
-        /// Parses an header value, possibly containing multiple content types, an returnes a 
+        /// Parses a header value, possibly containing multiple content types, an returnes a 
         /// ContentTypes collection describing them.
         /// </summary>
         public static ContentTypes Parse(string headerValue) => ContentType.ParseMany(headerValue);
@@ -104,7 +104,7 @@ namespace RESTar
         }
 
         /// <summary>
-        /// Parses an header value, possibly containing multiple content types, an returnes a 
+        /// Parses a header value, possibly containing multiple content types, an returnes a 
         /// ContentTypes collection describing them.
         /// </summary>
         public static ContentTypes ParseMany(string headerValue)
@@ -142,8 +142,7 @@ namespace RESTar
             var data = default(Dictionary<string, string>);
             foreach (var pair in parts.Skip(1).Select(i => i.TSplit('=')))
             {
-                if (data == null)
-                    data = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                data = data ?? new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
                 data.TPut(pair);
             }
             if (data == null)
@@ -151,7 +150,7 @@ namespace RESTar
                 Data = null;
                 return;
             }
-            if (data.TryGetValue("q", out var qs) && decimal.TryParse(qs, out var q))
+            if (data.TryGetValue("q", out var qString) && decimal.TryParse(qString, out var q))
                 Q = q;
             Data = data;
         }
