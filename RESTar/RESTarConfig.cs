@@ -159,7 +159,7 @@ namespace RESTar
         {
             try
             {
-                uri = ProcessUri(uri);
+                ProcessUri(ref uri);
                 Settings.Init(port, uri, false, prettyPrint, daysToSaveErrors, lineEndings);
                 Log.Init();
                 DynamitConfig.Init(true, true);
@@ -190,7 +190,7 @@ namespace RESTar
             }
         }
 
-        private static string ProcessUri(string uri)
+        private static void ProcessUri(ref string uri)
         {
             uri = uri?.Trim() ?? "/rest";
             if (!Regex.IsMatch(uri, RegEx.BaseUri))
@@ -200,7 +200,7 @@ namespace RESTar
             if (uri.EqualsNoCase(appName))
                 throw new ArgumentException($"URI must differ from application name ({appName})", nameof(appName));
             if (uri[0] != '/') uri = $"/{uri}";
-            return uri.TrimEnd('/');
+            uri = uri.TrimEnd('/');
         }
 
         private static void ReadConfig()
@@ -290,15 +290,17 @@ namespace RESTar
                                     AllowedMethods = allowAccess["Methods"].Value<string>().ToUpper().ToMethodsArray()
                                 });
                                 return;
+
                             case JArray allowAccesses:
                                 allowAccesses.ForEach(recurseAllowAccess);
                                 return;
+
                             default: throw new Exception("Invalid API key XML syntax in config file");
                         }
                     }
 
                     recurseAllowAccess(apiKeyToken["AllowAccess"]);
-                    var accessRights = accessRightList.ToAccessRights();
+                    var accessRights = AccessRights.ToAccessRights(accessRightList);
                     foreach (var resource in Resources.Where(r => r.GETAvailableToAll))
                     {
                         if (!accessRights.TryGetValue(resource, out var methods))

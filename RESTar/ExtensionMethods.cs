@@ -14,7 +14,6 @@ using Dynamit;
 using Microsoft.CSharp.RuntimeBinder;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using RESTar.Auth;
 using RESTar.ContentTypeProviders;
 using RESTar.Filters;
 using RESTar.Reflection.Dynamic;
@@ -237,17 +236,6 @@ namespace RESTar
             .GetMethod(nameof(DEFAULT), NonPublic | Static);
 
         private static object DEFAULT<T>() => default(T);
-
-        internal static AccessRights ToAccessRights(this IEnumerable<AccessRight> accessRights)
-        {
-            var ar = new AccessRights();
-            foreach (var right in accessRights)
-            foreach (var resource in right.Resources)
-                ar[resource] = ar.ContainsKey(resource)
-                    ? ar[resource].Union(right.AllowedMethods).ToArray()
-                    : right.AllowedMethods;
-            return ar;
-        }
 
         internal static string Fnuttify(this string sqlKey) => $"\"{sqlKey.Replace(".", "\".\"")}\"";
 
