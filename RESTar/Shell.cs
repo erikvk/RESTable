@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using RESTar.Requests;
 using RESTar.Resources;
 using RESTar.Results;
@@ -25,7 +26,7 @@ namespace RESTar
         private string query;
         private string previousQuery;
         private const long MaxStreamBufferSize = 16_000_000;
-        private long _streamBufferSize;
+        private long streamBufferSize;
         private Func<int, IUriComponents> GetNextPageLink;
         private Action OnConfirm;
         private IEntities PreviousResultMetadata;
@@ -61,16 +62,6 @@ namespace RESTar
         }
 
         /// <summary>
-        /// Should the shell be silent in output? Sets WriteStatusBeforeContent, WriteTimeElapsed, WriteQueryAfterContent
-        /// and WriteInfoTexts to false.
-        /// </summary>
-        public bool Silent
-        {
-            get => !WriteHeaders && !WriteTimeElapsed && !WriteQueryAfterContent && !WriteInfoTexts && !WriteOptions;
-            set => WriteHeaders = WriteTimeElapsed = WriteQueryAfterContent = WriteInfoTexts = WriteOptions = !value;
-        }
-
-        /// <summary>
         /// Should unsafe commands be allowed?
         /// </summary>
         public bool Unsafe { get; set; }
@@ -80,37 +71,47 @@ namespace RESTar
         /// </summary>
         public bool WriteHeaders { get; set; }
 
-        /// <summary>
-        /// Should the shell output the time elapsed in evaluating the command?
-        /// </summary>
-        public bool WriteTimeElapsed { get; set; }
-
-        /// <summary>
-        /// Should the shell output the current query after writing content?
-        /// </summary>
-        public bool WriteQueryAfterContent { get; set; }
-
-        /// <summary>
-        /// Should the shell output info texts?
-        /// </summary>
-        public bool WriteInfoTexts { get; set; }
+        private bool _autoOptions;
 
         /// <summary>
         /// Should the shell write options after a succesful navigation?
         /// </summary>
-        public bool WriteOptions { get; set; }
+        public bool AutoOptions
+        {
+            get => _autoOptions;
+            set
+            {
+                if (value) _autoGet = false;
+                _autoOptions = value;
+            }
+        }
+
+        private bool _autoGet;
+
+        /// <summary>
+        /// Should the shell automatically run a GET operation after a successful navigation?
+        /// </summary>
+        public bool AutoGet
+        {
+            get => _autoGet;
+            set
+            {
+                if (value) _autoOptions = false;
+                _autoGet = value;
+            }
+        }
 
         /// <summary>
         /// The size of stream messages in bytes
         /// </summary>
         public long StreamBufferSize
         {
-            get => _streamBufferSize;
+            get => streamBufferSize;
             set
             {
                 if (value < 512 || MaxStreamBufferSize < value)
-                    _streamBufferSize = MaxStreamBufferSize;
-                else _streamBufferSize = value;
+                    streamBufferSize = MaxStreamBufferSize;
+                else streamBufferSize = value;
                 if (CurrentStreamManifest != null)
                     SetupStreamManifest();
             }
@@ -119,18 +120,28 @@ namespace RESTar
         /// <inheritdoc />
         public Shell()
         {
-            Unsafe = false;
-            query = "";
-            previousQuery = "";
-            _streamBufferSize = 16_000_000;
-            WriteQueryAfterContent = true;
-            WriteInfoTexts = true;
-            WriteOptions = true;
             SupportsTextInput = true;
             SupportsBinaryInput = true;
-            WriteHeaders = false;
-            WriteTimeElapsed = true;
+            Reset();
         }
+
+        private void Reset()
+        {
+            streamBufferSize = 16_000_000;
+            Unsafe = false;
+            OnConfirm = null;
+            PreviousResultMetadata = null;
+            GetNextPageLink = null;
+            query = "";
+            previousQuery = "";
+            CurrentStreamManifest?.Dispose();
+            WriteHeaders = false;
+            AutoOptions = false;
+            AutoGet = false;
+        }
+
+        /// <inheritdoc />
+        public void Dispose() => Reset();
 
         /// <inheritdoc />
         public IWebSocket WebSocket { private get; set; }
@@ -225,7 +236,10 @@ namespace RESTar
                     if (input.StartsWith("//"))
                         input = $"/restar.availableresource/{input.Substring(2)}";
                     Query = input;
-                    ValidateQuery();
+                    if (!QueryIsValid(out var resource)) break;
+                    if (AutoOptions) SendOptions(resource);
+                    else if (AutoGet) SafeOperation(GET);
+                    else SendQuery();
                     break;
                 case '[':
                 case '{':
@@ -269,7 +283,8 @@ namespace RESTar
                             else SendResult(result);
                             break;
                         case "OPTIONS":
-                            ValidateQuery();
+                            if (!QueryIsValid(out var _resource)) break;
+                            SendOptions(_resource);
                             break;
 
                         case "HEADERS":
@@ -301,6 +316,37 @@ namespace RESTar
                             }
                             else WebSocket.SendText($"400: Bad request. Cannot read or write reserved header '{key}'.");
                             return;
+                        case "SET":
+                            if (string.IsNullOrWhiteSpace(tail))
+                            {
+                                WebSocket.SendJson(this);
+                                break;
+                            }
+                            var parts = Regex.Split(tail, " to ", RegexOptions.IgnoreCase);
+                            if (parts.Length == 1)
+                            {
+                                WebSocket.SendText("Invalid property assignment syntax. Should be: SET <property> TO <value>");
+                                break;
+                            }
+                            var (property, valueString) = (parts[0].Trim(), parts[1]);
+                            if (valueString.EqualsNoCase("null"))
+                                valueString = null;
+                            if (!TerminalResource.Members.TryGetValue(property, out var declaredProperty))
+                            {
+                                WebSocket.SendText($"Unknown shell property '{property}'. To list properties, type SET");
+                                break;
+                            }
+                            try
+                            {
+                                declaredProperty.SetValue(this, valueString.ParseConditionValue(declaredProperty));
+                                WebSocket.SendJson(this);
+                            }
+                            catch (Exception e)
+                            {
+                                WebSocket.SendException(e);
+                            }
+                            break;
+
                         case "HELP":
                             SendHelp();
                             break;
@@ -309,6 +355,16 @@ namespace RESTar
                         case "DISCONNECT":
                         case "CLOSE":
                             Close();
+                            break;
+                        case "?" when !string.IsNullOrWhiteSpace(tail):
+                            if (tail.Length == 1)
+                                tail = "/restar.availableresource";
+                            if (tail.StartsWith("//"))
+                                tail = $"/restar.availableresource/{tail.Substring(2)}";
+                            Query = tail;
+                            if (!QueryIsValid(out var __resource)) break;
+                            if (AutoOptions) SendOptions(__resource);
+                            else SendQuery();
                             break;
                         case "?":
                             WebSocket.SendText($"{(Query.Any() ? Query : "< empty >")}");
@@ -403,7 +459,9 @@ namespace RESTar
             }
         }
 
-        private void StreamMessage(int nr)
+        private byte[] buffer;
+
+        private async void StreamMessage(int nr)
         {
             try
             {
@@ -411,12 +469,12 @@ namespace RESTar
                 var endIndex = startIndex + nr;
                 if (endIndex > CurrentStreamManifest.NrOfMessages - 1)
                     endIndex = CurrentStreamManifest.NrOfMessages - 1;
-                var buffer = new byte[StreamBufferSize];
+                buffer = buffer ?? new byte[StreamBufferSize];
                 for (var i = startIndex; i <= endIndex; i += 1)
                 {
                     CurrentStreamManifest.CurrentMessageIndex = i;
                     var message = CurrentStreamManifest.Messages[i];
-                    CurrentStreamManifest.Content.Body.Read(buffer, 0, buffer.Length);
+                    await CurrentStreamManifest.Content.Body.ReadAsync(buffer, 0, buffer.Length);
                     WebSocket.SendBinary(buffer, 0, (int) message.Length);
                     message.Sent = true;
                     CurrentStreamManifest.MessagesStreamed += 1;
@@ -424,11 +482,12 @@ namespace RESTar
                     CurrentStreamManifest.BytesStreamed += message.Length;
                     CurrentStreamManifest.BytesRemaining -= message.Length;
                 }
-                if (endIndex == CurrentStreamManifest.NrOfMessages - 1 && WriteInfoTexts)
+                if (endIndex == CurrentStreamManifest.NrOfMessages - 1)
                 {
                     WebSocket.SendText($"200: OK. {CurrentStreamManifest.NrOfMessages} messages sucessfully streamed.");
                     CurrentStreamManifest.Dispose();
                     CurrentStreamManifest = null;
+                    buffer = null;
                 }
             }
             catch (Exception e)
@@ -438,25 +497,11 @@ namespace RESTar
                                    $"of {CurrentStreamManifest?.NrOfMessages ?? 1} messages.");
                 CurrentStreamManifest?.Dispose();
                 CurrentStreamManifest = null;
+                buffer = null;
             }
         }
 
         private void SendHeaders() => WebSocket.SendJson(new {WebSocket.Headers});
-
-        /// <inheritdoc />
-        public void Dispose()
-        {
-            OnConfirm = null;
-            PreviousResultMetadata = null;
-            GetNextPageLink = null;
-            query = "";
-            previousQuery = "";
-            CurrentStreamManifest?.Dispose();
-            WriteInfoTexts = true;
-            WriteHeaders = false;
-            WriteTimeElapsed = true;
-            WriteQueryAfterContent = true;
-        }
 
         private ISerializedResult WsEvaluate(Method method, byte[] body)
         {
@@ -481,31 +526,32 @@ namespace RESTar
             return result;
         }
 
-        private void ValidateQuery()
+        private bool QueryIsValid(out IResource resource)
         {
             var localQuery = Query;
-            if (!WebSocket.Context.UriIsValid(localQuery, out var error, out var resource))
+            if (!WebSocket.Context.UriIsValid(localQuery, out var error, out resource))
             {
                 query = previousQuery;
                 SendResult(error);
+                return false;
             }
-            else
-            {
-                query = localQuery;
-                if (WriteOptions)
-                {
-                    var availableResource = AvailableResource.Make(resource, WebSocket);
-                    WebSocket.SendJson(new
-                    {
-                        Resource = availableResource.Name,
-                        ResourceKind = availableResource.Kind,
-                        availableResource.Methods
-                    }, true);
-                }
-                if (WriteQueryAfterContent)
-                    WebSocket.SendText("? " + Query);
-            }
+            query = localQuery;
             queryChangedPreEval = false;
+            return true;
+        }
+
+        private void SendQuery() => WebSocket.SendText("? " + Query);
+
+        private void SendOptions(IResource resource)
+        {
+            var availableResource = AvailableResource.Make(resource, WebSocket);
+            WebSocket.SendJson(new
+            {
+                Resource = availableResource.Name,
+                ResourceKind = availableResource.Kind,
+                availableResource.Methods
+            }, true);
+            SendQuery();
         }
 
         private void SetupStreamManifest()
@@ -533,6 +579,7 @@ namespace RESTar
             CurrentStreamManifest.MessagesRemaining = (int) nrOfMessages;
             CurrentStreamManifest.Messages = messages;
             WebSocket.SendJson(CurrentStreamManifest);
+            buffer = null;
         }
 
         private void SafeOperation(Method method, byte[] body = null)
@@ -592,11 +639,11 @@ namespace RESTar
         {
             if (result is SwitchedTerminal) return;
             WebSocket.SendResult(result, elapsed, WriteHeaders);
-            if (!WriteQueryAfterContent) return;
             switch (result)
             {
+                case var _ when Query == "":
                 case ShellNoQuery _:
-                    WebSocket.SendText("? <empty>");
+                    WebSocket.SendText("? <no query>");
                     break;
                 default:
                     WebSocket.SendText("? " + Query);
@@ -606,7 +653,6 @@ namespace RESTar
 
         private void SendShellInit()
         {
-            if (!WriteInfoTexts) return;
             WebSocket.SendText("### Entering the RESTar WebSocket shell... ###");
             WebSocket.SendText("### Type a command to continue (e.g. HELP) ###");
         }
@@ -619,31 +665,13 @@ namespace RESTar
 
         private void Close()
         {
-            if (!WriteInfoTexts) return;
             WebSocket.SendText("### Closing the RESTar WebSocket shell... ###");
             var connection = (WebSocketConnection) WebSocket;
             connection.WebSocket.Disconnect();
         }
 
-        private void SendHelp() => WebSocket.SendText(
-            "\n  The RESTar WebSocket shell makes it possible to send\n" +
-            "  multiple requests to a RESTar API, over a single TCP\n" +
-            "  connection. Using commands, the client can navigate\n" +
-            "  around the resources of the API, read, insert, update\n" +
-            "  and/or delete entities, or enter terminals. To navigate\n" +
-            "  to a resource, simply send a request URI over this WebSocket,\n" +
-            "  e.g. '/availableresource//limit=3'. To list the entities,\n" +
-            "  send 'GET'. To insert a new entity into a resource, send the\n" +
-            "  representation over the WebSocket, for example in JSON. To \n" +
-            "  update entities, send 'PATCH <json>',  where <json> is the \n" +
-            "  JSON data to update entities from. To delete selected entities,\n" +
-            "  send 'DELETE'. For potentially unsafe operations, you will be\n" +
-            "  asked to confirm before changes are applied.\n\n" +
-            "  Some other simple commands:\n" +
-            "  ?           Prints the current location\n" +
-            "  REPORT      Counts the entities at the current location\n" +
-            "  HELP        Prints this help page\n" +
-            "  CLOSE       Closes the WebSocket\n");
+        private void SendHelp() => WebSocket.SendText("Shell documentation is available at https://github.com/Mopedo/Home/" +
+                                                      "blob/master/RESTar/Built-in%20resources/RESTar/Shell.md");
 
         private void SendCredits()
         {

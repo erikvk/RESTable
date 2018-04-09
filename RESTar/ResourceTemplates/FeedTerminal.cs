@@ -11,13 +11,13 @@ namespace RESTar.ResourceTemplates
         /// The Feed is connected to a WebSocket, but 
         /// currently marked as paused.
         /// </summary>
-        Paused,
+        PAUSED,
 
         /// <summary>
         /// The Feed is connected to a WebSocket and open,
         /// ready to receive messages.
         /// </summary>
-        Open
+        OPEN
     }
 
     /// <inheritdoc />
@@ -36,7 +36,7 @@ namespace RESTar.ResourceTemplates
         /// <summary>
         /// Is this feed's status currently Open?
         /// </summary>
-        protected bool IsOpen => Status == FeedStatus.Open;
+        protected bool IsOpen => Status == FeedStatus.OPEN;
 
         /// <summary>
         /// Should the welcome text be shown when the terminal launces?
@@ -92,11 +92,11 @@ namespace RESTar.ResourceTemplates
             {
                 case "": break;
                 case "OPEN":
-                    Status = FeedStatus.Open;
-                    WebSocket.SendText("> Status: ACTIVE\n");
+                    Status = FeedStatus.OPEN;
+                    WebSocket.SendText("> Status: OPEN\n");
                     break;
                 case "PAUSE":
-                    Status = FeedStatus.Paused;
+                    Status = FeedStatus.PAUSED;
                     WebSocket.SendText("> Status: PAUSED\n");
                     break;
                 case "CLOSE":

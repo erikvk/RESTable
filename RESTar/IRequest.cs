@@ -51,7 +51,7 @@ namespace RESTar
 
         /// <summary>
         /// The method used when selecting entities for request input. Set this property to override the default behavior.
-        /// This delegate is used in GetEntitites(). By default RESTar will generate entities by deserializing the request 
+        /// This delegate is used in GetInputEntitites(). By default RESTar will generate entities by deserializing the request 
         /// body to an <see cref="IEnumerable{T}"/> using the content type provided in the Content-Type header.
         /// </summary>
         Func<IEnumerable<T>> Selector { set; }

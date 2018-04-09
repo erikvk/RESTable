@@ -82,7 +82,6 @@ namespace RESTar.Results
 
         internal RequestSuccess(IRequest request) : base(request)
         {
-            Headers = new Headers();
             Request = request;
             TimeElapsed = request.TimeElapsed;
             RequestInternal = (IRequestInternal) request;

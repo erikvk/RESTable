@@ -134,6 +134,11 @@ namespace RESTar.Requests
             }
             CachedProtocolProvider = cachedProtocolProvider;
             UnparsedUri = uri;
+            if (Uri?.HasError == true)
+            {
+                Error = Uri.Error;
+                return;
+            }
             try
             {
                 var _ = IResource;
@@ -165,8 +170,6 @@ namespace RESTar.Requests
             }
             else BodyBytes = body;
             HasBody = BodyBytes?.Length > 0;
-            if (Error == null && Uri?.HasError == true)
-                Error = Uri.Error;
         }
 
         /// <summary>

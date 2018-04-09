@@ -10,7 +10,8 @@ namespace RESTar.Results
     /// </summary>
     public class InvalidConditionValueType : BadRequest
     {
-        internal InvalidConditionValueType(string valueLiteral, DeclaredProperty property)
-            : base(ErrorCodes.InvalidConditionValueType, $"Invalid type for condition value '{valueLiteral}'. Expected {property.Type.Name}") { }
+        internal InvalidConditionValueType(string valueLiteral, Member property)
+            : base(ErrorCodes.InvalidConditionValueType,
+                $"Invalid type for condition value '{valueLiteral}'. Expected {property.Type.Name.ToLower()}") { }
     }
 }

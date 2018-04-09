@@ -518,6 +518,7 @@ namespace RESTarTester
                     }
                 };
             });
+
             var byInternalSource = Http.POST("http://localhost:9000/rest/resource3", default(string),
                 new Dictionary<string, string> {["Source"] = "GET /resource3"});
 

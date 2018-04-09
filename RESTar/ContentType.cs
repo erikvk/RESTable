@@ -36,6 +36,11 @@ namespace RESTar
         /// </summary>
         /// <param name="contentTypes"></param>
         public static implicit operator ContentTypes(ContentType[] contentTypes) => new ContentTypes(contentTypes);
+
+        /// <summary>
+        /// Converts a header value string to a ContenType
+        /// </summary>
+        public static implicit operator ContentTypes(string headerValue) => ContentType.ParseMany(headerValue);
     }
 
     /// <summary>

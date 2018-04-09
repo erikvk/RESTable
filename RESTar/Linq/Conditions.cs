@@ -63,7 +63,7 @@ namespace RESTar.Linq
         /// <param name="value">The value of the new condition</param>
         public static void Add<T>(this List<Condition<T>> conds, string key, Operators op, object value) where T : class
         {
-            conds.Add(new Condition<T>(key, op, value));
+                conds.Add(new Condition<T>(key, op, value));
         }
 
         /// <summary>

@@ -31,7 +31,7 @@ namespace RESTar.Internal
             var view = match.Groups["view"].Value.TrimStart('-');
             var conditions = match.Groups["cond"].Value.TrimStart('/');
             var metaConditions = match.Groups["meta"].Value.TrimStart('/');
-
+            
             switch (conditions)
             {
                 case var _ when conditions.Length == 0:

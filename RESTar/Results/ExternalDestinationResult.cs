@@ -1,10 +1,14 @@
 ﻿using RESTar.Internal;
+using RESTar.Requests;
 
 namespace RESTar.Results
 {
     /// <inheritdoc />
     public class ExternalDestinationResult : Success
     {
+        /// <inheritdoc />
+        public override Headers Headers { get; }
+
         internal ExternalDestinationResult(IRequest request, HttpResponse response) : base(request)
         {
             StatusCode = response.StatusCode;
