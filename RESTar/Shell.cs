@@ -7,8 +7,11 @@ using RESTar.Requests;
 using RESTar.Resources;
 using RESTar.Results;
 using RESTar.WebSockets;
+using Starcounter;
 using static RESTar.Internal.ErrorCodes;
 using static RESTar.Method;
+using Error = RESTar.Results.Error;
+using IResource = RESTar.Resources.IResource;
 
 namespace RESTar
 {
@@ -20,8 +23,9 @@ namespace RESTar
     [RESTar(Description = description, GETAvailableToAll = true)]
     public class Shell : ITerminal
     {
-        private const string description = "The RESTar WebSocket shell lets the client navigate around the resources of the " +
-                                           "RESTar application, perform CRUD operations and enter terminal resources.";
+        private const string description =
+            "The RESTar WebSocket shell lets the client navigate around the resources of the " +
+            "RESTar application, perform CRUD operations and enter terminal resources.";
 
         private string query;
         private string previousQuery;
@@ -55,6 +59,7 @@ namespace RESTar
                     case var _ when value[0] != '/' && value[0] != '-':
                         throw new InvalidSyntax(InvalidUriSyntax, "Shell queries must begin with '/' or '-'");
                 }
+
                 previousQuery = query;
                 queryChangedPreEval = true;
                 query = value;
@@ -191,8 +196,10 @@ namespace RESTar
                         SendCancel();
                         break;
                 }
+
                 return;
             }
+
             if (CurrentStreamManifest != null)
             {
                 var (command, arg) = input.TSplit(' ');
@@ -212,19 +219,23 @@ namespace RESTar
                         StreamMessage(1);
                         break;
                     case "CLOSE":
-                        WebSocket.SendText($"499: Client closed request. Streamed {CurrentStreamManifest.CurrentMessageIndex} " +
-                                           $"of {CurrentStreamManifest.NrOfMessages} messages.");
+                        WebSocket.SendText(
+                            $"499: Client closed request. Streamed {CurrentStreamManifest.CurrentMessageIndex} " +
+                            $"of {CurrentStreamManifest.NrOfMessages} messages.");
                         CurrentStreamManifest.Dispose();
                         CurrentStreamManifest = null;
                         break;
                 }
+
                 return;
             }
+
             if (input == " ")
             {
                 SafeOperation(GET);
                 return;
             }
+
             switch (input.FirstOrDefault())
             {
                 case '\0':
@@ -281,6 +292,7 @@ namespace RESTar
                                 SetupStreamManifest();
                             }
                             else SendResult(result);
+
                             break;
                         case "OPTIONS":
                             if (!QueryIsValid(out var _resource)) break;
@@ -295,6 +307,7 @@ namespace RESTar
                                 SendHeaders();
                                 break;
                             }
+
                             var (key, value) = tail.TSplit('=');
                             key = key.Trim();
                             value = value?.Trim();
@@ -303,6 +316,7 @@ namespace RESTar
                                 SendHeaders();
                                 break;
                             }
+
                             if (Headers.IsCustom(key))
                             {
                                 if (value == "null")
@@ -311,10 +325,12 @@ namespace RESTar
                                     SendHeaders();
                                     break;
                                 }
+
                                 WebSocket.Headers[key] = value;
                                 SendHeaders();
                             }
                             else WebSocket.SendText($"400: Bad request. Cannot read or write reserved header '{key}'.");
+
                             return;
                         case "SET":
                             if (string.IsNullOrWhiteSpace(tail))
@@ -322,20 +338,25 @@ namespace RESTar
                                 WebSocket.SendJson(this);
                                 break;
                             }
+
                             var parts = Regex.Split(tail, " to ", RegexOptions.IgnoreCase);
                             if (parts.Length == 1)
                             {
-                                WebSocket.SendText("Invalid property assignment syntax. Should be: SET <property> TO <value>");
+                                WebSocket.SendText(
+                                    "Invalid property assignment syntax. Should be: SET <property> TO <value>");
                                 break;
                             }
+
                             var (property, valueString) = (parts[0].Trim(), parts[1]);
                             if (valueString.EqualsNoCase("null"))
                                 valueString = null;
                             if (!TerminalResource.Members.TryGetValue(property, out var declaredProperty))
                             {
-                                WebSocket.SendText($"Unknown shell property '{property}'. To list properties, type SET");
+                                WebSocket.SendText(
+                                    $"Unknown shell property '{property}'. To list properties, type SET");
                                 break;
                             }
+
                             try
                             {
                                 declaredProperty.SetValue(this, valueString.ParseConditionValue(declaredProperty));
@@ -345,6 +366,7 @@ namespace RESTar
                             {
                                 WebSocket.SendException(e);
                             }
+
                             break;
 
                         case "HELP":
@@ -381,6 +403,7 @@ namespace RESTar
                                 Query = link;
                                 SafeOperation(GET);
                             }
+
                             break;
 
                         #region Nonsense
@@ -455,6 +478,7 @@ namespace RESTar
 
                         #endregion
                     }
+
                     break;
             }
         }
@@ -475,13 +499,14 @@ namespace RESTar
                     CurrentStreamManifest.CurrentMessageIndex = i;
                     var message = CurrentStreamManifest.Messages[i];
                     await CurrentStreamManifest.Content.Body.ReadAsync(buffer, 0, buffer.Length);
-                    WebSocket.SendBinary(buffer, 0, (int) message.Length);
+                    await Scheduling.RunTask(() => WebSocket.SendBinary(buffer, 0, (int) message.Length));
                     message.Sent = true;
                     CurrentStreamManifest.MessagesStreamed += 1;
                     CurrentStreamManifest.MessagesRemaining -= 1;
                     CurrentStreamManifest.BytesStreamed += message.Length;
                     CurrentStreamManifest.BytesRemaining -= message.Length;
                 }
+
                 if (endIndex == CurrentStreamManifest.NrOfMessages - 1)
                 {
                     WebSocket.SendText($"200: OK. {CurrentStreamManifest.NrOfMessages} messages sucessfully streamed.");
@@ -493,8 +518,9 @@ namespace RESTar
             catch (Exception e)
             {
                 WebSocket.SendException(e);
-                WebSocket.SendText($"500: Error during streaming. Streamed {CurrentStreamManifest?.CurrentMessageIndex ?? 0} " +
-                                   $"of {CurrentStreamManifest?.NrOfMessages ?? 1} messages.");
+                WebSocket.SendText(
+                    $"500: Error during streaming. Streamed {CurrentStreamManifest?.CurrentMessageIndex ?? 0} " +
+                    $"of {CurrentStreamManifest?.NrOfMessages ?? 1} messages.");
                 CurrentStreamManifest?.Dispose();
                 CurrentStreamManifest = null;
                 buffer = null;
@@ -522,6 +548,7 @@ namespace RESTar
                     query = local;
                     break;
             }
+
             queryChangedPreEval = false;
             return result;
         }
@@ -535,6 +562,7 @@ namespace RESTar
                 SendResult(error);
                 return false;
             }
+
             query = localQuery;
             queryChangedPreEval = false;
             return true;
@@ -574,6 +602,7 @@ namespace RESTar
                 };
                 startIndex += StreamBufferSize;
             }
+
             messages.Last().Length = last;
             CurrentStreamManifest.NrOfMessages = (int) nrOfMessages;
             CurrentStreamManifest.MessagesRemaining = (int) nrOfMessages;
@@ -593,7 +622,8 @@ namespace RESTar
                         CurrentStreamManifest = new StreamManifest(tooLarge);
                         SetupStreamManifest();
                     };
-                    SendConfirmationRequest("426: The response message is too large. Do you wish to stream the response? ");
+                    SendConfirmationRequest(
+                        "426: The response message is too large. Do you wish to stream the response? ");
                     break;
                 case OK ok:
                     SendResult(ok, sw.Elapsed);
@@ -602,6 +632,7 @@ namespace RESTar
                     SendResult(other);
                     break;
             }
+
             sw.Stop();
         }
 
@@ -617,7 +648,8 @@ namespace RESTar
             {
                 case null:
                 case 0:
-                    SendBadRequest($". No entities for {method} operation. Make a selecting request before running {method}");
+                    SendBadRequest(
+                        $". No entities for {method} operation. Make a selecting request before running {method}");
                     break;
                 case 1:
                     operate();
@@ -628,6 +660,7 @@ namespace RESTar
                         operate();
                         break;
                     }
+
                     OnConfirm = operate;
                     SendConfirmationRequest($"This will run {method} on {many} entities in resource " +
                                             $"'{PreviousResultMetadata.Request.Resource.Name}'. ");
@@ -657,10 +690,15 @@ namespace RESTar
             WebSocket.SendText("### Type a command to continue (e.g. HELP) ###");
         }
 
-        private void SendConfirmationRequest(string initialInfo = null) => WebSocket.SendText($"{initialInfo}Type 'Y' to continue, 'N' to cancel");
+        private void SendConfirmationRequest(string initialInfo = null) =>
+            WebSocket.SendText($"{initialInfo}Type 'Y' to continue, 'N' to cancel");
+
         private void SendCancel() => WebSocket.SendText("Operation cancelled");
         private void SendBadRequest(string message = null) => WebSocket.SendText($"400: Bad request{message}");
-        private void SendInvalidCommandArgument(string command, string arg) => WebSocket.SendText($"Invalid argument '{arg}' for command '{command}'");
+
+        private void SendInvalidCommandArgument(string command, string arg) =>
+            WebSocket.SendText($"Invalid argument '{arg}' for command '{command}'");
+
         private void SendUnknownCommand(string command) => WebSocket.SendText($"Unknown command '{command}'");
 
         private void Close()
@@ -670,12 +708,14 @@ namespace RESTar
             connection.WebSocket.Disconnect();
         }
 
-        private void SendHelp() => WebSocket.SendText("Shell documentation is available at https://github.com/Mopedo/Home/" +
-                                                      "blob/master/RESTar/Built-in%20resources/RESTar/Shell.md");
+        private void SendHelp() => WebSocket.SendText(
+            "Shell documentation is available at https://github.com/Mopedo/Home/" +
+            "blob/master/RESTar/Built-in%20resources/RESTar/Shell.md");
 
         private void SendCredits()
         {
-            WebSocket.SendText($"RESTar is designed and developed by Erik von Krusenstierna, © Mopedo AB {DateTime.Now.Year}");
+            WebSocket.SendText(
+                $"RESTar is designed and developed by Erik von Krusenstierna, © Mopedo AB {DateTime.Now.Year}");
         }
     }
 }
