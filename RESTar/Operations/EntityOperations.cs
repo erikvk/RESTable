@@ -101,6 +101,7 @@ namespace RESTar.Operations
                     var _inserter = inserter;
                     inserter = () => _inserter().InputLimit();
                 }
+
                 request.EntitiesProducer = () => inserter()?.Select(entity =>
                 {
                     (entity as IValidatable)?.Validate();
@@ -118,12 +119,14 @@ namespace RESTar.Operations
         {
             try
             {
-                var sourceSelector = request.GetSelector() ?? (() => TrySelectFilter(request)?.ToList() ?? new List<T>());
+                var sourceSelector =
+                    request.GetSelector() ?? (() => TrySelectFilter(request)?.ToList() ?? new List<T>());
                 if (!request.MetaConditions.Unsafe)
                 {
                     var selector = sourceSelector;
                     sourceSelector = () => selector()?.UnsafeLimit();
                 }
+
                 var updater = request.GetUpdater() ?? (_source => request.Body.PopulateTo(_source));
                 request.EntitiesProducer = () => updater(sourceSelector())?.Select(entity =>
                 {
@@ -142,12 +145,14 @@ namespace RESTar.Operations
         {
             try
             {
-                var sourceSelector = request.GetSelector() ?? (() => TrySelectFilter(request)?.ToList() ?? new List<T>());
+                var sourceSelector =
+                    request.GetSelector() ?? (() => TrySelectFilter(request)?.ToList() ?? new List<T>());
                 if (!request.MetaConditions.Unsafe)
                 {
                     var selector = sourceSelector;
                     sourceSelector = () => selector()?.UnsafeLimit();
                 }
+
                 request.EntitiesProducer = () => sourceSelector() ?? new T[0];
                 return request.Resource.Delete(request);
             }
@@ -157,7 +162,8 @@ namespace RESTar.Operations
             }
         }
 
-        private static Entities<TEntityType> MakeEntities<TEntityType>(IRequest request, IEnumerable<TEntityType> content) where TEntityType : class
+        private static Entities<TEntityType> MakeEntities<TEntityType>(IRequest request,
+            IEnumerable<TEntityType> content) where TEntityType : class
         {
             return new Entities<TEntityType>(request, content);
         }
@@ -188,9 +194,7 @@ namespace RESTar.Operations
                 case Method.PUT:
                     return request =>
                     {
-                        var sourceSelector = request.GetSelector() ?? (() => TrySelectFilter(request)?.ToList() ?? new List<T>());
-                        var source = sourceSelector()?.InputLimit()?.ToList();
-                        request.Selector = () => source;
+                        var source = TrySelectFilter(request)?.ToList().InputLimit()?.ToList();
                         switch (source?.Count)
                         {
                             case null:
@@ -229,11 +233,13 @@ namespace RESTar.Operations
                 innerRequest.Selector = () => toInsert.Select(item => item.ToObject<T>());
                 insertedCount = Insert(innerRequest);
             }
+
             return new SafePostedEntities(updatedCount, insertedCount, request);
         }
 
-        private static (IRequestInternal<T> InnerRequest, JArray ToInsert, IList<(JObject json, T source)> ToUpdate) GetSafePostTasks(
-            IRequest<T> request)
+        private static (IRequestInternal<T> InnerRequest, JArray ToInsert, IList<(JObject json, T source)> ToUpdate)
+            GetSafePostTasks(
+                IRequest<T> request)
         {
             var innerRequest = (IRequestInternal<T>) request.Context.CreateRequest<T>(Method.GET);
             var toInsert = new JArray();
@@ -260,6 +266,7 @@ namespace RESTar.Operations
                         default: throw new AmbiguousMatch();
                     }
                 }
+
                 return (innerRequest, toInsert, toUpdate);
             }
             catch (Exception e)

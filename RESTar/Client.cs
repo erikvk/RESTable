@@ -85,6 +85,9 @@ namespace RESTar
         public static Client Internal => new Client(OriginType.Internal, $"localhost:{Admin.Settings._Port}",
             new IPAddress(new byte[] {127, 0, 0, 1}), null, null, false) {AccessRights = AccessRights.Root};
 
+        internal static Client Remote => new Client((OriginType) (-1), $"localhost:{Admin.Settings._Port}",
+            new IPAddress(new byte[] {127, 0, 0, 1}), null, null, false);
+
         /// <summary>
         /// Returns true if and only if this client is considered authenticated. This is a necessary precondition for 
         /// being included in a context. If false, a NotAuthorized result object is returned in the out parameter, that 

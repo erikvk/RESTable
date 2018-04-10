@@ -110,6 +110,7 @@ namespace RESTar.Internal
         NotCompliantWithProtocol = 500,
         WebSocketNotConnected = 501,
         InvalidShellHeaderAssignmentSyntax = 502,
-        ShellError
+        ShellError = 503,
+        NoResponseFromRemoteService = 504
     }
 }

@@ -33,10 +33,7 @@ namespace RESTar.Results
         /// <inheritdoc />
         public bool IsPaged => Content != null && EntityCount > 0 && (long) EntityCount == Request.MetaConditions.Limit;
 
-        internal Entities(IRequest request, IEnumerable<T> content) : base(request)
-        {
-            Content = content ?? new T[0];
-        }
+        internal Entities(IRequest request, IEnumerable<T> content) : base(request) => Content = content ?? new T[0];
 
         /// <inheritdoc />
         public void SetContentDisposition(string extension) => Headers["Content-Disposition"] =

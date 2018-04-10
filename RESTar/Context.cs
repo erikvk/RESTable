@@ -79,7 +79,7 @@ namespace RESTar
         /// <param name="protocolId">An optional protocol ID, defining the protocol to use for the request. If the 
         /// protocol ID is null, the default protocol will be used.</param>
         /// <param name="viewName">An optional view name to use when selecting entities from the resource</param>
-        public IRequest<T> CreateRequest<T>(Method method, string protocolId = null, string viewName = null) where T : class
+        public virtual IRequest<T> CreateRequest<T>(Method method, string protocolId = null, string viewName = null) where T : class
         {
             var resource = Resource<T>.SafeGet ?? throw new UnknownResource(typeof(T).RESTarTypeName());
             var parameters = new RequestParameters(this, method, resource, protocolId, viewName);
@@ -93,7 +93,7 @@ namespace RESTar
         /// <param name="uri">The URI of the request</param>
         /// <param name="body">The body of the request</param>
         /// <param name="headers">The headers of the request</param>
-        public IRequest CreateRequest(Method method, string uri, byte[] body = null, Headers headers = null)
+        public virtual IRequest CreateRequest(Method method, string uri, byte[] body = null, Headers headers = null)
         {
             if (uri == null) throw new MissingUri();
             if (IsWebSocketUpgrade)
@@ -170,6 +170,13 @@ namespace RESTar
         /// The context of internal root-level access requests
         /// </summary>
         public static Context Root => new InternalContext();
+
+        /// <summary>
+        /// The context of a remote request to some external RESTar service
+        /// </summary>
+        /// <param name="serviceRoot">The URI of the remote RESTar service, for example https://my-service.com:8282/rest</param>
+        /// <param name="apiKey">The API key to use in remote request to this service</param>
+        public static Context Remote(string serviceRoot, string apiKey = null) => new RemoteContext(serviceRoot, apiKey);
 
         private static ulong IdNr;
         private static string NextId => DbHelper.Base64EncodeObjectNo(IdNr += 1);
