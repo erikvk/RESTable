@@ -67,6 +67,40 @@ namespace RESTar
                 .Where(request.Conditions);
         }
 
+        /// <inheritdoc />
+        /// <summary>
+        /// Returns all the resources that are declared within a given namespace
+        /// </summary>
+        [RESTarView]
+        public class InNamespace : ISelector<AvailableResource>
+        {
+            /// <summary>
+            /// The namespace to match against
+            /// </summary>
+            public string Namespace { get; set; }
+
+            /// <inheritdoc />
+            public IEnumerable<AvailableResource> Select(IRequest<AvailableResource> request)
+            {
+                var @namespace = request.Conditions.Get(nameof(Namespace), Operators.EQUALS).Value as string;
+                if (@namespace != null)
+                    if (!@namespace.EndsWith("."))
+                        @namespace = @namespace + ".";
+                if (@namespace == null)
+                    return request.Context.Client.AccessRights.Keys
+                        .Where(r => r.IsGlobal && !r.IsInnerResource)
+                        .OrderBy(r => r.Name)
+                        .Select(r => Make(r, request))
+                        .Where(request.Conditions);
+                return request.Context.Client.AccessRights.Keys
+                    .Where(r => r.IsGlobal && !r.IsInnerResource)
+                    .Where(r => r.Name.StartsWith(@namespace, StringComparison.OrdinalIgnoreCase))
+                    .OrderBy(r => r.Name)
+                    .Select(r => Make(r, request))
+                    .Where(request.Conditions);
+            }
+        }
+
         internal static AvailableResource Make(IResource iresource, ITraceable trace) => new AvailableResource
         {
             Name = iresource.Name,

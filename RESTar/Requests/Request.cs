@@ -147,7 +147,10 @@ namespace RESTar.Requests
                     catch (NotImplementedException) { }
                 if (IsEvaluating) throw new InfiniteLoop();
                 var result = RunEvaluation();
-                result.Headers?.Add("RESTar-elapsed-ms", TimeElapsed.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
+                result.Headers.Elapsed = TimeElapsed.TotalMilliseconds.ToString(CultureInfo.InvariantCulture);
+                if (Headers.Metadata.EqualsNoCase("full"))
+                    result.Headers.Metadata = result.Metadata;
+                result.Headers.Version = RESTarConfig.Version;
                 if (result is InfiniteLoop loop && !Context.IsBottomIfStack)
                     throw loop;
                 return result;

@@ -114,6 +114,9 @@ namespace RESTar.Results
         /// <inheritdoc />
         public TimeSpan TimeElapsed => Result.TimeElapsed;
 
+        /// <inheritdoc />
+        public string Metadata => Result.Metadata;
+
         private readonly ISerializedResult Result;
 
         /// <inheritdoc />

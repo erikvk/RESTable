@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Text;
 using RESTar.Internal;
 using RESTar.Results;
 
@@ -22,7 +23,7 @@ namespace RESTar.Requests
         public byte[] Bytes { get; }
 
         /// <summary>
-        /// Deserializes the body to a list of entitites of the given type
+        /// Deserializes the body to a list of entities of the given type
         /// </summary>
         public List<T> ToList<T>() where T : class
         {
@@ -56,5 +57,8 @@ namespace RESTar.Requests
             HasContent = bytes?.Length > 0;
             ProtocolProvider = protocolProvider;
         }
+
+        /// <inheritdoc />
+        public override string ToString() => Encoding.UTF8.GetString(Bytes);
     }
 }

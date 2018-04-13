@@ -30,6 +30,8 @@ namespace RESTar.Results
         /// </summary>
         public ulong EntityCount { get; set; }
 
+        public override string Metadata => $"{GetType()};{EntityCount};{EntityType}";
+
         /// <inheritdoc />
         public bool IsPaged => Content != null && EntityCount > 0 && (long) EntityCount == Request.MetaConditions.Limit;
 

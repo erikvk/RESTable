@@ -7,14 +7,17 @@
     public class UpdatedEntities : OK
     {
         /// <summary>
-        /// The number of entitites updated
+        /// The number of entities updated
         /// </summary>
         public int UpdatedCount { get; }
+
+        /// <inheritdoc />
+        public override string Metadata => $"{GetType()};{UpdatedCount};";
 
         internal UpdatedEntities(int count, IRequest request) : base(request)
         {
             UpdatedCount = count;
-            Headers["RESTar-info"] = $"{count} entities updated in '{request.Resource.Name}'";
+            Headers.Info = $"{count} entities updated in '{request.Resource.Name}'";
         }
     }
 }

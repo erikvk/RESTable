@@ -57,8 +57,8 @@ namespace RESTar.Results
         {
             get
             {
-                var info = Headers["RESTar-Info"];
-                var errorInfo = Headers["ErrorInfo"];
+                var info = Headers.Info;
+                var errorInfo = Headers.Error;
                 var tail = "";
                 if (info != null)
                     tail += $". {info}";
@@ -86,7 +86,7 @@ namespace RESTar.Results
         {
             ExcludeHeaders = false;
             ErrorCode = code;
-            Headers["RESTar-info"] = Message;
+            Headers.Info = Message;
         }
 
         internal Error(ErrorCodes code, string message, Exception ie) : base(message, ie)
@@ -94,8 +94,8 @@ namespace RESTar.Results
             ExcludeHeaders = false;
             ErrorCode = code;
             if (message == null)
-                Headers["RESTar-info"] = ie.Message;
-            else Headers["RESTar-info"] = message;
+                Headers.Info = ie.Message;
+            else Headers.Info = message;
         }
 
         /// <inheritdoc />
@@ -157,9 +157,12 @@ namespace RESTar.Results
                 IsSerialized = true;
                 stopwatch.Stop();
                 TimeElapsed = TimeElapsed + stopwatch.Elapsed;
-                Headers["RESTar-elapsed-ms"] = TimeElapsed.TotalMilliseconds.ToString(CultureInfo.InvariantCulture);
+                Headers.Elapsed = TimeElapsed.TotalMilliseconds.ToString(CultureInfo.InvariantCulture);
             }
         }
+
+        /// <inheritdoc />
+        public string Metadata => $"0;{GetType().FullName};";
 
         /// <inheritdoc />
         /// <summary>

@@ -16,7 +16,7 @@ namespace RESTar.Internal
         internal bool IsSuccessStatusCode => StatusCode >= (HttpStatusCode) 200 && StatusCode < (HttpStatusCode) 300;
         public string TraceId { get; }
         public Context Context { get; }
-        public string LogMessage => $"{StatusCode.ToCode()}: {StatusDescription} ({Body?.Length ?? 0} bytes) {Headers["RESTar-Info"]}";
+        public string LogMessage => $"{StatusCode.ToCode()}: {StatusDescription} ({Body?.Length ?? 0} bytes) {Headers.Info}";
 
         private HttpResponse(ITraceable trace)
         {

@@ -45,7 +45,7 @@ namespace RESTar
         string ContentDispositionFileExtension { get; }
 
         /// <summary>
-        /// Serializes the entity to the given Stream. Include the number of entitites serialized in the entityCount
+        /// Serializes the entity to the given Stream. Include the number of entities serialized in the entityCount
         /// out parameter (should be 0 or 1).
         /// </summary>
         void SerializeEntity(object entity, Stream stream, IRequest request, out ulong entityCount);

@@ -74,6 +74,48 @@ namespace RESTar.Requests
     [JsonConverter(typeof(HeadersConverter))]
     public class Headers : IDictionary<string, string>, IReadOnlyDictionary<string, string>
     {
+        internal string Info
+        {
+            get => this["RESTar-info"];
+            set => this["RESTar-info"] = value;
+        }
+
+        internal string Error
+        {
+            get => this["RESTar-error"];
+            set => this["RESTar-error"] = value;
+        }
+
+        internal string Elapsed
+        {
+            get => this["RESTar-elapsed-ms"];
+            set => this["RESTar-elapsed-ms"] = value;
+        }
+
+        internal string EntityCount
+        {
+            get => this["RESTar-count"];
+            set => this["RESTar-count"] = value;
+        }
+
+        internal string Pager
+        {
+            get => this["RESTar-pager"];
+            set => this["RESTar-pager"] = value;
+        }
+
+        internal string Metadata
+        {
+            get => this["RESTar-metadata"];
+            set => this["RESTar-metadata"] = value;
+        }
+
+        internal string Version
+        {
+            get => this["RESTar-version"];
+            set => this["RESTar-version"] = value;
+        }
+
         /// <summary>
         /// The Accept header
         /// </summary>

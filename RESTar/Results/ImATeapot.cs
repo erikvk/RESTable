@@ -13,9 +13,9 @@ namespace RESTar.Results
         {
             StatusCode = (HttpStatusCode) 418;
             StatusDescription = "I'm a teapot";
-            Headers["RESTar-info"] = "Look what you did. You tried something real hacky, and now RESTar " +
-                                     "thinks it's in some kind of 'teapot mode'. I hope you're proud of " +
-                                     "yourself...";
+            Headers.Info = "Look what you did. You tried something real hacky, and now RESTar " +
+                           "thinks it's in some kind of 'teapot mode'. I hope you're proud of " +
+                           "yourself...";
         }
     }
 }

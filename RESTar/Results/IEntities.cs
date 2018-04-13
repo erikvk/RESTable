@@ -14,7 +14,7 @@ namespace RESTar.Results
     public interface IEntities : IEnumerable, IResult, ISerializedResult
     {
         /// <summary>
-        /// The number of entitites in the collection. Should be set by the serializer, since it is unknown
+        /// The number of entities in the collection. Should be set by the serializer, since it is unknown
         /// until the collection is iterated.
         /// </summary>
         ulong EntityCount { get; set; }

@@ -12,7 +12,7 @@ namespace RESTar.Sc
     {
         internal ScDatabaseError(Exception e) : base(ErrorCodes.DatabaseError, e.Message, e)
         {
-            Headers["RESTar-info"] = "The Starcounter database encountered an error: " + (e.InnerException?.Message ?? e.Message);
+            Headers.Info = "The Starcounter database encountered an error: " + (e.InnerException?.Message ?? e.Message);
         }
     }
 }

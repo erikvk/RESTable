@@ -122,7 +122,7 @@ namespace RESTar.Internal
                     return report;
 
                 case Head head:
-                    head.Headers["RESTar-count"] = head.EntityCount.ToString();
+                    head.Headers.EntityCount = head.EntityCount.ToString();
                     return head;
 
                 case IEntities<object> entities:
@@ -131,12 +131,12 @@ namespace RESTar.Internal
                     {
                         contentTypeProvider.SerializeCollection(entities, entities.Body, entities.Request, out var entityCount);
                         if (entityCount == 0) return new NoContent(entities.Request);
-                        entities.Headers["RESTar-count"] = entityCount.ToString();
+                        entities.Headers.EntityCount = entityCount.ToString();
                         entities.EntityCount = entityCount;
                         if (entities.IsPaged)
                         {
                             var pager = entities.GetNextPageLink();
-                            entities.Headers["RESTar-pager"] = MakeRelativeUri(pager);
+                            entities.Headers.Pager = MakeRelativeUri(pager);
                         }
                         entities.SetContentDisposition(contentTypeProvider.ContentDispositionFileExtension);
                         return entities;
@@ -166,7 +166,7 @@ namespace RESTar.Internal
                         var response = externalRequest.GetResponse() ?? throw new InvalidExternalDestination(externalRequest, "No response");
                         if (response.StatusCode >= HttpStatusCode.BadRequest)
                             throw new InvalidExternalDestination(externalRequest,
-                                $"Received {response.StatusCode.ToCode()} - {response.StatusDescription}. {response.Headers.SafeGet("RESTar-info")}");
+                                $"Received {response.StatusCode.ToCode()} - {response.StatusDescription}. {response.Headers.Info}");
                         if (serialized.Headers.FirstOrDefault(pair => pair.Key.EqualsNoCase("Access-Control-Allow-Origin")).Value is string h)
                             response.Headers["Access-Control-Allow-Origin"] = h;
                         return new ExternalDestinationResult(entities.Request, response);

@@ -125,6 +125,8 @@
     <Compile Include="Internal\InternalContext.cs" />
     <Compile Include="Internal\CachedProtocolProvider.cs" />
     <Compile Include="Internal\ContentTypeController.cs" />
+    <Compile Include="Requests\ExternalResource.cs" />
+    <Compile Include="Requests\ExternalServiceNotRESTar.cs" />
     <Compile Include="Requests\InvalidParametersRequest.cs" />
     <Compile Include="IProtocolProvider.cs" />
     <Compile Include="ContentTypeProviders\JsonContentProvider.cs" />

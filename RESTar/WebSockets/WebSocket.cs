@@ -248,8 +248,8 @@ namespace RESTar.WebSockets
 
             void sendStatus()
             {
-                var info = result.Headers["RESTar-Info"];
-                var errorInfo = result.Headers["ErrorInfo"];
+                var info = result.Headers.Info;
+                var errorInfo = result.Headers.Error;
                 var timeInfo = "";
                 if (timeElapsed != null)
                     timeInfo = $" ({timeElapsed.Value.TotalMilliseconds} ms)";

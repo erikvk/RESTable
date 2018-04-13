@@ -36,7 +36,6 @@ namespace RESTar
         private IEntities PreviousResultMetadata;
         private StreamManifest CurrentStreamManifest;
 
-
         /// <summary>
         /// Signals that there are changes to the query that have been made pre evaluation
         /// </summary>

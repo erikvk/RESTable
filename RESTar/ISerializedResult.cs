@@ -58,6 +58,11 @@ namespace RESTar
         /// Has this result been serialized?
         /// </summary>
         bool IsSerialized { get; }
+
+        /// <summary>
+        /// The metadata for this result, for use in the RESTar-metadata header in remote requests.
+        /// </summary>
+        string Metadata { get; }
     }
 
     /// <inheritdoc />

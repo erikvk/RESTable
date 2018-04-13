@@ -636,8 +636,11 @@ namespace RESTar
                 request.Context.WebSocket?.Disconnect();
                 return new WebSocketUpgradeSuccessful(request);
             }
+            if (request.Headers.Metadata.EqualsNoCase("full"))
+                error.Headers.Metadata = error.Metadata;
+            error.Headers.Version = RESTarConfig.Version;
             if (errorId != null)
-                error.Headers["ErrorInfo"] = $"/restar.admin.error/id={HttpUtility.UrlEncode(errorId)}";
+                error.Headers.Error = $"/restar.admin.error/id={HttpUtility.UrlEncode(errorId)}";
             error.TimeElapsed = request.TimeElapsed;
             return error;
         }

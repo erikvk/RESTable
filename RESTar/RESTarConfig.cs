@@ -42,6 +42,7 @@ namespace RESTar
         internal static bool Initialized { get; private set; }
         internal static readonly Method[] Methods = {GET, POST, PATCH, PUT, DELETE, REPORT, HEAD};
         internal static readonly Encoding DefaultEncoding = new UTF8Encoding(false);
+        internal static readonly string Version = typeof(RESTarConfig).Assembly.GetName().Version.ToString();
 
         static RESTarConfig() => NewState();
 

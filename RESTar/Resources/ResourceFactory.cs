@@ -107,6 +107,10 @@ namespace RESTar.Resources
                         throw new InvalidResourceDeclaration(
                             "Encountered an unknown type. No further information is available.");
 
+                    if (type.IsGenericTypeDefinition)
+                        throw new InvalidResourceDeclaration(
+                            $"Found a generic resource type '{type.FullName}'. RESTar resource types must be non-generic");
+
                     if (type.FullName.Count(c => c == '+') >= 2)
                         throw new InvalidResourceDeclaration($"Invalid resource '{type.RESTarTypeName()}'. " +
                                                              "Inner resources cannot have their own inner resources");

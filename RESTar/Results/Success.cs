@@ -24,7 +24,7 @@ namespace RESTar.Results
         public string StatusDescription { get; protected set; }
 
         /// <inheritdoc />
-        public virtual Headers Headers { get; } = new Headers();
+        public virtual Headers Headers { get; }
 
         /// <inheritdoc />
         public ICollection<string> Cookies { get; internal set; }
@@ -70,11 +70,15 @@ namespace RESTar.Results
         public void ThrowIfError() { }
 
         /// <inheritdoc />
+        public virtual string Metadata => $"{GetType()};;";
+
+        /// <inheritdoc />
         protected Success(ITraceable trace)
         {
             Context = trace.Context;
             TraceId = trace.TraceId;
             ExcludeHeaders = false;
+            Headers = new Headers();
             IsSerialized = false;
             LogTime = DateTime.Now;
             Body = null;

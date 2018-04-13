@@ -11,10 +11,13 @@
         /// </summary>
         public int DeletedCount { get; }
 
+        /// <inheritdoc />
+        public override string Metadata => $"{GetType()};{DeletedCount};";
+
         internal DeletedEntities(int count, IRequest request) : base(request)
         {
             DeletedCount = count;
-            Headers["RESTar-info"] = $"{count} entities deleted from '{request.Resource.Name}'";
+            Headers.Info = $"{count} entities deleted from '{request.Resource.Name}'";
         }
     }
 }

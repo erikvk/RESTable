@@ -68,7 +68,7 @@ namespace RESTar.Results
                 IsSerialized = true;
                 stopwatch.Stop();
                 TimeElapsed = TimeElapsed + stopwatch.Elapsed;
-                Headers["RESTar-elapsed-ms"] = TimeElapsed.TotalMilliseconds.ToString(CultureInfo.InvariantCulture);
+                Headers.Elapsed = TimeElapsed.TotalMilliseconds.ToString(CultureInfo.InvariantCulture);
             }
         }
 

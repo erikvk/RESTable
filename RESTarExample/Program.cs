@@ -7,12 +7,10 @@ using Dynamit;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using RESTar;
-using RESTar.Admin;
 using RESTar.Linq;
 using RESTar.Operations;
 using RESTar.ResourceTemplates;
 using Starcounter;
-using ContentType = RESTar.ContentType;
 
 #pragma warning disable 1591
 // ReSharper disable All
@@ -32,12 +30,9 @@ namespace RESTarExample
                 lineEndings: LineEndings.Linux
             );
 
-            var context = Context.Remote("https://demo-dsp.mopedo-drtb.com:8282/rest", "TDSPx1lnrN4RaKnu");
-            var request = context.CreateRequest(Method.GET, "/user//limit=2");
-            var result = request.Result;
-
-            DatabaseIndex.Register<DbClassWrapper>("TestDbWrapper", "MyString");
-
+//            var context = Context.Remote("https://demo-dsp.mopedo-drtb.com:8282/rest", "TDSPx1lnrN4RaKnu");
+//            var request = context.CreateRequest(Method.GET, "/user//limit=2");
+//            var result = request.Result;
         }
     }
 
