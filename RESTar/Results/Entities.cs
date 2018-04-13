@@ -10,7 +10,7 @@ namespace RESTar.Results
     /// <summary>
     /// A result that contains a set of entities
     /// </summary>
-    internal sealed class Entities<T> : Content, IEntities<T> where T : class
+    internal class Entities<T> : Content, IEntities<T> where T : class
     {
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
@@ -30,7 +30,7 @@ namespace RESTar.Results
         /// </summary>
         public ulong EntityCount { get; set; }
 
-        public override string Metadata => $"{GetType()};{EntityCount};{EntityType}";
+        public override string Metadata => $"RESTar.Results.Entities;{Request.Resource};{EntityType}";
 
         /// <inheritdoc />
         public bool IsPaged => Content != null && EntityCount > 0 && (long) EntityCount == Request.MetaConditions.Limit;

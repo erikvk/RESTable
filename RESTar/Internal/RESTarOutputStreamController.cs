@@ -19,18 +19,13 @@ namespace RESTar.Internal
         private void Swap()
         {
             Position = 0;
-            var fileStream = File.Create
-            (
-                path: $"{Path.GetTempPath()}{Guid.NewGuid()}.restar",
-                bufferSize: 1048576,
-                options: FileOptions.Asynchronous | FileOptions.DeleteOnClose
-            );
+            var fileStream = RESTarConfig.MakeTempFile();
             using (var memoryStream = (MemoryStream) Stream)
                 memoryStream.WriteTo(fileStream);
             Stream = fileStream;
             Swapped = true;
         }
-        
+
         /// <inheritdoc />
         public override void Flush() => Stream.Flush();
 

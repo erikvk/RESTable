@@ -17,7 +17,7 @@
         public int InsertedCount { get; }
 
         /// <inheritdoc />
-        public override string Metadata => $"{GetType()};{UpdatedCount};{InsertedCount}";
+        public override string Metadata => $"{GetType()};{Request.Resource};{UpdatedCount},{InsertedCount}";
 
         internal SafePostedEntities(int updatedEntities, int insertedEntities, IRequest request) : base(request)
         {

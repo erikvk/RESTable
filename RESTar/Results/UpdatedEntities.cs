@@ -12,7 +12,7 @@
         public int UpdatedCount { get; }
 
         /// <inheritdoc />
-        public override string Metadata => $"{GetType()};{UpdatedCount};";
+        public override string Metadata => $"{GetType()};{Request.Resource};{UpdatedCount}";
 
         internal UpdatedEntities(int count, IRequest request) : base(request)
         {

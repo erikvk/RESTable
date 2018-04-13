@@ -14,7 +14,7 @@ namespace RESTar.Results
         public int InsertedCount { get; }
 
         /// <inheritdoc />
-        public override string Metadata => $"{GetType()};{InsertedCount};";
+        public override string Metadata => $"{GetType()};{Request.Resource};{InsertedCount}";
 
         internal InsertedEntities(int count, IRequest trace) : base(trace)
         {

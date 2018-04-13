@@ -44,6 +44,13 @@ namespace RESTar
         internal static readonly Encoding DefaultEncoding = new UTF8Encoding(false);
         internal static readonly string Version = typeof(RESTarConfig).Assembly.GetName().Version.ToString();
 
+        internal static FileStream MakeTempFile() => File.Create
+        (
+            path: $"{Path.GetTempPath()}{Guid.NewGuid()}.restar",
+            bufferSize: 1048576,
+            options: FileOptions.Asynchronous | FileOptions.DeleteOnClose
+        );
+
         static RESTarConfig() => NewState();
 
         private static void NewState()

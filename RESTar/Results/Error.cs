@@ -162,7 +162,7 @@ namespace RESTar.Results
         }
 
         /// <inheritdoc />
-        public string Metadata => $"0;{GetType().FullName};";
+        public string Metadata => $"{GetType()};{RequestInternal.Resource};{ErrorCode}";
 
         /// <inheritdoc />
         /// <summary>

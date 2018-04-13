@@ -12,7 +12,7 @@
         public int DeletedCount { get; }
 
         /// <inheritdoc />
-        public override string Metadata => $"{GetType()};{DeletedCount};";
+        public override string Metadata => $"{GetType()};{Request.Resource};{DeletedCount}";
 
         internal DeletedEntities(int count, IRequest request) : base(request)
         {

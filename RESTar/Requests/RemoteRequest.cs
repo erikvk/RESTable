@@ -1,12 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using RESTar.Internal;
 using RESTar.Linq;
 using RESTar.Logging;
 using RESTar.Resources;
+using RESTar.Results;
 using RESTar.Serialization;
 
 namespace RESTar.Requests
@@ -22,8 +25,9 @@ namespace RESTar.Requests
         public Headers Headers { get; }
         public Method Method { get; set; }
         public Body Body { get; private set; }
+        private RemoteResource RemoteResource { get; set; }
 
-        private static string errorMessage(string propertyName) => $"Cannot get {propertyName} for a remote request";
+        private static string ErrorMessage(string propertyName) => $"Cannot get {propertyName} for a remote request";
 
         public void SetBody(object content)
         {
@@ -38,13 +42,13 @@ namespace RESTar.Requests
             Body = new Body(bytes, _contentType, CachedProtocolProvider);
         }
 
-        public IEntityResource Resource => throw new InvalidOperationException(errorMessage(nameof(Resource)));
-        public Type TargetType => throw new InvalidOperationException(errorMessage(nameof(TargetType)));
-        public bool HasConditions => throw new InvalidOperationException(errorMessage(nameof(HasConditions)));
-        public MetaConditions MetaConditions => throw new InvalidOperationException(errorMessage(nameof(MetaConditions)));
-        public Headers ResponseHeaders => throw new InvalidOperationException(errorMessage(nameof(ResponseHeaders)));
-        public ICollection<string> Cookies => throw new InvalidOperationException(errorMessage(nameof(Cookies)));
-        public IUriComponents UriComponents => throw new InvalidOperationException(errorMessage(nameof(UriComponents)));
+        public IEntityResource Resource => throw new InvalidOperationException(ErrorMessage(nameof(Resource)));
+        public Type TargetType => throw new InvalidOperationException(ErrorMessage(nameof(TargetType)));
+        public bool HasConditions => throw new InvalidOperationException(ErrorMessage(nameof(HasConditions)));
+        public MetaConditions MetaConditions => throw new InvalidOperationException(ErrorMessage(nameof(MetaConditions)));
+        public Headers ResponseHeaders => throw new InvalidOperationException(ErrorMessage(nameof(ResponseHeaders)));
+        public ICollection<string> Cookies => throw new InvalidOperationException(ErrorMessage(nameof(Cookies)));
+        public IUriComponents UriComponents => throw new InvalidOperationException(ErrorMessage(nameof(UriComponents)));
 
         public IResult Result => GetResult().Result;
 
@@ -55,6 +59,7 @@ namespace RESTar.Requests
                 var method = new HttpMethod(Method.ToString());
                 var message = new HttpRequestMessage(method, URI) {Content = new ByteArrayContent(Body.Bytes)};
                 Headers.Metadata = "full";
+                Headers.Accept = ContentType.JSON;
                 Headers.ForEach(header => message.Headers.Add(header.Key, header.Value));
                 var response = await HttpClient.SendAsync(message);
                 var responseHeaders = new Headers();
@@ -62,7 +67,20 @@ namespace RESTar.Requests
                 var metadata = responseHeaders.Metadata?.Split(';');
                 if (metadata?.Length != 3)
                     return new ExternalServiceNotRESTar(URI);
-                switch (metadata[0]) { }
+                var (resultType, resourceName, data) = (metadata[0], metadata[1], metadata[2]);
+                if (resultType == null || resourceName == null)
+                    return new ExternalServiceNotRESTar(URI);
+                RemoteResource = new RemoteResource(resourceName);
+                var stream = new RESTarOutputStreamController();
+                if (response.Content != null)
+                {
+                    await response.Content.CopyToAsync(stream);
+                    stream.Seek(0, SeekOrigin.Begin);
+                }
+                switch (resultType)
+                {
+                    case "RESTar.Results.Entities": return new RemoteEntities(this, stream);
+                }
                 return null;
             }
             catch (Exception e)
