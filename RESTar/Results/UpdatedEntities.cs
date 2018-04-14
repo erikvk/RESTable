@@ -11,7 +11,7 @@
         /// </summary>
         public int UpdatedCount { get; }
 
-        internal UpdatedEntities(int count, IRequest request) : base(request)
+        internal UpdatedEntities(IRequest request, int count) : base(request)
         {
             UpdatedCount = count;
             Headers.Info = $"{count} entities updated in '{request.Resource}'";

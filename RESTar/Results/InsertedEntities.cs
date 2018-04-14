@@ -13,12 +13,12 @@ namespace RESTar.Results
         /// </summary>
         public int InsertedCount { get; }
 
-        internal InsertedEntities(int count, IRequest trace) : base(trace)
+        internal InsertedEntities(IRequest request, int count) : base(request)
         {
             InsertedCount = count;
             StatusCode = count < 1 ? HttpStatusCode.OK : HttpStatusCode.Created;
             StatusDescription = StatusCode.ToString();
-            Headers.Info = $"{count} entities inserted into '{trace.Resource}'";
+            Headers.Info = $"{count} entities inserted into '{request.Resource}'";
         }
 
         /// <inheritdoc />

@@ -188,7 +188,7 @@ namespace RESTar.Operations
                     {
                         if (request.MetaConditions.SafePost != null)
                             return SafePOST(request);
-                        return new InsertedEntities(Insert(request), request);
+                        return new InsertedEntities(request, Insert(request));
                     };
 
                 case Method.PUT:
@@ -198,10 +198,10 @@ namespace RESTar.Operations
                         switch (source?.Count)
                         {
                             case null:
-                            case 0: return new InsertedEntities(Insert(request), request);
+                            case 0: return new InsertedEntities(request, Insert(request));
                             case 1 when request.GetUpdater() == null && !request.Body.HasContent:
-                                return new UpdatedEntities(0, request);
-                            default: return new UpdatedEntities(Update(request), request);
+                                return new UpdatedEntities(request, 0);
+                            default: return new UpdatedEntities(request, Update(request));
                         }
                     };
 
@@ -213,8 +213,8 @@ namespace RESTar.Operations
                         return new NoContent(request);
                     };
 
-                case Method.PATCH: return request => new UpdatedEntities(Update(request), request);
-                case Method.DELETE: return request => new DeletedEntities(Delete(request), request);
+                case Method.PATCH: return request => new UpdatedEntities(request, Update(request));
+                case Method.DELETE: return request => new DeletedEntities(request, Delete(request));
                 case Method.REPORT: return request => new Report(request, TryCount(request));
                 default: return request => new ImATeapot(request);
             }
@@ -234,7 +234,7 @@ namespace RESTar.Operations
                 insertedCount = Insert(innerRequest);
             }
 
-            return new SafePostedEntities(updatedCount, insertedCount, request);
+            return new SafePostedEntities(request, updatedCount, insertedCount);
         }
 
         private static (IEntityRequest<T> InnerRequest, JArray ToInsert, IList<(JObject json, T source)> ToUpdate)

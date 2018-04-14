@@ -30,8 +30,6 @@ namespace RESTar.Results
         /// </summary>
         public ulong EntityCount { get; set; }
 
-        public override string Metadata => $"{nameof(Entities<T>)};{Request.Resource};{EntityType}";
-
         /// <inheritdoc />
         public bool IsPaged => Content != null && EntityCount > 0 && (long) EntityCount == Request.MetaConditions.Limit;
 
@@ -58,5 +56,8 @@ namespace RESTar.Results
                 (Request.MetaConditions.Offset + (long) EntityCount).ToString()));
             return components;
         }
+
+        /// <inheritdoc />
+        public override string Metadata => $"{nameof(Entities<T>)};{Request.Resource};{EntityType}";
     }
 }

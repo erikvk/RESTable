@@ -9,9 +9,6 @@ namespace RESTar.Results
     /// </summary>
     public class UnsupportedWebSocketInput : Error
     {
-        /// <inheritdoc />
-        public override string Metadata => $"{nameof(UnsupportedWebSocketInput)};{RequestInternal.Resource};{ErrorCode}";
-
         internal UnsupportedWebSocketInput(string info) : base(ErrorCodes.UnsupportedContent, info)
         {
             StatusCode = HttpStatusCode.UnsupportedMediaType;

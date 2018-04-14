@@ -10,13 +10,13 @@ namespace RESTar.Results
     /// </summary>
     public abstract class Forbidden : Error
     {
-        /// <inheritdoc />
-        public override string Metadata => $"{nameof(Forbidden)};{RequestInternal.Resource};{ErrorCode}";
-
         internal Forbidden(ErrorCodes code, string info) : base(code, info)
         {
             StatusCode = HttpStatusCode.Forbidden;
             StatusDescription = "Forbidden";
         }
+
+        /// <inheritdoc />
+        public override string Metadata => $"{nameof(Forbidden)};{RequestInternal.Resource};{ErrorCode}";
     }
 }

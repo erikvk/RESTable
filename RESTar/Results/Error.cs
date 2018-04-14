@@ -155,7 +155,7 @@ namespace RESTar.Results
         }
 
         /// <inheritdoc />
-        public abstract string Metadata { get; }    
+        public virtual string Metadata => $"{GetType().Name};;";
 
         /// <inheritdoc />
         /// <summary>

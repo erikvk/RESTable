@@ -150,6 +150,7 @@
     <Compile Include="Resources\BinaryResourceProvider.cs" />
     <Compile Include="Results\Binary.cs" />
     <Compile Include="Results\NoResponse.cs" />
+    <Compile Include="Results\RemoteBadRequest.cs" />
     <Compile Include="Results\RemoteEntities.cs" />
     <Compile Include="INetworkProvider.cs" />
     <Compile Include="Results\ExternalDestinationResult.cs" />
@@ -157,6 +158,9 @@
     <Compile Include="Results\ImATeapot.cs" />
     <Compile Include="Results\InvalidShellStateForBinaryInput.cs" />
     <Compile Include="RESTarException.cs" />
+    <Compile Include="Results\RemoteForbidden.cs" />
+    <Compile Include="Results\RemoteInternal.cs" />
+    <Compile Include="Results\RemoteNotFound.cs" />
     <Compile Include="Results\Success.cs" />
     <Compile Include="Sc\ScContext.cs" />
     <Compile Include="StreamManifest.cs" />

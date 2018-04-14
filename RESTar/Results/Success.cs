@@ -70,9 +70,6 @@ namespace RESTar.Results
         public void ThrowIfError() { }
 
         /// <inheritdoc />
-        public virtual string Metadata => $"{GetType().Name};;";
-
-        /// <inheritdoc />
         protected Success(ITraceable trace)
         {
             Context = trace.Context;
@@ -83,5 +80,8 @@ namespace RESTar.Results
             LogTime = DateTime.Now;
             Body = null;
         }
+
+        /// <inheritdoc />
+        public virtual string Metadata => $"{GetType().Name};;";
     }
 }

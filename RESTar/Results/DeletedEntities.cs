@@ -11,7 +11,7 @@
         /// </summary>
         public int DeletedCount { get; }
 
-        internal DeletedEntities(int count, IRequest request) : base(request)
+        internal DeletedEntities(IRequest request, int count) : base(request)
         {
             DeletedCount = count;
             Headers.Info = $"{count} entities deleted from '{request.Resource}'";

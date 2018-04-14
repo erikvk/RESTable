@@ -16,7 +16,7 @@
         /// </summary>
         public int InsertedCount { get; }
 
-        internal SafePostedEntities(int updatedEntities, int insertedEntities, IRequest request) : base(request)
+        internal SafePostedEntities(IRequest request, int updatedEntities, int insertedEntities) : base(request)
         {
             UpdatedCount = updatedEntities;
             InsertedCount = insertedEntities;

@@ -10,16 +10,13 @@ namespace RESTar.Results
     /// </summary>
     public abstract class NotFound : Error
     {
-        /// <inheritdoc />
-        public override string Metadata => $"{nameof(NotFound)};{RequestInternal.Resource};{ErrorCode}";
-
-        /// <inheritdoc />
-        protected NotFound(ErrorCodes code, string info, Exception ie) : base(code, info, ie) { }
-
-        internal NotFound(ErrorCodes code, string info) : base(code, info)
+        internal NotFound(ErrorCodes code, string info, Exception ie = null) : base(code, info, ie)
         {
             StatusCode = HttpStatusCode.NotFound;
             StatusDescription = "Not found";
         }
+
+        /// <inheritdoc />
+        public override string Metadata => $"{nameof(NotFound)};{RequestInternal.Resource};{ErrorCode}";
     }
 }

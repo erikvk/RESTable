@@ -17,8 +17,5 @@ namespace RESTar.Results
                            "thinks it's in some kind of 'teapot mode'. I hope you're proud of " +
                            "yourself...";
         }
-
-        /// <inheritdoc />
-        public override string Metadata => $"{nameof(ImATeapot)};{Request.Resource};";
     }
 }
