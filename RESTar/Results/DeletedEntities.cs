@@ -17,7 +17,7 @@
         internal DeletedEntities(int count, IRequest request) : base(request)
         {
             DeletedCount = count;
-            Headers.Info = $"{count} entities deleted from '{request.Resource.Name}'";
+            Headers.Info = $"{count} entities deleted from '{request.Resource}'";
         }
     }
 }

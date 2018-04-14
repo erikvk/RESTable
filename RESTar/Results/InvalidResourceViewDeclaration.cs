@@ -7,7 +7,7 @@ namespace RESTar.Results
     /// <summary>
     /// Thrown when RESTar encounters an invalid resource view declaration
     /// </summary>
-    public class InvalidResourceViewDeclaration : Error
+    public class InvalidResourceViewDeclaration : RESTarException
     {
         internal InvalidResourceViewDeclaration(Type view, string message) : base(ErrorCodes.InvalidResourceViewDeclaration,
             $"Invalid resource view declaration for view '{view.Name}' in Resource '{view.DeclaringType?.RESTarTypeName()}'. {message}") { }

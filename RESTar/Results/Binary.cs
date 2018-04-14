@@ -16,6 +16,8 @@ namespace RESTar.Results
         {
             Headers.ContentType = contentType;
             Body = stream;
+            if (Body.CanSeek)
+                Body.Seek(0, SeekOrigin.Begin);
             IsSerialized = true;
         }
     }

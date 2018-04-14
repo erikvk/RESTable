@@ -21,7 +21,7 @@ namespace RESTar.Results
             InsertedCount = count;
             StatusCode = count < 1 ? HttpStatusCode.OK : HttpStatusCode.Created;
             StatusDescription = StatusCode.ToString();
-            Headers.Info = $"{count} entities inserted into '{trace.Resource.Name}'";
+            Headers.Info = $"{count} entities inserted into '{trace.Resource}'";
         }
     }
 }

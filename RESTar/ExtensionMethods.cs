@@ -778,10 +778,10 @@ namespace RESTar
             return ms.ToArray();
         }
 
-        internal static ClosedXML.Excel.XLWorkbook ToExcel(this IEnumerable<object> entities, IEntityResource resource)
+        internal static ClosedXML.Excel.XLWorkbook ToExcel(this IEnumerable<object> entities, ITarget target)
         {
             var dataSet = new DataSet();
-            var table = entities.MakeDataTable(resource);
+            var table = entities.MakeDataTable(target);
             if (table.Rows.Count == 0) return null;
             dataSet.Tables.Add(table);
             var workbook = new ClosedXML.Excel.XLWorkbook();
@@ -794,7 +794,7 @@ namespace RESTar
         /// </summary>
         public static ClosedXML.Excel.XLWorkbook ToExcel<T>(this IEnumerable<T> entities) where T : class
         {
-            var resource = EntityResource<T>.Get;
+            var resource = Resource<T>.Get;
             var dataSet = new DataSet();
             var table = entities.MakeDataTable(resource);
             if (table.Rows.Count == 0) return null;
@@ -804,7 +804,7 @@ namespace RESTar
             return workbook;
         }
 
-        private static DataTable MakeDataTable<T>(this IEnumerable<T> entities, IEntityResource resource)
+        private static DataTable MakeDataTable<T>(this IEnumerable<T> entities, ITarget resource)
         {
             var table = new DataTable();
             switch (entities)

@@ -10,19 +10,27 @@ using RESTar.Requests;
 
 namespace RESTar.Results
 {
-    /// <inheritdoc cref="Exception" />
-    /// <inheritdoc cref="ITraceable" />
-    /// <inheritdoc cref="ISerializedResult" />
-    /// <summary>
-    /// A super class for all custom RESTar exceptions
-    /// </summary>
-    public abstract class Error : Exception, ITraceable, ISerializedResult
+    public abstract class RESTarException : Exception
     {
         /// <summary>
         /// The error code for this error
         /// </summary>
         public ErrorCodes ErrorCode { get; }
 
+        protected RESTarException(ErrorCodes errorCode, string message, Exception ie = null) : base(message, ie)
+        {
+            ErrorCode = errorCode;
+        }
+    }
+
+    /// <inheritdoc cref="Exception" />
+    /// <inheritdoc cref="ITraceable" />
+    /// <inheritdoc cref="ISerializedResult" />
+    /// <summary>
+    /// A super class for all custom RESTar exceptions
+    /// </summary>
+    public abstract class Error : RESTarException, ITraceable, ISerializedResult
+    {
         /// <inheritdoc />
         public HttpStatusCode StatusCode { get; protected set; }
 
@@ -82,17 +90,15 @@ namespace RESTar.Results
 
         #endregion
 
-        internal Error(ErrorCodes code, string message) : base(message)
+        internal Error(ErrorCodes code, string message) : base(code, message, null)
         {
             ExcludeHeaders = false;
-            ErrorCode = code;
             Headers.Info = Message;
         }
 
-        internal Error(ErrorCodes code, string message, Exception ie) : base(message, ie)
+        internal Error(ErrorCodes code, string message, Exception ie) : base(code, message, ie)
         {
             ExcludeHeaders = false;
-            ErrorCode = code;
             if (message == null)
                 Headers.Info = ie.Message;
             else Headers.Info = message;

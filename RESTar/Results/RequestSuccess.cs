@@ -51,8 +51,12 @@ namespace RESTar.Results
                         result.Body.Dispose();
                         result.Body = null;
                     }
-                    else if (Headers.ContentType == null)
-                        Headers.ContentType = acceptProvider.ContentType;
+                    else
+                    {
+                        result.Body.Seek(0, SeekOrigin.Begin);
+                        if (Headers.ContentType == null)
+                            Headers.ContentType = acceptProvider.ContentType;
+                    }
                 }
                 else result.Body = null;
                 return result;

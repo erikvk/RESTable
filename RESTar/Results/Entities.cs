@@ -39,7 +39,7 @@ namespace RESTar.Results
 
         /// <inheritdoc />
         public void SetContentDisposition(string extension) => Headers["Content-Disposition"] =
-            $"attachment;filename={Request.Resource.Name}_{DateTime.Now:yyMMddHHmmssfff}{extension}";
+            $"attachment;filename={Request.Resource}_{DateTime.Now:yyMMddHHmmssfff}{extension}";
 
         /// <inheritdoc />
         public IUriComponents GetNextPageLink() => GetNextPageLink(-1);

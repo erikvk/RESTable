@@ -150,7 +150,6 @@
     <Compile Include="Results\Binary.cs" />
     <Compile Include="Results\NoResponse.cs" />
     <Compile Include="Results\RemoteEntities.cs" />
-    <Compile Include="Results\Untraceable - Copy.cs" />
     <Compile Include="INetworkProvider.cs" />
     <Compile Include="Results\ExternalDestinationResult.cs" />
     <Compile Include="Results\IEntities.cs" />
@@ -168,7 +167,7 @@
     <Compile Include="ResourceTemplates\FeedTerminal.cs" />
     <Compile Include="ResourceTemplates\OptionsTerminal.cs" />
     <Compile Include="Internal\RESTarOutputStreamController.cs" />
-    <Compile Include="Results\InvalidSyntax - Copy.cs" />
+    <Compile Include="Results\MissingDataSource.cs" />
     <Compile Include="Results\NotCompliantWithProtocol.cs" />
     <Compile Include="Results\InvalidProtocolProvider.cs" />
     <Compile Include="Results\InvalidContentTypeProvider.cs" />
@@ -177,7 +176,6 @@
     <Compile Include="Results\UnknownEntityResource.cs" />
     <Compile Include="Results\UnknownProtocol.cs" />
     <Compile Include="Results\BinderPermissions.cs" />
-    <Compile Include="Results\Untraceable.cs" />
     <Compile Include="Results\Content.cs" />
     <Compile Include="Results\Head.cs" />
     <Compile Include="Results\WebSocketResult.cs" />
@@ -283,13 +281,7 @@
     <Compile Include="Admin\ResourceAlias.cs" />
     <Compile Include="RESTarConfig.cs" />
     <Compile Include="Operations\EntityOperations.cs" />
-    <Compile Include="Results\AbortedReport.cs" />
-    <Compile Include="Results\AbortedDelete.cs" />
-    <Compile Include="Results\AbortedInsert.cs" />
     <Compile Include="Results\AbortedOperation.cs" />
-    <Compile Include="Results\AbortedProfile.cs" />
-    <Compile Include="Results\AbortedSelect.cs" />
-    <Compile Include="Results\AbortedUpdate.cs" />
     <Compile Include="Results\AliasAlreadyInUse.cs" />
     <Compile Include="Results\AliasEqualToResourceName.cs" />
     <Compile Include="Results\AmbiguousMatch.cs" />
@@ -298,9 +290,7 @@
     <Compile Include="Results\FailedJsonDeserialization.cs" />
     <Compile Include="Sc\ScDatabaseError.cs" />
     <Compile Include="Results\FailedResourceAuthentication.cs" />
-    <Compile Include="Results\MethodUnavailable.cs" />
     <Compile Include="Results\MethodNotAllowed.cs" />
-    <Compile Include="Results\UserNotSignedIn.cs" />
     <Compile Include="Results\Internal.cs" />
     <Compile Include="Results\InvalidTerminalDeclaration.cs" />
     <Compile Include="Results\UnsupportedWebSocketInput.cs" />
@@ -319,7 +309,6 @@
     <Compile Include="Results\InvalidSyntax.cs" />
     <Compile Include="Results\MissingConfigurationFile.cs" />
     <Compile Include="Results\NoAvalailableDynamicTable.cs" />
-    <Compile Include="Results\NoHtml.cs" />
     <Compile Include="Results\NotAcceptable.cs" />
     <Compile Include="Results\NotAllowedViewAction.cs" />
     <Compile Include="Results\NotAuthorized.cs" />
@@ -346,7 +335,6 @@
     <Compile Include="Results\Unknown.cs" />
     <Compile Include="Results\UnsupportedContent.cs" />
     <Compile Include="Results\FailedValidation.cs" />
-    <Compile Include="Results\InvalidVirtualResourceDeclaration.cs" />
     <Compile Include="Results\AcceptOrigin.cs" />
     <Compile Include="Results\DeletedEntities.cs" />
     <Compile Include="Results\Entities.cs" />

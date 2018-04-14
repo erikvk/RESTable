@@ -662,7 +662,7 @@ namespace RESTar
 
                     OnConfirm = operate;
                     SendConfirmationRequest($"This will run {method} on {many} entities in resource " +
-                                            $"'{PreviousResultMetadata.Request.Resource.Name}'. ");
+                                            $"'{PreviousResultMetadata.Request.Resource}'. ");
                     break;
             }
         }

@@ -23,7 +23,7 @@
         {
             UpdatedCount = updatedEntities;
             InsertedCount = insertedEntities;
-            Headers.Info = $"Updated {updatedEntities} and then inserted {insertedEntities} entities in resource '{request.Resource.Name}'";
+            Headers.Info = $"Updated {updatedEntities} and then inserted {insertedEntities} entities in resource '{request.Resource}'";
         }
     }
 }

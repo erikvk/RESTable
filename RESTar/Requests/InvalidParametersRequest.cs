@@ -42,7 +42,7 @@ namespace RESTar.Requests
         public CachedProtocolProvider CachedProtocolProvider => Parameters.CachedProtocolProvider;
         public IUriComponents UriComponents => Parameters.Uri;
         public Headers Headers => Parameters.Headers;
-        public IEntityResource Resource => Parameters.IResource as IEntityResource;
+        public IResource Resource => Parameters.IResource;
         public bool IsWebSocketUpgrade => Parameters.IsWebSocketUpgrade;
         public TimeSpan TimeElapsed => Parameters.Stopwatch.Elapsed;
 

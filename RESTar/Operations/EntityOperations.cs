@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using RESTar.Filters;
+using RESTar.Internal;
 using RESTar.Linq;
 using RESTar.Results;
 using RESTar.Serialization;
@@ -31,7 +31,7 @@ namespace RESTar.Operations
             .Filter(request.MetaConditions.Offset)
             .Filter(request.MetaConditions.Limit);
 
-        private static IEnumerable<T> TrySelectFilter(IRequestInternal<T> request)
+        private static IEnumerable<T> TrySelectFilter(IEntityRequest<T> request)
         {
             try
             {
@@ -44,11 +44,11 @@ namespace RESTar.Operations
             }
             catch (Exception e)
             {
-                throw new AbortedSelect<T>(request, e);
+                throw new AbortedOperation(request, ErrorCodes.AbortedSelect, e);
             }
         }
 
-        private static IEnumerable<object> TrySelectFilterProcess(IRequestInternal<T> request)
+        private static IEnumerable<object> TrySelectFilterProcess(IEntityRequest<T> request)
         {
             try
             {
@@ -63,16 +63,16 @@ namespace RESTar.Operations
             }
             catch (Exception e)
             {
-                throw new AbortedSelect<T>(request, e);
+                throw new AbortedOperation(request, ErrorCodes.AbortedSelect, e);
             }
         }
 
-        private static long TryCount(IRequestInternal<T> request)
+        private static long TryCount(IEntityRequest<T> request)
         {
             try
             {
                 request.EntitiesProducer = () => new T[0];
-                if (request.Resource.Count is Counter<T> counter &&
+                if (request.EntityResource.Count is Counter<T> counter &&
                     request.MetaConditions.CanUseExternalCounter)
                     return counter(request);
                 if (!request.MetaConditions.HasProcessors)
@@ -85,13 +85,13 @@ namespace RESTar.Operations
             }
             catch (Exception e)
             {
-                throw new AbortedReport<T>(request, e);
+                throw new AbortedOperation(request, ErrorCodes.AbortedReport, e);
             }
         }
 
         #endregion
 
-        private static int Insert(IRequestInternal<T> request, bool limit = false)
+        private static int Insert(IEntityRequest<T> request, bool limit = false)
         {
             try
             {
@@ -107,15 +107,15 @@ namespace RESTar.Operations
                     (entity as IValidatable)?.Validate();
                     return entity;
                 }) ?? throw new MissingDataSource(request);
-                return request.Resource.Insert(request);
+                return request.EntityResource.Insert(request);
             }
             catch (Exception e)
             {
-                throw new AbortedInsert<T>(request, e);
+                throw new AbortedOperation(request, ErrorCodes.AbortedInsert, e);
             }
         }
 
-        private static int Update(IRequestInternal<T> request)
+        private static int Update(IEntityRequest<T> request)
         {
             try
             {
@@ -133,15 +133,15 @@ namespace RESTar.Operations
                     (entity as IValidatable)?.Validate();
                     return entity;
                 }) ?? throw new MissingDataSource(request);
-                return request.Resource.Update(request);
+                return request.EntityResource.Update(request);
             }
             catch (Exception e)
             {
-                throw new AbortedUpdate<T>(request, e);
+                throw new AbortedOperation(request, ErrorCodes.AbortedUpdate, e);
             }
         }
 
-        private static int Delete(IRequestInternal<T> request)
+        private static int Delete(IEntityRequest<T> request)
         {
             try
             {
@@ -154,11 +154,11 @@ namespace RESTar.Operations
                 }
 
                 request.EntitiesProducer = () => sourceSelector() ?? new T[0];
-                return request.Resource.Delete(request);
+                return request.EntityResource.Delete(request);
             }
             catch (Exception e)
             {
-                throw new AbortedDelete<T>(e, request);
+                throw new AbortedOperation(request, ErrorCodes.AbortedDelete, e);
             }
         }
 
@@ -168,7 +168,7 @@ namespace RESTar.Operations
             return new Entities<TEntityType>(request, content);
         }
 
-        internal static Func<IRequestInternal<T>, RequestSuccess> GetEvaluator(Method method)
+        internal static Func<IEntityRequest<T>, RequestSuccess> GetEvaluator(Method method)
         {
             switch (method)
             {
@@ -237,11 +237,11 @@ namespace RESTar.Operations
             return new SafePostedEntities(updatedCount, insertedCount, request);
         }
 
-        private static (IRequestInternal<T> InnerRequest, JArray ToInsert, IList<(JObject json, T source)> ToUpdate)
+        private static (IEntityRequest<T> InnerRequest, JArray ToInsert, IList<(JObject json, T source)> ToUpdate)
             GetSafePostTasks(
                 IRequest<T> request)
         {
-            var innerRequest = (IRequestInternal<T>) request.Context.CreateRequest<T>(Method.GET);
+            var innerRequest = (IEntityRequest<T>) request.Context.CreateRequest<T>(Method.GET);
             var toInsert = new JArray();
             var toUpdate = new List<(JObject json, T source)>();
             try
@@ -271,11 +271,11 @@ namespace RESTar.Operations
             }
             catch (Exception e)
             {
-                throw new AbortedInsert<T>(request, e, e.Message);
+                throw new AbortedOperation(request, ErrorCodes.AbortedInsert, e, e.Message);
             }
         }
 
-        private static int UpdateSafePost(IRequestInternal<T> request, ICollection<(JObject json, T source)> items)
+        private static int UpdateSafePost(IEntityRequest<T> request, ICollection<(JObject json, T source)> items)
         {
             try
             {
@@ -285,12 +285,11 @@ namespace RESTar.Operations
                     (item.source as IValidatable)?.Validate();
                     return item.source;
                 });
-                return request.Resource.Update(request);
+                return request.EntityResource.Update(request);
             }
             catch (Exception e)
             {
-                var jsonMessage = e is JsonSerializationException jse ? jse.TotalMessage() : null;
-                throw new AbortedUpdate<T>(request, e, jsonMessage);
+                throw new AbortedOperation(request, ErrorCodes.AbortedUpdate, e);
             }
         }
 

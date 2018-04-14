@@ -26,8 +26,6 @@ namespace RESTar.Internal
             if (serviceRoot.EndsWith("/"))
                 ServiceRoot = serviceRoot.TrimEnd('/');
             ServiceRoot = serviceRoot;
-
-
             ApiKey = apiKey;
             HasApiKey = ApiKey != null;
         }

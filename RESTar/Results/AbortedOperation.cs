@@ -8,9 +8,9 @@ namespace RESTar.Results
     /// <summary>
     /// Thrown when RESTar aborts an operation due to some encountered error
     /// </summary>
-    public abstract class AbortedOperation<T> : BadRequest where T : class
+    public sealed class AbortedOperation : BadRequest
     {
-        internal AbortedOperation(IRequest<T> request, ErrorCodes code, Exception ie, string message = null) : base(code,
+        internal AbortedOperation(IRequest request, ErrorCodes code, Exception ie, string message = null) : base(code,
             message ?? (ie is JsonSerializationException || ie is JsonReaderException ? "JSON serialization error, check JSON syntax." : ""), ie)
         {
             Headers.Info = $"Aborted {request.Method} on resource '{request.Resource}' due to an error: {this.TotalMessage()}";

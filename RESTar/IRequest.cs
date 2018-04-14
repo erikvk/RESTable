@@ -14,8 +14,9 @@ namespace RESTar
         CachedProtocolProvider CachedProtocolProvider { get; }
     }
 
-    internal interface IRequestInternal<T> : IRequestInternal, IRequest<T> where T : class
+    internal interface IEntityRequest<T> : IRequestInternal, IRequest<T> where T : class
     {
+        IEntityResource<T> EntityResource { get; }
         Func<IEnumerable<T>> EntitiesProducer { set; }
         Func<IEnumerable<T>> GetSelector();
         Func<IEnumerable<T>, IEnumerable<T>> GetUpdater();
@@ -30,7 +31,7 @@ namespace RESTar
         /// <summary>
         /// The resource of the request
         /// </summary>
-        new IEntityResource<T> Resource { get; }
+        new IResource<T> Resource { get; }
 
         /// <summary>
         /// The conditions of the request
@@ -86,7 +87,7 @@ namespace RESTar
         /// <summary>
         /// The resource of the request
         /// </summary>
-        IEntityResource Resource { get; }
+        IResource Resource { get; }
 
         /// <summary>
         /// The type of the request target

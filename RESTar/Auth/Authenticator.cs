@@ -5,6 +5,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Web;
 using RESTar.Requests;
+using RESTar.Resources;
 using RESTar.Results;
 
 namespace RESTar.Auth
@@ -15,10 +16,10 @@ namespace RESTar.Auth
         internal static void NewState() => ApiKeys = new Dictionary<string, AccessRights>();
         private const string AuthHeaderMask = "*******";
 
-        internal static void RunResourceAuthentication<T>(this IRequest<T> request) where T : class
+        internal static void RunResourceAuthentication<T>(this IRequest<T> request, IEntityResource<T> resource) where T : class
         {
-            if (!request.Resource.RequiresAuthentication) return;
-            var authResults = request.Resource.Authenticate(request);
+            if (!resource.RequiresAuthentication) return;
+            var authResults = resource.Authenticate(request);
             if (!authResults.Success)
                 throw new FailedResourceAuthentication(authResults.Reason);
         }

@@ -6,7 +6,7 @@ namespace RESTar.Results
     /// <summary>
     /// Thrown when RESTar encounters an invalid resource declaration
     /// </summary>
-    public class InvalidResourceDeclaration : Error
+    public class InvalidResourceDeclaration : RESTarException
     {
         internal InvalidResourceDeclaration(string info) : base(ErrorCodes.InvalidResourceDeclaration, info) { }
     }

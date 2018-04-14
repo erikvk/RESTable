@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using RESTar.Internal;
@@ -42,7 +41,7 @@ namespace RESTar.Requests
             Body = new Body(bytes, _contentType, CachedProtocolProvider);
         }
 
-        public IEntityResource Resource => throw new InvalidOperationException(ErrorMessage(nameof(Resource)));
+        public IResource Resource => throw new InvalidOperationException(ErrorMessage(nameof(Resource)));
         public Type TargetType => throw new InvalidOperationException(ErrorMessage(nameof(TargetType)));
         public bool HasConditions => throw new InvalidOperationException(ErrorMessage(nameof(HasConditions)));
         public MetaConditions MetaConditions => throw new InvalidOperationException(ErrorMessage(nameof(MetaConditions)));

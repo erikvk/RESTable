@@ -15,11 +15,5 @@ namespace RESTar.Results
             StatusCode = (HttpStatusCode) 508;
             StatusDescription = "Infinite loop detected";
         }
-
-        internal InfiniteLoop(string info) : base(ErrorCodes.InfiniteLoopDetected, info)
-        {
-            StatusCode = (HttpStatusCode) 508;
-            StatusDescription = "Infinite loop detected";
-        }
     }
 }

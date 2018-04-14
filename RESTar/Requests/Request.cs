@@ -17,23 +17,23 @@ using RESTar.Serialization;
 
 namespace RESTar.Requests
 {
-    internal class Request<T> : IRequest, IRequest<T>, IRequestInternal<T>, ITraceable where T : class
+    internal class Request<T> : IRequest, IRequest<T>, IEntityRequest<T>, ITraceable where T : class
     {
         public ITarget<T> Target { get; }
         public Type TargetType { get; }
-
         public bool HasConditions => !(_conditions?.Count > 0);
         public Headers ResponseHeaders => _responseHeaders ?? (_responseHeaders = new Headers());
         public ICollection<string> Cookies => _cookies ?? (_cookies = new List<string>());
         private Exception Error { get; }
         public bool IsValid => Error == null;
-
         public Func<IEnumerable<T>> EntitiesProducer { private get; set; }
         public Func<IEnumerable<T>> Selector { private get; set; }
         public Func<IEnumerable<T>, IEnumerable<T>> Updater { private get; set; }
         public Func<IEnumerable<T>, IEnumerable<T>> GetUpdater() => Updater;
         public Func<IEnumerable<T>> GetSelector() => Selector;
-
+        public IResource<T> Resource { get; }
+        public IEntityResource<T> EntityResource => Resource as IEntityResource<T>;
+        IResource IRequest.Resource => Resource;
         public Method Method { get; set; }
 
         public List<Condition<T>> Conditions
@@ -75,7 +75,7 @@ namespace RESTar.Requests
 
         public IUriComponents UriComponents => new UriComponents
         (
-            resourceSpecifier: IResource.Name,
+            resourceSpecifier: Resource.Name,
             viewName: Target is IView ? Target.Name : null,
             conditions: Conditions,
             metaConditions: MetaConditions.AsConditionList(),
@@ -89,9 +89,6 @@ namespace RESTar.Requests
         private Headers _responseHeaders;
         private ICollection<string> _cookies;
         private Body _body;
-        private IResource<T> IResource { get; }
-        IEntityResource IRequest.Resource => IResource as IEntityResource;
-        IEntityResource<T> IRequest<T>.Resource => IResource as IEntityResource<T>;
         private DataConfig InputDataConfig { get; }
         private DataConfig OutputDataConfig { get; }
         private bool IsEvaluating;
@@ -137,7 +134,7 @@ namespace RESTar.Requests
             {
                 if (!IsValid) return Error.AsResultOf(this);
                 if (!MethodCheck(out var _failedAuth))
-                    return new MethodNotAllowed(Method, IResource, _failedAuth).AsResultOf(this);
+                    return new MethodNotAllowed(Method, Resource, _failedAuth).AsResultOf(this);
                 if (IsWebSocketUpgrade)
                     try
                     {
@@ -162,8 +159,8 @@ namespace RESTar.Requests
             if (Method < GET || Method > HEAD)
                 throw new ArgumentException($"Invalid method value {Method} for request");
             failedAuth = false;
-            if (IResource?.AvailableMethods.Contains(Method) != true) return false;
-            if (Context.Client.AccessRights[IResource]?.Contains(Method) == true) return true;
+            if (Resource?.AvailableMethods.Contains(Method) != true) return false;
+            if (Context.Client.AccessRights[Resource]?.Contains(Method) == true) return true;
             failedAuth = true;
             return false;
         }
@@ -174,7 +171,7 @@ namespace RESTar.Requests
             {
                 Context.IncreaseDepth();
                 IsEvaluating = true;
-                switch (IResource)
+                switch (Resource)
                 {
                     case Resources.TerminalResource<T> terminal:
                         if (!Context.HasWebSocket) return new UpgradeRequired(terminal.Name);
@@ -186,8 +183,8 @@ namespace RESTar.Requests
                         var (stream, contentType ) = binary.SelectBinary(this);
                         return new Binary(this, stream, contentType);
 
-                    case IEntityResource<T> _:
-                        this.RunResourceAuthentication();
+                    case IEntityResource<T> entity:
+                        this.RunResourceAuthentication(entity);
                         var result = EntityOperations<T>.GetEvaluator(Method).Invoke(this);
                         result.Cookies = Cookies;
                         ResponseHeaders.ForEach(h => result.Headers[h.Key.StartsWith("X-") ? h.Key : "X-" + h.Key] = h.Value);
@@ -236,7 +233,7 @@ namespace RESTar.Requests
         internal Request(IResource<T> resource, RequestParameters parameters)
         {
             Parameters = parameters;
-            IResource = resource;
+            Resource = resource;
             Target = resource;
             TargetType = typeof(T);
             InputDataConfig = Headers.Source != null ? DataConfig.External : DataConfig.Client;
@@ -247,7 +244,7 @@ namespace RESTar.Requests
             {
                 if (resource.IsInternal && Context.Client.Origin != OriginType.Internal)
                     throw new ResourceIsInternal(resource);
-                if (IResource is IEntityResource<T> entityResource)
+                if (Resource is IEntityResource<T> entityResource)
                 {
                     MetaConditions = MetaConditions.Parse(parameters.Uri.MetaConditions, entityResource);
                     if (parameters.Uri.ViewName != null)

@@ -17,7 +17,7 @@
         internal UpdatedEntities(int count, IRequest request) : base(request)
         {
             UpdatedCount = count;
-            Headers.Info = $"{count} entities updated in '{request.Resource.Name}'";
+            Headers.Info = $"{count} entities updated in '{request.Resource}'";
         }
     }
 }

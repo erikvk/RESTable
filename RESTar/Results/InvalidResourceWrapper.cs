@@ -6,7 +6,7 @@ namespace RESTar.Results
     /// <summary>
     /// Thrown when RESTar encounters an invalid resource wrapper declaration
     /// </summary>
-    public class InvalidResourceWrapper : Error
+    public class InvalidResourceWrapper : RESTarException
     {
         internal InvalidResourceWrapper(string info) : base(ErrorCodes.ResourceWrapperError, info) { }
     }
