@@ -56,7 +56,9 @@ namespace RESTar.Requests
             try
             {
                 var method = new HttpMethod(Method.ToString());
-                var message = new HttpRequestMessage(method, URI) {Content = new ByteArrayContent(Body.Bytes)};
+                var message = new HttpRequestMessage(method, URI);
+                if (Body.HasContent)
+                    message.Content = new ByteArrayContent(Body.Bytes);
                 Headers.Metadata = "full";
                 Headers.Accept = ContentType.JSON;
                 Headers.ForEach(header => message.Headers.Add(header.Key, header.Value));
@@ -76,40 +78,50 @@ namespace RESTar.Requests
                     await response.Content.CopyToAsync(stream);
                     stream.Seek(0, SeekOrigin.Begin);
                 }
-                int count;
-                ErrorCodes errorCode;
 
-                switch (resultType)
+                IResult getResult()
                 {
-                    case nameof(Entities<object>): return new RemoteEntities(this, stream);
-                    case nameof(Head) when int.TryParse(data, out count): return new Head(this, count);
-                    case nameof(Report) when int.TryParse(data, out count): return new Report(this, count);
-                    case nameof(Binary): return new Binary(this, stream, responseHeaders.ContentType ?? ContentType.DefaultOutput);
-                    case nameof(NoContent): return new NoContent(this);
-                    case nameof(InsertedEntities) when int.TryParse(data, out count): return new InsertedEntities(this, count);
-                    case nameof(UpdatedEntities) when int.TryParse(data, out count): return new UpdatedEntities(this, count);
-                    case nameof(DeletedEntities) when int.TryParse(data, out count): return new DeletedEntities(this, count);
-                    case nameof(SafePostedEntities)
-                        when data.TSplit(',') is var vt && int.TryParse(vt.Item1, out var upd) && int.TryParse(vt.Item2, out var ins):
-                        return new SafePostedEntities(this, upd, ins);
+                    int nr;
+                    ErrorCodes ec;
+                    switch (resultType)
+                    {
+                        case nameof(Entities<object>): return new RemoteEntities(this, new JObjectEnumerable(stream));
+                        case nameof(Head) when int.TryParse(data, out nr): return new Head(this, nr);
+                        case nameof(Report) when int.TryParse(data, out nr): return new Report(this, nr);
+                        case nameof(Binary): return new Binary(this, stream, responseHeaders.ContentType ?? ContentType.DefaultOutput);
+                        case nameof(NoContent): return new NoContent(this);
+                        case nameof(InsertedEntities) when int.TryParse(data, out nr): return new InsertedEntities(this, nr);
+                        case nameof(UpdatedEntities) when int.TryParse(data, out nr): return new UpdatedEntities(this, nr);
+                        case nameof(DeletedEntities) when int.TryParse(data, out nr): return new DeletedEntities(this, nr);
+                        case nameof(SafePostedEntities)
+                            when data.TSplit(',') is var vt && int.TryParse(vt.Item1, out var upd) && int.TryParse(vt.Item2, out var ins):
+                            return new SafePostedEntities(this, upd, ins);
 
-                    case nameof(BadRequest) when Enum.TryParse(data, out errorCode): return new RemoteBadRequest(errorCode);
-                    case nameof(NotFound) when Enum.TryParse(data, out errorCode): return new RemoteNotFound(errorCode);
-                    case nameof(Forbidden) when Enum.TryParse(data, out errorCode): return new RemoteForbidden(errorCode);
-                    case nameof(Results.Internal) when Enum.TryParse(data, out errorCode): return new RemoteInternal(errorCode);
+                        case nameof(BadRequest) when Enum.TryParse(data, out ec): return new RemoteBadRequest(ec);
+                        case nameof(NotFound) when Enum.TryParse(data, out ec): return new RemoteNotFound(ec);
+                        case nameof(Forbidden) when Enum.TryParse(data, out ec): return new RemoteForbidden(ec);
+                        case nameof(Results.Internal) when Enum.TryParse(data, out ec): return new RemoteInternal(ec);
 
-                    case nameof(FeatureNotImplemented): return new FeatureNotImplemented(null);
-                    case nameof(InfiniteLoop): return new InfiniteLoop();
-                    case nameof(MethodNotAllowed): return new MethodNotAllowed(Method, Resource, false);
-                    case nameof(NotAcceptable): return new NotAcceptable(Headers.Accept.ToString());
-                    case nameof(UnsupportedContent): return new UnsupportedContent(Headers.ContentType.ToString());
-                    case nameof(UpgradeRequired): return new UpgradeRequired(Resource.Name);
+                        case nameof(FeatureNotImplemented): return new FeatureNotImplemented(null);
+                        case nameof(InfiniteLoop): return new InfiniteLoop();
+                        case nameof(MethodNotAllowed): return new MethodNotAllowed(Method, Resource, false);
+                        case nameof(NotAcceptable): return new NotAcceptable(Headers.Accept.ToString());
+                        case nameof(UnsupportedContent): return new UnsupportedContent(Headers.ContentType.ToString());
+                        case nameof(UpgradeRequired): return new UpgradeRequired(Resource.Name);
+
+                        default: return new RemoteOther(this, response.StatusCode, response.ReasonPhrase);
+                    }
                 }
-                return null;
+
+                var result = getResult();
+                if (result is Error error)
+                    result = error.AsResultOf(this);
+                responseHeaders.ForEach(result.Headers.Put);
+                return result;
             }
             catch (Exception e)
             {
-                return new ExternalServiceNotRESTar(URI, e);
+                return new ExternalServiceNotRESTar(URI, e).AsResultOf(this);
             }
         }
 

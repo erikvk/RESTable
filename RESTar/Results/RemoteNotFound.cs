@@ -2,8 +2,13 @@
 
 namespace RESTar.Results
 {
+    /// <inheritdoc />
+    /// <summary>
+    /// A Not Found result received from a remote RESTar service
+    /// </summary>
     public class RemoteNotFound : NotFound
     {
-        public RemoteNotFound(ErrorCodes code) : base(code, null) { }
+        /// <inheritdoc />
+        internal RemoteNotFound(ErrorCodes code) : base(code, null) { }
     }
 }

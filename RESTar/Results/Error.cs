@@ -92,7 +92,7 @@ namespace RESTar.Results
         }
 
         /// <inheritdoc />
-        public IEntities<T> ToEntities<T>() where T : class => throw this;
+        public IEnumerable<T> ToEntities<T>() where T : class => throw this;
 
         /// <inheritdoc />
         public void ThrowIfError() => throw this;

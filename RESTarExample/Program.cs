@@ -10,6 +10,7 @@ using RESTar;
 using RESTar.Linq;
 using RESTar.Operations;
 using RESTar.ResourceTemplates;
+using RESTar.Results;
 using Starcounter;
 
 #pragma warning disable 1591
@@ -30,9 +31,15 @@ namespace RESTarExample
                 lineEndings: LineEndings.Linux
             );
 
-//            var context = Context.Remote("https://demo-dsp.mopedo-drtb.com:8282/rest", "TDSPx1lnrN4RaKnu");
-//            var request = context.CreateRequest(Method.GET, "/user//limit=2");
-//            var result = request.Result;
+            var context = Context.Remote("http://localhost:9000/rest");
+            var request = context.CreateRequest(Method.GET, "/resource1//limit=2");
+            var result = request.Result;
+            var entities = result as IEntities<JObject>;
+            var jobj = entities.FirstOrDefault();
+            var str = jobj.ToString();
+            
+
+            var y = "";
         }
     }
 

@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using RESTar.Logging;
-using RESTar.Results;
 
 namespace RESTar
 {
@@ -44,10 +43,10 @@ namespace RESTar
         void ThrowIfError();
 
         /// <summary>
-        /// Tries to convert the result to an Entities instance, or throws an 
+        /// Tries to convert the result to an IEnumerable instance, or throws an 
         /// Exception if the result is non-successful or cannot be cast to the given type.
         /// </summary>
-        IEntities<T> ToEntities<T>() where T : class;
+        IEnumerable<T> ToEntities<T>() where T : class;
 
         /// <summary>
         /// The time it took for RESTar to generate the response.

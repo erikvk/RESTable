@@ -2,8 +2,13 @@
 
 namespace RESTar.Results
 {
+    /// <inheritdoc />
+    /// <summary>
+    /// An Internal error received from a remote RESTar service
+    /// </summary>
     public class RemoteInternal : Internal
     {
-        public RemoteInternal(ErrorCodes code) : base(code, null) { }
+        /// <inheritdoc />
+        internal RemoteInternal(ErrorCodes code) : base(code, null) { }
     }
-}
+}   

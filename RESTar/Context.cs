@@ -176,7 +176,7 @@ namespace RESTar
         /// </summary>
         /// <param name="serviceRoot">The URI of the remote RESTar service, for example https://my-service.com:8282/rest</param>
         /// <param name="apiKey">The API key to use in remote request to this service</param>
-        internal static Context Remote(string serviceRoot, string apiKey = null) => new RemoteContext(serviceRoot, apiKey);
+        public static Context Remote(string serviceRoot, string apiKey = null) => new RemoteContext(serviceRoot, apiKey);
 
         private static ulong IdNr;
         private static string NextId => DbHelper.Base64EncodeObjectNo(IdNr += 1);

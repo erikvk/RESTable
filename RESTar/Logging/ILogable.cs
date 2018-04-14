@@ -25,7 +25,7 @@ namespace RESTar.Logging
         string LogContent { get; }
 
         /// <summary>
-        /// The headers
+        /// The headers of the logable entity
         /// </summary>
         Headers Headers { get; }
 

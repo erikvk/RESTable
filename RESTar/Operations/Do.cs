@@ -124,7 +124,7 @@ namespace RESTar.Operations
         /// Runs an action after a given delay. Uses Scheduling.ScheduleTask to ensure proper 
         /// Starcounter thread handling.
         /// </summary>
-        public static async void Schedule(Action action, TimeSpan delay)
+        public static async Task Schedule(Action action, TimeSpan delay)
         {
             await Task.Delay(delay);
             await Scheduling.RunTask(action);

@@ -162,8 +162,7 @@ namespace RESTar.Operations
             }
         }
 
-        private static Entities<TEntityType> MakeEntities<TEntityType>(IRequest request,
-            IEnumerable<TEntityType> content) where TEntityType : class
+        private static Entities<TEntityType> MakeEntities<TEntityType>(IRequest request, IEnumerable<TEntityType> content) where TEntityType : class
         {
             return new Entities<TEntityType>(request, content);
         }

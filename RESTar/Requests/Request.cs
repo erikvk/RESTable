@@ -126,7 +126,7 @@ namespace RESTar.Requests
 
         #endregion
 
-        public IEntities<T> ResultEntities => Result.ToEntities<T>();
+        public IEntities<T> ResultEntities => (IEntities<T>) Result;
 
         public IResult Result
         {

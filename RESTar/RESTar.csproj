@@ -161,6 +161,7 @@
     <Compile Include="Results\RemoteForbidden.cs" />
     <Compile Include="Results\RemoteInternal.cs" />
     <Compile Include="Results\RemoteNotFound.cs" />
+    <Compile Include="Results\RemoteOther.cs" />
     <Compile Include="Results\Success.cs" />
     <Compile Include="Sc\ScContext.cs" />
     <Compile Include="StreamManifest.cs" />

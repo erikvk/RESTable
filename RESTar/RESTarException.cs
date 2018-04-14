@@ -3,6 +3,10 @@ using RESTar.Internal;
 
 namespace RESTar
 {
+    /// <inheritdoc />
+    /// <summary>
+    /// A common base class for all RESTar exceptions
+    /// </summary>
     public abstract class RESTarException : Exception
     {
         /// <summary>
@@ -10,6 +14,7 @@ namespace RESTar
         /// </summary>
         public ErrorCodes ErrorCode { get; }
 
+        /// <inheritdoc />
         protected RESTarException(ErrorCodes errorCode, string message, Exception ie = null) : base(message, ie)
         {
             ErrorCode = errorCode;

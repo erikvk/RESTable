@@ -64,7 +64,7 @@ namespace RESTar.Results
         public DateTime LogTime { get; }
 
         /// <inheritdoc />
-        public virtual IEntities<T> ToEntities<T>() where T : class => (Entities<T>) this;
+        public virtual IEnumerable<T> ToEntities<T>() where T : class => (Entities<T>) this;
 
         /// <inheritdoc />
         public void ThrowIfError() { }
