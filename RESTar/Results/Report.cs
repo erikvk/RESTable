@@ -12,7 +12,10 @@
         public ReportBody ReportBody { get; }
 
         internal Report(IRequest request, long count) : base(request) => ReportBody = new ReportBody(count);
-    };
+
+        /// <inheritdoc />
+        public override string Metadata => $"{nameof(Report)};{Request.Resource};";
+    }
 
     /// <summary>
     /// Describes the body of a report

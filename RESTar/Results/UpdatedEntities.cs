@@ -11,13 +11,13 @@
         /// </summary>
         public int UpdatedCount { get; }
 
-        /// <inheritdoc />
-        public override string Metadata => $"{GetType()};{Request.Resource};{UpdatedCount}";
-
         internal UpdatedEntities(int count, IRequest request) : base(request)
         {
             UpdatedCount = count;
             Headers.Info = $"{count} entities updated in '{request.Resource}'";
         }
+
+        /// <inheritdoc />
+        public override string Metadata => $"{nameof(UpdatedEntities)};{Request.Resource};{UpdatedCount}";
     }
 }

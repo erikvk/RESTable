@@ -1,10 +1,9 @@
 ﻿using RESTar.Internal;
-using RESTar.Results;
 
 namespace RESTar.WebSockets
 {
-    internal class UnknownWebSocketId : Error
+    internal class UnknownWebSocketIdException : RESTarException
     {
-        public UnknownWebSocketId(string info) : base(ErrorCodes.UnknownWebSocketId, info) { }
+        public UnknownWebSocketIdException(string info) : base(ErrorCodes.UnknownWebSocketId, info) { }
     }
 }

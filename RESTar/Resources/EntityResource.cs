@@ -9,7 +9,6 @@ using RESTar.Linq;
 using RESTar.Operations;
 using RESTar.Reflection;
 using RESTar.Reflection.Dynamic;
-using RESTar.Results;
 using Starcounter;
 
 namespace RESTar.Resources
@@ -85,10 +84,10 @@ namespace RESTar.Resources
                 {
                     if (usedAliasMapping.Resource == Name)
                         return;
-                    throw new AliasAlreadyInUse(usedAliasMapping);
+                    throw new Exception($"Invalid Alias: '{Name}' is already in use for resource '{usedAliasMapping.Resource}'");
                 }
                 if (RESTarConfig.Resources.Any(r => r.Name.EqualsNoCase(value)))
-                    throw new AliasEqualToResourceName(value);
+                    throw new Exception($"Invalid Alias: '{value}' is a resource name");
                 Db.TransactAsync(() =>
                 {
                     existingAssignment = existingAssignment ?? new ResourceAlias {Resource = Name};
@@ -195,7 +194,7 @@ namespace RESTar.Resources
                 if (del == null)
                 {
                     var @interface = DelegateMaker.MatchingInterface(op);
-                    throw new InvalidResourceDeclaration(
+                    throw new InvalidResourceDeclarationException(
                         $"The '{op}' operation is needed to support method(s) {AvailableMethods.ToMethodsString()} for resource '{Name}', but " +
                         "RESTar found no implementation of the operation interface in the type declaration. Add an implementation of the " +
                         $"'{@interface.ToString().Replace("`1[T]", $"<{Name}>")}' interface to the resource's type declaration");

@@ -11,13 +11,13 @@
         /// </summary>
         public int DeletedCount { get; }
 
-        /// <inheritdoc />
-        public override string Metadata => $"{GetType()};{Request.Resource};{DeletedCount}";
-
         internal DeletedEntities(int count, IRequest request) : base(request)
         {
             DeletedCount = count;
             Headers.Info = $"{count} entities deleted from '{request.Resource}'";
         }
+
+        /// <inheritdoc />
+        public override string Metadata => $"{nameof(DeletedEntities)};{Request.Resource};{DeletedCount}";
     }
 }

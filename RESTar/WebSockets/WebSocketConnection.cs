@@ -12,7 +12,7 @@ namespace RESTar.WebSockets
 
         internal WebSocket WebSocket
         {
-            get => _webSocket ?? throw new WebSocketNotConnected();
+            get => _webSocket ?? throw new WebSocketNotConnectedException();
             private set => _webSocket = value;
         }
 
@@ -26,7 +26,7 @@ namespace RESTar.WebSockets
             TraceId = webSocket.Id;
             Context = webSocket.Context;
             if (webSocket == null || webSocket.Status == WebSocketStatus.Closed)
-                throw new WebSocketNotConnected();
+                throw new WebSocketNotConnectedException();
             WebSocket = webSocket;
             Resource = resource;
             Terminal = terminal;

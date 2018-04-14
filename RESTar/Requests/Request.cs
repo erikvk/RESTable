@@ -145,8 +145,8 @@ namespace RESTar.Requests
                 if (IsEvaluating) throw new InfiniteLoop();
                 var result = RunEvaluation();
                 result.Headers.Elapsed = TimeElapsed.TotalMilliseconds.ToString(CultureInfo.InvariantCulture);
-                if (Headers.Metadata == "full")
-                    result.Headers.Metadata = result.Metadata;
+                if (Headers.Metadata == "full" && result.Metadata is string metadata)
+                    result.Headers.Metadata = metadata;
                 result.Headers.Version = RESTarConfig.Version;
                 if (result is InfiniteLoop loop && !Context.IsBottomIfStack)
                     throw loop;

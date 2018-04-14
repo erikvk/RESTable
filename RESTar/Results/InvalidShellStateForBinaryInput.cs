@@ -10,6 +10,9 @@ namespace RESTar.Results
     /// </summary>
     public class InvalidShellStateForBinaryInput : Error
     {
+        /// <inheritdoc />
+        public override string Metadata => $"{nameof(InvalidShellStateForBinaryInput)};{RequestInternal.Resource};{ErrorCode}";
+
         internal InvalidShellStateForBinaryInput() : base(ErrorCodes.ShellError, "")
         {
             StatusCode = HttpStatusCode.ServiceUnavailable;

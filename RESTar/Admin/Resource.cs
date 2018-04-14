@@ -7,7 +7,6 @@ using RESTar.Internal;
 using RESTar.Linq;
 using RESTar.Operations;
 using RESTar.Resources;
-using RESTar.Results;
 
 namespace RESTar.Admin
 {
@@ -133,7 +132,7 @@ namespace RESTar.Admin
                 entity.Provider = "DynamicResource";
                 entity.ResolveDynamicResourceName();
                 if (!string.IsNullOrWhiteSpace(entity.Alias) && ResourceAlias.Exists(entity.Alias, out var alias))
-                    throw new AliasAlreadyInUse(alias);
+                    throw new Exception($"Invalid Alias: '{alias.Alias}' is already in use for resource '{alias.IResource.Name}'");
                 if (entity.EnabledMethods?.Any() != true)
                     entity.EnabledMethods = RESTarConfig.Methods;
                 DynamicResource.MakeTable(entity);

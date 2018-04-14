@@ -4,7 +4,6 @@ using System.Linq;
 using System.Reflection;
 using RESTar.Linq;
 using RESTar.Operations;
-using RESTar.Results;
 using static System.Reflection.BindingFlags;
 using static RESTar.Operations.DelegateMaker;
 
@@ -113,7 +112,7 @@ namespace RESTar.Resources
         internal override bool Include(Type type)
         {
             if (!typeof(TBase).IsAssignableFrom(type))
-                throw new InvalidResourceDeclaration(
+                throw new InvalidResourceDeclarationException(
                     $"Invalid resource declaration for type '{type.RESTarTypeName()}'. Expected type to " +
                     $"inherit from base type '{typeof(TBase).RESTarTypeName()}' as required by resource " +
                     $"provider of type '{GetType().RESTarTypeName()}'.");
@@ -133,7 +132,7 @@ namespace RESTar.Resources
         {
             var resource = (IEntityResource) BuildRegularMethod.MakeGenericMethod(type).Invoke(this, null);
             if (!IsValid(resource, out var reason))
-                throw new InvalidResourceDeclaration("An error was found in the declaration for resource " +
+                throw new InvalidResourceDeclarationException("An error was found in the declaration for resource " +
                                                      $"type '{type.RESTarTypeName()}': " + reason);
         });
 
@@ -141,7 +140,7 @@ namespace RESTar.Resources
         {
             var resource = (IEntityResource) BuildWrapperMethod.MakeGenericMethod(type, type.GetWrappedType()).Invoke(this, null);
             if (!IsValid(resource, out var reason))
-                throw new InvalidResourceDeclaration("An error was found in the declaration for wrapper resource " +
+                throw new InvalidResourceDeclarationException("An error was found in the declaration for wrapper resource " +
                                                      $"type '{type.RESTarTypeName()}': " + reason);
         });
 
@@ -181,11 +180,11 @@ namespace RESTar.Resources
         internal override void Validate()
         {
             if (AttributeType == null)
-                throw new InvalidExternalResourceProvider("AttributeType cannot be null");
+                throw new InvalidExternalResourceProviderException("AttributeType cannot be null");
             if (!AttributeType.IsSubclassOf(typeof(Attribute)))
-                throw new InvalidExternalResourceProvider("Provided AttributeType is not an attribute type");
+                throw new InvalidExternalResourceProviderException("Provided AttributeType is not an attribute type");
             if (!AttributeType.IsSubclassOf(typeof(ResourceProviderAttribute)))
-                throw new InvalidExternalResourceProvider($"Provided AttributeType '{AttributeType.RESTarTypeName()}' " +
+                throw new InvalidExternalResourceProviderException($"Provided AttributeType '{AttributeType.RESTarTypeName()}' " +
                                                           $"does not inherit from RESTar.ResourceProviderAttribute");
         }
 

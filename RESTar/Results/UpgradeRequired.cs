@@ -9,6 +9,9 @@ namespace RESTar.Results
     /// </summary>
     public class UpgradeRequired : Error
     {
+        /// <inheritdoc />
+        public override string Metadata => $"{nameof(UpgradeRequired)};{RequestInternal.Resource};{ErrorCode}";
+
         internal UpgradeRequired(string terminalName) : base(ErrorCodes.UpgradeRequired,
             $"Connections to terminal resource '{terminalName}' must include a WebSocket upgrade handshake")
         {

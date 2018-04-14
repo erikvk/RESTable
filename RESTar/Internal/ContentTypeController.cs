@@ -16,9 +16,9 @@ namespace RESTar.Internal
         private static void ValidateContentTypeProvider(IContentTypeProvider provider)
         {
             if (provider == null)
-                throw new InvalidContentTypeProvider("External content type provider cannot be null");
+                throw new InvalidContentTypeProviderException("External content type provider cannot be null");
             if (!provider.CanRead && !provider.CanWrite)
-                throw new InvalidContentTypeProvider($"Provider '{provider.GetType().RESTarTypeName()}' cannot read or write");
+                throw new InvalidContentTypeProviderException($"Provider '{provider.GetType().RESTarTypeName()}' cannot read or write");
         }
 
         internal static IContentTypeProvider ResolveOutputContentTypeProvider(IRequestInternal request, ContentType? providedContentType)

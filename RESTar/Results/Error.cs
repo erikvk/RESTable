@@ -10,19 +10,6 @@ using RESTar.Requests;
 
 namespace RESTar.Results
 {
-    public abstract class RESTarException : Exception
-    {
-        /// <summary>
-        /// The error code for this error
-        /// </summary>
-        public ErrorCodes ErrorCode { get; }
-
-        protected RESTarException(ErrorCodes errorCode, string message, Exception ie = null) : base(message, ie)
-        {
-            ErrorCode = errorCode;
-        }
-    }
-
     /// <inheritdoc cref="Exception" />
     /// <inheritdoc cref="ITraceable" />
     /// <inheritdoc cref="ISerializedResult" />
@@ -90,7 +77,7 @@ namespace RESTar.Results
 
         #endregion
 
-        internal Error(ErrorCodes code, string message) : base(code, message, null)
+        internal Error(ErrorCodes code, string message) : base(code, message)
         {
             ExcludeHeaders = false;
             Headers.Info = Message;
@@ -168,7 +155,7 @@ namespace RESTar.Results
         }
 
         /// <inheritdoc />
-        public string Metadata => $"{GetType()};{RequestInternal.Resource};{ErrorCode}";
+        public abstract string Metadata { get; }    
 
         /// <inheritdoc />
         /// <summary>

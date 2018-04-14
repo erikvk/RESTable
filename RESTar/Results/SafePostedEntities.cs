@@ -16,14 +16,14 @@
         /// </summary>
         public int InsertedCount { get; }
 
-        /// <inheritdoc />
-        public override string Metadata => $"{GetType()};{Request.Resource};{UpdatedCount},{InsertedCount}";
-
         internal SafePostedEntities(int updatedEntities, int insertedEntities, IRequest request) : base(request)
         {
             UpdatedCount = updatedEntities;
             InsertedCount = insertedEntities;
             Headers.Info = $"Updated {updatedEntities} and then inserted {insertedEntities} entities in resource '{request.Resource}'";
         }
+
+        /// <inheritdoc />
+        public override string Metadata => $"{nameof(SafePostedEntities)};{Request.Resource};{UpdatedCount},{InsertedCount}";
     }
 }

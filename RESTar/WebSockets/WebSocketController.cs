@@ -15,7 +15,7 @@ namespace RESTar.WebSockets
         internal static void HandleTextInput(string wsId, string textInput)
         {
             if (!AllSockets.TryGetValue(wsId, out var webSocket))
-                throw new UnknownWebSocketId($"WebSocket {wsId} no longer connected");
+                throw new UnknownWebSocketIdException($"WebSocket {wsId} no longer connected");
             if (textInput.ElementAtOrDefault(0) == '#')
             {
                 var (command, tail) = textInput.Trim().TSplit(' ');
@@ -70,14 +70,14 @@ namespace RESTar.WebSockets
         internal static void HandleBinaryInput(string wsId, byte[] binaryInput)
         {
             if (!AllSockets.TryGetValue(wsId, out var webSocket))
-                throw new UnknownWebSocketId($"Unknown WebSocket ID: {wsId}");
+                throw new UnknownWebSocketIdException($"Unknown WebSocket ID: {wsId}");
             webSocket.HandleBinaryInput(binaryInput);
         }
 
         internal static void HandleDisconnect(string wsId)
         {
             if (!AllSockets.TryGetValue(wsId, out var webSocket))
-                throw new UnknownWebSocketId($"Unknown WebSocket ID: {wsId}");
+                throw new UnknownWebSocketIdException($"Unknown WebSocket ID: {wsId}");
             webSocket.Dispose();
             AllSockets.Remove(wsId);
         }

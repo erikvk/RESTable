@@ -95,7 +95,7 @@ namespace RESTar
         /// <param name="headers">The headers of the request</param>
         public virtual IRequest CreateRequest(Method method, string uri, byte[] body = null, Headers headers = null)
         {
-            if (uri == null) throw new MissingUri();
+            if (uri == null) throw new ArgumentNullException(nameof(uri));
             if (IsWebSocketUpgrade)
             {
                 WebSocket = CreateWebSocket();
@@ -145,7 +145,7 @@ namespace RESTar
         /// <returns></returns>
         public ISerializedResult CheckOrigin(string uri, Headers headers)
         {
-            if (uri == null) throw new MissingUri();
+            if (uri == null) throw new ArgumentNullException(nameof(uri));
             var parameters = new RequestParameters(this, uri, headers);
             var origin = parameters.Headers.Origin;
             if (!parameters.IsValid || !Uri.TryCreate(origin, UriKind.Absolute, out var originUri))

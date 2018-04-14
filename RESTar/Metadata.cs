@@ -7,7 +7,6 @@ using RESTar.Reflection.Dynamic;
 using RESTar.Linq;
 using RESTar.Operations;
 using RESTar.Resources;
-using RESTar.Results;
 
 namespace RESTar
 {
@@ -75,7 +74,6 @@ namespace RESTar
         
         internal static Metadata Make(MetadataLevel level, AccessRights rights)
         {
-            if (!RESTarConfig.Initialized) throw new NotInitialized();
             var domain = rights?.Keys ?? RESTarConfig.Resources;
             var entityResources = domain
                 .OfType<IEntityResource>()

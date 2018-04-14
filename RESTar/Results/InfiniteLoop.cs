@@ -9,6 +9,9 @@ namespace RESTar.Results
     /// </summary>
     public class InfiniteLoop : Error
     {
+        /// <inheritdoc />
+        public override string Metadata => $"{nameof(InfiniteLoop)};{RequestInternal.Resource};{ErrorCode}";
+
         internal InfiniteLoop() : base(ErrorCodes.InfiniteLoopDetected,
             "RESTar encountered a potentially infinite loop of recursive internal calls.")
         {

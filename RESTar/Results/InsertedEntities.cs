@@ -13,9 +13,6 @@ namespace RESTar.Results
         /// </summary>
         public int InsertedCount { get; }
 
-        /// <inheritdoc />
-        public override string Metadata => $"{GetType()};{Request.Resource};{InsertedCount}";
-
         internal InsertedEntities(int count, IRequest trace) : base(trace)
         {
             InsertedCount = count;
@@ -23,5 +20,8 @@ namespace RESTar.Results
             StatusDescription = StatusCode.ToString();
             Headers.Info = $"{count} entities inserted into '{trace.Resource}'";
         }
+
+        /// <inheritdoc />
+        public override string Metadata => $"{nameof(InsertedEntities)};{Request.Resource};{InsertedCount}";
     }
 }

@@ -1,5 +1,4 @@
 ﻿using RESTar.Internal;
-using RESTar.Results;
 
 namespace RESTar.WebSockets
 {
@@ -7,9 +6,9 @@ namespace RESTar.WebSockets
     /// <summary>
     /// Throw when RESTar encounters an attempt to interact with a closed WebSocket connection
     /// </summary>
-    public class WebSocketNotConnected : Error
+    public class WebSocketNotConnectedException : RESTarException
     {
-        internal WebSocketNotConnected() : base(ErrorCodes.WebSocketNotConnected,
+        internal WebSocketNotConnectedException() : base(ErrorCodes.WebSocketNotConnected,
             "An attempt was made to interact with a closed WebSocket connection") { }
     }
 }

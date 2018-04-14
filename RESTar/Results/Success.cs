@@ -70,7 +70,7 @@ namespace RESTar.Results
         public void ThrowIfError() { }
 
         /// <inheritdoc />
-        public virtual string Metadata => $"{GetType()};;";
+        public virtual string Metadata => $"{GetType().Name};;";
 
         /// <inheritdoc />
         protected Success(ITraceable trace)

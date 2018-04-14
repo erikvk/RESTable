@@ -10,6 +10,9 @@ namespace RESTar.Results
     public class NotAcceptable : Error
     {
         /// <inheritdoc />
+        public override string Metadata => $"{nameof(NotAcceptable)};{RequestInternal.Resource};{ErrorCode}";
+
+        /// <inheritdoc />
         public NotAcceptable(string headerValue) : base(ErrorCodes.NotAcceptable,
             $"No supported media types were found in the Accept header. Found '{headerValue}'")
         {

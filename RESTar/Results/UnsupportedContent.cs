@@ -10,6 +10,9 @@ namespace RESTar.Results
     /// </summary>
     public class UnsupportedContent : Error
     {
+        /// <inheritdoc />
+        public override string Metadata => $"{nameof(UnsupportedContent)};{RequestInternal.Resource};{ErrorCode}";
+
         internal UnsupportedContent(Exception ie) : base(ErrorCodes.UnsupportedContent, ie.Message, ie)
         {
             StatusCode = HttpStatusCode.UnsupportedMediaType;

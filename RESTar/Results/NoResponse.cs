@@ -9,8 +9,6 @@ namespace RESTar.Results
     public class NoResponse : NotFound
     {
         internal NoResponse(string uri) : base(ErrorCodes.NoResponseFromRemoteService,
-            "No response from remote service at " + uri)
-        {
-        }
+            "No response from remote service at " + uri) { }
     }
 }

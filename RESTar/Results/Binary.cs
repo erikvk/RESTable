@@ -20,5 +20,8 @@ namespace RESTar.Results
                 Body.Seek(0, SeekOrigin.Begin);
             IsSerialized = true;
         }
+
+        /// <inheritdoc />
+        public override string Metadata => $"{nameof(Binary)};{Request.Resource};";
     }
 }

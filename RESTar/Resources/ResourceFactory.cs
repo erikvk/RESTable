@@ -10,7 +10,6 @@ using RESTar.Admin;
 using RESTar.Internal;
 using RESTar.Reflection.IL;
 using RESTar.Operations;
-using RESTar.Results;
 using RESTar.Sc;
 using Starcounter;
 using static System.Reflection.BindingFlags;
@@ -43,15 +42,15 @@ namespace RESTar.Resources
             if (externalProviders == null) return;
             externalProviders.ForEach(p =>
             {
-                if (p == null) throw new InvalidExternalResourceProvider("Found null value in 'resourceProviders' array");
+                if (p == null) throw new InvalidExternalResourceProviderException("Found null value in 'resourceProviders' array");
                 p.Validate();
             });
             if (externalProviders.ContainsDuplicates(p => p.GetType().RESTarTypeName(), out var typeDupe))
-                throw new InvalidExternalResourceProvider(
+                throw new InvalidExternalResourceProviderException(
                     $"Two or more external ResourceProviders with the same type '{typeDupe.GetType().RESTarTypeName()}' was found. Include " +
                     "only one in the call to RESTarConfig.Init()");
             if (externalProviders.Select(p => p.GetProviderId().ToLower()).ContainsDuplicates(out var idDupe))
-                throw new InvalidExternalResourceProvider(
+                throw new InvalidExternalResourceProviderException(
                     "Two or more external ResourceProviders had simliar type names, which would lead to confusion. Only one provider " +
                     $"should be associated with '{idDupe}'");
             ResourceProviders.AddRange(externalProviders);
@@ -77,7 +76,7 @@ namespace RESTar.Resources
             var resourceTypes = allTypes.Where(t => t.HasAttribute<RESTarAttribute>()).ToList();
             var viewTypes = allTypes.Where(t => t.HasAttribute<RESTarViewAttribute>()).ToList();
             if (resourceTypes.Union(viewTypes).ContainsDuplicates(t => t.RESTarTypeName()?.ToLower() ?? "unknown", out var dupe))
-                throw new InvalidResourceDeclaration("Types used by RESTar must have unique case insensitive names. Found " +
+                throw new InvalidResourceDeclarationException("Types used by RESTar must have unique case insensitive names. Found " +
                                                      $"multiple types with case insensitive name '{dupe}'.");
 
             void ValidateResourceTypes(List<Type> types)
@@ -104,44 +103,44 @@ namespace RESTar.Resources
                     #region Check general stuff
 
                     if (type.FullName == null)
-                        throw new InvalidResourceDeclaration(
+                        throw new InvalidResourceDeclarationException(
                             "Encountered an unknown type. No further information is available.");
 
                     if (type.IsGenericTypeDefinition)
-                        throw new InvalidResourceDeclaration(
+                        throw new InvalidResourceDeclarationException(
                             $"Found a generic resource type '{type.FullName}'. RESTar resource types must be non-generic");
 
                     if (type.FullName.Count(c => c == '+') >= 2)
-                        throw new InvalidResourceDeclaration($"Invalid resource '{type.RESTarTypeName()}'. " +
+                        throw new InvalidResourceDeclarationException($"Invalid resource '{type.RESTarTypeName()}'. " +
                                                              "Inner resources cannot have their own inner resources");
 
                     if (type.HasAttribute<RESTarViewAttribute>())
-                        throw new InvalidResourceDeclaration(
+                        throw new InvalidResourceDeclarationException(
                             $"Invalid resource type '{type.RESTarTypeName()}'. Resource types cannot be " +
                             "decorated with the 'RESTarViewAttribute'");
                     if (type.Namespace == null)
-                        throw new InvalidResourceDeclaration($"Invalid type '{type.RESTarTypeName()}'. Unknown namespace");
+                        throw new InvalidResourceDeclarationException($"Invalid type '{type.RESTarTypeName()}'. Unknown namespace");
 
                     if (RESTarConfig.ReservedNamespaces.Contains(type.Namespace.ToLower()) &&
                         type.Assembly != typeof(RESTarConfig).Assembly)
-                        throw new InvalidResourceDeclaration(
+                        throw new InvalidResourceDeclarationException(
                             $"Invalid namespace for resource type '{type.RESTarTypeName()}'. Namespace '{type.Namespace}' is reserved by RESTar");
 
                     if ((!type.IsClass || !type.IsPublic && !type.IsNestedPublic) && type.Assembly != typeof(Resource).Assembly)
-                        throw new InvalidResourceDeclaration(
+                        throw new InvalidResourceDeclarationException(
                             $"Invalid type '{type.RESTarTypeName()}'. Resource types must be public classes");
 
                     if (type.HasAttribute<RESTarAttribute>(out var a) && a.Interface is Type interfaceType)
                     {
                         if (!interfaceType.IsInterface)
-                            throw new InvalidResourceDeclaration(
+                            throw new InvalidResourceDeclarationException(
                                 $"Invalid Interface of type '{interfaceType.RESTarTypeName()}' assigned to resource '{type.RESTarTypeName()}'. " +
                                 "Type is not an interface");
 
                         if (interfaceType.GetProperties()
                             .Select(p => p.Name)
                             .ContainsDuplicates(StringComparer.OrdinalIgnoreCase, out var interfacePropDupe))
-                            throw new InvalidResourceMember(
+                            throw new InvalidResourceMemberException(
                                 $"Invalid Interface of type '{interfaceType.RESTarTypeName()}' assigned to resource '{type.RESTarTypeName()}'. " +
                                 $"Interface contained properties with duplicate names matching '{interfacePropDupe}' (case insensitive).");
 
@@ -161,7 +160,7 @@ namespace RESTar.Resources
                                 propertyType = method.GetParameters()[0].ParameterType;
 
                             if (propertyType == null)
-                                throw new InvalidResourceDeclaration(
+                                throw new InvalidResourceDeclarationException(
                                     $"Invalid implementation of interface '{interfaceType.RESTarTypeName()}' assigned to resource '{type.FullName}'. " +
                                     $"Unable to determine the type for interface property '{interfaceProperty.Name}'");
 
@@ -185,7 +184,7 @@ namespace RESTar.Resources
                             else return;
 
                             if (calledProperty == null)
-                                throw new InvalidResourceDeclaration(
+                                throw new InvalidResourceDeclarationException(
                                     $"Invalid implementation of interface '{interfaceType.RESTarTypeName()}' assigned to resource '{type.RESTarTypeName()}'. " +
                                     $"RESTar was unable to determine which property of '{type.RESTarTypeName()}' that is exposed by interface " +
                                     $"property '{interfaceProperty.Name}'. For getters, RESTar will look for the last IL instruction " +
@@ -193,7 +192,7 @@ namespace RESTar.Resources
                                     "for the last IL instruction in the method body that sets a property value in the resource type.");
 
                             if (calledProperty.PropertyType != propertyType)
-                                throw new InvalidResourceDeclaration(
+                                throw new InvalidResourceDeclarationException(
                                     $"Invalid implementation of interface '{interfaceType.RESTarTypeName()}' assigned to resource '{type.RESTarTypeName()}'. " +
                                     $"RESTar matched interface property '{interfaceProperty.Name}' with resource property '{calledProperty.Name}' " +
                                     "using the interface property matching rules, but these properties have a type mismatch. Expected " +
@@ -209,7 +208,7 @@ namespace RESTar.Resources
                     if (type.Implements(typeof(IDictionary<,>), out var typeParams)
                         && !type.IsSubclassOf(typeof(JObject))
                         && !typeParams.SequenceEqual(validTypes))
-                        throw new InvalidResourceDeclaration(
+                        throw new InvalidResourceDeclarationException(
                             $"Invalid resource declaration for type '{type.RESTarTypeName()}'. All resource types implementing " +
                             "the generic 'System.Collections.Generic.IDictionary`2' interface must either be subclasses of " +
                             "Newtonsoft.Json.Linq.JObject or have System.String as first type parameter and System.Object as " +
@@ -221,7 +220,7 @@ namespace RESTar.Resources
 
                     if ((type.Implements(typeof(IEnumerable<>)) || type.Implements(typeof(IEnumerable))) &&
                         !type.Implements(typeof(IDictionary<,>)))
-                        throw new InvalidResourceDeclaration(
+                        throw new InvalidResourceDeclarationException(
                             $"Invalid resource declaration for type '{type.RESTarTypeName()}'. The type has an invalid imple" +
                             $"mentation of an IEnumerable interface. The resource '{type.RESTarTypeName()}' (or any of its base types) " +
                             "cannot implement the \'System.Collections.Generic.IEnumerable`1\' or \'System.Collections.IEnume" +
@@ -234,7 +233,7 @@ namespace RESTar.Resources
 
                     var fields = type.GetFields(Public | Instance);
                     if (fields.Any())
-                        throw new InvalidResourceMember(
+                        throw new InvalidResourceMemberException(
                             $"A RESTar resource cannot have public instance fields, only properties. Resource: '{type.RESTarTypeName()}' had " +
                             $"fields: {string.Join(", ", fields.Select(f => $"'{f.Name}'"))} in resource '{type.RESTarTypeName()}'"
                         );
@@ -248,7 +247,7 @@ namespace RESTar.Resources
                         .Where(p => !(p.DeclaringType.Implements(typeof(IDictionary<,>)) && p.Name == "Item"))
                         .Select(p => p.RESTarMemberName().ToLower())
                         .ContainsDuplicates(out var duplicate))
-                        throw new InvalidResourceMember(
+                        throw new InvalidResourceMemberException(
                             $"Invalid properties for resource '{type.RESTarTypeName()}'. Names of public instance properties declared " +
                             $"for a virtual resource must be unique (case insensitive). Two or more property names evaluated to {duplicate}."
                         );
@@ -265,19 +264,19 @@ namespace RESTar.Resources
                 void ValidateWrapperDeclaration(List<Type> wrappers)
                 {
                     if (wrappers.Select(w => w.GetWrappedType()).ContainsDuplicates(out var wrapperDupe))
-                        throw new InvalidResourceWrapper("RESTar found multiple RESTar.ResourceWrapper declarations for " +
+                        throw new InvalidResourceWrapperException("RESTar found multiple RESTar.ResourceWrapper declarations for " +
                                                          $"type '{wrapperDupe.RESTarTypeName()}'. A type can only be wrapped once.");
                     foreach (var wrapper in wrappers)
                     {
                         var members = wrapper.GetMembers(Public | Instance);
                         if (members.OfType<PropertyInfo>().Any() || members.OfType<FieldInfo>().Any())
-                            throw new InvalidResourceWrapper(
+                            throw new InvalidResourceWrapperException(
                                 $"Invalid RESTar.ResourceWrapper '{wrapper.RESTarTypeName()}'. ResourceWrapper " +
                                 "classes cannot contain public instance properties or fields");
                         ValidateCommon(wrapper);
                         var wrapped = wrapper.GetWrappedType();
                         if (wrapped.HasResourceProviderAttribute())
-                            throw new InvalidResourceWrapper(
+                            throw new InvalidResourceWrapperException(
                                 $"Invalid RESTar.ResourceWrapper '{wrapper.RESTarTypeName()}' for wrapped " +
                                 $"type '{wrapped.RESTarTypeName()}'. Type decorated with a resource provider's " +
                                 "attribute cannot be wrapped. Resource provider attributes should be " +
@@ -285,21 +284,21 @@ namespace RESTar.Resources
                         if (wrapper.GetInterfaces()
                             .Where(i => typeof(IOperationsInterface).IsAssignableFrom(i))
                             .Any(i => i.IsGenericType && i.GenericTypeArguments[0] != wrapped))
-                            throw new InvalidResourceWrapper(
+                            throw new InvalidResourceWrapperException(
                                 $"Invalid RESTar.ResourceWrapper '{wrapper.RESTarTypeName()}'. This wrapper " +
                                 "cannot implement operations interfaces for types other than " +
                                 $"'{wrapped.RESTarTypeName()}'.");
                         if (wrapped.FullName?.Contains("+") == true)
-                            throw new InvalidResourceWrapper($"Invalid RESTar.ResourceWrapper '{wrapper.RESTarTypeName()}'. Cannot " +
+                            throw new InvalidResourceWrapperException($"Invalid RESTar.ResourceWrapper '{wrapper.RESTarTypeName()}'. Cannot " +
                                                              "wrap types that are declared within the scope of some other class.");
                         if (wrapped.HasAttribute<RESTarAttribute>())
-                            throw new InvalidResourceWrapper("RESTar found a RESTar.ResourceWrapper declaration for type " +
+                            throw new InvalidResourceWrapperException("RESTar found a RESTar.ResourceWrapper declaration for type " +
                                                              $"'{wrapped.RESTarTypeName()}', a type that is already a RESTar " +
                                                              "resource type. Only non-resource types can be wrapped.");
                         if (wrapper.Namespace == null)
-                            throw new InvalidResourceDeclaration($"Invalid type '{wrapper.RESTarTypeName()}'. Unknown namespace");
+                            throw new InvalidResourceDeclarationException($"Invalid type '{wrapper.RESTarTypeName()}'. Unknown namespace");
                         if (wrapper.Assembly == typeof(RESTarConfig).Assembly)
-                            throw new InvalidResourceWrapper("RESTar found an invalid RESTar.ResourceWrapper declaration for " +
+                            throw new InvalidResourceWrapperException("RESTar found an invalid RESTar.ResourceWrapper declaration for " +
                                                              $"type '{wrapped.RESTarTypeName()}'. RESTar types cannot be wrapped.");
                     }
                 }
@@ -311,15 +310,15 @@ namespace RESTar.Resources
                         ValidateCommon(terminal);
 
                         if (terminal.Implements(typeof(IEnumerable<>)))
-                            throw new InvalidTerminalDeclaration(terminal, "must not be collections");
+                            throw new InvalidTerminalDeclarationException(terminal, "must not be collections");
                         if (terminal.HasResourceProviderAttribute())
-                            throw new InvalidTerminalDeclaration(terminal, "must not be decorated with a resource provider attribute");
+                            throw new InvalidTerminalDeclarationException(terminal, "must not be decorated with a resource provider attribute");
                         if (terminal.HasAttribute<DatabaseAttribute>())
-                            throw new InvalidTerminalDeclaration(terminal, "must not be decorated with the Starcounter.DatabaseAttribute attribute");
+                            throw new InvalidTerminalDeclarationException(terminal, "must not be decorated with the Starcounter.DatabaseAttribute attribute");
                         if (typeof(IOperationsInterface).IsAssignableFrom(terminal))
-                            throw new InvalidTerminalDeclaration(terminal, "must not implement any other RESTar operations interfaces");
+                            throw new InvalidTerminalDeclarationException(terminal, "must not implement any other RESTar operations interfaces");
                         if (terminal.GetConstructor(Type.EmptyTypes) == null)
-                            throw new InvalidTerminalDeclaration(terminal, "must define a public parameterless constructor");
+                            throw new InvalidTerminalDeclarationException(terminal, "must define a public parameterless constructor");
                     }
                 }
 
@@ -329,13 +328,13 @@ namespace RESTar.Resources
                     {
                         ValidateCommon(binary);
                         if (binary.Implements(typeof(IEnumerable<>)))
-                            throw new InvalidBinaryDeclaration(binary, "must not be collections");
+                            throw new InvalidBinaryDeclarationException(binary, "must not be collections");
                         if (binary.HasResourceProviderAttribute())
-                            throw new InvalidBinaryDeclaration(binary, "must not be decorated with a resource provider attribute");
+                            throw new InvalidBinaryDeclarationException(binary, "must not be decorated with a resource provider attribute");
                         if (binary.HasAttribute<DatabaseAttribute>())
-                            throw new InvalidBinaryDeclaration(binary, "must not be decorated with the Starcounter.DatabaseAttribute attribute");
+                            throw new InvalidBinaryDeclarationException(binary, "must not be decorated with the Starcounter.DatabaseAttribute attribute");
                         if (typeof(IOperationsInterface).IsAssignableFrom(binary))
-                            throw new InvalidBinaryDeclaration(binary, "must not implement any other RESTar operations interfaces");
+                            throw new InvalidBinaryDeclarationException(binary, "must not implement any other RESTar operations interfaces");
                     }
                 }
 
@@ -356,25 +355,25 @@ namespace RESTar.Resources
                 {
                     var resource = type.DeclaringType;
                     if (!type.IsClass || !type.IsNestedPublic || resource == null)
-                        throw new InvalidResourceViewDeclaration(type,
+                        throw new InvalidResourceViewDeclarationException(type,
                             "Resource view types must be declared as public classes nested within the the " +
                             "resource type they are views for");
                     if (type.IsSubclassOf(type))
-                        throw new InvalidResourceViewDeclaration(type, "Views cannot inherit from their resource types");
+                        throw new InvalidResourceViewDeclarationException(type, "Views cannot inherit from their resource types");
 
                     if (resource.Implements(typeof(IResourceWrapper)))
                     {
                         var wrapped = resource.GetWrappedType();
                         if (!type.Implements(typeof(ISelector<>), out var param) || param[0] != wrapped)
-                            throw new InvalidResourceViewDeclaration(type,
+                            throw new InvalidResourceViewDeclarationException(type,
                                 $"Expected view type to implement ISelector<{wrapped.RESTarTypeName()}>");
                     }
                     else if (!type.Implements(typeof(ISelector<>), out var param) || param[0] != resource)
-                        throw new InvalidResourceViewDeclaration(type,
+                        throw new InvalidResourceViewDeclarationException(type,
                             $"Expected view type to implement ISelector<{resource.RESTarTypeName()}>");
                     var propertyUnion = resource.GetProperties(Public | Instance).Union(type.GetProperties(Public | Instance));
                     if (propertyUnion.ContainsDuplicates(p => p.RESTarMemberName(), StringComparer.OrdinalIgnoreCase, out var propDupe))
-                        throw new InvalidResourceViewDeclaration(type,
+                        throw new InvalidResourceViewDeclarationException(type,
                             $"Invalid property '{propDupe.Name}'. Resource view types must not contain any public instance " +
                             "properties with the same name (case insensitive) as a property of the corresponding resource. " +
                             "All properties in the resource are automatically inherited for use in conditions with the view.");
@@ -393,7 +392,7 @@ namespace RESTar.Resources
             {
                 var parentResource = (IResourceInternal) Resource.SafeGet(group.Key);
                 if (parentResource == null)
-                    throw new InvalidResourceDeclaration(
+                    throw new InvalidResourceDeclarationException(
                         $"Resource type(s) {string.Join(", ", group.Select(item => $"'{item.Name}'"))} is/are declared " +
                         $"within the scope of another class '{group.Key}', that is not a RESTar resource. Inner " +
                         "resources must be declared within a resource class.");
@@ -442,7 +441,7 @@ namespace RESTar.Resources
             foreach (var (enumType, _) in metadata.PeripheralTypes.Where(t => t.Type.IsEnum))
             {
                 if (Enum.GetNames(enumType).Select(name => name.ToLower()).ContainsDuplicates(out var dupe))
-                    throw new InvalidReferencedEnumDeclaration("A reference was made in some resource type to an enum type with name " +
+                    throw new InvalidReferencedEnumDeclarationException("A reference was made in some resource type to an enum type with name " +
                                                                $"'{enumType.RESTarTypeName()}', containing multiple named constants equal to '{dupe}' " +
                                                                "(case insensitive). All enum types referenced by some RESTar resource " +
                                                                "type must have unique case insensitive named constants");

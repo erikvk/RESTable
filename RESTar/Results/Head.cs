@@ -12,5 +12,8 @@
         public ulong EntityCount { get; }
 
         internal Head(IRequest request, long count) : base(request) => EntityCount = (ulong) count;
+
+        /// <inheritdoc />
+        public override string Metadata => $"{nameof(Head)};{Request.Resource};{EntityCount}";
     }
 }

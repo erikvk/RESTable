@@ -14,5 +14,8 @@ namespace RESTar.Results
             StatusDescription = "No content";
             Headers.Info = "No entities found matching request.";
         }
+
+        /// <inheritdoc />
+        public override string Metadata => $"{nameof(NoContent)};{Request.Resource};";
     }
 }
