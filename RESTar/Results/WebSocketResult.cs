@@ -102,7 +102,7 @@ namespace RESTar.Results
         public void ThrowIfError() => Result.ThrowIfError();
 
         /// <inheritdoc />
-        public IEnumerable<T> ToEntities<T>() where T : class => Result.ToEntities<T>();
+        public IEntities<T> ToEntities<T>() where T : class => Result.ToEntities<T>();
 
         /// <inheritdoc />
         public Stream Body

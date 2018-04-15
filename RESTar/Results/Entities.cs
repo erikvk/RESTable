@@ -2,7 +2,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using RESTar.Requests;
-using UriComponents = RESTar.Requests.UriComponents;
 
 namespace RESTar.Results
 {
@@ -40,22 +39,10 @@ namespace RESTar.Results
             $"attachment;filename={Request.Resource}_{DateTime.Now:yyMMddHHmmssfff}{extension}";
 
         /// <inheritdoc />
-        public IUriComponents GetNextPageLink() => GetNextPageLink(-1);
+        public IUriComponents GetNextPageLink() => this.MakeNextPageLink(-1);
 
         /// <inheritdoc />
-        public IUriComponents GetNextPageLink(int count)
-        {
-            var components = new UriComponents(Request.UriComponents);
-            if (count > -1)
-            {
-                components.MetaConditions.RemoveAll(c => c.Key.EqualsNoCase("limit"));
-                components.MetaConditions.Add(new UriCondition("limit", Operators.EQUALS, count.ToString()));
-            }
-            components.MetaConditions.RemoveAll(c => c.Key.EqualsNoCase("offset"));
-            components.MetaConditions.Add(new UriCondition("offset", Operators.EQUALS,
-                (Request.MetaConditions.Offset + (long) EntityCount).ToString()));
-            return components;
-        }
+        public IUriComponents GetNextPageLink(int count) => this.MakeNextPageLink(count);
 
         /// <inheritdoc />
         public override string Metadata => $"{nameof(Entities<T>)};{Request.Resource};{EntityType}";

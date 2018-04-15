@@ -41,7 +41,7 @@ namespace RESTar.Requests
             Body = new Body(bytes, _contentType, CachedProtocolProvider);
         }
 
-        public IResource Resource => throw new InvalidOperationException(ErrorMessage(nameof(Resource)));
+        public IResource Resource => RemoteResource;
         public Type TargetType => throw new InvalidOperationException(ErrorMessage(nameof(TargetType)));
         public bool HasConditions => throw new InvalidOperationException(ErrorMessage(nameof(HasConditions)));
         public MetaConditions MetaConditions => throw new InvalidOperationException(ErrorMessage(nameof(MetaConditions)));
@@ -72,10 +72,12 @@ namespace RESTar.Requests
                 if (resultType == null || resourceName == null)
                     return new ExternalServiceNotRESTar(URI);
                 RemoteResource = new RemoteResource(resourceName);
-                var stream = new RESTarOutputStreamController();
+                var stream = default(Stream);
                 if (response.Content != null)
                 {
-                    await response.Content.CopyToAsync(stream);
+                    var streamController = new RESTarOutputStreamController();
+                    await response.Content.CopyToAsync(streamController);
+                    stream = streamController.Stream;
                     stream.Seek(0, SeekOrigin.Begin);
                 }
 
@@ -85,7 +87,8 @@ namespace RESTar.Requests
                     ErrorCodes ec;
                     switch (resultType)
                     {
-                        case nameof(Entities<object>): return new RemoteEntities(this, new JObjectEnumerable(stream));
+                        case nameof(Entities<object>) when ulong.TryParse(responseHeaders.EntityCount, out var count):
+                            return new RemoteEntities(this, stream, count);
                         case nameof(Head) when int.TryParse(data, out nr): return new Head(this, nr);
                         case nameof(Report) when int.TryParse(data, out nr): return new Report(this, nr);
                         case nameof(Binary): return new Binary(this, stream, responseHeaders.ContentType ?? ContentType.DefaultOutput);
@@ -141,7 +144,9 @@ namespace RESTar.Requests
         {
             TraceId = context.InitialTraceId;
             Context = context;
-            Headers = new Headers();
+            Headers = headers ?? new Headers();
+            if (context.HasApiKey)
+                Headers.Authorization = $"apikey {context.ApiKey}";
             Method = method;
             LogEventType = LogEventType.HttpInput;
             IsValid = true;
@@ -152,7 +157,6 @@ namespace RESTar.Requests
             ExcludeHeaders = false;
             if (body?.Length > 0)
                 SetBody(body, Headers.ContentType);
-            Headers = headers ?? new Headers();
         }
     }
 }

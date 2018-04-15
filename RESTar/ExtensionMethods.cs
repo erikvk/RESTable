@@ -20,6 +20,7 @@ using RESTar.Reflection.Dynamic;
 using RESTar.Linq;
 using RESTar.Operations;
 using RESTar.Processors;
+using RESTar.Requests;
 using RESTar.Resources;
 using RESTar.Results;
 using RESTar.Sc;
@@ -32,7 +33,7 @@ using static RESTar.Operators;
 using static Starcounter.DbHelper;
 using IResource = RESTar.Resources.IResource;
 using Operator = RESTar.Internal.Operator;
-
+using UriComponents = RESTar.Requests.UriComponents;
 
 namespace RESTar
 {
@@ -620,7 +621,7 @@ namespace RESTar
             error.SetTrace(request);
             error.RequestInternal = request;
             string errorId = null;
-            if (!(error is Forbidden) && request.Method >= 0)
+            if (!(error is Forbidden) && !(request is RemoteRequest) && request.Method >= 0)
             {
                 Admin.Error.ClearOld();
                 Db.TransactAsync(() => errorId = Admin.Error.Create(error, request).Id);
@@ -643,6 +644,20 @@ namespace RESTar
                 error.Headers.Error = $"/restar.admin.error/id={HttpUtility.UrlEncode(errorId)}";
             error.TimeElapsed = request.TimeElapsed;
             return error;
+        }
+
+        internal static IUriComponents MakeNextPageLink<T>(this IEntities<T> entities, int count) where T : class
+        {
+            var components = new UriComponents(entities.Request.UriComponents);
+            if (count > -1)
+            {
+                components.MetaConditions.RemoveAll(c => c.Key.EqualsNoCase("limit"));
+                components.MetaConditions.Add(new UriCondition("limit", EQUALS, count.ToString()));
+            }
+            components.MetaConditions.RemoveAll(c => c.Key.EqualsNoCase("offset"));
+            components.MetaConditions.Add(new UriCondition("offset", EQUALS,
+                (entities.Request.MetaConditions.Offset + (long) entities.EntityCount).ToString()));
+            return components;
         }
 
         /// <summary>
@@ -767,15 +782,15 @@ namespace RESTar
 
         internal static byte[] ToByteArray(this Stream stream)
         {
-            if (stream == null) return null;
-            MemoryStream ms;
-            if (stream is MemoryStream _ms) ms = _ms;
-            else
+            switch (stream)
             {
-                ms = new MemoryStream();
-                using (stream) stream.CopyTo(ms);
+                case null: return null;
+                case MemoryStream _ms: return _ms.ToArray();
+                default:
+                    var ms = new MemoryStream();
+                    using (stream) stream.CopyTo(ms);
+                    return ms.ToArray();
             }
-            return ms.ToArray();
         }
 
         internal static ClosedXML.Excel.XLWorkbook ToExcel(this IEnumerable<object> entities, ITarget target)

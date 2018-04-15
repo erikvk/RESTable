@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Text;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -51,7 +50,7 @@ namespace RESTar.ContentTypeProviders
                 FloatParseHandling = FloatParseHandling.Decimal
             };
             Serializer = JsonSerializer.Create(Settings);
-            
+
             SettingsIgnoreNulls = new JsonSerializerSettings
             {
                 NullValueHandling = NullValueHandling.Ignore,
@@ -156,11 +155,11 @@ namespace RESTar.ContentTypeProviders
         public IEnumerable<T> Populate<T>(IEnumerable<T> entities, byte[] body) where T : class
         {
             var json = Encoding.UTF8.GetString(body);
-            return entities.Select(item =>
+            foreach (var entity in entities)
             {
-                JsonConvert.PopulateObject(json, item, Settings);
-                return item;
-            });
+                JsonConvert.PopulateObject(json, entity, Settings);
+                yield return entity;
+            }
         }
 
         /// <inheritdoc />
@@ -233,16 +232,23 @@ namespace RESTar.ContentTypeProviders
         }
 
         /// <inheritdoc />
-        public List<T> DeserializeCollection<T>(byte[] body) where T : class
+        public IEnumerable<T> DeserializeCollection<T>(byte[] body) where T : class
         {
-            using (var jsonStream = new MemoryStream(body))
-            using (var streamReader = new StreamReader(jsonStream, UTF8))
-            using (var jsonReader = new JsonTextReader(streamReader))
+            using (var jsonReader = new JsonTextReader(new StreamReader(new MemoryStream(body), UTF8)))
             {
                 jsonReader.Read();
-                if (jsonReader.TokenType == JsonToken.StartObject)
-                    return new List<T> {Serializer.Deserialize<T>(jsonReader)};
-                return Serializer.Deserialize<List<T>>(jsonReader);
+                switch (jsonReader.TokenType)
+                {
+                    case JsonToken.StartObject:
+                        yield return Serializer.Deserialize<T>(jsonReader);
+                        yield break;
+                    case JsonToken.StartArray:
+                        jsonReader.Read();
+                        while (jsonReader.TokenType != JsonToken.EndArray)
+                            yield return Serializer.Deserialize<T>(jsonReader);
+                        yield break;
+                    default: throw new JsonReaderException("Invalid JSON data. Expected array or object");
+                }
             }
         }
 

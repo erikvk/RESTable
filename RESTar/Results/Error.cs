@@ -87,12 +87,12 @@ namespace RESTar.Results
         {
             ExcludeHeaders = false;
             if (message == null)
-                Headers.Info = ie.Message;
+                Headers.Info = ie?.Message;
             else Headers.Info = message;
         }
 
         /// <inheritdoc />
-        public IEnumerable<T> ToEntities<T>() where T : class => throw this;
+        public IEntities<T> ToEntities<T>() where T : class => throw this;
 
         /// <inheritdoc />
         public void ThrowIfError() => throw this;

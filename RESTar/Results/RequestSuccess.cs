@@ -34,6 +34,7 @@ namespace RESTar.Results
         /// <inheritdoc />
         public override ISerializedResult Serialize(ContentType? contentType = null)
         {
+            if (IsSerialized) return this;
             IsSerializing = true;
             var stopwatch = Stopwatch.StartNew();
             ISerializedResult result = this;

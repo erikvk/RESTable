@@ -66,7 +66,7 @@ namespace RESTar
         /// Deserializes the byte array to the given content entity collection type. Deserialize calls can only be made with 
         /// content types included in CanRead.
         /// </summary>
-        List<T> DeserializeCollection<T>(byte[] body) where T : class;
+        IEnumerable<T> DeserializeCollection<T>(byte[] body) where T : class;
 
         /// <summary>
         /// Populates the byte array to all entities in the given collection. Populate calls can only be made with 

@@ -63,12 +63,14 @@ namespace RESTar.ContentTypeProviders
         public abstract void SerializeCollection(IEnumerable<object> entities, Stream stream, IRequest request, out ulong entityCount);
 
         /// <inheritdoc />
-        public List<T> DeserializeCollection<T>(byte[] body) where T : class
+        public IEnumerable<T> DeserializeCollection<T>(byte[] body) where T : class
         {
             var jsonbytes = ProduceJson(body, out var singular);
             if (singular)
-                return new List<T> {JsonProvider.DeserializeEntity<T>(jsonbytes)};
-            return JsonProvider.DeserializeCollection<T>(jsonbytes);
+                yield return JsonProvider.DeserializeEntity<T>(jsonbytes);
+            else
+                foreach (var item in JsonProvider.DeserializeCollection<T>(jsonbytes))
+                    yield return item;
         }
 
         /// <inheritdoc />

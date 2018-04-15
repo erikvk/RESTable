@@ -10,7 +10,6 @@ using RESTar;
 using RESTar.Linq;
 using RESTar.Operations;
 using RESTar.ResourceTemplates;
-using RESTar.Results;
 using Starcounter;
 
 #pragma warning disable 1591
@@ -30,17 +29,26 @@ namespace RESTarExample
                 configFilePath: @"C:\Mopedo\mopedo\Mopedo.config",
                 lineEndings: LineEndings.Linux
             );
-
-            var context = Context.Remote("http://localhost:9000/rest");
-            var request = context.CreateRequest(Method.GET, "/resource1//limit=2");
-            var result = request.Result;
-            var entities = result as IEntities<JObject>;
-            var jobj = entities.FirstOrDefault();
-            var str = jobj.ToString();
-            
-
-            var y = "";
         }
+    }
+
+    public class Resource1
+    {
+        public sbyte Sbyte;
+        public byte Byte;
+        public short Short;
+        public ushort Ushort;
+        public int Int;
+        public uint Uint;
+        public long Long;
+        public ulong Ulong;
+        public float Float;
+        public double Double;
+        public decimal Decimal;
+        public string String;
+        public bool Bool;
+        public DateTime DateTime;
+        public JObject MyDict;
     }
 
     [RESTar]

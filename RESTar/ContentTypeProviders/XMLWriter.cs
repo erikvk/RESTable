@@ -75,7 +75,7 @@ namespace RESTar.ContentTypeProviders
         public T DeserializeEntity<T>(byte[] body) where T : class => throw new NotImplementedException();
 
         /// <inheritdoc />
-        public List<T> DeserializeCollection<T>(byte[] body) where T : class => throw new NotImplementedException();
+        public IEnumerable<T> DeserializeCollection<T>(byte[] body) where T : class => throw new NotImplementedException();
 
         /// <inheritdoc />
         public IEnumerable<T> Populate<T>(IEnumerable<T> entities, byte[] body) where T : class =>

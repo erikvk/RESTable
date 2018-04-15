@@ -23,9 +23,9 @@ namespace RESTar.Requests
         public byte[] Bytes { get; }
 
         /// <summary>
-        /// Deserializes the body to a list of entities of the given type
+        /// Deserializes the body to an IEnumerable of entities of the given type
         /// </summary>
-        public List<T> ToList<T>() where T : class
+        public IEnumerable<T> Deserialize<T>() where T : class
         {
             if (!HasContent) return null;
             var contentTypeProvider = ProtocolProvider.InputMimeBindings.SafeGet(ContentType.MediaType) ??

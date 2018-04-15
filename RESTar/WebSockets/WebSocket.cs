@@ -283,13 +283,21 @@ namespace RESTar.WebSockets
         public void SendText(byte[] data, int offset, int length) => _SendBinary(data, true, offset, length);
 
         /// <inheritdoc />
-        public void SendText(Stream data) => _SendBinary(data.ToByteArray(), true, 0, (int) data.Length);
+        public void SendText(Stream data)
+        {
+            var array = data.ToByteArray();
+            _SendBinary(array, true, 0, array.Length);
+        }
 
         /// <inheritdoc />
         public void SendBinary(byte[] data, int offset, int length) => _SendBinary(data, false, offset, length);
 
         /// <inheritdoc />
-        public void SendBinary(Stream data) => _SendBinary(data.ToByteArray(), false, 0, (int) data.Length);
+        public void SendBinary(Stream data)
+        {
+            var array = data.ToByteArray();
+            _SendBinary(array, false, 0, array.Length);
+        }
 
         /// <inheritdoc />
         public void SendJson(object item, bool asText = false, bool? prettyPrint = null, bool ignoreNulls = false)

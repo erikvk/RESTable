@@ -95,7 +95,7 @@ namespace RESTar.Operations
         {
             try
             {
-                var inserter = request.GetSelector() ?? (() => request.Body.ToList<T>());
+                var inserter = request.GetSelector() ?? (() => request.Body.Deserialize<T>());
                 if (limit)
                 {
                     var _inserter = inserter;
@@ -249,7 +249,7 @@ namespace RESTar.Operations
                     .Split(',')
                     .Select(s => new Condition<T>(s, Operators.EQUALS, null))
                     .ToList();
-                foreach (var entity in request.Body.ToList<JObject>())
+                foreach (var entity in request.Body.Deserialize<JObject>())
                 {
                     conditions.ForEach(cond => cond.Value = cond.Term.Evaluate(entity));
                     request.Conditions = conditions;
