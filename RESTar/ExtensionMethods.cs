@@ -283,13 +283,20 @@ namespace RESTar
         /// Splits a string into two parts by a separator char, and returns a 2-tuple 
         /// holding the parts.
         /// </summary>
-        public static (string, string) TSplit(this string str, char separator)
+        public static (string, string) TSplit(this string str, char separator, bool trim = false)
         {
             var split = str.Split(new[] {separator}, 2);
+            if (!trim)
+                switch (split.Length)
+                {
+                    case 1: return (split[0], null);
+                    case 2: return (split[0], split[1]);
+                    default: return (null, null);
+                }
             switch (split.Length)
             {
-                case 1: return (split[0], null);
-                case 2: return (split[0], split[1]);
+                case 1: return (split[0].Trim(), null);
+                case 2: return (split[0].Trim(), split[1].Trim());
                 default: return (null, null);
             }
         }
@@ -298,14 +305,21 @@ namespace RESTar
         /// Splits a string into two parts by a separator string, and returns a 2-tuple 
         /// holding the parts.
         /// </summary>
-        public static (string, string) TSplit(this string str, string separator)
+        public static (string, string) TSplit(this string str, string separator, bool trim = false)
         {
             var split = str.Split(new[] {separator}, 2, StringSplitOptions.None);
+            if (!trim)
+                switch (split.Length)
+                {
+                    default: return (null, null);
+                    case 1: return (split[0], null);
+                    case 2: return (split[0], split[1]);
+                }
             switch (split.Length)
             {
-                case 1: return (split[0], null);
-                case 2: return (split[0], split[1]);
                 default: return (null, null);
+                case 1: return (split[0].Trim(), null);
+                case 2: return (split[0].Trim(), split[1].Trim());
             }
         }
 

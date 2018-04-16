@@ -32,7 +32,7 @@ namespace RESTarExample
                     var body = Body?.Length > 0 ? Encoding.UTF8.GetBytes(Body) : null;
                     var request = context.CreateRequest(method, tail, body, Headers);
                     var res = request.Result.Serialize();
-                    WebSocket.SendResult(res);
+                    WebSocket.SendResult(res, res.TimeElapsed, true);
                     break;
                 case "BODY":
                     Body = tail;

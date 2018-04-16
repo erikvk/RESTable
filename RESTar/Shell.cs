@@ -2,10 +2,10 @@
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Text.RegularExpressions;
 using RESTar.Requests;
 using RESTar.Resources;
 using RESTar.Results;
+using RESTar.Serialization;
 using RESTar.WebSockets;
 using Starcounter;
 using static RESTar.Internal.ErrorCodes;
@@ -25,7 +25,7 @@ namespace RESTar
     {
         private const string description =
             "The RESTar WebSocket shell lets the client navigate around the resources of the " +
-            "RESTar application, perform CRUD operations and enter terminal resources.";
+            "RESTar API, perform CRUD operations and enter terminal resources.";
 
         private string query;
         private string previousQuery;
@@ -145,7 +145,11 @@ namespace RESTar
         }
 
         /// <inheritdoc />
-        public void Dispose() => Reset();
+        public void Dispose()
+        {
+            WebSocket.Context.Client.ShellConfig = Serializers.Json.Serialize(this);
+            Reset();
+        }
 
         /// <inheritdoc />
         public IWebSocket WebSocket { private get; set; }
@@ -168,9 +172,27 @@ namespace RESTar
         /// <inheritdoc />
         public void Open()
         {
+            if (WebSocket.Context.Client.ShellConfig is string config)
+                Serializers.Json.Populate(config, this);
             if (Query != "")
-                SafeOperation(GET);
+                Navigate();
             else SendShellInit();
+        }
+
+        private void Navigate(string input = null)
+        {
+            if (input != null)
+            {
+                if (input.Length == 1)
+                    input = "/restar.availableresource";
+                if (input.StartsWith("//"))
+                    input = $"/restar.availableresource/{input.Substring(2)}";
+                Query = input;
+            }
+            if (!QueryIsValid(out var resource)) return;
+            if (AutoOptions) SendOptions(resource);
+            else if (AutoGet) SafeOperation(GET);
+            else SendQuery();
         }
 
         /// <inheritdoc />
@@ -195,7 +217,6 @@ namespace RESTar
                         SendCancel();
                         break;
                 }
-
                 return;
             }
 
@@ -225,7 +246,6 @@ namespace RESTar
                         CurrentStreamManifest = null;
                         break;
                 }
-
                 return;
             }
 
@@ -241,15 +261,7 @@ namespace RESTar
                 case '\n': break;
                 case '-':
                 case '/':
-                    if (input.Length == 1)
-                        input = "/restar.availableresource";
-                    if (input.StartsWith("//"))
-                        input = $"/restar.availableresource/{input.Substring(2)}";
-                    Query = input;
-                    if (!QueryIsValid(out var resource)) break;
-                    if (AutoOptions) SendOptions(resource);
-                    else if (AutoGet) SafeOperation(GET);
-                    else SendQuery();
+                    Navigate(input);
                     break;
                 case '[':
                 case '{':
@@ -291,7 +303,6 @@ namespace RESTar
                                 SetupStreamManifest();
                             }
                             else SendResult(result);
-
                             break;
                         case "OPTIONS":
                             if (!QueryIsValid(out var _resource)) break;
@@ -306,16 +317,12 @@ namespace RESTar
                                 SendHeaders();
                                 break;
                             }
-
-                            var (key, value) = tail.TSplit('=');
-                            key = key.Trim();
-                            value = value?.Trim();
+                            var (key, value) = tail.TSplit('=', true);
                             if (value == null)
                             {
                                 SendHeaders();
                                 break;
                             }
-
                             if (Headers.IsCustom(key))
                             {
                                 if (value == "null")
@@ -324,38 +331,31 @@ namespace RESTar
                                     SendHeaders();
                                     break;
                                 }
-
                                 WebSocket.Headers[key] = value;
                                 SendHeaders();
                             }
                             else WebSocket.SendText($"400: Bad request. Cannot read or write reserved header '{key}'.");
-
                             return;
-                        case "SET":
+
+                        case "VAR":
                             if (string.IsNullOrWhiteSpace(tail))
                             {
                                 WebSocket.SendJson(this);
                                 break;
                             }
-
-                            var parts = Regex.Split(tail, " to ", RegexOptions.IgnoreCase);
-                            if (parts.Length == 1)
+                            var (property, valueString) = tail.TSplit('=', true);
+                            if (property == null || valueString == null)
                             {
-                                WebSocket.SendText(
-                                    "Invalid property assignment syntax. Should be: SET <property> TO <value>");
+                                WebSocket.SendText("Invalid property assignment syntax. Should be: VAR <property> = <value>");
                                 break;
                             }
-
-                            var (property, valueString) = (parts[0].Trim(), parts[1]);
                             if (valueString.EqualsNoCase("null"))
                                 valueString = null;
                             if (!TerminalResource.Members.TryGetValue(property, out var declaredProperty))
                             {
-                                WebSocket.SendText(
-                                    $"Unknown shell property '{property}'. To list properties, type SET");
+                                WebSocket.SendText($"Unknown shell property '{property}'. To list properties, type VAR");
                                 break;
                             }
-
                             try
                             {
                                 declaredProperty.SetValue(this, valueString.ParseConditionValue(declaredProperty));
@@ -365,9 +365,7 @@ namespace RESTar
                             {
                                 WebSocket.SendException(e);
                             }
-
                             break;
-
                         case "HELP":
                             SendHelp();
                             break;
@@ -377,17 +375,15 @@ namespace RESTar
                         case "CLOSE":
                             Close();
                             break;
-                        case "?" when !string.IsNullOrWhiteSpace(tail):
-                            if (tail.Length == 1)
-                                tail = "/restar.availableresource";
-                            if (tail.StartsWith("//"))
-                                tail = $"/restar.availableresource/{tail.Substring(2)}";
-                            Query = tail;
-                            if (!QueryIsValid(out var __resource)) break;
-                            if (AutoOptions) SendOptions(__resource);
-                            else SendQuery();
-                            break;
+
+                        case "GO":
+                        case "NAVIGATE":
                         case "?":
+                            if (!string.IsNullOrWhiteSpace(tail))
+                            {
+                                Navigate(tail);
+                                break;
+                            }
                             WebSocket.SendText($"{(Query.Any() ? Query : "< empty >")}");
                             break;
                         case "NEXT":
@@ -402,7 +398,6 @@ namespace RESTar
                                 Query = link;
                                 SafeOperation(GET);
                             }
-
                             break;
 
                         #region Nonsense
@@ -477,7 +472,6 @@ namespace RESTar
 
                         #endregion
                     }
-
                     break;
             }
         }

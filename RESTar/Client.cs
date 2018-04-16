@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Net;
-using Newtonsoft.Json.Linq;
 using RESTar.Auth;
 using RESTar.Requests;
 using RESTar.Results;
@@ -48,7 +47,7 @@ namespace RESTar
 
         internal bool IsInWebSocket { get; set; }
 
-        internal JObject ShellConfig { get; set; }
+        internal string ShellConfig { get; set; }
 
         /// <summary>
         /// Creates a new client with the given origin type

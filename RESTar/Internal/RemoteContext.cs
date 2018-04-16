@@ -14,18 +14,15 @@ namespace RESTar.Internal
 
         public override IRequest CreateRequest(Method method, string uri, byte[] body = null, Headers headers = null)
         {
-            var remoteRequest = new RemoteRequest(this, method, uri, body, headers);
-            return remoteRequest;
+            return new RemoteRequest(this, method, uri, body, headers);
         }
 
         public override IRequest<T> CreateRequest<T>(Method method, string protocolId = null, string viewName = null) =>
-            throw new NotImplementedException("Cannot create generic requests for remote resources");
+            throw new InvalidOperationException("Cannot create generic requests in remote contexts");
 
         internal RemoteContext(string serviceRoot, string apiKey = null) : base(Client.Remote)
         {
-            if (serviceRoot.EndsWith("/"))
-                ServiceRoot = serviceRoot.TrimEnd('/');
-            ServiceRoot = serviceRoot;
+            ServiceRoot = serviceRoot.TrimEnd('/');
             ApiKey = apiKey;
             HasApiKey = ApiKey != null;
         }

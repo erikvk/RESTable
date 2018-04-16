@@ -41,7 +41,7 @@ namespace RESTar
         internal static bool Initialized { get; private set; }
         internal static readonly Method[] Methods = {GET, POST, PATCH, PUT, DELETE, REPORT, HEAD};
         internal static readonly Encoding DefaultEncoding = new UTF8Encoding(false);
-        internal static readonly string Version = typeof(RESTarConfig).Assembly.GetName().Version.ToString();
+        internal static readonly string Version;
 
         internal static FileStream MakeTempFile() => File.Create
         (
@@ -50,7 +50,12 @@ namespace RESTar
             options: FileOptions.Asynchronous | FileOptions.DeleteOnClose
         );
 
-        static RESTarConfig() => NewState();
+        static RESTarConfig()
+        {
+            var version = typeof(RESTarConfig).Assembly.GetName().Version;
+            Version = $"{version.Major}.{version.Minor}.{version.Build}";
+            NewState();
+        }
 
         private static void NewState()
         {

@@ -245,7 +245,10 @@ namespace RESTar.ContentTypeProviders
                     case JsonToken.StartArray:
                         jsonReader.Read();
                         while (jsonReader.TokenType != JsonToken.EndArray)
+                        {
                             yield return Serializer.Deserialize<T>(jsonReader);
+                            jsonReader.Read();
+                        }
                         yield break;
                     default: throw new JsonReaderException("Invalid JSON data. Expected array or object");
                 }

@@ -65,7 +65,7 @@ namespace RESTar.Requests
 
         internal CachedProtocolProvider CachedProtocolProvider { get; }
         private string UnparsedUri { get; }
-        private IResource iresource;
+        internal IResource iresource;
         internal IResource IResource => iresource ?? (iresource = Resource.Find(Uri.ResourceSpecifier));
         internal Exception Error { get; set; }
         private static bool PercentCharsEscaped(IDictionary<string, string> headers) => headers?.ContainsKey("X-ARR-LOG-ID") == true;

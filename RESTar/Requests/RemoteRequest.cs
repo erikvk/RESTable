@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
@@ -55,10 +56,18 @@ namespace RESTar.Requests
         {
             try
             {
+                var sw = Stopwatch.StartNew();
                 var method = new HttpMethod(Method.ToString());
                 var message = new HttpRequestMessage(method, URI);
-                if (Body.HasContent)
-                    message.Content = new ByteArrayContent(Body.Bytes);
+                switch (Method)
+                {
+                    case Method.POST:
+                    case Method.PATCH:
+                    case Method.PUT:
+                        if (Body.HasContent)
+                            message.Content = new ByteArrayContent(Body.Bytes);
+                        break;
+                }
                 Headers.Metadata = "full";
                 Headers.Accept = ContentType.JSON;
                 Headers.ForEach(header => message.Headers.Add(header.Key, header.Value));
@@ -67,10 +76,10 @@ namespace RESTar.Requests
                 response.Headers.ForEach(header => responseHeaders[header.Key] = header.Value.FirstOrDefault());
                 var metadata = responseHeaders.Metadata?.Split(';');
                 if (metadata?.Length != 3)
-                    return new ExternalServiceNotRESTar(URI);
+                    return new ExternalServiceNotRESTar(URI).AsResultOf(this);
                 var (resultType, resourceName, data) = (metadata[0], metadata[1], metadata[2]);
                 if (resultType == null || resourceName == null)
-                    return new ExternalServiceNotRESTar(URI);
+                    return new ExternalServiceNotRESTar(URI).AsResultOf(this);
                 RemoteResource = new RemoteResource(resourceName);
                 var stream = default(Stream);
                 if (response.Content != null)
@@ -120,6 +129,8 @@ namespace RESTar.Requests
                 if (result is Error error)
                     result = error.AsResultOf(this);
                 responseHeaders.ForEach(result.Headers.Put);
+                sw.Stop();
+                TimeElapsed = sw.Elapsed;
                 return result;
             }
             catch (Exception e)
