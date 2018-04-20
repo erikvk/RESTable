@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using ExcelDataReader;
+using RESTar.Internal;
 using RESTar.Serialization.NativeProtocol;
 using static System.Linq.Enumerable;
 
@@ -52,7 +53,6 @@ namespace RESTar.ContentTypeProviders
                 entityCount = (ulong) (excel?.Worksheet(1)?.RowsUsed().Count() - 1 ?? 0L);
                 if (excel == null || entityCount == 0) return;
                 excel.SaveAs(stream);
-                stream.Seek(0, SeekOrigin.Begin);
             }
             catch (Exception e)
             {
@@ -61,12 +61,11 @@ namespace RESTar.ContentTypeProviders
         }
 
         /// <inheritdoc />
-        protected override byte[] ProduceJson(byte[] excelBytes, out bool singular)
+        protected override Stream ProduceJson(Stream excelStream, out bool singular)
         {
             try
             {
-                var jsonStream = new MemoryStream();
-                using (var excelStream = new MemoryStream(excelBytes))
+                var jsonStream = new RESTarStreamController();
                 using (var swr = new StreamWriter(jsonStream, UTF8, 1024, true))
                 using (var jwr = new RESTarFromExcelJsonWriter(swr))
                 using (var reader = ExcelReaderFactory.CreateOpenXmlReader(excelStream))
@@ -91,7 +90,7 @@ namespace RESTar.ContentTypeProviders
                     singular = objectCount == 1;
                     jwr.WriteEndArray();
                 }
-                return jsonStream.ToArray();
+                return jsonStream.UnpackAndRewind();
             }
             catch (Exception e)
             {

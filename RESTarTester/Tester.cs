@@ -502,7 +502,7 @@ namespace RESTarTester
                 }
             });
 
-            Do.Schedule(() => Db.TransactAsync(() => new MyDict() {["Aaa"] = "Wook"}), TimeSpan.FromSeconds(10));
+            Do.Schedule(() => Db.TransactAsync(() => new MyDict() {["Aaa"] = "Wook"}), TimeSpan.FromSeconds(10)).Wait();
 
             DatabaseIndex.Register<MyDict2>("MyFineIdex", "R");
 
@@ -524,6 +524,15 @@ namespace RESTarTester
 
             #endregion
 
+            #region Remote requests
+
+            var remoteContext = Context.Remote("http://localhost:9000/rest");
+            var remoteRequest = remoteContext.CreateRequest(GET, "/resource1");
+            var remoteResult = remoteRequest.Result;
+            Debug.Assert(remoteResult is IEntities rement && rement.EntityCount > 1);
+
+            #endregion
+            
             #region OPTIONS
 
             var optionsResponse1 = Http.CustomRESTRequest("OPTIONS", "http://localhost:9000/rest/resource1", default(string),

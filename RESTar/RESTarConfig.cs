@@ -271,10 +271,11 @@ namespace RESTar
 
                     void recurseAllowAccess(JToken allowAccessToken)
                     {
+                        HashSet<IResource> resourceSet = null;
                         switch (allowAccessToken)
                         {
                             case JObject allowAccess:
-                                var resourceSet = new HashSet<IResource>();
+                                resourceSet = new HashSet<IResource>();
 
                                 void recurseResources(JToken resourceToken)
                                 {

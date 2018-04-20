@@ -2,8 +2,6 @@
 using RESTar;
 using Starcounter;
 
-// ReSharper disable All
-
 namespace TestProject
 {
     public class Program

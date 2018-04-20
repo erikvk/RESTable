@@ -29,11 +29,12 @@ namespace RESTar
 
         private string query;
         private string previousQuery;
-        private const long MaxStreamBufferSize = 16_000_000;
-        private long streamBufferSize;
+        private const int MaxStreamBufferSize = 16_000_000;
+        private const int MinStreamBufferSize = 512;
+        private int streamBufferSize;
         private Func<int, IUriComponents> GetNextPageLink;
         private Action OnConfirm;
-        private IEntities PreviousResultMetadata;
+        private IEntities PreviousEntities;
         private StreamManifest CurrentStreamManifest;
 
         /// <summary>
@@ -58,7 +59,6 @@ namespace RESTar
                     case var _ when value[0] != '/' && value[0] != '-':
                         throw new InvalidSyntax(InvalidUriSyntax, "Shell queries must begin with '/' or '-'");
                 }
-
                 previousQuery = query;
                 queryChangedPreEval = true;
                 query = value;
@@ -108,12 +108,14 @@ namespace RESTar
         /// <summary>
         /// The size of stream messages in bytes
         /// </summary>
-        public long StreamBufferSize
+        public int StreamBufferSize
         {
             get => streamBufferSize;
             set
             {
-                if (value < 512 || MaxStreamBufferSize < value)
+                if (value < MinStreamBufferSize)
+                    streamBufferSize = MinStreamBufferSize;
+                else if (MaxStreamBufferSize < value)
                     streamBufferSize = MaxStreamBufferSize;
                 else streamBufferSize = value;
                 if (CurrentStreamManifest != null)
@@ -134,7 +136,7 @@ namespace RESTar
             streamBufferSize = 16_000_000;
             Unsafe = false;
             OnConfirm = null;
-            PreviousResultMetadata = null;
+            PreviousEntities = null;
             GetNextPageLink = null;
             query = "";
             previousQuery = "";
@@ -173,8 +175,12 @@ namespace RESTar
         public void Open()
         {
             if (WebSocket.Context.Client.ShellConfig is string config)
+            {
                 Serializers.Json.Populate(config, this);
-            if (Query != "")
+                SendShellInit();
+                SendQuery();
+            }
+            else if (Query != "")
                 Navigate();
             else SendShellInit();
         }
@@ -193,6 +199,7 @@ namespace RESTar
             if (AutoOptions) SendOptions(resource);
             else if (AutoGet) SafeOperation(GET);
             else SendQuery();
+            PreviousEntities = null;
         }
 
         /// <inheritdoc />
@@ -534,7 +541,7 @@ namespace RESTar
                     break;
                 case IEntities entities:
                     query = local;
-                    PreviousResultMetadata = entities;
+                    PreviousEntities = entities;
                     GetNextPageLink = entities.GetNextPageLink;
                     break;
                 default:
@@ -595,7 +602,6 @@ namespace RESTar
                 };
                 startIndex += StreamBufferSize;
             }
-
             messages.Last().Length = last;
             CurrentStreamManifest.NrOfMessages = (int) nrOfMessages;
             CurrentStreamManifest.MessagesRemaining = (int) nrOfMessages;
@@ -615,8 +621,7 @@ namespace RESTar
                         CurrentStreamManifest = new StreamManifest(tooLarge);
                         SetupStreamManifest();
                     };
-                    SendConfirmationRequest(
-                        "426: The response message is too large. Do you wish to stream the response? ");
+                    SendConfirmationRequest("426: The response message is too large. Do you wish to stream the response? ");
                     break;
                 case OK ok:
                     SendResult(ok, sw.Elapsed);
@@ -631,32 +636,41 @@ namespace RESTar
 
         private void UnsafeOperation(Method method, byte[] body = null)
         {
-            void operate()
+            void runOperation()
             {
                 WebSocket.Headers.UnsafeOverride = true;
                 SafeOperation(method, body);
             }
 
-            switch (PreviousResultMetadata?.EntityCount)
+            if (PreviousEntities == null)
             {
-                case null:
+                var result = WsEvaluate(GET, null);
+                if (result is IEntities entities)
+                    PreviousEntities = entities;
+                else
+                {
+                    SendResult(result);
+                    return;
+                }
+            }
+
+            switch (PreviousEntities.EntityCount)
+            {
                 case 0:
-                    SendBadRequest(
-                        $". No entities for {method} operation. Make a selecting request before running {method}");
+                    SendBadRequest($". No entities for to run {method} on");
                     break;
                 case 1:
-                    operate();
+                    runOperation();
                     break;
-                case var many:
+                case var multiple:
                     if (Unsafe)
                     {
-                        operate();
+                        runOperation();
                         break;
                     }
-
-                    OnConfirm = operate;
-                    SendConfirmationRequest($"This will run {method} on {many} entities in resource " +
-                                            $"'{PreviousResultMetadata.Request.Resource}'. ");
+                    OnConfirm = runOperation;
+                    SendConfirmationRequest($"This will run {method} on {multiple} entities in resource " +
+                                            $"'{PreviousEntities.Request.Resource}'. ");
                     break;
             }
         }

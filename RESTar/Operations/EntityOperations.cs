@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json.Linq;
-using RESTar.Filters;
 using RESTar.Internal;
 using RESTar.Linq;
 using RESTar.Results;
@@ -33,6 +32,7 @@ namespace RESTar.Operations
 
         private static IEnumerable<T> TrySelectFilter(IEntityRequest<T> request)
         {
+            var producer = request.EntitiesProducer;
             try
             {
                 request.EntitiesProducer = () => new T[0];
@@ -46,10 +46,15 @@ namespace RESTar.Operations
             {
                 throw new AbortedOperation(request, ErrorCodes.AbortedSelect, e);
             }
+            finally
+            {
+                request.EntitiesProducer = producer;
+            }
         }
 
         private static IEnumerable<object> TrySelectFilterProcess(IEntityRequest<T> request)
         {
+            var producer = request.EntitiesProducer;
             try
             {
                 request.EntitiesProducer = () => new T[0];
@@ -64,6 +69,10 @@ namespace RESTar.Operations
             catch (Exception e)
             {
                 throw new AbortedOperation(request, ErrorCodes.AbortedSelect, e);
+            }
+            finally
+            {
+                request.EntitiesProducer = producer;
             }
         }
 
@@ -101,7 +110,6 @@ namespace RESTar.Operations
                     var _inserter = inserter;
                     inserter = () => _inserter().InputLimit();
                 }
-
                 request.EntitiesProducer = () => inserter()?.Select(entity =>
                 {
                     (entity as IValidatable)?.Validate();
@@ -119,14 +127,12 @@ namespace RESTar.Operations
         {
             try
             {
-                var sourceSelector =
-                    request.GetSelector() ?? (() => TrySelectFilter(request)?.ToList() ?? new List<T>());
+                var sourceSelector = request.GetSelector() ?? (() => TrySelectFilter(request) ?? new List<T>());
                 if (!request.MetaConditions.Unsafe)
                 {
                     var selector = sourceSelector;
                     sourceSelector = () => selector()?.UnsafeLimit();
                 }
-
                 var updater = request.GetUpdater() ?? (_source => request.Body.PopulateTo(_source));
                 request.EntitiesProducer = () => updater(sourceSelector())?.Select(entity =>
                 {
@@ -145,14 +151,12 @@ namespace RESTar.Operations
         {
             try
             {
-                var sourceSelector =
-                    request.GetSelector() ?? (() => TrySelectFilter(request)?.ToList() ?? new List<T>());
+                var sourceSelector = request.GetSelector() ?? (() => TrySelectFilter(request) ?? new List<T>());
                 if (!request.MetaConditions.Unsafe)
                 {
                     var selector = sourceSelector;
                     sourceSelector = () => selector()?.UnsafeLimit();
                 }
-
                 request.EntitiesProducer = () => sourceSelector() ?? new T[0];
                 return request.EntityResource.Delete(request);
             }
@@ -174,8 +178,10 @@ namespace RESTar.Operations
                 case Method.GET:
                     return request =>
                     {
-                        if (!request.MetaConditions.Unsafe && request.MetaConditions.Limit == -1)
-                            request.MetaConditions.Limit = (Limit) 1000;
+                        // INFO: This code was used to add a limit of 1000 to all requests that were not explicitly marked 
+                        // as unsafe. During an evaluation period, this functionality is removed.
+                        // if (!request.MetaConditions.Unsafe && request.MetaConditions.Limit == -1)
+                        //     request.MetaConditions.Limit = (Limit) 1000;
                         var entities = TrySelectFilterProcess(request);
                         if (entities == null)
                             return MakeEntities(request, default(IEnumerable<T>));

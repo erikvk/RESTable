@@ -71,7 +71,6 @@ namespace RESTarExample
                           "This is my important binary data! I repeat: This is my important binary data! I repeat: " +
                           "This is my important binary data! I repeat: This is my important binary data!");
             }
-            stream.Seek(0, SeekOrigin.Begin);
             return (stream, "text/plain");
         }
     }

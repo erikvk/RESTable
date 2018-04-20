@@ -48,6 +48,7 @@ namespace RESTar.ContentTypeProviders
         public void SerializeEntity(object entity, Stream stream, IRequest request, out ulong entityCount)
         {
             JsonProvider.SerializeEntity(entity, stream, request, out entityCount);
+            stream.Seek(0, SeekOrigin.Begin);
             XmlSerializeJsonStream(stream);
         }
 
@@ -67,7 +68,6 @@ namespace RESTar.ContentTypeProviders
                 stream.Seek(0, SeekOrigin.Begin);
                 stream.Write(XMLHeader, 0, XMLHeader.Length);
                 xml.Save(stream);
-                stream.Seek(0, SeekOrigin.Begin);
             }
         }
 
@@ -75,7 +75,7 @@ namespace RESTar.ContentTypeProviders
         public T DeserializeEntity<T>(byte[] body) where T : class => throw new NotImplementedException();
 
         /// <inheritdoc />
-        public IEnumerable<T> DeserializeCollection<T>(byte[] body) where T : class => throw new NotImplementedException();
+        public IEnumerable<T> DeserializeCollection<T>(Stream body) where T : class => throw new NotImplementedException();
 
         /// <inheritdoc />
         public IEnumerable<T> Populate<T>(IEnumerable<T> entities, byte[] body) where T : class =>

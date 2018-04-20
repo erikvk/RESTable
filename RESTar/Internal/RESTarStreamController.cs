@@ -4,16 +4,24 @@ namespace RESTar.Internal
 {
     /// <inheritdoc />
     /// <summary>
-    /// The main stream class used for output streams from RESTar
+    /// The main stream class used for streams in RESTar. Will automatically save to disk if larger than
+    /// 16 megabytes.
     /// </summary>
-    internal class RESTarOutputStreamController : Stream
+    internal class RESTarStreamController : Stream
     {
         private const int MaxMemoryContentLength = 1 << 24;
         private bool Swapped;
-        internal Stream Stream { get; private set; }
+        private Stream Stream { get; set; }
+        internal Stream Unpack() => Stream;
+
+        internal Stream UnpackAndRewind()
+        {
+            Stream.Seek(0, SeekOrigin.Begin);
+            return Stream;
+        }
 
         /// <inheritdoc />
-        public RESTarOutputStreamController() => Stream = new MemoryStream(1024);
+        public RESTarStreamController() => Stream = new MemoryStream(1024);
 
         private void Swap()
         {

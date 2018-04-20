@@ -101,7 +101,6 @@ namespace RESTar.ContentTypeProviders
                 jwr.Formatting = _formatting;
                 serializer.Serialize(jwr, entity);
             }
-            stream.Seek(0, SeekOrigin.Begin);
             return stream;
         }
 
@@ -198,7 +197,6 @@ namespace RESTar.ContentTypeProviders
                 entityCount = jwr.ObjectsWritten;
                 swr.Write(formatter.Post);
             }
-            stream.Seek(0, SeekOrigin.Begin);
         }
 
         /// <inheritdoc />
@@ -219,7 +217,6 @@ namespace RESTar.ContentTypeProviders
                 entityCount = jwr.ObjectsWritten;
                 swr.Write(formatter.Post);
             }
-            stream.Seek(0, SeekOrigin.Begin);
         }
 
         /// <inheritdoc />
@@ -232,9 +229,9 @@ namespace RESTar.ContentTypeProviders
         }
 
         /// <inheritdoc />
-        public IEnumerable<T> DeserializeCollection<T>(byte[] body) where T : class
+        public IEnumerable<T> DeserializeCollection<T>(Stream body) where T : class
         {
-            using (var jsonReader = new JsonTextReader(new StreamReader(new MemoryStream(body), UTF8)))
+            using (var jsonReader = new JsonTextReader(new StreamReader(body, UTF8, false, 1024, true)))
             {
                 jsonReader.Read();
                 switch (jsonReader.TokenType)

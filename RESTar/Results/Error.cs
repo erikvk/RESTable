@@ -105,7 +105,7 @@ namespace RESTar.Results
         /// <inheritdoc />
         public Stream Body
         {
-            get => _body ?? (IsSerializing ? _body = new RESTarOutputStreamController() : null);
+            get => _body ?? (IsSerializing ? _body = new RESTarStreamController() : null);
             set => _body = value;
         }
 
@@ -124,8 +124,8 @@ namespace RESTar.Results
                                        ?? ProtocolController.DefaultProtocolProvider.ProtocolProvider;
                 var acceptProvider = ContentTypeController.ResolveOutputContentTypeProvider(RequestInternal, contentType);
                 result = protocolProvider.Serialize(this, acceptProvider);
-                if (result.Body is RESTarOutputStreamController rsc)
-                    result.Body = rsc.Stream;
+                if (result.Body is RESTarStreamController rsc)
+                    result.Body = rsc.UnpackAndRewind();
                 if (result.Body?.CanRead == true)
                 {
                     if (result.Body.Length == 0)

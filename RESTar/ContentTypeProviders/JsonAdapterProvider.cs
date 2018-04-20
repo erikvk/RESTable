@@ -45,14 +45,13 @@ namespace RESTar.ContentTypeProviders
         /// Include true in the isSingularEntity property when the produced JSON encodes a single 
         /// entity (as opposed to an array of objects).
         /// </summary>
-        protected abstract byte[] ProduceJson(byte[] body, out bool isSingularEntity);
+        protected abstract Stream ProduceJson(Stream stream, out bool isSingularEntity);
 
         /// <inheritdoc />
         public T DeserializeEntity<T>(byte[] body) where T : class
         {
-            var jsonbytes = ProduceJson(body, out var singular);
-            if (singular)
-                return JsonProvider.DeserializeEntity<T>(jsonbytes);
+            var jsonBytes = ProduceJson(new MemoryStream(body), out var singular).ToByteArray();
+            if (singular) return JsonProvider.DeserializeEntity<T>(jsonBytes);
             throw new InvalidInputCount();
         }
 
@@ -63,22 +62,22 @@ namespace RESTar.ContentTypeProviders
         public abstract void SerializeCollection(IEnumerable<object> entities, Stream stream, IRequest request, out ulong entityCount);
 
         /// <inheritdoc />
-        public IEnumerable<T> DeserializeCollection<T>(byte[] body) where T : class
+        public IEnumerable<T> DeserializeCollection<T>(Stream stream) where T : class
         {
-            var jsonbytes = ProduceJson(body, out var singular);
+            var jsonStream = ProduceJson(stream, out var singular);
             if (singular)
-                yield return JsonProvider.DeserializeEntity<T>(jsonbytes);
+                yield return JsonProvider.DeserializeEntity<T>(jsonStream.ToByteArray());
             else
-                foreach (var item in JsonProvider.DeserializeCollection<T>(jsonbytes))
+                foreach (var item in JsonProvider.DeserializeCollection<T>(jsonStream))
                     yield return item;
         }
 
         /// <inheritdoc />
         public IEnumerable<T> Populate<T>(IEnumerable<T> entities, byte[] body) where T : class
         {
-            var json = ProduceJson(body, out var singular);
+            var json = ProduceJson(new MemoryStream(body), out var singular);
             if (!singular) throw new InvalidInputCount();
-            return JsonProvider.Populate(entities, json);
+            return JsonProvider.Populate(entities, json.ToByteArray());
         }
     }
 }

@@ -185,6 +185,19 @@ namespace RESTar
 
         #region Other
 
+        internal static byte[] ReadExactly(this Stream stream, int count)
+        {
+            var buffer = new byte[count];
+            var offset = 0;
+            while (offset < count)
+            {
+                var read = stream.Read(buffer, offset, count - offset);
+                if (read == 0) return buffer;
+                offset += read;
+            }
+            return buffer;
+        }
+
         /// <summary>
         /// Gets the object for a Starcounter object number
         /// </summary>

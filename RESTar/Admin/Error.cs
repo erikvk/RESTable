@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Linq;
-using System.Text;
 using RESTar.Internal;
 using RESTar.Linq;
 using RESTar.Resources;
@@ -91,9 +90,7 @@ namespace RESTar.Admin
                                (resource?.Alias != null ? $" ({resource.Alias})" : ""),
                 Method = request.Method,
                 ErrorCode = error.ErrorCode,
-                Body = request.Body.HasContent
-                    ? Encoding.UTF8.GetString(request.Body.Bytes.Take(5000).ToArray())
-                    : null,
+                Body = request.Body.ToString(),
                 StackTrace = stackTrace.Length > MaxStringLength ? stackTrace.Substring(0, MaxStringLength) : stackTrace,
                 Message = totalMessage.Length > MaxStringLength ? totalMessage.Substring(0, MaxStringLength) : totalMessage,
                 Uri = uri,

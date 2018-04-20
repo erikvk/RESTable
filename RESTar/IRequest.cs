@@ -17,7 +17,7 @@ namespace RESTar
     internal interface IEntityRequest<T> : IRequestInternal, IRequest<T> where T : class
     {
         IEntityResource<T> EntityResource { get; }
-        Func<IEnumerable<T>> EntitiesProducer { set; }
+        Func<IEnumerable<T>> EntitiesProducer { get; set; }
         Func<IEnumerable<T>> GetSelector();
         Func<IEnumerable<T>, IEnumerable<T>> GetUpdater();
     }

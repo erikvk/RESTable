@@ -20,7 +20,7 @@ namespace RESTarExample
         public string ApiKey { private get; set; }
         public string Service { get; set; } = "http://localhost:9000/rest";
         public string Body { get; set; }
-        public Headers Headers { get; set; }
+        public Headers Headers { get; set; } = new Headers();
 
         public void HandleTextInput(string input)
         {

@@ -102,8 +102,7 @@ namespace RESTar
                 WebSocket.Context = this;
             }
             var parameters = new RequestParameters(this, method, uri, body, headers);
-            if (!parameters.IsValid)
-                return new InvalidParametersRequest(parameters);
+            if (!parameters.IsValid) return new InvalidParametersRequest(parameters);
             return Construct((dynamic) parameters.IResource, parameters);
         }
 

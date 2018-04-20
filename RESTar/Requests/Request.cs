@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Net;
 using RESTar.Logging;
@@ -26,7 +27,7 @@ namespace RESTar.Requests
         public ICollection<string> Cookies => _cookies ?? (_cookies = new List<string>());
         private Exception Error { get; }
         public bool IsValid => Error == null;
-        public Func<IEnumerable<T>> EntitiesProducer { private get; set; }
+        public Func<IEnumerable<T>> EntitiesProducer { get; set; }
         public Func<IEnumerable<T>> Selector { private get; set; }
         public Func<IEnumerable<T>, IEnumerable<T>> Updater { private get; set; }
         public Func<IEnumerable<T>, IEnumerable<T>> GetUpdater() => Updater;
@@ -62,15 +63,21 @@ namespace RESTar.Requests
 
         public void SetBody(object content)
         {
-            var bytes = content != null ? Serializers.Json.SerializeToBytes(content) : new byte[0];
+            var stream = content != null ? Serializers.Json.SerializeStream(content) : new MemoryStream();
             var contentType = Serializers.Json.ContentType;
-            Body = new Body(bytes, contentType, CachedProtocolProvider);
+            Body = new Body(stream, contentType, CachedProtocolProvider);
         }
 
         public void SetBody(byte[] bytes, ContentType? contentType = null)
         {
             var _contentType = contentType ?? Headers.ContentType ?? CachedProtocolProvider.DefaultInputProvider.ContentType;
-            Body = new Body(bytes, _contentType, CachedProtocolProvider);
+            Body = new Body(new MemoryStream(bytes), _contentType, CachedProtocolProvider);
+        }
+
+        public void SetBody(Stream stream, ContentType? contentType = null)
+        {
+            var _contentType = contentType ?? Headers.ContentType ?? CachedProtocolProvider.DefaultInputProvider.ContentType;
+            Body = new Body(stream, _contentType, CachedProtocolProvider);
         }
 
         public IUriComponents UriComponents => new UriComponents
@@ -269,43 +276,41 @@ namespace RESTar.Requests
                     case DataConfig.Client:
                         if (!Parameters.HasBody)
                             return;
-                        Body = new Body(Parameters.BodyBytes, Headers.ContentType ?? defaultContentType, CachedProtocolProvider);
+                        Body = new Body(new MemoryStream(Parameters.BodyBytes), Headers.ContentType ?? defaultContentType, CachedProtocolProvider);
                         break;
                     case DataConfig.External:
                         try
                         {
-                            var sourceParameters = new HeaderRequestParameters(Headers.Source);
-                            if (sourceParameters.Method != GET)
+                            var source = new HeaderRequestParameters(Headers.Source);
+                            if (source.Method != GET)
                                 throw new InvalidSyntax(InvalidSource, "Only GET is allowed in Source headers");
-                            if (sourceParameters.IsInternal)
+
+                            if (source.IsInternal)
                             {
-                                var result = Context.CreateRequest(sourceParameters.Method, sourceParameters.URI, null, sourceParameters.Headers)
-                                    .Result;
-                                if (!(result is IEntities))
-                                    throw new InvalidExternalSource(sourceParameters.URI, result.LogMessage);
-                                if (result is IEntities<T> entitiesOfSameType)
-                                    Selector = () => entitiesOfSameType;
-                                else
-                                {
-                                    var serialized = (IEntities) result.Serialize();
-                                    Body = new Body
-                                    (
-                                        bytes: serialized.Body.ToByteArray(),
-                                        contentType: serialized.Headers.ContentType ?? CachedProtocolProvider.DefaultInputProvider.ContentType,
-                                        protocolProvider: CachedProtocolProvider
-                                    );
-                                }
-                                break;
+                                var result = Context.CreateRequest(source.Method, source.URI, null, source.Headers).Result;
+                                if (!(result is IEntities)) throw new InvalidExternalSource(source.URI, result.LogMessage);
+                                var serialized = (IEntities) result.Serialize();
+                                Body = new Body
+                                (
+                                    stream: serialized.Body,
+                                    contentType: serialized.Headers.ContentType ?? CachedProtocolProvider.DefaultInputProvider.ContentType,
+                                    protocolProvider: CachedProtocolProvider
+                                );
                             }
-                            if (sourceParameters.Headers.Accept == null)
-                                sourceParameters.Headers.Accept = defaultContentType;
-                            var request = new HttpRequest(this, sourceParameters, null);
-                            var response = request.GetResponse() ?? throw new InvalidExternalSource(sourceParameters.URI, "No response");
-                            if (response.StatusCode >= HttpStatusCode.BadRequest)
-                                throw new InvalidExternalSource(sourceParameters.URI, response.LogMessage);
-                            if (response.Body.CanSeek && response.Body.Length == 0)
-                                throw new InvalidExternalSource(sourceParameters.URI, "Response was empty");
-                            Body = new Body(response.Body.ToByteArray(), response.Headers.ContentType ?? defaultContentType, CachedProtocolProvider);
+
+                            else
+                            {
+                                if (source.Headers.Accept == null)
+                                    source.Headers.Accept = defaultContentType;
+                                var request = new HttpRequest(this, source, null);
+                                var response = request.GetResponse() ?? throw new InvalidExternalSource(source.URI, "No response");
+                                if (response.StatusCode >= HttpStatusCode.BadRequest)
+                                    throw new InvalidExternalSource(source.URI, response.LogMessage);
+                                if (response.Body.CanSeek && response.Body.Length == 0)
+                                    throw new InvalidExternalSource(source.URI, "Response was empty");
+                                Body = new Body(response.Body, response.Headers.ContentType ?? defaultContentType, CachedProtocolProvider);
+                            }
+
                             break;
                         }
                         catch (HttpRequestException re)

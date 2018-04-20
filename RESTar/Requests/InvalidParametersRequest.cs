@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using RESTar.Internal;
 using RESTar.Logging;
 using RESTar.Resources;
@@ -67,7 +68,7 @@ namespace RESTar.Requests
             Method = parameters.Method;
             Body = new Body
             (
-                bytes: parameters.BodyBytes,
+                stream: new MemoryStream(parameters.BodyBytes),
                 contentType: Headers.ContentType
                              ?? CachedProtocolProvider?.DefaultInputProvider.ContentType
                              ?? Serialization.Serializers.Json.ContentType,

@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Threading.Tasks;
 using RESTar.Internal;
 using RESTar.Linq;
@@ -31,15 +32,21 @@ namespace RESTar.Requests
 
         public void SetBody(object content)
         {
-            var bytes = content != null ? Serializers.Json.SerializeToBytes(content) : new byte[0];
+            var stream = content != null ? Serializers.Json.SerializeStream(content) : new MemoryStream();
             var contentType = Serializers.Json.ContentType;
-            Body = new Body(bytes, contentType, CachedProtocolProvider);
+            Body = new Body(stream, contentType, CachedProtocolProvider);
         }
 
         public void SetBody(byte[] bytes, ContentType? contentType = null)
         {
             var _contentType = contentType ?? Headers.ContentType ?? CachedProtocolProvider.DefaultInputProvider.ContentType;
-            Body = new Body(bytes, _contentType, CachedProtocolProvider);
+            Body = new Body(new MemoryStream(bytes), _contentType, CachedProtocolProvider);
+        }
+
+        public void SetBody(Stream stream, ContentType? contentType = null)
+        {
+            var _contentType = contentType ?? Headers.ContentType ?? CachedProtocolProvider.DefaultInputProvider.ContentType;
+            Body = new Body(stream, _contentType, CachedProtocolProvider);
         }
 
         public IResource Resource => RemoteResource;
@@ -65,11 +72,14 @@ namespace RESTar.Requests
                     case Method.PATCH:
                     case Method.PUT:
                         if (Body.HasContent)
-                            message.Content = new ByteArrayContent(Body.Bytes);
+                        {
+                            message.Content = new StreamContent(Body.Stream);
+                            message.Content.Headers.ContentType = MediaTypeHeaderValue.Parse(Headers.ContentType.ToString());
+                        }
                         break;
                 }
                 Headers.Metadata = "full";
-                Headers.Accept = ContentType.JSON;
+                Headers.ContentType = null;
                 Headers.ForEach(header => message.Headers.Add(header.Key, header.Value));
                 var response = await HttpClient.SendAsync(message);
                 var responseHeaders = new Headers();
@@ -84,10 +94,9 @@ namespace RESTar.Requests
                 var stream = default(Stream);
                 if (response.Content != null)
                 {
-                    var streamController = new RESTarOutputStreamController();
+                    var streamController = new RESTarStreamController();
                     await response.Content.CopyToAsync(streamController);
-                    stream = streamController.Stream;
-                    stream.Seek(0, SeekOrigin.Begin);
+                    stream = streamController.UnpackAndRewind();
                 }
 
                 IResult getResult()
@@ -145,7 +154,7 @@ namespace RESTar.Requests
         public CachedProtocolProvider CachedProtocolProvider { get; }
 
         public LogEventType LogEventType { get; }
-        public string LogMessage => $"{Method} {URI}{(Body.HasContent ? $" ({Body.Bytes.Length} bytes)" : "")}";
+        public string LogMessage => $"{Method} {URI}{Body.LengthLogString}";
         public string LogContent => Body.ToString();
         public string HeadersStringCache { get; set; }
         public bool ExcludeHeaders { get; }
