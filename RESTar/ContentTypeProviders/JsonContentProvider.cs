@@ -220,10 +220,9 @@ namespace RESTar.ContentTypeProviders
         }
 
         /// <inheritdoc />
-        public T DeserializeEntity<T>(byte[] body) where T : class
+        public T DeserializeEntity<T>(Stream stream) where T : class
         {
-            using (var jsonStream = new MemoryStream(body))
-            using (var streamReader = new StreamReader(jsonStream, UTF8))
+            using (var streamReader = new StreamReader(stream, UTF8))
             using (var jsonReader = new JsonTextReader(streamReader))
                 return Serializer.Deserialize<T>(jsonReader);
         }

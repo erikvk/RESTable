@@ -46,7 +46,7 @@ namespace RESTar.Admin
                 Reflection.Dynamic.TypeCache.TermCache
                     .Where(pair => pair.Key.Type == e.Type)
                     .Select(pair => pair.Key).ToList()
-                    .ForEach(key => Reflection.Dynamic.TypeCache.TermCache.TryRemove(key, out var _));
+                    .ForEach(key => Reflection.Dynamic.TypeCache.TermCache.TryRemove(key, out _));
                 count += 1;
             });
             return count;

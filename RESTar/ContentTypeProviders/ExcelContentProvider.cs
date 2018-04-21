@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using ExcelDataReader;
-using RESTar.Internal;
 using RESTar.Serialization.NativeProtocol;
 using static System.Linq.Enumerable;
 
@@ -61,11 +60,10 @@ namespace RESTar.ContentTypeProviders
         }
 
         /// <inheritdoc />
-        protected override Stream ProduceJson(Stream excelStream, out bool singular)
+        protected override void ProduceJson(Stream excelStream, Stream jsonStream, out bool singular)
         {
             try
             {
-                var jsonStream = new RESTarStreamController();
                 using (var swr = new StreamWriter(jsonStream, UTF8, 1024, true))
                 using (var jwr = new RESTarFromExcelJsonWriter(swr))
                 using (var reader = ExcelReaderFactory.CreateOpenXmlReader(excelStream))
@@ -90,7 +88,6 @@ namespace RESTar.ContentTypeProviders
                     singular = objectCount == 1;
                     jwr.WriteEndArray();
                 }
-                return jsonStream.UnpackAndRewind();
             }
             catch (Exception e)
             {

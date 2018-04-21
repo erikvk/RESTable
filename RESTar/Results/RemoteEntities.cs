@@ -2,9 +2,8 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using RESTar.ContentTypeProviders;
+using RESTar.Internal;
 using RESTar.Requests;
 
 namespace RESTar.Results
@@ -20,6 +19,8 @@ namespace RESTar.Results
         public ulong EntityCount { get; set; }
         public Type EntityType { get; }
         public bool IsPaged => EntityCount > 0 && (long) EntityCount == Request.MetaConditions.Limit;
+        private IRequestInternal RequestInternal { get; }
+        private IContentTypeProvider ContentTypeProvider { get; }
 
         /// <inheritdoc />
         public IUriComponents GetNextPageLink() => this.MakeNextPageLink(-1);
@@ -29,44 +30,39 @@ namespace RESTar.Results
 
         public void SetContentDisposition(string extension)
         {
-            Headers["Content-Disposition"] = $"attachment;filename={Request.Resource}_{DateTime.Now:yyMMddHHmmssfff}{extension}";
+            Headers["Content-Disposition"] = $"attachment; filename={Request.Resource}_{DateTime.Now:yyMMddHHmmssfff}{extension}";
         }
 
-        public override IEntities<T1> ToEntities<T1>()
-        {
-            Body.Seek(0, SeekOrigin.Begin);
-            return new DeserialzedTypeEnumerable<T1>(Request, Body, this);
-        }
+        public override IEntities<T1> ToEntities<T1>() => new DeserializedTypeEnumerable<T1>(RequestInternal, Body, this, ContentTypeProvider);
 
-        public IEnumerator<JObject> GetEnumerator()
-        {
-            Body.Seek(0, SeekOrigin.Begin);
-            return new JsonStreamEnumerator<JObject>(Body);
-        }
+        public IEnumerator<JObject> GetEnumerator() => new StreamEnumerator<JObject>(Body, ContentTypeProvider);
 
-        public RemoteEntities(IRequest request, Stream jsonStream, ulong entityCount) : base(request)
+        internal RemoteEntities(IRequestInternal request, Stream jsonStream, ulong entityCount) : base(request)
         {
+            RequestInternal = request;
             Body = jsonStream;
             EntityType = typeof(JObject);
             EntityCount = entityCount;
             IsSerialized = true;
+            ContentTypeProvider = ContentTypeController.ResolveOutputContentTypeProvider(RequestInternal, null);
         }
     }
 
-    internal class DeserialzedTypeEnumerable<T> : Content, IEntities<T> where T : class
+    internal class DeserializedTypeEnumerable<T> : Content, IEntities<T> where T : class
     {
-        private readonly Stream JsonStream;
+        private readonly Stream Stream;
         private readonly IEntities Entities;
+        private readonly IContentTypeProvider ContentTypeProvider;
 
-
-        public DeserialzedTypeEnumerable(IRequest request, Stream jsonStream, IEntities entities) : base(request)
+        public DeserializedTypeEnumerable(IRequest request, Stream stream, IEntities entities, IContentTypeProvider contentTypeProvider) : base(request)
         {
-            JsonStream = jsonStream;
+            Stream = stream;
             Entities = entities;
+            ContentTypeProvider = contentTypeProvider;
         }
 
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-        public IEnumerator<T> GetEnumerator() => new JsonStreamEnumerator<T>(JsonStream);
+        public IEnumerator<T> GetEnumerator() => new StreamEnumerator<T>(Stream, ContentTypeProvider);
 
         #region Entities bindings
 
@@ -85,55 +81,20 @@ namespace RESTar.Results
         #endregion
     }
 
-    internal class JsonStreamEnumerator<T> : IEnumerator<T> where T : class
+    internal class StreamEnumerator<T> : IEnumerator<T> where T : class
     {
-        private readonly Stream JsonStream;
-        private readonly JsonReader JsonReader;
+        private readonly IEnumerator<T> Enumerator;
 
-        public JsonStreamEnumerator(Stream jsonStream)
+        public StreamEnumerator(Stream stream, IContentTypeProvider contentTypeProvider)
         {
-            JsonStream = jsonStream;
-            JsonReader = new JsonTextReader(new StreamReader(JsonStream, RESTarConfig.DefaultEncoding)) {CloseInput = true};
-            JsonReader.Read();
+            var enumerable = contentTypeProvider.DeserializeCollection<T>(stream);
+            Enumerator = enumerable.GetEnumerator();
         }
 
-        private JsonStreamEnumerator(Stream jsonStream, JsonReader jsonReader)
-        {
-            JsonStream = jsonStream;
-            JsonReader = jsonReader;
-        }
-
-        public void Dispose() => JsonReader.Close();
-
-        public bool MoveNext()
-        {
-            switch (JsonReader.TokenType)
-            {
-                case JsonToken.None:
-                    JsonReader.Read();
-                    JsonReader.Read();
-                    break;
-                case JsonToken.EndObject:
-                case JsonToken.StartArray:
-                    JsonReader.Read();
-                    if (JsonReader.TokenType == JsonToken.EndArray)
-                        return false;
-                    break;
-                case var other: throw new JsonReaderException($"Unexpected JSON token: {other}. Expected object or array of objects.");
-            }
-
-            Current = JsonContentProvider.Serializer.Deserialize<T>(JsonReader);
-            return true;
-        }
-
-        public void Reset()
-        {
-            JsonStream.Seek(0, SeekOrigin.Begin);
-            Current = null;
-        }
-
+        public void Dispose() => Enumerator.Dispose();
+        public bool MoveNext() => Enumerator.MoveNext();
+        public void Reset() => Enumerator.Reset();
         object IEnumerator.Current => Current;
-
-        public T Current { get; private set; }
+        public T Current => Enumerator.Current;
     }
 }

@@ -31,13 +31,15 @@ namespace RESTar.Sc
                     if (!client.TryAuthenticate(ref uri, headers, out var error))
                         return ToResponse(error);
                     var context = new ScContext(client, scRequest);
-                    var request = context.CreateRequest(method, uri, scRequest.BodyBytes, headers);
-                    switch (request.Result.Serialize())
+                    using (var request = context.CreateRequest(method, uri, scRequest.BodyBytes, headers))
                     {
-                        case WebSocketUpgradeSuccessful _: return HandlerStatus.Handled;
-                        case var result:
-                            Console.Log(request, result);
-                            return ToResponse(result);
+                        switch (request.Result.Serialize())
+                        {
+                            case WebSocketUpgradeSuccessful _: return HandlerStatus.Handled;
+                            case var result:
+                                Console.Log(request, result);
+                                return ToResponse(result);
+                        }
                     }
                 }
             ));

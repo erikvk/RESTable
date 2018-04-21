@@ -175,7 +175,7 @@ namespace RESTar.Reflection.Dynamic
         /// <summary>
         /// Returns the value that this term denotes for a given target object
         /// </summary>
-        public dynamic Evaluate(object target) => Evaluate(target, out var _);
+        public dynamic Evaluate(object target) => Evaluate(target, out _);
 
         /// <summary>
         /// Returns the value that this term denotes for a given target object as well as

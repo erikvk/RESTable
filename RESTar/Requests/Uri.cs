@@ -99,7 +99,7 @@ namespace RESTar.Requests
         internal static URI Parse(string uriString)
         {
             var context = new InternalContext();
-            var uri = ParseInternal(uriString, false, context, out var _);
+            var uri = ParseInternal(uriString, false, context, out _);
             if (uri.HasError) throw uri.Error;
             return uri;
         }

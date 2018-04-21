@@ -72,7 +72,7 @@ namespace RESTar.ContentTypeProviders
         }
 
         /// <inheritdoc />
-        public T DeserializeEntity<T>(byte[] body) where T : class => throw new NotImplementedException();
+        public T DeserializeEntity<T>(Stream stream) where T : class => throw new NotImplementedException();
 
         /// <inheritdoc />
         public IEnumerable<T> DeserializeCollection<T>(Stream body) where T : class => throw new NotImplementedException();

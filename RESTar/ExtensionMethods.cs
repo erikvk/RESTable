@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Data;
+using System.Diagnostics.Contracts;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -16,6 +17,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using RESTar.ContentTypeProviders;
 using RESTar.Filters;
+using RESTar.Internal;
 using RESTar.Reflection.Dynamic;
 using RESTar.Linq;
 using RESTar.Operations;
@@ -673,6 +675,33 @@ namespace RESTar
             return error;
         }
 
+        [Pure]
+        internal static ISerializedResult Finalize(this ISerializedResult result, IContentTypeProvider acceptProvider)
+        {
+            if (result.Body is RESTarStreamController rsc)
+                result.Body = rsc.Unpack();
+            if (result.Body?.CanRead == true)
+            {
+                if (result.Body.CanSeek)
+                {
+                    if (result.Body.Length == 0)
+                    {
+                        result.Body.Dispose();
+                        result.Body = null;
+                    }
+                    else result.Body.Seek(0, SeekOrigin.Begin);
+                }
+            }
+            else
+            {
+                result.Body?.Dispose();
+                result.Body = null;
+            }
+            if (result.Body != null && result.Headers.ContentType == null)
+                result.Headers.ContentType = acceptProvider.ContentType;
+            return result;
+        }
+
         internal static IUriComponents MakeNextPageLink<T>(this IEntities<T> entities, int count) where T : class
         {
             var components = new UriComponents(entities.Request.UriComponents);
@@ -813,6 +842,7 @@ namespace RESTar
             {
                 case null: return null;
                 case MemoryStream _ms: return _ms.ToArray();
+                case RESTarStreamController rsc: return rsc.Unpack().ToByteArray();
                 default:
                     var ms = new MemoryStream();
                     using (stream) stream.CopyTo(ms);

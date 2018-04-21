@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using RESTar.Internal;
 using RESTar.Results;
 
 namespace RESTar.ContentTypeProviders
@@ -41,17 +42,21 @@ namespace RESTar.ContentTypeProviders
         public abstract string ContentDispositionFileExtension { get; }
 
         /// <summary>
-        /// Produces JSON that is then used to deserialize to entities of the resource type.
+        /// Produces JSON that is then used to deserialize to entities of the resource type. The
+        /// input stream contains data from the client, in the format of the content type provider.
+        /// Read this data and write corresponding JSON to the given output stream.
         /// Include true in the isSingularEntity property when the produced JSON encodes a single 
-        /// entity (as opposed to an array of objects).
+        /// entity (as opposed to an array of entities).
         /// </summary>
-        protected abstract Stream ProduceJson(Stream stream, out bool isSingularEntity);
+        protected abstract void ProduceJson(Stream inputStream, Stream outputStream, out bool isSingularEntity);
 
         /// <inheritdoc />
-        public T DeserializeEntity<T>(byte[] body) where T : class
+        public T DeserializeEntity<T>(Stream stream) where T : class
         {
-            var jsonBytes = ProduceJson(new MemoryStream(body), out var singular).ToByteArray();
-            if (singular) return JsonProvider.DeserializeEntity<T>(jsonBytes);
+            var streamController = new RESTarStreamController();
+            ProduceJson(stream, streamController, out var singular);
+            var jsonStream = streamController.UnpackAndRewind();
+            if (singular) return JsonProvider.DeserializeEntity<T>(jsonStream);
             throw new InvalidInputCount();
         }
 
@@ -64,9 +69,11 @@ namespace RESTar.ContentTypeProviders
         /// <inheritdoc />
         public IEnumerable<T> DeserializeCollection<T>(Stream stream) where T : class
         {
-            var jsonStream = ProduceJson(stream, out var singular);
+            var streamController = new RESTarStreamController();
+            ProduceJson(stream, streamController, out var singular);
+            var jsonStream = streamController.UnpackAndRewind();
             if (singular)
-                yield return JsonProvider.DeserializeEntity<T>(jsonStream.ToByteArray());
+                yield return JsonProvider.DeserializeEntity<T>(jsonStream);
             else
                 foreach (var item in JsonProvider.DeserializeCollection<T>(jsonStream))
                     yield return item;
@@ -75,9 +82,11 @@ namespace RESTar.ContentTypeProviders
         /// <inheritdoc />
         public IEnumerable<T> Populate<T>(IEnumerable<T> entities, byte[] body) where T : class
         {
-            var json = ProduceJson(new MemoryStream(body), out var singular);
+            var streamController = new RESTarStreamController();
+            ProduceJson(new MemoryStream(body), streamController, out var singular);
+            var jsonStream = streamController.UnpackAndRewind();
             if (!singular) throw new InvalidInputCount();
-            return JsonProvider.Populate(entities, json.ToByteArray());
+            return JsonProvider.Populate(entities, jsonStream.ToByteArray());
         }
     }
 }

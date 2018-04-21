@@ -100,7 +100,7 @@ namespace RESTar.Reflection.Dynamic
             HiddenIfNull = hiddenIfNull;
             IsEnum = isEnum;
             AllowedConditionOperators = allowedConditionOperators;
-            Nullable = !type.IsValueType || type.IsNullable(out var _) || hidden;
+            Nullable = !type.IsValueType || type.IsNullable(out _) || hidden;
             Getter = getter;
             Setter = setter;
         }
@@ -124,7 +124,7 @@ namespace RESTar.Reflection.Dynamic
             Hidden = memberAttribute?.Hidden == true;
             HiddenIfNull = memberAttribute?.HiddenIfNull == true || jsonAttribute?.NullValueHandling == Ignore;
             AllowedConditionOperators = memberAttribute?.AllowedOperators ?? Operators.All;
-            Nullable = !p.PropertyType.IsValueType || p.PropertyType.IsNullable(out var _) || Hidden;
+            Nullable = !p.PropertyType.IsValueType || p.PropertyType.IsNullable(out _) || Hidden;
             IsEnum = p.PropertyType.IsEnum;
             if (memberAttribute?.ExcelReducerName != null)
                 ExcelReducer = MakeExcelReducer(memberAttribute.ExcelReducerName, p);

@@ -62,7 +62,9 @@ namespace RESTar.WebSockets
         /// <inheritdoc />
         public void SendJson(object i, bool at = false, bool? p = null, bool ig = false) => WebSocket.SendJson(i, at, p, ig);
 
-        public void SendResult(ISerializedResult r, TimeSpan? t = null, bool w = false) => WebSocket.SendResult(r, t, w);
+        /// <inheritdoc />
+        public void SendResult(ISerializedResult r, TimeSpan? t = null, bool w = false, bool d = true) => WebSocket.SendResult(r, t, w, d);
+
         /// <inheritdoc />
         public void SendException(Exception exception) => WebSocket.SendException(exception);
 

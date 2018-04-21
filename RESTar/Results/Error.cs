@@ -106,7 +106,11 @@ namespace RESTar.Results
         public Stream Body
         {
             get => _body ?? (IsSerializing ? _body = new RESTarStreamController() : null);
-            set => _body = value;
+            set
+            {
+                _body?.Dispose();
+                _body = value;
+            }
         }
 
         /// <inheritdoc />
@@ -123,21 +127,7 @@ namespace RESTar.Results
                 var protocolProvider = RequestInternal.CachedProtocolProvider.ProtocolProvider
                                        ?? ProtocolController.DefaultProtocolProvider.ProtocolProvider;
                 var acceptProvider = ContentTypeController.ResolveOutputContentTypeProvider(RequestInternal, contentType);
-                result = protocolProvider.Serialize(this, acceptProvider);
-                if (result.Body is RESTarStreamController rsc)
-                    result.Body = rsc.UnpackAndRewind();
-                if (result.Body?.CanRead == true)
-                {
-                    if (result.Body.Length == 0)
-                    {
-                        result.Body.Dispose();
-                        result.Body = null;
-                    }
-                    else if (Headers.ContentType == null)
-                        Headers.ContentType = acceptProvider.ContentType;
-                }
-                else result.Body = null;
-                return result;
+                return protocolProvider.Serialize(this, acceptProvider).Finalize(acceptProvider);
             }
             catch (Exception exception)
             {
@@ -165,5 +155,8 @@ namespace RESTar.Results
 
         /// <inheritdoc />
         public override string ToString() => LogMessage;
+
+        /// <inheritdoc />
+        public void Dispose() => Body?.Dispose();
     }
 }

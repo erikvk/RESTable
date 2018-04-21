@@ -34,19 +34,19 @@ namespace RESTar.Requests
         {
             var stream = content != null ? Serializers.Json.SerializeStream(content) : new MemoryStream();
             var contentType = Serializers.Json.ContentType;
-            Body = new Body(stream, contentType, CachedProtocolProvider);
+            Body = new Body(new RESTarStreamController(stream), contentType, CachedProtocolProvider);
         }
 
         public void SetBody(byte[] bytes, ContentType? contentType = null)
         {
             var _contentType = contentType ?? Headers.ContentType ?? CachedProtocolProvider.DefaultInputProvider.ContentType;
-            Body = new Body(new MemoryStream(bytes), _contentType, CachedProtocolProvider);
+            Body = new Body(new RESTarStreamController(bytes), _contentType, CachedProtocolProvider);
         }
 
         public void SetBody(Stream stream, ContentType? contentType = null)
         {
             var _contentType = contentType ?? Headers.ContentType ?? CachedProtocolProvider.DefaultInputProvider.ContentType;
-            Body = new Body(stream, _contentType, CachedProtocolProvider);
+            Body = new Body(new RESTarStreamController(stream), _contentType, CachedProtocolProvider);
         }
 
         public IResource Resource => RemoteResource;
@@ -138,7 +138,6 @@ namespace RESTar.Requests
                 if (result is Error error)
                     result = error.AsResultOf(this);
                 responseHeaders.ForEach(result.Headers.Put);
-                sw.Stop();
                 TimeElapsed = sw.Elapsed;
                 return result;
             }
@@ -178,5 +177,7 @@ namespace RESTar.Requests
             if (body?.Length > 0)
                 SetBody(body, Headers.ContentType);
         }
+
+        public void Dispose() => Body.Dispose();
     }
 }

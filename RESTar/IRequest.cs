@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using RESTar.Internal;
 using RESTar.Logging;
 using RESTar.Requests;
@@ -77,7 +78,7 @@ namespace RESTar
     /// <summary>
     /// A non-generic common interface for all request classes used in RESTar
     /// </summary>
-    public interface IRequest : ITraceable, ILogable
+    public interface IRequest : ITraceable, ILogable, IDisposable
     {
         /// <summary>
         /// The method of the request
@@ -121,6 +122,13 @@ namespace RESTar
         /// <param name="bytes">The bytes that constitute the body</param>
         /// <param name="contentType"></param>
         void SetBody(byte[] bytes, ContentType? contentType = null);
+
+        /// <summary>
+        /// Assigns a new body from a stream and optional content type
+        /// </summary>
+        /// <param name="stream">The stream that contains the body</param>
+        /// <param name="contentType"></param>
+        void SetBody(Stream stream, ContentType? contentType = null);
 
         /// <summary>
         /// To include additional HTTP headers in the response, add them to 

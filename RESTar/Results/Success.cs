@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
+using RESTar.Internal;
 using RESTar.Logging;
 using RESTar.Requests;
 
@@ -83,5 +84,13 @@ namespace RESTar.Results
 
         /// <inheritdoc />
         public virtual string Metadata => $"{GetType().Name};;";
+
+        /// <inheritdoc />
+        public void Dispose()
+        {
+            if (Body is RESTarStreamController rsc)
+                rsc.CanClose = true;
+            Body?.Dispose();
+        }
     }
 }

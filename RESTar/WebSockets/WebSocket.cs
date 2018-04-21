@@ -236,36 +236,43 @@ namespace RESTar.WebSockets
         }
 
         /// <inheritdoc />
-        public void SendResult(ISerializedResult result, TimeSpan? timeElapsed = null, bool writeHeaders = false)
+        public void SendResult(ISerializedResult result, TimeSpan? timeElapsed = null, bool writeHeaders = false, bool disposeResult = true)
         {
-            switch (Status)
+            try
             {
-                case WebSocketStatus.Open: break;
-                case var closed:
-                    throw new InvalidOperationException($"Unable to send results to a WebSocket with status '{closed}'");
-            }
-            if (result is WebSocketUpgradeSuccessful) return;
+                switch (Status)
+                {
+                    case WebSocketStatus.Open: break;
+                    case var closed:
+                        throw new InvalidOperationException($"Unable to send results to a WebSocket with status '{closed}'");
+                }
+                if (result is WebSocketUpgradeSuccessful) return;
 
-            void sendStatus()
+                void sendStatus()
+                {
+                    var info = result.Headers.Info;
+                    var errorInfo = result.Headers.Error;
+                    var timeInfo = "";
+                    if (timeElapsed != null)
+                        timeInfo = $" ({timeElapsed.Value.TotalMilliseconds} ms)";
+                    var tail = "";
+                    if (info != null)
+                        tail += $". {info}";
+                    if (errorInfo != null)
+                        tail += $" (see {errorInfo})";
+                    _SendText($"{result.StatusCode.ToCode()}: {result.StatusDescription}{timeInfo}{tail}");
+                }
+
+                sendStatus();
+                if (writeHeaders)
+                    SendJson(result.Headers, true);
+                if (result.Body != null && (!result.Body.CanSeek || result.Body.Length > 0))
+                    SendBinary(result.Body);
+            }
+            finally
             {
-                var info = result.Headers.Info;
-                var errorInfo = result.Headers.Error;
-                var timeInfo = "";
-                if (timeElapsed != null)
-                    timeInfo = $" ({timeElapsed.Value.TotalMilliseconds} ms)";
-                var tail = "";
-                if (info != null)
-                    tail += $". {info}";
-                if (errorInfo != null)
-                    tail += $" (see {errorInfo})";
-                _SendText($"{result.StatusCode.ToCode()}: {result.StatusDescription}{timeInfo}{tail}");
+                if (disposeResult) result.Dispose();
             }
-
-            sendStatus();
-            if (writeHeaders)
-                SendJson(result.Headers, true);
-            if (result.Body != null && (!result.Body.CanSeek || result.Body.Length > 0))
-                SendBinary(result.Body);
         }
 
         /// <inheritdoc />

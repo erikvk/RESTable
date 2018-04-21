@@ -106,6 +106,7 @@
     <Compile Include="Internal\DefaultProtocolProvider.cs" />
     <Compile Include="Internal\RemoteContext.cs" />
     <Compile Include="InvalidBinaryDeclarationException.cs" />
+    <Compile Include="IResult.cs" />
     <Compile Include="Operations\IAuthenticatable.cs" />
     <Compile Include="Operations\ICounter.cs" />
     <Compile Include="Operations\IDeleter.cs" />

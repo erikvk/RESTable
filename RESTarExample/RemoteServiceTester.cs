@@ -1,9 +1,13 @@
 ﻿using System;
 using System.Text;
+using Newtonsoft.Json;
 using RESTar;
 using RESTar.Requests;
+using RESTar.Results;
 
 #pragma warning disable 1591
+
+// ReSharper disable All
 
 namespace RESTarExample
 {
@@ -31,8 +35,16 @@ namespace RESTarExample
                     var context = Context.Remote(Service, ApiKey);
                     var body = Body?.Length > 0 ? Encoding.UTF8.GetBytes(Body) : null;
                     var request = context.CreateRequest(method, tail, body, Headers);
-                    var res = request.Result.Serialize();
-                    WebSocket.SendResult(res, res.TimeElapsed, true);
+                    // var res = request.Result.Serialize();
+                    // WebSocket.SendResult(res, res.TimeElapsed, true);
+
+                    var result = request.Result;
+                    foreach (var entity in result as IEntities)
+                    {
+                        var json = JsonConvert.SerializeObject(entity);
+                    }
+                    var ser = result.Serialize();
+
                     break;
                 case "BODY":
                     Body = tail;
@@ -43,9 +55,8 @@ namespace RESTarExample
                 case "APIKEY":
                     ApiKey = tail;
                     break;
-                case var _:
-                    var (name, value) = tail.TSplit(' ');
-                    Headers[name] = value;
+                case var name:
+                    Headers[name] = tail;
                     WebSocket.SendJson(Headers);
                     break;
             }

@@ -22,7 +22,7 @@ namespace RESTar.Reflection.Dynamic
             if (fieldInfo.IsInitOnly)
                 Writable = false;
             Type = fieldInfo.FieldType;
-            Nullable = !fieldInfo.FieldType.IsValueType || fieldInfo.FieldType.IsNullable(out var _);
+            Nullable = !fieldInfo.FieldType.IsValueType || fieldInfo.FieldType.IsNullable(out _);
             IsEnum = fieldInfo.FieldType.IsEnum;
         }
     }

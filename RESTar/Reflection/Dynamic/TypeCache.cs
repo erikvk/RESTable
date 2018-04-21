@@ -59,7 +59,7 @@ namespace RESTar.Reflection.Dynamic
             .Where(pair => pair.Key.Type == typeof(T).RESTarTypeName())
             .Select(pair => pair.Key)
             .ToList()
-            .ForEach(key => TermCache.TryRemove(key, out var _));
+            .ForEach(key => TermCache.TryRemove(key, out _));
 
         #endregion
 

@@ -54,9 +54,13 @@ namespace RESTar.Requests
         public Body Body { get; }
         public Headers ResponseHeaders { get; }
         public ICollection<string> Cookies { get; }
+
         public void SetBody(object content) => throw new InvalidOperationException("Cannot set body of an invalid request");
 
         public void SetBody(byte[] bytes, ContentType? contentType) => throw new InvalidOperationException("Cannot set body of an invalid request");
+
+        public void SetBody(Stream stream, ContentType? contentType = null) =>
+            throw new InvalidOperationException("Cannot set body of an invalid request");
 
         internal InvalidParametersRequest(RequestParameters parameters)
         {
@@ -68,7 +72,7 @@ namespace RESTar.Requests
             Method = parameters.Method;
             Body = new Body
             (
-                stream: new MemoryStream(parameters.BodyBytes),
+                stream: new RESTarStreamController(parameters.BodyBytes),
                 contentType: Headers.ContentType
                              ?? CachedProtocolProvider?.DefaultInputProvider.ContentType
                              ?? Serialization.Serializers.Json.ContentType,
@@ -77,5 +81,7 @@ namespace RESTar.Requests
             ResponseHeaders = null;
             Cookies = null;
         }
+
+        public void Dispose() => Body.Dispose();
     }
 }

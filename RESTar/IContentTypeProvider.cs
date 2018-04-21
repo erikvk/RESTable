@@ -57,19 +57,19 @@ namespace RESTar
         void SerializeCollection(IEnumerable<object> entities, Stream stream, IRequest request, out ulong entityCount);
 
         /// <summary>
-        /// Deserializes the byte array to the given content entity type. Deserialize calls can only be made with 
+        /// Deserializes the data from the stream to the given content entity type. Deserialize calls can only be made with 
         /// content types included in CanRead.
         /// </summary>
-        T DeserializeEntity<T>(byte[] body) where T : class;
+        T DeserializeEntity<T>(Stream stream) where T : class;
 
         /// <summary>
-        /// Deserializes the input stream to the given content entity collection type. Deserialize calls can only be made with 
+        /// Deserializes the data from the stream to the given content entity collection type. Deserialize calls can only be made with 
         /// content types included in CanRead.
         /// </summary>
         IEnumerable<T> DeserializeCollection<T>(Stream stream) where T : class;
 
         /// <summary>
-        /// Populates the byte array to all entities in the given collection. Populate calls can only be made with 
+        /// Populates the data from the byte array to all entities in the given collection. Populate calls can only be made with 
         /// content types included in CanRead.
         /// </summary>
         IEnumerable<T> Populate<T>(IEnumerable<T> entities, byte[] body) where T : class;

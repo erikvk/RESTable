@@ -45,7 +45,7 @@ namespace RESTar.Results
     {
         internal WebSocketUpgradeFailed(Error error) : base(error) { }
     }
-    
+
     /// <inheritdoc />
     /// <summary>
     /// Wraps a result and maps operations to its members
@@ -116,6 +116,9 @@ namespace RESTar.Results
 
         /// <inheritdoc />
         public string Metadata => Result.Metadata;
+
+        /// <inheritdoc />
+        public void Dispose() => Result.Dispose();
 
         private readonly ISerializedResult Result;
 

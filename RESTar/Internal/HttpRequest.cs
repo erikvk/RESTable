@@ -12,7 +12,7 @@ namespace RESTar.Internal
         public Method Method { get; }
         public string URI { get; }
         public Headers Headers { get; }
-        public Stream Body;
+        public Stream Body { get; }
         public string TraceId { get; }
         public Context Context { get; }
         public HttpResponse GetResponse() => MakeExternalRequest(this, Method.ToString(), new Uri(URI), Body, Headers);
@@ -41,9 +41,8 @@ namespace RESTar.Internal
                 if (body != null)
                 {
                     request.ContentLength = body.Length;
-                    using (var requestStream = request.GetRequestStreamAsync().Result)
-                    using (body)
-                        body.CopyTo(requestStream);
+                    using (var requestStream = request.GetRequestStream())
+                    using (body) body.CopyTo(requestStream);
                 }
                 var webResponse = (HttpWebResponse) request.GetResponseAsync().Result;
                 var respLoc = webResponse.Headers["Location"];

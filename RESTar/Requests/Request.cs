@@ -52,11 +52,10 @@ namespace RESTar.Requests
         public Body Body
         {
             get => _body;
-            set
+            private set
             {
                 if (IsEvaluating)
-                    throw new InvalidOperationException(
-                        "Cannot set the request body while the request is evaluating");
+                    throw new InvalidOperationException("Cannot set the request body while the request is evaluating");
                 _body = value;
             }
         }
@@ -65,19 +64,19 @@ namespace RESTar.Requests
         {
             var stream = content != null ? Serializers.Json.SerializeStream(content) : new MemoryStream();
             var contentType = Serializers.Json.ContentType;
-            Body = new Body(stream, contentType, CachedProtocolProvider);
+            Body = new Body(new RESTarStreamController(stream), contentType, CachedProtocolProvider);
         }
 
         public void SetBody(byte[] bytes, ContentType? contentType = null)
         {
             var _contentType = contentType ?? Headers.ContentType ?? CachedProtocolProvider.DefaultInputProvider.ContentType;
-            Body = new Body(new MemoryStream(bytes), _contentType, CachedProtocolProvider);
+            Body = new Body(new RESTarStreamController(bytes), _contentType, CachedProtocolProvider);
         }
 
         public void SetBody(Stream stream, ContentType? contentType = null)
         {
             var _contentType = contentType ?? Headers.ContentType ?? CachedProtocolProvider.DefaultInputProvider.ContentType;
-            Body = new Body(stream, _contentType, CachedProtocolProvider);
+            Body = new Body(new RESTarStreamController(stream), _contentType, CachedProtocolProvider);
         }
 
         public IUriComponents UriComponents => new UriComponents
@@ -276,7 +275,8 @@ namespace RESTar.Requests
                     case DataConfig.Client:
                         if (!Parameters.HasBody)
                             return;
-                        Body = new Body(new MemoryStream(Parameters.BodyBytes), Headers.ContentType ?? defaultContentType, CachedProtocolProvider);
+                        Body = new Body(new RESTarStreamController(Parameters.BodyBytes), Headers.ContentType ?? defaultContentType,
+                            CachedProtocolProvider);
                         break;
                     case DataConfig.External:
                         try
@@ -292,7 +292,7 @@ namespace RESTar.Requests
                                 var serialized = (IEntities) result.Serialize();
                                 Body = new Body
                                 (
-                                    stream: serialized.Body,
+                                    stream: new RESTarStreamController(serialized.Body),
                                     contentType: serialized.Headers.ContentType ?? CachedProtocolProvider.DefaultInputProvider.ContentType,
                                     protocolProvider: CachedProtocolProvider
                                 );
@@ -308,7 +308,8 @@ namespace RESTar.Requests
                                     throw new InvalidExternalSource(source.URI, response.LogMessage);
                                 if (response.Body.CanSeek && response.Body.Length == 0)
                                     throw new InvalidExternalSource(source.URI, "Response was empty");
-                                Body = new Body(response.Body, response.Headers.ContentType ?? defaultContentType, CachedProtocolProvider);
+                                Body = new Body(new RESTarStreamController(response.Body), response.Headers.ContentType ?? defaultContentType,
+                                    CachedProtocolProvider);
                             }
 
                             break;
@@ -324,5 +325,7 @@ namespace RESTar.Requests
                 Error = e;
             }
         }
+
+        public void Dispose() => Body.Dispose();
     }
 }

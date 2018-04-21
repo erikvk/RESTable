@@ -54,7 +54,8 @@ namespace RESTar
         /// will be included in the status text message (see writeStatus)</param>
         /// <param name="writeHeaders">Should headers be included as a text message? If true, headers are printed after the status
         /// (if any) and before the content is sent.</param>
-        void SendResult(ISerializedResult result, TimeSpan? timeElapsed = null, bool writeHeaders = false);
+        /// <param name="disposeResult">Should the result be disposed after it is sent to the WebSocket?</param>
+        void SendResult(ISerializedResult result, TimeSpan? timeElapsed = null, bool writeHeaders = false, bool disposeResult = true);
 
         /// <summary>
         /// Sends an exception over the WebSocket.

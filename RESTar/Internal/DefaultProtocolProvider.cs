@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text.RegularExpressions;
@@ -112,7 +113,7 @@ namespace RESTar.Internal
             switch (result)
             {
                 case Report report:
-                    contentTypeProvider.SerializeEntity(report.ReportBody, report.Body, report.Request, out var _);
+                    contentTypeProvider.SerializeEntity(report.ReportBody, report.Body, report.Request, out _);
                     return report;
 
                 case Head head:
@@ -125,6 +126,7 @@ namespace RESTar.Internal
                     {
                         contentTypeProvider.SerializeCollection(entities, entities.Body, entities.Request, out var entityCount);
                         if (entityCount == 0) return new NoContent(entities.Request);
+                        entities.Body.Seek(0, SeekOrigin.Begin);
                         entities.Headers.EntityCount = entityCount.ToString();
                         entities.EntityCount = entityCount;
                         if (entities.IsPaged)
@@ -144,15 +146,10 @@ namespace RESTar.Internal
                         if (parameters.IsInternal)
                         {
                             var internalRequest = entities.Context.CreateRequest(parameters.Method, parameters.URI, null, parameters.Headers);
-                            if (internalRequest.TargetType.IsAssignableFrom(entities.EntityType))
-                                SetSelector((dynamic) internalRequest, (dynamic) entities);
-                            else
-                            {
-                                var serializedEntities = SerializeEntities();
-                                if (!(serializedEntities is Content content))
-                                    return serializedEntities;
-                                internalRequest.SetBody(content.Body.ToByteArray());
-                            }
+                            var serializedEntities = SerializeEntities();
+                            if (!(serializedEntities is Content content))
+                                return serializedEntities;
+                            internalRequest.SetBody(content.Body);
                             return internalRequest.Result.Serialize();
                         }
                         var serialized = SerializeEntities();
