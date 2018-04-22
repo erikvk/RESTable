@@ -96,7 +96,7 @@ namespace RESTar.Requests
                 {
                     var streamController = new RESTarStreamController();
                     await response.Content.CopyToAsync(streamController);
-                    stream = streamController.UnpackAndRewind();
+                    stream = streamController;
                 }
 
                 IResult getResult()

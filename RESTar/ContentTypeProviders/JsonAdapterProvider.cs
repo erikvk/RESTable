@@ -2,7 +2,6 @@
 using System.IO;
 using System.Text;
 using RESTar.Internal;
-using RESTar.Results;
 
 namespace RESTar.ContentTypeProviders
 {
@@ -48,20 +47,7 @@ namespace RESTar.ContentTypeProviders
         /// Include true in the isSingularEntity property when the produced JSON encodes a single 
         /// entity (as opposed to an array of entities).
         /// </summary>
-        protected abstract void ProduceJson(Stream inputStream, Stream outputStream, out bool isSingularEntity);
-
-        /// <inheritdoc />
-        public T DeserializeEntity<T>(Stream stream) where T : class
-        {
-            var streamController = new RESTarStreamController();
-            ProduceJson(stream, streamController, out var singular);
-            var jsonStream = streamController.UnpackAndRewind();
-            if (singular) return JsonProvider.DeserializeEntity<T>(jsonStream);
-            throw new InvalidInputCount();
-        }
-
-        /// <inheritdoc />
-        public abstract void SerializeEntity(object entity, Stream stream, IRequest request, out ulong entityCount);
+        protected abstract void ProduceJsonArray(Stream inputStream, Stream outputStream);
 
         /// <inheritdoc />
         public abstract void SerializeCollection(IEnumerable<object> entities, Stream stream, IRequest request, out ulong entityCount);
@@ -69,24 +55,34 @@ namespace RESTar.ContentTypeProviders
         /// <inheritdoc />
         public IEnumerable<T> DeserializeCollection<T>(Stream stream) where T : class
         {
-            var streamController = new RESTarStreamController();
-            ProduceJson(stream, streamController, out var singular);
-            var jsonStream = streamController.UnpackAndRewind();
-            if (singular)
-                yield return JsonProvider.DeserializeEntity<T>(jsonStream);
-            else
-                foreach (var item in JsonProvider.DeserializeCollection<T>(jsonStream))
+            var jsonStream = new RESTarStreamController();
+            try
+            {
+                ProduceJsonArray(stream, jsonStream);
+                foreach (var item in JsonProvider.DeserializeCollection<T>(jsonStream.Rewind()))
                     yield return item;
+            }
+            finally
+            {
+                jsonStream.CanClose = true;
+                jsonStream.Dispose();
+            }
         }
 
         /// <inheritdoc />
         public IEnumerable<T> Populate<T>(IEnumerable<T> entities, byte[] body) where T : class
         {
-            var streamController = new RESTarStreamController();
-            ProduceJson(new MemoryStream(body), streamController, out var singular);
-            var jsonStream = streamController.UnpackAndRewind();
-            if (!singular) throw new InvalidInputCount();
-            return JsonProvider.Populate(entities, jsonStream.ToByteArray());
+            var jsonStream = new RESTarStreamController();
+            try
+            {
+                ProduceJsonArray(new MemoryStream(body), jsonStream);
+                return JsonProvider.Populate(entities, jsonStream.GetBytes());
+            }
+            finally
+            {
+                jsonStream.CanClose = true;
+                jsonStream.Dispose();
+            }
         }
     }
 }

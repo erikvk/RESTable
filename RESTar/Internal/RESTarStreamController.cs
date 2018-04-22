@@ -11,15 +11,17 @@ namespace RESTar.Internal
     {
         private const int MaxMemoryContentLength = 1 << 24;
         private bool Swapped;
-        private Stream Stream { get; set; }
-        internal Stream Unpack() => Stream;
-        internal bool CanClose { private get; set; }
 
-        internal Stream UnpackAndRewind()
-        {
-            Stream.Seek(0, SeekOrigin.Begin);
-            return Stream;
-        }
+        private Stream Stream { get; set; }
+
+        //internal Stream Unpack() => Stream;
+        //internal Stream UnpackAndRewind()
+        //{
+        //    Stream.Seek(0, SeekOrigin.Begin);
+        //    return Stream;
+        //}
+
+        internal bool CanClose { private get; set; }
 
         internal Stream Rewind()
         {
@@ -27,30 +29,44 @@ namespace RESTar.Internal
             return this;
         }
 
-        internal byte[] GetBytes() => UnpackAndRewind().ToByteArray();
+        internal byte[] GetBytes()
+        {
+            Rewind();
+            try
+            {
+                return Stream.ToByteArray();
+            }
+            finally
+            {
+                Rewind();
+            }
+        }
 
         internal RESTarStreamController(byte[] buffer) => Stream = new MemoryStream(buffer, true);
+        internal RESTarStreamController(Stream existing = null) => ResolveStream(existing);
 
-        internal RESTarStreamController(Stream existing = null)
+        private void ResolveStream(Stream existing)
         {
-            if (existing != null)
+            switch (existing)
             {
-                switch (existing)
-                {
-                    case MemoryStream ms:
-                        Stream = ms;
-                        break;
-                    case FileStream fs:
-                        Swapped = true;
-                        Stream = fs;
-                        break;
-                    case var other:
-                        Stream = new MemoryStream(1024);
-                        using (other) other.CopyTo(this);
-                        break;
-                }
+                case null:
+                    Stream = new MemoryStream(1024);
+                    break;
+                case RESTarStreamController rsc:
+                    ResolveStream(rsc.Stream);
+                    break;
+                case MemoryStream ms:
+                    Stream = ms;
+                    break;
+                case FileStream fs:
+                    Swapped = true;
+                    Stream = fs;
+                    break;
+                case var other:
+                    Stream = new MemoryStream(1024);
+                    using (other) other.CopyTo(this);
+                    break;
             }
-            else Stream = new MemoryStream(1024);
         }
 
         private void Swap()

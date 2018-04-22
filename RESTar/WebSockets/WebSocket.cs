@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Text;
 using Newtonsoft.Json;
 using RESTar.Logging;
@@ -267,7 +266,10 @@ namespace RESTar.WebSockets
                 if (writeHeaders)
                     SendJson(result.Headers, true);
                 if (result.Body != null && (!result.Body.CanSeek || result.Body.Length > 0))
-                    SendBinary(result.Body);
+                {
+                    var array = result.Body.ToByteArray();
+                    SendBinary(array, 0, array.Length);
+                }
             }
             finally
             {
@@ -290,21 +292,7 @@ namespace RESTar.WebSockets
         public void SendText(byte[] data, int offset, int length) => _SendBinary(data, true, offset, length);
 
         /// <inheritdoc />
-        public void SendText(Stream data)
-        {
-            var array = data.ToByteArray();
-            _SendBinary(array, true, 0, array.Length);
-        }
-
-        /// <inheritdoc />
         public void SendBinary(byte[] data, int offset, int length) => _SendBinary(data, false, offset, length);
-
-        /// <inheritdoc />
-        public void SendBinary(Stream data)
-        {
-            var array = data.ToByteArray();
-            _SendBinary(array, false, 0, array.Length);
-        }
 
         /// <inheritdoc />
         public void SendJson(object item, bool asText = false, bool? prettyPrint = null, bool ignoreNulls = false)

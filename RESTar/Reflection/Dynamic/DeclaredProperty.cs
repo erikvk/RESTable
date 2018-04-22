@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -189,39 +188,6 @@ namespace RESTar.Reflection.Dynamic
                 case Starcounter.Binary binary: return binary.ToArray().Length;
                 default: return Type.CountBytes();
             }
-        }
-
-        internal DataColumn MakeColumn()
-        {
-            var (type, nullable) = GetColumnSpec();
-            return new DataColumn(Name, type) {AllowDBNull = nullable};
-        }
-
-        private (Type, bool) GetColumnSpec()
-        {
-            switch (Type)
-            {
-                case var _ when Type.IsEnum:
-                case var _ when ExcelReducer != null:
-                case var _ when Type.IsClass: return (typeof(string), true);
-                case var _ when Type.IsNullable(out var baseType): return (baseType, true);
-                default: return (Type, false);
-            }
-        }
-
-        internal void WriteCell(DataRow row, object target)
-        {
-            object getBaseValue()
-            {
-                switch (this)
-                {
-                    case var _ when ExcelReducer != null: return ExcelReducer((dynamic) target);
-                    case var _ when Type.IsEnum: return GetValue(target)?.ToString();
-                    default: return GetValue(target);
-                }
-            }
-
-            row[Name] = getBaseValue().MakeDynamicCellValue();
         }
 
         /// <inheritdoc />

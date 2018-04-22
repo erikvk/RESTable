@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using RESTar.Requests;
 using RESTar.Resources;
 
@@ -51,13 +50,7 @@ namespace RESTar.WebSockets
         public void SendText(byte[] data, int offset, int length) => WebSocket.SendText(data, offset, length);
 
         /// <inheritdoc />
-        public void SendText(Stream data) => WebSocket.SendText(data);
-
-        /// <inheritdoc />
         public void SendBinary(byte[] data, int offset, int length) => WebSocket.SendBinary(data, offset, length);
-
-        /// <inheritdoc />
-        public void SendBinary(Stream data) => WebSocket.SendBinary(data);
 
         /// <inheritdoc />
         public void SendJson(object i, bool at = false, bool? p = null, bool ig = false) => WebSocket.SendJson(i, at, p, ig);

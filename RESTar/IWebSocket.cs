@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using RESTar.Requests;
 using RESTar.Resources;
 using RESTar.WebSockets;
@@ -25,19 +24,9 @@ namespace RESTar
         void SendText(byte[] data, int offset, int length);
 
         /// <summary>
-        /// Sends the Stream data as text over the WebSocket.
-        /// </summary>
-        void SendText(Stream data);
-
-        /// <summary>
         /// Sends the byte array data as binary over the WebSocket.
         /// </summary>
         void SendBinary(byte[] data, int offset, int length);
-
-        /// <summary>
-        /// Sends the Stream data as binary over the WebSocket.
-        /// </summary>
-        void SendBinary(Stream data);
 
         /// <summary>
         /// Sends an object over the WebSocket, serialized as JSON text. The output pretty print setting is controlled by

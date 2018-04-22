@@ -128,7 +128,7 @@ namespace RESTar.ContentTypeProviders
         /// <summary>
         /// Deserializes the given json string to the given type.
         /// </summary>
-        public T Deserialize<T>(string json)
+        public T DeserializeCollection<T>(string json)
         {
             return JsonConvert.DeserializeObject<T>(json, Settings);
         }
@@ -180,26 +180,6 @@ namespace RESTar.ContentTypeProviders
         }
 
         /// <inheritdoc />
-        public void SerializeEntity(object entity, Stream stream, IRequest request, out ulong entityCount)
-        {
-            if (entity == null)
-            {
-                entityCount = 0;
-                return;
-            }
-            var formatter = request.MetaConditions.Formatter ?? DbOutputFormat.Default;
-            using (var swr = new StreamWriter(stream, UTF8, 2048, true))
-            using (var jwr = new RESTarJsonWriter(swr, formatter.StartIndent))
-            {
-                jwr.Formatting = _PrettyPrint ? Indented : None;
-                swr.Write(formatter.Pre);
-                Serializer.Serialize(jwr, entity);
-                entityCount = jwr.ObjectsWritten;
-                swr.Write(formatter.Post);
-            }
-        }
-
-        /// <inheritdoc />
         public void SerializeCollection(IEnumerable<object> entities, Stream stream, IRequest request, out ulong entityCount)
         {
             if (entities == null)
@@ -217,14 +197,6 @@ namespace RESTar.ContentTypeProviders
                 entityCount = jwr.ObjectsWritten;
                 swr.Write(formatter.Post);
             }
-        }
-
-        /// <inheritdoc />
-        public T DeserializeEntity<T>(Stream stream) where T : class
-        {
-            using (var streamReader = new StreamReader(stream, UTF8))
-            using (var jsonReader = new JsonTextReader(streamReader))
-                return Serializer.Deserialize<T>(jsonReader);
         }
 
         /// <inheritdoc />

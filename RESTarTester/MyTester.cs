@@ -4,7 +4,10 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Runtime.Serialization;
+using System.Text;
 using System.Threading.Tasks;
 using Dynamit;
 using Newtonsoft.Json;
@@ -16,13 +19,16 @@ using RESTar.Results;
 using Starcounter;
 using static RESTar.Method;
 using static RESTar.Operators;
+using Context = RESTar.Context;
 
+#pragma warning disable 618
 #pragma warning disable 219
+
 // ReSharper disable All
 
 namespace RESTarTester
 {
-    public class Tester
+    public class MyTester
     {
         private static decimal Time(Action action)
         {
@@ -31,6 +37,25 @@ namespace RESTarTester
                 action();
             s.Stop();
             return s.ElapsedMilliseconds;
+        }
+
+        private static class Http
+        {
+            private static HttpClient HttpClient = new HttpClient();
+
+            internal static HttpResponseMessage Request(string method, string uri, byte[] body = null, string contentType = "application/json",
+                Dictionary<string, string> headers = null)
+            {
+                var message = new HttpRequestMessage(new HttpMethod(method), uri);
+                if (body != null)
+                    message.Content =
+                        new ByteArrayContent(body) {Headers = {ContentType = MediaTypeHeaderValue.Parse(contentType ?? "application/json")}};
+                if (headers != null)
+                {
+                    foreach (var header in headers) message.Headers.Add(header.Key, header.Value);
+                }
+                return HttpClient.SendAsync(message).Result;
+            }
         }
 
         public static void Main()
@@ -43,6 +68,7 @@ namespace RESTarTester
                 allowAllOrigins: false,
                 configFilePath: @"C:\Mopedo\mopedo\Mopedo.config"
             );
+
             Db.SQL<Base>("SELECT t FROM RESTarTester.Base t").ForEach(b => Db.TransactAsync(b.Delete));
             Db.SQL<MyDict>("SELECT t FROM RESTarTester.MyDict t").ForEach(b => Db.TransactAsync(b.Delete));
             Db.SQL<MyDict2>("SELECT t FROM RESTarTester.MyDict2 t").ForEach(b => Db.TransactAsync(b.Delete));
@@ -289,62 +315,69 @@ namespace RESTarTester
 
             #region Insertions
 
-            var response1 = Http.POST("http://localhost:9000/rest/resource1", onesJson, null);
-            var response2 = Http.POST("http://localhost:9000/rest/resource2", twosJson, null);
-            var response3 = Http.POST("http://localhost:9000/rest/resource3", threesJson, null);
-            var response4 = Http.POST("http://localhost:9000/rest/resource4", foursJson, null);
-            var response5 = Http.POST("http://localhost:9000/rest/authresource", @"{""Id"": 1, ""Str"": ""Foogoo""}",
-                new Dictionary<string, string>() {["password"] = "the password"});
-            var response5fail = Http.POST("http://localhost:9000/rest/authresource", @"{""Id"": 2, ""Str"": ""Foogoo""}",
-                new Dictionary<string, string>() {["password"] = "not the password"});
+            var response1 = Http.Request("POST", "http://localhost:9000/rest/resource1", Encoding.UTF8.GetBytes(onesJson), null);
+            var response2 = Http.Request("POST", "http://localhost:9000/rest/resource2", Encoding.UTF8.GetBytes(twosJson), null);
+            var response3 = Http.Request("POST", "http://localhost:9000/rest/resource3", Encoding.UTF8.GetBytes(threesJson), null);
+            var response4 = Http.Request("POST", "http://localhost:9000/rest/resource4", Encoding.UTF8.GetBytes(foursJson), null);
+            var response5 = Http.Request("POST", "http://localhost:9000/rest/authresource",
+                Encoding.UTF8.GetBytes(@"{""Id"": 1, ""Str"": ""Foogoo""}"),
+                headers: new Dictionary<string, string>() {["password"] = "the password"});
+            var response5fail = Http.Request("POST", "http://localhost:9000/rest/authresource",
+                Encoding.UTF8.GetBytes(@"{""Id"": 2, ""Str"": ""Foogoo""}"),
+                headers: new Dictionary<string, string>() {["password"] = "not the password"});
 
             Debug.Assert(response1?.IsSuccessStatusCode == true);
             Debug.Assert(response2?.IsSuccessStatusCode == true);
             Debug.Assert(response3?.IsSuccessStatusCode == true);
             Debug.Assert(response4?.IsSuccessStatusCode == true);
             Debug.Assert(response5?.IsSuccessStatusCode == true);
-            Debug.Assert(response5fail?.StatusCode == 403);
+            Debug.Assert(response5fail?.StatusCode == (HttpStatusCode) 403);
 
             #endregion
 
             #region External source/destination inserts
 
             var resource1Url = "https://storage.googleapis.com/mopedo-web/resource1.json";
-            var esourceresponse1 = Http.POST
+            var esourceresponse1 = Http.Request
             (
+                method: "POST",
                 uri: "http://localhost:9000/rest/resource1",
                 body: null,
-                headersDictionary: new Dictionary<string, string> {["Source"] = "GET " + resource1Url}
+                headers: new Dictionary<string, string> {["Source"] = "GET " + resource1Url}
             );
             Debug.Assert(esourceresponse1?.IsSuccessStatusCode == true);
 
-            var esourceresponse2 = Http.POST
+            var esourceresponse2 = Http.Request
             (
+                method: "POST",
                 uri: "http://localhost:9000/rest/MyDict",
                 body: null,
-                headersDictionary: new Dictionary<string, string> {["Source"] = "GET " + resource1Url}
+                headers: new Dictionary<string, string> {["Source"] = "GET " + resource1Url}
             );
             Debug.Assert(esourceresponse2?.IsSuccessStatusCode == true);
 
-            var esourceresponse3 = Http.POST
+            var esourceresponse3 = Http.Request
             (
+                method: "POST",
                 uri: "http://localhost:9000/rest/MyDict",
                 body: null,
-                headersDictionary: new Dictionary<string, string> {["Source"] = "GET /resource1"}
+                headers: new Dictionary<string, string> {["Source"] = "GET /resource1"}
             );
             Debug.Assert(esourceresponse3?.IsSuccessStatusCode == true);
 
-            var edestinationresponse1 = Http.GET
+            var edestinationresponse1 = Http.Request
             (
+                method: "GET",
                 uri: "http://localhost:9000/rest/resource1",
-                headersDictionary: new Dictionary<string, string> {["Destination"] = "POST /mydict"}
+                headers: new Dictionary<string, string> {["Destination"] = "POST /mydict"}
             );
             Debug.Assert(edestinationresponse1?.IsSuccessStatusCode == true);
 
-            var edestinationresponse2 = Http.GET
+            var edestinationresponse2 = Http.Request
             (
+                method: "GET",
                 uri: "http://localhost:9000/rest/mydict",
-                headersDictionary: new Dictionary<string, string> {["Destination"] = "POST http://localhost:9000/rest/resource1"}
+                headers: new Dictionary<string, string> {["Destination"] = "POST http://localhost:9000/rest/resource1"}
             );
             Debug.Assert(edestinationresponse2?.IsSuccessStatusCode == true);
 
@@ -360,20 +393,19 @@ namespace RESTarTester
             var data = streamreader.ReadToEnd();
             Debug.Assert(!string.IsNullOrWhiteSpace(data));
 
-            var jsonResponse1 = Http.GET("http://localhost:9000/rest/restartester.resource1");
-            var jsonResponse1view = Http.GET("http://localhost:9000/rest/resource1-myview");
-            var jsonResponse2 = Http.GET("http://localhost:9000/rest/resource2");
-            var jsonResponse3 = Http.GET("http://localhost:9000/rest/resource3");
-            var jsonResponse4 = Http.GET("http://localhost:9000/rest/resource4");
-            var jsonResponse4distinct = Http.GET("http://localhost:9000/rest/resource4//select=string&distinct=true");
-            var jsonResponse4extreme = Http.GET
-                ("http://localhost:9000/rest/resource4//add=datetime.day&select=datetime.day,datetime.month,string,string.length&order_desc=string.length&distinct=true");
-            var jsonResponse5format = Http.GET
-                ("http://localhost:9000/rest/resource4//add=datetime.day&select=datetime.day,datetime.month,string,string.length&order_desc=string.length&format=jsend&distinct=true");
+            var jsonResponse1 = Http.Request("GET", "http://localhost:9000/rest/restartester.resource1");
+            var jsonResponse1view = Http.Request("GET", "http://localhost:9000/rest/resource1-myview");
+            var jsonResponse2 = Http.Request("GET", "http://localhost:9000/rest/resource2");
+            var jsonResponse3 = Http.Request("GET", "http://localhost:9000/rest/resource3");
+            var jsonResponse4 = Http.Request("GET", "http://localhost:9000/rest/resource4");
+            var jsonResponse4distinct = Http.Request("GET", "http://localhost:9000/rest/resource4//select=string&distinct=true");
+            var jsonResponse4extreme = Http.Request("GET",
+                "http://localhost:9000/rest/resource4//add=datetime.day&select=datetime.day,datetime.month,string,string.length&order_desc=string.length&distinct=true");
+            var jsonResponse5format = Http.Request("GET",
+                "http://localhost:9000/rest/resource4//add=datetime.day&select=datetime.day,datetime.month,string,string.length&order_desc=string.length&format=jsend&distinct=true");
 
-            var head = Http.CustomRESTRequest("HEAD", "http://localhost:9000/rest/resource1//distinct=true", default(string), null);
-            var report = Http.CustomRESTRequest("REPORT", "http://localhost:9000/rest/resource1//distinct=true", default(string), null);
-
+            var head = Http.Request("HEAD", "http://localhost:9000/rest/resource1//distinct=true");
+            var report = Http.Request("REPORT", "http://localhost:9000/rest/resource1//distinct=true");
 
             Debug.Assert(jsonResponse1?.IsSuccessStatusCode == true);
             Debug.Assert(jsonResponse1view?.IsSuccessStatusCode == true);
@@ -388,11 +420,11 @@ namespace RESTarTester
 
             #region GET Excel
 
-            var headers = new Dictionary<string, string> {["Accept"] = "Excel"};
-            var excelResponse1 = Http.GET("http://localhost:9000/rest/resource1", headersDictionary: headers);
-            var excelResponse2 = Http.GET("http://localhost:9000/rest/resource2", headersDictionary: headers);
-            var excelResponse3 = Http.GET("http://localhost:9000/rest/resource3", headersDictionary: headers);
-            var excelResponse4 = Http.GET("http://localhost:9000/rest/resource4", headersDictionary: headers);
+            var headers = new Dictionary<string, string> {["Accept"] = "application/restar-excel"};
+            var excelResponse1 = Http.Request("GET", "http://localhost:9000/rest/resource1", headers: headers);
+            var excelResponse2 = Http.Request("GET", "http://localhost:9000/rest/resource2", headers: headers);
+            var excelResponse3 = Http.Request("GET", "http://localhost:9000/rest/resource3", headers: headers);
+            var excelResponse4 = Http.Request("GET", "http://localhost:9000/rest/resource4", headers: headers);
 
             Debug.Assert(excelResponse1?.IsSuccessStatusCode == true);
             Debug.Assert(excelResponse2?.IsSuccessStatusCode == true);
@@ -403,17 +435,16 @@ namespace RESTarTester
 
             #region POST Excel
 
-            var headers2 = new Dictionary<string, string>
-                {["Content-Type"] = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", ["Foo"] = "123"};
-            var excelPostResponse1 = Http.POST("http://localhost:9000/rest/resource1", bodyBytes: excelResponse1.BodyBytes,
-                headersDictionary: headers2);
+            var excelbody = excelResponse1.Content.ReadAsByteArrayAsync().Result;
+            var excelPostResponse1 = Http.Request("POST", "http://localhost:9000/rest/resource1", body: excelbody,
+                contentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
             Debug.Assert(excelPostResponse1?.IsSuccessStatusCode == true);
 
             var webrequest = (HttpWebRequest) WebRequest.Create("http://localhost:9000/rest/resource1");
             webrequest.Method = "POST";
             webrequest.ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
             using (var str = webrequest.GetRequestStream())
-            using (var stream = new MemoryStream(excelResponse1.BodyBytes))
+            using (var stream = new MemoryStream(excelbody))
                 stream.CopyTo(str);
             var webResponse = (HttpWebResponse) webrequest.GetResponse();
             string _body;
@@ -425,10 +456,10 @@ namespace RESTarTester
 
             #region With conditions
 
-            var conditionResponse1 = Http.GET("http://localhost:9000/rest/resource1/sbyte>=0&byte!=200&datetime>2001-01-01");
-            var conditionResponse2 = Http.GET("http://localhost:9000/rest/resource2/sbyte<=10&byte!=200&datetime>2001-01-01");
-            var conditionResponse3 = Http.GET("http://localhost:9000/rest/resource3/sbyte>0&byte!=200&datetime>2001-01-01");
-            var conditionResponse4 = Http.GET("http://localhost:9000/rest/resource4/resource1.string!=aboo&resource2!=null");
+            var conditionResponse1 = Http.Request("GET", "http://localhost:9000/rest/resource1/sbyte>=0&byte!=200&datetime>2001-01-01");
+            var conditionResponse2 = Http.Request("GET", "http://localhost:9000/rest/resource2/sbyte<=10&byte!=200&datetime>2001-01-01");
+            var conditionResponse3 = Http.Request("GET", "http://localhost:9000/rest/resource3/sbyte>0&byte!=200&datetime>2001-01-01");
+            var conditionResponse4 = Http.Request("GET", "http://localhost:9000/rest/resource4/resource1.string!=aboo&resource2!=null");
 
             Debug.Assert(excelResponse1?.IsSuccessStatusCode == true);
             Debug.Assert(excelResponse2?.IsSuccessStatusCode == true);
@@ -519,8 +550,8 @@ namespace RESTarTester
                 };
             });
 
-            var byInternalSource = Http.POST("http://localhost:9000/rest/resource3", default(string),
-                new Dictionary<string, string> {["Source"] = "GET /resource3"});
+            var byInternalSource = Http.Request("POST", "http://localhost:9000/rest/resource3", null,
+                headers: new Dictionary<string, string> {["Source"] = "GET /resource3"});
 
             #endregion
 
@@ -532,18 +563,18 @@ namespace RESTarTester
             Debug.Assert(remoteResult is IEntities rement && rement.EntityCount > 1);
 
             #endregion
-            
+
             #region OPTIONS
 
-            var optionsResponse1 = Http.CustomRESTRequest("OPTIONS", "http://localhost:9000/rest/resource1", default(string),
-                new Dictionary<string, string> {["Origin"] = "https://fooboo.com/thingy"});
+            var optionsResponse1 = Http.Request("OPTIONS", "http://localhost:9000/rest/resource1", null,
+                headers: new Dictionary<string, string> {["Origin"] = "https://fooboo.com/thingy"});
             Debug.Assert(optionsResponse1?.IsSuccessStatusCode == true);
-            var optionsResponse2 = Http.CustomRESTRequest("OPTIONS", "http://localhost:9000/rest/resource1", default(string),
-                new Dictionary<string, string> {["Origin"] = "https://fooboo.com/invalid"});
+            var optionsResponse2 = Http.Request("OPTIONS", "http://localhost:9000/rest/resource1", null,
+                headers: new Dictionary<string, string> {["Origin"] = "https://fooboo.com/invalid"});
             Debug.Assert(optionsResponse2?.IsSuccessStatusCode == false);
 
             #endregion
-            
+
             var done = true;
         }
     }

@@ -30,6 +30,9 @@ namespace RESTar.Results
             get => _body ?? (IsSerializing ? _body = new RESTarStreamController() : null);
             set
             {
+                if (ReferenceEquals(_body, value)) return;
+                if (_body is RESTarStreamController rsc)
+                    rsc.CanClose = true;
                 _body?.Dispose();
                 _body = value;
             }

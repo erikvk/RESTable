@@ -108,6 +108,8 @@ namespace RESTar.Results
             get => _body ?? (IsSerializing ? _body = new RESTarStreamController() : null);
             set
             {
+                if (_body is RESTarStreamController rsc)
+                    rsc.CanClose = true;
                 _body?.Dispose();
                 _body = value;
             }
@@ -157,6 +159,11 @@ namespace RESTar.Results
         public override string ToString() => LogMessage;
 
         /// <inheritdoc />
-        public void Dispose() => Body?.Dispose();
+        public void Dispose()
+        {
+            if (Body is RESTarStreamController rsc)
+                rsc.CanClose = true;
+            Body?.Dispose();
+        }
     }
 }

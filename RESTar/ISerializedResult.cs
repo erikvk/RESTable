@@ -12,7 +12,7 @@ namespace RESTar
     public interface ISerializedResult : IResult, IDisposable
     {
         /// <summary>
-        /// The serialized body contained in the result
+        /// The serialized body contained in the result. Can be seekable or non-seekable.
         /// </summary>
         Stream Body { get; set; }
     }

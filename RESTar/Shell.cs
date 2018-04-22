@@ -533,24 +533,26 @@ namespace RESTar
         {
             if (Query.Length == 0) return new ShellNoQuery(WebSocket);
             var local = Query;
-            var result = WebSocket.Context.CreateRequest(method, local, body, WebSocket.Headers).Result.Serialize();
-            switch (result)
+            using (var request = WebSocket.Context.CreateRequest(method, local, body, WebSocket.Headers))
             {
-                case Error _ when queryChangedPreEval:
-                    query = previousQuery;
-                    break;
-                case IEntities entities:
-                    query = local;
-                    PreviousEntities = entities;
-                    GetNextPageLink = entities.GetNextPageLink;
-                    break;
-                default:
-                    query = local;
-                    break;
+                var result = request.Result.Serialize();
+                switch (result)
+                {
+                    case Error _ when queryChangedPreEval:
+                        query = previousQuery;
+                        break;
+                    case IEntities entities:
+                        query = local;
+                        PreviousEntities = entities;
+                        GetNextPageLink = entities.GetNextPageLink;
+                        break;
+                    default:
+                        query = local;
+                        break;
+                }
+                queryChangedPreEval = false;
+                return result;
             }
-
-            queryChangedPreEval = false;
-            return result;
         }
 
         private bool QueryIsValid(out IResource resource)
@@ -613,24 +615,26 @@ namespace RESTar
         private void SafeOperation(Method method, byte[] body = null)
         {
             var sw = Stopwatch.StartNew();
-            switch (WsEvaluate(method, body))
+            using (var result = WsEvaluate(method, body))
             {
-                case Content tooLarge when tooLarge.Body is FileStream || tooLarge.Body.Length > 16_000_000:
-                    OnConfirm = () =>
-                    {
-                        CurrentStreamManifest = new StreamManifest(tooLarge);
-                        SetupStreamManifest();
-                    };
-                    SendConfirmationRequest("426: The response message is too large. Do you wish to stream the response? ");
-                    break;
-                case OK ok:
-                    SendResult(ok, sw.Elapsed);
-                    break;
-                case var other:
-                    SendResult(other);
-                    break;
+                switch (result)
+                {
+                    case Content tooLarge when tooLarge.Body is FileStream || tooLarge.Body.Length > 16_000_000:
+                        OnConfirm = () =>
+                        {
+                            CurrentStreamManifest = new StreamManifest(tooLarge);
+                            SetupStreamManifest();
+                        };
+                        SendConfirmationRequest("426: The response message is too large. Do you wish to stream the response? ");
+                        break;
+                    case OK ok:
+                        SendResult(ok, sw.Elapsed);
+                        break;
+                    case var other:
+                        SendResult(other);
+                        break;
+                }
             }
-
             sw.Stop();
         }
 

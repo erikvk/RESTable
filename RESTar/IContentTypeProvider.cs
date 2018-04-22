@@ -45,22 +45,10 @@ namespace RESTar
         string ContentDispositionFileExtension { get; }
 
         /// <summary>
-        /// Serializes the entity to the given Stream. Include the number of entities serialized in the entityCount
-        /// out parameter (should be 0 or 1).
-        /// </summary>
-        void SerializeEntity(object entity, Stream stream, IRequest request, out ulong entityCount);
-
-        /// <summary>
         /// Serializes the entity collection to the given Stream. Include the number of entities serialized in the entityCount 
         /// out parameter.
         /// </summary>
         void SerializeCollection(IEnumerable<object> entities, Stream stream, IRequest request, out ulong entityCount);
-
-        /// <summary>
-        /// Deserializes the data from the stream to the given content entity type. Deserialize calls can only be made with 
-        /// content types included in CanRead.
-        /// </summary>
-        T DeserializeEntity<T>(Stream stream) where T : class;
 
         /// <summary>
         /// Deserializes the data from the stream to the given content entity collection type. Deserialize calls can only be made with 

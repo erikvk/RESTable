@@ -113,7 +113,7 @@ namespace RESTar.Internal
             switch (result)
             {
                 case Report report:
-                    contentTypeProvider.SerializeEntity(report.ReportBody, report.Body, report.Request, out _);
+                    contentTypeProvider.SerializeCollection(new[] {report.ReportBody}, report.Body, report.Request, out _);
                     return report;
 
                 case Head head:

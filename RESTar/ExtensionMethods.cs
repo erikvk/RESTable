@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Data;
 using System.Diagnostics.Contracts;
 using System.Globalization;
 using System.IO;
@@ -20,7 +19,6 @@ using RESTar.Filters;
 using RESTar.Internal;
 using RESTar.Reflection.Dynamic;
 using RESTar.Linq;
-using RESTar.Operations;
 using RESTar.Processors;
 using RESTar.Requests;
 using RESTar.Resources;
@@ -186,19 +184,6 @@ namespace RESTar
         #endregion
 
         #region Other
-
-        internal static byte[] ReadExactly(this Stream stream, int count)
-        {
-            var buffer = new byte[count];
-            var offset = 0;
-            while (offset < count)
-            {
-                var read = stream.Read(buffer, offset, count - offset);
-                if (read == 0) return buffer;
-                offset += read;
-            }
-            return buffer;
-        }
 
         /// <summary>
         /// Gets the object for a Starcounter object number
@@ -678,8 +663,6 @@ namespace RESTar
         [Pure]
         internal static ISerializedResult Finalize(this ISerializedResult result, IContentTypeProvider acceptProvider)
         {
-            if (result.Body is RESTarStreamController rsc)
-                result.Body = rsc.Unpack();
             if (result.Body?.CanRead == true)
             {
                 if (result.Body.CanSeek)
@@ -842,117 +825,30 @@ namespace RESTar
             {
                 case null: return null;
                 case MemoryStream _ms: return _ms.ToArray();
-                case RESTarStreamController rsc: return rsc.Unpack().ToByteArray();
+                case RESTarStreamController rsc: return rsc.GetBytes();
                 default:
-                    var ms = new MemoryStream();
-                    using (stream) stream.CopyTo(ms);
-                    return ms.ToArray();
-            }
-        }
-
-        internal static ClosedXML.Excel.XLWorkbook ToExcel(this IEnumerable<object> entities, ITarget target)
-        {
-            var dataSet = new DataSet();
-            var table = entities.MakeDataTable(target);
-            if (table.Rows.Count == 0) return null;
-            dataSet.Tables.Add(table);
-            var workbook = new ClosedXML.Excel.XLWorkbook();
-            workbook.AddWorksheet(dataSet);
-            return workbook;
-        }
-
-        /// <summary>
-        /// Converts an IEnumerable of T to an Excel workbook
-        /// </summary>
-        public static ClosedXML.Excel.XLWorkbook ToExcel<T>(this IEnumerable<T> entities) where T : class
-        {
-            var resource = Resource<T>.Get;
-            var dataSet = new DataSet();
-            var table = entities.MakeDataTable(resource);
-            if (table.Rows.Count == 0) return null;
-            dataSet.Tables.Add(table);
-            var workbook = new ClosedXML.Excel.XLWorkbook();
-            workbook.AddWorksheet(dataSet);
-            return workbook;
-        }
-
-        private static DataTable MakeDataTable<T>(this IEnumerable<T> entities, ITarget resource)
-        {
-            var table = new DataTable();
-            switch (entities)
-            {
-                case IEnumerable<IDictionary<string, object>> dicts:
-                    foreach (var item in dicts)
+                    using (var ms = new MemoryStream())
                     {
-                        var row = table.NewRow();
-                        foreach (var pair in item)
-                        {
-                            if (!table.Columns.Contains(pair.Key))
-                                table.Columns.Add(pair.Key);
-                            row[pair.Key] = pair.Value.MakeDynamicCellValue();
-                        }
-
-                        table.Rows.Add(row);
+                        stream.CopyTo(ms);
+                        return ms.ToArray();
                     }
-                    return table;
-                case IEnumerable<JObject> jobjects:
-                    foreach (var item in jobjects)
-                    {
-                        var row = table.NewRow();
-                        foreach (var pair in item)
-                        {
-                            if (!table.Columns.Contains(pair.Key))
-                                table.Columns.Add(pair.Key);
-                            row[pair.Key] = pair.Value.ToObject<object>().MakeDynamicCellValue();
-                        }
-                        table.Rows.Add(row);
-                    }
-                    return table;
-                default:
-                    var properties = resource.Members.Values.Where(p => !p.Hidden).ToList();
-                    properties.ForEach(prop => table.Columns.Add(prop.MakeColumn()));
-                    entities.ForEach(item =>
-                    {
-                        var row = table.NewRow();
-                        properties.ForEach(prop => prop.WriteCell(row, item));
-                        table.Rows.Add(row);
-                    });
-                    return table;
             }
         }
 
-        internal static object MakeDynamicCellValue(this object value)
-        {
-            switch (value)
-            {
-                case bool _:
-                case decimal _:
-                case long _:
-                case string _: return value;
-                case sbyte other: return (long) other;
-                case byte other: return (long) other;
-                case short other: return (long) other;
-                case ushort other: return (long) other;
-                case int other: return (long) other;
-                case uint other: return (long) other;
-                case ulong other: return (long) other;
-                case float other: return (decimal) other;
-                case double other: return (decimal) other;
-                case char other: return other.ToString();
-                case DateTime other: return other.ToString("O");
-                case JObject _: return typeof(JObject).FullName;
-                case DDictionary _: return $"$(ObjectNo: {value.GetObjectNo()})";
-                case IDictionary other: return other.GetType().RESTarTypeName();
-                case IEnumerable<object> other: return string.Join(", ", other.Select(o => o.ToString()));
-                case DBNull _:
-                case null: return DBNull.Value;
-                case IEnumerable<DateTime> dateTimes: return string.Join(", ", dateTimes.Select(o => o.ToString("O")));
-                case var valueTypeArray when value.GetType().Implements(typeof(IEnumerable<>), out var p) && p.Any() && p[0].IsValueType:
-                    IEnumerable<object> objects = System.Linq.Enumerable.Cast<object>((dynamic) valueTypeArray);
-                    return string.Join(", ", objects.Select(o => o.ToString()));
-                default: return Do.Try(() => $"$(ObjectNo: {value.GetObjectNo()})", value.ToString);
-            }
-        }
+        //        /// <summary>
+        //        /// Converts an IEnumerable of T to an Excel workbook
+        //        /// </summary>
+        //        public static ClosedXML.Excel.XLWorkbook ToExcel<T>(this IEnumerable<T> entities) where T : class
+        //        {
+        //            var resource = Resource<T>.Get;
+        //            var dataSet = new DataSet();
+        //            var table = entities.MakeDataTable(resource);
+        //            if (table.Rows.Count == 0) return null;
+        //            dataSet.Tables.Add(table);
+        //            var workbook = new ClosedXML.Excel.XLWorkbook();
+        //            workbook.AddWorksheet(dataSet);
+        //            return workbook;
+        //        }
 
         /// <summary>
         /// Converts a boolean into an XML boolean string, i.e. "true" or "false" 
