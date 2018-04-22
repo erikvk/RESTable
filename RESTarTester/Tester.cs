@@ -28,7 +28,7 @@ using Context = RESTar.Context;
 
 namespace RESTarTester
 {
-    public class MyTester
+    public class Tester
     {
         private static decimal Time(Action action)
         {
