@@ -52,7 +52,6 @@ namespace RESTar.ContentTypeProviders
                 {
                     var currentRow = 1;
                     var worksheet = package.Workbook.Worksheets.Add(request.Resource.Name);
-                    worksheet.Cells.AutoFitColumns(0);
                     switch (entities)
                     {
                         case IEnumerable<IDictionary<string, object>> dicts:
@@ -66,7 +65,9 @@ namespace RESTar.ContentTypeProviders
                                     {
                                         column = columns.Count + 1;
                                         columns[pair.Key] = column;
-                                        worksheet.Cells[1, column].Value = pair.Key;
+                                        var cell = worksheet.Cells[1, column];
+                                        cell.Style.Font.Bold = true;
+                                        cell.Value = pair.Key;
                                     }
                                     WriteExcelCell(worksheet.Cells[currentRow, column], pair.Value);
                                 }
@@ -83,7 +84,9 @@ namespace RESTar.ContentTypeProviders
                                     {
                                         column = _columns.Count + 1;
                                         _columns[pair.Key] = column;
-                                        worksheet.Cells[1, column].Value = pair.Key;
+                                        var cell = worksheet.Cells[1, column];
+                                        cell.Style.Font.Bold = true;
+                                        cell.Value = pair.Key;
                                     }
                                     WriteExcelCell(worksheet.Cells[currentRow, column], pair.Value.ToObject<object>());
                                 }
@@ -94,7 +97,9 @@ namespace RESTar.ContentTypeProviders
                             var columnIndex = 1;
                             foreach (var property in properties)
                             {
-                                worksheet.Cells[1, columnIndex].Value = property.Name;
+                                var cell = worksheet.Cells[1, columnIndex];
+                                cell.Style.Font.Bold = true;
+                                cell.Value = property.Name;
                                 columnIndex += 1;
                             }
                             foreach (var entity in entities)
@@ -115,6 +120,7 @@ namespace RESTar.ContentTypeProviders
                         return;
                     }
                     entityCount = (ulong) currentRow - 1;
+                    worksheet.Cells.AutoFitColumns(0);
                     package.Save();
                 }
             }
