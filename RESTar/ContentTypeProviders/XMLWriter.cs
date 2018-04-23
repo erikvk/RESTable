@@ -45,10 +45,11 @@ namespace RESTar.ContentTypeProviders
         }
 
         /// <inheritdoc />
-        public void SerializeCollection(IEnumerable<object> entities, Stream stream, IRequest request, out ulong entityCount)
+        public ulong SerializeCollection<T>(IEnumerable<T> entities, Stream stream, IRequest request = null) where T : class
         {
-            JsonProvider.SerializeCollection(entities, stream, request, out entityCount);
+            var count = JsonProvider.SerializeCollection(entities, stream, request);
             XmlSerializeJsonStream(stream);
+            return count;
         }
 
         private static void XmlSerializeJsonStream(Stream stream)

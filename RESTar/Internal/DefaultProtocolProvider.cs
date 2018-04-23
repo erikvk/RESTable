@@ -113,7 +113,7 @@ namespace RESTar.Internal
             switch (result)
             {
                 case Report report:
-                    contentTypeProvider.SerializeCollection(new[] {report.ReportBody}, report.Body, report.Request, out _);
+                    contentTypeProvider.SerializeCollection(new[] {report.ReportBody}, report.Body, report.Request);
                     return report;
 
                 case Head head:
@@ -124,7 +124,7 @@ namespace RESTar.Internal
 
                     ISerializedResult SerializeEntities()
                     {
-                        contentTypeProvider.SerializeCollection(entities, entities.Body, entities.Request, out var entityCount);
+                        var entityCount = contentTypeProvider.SerializeCollection(entities, entities.Body, entities.Request);
                         if (entityCount == 0) return new NoContent(entities.Request);
                         entities.Body.Seek(0, SeekOrigin.Begin);
                         entities.Headers.EntityCount = entityCount.ToString();

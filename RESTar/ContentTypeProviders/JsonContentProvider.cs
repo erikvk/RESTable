@@ -180,22 +180,18 @@ namespace RESTar.ContentTypeProviders
         }
 
         /// <inheritdoc />
-        public void SerializeCollection(IEnumerable<object> entities, Stream stream, IRequest request, out ulong entityCount)
+        public ulong SerializeCollection<T>(IEnumerable<T> entities, Stream stream, IRequest request = null) where T : class
         {
-            if (entities == null)
-            {
-                entityCount = 0;
-                return;
-            }
-            var formatter = request.MetaConditions.Formatter ?? DbOutputFormat.Default;
+            if (entities == null) return 0;
+            var formatter = request?.MetaConditions.Formatter ?? DbOutputFormat.Default;
             using (var swr = new StreamWriter(stream, UTF8, 2048, true))
             using (var jwr = new RESTarJsonWriter(swr, formatter.StartIndent))
             {
                 jwr.Formatting = _PrettyPrint ? Indented : None;
                 swr.Write(formatter.Pre);
                 Serializer.Serialize(jwr, entities);
-                entityCount = jwr.ObjectsWritten;
                 swr.Write(formatter.Post);
+                return jwr.ObjectsWritten;
             }
         }
 

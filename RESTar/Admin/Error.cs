@@ -119,9 +119,9 @@ namespace RESTar.Admin
         }
 
         /// <summary/>
-        [RESTarMember(ignore: true), Obsolete] public int Action { get; set; }
+        [RESTarMember(ignore: true), Obsolete] public long Action { get; set; }
 
         /// <summary/>
-        [RESTarMember(ignore: true), Obsolete] public int HandlerAction { get; set; }
+        [RESTarMember(ignore: true), Obsolete] public long HandlerAction { get; set; }
     }
 }

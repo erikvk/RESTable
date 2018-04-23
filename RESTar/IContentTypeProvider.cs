@@ -48,7 +48,7 @@ namespace RESTar
         /// Serializes the entity collection to the given Stream. Include the number of entities serialized in the entityCount 
         /// out parameter.
         /// </summary>
-        void SerializeCollection(IEnumerable<object> entities, Stream stream, IRequest request, out ulong entityCount);
+        ulong SerializeCollection<T>(IEnumerable<T> entities, Stream stream, IRequest request = null) where T : class;
 
         /// <summary>
         /// Deserializes the data from the stream to the given content entity collection type. Deserialize calls can only be made with 

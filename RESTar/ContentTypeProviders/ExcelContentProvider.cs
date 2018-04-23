@@ -39,19 +39,15 @@ namespace RESTar.ContentTypeProviders
         public override string ContentDispositionFileExtension => ".xlsx";
 
         /// <inheritdoc />
-        public override void SerializeCollection(IEnumerable<object> entities, Stream stream, IRequest request, out ulong entityCount)
+        public override ulong SerializeCollection<T>(IEnumerable<T> entities, Stream stream, IRequest request = null)
         {
-            if (entities == null)
-            {
-                entityCount = 0;
-                return;
-            }
+            if (entities == null) return 0;
             try
             {
                 using (var package = new ExcelPackage(stream))
                 {
                     var currentRow = 1;
-                    var worksheet = package.Workbook.Worksheets.Add(request.Resource.Name);
+                    var worksheet = package.Workbook.Worksheets.Add(request?.Resource.Name ?? "Sheet1");
                     switch (entities)
                     {
                         case IEnumerable<IDictionary<string, object>> dicts:
@@ -93,7 +89,7 @@ namespace RESTar.ContentTypeProviders
                             }
                             break;
                         default:
-                            var properties = request.Resource.Members.Values.Where(p => !p.Hidden).ToList();
+                            var properties = typeof(T).GetDeclaredProperties().Values.Where(p => !p.Hidden).ToList();
                             var columnIndex = 1;
                             foreach (var property in properties)
                             {
@@ -114,14 +110,10 @@ namespace RESTar.ContentTypeProviders
                             }
                             break;
                     }
-                    if (currentRow == 1)
-                    {
-                        entityCount = 0UL;
-                        return;
-                    }
-                    entityCount = (ulong) currentRow - 1;
+                    if (currentRow == 1) return 0;
                     worksheet.Cells.AutoFitColumns(0);
                     package.Save();
+                    return (ulong) currentRow - 1;
                 }
             }
             catch (Exception e)

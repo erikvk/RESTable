@@ -50,7 +50,7 @@ namespace RESTar.ContentTypeProviders
         protected abstract void ProduceJsonArray(Stream inputStream, Stream outputStream);
 
         /// <inheritdoc />
-        public abstract void SerializeCollection(IEnumerable<object> entities, Stream stream, IRequest request, out ulong entityCount);
+        public abstract ulong SerializeCollection<T>(IEnumerable<T> entities, Stream stream, IRequest request = null) where T : class;
 
         /// <inheritdoc />
         public IEnumerable<T> DeserializeCollection<T>(Stream stream) where T : class
