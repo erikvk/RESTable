@@ -51,7 +51,7 @@ namespace RESTar.Admin
         /// <summary>
         /// The URI of the macro
         /// </summary>
-        public string Uri
+        public string UriString
         {
             get
             {
@@ -89,6 +89,9 @@ namespace RESTar.Admin
         /// Should the macro overwrite the body of the calling request?
         /// </summary>
         public bool OverWriteBody { get; set; }
+
+        /// <summary />
+        [Obsolete] public string Uri { get; set; }
 
         /// <summary>
         /// A dictionary representation of the headers for this macro
@@ -217,7 +220,7 @@ namespace RESTar.Admin
             .Select(m => new Macro
             {
                 Name = m.Name,
-                Uri = m.Uri,
+                Uri = m.UriString,
                 Body = m.BodyBinary.Length > 0 ? JToken.Parse(m.BodyUTF8) : null,
                 Headers = m.Headers != null ? m.HeadersDictionary : null,
                 OverWriteBody = m.OverWriteBody,

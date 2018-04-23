@@ -117,5 +117,11 @@ namespace RESTar.Admin
             matches.ForEach(match => Db.TransactAsync(match.Delete));
             Checked = DateTime.Now.Date;
         }
+
+        /// <summary/>
+        [RESTarMember(ignore: true), Obsolete] public int Action { get; set; }
+
+        /// <summary/>
+        [RESTarMember(ignore: true), Obsolete] public int HandlerAction { get; set; }
     }
 }
