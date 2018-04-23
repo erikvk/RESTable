@@ -22,6 +22,12 @@ namespace RESTar.Results
         private IRequestInternal RequestInternal { get; }
         private IContentTypeProvider ContentTypeProvider { get; }
 
+        public override ISerializedResult Serialize(ContentType? contentType = null)
+        {
+            (Body as RESTarStreamController)?.Rewind();
+            return this;
+        }
+
         /// <inheritdoc />
         public IUriComponents GetNextPageLink() => this.MakeNextPageLink(-1);
 
@@ -37,7 +43,7 @@ namespace RESTar.Results
 
         public IEnumerator<JObject> GetEnumerator() => new StreamEnumerator<JObject>(Body, ContentTypeProvider);
 
-        internal RemoteEntities(IRequestInternal request, Stream jsonStream, ulong entityCount) : base(request)
+        internal RemoteEntities(IRequestInternal request, RESTarStreamController jsonStream, ulong entityCount) : base(request)
         {
             RequestInternal = request;
             Body = jsonStream;

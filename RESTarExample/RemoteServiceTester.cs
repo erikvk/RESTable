@@ -1,13 +1,9 @@
 ﻿using System;
 using System.Text;
-using Newtonsoft.Json;
 using RESTar;
 using RESTar.Requests;
-using RESTar.Results;
 
 #pragma warning disable 1591
-
-// ReSharper disable All
 
 namespace RESTarExample
 {
@@ -39,11 +35,12 @@ namespace RESTarExample
                     // WebSocket.SendResult(res, res.TimeElapsed, true);
 
                     var result = request.Result;
-                    foreach (var entity in result as IEntities)
-                    {
-                        var json = JsonConvert.SerializeObject(entity);
-                    }
+                    // foreach (var entity in result as IEntities)
+                    // {
+                    //     var json = JsonConvert.SerializeObject(entity);
+                    // }
                     var ser = result.Serialize();
+                    WebSocket.SendResult(ser);
 
                     break;
                 case "BODY":

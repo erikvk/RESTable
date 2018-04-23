@@ -218,7 +218,7 @@ namespace RESTar.ContentTypeProviders
                             jsonReader.Read();
                         }
                         yield break;
-                    default: throw new JsonReaderException("Invalid JSON data. Expected array or object");
+                    case var other: throw new JsonReaderException($"Invalid JSON data. Expected array or object. Found {other}");
                 }
             }
         }

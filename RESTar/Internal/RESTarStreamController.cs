@@ -14,16 +14,9 @@ namespace RESTar.Internal
 
         private Stream Stream { get; set; }
 
-        //internal Stream Unpack() => Stream;
-        //internal Stream UnpackAndRewind()
-        //{
-        //    Stream.Seek(0, SeekOrigin.Begin);
-        //    return Stream;
-        //}
-
         internal bool CanClose { private get; set; }
 
-        internal Stream Rewind()
+        internal RESTarStreamController Rewind()
         {
             Stream.Seek(0, SeekOrigin.Begin);
             return this;

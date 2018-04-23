@@ -25,7 +25,7 @@ namespace RESTar.Requests
         public Context Context { get; }
         public Headers Headers { get; }
         public Method Method { get; set; }
-        public Body Body { get; private set; }
+        public Body Body { get; internal set; }
         private RemoteResource RemoteResource { get; set; }
 
         private static string ErrorMessage(string propertyName) => $"Cannot get {propertyName} for a remote request";
@@ -91,12 +91,12 @@ namespace RESTar.Requests
                 if (resultType == null || resourceName == null)
                     return new ExternalServiceNotRESTar(URI).AsResultOf(this);
                 RemoteResource = new RemoteResource(resourceName);
-                var stream = default(Stream);
+                var stream = default(RESTarStreamController);
                 if (response.Content != null)
                 {
                     var streamController = new RESTarStreamController();
                     await response.Content.CopyToAsync(streamController);
-                    stream = streamController;
+                    stream = streamController.Rewind();
                 }
 
                 IResult getResult()
