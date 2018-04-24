@@ -14,6 +14,6 @@ namespace RESTar.Results
         }
 
         /// <inheritdoc />
-        public override string Metadata => $"{nameof(FeatureNotImplemented)};{RequestInternal.Resource};{ErrorCode}";
+        public override string Metadata => $"{nameof(FeatureNotImplemented)};{RequestInternal?.Resource};{ErrorCode}";
     }
 }

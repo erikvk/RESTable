@@ -25,6 +25,6 @@ namespace RESTar.Results
         }
 
         /// <inheritdoc />
-        public override string Metadata => $"{nameof(UnsupportedContent)};{RequestInternal.Resource};{ErrorCode}";
+        public override string Metadata => $"{nameof(UnsupportedContent)};{RequestInternal?.Resource};{ErrorCode}";
     }
 }

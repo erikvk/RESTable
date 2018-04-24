@@ -17,6 +17,6 @@ namespace RESTar.Results
         }
 
         /// <inheritdoc />
-        public override string Metadata => $"{nameof(Internal)};{RequestInternal.Resource};{ErrorCode}";
+        public override string Metadata => $"{nameof(Internal)};{RequestInternal?.Resource};{ErrorCode}";
     }
 }

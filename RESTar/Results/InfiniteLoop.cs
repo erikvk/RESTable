@@ -17,6 +17,6 @@ namespace RESTar.Results
         }
 
         /// <inheritdoc />
-        public override string Metadata => $"{nameof(InfiniteLoop)};{RequestInternal.Resource};{ErrorCode}";
+        public override string Metadata => $"{nameof(InfiniteLoop)};{RequestInternal?.Resource};{ErrorCode}";
     }
 }

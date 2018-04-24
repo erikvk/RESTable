@@ -54,6 +54,7 @@ namespace RESTarTester
                 {
                     foreach (var header in headers) message.Headers.Add(header.Key, header.Value);
                 }
+                message.Headers.Add("RESTar-metadata", "full");
                 return HttpClient.SendAsync(message).Result;
             }
         }

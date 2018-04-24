@@ -93,7 +93,7 @@ namespace RESTar.Requests
                 if (metadata?.Length != 3)
                     return new ExternalServiceNotRESTar(URI).AsResultOf(this);
                 var (resultType, resourceName, data) = (metadata[0], metadata[1], metadata[2]);
-                if (resultType == null || resourceName == null)
+                if (string.IsNullOrWhiteSpace(resultType))
                     return new ExternalServiceNotRESTar(URI).AsResultOf(this);
                 RemoteResource = new RemoteResource(resourceName);
                 var stream = default(RESTarStreamController);

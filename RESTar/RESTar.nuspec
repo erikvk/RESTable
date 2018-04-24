@@ -3,7 +3,7 @@
 <package>
   <metadata>
     <id>RESTar</id>
-    <version>0.4.19</version>
+    <version>0.4.20</version>
     <title>RESTar</title>
     <authors>Erik von Krusenstierna</authors>
     <owners>Mopedo AB</owners>
@@ -14,6 +14,6 @@
     <tags>mopedo starcounter REST RESTful web services dynamit</tags>
     <licenseUrl>https://goo.gl/eJS8o9</licenseUrl>
     <projectUrl>https://github.com/Mopedo/Home/tree/master/RESTar</projectUrl>
-    <iconUrl>https://storage.googleapis.com/mopedo-resources/RESTar_logo.png</iconUrl>
+    <iconUrl>https://storage.googleapis.com/mopedo-resources/Regular_png_largeframe.png</iconUrl>
   </metadata>
 </package>

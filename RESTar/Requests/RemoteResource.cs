@@ -11,7 +11,10 @@ namespace RESTar.Requests
     {
         public string Name { get; }
 
-        public RemoteResource(string name) => Name = name;
+        public RemoteResource(string name)
+        {
+            Name = string.IsNullOrWhiteSpace(name) ? "Unknown" : name;
+        }
 
         private static string ErrorMessage(string propertyName) => $"Cannot call {propertyName} on a remote resource";
 

@@ -20,6 +20,6 @@ namespace RESTar.Results
         }
 
         /// <inheritdoc />
-        public override string Metadata => $"{nameof(MethodNotAllowed)};{RequestInternal.Resource};{ErrorCode}";
+        public override string Metadata => $"{nameof(MethodNotAllowed)};{RequestInternal?.Resource};{ErrorCode}";
     }
 }
