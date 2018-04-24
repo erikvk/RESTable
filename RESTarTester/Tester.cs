@@ -576,6 +576,13 @@ namespace RESTarTester
 
             #endregion
 
+            #region XML
+
+            Debug.Assert(Http.Request("GET", "http://localhost:9000/rest/resource2",
+                             headers: new Dictionary<string, string> {["Accept"] = "application/xml"}).IsSuccessStatusCode);
+
+            #endregion
+
             #region Error triggers
 
             Debug.Assert(Http.Request("GET", "http://localhost:9000/rest/x9").StatusCode == HttpStatusCode.NotFound);
@@ -587,7 +594,7 @@ namespace RESTarTester
             Debug.Assert(Http.Request("POST", "http://localhost:9000/rest/myres", new byte[] {1, 2, 3}).StatusCode == HttpStatusCode.MethodNotAllowed);
 
             #endregion
-            
+
             var done = true;
         }
     }

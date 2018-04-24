@@ -48,6 +48,7 @@ namespace RESTar.ContentTypeProviders
         public ulong SerializeCollection<T>(IEnumerable<T> entities, Stream stream, IRequest request = null) where T : class
         {
             var count = JsonProvider.SerializeCollection(entities, stream, request);
+            stream.Seek(0, SeekOrigin.Begin);
             XmlSerializeJsonStream(stream);
             return count;
         }
