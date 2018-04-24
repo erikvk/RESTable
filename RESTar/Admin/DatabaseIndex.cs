@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.Serialization;
 using System.Text.RegularExpressions;
 using Newtonsoft.Json;
 using RESTar.Operations;
@@ -69,7 +68,7 @@ namespace RESTar.Admin
         /// <summary>
         /// The RESTar resource corresponding to the table on which this index is registered
         /// </summary>
-        [IgnoreDataMember] public IEntityResource IResource { get; private set; }
+        [RESTarMember(ignore: true)] public IEntityResource IResource { get; private set; }
 
         /// <summary>
         /// The columns on which this index is registered

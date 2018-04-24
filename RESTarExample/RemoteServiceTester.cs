@@ -40,7 +40,7 @@ namespace RESTarExample
                     //     var json = JsonConvert.SerializeObject(entity);
                     // }
                     var ser = result.Serialize();
-                    WebSocket.SendResult(ser);
+                    WebSocket.SendResult(ser, request.TimeElapsed, true);
 
                     break;
                 case "BODY":

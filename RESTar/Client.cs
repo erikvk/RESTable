@@ -108,6 +108,8 @@ namespace RESTar
             if (AccessRights == null)
             {
                 error = new NotAuthorized();
+                if (headers.Metadata == "full")
+                    error.Headers.Metadata = error.Metadata;
                 return false;
             }
             return true;

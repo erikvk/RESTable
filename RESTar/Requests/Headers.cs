@@ -214,6 +214,7 @@ namespace RESTar.Requests
                 case var _ when key.EqualsNoCase("authorization"):
                 case var _ when key.EqualsNoCase("connection"):
                 case var _ when key.EqualsNoCase("upgrade"):
+                case var _ when key.EqualsNoCase("restar-metadata"):
                 case var _ when key.EqualsNoCase("sec-websocket-version"):
                 case var _ when key.EqualsNoCase("sec-websocket-key"):
                 case var _ when key.EqualsNoCase("sec-websocket-extensions"): return false;

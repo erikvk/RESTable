@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.Serialization;
 using RESTar.Resources;
 using RESTar.Results;
 using Starcounter;
@@ -45,7 +44,25 @@ namespace RESTar.Internal
         /// <summary>
         /// A string representation of the available REST methods
         /// </summary>
-        [IgnoreDataMember] public string AvailableMethodsString { get; private set; }
+        [RESTarMember(ignore: true)] public string AvailableMethodsString { get; private set; }
+
+        /// <summary/>
+        [RESTarMember(ignore: true), Obsolete] public bool Editable { get; internal set; }
+
+        /// <summary/>
+        [RESTarMember(ignore: true), Obsolete] public bool Visible { get; internal set; }
+
+        /// <summary/>
+        [RESTarMember(ignore: true), Obsolete] public string EntityViewHtml { get; internal set; }
+
+        /// <summary/>
+        [RESTarMember(ignore: true), Obsolete] public string EntitiesViewHtml { get; internal set; }
+
+        /// <summary/>
+        [RESTarMember(ignore: true), Obsolete] public bool Viewable { get; internal set; }
+
+        /// <summary/>
+        [RESTarMember(ignore: true), Obsolete] public bool IsViewable { get; internal set; }
 
         /// <summary>
         /// The target type for this resource

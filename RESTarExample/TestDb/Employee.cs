@@ -16,7 +16,7 @@ namespace RESTarExample.TestDb
         [DataMember(Name = "Boss")] public ulong? BossObjectNo;
         [DataMember(Name = "Company")] public ulong? CompanyObjectNo;
 
-        [IgnoreDataMember] public EmployeeDetails Details
+        [RESTarMember(ignore: true)] public EmployeeDetails Details
         {
             get => DetailsObjectNo.GetReference<EmployeeDetails>();
             set => DetailsObjectNo = value.GetObjectNo();
@@ -28,13 +28,13 @@ namespace RESTarExample.TestDb
             set => BossObjectNo = value.GetObjectNo();
         }
 
-        [IgnoreDataMember] public Company Company
+        [RESTarMember(ignore: true)] public Company Company
         {
             get => CompanyObjectNo.GetReference<Company>();
             set => CompanyObjectNo = value.GetObjectNo();
         }
 
-        [IgnoreDataMember] public IEnumerable<Employee> Subordinates
+        [RESTarMember(ignore: true)] public IEnumerable<Employee> Subordinates
         {
             get { return Db.SQL<Employee>($"SELECT t FROM {GetType().FullName} t WHERE t.Boss =?", this); }
             set { }

@@ -13,6 +13,8 @@ namespace RESTar.Results
             StatusCode = HttpStatusCode.NoContent;
             StatusDescription = "No content";
             Headers.Info = "No entities found matching request.";
+            if (request.Headers.Metadata == "full")
+                Headers.Metadata = Metadata;
         }
 
         /// <inheritdoc />

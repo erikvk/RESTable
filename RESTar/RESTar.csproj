@@ -47,9 +47,8 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Dynamit">
-      <HintPath>..\packages\Dynamit.0.1.37\lib\net452\Dynamit.dll</HintPath>
-      <Private>True</Private>
+    <Reference Include="Dynamit, Version=0.1.38.0, Culture=neutral, processorArchitecture=AMD64">
+      <HintPath>..\packages\Dynamit.0.1.38\lib\net452\Dynamit.dll</HintPath>
     </Reference>
     <Reference Include="EPPlus">
       <HintPath>..\packages\EPPlus.4.5.1\lib\net40\EPPlus.dll</HintPath>

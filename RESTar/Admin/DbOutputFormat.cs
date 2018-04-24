@@ -88,6 +88,9 @@ namespace RESTar.Admin
         /// </summary>
         public int StartIndent { get; private set; }
 
+        /// <summary/>
+        [Obsolete] public string PrettyPrintPattern { get; internal set; }
+
         #endregion
 
         internal DbOutputFormat() { }
@@ -107,6 +110,7 @@ namespace RESTar.Admin
         internal static Formatter Raw => default;
         internal static IEnumerable<DbOutputFormat> GetAll() => Db.SQL<DbOutputFormat>(All);
         internal static DbOutputFormat GetByName(string formatName) => Db.SQL<DbOutputFormat>(ByName, formatName).FirstOrDefault();
+
 
         internal static void Init()
         {

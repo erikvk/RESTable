@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.Serialization;
 using RESTar.Results;
 using Starcounter;
 using static RESTar.Method;
@@ -73,7 +72,7 @@ namespace RESTar.Admin
         /// <summary>
         /// Gets the resource denoted by this alias
         /// </summary>
-        [IgnoreDataMember] public IResource IResource => RESTarConfig.ResourceByName[Resource];
+        [RESTarMember(ignore: true)] public IResource IResource => RESTarConfig.ResourceByName[Resource];
 
         /// <summary>
         /// Gets a ResourceAlias by its alias (case insensitive)
