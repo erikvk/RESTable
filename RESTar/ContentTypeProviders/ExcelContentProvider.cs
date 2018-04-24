@@ -194,26 +194,33 @@ namespace RESTar.ContentTypeProviders
                 using (var jwr = new RESTarFromExcelJsonWriter(swr))
                 using (var package = new ExcelPackage(excelStream))
                 {
-                    var inputTable = package.Workbook.Worksheets[1];
-                    var (rows, columns ) = (inputTable.Dimension.Rows, inputTable.Dimension.Columns);
-                    if (rows < 2) return;
-                    var propertyNames = new string[columns + 1];
-                    for (var col = 1; col <= columns; col += 1)
-                        propertyNames[col] = inputTable.Cells[1, col].GetValue<string>();
                     jwr.WriteStartArray();
-                    for (var row = 2; row <= rows; row += 1)
+
+                    var worksheet = package.Workbook?.Worksheets?.FirstOrDefault();
+                    if (worksheet?.Dimension != null)
                     {
-                        jwr.WriteStartObject();
-                        for (var col = 1; col <= columns; col += 1)
+                        var (rows, columns) = (worksheet.Dimension.Rows, worksheet.Dimension.Columns);
+                        if (rows > 1)
                         {
-                            if (propertyNames[col] is string propertyName)
+                            var propertyNames = new string[columns + 1];
+                            for (var col = 1; col <= columns; col += 1)
+                                propertyNames[col] = worksheet.Cells[1, col].GetValue<string>();
+                            for (var row = 2; row <= rows; row += 1)
                             {
-                                jwr.WritePropertyName(propertyName);
-                                jwr.WriteValue(inputTable.Cells[row, col].Value);
+                                jwr.WriteStartObject();
+                                for (var col = 1; col <= columns; col += 1)
+                                {
+                                    if (propertyNames[col] is string propertyName)
+                                    {
+                                        jwr.WritePropertyName(propertyName);
+                                        jwr.WriteValue(worksheet.Cells[row, col].Value);
+                                    }
+                                }
+                                jwr.WriteEndObject();
                             }
                         }
-                        jwr.WriteEndObject();
                     }
+
                     jwr.WriteEndArray();
                 }
             }

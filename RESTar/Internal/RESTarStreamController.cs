@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 
 namespace RESTar.Internal
 {
@@ -35,7 +36,12 @@ namespace RESTar.Internal
             }
         }
 
-        internal RESTarStreamController(byte[] buffer) => Stream = new MemoryStream(buffer, true);
+        internal RESTarStreamController(byte[] buffer)
+        {
+            if (buffer == null) throw new ArgumentNullException(nameof(buffer));
+            Stream = new MemoryStream(buffer, true);
+        }
+
         internal RESTarStreamController(Stream existing = null) => ResolveStream(existing);
 
         private void ResolveStream(Stream existing)

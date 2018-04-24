@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using RESTar.Internal;
 using RESTar.Logging;
 using RESTar.Resources;
@@ -70,14 +71,15 @@ namespace RESTar.Requests
             Resource = parameters.iresource;
             MetaConditions = null;
             Method = parameters.Method;
-            Body = new Body
-            (
-                stream: new RESTarStreamController(parameters.BodyBytes),
-                contentType: Headers.ContentType
-                             ?? CachedProtocolProvider?.DefaultInputProvider.ContentType
-                             ?? Serialization.Serializers.Json.ContentType,
-                protocolProvider: parameters.CachedProtocolProvider
-            );
+            if (parameters.BodyBytes?.Any() == true)
+                Body = new Body
+                (
+                    stream: new RESTarStreamController(parameters.BodyBytes),
+                    contentType: Headers.ContentType
+                                 ?? CachedProtocolProvider?.DefaultInputProvider.ContentType
+                                 ?? Serialization.Serializers.Json.ContentType,
+                    protocolProvider: parameters.CachedProtocolProvider
+                );
             ResponseHeaders = null;
             Cookies = null;
         }

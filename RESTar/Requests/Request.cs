@@ -20,11 +20,17 @@ namespace RESTar.Requests
 {
     internal class Request<T> : IRequest, IRequest<T>, IEntityRequest<T>, ITraceable where T : class
     {
+        private bool IsEvaluating { get; set; }
         public ITarget<T> Target { get; }
         public Type TargetType { get; }
         public bool HasConditions => !(_conditions?.Count > 0);
+
+        private Headers _responseHeaders;
         public Headers ResponseHeaders => _responseHeaders ?? (_responseHeaders = new Headers());
+
+        private ICollection<string> _cookies;
         public ICollection<string> Cookies => _cookies ?? (_cookies = new List<string>());
+
         private Exception Error { get; }
         public bool IsValid => Error == null;
         public Func<IEnumerable<T>> EntitiesProducer { get; set; }
@@ -37,17 +43,23 @@ namespace RESTar.Requests
         IResource IRequest.Resource => Resource;
         public Method Method { get; set; }
 
+        private List<Condition<T>> _conditions;
+
         public List<Condition<T>> Conditions
         {
             get => _conditions ?? (_conditions = new List<Condition<T>>());
             set => _conditions = value;
         }
 
+        private MetaConditions _metaConditions;
+
         public MetaConditions MetaConditions
         {
             get => _metaConditions ?? (_metaConditions = new MetaConditions());
             set => _metaConditions = value;
         }
+
+        private Body _body;
 
         public Body Body
         {
@@ -69,12 +81,14 @@ namespace RESTar.Requests
 
         public void SetBody(byte[] bytes, ContentType? contentType = null)
         {
+            if (bytes == null) throw new ArgumentNullException(nameof(bytes));
             var _contentType = contentType ?? Headers.ContentType ?? CachedProtocolProvider.DefaultInputProvider.ContentType;
             Body = new Body(new RESTarStreamController(bytes), _contentType, CachedProtocolProvider);
         }
 
         public void SetBody(Stream stream, ContentType? contentType = null)
         {
+            if (stream == null) throw new ArgumentNullException(nameof(stream));
             var _contentType = contentType ?? Headers.ContentType ?? CachedProtocolProvider.DefaultInputProvider.ContentType;
             Body = new Body(new RESTarStreamController(stream), _contentType, CachedProtocolProvider);
         }
@@ -87,17 +101,6 @@ namespace RESTar.Requests
             metaConditions: MetaConditions.AsConditionList(),
             protocolProvider: CachedProtocolProvider.ProtocolProvider
         );
-
-        #region Private
-
-        private List<Condition<T>> _conditions;
-        private MetaConditions _metaConditions;
-        private Headers _responseHeaders;
-        private ICollection<string> _cookies;
-        private Body _body;
-        private bool IsEvaluating;
-
-        #endregion
 
         #region Parameter bindings
 

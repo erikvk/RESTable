@@ -39,23 +39,28 @@ namespace RESTar.Requests
 
         public void SetBody(byte[] bytes, ContentType? contentType = null)
         {
+            if (bytes == null) throw new ArgumentNullException(nameof(bytes));
             var _contentType = contentType ?? Headers.ContentType ?? CachedProtocolProvider.DefaultInputProvider.ContentType;
             Body = new Body(new RESTarStreamController(bytes), _contentType, CachedProtocolProvider);
         }
 
         public void SetBody(Stream stream, ContentType? contentType = null)
         {
+            if (stream == null) throw new ArgumentNullException(nameof(stream));
             var _contentType = contentType ?? Headers.ContentType ?? CachedProtocolProvider.DefaultInputProvider.ContentType;
             Body = new Body(new RESTarStreamController(stream), _contentType, CachedProtocolProvider);
         }
 
         public IResource Resource => RemoteResource;
-        public Type TargetType => throw new InvalidOperationException(ErrorMessage(nameof(TargetType)));
-        public bool HasConditions => throw new InvalidOperationException(ErrorMessage(nameof(HasConditions)));
-        public MetaConditions MetaConditions => throw new InvalidOperationException(ErrorMessage(nameof(MetaConditions)));
-        public Headers ResponseHeaders => throw new InvalidOperationException(ErrorMessage(nameof(ResponseHeaders)));
-        public ICollection<string> Cookies => throw new InvalidOperationException(ErrorMessage(nameof(Cookies)));
-        public IUriComponents UriComponents => throw new InvalidOperationException(ErrorMessage(nameof(UriComponents)));
+        public Type TargetType => null;
+        public bool HasConditions => false;
+        private MetaConditions _metaConditions;
+        public MetaConditions MetaConditions => _metaConditions ?? (_metaConditions = new MetaConditions());
+        private Headers _responseHeaders;
+        public Headers ResponseHeaders => _responseHeaders ?? (_responseHeaders = new Headers());
+        private ICollection<string> _cookies;
+        public ICollection<string> Cookies => _cookies ?? (_cookies = new List<string>());
+        public IUriComponents UriComponents => null;
 
         public IResult Result => GetResult().Result;
 

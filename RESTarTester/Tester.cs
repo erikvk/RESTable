@@ -575,6 +575,18 @@ namespace RESTarTester
 
             #endregion
 
+            #region Error triggers
+
+            Debug.Assert(Http.Request("GET", "http://localhost:9000/rest/x9").StatusCode == HttpStatusCode.NotFound);
+            Debug.Assert(Http.Request("GET", "http://localhost:9000/rest/resource1/bfa=1").StatusCode == HttpStatusCode.NotFound);
+            Debug.Assert(Http.Request("GET", "http://localhost:9000/rest/resource1//limit=foo").StatusCode == HttpStatusCode.BadRequest);
+            Debug.Assert(Http.Request("POST", "http://localhost:9000/rest/resource1/bfa=1").StatusCode == HttpStatusCode.NotFound);
+            Debug.Assert(Http.Request("POST", "http://localhost:9000/rest/resource1").StatusCode == HttpStatusCode.BadRequest);
+            Debug.Assert(Http.Request("PATCH", "http://localhost:9000/rest/resource1").StatusCode == HttpStatusCode.BadRequest);
+            Debug.Assert(Http.Request("POST", "http://localhost:9000/rest/myres", new byte[] {1, 2, 3}).StatusCode == HttpStatusCode.MethodNotAllowed);
+
+            #endregion
+            
             var done = true;
         }
     }
