@@ -22,7 +22,7 @@ namespace RESTar.Requests
         /// <summary>
         /// The body's bytes
         /// </summary>
-        internal RESTarStreamController Stream { get; }
+        internal RESTarStream Stream { get; }
 
         /// <summary>
         /// Deserializes the body to an IEnumerable of entities of the given type
@@ -68,7 +68,7 @@ namespace RESTar.Requests
 
         internal string LengthLogString => !HasContent ? "" : $" ({Stream.Length} bytes)";
 
-        internal Body(RESTarStreamController stream, ContentType contentType, CachedProtocolProvider protocolProvider)
+        internal Body(RESTarStream stream, ContentType contentType, CachedProtocolProvider protocolProvider)
         {
             ContentType = contentType;
             Stream = stream;

@@ -88,7 +88,7 @@ namespace RESTar.Results
         /// <inheritdoc />
         public void Dispose()
         {
-            if (Body is RESTarStreamController rsc)
+            if (Body is RESTarStream rsc)
                 rsc.CanClose = true;
             Body?.Dispose();
         }

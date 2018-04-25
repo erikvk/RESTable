@@ -176,7 +176,7 @@
     <Compile Include="Resources\TerminalResourceProvider.cs" />
     <Compile Include="ResourceTemplates\FeedTerminal.cs" />
     <Compile Include="ResourceTemplates\OptionsTerminal.cs" />
-    <Compile Include="Internal\RESTarStreamController.cs" />
+    <Compile Include="Internal\RESTarStream.cs" />
     <Compile Include="Results\MissingDataSource.cs" />
     <Compile Include="Results\NotCompliantWithProtocol.cs" />
     <Compile Include="InvalidProtocolProviderException.cs" />

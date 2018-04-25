@@ -21,6 +21,14 @@ namespace RESTar.Internal
                 throw new InvalidContentTypeProviderException($"Provider '{provider.GetType().RESTarTypeName()}' cannot read or write");
         }
 
+        internal static IContentTypeProvider ResolveInputContentTypeProvider(IRequestInternal request, ContentType? providedContentType)
+        {
+            providedContentType = providedContentType ?? request.Headers.ContentType ?? request.CachedProtocolProvider.DefaultInputProvider.ContentType;
+            if (!request.CachedProtocolProvider.InputMimeBindings.TryGetValue(providedContentType.Value.MediaType, out var contentTypeProvider))
+                throw new UnsupportedContent(providedContentType.ToString());
+            return contentTypeProvider;
+        }
+
         internal static IContentTypeProvider ResolveOutputContentTypeProvider(IRequestInternal request, ContentType? providedContentType)
         {
             var protocolProvider = request.CachedProtocolProvider;

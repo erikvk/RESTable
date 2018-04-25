@@ -2,10 +2,10 @@
 using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json.Linq;
+using RESTar.ContentTypeProviders;
 using RESTar.Internal;
 using RESTar.Linq;
 using RESTar.Results;
-using RESTar.Serialization;
 
 namespace RESTar.Operations
 {
@@ -286,7 +286,9 @@ namespace RESTar.Operations
             {
                 request.EntitiesProducer = () => items.Select(item =>
                 {
-                    Serializers.Json.PopulateJToken(item.json, item.source);
+                    if (item.json != null && item.source != null)
+                        using (var sr = item.json.CreateReader())
+                            JsonContentProvider.Serializer.Populate(sr, item.source);
                     (item.source as IValidatable)?.Validate();
                     return item.source;
                 });

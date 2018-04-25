@@ -27,11 +27,11 @@ namespace RESTar.Results
         /// <inheritdoc />
         public override Stream Body
         {
-            get => _body ?? (IsSerializing ? _body = new RESTarStreamController() : null);
+            get => _body ?? (IsSerializing ? _body = new RESTarStream() : null);
             set
             {
                 if (ReferenceEquals(_body, value)) return;
-                if (_body is RESTarStreamController rsc)
+                if (_body is RESTarStream rsc)
                     rsc.CanClose = true;
                 _body?.Dispose();
                 _body = value;

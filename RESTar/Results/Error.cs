@@ -105,10 +105,10 @@ namespace RESTar.Results
         /// <inheritdoc />
         public Stream Body
         {
-            get => _body ?? (IsSerializing ? _body = new RESTarStreamController() : null);
+            get => _body ?? (IsSerializing ? _body = new RESTarStream() : null);
             set
             {
-                if (_body is RESTarStreamController rsc)
+                if (_body is RESTarStream rsc)
                     rsc.CanClose = true;
                 _body?.Dispose();
                 _body = value;
@@ -161,7 +161,7 @@ namespace RESTar.Results
         /// <inheritdoc />
         public void Dispose()
         {
-            if (Body is RESTarStreamController rsc)
+            if (Body is RESTarStream rsc)
                 rsc.CanClose = true;
             Body?.Dispose();
         }

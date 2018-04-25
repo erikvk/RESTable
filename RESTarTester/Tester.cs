@@ -11,6 +11,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Dynamit;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using RESTar;
 using RESTar.Admin;
 using RESTar.Linq;
@@ -492,6 +493,65 @@ namespace RESTarTester
             var result = g.Result;
             Debug.Assert(result is InsertedEntities ie && ie.InsertedCount == 3);
 
+            var g2 = context.CreateRequest<MyDict>(POST);
+            dynamic d2 = new JObject();
+            d2.Hej = "123";
+            d2.Foo = 3213M;
+            d2.Goo = true;
+            dynamic v2 = new JObject();
+            v2.Hej = "123";
+            v2.Foo = 3213M;
+            v2.Goo = false;
+            dynamic x2 = new JObject();
+            x2.Hej = "123";
+            x2.Foo = 3213M;
+            x2.Goo = false;
+            var arr2 = new[] {d2, v2, x2};
+            g2.SetBody(arr2);
+            var result2 = g2.Result;
+            Debug.Assert(result2 is InsertedEntities ie2 && ie2.InsertedCount == 3);
+
+            var g5 = context.CreateRequest<MyDict>(POST);
+            dynamic d5 = new JObject();
+            d5.Hej = "123";
+            d5.Foo = 3213M;
+            d5.Goo = true;
+            dynamic v5 = new JObject();
+            v5.Hej = "123";
+            v5.Foo = 3213M;
+            v5.Goo = false;
+            dynamic x5 = new JObject();
+            x5.Hej = "123";
+            x5.Foo = 3213M;
+            x5.Goo = false;
+            var arr5 = new[] { d5, v5, x5 };
+            g5.SetBody(arr5, ContentType.Excel);
+            var result5 = g5.Result;
+            Debug.Assert(result5 is InsertedEntities ie5 && ie5.InsertedCount == 3);
+
+            var g3 = context.CreateRequest<MyDict>(POST);
+            var d3 = new
+            {
+                Hej = "123",
+                Foo = 3213M,
+                Goo = true
+            };
+            g3.SetBody(d3);
+            var result3 = g3.Result;
+            Debug.Assert(result3 is InsertedEntities ie3 && ie3.InsertedCount == 1);
+
+            var g4 = context.CreateRequest<MyDict>(POST);
+            var d4 = JsonConvert.SerializeObject(new
+            {
+                Hej = "123",
+                Foo = 3213M,
+                Goo = true
+            });
+            g4.SetBody(d4);
+            var result4 = g4.Result;
+            Debug.Assert(result4 is InsertedEntities ie4 && ie4.InsertedCount == 1);
+
+
             var r1Cond = new Condition<Resource1>(nameof(Resource1.Sbyte), GREATER_THAN, 1);
             var r1 = context.CreateRequest<Resource1>(GET);
             r1.Conditions.Add(r1Cond);
@@ -579,7 +639,7 @@ namespace RESTarTester
             #region XML
 
             Debug.Assert(Http.Request("GET", "http://localhost:9000/rest/resource2",
-                             headers: new Dictionary<string, string> {["Accept"] = "application/xml"}).IsSuccessStatusCode);
+                headers: new Dictionary<string, string> {["Accept"] = "application/xml"}).IsSuccessStatusCode);
 
             #endregion
 

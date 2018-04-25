@@ -55,7 +55,7 @@ namespace RESTar.ContentTypeProviders
         /// <inheritdoc />
         public IEnumerable<T> DeserializeCollection<T>(Stream stream) where T : class
         {
-            var jsonStream = new RESTarStreamController();
+            var jsonStream = new RESTarStream();
             try
             {
                 ProduceJsonArray(stream, jsonStream);
@@ -72,7 +72,7 @@ namespace RESTar.ContentTypeProviders
         /// <inheritdoc />
         public IEnumerable<T> Populate<T>(IEnumerable<T> entities, byte[] body) where T : class
         {
-            var jsonStream = new RESTarStreamController();
+            var jsonStream = new RESTarStream();
             try
             {
                 ProduceJsonArray(new MemoryStream(body), jsonStream);

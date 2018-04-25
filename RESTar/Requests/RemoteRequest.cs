@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -11,7 +10,6 @@ using RESTar.Linq;
 using RESTar.Logging;
 using RESTar.Resources;
 using RESTar.Results;
-using RESTar.Serialization;
 
 namespace RESTar.Requests
 {
@@ -25,31 +23,17 @@ namespace RESTar.Requests
         public Context Context { get; }
         public Headers Headers { get; }
         public Method Method { get; set; }
-        public Body Body { get; internal set; }
+        public Body Body { get; private set; }
         private RemoteResource RemoteResource { get; set; }
 
         private static string ErrorMessage(string propertyName) => $"Cannot get {propertyName} for a remote request";
 
-        public void SetBody(object content)
-        {
-            var stream = content != null ? Serializers.Json.SerializeStream(content) : new MemoryStream();
-            var contentType = Serializers.Json.ContentType;
-            Body = new Body(new RESTarStreamController(stream), contentType, CachedProtocolProvider);
-        }
-
-        public void SetBody(byte[] bytes, ContentType? contentType = null)
-        {
-            if (bytes == null) throw new ArgumentNullException(nameof(bytes));
-            var _contentType = contentType ?? Headers.ContentType ?? CachedProtocolProvider.DefaultInputProvider.ContentType;
-            Body = new Body(new RESTarStreamController(bytes), _contentType, CachedProtocolProvider);
-        }
-
-        public void SetBody(Stream stream, ContentType? contentType = null)
-        {
-            if (stream == null) throw new ArgumentNullException(nameof(stream));
-            var _contentType = contentType ?? Headers.ContentType ?? CachedProtocolProvider.DefaultInputProvider.ContentType;
-            Body = new Body(new RESTarStreamController(stream), _contentType, CachedProtocolProvider);
-        }
+        public void SetBody(object content, ContentType? contentType = null) => Body = new Body
+        (
+            stream: this.GetBodyStream(content, contentType),
+            contentType: Headers.ContentType ?? CachedProtocolProvider.DefaultInputProvider.ContentType,
+            protocolProvider: CachedProtocolProvider
+        );
 
         public IResource Resource => RemoteResource;
         public Type TargetType => null;
@@ -96,10 +80,10 @@ namespace RESTar.Requests
                 if (string.IsNullOrWhiteSpace(resultType))
                     return new ExternalServiceNotRESTar(URI).AsResultOf(this);
                 RemoteResource = new RemoteResource(resourceName);
-                var stream = default(RESTarStreamController);
+                var stream = default(RESTarStream);
                 if (response.Content != null)
                 {
-                    var streamController = new RESTarStreamController();
+                    var streamController = new RESTarStream();
                     await response.Content.CopyToAsync(streamController);
                     stream = streamController.Rewind();
                 }

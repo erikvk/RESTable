@@ -793,6 +793,37 @@ namespace RESTar
 
         #region Conversion
 
+        internal static RESTarStream GetBodyStream<T>(this IRequestInternal request, T content, ContentType? contentType = null) where T : class
+        {
+            switch (content)
+            {
+                case Stream _stream: return new RESTarStream(_stream);
+                case byte[] bytes: return new RESTarStream(bytes);
+                case string str: return new RESTarStream(str.ToBytes());
+                case null: throw new ArgumentNullException(nameof(content));
+            }
+            var contentTypeProvider = ContentTypeController.ResolveInputContentTypeProvider(request, contentType);
+            request.Headers.ContentType = contentTypeProvider.ContentType;
+            var stream = new RESTarStream();
+            switch (content)
+            {
+                case IDictionary<string, object> _:
+                case JObject _:
+                    contentTypeProvider.SerializeCollection(new[] {content}, stream);
+                    break;
+                case IEnumerable<object> ie:
+                    contentTypeProvider.SerializeCollection(ie, stream);
+                    break;
+                case IEnumerable ie:
+                    contentTypeProvider.SerializeCollection(ie.Cast<object>(), stream);
+                    break;
+                default:
+                    contentTypeProvider.SerializeCollection(new[] {content}, stream);
+                    break;
+            }
+            return stream.Rewind();
+        }
+
         internal static string SHA256(this string input)
         {
             using (var hasher = System.Security.Cryptography.SHA256.Create())
@@ -825,7 +856,7 @@ namespace RESTar
             {
                 case null: return null;
                 case MemoryStream _ms: return _ms.ToArray();
-                case RESTarStreamController rsc: return rsc.GetBytes();
+                case RESTarStream rsc: return rsc.GetBytes();
                 default:
                     using (var ms = new MemoryStream())
                     {

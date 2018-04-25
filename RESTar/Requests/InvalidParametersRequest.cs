@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using RESTar.Internal;
 using RESTar.Logging;
@@ -56,11 +55,7 @@ namespace RESTar.Requests
         public Headers ResponseHeaders { get; }
         public ICollection<string> Cookies { get; }
 
-        public void SetBody(object content) => throw new InvalidOperationException("Cannot set body of an invalid request");
-
-        public void SetBody(byte[] bytes, ContentType? contentType) => throw new InvalidOperationException("Cannot set body of an invalid request");
-
-        public void SetBody(Stream stream, ContentType? contentType = null) =>
+        public void SetBody(object content, ContentType? contentType = null) =>
             throw new InvalidOperationException("Cannot set body of an invalid request");
 
         internal InvalidParametersRequest(RequestParameters parameters)
@@ -74,7 +69,7 @@ namespace RESTar.Requests
             if (parameters.BodyBytes?.Any() == true)
                 Body = new Body
                 (
-                    stream: new RESTarStreamController(parameters.BodyBytes),
+                    stream: new RESTarStream(parameters.BodyBytes),
                     contentType: Headers.ContentType
                                  ?? CachedProtocolProvider?.DefaultInputProvider.ContentType
                                  ?? Serialization.Serializers.Json.ContentType,

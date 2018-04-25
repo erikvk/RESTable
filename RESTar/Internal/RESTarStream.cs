@@ -8,7 +8,7 @@ namespace RESTar.Internal
     /// The main stream class used for streams in RESTar. Will automatically save to disk if larger than
     /// 16 megabytes.
     /// </summary>
-    internal class RESTarStreamController : Stream
+    internal class RESTarStream : Stream
     {
         private const int MaxMemoryContentLength = 1 << 24;
         private bool Swapped;
@@ -17,7 +17,7 @@ namespace RESTar.Internal
 
         internal bool CanClose { private get; set; }
 
-        internal RESTarStreamController Rewind()
+        internal RESTarStream Rewind()
         {
             Stream.Seek(0, SeekOrigin.Begin);
             return this;
@@ -36,13 +36,13 @@ namespace RESTar.Internal
             }
         }
 
-        internal RESTarStreamController(byte[] buffer)
+        internal RESTarStream(byte[] buffer)
         {
             if (buffer == null) throw new ArgumentNullException(nameof(buffer));
             Stream = new MemoryStream(buffer, true);
         }
 
-        internal RESTarStreamController(Stream existing = null) => ResolveStream(existing);
+        internal RESTarStream(Stream existing = null) => ResolveStream(existing);
 
         private void ResolveStream(Stream existing)
         {
@@ -51,7 +51,7 @@ namespace RESTar.Internal
                 case null:
                     Stream = new MemoryStream(1024);
                     break;
-                case RESTarStreamController rsc:
+                case RESTarStream rsc:
                     ResolveStream(rsc.Stream);
                     break;
                 case MemoryStream ms:

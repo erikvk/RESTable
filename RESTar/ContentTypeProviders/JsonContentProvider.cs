@@ -63,8 +63,6 @@ namespace RESTar.ContentTypeProviders
             SerializerIgnoreNulls = JsonSerializer.Create(SettingsIgnoreNulls);
         }
 
-        #region Internals
-
         internal string SerializeFormatter(JToken formatterToken, out int indents)
         {
             using (var sw = new StringWriter())
@@ -77,11 +75,23 @@ namespace RESTar.ContentTypeProviders
             }
         }
 
-        internal void PopulateJToken(JToken value, object target)
+        /// <summary>
+        /// A general-purpose serializer. Serializes the given value using the formatting, and optionally - a type. If no 
+        /// formatting is given, the formatting defined in Settings is used.
+        /// </summary>
+        public string Serialize(object value, Formatting? formatting = null, bool ignoreNulls = false)
         {
-            if (value == null || target == null) return;
-            using (var sr = value.CreateReader())
-                Serializer.Populate(sr, target);
+            var _formatting = formatting ?? (_PrettyPrint ? Indented : None);
+            var settings = ignoreNulls ? SettingsIgnoreNulls : Settings;
+            return JsonConvert.SerializeObject(value, _formatting, settings);
+        }
+
+        /// <summary>
+        /// Serializes the value to the given JsonTextWriter, using the default serializer
+        /// </summary>
+        public void Serialize(JsonTextWriter jsonWriter, object value)
+        {
+            Serializer.Serialize(jsonWriter, value);
         }
 
         internal void Populate(string json, object target)
@@ -103,37 +113,6 @@ namespace RESTar.ContentTypeProviders
             }
             return stream;
         }
-
-        #endregion
-
-        /// <summary>
-        /// Serializes the value to the given JsonTextWriter
-        /// </summary>
-        public void Serialize(JsonTextWriter jsonWriter, object value)
-        {
-            Serializer.Serialize(jsonWriter, value);
-        }
-
-        /// <summary>
-        /// Serializes the given value using the formatting, and optionally - a type. If no 
-        /// formatting is given, the formatting defined in Settings is used.
-        /// </summary>
-        public string Serialize(object value, Formatting? formatting = null, bool ignoreNulls = false)
-        {
-            var _formatting = formatting ?? (_PrettyPrint ? Indented : None);
-            var settings = ignoreNulls ? SettingsIgnoreNulls : Settings;
-            return JsonConvert.SerializeObject(value, _formatting, settings);
-        }
-
-        /// <summary>
-        /// Deserializes the given json string to the given type.
-        /// </summary>
-        public T DeserializeCollection<T>(string json)
-        {
-            return JsonConvert.DeserializeObject<T>(json, Settings);
-        }
-
-        #region IContentTypeProvider
 
         /// <inheritdoc />
         public string Name => "JSON";
@@ -163,21 +142,6 @@ namespace RESTar.ContentTypeProviders
 
         /// <inheritdoc />
         public string[] MatchStrings { get; set; } = {JsonMimeType, RESTarSpecific, Brief, TextPlain};
-
-        /// <summary>
-        /// Serializes the given object to a byte array
-        /// </summary>
-        public byte[] SerializeToBytes<T>(T obj)
-        {
-            var stream = new MemoryStream();
-            using (var swr = new StreamWriter(stream, UTF8, 1024, true))
-            using (var jwr = new RESTarJsonWriter(swr, 0))
-            {
-                jwr.Formatting = _PrettyPrint ? Indented : None;
-                Serializer.Serialize(jwr, obj);
-            }
-            return stream.ToArray();
-        }
 
         /// <inheritdoc />
         public ulong SerializeCollection<T>(IEnumerable<T> entities, Stream stream, IRequest request = null) where T : class
@@ -218,7 +182,5 @@ namespace RESTar.ContentTypeProviders
                 }
             }
         }
-
-        #endregion
     }
 }

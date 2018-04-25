@@ -39,77 +39,88 @@ namespace RESTar.ContentTypeProviders
         public override string ContentDispositionFileExtension => ".xlsx";
 
         /// <inheritdoc />
-        public override ulong SerializeCollection<T>(IEnumerable<T> entities, Stream stream, IRequest request = null)
+        public override ulong SerializeCollection<T>(IEnumerable<T> _entities, Stream stream, IRequest request = null)
         {
-            if (entities == null) return 0;
+            if (_entities == null) return 0;
             try
             {
                 using (var package = new ExcelPackage(stream))
                 {
                     var currentRow = 1;
-                    var worksheet = package.Workbook.Worksheets.Add(request?.Resource.Name ?? "Sheet1");
-                    switch (entities)
+                    var worksheet = package.Workbook.Worksheets.Add(request?.Resource.Name ?? "Sheetasd1");
+
+                    void writeEntities(IEnumerable<object> entities)
                     {
-                        case IEnumerable<IDictionary<string, object>> dicts:
-                            var columns = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-                            foreach (var dict in dicts)
-                            {
-                                currentRow += 1;
-                                foreach (var pair in dict)
+                        switch (entities)
+                        {
+                            case IEnumerable<IDictionary<string, object>> dicts:
+                                var columns = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+                                foreach (var dict in dicts)
                                 {
-                                    if (!columns.TryGetValue(pair.Key, out var column))
+                                    currentRow += 1;
+                                    foreach (var pair in dict)
                                     {
-                                        column = columns.Count + 1;
-                                        columns[pair.Key] = column;
-                                        var cell = worksheet.Cells[1, column];
-                                        cell.Style.Font.Bold = true;
-                                        cell.Value = pair.Key;
+                                        if (!columns.TryGetValue(pair.Key, out var column))
+                                        {
+                                            column = columns.Count + 1;
+                                            columns[pair.Key] = column;
+                                            var cell = worksheet.Cells[1, column];
+                                            cell.Style.Font.Bold = true;
+                                            cell.Value = pair.Key;
+                                        }
+                                        WriteExcelCell(worksheet.Cells[currentRow, column], pair.Value);
                                     }
-                                    WriteExcelCell(worksheet.Cells[currentRow, column], pair.Value);
                                 }
-                            }
-                            break;
-                        case IEnumerable<JObject> jobjects:
-                            var _columns = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-                            foreach (var jobject in jobjects)
-                            {
-                                currentRow += 1;
-                                foreach (var pair in jobject)
+                                break;
+                            case IEnumerable<JObject> jobjects:
+                                var _columns = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+                                foreach (var jobject in jobjects)
                                 {
-                                    if (!_columns.TryGetValue(pair.Key, out var column))
+                                    currentRow += 1;
+                                    foreach (var pair in jobject)
                                     {
-                                        column = _columns.Count + 1;
-                                        _columns[pair.Key] = column;
-                                        var cell = worksheet.Cells[1, column];
-                                        cell.Style.Font.Bold = true;
-                                        cell.Value = pair.Key;
+                                        if (!_columns.TryGetValue(pair.Key, out var column))
+                                        {
+                                            column = _columns.Count + 1;
+                                            _columns[pair.Key] = column;
+                                            var cell = worksheet.Cells[1, column];
+                                            cell.Style.Font.Bold = true;
+                                            cell.Value = pair.Key;
+                                        }
+                                        WriteExcelCell(worksheet.Cells[currentRow, column], pair.Value.ToObject<object>());
                                     }
-                                    WriteExcelCell(worksheet.Cells[currentRow, column], pair.Value.ToObject<object>());
                                 }
-                            }
-                            break;
-                        default:
-                            var properties = typeof(T).GetDeclaredProperties().Values.Where(p => !p.Hidden).ToList();
-                            var columnIndex = 1;
-                            foreach (var property in properties)
-                            {
-                                var cell = worksheet.Cells[1, columnIndex];
-                                cell.Style.Font.Bold = true;
-                                cell.Value = property.Name;
-                                columnIndex += 1;
-                            }
-                            foreach (var entity in entities)
-                            {
-                                currentRow += 1;
-                                columnIndex = 1;
+                                break;
+
+                            case ICollection<object> objs:
+                                writeEntities(objs.Select(o => o is JObject jo ? jo : JObject.FromObject(o, JsonContentProvider.Serializer)));
+                                break;
+
+                            default:
+                                var properties = typeof(T).GetDeclaredProperties().Values.Where(p => !p.Hidden).ToList();
+                                var columnIndex = 1;
                                 foreach (var property in properties)
                                 {
-                                    WriteExcelCell(worksheet.Cells[currentRow, columnIndex], GetCellValue(property, entity));
+                                    var cell = worksheet.Cells[1, columnIndex];
+                                    cell.Style.Font.Bold = true;
+                                    cell.Value = property.Name;
                                     columnIndex += 1;
                                 }
-                            }
-                            break;
+                                foreach (var entity in entities)
+                                {
+                                    currentRow += 1;
+                                    columnIndex = 1;
+                                    foreach (var property in properties)
+                                    {
+                                        WriteExcelCell(worksheet.Cells[currentRow, columnIndex], GetCellValue(property, entity));
+                                        columnIndex += 1;
+                                    }
+                                }
+                                break;
+                        }
                     }
+
+                    writeEntities(_entities);
                     if (currentRow == 1) return 0;
                     worksheet.Cells.AutoFitColumns(0);
                     package.Save();

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using RESTar.Internal;
 using RESTar.Logging;
 using RESTar.Requests;
@@ -111,24 +110,14 @@ namespace RESTar
         Body Body { get; }
 
         /// <summary>
-        /// Assigns a new Body instance from a JSON serializable .NET object.
+        /// Assigns a new Body instance from a .NET object and, optionally, a content type.
+        /// If string, Stream or byte array, the content is used directly - with the content type
+        /// given in Headers. Otherwise it is serialized using the given content type, or the
+        /// protocol default if contentType is null.
         /// </summary>
         /// <param name="content"></param>
-        void SetBody(object content);
-
-        /// <summary>
-        /// Assigns a new body from a byte array and optional content type
-        /// </summary>
-        /// <param name="bytes">The bytes that constitute the body</param>
         /// <param name="contentType"></param>
-        void SetBody(byte[] bytes, ContentType? contentType = null);
-
-        /// <summary>
-        /// Assigns a new body from a stream and optional content type
-        /// </summary>
-        /// <param name="stream">The stream that contains the body</param>
-        /// <param name="contentType"></param>
-        void SetBody(Stream stream, ContentType? contentType = null);
+        void SetBody(object content, ContentType? contentType = null);
 
         /// <summary>
         /// To include additional HTTP headers in the response, add them to 

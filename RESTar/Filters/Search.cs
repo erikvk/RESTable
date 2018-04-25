@@ -1,7 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using RESTar.Serialization;
+using static System.StringComparison;
 
 namespace RESTar.Filters
 {
@@ -28,7 +28,7 @@ namespace RESTar.Filters
         public IEnumerable<T> Apply<T>(IEnumerable<T> entities)
         {
             if (string.IsNullOrWhiteSpace(Pattern)) return entities;
-            return entities.Where(e => Serializers.Json.Serialize(e).IndexOf(Pattern, StringComparison.OrdinalIgnoreCase) >= 0);
+            return entities.Where(e => Serializers.Json.Serialize(e).IndexOf(Pattern, OrdinalIgnoreCase) >= 0);
         }
     }
 }
