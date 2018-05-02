@@ -4,12 +4,14 @@ using System.Net;
 using RESTar.Logging;
 using RESTar.Results;
 
-namespace RESTar {
-    /// <inheritdoc />
+namespace RESTar
+{
+    /// <inheritdoc cref="ILogable" />
+    /// <inheritdoc cref="IDisposable" />
     /// <summary>
     /// A RESTar result
     /// </summary>
-    public interface IResult : ILogable
+    public interface IResult : ILogable, IDisposable
     {
         /// <summary>
         /// The status code of the result

@@ -43,10 +43,10 @@ namespace RESTar.Results
 
         public IEnumerator<JObject> GetEnumerator() => new StreamEnumerator<JObject>(Body, ContentTypeProvider);
 
-        internal RemoteEntities(IRequestInternal request, RESTarStream jsonStream, ulong entityCount) : base(request)
+        internal RemoteEntities(IRequestInternal request, RESTarStream stream, ulong entityCount) : base(request)
         {
             RequestInternal = request;
-            Body = jsonStream;
+            Body = stream;
             EntityType = typeof(JObject);
             EntityCount = entityCount;
             IsSerialized = true;

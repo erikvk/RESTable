@@ -237,7 +237,6 @@
     <Compile Include="Linq\Conditions.cs" />
     <Compile Include="Linq\Enumerable.cs" />
     <Compile Include="Processors\IProcessor.cs" />
-    <Compile Include="Sc\Transact.cs" />
     <Compile Include="Requests\RequestParameters.cs" />
     <Compile Include="Internal\ErrorCodes.cs" />
     <Compile Include="Operators.cs" />

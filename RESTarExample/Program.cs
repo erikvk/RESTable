@@ -32,6 +32,19 @@ namespace RESTarExample
         }
     }
 
+    [Database]
+    public class DtTest
+    {
+        public DateTime DtLocal;
+        public DateTime DtUTC;
+
+        public DtTest()
+        {
+            DtLocal = DateTime.Now;
+            DtUTC = DateTime.UtcNow;
+        }
+    }
+
     public class Resource1
     {
         public sbyte Sbyte;

@@ -9,7 +9,7 @@ namespace RESTar
     /// Represents a result that is ready to be sent back to the client, for example 
     /// in an HTTP response or a WebSocket message.
     /// </summary>
-    public interface ISerializedResult : IResult, IDisposable
+    public interface ISerializedResult : IResult
     {
         /// <summary>
         /// The serialized body contained in the result. Can be seekable or non-seekable.

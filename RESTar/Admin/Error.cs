@@ -85,7 +85,7 @@ namespace RESTar.Admin
             var totalMessage = error.TotalMessage();
             return new Error
             {
-                Time = DateTime.Now,
+                Time = DateTime.UtcNow,
                 ResourceName = (resource?.Name ?? "<unknown>") +
                                (resource?.Alias != null ? $" ({resource.Alias})" : ""),
                 Method = request.Method,
@@ -112,10 +112,10 @@ namespace RESTar.Admin
 
         internal static void ClearOld()
         {
-            if (Checked >= DateTime.Now.Date) return;
-            var matches = Db.SQL<Error>(ByTimeLessThan, DateTime.Now.AddDays(0 - _DaysToSaveErrors));
+            if (Checked >= DateTime.UtcNow.Date) return;
+            var matches = Db.SQL<Error>(ByTimeLessThan, DateTime.UtcNow.AddDays(0 - _DaysToSaveErrors));
             matches.ForEach(match => Db.TransactAsync(match.Delete));
-            Checked = DateTime.Now.Date;
+            Checked = DateTime.UtcNow.Date;
         }
 
         /// <summary/>
