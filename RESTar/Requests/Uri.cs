@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using RESTar.Admin;
 using RESTar.Internal;
+using RESTar.ProtocolProviders;
 using RESTar.Results;
 
 namespace RESTar.Requests

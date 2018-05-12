@@ -2,13 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using RESTar.Admin;
-using RESTar.Filters;
 using RESTar.Linq;
-using RESTar.Processors;
-using RESTar.Resources;
+using RESTar.Meta;
+using RESTar.Requests.Filters;
+using RESTar.Requests.Processors;
 using RESTar.Results;
 using static RESTar.Internal.ErrorCodes;
-using static RESTar.Operators;
+using static RESTar.Requests.Operators;
 
 #pragma warning disable 612
 

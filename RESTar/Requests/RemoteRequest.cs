@@ -6,9 +6,9 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
 using RESTar.Internal;
+using RESTar.Internal.Logging;
 using RESTar.Linq;
-using RESTar.Logging;
-using RESTar.Resources;
+using RESTar.Meta;
 using RESTar.Results;
 
 namespace RESTar.Requests
@@ -46,9 +46,11 @@ namespace RESTar.Requests
         public ICollection<string> Cookies => _cookies ?? (_cookies = new List<string>());
         public IUriComponents UriComponents => null;
 
-        public IResult Result => GetResult().Result;
+        public IResult Evaluate() => _GetResult().Result;
 
-        private async Task<IResult> GetResult()
+        public Task<IResult> EvaluateAsync() => _GetResult();
+
+        private async Task<IResult> _GetResult()
         {
             try
             {

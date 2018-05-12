@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using RESTar.Meta;
 using RESTar.Requests;
 using RESTar.Resources;
+using RESTar.Results;
 
 namespace RESTar.WebSockets
 {
@@ -57,6 +59,9 @@ namespace RESTar.WebSockets
 
         /// <inheritdoc />
         public void SendResult(ISerializedResult r, TimeSpan? t = null, bool w = false, bool d = true) => WebSocket.SendResult(r, t, w, d);
+
+        /// <inheritdoc />
+        public void StreamResult(ISerializedResult r, TimeSpan? t = null, bool w = false, bool d = true) => WebSocket.StreamResult(r, t, w, d);
 
         /// <inheritdoc />
         public void SendException(Exception exception) => WebSocket.SendException(exception);

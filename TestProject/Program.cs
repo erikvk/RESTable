@@ -1,5 +1,6 @@
 ﻿using System;
 using RESTar;
+using RESTar.Resources;
 using Starcounter;
 
 namespace TestProject

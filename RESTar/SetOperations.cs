@@ -6,7 +6,9 @@ using System.Web;
 using Newtonsoft.Json.Linq;
 using RESTar.ContentTypeProviders;
 using RESTar.Linq;
-using RESTar.Operations;
+using RESTar.Requests;
+using RESTar.Resources;
+using RESTar.Resources.Operations;
 using RESTar.Results;
 using static System.StringComparison;
 using static RESTar.Method;
@@ -52,10 +54,10 @@ namespace RESTar
                             case default(char): throw new Exception("Operation expressions cannot be empty strings");
                             case '[': return JArray.Parse(argument);
                             case '/':
-                                switch (request.Context.CreateRequest(GET, argument).Result)
+                                switch (request.Context.CreateRequest(GET, argument).Evaluate())
                                 {
                                     case NoContent _: return new JArray();
-                                    case IEntities entities: return JArray.FromObject(entities, JsonContentProvider.Serializer);
+                                    case IEntities entities: return JArray.FromObject(entities, Json.Serializer);
                                     case var other: throw new Exception($"Could not get source data from '{argument}'. {other.LogMessage}");
                                 }
                             default:
@@ -153,7 +155,7 @@ namespace RESTar
                     valueBuffer[i] = HttpUtility.UrlEncode(value);
                 }
                 localMapper = string.Format(localMapper, valueBuffer);
-                switch (request.Context.CreateRequest(GET, localMapper).Result)
+                switch (request.Context.CreateRequest(GET, localMapper).Evaluate())
                 {
                     case NoContent _: break;
                     case IEntities<object> entities:

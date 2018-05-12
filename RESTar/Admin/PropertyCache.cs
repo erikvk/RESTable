@@ -1,8 +1,10 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using RESTar.Reflection.Dynamic;
 using RESTar.Linq;
-using RESTar.Operations;
+using RESTar.Meta;
+using RESTar.Requests;
+using RESTar.Resources;
+using RESTar.Resources.Operations;
 
 namespace RESTar.Admin
 {

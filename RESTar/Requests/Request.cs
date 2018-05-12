@@ -3,15 +3,17 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Net;
-using RESTar.Logging;
+using System.Threading.Tasks;
 using RESTar.Admin;
-using RESTar.Auth;
 using RESTar.Internal;
-using RESTar.Operations;
+using RESTar.Internal.Auth;
+using RESTar.Internal.Logging;
 using static RESTar.Method;
 using static RESTar.Internal.ErrorCodes;
 using RESTar.Linq;
-using RESTar.Resources;
+using RESTar.Meta;
+using RESTar.Meta.Internal;
+using RESTar.Resources.Operations;
 using RESTar.Results;
 
 namespace RESTar.Requests
@@ -22,13 +24,10 @@ namespace RESTar.Requests
         public ITarget<T> Target { get; }
         public Type TargetType { get; }
         public bool HasConditions => !(_conditions?.Count > 0);
-
         private Headers _responseHeaders;
         public Headers ResponseHeaders => _responseHeaders ?? (_responseHeaders = new Headers());
-
         private ICollection<string> _cookies;
         public ICollection<string> Cookies => _cookies ?? (_cookies = new List<string>());
-
         private Exception Error { get; }
         public bool IsValid => Error == null;
         public Func<IEnumerable<T>> EntitiesProducer { get; set; }
@@ -117,32 +116,31 @@ namespace RESTar.Requests
 
         #endregion
 
-        public IEntities<T> ResultEntities => (IEntities<T>) Result;
+        public IEntities<T> ResultEntities => (IEntities<T>) Evaluate();
 
-        public IResult Result
+        public IResult Evaluate() => EvaluateAsync().Result;
+
+        public async Task<IResult> EvaluateAsync()
         {
-            get
-            {
-                if (!IsValid) return Error.AsResultOf(this);
-                if (!MethodCheck(out var _failedAuth))
-                    return new MethodNotAllowed(Method, Resource, _failedAuth).AsResultOf(this);
-                if (IsWebSocketUpgrade)
-                    try
-                    {
-                        if (!CachedProtocolProvider.ProtocolProvider.IsCompliant(this, out var reason))
-                            return new NotCompliantWithProtocol(CachedProtocolProvider.ProtocolProvider, reason).AsResultOf(this);
-                    }
-                    catch (NotImplementedException) { }
-                if (IsEvaluating) throw new InfiniteLoop();
-                var result = RunEvaluation();
-                result.Headers.Elapsed = TimeElapsed.TotalMilliseconds.ToString(CultureInfo.InvariantCulture);
-                if (Headers.Metadata == "full" && result.Metadata is string metadata)
-                    result.Headers.Metadata = metadata;
-                result.Headers.Version = RESTarConfig.Version;
-                if (result is InfiniteLoop loop && !Context.IsBottomIfStack)
-                    throw loop;
-                return result;
-            }
+            if (!IsValid) return Error.AsResultOf(this);
+            if (!MethodCheck(out var _failedAuth))
+                return new MethodNotAllowed(Method, Resource, _failedAuth).AsResultOf(this);
+            if (IsWebSocketUpgrade)
+                try
+                {
+                    if (!CachedProtocolProvider.ProtocolProvider.IsCompliant(this, out var reason))
+                        return new NotCompliantWithProtocol(CachedProtocolProvider.ProtocolProvider, reason).AsResultOf(this);
+                }
+                catch (NotImplementedException) { }
+            if (IsEvaluating) throw new InfiniteLoop();
+            var result = await RunEvaluation();
+            result.Headers.Elapsed = TimeElapsed.TotalMilliseconds.ToString(CultureInfo.InvariantCulture);
+            if (Headers.Metadata == "full" && result.Metadata is string metadata)
+                result.Headers.Metadata = metadata;
+            result.Headers.Version = RESTarConfig.Version;
+            if (result is InfiniteLoop loop && !Context.IsBottomIfStack)
+                throw loop;
+            return result;
         }
 
         private bool MethodCheck(out bool failedAuth)
@@ -156,7 +154,7 @@ namespace RESTar.Requests
             return false;
         }
 
-        private IResult RunEvaluation()
+        private async Task<IResult> RunEvaluation()
         {
             try
             {
@@ -164,13 +162,13 @@ namespace RESTar.Requests
                 IsEvaluating = true;
                 switch (Resource)
                 {
-                    case Resources.TerminalResource<T> terminal:
+                    case Meta.Internal.TerminalResource<T> terminal:
                         if (!Context.HasWebSocket) return new UpgradeRequired(terminal.Name);
                         if (IsWebSocketUpgrade)
                             return MakeWebSocketUpgrade(terminal);
                         return SwitchTerminal(terminal);
 
-                    case Resources.IBinaryResource<T> binary:
+                    case IBinaryResource<T> binary:
                         var (stream, contentType ) = binary.SelectBinary(this);
                         return new Binary(this, stream, contentType);
 
@@ -201,7 +199,7 @@ namespace RESTar.Requests
             }
         }
 
-        private ISerializedResult SwitchTerminal(Resources.TerminalResource<T> resource)
+        private ISerializedResult SwitchTerminal(Meta.Internal.TerminalResource<T> resource)
         {
             var newTerminal = resource.MakeTerminal(Conditions);
             Context.WebSocket.ConnectTo(newTerminal, resource);
@@ -209,7 +207,7 @@ namespace RESTar.Requests
             return new SwitchedTerminal(this);
         }
 
-        private ISerializedResult MakeWebSocketUpgrade(Resources.TerminalResource<T> resource)
+        private ISerializedResult MakeWebSocketUpgrade(Meta.Internal.TerminalResource<T> resource)
         {
             var terminal = resource.MakeTerminal(Conditions);
             Context.WebSocket.SetContext(this);
@@ -271,7 +269,7 @@ namespace RESTar.Requests
                         if (source.Method != GET) throw new InvalidSyntax(InvalidSource, "Only GET is allowed in Source headers");
                         if (source.IsInternal)
                         {
-                            var result = Context.CreateRequest(source.Method, source.URI, null, source.Headers).Result;
+                            var result = Context.CreateRequest(source.Method, source.URI, null, source.Headers).Evaluate();
                             if (!(result is IEntities)) throw new InvalidExternalSource(source.URI, result.LogMessage);
                             var serialized = result.Serialize();
                             if (serialized is NoContent) throw new InvalidExternalSource(source.URI, "Response was empty");

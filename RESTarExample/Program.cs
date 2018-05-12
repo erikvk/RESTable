@@ -8,8 +8,10 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using RESTar;
 using RESTar.Linq;
-using RESTar.Operations;
-using RESTar.ResourceTemplates;
+using RESTar.Requests;
+using RESTar.Resources;
+using RESTar.Resources.Operations;
+using RESTar.Resources.Templates;
 using Starcounter;
 
 #pragma warning disable 1591
@@ -31,20 +33,6 @@ namespace RESTarExample
             );
         }
     }
-
-    [Database]
-    public class DtTest
-    {
-        public DateTime DtLocal;
-        public DateTime DtUTC;
-
-        public DtTest()
-        {
-            DtLocal = DateTime.Now;
-            DtUTC = DateTime.UtcNow;
-        }
-    }
-
     public class Resource1
     {
         public sbyte Sbyte;

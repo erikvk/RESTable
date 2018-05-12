@@ -2,12 +2,13 @@
 using System.Collections.Generic;
 using System.Text;
 using Newtonsoft.Json;
-using RESTar.Logging;
+using RESTar.ContentTypeProviders;
+using RESTar.Internal.Logging;
+using RESTar.Internal.Sc;
+using RESTar.Meta;
 using RESTar.Requests;
 using RESTar.Resources;
 using RESTar.Results;
-using RESTar.Serialization;
-using RESTar.Sc;
 using Console = RESTar.Admin.Console;
 
 namespace RESTar.WebSockets
@@ -18,6 +19,11 @@ namespace RESTar.WebSockets
     /// </summary>
     public abstract class WebSocket : IWebSocket, ITraceable, IDisposable
     {
+        public void StreamResult(ISerializedResult result, TimeSpan? timeElapsed = null, bool writeHeaders = false, bool disposeResult = true)
+        {
+            throw new NotImplementedException();
+        }
+
         /// <summary>
         /// The ID of the WebSocket
         /// </summary>
@@ -165,7 +171,7 @@ namespace RESTar.WebSockets
                 throw new InvalidOperationException($"Unable to send WebSocket with status '{Status}' to terminal '{resource.Name}'");
             if (resource == null)
                 throw new ArgumentNullException(nameof(resource));
-            var _resource = (Resources.TerminalResource<T>) resource;
+            var _resource = (Meta.Internal.TerminalResource<T>) resource;
             var newTerminal = _resource.MakeTerminal(assignments);
             Context.WebSocket.ConnectTo(newTerminal, _resource);
             newTerminal.Open();

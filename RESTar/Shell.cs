@@ -2,16 +2,18 @@
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using RESTar.ContentTypeProviders;
+using RESTar.Internal;
+using RESTar.Meta;
 using RESTar.Requests;
 using RESTar.Resources;
 using RESTar.Results;
-using RESTar.Serialization;
 using RESTar.WebSockets;
 using Starcounter;
 using static RESTar.Internal.ErrorCodes;
 using static RESTar.Method;
 using Error = RESTar.Results.Error;
-using IResource = RESTar.Resources.IResource;
+using IResource = RESTar.Meta.IResource;
 
 namespace RESTar
 {
@@ -535,7 +537,7 @@ namespace RESTar
             var local = Query;
             using (var request = WebSocket.Context.CreateRequest(method, local, body, WebSocket.Headers))
             {
-                var result = request.Result.Serialize();
+                var result = request.Evaluate().Serialize();
                 switch (result)
                 {
                     case Error _ when queryChangedPreEval:

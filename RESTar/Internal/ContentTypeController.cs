@@ -3,8 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using RESTar.ContentTypeProviders;
 using RESTar.Linq;
+using RESTar.Requests;
+using RESTar.Resources;
 using RESTar.Results;
-using RESTar.Serialization;
 
 namespace RESTar.Internal
 {

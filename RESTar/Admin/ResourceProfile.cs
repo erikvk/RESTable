@@ -3,8 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using Dynamit;
 using RESTar.Linq;
-using RESTar.Operations;
+using RESTar.Meta;
+using RESTar.Requests;
 using RESTar.Resources;
+using RESTar.Resources.Operations;
 using Starcounter;
 
 namespace RESTar.Admin
@@ -52,7 +54,7 @@ namespace RESTar.Admin
                 profiles = RESTarConfig.Resources.OfType<IEntityResource>().Select(r => r.ResourceProfile).Where(r => r != null);
             else
             {
-                var resource = RESTar.Resource.Find(input);
+                var resource = Meta.Resource.Find(input);
                 var entityResource = resource as IEntityResource;
                 var profile = entityResource?.ResourceProfile
                               ?? throw new Exception($"Cannot profile '{resource.Name}'. No profiler implemented for type");

@@ -5,8 +5,11 @@ using System.Text.RegularExpressions;
 using Newtonsoft.Json;
 using RESTar.Internal;
 using RESTar.Linq;
-using RESTar.Operations;
+using RESTar.Meta;
+using RESTar.Meta.Internal;
+using RESTar.Requests;
 using RESTar.Resources;
+using RESTar.Resources.Operations;
 
 namespace RESTar.Admin
 {

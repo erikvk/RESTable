@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using RESTar.Meta.Internal;
 using RESTar.Resources;
 using RESTar.Results;
 using Starcounter;
@@ -80,8 +81,7 @@ namespace RESTar.Internal
         internal static IEnumerable<DynamicResource> GetAll() => Db.SQL<DynamicResource>(All);
         private static bool Exists(string tableName) => Db.SQL<DynamicResource>(ByTableName, tableName).FirstOrDefault() != null;
 
-        private DynamicResource(string name, Type table, IEnumerable<Method> availableMethods,
-            string description = null)
+        private DynamicResource(string name, Type table, IEnumerable<Method> availableMethods, string description = null)
         {
             Name = name;
             TableName = table.RESTarTypeName();

@@ -2,16 +2,18 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using RESTar.Linq;
-using RESTar.Operations;
+using RESTar.Meta;
+using RESTar.Meta.Internal;
 using RESTar.Requests;
 using RESTar.Resources;
+using RESTar.Resources.Operations;
 using static RESTar.Method;
 
 namespace RESTar
 {
     /// <inheritdoc />
     /// <summary>
-    /// Gets the available resources for the current user
+    /// A resource that generates a list of the available resources for the current user
     /// </summary>
     [RESTar(GET, Description = description, GETAvailableToAll = true)]
     public sealed class AvailableResource : ISelector<AvailableResource>

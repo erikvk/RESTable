@@ -2,7 +2,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using RESTar.Serialization;
+using RESTar.ContentTypeProviders;
 
 namespace RESTar.WebSockets
 {

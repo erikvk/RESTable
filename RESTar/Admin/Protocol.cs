@@ -1,7 +1,10 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using RESTar.Internal;
-using RESTar.Operations;
+using RESTar.ProtocolProviders;
+using RESTar.Requests;
+using RESTar.Resources;
+using RESTar.Resources.Operations;
 
 namespace RESTar.Admin
 {

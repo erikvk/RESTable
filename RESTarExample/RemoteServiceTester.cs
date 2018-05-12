@@ -2,6 +2,8 @@
 using System.Text;
 using RESTar;
 using RESTar.Requests;
+using RESTar.Resources;
+using RESTar.WebSockets;
 
 #pragma warning disable 1591
 
@@ -34,7 +36,7 @@ namespace RESTarExample
                     // var res = request.Result.Serialize();
                     // WebSocket.SendResult(res, res.TimeElapsed, true);
 
-                    var result = request.Result;
+                    var result = request.Evaluate();
                     // foreach (var entity in result as IEntities)
                     // {
                     //     var json = JsonConvert.SerializeObject(entity);

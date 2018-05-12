@@ -10,15 +10,21 @@ using Dynamit;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using RESTar.Admin;
-using RESTar.Auth;
-using RESTar.Reflection.Dynamic;
+using RESTar.ContentTypeProviders;
 using RESTar.Internal;
+using RESTar.Internal.Auth;
+using RESTar.Internal.Logging;
+using RESTar.Internal.Sc;
 using RESTar.Linq;
+using RESTar.Meta;
+using RESTar.Meta.Internal;
+using RESTar.NetworkProviders;
+using RESTar.ProtocolProviders;
 using RESTar.Resources;
-using RESTar.Sc;
 using Starcounter;
 using static RESTar.Method;
-using IResource = RESTar.Resources.IResource;
+using IResource = RESTar.Meta.IResource;
+using Resource = RESTar.Meta.Resource;
 
 namespace RESTar
 {

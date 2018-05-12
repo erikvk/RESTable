@@ -15,12 +15,14 @@ using Newtonsoft.Json.Linq;
 using RESTar;
 using RESTar.Admin;
 using RESTar.Linq;
-using RESTar.Operations;
+using RESTar.Requests;
+using RESTar.Resources;
+using RESTar.Resources.Operations;
 using RESTar.Results;
 using Starcounter;
 using static RESTar.Method;
-using static RESTar.Operators;
-using Context = RESTar.Context;
+using static RESTar.Requests.Operators;
+using Context = RESTar.Requests.Context;
 
 #pragma warning disable 618
 #pragma warning disable 219
@@ -490,7 +492,7 @@ namespace RESTarTester
                 x.Goo = false;
                 return new MyDict[] {d, v, x};
             };
-            var result = g.Result;
+            var result = g.Evaluate();
             Debug.Assert(result is InsertedEntities ie && ie.InsertedCount == 3);
 
             var g2 = context.CreateRequest<MyDict>(POST);
@@ -508,7 +510,7 @@ namespace RESTarTester
             x2.Goo = false;
             var arr2 = new[] {d2, v2, x2};
             g2.SetBody(arr2);
-            var result2 = g2.Result;
+            var result2 = g2.Evaluate();
             Debug.Assert(result2 is InsertedEntities ie2 && ie2.InsertedCount == 3);
 
             var g5 = context.CreateRequest<MyDict>(POST);
@@ -526,7 +528,7 @@ namespace RESTarTester
             x5.Goo = false;
             var arr5 = new[] { d5, v5, x5 };
             g5.SetBody(arr5, ContentType.Excel);
-            var result5 = g5.Result;
+            var result5 = g5.Evaluate();
             Debug.Assert(result5 is InsertedEntities ie5 && ie5.InsertedCount == 3);
 
             var g3 = context.CreateRequest<MyDict>(POST);
@@ -537,7 +539,7 @@ namespace RESTarTester
                 Goo = true
             };
             g3.SetBody(d3);
-            var result3 = g3.Result;
+            var result3 = g3.Evaluate();
             Debug.Assert(result3 is InsertedEntities ie3 && ie3.InsertedCount == 1);
 
             var g4 = context.CreateRequest<MyDict>(POST);
@@ -548,7 +550,7 @@ namespace RESTarTester
                 Goo = true
             });
             g4.SetBody(d4);
-            var result4 = g4.Result;
+            var result4 = g4.Evaluate();
             Debug.Assert(result4 is InsertedEntities ie4 && ie4.InsertedCount == 1);
 
 
@@ -568,16 +570,16 @@ namespace RESTarTester
             var r5 = context.CreateRequest<Resource1>(GET);
             var cond = new Condition<Resource1>("SByte", GREATER_THAN, 2);
             r5.Conditions.Add(cond);
-            r5.Headers.Accept = RESTar.ContentType.Excel;
+            r5.Headers.Accept = ContentType.Excel;
 
-            var res1 = r1.Result.Serialize();
-            var res2 = r2.Result.Serialize();
-            var res3 = r3.Result.Serialize();
-            var res4 = r4.Result.Serialize();
-            var res5 = r5.Result.Serialize();
-            var res6 = r6.Result.Serialize();
+            var res1 = r1.Evaluate().Serialize();
+            var res2 = r2.Evaluate().Serialize();
+            var res3 = r3.Evaluate().Serialize();
+            var res4 = r4.Evaluate().Serialize();
+            var res5 = r5.Evaluate().Serialize();
+            var res6 = r6.Evaluate().Serialize();
 
-            Debug.Assert(res5.Headers.ContentType == RESTar.ContentType.Excel);
+            Debug.Assert(res5.Headers.ContentType == ContentType.Excel);
             Debug.Assert(res5.Body.Length > 1);
 
             Db.TransactAsync(() =>
@@ -620,7 +622,7 @@ namespace RESTarTester
 
             var remoteContext = Context.Remote("http://localhost:9000/rest");
             var remoteRequest = remoteContext.CreateRequest(GET, "/resource1");
-            var remoteResult = remoteRequest.Result;
+            var remoteResult = remoteRequest.Evaluate();
             Debug.Assert(remoteResult is IEntities rement && rement.EntityCount > 1);
 
             #endregion

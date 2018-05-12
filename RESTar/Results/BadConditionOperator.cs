@@ -1,8 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using RESTar.Internal;
-using RESTar.Reflection.Dynamic;
-using RESTar.Resources;
+using RESTar.Meta;
 
 namespace RESTar.Results
 {

@@ -2,7 +2,10 @@
 using System.Collections.Generic;
 using System.Linq;
 using RESTar.Linq;
-using RESTar.Operations;
+using RESTar.Meta;
+using RESTar.Requests;
+using RESTar.Resources;
+using RESTar.Resources.Operations;
 using static RESTar.Method;
 
 #pragma warning disable 1591
@@ -30,7 +33,7 @@ namespace RESTar.Admin
             return RESTarConfig.Resources.Select(r => new TermCache
             {
                 Type = r.Type.RESTarTypeName(),
-                Terms = Reflection.Dynamic.TypeCache.TermCache
+                Terms = TypeCache.TermCache
                     .Where(pair => pair.Key.Type == r.Type.RESTarTypeName())
                     .Select(pair => pair.Value.Key)
                     .ToArray()
@@ -43,10 +46,10 @@ namespace RESTar.Admin
             var count = 0;
             request.GetInputEntities().ForEach(e =>
             {
-                Reflection.Dynamic.TypeCache.TermCache
+                TypeCache.TermCache
                     .Where(pair => pair.Key.Type == e.Type)
                     .Select(pair => pair.Key).ToList()
-                    .ForEach(key => Reflection.Dynamic.TypeCache.TermCache.TryRemove(key, out _));
+                    .ForEach(key => TypeCache.TermCache.TryRemove(key, out _));
                 count += 1;
             });
             return count;

@@ -1,4 +1,6 @@
 ﻿
+using RESTar.Requests;
+
 namespace RESTar.Results
 {
     /// <inheritdoc />

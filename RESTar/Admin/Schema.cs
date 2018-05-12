@@ -2,10 +2,12 @@
 using System.Collections.Generic;
 using Newtonsoft.Json.Linq;
 using RESTar.Linq;
-using RESTar.Operations;
+using RESTar.Meta;
+using RESTar.Requests;
 using RESTar.Resources;
+using RESTar.Resources.Operations;
 using static RESTar.Method;
-using static RESTar.Operators;
+using static RESTar.Requests.Operators;
 
 namespace RESTar.Admin
 {
@@ -32,7 +34,7 @@ namespace RESTar.Admin
             if (!(request.Conditions.Get("resource", EQUALS)?.Value is string resourceName))
                 throw new Exception("Invalid syntax in request to RESTar.Schema. Format: " +
                                     "/schema/resource=insert_resource_name_here");
-            var res = RESTar.Resource.Find(resourceName) as IEntityResource;
+            var res = Meta.Resource.Find(resourceName) as IEntityResource;
             if (res?.IsDynamic != false) return null;
             var schema = new Schema();
             res.Members.Values.ForEach(p => schema[p.Name] = p.Type.FullName);

@@ -1,5 +1,7 @@
 ﻿using System.Collections.Generic;
-using RESTar.Operations;
+using RESTar.Requests;
+using RESTar.Resources;
+using RESTar.Resources.Operations;
 
 namespace RESTar
 {

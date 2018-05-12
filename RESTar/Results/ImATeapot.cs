@@ -1,4 +1,5 @@
 ﻿using System.Net;
+using RESTar.Requests;
 
 namespace RESTar.Results
 {

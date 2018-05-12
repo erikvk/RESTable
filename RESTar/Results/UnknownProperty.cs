@@ -1,5 +1,7 @@
 ﻿using System.Reflection;
 using RESTar.Internal;
+using RESTar.Meta;
+using RESTar.Resources;
 
 namespace RESTar.Results
 {

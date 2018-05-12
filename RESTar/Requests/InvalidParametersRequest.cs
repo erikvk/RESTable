@@ -1,9 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
+using RESTar.ContentTypeProviders;
 using RESTar.Internal;
-using RESTar.Logging;
-using RESTar.Resources;
+using RESTar.Internal.Logging;
+using RESTar.Meta;
+using RESTar.Results;
 
 namespace RESTar.Requests
 {
@@ -11,7 +14,8 @@ namespace RESTar.Requests
     {
         public bool IsValid { get; }
         private Exception Error { get; }
-        public IResult Result => Error.AsResultOf(this);
+        public IResult Evaluate() => Error.AsResultOf(this);
+        public Task<IResult> EvaluateAsync() => new Task<IResult>(Evaluate);
         public Type TargetType => null;
         public bool HasConditions => false;
 
@@ -72,7 +76,7 @@ namespace RESTar.Requests
                     stream: new RESTarStream(parameters.BodyBytes),
                     contentType: Headers.ContentType
                                  ?? CachedProtocolProvider?.DefaultInputProvider.ContentType
-                                 ?? Serialization.Serializers.Json.ContentType,
+                                 ?? Serializers.Json.ContentType,
                     protocolProvider: parameters.CachedProtocolProvider
                 );
             ResponseHeaders = null;

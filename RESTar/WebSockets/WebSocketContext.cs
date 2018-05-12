@@ -1,4 +1,5 @@
 ﻿using System;
+using RESTar.Requests;
 
 namespace RESTar.WebSockets
 {

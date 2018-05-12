@@ -1,4 +1,5 @@
 ﻿using System;
+using RESTar.Requests;
 
 #pragma warning disable 1591
 

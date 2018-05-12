@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using RESTar.Internal;
-using RESTar.Logging;
+using RESTar.Internal.Logging;
 using RESTar.Requests;
 
 namespace RESTar.Results

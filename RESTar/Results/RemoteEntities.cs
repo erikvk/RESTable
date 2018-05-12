@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using Newtonsoft.Json.Linq;
+using RESTar.ContentTypeProviders;
 using RESTar.Internal;
 using RESTar.Requests;
 

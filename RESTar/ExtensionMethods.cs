@@ -15,23 +15,25 @@ using Microsoft.CSharp.RuntimeBinder;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using RESTar.ContentTypeProviders;
-using RESTar.Filters;
 using RESTar.Internal;
-using RESTar.Reflection.Dynamic;
+using RESTar.Internal.Sc;
 using RESTar.Linq;
-using RESTar.Processors;
+using RESTar.Meta;
+using RESTar.Meta.Internal;
 using RESTar.Requests;
+using RESTar.Requests.Filters;
+using RESTar.Requests.Processors;
 using RESTar.Resources;
+using RESTar.Resources.Operations;
 using RESTar.Results;
-using RESTar.Sc;
 using Starcounter;
 using static System.Globalization.DateTimeStyles;
 using static System.Reflection.BindingFlags;
 using static System.StringComparison;
 using static RESTar.Internal.ErrorCodes;
-using static RESTar.Operators;
+using static RESTar.Requests.Operators;
 using static Starcounter.DbHelper;
-using IResource = RESTar.Resources.IResource;
+using IResource = RESTar.Meta.IResource;
 using Operator = RESTar.Internal.Operator;
 using UriComponents = RESTar.Requests.UriComponents;
 
@@ -360,7 +362,7 @@ namespace RESTar
                     foreach (DictionaryEntry pair in idict)
                         _jobj[pair.Key.ToString()] = pair.Value == null
                             ? null
-                            : JToken.FromObject(pair.Value, JsonContentProvider.Serializer);
+                            : JToken.FromObject(pair.Value, Json.Serializer);
                     return _jobj;
             }
 
@@ -372,7 +374,7 @@ namespace RESTar
                 .ForEach(prop =>
                 {
                     object val = prop.GetValue(entity);
-                    jobj[prop.Name] = val == null ? null : JToken.FromObject(val, JsonContentProvider.Serializer);
+                    jobj[prop.Name] = val == null ? null : JToken.FromObject(val, Json.Serializer);
                 });
             return jobj;
         }

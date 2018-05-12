@@ -1,10 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using RESTar.Resources;
 using RESTar.Results;
 using Starcounter;
 using static RESTar.Method;
-using IResource = RESTar.Resources.IResource;
+using IResource = RESTar.Meta.IResource;
 
 namespace RESTar.Admin
 {
@@ -59,7 +60,7 @@ namespace RESTar.Admin
                 catch (KeyNotFoundException)
                 {
                     this.Delete();
-                    throw new UnknownResourceForAlias(value, RESTar.Resource.Find(value));
+                    throw new UnknownResourceForAlias(value, Meta.Resource.Find(value));
                 }
                 catch
                 {

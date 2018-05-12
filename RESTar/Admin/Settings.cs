@@ -1,6 +1,7 @@
 ﻿using System.IO;
 using System.Linq;
 using RESTar.Linq;
+using RESTar.Resources;
 using Starcounter;
 using static RESTar.Method;
 

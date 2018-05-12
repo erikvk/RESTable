@@ -2,6 +2,8 @@
 using System.Linq;
 using RESTar.Internal;
 using RESTar.Linq;
+using RESTar.Meta;
+using RESTar.Requests;
 using RESTar.Resources;
 using Starcounter;
 using static RESTar.Admin.Settings;

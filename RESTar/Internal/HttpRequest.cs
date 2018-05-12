@@ -2,6 +2,7 @@
 using System.IO;
 using System.Linq;
 using System.Net;
+using RESTar.Internal.Logging;
 using RESTar.Linq;
 using RESTar.Requests;
 

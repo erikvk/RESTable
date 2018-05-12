@@ -2,9 +2,11 @@
 using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json.Linq;
+using RESTar.ContentTypeProviders;
 using RESTar.Linq;
-using RESTar.Operations;
-using RESTar.Serialization;
+using RESTar.Requests;
+using RESTar.Resources;
+using RESTar.Resources.Operations;
 using Starcounter;
 using static RESTar.Admin.Settings;
 

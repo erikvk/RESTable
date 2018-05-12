@@ -2,11 +2,12 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using RESTar.Auth;
-using RESTar.Reflection.Dynamic;
+using RESTar.Internal.Auth;
 using RESTar.Linq;
-using RESTar.Operations;
+using RESTar.Meta;
+using RESTar.Requests;
 using RESTar.Resources;
+using RESTar.Resources.Operations;
 
 namespace RESTar
 {
@@ -29,7 +30,8 @@ namespace RESTar
 
     /// <inheritdoc />
     /// <summary>
-    /// Creates metadata for the types and resources of the RESTar instance
+    /// A resource that creates metadata for the types and resources of the RESTar instance,
+    /// using the types included in the RESTar.Meta namespace.
     /// </summary>
     [RESTar(Method.GET, GETAvailableToAll = true)]
     public class Metadata : ISelector<Metadata>

@@ -1,4 +1,4 @@
-﻿using RESTar;
+﻿using RESTar.Resources;
 using RESTarExample.TestDb;
 using Starcounter;
 using static RESTar.Method;

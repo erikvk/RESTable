@@ -2,13 +2,13 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
+using RESTar.ContentTypeProviders;
 using RESTar.Internal;
+using RESTar.Internal.Logging;
 using RESTar.Linq;
-using RESTar.Logging;
-using RESTar.Resources;
-using RESTar.Serialization;
+using RESTar.Meta;
 using RESTar.WebSockets;
-using IResource = RESTar.Resources.IResource;
+using IResource = RESTar.Meta.IResource;
 
 namespace RESTar.Requests
 {

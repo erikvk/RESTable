@@ -3,8 +3,8 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json;
+using RESTar.ContentTypeProviders.NativeJsonProtocol;
 using RESTar.Linq;
-using RESTar.Serialization.NativeProtocol;
 
 namespace RESTar.Requests
 {
@@ -175,11 +175,11 @@ namespace RESTar.Requests
                 {
                     case var _ when key.EqualsNoCase(nameof(Accept)):
                         if (!string.IsNullOrWhiteSpace(value))
-                            Accept = RESTar.ContentType.ParseMany(value);
+                            Accept = Requests.ContentType.ParseMany(value);
                         break;
                     case var _ when key.EqualsNoCase("Content-Type"):
                         if (!string.IsNullOrWhiteSpace(value))
-                            ContentType = RESTar.ContentType.Parse(value);
+                            ContentType = Requests.ContentType.Parse(value);
                         break;
                     case var _ when key.EqualsNoCase(nameof(Source)):
                         Source = value;

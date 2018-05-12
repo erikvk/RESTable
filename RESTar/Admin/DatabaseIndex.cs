@@ -3,8 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using Newtonsoft.Json;
-using RESTar.Operations;
+using RESTar.Meta;
+using RESTar.Requests;
 using RESTar.Resources;
+using RESTar.Resources.Operations;
 
 namespace RESTar.Admin
 {
@@ -54,7 +56,7 @@ namespace RESTar.Admin
             get => _table;
             set
             {
-                IResource = RESTar.Resource.GetEntityResource(value);
+                IResource = Meta.Resource.GetEntityResource(value);
                 _table = IResource.Name;
                 Provider = IResource.Provider;
             }
@@ -119,7 +121,7 @@ namespace RESTar.Admin
                     Columns = columns
                 }
             };
-            SelectionRequest.Result.ThrowIfError();
+            SelectionRequest.Evaluate().ThrowIfError();
         }
 
         #endregion

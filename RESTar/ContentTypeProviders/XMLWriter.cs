@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using Newtonsoft.Json;
+using RESTar.Requests;
 
 namespace RESTar.ContentTypeProviders
 {
@@ -35,12 +36,12 @@ namespace RESTar.ContentTypeProviders
         /// <inheritdoc />
         public string ContentDispositionFileExtension => ".xml";
 
-        private static readonly JsonContentProvider JsonProvider;
+        private static readonly Json JsonProvider;
         private static readonly byte[] XMLHeader;
 
         static XMLWriter()
         {
-            JsonProvider = new JsonContentProvider();
+            JsonProvider = new Json();
             XMLHeader = Encoding.UTF8.GetBytes("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n");
         }
 

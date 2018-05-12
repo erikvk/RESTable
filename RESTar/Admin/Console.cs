@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Linq;
 using System.Text;
+using RESTar.ContentTypeProviders;
+using RESTar.Internal.Logging;
 using RESTar.Linq;
-using RESTar.Logging;
-using RESTar.ResourceTemplates;
+using RESTar.Requests;
+using RESTar.Resources;
+using RESTar.Resources.Templates;
 using RESTar.Results;
-using RESTar.Serialization;
 using RESTar.WebSockets;
 using static Newtonsoft.Json.Formatting;
 

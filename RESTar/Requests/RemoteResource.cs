@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using RESTar.Admin;
-using RESTar.Reflection;
-using RESTar.Reflection.Dynamic;
+using RESTar.Meta;
+using RESTar.Meta.Internal;
 using RESTar.Resources;
 
 namespace RESTar.Requests
@@ -52,7 +52,7 @@ namespace RESTar.Requests
         public bool IsSingleton => throw new InvalidOperationException(ErrorMessage(nameof(IsSingleton)));
         public bool RequiresValidation => throw new InvalidOperationException(ErrorMessage(nameof(RequiresValidation)));
         public ResourceProfile ResourceProfile => throw new InvalidOperationException(ErrorMessage(nameof(ResourceProfile)));
-        public IEnumerable<IView> Views => throw new InvalidOperationException(ErrorMessage(nameof(Views)));
+        public IEnumerable<ITarget> Views => throw new InvalidOperationException(ErrorMessage(nameof(Views)));
         public bool RequiresAuthentication => throw new InvalidOperationException(ErrorMessage(nameof(RequiresAuthentication)));
         public IReadOnlyCollection<Method> AvailableMethods => throw new InvalidOperationException(ErrorMessage(nameof(AvailableMethods)));
         public string Alias => throw new InvalidOperationException(ErrorMessage(nameof(Alias)));

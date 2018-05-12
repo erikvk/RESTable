@@ -1,6 +1,6 @@
 ﻿using System.Net;
 using RESTar.Internal;
-using RESTar.Resources;
+using RESTar.Meta;
 
 namespace RESTar.Results
 {

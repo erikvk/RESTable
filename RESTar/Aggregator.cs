@@ -6,7 +6,9 @@ using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
 using RESTar.ContentTypeProviders;
 using RESTar.Linq;
-using RESTar.Operations;
+using RESTar.Requests;
+using RESTar.Resources;
+using RESTar.Resources.Operations;
 using RESTar.Results;
 using static System.StringComparison;
 using static Newtonsoft.Json.JsonToken;
@@ -54,7 +56,7 @@ namespace RESTar
                     case JArray array:
                         return array.Select(item => item.ToObject<object>()).Select(populator).ToList();
                     case JObject jobj:
-                        return populator(jobj.ToObject<Aggregator>(JsonContentProvider.Serializer));
+                        return populator(jobj.ToObject<Aggregator>(Json.Serializer));
                     case string empty when string.IsNullOrWhiteSpace(empty): return empty;
                     case string stringValue:
                         Method method;
@@ -72,7 +74,7 @@ namespace RESTar
                         else return stringValue;
                         if (string.IsNullOrWhiteSpace(uri))
                             throw new Exception($"Invalid URI in aggregator template. Expected relative uri after '{method.ToString()}'.");
-                        switch (request.Context.CreateRequest(method, uri, null, request.Headers).Result)
+                        switch (request.Context.CreateRequest(method, uri, null, request.Headers).Evaluate())
                         {
                             case Error error: throw new Exception($"Could not get source data from '{uri}'. The resource returned: {error}");
                             case NoContent _: return null;

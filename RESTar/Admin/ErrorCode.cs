@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using RESTar.Reflection;
 using RESTar.Internal;
 using RESTar.Linq;
-using RESTar.Operations;
+using RESTar.Meta;
+using RESTar.Requests;
+using RESTar.Resources;
+using RESTar.Resources.Operations;
 using static RESTar.Method;
 
 namespace RESTar.Admin
