@@ -33,7 +33,7 @@ namespace RESTar.Requests.Processors
                 if (value == null)
                 {
                     value = pair.Key.Evaluate(entity, out _);
-                    entity[pair.Value] = value == null ? null : JToken.FromObject(value, Json.Serializer);
+                    entity[pair.Value] = value == null ? null : JToken.FromObject(value, JsonProvider.Serializer);
                     return;
                 }
                 var property = (JProperty) value.Parent;

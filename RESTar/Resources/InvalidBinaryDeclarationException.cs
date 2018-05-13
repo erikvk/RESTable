@@ -1,7 +1,8 @@
 ﻿using System;
 using RESTar.Internal;
 
-namespace RESTar.Resources {
+namespace RESTar.Resources
+{
     /// <inheritdoc />
     /// <summary>
     /// Thrown when RESTar encounters an invalid terminal resource declaration

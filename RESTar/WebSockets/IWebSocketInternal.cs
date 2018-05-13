@@ -1,6 +1,7 @@
 ﻿using System;
 
-namespace RESTar.WebSockets {
+namespace RESTar.WebSockets
+{
     internal interface IWebSocketInternal : IWebSocket, IDisposable
     {
         void SendTextRaw(string text);

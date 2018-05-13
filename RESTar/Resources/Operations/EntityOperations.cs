@@ -289,7 +289,7 @@ namespace RESTar.Resources.Operations
                 {
                     if (item.json != null && item.source != null)
                         using (var sr = item.json.CreateReader())
-                            Json.Serializer.Populate(sr, item.source);
+                            JsonProvider.Serializer.Populate(sr, item.source);
                     (item.source as IValidatable)?.Validate();
                     return item.source;
                 });

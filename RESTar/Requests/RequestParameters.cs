@@ -155,7 +155,7 @@ namespace RESTar.Requests
                     if (Uri.Macro.HasBody)
                     {
                         BodyBytes = Uri.Macro.GetBody();
-                        Headers.ContentType = Serializers.Json.ContentType;
+                        Headers.ContentType = Serializers.JsonProvider.ContentType;
                     }
                 }
                 else
@@ -163,7 +163,7 @@ namespace RESTar.Requests
                     if (!(body?.Length > 0) && Uri.Macro.HasBody)
                     {
                         BodyBytes = Uri.Macro.GetBody();
-                        Headers.ContentType = Serializers.Json.ContentType;
+                        Headers.ContentType = Serializers.JsonProvider.ContentType;
                     }
                     else BodyBytes = body;
                 }

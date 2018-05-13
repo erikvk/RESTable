@@ -1,6 +1,7 @@
 ﻿using System;
 
-namespace RESTar.ContentTypeProviders {
+namespace RESTar.ContentTypeProviders
+{
     /// <inheritdoc />
     /// <summary>
     /// Thrown when RESTar encounters an error when writing to Excel

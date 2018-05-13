@@ -5,7 +5,8 @@ using System.Net;
 using RESTar.Internal.Logging;
 using RESTar.Requests;
 
-namespace RESTar.Results {
+namespace RESTar.Results
+{
     /// <inheritdoc />
     /// <summary>
     /// Wraps a result and maps operations to its members

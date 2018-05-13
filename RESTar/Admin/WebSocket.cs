@@ -49,8 +49,8 @@ namespace RESTar.Admin
             {
                 Id = socket.TraceId,
                 TerminalType = socket.TerminalResource?.Name,
-                Client = JObject.Parse(Serializers.Json.Serialize(socket.GetConnectionProfile())),
-                Terminal = JObject.Parse(Serializers.Json.Serialize(socket.Terminal)),
+                Client = JObject.Parse(Serializers.JsonProvider.Serialize(socket.GetConnectionProfile())),
+                Terminal = JObject.Parse(Serializers.JsonProvider.Serialize(socket.Terminal)),
                 _WebSocket = socket
             })
             .Where(request.Conditions);

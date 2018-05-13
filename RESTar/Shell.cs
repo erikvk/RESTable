@@ -146,7 +146,7 @@ namespace RESTar
         /// <inheritdoc />
         public void Dispose()
         {
-            WebSocket.Context.Client.ShellConfig = Serializers.Json.Serialize(this);
+            WebSocket.Context.Client.ShellConfig = Serializers.JsonProvider.Serialize(this);
             Reset();
         }
 
@@ -173,7 +173,7 @@ namespace RESTar
         {
             if (WebSocket.Context.Client.ShellConfig is string config)
             {
-                Serializers.Json.Populate(config, this);
+                Serializers.JsonProvider.Populate(config, this);
                 SendShellInit();
                 SendQuery();
             }

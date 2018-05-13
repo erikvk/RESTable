@@ -15,7 +15,7 @@ using Starcounter;
 namespace RESTar.ContentTypeProviders
 {
     /// <inheritdoc />
-    public class Excel : JsonAdapter
+    public class ExcelProvider : JsonAdapter
     {
         private const string ExcelMimeType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
         private const string RESTarSpecific = "application/restar-excel";
@@ -94,7 +94,7 @@ namespace RESTar.ContentTypeProviders
                                 break;
 
                             case ICollection<object> objs:
-                                writeEntities(objs.Select(o => o is JObject jo ? jo : JObject.FromObject(o, Json.Serializer)));
+                                writeEntities(objs.Select(o => o is JObject jo ? jo : JObject.FromObject(o, JsonProvider.Serializer)));
                                 break;
 
                             default:

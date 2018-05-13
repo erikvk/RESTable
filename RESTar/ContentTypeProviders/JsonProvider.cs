@@ -12,7 +12,7 @@ using static RESTar.Admin.Settings;
 namespace RESTar.ContentTypeProviders
 {
     /// <inheritdoc />
-    public class Json : IContentTypeProvider
+    public class JsonProvider : IContentTypeProvider
     {
         /// <summary>
         /// The settings that are used when serializing and deserializing JSON
@@ -38,7 +38,7 @@ namespace RESTar.ContentTypeProviders
         private const string Brief = "json";
         private const string TextPlain = "text/plain";
 
-        static Json()
+        static JsonProvider()
         {
             UTF8 = RESTarConfig.DefaultEncoding;
             Settings = new JsonSerializerSettings

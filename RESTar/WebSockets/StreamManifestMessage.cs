@@ -1,4 +1,5 @@
-﻿namespace RESTar.WebSockets {
+﻿namespace RESTar.WebSockets
+{
     internal class StreamManifestMessage
     {
         public long StartIndex;

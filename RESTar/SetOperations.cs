@@ -57,7 +57,7 @@ namespace RESTar
                                 switch (request.Context.CreateRequest(GET, argument).Evaluate())
                                 {
                                     case NoContent _: return new JArray();
-                                    case IEntities entities: return JArray.FromObject(entities, Json.Serializer);
+                                    case IEntities entities: return JArray.FromObject(entities, JsonProvider.Serializer);
                                     case var other: throw new Exception($"Could not get source data from '{argument}'. {other.LogMessage}");
                                 }
                             default:

@@ -36,12 +36,12 @@ namespace RESTar.ContentTypeProviders
         /// <inheritdoc />
         public string ContentDispositionFileExtension => ".xml";
 
-        private static readonly Json JsonProvider;
+        private static readonly JsonProvider JsonProvider;
         private static readonly byte[] XMLHeader;
 
         static XMLWriter()
         {
-            JsonProvider = new Json();
+            JsonProvider = new JsonProvider();
             XMLHeader = Encoding.UTF8.GetBytes("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n");
         }
 

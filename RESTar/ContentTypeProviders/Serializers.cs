@@ -8,17 +8,17 @@
         /// <summary>
         /// A statically accessable JsonContentProvider
         /// </summary>
-        public static readonly Json Json;
+        public static readonly JsonProvider JsonProvider;
 
         /// <summary>
         /// A statically accessable ExcelContentProvider
         /// </summary>
-        public static readonly Excel Excel;
+        public static readonly ExcelProvider ExcelProvider;
 
         static Serializers()
         {
-            Json = new Json();
-            Excel = new Excel();
+            JsonProvider = new JsonProvider();
+            ExcelProvider = new ExcelProvider();
         }
     }
 }

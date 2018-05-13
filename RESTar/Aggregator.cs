@@ -56,7 +56,7 @@ namespace RESTar
                     case JArray array:
                         return array.Select(item => item.ToObject<object>()).Select(populator).ToList();
                     case JObject jobj:
-                        return populator(jobj.ToObject<Aggregator>(Json.Serializer));
+                        return populator(jobj.ToObject<Aggregator>(JsonProvider.Serializer));
                     case string empty when string.IsNullOrWhiteSpace(empty): return empty;
                     case string stringValue:
                         Method method;

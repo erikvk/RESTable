@@ -16,7 +16,7 @@ namespace RESTar.ContentTypeProviders
     /// </summary>
     public abstract class JsonAdapter : IContentTypeProvider
     {
-        private readonly Json JsonProvider = new Json();
+        private readonly JsonProvider JsonProvider = new JsonProvider();
 
         /// <summary>
         /// The RESTar default UTF8 encoding. An UTF8 encoding without BOM.

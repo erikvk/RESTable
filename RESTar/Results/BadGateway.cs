@@ -1,6 +1,7 @@
 ﻿using RESTar.Internal;
 
-namespace RESTar.Results {
+namespace RESTar.Results
+{
     /// <inheritdoc />
     /// <summary>
     /// Thrown when RESTar encounters a bad gateway when connecting to a remote RESTar service

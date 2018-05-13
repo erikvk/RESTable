@@ -100,7 +100,7 @@
     <Compile Include="Admin\Utilities.cs" />
     <Compile Include="Admin\Console.cs" />
     <Compile Include="Admin\DbMacro.cs" />
-    <Compile Include="ContentTypeProviders\Excel.cs" />
+    <Compile Include="ContentTypeProviders\ExcelProvider.cs" />
     <Compile Include="ContentTypeProviders\ExcelFormatException.cs" />
     <Compile Include="ContentTypeProviders\ExcelInputException.cs" />
     <Compile Include="ContentTypeProviders\JsonAdapter.cs" />
@@ -140,7 +140,7 @@
     <Compile Include="Results\ExternalServiceNotRESTar.cs" />
     <Compile Include="Requests\InvalidParametersRequest.cs" />
     <Compile Include="ProtocolProviders\IProtocolProvider.cs" />
-    <Compile Include="ContentTypeProviders\Json.cs" />
+    <Compile Include="ContentTypeProviders\JsonProvider.cs" />
     <Compile Include="Internal\Logging\ConsoleFormat.cs" />
     <Compile Include="Internal\Logging\ILogable.cs" />
     <Compile Include="Internal\Logging\LogEventType.cs" />

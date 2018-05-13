@@ -1,4 +1,5 @@
-﻿namespace RESTar.Resources {
+﻿namespace RESTar.Resources
+{
     /// <inheritdoc />
     /// <summary>
     /// Dynamic terminals are terminals that can accept arbitrary assignments.
