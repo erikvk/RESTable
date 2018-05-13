@@ -2,6 +2,7 @@
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Threading.Tasks;
 using RESTar.Internal.Logging;
 using RESTar.Linq;
 using RESTar.Requests;
@@ -16,7 +17,7 @@ namespace RESTar.Internal
         public Stream Body { get; }
         public string TraceId { get; }
         public Context Context { get; }
-        public HttpResponse GetResponse() => MakeExternalRequest(this, Method.ToString(), new Uri(URI), Body, Headers);
+        public async Task<HttpResponse> GetResponseAsync() => await MakeExternalRequestAsync(this, Method.ToString(), new Uri(URI), Body, Headers);
 
         internal HttpRequest(ITraceable trace, HeaderRequestParameters parameters, Stream body)
         {
@@ -28,7 +29,7 @@ namespace RESTar.Internal
             Method = parameters.Method;
         }
 
-        private static HttpResponse MakeExternalRequest(ITraceable trace, string method, Uri uri, Stream body, Headers headers)
+        private static async Task<HttpResponse> MakeExternalRequestAsync(ITraceable trace, string method, Uri uri, Stream body, Headers headers)
         {
             try
             {
@@ -42,13 +43,13 @@ namespace RESTar.Internal
                 if (body != null)
                 {
                     request.ContentLength = body.Length;
-                    using (var requestStream = request.GetRequestStream())
-                    using (body) body.CopyTo(requestStream);
+                    using (var requestStream = await request.GetRequestStreamAsync())
+                    using (body) await body.CopyToAsync(requestStream);
                 }
-                var webResponse = (HttpWebResponse) request.GetResponseAsync().Result;
+                var webResponse = (HttpWebResponse) await request.GetResponseAsync();
                 var respLoc = webResponse.Headers["Location"];
                 if (webResponse.StatusCode == HttpStatusCode.MovedPermanently && respLoc != null)
-                    return MakeExternalRequest(trace, method, new Uri(respLoc), body, headers);
+                    return await MakeExternalRequestAsync(trace, method, new Uri(respLoc), body, headers);
                 return new HttpResponse(trace, webResponse);
             }
             catch (WebException we)

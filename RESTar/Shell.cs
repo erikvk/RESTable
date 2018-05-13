@@ -3,13 +3,11 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using RESTar.ContentTypeProviders;
-using RESTar.Internal;
 using RESTar.Meta;
 using RESTar.Requests;
 using RESTar.Resources;
 using RESTar.Results;
 using RESTar.WebSockets;
-using Starcounter;
 using static RESTar.Internal.ErrorCodes;
 using static RESTar.Method;
 using Error = RESTar.Results.Error;
@@ -31,13 +29,9 @@ namespace RESTar
 
         private string query;
         private string previousQuery;
-        private const int MaxStreamBufferSize = 16_000_000;
-        private const int MinStreamBufferSize = 512;
-        private int streamBufferSize;
         private Func<int, IUriComponents> GetNextPageLink;
         private Action OnConfirm;
         private IEntities PreviousEntities;
-        private StreamManifest CurrentStreamManifest;
 
         /// <summary>
         /// Signals that there are changes to the query that have been made pre evaluation
@@ -107,6 +101,10 @@ namespace RESTar
             }
         }
 
+        private int streamBufferSize;
+        private const int MaxStreamBufferSize = 16_000_000;
+        private const int MinStreamBufferSize = 512;
+
         /// <summary>
         /// The size of stream messages in bytes
         /// </summary>
@@ -120,8 +118,6 @@ namespace RESTar
                 else if (MaxStreamBufferSize < value)
                     streamBufferSize = MaxStreamBufferSize;
                 else streamBufferSize = value;
-                if (CurrentStreamManifest != null)
-                    SetupStreamManifest();
             }
         }
 
@@ -142,7 +138,6 @@ namespace RESTar
             GetNextPageLink = null;
             query = "";
             previousQuery = "";
-            CurrentStreamManifest?.Dispose();
             WriteHeaders = false;
             AutoOptions = false;
             AutoGet = false;
@@ -229,35 +224,6 @@ namespace RESTar
                 return;
             }
 
-            if (CurrentStreamManifest != null)
-            {
-                var (command, arg) = input.TSplit(' ');
-                switch (command.ToUpperInvariant())
-                {
-                    case "OPTIONS":
-                    case "MANIFEST":
-                        WebSocket.SendJson(CurrentStreamManifest);
-                        break;
-                    case "GET":
-                        StreamMessage(CurrentStreamManifest.MessagesRemaining);
-                        break;
-                    case "NEXT" when int.TryParse(arg, out var nr):
-                        StreamMessage(nr);
-                        break;
-                    case "NEXT":
-                        StreamMessage(1);
-                        break;
-                    case "CLOSE":
-                        WebSocket.SendText(
-                            $"499: Client closed request. Streamed {CurrentStreamManifest.CurrentMessageIndex} " +
-                            $"of {CurrentStreamManifest.NrOfMessages} messages.");
-                        CurrentStreamManifest.Dispose();
-                        CurrentStreamManifest = null;
-                        break;
-                }
-                return;
-            }
-
             if (input == " ")
             {
                 SafeOperation(GET);
@@ -306,11 +272,8 @@ namespace RESTar
                             break;
                         case "STREAM":
                             var result = WsEvaluate(GET, null);
-                            if (result is Content content)
-                            {
-                                CurrentStreamManifest = new StreamManifest(content);
-                                SetupStreamManifest();
-                            }
+                            if (result is Content)
+                                WebSocket.StreamResult(result, StreamBufferSize, result.TimeElapsed, WriteHeaders);
                             else SendResult(result);
                             break;
                         case "OPTIONS":
@@ -485,50 +448,6 @@ namespace RESTar
             }
         }
 
-        private byte[] buffer;
-
-        private async void StreamMessage(int nr)
-        {
-            try
-            {
-                var startIndex = CurrentStreamManifest.CurrentMessageIndex;
-                var endIndex = startIndex + nr;
-                if (endIndex > CurrentStreamManifest.NrOfMessages - 1)
-                    endIndex = CurrentStreamManifest.NrOfMessages - 1;
-                buffer = buffer ?? new byte[StreamBufferSize];
-                for (var i = startIndex; i <= endIndex; i += 1)
-                {
-                    CurrentStreamManifest.CurrentMessageIndex = i;
-                    var message = CurrentStreamManifest.Messages[i];
-                    await CurrentStreamManifest.Content.Body.ReadAsync(buffer, 0, buffer.Length);
-                    await Scheduling.RunTask(() => WebSocket.SendBinary(buffer, 0, (int) message.Length));
-                    message.Sent = true;
-                    CurrentStreamManifest.MessagesStreamed += 1;
-                    CurrentStreamManifest.MessagesRemaining -= 1;
-                    CurrentStreamManifest.BytesStreamed += message.Length;
-                    CurrentStreamManifest.BytesRemaining -= message.Length;
-                }
-
-                if (endIndex == CurrentStreamManifest.NrOfMessages - 1)
-                {
-                    WebSocket.SendText($"200: OK. {CurrentStreamManifest.NrOfMessages} messages sucessfully streamed.");
-                    CurrentStreamManifest.Dispose();
-                    CurrentStreamManifest = null;
-                    buffer = null;
-                }
-            }
-            catch (Exception e)
-            {
-                WebSocket.SendException(e);
-                WebSocket.SendText(
-                    $"500: Error during streaming. Streamed {CurrentStreamManifest?.CurrentMessageIndex ?? 0} " +
-                    $"of {CurrentStreamManifest?.NrOfMessages ?? 1} messages.");
-                CurrentStreamManifest?.Dispose();
-                CurrentStreamManifest = null;
-                buffer = null;
-            }
-        }
-
         private void SendHeaders() => WebSocket.SendJson(new {WebSocket.Headers});
 
         private ISerializedResult WsEvaluate(Method method, byte[] body)
@@ -586,34 +505,6 @@ namespace RESTar
             SendQuery();
         }
 
-        private void SetupStreamManifest()
-        {
-            var data = CurrentStreamManifest.Content;
-            var dataLength = data.Body.Length;
-            if (dataLength == 0) return;
-            var nrOfMessages = dataLength / StreamBufferSize;
-            var last = dataLength % StreamBufferSize;
-            if (last > 0) nrOfMessages += 1;
-            else last = StreamBufferSize;
-            var messages = new StreamManifestMessage[nrOfMessages];
-            long startIndex = 0;
-            for (var i = 0; i < messages.Length; i += 1)
-            {
-                messages[i] = new StreamManifestMessage
-                {
-                    StartIndex = startIndex,
-                    Length = StreamBufferSize
-                };
-                startIndex += StreamBufferSize;
-            }
-            messages.Last().Length = last;
-            CurrentStreamManifest.NrOfMessages = (int) nrOfMessages;
-            CurrentStreamManifest.MessagesRemaining = (int) nrOfMessages;
-            CurrentStreamManifest.Messages = messages;
-            WebSocket.SendJson(CurrentStreamManifest);
-            buffer = null;
-        }
-
         private void SafeOperation(Method method, byte[] body = null)
         {
             var sw = Stopwatch.StartNew();
@@ -622,11 +513,7 @@ namespace RESTar
                 switch (result)
                 {
                     case Content tooLarge when tooLarge.Body is FileStream || tooLarge.Body.Length > 16_000_000:
-                        OnConfirm = () =>
-                        {
-                            CurrentStreamManifest = new StreamManifest(tooLarge);
-                            SetupStreamManifest();
-                        };
+                        OnConfirm = () => StreamResult(tooLarge, tooLarge.TimeElapsed);
                         SendConfirmationRequest("426: The response message is too large. Do you wish to stream the response? ");
                         break;
                     case OK ok:
@@ -685,6 +572,22 @@ namespace RESTar
         {
             if (result is SwitchedTerminal) return;
             WebSocket.SendResult(result, elapsed, WriteHeaders);
+            switch (result)
+            {
+                case var _ when Query == "":
+                case ShellNoQuery _:
+                    WebSocket.SendText("? <no query>");
+                    break;
+                default:
+                    WebSocket.SendText("? " + Query);
+                    break;
+            }
+        }
+
+        private void StreamResult(ISerializedResult result, TimeSpan? elapsed = null)
+        {
+            if (result is SwitchedTerminal) return;
+            WebSocket.StreamResult(result, StreamBufferSize, elapsed, WriteHeaders);
             switch (result)
             {
                 case var _ when Query == "":

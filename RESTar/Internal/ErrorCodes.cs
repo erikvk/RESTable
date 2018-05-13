@@ -112,6 +112,7 @@ namespace RESTar.Internal
         InvalidShellHeaderAssignmentSyntax = 502,
         ShellError = 503,
         NoResponseFromRemoteService = 504,
-        ExternalServiceNotRESTar = 505
+        ExternalServiceNotRESTar = 505,
+        WebSocketMessageTooLarge = 506
     }
 }

@@ -173,11 +173,12 @@
     <Compile Include="Results\RemoteOther.cs" />
     <Compile Include="Results\Success.cs" />
     <Compile Include="Internal\Sc\ScContext.cs" />
-    <Compile Include="Internal\StreamManifest.cs" />
+    <Compile Include="WebSockets\StreamManifest.cs" />
     <Compile Include="Meta\TerminalResource.cs" />
     <Compile Include="WebSockets\WebSocket.cs" />
     <Compile Include="WebSockets\WebSocketConnection.cs" />
     <Compile Include="WebSockets\WebSocketContext.cs" />
+    <Compile Include="WebSockets\WebSocketMessageTooLargeException.cs" />
     <Compile Include="WebSockets\WebSocketNotConnectedException.cs" />
     <Compile Include="Meta\Internal\TerminalResourceProvider.cs" />
     <Compile Include="Resources\Templates\FeedTerminal.cs" />

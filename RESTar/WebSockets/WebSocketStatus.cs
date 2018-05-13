@@ -24,6 +24,11 @@
         /// <summary>
         /// The WebSocket is closed. Messages cannot be sent or received.
         /// </summary>
-        Closed
+        Closed,
+
+        /// <summary>
+        /// The WebSocket is suspended during the course of a streaming session.
+        /// </summary>
+        Suspended
     }
 }

@@ -2,6 +2,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using RESTar.ContentTypeProviders;
 
 namespace RESTar.WebSockets
@@ -12,10 +13,17 @@ namespace RESTar.WebSockets
         static WebSocketController() => AllSockets = new ConcurrentDictionary<string, WebSocket>();
         internal static void Add(WebSocket webSocket) => AllSockets[webSocket.TraceId] = webSocket;
 
-        internal static void HandleTextInput(string wsId, string textInput)
+        internal static async Task HandleTextInput(string wsId, string textInput)
         {
             if (!AllSockets.TryGetValue(wsId, out var webSocket))
                 throw new UnknownWebSocketIdException($"WebSocket {wsId} no longer connected");
+
+            if (webSocket.IsStreaming)
+            {
+                await webSocket.HandleStreamingTextInput(textInput);
+                return;
+            }
+
             if (textInput.ElementAtOrDefault(0) == '#')
             {
                 var (command, tail) = textInput.Trim().TSplit(' ');
@@ -23,7 +31,7 @@ namespace RESTar.WebSockets
                 {
                     case "#SHELL":
                     case "#HOME":
-                        webSocket.SendToShell();
+                        webSocket.DirectToShell();
                         break;
                     case "#DISCONNECT":
                         webSocket.Disconnect();

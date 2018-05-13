@@ -9,6 +9,7 @@ using System.Net;
 using System.Reflection;
 using System.Runtime.Serialization;
 using System.Text;
+using System.Threading.Tasks;
 using System.Web;
 using Dynamit;
 using Microsoft.CSharp.RuntimeBinder;
@@ -863,6 +864,22 @@ namespace RESTar
                     using (var ms = new MemoryStream())
                     {
                         stream.CopyTo(ms);
+                        return ms.ToArray();
+                    }
+            }
+        }
+
+        internal static async Task<byte[]> ToByteArrayAsync(this Stream stream)
+        {
+            switch (stream)
+            {
+                case null: return null;
+                case MemoryStream _ms: return _ms.ToArray();
+                case RESTarStream rsc: return await rsc.GetBytesAsync();
+                default:
+                    using (var ms = new MemoryStream())
+                    {
+                        await stream.CopyToAsync(ms);
                         return ms.ToArray();
                     }
             }

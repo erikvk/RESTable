@@ -11,23 +11,26 @@ namespace RESTar.Internal.Sc
         private readonly string GroupName;
         private Starcounter.WebSocket WebSocket;
 
-        protected override void Send(string text) => WebSocket.Send(text);
+        protected override void Send(string text) => Scheduling.RunTask(() => WebSocket.Send(text)).Wait();
 
         protected override void Send(byte[] data, bool isText, int offset, int length)
         {
             if (offset == 0)
-                WebSocket.Send(data, length, isText);
+                Scheduling.RunTask(() => WebSocket.Send(data, length, isText)).Wait();
             else
             {
-                var buffer = new byte[length];
-                Array.Copy(data, offset, buffer, 0, length);
-                WebSocket.Send(buffer, length, isText);
+                Scheduling.RunTask(() =>
+                {
+                    var buffer = new byte[length];
+                    Array.Copy(data, offset, buffer, 0, length);
+                    WebSocket.Send(buffer, length, isText);
+                }).Wait();
             }
         }
 
         protected override bool IsConnected => WebSocket?.IsDead() == false;
-        protected override void DisconnectWebSocket(string message = null) => WebSocket.Disconnect(message);
-        protected override void SendUpgrade() => WebSocket = UpgradeRequest.SendUpgrade(GroupName);
+        protected override void DisconnectWebSocket(string message = null) => Scheduling.RunTask(() => WebSocket.Disconnect(message)).Wait();
+        protected override void SendUpgrade() => Scheduling.RunTask(() => WebSocket = UpgradeRequest.SendUpgrade(GroupName)).Wait();
 
         internal ScWebSocket(string groupName, Request upgradeRequest, Client client)
             : base(DbHelper.Base64EncodeObjectNo(upgradeRequest.GetWebSocketId()), client)

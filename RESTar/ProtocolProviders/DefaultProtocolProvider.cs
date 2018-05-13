@@ -157,7 +157,8 @@ namespace RESTar.ProtocolProviders
                         }
                         var serialized = SerializeEntities();
                         var externalRequest = new HttpRequest(serialized, parameters, serialized.Body);
-                        var response = externalRequest.GetResponse() ?? throw new InvalidExternalDestination(externalRequest, "No response");
+                        var response = externalRequest.GetResponseAsync().Result
+                                       ?? throw new InvalidExternalDestination(externalRequest, "No response");
                         if (response.StatusCode >= HttpStatusCode.BadRequest)
                             throw new InvalidExternalDestination(externalRequest,
                                 $"Received {response.StatusCode.ToCode()} - {response.StatusDescription}. {response.Headers.Info}");

@@ -61,7 +61,7 @@ namespace RESTar.Internal.Sc
             {
                 try
                 {
-                    WebSocketController.HandleTextInput(DbHelper.Base64EncodeObjectNo(ws.ToUInt64()), text);
+                    WebSocketController.HandleTextInput(DbHelper.Base64EncodeObjectNo(ws.ToUInt64()), text).Wait();
                 }
                 catch (Exception e)
                 {

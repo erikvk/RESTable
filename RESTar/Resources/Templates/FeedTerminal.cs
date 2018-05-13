@@ -102,7 +102,7 @@ namespace RESTar.Resources.Templates
                     break;
                 case "CLOSE":
                     WebSocket.SendText("> Status: CLOSED\n");
-                    WebSocket.SendToShell();
+                    WebSocket.DirectToShell();
                     break;
                 case var unrecognized:
                     WebSocket.SendText($"> Unknown command '{unrecognized}'");

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
 using Newtonsoft.Json;
 using RESTar.ContentTypeProviders;
 using RESTar.Internal.Logging;
@@ -17,13 +18,8 @@ namespace RESTar.WebSockets
     /// <inheritdoc cref="ITraceable" />
     /// <summary>
     /// </summary>
-    public abstract class WebSocket : IWebSocket, ITraceable, IDisposable
+    public abstract class WebSocket : IWebSocket, IWebSocketInternal, ITraceable, IDisposable
     {
-        public void StreamResult(ISerializedResult result, TimeSpan? timeElapsed = null, bool writeHeaders = false, bool disposeResult = true)
-        {
-            throw new NotImplementedException();
-        }
-
         /// <summary>
         /// The ID of the WebSocket
         /// </summary>
@@ -49,6 +45,9 @@ namespace RESTar.WebSockets
         /// The status of the WebSocket
         /// </summary>
         public WebSocketStatus Status { get; private set; }
+
+        /// <inheritdoc />
+        public void SetStatus(WebSocketStatus status) => Status = status;
 
         /// <inheritdoc />
         /// <summary>
@@ -123,6 +122,8 @@ namespace RESTar.WebSockets
         {
             if (disposed) return;
             Status = WebSocketStatus.PendingClose;
+            StreamManifest?.Dispose();
+            StreamManifest = null;
             var terminalName = TerminalConnection?.Resource?.Name;
             ReleaseTerminal();
             if (IsConnected)
@@ -162,10 +163,10 @@ namespace RESTar.WebSockets
         #region IWebSocket
 
         /// <inheritdoc />
-        public void SendToShell(IEnumerable<Condition<Shell>> assignments = null) => SendTo(Shell.TerminalResource);
+        public void DirectToShell(IEnumerable<Condition<Shell>> assignments = null) => DirectTo(Shell.TerminalResource);
 
         /// <inheritdoc />
-        public void SendTo<T>(ITerminalResource<T> resource, IEnumerable<Condition<T>> assignments = null) where T : class, ITerminal
+        public void DirectTo<T>(ITerminalResource<T> resource, IEnumerable<Condition<T>> assignments = null) where T : class, ITerminal
         {
             if (Status != WebSocketStatus.Open)
                 throw new InvalidOperationException($"Unable to send WebSocket with status '{Status}' to terminal '{resource.Name}'");
@@ -176,6 +177,8 @@ namespace RESTar.WebSockets
             Context.WebSocket.ConnectTo(newTerminal, _resource);
             newTerminal.Open();
         }
+
+        #region Input
 
         internal void HandleTextInput(string textData)
         {
@@ -205,12 +208,9 @@ namespace RESTar.WebSockets
             BytesSent += (ulong) binaryData.Length;
         }
 
-        internal void SendTextRaw(string textData)
-        {
-            if (Status != WebSocketStatus.Open) return;
-            Send(textData);
-            BytesSent += (ulong) Encoding.UTF8.GetByteCount(textData);
-        }
+        #endregion
+
+        #region Simple output
 
         private void _SendText(string textData)
         {
@@ -241,6 +241,23 @@ namespace RESTar.WebSockets
         }
 
         /// <inheritdoc />
+        public void SendText(string data) => _SendText(data);
+
+        /// <inheritdoc />
+        public void SendText(byte[] data, int offset, int length) => _SendBinary(data, true, offset, length);
+
+        /// <inheritdoc />
+        public void SendBinary(byte[] data, int offset, int length) => _SendBinary(data, false, offset, length);
+
+        /// <inheritdoc />
+        public void SendTextRaw(string textData)
+        {
+            if (Status != WebSocketStatus.Open) return;
+            Send(textData);
+            BytesSent += (ulong) Encoding.UTF8.GetByteCount(textData);
+        }
+
+        /// <inheritdoc />
         public void SendResult(ISerializedResult result, TimeSpan? timeElapsed = null, bool writeHeaders = false, bool disposeResult = true)
         {
             try
@@ -248,8 +265,7 @@ namespace RESTar.WebSockets
                 switch (Status)
                 {
                     case WebSocketStatus.Open: break;
-                    case var closed:
-                        throw new InvalidOperationException($"Unable to send results to a WebSocket with status '{closed}'");
+                    case var other: throw new InvalidOperationException($"Unable to send results to a WebSocket with status '{other}'");
                 }
                 if (result is WebSocketUpgradeSuccessful) return;
 
@@ -279,7 +295,8 @@ namespace RESTar.WebSockets
             }
             finally
             {
-                if (disposeResult) result.Dispose();
+                if (disposeResult)
+                    result.Dispose();
             }
         }
 
@@ -292,15 +309,6 @@ namespace RESTar.WebSockets
         }
 
         /// <inheritdoc />
-        public void SendText(string data) => _SendText(data);
-
-        /// <inheritdoc />
-        public void SendText(byte[] data, int offset, int length) => _SendBinary(data, true, offset, length);
-
-        /// <inheritdoc />
-        public void SendBinary(byte[] data, int offset, int length) => _SendBinary(data, false, offset, length);
-
-        /// <inheritdoc />
         public void SendJson(object item, bool asText = false, bool? prettyPrint = null, bool ignoreNulls = false)
         {
             Formatting _prettyPrint;
@@ -311,6 +319,126 @@ namespace RESTar.WebSockets
             var array = stream.ToArray();
             _SendBinary(array, asText, 0, array.Length);
         }
+
+        #endregion
+
+        #region Streaming
+
+        internal async Task HandleStreamingTextInput(string textInput)
+        {
+            var (command, arg) = textInput.TSplit(' ');
+            switch (command.ToUpperInvariant())
+            {
+                case "OPTIONS":
+                case "MANIFEST":
+                    SendManifest();
+                    break;
+                case "GET":
+                    await StreamMessage(-1);
+                    break;
+                case "NEXT" when int.TryParse(arg, out var nr) && nr > 0:
+                    await StreamMessage(nr);
+                    break;
+                case "NEXT":
+                    await StreamMessage(1);
+                    break;
+                case "CLOSE":
+                    CloseStream();
+                    break;
+            }
+        }
+
+        internal bool IsStreaming => StreamManifest != null;
+        private StreamManifest StreamManifest { get; set; }
+
+        private const int MaxStreamBufferSize = 16_000_000;
+        private const int MinStreamBufferSize = 512;
+
+        /// <inheritdoc />
+        public void StreamResult(ISerializedResult result, int messageSize, TimeSpan? timeElapsed = null, bool writeHeaders = false,
+            bool disposeResult = true)
+        {
+            if (result == null) throw new ArgumentNullException(nameof(result));
+            if (!result.IsSerialized)
+                result = result.Serialize();
+            if (!(result is Content content) || !(content.Body?.Length > 0))
+            {
+                SendResult(result, result.TimeElapsed, writeHeaders, disposeResult);
+                return;
+            }
+            TerminalConnection?.Suspend();
+            if (messageSize < MinStreamBufferSize)
+                messageSize = MinStreamBufferSize;
+            else if (MaxStreamBufferSize < messageSize)
+                messageSize = MaxStreamBufferSize;
+            StreamManifest?.Dispose();
+            StreamManifest = new StreamManifest(content, messageSize);
+            SendJson(StreamManifest);
+            buffer = null;
+        }
+
+        private byte[] buffer;
+
+        internal void CloseStream()
+        {
+            SendText(
+                $"499: Client closed request. Streamed {StreamManifest.CurrentMessageIndex} " +
+                $"of {StreamManifest.NrOfMessages} messages.");
+            StopStreaming();
+        }
+
+        private void StopStreaming()
+        {
+            StreamManifest.Dispose();
+            StreamManifest = null;
+            buffer = null;
+            TerminalConnection?.Unsuspend();
+        }
+
+        internal void SendManifest() => SendJson(StreamManifest);
+
+        internal async Task StreamMessage(int nr)
+        {
+            if (nr == -1)
+                nr = StreamManifest.MessagesRemaining;
+            try
+            {
+                var startIndex = StreamManifest.CurrentMessageIndex;
+                var endIndex = startIndex + nr;
+                if (endIndex > StreamManifest.NrOfMessages - 1)
+                    endIndex = StreamManifest.NrOfMessages - 1;
+                buffer = buffer ?? new byte[StreamManifest.BufferSize];
+                for (var i = startIndex; i <= endIndex; i += 1)
+                {
+                    var read = StreamManifest.Content.Body.ReadAsync(buffer, 0, buffer.Length);
+                    StreamManifest.CurrentMessageIndex = i;
+                    var message = StreamManifest.Messages[i];
+                    await read;
+                    SendBinary(buffer, 0, (int) message.Length);
+                    message.Sent = true;
+                    StreamManifest.MessagesStreamed += 1;
+                    StreamManifest.MessagesRemaining -= 1;
+                    StreamManifest.BytesStreamed += message.Length;
+                    StreamManifest.BytesRemaining -= message.Length;
+                }
+
+                if (endIndex == StreamManifest.NrOfMessages - 1)
+                {
+                    SendText($"200: OK. {StreamManifest.NrOfMessages} messages sucessfully streamed.");
+                    StopStreaming();
+                }
+            }
+            catch (Exception e)
+            {
+                SendException(e);
+                SendText(
+                    $"500: Error during streaming. Streamed {StreamManifest?.CurrentMessageIndex ?? 0} " +
+                    $"of {StreamManifest?.NrOfMessages ?? 1} messages.");
+                StopStreaming();
+            }
+        }
+
+        #endregion
 
         #endregion
 

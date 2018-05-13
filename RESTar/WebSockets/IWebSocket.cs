@@ -7,6 +7,13 @@ using RESTar.Results;
 
 namespace RESTar.WebSockets
 {
+    internal interface IWebSocketInternal : IWebSocket, IDisposable
+    {
+        void SendTextRaw(string text);
+        void Disconnect();
+        void SetStatus(WebSocketStatus status);
+    }
+
     /// <inheritdoc />
     /// <summary>
     /// WebSockets support sending continuous data over a single TCP connection
@@ -36,7 +43,8 @@ namespace RESTar.WebSockets
         void SendJson(object item, bool asText = false, bool? prettyPrint = null, bool ignoreNulls = false);
 
         /// <summary>
-        /// Sends a result over a WebSocket, with the body contained in a single binary message.
+        /// Sends a result synchronously over a WebSocket, with the body contained in a single binary message. If the result body is larger than
+        /// 16 megabytes, a <see cref="WebSocketMessageTooLargeException"/> will be thrown. In these cases, use <see cref="StreamResult"/> instead.
         /// </summary>
         /// <param name="result">The result to send. The body of the result will be sent as binary over the websocket.
         /// Additional inforation can be included in separate text messages (see other parameters).</param>
@@ -48,16 +56,20 @@ namespace RESTar.WebSockets
         void SendResult(ISerializedResult result, TimeSpan? timeElapsed = null, bool writeHeaders = false, bool disposeResult = true);
 
         /// <summary>
-        /// Sends a result over a WebSocket, with the body contained in multiple binary messages.
+        /// Sends an arbitrarily large result over a WebSocket, with the body split over multiple binary messages. Before sending
+        /// the contents of the result, RESTar will send a stream manifest as a text message, which enables a set of commands for
+        /// initiating and controlling the actual data transfer. The WebSocket is directed back to the previous terminal once streaming
+        /// is either completed or cancelled.
         /// </summary>
         /// <param name="result">The result to send. The body of the result will be sent as binary over the websocket.
         /// Additional inforation can be included in separate text messages (see other parameters).</param>
+        /// <param name="messageSize">The size of each message, in bytes. Cannot be less than 512 or greater than 16000000</param>
         /// <param name="timeElapsed">The elapsed time to include, or null if no time should be included. If not null, timeElapsed 
         /// will be included in the status text message (see writeStatus)</param>
         /// <param name="writeHeaders">Should headers be included as a text message? If true, headers are printed after the status
         /// (if any) and before the content is sent.</param>
         /// <param name="disposeResult">Should the result be disposed after it is sent to the WebSocket?</param>
-        void StreamResult(ISerializedResult result, TimeSpan? timeElapsed = null, bool writeHeaders = false, bool disposeResult = true);
+        void StreamResult(ISerializedResult result, int messageSize, TimeSpan? timeElapsed = null, bool writeHeaders = false, bool disposeResult = true);
 
         /// <summary>
         /// Sends an exception over the WebSocket.
@@ -70,16 +82,16 @@ namespace RESTar.WebSockets
         Headers Headers { get; }
 
         /// <summary>
-        /// Closes the current terminal (if any) and sends the WebSocket to the Shell terminal. Use this to quit from a 
-        /// terminal resource.
+        /// Closes the current terminal (if any) and directs the WebSocket to the Shell terminal. Use this to quit from a 
+        /// terminal resource and launch the shell.
         /// </summary>
-        void SendToShell(IEnumerable<Condition<Shell>> assignments = null);
+        void DirectToShell(IEnumerable<Condition<Shell>> assignments = null);
 
         /// <summary>
-        /// Closes the current terminal (if any) and sends the WebSocket to the provided terminal. Use this to quit from a 
+        /// Closes the current terminal (if any) and directs the WebSocket to the provided terminal. Use this to quit from a 
         /// terminal resource and open another terminal instead.
         /// </summary>
-        void SendTo<T>(ITerminalResource<T> terminalResource, IEnumerable<Condition<T>> assignments = null) where T : class, ITerminal;
+        void DirectTo<T>(ITerminalResource<T> terminalResource, IEnumerable<Condition<T>> assignments = null) where T : class, ITerminal;
 
         /// <summary>
         /// The current status of this WebSocket

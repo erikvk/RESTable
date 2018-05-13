@@ -29,7 +29,7 @@ namespace RESTar.Admin
         public bool IncludeHeaders { get; set; } = false;
         public bool IncludeContent { get; set; } = false;
 
-        private WebSockets.WebSocket ActualSocket => (WebSocket as WebSocketConnection)?.WebSocket;
+        private IWebSocketInternal ActualSocket => (WebSocket as WebSocketConnection)?.WebSocket;
 
         /// <inheritdoc />
         protected override string WelcomeHeader { get; } = "RESTar network console";

@@ -1,10 +1,11 @@
 ﻿using System;
+using System.Linq;
 using Newtonsoft.Json;
 using RESTar.Results;
 
 #pragma warning disable 414
 
-namespace RESTar.Internal
+namespace RESTar.WebSockets
 {
     internal class StreamManifestMessage
     {
@@ -23,6 +24,7 @@ namespace RESTar.Internal
     {
         internal readonly Content Content;
         internal int CurrentMessageIndex;
+        internal int BufferSize;
 
         public long TotalLength;
         public long BytesRemaining;
@@ -33,8 +35,13 @@ namespace RESTar.Internal
         public int MessagesStreamed;
 
         public readonly string ContentType;
-        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)] public readonly string EntityType;
-        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)] public readonly ulong EntityCount;
+
+        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+        public readonly string EntityType;
+
+        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+        public readonly ulong EntityCount;
+
         public StreamManifestMessage[] Messages;
         public readonly StreamCommand[] Commands = _Commands;
 
@@ -67,17 +74,38 @@ namespace RESTar.Internal
             }
         };
 
-        internal StreamManifest(Content content)
+        internal StreamManifest(Content content, int bufferSize)
         {
             Content = content;
             ContentType = content.Headers.ContentType?.ToString();
             TotalLength = content.Body.Length;
+            BufferSize = bufferSize;
             BytesRemaining = content.Body.Length;
             if (content is IEntities entities)
             {
                 EntityType = entities.EntityType.FullName;
                 EntityCount = entities.EntityCount;
             }
+            var dataLength = content.Body.Length;
+            var nrOfMessages = dataLength / bufferSize;
+            var last = dataLength % bufferSize;
+            if (last > 0) nrOfMessages += 1;
+            else last = bufferSize;
+            var messages = new StreamManifestMessage[nrOfMessages];
+            long startIndex = 0;
+            for (var i = 0; i < messages.Length; i += 1)
+            {
+                messages[i] = new StreamManifestMessage
+                {
+                    StartIndex = startIndex,
+                    Length = bufferSize
+                };
+                startIndex += bufferSize;
+            }
+            messages.Last().Length = last;
+            NrOfMessages = (int) nrOfMessages;
+            MessagesRemaining = (int) nrOfMessages;
+            Messages = messages;
         }
 
         public void Dispose() => Content.Body.Dispose();

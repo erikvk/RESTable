@@ -72,7 +72,7 @@ namespace RESTar.Resources.Templates
             switch (command.Trim())
             {
                 case var cancel when cancel.EqualsNoCase("cancel"):
-                    WebSocket.SendToShell();
+                    WebSocket.DirectToShell();
                     break;
                 case var _ when _options.TryGetValue(command, out var option):
                     var argsArray = args?.Split(" ", StringSplitOptions.RemoveEmptyEntries) ?? new string[0];

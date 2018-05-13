@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Threading.Tasks;
 
 namespace RESTar.Internal
 {
@@ -29,6 +30,19 @@ namespace RESTar.Internal
             try
             {
                 return Stream.ToByteArray();
+            }
+            finally
+            {
+                Rewind();
+            }
+        }
+
+        internal async Task<byte[]> GetBytesAsync()
+        {
+            Rewind();
+            try
+            {
+                return await Stream.ToByteArrayAsync();
             }
             finally
             {
