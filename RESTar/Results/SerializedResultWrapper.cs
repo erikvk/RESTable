@@ -1,89 +1,32 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Net;
-using RESTar.Internal.Logging;
-using RESTar.Requests;
+﻿using System.IO;
 
 namespace RESTar.Results
 {
-    /// <inheritdoc />
+    /// <inheritdoc cref="ResultWrapper" />
+    /// <inheritdoc cref="ISerializedResult" />
     /// <summary>
     /// Wraps a result and maps operations to its members
+    /// </summary>    /// <summary>
+    /// Wraps a serialized result and maps operations to its members
     /// </summary>
-    public abstract class SerializedResultWrapper : ISerializedResult
+    public abstract class SerializedResultWrapper : ResultWrapper, ISerializedResult
     {
-        /// <inheritdoc />
-        public string TraceId => Result.TraceId;
+        /// <summary>
+        /// The wrapped result
+        /// </summary>
+        protected ISerializedResult SerializedResult { get; }
 
         /// <inheritdoc />
-        public Context Context => Result.Context;
-
-        /// <inheritdoc />
-        public LogEventType LogEventType => Result.LogEventType;
-
-        /// <inheritdoc />
-        public string LogMessage => Result.LogMessage;
-
-        /// <inheritdoc />
-        public string LogContent => Result.LogContent;
-
-        /// <inheritdoc />
-        public Headers Headers => Result.Headers;
-
-        /// <inheritdoc />
-        public string HeadersStringCache
+        protected SerializedResultWrapper(ISerializedResult result) : base(result)
         {
-            get => Result.HeadersStringCache;
-            set => Result.HeadersStringCache = value;
+            SerializedResult = result;
         }
-
-        /// <inheritdoc />
-        public bool ExcludeHeaders => Result.ExcludeHeaders;
-
-        /// <inheritdoc />
-        public DateTime LogTime => Result.LogTime;
-
-        /// <inheritdoc />
-        public HttpStatusCode StatusCode => Result.StatusCode;
-
-        /// <inheritdoc />
-        public string StatusDescription => Result.StatusDescription;
-
-        /// <inheritdoc />
-        public ICollection<string> Cookies => Result.Cookies;
-
-        /// <inheritdoc />
-        public bool IsSerialized => Result.IsSerialized;
-
-        /// <inheritdoc />
-        public ISerializedResult Serialize(ContentType? contentType = null) => Result.Serialize();
-
-        /// <inheritdoc />
-        public void ThrowIfError() => Result.ThrowIfError();
-
-        /// <inheritdoc />
-        public IEntities<T> ToEntities<T>() where T : class => Result.ToEntities<T>();
 
         /// <inheritdoc />
         public Stream Body
         {
-            get => Result.Body;
-            set => Result.Body = value;
+            get => SerializedResult.Body;
+            set => SerializedResult.Body = value;
         }
-
-        /// <inheritdoc />
-        public TimeSpan TimeElapsed => Result.TimeElapsed;
-
-        /// <inheritdoc />
-        public string Metadata => Result.Metadata;
-
-        /// <inheritdoc />
-        public void Dispose() => Result.Dispose();
-
-        private readonly ISerializedResult Result;
-
-        /// <inheritdoc />
-        protected SerializedResultWrapper(ISerializedResult result) => Result = result;
     }
 }

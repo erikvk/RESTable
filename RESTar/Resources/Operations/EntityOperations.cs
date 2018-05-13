@@ -243,11 +243,9 @@ namespace RESTar.Resources.Operations
             return new SafePostedEntities(request, updatedCount, insertedCount);
         }
 
-        private static (IEntityRequest<T> InnerRequest, JArray ToInsert, IList<(JObject json, T source)> ToUpdate)
-            GetSafePostTasks(
-                IRequest<T> request)
+        private static (IEntityRequest<T> InnerRequest, JArray ToInsert, IList<(JObject json, T source)> ToUpdate) GetSafePostTasks(IRequest<T> request)
         {
-            var innerRequest = (IEntityRequest<T>) request.Context.CreateRequest<T>(Method.GET);
+            var innerRequest = (IEntityRequest<T>) request.Context.CreateRequest<T>();
             var toInsert = new JArray();
             var toUpdate = new List<(JObject json, T source)>();
             try

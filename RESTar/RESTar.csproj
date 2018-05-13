@@ -159,6 +159,7 @@
     <Compile Include="Meta\Internal\BinaryResource.cs" />
     <Compile Include="Meta\Internal\BinaryResourceProvider.cs" />
     <Compile Include="Results\Binary.cs" />
+    <Compile Include="Results\ResultWrapper.cs" />
     <Compile Include="Results\SerializedResultWrapper.cs" />
     <Compile Include="Results\ShellNoContent.cs" />
     <Compile Include="Results\ShellNoQuery.cs" />
@@ -366,7 +367,7 @@
     <Compile Include="ContentTypeProviders\NativeJsonProtocol\FormatWriter.cs" />
     <Compile Include="ContentTypeProviders\NativeJsonProtocol\RESTarFromExcelJsonWriter.cs" />
     <Compile Include="ContentTypeProviders\NativeJsonProtocol\RESTarJsonWriter.cs" />
-    <Compile Include="ContentTypeProviders\Serializers.cs" />
+    <Compile Include="ContentTypeProviders\Providers.cs" />
     <Compile Include="SetOperations.cs" />
     <Compile Include="Resources\Operations\StarcounterOperations.cs" />
     <Compile Include="Requests\Processors\Select.cs" />

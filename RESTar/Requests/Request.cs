@@ -121,7 +121,19 @@ namespace RESTar.Requests
 
         #endregion
 
-        public IEntities<T> ResultEntities => (IEntities<T>) Evaluate();
+        public IEntities<T> EvaluateToEntities()
+        {
+            var result = Evaluate();
+            if (result is Results.Error e) throw e;
+            return (IEntities<T>) result;
+        }
+
+        public async Task<IEntities<T>> EvaluateToEntitiesAsync()
+        {
+            var result = await EvaluateAsync();
+            if (result is Results.Error e) throw e;
+            return (IEntities<T>) result;
+        }
 
         public IResult Evaluate() => EvaluateAsync().Result;
 
@@ -284,7 +296,7 @@ namespace RESTar.Requests
                             if (source.IsInternal)
                             {
                                 var result = Context
-                                    .CreateRequest(source.Method, source.URI, null, source.Headers)
+                                    .CreateRequest(source.URI, source.Method, null, source.Headers)
                                     .Evaluate();
                                 if (!(result is IEntities)) throw new InvalidExternalSource(source.URI, result.LogMessage);
                                 var serialized = result.Serialize();

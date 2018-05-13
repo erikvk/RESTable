@@ -32,7 +32,7 @@ namespace RESTar.Internal.Sc
                     if (!client.TryAuthenticate(ref uri, headers, out var error))
                         return ToResponse(error);
                     var context = new ScContext(client, scRequest);
-                    using (var request = context.CreateRequest(method, uri, scRequest.BodyBytes, headers))
+                    using (var request = context.CreateRequest(uri, method, scRequest.BodyBytes, headers))
                     {
                         switch (request.Evaluate().Serialize())
                         {

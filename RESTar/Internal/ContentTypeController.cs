@@ -65,8 +65,8 @@ namespace RESTar.Internal
             OutputContentTypeProviders = new Dictionary<string, IContentTypeProvider>(StringComparer.OrdinalIgnoreCase);
             contentTypeProviders = contentTypeProviders ?? new List<IContentTypeProvider>();
             contentTypeProviders.Insert(0, new XMLWriter());
-            contentTypeProviders.Insert(0, Serializers.ExcelProvider);
-            contentTypeProviders.Insert(0, Serializers.JsonProvider);
+            contentTypeProviders.Insert(0, Providers.Excel);
+            contentTypeProviders.Insert(0, Providers.Json);
             foreach (var provider in contentTypeProviders)
             {
                 ValidateContentTypeProvider(provider);

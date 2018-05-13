@@ -39,7 +39,7 @@ namespace RESTar.Admin
             {
                 _regularPattern = value;
                 (RegularPre, RegularPost) = value.TSplit(macro);
-                var prettyPrintPattern = Serializers.JsonProvider.SerializeFormatter(
+                var prettyPrintPattern = Providers.Json.SerializeFormatter(
                     JToken.Parse(RegularPre + placeholder + RegularPost), out var indents);
                 (PrettyPrintPre, PrettyPrintPost) = prettyPrintPattern.TSplit(placeholder);
                 StartIndent = indents;

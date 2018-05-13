@@ -315,7 +315,7 @@ namespace RESTar.WebSockets
             if (prettyPrint == null)
                 _prettyPrint = Admin.Settings._PrettyPrint ? Formatting.Indented : Formatting.None;
             else _prettyPrint = prettyPrint.Value ? Formatting.Indented : Formatting.None;
-            var stream = Serializers.JsonProvider.SerializeStream(item, _prettyPrint, ignoreNulls);
+            var stream = Providers.Json.SerializeStream(item, _prettyPrint, ignoreNulls);
             var array = stream.ToArray();
             _SendBinary(array, asText, 0, array.Length);
         }

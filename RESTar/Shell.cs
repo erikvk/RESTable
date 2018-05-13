@@ -146,7 +146,7 @@ namespace RESTar
         /// <inheritdoc />
         public void Dispose()
         {
-            WebSocket.Context.Client.ShellConfig = Serializers.JsonProvider.Serialize(this);
+            WebSocket.Context.Client.ShellConfig = Providers.Json.Serialize(this);
             Reset();
         }
 
@@ -173,7 +173,7 @@ namespace RESTar
         {
             if (WebSocket.Context.Client.ShellConfig is string config)
             {
-                Serializers.JsonProvider.Populate(config, this);
+                Providers.Json.Populate(config, this);
                 SendShellInit();
                 SendQuery();
             }
@@ -454,7 +454,7 @@ namespace RESTar
         {
             if (Query.Length == 0) return new ShellNoQuery(WebSocket);
             var local = Query;
-            using (var request = WebSocket.Context.CreateRequest(method, local, body, WebSocket.Headers))
+            using (var request = WebSocket.Context.CreateRequest(local, method, body, WebSocket.Headers))
             {
                 var result = request.Evaluate().Serialize();
                 switch (result)

@@ -28,7 +28,7 @@ namespace RESTar.Requests.Filters
         public IEnumerable<T> Apply<T>(IEnumerable<T> entities)
         {
             if (string.IsNullOrWhiteSpace(Pattern)) return entities;
-            return entities.Where(e => Serializers.JsonProvider.Serialize(e).IndexOf(Pattern, StringComparison.OrdinalIgnoreCase) >= 0);
+            return entities.Where(e => Providers.Json.Serialize(e).IndexOf(Pattern, StringComparison.OrdinalIgnoreCase) >= 0);
         }
     }
 }

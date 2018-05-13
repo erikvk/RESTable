@@ -76,7 +76,7 @@ namespace RESTar.Requests
                     stream: new RESTarStream(parameters.BodyBytes),
                     contentType: Headers.ContentType
                                  ?? CachedProtocolProvider?.DefaultInputProvider.ContentType
-                                 ?? Serializers.JsonProvider.ContentType,
+                                 ?? Providers.Json.ContentType,
                     protocolProvider: parameters.CachedProtocolProvider
                 );
             ResponseHeaders = null;

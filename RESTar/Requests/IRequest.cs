@@ -63,6 +63,18 @@ namespace RESTar.Requests
         /// content type provided in the Content-Type header.
         /// </summary>
         Func<IEnumerable<T>, IEnumerable<T>> Updater { set; }
+
+        /// <summary>
+        /// Evaluates the request synchronously and returns the result as an entity collection. Only valid for GET requests.
+        /// If an error is encountered while evaluating the request, an exception is thrown. Equivalent to Evaluate().ToEntities&lt;T&gt;()
+        /// but with one less generic type parameter.
+        /// </summary>
+        IEntities<T> EvaluateToEntities();
+
+        /// <summary>
+        /// An asynchronous version of <see cref="EvaluateToEntities" />;
+        /// </summary>
+        Task<IEntities<T>> EvaluateToEntitiesAsync();
     }
 
     /// <inheritdoc cref="ITraceable" />
@@ -139,7 +151,7 @@ namespace RESTar.Requests
         IResult Evaluate();
 
         /// <summary>
-        /// Evaluates the request asynchronously and returns a Task representating the evaluation
+        /// Evaluates the request asynchronously and returns a Task representing the evaluation
         /// </summary>
         Task<IResult> EvaluateAsync();
 

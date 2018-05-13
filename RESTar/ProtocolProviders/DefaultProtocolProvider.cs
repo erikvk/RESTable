@@ -148,7 +148,7 @@ namespace RESTar.ProtocolProviders
                         var parameters = new HeaderRequestParameters(entities.Request.Headers.Destination);
                         if (parameters.IsInternal)
                         {
-                            var internalRequest = entities.Context.CreateRequest(parameters.Method, parameters.URI, null, parameters.Headers);
+                            var internalRequest = entities.Context.CreateRequest(parameters.URI, parameters.Method, null, parameters.Headers);
                             var serializedEntities = SerializeEntities();
                             if (!(serializedEntities is Content content))
                                 return serializedEntities;

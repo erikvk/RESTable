@@ -6,6 +6,27 @@ using RESTar.Requests;
 
 namespace RESTar.Results
 {
+    /// <summary>
+    /// A generic RESTar result
+    /// </summary>
+    /// <typeparam name="T">The resource type</typeparam>
+    public interface IResult<T> : IResult where T : class
+    {
+        /// <summary>
+        /// The entities contained in the result
+        /// </summary>
+        IEntities<T> Entities { get; }
+
+        /// <summary>
+        /// Serializes the result and prepares output streams and content types.
+        /// Optionally, provide a content type to serialize the result with.
+        /// If null, the content type specified in the request will be used.
+        /// If no content type is specified in the request, the default content 
+        /// type for the protocol is used.
+        /// </summary>
+        new ISerializedResult<T> Serialize(ContentType? contentType = null);
+    }
+
     /// <inheritdoc cref="ILogable" />
     /// <inheritdoc cref="IDisposable" />
     /// <summary>

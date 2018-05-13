@@ -73,9 +73,9 @@ namespace RESTarTester
                 configFilePath: @"C:\Mopedo\mopedo\Mopedo.config"
             );
 
-                Db.SQL<Base>("SELECT t FROM RESTarTester.Base t").ForEach(b => Db.TransactAsync(b.Delete));
-                Db.SQL<MyDict>("SELECT t FROM RESTarTester.MyDict t").ForEach(b => Db.TransactAsync(b.Delete));
-                Db.SQL<MyDict2>("SELECT t FROM RESTarTester.MyDict2 t").ForEach(b => Db.TransactAsync(b.Delete));
+            Db.SQL<Base>("SELECT t FROM RESTarTester.Base t").ForEach(b => Db.TransactAsync(b.Delete));
+            Db.SQL<MyDict>("SELECT t FROM RESTarTester.MyDict t").ForEach(b => Db.TransactAsync(b.Delete));
+            Db.SQL<MyDict2>("SELECT t FROM RESTarTester.MyDict2 t").ForEach(b => Db.TransactAsync(b.Delete));
 
             string onesJson = null;
             string twosJson = null;
@@ -526,7 +526,7 @@ namespace RESTarTester
             x5.Hej = "123";
             x5.Foo = 3213M;
             x5.Goo = false;
-            var arr5 = new[] { d5, v5, x5 };
+            var arr5 = new[] {d5, v5, x5};
             g5.SetBody(arr5, ContentType.Excel);
             var result5 = g5.Evaluate();
             Debug.Assert(result5 is InsertedEntities ie5 && ie5.InsertedCount == 3);
@@ -616,12 +616,17 @@ namespace RESTarTester
             var byInternalSource = Http.Request("POST", "http://localhost:9000/rest/resource3", null,
                 headers: new Dictionary<string, string> {["Source"] = "GET /resource3"});
 
+
+            var internalRequest9 = Context.Root.CreateRequest<Resource1>();
+            var entities = internalRequest9.EvaluateToEntities();
+            Debug.Assert(entities is IEntities<Resource1> rement1 && rement1.Count() > 1 && entities is IEnumerable<Resource1>);
+
             #endregion
 
             #region Remote requests
 
             var remoteContext = Context.Remote("http://localhost:9000/rest");
-            var remoteRequest = remoteContext.CreateRequest(GET, "/resource1");
+            var remoteRequest = remoteContext.CreateRequest("/resource1", GET);
             var remoteResult = remoteRequest.Evaluate();
             Debug.Assert(remoteResult is IEntities rement && rement.EntityCount > 1);
 

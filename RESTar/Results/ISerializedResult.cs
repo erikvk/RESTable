@@ -16,4 +16,10 @@ namespace RESTar.Results
         /// </summary>
         Stream Body { get; set; }
     }
+
+    /// <summary>
+    /// Represents a result that is ready to be sent back to the client, for example 
+    /// in an HTTP response or a WebSocket message.
+    /// </summary>
+    public interface ISerializedResult<T> : IResult<T>, ISerializedResult where T : class { }
 }

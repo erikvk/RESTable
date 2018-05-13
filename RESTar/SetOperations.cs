@@ -54,7 +54,7 @@ namespace RESTar
                             case default(char): throw new Exception("Operation expressions cannot be empty strings");
                             case '[': return JArray.Parse(argument);
                             case '/':
-                                switch (request.Context.CreateRequest(GET, argument).Evaluate())
+                                switch (request.Context.CreateRequest(argument).Evaluate())
                                 {
                                     case NoContent _: return new JArray();
                                     case IEntities entities: return JArray.FromObject(entities, JsonProvider.Serializer);
@@ -155,7 +155,7 @@ namespace RESTar
                     valueBuffer[i] = HttpUtility.UrlEncode(value);
                 }
                 localMapper = string.Format(localMapper, valueBuffer);
-                switch (request.Context.CreateRequest(GET, localMapper).Evaluate())
+                switch (request.Context.CreateRequest(localMapper).Evaluate())
                 {
                     case NoContent _: break;
                     case IEntities<object> entities:

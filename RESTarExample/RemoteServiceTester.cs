@@ -32,7 +32,7 @@ namespace RESTarExample
                 case var methodString when Enum.TryParse(methodString, out Method method):
                     var context = Context.Remote(Service, ApiKey);
                     var body = Body?.Length > 0 ? Encoding.UTF8.GetBytes(Body) : null;
-                    var request = context.CreateRequest(method, tail, body, Headers);
+                    var request = context.CreateRequest(tail, method, body, Headers);
                     // var res = request.Result.Serialize();
                     // WebSocket.SendResult(res, res.TimeElapsed, true);
 
