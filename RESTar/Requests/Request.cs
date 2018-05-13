@@ -15,6 +15,9 @@ using RESTar.Meta;
 using RESTar.Meta.Internal;
 using RESTar.Resources.Operations;
 using RESTar.Results;
+using Starcounter;
+using Binary = RESTar.Results.Binary;
+using IResource = RESTar.Meta.IResource;
 
 namespace RESTar.Requests
 {
@@ -56,7 +59,7 @@ namespace RESTar.Requests
             set => _metaConditions = value;
         }
 
-        private Task<Body> BodyTask { get; }
+        private Task BodyTask { get; set; }
 
         private Body _body;
 
@@ -160,10 +163,14 @@ namespace RESTar.Requests
         {
             try
             {
+                if (!Body.HasContent && BodyTask != null)
+                {
+                    await BodyTask;
+                    BodyTask = null;
+                }
+
                 Context.IncreaseDepth();
                 IsEvaluating = true;
-                if (!Body.HasContent && BodyTask != null)
-                    Body = await BodyTask;
 
                 switch (Resource)
                 {
@@ -268,7 +275,7 @@ namespace RESTar.Requests
                 }
                 else
                 {
-                    async Task<Body> getBodyFromExternalSource()
+                    void setBodyFromExternalSource()
                     {
                         try
                         {
@@ -276,30 +283,34 @@ namespace RESTar.Requests
                             if (source.Method != GET) throw new InvalidSyntax(InvalidSource, "Only GET is allowed in Source headers");
                             if (source.IsInternal)
                             {
-                                var result = await Context
+                                var result = Context
                                     .CreateRequest(source.Method, source.URI, null, source.Headers)
-                                    .EvaluateAsync();
+                                    .Evaluate();
                                 if (!(result is IEntities)) throw new InvalidExternalSource(source.URI, result.LogMessage);
                                 var serialized = result.Serialize();
                                 if (serialized is NoContent) throw new InvalidExternalSource(source.URI, "Response was empty");
-                                return new Body
+                                Body = new Body
                                 (
                                     stream: new RESTarStream(serialized.Body),
                                     contentType: serialized.Headers.ContentType ?? CachedProtocolProvider.DefaultInputProvider.ContentType,
                                     protocolProvider: CachedProtocolProvider
                                 );
                             }
-                            if (source.Headers.Accept == null) source.Headers.Accept = defaultContentType;
-                            var request = new HttpRequest(this, source, null);
-                            var response = await request.GetResponseAsync() ?? throw new InvalidExternalSource(source.URI, "No response");
-                            if (response.StatusCode >= HttpStatusCode.BadRequest) throw new InvalidExternalSource(source.URI, response.LogMessage);
-                            if (response.Body.CanSeek && response.Body.Length == 0) throw new InvalidExternalSource(source.URI, "Response was empty");
-                            return new Body
-                            (
-                                stream: new RESTarStream(response.Body),
-                                contentType: response.Headers.ContentType ?? defaultContentType,
-                                protocolProvider: CachedProtocolProvider
-                            );
+                            else
+                            {
+                                if (source.Headers.Accept == null) source.Headers.Accept = defaultContentType;
+                                var request = new HttpRequest(this, source, null);
+                                var response = request.GetResponseAsync().Result ?? throw new InvalidExternalSource(source.URI, "No response");
+                                if (response.StatusCode >= HttpStatusCode.BadRequest) throw new InvalidExternalSource(source.URI, response.LogMessage);
+                                if (response.Body.CanSeek && response.Body.Length == 0)
+                                    throw new InvalidExternalSource(source.URI, "Response was empty");
+                                Body = new Body
+                                (
+                                    stream: new RESTarStream(response.Body),
+                                    contentType: response.Headers.ContentType ?? defaultContentType,
+                                    protocolProvider: CachedProtocolProvider
+                                );
+                            }
                         }
                         catch (HttpRequestException re)
                         {
@@ -307,7 +318,7 @@ namespace RESTar.Requests
                         }
                     }
 
-                    BodyTask = Task.Run(getBodyFromExternalSource);
+                    BodyTask = Scheduling.RunTask(setBodyFromExternalSource);
                 }
             }
             catch (Exception e)

@@ -5,47 +5,7 @@ using System.Net;
 using RESTar.Internal.Logging;
 using RESTar.Requests;
 
-namespace RESTar.Results
-{
-    internal class SwitchedTerminal : Success
-    {
-        internal SwitchedTerminal(IRequest request) : base(request)
-        {
-            StatusCode = HttpStatusCode.OK;
-            StatusDescription = "Switched terminal";
-            TimeElapsed = request.TimeElapsed;
-        }
-    }
-
-    internal class ShellNoContent : Success
-    {
-        internal ShellNoContent(ITraceable trace, TimeSpan elapsed) : base(trace)
-        {
-            StatusCode = HttpStatusCode.NoContent;
-            StatusDescription = "No content";
-            TimeElapsed = elapsed;
-        }
-    }
-
-    internal class ShellNoQuery : Success
-    {
-        internal ShellNoQuery(ITraceable trace) : base(trace)
-        {
-            StatusCode = HttpStatusCode.NoContent;
-            StatusDescription = "No query";
-            TimeElapsed = default;
-        }
-    }
-
-    /// <inheritdoc />
-    /// <summary>
-    /// Returned when a WebSocket upgrade request failed
-    /// </summary>
-    public class WebSocketUpgradeFailed : SerializedResultWrapper
-    {
-        internal WebSocketUpgradeFailed(Error error) : base(error) { }
-    }
-
+namespace RESTar.Results {
     /// <inheritdoc />
     /// <summary>
     /// Wraps a result and maps operations to its members
@@ -124,20 +84,5 @@ namespace RESTar.Results
 
         /// <inheritdoc />
         protected SerializedResultWrapper(ISerializedResult result) => Result = result;
-    }
-
-    /// <inheritdoc />
-    /// <summary>
-    /// Returned when a WebSocket upgrade was performed successfully, and RESTar has taken over the 
-    /// context from the network provider.
-    /// </summary>
-    public class WebSocketUpgradeSuccessful : Success
-    {
-        internal WebSocketUpgradeSuccessful(IRequest request) : base(request)
-        {
-            StatusCode = HttpStatusCode.SwitchingProtocols;
-            StatusDescription = "Switching protocols";
-            TimeElapsed = request.TimeElapsed;
-        }
     }
 }

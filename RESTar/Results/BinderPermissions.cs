@@ -8,7 +8,7 @@ namespace RESTar.Results
     /// Thrown when RESTar encounters an error with permissions for binding 
     /// against, for example, properties of resources.
     /// </summary>
-    public class BinderPermissions : Internal
+    internal class BinderPermissions : Internal
     {
         /// <inheritdoc />
         public BinderPermissions(Exception e) : base(ErrorCodes.FailedBinding, 

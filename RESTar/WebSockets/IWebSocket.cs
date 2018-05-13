@@ -7,13 +7,6 @@ using RESTar.Results;
 
 namespace RESTar.WebSockets
 {
-    internal interface IWebSocketInternal : IWebSocket, IDisposable
-    {
-        void SendTextRaw(string text);
-        void Disconnect();
-        void SetStatus(WebSocketStatus status);
-    }
-
     /// <inheritdoc />
     /// <summary>
     /// WebSockets support sending continuous data over a single TCP connection

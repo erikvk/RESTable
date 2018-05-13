@@ -111,6 +111,7 @@
     <Compile Include="Internal\RemoteContext.cs" />
     <Compile Include="Resources\IDynamicTerminal.cs" />
     <Compile Include="Resources\InvalidBinaryDeclarationException.cs" />
+    <Compile Include="Results\BadGateway.cs" />
     <Compile Include="Results\IResult.cs" />
     <Compile Include="Resources\Operations\IAuthenticatable.cs" />
     <Compile Include="Resources\Operations\ICounter.cs" />
@@ -158,7 +159,10 @@
     <Compile Include="Meta\Internal\BinaryResource.cs" />
     <Compile Include="Meta\Internal\BinaryResourceProvider.cs" />
     <Compile Include="Results\Binary.cs" />
-    <Compile Include="Results\NoResponse.cs" />
+    <Compile Include="Results\SerializedResultWrapper.cs" />
+    <Compile Include="Results\ShellNoContent.cs" />
+    <Compile Include="Results\ShellNoQuery.cs" />
+    <Compile Include="Results\Timeout.cs" />
     <Compile Include="Results\RemoteBadRequest.cs" />
     <Compile Include="Results\RemoteEntities.cs" />
     <Compile Include="NetworkProviders\INetworkProvider.cs" />
@@ -173,8 +177,13 @@
     <Compile Include="Results\RemoteOther.cs" />
     <Compile Include="Results\Success.cs" />
     <Compile Include="Internal\Sc\ScContext.cs" />
+    <Compile Include="Results\WebSocketUpgradeFailed.cs" />
+    <Compile Include="Results\WebSocketUpgradeSuccessful.cs" />
+    <Compile Include="WebSockets\IWebSocketInternal.cs" />
+    <Compile Include="WebSockets\StreamCommand.cs" />
     <Compile Include="WebSockets\StreamManifest.cs" />
     <Compile Include="Meta\TerminalResource.cs" />
+    <Compile Include="WebSockets\StreamManifestMessage.cs" />
     <Compile Include="WebSockets\WebSocket.cs" />
     <Compile Include="WebSockets\WebSocketConnection.cs" />
     <Compile Include="WebSockets\WebSocketContext.cs" />
@@ -189,12 +198,11 @@
     <Compile Include="Resources\InvalidProtocolProviderException.cs" />
     <Compile Include="Resources\InvalidContentTypeProviderException.cs" />
     <Compile Include="Resources\InvalidReferencedEnumDeclarationException.cs" />
-    <Compile Include="Results\UnknownEntityResource.cs" />
     <Compile Include="Results\UnknownProtocol.cs" />
     <Compile Include="Results\BinderPermissions.cs" />
     <Compile Include="Results\Content.cs" />
     <Compile Include="Results\Head.cs" />
-    <Compile Include="Results\WebSocketResult.cs" />
+    <Compile Include="Results\SwitchedTerminal.cs" />
     <Compile Include="Internal\Sc\DDictionaryConverter.cs" />
     <Compile Include="ContentTypeProviders\DefaultValueProvider.cs" />
     <Compile Include="ContentTypeProviders\NativeJsonProtocol\HeadersConverter.cs" />
@@ -320,9 +328,8 @@
     <Compile Include="Results\InvalidOrigin.cs" />
     <Compile Include="Results\InvalidSyntax.cs" />
     <Compile Include="Internal\MissingConfigurationFile.cs" />
-    <Compile Include="Results\NoAvalailableDynamicTable.cs" />
+    <Compile Include="Results\NoAvailableDynamicTable.cs" />
     <Compile Include="Results\NotAcceptable.cs" />
-    <Compile Include="Results\NotAllowedViewAction.cs" />
     <Compile Include="Results\NotAuthorized.cs" />
     <Compile Include="Results\NotFound.cs" />
     <Compile Include="Results\InvalidOperator.cs" />
@@ -369,10 +376,11 @@
     <Compile Include="ContentTypeProviders\NativeJsonProtocol\CreateViewModelResolver.cs" />
     <Compile Include="ContentTypeProviders\NativeJsonProtocol\DefaultResolver.cs" />
     <Compile Include="Resources\ITerminal.cs" />
+    <Compile Include="WebSockets\WebSocketQueue.cs" />
     <Compile Include="WebSockets\WebSocketStatus.cs" />
     <Compile Include="WebSockets\ConnectionProfile.cs" />
     <Compile Include="Shell.cs" />
-    <Compile Include="WebSockets\UnknownWebSocket.cs" />
+    <Compile Include="WebSockets\UnknownWebSocketIdException.cs" />
     <Compile Include="WebSockets\WebSocketComparer.cs" />
     <Compile Include="WebSockets\WebSocketController.cs" />
   </ItemGroup>

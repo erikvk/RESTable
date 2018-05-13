@@ -8,7 +8,7 @@ namespace RESTar.Results
     /// Thrown when an invalid value type was used in a condition or there was a mismatch 
     /// with the type of the referenced property.
     /// </summary>
-    public class InvalidConditionValueType : BadRequest
+    internal class InvalidConditionValueType : BadRequest
     {
         internal InvalidConditionValueType(string valueLiteral, Member property)
             : base(ErrorCodes.InvalidConditionValueType,

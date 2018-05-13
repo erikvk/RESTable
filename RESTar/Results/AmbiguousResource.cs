@@ -6,7 +6,7 @@ namespace RESTar.Results
     /// <summary>
     /// Thrown when RESTar cannot uniquely identify a resource by some search string
     /// </summary>
-    public class AmbiguousResource : NotFound
+    internal class AmbiguousResource : NotFound
     {
         internal AmbiguousResource(string searchString) : base(ErrorCodes.AmbiguousResource,
             $"RESTar could not uniquely identify a resource by '{searchString}'. Try qualifying the name further. ") { }

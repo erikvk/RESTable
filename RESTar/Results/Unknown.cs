@@ -7,7 +7,7 @@ namespace RESTar.Results
     /// <summary>
     /// Thrown when RESTar encounters an unkown error
     /// </summary>
-    public class Unknown : Internal
+    internal class Unknown : Internal
     {
         /// <inheritdoc />
         public Unknown(Exception e) : base(ErrorCodes.Unknown, e.Message, e) { }

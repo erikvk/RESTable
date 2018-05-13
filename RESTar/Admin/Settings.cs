@@ -17,7 +17,7 @@ namespace RESTar.Admin
                                            "settings for the RESTar instance.";
 
         internal const string All = "SELECT t FROM RESTar.Admin.Settings t";
-
+               
         internal static ushort _Port => Instance.Port;
         internal static string _Uri => Instance.Uri;
         internal static bool _ViewEnabled => Instance.ViewEnabled;
@@ -27,32 +27,32 @@ namespace RESTar.Admin
         internal static string _HelpResourcePath => Instance.HelpResourcePath;
         internal static bool _DontUseLRT => Instance.DontUseLRT;
         internal static LineEndings _LineEndings => Instance.LineEndings;
-
+               
         /// <summary>
         /// The port of the RESTar REST API
         /// </summary>
         public ushort Port { get; private set; }
-
+               
         /// <summary>
         /// The URI of the RESTar REST API
         /// </summary>
         public string Uri { get; private set; }
-
+               
         /// <summary>
         /// Is the view enabled?
         /// </summary>
         [RESTarMember(ignore: true)] public bool ViewEnabled { get; private set; }
-
+               
         /// <summary>
         /// Will JSON be serialized with pretty print? (indented JSON)
         /// </summary>
         public bool PrettyPrint { get; set; }
-
+               
         /// <summary>
         /// Use long running transactions instead of regular transact calls
         /// </summary>
         [RESTarMember(ignore: true)] public bool DontUseLRT { get; set; }
-
+               
         /// <summary>
         /// The line endings to use when writing JSON
         /// </summary>

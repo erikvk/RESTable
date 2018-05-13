@@ -4,7 +4,7 @@ using RESTar.Requests;
 namespace RESTar.Results
 {
     /// <inheritdoc />
-    public class ExternalDestinationResult : Success
+    internal class ExternalDestinationResult : Success
     {
         /// <inheritdoc />
         public override Headers Headers { get; }

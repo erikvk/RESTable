@@ -6,9 +6,9 @@ namespace RESTar.Results
     /// <summary>
     /// Thrown when RESTar cannot allocate a dynamic table for resource insertion
     /// </summary>
-    public class NoAvalailableDynamicTable : BadRequest
+    internal class NoAvailableDynamicTable : BadRequest
     {
-        internal NoAvalailableDynamicTable() : base(ErrorCodes.NoAvalailableDynamicTable,
+        internal NoAvailableDynamicTable() : base(ErrorCodes.NoAvalailableDynamicTable,
             "RESTar have no more unallocated dynamic tables. Remove an existing table and try again.") { }
     }
 }

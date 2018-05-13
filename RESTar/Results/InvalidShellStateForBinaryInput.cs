@@ -8,7 +8,7 @@ namespace RESTar.Results
     /// Thrown from the WebSocket shell when the shell is in an invalid state to handle incoming
     /// binary data.
     /// </summary>
-    public class InvalidShellStateForBinaryInput : Error
+    internal class InvalidShellStateForBinaryInput : Error
     {
         internal InvalidShellStateForBinaryInput() : base(ErrorCodes.ShellError, "")
         {

@@ -7,19 +7,6 @@ using RESTar.Results;
 
 namespace RESTar.WebSockets
 {
-    internal class StreamManifestMessage
-    {
-        public long StartIndex;
-        public long Length;
-        public bool Sent;
-    }
-
-    internal class StreamCommand
-    {
-        public string Command;
-        public string Description;
-    }
-
     internal class StreamManifest : IDisposable
     {
         internal readonly Content Content;

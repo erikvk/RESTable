@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
@@ -73,6 +74,13 @@ namespace RESTar.Requests
                 Headers.ContentType = null;
                 Headers.ForEach(header => message.Headers.Add(header.Key, header.Value));
                 var response = await HttpClient.SendAsync(message);
+                switch (response?.StatusCode)
+                {
+                    case null:
+                    case HttpStatusCode.GatewayTimeout:
+                    case HttpStatusCode.RequestTimeout: return new Timeout(URI.ToString()).AsResultOf(this);
+                    case HttpStatusCode.BadGateway: return new BadGateway(URI.ToString()).AsResultOf(this);
+                }
                 var responseHeaders = new Headers();
                 response.Headers.ForEach(header => responseHeaders[header.Key] = header.Value.FirstOrDefault());
                 var metadata = responseHeaders.Metadata?.Split(';');

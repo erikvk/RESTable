@@ -98,7 +98,7 @@ namespace RESTar.Requests
         /// <param name="headers">The headers of the request</param>
         /// <param name="error">The error result, if not authenticated</param>
         /// <returns></returns>
-        public bool TryAuthenticate(ref string uri, Headers headers, out NotAuthorized error)
+        public bool TryAuthenticate(ref string uri, Headers headers, out Forbidden error)
         {
             error = null;
             AccessRights = Authenticator.GetAccessRights(ref uri, headers);

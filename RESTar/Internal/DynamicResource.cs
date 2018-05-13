@@ -97,7 +97,7 @@ namespace RESTar.Internal
             Db.TransactAsync(() =>
             {
                 var newTable = DynamitControl.DynamitTypes.FirstOrDefault(type => !Exists(type.RESTarTypeName()))
-                               ?? throw new NoAvalailableDynamicTable();
+                               ?? throw new NoAvailableDynamicTable();
                 if (!string.IsNullOrWhiteSpace(resource.Alias))
                     new Admin.ResourceAlias
                     {

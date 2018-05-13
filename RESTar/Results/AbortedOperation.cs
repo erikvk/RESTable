@@ -9,7 +9,7 @@ namespace RESTar.Results
     /// <summary>
     /// Thrown when RESTar aborts an operation due to some encountered error
     /// </summary>
-    public sealed class AbortedOperation : BadRequest
+    internal sealed class AbortedOperation : BadRequest
     {
         internal AbortedOperation(IRequest request, ErrorCodes code, Exception ie, string message = null) : base(code,
             message ?? (ie is JsonSerializationException || ie is JsonReaderException ? "JSON serialization error, check JSON syntax." : ""), ie)

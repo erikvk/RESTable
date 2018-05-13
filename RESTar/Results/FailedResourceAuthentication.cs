@@ -7,7 +7,7 @@ namespace RESTar.Results
     /// Thrown when a request failed resource-specific authentication
     /// search string.
     /// </summary>
-    public class FailedResourceAuthentication : Forbidden
+    internal class FailedResourceAuthentication : Forbidden
     {
         /// <inheritdoc />
         internal FailedResourceAuthentication(string info) : base(ErrorCodes.FailedResourceAuthentication, info) { }

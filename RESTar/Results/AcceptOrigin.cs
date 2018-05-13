@@ -7,7 +7,7 @@ namespace RESTar.Results
     /// <summary>
     /// Returned to the client on a successful CORS preflight
     /// </summary>
-    public class AcceptOrigin : Success
+    internal class AcceptOrigin : Success
     {
         internal AcceptOrigin(string origin, RequestParameters parameters) : base(parameters)
         {

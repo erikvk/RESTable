@@ -273,7 +273,7 @@ namespace RESTar
                         case "STREAM":
                             var result = WsEvaluate(GET, null);
                             if (result is Content)
-                                WebSocket.StreamResult(result, StreamBufferSize, result.TimeElapsed, WriteHeaders);
+                                StreamResult(result, result.TimeElapsed);
                             else SendResult(result);
                             break;
                         case "OPTIONS":
@@ -508,21 +508,19 @@ namespace RESTar
         private void SafeOperation(Method method, byte[] body = null)
         {
             var sw = Stopwatch.StartNew();
-            using (var result = WsEvaluate(method, body))
+            switch (WsEvaluate(method, body))
             {
-                switch (result)
-                {
-                    case Content tooLarge when tooLarge.Body is FileStream || tooLarge.Body.Length > 16_000_000:
-                        OnConfirm = () => StreamResult(tooLarge, tooLarge.TimeElapsed);
-                        SendConfirmationRequest("426: The response message is too large. Do you wish to stream the response? ");
-                        break;
-                    case OK ok:
-                        SendResult(ok, sw.Elapsed);
-                        break;
-                    case var other:
-                        SendResult(other);
-                        break;
-                }
+                case Content tooLarge when tooLarge.Body is FileStream || tooLarge.Body.Length > 500:
+                    OnConfirm = () => StreamResult(tooLarge, tooLarge.TimeElapsed);
+                    SendConfirmationRequest("426: The result body is too large to be sent in a single WebSocket message. " +
+                                            "Do you want to stream the result instead? ");
+                    break;
+                case OK ok:
+                    SendResult(ok, sw.Elapsed);
+                    break;
+                case var other:
+                    SendResult(other);
+                    break;
             }
             sw.Stop();
         }

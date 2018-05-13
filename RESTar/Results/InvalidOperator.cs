@@ -7,7 +7,7 @@ namespace RESTar.Results
     /// Thrown when an alias cannot be inserted because RESTar cannot locate a resource by some
     /// search string.
     /// </summary>
-    public class InvalidOperator : InvalidSyntax
+    internal class InvalidOperator : InvalidSyntax
     {
         internal InvalidOperator(string c) : base(ErrorCodes.InvalidConditionOperator,
             $"Invalid or missing operator or separator ('&') for condition '{c}'. Always URI encode all equals ('=' -> '%3D') " +

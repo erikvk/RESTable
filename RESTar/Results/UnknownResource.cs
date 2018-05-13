@@ -7,7 +7,7 @@ namespace RESTar.Results
     /// <summary>
     /// Thrown when RESTar cannot locate a resource by some search string
     /// </summary>
-    public class UnknownResource : NotFound
+    internal class UnknownResource : NotFound
     {
         /// <inheritdoc />
         public UnknownResource(ErrorCodes code, string info, Exception ie) : base(code, info, ie) { }
