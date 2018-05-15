@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 using RESTar.Internal;
 using RESTar.Internal.Logging;
 using RESTar.Meta;
@@ -67,14 +66,9 @@ namespace RESTar.Requests
         /// <summary>
         /// Evaluates the request synchronously and returns the result as an entity collection. Only valid for GET requests.
         /// If an error is encountered while evaluating the request, an exception is thrown. Equivalent to Evaluate().ToEntities&lt;T&gt;()
-        /// but with one less generic type parameter.
+        /// but shorter and with one less generic type parameter.
         /// </summary>
         IEntities<T> EvaluateToEntities();
-
-        /// <summary>
-        /// An asynchronous version of <see cref="EvaluateToEntities" />;
-        /// </summary>
-        Task<IEntities<T>> EvaluateToEntitiesAsync();
     }
 
     /// <inheritdoc cref="ITraceable" />
@@ -149,11 +143,6 @@ namespace RESTar.Requests
         /// Evaluates the request synchronously and returns the result
         /// </summary>
         IResult Evaluate();
-
-        /// <summary>
-        /// Evaluates the request asynchronously and returns a Task representing the evaluation
-        /// </summary>
-        Task<IResult> EvaluateAsync();
 
         /// <summary>
         /// Is this request valid?

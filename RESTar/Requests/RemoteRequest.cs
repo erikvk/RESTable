@@ -49,8 +49,6 @@ namespace RESTar.Requests
 
         public IResult Evaluate() => _GetResult().Result;
 
-        public Task<IResult> EvaluateAsync() => _GetResult();
-
         private async Task<IResult> _GetResult()
         {
             try

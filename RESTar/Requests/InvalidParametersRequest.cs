@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using RESTar.ContentTypeProviders;
 using RESTar.Internal;
 using RESTar.Internal.Logging;
@@ -15,7 +14,6 @@ namespace RESTar.Requests
         public bool IsValid { get; }
         private Exception Error { get; }
         public IResult Evaluate() => Error.AsResultOf(this);
-        public Task<IResult> EvaluateAsync() => new Task<IResult>(Evaluate);
         public Type TargetType => null;
         public bool HasConditions => false;
 

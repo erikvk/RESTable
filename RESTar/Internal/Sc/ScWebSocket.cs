@@ -10,6 +10,10 @@ namespace RESTar.Internal.Sc
         private readonly Request UpgradeRequest;
         private readonly string GroupName;
         private Starcounter.WebSocket WebSocket;
+        private static string GetRESTarWsId(Request upgradeRequest) => MakeRESTarWsId(upgradeRequest.GetWebSocketId());
+        internal static string GetRESTarWsId(Starcounter.WebSocket webSocket) => MakeRESTarWsId(webSocket.ToUInt64());
+
+        private static string MakeRESTarWsId(ulong id) => DbHelper.Base64EncodeObjectNo(id);
 
         protected override void Send(string text) => Scheduling.RunTask(() => WebSocket.Send(text)).Wait();
 
@@ -30,10 +34,9 @@ namespace RESTar.Internal.Sc
 
         protected override bool IsConnected => WebSocket?.IsDead() == false;
         protected override void DisconnectWebSocket(string message = null) => Scheduling.RunTask(() => WebSocket.Disconnect(message)).Wait();
-        protected override void SendUpgrade() => Scheduling.RunTask(() => WebSocket = UpgradeRequest.SendUpgrade(GroupName)).Wait();
+        protected override void SendUpgrade() => WebSocket = UpgradeRequest.SendUpgrade(GroupName);
 
-        internal ScWebSocket(string groupName, Request upgradeRequest, Client client)
-            : base(DbHelper.Base64EncodeObjectNo(upgradeRequest.GetWebSocketId()), client)
+        internal ScWebSocket(string groupName, Request upgradeRequest, Client client) : base(GetRESTarWsId(upgradeRequest), client)
         {
             GroupName = groupName;
             UpgradeRequest = upgradeRequest;

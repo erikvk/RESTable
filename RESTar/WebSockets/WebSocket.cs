@@ -379,7 +379,7 @@ namespace RESTar.WebSockets
 
         private byte[] buffer;
 
-        internal void CloseStream()
+        private void CloseStream()
         {
             SendText(
                 $"499: Client closed request. Streamed {StreamManifest.CurrentMessageIndex} " +
@@ -395,9 +395,9 @@ namespace RESTar.WebSockets
             TerminalConnection?.Unsuspend();
         }
 
-        internal void SendManifest() => SendJson(StreamManifest);
+        private void SendManifest() => SendJson(StreamManifest);
 
-        internal async Task StreamMessage(int nr)
+        private async Task StreamMessage(int nr)
         {
             if (nr == -1)
                 nr = StreamManifest.MessagesRemaining;

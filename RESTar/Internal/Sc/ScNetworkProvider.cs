@@ -61,7 +61,7 @@ namespace RESTar.Internal.Sc
             {
                 try
                 {
-                    WebSocketController.HandleTextInput(DbHelper.Base64EncodeObjectNo(ws.ToUInt64()), text).Wait();
+                    WebSocketController.HandleTextInput(ScWebSocket.GetRESTarWsId(ws), text).Wait();
                 }
                 catch (Exception e)
                 {
@@ -74,7 +74,7 @@ namespace RESTar.Internal.Sc
             {
                 try
                 {
-                    WebSocketController.HandleBinaryInput(DbHelper.Base64EncodeObjectNo(ws.ToUInt64()), binary);
+                    WebSocketController.HandleBinaryInput(ScWebSocket.GetRESTarWsId(ws), binary);
                 }
                 catch (Exception e)
                 {
@@ -87,7 +87,7 @@ namespace RESTar.Internal.Sc
             {
                 try
                 {
-                    WebSocketController.HandleDisconnect(DbHelper.Base64EncodeObjectNo(ws.ToUInt64()));
+                    WebSocketController.HandleDisconnect(ScWebSocket.GetRESTarWsId(ws));
                 }
                 catch { }
             });

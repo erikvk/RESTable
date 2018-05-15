@@ -178,6 +178,7 @@
     <Compile Include="Results\RemoteOther.cs" />
     <Compile Include="Results\Success.cs" />
     <Compile Include="Internal\Sc\ScContext.cs" />
+    <Compile Include="Results\UnreadableContentStream.cs" />
     <Compile Include="Results\WebSocketUpgradeFailed.cs" />
     <Compile Include="Results\WebSocketUpgradeSuccessful.cs" />
     <Compile Include="WebSockets\IWebSocketInternal.cs" />

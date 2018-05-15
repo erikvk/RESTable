@@ -141,7 +141,7 @@ namespace RESTar.Resources.Operations
                     return entity;
                 }) ?? throw new MissingDataSource(request);
                 return request.EntityResource.Update(request);
-            }
+            }   
             catch (Exception e)
             {
                 throw new AbortedOperation(request, ErrorCodes.AbortedUpdate, e);

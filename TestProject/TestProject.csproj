@@ -67,12 +67,9 @@
   <ItemGroup>
     <None Include="app.config" />
     <None Include="packages.config" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\RESTar\RESTar.csproj">
-      <Project>{3ca9602f-fc6f-4dfe-8749-c6dbdd9a4809}</Project>
-      <Name>RESTar</Name>
-    </ProjectReference>
+    <None Include="weaver.ignore">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="$(StarcounterBin)\Starcounter.MsBuild.targets" />

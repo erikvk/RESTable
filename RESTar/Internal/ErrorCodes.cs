@@ -113,6 +113,7 @@ namespace RESTar.Internal
         ShellError = 503,
         NoResponseFromRemoteService = 504,
         ExternalServiceNotRESTar = 505,
-        WebSocketMessageTooLarge = 506
+        WebSocketMessageTooLarge = 506,
+        UnreadableContentStream = 507
     }
 }

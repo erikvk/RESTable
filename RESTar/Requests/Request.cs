@@ -65,11 +65,24 @@ namespace RESTar.Requests
 
         public Body Body
         {
-            get => _body;
+            get
+            {
+                if (BodyTask != null)
+                {
+                    BodyTask.Wait();
+                    BodyTask = null;
+                }
+                return _body;
+            }
             private set
             {
                 if (IsEvaluating)
                     throw new InvalidOperationException("Cannot set the request body while the request is evaluating");
+                if (BodyTask != null)
+                {
+                    BodyTask.Wait();
+                    BodyTask = null;
+                }
                 _body = value;
             }
         }
@@ -128,16 +141,7 @@ namespace RESTar.Requests
             return (IEntities<T>) result;
         }
 
-        public async Task<IEntities<T>> EvaluateToEntitiesAsync()
-        {
-            var result = await EvaluateAsync();
-            if (result is Results.Error e) throw e;
-            return (IEntities<T>) result;
-        }
-
-        public IResult Evaluate() => EvaluateAsync().Result;
-
-        public async Task<IResult> EvaluateAsync()
+        public IResult Evaluate()
         {
             if (!IsValid) return Error.AsResultOf(this);
             if (!MethodCheck(out var _failedAuth))
@@ -150,7 +154,7 @@ namespace RESTar.Requests
                 }
                 catch (NotImplementedException) { }
             if (IsEvaluating) throw new InfiniteLoop();
-            var result = await RunEvaluation();
+            var result = RunEvaluation();
             result.Headers.Elapsed = TimeElapsed.TotalMilliseconds.ToString(CultureInfo.InvariantCulture);
             if (Headers.Metadata == "full" && result.Metadata is string metadata)
                 result.Headers.Metadata = metadata;
@@ -171,29 +175,23 @@ namespace RESTar.Requests
             return false;
         }
 
-        private async Task<IResult> RunEvaluation()
+        private IResult RunEvaluation()
         {
             try
             {
-                if (!Body.HasContent && BodyTask != null)
-                {
-                    await BodyTask;
-                    BodyTask = null;
-                }
-
                 Context.IncreaseDepth();
                 IsEvaluating = true;
 
                 switch (Resource)
                 {
-                    case Meta.Internal.TerminalResource<T> terminal:
+                    case ITerminalResource<T> terminal:
                         if (!Context.HasWebSocket) return new UpgradeRequired(terminal.Name);
                         if (IsWebSocketUpgrade)
                             return MakeWebSocketUpgrade(terminal);
                         return SwitchTerminal(terminal);
 
                     case IBinaryResource<T> binary:
-                        var (stream, contentType ) = binary.SelectBinary(this);
+                        var (stream, contentType) = binary.SelectBinary(this);
                         return new Binary(this, stream, contentType);
 
                     case IEntityResource<T> entity:
@@ -223,17 +221,19 @@ namespace RESTar.Requests
             }
         }
 
-        private ISerializedResult SwitchTerminal(Meta.Internal.TerminalResource<T> resource)
+        private ISerializedResult SwitchTerminal(ITerminalResource<T> resource)
         {
-            var newTerminal = resource.MakeTerminal(Conditions);
+            var _resource = (Meta.Internal.TerminalResource<T>) resource;
+            var newTerminal = _resource.MakeTerminal(Conditions);
             Context.WebSocket.ConnectTo(newTerminal, resource);
             newTerminal.Open();
             return new SwitchedTerminal(this);
         }
 
-        private ISerializedResult MakeWebSocketUpgrade(Meta.Internal.TerminalResource<T> resource)
+        private ISerializedResult MakeWebSocketUpgrade(ITerminalResource<T> resource)
         {
-            var terminal = resource.MakeTerminal(Conditions);
+            var _resource = (Meta.Internal.TerminalResource<T>) resource;
+            var terminal = _resource.MakeTerminal(Conditions);
             Context.WebSocket.SetContext(this);
             Context.WebSocket.ConnectTo(terminal, resource);
             Context.WebSocket.Open();
@@ -301,7 +301,7 @@ namespace RESTar.Requests
                                 if (!(result is IEntities)) throw new InvalidExternalSource(source.URI, result.LogMessage);
                                 var serialized = result.Serialize();
                                 if (serialized is NoContent) throw new InvalidExternalSource(source.URI, "Response was empty");
-                                Body = new Body
+                                _body = new Body
                                 (
                                     stream: new RESTarStream(serialized.Body),
                                     contentType: serialized.Headers.ContentType ?? CachedProtocolProvider.DefaultInputProvider.ContentType,
@@ -316,7 +316,7 @@ namespace RESTar.Requests
                                 if (response.StatusCode >= HttpStatusCode.BadRequest) throw new InvalidExternalSource(source.URI, response.LogMessage);
                                 if (response.Body.CanSeek && response.Body.Length == 0)
                                     throw new InvalidExternalSource(source.URI, "Response was empty");
-                                Body = new Body
+                                _body = new Body
                                 (
                                     stream: new RESTarStream(response.Body),
                                     contentType: response.Headers.ContentType ?? defaultContentType,

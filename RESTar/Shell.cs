@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using RESTar.ContentTypeProviders;
+using RESTar.Internal;
 using RESTar.Meta;
 using RESTar.Requests;
 using RESTar.Resources;
@@ -510,10 +511,25 @@ namespace RESTar
             var sw = Stopwatch.StartNew();
             switch (WsEvaluate(method, body))
             {
-                case Content tooLarge when tooLarge.Body is FileStream || tooLarge.Body.Length > 500:
-                    OnConfirm = () => StreamResult(tooLarge, tooLarge.TimeElapsed);
-                    SendConfirmationRequest("426: The result body is too large to be sent in a single WebSocket message. " +
-                                            "Do you want to stream the result instead? ");
+                case Content content when content.Body is Stream _:
+                    if (!content.Body.CanRead)
+                    {
+                        SendResult(new UnreadableContentStream(content));
+                        break;
+                    }
+                    if (!content.Body.CanSeek)
+                    {
+                        content.Body = new RESTarStream(content.Body);
+                        break;
+                    }
+                    if (content.Body.Length > 16_000_000)
+                    {
+                        OnConfirm = () => StreamResult(content, sw.Elapsed);
+                        SendConfirmationRequest("426: The result body is too large to be sent in a single WebSocket message. " +
+                                                "Do you want to stream the result instead? ");
+                        break;
+                    }
+                    SendResult(content, sw.Elapsed);
                     break;
                 case OK ok:
                     SendResult(ok, sw.Elapsed);
