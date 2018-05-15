@@ -5,6 +5,7 @@ using Dynamit;
 using RESTar.Internal;
 using RESTar.Resources;
 using RESTar.Resources.Operations;
+using Starcounter;
 
 namespace RESTar.Meta.Internal
 {
@@ -26,9 +27,17 @@ namespace RESTar.Meta.Internal
         internal DynamicResourceProvider() => DynamicBuilderMethod =
             typeof(DynamicResourceProvider).GetMethod(nameof(_BuildDynamicResource), BindingFlags.NonPublic | BindingFlags.Instance);
 
-        internal void BuildDynamicResource(DynamicResource resource) => DynamicBuilderMethod
-            .MakeGenericMethod(resource.Table)
-            .Invoke(this, new object[] {resource});
+        internal void BuildDynamicResource(DynamicResource resource)
+        {
+            if (resource.Table == null)
+            {
+                Db.TransactAsync(resource.Delete);
+                return;
+            }
+            DynamicBuilderMethod
+                .MakeGenericMethod(resource.Table)
+                .Invoke(this, new object[] {resource});
+        }
 
         private void _BuildDynamicResource<T>(DynamicResource resource) where T : DDictionary => new EntityResource<T>
         (

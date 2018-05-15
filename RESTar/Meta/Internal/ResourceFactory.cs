@@ -18,12 +18,12 @@ namespace RESTar.Meta.Internal
 {
     internal static class ResourceFactory
     {
-        internal static DDictResourceProvider DDictProvider { get; }
-        internal static ScResourceProvider ScProvider { get; }
-        internal static VirtualResourceProvider VrProvider { get; }
-        internal static DynamicResourceProvider DynProvider { get; }
-        internal static TerminalResourceProvider TerminalProvider { get; }
-        internal static BinaryResourceProvider BinaryProvider { get; }
+        private static DDictResourceProvider DDictProvider { get; }
+        public static ScResourceProvider ScProvider { get; }
+        private static VirtualResourceProvider VrProvider { get; }
+        private static DynamicResourceProvider DynProvider { get; }
+        private static TerminalResourceProvider TerminalProvider { get; }
+        private static BinaryResourceProvider BinaryProvider { get; }
         private static List<ResourceProvider> ResourceProviders { get; }
 
         static ResourceFactory()
