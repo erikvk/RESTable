@@ -51,7 +51,6 @@ namespace RESTar.ContentTypeProviders
                 FloatParseHandling = FloatParseHandling.Decimal
             };
             Serializer = JsonSerializer.Create(Settings);
-
             SettingsIgnoreNulls = new JsonSerializerSettings
             {
                 NullValueHandling = NullValueHandling.Ignore,
