@@ -25,7 +25,7 @@ namespace RESTar.Admin
         static Console() => Consoles = new TerminalSet<Console>();
 
         public ConsoleFormat Format { get; set; }
-        public bool IncludeConnection { get; set; } = true;
+        public bool IncludeClient { get; set; } = true;
         public bool IncludeHeaders { get; set; } = false;
         public bool IncludeContent { get; set; } = false;
 
@@ -74,7 +74,7 @@ namespace RESTar.Admin
                                 Out = new LogItem {Id = result.TraceId, Message = result.LogMessage},
                                 ElapsedMilliseconds = milliseconds
                             };
-                            if (c.IncludeConnection)
+                            if (c.IncludeClient)
                                 item.ClientInfo = new ClientInfo(request.Context.Client);
                             if (c.IncludeHeaders)
                             {
@@ -116,11 +116,11 @@ namespace RESTar.Admin
                             {
                                 Type = logable.LogEventType.ToString(),
                                 Id = logable.TraceId,
-                                Message = logable.LogMessage
+                                Message = logable.LogMessage,
+                                Time = logable.LogTime
                             };
-                            if (c.IncludeConnection)
+                            if (c.IncludeClient)
                                 item.Client = new ClientInfo(logable.Context.Client);
-                            else item.Time = logable.LogTime;
                             if (c.IncludeHeaders && !logable.ExcludeHeaders)
                                 item.CustomHeaders = logable.Headers;
                             if (c.IncludeContent)
@@ -139,7 +139,7 @@ namespace RESTar.Admin
 
         private void PrintLine(StringBuilder builder, ILogable logable)
         {
-            if (IncludeConnection)
+            if (IncludeClient)
             {
                 builder.Append(connection);
                 builder.Append(logable.Context.Client.ClientIP);
@@ -161,7 +161,7 @@ namespace RESTar.Admin
 
         private void PrintLines(StringBuilder builder1, ILogable logable1, StringBuilder builder2, ILogable logable2)
         {
-            if (IncludeConnection)
+            if (IncludeClient)
             {
                 builder1.Append(connection);
                 builder2.Append(connection);
@@ -216,7 +216,7 @@ namespace RESTar.Admin
                     builder.Append("-- ");
                     break;
             }
-            var dateTimeString = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff ");
+            var dateTimeString = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff zzz");
             builder.Append(dateTimeString);
             builder.Append($"[{logable.TraceId}] ");
             builder.Append(logable.LogMessage);

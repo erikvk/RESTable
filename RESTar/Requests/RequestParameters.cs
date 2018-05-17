@@ -67,7 +67,7 @@ namespace RESTar.Requests
         private string UnparsedUri { get; }
         internal IResource iresource;
         internal IResource IResource => iresource ?? (iresource = Resource.Find(Uri.ResourceSpecifier));
-        internal Exception Error { get; set; }
+        internal Exception Error { get; }
         private static bool PercentCharsEscaped(IDictionary<string, string> headers) => headers?.ContainsKey("X-ARR-LOG-ID") == true;
         bool ILogable.ExcludeHeaders => IResource is IEntityResource e && e.RequiresAuthentication;
         LogEventType ILogable.LogEventType { get; } = LogEventType.HttpInput;

@@ -35,11 +35,6 @@ namespace RESTar.Results
         /// <inheritdoc />
         public IUriComponents GetNextPageLink(int count) => this.MakeNextPageLink(count);
 
-        public void SetContentDisposition(string extension)
-        {
-            Headers["Content-Disposition"] = $"attachment; filename={Request.Resource}_{DateTime.Now:yyMMddHHmmssfff}{extension}";
-        }
-
         public override IEntities<T1> ToEntities<T1>() => new DeserializedTypeEnumerable<T1>(RequestInternal, Body, this, ContentTypeProvider);
 
         public IEnumerator<JObject> GetEnumerator() => new StreamEnumerator<JObject>(Body, ContentTypeProvider);
@@ -76,7 +71,6 @@ namespace RESTar.Results
         public bool IsPaged => Entities.IsPaged;
         public IUriComponents GetNextPageLink(int count) => Entities.GetNextPageLink(count);
         public IUriComponents GetNextPageLink() => Entities.GetNextPageLink();
-        public void SetContentDisposition(string extension) => Entities.SetContentDisposition(extension);
         public Type EntityType => Entities.EntityType;
 
         public ulong EntityCount

@@ -35,10 +35,6 @@ namespace RESTar.Results
         internal Entities(IRequest request, IEnumerable<T> enumerable) : base(request) => Content = enumerable ?? new T[0];
 
         /// <inheritdoc />
-        public void SetContentDisposition(string extension) => Headers["Content-Disposition"] =
-            $"attachment;filename={Request.Resource}_{DateTime.Now:yyMMddHHmmssfff}{extension}";
-
-        /// <inheritdoc />
         public IUriComponents GetNextPageLink() => this.MakeNextPageLink(-1);
 
         /// <inheritdoc />

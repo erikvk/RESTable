@@ -644,8 +644,7 @@ namespace RESTar
 
         private void SendCredits()
         {
-            WebSocket.SendText(
-                $"RESTar is designed and developed by Erik von Krusenstierna, © Mopedo AB {DateTime.Now.Year}");
+            WebSocket.SendText($"RESTar is designed and developed by Erik von Krusenstierna, © Mopedo AB {DateTime.Now.Year}");
         }
     }
 }
