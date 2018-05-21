@@ -98,7 +98,7 @@ namespace RESTar.Internal
         // 400-500: Initialization errors
         NotInitialized = 400,
         AddOnError = 401,
-        ResourceProviderError = 402,
+        EntityResourceProviderError = 402,
         ResourceWrapperError = 403,
         InfiniteLoopDetected = 404,
         NotImplemented = 405,

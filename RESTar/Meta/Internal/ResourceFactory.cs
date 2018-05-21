@@ -6,7 +6,6 @@ using System.Reflection;
 using System.Reflection.Emit;
 using Newtonsoft.Json.Linq;
 using RESTar.Admin;
-using RESTar.Internal;
 using RESTar.Internal.Sc;
 using RESTar.Linq;
 using RESTar.Meta.IL;
@@ -19,25 +18,25 @@ namespace RESTar.Meta.Internal
     internal static class ResourceFactory
     {
         private static DDictResourceProvider DDictProvider { get; }
-        public static ScResourceProvider ScProvider { get; }
+        private static ScResourceProvider ScProvider { get; }
         private static VirtualResourceProvider VrProvider { get; }
-        private static DynamicResourceProvider DynProvider { get; }
+        internal static DynamicResourceProvider DynProvider { get; }
         private static TerminalResourceProvider TerminalProvider { get; }
         private static BinaryResourceProvider BinaryProvider { get; }
-        private static List<ResourceProvider> ResourceProviders { get; }
+        private static List<EntityResourceProvider> ResourceProviders { get; }
 
         static ResourceFactory()
         {
             ScProvider = new ScResourceProvider();
             DDictProvider = new DDictResourceProvider {DatabaseIndexer = ScProvider.DatabaseIndexer};
             VrProvider = new VirtualResourceProvider();
-            ResourceProviders = new List<ResourceProvider> {DDictProvider, ScProvider, VrProvider};
+            ResourceProviders = new List<EntityResourceProvider> {DDictProvider, ScProvider, VrProvider};
             DynProvider = new DynamicResourceProvider();
             TerminalProvider = new TerminalResourceProvider();
             BinaryProvider = new BinaryResourceProvider();
         }
 
-        private static void ValidateResourceProviders(ICollection<ResourceProvider> externalProviders)
+        private static void ValidateResourceProviders(ICollection<EntityResourceProvider> externalProviders)
         {
             if (externalProviders == null) return;
             externalProviders.ForEach(p =>
@@ -77,7 +76,7 @@ namespace RESTar.Meta.Internal
             var viewTypes = allTypes.Where(t => t.HasAttribute<RESTarViewAttribute>()).ToList();
             if (resourceTypes.Union(viewTypes).ContainsDuplicates(t => t.RESTarTypeName()?.ToLower() ?? "unknown", out var dupe))
                 throw new InvalidResourceDeclarationException("Types used by RESTar must have unique case insensitive names. Found " +
-                                                     $"multiple types with case insensitive name '{dupe}'.");
+                                                              $"multiple types with case insensitive name '{dupe}'.");
 
             void ValidateResourceTypes(List<Type> types)
             {
@@ -112,7 +111,7 @@ namespace RESTar.Meta.Internal
 
                     if (type.FullName.Count(c => c == '+') >= 2)
                         throw new InvalidResourceDeclarationException($"Invalid resource '{type.RESTarTypeName()}'. " +
-                                                             "Inner resources cannot have their own inner resources");
+                                                                      "Inner resources cannot have their own inner resources");
 
                     if (type.HasAttribute<RESTarViewAttribute>())
                         throw new InvalidResourceDeclarationException(
@@ -169,7 +168,8 @@ namespace RESTar.Meta.Internal
                             {
                                 calledProperty = method.GetInstructions()
                                     .Select(i => i.OpCode == OpCodes.Call && i.Operand is MethodInfo calledMethod && method.IsSpecialName
-                                        ? type.GetProperties(BindingFlags.Public | BindingFlags.Instance).FirstOrDefault(p => p.GetGetMethod() == calledMethod)
+                                        ? type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                                            .FirstOrDefault(p => p.GetGetMethod() == calledMethod)
                                         : null)
                                     .LastOrDefault(p => p != null);
                             }
@@ -177,7 +177,8 @@ namespace RESTar.Meta.Internal
                             {
                                 calledProperty = method.GetInstructions()
                                     .Select(i => i.OpCode == OpCodes.Call && i.Operand is MethodInfo calledMethod && method.IsSpecialName
-                                        ? type.GetProperties(BindingFlags.Public | BindingFlags.Instance).FirstOrDefault(p => p.GetSetMethod() == calledMethod)
+                                        ? type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                                            .FirstOrDefault(p => p.GetSetMethod() == calledMethod)
                                         : null)
                                     .LastOrDefault(p => p != null);
                             }
@@ -265,7 +266,7 @@ namespace RESTar.Meta.Internal
                 {
                     if (wrappers.Select(w => w.GetWrappedType()).ContainsDuplicates(out var wrapperDupe))
                         throw new InvalidResourceWrapperException("RESTar found multiple RESTar.ResourceWrapper declarations for " +
-                                                         $"type '{wrapperDupe.RESTarTypeName()}'. A type can only be wrapped once.");
+                                                                  $"type '{wrapperDupe.RESTarTypeName()}'. A type can only be wrapped once.");
                     foreach (var wrapper in wrappers)
                     {
                         var members = wrapper.GetMembers(BindingFlags.Public | BindingFlags.Instance);
@@ -290,16 +291,16 @@ namespace RESTar.Meta.Internal
                                 $"'{wrapped.RESTarTypeName()}'.");
                         if (wrapped.FullName?.Contains("+") == true)
                             throw new InvalidResourceWrapperException($"Invalid RESTar.ResourceWrapper '{wrapper.RESTarTypeName()}'. Cannot " +
-                                                             "wrap types that are declared within the scope of some other class.");
+                                                                      "wrap types that are declared within the scope of some other class.");
                         if (wrapped.HasAttribute<RESTarAttribute>())
                             throw new InvalidResourceWrapperException("RESTar found a RESTar.ResourceWrapper declaration for type " +
-                                                             $"'{wrapped.RESTarTypeName()}', a type that is already a RESTar " +
-                                                             "resource type. Only non-resource types can be wrapped.");
+                                                                      $"'{wrapped.RESTarTypeName()}', a type that is already a RESTar " +
+                                                                      "resource type. Only non-resource types can be wrapped.");
                         if (wrapper.Namespace == null)
                             throw new InvalidResourceDeclarationException($"Invalid type '{wrapper.RESTarTypeName()}'. Unknown namespace");
                         if (wrapper.Assembly == typeof(RESTarConfig).Assembly)
                             throw new InvalidResourceWrapperException("RESTar found an invalid RESTar.ResourceWrapper declaration for " +
-                                                             $"type '{wrapped.RESTarTypeName()}'. RESTar types cannot be wrapped.");
+                                                                      $"type '{wrapped.RESTarTypeName()}'. RESTar types cannot be wrapped.");
                     }
                 }
 
@@ -314,7 +315,8 @@ namespace RESTar.Meta.Internal
                         if (terminal.HasResourceProviderAttribute())
                             throw new InvalidTerminalDeclarationException(terminal, "must not be decorated with a resource provider attribute");
                         if (terminal.HasAttribute<DatabaseAttribute>())
-                            throw new InvalidTerminalDeclarationException(terminal, "must not be decorated with the Starcounter.DatabaseAttribute attribute");
+                            throw new InvalidTerminalDeclarationException(terminal,
+                                "must not be decorated with the Starcounter.DatabaseAttribute attribute");
                         if (typeof(IOperationsInterface).IsAssignableFrom(terminal))
                             throw new InvalidTerminalDeclarationException(terminal, "must not implement any other RESTar operations interfaces");
                         if (terminal.GetConstructor(Type.EmptyTypes) == null)
@@ -332,7 +334,8 @@ namespace RESTar.Meta.Internal
                         if (binary.HasResourceProviderAttribute())
                             throw new InvalidBinaryDeclarationException(binary, "must not be decorated with a resource provider attribute");
                         if (binary.HasAttribute<DatabaseAttribute>())
-                            throw new InvalidBinaryDeclarationException(binary, "must not be decorated with the Starcounter.DatabaseAttribute attribute");
+                            throw new InvalidBinaryDeclarationException(binary,
+                                "must not be decorated with the Starcounter.DatabaseAttribute attribute");
                         if (typeof(IOperationsInterface).IsAssignableFrom(binary))
                             throw new InvalidBinaryDeclarationException(binary, "must not implement any other RESTar operations interfaces");
                     }
@@ -371,7 +374,8 @@ namespace RESTar.Meta.Internal
                     else if (!type.Implements(typeof(ISelector<>), out var param) || param[0] != resource)
                         throw new InvalidResourceViewDeclarationException(type,
                             $"Expected view type to implement ISelector<{resource.RESTarTypeName()}>");
-                    var propertyUnion = resource.GetProperties(BindingFlags.Public | BindingFlags.Instance).Union(type.GetProperties(BindingFlags.Public | BindingFlags.Instance));
+                    var propertyUnion = resource.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                        .Union(type.GetProperties(BindingFlags.Public | BindingFlags.Instance));
                     if (propertyUnion.ContainsDuplicates(p => p.RESTarMemberName(), StringComparer.OrdinalIgnoreCase, out var propDupe))
                         throw new InvalidResourceViewDeclarationException(type,
                             $"Invalid property '{propDupe.Name}'. Resource view types must not contain any public instance " +
@@ -399,10 +403,11 @@ namespace RESTar.Meta.Internal
                 parentResource.InnerResources = group.ToList();
             });
 
-        internal static void MakeResources(ResourceProvider[] externalProviders)
+        internal static void MakeResources(EntityResourceProvider[] externalProviders)
         {
             ValidateResourceProviders(externalProviders);
             var (regularResources, resourceWrappers, terminals, binaries) = ValidateAndBuildTypeLists();
+
             foreach (var provider in ResourceProviders)
             {
                 var claim = provider.GetClaim(regularResources);
@@ -424,13 +429,11 @@ namespace RESTar.Meta.Internal
                 provider.ReceiveClaimed(Resource.ClaimedBy(provider));
             }
 
-            DynamicResource.GetAll().ForEach(MakeDynamicResource);
+            DynProvider.RegisterDynamicResources();
             TerminalProvider.RegisterTerminalTypes(terminals);
             BinaryProvider.RegisterBinaryTypes(binaries);
             ValidateInnerResources();
         }
-
-        internal static void MakeDynamicResource(DynamicResource resource) => DynProvider.BuildDynamicResource(resource);
 
         /// <summary>
         /// All resources are now in place and metadata can be built. This checks for any additional errors
@@ -442,9 +445,9 @@ namespace RESTar.Meta.Internal
             {
                 if (Enum.GetNames(enumType).Select(name => name.ToLower()).ContainsDuplicates(out var dupe))
                     throw new InvalidReferencedEnumDeclarationException("A reference was made in some resource type to an enum type with name " +
-                                                               $"'{enumType.RESTarTypeName()}', containing multiple named constants equal to '{dupe}' " +
-                                                               "(case insensitive). All enum types referenced by some RESTar resource " +
-                                                               "type must have unique case insensitive named constants");
+                                                                        $"'{enumType.RESTarTypeName()}', containing multiple named constants equal to '{dupe}' " +
+                                                                        "(case insensitive). All enum types referenced by some RESTar resource " +
+                                                                        "type must have unique case insensitive named constants");
             }
         }
     }

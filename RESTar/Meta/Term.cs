@@ -87,13 +87,13 @@ namespace RESTar.Meta
         /// <summary>
         /// Create a new term for a given type, with a key describing the target property
         /// </summary>
-        public static Term Create(Type type, string key) => type.MakeOrGetCachedTerm(key, TermBindingRules.DeclaredWithDynamicFallback);
+        public static Term Create(Type type, string key) => type.MakeOrGetCachedTerm(key, TermBindingRule.DeclaredWithDynamicFallback);
 
         /// <summary>
         /// Create a new term from a given PropertyInfo
         /// </summary>
         public static Term Create(PropertyInfo propertyInfo) => propertyInfo.DeclaringType
-            .MakeOrGetCachedTerm(propertyInfo.Name, TermBindingRules.DeclaredWithDynamicFallback);
+            .MakeOrGetCachedTerm(propertyInfo.Name, TermBindingRule.DeclaredWithDynamicFallback);
 
         #endregion
 
@@ -102,7 +102,7 @@ namespace RESTar.Meta
         /// The main caller is TypeCache.MakeTerm, but it's also called from places that use a 
         /// dynamic domain (processors).
         /// </summary>
-        internal static Term Parse(Type resource, string key, TermBindingRules bindingRule, ICollection<string> dynDomain)
+        internal static Term Parse(Type resource, string key, TermBindingRule bindingRule, ICollection<string> dynDomain)
         {
             var term = new Term();
 
@@ -118,7 +118,7 @@ namespace RESTar.Meta
                     switch (bindingRule)
                     {
                         case var _ when type.IsDDictionary():
-                        case TermBindingRules.DeclaredWithDynamicFallback:
+                        case TermBindingRule.DeclaredWithDynamicFallback:
                             try
                             {
                                 return DeclaredProperty.Find(type, str);
@@ -127,8 +127,8 @@ namespace RESTar.Meta
                             {
                                 return DynamicProperty.Parse(str);
                             }
-                        case TermBindingRules.DynamicWithDeclaredFallback: return DynamicProperty.Parse(str, true);
-                        case TermBindingRules.OnlyDeclared: return DeclaredProperty.Find(type, str);
+                        case TermBindingRule.DynamicWithDeclaredFallback: return DynamicProperty.Parse(str, true);
+                        case TermBindingRule.OnlyDeclared: return DeclaredProperty.Find(type, str);
                         default: throw new Exception();
                     }
                 }

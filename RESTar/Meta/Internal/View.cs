@@ -16,7 +16,7 @@ namespace RESTar.Meta.Internal
         /// <summary>
         /// The binding rule to use when binding conditions to this view
         /// </summary>
-        public TermBindingRules ConditionBindingRule { get; }
+        public TermBindingRule ConditionBindingRule { get; }
 
         /// <inheritdoc />
         public string Name { get; }
@@ -45,8 +45,8 @@ namespace RESTar.Meta.Internal
             Members = type.GetDeclaredProperties();
             Description = viewAttribute.Description;
             ConditionBindingRule = viewAttribute.AllowDynamicConditions
-                ? TermBindingRules.DeclaredWithDynamicFallback
-                : TermBindingRules.OnlyDeclared;
+                ? TermBindingRule.DeclaredWithDynamicFallback
+                : TermBindingRule.OnlyDeclared;
         }
 
         /// <inheritdoc />

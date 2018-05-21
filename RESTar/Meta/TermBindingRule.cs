@@ -3,7 +3,7 @@
     /// <summary>
     /// The rule used for binding terms to a resource
     /// </summary>
-    public enum TermBindingRules
+    public enum TermBindingRule
     {
         /// <summary>
         /// First finds declared properties, then creates dynamic properties

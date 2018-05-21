@@ -96,7 +96,7 @@ namespace RESTar
 
         internal static bool HasResourceProviderAttribute(this Type resource)
         {
-            return resource.GetCustomAttributes().OfType<ResourceProviderAttribute>().Any();
+            return resource.GetCustomAttributes().OfType<EntityResourceProviderAttribute>().Any();
         }
 
         internal static bool HasAttribute<TAttribute>(this MemberInfo type) where TAttribute : Attribute
@@ -389,7 +389,7 @@ namespace RESTar
             return typeName;
         }
 
-        internal static string GetProviderId(this ResourceProvider provider) => GetProviderId(provider.GetType());
+        internal static string GetProviderId(this EntityResourceProvider provider) => GetProviderId(provider.GetType());
 
         internal static Type GetWrappedType(this Type wrapperType) => wrapperType.BaseType?.GetGenericArguments()[0];
 

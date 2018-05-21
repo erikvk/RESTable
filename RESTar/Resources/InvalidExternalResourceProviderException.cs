@@ -8,7 +8,7 @@ namespace RESTar.Resources
     /// </summary>
     public class InvalidExternalResourceProviderException : RESTarException
     {
-        internal InvalidExternalResourceProviderException(string message) : base(ErrorCodes.ResourceProviderError,
+        internal InvalidExternalResourceProviderException(string message) : base(ErrorCodes.EntityResourceProviderError,
             "An error was found in an external ResourceProvider: " + message) { }
     }
 }

@@ -33,6 +33,7 @@ namespace RESTarExample
             );
         }
     }
+
     public class Resource1
     {
         public sbyte Sbyte;
@@ -410,7 +411,19 @@ namespace RESTarExample
     {
         public string Str { get; set; }
         public int Int { get; set; }
+        public Static AStatic => Db.SQL<Static>($"SELECT t FROM {typeof(Static)} t").FirstOrDefault();
 
+        protected override object GetDeclaredMemberValue(string key)
+        {
+            switch (key)
+            {
+                case nameof(AStatic): return AStatic;
+                case nameof(Str): return Str;
+                case nameof(Int): return Int;
+                default: return null;
+            }
+        }
+        
         public DDictKeyValuePair NewKeyPair(DDictThing dict, string key, object value = null)
         {
             return new DDictKeyValuePair(dict, key, value);

@@ -23,7 +23,7 @@ namespace RESTar.Meta.Internal
         public bool Equals(IResource x, IResource y) => x?.Name == y?.Name;
         public int GetHashCode(IResource obj) => obj.Name.GetHashCode();
         public int CompareTo(IResource other) => string.Compare(Name, other.Name, StringComparison.Ordinal);
-        public TermBindingRules ConditionBindingRule { get; }
+        public TermBindingRule ConditionBindingRule { get; }
         public string Description { get; set; }
         public bool GETAvailableToAll { get; }
         public override string ToString() => Name;
@@ -66,8 +66,8 @@ namespace RESTar.Meta.Internal
             InterfaceType = attribute?.Interface;
             ResourceKind = ResourceKind.TerminalResource;
             ConditionBindingRule = typeof(T).Implements(typeof(IDynamicTerminal))
-                ? TermBindingRules.DeclaredWithDynamicFallback
-                : TermBindingRules.OnlyDeclared;
+                ? TermBindingRule.DeclaredWithDynamicFallback
+                : TermBindingRule.OnlyDeclared;
             Description = attribute?.Description;
             Select = null;
             Members = typeof(T).GetDeclaredProperties();

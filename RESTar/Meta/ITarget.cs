@@ -27,7 +27,7 @@ namespace RESTar.Meta
         /// <summary>
         /// The binding rule to use when binding condition terms for this target
         /// </summary>
-        TermBindingRules ConditionBindingRule { get; }
+        TermBindingRule ConditionBindingRule { get; }
 
         /// <summary>
         /// The members of this target, in a case insensitive dictionary.

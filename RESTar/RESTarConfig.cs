@@ -155,7 +155,7 @@ namespace RESTar
         /// <param name="requireApiKey">Should the REST API require an API key?</param>
         /// <param name="allowAllOrigins">Should any origin be allowed to make CORS requests?</param>
         /// <param name="lineEndings">The line endings to use when writing JSON</param>
-        /// <param name="resourceProviders">External resource providers for the RESTar instance</param>
+        /// <param name="entityResourceProviders">External entity resource providers for the RESTar instance</param>
         /// <param name="protocolProviders">External protocol providers for the RESTar instance</param>
         /// <param name="contentTypeProviders">External content type providers for the RESTar instance</param>
         public static void Init
@@ -168,7 +168,7 @@ namespace RESTar
             bool prettyPrint = true,
             ushort daysToSaveErrors = 30,
             LineEndings lineEndings = LineEndings.Windows,
-            IEnumerable<ResourceProvider> resourceProviders = null,
+            IEnumerable<EntityResourceProvider> entityResourceProviders = null,
             IEnumerable<IProtocolProvider> protocolProviders = null,
             IEnumerable<IContentTypeProvider> contentTypeProviders = null
         )
@@ -179,7 +179,7 @@ namespace RESTar
                 Settings.Init(port, uri, false, prettyPrint, daysToSaveErrors, lineEndings);
                 Log.Init();
                 DynamitConfig.Init(true, true);
-                ResourceFactory.MakeResources(resourceProviders?.ToArray());
+                ResourceFactory.MakeResources(entityResourceProviders?.ToArray());
                 ContentTypeController.SetupContentTypeProviders(contentTypeProviders?.ToList());
                 ProtocolController.SetupProtocolProviders(protocolProviders?.ToList());
                 RequireApiKey = requireApiKey;

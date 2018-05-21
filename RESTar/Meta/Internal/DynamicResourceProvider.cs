@@ -1,57 +1,80 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Reflection;
+using System.Linq;
 using Dynamit;
 using RESTar.Internal;
+using RESTar.Linq;
 using RESTar.Resources;
 using RESTar.Resources.Operations;
+using RESTar.Results;
 using Starcounter;
 
 namespace RESTar.Meta.Internal
 {
-    internal class DynamicResourceProvider : ResourceProvider<object>
+    internal class DynamicResourceProvider : EntityResourceProvider<DDictionary>
     {
         internal override bool Include(Type type) => false;
         internal override void MakeClaimRegular(IEnumerable<Type> types) { }
         internal override void MakeClaimWrapped(IEnumerable<Type> types) { }
         internal override void Validate() { }
         public override Type AttributeType { get; } = null;
-        public override Selector<T> GetDefaultSelector<T>() => throw new NotImplementedException();
-        public override Inserter<T> GetDefaultInserter<T>() => throw new NotImplementedException();
-        public override Updater<T> GetDefaultUpdater<T>() => throw new NotImplementedException();
-        public override Deleter<T> GetDefaultDeleter<T>() => throw new NotImplementedException();
-        public override Counter<T> GetDefaultCounter<T>() => throw new NotImplementedException();
-        public override Profiler<T> GetProfiler<T>() => throw new NotImplementedException();
-        private readonly MethodInfo DynamicBuilderMethod;
+        public override Selector<T> GetDefaultSelector<T>() => DDictionaryOperations<T>.Select;
+        public override Inserter<T> GetDefaultInserter<T>() => DDictionaryOperations<T>.Insert;
+        public override Updater<T> GetDefaultUpdater<T>() => DDictionaryOperations<T>.Update;
+        public override Deleter<T> GetDefaultDeleter<T>() => DDictionaryOperations<T>.Delete;
+        public override Counter<T> GetDefaultCounter<T>() => null;
+        public override Profiler<T> GetProfiler<T>() => DDictionaryOperations<T>.Profile;
 
-        internal DynamicResourceProvider() => DynamicBuilderMethod =
-            typeof(DynamicResourceProvider).GetMethod(nameof(_BuildDynamicResource), BindingFlags.NonPublic | BindingFlags.Instance);
+        internal void InsertTable(Admin.Resource resource)
+        {
+            DynamicResource dynamicResource = null;
+            Db.TransactAsync(() =>
+            {
+                var newTable = DynamitControl.DynamitTypes.FirstOrDefault(type =>
+                                   Db.SQL<DynamicResource>(DynamicResource.ByTableName, type.RESTarTypeName()).FirstOrDefault() == null)
+                               ?? throw new NoAvailableDynamicTable();
+                if (!string.IsNullOrWhiteSpace(resource.Alias))
+                    new Admin.ResourceAlias
+                    {
+                        Alias = resource.Alias,
+                        Resource = resource.Name
+                    };
+                dynamicResource = new DynamicResource(resource.Name, newTable, resource.EnabledMethods, resource.Description);
+            });
+            CreateDynamicResource(dynamicResource);
+        }
 
-        internal void BuildDynamicResource(DynamicResource resource)
+        internal void RegisterDynamicResources() => Db
+            .SQL<DynamicResource>(DynamicResource.All)
+            .ForEach(CreateDynamicResource);
+
+        internal bool RemoveDynamicResource(DynamicResource dynamicResource, IResource resource)
+        {
+            if (dynamicResource == null) return false;
+            DynamitControl.ClearTable(dynamicResource.TableName);
+            var alias = Admin.ResourceAlias.GetByResource(dynamicResource.Name);
+            Db.TransactAsync(() =>
+            {
+                alias?.Delete();
+                dynamicResource.Delete();
+            });
+            RemoveResource(resource);
+            return true;
+        }
+
+        internal void CreateDynamicResource(DynamicResource resource)
         {
             if (resource.Table == null)
             {
                 Db.TransactAsync(resource.Delete);
                 return;
             }
-            DynamicBuilderMethod
-                .MakeGenericMethod(resource.Table)
-                .Invoke(this, new object[] {resource});
+            InsertResource
+            (
+                type: resource.Table,
+                fullName: resource.Name,
+                attribute: resource.Attribute
+            );
         }
-
-        private void _BuildDynamicResource<T>(DynamicResource resource) where T : DDictionary => new EntityResource<T>
-        (
-            fullName: resource.Name,
-            attribute: resource.Attribute,
-            selector: DDictionaryOperations<T>.Select,
-            inserter: DDictionaryOperations<T>.Insert,
-            updater: DDictionaryOperations<T>.Update,
-            deleter: DDictionaryOperations<T>.Delete,
-            counter: null,
-            profiler: DDictionaryOperations<T>.Profile,
-            authenticator: null,
-            views: null,
-            provider: this
-        );
     }
 }

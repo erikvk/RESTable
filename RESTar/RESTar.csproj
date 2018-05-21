@@ -47,9 +47,6 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Dynamit, Version=0.1.38.0, Culture=neutral, processorArchitecture=AMD64">
-      <HintPath>..\packages\Dynamit.0.1.38\lib\net452\Dynamit.dll</HintPath>
-    </Reference>
     <Reference Include="EPPlus">
       <HintPath>..\packages\EPPlus.4.5.1\lib\net40\EPPlus.dll</HintPath>
       <Private>True</Private>
@@ -211,7 +208,7 @@
     <Compile Include="Resources\TerminalSet.cs" />
     <Compile Include="ViewInfo.cs" />
     <Compile Include="Aggregator.cs" />
-    <Compile Include="Meta\TermBindingRules.cs" />
+    <Compile Include="Meta\TermBindingRule.cs" />
     <Compile Include="Admin\DbOutputFormat.cs" />
     <Compile Include="Internal\DynamicTableAttribute.cs" />
     <Compile Include="Requests\Formatter.cs" />
@@ -235,7 +232,7 @@
     <Compile Include="Internal\Sc\ScWebSocket.cs" />
     <Compile Include="Requests\Uri.cs" />
     <Compile Include="Requests\UriCondition.cs" />
-    <Compile Include="Resources\ResourceProviderAttribute.cs" />
+    <Compile Include="Resources\EntityResourceProviderAttribute.cs" />
     <Compile Include="Internal\Sc\ScIndexer.cs" />
     <Compile Include="AvailableResource.cs" />
     <Compile Include="Internal\Auth\AccessRight.cs" />
@@ -263,7 +260,7 @@
     <Compile Include="Meta\Internal\DynamicResourceProvider.cs" />
     <Compile Include="Meta\Internal\IResourceWrapper.cs" />
     <Compile Include="Meta\Internal\ResourceFactory.cs" />
-    <Compile Include="Resources\ResourceProvider.cs" />
+    <Compile Include="Resources\EntityResourceProvider.cs" />
     <Compile Include="Internal\Sc\DDictResourceProvider.cs" />
     <Compile Include="Internal\Sc\ScResourceProvider.cs" />
     <Compile Include="Meta\Internal\VirtualResourceProvider.cs" />
@@ -394,7 +391,12 @@
     </None>
     <None Include="weaver.ignore" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <ProjectReference Include="..\..\Dynamit\Dynamit\Dynamit.csproj">
+      <Project>{1c0568e7-1bf6-406d-a345-2a870c23f20c}</Project>
+      <Name>Dynamit</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="$(StarcounterBin)\Starcounter.MsBuild.targets" />
   <PropertyGroup>

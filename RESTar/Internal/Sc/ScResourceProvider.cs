@@ -6,7 +6,7 @@ using Starcounter;
 
 namespace RESTar.Internal.Sc
 {
-    internal class ScResourceProvider : ResourceProvider<object>
+    internal class ScResourceProvider : EntityResourceProvider<object>
     {
         public override Type AttributeType => null;
         internal ScResourceProvider() => DatabaseIndexer = new ScIndexer();

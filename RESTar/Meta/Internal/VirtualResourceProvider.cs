@@ -4,7 +4,7 @@ using RESTar.Resources.Operations;
 
 namespace RESTar.Meta.Internal
 {
-    internal class VirtualResourceProvider : ResourceProvider<object>
+    internal class VirtualResourceProvider : EntityResourceProvider<object>
     {
         internal override bool Include(Type type) => !type.HasResourceProviderAttribute();
         internal override void Validate() { }

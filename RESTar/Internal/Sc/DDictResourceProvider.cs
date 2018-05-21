@@ -6,7 +6,7 @@ using RESTar.Resources.Operations;
 
 namespace RESTar.Internal.Sc
 {
-    internal class DDictResourceProvider : ResourceProvider<DDictionary>
+    internal class DDictResourceProvider : EntityResourceProvider<DDictionary>
     {
         internal override bool Include(Type type)
         {

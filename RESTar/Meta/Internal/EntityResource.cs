@@ -32,8 +32,8 @@ namespace RESTar.Meta.Internal
         public bool DynamicConditionsAllowed { get; }
         public IReadOnlyDictionary<string, ITarget<T>> ViewDictionary => ViewDictionaryInternal;
         public IEnumerable<ITarget> Views => ViewDictionaryInternal?.Values;
-        public TermBindingRules ConditionBindingRule { get; }
-        public TermBindingRules OutputBindingRule { get; }
+        public TermBindingRule ConditionBindingRule { get; }
+        public TermBindingRule OutputBindingRule { get; }
         public bool RequiresAuthentication => Authenticate != null;
         public bool GETAvailableToAll { get; }
         public IReadOnlyDictionary<string, DeclaredProperty> Members { get; }
@@ -45,7 +45,7 @@ namespace RESTar.Meta.Internal
         public string Provider { get; }
         public IReadOnlyList<IResource> InnerResources { get; set; }
         public ResourceProfile ResourceProfile => Profile?.Invoke(this);
-        public bool ClaimedBy<T1>() where T1 : ResourceProvider => Provider == typeof(T1).GetProviderId();
+        public bool ClaimedBy<T1>() where T1 : EntityResourceProvider => Provider == typeof(T1).GetProviderId();
         public ResourceKind ResourceKind { get; }
 
         string IResourceInternal.Description
@@ -101,7 +101,7 @@ namespace RESTar.Meta.Internal
         /// </summary>
         internal EntityResource(string fullName, RESTarAttribute attribute, Selector<T> selector, Inserter<T> inserter,
             Updater<T> updater, Deleter<T> deleter, Counter<T> counter, Profiler<T> profiler, Authenticator<T> authenticator,
-            ResourceProvider provider, View<T>[] views)
+            EntityResourceProvider provider, View<T>[] views)
         {
             if (fullName.Contains('+'))
             {
@@ -111,6 +111,7 @@ namespace RESTar.Meta.Internal
                 Name = fullName.Replace('+', '.');
             }
             else Name = fullName;
+            provider.ModifyResourceAttribute(typeof(T), attribute);
             Editable = attribute.Editable;
             Description = attribute.Description;
             AvailableMethods = attribute.AvailableMethods;
@@ -121,12 +122,12 @@ namespace RESTar.Meta.Internal
             DeclaredPropertiesFlagged = typeof(T).IsDDictionary() || attribute.FlagStaticMembers;
             GETAvailableToAll = attribute.GETAvailableToAll;
             ResourceKind = ResourceKind.EntityResource;
-            ConditionBindingRule = DynamicConditionsAllowed ? TermBindingRules.DeclaredWithDynamicFallback : TermBindingRules.OnlyDeclared;
+            ConditionBindingRule = DynamicConditionsAllowed ? TermBindingRule.DeclaredWithDynamicFallback : TermBindingRule.OnlyDeclared;
             if (DeclaredPropertiesFlagged)
-                OutputBindingRule = TermBindingRules.DeclaredWithDynamicFallback;
+                OutputBindingRule = TermBindingRule.DeclaredWithDynamicFallback;
             else if (typeof(T).IsDynamic() && !DeclaredPropertiesFlagged)
-                OutputBindingRule = TermBindingRules.DynamicWithDeclaredFallback;
-            else OutputBindingRule = TermBindingRules.OnlyDeclared;
+                OutputBindingRule = TermBindingRule.DynamicWithDeclaredFallback;
+            else OutputBindingRule = TermBindingRule.OnlyDeclared;
             RequiresValidation = typeof(IValidatable).IsAssignableFrom(typeof(T));
             IsDDictionary = typeof(T).IsDDictionary();
             IsDynamic = IsDDictionary || typeof(T).IsSubclassOf(typeof(JObject)) || typeof(IDictionary).IsAssignableFrom(typeof(T));

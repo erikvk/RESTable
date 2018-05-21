@@ -100,7 +100,7 @@ namespace RESTar.Admin
                 .Where(request.Conditions);
         }
 
-        internal static Resource Make(IResource iresource)
+        private static Resource Make(IResource iresource)
         {
             var entityResource = iresource as IEntityResource;
             return new Resource
@@ -138,7 +138,7 @@ namespace RESTar.Admin
                     throw new Exception($"Invalid Alias: '{alias.Alias}' is already in use for resource '{alias.IResource.Name}'");
                 if (entity.EnabledMethods?.Any() != true)
                     entity.EnabledMethods = RESTarConfig.Methods;
-                DynamicResource.MakeTable(entity);
+                ResourceFactory.DynProvider.InsertTable(entity);
                 count += 1;
             }
             return count;
@@ -149,11 +149,11 @@ namespace RESTar.Admin
             switch (Name)
             {
                 case var _ when !Regex.IsMatch(Name, RegEx.DynamicResourceName):
-                    throw new Exception($"Resource name '{Name}' contains invalid characters: Only letters, nu" +
+                    throw new Exception($"Resource name '{Name}' contains invalid characters. Letters, nu" +
                                         "mbers and underscores are valid in resource names. Dots can be used " +
                                         "to organize resources into namespaces. No other characters can be used.");
                 case var _ when Name.StartsWith(".") || Name.Contains("..") || Name.EndsWith("."):
-                    throw new Exception($"'{Name}' is not a valid resource name: Invalid namespace syntax");
+                    throw new Exception($"'{Name}' is not a valid resource name. Invalid namespace syntax");
             }
             if (!Name.StartsWith("RESTar.Dynamic."))
             {
@@ -215,7 +215,7 @@ namespace RESTar.Admin
                         var alias = ResourceAlias.GetByResource(iresource.Name);
                         if (alias != null) alias._resource = resource.Name;
                         RESTarConfig.RemoveResource(iresource);
-                        ResourceFactory.MakeDynamicResource(dynamicResource);
+                        ResourceFactory.DynProvider.CreateDynamicResource(dynamicResource);
                         updated = true;
                     }
 
@@ -230,7 +230,11 @@ namespace RESTar.Admin
         public int Delete(IRequest<Resource> request)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
-            return request.GetInputEntities().Count(DynamicResource.DeleteTable);
+            return request.GetInputEntities().Count(item =>
+            {
+                var dynamicResource = DynamicResource.Get(item.Name);
+                return ResourceFactory.DynProvider.RemoveDynamicResource(dynamicResource, item.IResource);
+            });
         }
     }
 }

@@ -2,5 +2,5 @@
 
 namespace RESTar.Internal
 {
-    internal class DynamicTableAttribute : ResourceProviderAttribute { }
+    internal class DynamicTableAttribute : EntityResourceProviderAttribute { }
 }

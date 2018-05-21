@@ -18,7 +18,6 @@ namespace RESTar.Internal.Auth
 
         internal static void RunResourceAuthentication<T>(this IRequest<T> request, IEntityResource<T> resource) where T : class
         {
-            if (!resource.RequiresAuthentication) return;
             var authResults = resource.Authenticate(request);
             if (!authResults.Success)
                 throw new FailedResourceAuthentication(authResults.Reason);

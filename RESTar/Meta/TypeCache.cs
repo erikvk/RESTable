@@ -22,12 +22,12 @@ namespace RESTar.Meta
         static TypeCache()
         {
             DeclaredPropertyCache = new ConcurrentDictionary<Type, IReadOnlyDictionary<string, DeclaredProperty>>();
-            TermCache = new ConcurrentDictionary<(string, string, TermBindingRules), Term>();
+            TermCache = new ConcurrentDictionary<(string, string, TermBindingRule), Term>();
         }
 
         #region Terms
 
-        internal static readonly ConcurrentDictionary<(string Type, string Key, TermBindingRules BindingRule), Term> TermCache;
+        internal static readonly ConcurrentDictionary<(string Type, string Key, TermBindingRule BindingRule), Term> TermCache;
 
         /// <summary>
         /// Condition terms are terms that refer to properties in resources, or  for
@@ -45,7 +45,7 @@ namespace RESTar.Meta
                 ? MakeOrGetCachedTerm(target.Type, key, target.OutputBindingRule)
                 : Term.Parse(target.Type, key, target.OutputBindingRule, dynamicDomain);
 
-        internal static Term MakeOrGetCachedTerm(this Type resource, string key, TermBindingRules bindingRule)
+        internal static Term MakeOrGetCachedTerm(this Type resource, string key, TermBindingRule bindingRule)
         {
             var tuple = (resource.RESTarTypeName(), key.ToLower(), bindingRule);
             if (!TermCache.TryGetValue(tuple, out var term))

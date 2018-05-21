@@ -83,7 +83,7 @@ namespace RESTar.Requests
             return new Condition<T1>
             (
                 term: EntityResource<T1>.SafeGet?.MakeConditionTerm(newKey ?? Key)
-                      ?? typeof(T1).MakeOrGetCachedTerm(newKey ?? Key, TermBindingRules.DeclaredWithDynamicFallback),
+                      ?? typeof(T1).MakeOrGetCachedTerm(newKey ?? Key, TermBindingRule.DeclaredWithDynamicFallback),
                 op: Operator,
                 value: Value
             );
@@ -98,7 +98,7 @@ namespace RESTar.Requests
         public Condition(string key, Operators op, object value) : this
         (
             term: EntityResource<T>.SafeGet?.MakeConditionTerm(key)
-                  ?? typeof(T).MakeOrGetCachedTerm(key, TermBindingRules.DeclaredWithDynamicFallback),
+                  ?? typeof(T).MakeOrGetCachedTerm(key, TermBindingRule.DeclaredWithDynamicFallback),
             op: op,
             value: value
         ) { }

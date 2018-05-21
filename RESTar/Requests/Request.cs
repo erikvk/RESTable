@@ -195,7 +195,8 @@ namespace RESTar.Requests
                         return new Binary(this, stream, contentType);
 
                     case IEntityResource<T> entity:
-                        this.RunResourceAuthentication(entity);
+                        if (entity.RequiresAuthentication)
+                            this.RunResourceAuthentication(entity);
                         var result = EntityOperations<T>.GetEvaluator(Method).Invoke(this);
                         result.Cookies = Cookies;
                         ResponseHeaders.ForEach(h => result.Headers[h.Key.StartsWith("X-") ? h.Key : "X-" + h.Key] = h.Value);
@@ -212,7 +213,9 @@ namespace RESTar.Requests
             }
             catch (Exception exception)
             {
-                return exception.AsResultOf(this);
+                var result = exception.AsResultOf(this);
+                ResponseHeaders.ForEach(h => result.Headers[h.Key.StartsWith("X-") ? h.Key : "X-" + h.Key] = h.Value);
+                return result;
             }
             finally
             {

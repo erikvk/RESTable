@@ -36,19 +36,19 @@ namespace RESTar.Requests
         }
 
         public Type Type => throw new InvalidOperationException(ErrorMessage(nameof(Type)));
-        public TermBindingRules ConditionBindingRule => throw new InvalidOperationException(ErrorMessage(nameof(ConditionBindingRule)));
+        public TermBindingRule ConditionBindingRule => throw new InvalidOperationException(ErrorMessage(nameof(ConditionBindingRule)));
         public IReadOnlyDictionary<string, DeclaredProperty> Members => throw new InvalidOperationException(ErrorMessage(nameof(Members)));
         public bool Equals(IResource x, IResource y) => throw new InvalidOperationException(ErrorMessage(nameof(Equals)));
         public int GetHashCode(IResource obj) => throw new InvalidOperationException(ErrorMessage(nameof(GetHashCode)));
         public int CompareTo(IResource other) => throw new InvalidOperationException(ErrorMessage(nameof(CompareTo)));
         public bool Editable { get; } = false;
         public string Provider => throw new InvalidOperationException(ErrorMessage(nameof(Provider)));
-        public bool ClaimedBy<T>() where T : ResourceProvider => false;
+        public bool ClaimedBy<T>() where T : EntityResourceProvider => false;
         public bool IsDDictionary => throw new InvalidOperationException(ErrorMessage(nameof(IsDDictionary)));
         public bool IsDynamic => throw new InvalidOperationException(ErrorMessage(nameof(IsDynamic)));
         public bool DynamicConditionsAllowed => throw new InvalidOperationException(ErrorMessage(nameof(DynamicConditionsAllowed)));
         public bool DeclaredPropertiesFlagged => throw new InvalidOperationException(ErrorMessage(nameof(DeclaredPropertiesFlagged)));
-        public TermBindingRules OutputBindingRule => throw new InvalidOperationException(ErrorMessage(nameof(OutputBindingRule)));
+        public TermBindingRule OutputBindingRule => throw new InvalidOperationException(ErrorMessage(nameof(OutputBindingRule)));
         public bool IsSingleton => throw new InvalidOperationException(ErrorMessage(nameof(IsSingleton)));
         public bool RequiresValidation => throw new InvalidOperationException(ErrorMessage(nameof(RequiresValidation)));
         public ResourceProfile ResourceProfile => throw new InvalidOperationException(ErrorMessage(nameof(ResourceProfile)));

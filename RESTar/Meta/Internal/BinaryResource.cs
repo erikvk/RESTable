@@ -20,7 +20,7 @@ namespace RESTar.Meta.Internal
         public string Name { get; }
         public string Description { get; set; }
         public Type Type { get; }
-        public TermBindingRules ConditionBindingRule { get; }
+        public TermBindingRule ConditionBindingRule { get; }
         public IReadOnlyDictionary<string, DeclaredProperty> Members { get; }
         public bool Equals(IResource x, IResource y) => x?.Name == y?.Name;
         public int GetHashCode(IResource obj) => obj.Name.GetHashCode();
@@ -51,8 +51,8 @@ namespace RESTar.Meta.Internal
             InterfaceType = attribute.Interface;
             ResourceKind = ResourceKind.BinaryResource;
             ConditionBindingRule = attribute.AllowDynamicConditions
-                ? TermBindingRules.DeclaredWithDynamicFallback
-                : TermBindingRules.OnlyDeclared;
+                ? TermBindingRule.DeclaredWithDynamicFallback
+                : TermBindingRule.OnlyDeclared;
             Description = attribute.Description;
             SelectBinary = binarySelector;
             Members = typeof(T).GetDeclaredProperties();

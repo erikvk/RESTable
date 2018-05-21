@@ -11,11 +11,15 @@ namespace RESTar.Internal.Sc
         {
             var dict = (DDictionary) value;
             writer.WriteStartObject();
+
             foreach (var pair in dict.KeyValuePairs)
-            {
-                writer.WritePropertyName(pair.Key);
-                writer.WriteValue(pair.Value);
-            }
+                serializer.Serialize(writer, pair);
+
+            // foreach (var pair in dict.KeyValuePairs)
+            // {
+            //     writer.WritePropertyName(pair.Key);
+            //     writer.WriteValue(pair.Value);
+            // }
             writer.WritePropertyName("$ObjectNo");
             writer.WriteValue(dict.GetObjectNo());
             writer.WriteEndObject();
@@ -25,6 +29,7 @@ namespace RESTar.Internal.Sc
             throw new NotImplementedException();
 
         public override bool CanRead { get; } = false;
+
         public override bool CanConvert(Type objectType) => objectType.IsSubclassOf(typeof(DDictionary));
     }
 }

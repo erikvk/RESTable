@@ -25,7 +25,7 @@ namespace RESTar.Meta
         /// Returns true if and only if this resource was claimed by the given 
         /// ResourceProvider type
         /// </summary>
-        bool ClaimedBy<T>() where T : ResourceProvider;
+        bool ClaimedBy<T>() where T : EntityResourceProvider;
 
         /// <summary>
         /// Is this a DDictionary resource?
@@ -52,7 +52,7 @@ namespace RESTar.Meta
         /// <summary>
         /// The binding rule to use when binding output terms for this resource
         /// </summary>
-        TermBindingRules OutputBindingRule { get; }
+        TermBindingRule OutputBindingRule { get; }
 
         /// <summary>
         /// Is this a singleton resource?
