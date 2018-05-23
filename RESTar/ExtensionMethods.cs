@@ -34,7 +34,6 @@ using static System.StringComparison;
 using static RESTar.Internal.ErrorCodes;
 using static RESTar.Requests.Operators;
 using static Starcounter.DbHelper;
-using IResource = RESTar.Meta.IResource;
 using Operator = RESTar.Internal.Operator;
 using UriComponents = RESTar.Requests.UriComponents;
 
@@ -394,18 +393,6 @@ namespace RESTar
         internal static Type GetWrappedType(this Type wrapperType) => wrapperType.BaseType?.GetGenericArguments()[0];
 
         internal static bool IsWrapper(this Type type) => typeof(IResourceWrapper).IsAssignableFrom(type);
-
-        /// <summary>
-        /// If the type is represented by some RESTar resource in the current instance,
-        /// returns this resource. Else null.
-        /// </summary>
-        public static IResource GetResource(this Type type) => Resource.ByTypeName(type.RESTarTypeName());
-
-        /// <summary>
-        /// If the type is represented by some RESTar resource in the current instance,
-        /// returns the name of this resource. Else null.
-        /// </summary>
-        public static string GetResourceName(this Type type) => type.GetResource()?.Name;
 
         #endregion
 

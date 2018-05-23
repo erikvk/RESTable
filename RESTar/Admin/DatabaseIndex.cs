@@ -56,7 +56,7 @@ namespace RESTar.Admin
             get => _table;
             set
             {
-                IResource = Meta.Resource.GetEntityResource(value);
+                IResource = EntityResource.Get(value);
                 _table = IResource.Name;
                 Provider = IResource.Provider;
             }

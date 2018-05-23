@@ -8,7 +8,7 @@ namespace RESTar.Internal.Sc
 {
     internal class ScResourceProvider : EntityResourceProvider<object>
     {
-        public override Type AttributeType => null;
+        protected override Type AttributeType => null;
         internal ScResourceProvider() => DatabaseIndexer = new ScIndexer();
         internal override void Validate() { }
 
@@ -26,7 +26,7 @@ namespace RESTar.Internal.Sc
         public override Counter<T> GetDefaultCounter<T>() => null;
         public override Profiler<T> GetProfiler<T>() => StarcounterOperations<T>.Profile;
 
-        public override bool IsValid(IEntityResource resource, out string reason) =>
+        protected override bool IsValid(IEntityResource resource, out string reason) =>
             StarcounterOperations<object>.IsValid(resource, out reason);
     }
 }

@@ -18,7 +18,7 @@ namespace RESTar.Internal.Sc
         internal override void Validate() { }
 
         // ReSharper disable once UnassignedGetOnlyAutoProperty
-        public override Type AttributeType { get; }
+        protected override Type AttributeType { get; }
 
         public override Selector<T> GetDefaultSelector<T>() => DDictionaryOperations<T>.Select;
         public override Inserter<T> GetDefaultInserter<T>() => DDictionaryOperations<T>.Insert;
@@ -27,7 +27,7 @@ namespace RESTar.Internal.Sc
         public override Counter<T> GetDefaultCounter<T>() => null;
         public override Profiler<T> GetProfiler<T>() => DDictionaryOperations<T>.Profile;
 
-        public override bool IsValid(IEntityResource resource, out string reason) =>
+        protected override bool IsValid(IEntityResource resource, out string reason) =>
             StarcounterOperations<object>.IsValid(resource, out reason);
     }
 }

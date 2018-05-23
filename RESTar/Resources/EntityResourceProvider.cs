@@ -24,6 +24,12 @@ namespace RESTar.Resources
         internal ICollection<Type> GetClaim(IEnumerable<Type> types) => types.Where(Include).ToList();
 
         /// <summary>
+        /// The attribute type associated with this ResourceProvider. Used to decorate 
+        /// resource types that should be claimed by this ResourceProvider.
+        /// </summary>
+        protected abstract Type AttributeType { get; }
+
+        /// <summary>
         /// IndexProviders are plugins for the DatabaseIndex resource, that allow resources 
         /// created by this provider to have database indexes managed by that resource.
         /// </summary>
@@ -40,6 +46,31 @@ namespace RESTar.Resources
         /// An optional method for modifying the RESTar resource attribute of a type before the resource is generated
         /// </summary>
         public virtual void ModifyResourceAttribute(Type type, RESTarAttribute attribute) { }
+
+        /// <summary>
+        /// Override this method to add a validation step to the resource claim process. 
+        /// </summary>
+        /// <param name="resource">The resource to check validity for</param>
+        /// <param name="reason">Return the reason for this Type not being valid</param>
+        protected virtual bool IsValid(IEntityResource resource, out string reason)
+        {
+            reason = null;
+            return true;
+        }
+
+        /// <summary>
+        /// Removes the given resource from the RESTar instance
+        /// </summary>
+        /// <returns>True if and only if a resource was successfully removed</returns>
+        protected bool RemoveResource(IResource resource)
+        {
+            if (resource is IEntityResource er && er.Provider == this.GetProviderId())
+            {
+                RESTarConfig.RemoveResource(resource);
+                return true;
+            }
+            return false;
+        }
     }
 
     /// <inheritdoc />
@@ -54,15 +85,6 @@ namespace RESTar.Resources
     public abstract class EntityResourceProvider<TBase> : EntityResourceProvider where TBase : class
     {
         #region Public members
-
-        /// <summary>
-        /// The attribute type associated with this ResourceProvider. Used to decorate 
-        /// resource types that should be claimed by this ResourceProvider.
-        /// </summary>
-        public abstract Type AttributeType { get; }
-
-        /// <inheritdoc />
-        public EntityResourceProvider() { }
 
         /// <summary>
         /// The default Selector to use for resources claimed by this ResourceProvider
@@ -102,35 +124,10 @@ namespace RESTar.Resources
         public abstract Profiler<T> GetProfiler<T>() where T : class, TBase;
 
         /// <summary>
-        /// Override this method to add a validation step to the resource claim process. 
-        /// </summary>
-        /// <param name="resource">The resource to check validity for</param>
-        /// <param name="reason">Return the reason for this Type not being valid</param>
-        public virtual bool IsValid(IEntityResource resource, out string reason)
-        {
-            reason = null;
-            return true;
-        }
-
-        /// <summary>
         /// Removes the resource corresponding with the given resource type from the RESTar instance
         /// </summary>
         /// <returns>True if and only if a resource was successfully removed</returns>
         protected bool RemoveResource<TResource>() where TResource : class, TBase => RemoveResource(Resource<TResource>.SafeGet);
-
-        /// <summary>
-        /// Removes the given resource from the RESTar instance
-        /// </summary>
-        /// <returns>True if and only if a resource was successfully removed</returns>
-        protected bool RemoveResource(IResource resource)
-        {
-            if (resource is IEntityResource er && er.Provider == this.GetProviderId())
-            {
-                RESTarConfig.RemoveResource(resource);
-                return true;
-            }
-            return false;
-        }
 
         private static readonly MethodInfo InsertResourceMethod;
         private static readonly MethodInfo InsertResourceWrappedMethod;
@@ -240,8 +237,8 @@ namespace RESTar.Resources
             where TWrapper : ResourceWrapper<TWrapped>
             where TWrapped : class, TBase => new Meta.Internal.EntityResource<TWrapped>
         (
-            fullName: typeof(TWrapper).FullName,
-            attribute: typeof(TWrapper).GetCustomAttribute<RESTarAttribute>(),
+            fullName: fullName ?? typeof(TWrapper).FullName,
+            attribute: attribute ?? typeof(TWrapper).GetCustomAttribute<RESTarAttribute>(),
             selector: selector ?? GetDelegate<Selector<TWrapped>>(typeof(TWrapper)) ?? GetDefaultSelector<TWrapped>(),
             inserter: inserter ?? GetDelegate<Inserter<TWrapped>>(typeof(TWrapper)) ?? GetDefaultInserter<TWrapped>(),
             updater: updater ?? GetDelegate<Updater<TWrapped>>(typeof(TWrapper)) ?? GetDefaultUpdater<TWrapped>(),

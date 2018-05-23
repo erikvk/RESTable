@@ -11,15 +11,11 @@ namespace RESTar.Internal.Sc
         {
             var dict = (DDictionary) value;
             writer.WriteStartObject();
-
             foreach (var pair in dict.KeyValuePairs)
-                serializer.Serialize(writer, pair);
-
-            // foreach (var pair in dict.KeyValuePairs)
-            // {
-            //     writer.WritePropertyName(pair.Key);
-            //     writer.WriteValue(pair.Value);
-            // }
+            {
+                writer.WritePropertyName(pair.Key);
+                writer.WriteValue(pair.Value);
+            }
             writer.WritePropertyName("$ObjectNo");
             writer.WriteValue(dict.GetObjectNo());
             writer.WriteEndObject();

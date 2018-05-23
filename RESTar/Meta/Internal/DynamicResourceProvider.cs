@@ -17,7 +17,7 @@ namespace RESTar.Meta.Internal
         internal override void MakeClaimRegular(IEnumerable<Type> types) { }
         internal override void MakeClaimWrapped(IEnumerable<Type> types) { }
         internal override void Validate() { }
-        public override Type AttributeType { get; } = null;
+        protected override Type AttributeType { get; } = null;
         public override Selector<T> GetDefaultSelector<T>() => DDictionaryOperations<T>.Select;
         public override Inserter<T> GetDefaultInserter<T>() => DDictionaryOperations<T>.Insert;
         public override Updater<T> GetDefaultUpdater<T>() => DDictionaryOperations<T>.Update;

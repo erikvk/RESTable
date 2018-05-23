@@ -36,13 +36,6 @@ namespace RESTar.Meta
             .ToList();
 
         /// <summary>
-        /// </summary>
-        public static IResource ByTypeName(string typeName)
-        {
-            return All.FirstOrDefault(r => string.Equals(r.Type.RESTarTypeName(), typeName, StringComparison.CurrentCultureIgnoreCase));
-        }
-
-        /// <summary>
         /// Finds a resource by a search string. The string can be a partial resource name. If no resource 
         /// is found, throws an UnknownResource exception. If more than one resource is found, throws
         /// an AmbiguousResource exception.
@@ -108,35 +101,27 @@ namespace RESTar.Meta
         }
 
         /// <summary>
+        /// Gets the entity resource for a given type, or throws an UnknownResource exception 
+        /// if there is no such resource
+        /// </summary>
+        public static IResource Get(Type type) => RESTarConfig.ResourceByType.SafeGet(type) ?? throw new UnknownResource(type.RESTarTypeName());
+
+        /// <summary>
+        /// Gets the entity resource for a given type or returns null if there is no such resource
+        /// </summary>
+        public static IResource SafeGet(Type type) => RESTarConfig.ResourceByType.SafeGet(type);
+
+        /// <summary>
         /// Finds a resource by name (case insensitive) and throws an UnknownResource exception
         /// if no resource is found.
         /// </summary>
         public static IResource Get(string name) => RESTarConfig.ResourceByName.SafeGet(name) ?? throw new UnknownResource(name);
 
         /// <summary>
-        /// Finds an entity resource by name (case insensitive) and throws an UnknownResource exception
-        /// if no resource is found.
-        /// </summary>
-        public static IEntityResource GetEntityResource(string name) => Get(name) as IEntityResource ?? throw new UnknownResource(name);
-
-        /// <summary>
         /// Finds a resource by name (case insensitive) and returns null
         /// if no resource is found
         /// </summary>
         public static IResource SafeGet(string name) => RESTarConfig.ResourceByName.SafeGet(name);
-
-        /// <summary>
-        /// Finds a resource by target type and throws an UnknownResource exception
-        /// if no resource is found.
-        /// </summary>
-        public static IEntityResource Get(Type type) => RESTarConfig.ResourceByType.SafeGet(type) as IEntityResource
-                                                        ?? throw new UnknownResource(type.RESTarTypeName());
-
-        /// <summary>
-        /// Finds a resource by target type and throws an UnknownResource exception
-        /// if no resource is found.
-        /// </summary>
-        public static IEntityResource SafeGet(Type type) => RESTarConfig.ResourceByType.SafeGet(type) as IEntityResource;
 
         #endregion
     }
