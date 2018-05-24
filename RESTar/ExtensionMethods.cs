@@ -27,6 +27,7 @@ using RESTar.Requests.Processors;
 using RESTar.Resources;
 using RESTar.Resources.Operations;
 using RESTar.Results;
+using RESTar.WebSockets;
 using Starcounter;
 using static System.Globalization.DateTimeStyles;
 using static System.Reflection.BindingFlags;
@@ -637,6 +638,8 @@ namespace RESTar
                     request.Context.WebSocket.Disconnect();
                     return new WebSocketUpgradeFailed(error);
                 }
+                if (request.Context.WebSocket?.Status == WebSocketStatus.Waiting)
+                    request.Context.WebSocket?.Open();
                 request.Context.WebSocket?.SendResult(error);
                 request.Context.WebSocket?.Disconnect();
                 return new WebSocketUpgradeSuccessful(request);

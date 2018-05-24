@@ -52,6 +52,9 @@
     <StartupObject>RESTarExample.Program</StartupObject>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Dynamit, Version=0.1.42.0, Culture=neutral, processorArchitecture=AMD64">
+      <HintPath>..\packages\Dynamit.0.1.42\lib\net452\Dynamit.dll</HintPath>
+    </Reference>
     <Reference Include="EPPlus, Version=4.5.1.0, Culture=neutral, PublicKeyToken=ea159fdaa78159a1, processorArchitecture=MSIL">
       <HintPath>..\packages\EPPlus.4.5.1\lib\net40\EPPlus.dll</HintPath>
     </Reference>
@@ -116,10 +119,6 @@
     <Service Include="{3259AA49-8AA1-44D3-9025-A0B520596A8C}" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\Dynamit\Dynamit\Dynamit.csproj">
-      <Project>{1c0568e7-1bf6-406d-a345-2a870c23f20c}</Project>
-      <Name>Dynamit</Name>
-    </ProjectReference>
     <ProjectReference Include="..\RESTar\RESTar.csproj">
       <Project>{3ca9602f-fc6f-4dfe-8749-c6dbdd9a4809}</Project>
       <Name>RESTar</Name>
