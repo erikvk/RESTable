@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 
 namespace RESTar.Resources
 {
@@ -12,9 +11,6 @@ namespace RESTar.Resources
     [AttributeUsage(AttributeTargets.Class, Inherited = false)]
     public class RESTarInternalAttribute : RESTarAttribute
     {
-        /// <inheritdoc />
-        internal RESTarInternalAttribute(IReadOnlyList<Method> methods) : base(methods) { }
-
         /// <inheritdoc />
         public RESTarInternalAttribute(params Method[] methodRestrictions) : base(methodRestrictions) { }
     }

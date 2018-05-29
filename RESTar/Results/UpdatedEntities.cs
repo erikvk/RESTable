@@ -6,7 +6,7 @@ namespace RESTar.Results
     /// <summary>
     /// Returned to the client on successful update of entities
     /// </summary>
-    public class UpdatedEntities : OK
+    public class UpdatedEntities : Change
     {
         /// <summary>
         /// The number of entities updated

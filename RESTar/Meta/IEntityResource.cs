@@ -12,11 +12,6 @@ namespace RESTar.Meta
     public interface IEntityResource : IResource
     {
         /// <summary>
-        /// Is this resource editable?
-        /// </summary>
-        bool Editable { get; }
-
-        /// <summary>
         /// The resource provider that generated this resource
         /// </summary>
         string Provider { get; }
@@ -36,6 +31,11 @@ namespace RESTar.Meta
         /// Does this resource contain dynamic members?
         /// </summary>
         bool IsDynamic { get; }
+
+        /// <summary>
+        /// Does this entity resource have a type declaration?
+        /// </summary>
+        bool IsDeclared { get; }
 
         /// <summary>
         /// Are runtime-defined conditions allowed in requests to this resource?

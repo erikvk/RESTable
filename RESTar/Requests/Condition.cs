@@ -73,7 +73,7 @@ namespace RESTar.Requests
         /// </summary>
         internal bool ScQueryable => Term.ScQueryable;
 
-        internal Type Type => Term.IsStatic ? Term.LastAs<DeclaredProperty>()?.Type : null;
+        internal Type Type => Term.IsDeclared ? Term.LastAs<DeclaredProperty>()?.Type : null;
         internal bool IsOfType<T1>() => Type == typeof(T1);
 
         /// <inheritdoc />

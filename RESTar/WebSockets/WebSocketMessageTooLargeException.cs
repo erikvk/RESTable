@@ -2,6 +2,7 @@
 
 namespace RESTar.WebSockets
 {
+    /// <inheritdoc />
     /// <summary>
     /// Thrown when RESTar gets a call to IWebSocket.SendResult() with a dataset larger than 16 megabytes.
     /// </summary>

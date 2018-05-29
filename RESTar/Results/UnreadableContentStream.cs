@@ -2,6 +2,7 @@
 
 namespace RESTar.Results
 {
+    /// <inheritdoc />
     /// <summary>
     /// Thrown when RESTar encounters a content stream that is unreadable
     /// </summary>

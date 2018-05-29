@@ -6,7 +6,7 @@ namespace RESTar.Results
     /// <summary>
     /// Returned to the client on successful safe post insertion/updating
     /// </summary>
-    public class SafePostedEntities : OK
+    public class SafePostedEntities : Change
     {
         /// <summary>
         /// The number of updated entities

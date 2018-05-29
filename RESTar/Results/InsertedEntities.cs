@@ -7,7 +7,7 @@ namespace RESTar.Results
     /// <summary>
     /// Returned to the client on successful insertion of entities
     /// </summary>
-    public class InsertedEntities : OK
+    public class InsertedEntities : Change
     {
         /// <summary>
         /// The number of inserted entities

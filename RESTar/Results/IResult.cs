@@ -6,6 +6,7 @@ using RESTar.Requests;
 
 namespace RESTar.Results
 {
+    /// <inheritdoc />
     /// <summary>
     /// A generic RESTar result
     /// </summary>

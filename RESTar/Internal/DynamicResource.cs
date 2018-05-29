@@ -6,34 +6,37 @@ using Starcounter;
 
 namespace RESTar.Internal
 {
+    /// <inheritdoc />
     /// <summary>
     /// Creates and structures all the dynamic resources for this RESTar instance
     /// </summary>
     [Database]
-    public class DynamicResource
+    public class DynamicResource : IProceduralEntityResource
     {
         internal const string All = "SELECT t FROM RESTar.Internal.DynamicResource t";
         internal const string ByTableName = All + " WHERE t.TableName =?";
-        internal const string ByName = All + " WHERE t.Name =?";
 
+        /// <inheritdoc />
         /// <summary>
         /// The available methods for this resource
         /// </summary>
-        public IReadOnlyList<Method> AvailableMethods
+        public Method[] Methods
         {
             get => AvailableMethodsString.ToMethodsArray();
             set => AvailableMethodsString = value.ToMethodsString();
         }
 
+        /// <inheritdoc />
         /// <summary>
         /// The name of this resource
         /// </summary>
-        public string Name { get; internal set; }
+        public string Name { get; set; }
 
+        /// <inheritdoc />
         /// <summary>
         /// The description for this resource
         /// </summary>
-        public string Description { get; internal set; }
+        public string Description { get; set; }
 
         /// <summary>
         /// The name of the dynamic table (used internally)
@@ -45,7 +48,8 @@ namespace RESTar.Internal
         /// </summary>
         [RESTarMember(ignore: true)] public string AvailableMethodsString { get; private set; }
 
-        /// <summary/>
+        /// <inheritdoc />
+        /// <summary />
         [RESTarMember(ignore: true), Obsolete] public bool Editable { get; internal set; }
 
         /// <summary/>
@@ -63,29 +67,15 @@ namespace RESTar.Internal
         /// <summary/>
         [RESTarMember(ignore: true), Obsolete] public bool IsViewable { get; internal set; }
 
-        /// <summary>
-        /// The target type for this resource
-        /// </summary>
-        public Type Table => DynamitControl.GetByTableName(TableName);
-
-        internal RESTarAttribute Attribute => new RESTarAttribute(
-            AvailableMethods.OrderBy(i => i, MethodComparer.Instance).ToList())
-        {
-            Singleton = false,
-            Editable = true,
-            Description = Description
-        };
+        /// <inheritdoc />
+        public Type Type => DynamitControl.GetByTableName(TableName);
 
         internal DynamicResource(string name, Type table, IEnumerable<Method> availableMethods, string description = null)
         {
             Name = name;
             TableName = table.RESTarTypeName();
             Description = description;
-            var methods = availableMethods.Distinct().ToList();
-            methods.Sort(MethodComparer.Instance);
-            AvailableMethods = methods;
+            Methods = availableMethods.ResolveMethodsCollection().ToArray();
         }
-
-        internal static DynamicResource Get(string resourceName) => Db.SQL<DynamicResource>(ByName, resourceName).FirstOrDefault();
     }
 }

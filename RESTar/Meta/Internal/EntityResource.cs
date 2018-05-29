@@ -18,7 +18,6 @@ namespace RESTar.Meta.Internal
         private Dictionary<string, ITarget<T>> ViewDictionaryInternal { get; }
 
         public string Name { get; }
-        public bool Editable { get; }
         public IReadOnlyCollection<Method> AvailableMethods { get; private set; }
         public string Description { get; private set; }
         public Type Type => typeof(T);
@@ -47,6 +46,7 @@ namespace RESTar.Meta.Internal
         public ResourceProfile ResourceProfile => Profile?.Invoke(this);
         public bool ClaimedBy<T1>() where T1 : EntityResourceProvider => Provider == typeof(T1).GetProviderId();
         public ResourceKind ResourceKind { get; }
+        public bool IsDeclared { get; }
 
         string IResourceInternal.Description
         {
@@ -112,7 +112,7 @@ namespace RESTar.Meta.Internal
             }
             else Name = fullName;
             provider.ModifyResourceAttribute(typeof(T), attribute);
-            Editable = attribute.Editable;
+            IsDeclared = attribute.IsDeclared;
             Description = attribute.Description;
             AvailableMethods = attribute.AvailableMethods;
             IsSingleton = attribute.Singleton;

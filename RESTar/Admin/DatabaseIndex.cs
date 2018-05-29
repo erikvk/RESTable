@@ -7,6 +7,7 @@ using RESTar.Meta;
 using RESTar.Requests;
 using RESTar.Resources;
 using RESTar.Resources.Operations;
+using static RESTar.Internal.EntityResourceProviderController;
 
 namespace RESTar.Admin
 {
@@ -127,9 +128,10 @@ namespace RESTar.Admin
         #endregion
 
         private static Condition<DatabaseIndex> SelectionCondition { get; set; }
+
         private static IRequest<DatabaseIndex> SelectionRequest { get; set; }
-        internal static readonly Dictionary<string, IDatabaseIndexer> Indexers;
-        static DatabaseIndex() => Indexers = new Dictionary<string, IDatabaseIndexer>();
+        //internal static readonly Dictionary<string, IDatabaseIndexer> Indexers;
+        //static DatabaseIndex() => Indexers = new Dictionary<string, IDatabaseIndexer>();
 
         internal static void Init()
         {
@@ -162,8 +164,10 @@ namespace RESTar.Admin
         }
 
         /// <inheritdoc />
-        public IEnumerable<DatabaseIndex> Select(IRequest<DatabaseIndex> request) => Indexers
+        public IEnumerable<DatabaseIndex> Select(IRequest<DatabaseIndex> request) => EntityResourceProviders
             .Values
+            .Select(p => p.DatabaseIndexer)
+            .Where(indexer => indexer != null)
             .Distinct()
             .SelectMany(indexer => indexer.Select(request));
 
@@ -172,9 +176,8 @@ namespace RESTar.Admin
             .GroupBy(index => index.IResource.Provider)
             .Sum(group =>
             {
-                if (!Indexers.TryGetValue(group.Key, out var indexer))
-                    throw new Exception($"Unable to register index. Resource '{group.First().IResource.Name}' " +
-                                        "is not a database resource.");
+                if (!EntityResourceProviders.TryGetValue(group.Key, out var provider) || !(provider.DatabaseIndexer is IDatabaseIndexer indexer))
+                    throw new Exception($"Unable to register index. Resource '{group.First().IResource.Name}' is not a database resource.");
                 request.Selector = () => group;
                 return indexer.Insert(request);
             });
@@ -185,7 +188,7 @@ namespace RESTar.Admin
             .Sum(group =>
             {
                 request.Updater = _ => group;
-                return Indexers[group.Key].Update(request);
+                return EntityResourceProviders[group.Key].DatabaseIndexer.Update(request);
             });
 
         /// <inheritdoc />
@@ -194,7 +197,7 @@ namespace RESTar.Admin
             .Sum(group =>
             {
                 request.Selector = () => group;
-                return Indexers[group.Key].Delete(request);
+                return EntityResourceProviders[group.Key].DatabaseIndexer.Delete(request);
             });
     }
 

@@ -53,6 +53,19 @@ namespace RESTarExample
         public JObject MyDict;
     }
 
+    [Database, RESTar]
+    public class R1
+    {
+        public int I;
+    }
+
+    [Database, RESTar]
+    public class R2 : R1
+    {
+        public string STR;
+    }
+
+
     [RESTar]
     public class MyBinaryResource : IBinaryResource<MyBinaryResource>
     {
@@ -423,7 +436,7 @@ namespace RESTarExample
                 default: return null;
             }
         }
-        
+
         public DDictKeyValuePair NewKeyPair(DDictThing dict, string key, object value = null)
         {
             return new DDictKeyValuePair(dict, key, value);

@@ -7,6 +7,16 @@ namespace RESTar.Resources
 {
     /// <inheritdoc />
     /// <summary>
+    /// A RESTar attribute type used for procedurally created resources
+    /// </summary>
+    internal class RESTarProceduralAttribute : RESTarAttribute
+    {
+        /// <inheritdoc />
+        internal RESTarProceduralAttribute(IEnumerable<Method> methods) : base(methods.ToArray()) { }
+    }
+
+    /// <inheritdoc />
+    /// <summary>
     /// Registers a new RESTar resource and provides permissions. If no methods are 
     /// provided in the constructor, all methods are made available for this resource.
     /// </summary>
@@ -67,29 +77,32 @@ namespace RESTar.Resources
         /// </summary>
         public Type Interface { get; set; }
 
-        /// <inheritdoc />
-        internal RESTarAttribute(IReadOnlyList<Method> methods)
-        {
-            if (methods.Contains(Method.GET))
-                AvailableMethods = methods.Union(new[] {Method.REPORT, Method.HEAD}).ToList();
-            else AvailableMethods = methods;
-        }
+        /// <summary>
+        /// Does this attribute describe a declared resource type?
+        /// </summary>
+        internal bool IsDeclared => !(this is RESTarProceduralAttribute);
 
         /// <inheritdoc />
         /// <summary>
         /// Registers a new RESTar resource and provides permissions. If no methods are 
         /// provided in the constructor, all methods are made available for this resource.
         /// </summary>
-        public RESTarAttribute(params Method[] methodRestrictions)
+        public RESTarAttribute(params Method[] methodRestrictions) => AvailableMethods = methodRestrictions.ResolveMethodsCollection();
+    }
+
+    internal static class MethodsExtensions
+    {
+        internal static IReadOnlyList<Method> ResolveMethodsCollection(this IEnumerable<Method> methods)
         {
+            var methodRestrictions = methods.Distinct().ToArray();
             if (!methodRestrictions.Any())
                 methodRestrictions = RESTarConfig.Methods;
             var restrictions = methodRestrictions.OrderBy(i => i, MethodComparer.Instance).ToList();
-            if (methodRestrictions.Contains(Method.GET) && !methodRestrictions.Contains(Method.REPORT))
+            if (restrictions.Contains(Method.GET) && !restrictions.Contains(Method.REPORT))
                 restrictions.Add(Method.REPORT);
-            if (methodRestrictions.Contains(Method.GET) && !methodRestrictions.Contains(Method.HEAD))
+            if (restrictions.Contains(Method.GET) && !restrictions.Contains(Method.HEAD))
                 restrictions.Add(Method.HEAD);
-            AvailableMethods = restrictions;
+            return restrictions.ToList().AsReadOnly();
         }
     }
 }

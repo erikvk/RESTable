@@ -384,7 +384,9 @@ namespace RESTar
         {
             var typeName = providerType.Name;
             if (typeName == null) throw new ArgumentNullException();
-            if (typeName.EndsWith("provider", InvariantCultureIgnoreCase))
+            if (typeName.EndsWith("resourceprovider", InvariantCultureIgnoreCase))
+                typeName = typeName.Substring(0, typeName.Length - 16);
+            else if (typeName.EndsWith("provider", InvariantCultureIgnoreCase))
                 typeName = typeName.Substring(0, typeName.Length - 8);
             return typeName;
         }

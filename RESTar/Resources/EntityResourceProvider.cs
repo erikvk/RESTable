@@ -19,6 +19,8 @@ namespace RESTar.Resources
         internal abstract bool Include(Type type);
         internal abstract void MakeClaimRegular(IEnumerable<Type> types);
         internal abstract void MakeClaimWrapped(IEnumerable<Type> types);
+        internal abstract void MakeClaimProcedural();
+        internal abstract void InsertProcedural(IProceduralEntityResource resource);
         internal abstract void Validate();
         internal EntityResourceProvider() { }
         internal ICollection<Type> GetClaim(IEnumerable<Type> types) => types.Where(Include).ToList();
@@ -30,10 +32,10 @@ namespace RESTar.Resources
         protected abstract Type AttributeType { get; }
 
         /// <summary>
-        /// IndexProviders are plugins for the DatabaseIndex resource, that allow resources 
+        /// IDatabaseIndexers are plugins for the DatabaseIndex resource, that allow resources 
         /// created by this provider to have database indexes managed by that resource.
         /// </summary>
-        public IDatabaseIndexer DatabaseIndexer { get; set; }
+        public virtual IDatabaseIndexer DatabaseIndexer { get; } = null;
 
         /// <summary>
         /// The ReceiveClaimed method is called by RESTar once the resources provided
@@ -56,6 +58,13 @@ namespace RESTar.Resources
         {
             reason = null;
             return true;
+        }
+
+        internal bool RemoveProceduralResource(Type resourceType)
+        {
+            var iresource = Resource.SafeGet(resourceType);
+            if (iresource == null) return true;
+            return RemoveResource(iresource);
         }
 
         /// <summary>
@@ -90,38 +99,38 @@ namespace RESTar.Resources
         /// The default Selector to use for resources claimed by this ResourceProvider
         /// </summary>
         /// <typeparam name="T">The resource type</typeparam>
-        public abstract Selector<T> GetDefaultSelector<T>() where T : class, TBase;
+        protected abstract Selector<T> GetDefaultSelector<T>() where T : class, TBase;
 
         /// <summary>
         /// The default Inserter to use for resources claimed by this ResourceProvider
         /// </summary>
         /// 
         /// <typeparam name="T">The resource type</typeparam>
-        public abstract Inserter<T> GetDefaultInserter<T>() where T : class, TBase;
+        protected abstract Inserter<T> GetDefaultInserter<T>() where T : class, TBase;
 
         /// <summary>
         /// The default Updater to use for resources claimed by this ResourceProvider
         /// </summary>
         /// <typeparam name="T">The resource type</typeparam>
-        public abstract Updater<T> GetDefaultUpdater<T>() where T : class, TBase;
+        protected abstract Updater<T> GetDefaultUpdater<T>() where T : class, TBase;
 
         /// <summary>
         /// The default Deleter to use for resources claimed by this ResourceProvider
         /// </summary>
         /// <typeparam name="T">The resource type</typeparam>
-        public abstract Deleter<T> GetDefaultDeleter<T>() where T : class, TBase;
+        protected abstract Deleter<T> GetDefaultDeleter<T>() where T : class, TBase;
 
         /// <summary>
         /// The default Counter to use for resources claimed by this ResourceProvider
         /// </summary>
         /// <typeparam name="T">The resource type</typeparam>
-        public abstract Counter<T> GetDefaultCounter<T>() where T : class, TBase;
+        protected abstract Counter<T> GetDefaultCounter<T>() where T : class, TBase;
 
         /// <summary>
         /// The default Profiler to use for resources claimed by this ResourceProvider
         /// </summary>
         /// <typeparam name="T">The resource type</typeparam>
-        public abstract Profiler<T> GetProfiler<T>() where T : class, TBase;
+        protected abstract Profiler<T> GetProfiler<T>() where T : class, TBase;
 
         /// <summary>
         /// Removes the resource corresponding with the given resource type from the RESTar instance
@@ -129,15 +138,7 @@ namespace RESTar.Resources
         /// <returns>True if and only if a resource was successfully removed</returns>
         protected bool RemoveResource<TResource>() where TResource : class, TBase => RemoveResource(Resource<TResource>.SafeGet);
 
-        private static readonly MethodInfo InsertResourceMethod;
-        private static readonly MethodInfo InsertResourceWrappedMethod;
-
-        static EntityResourceProvider()
-        {
-            var methods = typeof(EntityResourceProvider<TBase>).GetMethods(Instance | NonPublic);
-            InsertResourceMethod = methods.First(m => m.Name == nameof(InsertResource) && m.IsGenericMethod);
-            InsertResourceWrappedMethod = methods.First(m => m.Name == nameof(InsertWrapperResource) && m.IsGenericMethod);
-        }
+        #region Add resource API
 
         /// <summary>
         /// Inserts a new resource into the RESTar instance, with the given type, name and attribute.
@@ -149,8 +150,7 @@ namespace RESTar.Resources
         /// <returns></returns>
         protected IEntityResource InsertResource(Type type, string fullName = null, RESTarAttribute attribute = null)
         {
-            var method = InsertResourceMethod.MakeGenericMethod(type);
-            return (IEntityResource) method.Invoke(this, new object[] {fullName, attribute, null, null, null, null, null, null, null});
+            return _InsertResource(type, fullName, attribute);
         }
 
         /// <summary>
@@ -163,8 +163,7 @@ namespace RESTar.Resources
         /// is fetched from the resource type declaration.</param>
         protected IEntityResource InsertWrapperResource(Type wrapperType, Type wrappedType, string fullName = null, RESTarAttribute attribute = null)
         {
-            var method = InsertResourceWrappedMethod.MakeGenericMethod(wrapperType, wrappedType);
-            return (IEntityResource) method.Invoke(this, new object[] {fullName, attribute, null, null, null, null, null, null, null});
+            return _InsertWrapperResource(wrapperType, wrappedType, fullName, attribute);
         }
 
         /// <summary>
@@ -182,7 +181,69 @@ namespace RESTar.Resources
         /// <param name="authenticator">The authenticator to use. If null, the default authenticator is used</param>
         /// <typeparam name="TResource">The type to create the resource for</typeparam>
         /// <returns></returns>
-        protected IEntityResource<TResource> InsertResource<TResource>(
+        protected IEntityResource<TResource> InsertResource<TResource>(string fullName = null, RESTarAttribute attribute = null,
+            Selector<TResource> selector = null, Inserter<TResource> inserter = null, Updater<TResource> updater = null,
+            Deleter<TResource> deleter = null, Counter<TResource> counter = null, Profiler<TResource> profiler = null,
+            Authenticator<TResource> authenticator = null) where TResource : class, TBase
+        {
+            return _InsertResource(fullName, attribute, selector, inserter, updater, deleter, counter, profiler, authenticator);
+        }
+
+        /// <summary>
+        /// Inserts a new resource wrapper into the RESTar instance, with the given type, name, attribute and operations.
+        /// </summary>
+        /// <param name="fullName">The name of the resource to insert. If null, type.FullName is used</param>
+        /// <param name="attribute">The attribute to use when creating the resource. If null, the attribute
+        /// is fetched from the resource's type declaration.</param>
+        /// <param name="selector">The selector to use. If null, the default selector is used</param>
+        /// <param name="inserter">The inserter to use. If null, the default inserter is used</param>
+        /// <param name="updater">The updater to use. If null, the default updater is used</param>
+        /// <param name="deleter">The deleter to use. If null, the default deleter is used</param>
+        /// <param name="counter">The counter to use. If null, the default counter is used</param>
+        /// <param name="profiler">The profiler to use. If null, the default profiler is used</param>
+        /// <param name="authenticator">The authenticator to use. If null, the default authenticator is used</param>
+        /// <typeparam name="TWrapper">The resource wrapper type</typeparam>
+        /// <typeparam name="TWrapped">The wrapped resource type</typeparam>
+        /// <returns></returns>
+        protected IEntityResource<TWrapped> InsertWrapperResource<TWrapper, TWrapped>(string fullName = null, RESTarAttribute attribute = null,
+            Selector<TWrapped> selector = null, Inserter<TWrapped> inserter = null, Updater<TWrapped> updater = null, Deleter<TWrapped> deleter = null,
+            Counter<TWrapped> counter = null, Profiler<TWrapped> profiler = null, Authenticator<TWrapped> authenticator = null)
+            where TWrapper : ResourceWrapper<TWrapped> where TWrapped : class, TBase
+        {
+            return _InsertWrapperResource<TWrapper, TWrapped>(fullName, attribute, selector, inserter, updater, deleter, counter, profiler,
+                authenticator);
+        }
+
+        #endregion
+
+        #endregion
+
+        #region Internals
+
+        private static readonly MethodInfo InsertResourceMethod;
+        private static readonly MethodInfo InsertResourceWrappedMethod;
+
+        static EntityResourceProvider()
+        {
+            var methods = typeof(EntityResourceProvider<TBase>).GetMethods(Instance | NonPublic);
+            InsertResourceMethod = methods.First(m => m.Name == nameof(_InsertResource) && m.IsGenericMethod);
+            InsertResourceWrappedMethod = methods.First(m => m.Name == nameof(_InsertWrapperResource) && m.IsGenericMethod);
+        }
+
+
+        private IEntityResource _InsertResource(Type type, string fullName = null, RESTarAttribute attribute = null)
+        {
+            var method = InsertResourceMethod.MakeGenericMethod(type);
+            return (IEntityResource) method.Invoke(this, new object[] {fullName, attribute, null, null, null, null, null, null, null});
+        }
+
+        private IEntityResource _InsertWrapperResource(Type wrapperType, Type wrappedType, string fullName = null, RESTarAttribute attribute = null)
+        {
+            var method = InsertResourceWrappedMethod.MakeGenericMethod(wrapperType, wrappedType);
+            return (IEntityResource) method.Invoke(this, new object[] {fullName, attribute, null, null, null, null, null, null, null});
+        }
+
+        private IEntityResource<TResource> _InsertResource<TResource>(
             string fullName = null,
             RESTarAttribute attribute = null,
             Selector<TResource> selector = null,
@@ -207,23 +268,7 @@ namespace RESTar.Resources
             provider: this
         );
 
-        /// <summary>
-        /// Inserts a new resource wrapper into the RESTar instance, with the given type, name, attribute and operations.
-        /// </summary>
-        /// <param name="fullName">The name of the resource to insert. If null, type.FullName is used</param>
-        /// <param name="attribute">The attribute to use when creating the resource. If null, the attribute
-        /// is fetched from the resource type declaration.</param>
-        /// <param name="selector">The selector to use. If null, the default selector is used</param>
-        /// <param name="inserter">The inserter to use. If null, the default inserter is used</param>
-        /// <param name="updater">The updater to use. If null, the default updater is used</param>
-        /// <param name="deleter">The deleter to use. If null, the default deleter is used</param>
-        /// <param name="counter">The counter to use. If null, the default counter is used</param>
-        /// <param name="profiler">The profiler to use. If null, the default profiler is used</param>
-        /// <param name="authenticator">The authenticator to use. If null, the default authenticator is used</param>
-        /// <typeparam name="TWrapper">The resource wrapper type</typeparam>
-        /// <typeparam name="TWrapped">The wrapped resource type</typeparam>
-        /// <returns></returns>
-        protected IEntityResource<TWrapped> InsertWrapperResource<TWrapper, TWrapped>(
+        private IEntityResource<TWrapped> _InsertWrapperResource<TWrapper, TWrapped>(
             string fullName = null,
             RESTarAttribute attribute = null,
             Selector<TWrapped> selector = null,
@@ -250,9 +295,16 @@ namespace RESTar.Resources
             provider: this
         );
 
-        #endregion
-
-        #region Internals
+        internal override void InsertProcedural(IProceduralEntityResource resource) => _InsertResource
+        (
+            type: resource.Type,
+            fullName: resource.Name,
+            attribute: new RESTarProceduralAttribute(resource.Methods)
+            {
+                Description = resource.Description,
+                Editable = resource.Editable
+            }
+        );
 
         internal override bool Include(Type type)
         {
@@ -264,9 +316,13 @@ namespace RESTar.Resources
             return type.HasAttribute(AttributeType);
         }
 
+        internal override void MakeClaimProcedural() => (this as IProceduralEntityResourceProvider)?
+            .Select()
+            .ForEach(InsertProcedural);
+
         internal override void MakeClaimRegular(IEnumerable<Type> types) => types.ForEach(type =>
         {
-            var resource = InsertResource(type);
+            var resource = _InsertResource(type);
             if (!IsValid(resource, out var reason))
                 throw new InvalidResourceDeclarationException("An error was found in the declaration for resource " +
                                                               $"type '{type.RESTarTypeName()}': " + reason);
@@ -274,7 +330,7 @@ namespace RESTar.Resources
 
         internal override void MakeClaimWrapped(IEnumerable<Type> types) => types.ForEach(type =>
         {
-            var resource = InsertWrapperResource(type, type.GetWrappedType());
+            var resource = _InsertWrapperResource(type, type.GetWrappedType());
             if (!IsValid(resource, out var reason))
                 throw new InvalidResourceDeclarationException("An error was found in the declaration for wrapper resource " +
                                                               $"type '{type.RESTarTypeName()}': " + reason);
@@ -289,6 +345,14 @@ namespace RESTar.Resources
             if (!AttributeType.IsSubclassOf(typeof(EntityResourceProviderAttribute)))
                 throw new InvalidExternalResourceProviderException($"Provided AttributeType '{AttributeType.RESTarTypeName()}' " +
                                                                    $"does not inherit from RESTar.ResourceProviderAttribute");
+
+            if (this is IProceduralEntityResourceProvider proc)
+            {
+                var baseNamespace = proc.BaseNamespace;
+                if (string.IsNullOrWhiteSpace(baseNamespace) || baseNamespace.StartsWith("restar", StringComparison.OrdinalIgnoreCase))
+                    throw new Exception($"Invalid base namespace '{baseNamespace}' for dynamic entity resource provider " +
+                                        $"'{GetType()}'. Must not begin with 'RESTar'");
+            }
         }
 
         private static View<TResource>[] GetViews<TResource>() where TResource : class, TBase => typeof(TResource)

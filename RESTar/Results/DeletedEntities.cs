@@ -6,7 +6,7 @@ namespace RESTar.Results
     /// <summary>
     /// Returned to the client on successful deletion of entities
     /// </summary>
-    public class DeletedEntities : OK
+    public class DeletedEntities : Change
     {
         /// <summary>
         /// The number of entities deleted

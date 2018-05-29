@@ -36,12 +36,12 @@ namespace RESTar.Meta
         /// <summary>
         /// Is this term static? (Are all of its containing property references denoting declared members?)
         /// </summary>
-        public bool IsStatic { get; private set; }
+        public bool IsDeclared { get; private set; }
 
         /// <summary>
         /// Is this term dynamic? (Are not all of its containing property references denoting declared members?)
         /// </summary>
-        public bool IsDynamic => !IsStatic;
+        public bool IsDynamic => !IsDeclared;
 
         /// <summary>
         /// Automatically sets the Skip property of conditions matched against this term to true
@@ -123,12 +123,22 @@ namespace RESTar.Meta
                             {
                                 return DeclaredProperty.Find(type, str);
                             }
-                            catch
+                            catch (UnknownProperty)
                             {
                                 return DynamicProperty.Parse(str);
                             }
                         case TermBindingRule.DynamicWithDeclaredFallback: return DynamicProperty.Parse(str, true);
-                        case TermBindingRule.OnlyDeclared: return DeclaredProperty.Find(type, str);
+                        case TermBindingRule.OnlyDeclared:
+                            try
+                            {
+                                return DeclaredProperty.Find(type, str);
+                            }
+                            catch (UnknownProperty)
+                            {
+                                if (type.GetSubclasses().Any(subClass => DeclaredProperty.TryFind(subClass, str, out _)))
+                                    return DynamicProperty.Parse(str);
+                                throw;
+                            }
                         default: throw new Exception();
                     }
                 }
@@ -143,7 +153,7 @@ namespace RESTar.Meta
 
             key.Split('.').ForEach(s => term.Store.Add(propertyMaker(s)));
             term.ScQueryable = term.Store.All(p => p.ScQueryable);
-            term.IsStatic = term.Store.All(p => p is DeclaredProperty);
+            term.IsDeclared = term.Store.All(p => p is DeclaredProperty);
             term.ConditionSkip = term.Store.Any(p => p is DeclaredProperty s && s.SkipConditions);
             term.Key = string.Join(".", term.Store.Select(p => p.Name));
             term.DbKey = string.Join(".", term.Store.Select(p => p.ActualName));
@@ -167,7 +177,7 @@ namespace RESTar.Meta
                 }
             }).ToList();
             ScQueryable = false;
-            IsStatic = false;
+            IsDeclared = false;
             Key = string.Join(".", Store.Select(p => p.Name));
         }
 

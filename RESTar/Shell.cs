@@ -32,7 +32,17 @@ namespace RESTar
         private string previousQuery;
         private Func<int, IUriComponents> GetNextPageLink;
         private Action OnConfirm;
-        private IEntities PreviousEntities;
+
+        private IEntities PreviousEntities
+        {
+            get => _previousEntities;
+            set
+            {
+                if (value?.Equals(_previousEntities) != true)
+                    _previousEntities?.Dispose();
+                _previousEntities = value;
+            }
+        }
 
         /// <summary>
         /// Signals that there are changes to the query that have been made pre evaluation
@@ -103,6 +113,7 @@ namespace RESTar
         }
 
         private int streamBufferSize;
+        private IEntities _previousEntities;
         private const int MaxStreamBufferSize = 16_000_000;
         private const int MinStreamBufferSize = 512;
 
@@ -467,6 +478,10 @@ namespace RESTar
                         query = local;
                         PreviousEntities = entities;
                         GetNextPageLink = entities.GetNextPageLink;
+                        break;
+                    case Change _:
+                        query = local;
+                        PreviousEntities = null;
                         break;
                     default:
                         query = local;

@@ -115,7 +115,8 @@ namespace RESTar.Meta
                             {
                                 p.ActualName = getter.GetInstructions()
                                     .Select(i => i.OpCode == OpCodes.Call && i.Operand is MethodInfo calledMethod && getter.IsSpecialName
-                                        ? type.GetProperties(BindingFlags.Public | BindingFlags.Instance).FirstOrDefault(prop => prop.GetGetMethod() == calledMethod)
+                                        ? type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                                            .FirstOrDefault(prop => prop.GetGetMethod() == calledMethod)
                                         : null)
                                     .LastOrDefault(prop => prop != null)?
                                     .Name;
@@ -124,7 +125,8 @@ namespace RESTar.Meta
                             {
                                 p.ActualName = setter.GetInstructions()
                                     .Select(i => i.OpCode == OpCodes.Call && i.Operand is MethodInfo calledMethod && setter.IsSpecialName
-                                        ? type.GetProperties(BindingFlags.Public | BindingFlags.Instance).FirstOrDefault(prop => prop.GetSetMethod() == calledMethod)
+                                        ? type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                                            .FirstOrDefault(prop => prop.GetSetMethod() == calledMethod)
                                         : null)
                                     .LastOrDefault(prop => prop != null)?
                                     .Name;

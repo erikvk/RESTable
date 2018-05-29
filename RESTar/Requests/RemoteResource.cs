@@ -41,11 +41,11 @@ namespace RESTar.Requests
         public bool Equals(IResource x, IResource y) => throw new InvalidOperationException(ErrorMessage(nameof(Equals)));
         public int GetHashCode(IResource obj) => throw new InvalidOperationException(ErrorMessage(nameof(GetHashCode)));
         public int CompareTo(IResource other) => throw new InvalidOperationException(ErrorMessage(nameof(CompareTo)));
-        public bool Editable { get; } = false;
         public string Provider => throw new InvalidOperationException(ErrorMessage(nameof(Provider)));
         public bool ClaimedBy<T>() where T : EntityResourceProvider => false;
         public bool IsDDictionary => throw new InvalidOperationException(ErrorMessage(nameof(IsDDictionary)));
         public bool IsDynamic => throw new InvalidOperationException(ErrorMessage(nameof(IsDynamic)));
+        public bool IsDeclared => throw new InvalidOperationException(ErrorMessage(nameof(IsDeclared)));
         public bool DynamicConditionsAllowed => throw new InvalidOperationException(ErrorMessage(nameof(DynamicConditionsAllowed)));
         public bool DeclaredPropertiesFlagged => throw new InvalidOperationException(ErrorMessage(nameof(DeclaredPropertiesFlagged)));
         public TermBindingRule OutputBindingRule => throw new InvalidOperationException(ErrorMessage(nameof(OutputBindingRule)));
