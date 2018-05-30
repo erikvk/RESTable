@@ -141,7 +141,7 @@ namespace RESTar.Resources.Operations
                     return entity;
                 }) ?? throw new MissingDataSource(request);
                 return request.EntityResource.Update(request);
-            }   
+            }
             catch (Exception e)
             {
                 throw new AbortedOperation(request, ErrorCodes.AbortedUpdate, e);
@@ -256,8 +256,8 @@ namespace RESTar.Resources.Operations
                     .ToList();
                 foreach (var entity in request.Body.Deserialize<JObject>())
                 {
-                    conditions.ForEach(cond => cond.Value = cond.Term.Evaluate(entity));
-                    request.Conditions = conditions;
+                    conditions.ForEach(cond => cond.Value = entity.SafeGet(cond.Term.Evaluate));
+                    innerRequest.Conditions = conditions;
                     var results = innerRequest.Evaluate().ToEntities<T>().ToList();
                     switch (results.Count)
                     {

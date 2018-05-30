@@ -1,6 +1,9 @@
 ﻿using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Net;
 using RESTar.Internal.Auth;
+using RESTar.Meta;
 using RESTar.Results;
 
 namespace RESTar.Requests
@@ -43,6 +46,7 @@ namespace RESTar.Requests
         public bool HTTPS { get; }
 
         internal AccessRights AccessRights { get; set; }
+        internal IDictionary<IResource, byte> ResourceAuthMappings { get; }
 
         internal bool IsInWebSocket { get; set; }
 
@@ -59,6 +63,7 @@ namespace RESTar.Requests
             ProxyIP = proxyIP?.ToString();
             UserAgent = userAgent;
             HTTPS = https;
+            ResourceAuthMappings = new ConcurrentDictionary<IResource, byte>();
         }
 
         /// <summary>

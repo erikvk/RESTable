@@ -166,6 +166,7 @@
     <Compile Include="Meta\Internal\BinaryResourceProvider.cs" />
     <Compile Include="Results\Binary.cs" />
     <Compile Include="Results\ResultWrapper.cs" />
+    <Compile Include="Results\SafePostNotSupported.cs" />
     <Compile Include="Results\SerializedResultWrapper.cs" />
     <Compile Include="Results\ShellNoContent.cs" />
     <Compile Include="Results\ShellNoQuery.cs" />

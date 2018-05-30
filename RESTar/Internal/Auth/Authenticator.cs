@@ -18,9 +18,12 @@ namespace RESTar.Internal.Auth
 
         internal static void RunResourceAuthentication<T>(this IRequest<T> request, IEntityResource<T> resource) where T : class
         {
+            if (request.Context.Client.ResourceAuthMappings.ContainsKey(resource))
+                return;
             var authResults = resource.Authenticate(request);
-            if (!authResults.Success)
-                throw new FailedResourceAuthentication(authResults.Reason);
+            if (authResults.Success)
+                request.Context.Client.ResourceAuthMappings[resource] = default;
+            else throw new FailedResourceAuthentication(authResults.Reason);
         }
 
         internal static AccessRights GetAccessRights(ref string uri, Headers headers)

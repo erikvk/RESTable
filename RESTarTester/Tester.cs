@@ -329,6 +329,7 @@ namespace RESTarTester
             var response5fail = Http.Request("POST", "http://localhost:9000/rest/authresource",
                 Encoding.UTF8.GetBytes(@"{""Id"": 2, ""Str"": ""Foogoo""}"),
                 headers: new Dictionary<string, string>() {["password"] = "not the password"});
+            var response6 = Http.Request("POST", "http://localhost:9000/rest/resource1//safepost=ObjectNo", Encoding.UTF8.GetBytes(onesJson), null);
 
             Debug.Assert(response1?.IsSuccessStatusCode == true);
             Debug.Assert(response2?.IsSuccessStatusCode == true);
@@ -336,6 +337,7 @@ namespace RESTarTester
             Debug.Assert(response4?.IsSuccessStatusCode == true);
             Debug.Assert(response5?.IsSuccessStatusCode == true);
             Debug.Assert(response5fail?.StatusCode == (HttpStatusCode) 403);
+            Debug.Assert(response6?.IsSuccessStatusCode == true);
 
             #endregion
 
@@ -564,8 +566,8 @@ namespace RESTarTester
             var r6 = context.CreateRequest<Aggregator>(GET);
             r6.SetBody(new
             {
-                A = "REPORT /resource",
-                B = new[] {"REPORT /resource", "REPORT /resource"}
+                A = "REPORT /admin.resource",
+                B = new[] {"REPORT /admin.resource", "REPORT /admin.resource"}
             });
             var r5 = context.CreateRequest<Resource1>(GET);
             var cond = new Condition<Resource1>("SByte", GREATER_THAN, 2);
@@ -817,7 +819,8 @@ namespace RESTarTester
             return count += 1;
         });
 
-        public int Delete(IRequest<AuthResource> request) => request.GetInputEntities()
+        public int Delete(IRequest<AuthResource> request) => request
+            .GetInputEntities()
             .Aggregate(0, (count, entity) => count += Items.RemoveAll(i => i.Id == entity.Id));
 
         public AuthResults Authenticate(IRequest<AuthResource> request)
@@ -867,7 +870,7 @@ namespace RESTarTester
                 return null;
             }
         }
-
+        
         public sbyte Sbyte;
         public byte Byte;
         public short Short;

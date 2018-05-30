@@ -185,7 +185,8 @@ namespace RESTar.Requests
                 switch (Resource)
                 {
                     case ITerminalResource<T> terminal:
-                        if (!Context.HasWebSocket) return new UpgradeRequired(terminal.Name);
+                        if (!Context.HasWebSocket)
+                            throw new UpgradeRequired(terminal.Name);
                         if (IsWebSocketUpgrade)
                             return MakeWebSocketUpgrade(terminal);
                         return SwitchTerminal(terminal);
@@ -197,6 +198,13 @@ namespace RESTar.Requests
                     case IEntityResource<T> entity:
                         if (entity.RequiresAuthentication)
                             this.RunResourceAuthentication(entity);
+                        if (MetaConditions.SafePost != null)
+                        {
+                            if (entity.Select == null)
+                                throw new SafePostNotSupported("(no selector implemented)");
+                            if (entity.Update == null)
+                                throw new SafePostNotSupported("(no updater implemented)");
+                        }
                         var result = EntityOperations<T>.GetEvaluator(Method).Invoke(this);
                         result.Cookies = Cookies;
                         ResponseHeaders.ForEach(h => result.Headers[h.Key.StartsWith("X-") ? h.Key : "X-" + h.Key] = h.Value);

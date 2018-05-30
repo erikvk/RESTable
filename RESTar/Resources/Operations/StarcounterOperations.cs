@@ -57,8 +57,9 @@ namespace RESTar.Resources.Operations
                                 {
                                     try
                                     {
-                                        var objectNo = (ulong) only.Value;
-                                        var result = Db.FromId<T>(objectNo);
+                                        var objectNo = (ulong?) only.Value;
+                                        if (!objectNo.HasValue) return null;
+                                        var result = Db.FromId<T>(objectNo.Value);
                                         return result == null ? null : new[] {result};
                                     }
                                     catch
@@ -71,6 +72,7 @@ namespace RESTar.Resources.Operations
                                     try
                                     {
                                         var objectID = (string) only.Value;
+                                        if (objectID == null) return null;
                                         var result = Db.FromId<T>(objectID);
                                         return result == null ? null : new[] {result};
                                     }
