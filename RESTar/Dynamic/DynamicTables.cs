@@ -3,7 +3,7 @@
 // ReSharper disable UnusedMember.Global
 #pragma warning disable 1591
 
-namespace RESTar.Internal
+namespace RESTar.Dynamic
 {
     [DynamicTable]
     public class DynamicResource01 : DDictionary, IDDictionary<DynamicResource01, DynamicResource1KeyValuePair>

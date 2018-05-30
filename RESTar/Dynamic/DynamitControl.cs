@@ -5,7 +5,7 @@ using Dynamit;
 using RESTar.Linq;
 using Starcounter;
 
-namespace RESTar.Internal
+namespace RESTar.Dynamic
 {
     internal static class DynamitControl
     {

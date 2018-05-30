@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using RESTar.Dynamic;
 using RESTar.Linq;
 using RESTar.Meta;
 using RESTar.Meta.Internal;
@@ -25,11 +26,70 @@ namespace RESTar.Resources
         internal EntityResourceProvider() { }
         internal ICollection<Type> GetClaim(IEnumerable<Type> types) => types.Where(Include).ToList();
 
+        internal IEnumerable<IProceduralEntityResource> _Select() => SelectProceduralResources();
+
+        internal void _Insert(string name, string description, Method[] methods)
+        {
+            var inserted = InsertProceduralResource(name, description, methods);
+            if (inserted == null) return;
+            InsertProcedural(inserted);
+        }
+
+        internal void _SetMethods(IProceduralEntityResource procedural, IResourceInternal resource, IReadOnlyList<Method> methods)
+        {
+            SetProceduralResourceMethods(procedural, methods.ToArray());
+            resource.AvailableMethods = methods;
+        }
+
+        internal void _SetDescription(IProceduralEntityResource procedural, IResourceInternal resource, string description)
+        {
+            SetProceduralResourceDescription(procedural, description);
+            resource.Description = description;
+        }
+
+        internal void _Delete(IProceduralEntityResource procedural)
+        {
+            if (procedural == null) return;
+            var type = procedural.Type;
+            if (DeleteProceduralResource(procedural))
+                RemoveProceduralResource(type);
+        }
+
         /// <summary>
         /// The attribute type associated with this ResourceProvider. Used to decorate 
         /// resource types that should be claimed by this ResourceProvider.
         /// </summary>
         protected abstract Type AttributeType { get; }
+
+        /// <summary>
+        /// Does this entity resource provider supports adding and modifying resources during runtime?
+        /// </summary>
+        public abstract bool SupportsProceduralResources { get; }
+
+        /// <summary>
+        /// Returns all procedural entity resources from the provider. Used by RESTar internally. Don't call this method.
+        /// </summary>
+        protected abstract IEnumerable<IProceduralEntityResource> SelectProceduralResources();
+
+        /// <summary>
+        /// Creates a new dynamic entity resource object with the given name, description and methods. Used by RESTar internally. Don't call this method.
+        /// </summary>
+        protected abstract IProceduralEntityResource InsertProceduralResource(string name, string description, Method[] methods);
+
+        /// <summary>
+        /// Runs a given update operation. Used by RESTar internally. Don't call this method.
+        /// </summary>
+        protected abstract void SetProceduralResourceMethods(IProceduralEntityResource resource, Method[] methods);
+
+        /// <summary>
+        /// Runs a given update operation. Used by RESTar internally. Don't call this method.
+        /// </summary>
+        protected abstract void SetProceduralResourceDescription(IProceduralEntityResource resource, string newDescription);
+
+        /// <summary>
+        /// Deletes a dynamic entity resource entity. Used by RESTar internally. Don't call this method.
+        /// </summary>
+        protected abstract bool DeleteProceduralResource(IProceduralEntityResource resource);
 
         /// <summary>
         /// IDatabaseIndexers are plugins for the DatabaseIndex resource, that allow resources 
@@ -132,12 +192,6 @@ namespace RESTar.Resources
         /// <typeparam name="T">The resource type</typeparam>
         protected abstract Profiler<T> GetProfiler<T>() where T : class, TBase;
 
-        /// <summary>
-        /// Removes the resource corresponding with the given resource type from the RESTar instance
-        /// </summary>
-        /// <returns>True if and only if a resource was successfully removed</returns>
-        protected bool RemoveResource<TResource>() where TResource : class, TBase => RemoveResource(Resource<TResource>.SafeGet);
-
         #region Add resource API
 
         /// <summary>
@@ -148,8 +202,10 @@ namespace RESTar.Resources
         /// <param name="attribute">The attribute to use when creating the resource. If null, the attribute
         /// is fetched from the resource type declaration.</param>
         /// <returns></returns>
-        protected IEntityResource InsertResource(Type type, string fullName = null, RESTarAttribute attribute = null)
+        private IEntityResource InsertResource(Type type, string fullName = null, RESTarAttribute attribute = null)
         {
+            ResourceValidator.ValidateRuntimeInsertion(type, fullName, attribute);
+            ResourceValidator.Validate(type);
             return _InsertResource(type, fullName, attribute);
         }
 
@@ -161,7 +217,7 @@ namespace RESTar.Resources
         /// <param name="fullName">The name of the resource to insert. If null, type.FullName is used</param>
         /// <param name="attribute">The attribute to use when creating the resource. If null, the attribute
         /// is fetched from the resource type declaration.</param>
-        protected IEntityResource InsertWrapperResource(Type wrapperType, Type wrappedType, string fullName = null, RESTarAttribute attribute = null)
+        private IEntityResource InsertWrapperResource(Type wrapperType, Type wrappedType, string fullName = null, RESTarAttribute attribute = null)
         {
             return _InsertWrapperResource(wrapperType, wrappedType, fullName, attribute);
         }
@@ -181,7 +237,7 @@ namespace RESTar.Resources
         /// <param name="authenticator">The authenticator to use. If null, the default authenticator is used</param>
         /// <typeparam name="TResource">The type to create the resource for</typeparam>
         /// <returns></returns>
-        protected IEntityResource<TResource> InsertResource<TResource>(string fullName = null, RESTarAttribute attribute = null,
+        private IEntityResource<TResource> InsertResource<TResource>(string fullName = null, RESTarAttribute attribute = null,
             Selector<TResource> selector = null, Inserter<TResource> inserter = null, Updater<TResource> updater = null,
             Deleter<TResource> deleter = null, Counter<TResource> counter = null, Profiler<TResource> profiler = null,
             Authenticator<TResource> authenticator = null) where TResource : class, TBase
@@ -205,7 +261,7 @@ namespace RESTar.Resources
         /// <typeparam name="TWrapper">The resource wrapper type</typeparam>
         /// <typeparam name="TWrapped">The wrapped resource type</typeparam>
         /// <returns></returns>
-        protected IEntityResource<TWrapped> InsertWrapperResource<TWrapper, TWrapped>(string fullName = null, RESTarAttribute attribute = null,
+        private IEntityResource<TWrapped> InsertWrapperResource<TWrapper, TWrapped>(string fullName = null, RESTarAttribute attribute = null,
             Selector<TWrapped> selector = null, Inserter<TWrapped> inserter = null, Updater<TWrapped> updater = null, Deleter<TWrapped> deleter = null,
             Counter<TWrapped> counter = null, Profiler<TWrapped> profiler = null, Authenticator<TWrapped> authenticator = null)
             where TWrapper : ResourceWrapper<TWrapped> where TWrapped : class, TBase
@@ -213,6 +269,12 @@ namespace RESTar.Resources
             return _InsertWrapperResource<TWrapper, TWrapped>(fullName, attribute, selector, inserter, updater, deleter, counter, profiler,
                 authenticator);
         }
+
+        /// <summary>
+        /// Removes the resource corresponding with the given resource type from the RESTar instance
+        /// </summary>
+        /// <returns>True if and only if a resource was successfully removed</returns>
+        private bool RemoveResource<TResource>() where TResource : class, TBase => RemoveResource(Resource<TResource>.SafeGet);
 
         #endregion
 
@@ -299,11 +361,7 @@ namespace RESTar.Resources
         (
             type: resource.Type,
             fullName: resource.Name,
-            attribute: new RESTarProceduralAttribute(resource.Methods)
-            {
-                Description = resource.Description,
-                Editable = resource.Editable
-            }
+            attribute: new RESTarProceduralAttribute(resource.Methods) {Description = resource.Description,}
         );
 
         internal override bool Include(Type type)
@@ -316,9 +374,7 @@ namespace RESTar.Resources
             return type.HasAttribute(AttributeType);
         }
 
-        internal override void MakeClaimProcedural() => (this as IProceduralEntityResourceProvider)?
-            .Select()
-            .ForEach(InsertProcedural);
+        internal override void MakeClaimProcedural() => SelectProceduralResources().ForEach(InsertProcedural);
 
         internal override void MakeClaimRegular(IEnumerable<Type> types) => types.ForEach(type =>
         {
@@ -345,14 +401,6 @@ namespace RESTar.Resources
             if (!AttributeType.IsSubclassOf(typeof(EntityResourceProviderAttribute)))
                 throw new InvalidExternalResourceProviderException($"Provided AttributeType '{AttributeType.RESTarTypeName()}' " +
                                                                    $"does not inherit from RESTar.ResourceProviderAttribute");
-
-            if (this is IProceduralEntityResourceProvider proc)
-            {
-                var baseNamespace = proc.BaseNamespace;
-                if (string.IsNullOrWhiteSpace(baseNamespace) || baseNamespace.StartsWith("restar", StringComparison.OrdinalIgnoreCase))
-                    throw new Exception($"Invalid base namespace '{baseNamespace}' for dynamic entity resource provider " +
-                                        $"'{GetType()}'. Must not begin with 'RESTar'");
-            }
         }
 
         private static View<TResource>[] GetViews<TResource>() where TResource : class, TBase => typeof(TResource)

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using RESTar.Meta;
 using RESTar.Resources;
 using RESTar.Resources.Operations;
@@ -28,5 +29,20 @@ namespace RESTar.Internal.Sc
 
         protected override bool IsValid(IEntityResource resource, out string reason) =>
             StarcounterOperations<object>.IsValid(resource, out reason);
+
+        protected override bool SupportsProceduralResources { get; } = false;
+
+        protected override IEnumerable<IProceduralEntityResource> SelectProceduralResources() => throw new NotImplementedException();
+
+        protected override IProceduralEntityResource InsertProceduralResource(string name, string description, Method[] methods) =>
+            throw new NotImplementedException();
+
+        protected override void SetProceduralResourceMethods(IProceduralEntityResource resource, Method[] methods) =>
+            throw new NotImplementedException();
+
+        protected override void SetProceduralResourceDescription(IProceduralEntityResource resource, string newDescription) =>
+            throw new NotImplementedException();
+
+        protected override bool DeleteProceduralResource(IProceduralEntityResource resource) => throw new NotImplementedException();
     }
 }

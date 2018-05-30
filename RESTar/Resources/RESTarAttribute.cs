@@ -45,12 +45,6 @@ namespace RESTar.Resources
         public bool FlagStaticMembers { get; set; }
 
         /// <summary>
-        /// Should this resource be editable after registration? Not applicable for 
-        /// terminal resources.
-        /// </summary>
-        internal bool Editable { get; set; }
-
-        /// <summary>
         /// Singleton resources get special treatment in the view. They have no list 
         /// view, but only entity view. Good for settings, reports etc. Not applicable for 
         /// terminal resources.

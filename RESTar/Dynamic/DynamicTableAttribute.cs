@@ -1,6 +1,6 @@
 ﻿using RESTar.Resources;
 
-namespace RESTar.Internal
+namespace RESTar.Dynamic
 {
     internal class DynamicTableAttribute : EntityResourceProviderAttribute { }
 }

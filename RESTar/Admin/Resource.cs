@@ -21,7 +21,7 @@ namespace RESTar.Admin
     /// A meta-resource that provides representations of all resources in a RESTar instance
     /// </summary>
     [RESTar(Description = description)]
-    public sealed class Resource : ISelector<Resource>, IInserter<Resource>, IUpdater<Resource>, IDeleter<Resource>
+    public class Resource : ISelector<Resource>, IInserter<Resource>, IUpdater<Resource>, IDeleter<Resource>
     {
         private const string description = "A meta-resource that provides representations " +
                                            "of all resources in a RESTar instance.";
@@ -49,7 +49,7 @@ namespace RESTar.Admin
         /// <summary>
         /// Is this resource declared, as opposed to procedural?
         /// </summary>
-        public bool IsDeclared { get; private set; }
+        public bool IsDeclared { get; internal set; }
 
         /// <summary>
         /// Is this resource procedural, as opposed to declared?
@@ -64,7 +64,7 @@ namespace RESTar.Admin
         /// <summary>
         /// The type targeted by this resource.
         /// </summary>
-        public string Type { get; private set; }
+        public string Type { get; internal set; }
 
         /// <summary>
         /// The views for this resource
@@ -91,56 +91,28 @@ namespace RESTar.Admin
         /// </summary>
         [RESTarMember(hideIfNull: true)] public Resource[] InnerResources { get; private set; }
 
-        private void ResolveDynamicResourceName(string baseNameSpace)
-        {
-            switch (Name)
-            {
-                case var _ when !Regex.IsMatch(Name, RegEx.DynamicResourceName):
-                    throw new Exception($"Resource name '{Name}' contains invalid characters. Letters, nu" +
-                                        "mbers and underscores are valid in resource names. Dots can be used " +
-                                        "to organize resources into namespaces. No other characters can be used.");
-                case var _ when Name.StartsWith(".") || Name.Contains("..") || Name.EndsWith("."):
-                    throw new Exception($"'{Name}' is not a valid resource name. Invalid namespace syntax");
-            }
-            if (!Name.StartsWith($"{baseNameSpace}."))
-            {
-                if (Name.StartsWith($"{baseNameSpace}.", StringComparison.OrdinalIgnoreCase))
-                {
-                    var nrOfDots = Name.Count(c => c == '.') + 2;
-                    Name = $"{baseNameSpace}.{Name.Split(new[] {'.'}, nrOfDots).Last()}";
-                }
-                else Name = $"{baseNameSpace}.{Name}";
-            }
-            if (RESTarConfig.ResourceByName.ContainsKey(Name))
-                throw new Exception($"Invalid resource name '{Name}'. Name already in use.");
-        }
-
         private bool IsProcedural(out IProceduralEntityResource proceduralResource, out IEntityResource entityResource,
-            out IProceduralEntityResourceProvider proceduralProvider)
+            out EntityResourceProvider provider)
         {
             proceduralResource = null;
             entityResource = null;
-            proceduralProvider = null;
+            provider = null;
 
             if (IResource is IEntityResource _entityResource)
                 entityResource = _entityResource;
             else return false;
-            if (!EntityResourceProviders.TryGetValue(entityResource.Provider, out var entityResourceProvider))
+            if (!EntityResourceProviders.TryGetValue(entityResource.Provider, out provider) || !provider.SupportsProceduralResources)
                 return false;
-            if (entityResourceProvider is IProceduralEntityResourceProvider dynamicEntityResourceProvider)
-                proceduralProvider = dynamicEntityResourceProvider;
-            else return false;
             var resource = entityResource;
-            if (dynamicEntityResourceProvider
-                .Select()
-                .FirstOrDefault(r => r.Name == resource.Name) is IProceduralEntityResource _dynamicResource)
+            if (provider._Select().FirstOrDefault(r => r.Name == resource.Name) is IProceduralEntityResource _dynamicResource)
                 proceduralResource = _dynamicResource;
             else return false;
             return true;
         }
 
-        private static Resource Make(IResource iresource)
+        internal static Resource Make(IResource iresource)
         {
+            if (iresource == null) return null;
             var entityResource = iresource as IEntityResource;
             return new Resource
             {
@@ -173,7 +145,6 @@ namespace RESTar.Admin
                 .Where(request.Conditions);
         }
 
-
         /// <inheritdoc />
         public int Insert(IRequest<Resource> request)
         {
@@ -181,28 +152,7 @@ namespace RESTar.Admin
             var count = 0;
             foreach (var resource in request.GetInputEntities())
             {
-                if (string.IsNullOrWhiteSpace(resource.Name))
-                    throw new Exception("Missing or invalid name for new resource");
-                if (string.IsNullOrWhiteSpace(resource.Provider))
-                    resource.Provider = DynamitResourceProvider.ProviderId;
 
-                if (!EntityResourceProviders.TryGetValue(resource.Provider, out var provider))
-                    throw new Exception($"Unknown entity resource provider: '{resource.Provider}'");
-                if (!(provider is IProceduralEntityResourceProvider dynamicProvider))
-                    throw new Exception($"Entity resource provider '{provider.GetProviderId()}' cannot add " +
-                                        "procedural (runtime defined) entity resources");
-                var baseNamespace = dynamicProvider.BaseNamespace;
-                if (string.IsNullOrWhiteSpace(baseNamespace) || baseNamespace.StartsWith("restar", StringComparison.OrdinalIgnoreCase) &&
-                    !(dynamicProvider is DynamitResourceProvider))
-                    throw new Exception($"Invalid namespace '{baseNamespace}' for dynamic entity resource. Must not begin with RESTar");
-                resource.ResolveDynamicResourceName(baseNamespace);
-                if (!string.IsNullOrWhiteSpace(resource.Alias) && ResourceAlias.Exists(resource.Alias, out var alias))
-                    throw new Exception($"Invalid Alias: '{alias.Alias}' is already in use for resource '{alias.IResource.Name}'");
-                if (resource.EnabledMethods?.Any() != true)
-                    resource.EnabledMethods = RESTarConfig.Methods;
-                var methodsArray = resource.EnabledMethods.ResolveMethodsCollection().ToArray();
-                var procedural = dynamicProvider.Insert(resource.Name, resource.Description, methodsArray, resource.Alias);
-                provider.InsertProcedural(procedural);
                 count += 1;
             }
             return count;
@@ -271,10 +221,10 @@ namespace RESTar.Admin
             return request.GetInputEntities().Count(item =>
             {
                 var type = item.IResource.Type;
-                if (item.IsProcedural(out var dr, out _, out var dp) && dp.Delete(dr))
+                if (item.IsProcedural(out var dr, out _, out var dp))
                 {
                     var entityResourceProvider = (EntityResourceProvider) dp;
-                    entityResourceProvider.RemoveProceduralResource(type);
+                    entityResourceProvider.;
                     return true;
                 }
                 return false;

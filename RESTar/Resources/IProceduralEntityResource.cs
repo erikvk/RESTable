@@ -1,6 +1,7 @@
 ﻿using System;
 
-namespace RESTar.Resources {
+namespace RESTar.Resources
+{
     /// <summary>
     /// Describes a dynamic entity resource
     /// </summary>
@@ -9,7 +10,7 @@ namespace RESTar.Resources {
         /// <summary>
         /// The name, including namespace, of this resource
         /// </summary>
-        string Name { get; set; }
+        string Name { get; }
 
         /// <summary>
         /// The description to use for the resource
@@ -25,10 +26,5 @@ namespace RESTar.Resources {
         /// The type to bind to this resource. Must be unique for this resource.
         /// </summary>
         Type Type { get; }
-
-        /// <summary>
-        /// Is this resource editable?
-        /// </summary>
-        bool Editable { get; }
     }
 }

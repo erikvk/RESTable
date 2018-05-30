@@ -4,7 +4,7 @@ using System.Linq;
 using RESTar.Resources;
 using Starcounter;
 
-namespace RESTar.Internal
+namespace RESTar.Dynamic
 {
     /// <inheritdoc />
     /// <summary>
@@ -13,7 +13,7 @@ namespace RESTar.Internal
     [Database]
     public class DynamicResource : IProceduralEntityResource
     {
-        internal const string All = "SELECT t FROM RESTar.Internal.DynamicResource t";
+        internal const string All = "SELECT t FROM RESTar.Dynamic.DynamicResource t";
         internal const string ByTableName = All + " WHERE t.TableName =?";
 
         /// <inheritdoc />
@@ -30,7 +30,7 @@ namespace RESTar.Internal
         /// <summary>
         /// The name of this resource
         /// </summary>
-        public string Name { get; set; }
+        public string Name { get; }
 
         /// <inheritdoc />
         /// <summary>
@@ -47,25 +47,6 @@ namespace RESTar.Internal
         /// A string representation of the available REST methods
         /// </summary>
         [RESTarMember(ignore: true)] public string AvailableMethodsString { get; private set; }
-
-        /// <inheritdoc />
-        /// <summary />
-        [RESTarMember(ignore: true), Obsolete] public bool Editable { get; internal set; }
-
-        /// <summary/>
-        [RESTarMember(ignore: true), Obsolete] public bool Visible { get; internal set; }
-
-        /// <summary/>
-        [RESTarMember(ignore: true), Obsolete] public string EntityViewHtml { get; internal set; }
-
-        /// <summary/>
-        [RESTarMember(ignore: true), Obsolete] public string EntitiesViewHtml { get; internal set; }
-
-        /// <summary/>
-        [RESTarMember(ignore: true), Obsolete] public bool Viewable { get; internal set; }
-
-        /// <summary/>
-        [RESTarMember(ignore: true), Obsolete] public bool IsViewable { get; internal set; }
 
         /// <inheritdoc />
         public Type Type => DynamitControl.GetByTableName(TableName);

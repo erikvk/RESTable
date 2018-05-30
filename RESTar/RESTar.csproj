@@ -104,7 +104,9 @@
     <Compile Include="ContentTypeProviders\ExcelInputException.cs" />
     <Compile Include="ContentTypeProviders\JsonAdapter.cs" />
     <Compile Include="ContentTypeProviders\XMLWriter.cs" />
+    <Compile Include="Dynamic\DynamicController.cs" />
     <Compile Include="Internal\EntityResourceProviderController.cs" />
+    <Compile Include="Meta\Internal\ResourceValidator.cs" />
     <Compile Include="Requests\Context.cs" />
     <Compile Include="Resources\IBinaryResource.cs" />
     <Compile Include="ProtocolProviders\DefaultProtocolProvider.cs" />
@@ -112,7 +114,6 @@
     <Compile Include="Resources\IDynamicTerminal.cs" />
     <Compile Include="Resources\InvalidBinaryDeclarationException.cs" />
     <Compile Include="Resources\IProceduralEntityResource.cs" />
-    <Compile Include="Resources\IProceduralEntityResourceProvider.cs" />
     <Compile Include="Results\BadGateway.cs" />
     <Compile Include="Results\Change.cs" />
     <Compile Include="Results\IResult.cs" />
@@ -216,7 +217,7 @@
     <Compile Include="Aggregator.cs" />
     <Compile Include="Meta\TermBindingRule.cs" />
     <Compile Include="Admin\DbOutputFormat.cs" />
-    <Compile Include="Internal\DynamicTableAttribute.cs" />
+    <Compile Include="Dynamic\DynamicTableAttribute.cs" />
     <Compile Include="Requests\Formatter.cs" />
     <Compile Include="Internal\HttpResponse.cs" />
     <Compile Include="Meta\IResource.cs" />
@@ -288,10 +289,10 @@
     <Compile Include="Requests\Filters\Limit.cs" />
     <Compile Include="Requests\MetaConditions.cs" />
     <Compile Include="Requests\ContentType.cs" />
-    <Compile Include="Internal\DynamicResource.cs" />
-    <Compile Include="Internal\DynamitControl.cs" />
+    <Compile Include="Dynamic\DynamicResource.cs" />
+    <Compile Include="Dynamic\DynamitControl.cs" />
     <Compile Include="Resources\Operations\DDictionaryOperations.cs" />
-    <Compile Include="Internal\DynamicTables.cs" />
+    <Compile Include="Dynamic\DynamicTables.cs" />
     <Compile Include="Meta\IEntityResource.cs" />
     <Compile Include="Meta\Property.cs" />
     <Compile Include="Meta\Term.cs" />

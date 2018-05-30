@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Dynamit;
+using RESTar.Dynamic;
 using RESTar.Meta;
 using RESTar.Resources;
 using RESTar.Resources.Operations;
@@ -10,7 +11,7 @@ using Starcounter;
 
 namespace RESTar.Internal.Sc
 {
-    internal class DynamitResourceProvider : EntityResourceProvider<DDictionary>, IProceduralEntityResourceProvider
+    internal class DynamitResourceProvider : EntityResourceProvider<DDictionary>
     {
         internal const string ProviderId = "Dynamit";
 
@@ -42,7 +43,9 @@ namespace RESTar.Internal.Sc
 
         private static bool Exists(Type type) => Db.SQL<DynamicResource>(DynamicResource.ByTableName, type.RESTarTypeName()).FirstOrDefault() != null;
 
-        public IEnumerable<IProceduralEntityResource> Select() => Db
+        protected override bool SupportsProceduralResources { get; } = true;
+
+        protected override IEnumerable<IProceduralEntityResource> SelectProceduralResources() => Db
             .SQL<DynamicResource>(DynamicResource.All)
             .Where(resource =>
             {
@@ -56,27 +59,24 @@ namespace RESTar.Internal.Sc
             })
             .ToList();
 
-        public IProceduralEntityResource Insert(string name, string description, Method[] methods, string alias)
+        protected override IProceduralEntityResource InsertProceduralResource(string name, string description, Method[] methods)
         {
             DynamicResource proceduralResource = null;
             Db.TransactAsync(() =>
             {
                 var newTable = DynamitControl.DynamitTypes.FirstOrDefault(type => !Exists(type)) ?? throw new NoAvailableDynamicTable();
-                if (!string.IsNullOrWhiteSpace(alias))
-                    new Admin.ResourceAlias {Alias = alias, Resource = name};
                 proceduralResource = new DynamicResource(name, newTable, methods, description);
             });
             return proceduralResource;
         }
 
-        public bool Update(IProceduralEntityResource resource, Func<bool> updater)
-        {
-            var success = false;
-            Db.TransactAsync(() => success = updater());
-            return success;
-        }
+        protected override void SetProceduralResourceMethods(IProceduralEntityResource resource, Method[] methods) =>
+            Db.TransactAsync(() => resource.Methods = methods);
 
-        public bool Delete(IProceduralEntityResource resource)
+        protected override void SetProceduralResourceDescription(IProceduralEntityResource resource, string newDescription) =>
+            Db.TransactAsync(() => resource.Description = newDescription);
+
+        protected override bool DeleteProceduralResource(IProceduralEntityResource resource)
         {
             var _resource = (DynamicResource) resource;
             DynamitControl.ClearTable(_resource.TableName);
