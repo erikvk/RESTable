@@ -11,10 +11,8 @@ using Starcounter;
 
 namespace RESTar.Internal.Sc
 {
-    internal class DynamitResourceProvider : EntityResourceProvider<DDictionary>
+    internal class DynamitResourceProvider : EntityResourceProvider<DDictionary>, IProceduralEntityResourceProvider
     {
-        internal const string ProviderId = "Dynamit";
-
         internal override bool Include(Type type)
         {
             if (type.IsWrapper())
@@ -39,11 +37,7 @@ namespace RESTar.Internal.Sc
         protected override bool IsValid(IEntityResource resource, out string reason) =>
             StarcounterOperations<object>.IsValid(resource, out reason);
 
-        public string BaseNamespace { get; } = "RESTar.Dynamic";
-
         private static bool Exists(Type type) => Db.SQL<DynamicResource>(DynamicResource.ByTableName, type.RESTarTypeName()).FirstOrDefault() != null;
-
-        protected override bool SupportsProceduralResources { get; } = true;
 
         protected override IEnumerable<IProceduralEntityResource> SelectProceduralResources() => Db
             .SQL<DynamicResource>(DynamicResource.All)

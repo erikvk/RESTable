@@ -2,13 +2,13 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using RESTar.Dynamic;
 using RESTar.Linq;
 using RESTar.Meta;
 using RESTar.Meta.Internal;
 using RESTar.Resources.Operations;
 using static System.Reflection.BindingFlags;
 using static RESTar.Resources.Operations.DelegateMaker;
+using Resource = RESTar.Meta.Resource;
 
 namespace RESTar.Resources
 {
@@ -62,34 +62,44 @@ namespace RESTar.Resources
         protected abstract Type AttributeType { get; }
 
         /// <summary>
-        /// Does this entity resource provider supports adding and modifying resources during runtime?
-        /// </summary>
-        public abstract bool SupportsProceduralResources { get; }
-
-        /// <summary>
         /// Returns all procedural entity resources from the provider. Used by RESTar internally. Don't call this method.
         /// </summary>
-        protected abstract IEnumerable<IProceduralEntityResource> SelectProceduralResources();
+        protected virtual IEnumerable<IProceduralEntityResource> SelectProceduralResources()
+        {
+            throw new NotImplementedException();
+        }
 
         /// <summary>
         /// Creates a new dynamic entity resource object with the given name, description and methods. Used by RESTar internally. Don't call this method.
         /// </summary>
-        protected abstract IProceduralEntityResource InsertProceduralResource(string name, string description, Method[] methods);
+        protected virtual IProceduralEntityResource InsertProceduralResource(string name, string description, Method[] methods)
+        {
+            throw new NotImplementedException();
+        }
 
         /// <summary>
         /// Runs a given update operation. Used by RESTar internally. Don't call this method.
         /// </summary>
-        protected abstract void SetProceduralResourceMethods(IProceduralEntityResource resource, Method[] methods);
+        protected virtual void SetProceduralResourceMethods(IProceduralEntityResource resource, Method[] methods)
+        {
+            throw new NotImplementedException();
+        }
 
         /// <summary>
         /// Runs a given update operation. Used by RESTar internally. Don't call this method.
         /// </summary>
-        protected abstract void SetProceduralResourceDescription(IProceduralEntityResource resource, string newDescription);
+        protected virtual void SetProceduralResourceDescription(IProceduralEntityResource resource, string newDescription)
+        {
+            throw new NotImplementedException();
+        }
 
         /// <summary>
         /// Deletes a dynamic entity resource entity. Used by RESTar internally. Don't call this method.
         /// </summary>
-        protected abstract bool DeleteProceduralResource(IProceduralEntityResource resource);
+        protected virtual bool DeleteProceduralResource(IProceduralEntityResource resource)
+        {
+            throw new NotImplementedException();
+        }
 
         /// <summary>
         /// IDatabaseIndexers are plugins for the DatabaseIndex resource, that allow resources 

@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.RegularExpressions;
-using RESTar.Internal.Sc;
 using RESTar.Linq;
 using RESTar.Meta;
 using RESTar.Meta.Internal;
@@ -14,14 +12,12 @@ using static RESTar.Internal.EntityResourceProviderController;
 namespace RESTar.Admin
 {
     /// <inheritdoc cref="ISelector{T}" />
-    /// <inheritdoc cref="IInserter{T}" />
     /// <inheritdoc cref="IUpdater{T}" />
-    /// <inheritdoc cref="IDeleter{T}" />
-    /// <summary>
+        /// <summary>
     /// A meta-resource that provides representations of all resources in a RESTar instance
     /// </summary>
-    [RESTar(Description = description)]
-    public class Resource : ISelector<Resource>, IInserter<Resource>, IUpdater<Resource>, IDeleter<Resource>
+    [RESTar(Method.GET, Method.PATCH, Description = description)]
+    public class Resource : ISelector<Resource>, IUpdater<Resource>
     {
         private const string description = "A meta-resource that provides representations " +
                                            "of all resources in a RESTar instance.";
@@ -89,7 +85,7 @@ namespace RESTar.Admin
         /// <summary>
         /// Inner resources for this resource
         /// </summary>
-        [RESTarMember(hideIfNull: true)] public Resource[] InnerResources { get; private set; }
+        [RESTarMember(hideIfNull: true)] public IEnumerable<Resource> InnerResources { get; private set; }
 
         private bool IsProcedural(out IProceduralEntityResource proceduralResource, out IEntityResource entityResource,
             out EntityResourceProvider provider)
@@ -101,7 +97,7 @@ namespace RESTar.Admin
             if (IResource is IEntityResource _entityResource)
                 entityResource = _entityResource;
             else return false;
-            if (!EntityResourceProviders.TryGetValue(entityResource.Provider, out provider) || !provider.SupportsProceduralResources)
+            if (!EntityResourceProviders.TryGetValue(entityResource.Provider, out provider) || !(provider is IProceduralEntityResourceProvider))
                 return false;
             var resource = entityResource;
             if (provider._Select().FirstOrDefault(r => r.Name == resource.Name) is IProceduralEntityResource _dynamicResource)
@@ -110,11 +106,11 @@ namespace RESTar.Admin
             return true;
         }
 
-        internal static Resource Make(IResource iresource)
+        internal static T Make<T>(IResource iresource) where T : Resource, new()
         {
             if (iresource == null) return null;
             var entityResource = iresource as IEntityResource;
-            return new Resource
+            return new T
             {
                 Name = iresource.Name,
                 Alias = iresource.Alias,
@@ -130,7 +126,7 @@ namespace RESTar.Admin
                 IResource = iresource,
                 Provider = entityResource?.Provider ?? (iresource is IBinaryResource ? "Binary" : "Terminal"),
                 Kind = iresource.ResourceKind,
-                InnerResources = ((IResourceInternal) iresource).InnerResources?.Select(Make).ToArray()
+                InnerResources = ((IResourceInternal) iresource).InnerResources?.Select(Make<T>).ToArray()
             };
         }
 
@@ -141,21 +137,8 @@ namespace RESTar.Admin
             return RESTarConfig.Resources
                 .Where(r => r.IsGlobal)
                 .OrderBy(r => r.Name)
-                .Select(Make)
+                .Select(Make<Resource>)
                 .Where(request.Conditions);
-        }
-
-        /// <inheritdoc />
-        public int Insert(IRequest<Resource> request)
-        {
-            if (request == null) throw new ArgumentNullException(nameof(request));
-            var count = 0;
-            foreach (var resource in request.GetInputEntities())
-            {
-
-                count += 1;
-            }
-            return count;
         }
 
         /// <inheritdoc />
@@ -165,8 +148,6 @@ namespace RESTar.Admin
             var count = 0;
             foreach (var resource in request.GetInputEntities())
             {
-                #region Edit alias (available for all resources)
-
                 var updated = false;
                 var iresource = resource.IResource;
                 if (resource.Alias != iresource.Alias)
@@ -175,60 +156,9 @@ namespace RESTar.Admin
                     iresourceInternal.SetAlias(resource.Alias);
                     updated = true;
                 }
-
-                #endregion
-
-                if (resource.IsProcedural(out var dynamicResource, out var entityResource, out var dynamicProvider))
-                {
-                    #region Edit other properties (available for dynamic resources)
-
-                    var resourceInternal = (IResourceInternal) entityResource;
-
-                    bool updater()
-                    {
-                        if (entityResource.Description != resource.Description)
-                        {
-                            dynamicResource.Description = resource.Description;
-                            updated = true;
-                        }
-                        var methods = resource.EnabledMethods?.ResolveMethodsCollection();
-                        if (methods != null && !iresource.AvailableMethods.SequenceEqual(methods))
-                        {
-                            dynamicResource.Methods = methods.ToArray();
-                            updated = true;
-                        }
-                        return updated;
-                    }
-
-                    if (dynamicProvider.Update(dynamicResource, updater))
-                    {
-                        resourceInternal.Description = dynamicResource.Description;
-                        var methods = dynamicResource.Methods.ResolveMethodsCollection();
-                        resourceInternal.AvailableMethods = methods;
-                    }
-
-                    #endregion
-                }
                 if (updated) count += 1;
             }
             return count;
-        }
-
-        /// <inheritdoc />
-        public int Delete(IRequest<Resource> request)
-        {
-            if (request == null) throw new ArgumentNullException(nameof(request));
-            return request.GetInputEntities().Count(item =>
-            {
-                var type = item.IResource.Type;
-                if (item.IsProcedural(out var dr, out _, out var dp))
-                {
-                    var entityResourceProvider = (EntityResourceProvider) dp;
-                    entityResourceProvider.;
-                    return true;
-                }
-                return false;
-            });
         }
     }
 }

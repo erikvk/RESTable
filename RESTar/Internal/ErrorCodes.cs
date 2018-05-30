@@ -71,6 +71,7 @@ namespace RESTar.Internal
         InvalidTerminalDeclaration = 126,
         InvalidReferencedEnumDeclaration = 127,
         InvalidBinaryResourceDeclaration = 128,
+        InvalidResourceControllerDeclaration = 129,
 
         // 130-139: Alias errors
         AliasAlreadyInUse = 130,

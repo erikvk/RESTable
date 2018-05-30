@@ -2,18 +2,20 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
-using RESTar.Admin;
-using RESTar.Internal.Sc;
 using RESTar.Meta.Internal;
-using RESTar.Resources;
-using Resource = RESTar.Meta.Resource;
 
-namespace RESTar.Dynamic
+namespace RESTar.Resources
 {
-    public abstract class ResourceController<T> : Admin.Resource where T : EntityResourceProvider
+    /// <inheritdoc />
+    /// <summary>
+    /// Resource controllers attach to entity resource providers that support procedural resources,
+    /// and enable insertion of resources during runtime.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    public abstract class ResourceController<T> : Admin.Resource where T : EntityResourceProvider, IProceduralEntityResourceProvider
     {
-        internal static string BaseNamespace { get; set; }
-        internal static EntityResourceProvider ResourceProvider { private get; set; }
+        internal static string BaseNamespace { private get; set; }
+        internal static T ResourceProvider { private get; set; }
 
         private static void ResolveDynamicResourceName(ref string name)
         {
@@ -42,7 +44,9 @@ namespace RESTar.Dynamic
         /// <summary>
         /// Selects the instances that have been inserted by this controller
         /// </summary>
-        protected IEnumerable<Admin.Resource> Select() => ResourceProvider._Select().Select(resource => Make(Resource.SafeGet(resource.Name)));
+        protected static IEnumerable<T1> Select<T1>() where T1 : Admin.Resource, new() => ResourceProvider
+            ._Select()
+            .Select(resource => Make<T1>(Meta.Resource.SafeGet(resource.Name)));
 
         /// <summary>
         /// Inserts the current instance as a new dynamic procedural
@@ -59,18 +63,18 @@ namespace RESTar.Dynamic
                 methods = RESTarConfig.Methods;
             var methodsArray = methods.ResolveMethodsCollection().ToArray();
             ResourceProvider._Insert(name, description, methodsArray);
-            var resource = (IResourceInternal) Resource.SafeGet(Name);
+            var resource = (IResourceInternal) Meta.Resource.SafeGet(name);
             resource.SetAlias(Alias);
         }
 
         /// <summary>
         /// Updates the state of the current instance to the corresponding procedural resource
         /// </summary>
-        public void Update()
+        protected void Update()
         {
             var procedural = ResourceProvider._Select()?.FirstOrDefault(item => item.Name == Name) ??
                              throw new InvalidOperationException($"Cannot update resource '{Name}'. Resource has not been inserted.");
-            var resource = (IResourceInternal) Resource.SafeGet(procedural.Type) ??
+            var resource = (IResourceInternal) Meta.Resource.SafeGet(procedural.Type) ??
                            throw new InvalidOperationException($"Cannot update resource '{Name}'. Resource has not been inserted.");
             resource.SetAlias(Alias);
             ResourceProvider._SetDescription(procedural, resource, Description);
@@ -80,12 +84,10 @@ namespace RESTar.Dynamic
         /// <summary>
         /// Deletes the corresponding procedural resource
         /// </summary>
-        public void Delete()
+        protected void Delete()
         {
             var procedural = ResourceProvider._Select()?.FirstOrDefault(item => item.Name == Name);
             ResourceProvider._Delete(procedural);
         }
     }
-
-    internal class DynamicController : ResourceController<DynamitResourceProvider> { }
 }

@@ -191,6 +191,7 @@ namespace RESTar
                 UpdateConfiguration();
                 DatabaseIndex.Init();
                 DbOutputFormat.Init();
+                ResourceFactory.BindControllers();
                 ResourceFactory.FinalCheck();
             }
             catch

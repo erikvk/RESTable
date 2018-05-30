@@ -6,7 +6,6 @@ using System.Reflection;
 using Newtonsoft.Json.Linq;
 using RESTar.Admin;
 using RESTar.Dynamic;
-using RESTar.Internal;
 using RESTar.Linq;
 using RESTar.Resources;
 using RESTar.Resources.Operations;

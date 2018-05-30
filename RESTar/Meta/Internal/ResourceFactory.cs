@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using RESTar.Internal.Sc;
 using RESTar.Linq;
 using RESTar.Resources;
 using RESTar.Resources.Operations;
+using static System.Reflection.BindingFlags;
 using static RESTar.Internal.EntityResourceProviderController;
 
 namespace RESTar.Meta.Internal
@@ -30,7 +30,7 @@ namespace RESTar.Meta.Internal
             BinaryProvider = new BinaryResourceProvider();
         }
 
-        private static void ValidateResourceProviders(ICollection<EntityResourceProvider> externalProviders)
+        private static void ValidateEntityResourceProviders(ICollection<EntityResourceProvider> externalProviders)
         {
             if (externalProviders == null) return;
             externalProviders.ForEach(p =>
@@ -46,6 +46,20 @@ namespace RESTar.Meta.Internal
                 throw new InvalidExternalResourceProviderException(
                     "Two or more external ResourceProviders had simliar type names, which could lead to confusion. Only one provider " +
                     $"should be associated with '{idDupe}'");
+            foreach (var provider in externalProviders.Where(provider => provider is IProceduralEntityResourceProvider))
+            {
+                var methods = provider.GetType().GetMethods(DeclaredOnly | Instance | Public);
+                if (methods.All(method => method.Name != "SelectProceduralResources"
+                                          && method.Name != "InsertProceduralResource"
+                                          && method.Name != "SetProceduralResourceMethods"
+                                          && method.Name != "SetProceduralResourceDescription"
+                                          && method.Name != "DeleteProceduralResource"))
+                    throw new InvalidExternalResourceProviderException(
+                        $"Resource provider '{provider.GetType()}' was declared to support procedural resources, but did not override methods " +
+                        "'SelectProceduralResources()', 'InsertProceduralResource()', 'SetProceduralResourceMethods', 'SetProceduralResourceDescription' " +
+                        "and 'DeleteProceduralResource' from 'EntityResourceProvider'."
+                    );
+            }
             foreach (var provider in externalProviders)
                 EntityResourceProviders.Add(provider.GetProviderId(), provider);
         }
@@ -95,8 +109,8 @@ namespace RESTar.Meta.Internal
                     else if (!type.Implements(typeof(ISelector<>), out var param) || param[0] != resource)
                         throw new InvalidResourceViewDeclarationException(type,
                             $"Expected view type to implement ISelector<{resource.RESTarTypeName()}>");
-                    var propertyUnion = resource.GetProperties(BindingFlags.Public | BindingFlags.Instance)
-                        .Union(type.GetProperties(BindingFlags.Public | BindingFlags.Instance));
+                    var propertyUnion = resource.GetProperties(Public | Instance)
+                        .Union(type.GetProperties(Public | Instance));
                     if (propertyUnion.ContainsDuplicates(p => p.RESTarMemberName(), StringComparer.OrdinalIgnoreCase, out var propDupe))
                         throw new InvalidResourceViewDeclarationException(type,
                             $"Invalid property '{propDupe.Name}'. Resource view types must not contain any public instance " +
@@ -125,7 +139,7 @@ namespace RESTar.Meta.Internal
 
         internal static void MakeResources(EntityResourceProvider[] externalProviders)
         {
-            ValidateResourceProviders(externalProviders);
+            ValidateEntityResourceProviders(externalProviders);
             ValidateAndBuildTypeLists(out var regularTypes, out var wrapperTypes, out var terminalTypes, out var binaryTypes);
 
             foreach (var provider in EntityResourceProviders.Values)
@@ -145,12 +159,44 @@ namespace RESTar.Meta.Internal
             foreach (var provider in EntityResourceProviders.Values)
             {
                 provider.ReceiveClaimed(Resource.ClaimedBy(provider));
-                provider.MakeClaimProcedural();
+                if (provider is IProceduralEntityResourceProvider)
+                    provider.MakeClaimProcedural();
             }
 
             TerminalProvider.RegisterTerminalTypes(terminalTypes);
             BinaryProvider.RegisterBinaryTypes(binaryTypes);
             ValidateInnerResources();
+        }
+
+        internal static void BindControllers()
+        {
+            foreach (var (provider, controller) in typeof(object).GetConcreteSubclasses()
+                .Select(controller =>
+                {
+                    if (!controller.IsAbstract
+                        && controller.BaseType is Type baseType
+                        && baseType.IsGenericType
+                        && baseType.GetGenericTypeDefinition() == typeof(ResourceController<>)
+                        && baseType.GetGenericArguments().FirstOrDefault() is Type provider)
+                        return (provider, controller);
+                    return default;
+                })
+                .Where(t => t.provider != null))
+            {
+                var resourceProvider = EntityResourceProviders.Values
+                    .Where(_provider => _provider is IProceduralEntityResourceProvider)
+                    .FirstOrDefault(_provider => _provider.GetType() == provider);
+                if (resourceProvider == null)
+                    throw new InvalidResourceControllerException($"Invalid resource controller '{controller}'. A binding was made to " +
+                                                                 $"an EntityResourceProvider of type '{provider}'. No such provider has " +
+                                                                 "been included in the call to RESTarConfig.Init().");
+                var providerProperty = controller.BaseType?.GetProperty("ResourceProvider", Static | NonPublic)
+                                       ?? throw new Exception($"Unable to locate property 'ResourceProvider' in type '{controller}'");
+                var baseNamespaceProperty = controller.BaseType?.GetProperty("BaseNamespace", Static | NonPublic)
+                                            ?? throw new Exception($"Unable to locate property 'BaseNamespace' in type '{controller}'");
+                providerProperty.SetValue(null, resourceProvider);
+                baseNamespaceProperty.SetValue(null, controller.Namespace);
+            }
         }
 
         /// <summary>
