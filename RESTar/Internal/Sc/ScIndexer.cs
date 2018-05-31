@@ -25,7 +25,7 @@ namespace RESTar.Internal.Sc
             return Db.SQL<Index>(AllIndexes)
                 .Where(index => !index.Table.FullName.StartsWith("Starcounter."))
                 .Where(index => !index.Name.StartsWith("DYNAMIT_GENERATED_INDEX"))
-                .Select(index => (resource: Resource.SafeGet(index.Table.FullName), index))
+                .Select(index => (resource: Resource.ByTypeName(index.Table.FullName), index))
                 .Where(pair => pair.resource != null)
                 .Select(pair => new DatabaseIndex(pair.resource.Name)
                 {

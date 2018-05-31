@@ -101,13 +101,20 @@ namespace RESTar.Meta
         }
 
         /// <summary>
-        /// Gets the entity resource for a given type, or throws an UnknownResource exception 
-        /// if there is no such resource
+        /// Gets resource for a given type, based on the type's name
+        /// </summary>
+        public static IResource ByTypeName(string typeName)
+        {
+            return All.FirstOrDefault(r => string.Equals(r.Type.RESTarTypeName(), typeName, StringComparison.CurrentCultureIgnoreCase));
+        }
+
+        /// <summary>
+        /// Gets the resource for a given type, or throws an UnknownResource exception if there is no such resource
         /// </summary>
         public static IResource Get(Type type) => RESTarConfig.ResourceByType.SafeGet(type) ?? throw new UnknownResource(type.RESTarTypeName());
 
         /// <summary>
-        /// Gets the entity resource for a given type or returns null if there is no such resource
+        /// Gets the resource for a given type or returns null if there is no such resource
         /// </summary>
         public static IResource SafeGet(Type type) => RESTarConfig.ResourceByType.SafeGet(type);
 
