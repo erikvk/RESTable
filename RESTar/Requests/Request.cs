@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -42,6 +43,20 @@ namespace RESTar.Requests
         public IEntityResource<T> EntityResource => Resource as IEntityResource<T>;
         IResource IRequest.Resource => Resource;
         public Method Method { get; set; }
+
+        public TData GetClientData<TData>(string key)
+        {
+            if (Context.Client.ResourceClientDataMappings.TryGetValue(Resource, out var data) && data.TryGetValue(key, out var value))
+                return (TData) value;
+            return default;
+        }
+
+        public void SetClientData<TData>(string key, TData value)
+        {
+            if (!Context.Client.ResourceClientDataMappings.TryGetValue(Resource, out var data))
+                data = Context.Client.ResourceClientDataMappings[Resource] = new ConcurrentDictionary<string, object>(StringComparer.OrdinalIgnoreCase);
+            data[key] = value;
+        }
 
         private List<Condition<T>> _conditions;
 

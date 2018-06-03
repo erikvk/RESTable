@@ -57,11 +57,11 @@ namespace RESTar.Internal.Sc
                 }
             );
 
-            Handle.WebSocket(port, WsGroupName, (text, ws) =>
+            Handle.WebSocket(port, WsGroupName, async (text, ws) =>
             {
                 try
                 {
-                    WebSocketController.HandleTextInput(ScWebSocket.GetRESTarWsId(ws), text).Wait();
+                    await WebSocketController.HandleTextInput(ScWebSocket.GetRESTarWsId(ws), text);
                 }
                 catch (Exception e)
                 {

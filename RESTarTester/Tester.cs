@@ -736,6 +736,7 @@ namespace RESTarTester
 
         public IEnumerable<MyRes> Select(IRequest<MyRes> request)
         {
+            var s = request.GetClientData<object>("account");
             Things thing = request.Conditions.Get("$T", EQUALS).Value;
             var other = request.Conditions.Get("V", EQUALS).Value;
             return new[] {new MyRes {["T"] = thing, ["V"] = other}};
@@ -811,7 +812,11 @@ namespace RESTarTester
 
         private static List<AuthResource> Items = new List<AuthResource>();
 
-        public IEnumerable<AuthResource> Select(IRequest<AuthResource> request) => Items.Where(request.Conditions);
+        public IEnumerable<AuthResource> Select(IRequest<AuthResource> request)
+        {
+            var d = request.GetClientData<object>("account");
+            return Items.Where(request.Conditions);
+        }
 
         public int Insert(IRequest<AuthResource> request) => request.GetInputEntities().Aggregate(0, (count, entity) =>
         {
@@ -826,6 +831,7 @@ namespace RESTarTester
         public AuthResults Authenticate(IRequest<AuthResource> request)
         {
             var password = request.Headers["password"];
+            request.SetClientData("account", new JObject() {["A"] = 321});
             return (password == "the password", "Invalid password!");
         }
 
@@ -870,7 +876,7 @@ namespace RESTarTester
                 return null;
             }
         }
-        
+
         public sbyte Sbyte;
         public byte Byte;
         public short Short;

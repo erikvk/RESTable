@@ -104,6 +104,7 @@
     <Compile Include="ContentTypeProviders\JsonAdapter.cs" />
     <Compile Include="ContentTypeProviders\XMLWriter.cs" />
     <Compile Include="Dynamic\Resource.cs" />
+    <Compile Include="Meta\IDynamicMemberValueProvider.cs" />
     <Compile Include="Resources\InvalidResourceControllerException.cs" />
     <Compile Include="Resources\IProceduralEntityResourceProvider.cs" />
     <Compile Include="Resources\ResourceController.cs" />

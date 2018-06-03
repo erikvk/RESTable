@@ -45,101 +45,20 @@ namespace RESTar
         internal static bool NeedsConfiguration => RequireApiKey || !AllowAllOrigins;
         private static string ConfigFilePath { get; set; }
         internal static bool Initialized { get; private set; }
-        internal static readonly Method[] Methods = {GET, POST, PATCH, PUT, DELETE, REPORT, HEAD};
         internal static readonly Encoding DefaultEncoding = new UTF8Encoding(false);
         internal static readonly string Version;
 
-        internal static FileStream MakeTempFile() => File.Create
-        (
-            path: $"{Path.GetTempPath()}{Guid.NewGuid()}.restar",
-            bufferSize: 1048576,
-            options: FileOptions.Asynchronous | FileOptions.DeleteOnClose
-        );
+        /// <summary>
+        /// The REST methods available in RESTar
+        /// </summary>
+        public static Method[] Methods { get; }
 
         static RESTarConfig()
         {
+            Methods = new[] {GET, POST, PATCH, PUT, DELETE, REPORT, HEAD};
             var version = typeof(RESTarConfig).Assembly.GetName().Version;
             Version = $"{version.Major}.{version.Minor}.{version.Build}";
             NewState();
-        }
-
-        private static void NewState()
-        {
-            ResourceByType = new Dictionary<Type, IResource>();
-            ResourceByName = new Dictionary<string, IResource>(StringComparer.OrdinalIgnoreCase);
-            ResourceFinder = new ConcurrentDictionary<string, IResource>(StringComparer.OrdinalIgnoreCase);
-            AllowedOrigins = new List<Uri>();
-            ReservedNamespaces = typeof(RESTarConfig).Assembly
-                .GetTypes()
-                .Select(type => type.Namespace?.ToLower())
-                .Where(ns => ns != null)
-                .Distinct()
-                .ToArray();
-            Authenticator.NewState();
-        }
-
-        internal static void UpdateConfiguration()
-        {
-            if (!Initialized) return;
-            if (NeedsConfiguration && ConfigFilePath == null)
-            {
-                var (task, measure) = RequireApiKey
-                    ? ("require API keys", "read keys and assign access rights")
-                    : ("only allow some CORS origins", "know what origins to deny");
-                throw new MissingConfigurationFile($"RESTar was set up to {task}, but needs to read settings from a configuration file in " +
-                                                   $"order to {measure}. Provide a configuration file path in the call to RESTarConfig.Init. " +
-                                                   "See the specification for more info.");
-            }
-            if (NeedsConfiguration) ReadConfig();
-            AccessRights.ReloadRoot();
-        }
-
-        internal static void AddResource(IResource toAdd)
-        {
-            ResourceByName[toAdd.Name] = toAdd;
-            ResourceByType[toAdd.Type] = toAdd;
-            AddToResourceFinder(toAdd, ResourceFinder);
-            UpdateConfiguration();
-            toAdd.Type.GetDeclaredProperties();
-        }
-
-        internal static void RemoveResource(IResource toRemove)
-        {
-            ResourceByName.Remove(toRemove.Name);
-            ResourceByType.Remove(toRemove.Type);
-            ReloadResourceFinder();
-            UpdateConfiguration();
-        }
-
-        internal static void ReloadResourceFinder()
-        {
-            var newFinder = new ConcurrentDictionary<string, IResource>(StringComparer.OrdinalIgnoreCase);
-            Resources.ForEach(r => AddToResourceFinder(r, newFinder));
-            ResourceFinder = newFinder;
-        }
-
-        private static void AddToResourceFinder(IResource toAdd, IDictionary<string, IResource> finder)
-        {
-            string[] makeResourceParts(IResource resource)
-            {
-                switch (resource)
-                {
-                    case var _ when resource.IsInternal: return new[] {resource.Name};
-                    case var _ when resource.IsInnerResource:
-                        var dots = resource.Name.Count('.');
-                        return resource.Name.Split(new[] {'.'}, dots);
-                    default: return resource.Name.Split('.');
-                }
-            }
-
-            var parts = makeResourceParts(toAdd);
-            parts.ForEach((item, index) =>
-            {
-                var key = string.Join(".", parts.Skip(index));
-                if (finder.ContainsKey(key))
-                    finder[key] = null;
-                else finder[key] = toAdd;
-            });
         }
 
         /// <summary>
@@ -205,6 +124,92 @@ namespace RESTar
                 NewState();
                 throw;
             }
+        }
+
+        private static void NewState()
+        {
+            ResourceByType = new Dictionary<Type, IResource>();
+            ResourceByName = new Dictionary<string, IResource>(StringComparer.OrdinalIgnoreCase);
+            ResourceFinder = new ConcurrentDictionary<string, IResource>(StringComparer.OrdinalIgnoreCase);
+            AllowedOrigins = new List<Uri>();
+            ReservedNamespaces = typeof(RESTarConfig).Assembly
+                .GetTypes()
+                .Select(type => type.Namespace?.ToLower())
+                .Where(ns => ns != null)
+                .Distinct()
+                .ToArray();
+            Authenticator.NewState();
+        }
+
+        internal static void UpdateConfiguration()
+        {
+            if (!Initialized) return;
+            if (NeedsConfiguration && ConfigFilePath == null)
+            {
+                var (task, measure) = RequireApiKey
+                    ? ("require API keys", "read keys and assign access rights")
+                    : ("only allow some CORS origins", "know what origins to deny");
+                throw new MissingConfigurationFile($"RESTar was set up to {task}, but needs to read settings from a configuration file in " +
+                                                   $"order to {measure}. Provide a configuration file path in the call to RESTarConfig.Init. " +
+                                                   "See the specification for more info.");
+            }
+            if (NeedsConfiguration) ReadConfig();
+            AccessRights.ReloadRoot();
+        }
+
+        internal static FileStream MakeTempFile() => File.Create
+        (
+            path: $"{Path.GetTempPath()}{Guid.NewGuid()}.restar",
+            bufferSize: 1048576,
+            options: FileOptions.Asynchronous | FileOptions.DeleteOnClose
+        );
+
+        internal static void AddResource(IResource toAdd)
+        {
+            ResourceByName[toAdd.Name] = toAdd;
+            ResourceByType[toAdd.Type] = toAdd;
+            AddToResourceFinder(toAdd, ResourceFinder);
+            UpdateConfiguration();
+            toAdd.Type.GetDeclaredProperties();
+        }
+
+        internal static void RemoveResource(IResource toRemove)
+        {
+            ResourceByName.Remove(toRemove.Name);
+            ResourceByType.Remove(toRemove.Type);
+            ReloadResourceFinder();
+            UpdateConfiguration();
+        }
+
+        private static void ReloadResourceFinder()
+        {
+            var newFinder = new ConcurrentDictionary<string, IResource>(StringComparer.OrdinalIgnoreCase);
+            Resources.ForEach(r => AddToResourceFinder(r, newFinder));
+            ResourceFinder = newFinder;
+        }
+
+        private static void AddToResourceFinder(IResource toAdd, IDictionary<string, IResource> finder)
+        {
+            string[] makeResourceParts(IResource resource)
+            {
+                switch (resource)
+                {
+                    case var _ when resource.IsInternal: return new[] {resource.Name};
+                    case var _ when resource.IsInnerResource:
+                        var dots = resource.Name.Count('.');
+                        return resource.Name.Split(new[] {'.'}, dots);
+                    default: return resource.Name.Split('.');
+                }
+            }
+
+            var parts = makeResourceParts(toAdd);
+            parts.ForEach((item, index) =>
+            {
+                var key = string.Join(".", parts.Skip(index));
+                if (finder.ContainsKey(key))
+                    finder[key] = null;
+                else finder[key] = toAdd;
+            });
         }
 
         private static void ProcessUri(ref string uri)

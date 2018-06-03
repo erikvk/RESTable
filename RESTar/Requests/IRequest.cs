@@ -69,6 +69,20 @@ namespace RESTar.Requests
         /// but shorter and with one less generic type parameter.
         /// </summary>
         IEntities<T> EvaluateToEntities();
+
+        /// <summary>
+        /// Gets a client data point for the current resouce. Data points assigned to the client of the request, for use with RESTar
+        /// internally to pass custom data between operations, for example account or session information. Each resource can have its
+        /// separate client data set, that is not available from other resuorces.
+        /// </summary>
+        TData GetClientData<TData>(string key);
+
+        /// <summary>
+        /// Sets a client data point for the current resouce. Data points assigned to the client of the request, for use with RESTar
+        /// internally to pass custom data between operations, for example account or session information. Each resource can have its
+        /// separate client data set, that is not available from other resuorces.
+        /// </summary>
+        void SetClientData<TData>(string key, TData value);
     }
 
     /// <inheritdoc cref="ITraceable" />

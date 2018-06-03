@@ -63,6 +63,13 @@ namespace RESTar.Meta
 
                 switch (obj)
                 {
+                    case IDynamicMemberValueProvider dm:
+                        if (dm.TryGetValue(Name, out actualKey, out value))
+                        {
+                            Name = actualKey;
+                            return value;
+                        }
+                        return DeclaredFallback ? getFromStatic() : null;
                     case IDictionary<string, object> dict:
                         capitalized = Name.Capitalize();
                         if (dict.TryGetValue(capitalized, out value))
@@ -90,6 +97,9 @@ namespace RESTar.Meta
             {
                 switch (obj)
                 {
+                    case IDynamicMemberValueProvider dm:
+                        dm.TrySetValue(Name, value);
+                        break;
                     case IDictionary<string, dynamic> ddict:
                         ddict[Name] = value;
                         break;

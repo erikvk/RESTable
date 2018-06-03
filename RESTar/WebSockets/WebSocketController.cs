@@ -16,7 +16,7 @@ namespace RESTar.WebSockets
         internal static async Task HandleTextInput(string wsId, string textInput)
         {
             if (!AllSockets.TryGetValue(wsId, out var webSocket))
-                throw new UnknownWebSocketIdException($"WebSocket {wsId} no longer connected");
+                throw new UnknownWebSocketIdException($"This WebSocket ({wsId}) is not connected");
 
             if (webSocket.IsStreaming)
             {

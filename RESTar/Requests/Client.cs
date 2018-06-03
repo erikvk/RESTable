@@ -47,9 +47,8 @@ namespace RESTar.Requests
 
         internal AccessRights AccessRights { get; set; }
         internal IDictionary<IResource, byte> ResourceAuthMappings { get; }
-
+        internal IDictionary<IResource, IDictionary<string, object>> ResourceClientDataMappings { get; }
         internal bool IsInWebSocket { get; set; }
-
         internal string ShellConfig { get; set; }
 
         /// <summary>
@@ -64,6 +63,7 @@ namespace RESTar.Requests
             UserAgent = userAgent;
             HTTPS = https;
             ResourceAuthMappings = new ConcurrentDictionary<IResource, byte>();
+            ResourceClientDataMappings = new ConcurrentDictionary<IResource, IDictionary<string, object>>();
         }
 
         /// <summary>

@@ -188,7 +188,6 @@ namespace RESTar.Resources.Operations
                             return MakeEntities(request, default(IEnumerable<T>));
                         return MakeEntities(request, (dynamic) entities);
                     };
-
                 case Method.POST:
                     return request =>
                     {
@@ -196,21 +195,21 @@ namespace RESTar.Resources.Operations
                             return SafePOST(request);
                         return new InsertedEntities(request, Insert(request));
                     };
-
                 case Method.PUT:
                     return request =>
                     {
-                        var source = TrySelectFilter(request)?.ToList().InputLimit()?.ToList();
+                        var source = TrySelectFilter(request)?.InputLimit()?.ToList();
                         switch (source?.Count)
                         {
                             case null:
                             case 0: return new InsertedEntities(request, Insert(request));
                             case 1 when request.GetUpdater() == null && !request.Body.HasContent:
                                 return new UpdatedEntities(request, 0);
-                            default: return new UpdatedEntities(request, Update(request));
+                            default:
+                                request.Selector = () => source;
+                                return new UpdatedEntities(request, Update(request));
                         }
                     };
-
                 case Method.HEAD:
                     return request =>
                     {
@@ -218,7 +217,6 @@ namespace RESTar.Resources.Operations
                         if (count > 0) return new Head(request, count);
                         return new NoContent(request);
                     };
-
                 case Method.PATCH: return request => new UpdatedEntities(request, Update(request));
                 case Method.DELETE: return request => new DeletedEntities(request, Delete(request));
                 case Method.REPORT: return request => new Report(request, TryCount(request));
@@ -239,7 +237,6 @@ namespace RESTar.Resources.Operations
                 innerRequest.Selector = () => toInsert.Select(item => item.ToObject<T>());
                 insertedCount = Insert(innerRequest);
             }
-
             return new SafePostedEntities(request, updatedCount, insertedCount);
         }
 
@@ -270,7 +267,6 @@ namespace RESTar.Resources.Operations
                         default: throw new AmbiguousMatch();
                     }
                 }
-
                 return (innerRequest, toInsert, toUpdate);
             }
             catch (Exception e)
