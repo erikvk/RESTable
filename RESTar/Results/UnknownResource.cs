@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Text.RegularExpressions;
 using RESTar.Internal;
-using RESTar.Meta;
 
 namespace RESTar.Results
 {

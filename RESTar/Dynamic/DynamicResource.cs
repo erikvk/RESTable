@@ -18,16 +18,6 @@ namespace RESTar.Dynamic
 
         /// <inheritdoc />
         /// <summary>
-        /// The available methods for this resource
-        /// </summary>
-        public Method[] Methods
-        {
-            get => AvailableMethodsString.ToMethodsArray();
-            set => AvailableMethodsString = value.ToMethodsString();
-        }
-
-        /// <inheritdoc />
-        /// <summary>
         /// The name of this resource
         /// </summary>
         public string Name { get; }
@@ -36,7 +26,17 @@ namespace RESTar.Dynamic
         /// <summary>
         /// The description for this resource
         /// </summary>
-        public string Description { get; set; }
+        public string Description { get; internal set; }
+
+        /// <inheritdoc />
+        /// <summary>
+        /// The available methods for this resource
+        /// </summary>
+        public Method[] Methods
+        {
+            get => AvailableMethodsString.ToMethodsArray();
+            internal set => AvailableMethodsString = value.ToMethodsString();
+        }
 
         /// <summary>
         /// The name of the dynamic table (used internally)

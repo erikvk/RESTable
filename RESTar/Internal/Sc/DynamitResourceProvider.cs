@@ -65,10 +65,18 @@ namespace RESTar.Internal.Sc
         }
 
         protected override void SetProceduralResourceMethods(IProceduralEntityResource resource, Method[] methods) =>
-            Db.TransactAsync(() => resource.Methods = methods);
+            Db.TransactAsync(() =>
+            {
+                var _resource = (DynamicResource) resource;
+                _resource.Methods = methods;
+            });
 
         protected override void SetProceduralResourceDescription(IProceduralEntityResource resource, string newDescription) =>
-            Db.TransactAsync(() => resource.Description = newDescription);
+            Db.TransactAsync(() =>
+            {
+                var _resource = (DynamicResource) resource;
+                _resource.Description = newDescription;
+            });
 
         protected override bool DeleteProceduralResource(IProceduralEntityResource resource)
         {

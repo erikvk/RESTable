@@ -15,12 +15,12 @@ namespace RESTar.Resources
         /// <summary>
         /// The description to use for the resource
         /// </summary>
-        string Description { get; set; }
+        string Description { get; }
 
         /// <summary>
         /// The methods to enable for the resource
         /// </summary>
-        Method[] Methods { get; set; }
+        Method[] Methods { get; }
 
         /// <summary>
         /// The type to bind to this resource. Must be unique for this resource.
