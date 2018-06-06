@@ -7,6 +7,7 @@ using RESTar.Meta;
 using RESTar.Requests;
 using RESTar.Resources;
 using RESTar.Resources.Operations;
+using RESTar.Results;
 using static RESTar.Internal.EntityResourceProviderController;
 
 namespace RESTar.Admin
@@ -46,20 +47,21 @@ namespace RESTar.Admin
             }
         }
 
-        private string _table;
+        private string _resourceName;
 
         /// <summary>
-        /// The name of the RESTar resource corresponding with the database table on which 
+        /// The full name of the RESTar resource corresponding with the database table on which 
         /// this index is registered
         /// </summary>
-        public string Table
+        public string ResourceName
         {
-            get => _table;
+            get => _resourceName;
             set
             {
-                IResource = EntityResource.Get(value);
-                _table = IResource.Name;
-                Provider = IResource.Provider;
+                Resource = Meta.Resource.SafeFind(value) as IEntityResource;
+                if (Resource == null) throw new UnknownResource(value);
+                _resourceName = Resource.Name;
+                Provider = Resource.Provider;
             }
         }
 
@@ -71,7 +73,7 @@ namespace RESTar.Admin
         /// <summary>
         /// The RESTar resource corresponding to the table on which this index is registered
         /// </summary>
-        [RESTarMember(ignore: true)] public IEntityResource IResource { get; private set; }
+        [RESTarMember(ignore: true)] public IEntityResource Resource { get; private set; }
 
         /// <summary>
         /// The columns on which this index is registered
@@ -80,11 +82,12 @@ namespace RESTar.Admin
 
         /// <inheritdoc />
         [JsonConstructor]
-        public DatabaseIndex(string table)
+        public DatabaseIndex(string resourceName)
         {
-            if (string.IsNullOrWhiteSpace(table))
-                throw new Exception("Found no resource to register index on. Resource was null or empty");
-            Table = table;
+            if (string.IsNullOrWhiteSpace(resourceName))
+                throw new Exception("Found no resource to register the index on. The 'ResourceName' " +
+                                    "property was null or empty");
+            ResourceName = resourceName;
         }
 
         #region Public helpers
@@ -143,7 +146,7 @@ namespace RESTar.Admin
         /// <inheritdoc />
         public bool IsValid(out string invalidReason)
         {
-            if (string.IsNullOrWhiteSpace(Table))
+            if (string.IsNullOrWhiteSpace(ResourceName))
             {
                 invalidReason = "Index resource name cannot be null or whitespace";
                 return false;
@@ -173,18 +176,18 @@ namespace RESTar.Admin
 
         /// <inheritdoc />
         public int Insert(IRequest<DatabaseIndex> request) => request.GetInputEntities()
-            .GroupBy(index => index.IResource.Provider)
+            .GroupBy(index => index.Resource.Provider)
             .Sum(group =>
             {
                 if (!EntityResourceProviders.TryGetValue(group.Key, out var provider) || !(provider.DatabaseIndexer is IDatabaseIndexer indexer))
-                    throw new Exception($"Unable to register index. Resource '{group.First().IResource.Name}' is not a database resource.");
+                    throw new Exception($"Unable to register index. Resource '{group.First().Resource.Name}' is not a database resource.");
                 request.Selector = () => group;
                 return indexer.Insert(request);
             });
 
         /// <inheritdoc />
         public int Update(IRequest<DatabaseIndex> request) => request.GetInputEntities()
-            .GroupBy(index => index.IResource.Provider)
+            .GroupBy(index => index.Resource.Provider)
             .Sum(group =>
             {
                 request.Updater = _ => group;
@@ -193,7 +196,7 @@ namespace RESTar.Admin
 
         /// <inheritdoc />
         public int Delete(IRequest<DatabaseIndex> request) => request.GetInputEntities()
-            .GroupBy(index => index.IResource.Provider)
+            .GroupBy(index => index.Resource.Provider)
             .Sum(group =>
             {
                 request.Selector = () => group;

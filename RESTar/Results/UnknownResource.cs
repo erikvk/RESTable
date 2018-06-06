@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Text.RegularExpressions;
 using RESTar.Internal;
+using RESTar.Meta;
 
 namespace RESTar.Results
 {
@@ -14,7 +15,7 @@ namespace RESTar.Results
         public UnknownResource(ErrorCodes code, string info, Exception ie) : base(code, info, ie) { }
 
         internal UnknownResource(string searchString) : base(ErrorCodes.UnknownResource,
-            $"RESTar could not locate any resource by '{searchString}'." +
+            $"RESTar could not locate any resource by '{searchString}'. " +
             (Regex.IsMatch(searchString, @"[^\w\d\.]+") ? " Check request URI syntax." : "")) { }
     }
 }
