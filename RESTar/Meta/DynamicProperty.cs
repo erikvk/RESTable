@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Dynamit;
 using Newtonsoft.Json.Linq;
 using RESTar.Resources.Operations;
 
@@ -64,7 +65,19 @@ namespace RESTar.Meta
                 switch (obj)
                 {
                     case IDynamicMemberValueProvider dm:
-                        if (dm.TryGetValue(Name, out actualKey, out value))
+                        if (dm.TryGetValue(Name, out value, out actualKey))
+                        {
+                            Name = actualKey;
+                            return value;
+                        }
+                        return DeclaredFallback ? getFromStatic() : null;
+                    case JObject jobj:
+                        if (!(jobj.GetValue(Name, StringComparison.OrdinalIgnoreCase)?.Parent is JProperty property))
+                            return DeclaredFallback ? getFromStatic() : null;
+                        Name = property.Name;
+                        return property.Value.ToObject<dynamic>();
+                    case DDictionary ddict:
+                        if (ddict.TryGetValue(Name, out value, out actualKey))
                         {
                             Name = actualKey;
                             return value;
@@ -83,12 +96,6 @@ namespace RESTar.Meta
                             return value;
                         }
                         return DeclaredFallback ? getFromStatic() : null;
-                    case JObject jobj:
-                        capitalized = Name.Capitalize();
-                        if (!(jobj.GetValue(capitalized, StringComparison.OrdinalIgnoreCase)?.Parent is JProperty property))
-                            return DeclaredFallback ? getFromStatic() : null;
-                        Name = property.Name;
-                        return property.Value.ToObject<dynamic>();
                     default: return getFromStatic();
                 }
             };

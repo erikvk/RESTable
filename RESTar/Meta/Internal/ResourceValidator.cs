@@ -49,7 +49,7 @@ namespace RESTar.Meta.Internal
             Validate(params Type[] types)
         {
             var entityTypes = types
-                .Where(t => !t.Implements(typeof(ITerminal)) && !t.Implements(typeof(Resources.IBinaryResource<>)))
+                .Where(t => !typeof(ITerminal).IsAssignableFrom(t) && !t.ImplementsGenericInterface(typeof(Resources.IBinaryResource<>)))
                 .ToList();
             var regularTypes = entityTypes
                 .Where(t => !typeof(IResourceWrapper).IsAssignableFrom(t))
@@ -58,10 +58,10 @@ namespace RESTar.Meta.Internal
                 .Where(t => typeof(IResourceWrapper).IsAssignableFrom(t))
                 .ToList();
             var terminalTypes = types
-                .Where(t => t.Implements(typeof(ITerminal)))
+                .Where(t => typeof(ITerminal).IsAssignableFrom(t))
                 .ToList();
             var binaryTypes = types
-                .Where(t => t.Implements(typeof(Resources.IBinaryResource<>)))
+                .Where(t => t.ImplementsGenericInterface(typeof(Resources.IBinaryResource<>)))
                 .ToList();
 
             void ValidateCommon(Type type)
@@ -173,7 +173,7 @@ namespace RESTar.Meta.Internal
                 #region Check for invalid IDictionary implementation
 
                 var validTypes = new[] {typeof(string), typeof(object)};
-                if (type.Implements(typeof(IDictionary<,>), out var typeParams)
+                if (type.ImplementsGenericInterface(typeof(IDictionary<,>), out var typeParams)
                     && !type.IsSubclassOf(typeof(JObject))
                     && !typeParams.SequenceEqual(validTypes))
                     throw new InvalidResourceDeclarationException(
@@ -186,8 +186,8 @@ namespace RESTar.Meta.Internal
 
                 #region Check for invalid IEnumerable implementation
 
-                if ((type.Implements(typeof(IEnumerable<>)) || type.Implements(typeof(IEnumerable))) &&
-                    !type.Implements(typeof(IDictionary<,>)))
+                if ((type.ImplementsGenericInterface(typeof(IEnumerable<>)) || typeof(IEnumerable).IsAssignableFrom(type)) &&
+                    !type.ImplementsGenericInterface(typeof(IDictionary<,>)))
                     throw new InvalidResourceDeclarationException(
                         $"Invalid resource declaration for type '{type.RESTarTypeName()}'. The type has an invalid imple" +
                         $"mentation of an IEnumerable interface. The resource '{type.RESTarTypeName()}' (or any of its base types) " +
@@ -212,7 +212,7 @@ namespace RESTar.Meta.Internal
 
                 if (type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
                     .Where(p => !p.RESTarIgnored())
-                    .Where(p => !(p.DeclaringType.Implements(typeof(IDictionary<,>)) && p.Name == "Item"))
+                    .Where(p => !(p.DeclaringType.ImplementsGenericInterface(typeof(IDictionary<,>)) && p.Name == "Item"))
                     .Select(p => p.RESTarMemberName().ToLower())
                     .ContainsDuplicates(out var duplicate))
                     throw new InvalidResourceMemberException(
@@ -277,7 +277,7 @@ namespace RESTar.Meta.Internal
                 {
                     ValidateCommon(terminal);
 
-                    if (terminal.Implements(typeof(IEnumerable<>)))
+                    if (terminal.ImplementsGenericInterface(typeof(IEnumerable<>)))
                         throw new InvalidTerminalDeclarationException(terminal, "must not be collections");
                     if (terminal.HasResourceProviderAttribute())
                         throw new InvalidTerminalDeclarationException(terminal, "must not be decorated with a resource provider attribute");
@@ -296,7 +296,7 @@ namespace RESTar.Meta.Internal
                 foreach (var binary in binaries)
                 {
                     ValidateCommon(binary);
-                    if (binary.Implements(typeof(IEnumerable<>)))
+                    if (binary.ImplementsGenericInterface(typeof(IEnumerable<>)))
                         throw new InvalidBinaryDeclarationException(binary, "must not be collections");
                     if (binary.HasResourceProviderAttribute())
                         throw new InvalidBinaryDeclarationException(binary, "must not be decorated with a resource provider attribute");

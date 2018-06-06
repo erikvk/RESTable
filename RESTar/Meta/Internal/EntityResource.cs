@@ -118,7 +118,8 @@ namespace RESTar.Meta.Internal
             IsSingleton = attribute.Singleton;
             IsInternal = attribute is RESTarInternalAttribute;
             InterfaceType = attribute.Interface;
-            DynamicConditionsAllowed = typeof(T).IsDDictionary() || attribute.AllowDynamicConditions;
+            DynamicConditionsAllowed = typeof(T).IsDDictionary() || typeof(IDynamicMemberValueProvider).IsAssignableFrom(typeof(T)) ||
+                                       attribute.AllowDynamicConditions;
             DeclaredPropertiesFlagged = typeof(T).IsDDictionary() || attribute.FlagStaticMembers;
             GETAvailableToAll = attribute.GETAvailableToAll;
             ResourceKind = ResourceKind.EntityResource;

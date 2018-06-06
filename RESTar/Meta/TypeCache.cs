@@ -133,7 +133,7 @@ namespace RESTar.Meta
                             }
                             return p;
                         }).If(_type.HasAttribute<DatabaseAttribute>(), ps => ps.Union(SpecialProperty.GetObjectNoAndObjectID(false)));
-                    case var _ when _type.Implements(typeof(ITerminal)):
+                    case var _ when typeof(ITerminal).IsAssignableFrom(_type):
                         return _type.GetProperties(BindingFlags.Instance | BindingFlags.Public)
                             .ParseDeclaredProperties(flag: false)
                             .Except(make(typeof(ITerminal)), DeclaredProperty.NameComparer);

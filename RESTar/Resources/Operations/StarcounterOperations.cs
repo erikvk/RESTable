@@ -139,7 +139,7 @@ namespace RESTar.Resources.Operations
                 }
             }
 
-            if (resource.Type.Implements(typeof(IProfiler<>)))
+            if (resource.Type.ImplementsGenericInterface(typeof(IProfiler<>)))
             {
                 reason = $"Invalid IProfiler interface implementation for resource type '{resource.Name}'. " +
                          "Starcounter database resources use their default profilers, and cannot implement IProfiler";

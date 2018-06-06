@@ -74,7 +74,8 @@ namespace RESTar
         /// <summary>
         /// Can this type hold dynamic members? Defined as implementing the IDictionary`2 interface
         /// </summary>
-        public static bool IsDynamic(this Type type) => type.Implements(typeof(IDictionary<,>));
+        public static bool IsDynamic(this Type type) => type.ImplementsGenericInterface(typeof(IDictionary<,>))
+                                                        || typeof(IDynamicMemberValueProvider).IsAssignableFrom(type);
 
         internal static bool IsDDictionary(this Type type) => type == typeof(DDictionary) ||
                                                               type.IsSubclassOf(typeof(DDictionary));
@@ -111,9 +112,9 @@ namespace RESTar
         }
 
         /// <summary>
-        /// Returns true if and only if the type implements the interface type
+        /// Returns true if and only if the type implements the generic interface type
         /// </summary>
-        public static bool Implements(this Type type, Type interfaceType)
+        public static bool ImplementsGenericInterface(this Type type, Type interfaceType)
         {
             if (type.Name == interfaceType.Name &&
                 type.Namespace == interfaceType.Namespace &&
@@ -127,10 +128,10 @@ namespace RESTar
         }
 
         /// <summary>
-        /// Returns true if and only if the type implements the interface type. Returns the 
+        /// Returns true if and only if the type implements the generic interface type. Returns the 
         /// generic type parameters (if any) in an out parameter.
         /// </summary>
-        public static bool Implements(this Type type, Type interfaceType, out Type[] genericParameters)
+        public static bool ImplementsGenericInterface(this Type type, Type interfaceType, out Type[] genericParameters)
         {
             var match = type.GetInterfaces()
                 .FirstOrDefault(i => i.Name == interfaceType.Name &&

@@ -99,14 +99,14 @@ namespace RESTar.Meta.Internal
                     if (type.IsSubclassOf(type))
                         throw new InvalidResourceViewDeclarationException(type, "Views cannot inherit from their resource types");
 
-                    if (resource.Implements(typeof(IResourceWrapper)))
+                    if (typeof(IResourceWrapper).IsAssignableFrom(resource))
                     {
                         var wrapped = resource.GetWrappedType();
-                        if (!type.Implements(typeof(ISelector<>), out var param) || param[0] != wrapped)
+                        if (!type.ImplementsGenericInterface(typeof(ISelector<>), out var param) || param[0] != wrapped)
                             throw new InvalidResourceViewDeclarationException(type,
                                 $"Expected view type to implement ISelector<{wrapped.RESTarTypeName()}>");
                     }
-                    else if (!type.Implements(typeof(ISelector<>), out var param) || param[0] != resource)
+                    else if (!type.ImplementsGenericInterface(typeof(ISelector<>), out var param) || param[0] != resource)
                         throw new InvalidResourceViewDeclarationException(type,
                             $"Expected view type to implement ISelector<{resource.RESTarTypeName()}>");
                     var propertyUnion = resource.GetProperties(Public | Instance)

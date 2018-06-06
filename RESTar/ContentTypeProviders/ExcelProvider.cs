@@ -187,8 +187,8 @@ namespace RESTar.ContentTypeProviders
                 case IEnumerable<DateTime> dateTimes:
                     target.Value = string.Join(", ", dateTimes.Select(o => o.ToString("O")));
                     break;
-                case var valueTypeArray when value.GetType().Implements(typeof(IEnumerable<>), out var p) && p.Any() && p[0].IsValueType:
-                    IEnumerable<object> objects = Enumerable.Cast<object>((dynamic) valueTypeArray);
+                case var valArr when value.GetType().ImplementsGenericInterface(typeof(IEnumerable<>), out var p) && p.Any() && p[0].IsValueType:
+                    IEnumerable<object> objects = Enumerable.Cast<object>((dynamic) valArr);
                     target.Value = string.Join(", ", objects.Select(o => o.ToString()));
                     break;
                 default:

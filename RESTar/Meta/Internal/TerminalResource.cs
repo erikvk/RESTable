@@ -65,7 +65,7 @@ namespace RESTar.Meta.Internal
             var attribute = typeof(T).GetCustomAttribute<RESTarAttribute>();
             InterfaceType = attribute?.Interface;
             ResourceKind = ResourceKind.TerminalResource;
-            ConditionBindingRule = typeof(T).Implements(typeof(IDynamicTerminal))
+            ConditionBindingRule = typeof(IDynamicTerminal).IsAssignableFrom(typeof(T))
                 ? TermBindingRule.DeclaredWithDynamicFallback
                 : TermBindingRule.OnlyDeclared;
             Description = attribute?.Description;
