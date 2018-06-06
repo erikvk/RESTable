@@ -6,8 +6,10 @@ using RESTar.Linq;
 using RESTar.Meta;
 using RESTar.Meta.Internal;
 using RESTar.Resources.Operations;
+using Starcounter;
 using static System.Reflection.BindingFlags;
 using static RESTar.Resources.Operations.DelegateMaker;
+using IResource = RESTar.Meta.IResource;
 using Resource = RESTar.Meta.Resource;
 
 namespace RESTar.Resources
@@ -51,6 +53,7 @@ namespace RESTar.Resources
         {
             if (procedural == null) return;
             var type = procedural.Type;
+            Db.TransactAsync(() => Admin.ResourceAlias.GetByResource(procedural.Name)?.Delete());
             if (DeleteProceduralResource(procedural))
                 RemoveProceduralResource(type);
         }
@@ -367,12 +370,14 @@ namespace RESTar.Resources
             provider: this
         );
 
-        internal override void InsertProcedural(IProceduralEntityResource resource) => _InsertResource
-        (
-            type: resource.Type,
-            fullName: resource.Name,
-            attribute: new RESTarProceduralAttribute(resource.Methods) {Description = resource.Description,}
-        );
+        internal override void InsertProcedural(IProceduralEntityResource resource)
+        {
+            var attribute = new RESTarProceduralAttribute(resource.Methods) {Description = resource.Description};
+            var type = resource.Type;
+            ResourceValidator.ValidateRuntimeInsertion(type, resource.Name, attribute);
+            ResourceValidator.Validate(type);
+            _InsertResource(type, resource.Name, attribute);
+        }
 
         internal override bool Include(Type type)
         {

@@ -20,9 +20,8 @@ namespace RESTar.Meta.Internal
             string name;
             if (fullName != null)
             {
-                if (fullName.StartsWith("restar", StringComparison.OrdinalIgnoreCase))
-                    throw new InvalidResourceDeclarationException(
-                        $"Cannot add resource '{fullName}'. A resource name cannot start with 'RESTar'");
+                if (fullName.StartsWith("RESTar", StringComparison.OrdinalIgnoreCase) && !type.Assembly.Equals(typeof(ResourceValidator).Assembly))
+                    throw new InvalidResourceDeclarationException($"Cannot add resource '{fullName}'. A resource name cannot start with 'RESTar'");
                 name = fullName;
             }
             else name = type.FullName;
@@ -30,10 +29,8 @@ namespace RESTar.Meta.Internal
                 throw new InvalidResourceDeclarationException(
                     "Encountered an unknown type. No further information is available.");
             if (RESTarConfig.ResourceByType.ContainsKey(type))
-            {
                 throw new InvalidResourceDeclarationException(
                     $"Cannot add resource '{name}'. A resource with the same type ('{type.FullName}') has already been added to RESTar");
-            }
             if (RESTarConfig.ResourceByName.ContainsKey(name))
                 throw new InvalidResourceDeclarationException(
                     $"Cannot add resource '{name}'. A resource with the same name has already been added to RESTar");

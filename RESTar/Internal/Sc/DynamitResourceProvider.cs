@@ -82,12 +82,7 @@ namespace RESTar.Internal.Sc
         {
             var _resource = (DynamicResource) resource;
             DynamitControl.ClearTable(_resource.TableName);
-            var alias = Admin.ResourceAlias.GetByResource(resource.Name);
-            Db.TransactAsync(() =>
-            {
-                alias?.Delete();
-                resource.Delete();
-            });
+            Db.TransactAsync(_resource.Delete);
             return true;
         }
     }
