@@ -20,7 +20,7 @@ namespace RESTar.Meta.Internal
             string name;
             if (fullName != null)
             {
-                if (fullName.StartsWith("RESTar", StringComparison.OrdinalIgnoreCase) && !type.Assembly.Equals(typeof(ResourceValidator).Assembly))
+                if (fullName.StartsWith("RESTar.", StringComparison.OrdinalIgnoreCase) && !type.Assembly.Equals(typeof(ResourceValidator).Assembly))
                     throw new InvalidResourceDeclarationException($"Cannot add resource '{fullName}'. A resource name cannot start with 'RESTar'");
                 name = fullName;
             }
