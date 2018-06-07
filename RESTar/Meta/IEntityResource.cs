@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using RESTar.Admin;
+using RESTar.Requests;
 using RESTar.Resources;
 using RESTar.Resources.Operations;
 
@@ -90,36 +91,61 @@ namespace RESTar.Meta
         /// <summary>
         /// RESTar inserter (don't use)
         /// </summary>
-        Inserter<T> Insert { get; }
+        int Insert(IRequest<T> request);
 
         /// <summary>
         /// RESTar updater (don't use)
         /// </summary>
-        Updater<T> Update { get; }
+        int Update(IRequest<T> request);
 
         /// <summary>
         /// RESTar deleter (don't use)
         /// </summary>
-        Deleter<T> Delete { get; }
-
-        /// <summary>
-        /// RESTar counter (don't use)
-        /// </summary>
-        Counter<T> Count { get; }
-
-        /// <summary>
-        /// RESTar profiler (don't use)
-        /// </summary>
-        Profiler<T> Profile { get; }
+        int Delete(IRequest<T> request);
 
         /// <summary>
         /// RESTar authenticate (don't use)
         /// </summary>
-        Authenticator<T> Authenticate { get; }
+        AuthResults Authenticate(IRequest<T> request);
+
+        /// <summary>
+        /// RESTar profiler (don't use)
+        /// </summary>
+        ResourceProfile Profile(IRequest<T> request);
+
+        /// <summary>
+        /// RESTar counter (don't use)
+        /// </summary>
+        long Count(IRequest<T> request);
 
         /// <summary>
         /// The Views registered for this resource
         /// </summary>
         IReadOnlyDictionary<string, ITarget<T>> ViewDictionary { get; }
+
+        /// <summary>
+        /// Can this resource select entities?
+        /// </summary>
+        bool CanSelect { get; }
+
+        /// <summary>
+        /// Can this resource insert entities?
+        /// </summary>
+        bool CanInsert { get; }
+
+        /// <summary>
+        /// Can this resource update entities?
+        /// </summary>
+        bool CanUpdate { get; }
+
+        /// <summary>
+        /// Can this resource delete entities?
+        /// </summary>
+        bool CanDelete { get; }
+
+        /// <summary>
+        /// Can this resource delete entities?
+        /// </summary>
+        bool CanCount { get; }
     }
 }

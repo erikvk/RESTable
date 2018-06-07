@@ -7,6 +7,7 @@ using Newtonsoft.Json.Linq;
 using RESTar.Admin;
 using RESTar.Dynamic;
 using RESTar.Linq;
+using RESTar.Requests;
 using RESTar.Resources;
 using RESTar.Resources.Operations;
 using Starcounter;
@@ -33,7 +34,7 @@ namespace RESTar.Meta.Internal
         public IEnumerable<ITarget> Views => ViewDictionaryInternal?.Values;
         public TermBindingRule ConditionBindingRule { get; }
         public TermBindingRule OutputBindingRule { get; }
-        public bool RequiresAuthentication => Authenticate != null;
+        public bool RequiresAuthentication => Authenticator != null;
         public bool GETAvailableToAll { get; }
         public IReadOnlyDictionary<string, DeclaredProperty> Members { get; }
         public void SetAlias(string alias) => Alias = alias;
@@ -43,10 +44,15 @@ namespace RESTar.Meta.Internal
         public bool RequiresValidation { get; }
         public string Provider { get; }
         public IReadOnlyList<IResource> InnerResources { get; set; }
-        public ResourceProfile ResourceProfile => Profile?.Invoke(this);
+        public ResourceProfile ResourceProfile => Profiler?.Invoke(this);
         public bool ClaimedBy<T1>() where T1 : EntityResourceProvider => Provider == typeof(T1).GetProviderId();
         public ResourceKind ResourceKind { get; }
         public bool IsDeclared { get; }
+        public bool CanSelect => Selector != null;
+        public bool CanInsert => Inserter != null;
+        public bool CanUpdate => Updater != null;
+        public bool CanDelete => Deleter != null;
+        public bool CanCount => Counter != null;
 
         string IResourceInternal.Description
         {
@@ -58,13 +64,21 @@ namespace RESTar.Meta.Internal
             set => AvailableMethods = value;
         }
 
-        public Selector<T> Select { get; }
-        public Inserter<T> Insert { get; }
-        public Updater<T> Update { get; }
-        public Deleter<T> Delete { get; }
-        public Counter<T> Count { get; }
-        public Profiler<T> Profile { get; }
-        public Authenticator<T> Authenticate { get; }
+        public IEnumerable<T> Select(IRequest<T> request) => Selector(request);
+        public int Insert(IRequest<T> request) => Inserter(request);
+        public int Update(IRequest<T> request) => Updater(request);
+        public int Delete(IRequest<T> request) => Deleter(request);
+        public AuthResults Authenticate(IRequest<T> request) => Authenticator(request);
+        public ResourceProfile Profile(IRequest<T> request) => Profiler(this);
+        public long Count(IRequest<T> request) => Counter(request);
+
+        private Selector<T> Selector { get; }
+        private Inserter<T> Inserter { get; }
+        private Updater<T> Updater { get; }
+        private Deleter<T> Deleter { get; }
+        private Authenticator<T> Authenticator { get; }
+        private Profiler<T> Profiler { get; }
+        private Counter<T> Counter { get; }
 
         public string Alias
         {
@@ -111,6 +125,7 @@ namespace RESTar.Meta.Internal
                 Name = fullName.Replace('+', '.');
             }
             else Name = fullName;
+
             provider.ModifyResourceAttribute(typeof(T), attribute);
             IsDeclared = attribute.IsDeclared;
             Description = attribute.Description;
@@ -134,18 +149,20 @@ namespace RESTar.Meta.Internal
             IsDynamic = IsDDictionary || typeof(T).IsSubclassOf(typeof(JObject)) || typeof(IDictionary).IsAssignableFrom(typeof(T));
             Provider = provider.GetProviderId();
             Members = typeof(T).GetDeclaredProperties();
-            Select = selector;
-            Insert = inserter;
-            Update = updater;
-            Delete = deleter;
-            Count = counter;
-            Profile = profiler;
-            Authenticate = authenticator;
+
+            Selector = selector.AsImplemented();
+            Inserter = inserter.AsImplemented();
+            Updater = updater.AsImplemented();
+            Deleter = deleter.AsImplemented();
+            Counter = counter.AsImplemented();
+            Profiler = profiler.AsImplemented();
+            Authenticator = authenticator.AsImplemented();
+
             ViewDictionaryInternal = new Dictionary<string, ITarget<T>>(StringComparer.OrdinalIgnoreCase);
             views?.ForEach(view =>
             {
                 ViewDictionaryInternal[view.Name] = view;
-                view.EntityResource = this;
+                view.SetEntityResource(this);
             });
             CheckOperationsSupport();
             RESTarConfig.AddResource(this);
@@ -180,10 +197,10 @@ namespace RESTar.Meta.Internal
         {
             switch (op)
             {
-                case RESTarOperations.Select: return Select;
-                case RESTarOperations.Insert: return Insert;
-                case RESTarOperations.Update: return Update;
-                case RESTarOperations.Delete: return Delete;
+                case RESTarOperations.Select: return Selector;
+                case RESTarOperations.Insert: return Inserter;
+                case RESTarOperations.Update: return Updater;
+                case RESTarOperations.Delete: return Deleter;
                 default: throw new ArgumentOutOfRangeException(nameof(op));
             }
         }

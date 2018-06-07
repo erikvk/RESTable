@@ -2,20 +2,30 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
+using RESTar.Linq;
 using RESTar.Meta.Internal;
+using RESTar.Requests;
+using RESTar.Resources.Operations;
 
 namespace RESTar.Resources
 {
-    /// <inheritdoc />
+    /// <inheritdoc cref="ISelector{T}" />
+    /// <inheritdoc cref="IInserter{T}" />
+    /// <inheritdoc cref="IUpdater{T}" />
+    /// <inheritdoc cref="IDeleter{T}" />
+    /// <inheritdoc cref="ResourceController{TController,TProvider}" />
     /// <summary>
     /// Resource controllers attach to entity resource providers that support procedural resources,
     /// and enable insertion of resources during runtime.
     /// </summary>
-    /// <typeparam name="T"></typeparam>
-    public abstract class ResourceController<T> : Admin.Resource where T : EntityResourceProvider, IProceduralEntityResourceProvider
+    /// <typeparam name="TProvider"></typeparam>
+    /// <typeparam name="TController"></typeparam>
+    public abstract class ResourceController<TController, TProvider> : Admin.Resource, ISelector<TController>, IInserter<TController>,
+        IUpdater<TController>, IDeleter<TController> where TController : ResourceController<TController, TProvider>, new()
+        where TProvider : EntityResourceProvider, IProceduralEntityResourceProvider
     {
         internal static string BaseNamespace { private get; set; }
-        internal static T ResourceProvider { private get; set; }
+        internal static TProvider ResourceProvider { private get; set; }
 
         private static void ResolveDynamicResourceName(ref string name)
         {
@@ -88,6 +98,48 @@ namespace RESTar.Resources
         {
             var procedural = ResourceProvider._Select()?.FirstOrDefault(item => item.Name == Name);
             ResourceProvider._Delete(procedural);
+        }
+
+        /// <inheritdoc />
+        public virtual IEnumerable<TController> Select(IRequest<TController> request)
+        {
+            return Select<TController>().Where(request.Conditions);
+        }
+
+        /// <inheritdoc />
+        public int Insert(IRequest<TController> request)
+        {
+            var i = 0;
+            foreach (var resource in request.GetInputEntities())
+            {
+                resource.Insert();
+                i += 1;
+            }
+            return i;
+        }
+
+        /// <inheritdoc />
+        public int Update(IRequest<TController> request)
+        {
+            var i = 0;
+            foreach (var resource in request.GetInputEntities())
+            {
+                resource.Update();
+                i += 1;
+            }
+            return i;
+        }
+
+        /// <inheritdoc />
+        public int Delete(IRequest<TController> request)
+        {
+            var i = 0;
+            foreach (var resource in request.GetInputEntities())
+            {
+                resource.Delete();
+                i += 1;
+            }
+            return i;
         }
     }
 }

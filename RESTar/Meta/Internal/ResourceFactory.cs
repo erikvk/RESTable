@@ -176,8 +176,8 @@ namespace RESTar.Meta.Internal
                     if (!controller.IsAbstract
                         && controller.BaseType is Type baseType
                         && baseType.IsGenericType
-                        && baseType.GetGenericTypeDefinition() == typeof(ResourceController<>)
-                        && baseType.GetGenericArguments().FirstOrDefault() is Type provider)
+                        && baseType.GetGenericTypeDefinition() == typeof(ResourceController<,>)
+                        && baseType.GetGenericArguments().LastOrDefault() is Type provider)
                         return (provider, controller);
                     return default;
                 })

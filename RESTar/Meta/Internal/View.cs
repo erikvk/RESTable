@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Reflection;
+using RESTar.Requests;
 using RESTar.Resources;
 using RESTar.Resources.Operations;
 
@@ -10,7 +11,7 @@ namespace RESTar.Meta.Internal
     /// <summary>
     /// Represents a RESTar resource view
     /// </summary>
-    internal class View<T> : IView, ITarget<T> where T : class
+    internal class View<TResource> : IView, ITarget<TResource> where TResource : class
     {
         /// <inheritdoc />
         /// <summary>
@@ -27,22 +28,25 @@ namespace RESTar.Meta.Internal
         /// <inheritdoc />
         public Type Type { get; }
 
-        /// <inheritdoc />
-        public Selector<T> Select { get; }
+        private ViewSelector<TResource> ViewSelector { get; }
+
+        public IEnumerable<TResource> Select(IRequest<TResource> request) => ViewSelector(request);
 
         /// <inheritdoc />
-        public IEntityResource EntityResource { get; internal set; }
+        public IEntityResource EntityResource { get; private set; }
+
+        public void SetEntityResource(IEntityResource resource) => EntityResource = resource;
 
         /// <inheritdoc />
         public IReadOnlyDictionary<string, DeclaredProperty> Members { get; }
 
-        internal View(Type type)
+        internal View(Type viewType)
         {
-            Type = type;
-            Name = type.Name;
-            Select = DelegateMaker.GetDelegate<Selector<T>>(type);
-            var viewAttribute = type.GetCustomAttribute<RESTarViewAttribute>();
-            Members = type.GetDeclaredProperties();
+            Type = viewType;
+            Name = viewType.Name;
+            ViewSelector = DelegateMaker.GetDelegate<ViewSelector<TResource>>(viewType);
+            var viewAttribute = viewType.GetCustomAttribute<RESTarViewAttribute>();
+            Members = viewType.GetDeclaredProperties();
             Description = viewAttribute.Description;
             ConditionBindingRule = viewAttribute.AllowDynamicConditions
                 ? TermBindingRule.DeclaredWithDynamicFallback
@@ -53,7 +57,7 @@ namespace RESTar.Meta.Internal
         public override string ToString() => $"{EntityResource.Name}-{Name}";
 
         /// <inheritdoc />
-        public override bool Equals(object obj) => obj is View<T> view && view.Name == Name;
+        public override bool Equals(object obj) => obj is View<TResource> view && view.Name == Name;
 
         /// <inheritdoc />
         public override int GetHashCode() => Name.GetHashCode();

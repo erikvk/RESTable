@@ -54,9 +54,8 @@
       <HintPath>..\packages\EPPlus.4.5.2.1\lib\net40\EPPlus.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.CSharp" />
-    <Reference Include="Newtonsoft.Json">
+    <Reference Include="Newtonsoft.Json, Version=11.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\packages\Newtonsoft.Json.11.0.2\lib\net45\Newtonsoft.Json.dll</HintPath>
-      <Private>True</Private>
     </Reference>
     <Reference Include="PresentationCore" />
     <Reference Include="Starcounter, Version=2.0.0.0, Culture=neutral, PublicKeyToken=d2df1e81d0ca3abf, processorArchitecture=AMD64">
@@ -107,6 +106,7 @@
     <Compile Include="Meta\IDynamicMemberValueProvider.cs" />
     <Compile Include="Resources\InvalidResourceControllerException.cs" />
     <Compile Include="Resources\IProceduralEntityResourceProvider.cs" />
+    <Compile Include="Resources\MethodNotImplementedAttribute.cs" />
     <Compile Include="Resources\ResourceController.cs" />
     <Compile Include="Internal\EntityResourceProviderController.cs" />
     <Compile Include="Meta\Internal\ResourceValidator.cs" />
@@ -394,7 +394,9 @@
     <Compile Include="WebSockets\WebSocketController.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="app.config" />
+    <None Include="app.config">
+      <SubType>Designer</SubType>
+    </None>
     <None Include="packages.config" />
     <None Include="RESTar.nuspec">
       <SubType>Designer</SubType>

@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using RESTar.Resources.Operations;
+using RESTar.Requests;
 
 namespace RESTar.Meta
 {
@@ -45,6 +45,6 @@ namespace RESTar.Meta
         /// <summary>
         /// RESTar selector (don't use)
         /// </summary>
-        Selector<T> Select { get; }
+        IEnumerable<T> Select(IRequest<T> request);
     }
 }

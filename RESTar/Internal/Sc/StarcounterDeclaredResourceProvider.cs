@@ -1,5 +1,8 @@
 using System;
+using System.Collections.Generic;
+using RESTar.Admin;
 using RESTar.Meta;
+using RESTar.Requests;
 using RESTar.Resources;
 using RESTar.Resources.Operations;
 using Starcounter;
@@ -19,12 +22,11 @@ namespace RESTar.Internal.Sc
             return type.HasAttribute<DatabaseAttribute>() && !type.HasResourceProviderAttribute();
         }
 
-        protected override Selector<T> GetDefaultSelector<T>() => StarcounterOperations<T>.Select;
-        protected override Inserter<T> GetDefaultInserter<T>() => StarcounterOperations<T>.Insert;
-        protected override Updater<T> GetDefaultUpdater<T>() => StarcounterOperations<T>.Update;
-        protected override Deleter<T> GetDefaultDeleter<T>() => StarcounterOperations<T>.Delete;
-        protected override Counter<T> GetDefaultCounter<T>() => null;
-        protected override Profiler<T> GetProfiler<T>() => StarcounterOperations<T>.Profile;
+        protected override IEnumerable<T> DefaultSelect<T>(IRequest<T> request) => StarcounterOperations<T>.Select(request);
+        protected override int DefaultInsert<T>(IRequest<T> request) => StarcounterOperations<T>.Insert(request);
+        protected override int DefaultUpdate<T>(IRequest<T> request) => StarcounterOperations<T>.Update(request);
+        protected override int DefaultDelete<T>(IRequest<T> request) => StarcounterOperations<T>.Delete(request);
+        protected override ResourceProfile DefaultProfile<T>(IEntityResource<T> resource) => StarcounterOperations<T>.Profile(resource);
 
         protected override bool IsValid(IEntityResource resource, out string reason) =>
             StarcounterOperations<object>.IsValid(resource, out reason);

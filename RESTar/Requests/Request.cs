@@ -215,9 +215,9 @@ namespace RESTar.Requests
                             this.RunResourceAuthentication(entity);
                         if (MetaConditions.SafePost != null)
                         {
-                            if (entity.Select == null)
+                            if (!entity.CanSelect)
                                 throw new SafePostNotSupported("(no selector implemented)");
-                            if (entity.Update == null)
+                            if (!entity.CanUpdate)
                                 throw new SafePostNotSupported("(no updater implemented)");
                         }
                         var result = EntityOperations<T>.GetEvaluator(Method).Invoke(this);

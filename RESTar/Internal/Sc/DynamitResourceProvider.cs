@@ -2,8 +2,10 @@
 using System.Collections.Generic;
 using System.Linq;
 using Dynamit;
+using RESTar.Admin;
 using RESTar.Dynamic;
 using RESTar.Meta;
+using RESTar.Requests;
 using RESTar.Resources;
 using RESTar.Resources.Operations;
 using RESTar.Results;
@@ -25,12 +27,12 @@ namespace RESTar.Internal.Sc
         // ReSharper disable once UnassignedGetOnlyAutoProperty
         protected override Type AttributeType { get; }
 
-        protected override Selector<T> GetDefaultSelector<T>() => DDictionaryOperations<T>.Select;
-        protected override Inserter<T> GetDefaultInserter<T>() => DDictionaryOperations<T>.Insert;
-        protected override Updater<T> GetDefaultUpdater<T>() => DDictionaryOperations<T>.Update;
-        protected override Deleter<T> GetDefaultDeleter<T>() => DDictionaryOperations<T>.Delete;
-        protected override Counter<T> GetDefaultCounter<T>() => null;
-        protected override Profiler<T> GetProfiler<T>() => DDictionaryOperations<T>.Profile;
+        protected override IEnumerable<T> DefaultSelect<T>(IRequest<T> request) => DDictionaryOperations<T>.Select(request);
+        protected override int DefaultInsert<T>(IRequest<T> request) => DDictionaryOperations<T>.Insert(request);
+        protected override int DefaultUpdate<T>(IRequest<T> request) => DDictionaryOperations<T>.Update(request);
+        protected override int DefaultDelete<T>(IRequest<T> request) => DDictionaryOperations<T>.Delete(request);
+        protected override ResourceProfile DefaultProfile<T>(IEntityResource<T> resource) => DDictionaryOperations<T>.Profile(resource);
+
         public override IDatabaseIndexer DatabaseIndexer { get; }
         internal DynamitResourceProvider(IDatabaseIndexer databaseIndexer) => DatabaseIndexer = databaseIndexer;
 

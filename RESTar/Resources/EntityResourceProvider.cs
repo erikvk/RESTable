@@ -2,9 +2,11 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using RESTar.Admin;
 using RESTar.Linq;
 using RESTar.Meta;
 using RESTar.Meta.Internal;
+using RESTar.Requests;
 using RESTar.Resources.Operations;
 using Starcounter;
 using static System.Reflection.BindingFlags;
@@ -53,7 +55,7 @@ namespace RESTar.Resources
         {
             if (procedural == null) return;
             var type = procedural.Type;
-            Db.TransactAsync(() => Admin.ResourceAlias.GetByResource(procedural.Name)?.Delete());
+            Db.TransactAsync(() => ResourceAlias.GetByResource(procedural.Name)?.Delete());
             if (DeleteProceduralResource(procedural))
                 RemoveProceduralResource(type);
         }
@@ -172,38 +174,61 @@ namespace RESTar.Resources
         /// The default Selector to use for resources claimed by this ResourceProvider
         /// </summary>
         /// <typeparam name="T">The resource type</typeparam>
-        protected abstract Selector<T> GetDefaultSelector<T>() where T : class, TBase;
+        [MethodNotImplemented]
+        protected virtual IEnumerable<T> DefaultSelect<T>(IRequest<T> request) where T : class, TBase
+        {
+            throw new NotImplementedException();
+        }
 
         /// <summary>
         /// The default Inserter to use for resources claimed by this ResourceProvider
         /// </summary>
-        /// 
-        /// <typeparam name="T">The resource type</typeparam>
-        protected abstract Inserter<T> GetDefaultInserter<T>() where T : class, TBase;
+        ///  <typeparam name="T">The resource type</typeparam>
+        [MethodNotImplemented]
+        protected virtual int DefaultInsert<T>(IRequest<T> request) where T : class, TBase
+        {
+            throw new NotImplementedException();
+        }
 
         /// <summary>
         /// The default Updater to use for resources claimed by this ResourceProvider
         /// </summary>
         /// <typeparam name="T">The resource type</typeparam>
-        protected abstract Updater<T> GetDefaultUpdater<T>() where T : class, TBase;
+        [MethodNotImplemented]
+        protected virtual int DefaultUpdate<T>(IRequest<T> request) where T : class, TBase
+        {
+            throw new NotImplementedException();
+        }
 
         /// <summary>
         /// The default Deleter to use for resources claimed by this ResourceProvider
         /// </summary>
         /// <typeparam name="T">The resource type</typeparam>
-        protected abstract Deleter<T> GetDefaultDeleter<T>() where T : class, TBase;
+        [MethodNotImplemented]
+        protected virtual int DefaultDelete<T>(IRequest<T> request) where T : class, TBase
+        {
+            throw new NotImplementedException();
+        }
 
         /// <summary>
         /// The default Counter to use for resources claimed by this ResourceProvider
         /// </summary>
         /// <typeparam name="T">The resource type</typeparam>
-        protected abstract Counter<T> GetDefaultCounter<T>() where T : class, TBase;
+        [MethodNotImplemented]
+        protected virtual long DefaultCount<T>(IRequest<T> request) where T : class, TBase
+        {
+            throw new NotImplementedException();
+        }
 
         /// <summary>
         /// The default Profiler to use for resources claimed by this ResourceProvider
         /// </summary>
         /// <typeparam name="T">The resource type</typeparam>
-        protected abstract Profiler<T> GetProfiler<T>() where T : class, TBase;
+        [MethodNotImplemented]
+        protected virtual ResourceProfile DefaultProfile<T>(IEntityResource<T> resource) where T : class, TBase
+        {
+            throw new NotImplementedException();
+        }
 
         #region Add resource API
 
@@ -328,20 +353,23 @@ namespace RESTar.Resources
             Counter<TResource> counter = null,
             Profiler<TResource> profiler = null,
             Authenticator<TResource> authenticator = null
-        ) where TResource : class, TBase => new Meta.Internal.EntityResource<TResource>
-        (
-            fullName: fullName ?? typeof(TResource).FullName,
-            attribute: attribute ?? typeof(TResource).GetCustomAttribute<RESTarAttribute>(),
-            selector: selector ?? GetDelegate<Selector<TResource>>(typeof(TResource)) ?? GetDefaultSelector<TResource>(),
-            inserter: inserter ?? GetDelegate<Inserter<TResource>>(typeof(TResource)) ?? GetDefaultInserter<TResource>(),
-            updater: updater ?? GetDelegate<Updater<TResource>>(typeof(TResource)) ?? GetDefaultUpdater<TResource>(),
-            deleter: deleter ?? GetDelegate<Deleter<TResource>>(typeof(TResource)) ?? GetDefaultDeleter<TResource>(),
-            counter: counter ?? GetDelegate<Counter<TResource>>(typeof(TResource)) ?? GetDefaultCounter<TResource>(),
-            profiler: profiler ?? GetProfiler<TResource>(),
-            authenticator: authenticator ?? GetDelegate<Authenticator<TResource>>(typeof(TResource)),
-            views: GetViews<TResource>(),
-            provider: this
-        );
+        ) where TResource : class, TBase
+        {
+            return new Meta.Internal.EntityResource<TResource>
+            (
+                fullName: fullName ?? typeof(TResource).FullName,
+                attribute: attribute ?? typeof(TResource).GetCustomAttribute<RESTarAttribute>(),
+                selector: selector ?? GetDelegate<Selector<TResource>>(typeof(TResource)) ?? DefaultSelect,
+                inserter: inserter ?? GetDelegate<Inserter<TResource>>(typeof(TResource)) ?? DefaultInsert,
+                updater: updater ?? GetDelegate<Updater<TResource>>(typeof(TResource)) ?? DefaultUpdate,
+                deleter: deleter ?? GetDelegate<Deleter<TResource>>(typeof(TResource)) ?? DefaultDelete,
+                counter: counter ?? GetDelegate<Counter<TResource>>(typeof(TResource)) ?? DefaultCount,
+                profiler: profiler ?? DefaultProfile,
+                authenticator: authenticator ?? GetDelegate<Authenticator<TResource>>(typeof(TResource)),
+                views: GetViews<TResource>(),
+                provider: this
+            );
+        }
 
         private IEntityResource<TWrapped> _InsertWrapperResource<TWrapper, TWrapped>(
             string fullName = null,
@@ -359,12 +387,12 @@ namespace RESTar.Resources
         (
             fullName: fullName ?? typeof(TWrapper).FullName,
             attribute: attribute ?? typeof(TWrapper).GetCustomAttribute<RESTarAttribute>(),
-            selector: selector ?? GetDelegate<Selector<TWrapped>>(typeof(TWrapper)) ?? GetDefaultSelector<TWrapped>(),
-            inserter: inserter ?? GetDelegate<Inserter<TWrapped>>(typeof(TWrapper)) ?? GetDefaultInserter<TWrapped>(),
-            updater: updater ?? GetDelegate<Updater<TWrapped>>(typeof(TWrapper)) ?? GetDefaultUpdater<TWrapped>(),
-            deleter: deleter ?? GetDelegate<Deleter<TWrapped>>(typeof(TWrapper)) ?? GetDefaultDeleter<TWrapped>(),
-            counter: counter ?? GetDelegate<Counter<TWrapped>>(typeof(TWrapper)) ?? GetDefaultCounter<TWrapped>(),
-            profiler: profiler ?? GetProfiler<TWrapped>(),
+            selector: selector ?? GetDelegate<Selector<TWrapped>>(typeof(TWrapper)) ?? DefaultSelect,
+            inserter: inserter ?? GetDelegate<Inserter<TWrapped>>(typeof(TWrapper)) ?? DefaultInsert,
+            updater: updater ?? GetDelegate<Updater<TWrapped>>(typeof(TWrapper)) ?? DefaultUpdate,
+            deleter: deleter ?? GetDelegate<Deleter<TWrapped>>(typeof(TWrapper)) ?? DefaultDelete,
+            counter: counter ?? GetDelegate<Counter<TWrapped>>(typeof(TWrapper)) ?? DefaultCount,
+            profiler: profiler ?? DefaultProfile,
             authenticator: authenticator ?? GetDelegate<Authenticator<TWrapped>>(typeof(TWrapper)),
             views: GetWrappedViews<TWrapper, TWrapped>(),
             provider: this

@@ -30,12 +30,15 @@ namespace RESTar.Meta.Internal
         public override bool Equals(object obj) => obj is TerminalResource<T> t && t.Name == Name;
         public override int GetHashCode() => Name.GetHashCode();
         public IReadOnlyList<IResource> InnerResources { get; set; }
-        public Selector<T> Select { get; }
         public IReadOnlyDictionary<string, DeclaredProperty> Members { get; }
-        private Constructor<ITerminal> Constructor { get; }
         public void SetAlias(string alias) => Alias = alias;
         public Type InterfaceType { get; }
         public ResourceKind ResourceKind { get; }
+
+        private Constructor<ITerminal> Constructor { get; }
+        private Func<T, IRequest<T>, IEnumerable<T>> Selector { get; }
+
+        public IEnumerable<T> Select(IRequest<T> request) => Selector(null, request);
 
         internal ITerminal MakeTerminal(IEnumerable<Condition<T>> assignments = null)
         {
@@ -69,7 +72,7 @@ namespace RESTar.Meta.Internal
                 ? TermBindingRule.DeclaredWithDynamicFallback
                 : TermBindingRule.OnlyDeclared;
             Description = attribute?.Description;
-            Select = null;
+            Selector = null;
             Members = typeof(T).GetDeclaredProperties();
             Constructor = typeof(T).MakeStaticConstructor<ITerminal>();
             GETAvailableToAll = attribute?.GETAvailableToAll == true;

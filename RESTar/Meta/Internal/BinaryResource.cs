@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
+using RESTar.Requests;
 using RESTar.Resources;
 using RESTar.Resources.Operations;
 
@@ -12,7 +14,7 @@ namespace RESTar.Meta.Internal
         /// <summary>
         /// Selects binary content from a binary resource
         /// </summary>
-        BinarySelector<T> SelectBinary { get; }
+        (Stream stream, ContentType contentType) SelectBinary(IRequest<T> request);
     }
 
     internal class BinaryResource<T> : IResource<T>, IResourceInternal, IBinaryResource<T> where T : class
@@ -34,13 +36,20 @@ namespace RESTar.Meta.Internal
         public string ParentResourceName { get; }
         public bool GETAvailableToAll { get; }
         public Type InterfaceType { get; }
-        Selector<T> ITarget<T>.Select { get; } = null;
+
+        public IEnumerable<T> Select(IRequest<T> request) => throw new NotImplementedException();
+
+        public (Stream stream, ContentType contentType) SelectBinary(IRequest<T> request)
+        {
+            return BinarySelector(request);
+        }
+
         public IReadOnlyList<IResource> InnerResources { get; set; }
         public void SetAlias(string alias) => Alias = alias;
         public ResourceKind ResourceKind { get; }
-        public BinarySelector<T> SelectBinary { get; }
+        private BinarySelector<T> BinarySelector { get; }
 
-        internal BinaryResource(BinarySelector<T> binarySelector)
+        internal BinaryResource(BinarySelector<T> binarySelectorSelector)
         {
             Name = typeof(T).FullName ?? throw new Exception();
             Type = typeof(T);
@@ -54,7 +63,7 @@ namespace RESTar.Meta.Internal
                 ? TermBindingRule.DeclaredWithDynamicFallback
                 : TermBindingRule.OnlyDeclared;
             Description = attribute.Description;
-            SelectBinary = binarySelector;
+            BinarySelector = binarySelectorSelector;
             Members = typeof(T).GetDeclaredProperties();
             GETAvailableToAll = attribute.GETAvailableToAll;
             if (Name.Contains('+'))

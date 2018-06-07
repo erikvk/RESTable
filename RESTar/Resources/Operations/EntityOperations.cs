@@ -14,7 +14,7 @@ namespace RESTar.Resources.Operations
     {
         #region Select
 
-        private static IEnumerable<T> SelectFilter(IRequest<T> request) => request.Target
+        internal static IEnumerable<T> SelectFilter(IRequest<T> request) => request.Target
             .Select(request)?
             .Filter(request.MetaConditions.Distinct)
             .Filter(request.MetaConditions.Search)
@@ -22,7 +22,7 @@ namespace RESTar.Resources.Operations
             .Filter(request.MetaConditions.Offset)
             .Filter(request.MetaConditions.Limit);
 
-        private static IEnumerable<object> SelectFilterProcess(IRequest<T> request) => request.Target
+        internal static IEnumerable<object> SelectFilterProcess(IRequest<T> request) => request.Target
             .Select(request)?
             .Process(request.MetaConditions.Processors)
             .Filter(request.MetaConditions.Distinct)
@@ -82,9 +82,9 @@ namespace RESTar.Resources.Operations
             try
             {
                 request.EntitiesProducer = () => new T[0];
-                if (request.EntityResource.Count is Counter<T> counter &&
+                if (request.EntityResource.CanCount &&
                     request.MetaConditions.CanUseExternalCounter)
-                    return counter(request);
+                    return request.EntityResource.Count(request);
                 if (!request.MetaConditions.HasProcessors)
                     return SelectFilter(request)?.Count() ?? 0L;
                 return SelectFilterProcess(request)?.Count() ?? 0L;
