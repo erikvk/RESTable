@@ -48,7 +48,7 @@ namespace RESTar.Meta.Internal
                     $"should be associated with '{idDupe}'");
             foreach (var provider in externalProviders.Where(provider => provider is IProceduralEntityResourceProvider))
             {
-                var methods = provider.GetType().GetMethods(DeclaredOnly | Instance | Public);
+                var methods = provider.GetType().GetMethods(DeclaredOnly | Instance | NonPublic);
                 if (methods.All(method => method.Name != "SelectProceduralResources"
                                           && method.Name != "InsertProceduralResource"
                                           && method.Name != "SetProceduralResourceMethods"
@@ -168,17 +168,29 @@ namespace RESTar.Meta.Internal
             ValidateInnerResources();
         }
 
+        internal static IEnumerable<Type> GetBaseTypes(Type type)
+        {
+            var currentBaseType = type.BaseType;
+            while (currentBaseType != null)
+            {
+                yield return currentBaseType;
+                currentBaseType = currentBaseType.BaseType;
+            }
+        }
+
         internal static void BindControllers()
         {
-            foreach (var (provider, controller) in typeof(object).GetConcreteSubclasses()
-                .Select(controller =>
+            foreach (var (provider, controller, baseType) in typeof(Admin.Resource)
+                .GetConcreteSubclasses()
+                .Select(@class =>
                 {
-                    if (!controller.IsAbstract
-                        && controller.BaseType is Type baseType
-                        && baseType.IsGenericType
-                        && baseType.GetGenericTypeDefinition() == typeof(ResourceController<,>)
-                        && baseType.GetGenericArguments().LastOrDefault() is Type provider)
-                        return (provider, controller);
+                    foreach (var baseType in GetBaseTypes(@class))
+                    {
+                        if (baseType.IsGenericType
+                            && baseType.GetGenericTypeDefinition() == typeof(ResourceController<,>)
+                            && baseType.GetGenericArguments().LastOrDefault() is Type provider)
+                            return (provider, @class, baseType);
+                    }
                     return default;
                 })
                 .Where(t => t.provider != null))
@@ -190,9 +202,9 @@ namespace RESTar.Meta.Internal
                     throw new InvalidResourceControllerException($"Invalid resource controller '{controller}'. A binding was made to " +
                                                                  $"an EntityResourceProvider of type '{provider}'. No such provider has " +
                                                                  "been included in the call to RESTarConfig.Init().");
-                var providerProperty = controller.BaseType?.GetProperty("ResourceProvider", Static | NonPublic)
+                var providerProperty = baseType.GetProperty("ResourceProvider", Static | NonPublic)
                                        ?? throw new Exception($"Unable to locate property 'ResourceProvider' in type '{controller}'");
-                var baseNamespaceProperty = controller.BaseType?.GetProperty("BaseNamespace", Static | NonPublic)
+                var baseNamespaceProperty = baseType.GetProperty("BaseNamespace", Static | NonPublic)
                                             ?? throw new Exception($"Unable to locate property 'BaseNamespace' in type '{controller}'");
                 providerProperty.SetValue(null, resourceProvider);
                 baseNamespaceProperty.SetValue(null, controller.Namespace);

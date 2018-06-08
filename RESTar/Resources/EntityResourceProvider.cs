@@ -32,9 +32,9 @@ namespace RESTar.Resources
 
         internal IEnumerable<IProceduralEntityResource> _Select() => SelectProceduralResources();
 
-        internal void _Insert(string name, string description, Method[] methods)
+        internal void _Insert(string name, string description, Method[] methods, dynamic data)
         {
-            var inserted = InsertProceduralResource(name, description, methods);
+            var inserted = InsertProceduralResource(name, description, methods, data);
             if (inserted == null) return;
             InsertProcedural(inserted);
         }
@@ -77,7 +77,7 @@ namespace RESTar.Resources
         /// <summary>
         /// Creates a new dynamic entity resource object with the given name, description and methods. Used by RESTar internally. Don't call this method.
         /// </summary>
-        protected virtual IProceduralEntityResource InsertProceduralResource(string name, string description, Method[] methods)
+        protected virtual IProceduralEntityResource InsertProceduralResource(string name, string description, Method[] methods, dynamic data)
         {
             throw new NotImplementedException();
         }

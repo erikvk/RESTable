@@ -55,7 +55,7 @@ namespace RESTar.Internal.Sc
             })
             .ToList();
 
-        protected override IProceduralEntityResource InsertProceduralResource(string name, string description, Method[] methods)
+        protected override IProceduralEntityResource InsertProceduralResource(string name, string description, Method[] methods, dynamic data)
         {
             DynamicResource proceduralResource = null;
             Db.TransactAsync(() =>

@@ -21,7 +21,8 @@ namespace RESTar.Resources
     /// <typeparam name="TProvider"></typeparam>
     /// <typeparam name="TController"></typeparam>
     public abstract class ResourceController<TController, TProvider> : Admin.Resource, ISelector<TController>, IInserter<TController>,
-        IUpdater<TController>, IDeleter<TController> where TController : ResourceController<TController, TProvider>, new()
+        IUpdater<TController>, IDeleter<TController>
+        where TController : ResourceController<TController, TProvider>, new()
         where TProvider : EntityResourceProvider, IProceduralEntityResourceProvider
     {
         internal static string BaseNamespace { private get; set; }
@@ -52,16 +53,21 @@ namespace RESTar.Resources
         }
 
         /// <summary>
+        /// Additional data associated with this resource (as defined by the resource provider)
+        /// </summary>
+        [RESTarMember(ignore: true)] protected virtual dynamic Data { get; } = null;
+
+        /// <summary>
         /// Selects the instances that have been inserted by this controller
         /// </summary>
-        protected static IEnumerable<T1> Select<T1>() where T1 : Admin.Resource, new() => ResourceProvider
+        public static IEnumerable<TController> Select() => ResourceProvider
             ._Select()
-            .Select(resource => Make<T1>(Meta.Resource.SafeGet(resource.Name)));
+            .Select(resource => Make<TController>(Meta.Resource.SafeGet(resource.Name)));
 
         /// <summary>
         /// Inserts the current instance as a new dynamic procedural
         /// </summary>
-        protected void Insert()
+        public void Insert()
         {
             var name = Name;
             var methods = EnabledMethods;
@@ -72,7 +78,7 @@ namespace RESTar.Resources
             if (methods?.Any() != true)
                 methods = RESTarConfig.Methods;
             var methodsArray = methods.ResolveMethodsCollection().ToArray();
-            ResourceProvider._Insert(name, description, methodsArray);
+            ResourceProvider._Insert(name, description, methodsArray, Data);
             var resource = (IResourceInternal) Meta.Resource.SafeGet(name);
             resource.SetAlias(Alias);
         }
@@ -80,7 +86,7 @@ namespace RESTar.Resources
         /// <summary>
         /// Updates the state of the current instance to the corresponding procedural resource
         /// </summary>
-        protected void Update()
+        public void Update()
         {
             var procedural = ResourceProvider._Select()?.FirstOrDefault(item => item.Name == Name) ??
                              throw new InvalidOperationException($"Cannot update resource '{Name}'. Resource has not been inserted.");
@@ -94,7 +100,7 @@ namespace RESTar.Resources
         /// <summary>
         /// Deletes the corresponding procedural resource
         /// </summary>
-        protected void Delete()
+        public void Delete()
         {
             var procedural = ResourceProvider._Select()?.FirstOrDefault(item => item.Name == Name);
             ResourceProvider._Delete(procedural);
@@ -103,11 +109,11 @@ namespace RESTar.Resources
         /// <inheritdoc />
         public virtual IEnumerable<TController> Select(IRequest<TController> request)
         {
-            return Select<TController>().Where(request.Conditions);
+            return Select().Where(request.Conditions);
         }
 
         /// <inheritdoc />
-        public int Insert(IRequest<TController> request)
+        public virtual int Insert(IRequest<TController> request)
         {
             var i = 0;
             foreach (var resource in request.GetInputEntities())
@@ -119,7 +125,7 @@ namespace RESTar.Resources
         }
 
         /// <inheritdoc />
-        public int Update(IRequest<TController> request)
+        public virtual int Update(IRequest<TController> request)
         {
             var i = 0;
             foreach (var resource in request.GetInputEntities())
@@ -131,7 +137,7 @@ namespace RESTar.Resources
         }
 
         /// <inheritdoc />
-        public int Delete(IRequest<TController> request)
+        public virtual int Delete(IRequest<TController> request)
         {
             var i = 0;
             foreach (var resource in request.GetInputEntities())
