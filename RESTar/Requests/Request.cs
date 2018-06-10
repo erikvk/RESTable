@@ -5,7 +5,6 @@ using System.Globalization;
 using System.Linq;
 using System.Net;
 using System.Threading;
-using System.Threading.Tasks;
 using RESTar.Admin;
 using RESTar.Internal;
 using RESTar.Internal.Auth;
@@ -17,7 +16,6 @@ using RESTar.Meta;
 using RESTar.Meta.Internal;
 using RESTar.Resources.Operations;
 using RESTar.Results;
-using Starcounter;
 using Binary = RESTar.Results.Binary;
 using IResource = RESTar.Meta.IResource;
 
@@ -76,62 +74,33 @@ namespace RESTar.Requests
             set => _metaConditions = value;
         }
 
-        private Task BodyTask { get; set; }
-        private bool BodyTaskFailed;
+        private Func<Body> BodyFunc { get; set; }
         private Body _body;
 
-        public Body Body
+        public Body GetBody()
         {
-            get
+            if (BodyFunc != null)
             {
-                if (BodyTask != null)
-                {
-                    try
-                    {
-                        BodyTask.Wait();
-                    }
-                    catch (AggregateException e)
-                    {
-                        if (!BodyTaskFailed)
-                        {
-                            BodyTaskFailed = true;
-                            throw e.InnerExceptions.FirstOrDefault() ?? e.InnerException ?? e;
-                        }
-                    }
-                    BodyTask = null;
-                }
-                return _body;
+                _body = BodyFunc();
+                BodyFunc = null;
             }
-            private set
-            {
-                if (IsEvaluating)
-                    throw new InvalidOperationException("Cannot set the request body while the request is evaluating");
-                if (BodyTask != null)
-                {
-                    try
-                    {
-                        BodyTask.Wait();
-                    }
-                    catch (AggregateException e)
-                    {
-                        if (!BodyTaskFailed)
-                        {
-                            BodyTaskFailed = true;
-                            throw e.InnerExceptions.FirstOrDefault() ?? e.InnerException ?? e;
-                        }
-                    }
-                    BodyTask = null;
-                }
-                _body = value;
-            }
+            return _body;
         }
 
-        public void SetBody(object content, ContentType? contentType = null) => Body = new Body
+        private void SetBody(Body value)
+        {
+            if (IsEvaluating)
+                throw new InvalidOperationException("Cannot set the request body whilst the request is evaluating");
+            BodyFunc = null;
+            _body = value;
+        }
+
+        public void SetBody(object content, ContentType? contentType = null) => SetBody(new Body
         (
             stream: this.GetBodyStream(content, contentType),
             contentType: Headers.ContentType ?? CachedProtocolProvider.DefaultInputProvider.ContentType,
             protocolProvider: CachedProtocolProvider
-        );
+        ));
 
         public IUriComponents UriComponents => new UriComponents
         (
@@ -328,35 +297,30 @@ namespace RESTar.Requests
                 if (Headers.Source == null)
                 {
                     if (!Parameters.HasBody) return;
-                    Body = new Body
+                    SetBody(new Body
                     (
                         stream: new RESTarStream(Parameters.BodyBytes),
                         contentType: Headers.ContentType ?? defaultContentType,
                         protocolProvider: CachedProtocolProvider
-                    );
+                    ));
                 }
                 else
                 {
-                    void setBodyFromExternalSource()
+                    Body getBodyFromExternalSourceSync()
                     {
                         try
                         {
+                            Body body;
                             var source = new HeaderRequestParameters(Headers.Source);
                             if (source.Method != GET) throw new InvalidSyntax(InvalidSource, "Only GET is allowed in Source headers");
                             if (source.IsInternal)
                             {
-                                var result = Context
-                                    .CreateRequest(source.URI, source.Method, null, source.Headers)
+                                var result = Context.CreateRequest(source.URI, source.Method, null, source.Headers)
                                     .Evaluate();
                                 if (!(result is IEntities)) throw new InvalidExternalSource(source.URI, result.LogMessage);
                                 var serialized = result.Serialize();
                                 if (serialized is NoContent) throw new InvalidExternalSource(source.URI, "Response was empty");
-                                _body = new Body
-                                (
-                                    stream: new RESTarStream(serialized.Body),
-                                    contentType: serialized.Headers.ContentType ?? CachedProtocolProvider.DefaultInputProvider.ContentType,
-                                    protocolProvider: CachedProtocolProvider
-                                );
+                                body = new Body(stream: new RESTarStream(serialized.Body), contentType: serialized.Headers.ContentType ?? CachedProtocolProvider.DefaultInputProvider.ContentType, protocolProvider: CachedProtocolProvider);
                             }
                             else
                             {
@@ -364,15 +328,10 @@ namespace RESTar.Requests
                                 var request = new HttpRequest(this, source, null);
                                 var response = request.GetResponseAsync().Result ?? throw new InvalidExternalSource(source.URI, "No response");
                                 if (response.StatusCode >= HttpStatusCode.BadRequest) throw new InvalidExternalSource(source.URI, response.LogMessage);
-                                if (response.Body.CanSeek && response.Body.Length == 0)
-                                    throw new InvalidExternalSource(source.URI, "Response was empty");
-                                _body = new Body
-                                (
-                                    stream: new RESTarStream(response.Body),
-                                    contentType: response.Headers.ContentType ?? defaultContentType,
-                                    protocolProvider: CachedProtocolProvider
-                                );
+                                if (response.Body.CanSeek && response.Body.Length == 0) throw new InvalidExternalSource(source.URI, "Response was empty");
+                                body = new Body(stream: new RESTarStream(response.Body), contentType: response.Headers.ContentType ?? defaultContentType, protocolProvider: CachedProtocolProvider);
                             }
+                            return body;
                         }
                         catch (HttpRequestException re)
                         {
@@ -380,7 +339,7 @@ namespace RESTar.Requests
                         }
                     }
 
-                    BodyTask = Scheduling.RunTask(setBodyFromExternalSource);
+                    BodyFunc = getBodyFromExternalSourceSync;
                 }
             }
             catch (Exception e)
@@ -389,6 +348,6 @@ namespace RESTar.Requests
             }
         }
 
-        public void Dispose() => Body.Dispose();
+        public void Dispose() => GetBody().Dispose();
     }
 }

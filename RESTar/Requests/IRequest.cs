@@ -121,7 +121,7 @@ namespace RESTar.Requests
         /// <summary>
         /// Gets the request body
         /// </summary>
-        Body Body { get; }
+        Body GetBody();
 
         /// <summary>
         /// Assigns a new Body instance from a .NET object and, optionally, a content type.

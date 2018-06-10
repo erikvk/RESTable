@@ -92,7 +92,7 @@ namespace RESTar.Admin
                                (resource?.Alias != null ? $" ({resource.Alias})" : ""),
                 Method = request.Method,
                 ErrorCode = error.ErrorCode,
-                Body = request.Body.ToString(),
+                Body = request.GetBody().ToString(),
                 StackTrace = stackTrace.Length > MaxStringLength ? stackTrace.Substring(0, MaxStringLength) : stackTrace,
                 Message = totalMessage.Length > MaxStringLength ? totalMessage.Substring(0, MaxStringLength) : totalMessage,
                 Uri = uri,

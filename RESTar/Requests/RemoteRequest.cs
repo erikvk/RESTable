@@ -24,17 +24,29 @@ namespace RESTar.Requests
         public Context Context { get; }
         public Headers Headers { get; }
         public Method Method { get; set; }
-        public Body Body { get; private set; }
+
+        private Body body;
+
+        public Body GetBody()
+        {
+            return body;
+        }
+
+        private void SetBody(Body value)
+        {
+            body = value;
+        }
+
         private RemoteResource RemoteResource { get; set; }
 
         private static string ErrorMessage(string propertyName) => $"Cannot get {propertyName} for a remote request";
 
-        public void SetBody(object content, ContentType? contentType = null) => Body = new Body
+        public void SetBody(object content, ContentType? contentType = null) => SetBody(new Body
         (
             stream: this.GetBodyStream(content, contentType),
             contentType: Headers.ContentType ?? CachedProtocolProvider.DefaultInputProvider.ContentType,
             protocolProvider: CachedProtocolProvider
-        );
+        ));
 
         public IResource Resource => RemoteResource;
         public Type TargetType => null;
@@ -61,9 +73,9 @@ namespace RESTar.Requests
                     case Method.POST:
                     case Method.PATCH:
                     case Method.PUT:
-                        if (Body.HasContent)
+                        if (GetBody().HasContent)
                         {
-                            message.Content = new StreamContent(Body.Stream);
+                            message.Content = new StreamContent(GetBody().Stream);
                             message.Content.Headers.ContentType = MediaTypeHeaderValue.Parse(Headers.ContentType.ToString());
                         }
                         break;
@@ -150,8 +162,8 @@ namespace RESTar.Requests
         public CachedProtocolProvider CachedProtocolProvider { get; }
 
         public LogEventType LogEventType { get; }
-        public string LogMessage => $"{Method} {URI}{Body.LengthLogString}";
-        public string LogContent => Body.ToString();
+        public string LogMessage => $"{Method} {URI}{GetBody().LengthLogString}";
+        public string LogContent => GetBody().ToString();
         public string HeadersStringCache { get; set; }
         public bool ExcludeHeaders { get; }
         public DateTime LogTime { get; }
@@ -175,6 +187,6 @@ namespace RESTar.Requests
                 SetBody(body, Headers.ContentType);
         }
 
-        public void Dispose() => Body.Dispose();
+        public void Dispose() => GetBody().Dispose();
     }
 }

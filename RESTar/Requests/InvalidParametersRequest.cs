@@ -53,7 +53,14 @@ namespace RESTar.Requests
 
         public Method Method { get; set; }
         public MetaConditions MetaConditions { get; }
-        public Body Body { get; }
+
+        private readonly Body body;
+
+        public Body GetBody()
+        {
+            return body;
+        }
+
         public Headers ResponseHeaders { get; }
         public ICollection<string> Cookies { get; }
 
@@ -69,7 +76,7 @@ namespace RESTar.Requests
             MetaConditions = null;
             Method = parameters.Method;
             if (parameters.BodyBytes?.Any() == true)
-                Body = new Body
+                body = new Body
                 (
                     stream: new RESTarStream(parameters.BodyBytes),
                     contentType: Headers.ContentType
@@ -81,6 +88,6 @@ namespace RESTar.Requests
             Cookies = null;
         }
 
-        public void Dispose() => Body.Dispose();
+        public void Dispose() => GetBody().Dispose();
     }
 }

@@ -105,7 +105,7 @@ namespace RESTar.Resources.Operations
         {
             try
             {
-                var inserter = request.GetSelector() ?? (() => request.Body.Deserialize<T>());
+                var inserter = request.GetSelector() ?? (() => request.GetBody().Deserialize<T>());
                 if (limit)
                 {
                     var _inserter = inserter;
@@ -134,7 +134,7 @@ namespace RESTar.Resources.Operations
                     var selector = sourceSelector;
                     sourceSelector = () => selector()?.UnsafeLimit();
                 }
-                var updater = request.GetUpdater() ?? (_source => request.Body.PopulateTo(_source));
+                var updater = request.GetUpdater() ?? (_source => request.GetBody().PopulateTo(_source));
                 request.EntitiesProducer = () => updater(sourceSelector())?.Select(entity =>
                 {
                     (entity as IValidatable)?.Validate();
@@ -203,7 +203,7 @@ namespace RESTar.Resources.Operations
                         {
                             case null:
                             case 0: return new InsertedEntities(request, Insert(request));
-                            case 1 when request.GetUpdater() == null && !request.Body.HasContent:
+                            case 1 when request.GetUpdater() == null && !request.GetBody().HasContent:
                                 return new UpdatedEntities(request, 0);
                             default:
                                 request.Selector = () => source;
@@ -251,7 +251,7 @@ namespace RESTar.Resources.Operations
                     .Split(',')
                     .Select(s => new Condition<T>(s, Operators.EQUALS, null))
                     .ToList();
-                foreach (var entity in request.Body.Deserialize<JObject>())
+                foreach (var entity in request.GetBody().Deserialize<JObject>())
                 {
                     conditions.ForEach(cond => cond.Value = entity.SafeGet(cond.Term.Evaluate));
                     innerRequest.Conditions = conditions;

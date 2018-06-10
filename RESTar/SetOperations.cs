@@ -38,9 +38,9 @@ namespace RESTar
         public IEnumerable<SetOperations> Select(IRequest<SetOperations> request)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
-            if (!request.Body.HasContent)
+            if (!request.GetBody().HasContent)
                 throw new Exception("Missing data source for SetOperations request");
-            var jobject = request.Body.Deserialize<JObject>().FirstOrDefault();
+            var jobject = request.GetBody().Deserialize<JObject>().FirstOrDefault();
 
             JTokens recursor(JToken token)
             {

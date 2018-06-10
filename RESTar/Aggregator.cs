@@ -88,9 +88,9 @@ namespace RESTar
                 }
             }
 
-            if (!request.Body.HasContent)
+            if (!request.GetBody().HasContent)
                 throw new Exception("Missing data source for Aggregator request");
-            var template = request.Body.Deserialize<Aggregator>().FirstOrDefault();
+            var template = request.GetBody().Deserialize<Aggregator>().FirstOrDefault();
             populator(template);
             return new[] {template}.Where(request.Conditions);
         }
