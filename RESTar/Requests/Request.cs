@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Net;
+using System.Threading;
 using System.Threading.Tasks;
 using RESTar.Admin;
 using RESTar.Internal;
@@ -24,6 +25,7 @@ namespace RESTar.Requests
 {
     internal class Request<T> : IRequest, IRequest<T>, IEntityRequest<T>, ITraceable where T : class
     {
+        private static CancellationTokenSource CancellationSource { get; } = new CancellationTokenSource();
         private bool IsEvaluating { get; set; }
         public ITarget<T> Target { get; }
         public Type TargetType { get; }
@@ -75,7 +77,7 @@ namespace RESTar.Requests
         }
 
         private Task BodyTask { get; set; }
-
+        private bool BodyTaskFailed;
         private Body _body;
 
         public Body Body
@@ -84,7 +86,18 @@ namespace RESTar.Requests
             {
                 if (BodyTask != null)
                 {
-                    BodyTask.Wait();
+                    try
+                    {
+                        BodyTask.Wait();
+                    }
+                    catch (AggregateException e)
+                    {
+                        if (!BodyTaskFailed)
+                        {
+                            BodyTaskFailed = true;
+                            throw e.InnerExceptions.FirstOrDefault() ?? e.InnerException ?? e;
+                        }
+                    }
                     BodyTask = null;
                 }
                 return _body;
@@ -95,7 +108,18 @@ namespace RESTar.Requests
                     throw new InvalidOperationException("Cannot set the request body while the request is evaluating");
                 if (BodyTask != null)
                 {
-                    BodyTask.Wait();
+                    try
+                    {
+                        BodyTask.Wait();
+                    }
+                    catch (AggregateException e)
+                    {
+                        if (!BodyTaskFailed)
+                        {
+                            BodyTaskFailed = true;
+                            throw e.InnerExceptions.FirstOrDefault() ?? e.InnerException ?? e;
+                        }
+                    }
                     BodyTask = null;
                 }
                 _body = value;
