@@ -5,27 +5,22 @@ using Starcounter;
 
 namespace RESTar.Internal.Sc
 {
-    internal class DDictionaryConverter : JsonConverter
+    internal class DDictionaryConverter : JsonConverter<DDictionary>
     {
-        public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
+        public override bool CanRead { get; } = false;
+        public override DDictionary ReadJson(JsonReader r, Type o, DDictionary e, bool h, JsonSerializer _) => throw new NotImplementedException();
+
+        public override void WriteJson(JsonWriter writer, DDictionary dictionary, JsonSerializer _)
         {
-            var dict = (DDictionary) value;
             writer.WriteStartObject();
-            foreach (var pair in dict.KeyValuePairs)
+            foreach (var pair in dictionary.KeyValuePairs)
             {
                 writer.WritePropertyName(pair.Key);
                 writer.WriteValue(pair.Value);
             }
             writer.WritePropertyName("$ObjectNo");
-            writer.WriteValue(dict.GetObjectNo());
+            writer.WriteValue(dictionary.GetObjectNo());
             writer.WriteEndObject();
         }
-
-        public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer) =>
-            throw new NotImplementedException();
-
-        public override bool CanRead { get; } = false;
-
-        public override bool CanConvert(Type objectType) => objectType.IsSubclassOf(typeof(DDictionary));
     }
 }

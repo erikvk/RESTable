@@ -17,11 +17,13 @@ namespace RESTar.ContentTypeProviders.NativeJsonProtocol
     {
         private static readonly JsonConverter DDictionaryConverter;
         private static readonly JsonConverter StringEnumConverter;
+        private static readonly TypeConverter TypeConverter;
 
         static DefaultResolver()
         {
             DDictionaryConverter = new DDictionaryConverter();
             StringEnumConverter = new StringEnumConverter();
+            TypeConverter = new TypeConverter();
         }
 
         protected override string ResolveDictionaryKey(string dictionaryKey)
@@ -38,6 +40,9 @@ namespace RESTar.ContentTypeProviders.NativeJsonProtocol
                 case var _ when typeof(DDictionary).IsAssignableFrom(objectType) && contract is JsonDictionaryContract jc:
                     jc.Converter = DDictionaryConverter;
                     jc.ItemIsReference = true;
+                    break;
+                case var _ when objectType.IsSubclassOf(typeof(Type)):
+                    contract.Converter = TypeConverter;
                     break;
                 case var _ when objectType.IsEnum:
                     contract.Converter = StringEnumConverter;

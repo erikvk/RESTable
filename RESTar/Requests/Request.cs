@@ -335,6 +335,7 @@ namespace RESTar.Requests
                         }
                         catch (HttpRequestException re)
                         {
+                            BodyFunc = null;
                             throw new InvalidSyntax(InvalidSource, $"{re.Message} in the Source header");
                         }
                     }

@@ -101,6 +101,7 @@
     <Compile Include="ContentTypeProviders\ExcelFormatException.cs" />
     <Compile Include="ContentTypeProviders\ExcelInputException.cs" />
     <Compile Include="ContentTypeProviders\JsonAdapter.cs" />
+    <Compile Include="ContentTypeProviders\TypeConverter.cs" />
     <Compile Include="ContentTypeProviders\XMLWriter.cs" />
     <Compile Include="Dynamic\Resource.cs" />
     <Compile Include="Meta\IDynamicMemberValueProvider.cs" />

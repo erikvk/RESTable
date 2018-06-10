@@ -8,15 +8,14 @@ using RESTar.Requests;
 
 namespace RESTar.ContentTypeProviders.NativeJsonProtocol
 {
-    internal class HeadersConverter : JsonConverter
+    internal class HeadersConverter : JsonConverter<Headers>
     {
         /// <inheritdoc />
         /// <summary>
         /// Writes only custom headers to JSON
         /// </summary>
-        public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
+        public override void WriteJson(JsonWriter writer, Headers headers, JsonSerializer serializer)
         {
-            var headers = value as Headers;
             var jobj = new JObject();
             headers?.CustomHeaders.ForEach(pair => jobj[pair.Key] = pair.Value);
             jobj.WriteTo(writer);
@@ -26,14 +25,12 @@ namespace RESTar.ContentTypeProviders.NativeJsonProtocol
         /// <summary>
         /// Reads only custom headers from JSON
         /// </summary>
-        public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
+        public override Headers ReadJson(JsonReader reader, Type objectType, Headers headers, bool hasExistingValue, JsonSerializer serializer)
         {
             IEnumerable<KeyValuePair<string, JToken>> values = JObject.Load(reader);
-            if (!(existingValue is Headers headers)) headers = new Headers();
+            headers = headers ?? new Headers();
             values.Where(pair => Headers.IsCustom(pair.Key)).ForEach(pair => headers[pair.Key] = pair.Value.ToObject<string>());
             return headers;
         }
-
-        public override bool CanConvert(Type objectType) => objectType == typeof(Headers);
     }
 }

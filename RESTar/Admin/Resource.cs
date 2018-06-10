@@ -13,7 +13,7 @@ namespace RESTar.Admin
 {
     /// <inheritdoc cref="ISelector{T}" />
     /// <inheritdoc cref="IUpdater{T}" />
-        /// <summary>
+    /// <summary>
     /// A meta-resource that provides representations of all resources in a RESTar instance
     /// </summary>
     [RESTar(Method.GET, Method.PATCH, Description = description)]
@@ -60,7 +60,7 @@ namespace RESTar.Admin
         /// <summary>
         /// The type targeted by this resource.
         /// </summary>
-        public string Type { get; internal set; }
+        public Type Type { get; internal set; }
 
         /// <summary>
         /// The views for this resource
@@ -118,7 +118,7 @@ namespace RESTar.Admin
                 EnabledMethods = iresource.AvailableMethods.ToArray(),
                 IsInternal = iresource.IsInternal,
                 IsDeclared = entityResource?.IsDeclared ?? true,
-                Type = iresource.Type.RESTarTypeName(),
+                Type = iresource.Type,
                 Views = entityResource != null
                     ? entityResource.Views?.Select(v => new ViewInfo(v.Name, v.Description ?? "No description")).ToArray()
                       ?? new ViewInfo[0]
