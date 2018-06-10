@@ -21,7 +21,7 @@ namespace RESTar.Meta.Internal
         static ResourceFactory()
         {
             StarcounterDeclaredProvider = new StarcounterDeclaredResourceProvider();
-            DynamitProvider = new DynamitResourceProvider(StarcounterDeclaredProvider.DatabaseIndexer);
+            DynamitProvider = new DynamitResourceProvider(StarcounterDeclaredProvider._DatabaseIndexer);
             VrProvider = new VirtualResourceProvider();
             EntityResourceProviders.Add(DynamitProvider.GetProviderId(), DynamitProvider);
             EntityResourceProviders.Add(StarcounterDeclaredProvider.GetProviderId(), StarcounterDeclaredProvider);
@@ -158,7 +158,7 @@ namespace RESTar.Meta.Internal
 
             foreach (var provider in EntityResourceProviders.Values)
             {
-                provider.ReceiveClaimed(Resource.ClaimedBy(provider));
+                provider._ReceiveClaimed(Resource.ClaimedBy(provider));
                 if (provider is IProceduralEntityResourceProvider)
                     provider.MakeClaimProcedural();
             }

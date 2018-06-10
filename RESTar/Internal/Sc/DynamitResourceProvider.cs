@@ -32,8 +32,8 @@ namespace RESTar.Internal.Sc
         protected override int DefaultUpdate<T>(IRequest<T> request) => DDictionaryOperations<T>.Update(request);
         protected override int DefaultDelete<T>(IRequest<T> request) => DDictionaryOperations<T>.Delete(request);
         protected override ResourceProfile DefaultProfile<T>(IEntityResource<T> resource) => DDictionaryOperations<T>.Profile(resource);
+        protected override IDatabaseIndexer DatabaseIndexer { get; }
 
-        public override IDatabaseIndexer DatabaseIndexer { get; }
         internal DynamitResourceProvider(IDatabaseIndexer databaseIndexer) => DatabaseIndexer = databaseIndexer;
 
         protected override bool IsValid(IEntityResource resource, out string reason) =>

@@ -60,14 +60,14 @@ namespace RESTar.Resources
         /// <summary>
         /// Selects the instances that have been inserted by this controller
         /// </summary>
-        public static IEnumerable<TController> Select() => ResourceProvider
+        protected static IEnumerable<TController> Select() => ResourceProvider
             ._Select()
             .Select(resource => Make<TController>(Meta.Resource.SafeGet(resource.Name)));
 
         /// <summary>
         /// Inserts the current instance as a new dynamic procedural
         /// </summary>
-        public void Insert()
+        protected void Insert()
         {
             var name = Name;
             var methods = EnabledMethods;
@@ -86,7 +86,7 @@ namespace RESTar.Resources
         /// <summary>
         /// Updates the state of the current instance to the corresponding procedural resource
         /// </summary>
-        public void Update()
+        protected void Update()
         {
             var procedural = ResourceProvider._Select()?.FirstOrDefault(item => item.Name == Name) ??
                              throw new InvalidOperationException($"Cannot update resource '{Name}'. Resource has not been inserted.");
@@ -100,11 +100,13 @@ namespace RESTar.Resources
         /// <summary>
         /// Deletes the corresponding procedural resource
         /// </summary>
-        public void Delete()
+        protected void Delete()
         {
             var procedural = ResourceProvider._Select()?.FirstOrDefault(item => item.Name == Name);
             ResourceProvider._Delete(procedural);
         }
+
+        #region RESTar
 
         /// <inheritdoc />
         public virtual IEnumerable<TController> Select(IRequest<TController> request)
@@ -147,5 +149,7 @@ namespace RESTar.Resources
             }
             return i;
         }
+
+        #endregion
     }
 }

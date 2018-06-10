@@ -12,7 +12,7 @@ namespace RESTar.Internal.Sc
     internal class StarcounterDeclaredResourceProvider : EntityResourceProvider<object>
     {
         protected override Type AttributeType { get; } = null;
-        public override IDatabaseIndexer DatabaseIndexer { get; } = new ScIndexer();
+        protected override IDatabaseIndexer DatabaseIndexer { get; } = new ScIndexer();
         internal override void Validate() { }
 
         internal override bool Include(Type type)

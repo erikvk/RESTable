@@ -126,7 +126,7 @@ namespace RESTar.Meta.Internal
             }
             else Name = fullName;
 
-            provider.ModifyResourceAttribute(typeof(T), attribute);
+            provider._ModifyResourceAttribute(typeof(T), attribute);
             IsDeclared = attribute.IsDeclared;
             Description = attribute.Description;
             AvailableMethods = attribute.AvailableMethods;

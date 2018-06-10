@@ -106,23 +106,29 @@ namespace RESTar.Resources
             throw new NotImplementedException();
         }
 
+        internal IDatabaseIndexer _DatabaseIndexer => DatabaseIndexer;
+
         /// <summary>
         /// IDatabaseIndexers are plugins for the DatabaseIndex resource, that allow resources 
         /// created by this provider to have database indexes managed by that resource.
         /// </summary>
-        public virtual IDatabaseIndexer DatabaseIndexer { get; } = null;
+        protected virtual IDatabaseIndexer DatabaseIndexer { get; } = null;
+
+        internal virtual void _ReceiveClaimed(ICollection<IEntityResource> claimedResources) => ReceiveClaimed(claimedResources);
 
         /// <summary>
-        /// The ReceiveClaimed method is called by RESTar once the resources provided
+        /// The ReceiveClaimed method is called by RESTar once one or more resources provided
         /// by this ResourceProvider have been added. Override this to provide additional 
         /// logic once resources have been validated and set up.
         /// </summary>
-        public virtual void ReceiveClaimed(ICollection<IEntityResource> claimedResources) { }
+        protected virtual void ReceiveClaimed(ICollection<IEntityResource> claimedResources) { }
+
+        internal void _ModifyResourceAttribute(Type type, RESTarAttribute attribute) => ModifyResourceAttribute(type, attribute);
 
         /// <summary>
         /// An optional method for modifying the RESTar resource attribute of a type before the resource is generated
         /// </summary>
-        public virtual void ModifyResourceAttribute(Type type, RESTarAttribute attribute) { }
+        protected virtual void ModifyResourceAttribute(Type type, RESTarAttribute attribute) { }
 
         /// <summary>
         /// Override this method to add a validation step to the resource claim process. 
@@ -404,7 +410,8 @@ namespace RESTar.Resources
             var type = resource.Type;
             ResourceValidator.ValidateRuntimeInsertion(type, resource.Name, attribute);
             ResourceValidator.Validate(type);
-            _InsertResource(type, resource.Name, attribute);
+            var inserted = _InsertResource(type, resource.Name, attribute);
+            ReceiveClaimed(new[] {inserted});
         }
 
         internal override bool Include(Type type)
