@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Runtime.Serialization;
-using RESTar;
+using RESTar.Resources;
 using Starcounter;
 
 #pragma warning disable 1591
@@ -102,7 +102,7 @@ namespace RESTarExample
         /// by a Starcounter object reference. In the CLR domain, the column 'Boss' will still
         /// be of type 'BetterEmployee', but in the JSON domain it will be a nullable UInt64.
         /// </summary>
-        [IgnoreDataMember] // first we ignore this member
+        [RESTarMember(ignore: true)] // first we ignore this member
         public BetterEmployee Boss // then we make it into a property like so:
         {
             // ReSharper disable once SuspiciousTypeConversion.Global

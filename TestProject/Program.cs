@@ -1,59 +1,50 @@
-﻿using System;
-using RESTar;
+﻿using System.Collections.Generic;
+using System.Diagnostics;
+using System.Net;
+using System.Threading.Tasks;
 using Starcounter;
-
-// ReSharper disable All
 
 namespace TestProject
 {
     public class Program
     {
+        private const string groupName = "testgroup";
+        private static readonly List<ulong> Added = new List<ulong>();
+
         public static void Main()
         {
-            RESTarConfig.Init();
-
-            var request = new Request<DbCustomer>
-                {Conditions = new[] {new Condition<DbCustomer>("Name", Operators.EQUALS, "Foo")}};
-
-            var customers = request.GET();
-
-            var s = request
-                .WithConditions("Name", Operators.EQUALS, "SomeName")
-                .GET();
-        }
-
-        public interface IDbCustomerInterface
-        {
-            string myname { get; set; }
-            DateTime datetime { get; set; }
-        }
-
-        [Database, RESTar(Interface = typeof(IDbCustomerInterface))]
-        public class DbCustomer : IDbCustomerInterface
-        {
-            public string Name { get; set; }
-            public int MyInt { get; set; }
-            public DateTime MyDateTime { get; set; }
-
-            string IDbCustomerInterface.myname
+            Handle.GET("/test?{?}", (string query, Request request) =>
             {
-                get => Name;
-                set => Name = value;
-            }
+                if (!request.WebSocketUpgrade)
+                    return HttpStatusCode.UpgradeRequired;
 
-            DateTime IDbCustomerInterface.datetime
+                Added.Add(request.GetWebSocketId());
+
+                if (query == "schedule")
+                    Scheduling.RunTask(() => request.SendUpgrade(groupName)).Wait();
+                else if (query == "taskrun")
+                    Task.Run(() => request.SendUpgrade(groupName)).Wait();
+                else request.SendUpgrade(groupName);
+
+                return HandlerStatus.Handled;
+            });
+
+            Handle.WebSocket(groupName, (string s, WebSocket socket) =>
             {
-                get => MyDateTime;
-                set => MyDateTime = value;
-            }
-        }
+                // sorry, no reaction
+            });
 
-        [Database]
-        public class DbOrder
-        {
-            public string Name { get; set; }
-            public int MyInt { get; set; }
-            public DateTime MyDateTime { get; set; }
+            Handle.WebSocket(groupName, (byte[] b, WebSocket socket) =>
+            {
+                // sorry, no reaction
+            });
+
+            Handle.WebSocketDisconnect(groupName, ws =>
+            {
+                var id = ws.ToUInt64();
+                Debug.Assert(Added.Contains(id));
+                Added.Remove(id);
+            });
         }
     }
 }

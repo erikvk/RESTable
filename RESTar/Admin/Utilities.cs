@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
-using RESTar.ResourceTemplates;
+using RESTar.Resources;
+using RESTar.Resources.Templates;
 
 namespace RESTar.Admin
 {

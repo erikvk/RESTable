@@ -1,54 +1,49 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using RESTar.Internal;
+using RESTar.ProtocolProviders;
 using RESTar.Requests;
+using RESTar.Resources;
+using RESTar.Resources.Operations;
 
 namespace RESTar.Admin
 {
     /// <summary>
     /// Describes a content type
     /// </summary>
-    public class ContentType
+    public class ContentTypeInfo
     {
         /// <summary>
         /// The name of the content type
         /// </summary>
-        public string Name { get; }
+        public string Name { get; internal set; }
 
         /// <summary>
         /// The MIME type of this content type
         /// </summary>
-        public string MimeType { get; }
+        public string MimeType { get; internal set; }
 
         /// <summary>
         /// Can this content type be used to read data?
         /// </summary>
-        public bool CanRead { get; }
+        public bool CanRead { get; internal set; }
 
         /// <summary>
         /// Can this content type be used to write data?
         /// </summary>
-        public bool CanWrite { get; }
+        public bool CanWrite { get; internal set; }
 
         /// <summary>
         /// The MIME type string bindings used for the protocol provider
         /// </summary>
-        public string[] Bindings { get; }
-
-        internal ContentType(string name, string mimeType, bool canRead, bool canWrite, string[] bindings)
-        {
-            Name = name;
-            MimeType = mimeType;
-            CanRead = canRead;
-            CanWrite = canWrite;
-            Bindings = bindings;
-        }
+        public IEnumerable<string> Bindings { get; internal set; }
     }
 
     /// <inheritdoc />
     /// <summary>
     /// Contains all the available protocols and content types for the current RESTar instance
     /// </summary>
-    [RESTar(Methods.GET)]
+    [RESTar(Method.GET)]
     public class Protocol : ISelector<Protocol>
     {
         private const string description = "Contains all the available protocols and content types for the current RESTar instance";
@@ -71,36 +66,31 @@ namespace RESTar.Admin
         /// <summary>
         /// The content types supported by this protocol
         /// </summary>
-        public ContentType[] ContentTypes { get; private set; }
+        public IEnumerable<ContentTypeInfo> ContentTypes { get; private set; }
 
         /// <inheritdoc />
-        public IEnumerable<Protocol> Select(IRequest<Protocol> request)
-        {
-            return RequestEvaluator.ProtocolProviders.Values.Distinct().Select(cachedProvider =>
+        public IEnumerable<Protocol> Select(IRequest<Protocol> request) => ProtocolController.ProtocolProviders.Values
+            .Distinct()
+            .Select(cachedProvider => new Protocol
             {
-                var contentTypes = cachedProvider.InputMimeBindings.Values
+                Name = cachedProvider.ProtocolProvider.ProtocolName,
+                Identifier = cachedProvider.ProtocolProvider.ProtocolIdentifier,
+                IsDefault = cachedProvider.ProtocolProvider is DefaultProtocolProvider,
+                ContentTypes = cachedProvider.InputMimeBindings.Values
                     .Union(cachedProvider.OutputMimeBindings.Values)
                     .Distinct()
-                    .Select(provider => new ContentType
-                    (
-                        name: provider.Name,
-                        mimeType: provider.ContentType.MimeType,
-                        canRead: cachedProvider.InputMimeBindings.Values.Contains(provider),
-                        canWrite: cachedProvider.OutputMimeBindings.Values.Contains(provider),
-                        bindings: cachedProvider.InputMimeBindings
+                    .Select(provider => new ContentTypeInfo
+                    {
+                        Name = provider.Name,
+                        MimeType = provider.ContentType.MediaType,
+                        CanRead = cachedProvider.InputMimeBindings.Values.Contains(provider),
+                        CanWrite = cachedProvider.OutputMimeBindings.Values.Contains(provider),
+                        Bindings = cachedProvider.InputMimeBindings
                             .Where(binding => binding.Value.Equals(provider))
                             .Union(cachedProvider.OutputMimeBindings
                                 .Where(binding => binding.Value.Equals(provider)))
-                            .Select(binding => binding.Key).ToArray()
-                    ));
-                return new Protocol
-                {
-                    Name = cachedProvider.ProtocolProvider.ProtocolName,
-                    Identifier = cachedProvider.ProtocolProvider.ProtocolIdentifier,
-                    IsDefault = cachedProvider.ProtocolProvider is DefaultProtocolProvider,
-                    ContentTypes = contentTypes.ToArray()
-                };
+                            .Select(binding => binding.Key)
+                    })
             });
-        }
     }
 }

@@ -1,7 +1,10 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using RESTar.Deflection.Dynamic;
 using RESTar.Linq;
+using RESTar.Meta;
+using RESTar.Requests;
+using RESTar.Resources;
+using RESTar.Resources.Operations;
 
 namespace RESTar.Admin
 {
@@ -9,7 +12,7 @@ namespace RESTar.Admin
     /// <summary>
     /// Gets the properties discovered by this RESTar instance
     /// </summary>
-    [RESTar(Methods.GET)]
+    [RESTar(Method.GET)]
     public class PropertyCache : ISelector<PropertyCache>
     {
         /// <summary>

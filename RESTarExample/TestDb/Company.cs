@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
-using System.Runtime.Serialization;
-using RESTar;
+using RESTar.Resources;
 using Starcounter;
 
 #pragma warning disable 1591
@@ -13,7 +12,7 @@ namespace RESTarExample.TestDb
         public string Name;
         public Employee CEO;
 
-        [IgnoreDataMember]
+        [RESTarMember(ignore: true)]
         public IEnumerable<Employee> Employees
         {
             get { return Db.SQL<Employee>($"SELECT t FROM {typeof(Employee)} t WHERE t.Company =?", this); }

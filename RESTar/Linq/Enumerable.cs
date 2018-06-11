@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using RESTar.Results;
 
 namespace RESTar.Linq
 {
@@ -229,6 +230,42 @@ namespace RESTar.Linq
                 else falses.Add(item);
             }
             return (trues, falses);
+        }
+
+        internal static IEnumerable<T> UnsafeLimit<T>(this IEnumerable<T> source)
+        {
+            if (source == null) return null;
+
+            IEnumerable<T> apply()
+            {
+                var i = 1;
+                foreach (var entity in source)
+                {
+                    if (i > 1) throw new AmbiguousMatch();
+                    i += 1;
+                    yield return entity;
+                }
+            }
+
+            return apply();
+        }
+
+        internal static IEnumerable<T> InputLimit<T>(this IEnumerable<T> source)
+        {
+            if (source == null) return null;
+
+            IEnumerable<T> apply()
+            {
+                var i = 1;
+                foreach (var entity in source)
+                {
+                    if (i > 1) throw new InvalidInputCount();
+                    i += 1;
+                    yield return entity;
+                }
+            }
+
+            return apply();
         }
     }
 }

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Data;
+using System.Diagnostics.Contracts;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -9,27 +9,34 @@ using System.Net;
 using System.Reflection;
 using System.Runtime.Serialization;
 using System.Text;
+using System.Threading.Tasks;
+using System.Web;
 using Dynamit;
+using Microsoft.CSharp.RuntimeBinder;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using RESTar.Auth;
 using RESTar.ContentTypeProviders;
-using RESTar.Deflection.Dynamic;
 using RESTar.Internal;
+using RESTar.Internal.Sc;
 using RESTar.Linq;
-using RESTar.Operations;
+using RESTar.Meta;
+using RESTar.Meta.Internal;
+using RESTar.Requests;
+using RESTar.Requests.Filters;
+using RESTar.Requests.Processors;
 using RESTar.Resources;
-using RESTar.Results.Error.BadRequest;
-using RESTar.Results.Error.Forbidden;
-using RESTar.View;
+using RESTar.Resources.Operations;
+using RESTar.Results;
+using RESTar.WebSockets;
 using Starcounter;
 using static System.Globalization.DateTimeStyles;
 using static System.Reflection.BindingFlags;
 using static System.StringComparison;
 using static RESTar.Internal.ErrorCodes;
-using static RESTar.Operators;
+using static RESTar.Requests.Operators;
 using static Starcounter.DbHelper;
-
+using Operator = RESTar.Internal.Operator;
+using UriComponents = RESTar.Requests.UriComponents;
 
 namespace RESTar
 {
@@ -42,14 +49,20 @@ namespace RESTar
 
         internal static string RESTarMemberName(this MemberInfo m, bool flagged = false)
         {
-            var name = m.GetAttribute<RESTarMemberAttribute>()?.Name ??
-                       m.GetAttribute<DataMemberAttribute>()?.Name ??
-                       m.GetAttribute<JsonPropertyAttribute>()?.PropertyName ??
-                       m.Name;
-            return flagged ? "$" + name : name;
+            var name = m.GetCustomAttributes().Select(a =>
+            {
+                switch (a)
+                {
+                    case RESTarMemberAttribute rma: return rma.Name;
+                    case DataMemberAttribute dma: return dma.Name;
+                    case JsonPropertyAttribute jpa: return jpa.PropertyName;
+                    default: return null;
+                }
+            }).FirstOrDefault(a => a != null) ?? m.Name;
+            return flagged ? $"${name}" : name;
         }
 
-        internal static bool RESTarIgnored(this MemberInfo m) => m.GetAttribute<RESTarMemberAttribute>()?.Ignored == true ||
+        internal static bool RESTarIgnored(this MemberInfo m) => m.GetCustomAttribute<RESTarMemberAttribute>()?.Ignored == true ||
                                                                  m.HasAttribute<IgnoreDataMemberAttribute>();
 
         #endregion
@@ -61,12 +74,11 @@ namespace RESTar
         /// <summary>
         /// Can this type hold dynamic members? Defined as implementing the IDictionary`2 interface
         /// </summary>
-        public static bool IsDynamic(this Type type) => type.Implements(typeof(IDictionary<,>));
+        public static bool IsDynamic(this Type type) => type.ImplementsGenericInterface(typeof(IDictionary<,>))
+                                                        || typeof(IDynamicMemberValueProvider).IsAssignableFrom(type);
 
         internal static bool IsDDictionary(this Type type) => type == typeof(DDictionary) ||
                                                               type.IsSubclassOf(typeof(DDictionary));
-
-        internal static bool IsStarcounterDbClass(this Type type) => type.HasAttribute<DatabaseAttribute>();
 
         internal static IList<Type> GetConcreteSubclasses(this Type baseType) => baseType.GetSubclasses()
             .Where(type => !type.IsAbstract)
@@ -78,29 +90,36 @@ namespace RESTar
             where type.IsSubclassOf(baseType)
             select type;
 
-        internal static TAttribute GetAttribute<TAttribute>(this MemberInfo type) where TAttribute : Attribute =>
-            type?.GetCustomAttributes<TAttribute>().FirstOrDefault();
-
-        internal static bool HasAttribute(this MemberInfo type, Type attributeType) =>
-            (type?.GetCustomAttributes(attributeType).Any()).GetValueOrDefault();
-
-        internal static bool HasResourceProviderAttribute(this Type resource) =>
-            resource.GetCustomAttributes().OfType<ResourceProviderAttribute>().Any();
-
-        internal static bool HasAttribute<TAttribute>(this MemberInfo type)
-            where TAttribute : Attribute => (type?.GetCustomAttributes<TAttribute>().Any()).GetValueOrDefault();
-
-        internal static bool HasAttribute<TAttribute>(this MemberInfo type, out TAttribute attribute)
-            where TAttribute : Attribute
+        internal static T AsImplemented<T>(this T @delegate) where T : Delegate
         {
-            attribute = type?.GetCustomAttributes<TAttribute>().FirstOrDefault();
+            return @delegate?.Method.HasAttribute<MethodNotImplementedAttribute>() == false ? @delegate : null;
+        }
+
+        internal static bool HasAttribute(this MemberInfo type, Type attributeType)
+        {
+            return (type?.GetCustomAttributes(attributeType).Any()).GetValueOrDefault();
+        }
+
+        internal static bool HasResourceProviderAttribute(this Type resource)
+        {
+            return resource.GetCustomAttributes().OfType<EntityResourceProviderAttribute>().Any();
+        }
+
+        internal static bool HasAttribute<TAttribute>(this MemberInfo type) where TAttribute : Attribute
+        {
+            return type?.GetCustomAttribute<TAttribute>() != null;
+        }
+
+        internal static bool HasAttribute<TAttribute>(this MemberInfo type, out TAttribute attribute) where TAttribute : Attribute
+        {
+            attribute = type?.GetCustomAttribute<TAttribute>();
             return attribute != null;
         }
 
         /// <summary>
-        /// Returns true if and only if the type implements the interface type
+        /// Returns true if and only if the type implements the generic interface type
         /// </summary>
-        public static bool Implements(this Type type, Type interfaceType)
+        public static bool ImplementsGenericInterface(this Type type, Type interfaceType)
         {
             if (type.Name == interfaceType.Name &&
                 type.Namespace == interfaceType.Namespace &&
@@ -114,10 +133,10 @@ namespace RESTar
         }
 
         /// <summary>
-        /// Returns true if and only if the type implements the interface type. Returns the 
+        /// Returns true if and only if the type implements the generic interface type. Returns the 
         /// generic type parameters (if any) in an out parameter.
         /// </summary>
-        public static bool Implements(this Type type, Type interfaceType, out Type[] genericParameters)
+        public static bool ImplementsGenericInterface(this Type type, Type interfaceType, out Type[] genericParameters)
         {
             var match = type.GetInterfaces()
                 .FirstOrDefault(i => i.Name == interfaceType.Name &&
@@ -139,7 +158,7 @@ namespace RESTar
             {
                 case null: return 0;
                 case string str: return Encoding.UTF8.GetByteCount(str);
-                case Binary binary: return binary.ToArray().Length;
+                case Starcounter.Binary binary: return binary.ToArray().Length;
                 default: return CountBytes(property.PropertyType);
             }
         }
@@ -151,7 +170,7 @@ namespace RESTar
             {
                 case TypeCode.Object:
                     if (type.IsNullable(out var baseType)) return CountBytes(baseType);
-                    if (type.IsStarcounterDbClass()) return 16;
+                    if (type.HasAttribute<DatabaseAttribute>()) return 16;
                     throw new Exception($"Unknown type encountered: '{type.RESTarTypeName()}'");
                 case TypeCode.Boolean: return 4;
                 case TypeCode.Char: return 2;
@@ -189,8 +208,8 @@ namespace RESTar
         /// <returns>The object with the specified ObjectNo</returns>
         public static T GetReference<T>(this ulong objectNo) where T : class => FromID(objectNo) as T;
 
-        internal static bool EqualsNoCase(this string s1, string s2) => string.Equals(s1, s2, CurrentCultureIgnoreCase);
-        internal static string ToMethodsString(this IEnumerable<Methods> ie) => string.Join(", ", ie);
+        internal static bool EqualsNoCase(this string s1, string s2) => string.Equals(s1, s2, OrdinalIgnoreCase);
+        internal static string ToMethodsString(this IEnumerable<Method> ie) => string.Join(", ", ie);
 
         internal static string ReplaceFirst(this string text, string search, string replace, out bool replaced)
         {
@@ -205,14 +224,14 @@ namespace RESTar
             return $"{text.Substring(0, pos)}{replace}{text.Substring(pos + search.Length)}";
         }
 
-        internal static Methods[] ToMethodsArray(this string methodsString)
+        internal static Method[] ToMethodsArray(this string methodsString)
         {
             if (methodsString == null) return null;
             if (methodsString.Trim() == "*")
                 return RESTarConfig.Methods;
             return methodsString.Split(',')
                 .Where(s => s != "")
-                .Select(s => (Methods) Enum.Parse(typeof(Methods), s))
+                .Select(s => (Method) Enum.Parse(typeof(Method), s))
                 .ToArray();
         }
 
@@ -227,17 +246,6 @@ namespace RESTar
             .GetMethod(nameof(DEFAULT), NonPublic | Static);
 
         private static object DEFAULT<T>() => default(T);
-
-        internal static AccessRights ToAccessRights(this List<AccessRight> accessRights, string key)
-        {
-            var ar = new AccessRights(key);
-            foreach (var right in accessRights)
-            foreach (var resource in right.Resources)
-                ar[resource] = ar.ContainsKey(resource)
-                    ? ar[resource].Union(right.AllowedMethods).ToArray()
-                    : right.AllowedMethods;
-            return ar;
-        }
 
         internal static string Fnuttify(this string sqlKey) => $"\"{sqlKey.Replace(".", "\".\"")}\"";
 
@@ -284,13 +292,20 @@ namespace RESTar
         /// Splits a string into two parts by a separator char, and returns a 2-tuple 
         /// holding the parts.
         /// </summary>
-        public static (string, string) TSplit(this string str, char separator)
+        public static (string, string) TSplit(this string str, char separator, bool trim = false)
         {
             var split = str.Split(new[] {separator}, 2);
+            if (!trim)
+                switch (split.Length)
+                {
+                    case 1: return (split[0], null);
+                    case 2: return (split[0], split[1]);
+                    default: return (null, null);
+                }
             switch (split.Length)
             {
-                case 1: return (split[0], null);
-                case 2: return (split[0], split[1]);
+                case 1: return (split[0].Trim(), null);
+                case 2: return (split[0].Trim(), split[1].Trim());
                 default: return (null, null);
             }
         }
@@ -299,14 +314,21 @@ namespace RESTar
         /// Splits a string into two parts by a separator string, and returns a 2-tuple 
         /// holding the parts.
         /// </summary>
-        public static (string, string) TSplit(this string str, string separator)
+        public static (string, string) TSplit(this string str, string separator, bool trim = false)
         {
             var split = str.Split(new[] {separator}, 2, StringSplitOptions.None);
+            if (!trim)
+                switch (split.Length)
+                {
+                    default: return (null, null);
+                    case 1: return (split[0], null);
+                    case 2: return (split[0], split[1]);
+                }
             switch (split.Length)
             {
-                case 1: return (split[0], null);
-                case 2: return (split[0], split[1]);
                 default: return (null, null);
+                case 1: return (split[0].Trim(), null);
+                case 2: return (split[0].Trim(), split[1].Trim());
             }
         }
 
@@ -347,7 +369,7 @@ namespace RESTar
                     foreach (DictionaryEntry pair in idict)
                         _jobj[pair.Key.ToString()] = pair.Value == null
                             ? null
-                            : JToken.FromObject(pair.Value, JsonContentProvider.Serializer);
+                            : JToken.FromObject(pair.Value, JsonProvider.Serializer);
                     return _jobj;
             }
 
@@ -359,7 +381,7 @@ namespace RESTar
                 .ForEach(prop =>
                 {
                     object val = prop.GetValue(entity);
-                    jobj[prop.Name] = val == null ? null : JToken.FromObject(val, JsonContentProvider.Serializer);
+                    jobj[prop.Name] = val == null ? null : JToken.FromObject(val, JsonProvider.Serializer);
                 });
             return jobj;
         }
@@ -368,28 +390,18 @@ namespace RESTar
         {
             var typeName = providerType.Name;
             if (typeName == null) throw new ArgumentNullException();
-            if (typeName.EndsWith("provider", InvariantCultureIgnoreCase))
+            if (typeName.EndsWith("resourceprovider", InvariantCultureIgnoreCase))
+                typeName = typeName.Substring(0, typeName.Length - 16);
+            else if (typeName.EndsWith("provider", InvariantCultureIgnoreCase))
                 typeName = typeName.Substring(0, typeName.Length - 8);
             return typeName;
         }
 
-        internal static string GetProviderId(this ResourceProvider provider) => GetProviderId(provider.GetType());
+        internal static string GetProviderId(this EntityResourceProvider provider) => GetProviderId(provider.GetType());
 
         internal static Type GetWrappedType(this Type wrapperType) => wrapperType.BaseType?.GetGenericArguments()[0];
 
         internal static bool IsWrapper(this Type type) => typeof(IResourceWrapper).IsAssignableFrom(type);
-
-        /// <summary>
-        /// If the type is represented by some RESTar resource in the current instance,
-        /// returns this resource. Else null.
-        /// </summary>
-        public static Internal.IResource GetResource(this Type type) => Resource.ByTypeName(type.RESTarTypeName());
-
-        /// <summary>
-        /// If the type is represented by some RESTar resource in the current instance,
-        /// returns the name of this resource. Else null.
-        /// </summary>
-        public static string GetResourceName(this Type type) => type.GetResource()?.Name;
 
         #endregion
 
@@ -602,6 +614,92 @@ namespace RESTar
 
         private static readonly CultureInfo en_US = new CultureInfo("en-US");
 
+        internal static Results.Error AsError(this Exception exception)
+        {
+            switch (exception)
+            {
+                case Results.Error re: return re;
+                case FormatException _: return new UnsupportedContent(exception);
+                case JsonReaderException jre: return new FailedJsonDeserialization(jre);
+                case DbException _: return new ScDatabaseError(exception);
+                case RuntimeBinderException _: return new BinderPermissions(exception);
+                case NotImplementedException _: return new FeatureNotImplemented("RESTar encountered a call to a non-implemented method");
+                default: return new Unknown(exception);
+            }
+        }
+
+        internal static IResult AsResultOf(this Exception exception, IRequestInternal request)
+        {
+            var error = exception.AsError();
+            error.SetTrace(request);
+            error.RequestInternal = request;
+            string errorId = null;
+            if (!(error is Forbidden) && !(request is RemoteRequest) && request.Method >= 0)
+            {
+                Admin.Error.ClearOld();
+                Db.TransactAsync(() => errorId = Admin.Error.Create(error, request).Id);
+            }
+            if (request.IsWebSocketUpgrade)
+            {
+                if (error is Forbidden)
+                {
+                    request.Context.WebSocket.Disconnect();
+                    return new WebSocketUpgradeFailed(error);
+                }
+                if (request.Context.WebSocket?.Status == WebSocketStatus.Waiting)
+                    request.Context.WebSocket?.Open();
+                request.Context.WebSocket?.SendResult(error);
+                request.Context.WebSocket?.Disconnect();
+                return new WebSocketUpgradeSuccessful(request);
+            }
+            if (request.Headers.Metadata.EqualsNoCase("full"))
+                error.Headers.Metadata = error.Metadata;
+            error.Headers.Version = RESTarConfig.Version;
+            if (errorId != null)
+                error.Headers.Error = $"/restar.admin.error/id={HttpUtility.UrlEncode(errorId)}";
+            error.TimeElapsed = request.TimeElapsed;
+            return error;
+        }
+
+        [Pure]
+        internal static ISerializedResult Finalize(this ISerializedResult result, IContentTypeProvider acceptProvider)
+        {
+            if (result.Body?.CanRead == true)
+            {
+                if (result.Body.CanSeek)
+                {
+                    if (result.Body.Length == 0)
+                    {
+                        result.Body.Dispose();
+                        result.Body = null;
+                    }
+                    else result.Body.Seek(0, SeekOrigin.Begin);
+                }
+            }
+            else
+            {
+                result.Body?.Dispose();
+                result.Body = null;
+            }
+            if (result.Body != null && result.Headers.ContentType == null)
+                result.Headers.ContentType = acceptProvider.ContentType;
+            return result;
+        }
+
+        internal static IUriComponents MakeNextPageLink<T>(this IEntities<T> entities, int count) where T : class
+        {
+            var components = new UriComponents(entities.Request.UriComponents);
+            if (count > -1)
+            {
+                components.MetaConditions.RemoveAll(c => c.Key.EqualsNoCase("limit"));
+                components.MetaConditions.Add(new UriCondition("limit", EQUALS, count.ToString()));
+            }
+            components.MetaConditions.RemoveAll(c => c.Key.EqualsNoCase("offset"));
+            components.MetaConditions.Add(new UriCondition("offset", EQUALS,
+                (entities.Request.MetaConditions.Offset + (long) entities.EntityCount).ToString()));
+            return components;
+        }
+
         /// <summary>
         /// Parses a condition value from a value literal, and performs an optional type check (non-optional for enums)
         /// </summary>
@@ -647,12 +745,12 @@ namespace RESTar
             }
             switch (valueLiteral)
             {
-                case "true":
-                case "True":
-                case "TRUE": return true;
                 case "false":
                 case "False":
                 case "FALSE": return false;
+                case "true":
+                case "True":
+                case "TRUE": return true;
             }
             if (char.IsDigit(first))
             {
@@ -666,12 +764,6 @@ namespace RESTar
                     return dat;
             }
             return valueLiteral;
-        }
-
-        internal static void MethodCheck(this IRequest request)
-        {
-            if (!Authenticator.MethodCheck(request.Method, request.Resource, request.TcpConnection.AuthToken, out var failedAuth))
-                throw new MethodNotAllowed(request.Method, request.Resource, failedAuth);
         }
 
         /// <summary>
@@ -702,6 +794,37 @@ namespace RESTar
 
         #region Conversion
 
+        internal static RESTarStream GetBodyStream<T>(this IRequestInternal request, T content, ContentType? contentType = null) where T : class
+        {
+            switch (content)
+            {
+                case Stream _stream: return new RESTarStream(_stream);
+                case byte[] bytes: return new RESTarStream(bytes);
+                case string str: return new RESTarStream(str.ToBytes());
+                case null: throw new ArgumentNullException(nameof(content));
+            }
+            var contentTypeProvider = ContentTypeController.ResolveInputContentTypeProvider(request, contentType);
+            request.Headers.ContentType = contentTypeProvider.ContentType;
+            var stream = new RESTarStream();
+            switch (content)
+            {
+                case IDictionary<string, object> _:
+                case JObject _:
+                    contentTypeProvider.SerializeCollection(new[] {content}, stream);
+                    break;
+                case IEnumerable<object> ie:
+                    contentTypeProvider.SerializeCollection(ie, stream);
+                    break;
+                case IEnumerable ie:
+                    contentTypeProvider.SerializeCollection(ie.Cast<object>(), stream);
+                    break;
+                default:
+                    contentTypeProvider.SerializeCollection(new[] {content}, stream);
+                    break;
+            }
+            return stream.Rewind();
+        }
+
         internal static string SHA256(this string input)
         {
             using (var hasher = System.Security.Cryptography.SHA256.Create())
@@ -730,120 +853,50 @@ namespace RESTar
 
         internal static byte[] ToByteArray(this Stream stream)
         {
-            if (stream == null) return null;
-            MemoryStream ms;
-            if (stream is MemoryStream _ms) ms = _ms;
-            else
+            switch (stream)
             {
-                ms = new MemoryStream();
-                using (stream) stream.CopyTo(ms);
-            }
-            return ms.ToArray();
-        }
-
-        internal static ClosedXML.Excel.XLWorkbook ToExcel(this IEnumerable<object> entities, IEntityResource resource)
-        {
-            var dataSet = new DataSet();
-            var table = entities.MakeDataTable(resource);
-            if (table.Rows.Count == 0) return null;
-            dataSet.Tables.Add(table);
-            var workbook = new ClosedXML.Excel.XLWorkbook();
-            workbook.AddWorksheet(dataSet);
-            return workbook;
-        }
-
-        /// <summary>
-        /// Converts an IEnumerable of T to an Excel workbook
-        /// </summary>
-        public static ClosedXML.Excel.XLWorkbook ToExcel<T>(this IEnumerable<T> entities) where T : class
-        {
-            var resource = EntityResource<T>.Get;
-            var dataSet = new DataSet();
-            var table = entities.MakeDataTable(resource);
-            if (table.Rows.Count == 0) return null;
-            dataSet.Tables.Add(table);
-            var workbook = new ClosedXML.Excel.XLWorkbook();
-            workbook.AddWorksheet(dataSet);
-            return workbook;
-        }
-
-        internal static DataTable MakeDataTable(this IEnumerable<object> entities, IEntityResource resource)
-        {
-            var table = new DataTable();
-            switch (entities)
-            {
-                case IEnumerable<IDictionary<string, object>> dicts:
-                    foreach (var item in dicts)
-                    {
-                        var row = table.NewRow();
-                        foreach (var pair in item)
-                        {
-                            if (!table.Columns.Contains(pair.Key))
-                                table.Columns.Add(pair.Key);
-                            row[pair.Key] = pair.Value.MakeDynamicCellValue();
-                        }
-
-                        table.Rows.Add(row);
-                    }
-                    return table;
-                case IEnumerable<JObject> jobjects:
-                    foreach (var item in jobjects)
-                    {
-                        var row = table.NewRow();
-                        foreach (var pair in item)
-                        {
-                            if (!table.Columns.Contains(pair.Key))
-                                table.Columns.Add(pair.Key);
-                            row[pair.Key] = pair.Value.ToObject<object>().MakeDynamicCellValue();
-                        }
-                        table.Rows.Add(row);
-                    }
-                    return table;
+                case null: return null;
+                case MemoryStream _ms: return _ms.ToArray();
+                case RESTarStream rsc: return rsc.GetBytes();
                 default:
-                    var properties = resource.Members.Values.Where(p => !p.Hidden).ToList();
-                    properties.ForEach(prop => table.Columns.Add(prop.MakeColumn()));
-                    entities.ForEach(item =>
+                    using (var ms = new MemoryStream())
                     {
-                        var row = table.NewRow();
-                        properties.ForEach(prop => prop.WriteCell(row, item));
-                        table.Rows.Add(row);
-                    });
-                    return table;
+                        stream.CopyTo(ms);
+                        return ms.ToArray();
+                    }
             }
         }
 
-        internal static object MakeDynamicCellValue(this object value)
+        internal static async Task<byte[]> ToByteArrayAsync(this Stream stream)
         {
-            switch (value)
+            switch (stream)
             {
-                case bool _:
-                case decimal _:
-                case long _:
-                case string _: return value;
-                case sbyte other: return (long) other;
-                case byte other: return (long) other;
-                case short other: return (long) other;
-                case ushort other: return (long) other;
-                case int other: return (long) other;
-                case uint other: return (long) other;
-                case ulong other: return (long) other;
-                case float other: return (decimal) other;
-                case double other: return (decimal) other;
-                case char other: return other.ToString();
-                case DateTime other: return other.ToString("O");
-                case JObject _: return typeof(JObject).FullName;
-                case DDictionary _: return $"$(ObjectNo: {value.GetObjectNo()})";
-                case IDictionary other: return other.GetType().RESTarTypeName();
-                case IEnumerable<object> other: return string.Join(", ", other.Select(o => o.ToString()));
-                case DBNull _:
-                case null: return DBNull.Value;
-                case IEnumerable<DateTime> dateTimes: return string.Join(", ", dateTimes.Select(o => o.ToString("O")));
-                case var valueTypeArray when value.GetType().Implements(typeof(IEnumerable<>), out var p) && p.Any() && p[0].IsValueType:
-                    IEnumerable<object> objects = System.Linq.Enumerable.Cast<object>((dynamic) valueTypeArray);
-                    return string.Join(", ", objects.Select(o => o.ToString()));
-                default: return Do.Try(() => $"$(ObjectNo: {value.GetObjectNo()})", value.ToString);
+                case null: return null;
+                case MemoryStream _ms: return _ms.ToArray();
+                case RESTarStream rsc: return await rsc.GetBytesAsync();
+                default:
+                    using (var ms = new MemoryStream())
+                    {
+                        await stream.CopyToAsync(ms);
+                        return ms.ToArray();
+                    }
             }
         }
+
+        //        /// <summary>
+        //        /// Converts an IEnumerable of T to an Excel workbook
+        //        /// </summary>
+        //        public static ClosedXML.Excel.XLWorkbook ToExcel<T>(this IEnumerable<T> entities) where T : class
+        //        {
+        //            var resource = Resource<T>.Get;
+        //            var dataSet = new DataSet();
+        //            var table = entities.MakeDataTable(resource);
+        //            if (table.Rows.Count == 0) return null;
+        //            dataSet.Tables.Add(table);
+        //            var workbook = new ClosedXML.Excel.XLWorkbook();
+        //            workbook.AddWorksheet(dataSet);
+        //            return workbook;
+        //        }
 
         /// <summary>
         /// Converts a boolean into an XML boolean string, i.e. "true" or "false" 
@@ -862,62 +915,6 @@ namespace RESTar
         /// Converts an HTTP status code to the underlying numeric code
         /// </summary>
         internal static ushort? ToCode(this HttpStatusCode statusCode) => (ushort) statusCode;
-
-        #endregion
-
-        #region View models
-
-        internal static Json MakeCurrentView(this RESTarView view)
-        {
-            var master = Self.GET<View.Page>("/__restar/__page");
-            master.CurrentPage = view ?? master.CurrentPage;
-            return master;
-        }
-
-        internal static Dictionary<string, dynamic> MakeViewModelTemplate(this IEntityResource resource)
-        {
-            if (resource.IsDDictionary) return new Dictionary<string, dynamic>();
-            return resource.Members.Values
-                .Where(p => !p.Hidden || p is SpecialProperty)
-                .ToDictionary(p => p.ViewModelName, p => p.Type.MakeViewModelDefault(p));
-        }
-
-        internal static dynamic MakeViewModelDefault(this Type type, DeclaredProperty property = null)
-        {
-            dynamic DefaultValueRecurser(Type propType)
-            {
-                if (propType == typeof(string))
-                    return "";
-                var ienumImplementation = propType.GetInterfaces()
-                    .FirstOrDefault(t => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(IEnumerable<>));
-                if (ienumImplementation != null)
-                {
-                    var elementType = ienumImplementation.GenericTypeArguments[0];
-                    return new object[] {DefaultValueRecurser(elementType)};
-                }
-
-                if (propType.IsClass)
-                {
-                    if (propType == typeof(object))
-                        return "@RESTar()";
-                    var props = propType.GetDeclaredProperties().Values;
-                    return props.ToDictionary(
-                        p => p.ViewModelName,
-                        p => DefaultValueRecurser(p.Type));
-                }
-
-                if (propType.IsValueType)
-                {
-                    if (propType.IsGenericType && propType.GetGenericTypeDefinition() == typeof(Nullable<>))
-                        return propType.GetGenericArguments()[0].GetDefault();
-                    return propType.GetDefault();
-                }
-
-                throw new ArgumentOutOfRangeException();
-            }
-
-            return DefaultValueRecurser(type);
-        }
 
         #endregion
     }

@@ -1,32 +1,59 @@
 ﻿using System;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
+using RESTar.ContentTypeProviders;
 using RESTar.Internal;
-using RESTar.Operations;
+using RESTar.Meta;
 using RESTar.Requests;
-using RESTar.Results.Error;
-using RESTar.Results.Error.BadRequest;
-using RESTar.Results.Success;
+using RESTar.Resources;
+using RESTar.Results;
 using RESTar.WebSockets;
 using static RESTar.Internal.ErrorCodes;
-using static RESTar.Methods;
+using static RESTar.Method;
+using Error = RESTar.Results.Error;
+using IResource = RESTar.Meta.IResource;
 
 namespace RESTar
 {
+    /// <inheritdoc />
+    /// <summary>
+    /// The WebSocket shell, used to navigate and execute commands against RESTar resources
+    /// from a connected WebSocket. 
+    /// </summary>
     [RESTar(Description = description, GETAvailableToAll = true)]
-    internal class Shell : ITerminal
+    public class Shell : ITerminal
     {
-        private const string description = "The RESTar WebSocket shell lets the client navigate around the resources of the " +
-                                           "RESTar application, perform CRUD operations and enter terminal resources.";
+        private const string description =
+            "The RESTar WebSocket shell lets the client navigate around the resources of the " +
+            "RESTar API, perform CRUD operations and enter terminal resources.";
 
-        private string query = "";
-        private string previousQuery = "";
+        private string query;
+        private string previousQuery;
+        private Func<int, IUriComponents> GetNextPageLink;
+        private Action OnConfirm;
+
+        private IEntities PreviousEntities
+        {
+            get => _previousEntities;
+            set
+            {
+                if (value?.Equals(_previousEntities) != true)
+                    _previousEntities?.Dispose();
+                _previousEntities = value;
+            }
+        }
 
         /// <summary>
         /// Signals that there are changes to the query that have been made pre evaluation
         /// </summary>
         private bool queryChangedPreEval;
 
+        internal static ITerminalResource<Shell> TerminalResource { get; set; }
+
+        /// <summary>
+        /// The query to perform in the shell
+        /// </summary>
         public string Query
         {
             get => query;
@@ -45,43 +72,146 @@ namespace RESTar
             }
         }
 
-        public bool Silent
+        /// <summary>
+        /// Should unsafe commands be allowed?
+        /// </summary>
+        public bool Unsafe { get; set; }
+
+        /// <summary>
+        /// Should the shell write result headers?
+        /// </summary>
+        public bool WriteHeaders { get; set; }
+
+        private bool _autoOptions;
+
+        /// <summary>
+        /// Should the shell write options after a succesful navigation?
+        /// </summary>
+        public bool AutoOptions
         {
-            get => !WriteStatusBeforeContent && !WriteTimeElapsed && !WriteQueryAfterContent && !WriteInfoTexts;
+            get => _autoOptions;
             set
             {
-                WriteStatusBeforeContent = !value;
-                WriteTimeElapsed = !value;
-                WriteQueryAfterContent = !value;
-                WriteInfoTexts = !value;
+                if (value) _autoGet = false;
+                _autoOptions = value;
             }
         }
 
-        public bool Unsafe { get; set; } = false;
-        public bool WriteStatusBeforeContent { get; set; } = true;
-        public bool WriteTimeElapsed { get; set; } = true;
-        public bool WriteQueryAfterContent { get; set; } = true;
-        public bool WriteInfoTexts { get; set; } = true;
+        private bool _autoGet;
 
-        private Func<int, IUriParameters> GetNextPageLink;
-        private Action OnConfirm;
-        private IEntitiesMetadata PreviousResultMetadata;
+        /// <summary>
+        /// Should the shell automatically run a GET operation after a successful navigation?
+        /// </summary>
+        public bool AutoGet
+        {
+            get => _autoGet;
+            set
+            {
+                if (value) _autoOptions = false;
+                _autoGet = value;
+            }
+        }
 
+        private int streamBufferSize;
+        private IEntities _previousEntities;
+        private const int MaxStreamBufferSize = 16_000_000;
+        private const int MinStreamBufferSize = 512;
+
+        /// <summary>
+        /// The size of stream messages in bytes
+        /// </summary>
+        public int StreamBufferSize
+        {
+            get => streamBufferSize;
+            set
+            {
+                if (value < MinStreamBufferSize)
+                    streamBufferSize = MinStreamBufferSize;
+                else if (MaxStreamBufferSize < value)
+                    streamBufferSize = MaxStreamBufferSize;
+                else streamBufferSize = value;
+            }
+        }
+
+        /// <inheritdoc />
+        public Shell()
+        {
+            SupportsTextInput = true;
+            SupportsBinaryInput = true;
+            Reset();
+        }
+
+        private void Reset()
+        {
+            streamBufferSize = 16_000_000;
+            Unsafe = false;
+            OnConfirm = null;
+            PreviousEntities = null;
+            GetNextPageLink = null;
+            query = "";
+            previousQuery = "";
+            WriteHeaders = false;
+            AutoOptions = false;
+            AutoGet = false;
+        }
+
+        /// <inheritdoc />
+        public void Dispose()
+        {
+            WebSocket.Context.Client.ShellConfig = Providers.Json.Serialize(this);
+            Reset();
+        }
+
+        /// <inheritdoc />
         public IWebSocket WebSocket { private get; set; }
-        private IWebSocketInternal WebSocketInternal => (IWebSocketInternal) WebSocket;
-        public void HandleBinaryInput(byte[] input) => throw new NotImplementedException();
-        public bool SupportsTextInput { get; } = true;
-        public bool SupportsBinaryInput { get; } = false;
-        internal static ITerminalResourceInternal TerminalResource { get; set; }
 
+        /// <inheritdoc />
+        public void HandleBinaryInput(byte[] input)
+        {
+            if (!(input?.Length > 0)) return;
+            if (Query.Length == 0 || OnConfirm != null)
+                WebSocket.SendResult(new InvalidShellStateForBinaryInput());
+            else SafeOperation(POST, input);
+        }
+
+        /// <inheritdoc />
+        public bool SupportsTextInput { get; }
+
+        /// <inheritdoc />
+        public bool SupportsBinaryInput { get; }
+
+        /// <inheritdoc />
         public void Open()
         {
-            WebSocket.TcpConnection.Origin = OriginType.Shell;
-            if (Query != "")
-                SafeOperation(GET);
+            if (WebSocket.Context.Client.ShellConfig is string config)
+            {
+                Providers.Json.Populate(config, this);
+                SendShellInit();
+                SendQuery();
+            }
+            else if (Query != "")
+                Navigate();
             else SendShellInit();
         }
 
+        private void Navigate(string input = null)
+        {
+            if (input != null)
+            {
+                if (input.Length == 1)
+                    input = "/restar.availableresource";
+                if (input.StartsWith("//"))
+                    input = $"/restar.availableresource/{input.Substring(2)}";
+                Query = input;
+            }
+            if (!QueryIsValid(out var resource)) return;
+            if (AutoOptions) SendOptions(resource);
+            else if (AutoGet) SafeOperation(GET);
+            else SendQuery();
+            PreviousEntities = null;
+        }
+
+        /// <inheritdoc />
         public void HandleTextInput(string input)
         {
             if (OnConfirm != null)
@@ -105,26 +235,26 @@ namespace RESTar
                 }
                 return;
             }
+
             if (input == " ")
             {
                 SafeOperation(GET);
                 return;
             }
-            input = input.Trim();
+
             switch (input.FirstOrDefault())
             {
                 case '\0':
                 case '\n': break;
                 case '-':
                 case '/':
-                    Query = input;
-                    SafeOperation(GET);
+                    Navigate(input);
                     break;
                 case '[':
                 case '{':
                     SafeOperation(POST, input.ToBytes());
                     break;
-                case var _ when input.Length > 2000:
+                case var _ when input.Length > 16_000_000:
                     SendBadRequest();
                     break;
                 default:
@@ -132,43 +262,93 @@ namespace RESTar
                     switch (command.ToUpperInvariant())
                     {
                         case "GET":
-                            byte[] body = null;
-                            if (!string.IsNullOrWhiteSpace(tail))
-                            {
-                                var (q, b) = tail.TSplit(' ');
-                                Query = q;
-                                body = b?.ToBytes();
-                            }
-                            SafeOperation(GET, body);
+                            SafeOperation(GET, tail?.ToBytes());
                             break;
                         case "POST":
-                            SafeOperation(POST, tail.ToBytes());
-                            break;
-                        case "PUT":
-                            SendBadRequest("PUT is not available in the WebSocket interface");
+                            SafeOperation(POST, tail?.ToBytes());
                             break;
                         case "PATCH":
-                            UnsafeOperation(PATCH, tail.ToBytes());
+                            UnsafeOperation(PATCH, tail?.ToBytes());
+                            break;
+                        case "PUT":
+                            SafeOperation(PUT, tail?.ToBytes());
                             break;
                         case "DELETE":
-                            UnsafeOperation(DELETE);
+                            UnsafeOperation(DELETE, tail?.ToBytes());
                             break;
                         case "REPORT":
-                            if (!string.IsNullOrWhiteSpace(tail))
-                                Query = tail;
-                            SafeOperation(REPORT);
+                            SafeOperation(REPORT, tail?.ToBytes());
                             break;
-                        case "@":
-                        case "NAVIGATE":
-                        case "GO":
                         case "HEAD":
-                            if (!string.IsNullOrWhiteSpace(tail))
-                                Query = tail;
-                            var result = WsEvaluate(HEAD, null);
-                            if (!(result is Head))
-                                SendResult(result, null);
-                            else if (WriteQueryAfterContent)
-                                WebSocket.SendText("? " + Query);
+                            SafeOperation(HEAD, tail?.ToBytes());
+                            break;
+                        case "STREAM":
+                            var result = WsEvaluate(GET, null);
+                            if (result is Content)
+                                StreamResult(result, result.TimeElapsed);
+                            else SendResult(result);
+                            break;
+                        case "OPTIONS":
+                            if (!QueryIsValid(out var _resource)) break;
+                            SendOptions(_resource);
+                            break;
+
+                        case "HEADERS":
+                        case "HEADER":
+                            tail = tail?.Trim();
+                            if (string.IsNullOrWhiteSpace(tail))
+                            {
+                                SendHeaders();
+                                break;
+                            }
+                            var (key, value) = tail.TSplit('=', true);
+                            if (value == null)
+                            {
+                                SendHeaders();
+                                break;
+                            }
+                            if (Headers.IsCustom(key))
+                            {
+                                if (value == "null")
+                                {
+                                    WebSocket.Headers.Remove(key);
+                                    SendHeaders();
+                                    break;
+                                }
+                                WebSocket.Headers[key] = value;
+                                SendHeaders();
+                            }
+                            else WebSocket.SendText($"400: Bad request. Cannot read or write reserved header '{key}'.");
+                            return;
+
+                        case "VAR":
+                            if (string.IsNullOrWhiteSpace(tail))
+                            {
+                                WebSocket.SendJson(this);
+                                break;
+                            }
+                            var (property, valueString) = tail.TSplit('=', true);
+                            if (property == null || valueString == null)
+                            {
+                                WebSocket.SendText("Invalid property assignment syntax. Should be: VAR <property> = <value>");
+                                break;
+                            }
+                            if (valueString.EqualsNoCase("null"))
+                                valueString = null;
+                            if (!TerminalResource.Members.TryGetValue(property, out var declaredProperty))
+                            {
+                                WebSocket.SendText($"Unknown shell property '{property}'. To list properties, type VAR");
+                                break;
+                            }
+                            try
+                            {
+                                declaredProperty.SetValue(this, valueString.ParseConditionValue(declaredProperty));
+                                WebSocket.SendJson(this);
+                            }
+                            catch (Exception e)
+                            {
+                                WebSocket.SendException(e);
+                            }
                             break;
                         case "HELP":
                             SendHelp();
@@ -179,24 +359,52 @@ namespace RESTar
                         case "CLOSE":
                             Close();
                             break;
+
+                        case "GO":
+                        case "NAVIGATE":
                         case "?":
-                            WebSocket.SendText($"{(Query.Any() ? Query : "<empty>")}");
-                            break;
-                        case "RELOAD":
-                            SafeOperation(GET);
+                            if (!string.IsNullOrWhiteSpace(tail))
+                            {
+                                Navigate(tail);
+                                break;
+                            }
+                            WebSocket.SendText($"{(Query.Any() ? Query : "< empty >")}");
                             break;
                         case "NEXT":
+                            var stopwatch = Stopwatch.StartNew();
                             if (tail == null || !int.TryParse(tail, out var count))
                                 count = -1;
                             var link = GetNextPageLink?.Invoke(count)?.ToString();
                             if (link == null)
-                                SendResult(new NoContent(WebSocket), null);
+                                SendResult(new ShellNoContent(WebSocket, stopwatch.Elapsed));
                             else
                             {
                                 Query = link;
                                 SafeOperation(GET);
                             }
                             break;
+
+                        #region Nonsense
+
+                        case "HELLO" when tail.EqualsNoCase("world"):
+
+                            string getHelloWorld()
+                            {
+                                switch (new Random().Next(0, 7))
+                                {
+                                    case 0: return "The world says: 'hi!'";
+                                    case 1: return "The world says: 'what's up?'";
+                                    case 2: return "The world says: 'greetings!'";
+                                    case 3: return "The world is currently busy";
+                                    case 4: return "The world cannot answer right now";
+                                    case 5: return "The world is currently out on lunch";
+                                    default: return "The world says: 'why do people keep saying that?'";
+                                }
+                            }
+
+                            WebSocket.SendText(getHelloWorld());
+                            break;
+
                         case "HI":
                         case "HELLO":
 
@@ -245,100 +453,175 @@ namespace RESTar
                         case var unknown:
                             SendUnknownCommand(unknown);
                             break;
+
+                        #endregion
                     }
                     break;
             }
         }
 
-        public void Dispose()
-        {
-            WebSocket.TcpConnection.Origin = OriginType.External;
-            OnConfirm = null;
-            PreviousResultMetadata = null;
-            GetNextPageLink = null;
-            query = "";
-            previousQuery = "";
-            WriteInfoTexts = true;
-            WriteStatusBeforeContent = true;
-            WriteTimeElapsed = true;
-            WriteQueryAfterContent = true;
-        }
+        private void SendHeaders() => WebSocket.SendJson(new {WebSocket.Headers});
 
-        private IFinalizedResult WsEvaluate(Methods method, byte[] body)
+        private ISerializedResult WsEvaluate(Method method, byte[] body)
         {
-            if (Query.Length == 0) return new NoQuery(WebSocket);
-            var localQuery = Query;
-            var result = RequestEvaluator
-                .Evaluate(WebSocket, method, ref localQuery, body, WebSocket.Headers)
-                .GetFinalizedResult();
-            if (result is RESTarError _ && queryChangedPreEval)
-                query = previousQuery;
-            else query = localQuery;
-            queryChangedPreEval = false;
-            if (result is IEntitiesMetadata entitiesMetaData)
+            if (Query.Length == 0) return new ShellNoQuery(WebSocket);
+            var local = Query;
+            using (var request = WebSocket.Context.CreateRequest(local, method, body, WebSocket.Headers))
             {
-                PreviousResultMetadata = entitiesMetaData;
-                GetNextPageLink = entitiesMetaData.GetNextPageLink;
+                var result = request.Evaluate().Serialize();
+                switch (result)
+                {
+                    case Error _ when queryChangedPreEval:
+                        query = previousQuery;
+                        break;
+                    case IEntities entities:
+                        query = local;
+                        PreviousEntities = entities;
+                        GetNextPageLink = entities.GetNextPageLink;
+                        break;
+                    case Change _:
+                        query = local;
+                        PreviousEntities = null;
+                        break;
+                    default:
+                        query = local;
+                        break;
+                }
+                queryChangedPreEval = false;
+                return result;
             }
-            return result;
         }
 
-        private void SafeOperation(Methods method, byte[] body = null)
+        private bool QueryIsValid(out IResource resource)
+        {
+            var localQuery = Query;
+            if (!WebSocket.Context.UriIsValid(localQuery, out var error, out resource))
+            {
+                query = previousQuery;
+                SendResult(error);
+                return false;
+            }
+
+            query = localQuery;
+            queryChangedPreEval = false;
+            return true;
+        }
+
+        private void SendQuery() => WebSocket.SendText("? " + Query);
+
+        private void SendOptions(IResource resource)
+        {
+            var availableResource = AvailableResource.Make(resource, WebSocket);
+            WebSocket.SendJson(new
+            {
+                Resource = availableResource.Name,
+                ResourceKind = availableResource.Kind,
+                availableResource.Methods
+            }, true);
+            SendQuery();
+        }
+
+        private void SafeOperation(Method method, byte[] body = null)
         {
             var sw = Stopwatch.StartNew();
             switch (WsEvaluate(method, body))
             {
-                case Entities entities:
-                    SendResult(entities, sw.Elapsed);
+                case Content content when content.Body is Stream _:
+                    if (!content.Body.CanRead)
+                    {
+                        SendResult(new UnreadableContentStream(content));
+                        break;
+                    }
+                    if (!content.Body.CanSeek)
+                    {
+                        content.Body = new RESTarStream(content.Body);
+                        break;
+                    }
+                    if (content.Body.Length > 16_000_000)
+                    {
+                        OnConfirm = () => StreamResult(content, sw.Elapsed);
+                        SendConfirmationRequest("426: The result body is too large to be sent in a single WebSocket message. " +
+                                                "Do you want to stream the result instead? ");
+                        break;
+                    }
+                    SendResult(content, sw.Elapsed);
                     break;
-                case Report report:
-                    SendResult(report, sw.Elapsed);
+                case OK ok:
+                    SendResult(ok, sw.Elapsed);
                     break;
                 case var other:
-                    SendResult(other, null);
+                    SendResult(other);
                     break;
             }
             sw.Stop();
         }
 
-        private void UnsafeOperation(Methods method, byte[] body = null)
+        private void UnsafeOperation(Method method, byte[] body = null)
         {
-            void operate()
+            void runOperation()
             {
                 WebSocket.Headers.UnsafeOverride = true;
                 SafeOperation(method, body);
             }
 
-            switch (PreviousResultMetadata?.EntityCount)
+            if (PreviousEntities == null)
             {
-                case null:
+                var result = WsEvaluate(GET, null);
+                if (result is IEntities entities)
+                    PreviousEntities = entities;
+                else
+                {
+                    SendResult(result);
+                    return;
+                }
+            }
+
+            switch (PreviousEntities.EntityCount)
+            {
                 case 0:
-                    SendBadRequest($". No entities for {method} operation. Make a selecting request before running {method}");
+                    SendBadRequest($". No entities for to run {method} on");
                     break;
                 case 1:
-                    operate();
+                    runOperation();
                     break;
-                case var many:
+                case var multiple:
                     if (Unsafe)
                     {
-                        operate();
+                        runOperation();
                         break;
                     }
-                    OnConfirm = operate;
-                    SendConfirmationRequest($"This will run {method} on {many} entities in resource '{PreviousResultMetadata.ResourceFullName}'. ");
+                    OnConfirm = runOperation;
+                    SendConfirmationRequest($"This will run {method} on {multiple} entities in resource " +
+                                            $"'{PreviousEntities.Request.Resource}'. ");
                     break;
             }
         }
 
-        private void SendResult(IFinalizedResult result, TimeSpan? elapsed)
+        private void SendResult(ISerializedResult result, TimeSpan? elapsed = null)
         {
-            WebSocket.SendResult(result, WriteStatusBeforeContent, elapsed);
-            if (!WriteQueryAfterContent) return;
+            if (result is SwitchedTerminal) return;
+            WebSocket.SendResult(result, elapsed, WriteHeaders);
             switch (result)
             {
-                case WebSocketResult _: return;
-                case NoQuery _:
-                    WebSocket.SendText("? <empty>");
+                case var _ when Query == "":
+                case ShellNoQuery _:
+                    WebSocket.SendText("? <no query>");
+                    break;
+                default:
+                    WebSocket.SendText("? " + Query);
+                    break;
+            }
+        }
+
+        private void StreamResult(ISerializedResult result, TimeSpan? elapsed = null)
+        {
+            if (result is SwitchedTerminal) return;
+            WebSocket.StreamResult(result, StreamBufferSize, elapsed, WriteHeaders);
+            switch (result)
+            {
+                case var _ when Query == "":
+                case ShellNoQuery _:
+                    WebSocket.SendText("? <no query>");
                     break;
                 default:
                     WebSocket.SendText("? " + Query);
@@ -348,44 +631,31 @@ namespace RESTar
 
         private void SendShellInit()
         {
-            if (!WriteInfoTexts) return;
             WebSocket.SendText("### Entering the RESTar WebSocket shell... ###");
             WebSocket.SendText("### Type a command to continue (e.g. HELP) ###");
         }
 
-        private void SendConfirmationRequest(string initialInfo = null) => WebSocket.SendText($"{initialInfo}Type 'Y' to continue, 'N' to cancel");
+        private void SendConfirmationRequest(string initialInfo = null) =>
+            WebSocket.SendText($"{initialInfo}Type 'Y' to continue, 'N' to cancel");
+
         private void SendCancel() => WebSocket.SendText("Operation cancelled");
         private void SendBadRequest(string message = null) => WebSocket.SendText($"400: Bad request{message}");
-        private void SendInvalidCommandArgument(string command, string arg) => WebSocket.SendText($"Invalid argument '{arg}' for command '{command}'");
+
+        private void SendInvalidCommandArgument(string command, string arg) =>
+            WebSocket.SendText($"Invalid argument '{arg}' for command '{command}'");
+
         private void SendUnknownCommand(string command) => WebSocket.SendText($"Unknown command '{command}'");
 
         private void Close()
         {
-            if (!WriteInfoTexts) return;
             WebSocket.SendText("### Closing the RESTar WebSocket shell... ###");
-            WebSocketInternal.Disconnect();
+            var connection = (WebSocketConnection) WebSocket;
+            connection.WebSocket.Disconnect();
         }
 
         private void SendHelp() => WebSocket.SendText(
-            "\n  The RESTar WebSocket shell makes it possible to send\n" +
-            "  multiple requests to a RESTar API, over a single TCP\n" +
-            "  connection. Using commands, the client can navigate\n" +
-            "  around the resources of the API, read, insert, update\n" +
-            "  and/or delete entities, or enter terminals. To navigate\n" +
-            "  and select entities, simply send a request URI over this\n" +
-            "  WebSocket, e.g. '/availableresource//limit=3'. To insert\n" +
-            "  an entity into a resource, send the JSON representation\n" +
-            "  over the WebSocket. To update entities, send 'PATCH <json>',\n" +
-            "  where <json> is the JSON data to update entities from. To\n" +
-            "  delete selected entities, send 'DELETE'. For potentially\n" +
-            "  unsafe operations, you will be asked to confirm before\n" +
-            "  changes are applied.\n\n" +
-            "  Some other simple commands:\n" +
-            "  ?           Prints the current location\n" +
-            "  REPORT      Counts the entities at the current location\n" +
-            "  RELOAD      Relods the current location\n" +
-            "  HELP        Prints this help page\n" +
-            "  CLOSE       Closes the WebSocket\n");
+            "Shell documentation is available at https://github.com/Mopedo/Home/" +
+            "blob/master/RESTar/Built-in%20resources/RESTar/Shell.md");
 
         private void SendCredits()
         {

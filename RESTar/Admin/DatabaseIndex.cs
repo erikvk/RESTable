@@ -1,10 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.Serialization;
 using System.Text.RegularExpressions;
 using Newtonsoft.Json;
-using RESTar.Internal;
+using RESTar.Meta;
+using RESTar.Requests;
+using RESTar.Resources;
+using RESTar.Resources.Operations;
+using RESTar.Results;
+using static RESTar.Internal.EntityResourceProviderController;
 
 namespace RESTar.Admin
 {
@@ -43,20 +47,21 @@ namespace RESTar.Admin
             }
         }
 
-        private string _table;
+        private string _resourceName;
 
         /// <summary>
-        /// The name of the RESTar resource corresponding with the database table on which 
+        /// The full name of the RESTar resource corresponding with the database table on which 
         /// this index is registered
         /// </summary>
-        public string Table
+        public string ResourceName
         {
-            get => _table;
+            get => _resourceName;
             set
             {
-                IResource = RESTar.Resource.GetEntityResource(value);
-                _table = IResource.Name;
-                Provider = IResource.Provider;
+                Resource = Meta.Resource.SafeFind(value) as IEntityResource;
+                if (Resource == null) throw new UnknownResource(value);
+                _resourceName = Resource.Name;
+                Provider = Resource.Provider;
             }
         }
 
@@ -68,7 +73,7 @@ namespace RESTar.Admin
         /// <summary>
         /// The RESTar resource corresponding to the table on which this index is registered
         /// </summary>
-        [IgnoreDataMember] public IEntityResource IResource { get; private set; }
+        [RESTarMember(ignore: true)] public IEntityResource Resource { get; private set; }
 
         /// <summary>
         /// The columns on which this index is registered
@@ -77,11 +82,12 @@ namespace RESTar.Admin
 
         /// <inheritdoc />
         [JsonConstructor]
-        public DatabaseIndex(string table)
+        public DatabaseIndex(string resourceName)
         {
-            if (string.IsNullOrWhiteSpace(table))
-                throw new Exception("Found no resource to register index on. Resource was null or empty");
-            Table = table;
+            if (string.IsNullOrWhiteSpace(resourceName))
+                throw new Exception("Found no resource to register the index on. The 'ResourceName' " +
+                                    "property was null or empty");
+            ResourceName = resourceName;
         }
 
         #region Public helpers
@@ -111,30 +117,36 @@ namespace RESTar.Admin
         private static void Register<T>(string indexName, params ColumnInfo[] columns) where T : class
         {
             SelectionCondition.Value = indexName;
-            SelectionRequest.PUT(() => new DatabaseIndex(typeof(T).RESTarTypeName())
+            SelectionRequest.Selector = () => new[]
             {
-                Name = indexName,
-                Columns = columns
-            });
+                new DatabaseIndex(typeof(T).RESTarTypeName())
+                {
+                    Name = indexName,
+                    Columns = columns
+                }
+            };
+            SelectionRequest.Evaluate().ThrowIfError();
         }
 
         #endregion
 
         private static Condition<DatabaseIndex> SelectionCondition { get; set; }
-        private static Request<DatabaseIndex> SelectionRequest { get; set; }
-        internal static readonly Dictionary<string, IDatabaseIndexer> Indexers;
-        static DatabaseIndex() => Indexers = new Dictionary<string, IDatabaseIndexer>();
+
+        private static IRequest<DatabaseIndex> SelectionRequest { get; set; }
+        //internal static readonly Dictionary<string, IDatabaseIndexer> Indexers;
+        //static DatabaseIndex() => Indexers = new Dictionary<string, IDatabaseIndexer>();
 
         internal static void Init()
         {
             SelectionCondition = new Condition<DatabaseIndex>(nameof(Name), Operators.EQUALS, null);
-            SelectionRequest = new Request<DatabaseIndex>(SelectionCondition);
+            SelectionRequest = Context.Root.CreateRequest<DatabaseIndex>(Method.PUT);
+            SelectionRequest.Conditions.Add(SelectionCondition);
         }
 
         /// <inheritdoc />
         public bool IsValid(out string invalidReason)
         {
-            if (string.IsNullOrWhiteSpace(Table))
+            if (string.IsNullOrWhiteSpace(ResourceName))
             {
                 invalidReason = "Index resource name cannot be null or whitespace";
                 return false;
@@ -155,42 +167,40 @@ namespace RESTar.Admin
         }
 
         /// <inheritdoc />
-        public IEnumerable<DatabaseIndex> Select(IRequest<DatabaseIndex> request) => Indexers
+        public IEnumerable<DatabaseIndex> Select(IRequest<DatabaseIndex> request) => EntityResourceProviders
             .Values
+            .Select(p => p._DatabaseIndexer)
+            .Where(indexer => indexer != null)
             .Distinct()
             .SelectMany(indexer => indexer.Select(request));
 
         /// <inheritdoc />
-        public int Insert(IRequest<DatabaseIndex> request) => request.GetEntities()
-            .GroupBy(index => index.IResource.Provider)
+        public int Insert(IRequest<DatabaseIndex> request) => request.GetInputEntities()
+            .GroupBy(index => index.Resource.Provider)
             .Sum(group =>
             {
-                var requestinternal = (IRequestInternal<DatabaseIndex>) request;
-                if (!Indexers.TryGetValue(group.Key, out var indexer))
-                    throw new Exception($"Unable to register index. Resource '{group.First().IResource.Name}' " +
-                                        "is not a database resource.");
-                requestinternal.EntitiesGenerator = () => group;
-                return indexer.Insert(requestinternal);
+                if (!EntityResourceProviders.TryGetValue(group.Key, out var provider) || !(provider._DatabaseIndexer is IDatabaseIndexer indexer))
+                    throw new Exception($"Unable to register index. Resource '{group.First().Resource.Name}' is not a database resource.");
+                request.Selector = () => group;
+                return indexer.Insert(request);
             });
 
         /// <inheritdoc />
-        public int Update(IRequest<DatabaseIndex> request) => request.GetEntities()
-            .GroupBy(index => index.IResource.Provider)
+        public int Update(IRequest<DatabaseIndex> request) => request.GetInputEntities()
+            .GroupBy(index => index.Resource.Provider)
             .Sum(group =>
             {
-                var requestinternal = (IRequestInternal<DatabaseIndex>) request;
-                requestinternal.EntitiesGenerator = () => group;
-                return Indexers[group.Key].Update(requestinternal);
+                request.Updater = _ => group;
+                return EntityResourceProviders[group.Key]._DatabaseIndexer.Update(request);
             });
 
         /// <inheritdoc />
-        public int Delete(IRequest<DatabaseIndex> request) => request.GetEntities()
-            .GroupBy(index => index.IResource.Provider)
+        public int Delete(IRequest<DatabaseIndex> request) => request.GetInputEntities()
+            .GroupBy(index => index.Resource.Provider)
             .Sum(group =>
             {
-                var requestinternal = (IRequestInternal<DatabaseIndex>) request;
-                requestinternal.EntitiesGenerator = () => group;
-                return Indexers[group.Key].Delete(requestinternal);
+                request.Selector = () => group;
+                return EntityResourceProviders[group.Key]._DatabaseIndexer.Delete(request);
             });
     }
 

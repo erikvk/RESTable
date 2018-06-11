@@ -2,7 +2,11 @@
 using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json.Linq;
-using static RESTar.Methods;
+using RESTar.Meta;
+using RESTar.Requests;
+using RESTar.Resources;
+using RESTar.Resources.Operations;
+using static RESTar.Method;
 
 namespace RESTar
 {
@@ -34,7 +38,7 @@ namespace RESTar
             {
                 new Echo(request.Conditions.Select(c => new JProperty(c.Key, c.Value)))
             };
-            Deflection.Dynamic.TypeCache.ClearTermsFor<Echo>();
+            TypeCache.ClearTermsFor<Echo>();
             return echo;
         }
     }

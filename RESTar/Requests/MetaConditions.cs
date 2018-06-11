@@ -2,12 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using RESTar.Admin;
-using RESTar.Internal;
 using RESTar.Linq;
-using RESTar.Operations;
-using RESTar.Results.Error.BadRequest;
+using RESTar.Meta;
+using RESTar.Requests.Filters;
+using RESTar.Requests.Processors;
+using RESTar.Results;
 using static RESTar.Internal.ErrorCodes;
-using static RESTar.Operators;
+using static RESTar.Requests.Operators;
 
 #pragma warning disable 612
 
@@ -64,58 +65,58 @@ namespace RESTar.Requests
         /// <summary>
         /// Is this request unsafe?
         /// </summary>
-        public bool Unsafe { get; internal set; }
+        public bool Unsafe { get; set; }
 
         /// <summary>
         /// The limit by which the request's response body entity count should be restricted to
         /// </summary>
-        public Limit Limit { get; internal set; } = Limit.NoLimit;
+        public Limit Limit { get; set; } = Limit.NoLimit;
 
         /// <summary>
         /// An offset in the request's entities, on which enumeration will start when creating the 
         /// response
         /// </summary>
-        public Offset Offset { get; internal set; } = Offset.NoOffset;
+        public Offset Offset { get; set; } = Offset.NoOffset;
 
         /// <summary>
         /// The OrderBy filter to apply to the output from this request
         /// </summary>
-        public OrderBy OrderBy { get; internal set; }
+        public OrderBy OrderBy { get; set; }
 
         /// <summary>
         /// The Select processor to apply to the output from this request
         /// </summary>
-        public Select Select { get; internal set; }
+        public Select Select { get; set; }
 
         /// <summary>
         /// The Add processor to apply to the output from this request
         /// </summary>
-        public Add Add { get; internal set; }
+        public Add Add { get; set; }
 
         /// <summary>
         /// The Renam processor to apply to the output from this request
         /// </summary>
-        public Rename Rename { get; internal set; }
+        public Rename Rename { get; set; }
 
         /// <summary>
         /// The Distinct processor to apply to the output from this request
         /// </summary>
-        public Distinct Distinct { get; internal set; }
+        public Distinct Distinct { get; set; }
 
         /// <summary>
         /// The search filter to apply to the output from this request
         /// </summary>
-        public Search Search { get; internal set; }
+        public Search Search { get; set; }
 
         /// <summary>
         /// The term to use for safepost
         /// </summary>
-        internal string SafePost { get; set; }
+        public string SafePost { get; set; }
 
         /// <summary>
         /// The format to use when serializing JSON
         /// </summary>
-        internal Formatter Formatter { get; set; } = DbOutputFormat.Default;
+        internal Formatter? Formatter { get; set; }
 
         internal bool New { get; set; }
         internal bool Empty = true;
@@ -219,18 +220,12 @@ namespace RESTar.Requests
 
             if (mc.OrderBy != null)
             {
-                if (mc.Add?.Any(pc => pc.Key.EqualsNoCase(mc.OrderBy.Key)) == true)
-                    mc.OrderBy.IsSqlQueryable = false;
-                if (mc.Rename?.Any(pc => pc.Value.EqualsNoCase(mc.OrderBy.Key)) == true)
-                    mc.OrderBy.IsSqlQueryable = false;
                 if (mc.Rename?.Any(p => p.Key.Key.EqualsNoCase(mc.OrderBy.Key)) == true
                     && !mc.Rename.Any(p => p.Value.EqualsNoCase(mc.OrderBy.Key)))
                     throw new InvalidSyntax(InvalidMetaConditionSyntax,
                         $"The {(mc.OrderBy.Ascending ? "'Order_asc'" : "'Order_desc'")} " +
                         "meta-condition cannot refer to a property x that is to be renamed " +
                         "unless some other property is renamed to x");
-                if (mc.OrderBy.Term.ScQueryable == false)
-                    mc.OrderBy.IsSqlQueryable = false;
             }
 
             if (mc.Select != null && mc.Rename != null)
@@ -251,6 +246,40 @@ namespace RESTar.Requests
             if (type == typeof(int)) return "integer";
             if (type == typeof(bool)) return "boolean";
             return null;
+        }
+
+        /// <summary>
+        /// Converts the MetaConditions object into a collection of IUriCondition instances
+        /// </summary>
+        public IEnumerable<IUriCondition> AsConditionList()
+        {
+            var list = new List<IUriCondition>();
+            if (Unsafe)
+                list.Add(new UriCondition("unsafe", EQUALS, "true"));
+            if (Limit.Number > -1)
+                list.Add(new UriCondition("limit", EQUALS, Limit.Number.ToString()));
+            if (Offset.Number > 0)
+                list.Add(new UriCondition("offset", EQUALS, Offset.Number.ToString()));
+            if (OrderBy != null)
+            {
+                var key = OrderBy.Descending ? "order_desc" : "order_asc";
+                list.Add(new UriCondition(key, EQUALS, OrderBy.Term.ToString()));
+            }
+            if (Select != null)
+                list.Add(new UriCondition("select", EQUALS, string.Join(",", Select)));
+            if (Add != null)
+                list.Add(new UriCondition("add", EQUALS, string.Join(",", Add)));
+            if (Rename != null)
+                list.Add(new UriCondition("rename", EQUALS, string.Join(",", Rename.Select(r => $"{r.Key}->{r.Value}"))));
+            if (Distinct != null)
+                list.Add(new UriCondition("distinct", EQUALS, "true"));
+            if (Search != null)
+                list.Add(new UriCondition("search", EQUALS, Search.Pattern));
+            if (SafePost != null)
+                list.Add(new UriCondition("safepost", EQUALS, SafePost));
+            if (Formatter.HasValue)
+                list.Add(new UriCondition("formatter", EQUALS, Formatter.Value.Name));
+            return list;
         }
     }
 }

@@ -7,8 +7,10 @@ using Newtonsoft.Json.Linq;
 using RESTar.ContentTypeProviders;
 using RESTar.Linq;
 using RESTar.Requests;
-using RESTar.Results.Error;
-using RESTar.Results.Success;
+using RESTar.Resources;
+using RESTar.Resources.Operations;
+using RESTar.Results;
+using static System.StringComparison;
 using static Newtonsoft.Json.JsonToken;
 
 namespace RESTar
@@ -36,7 +38,7 @@ namespace RESTar
     /// A resource for creating arbitrary aggregated reports from multiple
     /// internal requests.
     /// </summary>
-    [RESTar(Methods.GET, Description = description), JsonConverter(typeof(AggregatorTemplateConverter))]
+    [RESTar(Method.GET, Description = description), JsonConverter(typeof(AggregatorTemplateConverter))]
     public class Aggregator : Dictionary<string, object>, ISelector<Aggregator>
     {
         private const string description = "A resource for creating arbitrary aggregated reports from multiple internal requests";
@@ -54,45 +56,43 @@ namespace RESTar
                     case JArray array:
                         return array.Select(item => item.ToObject<object>()).Select(populator).ToList();
                     case JObject jobj:
-                        return populator(jobj.ToObject<Aggregator>(JsonContentProvider.Serializer));
-
+                        return populator(jobj.ToObject<Aggregator>(JsonProvider.Serializer));
                     case string empty when string.IsNullOrWhiteSpace(empty): return empty;
-
                     case string stringValue:
-                        Methods method;
+                        Method method;
                         string uri;
-                        if (stringValue.StartsWith("GET "))
+                        if (stringValue.StartsWith("GET ", OrdinalIgnoreCase))
                         {
-                            method = Methods.GET;
+                            method = Method.GET;
                             uri = stringValue.Substring(4);
                         }
-                        else if (stringValue.StartsWith("REPORT "))
+                        else if (stringValue.StartsWith("REPORT ", OrdinalIgnoreCase))
                         {
-                            method = Methods.REPORT;
+                            method = Method.REPORT;
                             uri = stringValue.Substring(7);
                         }
                         else return stringValue;
                         if (string.IsNullOrWhiteSpace(uri))
                             throw new Exception($"Invalid URI in aggregator template. Expected relative uri after '{method.ToString()}'.");
-                        switch (RequestEvaluator.Evaluate(request, method, ref uri, null, request.Headers).GetRawResult())
+                        switch (request.Context.CreateRequest(uri, method, null, request.Headers).Evaluate())
                         {
-                            case RESTarError error: throw new Exception($"Could not get source data from '{uri}'. {error}");
+                            case Error error: throw new Exception($"Could not get source data from '{uri}'. The resource returned: {error}");
                             case NoContent _: return null;
                             case Report report: return report.ReportBody.Count;
-                            case Entities entities: return entities.Content;
+                            case IEntities entities: return entities;
                             case var other:
-                                throw new Exception($"Unexpected result from {method.ToString()} query inside " +
+                                throw new Exception($"Unexpected result from {method.ToString()} request inside " +
                                                     $"Aggregator: {other.LogMessage}");
                         }
                     case var other: return other;
                 }
             }
 
-            if (!request.Body.HasContent)
+            if (!request.GetBody().HasContent)
                 throw new Exception("Missing data source for Aggregator request");
-            var _template = request.Body.ToList<Aggregator>().FirstOrDefault();
-            populator(_template);
-            return new[] {_template}.Where(request.Conditions);
+            var template = request.GetBody().Deserialize<Aggregator>().FirstOrDefault();
+            populator(template);
+            return new[] {template}.Where(request.Conditions);
         }
     }
 }

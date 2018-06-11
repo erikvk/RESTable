@@ -4,20 +4,29 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Runtime.Serialization;
+using System.Text;
 using System.Threading.Tasks;
 using Dynamit;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using RESTar;
 using RESTar.Admin;
 using RESTar.Linq;
-using RESTar.Operations;
+using RESTar.Requests;
 using RESTar.Resources;
+using RESTar.Resources.Operations;
+using RESTar.Results;
 using Starcounter;
-using static RESTar.Methods;
-using static RESTar.Operators;
+using static RESTar.Method;
+using static RESTar.Requests.Operators;
+using Context = RESTar.Requests.Context;
 
+#pragma warning disable 618
 #pragma warning disable 219
+
 // ReSharper disable All
 
 namespace RESTarTester
@@ -33,9 +42,37 @@ namespace RESTarTester
             return s.ElapsedMilliseconds;
         }
 
+        private static class Http
+        {
+            private static HttpClient HttpClient = new HttpClient();
+
+            internal static HttpResponseMessage Request(string method, string uri, byte[] body = null, string contentType = "application/json",
+                Dictionary<string, string> headers = null)
+            {
+                var message = new HttpRequestMessage(new HttpMethod(method), uri);
+                if (body != null)
+                    message.Content =
+                        new ByteArrayContent(body) {Headers = {ContentType = MediaTypeHeaderValue.Parse(contentType ?? "application/json")}};
+                if (headers != null)
+                {
+                    foreach (var header in headers) message.Headers.Add(header.Key, header.Value);
+                }
+                message.Headers.Add("RESTar-metadata", "full");
+                return HttpClient.SendAsync(message).Result;
+            }
+        }
+
         public static void Main()
         {
-            RESTarConfig.Init(9000, lineEndings: LineEndings.Windows, prettyPrint: true);
+            RESTarConfig.Init
+            (
+                port: 9000,
+                lineEndings: LineEndings.Windows,
+                prettyPrint: true,
+                allowAllOrigins: false,
+                configFilePath: @"C:\Mopedo\mopedo\Mopedo.config"
+            );
+
             Db.SQL<Base>("SELECT t FROM RESTarTester.Base t").ForEach(b => Db.TransactAsync(b.Delete));
             Db.SQL<MyDict>("SELECT t FROM RESTarTester.MyDict t").ForEach(b => Db.TransactAsync(b.Delete));
             Db.SQL<MyDict2>("SELECT t FROM RESTarTester.MyDict2 t").ForEach(b => Db.TransactAsync(b.Delete));
@@ -282,62 +319,71 @@ namespace RESTarTester
 
             #region Insertions
 
-            var response1 = Http.POST("http://localhost:9000/rest/resource1", onesJson, null);
-            var response2 = Http.POST("http://localhost:9000/rest/resource2", twosJson, null);
-            var response3 = Http.POST("http://localhost:9000/rest/resource3", threesJson, null);
-            var response4 = Http.POST("http://localhost:9000/rest/resource4", foursJson, null);
-            var response5 = Http.POST("http://localhost:9000/rest/authresource", @"{""Id"": 1, ""Str"": ""Foogoo""}",
-                new Dictionary<string, string>() {["password"] = "the password"});
-            var response5fail = Http.POST("http://localhost:9000/rest/authresource", @"{""Id"": 2, ""Str"": ""Foogoo""}",
-                new Dictionary<string, string>() {["password"] = "not the password"});
+            var response1 = Http.Request("POST", "http://localhost:9000/rest/resource1", Encoding.UTF8.GetBytes(onesJson), null);
+            var response2 = Http.Request("POST", "http://localhost:9000/rest/resource2", Encoding.UTF8.GetBytes(twosJson), null);
+            var response3 = Http.Request("POST", "http://localhost:9000/rest/resource3", Encoding.UTF8.GetBytes(threesJson), null);
+            var response4 = Http.Request("POST", "http://localhost:9000/rest/resource4", Encoding.UTF8.GetBytes(foursJson), null);
+            var response5 = Http.Request("POST", "http://localhost:9000/rest/authresource",
+                Encoding.UTF8.GetBytes(@"{""Id"": 1, ""Str"": ""Foogoo""}"),
+                headers: new Dictionary<string, string>() {["password"] = "the password"});
+            var response5fail = Http.Request("POST", "http://localhost:9000/rest/authresource",
+                Encoding.UTF8.GetBytes(@"{""Id"": 2, ""Str"": ""Foogoo""}"),
+                headers: new Dictionary<string, string>() {["password"] = "not the password"});
+            var response6 = Http.Request("POST", "http://localhost:9000/rest/resource1//safepost=ObjectNo", Encoding.UTF8.GetBytes(onesJson), null);
 
             Debug.Assert(response1?.IsSuccessStatusCode == true);
             Debug.Assert(response2?.IsSuccessStatusCode == true);
             Debug.Assert(response3?.IsSuccessStatusCode == true);
             Debug.Assert(response4?.IsSuccessStatusCode == true);
             Debug.Assert(response5?.IsSuccessStatusCode == true);
-            Debug.Assert(response5fail?.StatusCode == 403);
+            Debug.Assert(response5fail?.StatusCode == (HttpStatusCode) 403);
+            Debug.Assert(response6?.IsSuccessStatusCode == true);
 
             #endregion
 
             #region External source/destination inserts
 
             var resource1Url = "https://storage.googleapis.com/mopedo-web/resource1.json";
-            var esourceresponse1 = Http.POST
+            var esourceresponse1 = Http.Request
             (
+                method: "POST",
                 uri: "http://localhost:9000/rest/resource1",
                 body: null,
-                headersDictionary: new Dictionary<string, string> {["Source"] = "GET " + resource1Url}
+                headers: new Dictionary<string, string> {["Source"] = "GET " + resource1Url}
             );
             Debug.Assert(esourceresponse1?.IsSuccessStatusCode == true);
 
-            var esourceresponse2 = Http.POST
+            var esourceresponse2 = Http.Request
             (
+                method: "POST",
                 uri: "http://localhost:9000/rest/MyDict",
                 body: null,
-                headersDictionary: new Dictionary<string, string> {["Source"] = "GET " + resource1Url}
+                headers: new Dictionary<string, string> {["Source"] = "GET " + resource1Url}
             );
             Debug.Assert(esourceresponse2?.IsSuccessStatusCode == true);
 
-            var esourceresponse3 = Http.POST
+            var esourceresponse3 = Http.Request
             (
+                method: "POST",
                 uri: "http://localhost:9000/rest/MyDict",
                 body: null,
-                headersDictionary: new Dictionary<string, string> {["Source"] = "GET /resource1"}
+                headers: new Dictionary<string, string> {["Source"] = "GET /resource1"}
             );
             Debug.Assert(esourceresponse3?.IsSuccessStatusCode == true);
 
-            var edestinationresponse1 = Http.GET
+            var edestinationresponse1 = Http.Request
             (
+                method: "GET",
                 uri: "http://localhost:9000/rest/resource1",
-                headersDictionary: new Dictionary<string, string> {["Destination"] = "POST /mydict"}
+                headers: new Dictionary<string, string> {["Destination"] = "POST /mydict"}
             );
             Debug.Assert(edestinationresponse1?.IsSuccessStatusCode == true);
 
-            var edestinationresponse2 = Http.GET
+            var edestinationresponse2 = Http.Request
             (
+                method: "GET",
                 uri: "http://localhost:9000/rest/mydict",
-                headersDictionary: new Dictionary<string, string> {["Destination"] = "POST http://localhost:9000/rest/resource1"}
+                headers: new Dictionary<string, string> {["Destination"] = "POST http://localhost:9000/rest/resource1"}
             );
             Debug.Assert(edestinationresponse2?.IsSuccessStatusCode == true);
 
@@ -353,20 +399,19 @@ namespace RESTarTester
             var data = streamreader.ReadToEnd();
             Debug.Assert(!string.IsNullOrWhiteSpace(data));
 
-            var jsonResponse1 = Http.GET("http://localhost:9000/rest/restartester.resource1");
-            var jsonResponse1view = Http.GET("http://localhost:9000/rest/resource1-myview");
-            var jsonResponse2 = Http.GET("http://localhost:9000/rest/resource2");
-            var jsonResponse3 = Http.GET("http://localhost:9000/rest/resource3");
-            var jsonResponse4 = Http.GET("http://localhost:9000/rest/resource4");
-            var jsonResponse4distinct = Http.GET("http://localhost:9000/rest/resource4//select=string&distinct=true");
-            var jsonResponse4extreme = Http.GET
-                ("http://localhost:9000/rest/resource4//add=datetime.day&select=datetime.day,datetime.month,string,string.length&order_desc=string.length&distinct=true");
-            var jsonResponse5format = Http.GET
-                ("http://localhost:9000/rest/resource4//add=datetime.day&select=datetime.day,datetime.month,string,string.length&order_desc=string.length&format=jsend&distinct=true");
+            var jsonResponse1 = Http.Request("GET", "http://localhost:9000/rest/restartester.resource1");
+            var jsonResponse1view = Http.Request("GET", "http://localhost:9000/rest/resource1-myview");
+            var jsonResponse2 = Http.Request("GET", "http://localhost:9000/rest/resource2");
+            var jsonResponse3 = Http.Request("GET", "http://localhost:9000/rest/resource3");
+            var jsonResponse4 = Http.Request("GET", "http://localhost:9000/rest/resource4");
+            var jsonResponse4distinct = Http.Request("GET", "http://localhost:9000/rest/resource4//select=string&distinct=true");
+            var jsonResponse4extreme = Http.Request("GET",
+                "http://localhost:9000/rest/resource4//add=datetime.day&select=datetime.day,datetime.month,string,string.length&order_desc=string.length&distinct=true");
+            var jsonResponse5format = Http.Request("GET",
+                "http://localhost:9000/rest/resource4//add=datetime.day&select=datetime.day,datetime.month,string,string.length&order_desc=string.length&format=jsend&distinct=true");
 
-            var head = Http.CustomRESTRequest("HEAD", "http://localhost:9000/rest/resource1//distinct=true", default(string), null);
-            var report = Http.CustomRESTRequest("REPORT", "http://localhost:9000/rest/resource1//distinct=true", default(string), null);
-
+            var head = Http.Request("HEAD", "http://localhost:9000/rest/resource1//distinct=true");
+            var report = Http.Request("REPORT", "http://localhost:9000/rest/resource1//distinct=true");
 
             Debug.Assert(jsonResponse1?.IsSuccessStatusCode == true);
             Debug.Assert(jsonResponse1view?.IsSuccessStatusCode == true);
@@ -381,11 +426,11 @@ namespace RESTarTester
 
             #region GET Excel
 
-            var headers = new Dictionary<string, string> {["Accept"] = "Excel"};
-            var excelResponse1 = Http.GET("http://localhost:9000/rest/resource1", headersDictionary: headers);
-            var excelResponse2 = Http.GET("http://localhost:9000/rest/resource2", headersDictionary: headers);
-            var excelResponse3 = Http.GET("http://localhost:9000/rest/resource3", headersDictionary: headers);
-            var excelResponse4 = Http.GET("http://localhost:9000/rest/resource4", headersDictionary: headers);
+            var headers = new Dictionary<string, string> {["Accept"] = "application/restar-excel"};
+            var excelResponse1 = Http.Request("GET", "http://localhost:9000/rest/resource1", headers: headers);
+            var excelResponse2 = Http.Request("GET", "http://localhost:9000/rest/resource2", headers: headers);
+            var excelResponse3 = Http.Request("GET", "http://localhost:9000/rest/resource3", headers: headers);
+            var excelResponse4 = Http.Request("GET", "http://localhost:9000/rest/resource4", headers: headers);
 
             Debug.Assert(excelResponse1?.IsSuccessStatusCode == true);
             Debug.Assert(excelResponse2?.IsSuccessStatusCode == true);
@@ -396,17 +441,16 @@ namespace RESTarTester
 
             #region POST Excel
 
-            var headers2 = new Dictionary<string, string>
-                {["Content-Type"] = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", ["Foo"] = "123"};
-            var excelPostResponse1 = Http.POST("http://localhost:9000/rest/resource1", bodyBytes: excelResponse1.BodyBytes,
-                headersDictionary: headers2);
+            var excelbody = excelResponse1.Content.ReadAsByteArrayAsync().Result;
+            var excelPostResponse1 = Http.Request("POST", "http://localhost:9000/rest/resource1", body: excelbody,
+                contentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
             Debug.Assert(excelPostResponse1?.IsSuccessStatusCode == true);
 
             var webrequest = (HttpWebRequest) WebRequest.Create("http://localhost:9000/rest/resource1");
             webrequest.Method = "POST";
             webrequest.ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
             using (var str = webrequest.GetRequestStream())
-            using (var stream = new MemoryStream(excelResponse1.BodyBytes))
+            using (var stream = new MemoryStream(excelbody))
                 stream.CopyTo(str);
             var webResponse = (HttpWebResponse) webrequest.GetResponse();
             string _body;
@@ -418,10 +462,10 @@ namespace RESTarTester
 
             #region With conditions
 
-            var conditionResponse1 = Http.GET("http://localhost:9000/rest/resource1/sbyte>=0&byte!=200&datetime>2001-01-01");
-            var conditionResponse2 = Http.GET("http://localhost:9000/rest/resource2/sbyte<=10&byte!=200&datetime>2001-01-01");
-            var conditionResponse3 = Http.GET("http://localhost:9000/rest/resource3/sbyte>0&byte!=200&datetime>2001-01-01");
-            var conditionResponse4 = Http.GET("http://localhost:9000/rest/resource4/resource1.string!=aboo&resource2!=null");
+            var conditionResponse1 = Http.Request("GET", "http://localhost:9000/rest/resource1/sbyte>=0&byte!=200&datetime>2001-01-01");
+            var conditionResponse2 = Http.Request("GET", "http://localhost:9000/rest/resource2/sbyte<=10&byte!=200&datetime>2001-01-01");
+            var conditionResponse3 = Http.Request("GET", "http://localhost:9000/rest/resource3/sbyte>0&byte!=200&datetime>2001-01-01");
+            var conditionResponse4 = Http.Request("GET", "http://localhost:9000/rest/resource4/resource1.string!=aboo&resource2!=null");
 
             Debug.Assert(excelResponse1?.IsSuccessStatusCode == true);
             Debug.Assert(excelResponse2?.IsSuccessStatusCode == true);
@@ -432,7 +476,9 @@ namespace RESTarTester
 
             #region Internal requests
 
-            var g = new Request<MyDict>().POST(() =>
+            var context = Context.Root;
+            var g = context.CreateRequest<MyDict>(POST);
+            g.Selector = () =>
             {
                 dynamic d = new MyDict();
                 d.Hej = "123";
@@ -447,32 +493,96 @@ namespace RESTarTester
                 x.Foo = 3213M;
                 x.Goo = false;
                 return new MyDict[] {d, v, x};
-            });
-
-            var r1 = new Request<Resource1>(new Condition<Resource1>(nameof(Resource1.Sbyte), GREATER_THAN, 1));
-            var r2 = new Request<Resource2>();
-            var r3 = new Request<Resource3>();
-            var r4 = new Request<Resource4>();
-            var r6 = new Request<Aggregator>
-            {
-                Body = new
-                {
-                    A = "REPORT /resource",
-                    B = new[] {"REPORT /resource", "REPORT /resource"}
-                }
             };
-            var r5 = new Request<MyDict>();
-            var cond = new Condition<MyDict>("Goo", EQUALS, false);
-            r5.Conditions = new[] {cond};
+            var result = g.Evaluate();
+            Debug.Assert(result is InsertedEntities ie && ie.InsertedCount == 3);
 
-            var res1 = r1.GET();
-            var res2 = r2.GET();
-            var res3 = r3.GET();
-            var res4 = r4.GET();
-            var res5 = r5.GET();
-            var (excel, nrOfRows) = r5.GETExcel();
-            excel.Dispose();
-            var res6 = r6.GET();
+            var g2 = context.CreateRequest<MyDict>(POST);
+            dynamic d2 = new JObject();
+            d2.Hej = "123";
+            d2.Foo = 3213M;
+            d2.Goo = true;
+            dynamic v2 = new JObject();
+            v2.Hej = "123";
+            v2.Foo = 3213M;
+            v2.Goo = false;
+            dynamic x2 = new JObject();
+            x2.Hej = "123";
+            x2.Foo = 3213M;
+            x2.Goo = false;
+            var arr2 = new[] {d2, v2, x2};
+            g2.SetBody(arr2);
+            var result2 = g2.Evaluate();
+            Debug.Assert(result2 is InsertedEntities ie2 && ie2.InsertedCount == 3);
+
+            var g5 = context.CreateRequest<MyDict>(POST);
+            dynamic d5 = new JObject();
+            d5.Hej = "123";
+            d5.Foo = 3213M;
+            d5.Goo = true;
+            dynamic v5 = new JObject();
+            v5.Hej = "123";
+            v5.Foo = 3213M;
+            v5.Goo = false;
+            dynamic x5 = new JObject();
+            x5.Hej = "123";
+            x5.Foo = 3213M;
+            x5.Goo = false;
+            var arr5 = new[] {d5, v5, x5};
+            g5.SetBody(arr5, ContentType.Excel);
+            var result5 = g5.Evaluate();
+            Debug.Assert(result5 is InsertedEntities ie5 && ie5.InsertedCount == 3);
+
+            var g3 = context.CreateRequest<MyDict>(POST);
+            var d3 = new
+            {
+                Hej = "123",
+                Foo = 3213M,
+                Goo = true
+            };
+            g3.SetBody(d3);
+            var result3 = g3.Evaluate();
+            Debug.Assert(result3 is InsertedEntities ie3 && ie3.InsertedCount == 1);
+
+            var g4 = context.CreateRequest<MyDict>(POST);
+            var d4 = JsonConvert.SerializeObject(new
+            {
+                Hej = "123",
+                Foo = 3213M,
+                Goo = true
+            });
+            g4.SetBody(d4);
+            var result4 = g4.Evaluate();
+            Debug.Assert(result4 is InsertedEntities ie4 && ie4.InsertedCount == 1);
+
+
+            var r1Cond = new Condition<Resource1>(nameof(Resource1.Sbyte), GREATER_THAN, 1);
+            var r1 = context.CreateRequest<Resource1>(GET);
+            r1.Conditions.Add(r1Cond);
+
+            var r2 = context.CreateRequest<Resource2>(GET);
+            var r3 = context.CreateRequest<Resource3>(GET);
+            var r4 = context.CreateRequest<Resource4>(GET);
+            var r6 = context.CreateRequest<Aggregator>(GET);
+            r6.SetBody(new
+            {
+                A = "REPORT /admin.resource",
+                B = new[] {"REPORT /admin.resource", "REPORT /admin.resource"}
+            });
+            var r5 = context.CreateRequest<Resource1>(GET);
+            var cond = new Condition<Resource1>("SByte", GREATER_THAN, 2);
+            r5.Conditions.Add(cond);
+            r5.Headers.Accept = ContentType.Excel;
+
+            var res1 = r1.Evaluate().Serialize();
+            var res2 = r2.Evaluate().Serialize();
+            var res3 = r3.Evaluate().Serialize();
+            var res4 = r4.Evaluate().Serialize();
+            var res5 = r5.Evaluate().Serialize();
+            var res6 = r6.Evaluate().Serialize();
+
+            Debug.Assert(res5.Headers.ContentType == ContentType.Excel);
+            Debug.Assert(res5.Body.Length > 1);
 
             Db.TransactAsync(() =>
             {
@@ -488,7 +598,7 @@ namespace RESTarTester
                 }
             });
 
-            Do.Schedule(() => Db.TransactAsync(() => new MyDict() {["Aaa"] = "Wook"}), TimeSpan.FromSeconds(10));
+            Do.Schedule(() => Db.TransactAsync(() => new MyDict() {["Aaa"] = "Wook"}), TimeSpan.FromSeconds(10)).Wait();
 
             DatabaseIndex.Register<MyDict2>("MyFineIdex", "R");
 
@@ -504,8 +614,53 @@ namespace RESTarTester
                     }
                 };
             });
-            var byInternalSource = Http.POST("http://localhost:9000/rest/resource3", default(string),
-                new Dictionary<string, string> {["Source"] = "GET /resource3"});
+
+            var byInternalSource = Http.Request("POST", "http://localhost:9000/rest/resource3", null,
+                headers: new Dictionary<string, string> {["Source"] = "GET /resource3"});
+
+
+            var internalRequest9 = Context.Root.CreateRequest<Resource1>();
+            var entities = internalRequest9.EvaluateToEntities();
+            Debug.Assert(entities is IEntities<Resource1> rement1 && rement1.Count() > 1 && entities is IEnumerable<Resource1>);
+
+            #endregion
+
+            #region Remote requests
+
+            var remoteContext = Context.Remote("http://localhost:9000/rest");
+            var remoteRequest = remoteContext.CreateRequest("/resource1", GET);
+            var remoteResult = remoteRequest.Evaluate();
+            Debug.Assert(remoteResult is IEntities rement && rement.EntityCount > 1);
+
+            #endregion
+
+            #region OPTIONS
+
+            var optionsResponse1 = Http.Request("OPTIONS", "http://localhost:9000/rest/resource1", null,
+                headers: new Dictionary<string, string> {["Origin"] = "https://fooboo.com/thingy"});
+            Debug.Assert(optionsResponse1?.IsSuccessStatusCode == true);
+            var optionsResponse2 = Http.Request("OPTIONS", "http://localhost:9000/rest/resource1", null,
+                headers: new Dictionary<string, string> {["Origin"] = "https://fooboo.com/invalid"});
+            Debug.Assert(optionsResponse2?.IsSuccessStatusCode == false);
+
+            #endregion
+
+            #region XML
+
+            Debug.Assert(Http.Request("GET", "http://localhost:9000/rest/resource2",
+                headers: new Dictionary<string, string> {["Accept"] = "application/xml"}).IsSuccessStatusCode);
+
+            #endregion
+
+            #region Error triggers
+
+            Debug.Assert(Http.Request("GET", "http://localhost:9000/rest/x9").StatusCode == HttpStatusCode.NotFound);
+            Debug.Assert(Http.Request("GET", "http://localhost:9000/rest/resource1/bfa=1").StatusCode == HttpStatusCode.NotFound);
+            Debug.Assert(Http.Request("GET", "http://localhost:9000/rest/resource1//limit=foo").StatusCode == HttpStatusCode.BadRequest);
+            Debug.Assert(Http.Request("POST", "http://localhost:9000/rest/resource1/bfa=1").StatusCode == HttpStatusCode.NotFound);
+            Debug.Assert(Http.Request("POST", "http://localhost:9000/rest/resource1").StatusCode == HttpStatusCode.BadRequest);
+            Debug.Assert(Http.Request("PATCH", "http://localhost:9000/rest/resource1").StatusCode == HttpStatusCode.BadRequest);
+            Debug.Assert(Http.Request("POST", "http://localhost:9000/rest/myres", new byte[] {1, 2, 3}).StatusCode == HttpStatusCode.MethodNotAllowed);
 
             #endregion
 
@@ -581,6 +736,7 @@ namespace RESTarTester
 
         public IEnumerable<MyRes> Select(IRequest<MyRes> request)
         {
+            var s = request.GetClientData<object>("account");
             Things thing = request.Conditions.Get("$T", EQUALS).Value;
             var other = request.Conditions.Get("V", EQUALS).Value;
             return new[] {new MyRes {["T"] = thing, ["V"] = other}};
@@ -656,20 +812,26 @@ namespace RESTarTester
 
         private static List<AuthResource> Items = new List<AuthResource>();
 
-        public IEnumerable<AuthResource> Select(IRequest<AuthResource> request) => Items.Where(request.Conditions);
+        public IEnumerable<AuthResource> Select(IRequest<AuthResource> request)
+        {
+            var d = request.GetClientData<object>("account");
+            return Items.Where(request.Conditions);
+        }
 
-        public int Insert(IRequest<AuthResource> request) => request.GetEntities().Aggregate(0, (count, entity) =>
+        public int Insert(IRequest<AuthResource> request) => request.GetInputEntities().Aggregate(0, (count, entity) =>
         {
             Items.Add(entity);
             return count += 1;
         });
 
-        public int Delete(IRequest<AuthResource> request) => request.GetEntities()
+        public int Delete(IRequest<AuthResource> request) => request
+            .GetInputEntities()
             .Aggregate(0, (count, entity) => count += Items.RemoveAll(i => i.Id == entity.Id));
 
         public AuthResults Authenticate(IRequest<AuthResource> request)
         {
             var password = request.Headers["password"];
+            request.SetClientData("account", new JObject() {["A"] = 321});
             return (password == "the password", "Invalid password!");
         }
 

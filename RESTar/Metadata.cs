@@ -2,11 +2,12 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using RESTar.Auth;
-using RESTar.Deflection.Dynamic;
-using RESTar.Internal;
+using RESTar.Internal.Auth;
 using RESTar.Linq;
-using RESTar.Results.Error;
+using RESTar.Meta;
+using RESTar.Requests;
+using RESTar.Resources;
+using RESTar.Resources.Operations;
 
 namespace RESTar
 {
@@ -29,15 +30,16 @@ namespace RESTar
 
     /// <inheritdoc />
     /// <summary>
-    /// Creates metadata for the types and resources of the RESTar instance
+    /// A resource that creates metadata for the types and resources of the RESTar instance,
+    /// using the types included in the RESTar.Meta namespace.
     /// </summary>
-    [RESTar(Methods.GET, GETAvailableToAll = true)]
+    [RESTar(Method.GET, GETAvailableToAll = true)]
     public class Metadata : ISelector<Metadata>
     {
         /// <summary>
         /// The access scope for the current client
         /// </summary>
-        public IDictionary<IResource, Methods[]> CurrentAccessScope { get; private set; }
+        public IDictionary<IResource, Method[]> CurrentAccessScope { get; private set; }
 
         /// <summary>
         /// The entity resources within the access scope
@@ -63,7 +65,7 @@ namespace RESTar
         /// <inheritdoc />
         public IEnumerable<Metadata> Select(IRequest<Metadata> request)
         {
-            var accessrights = Authenticator.AuthTokens[request.TcpConnection.AuthToken];
+            var accessrights = request.Context.Client.AccessRights;
             return new[] {Make(MetadataLevel.Full, accessrights)};
         }
 
@@ -74,7 +76,6 @@ namespace RESTar
         
         internal static Metadata Make(MetadataLevel level, AccessRights rights)
         {
-            if (!RESTarConfig.Initialized) throw new NotInitialized();
             var domain = rights?.Keys ?? RESTarConfig.Resources;
             var entityResources = domain
                 .OfType<IEntityResource>()
@@ -88,7 +89,7 @@ namespace RESTar
             if (level == MetadataLevel.OnlyResources)
                 return new Metadata
                 {
-                    CurrentAccessScope = new Dictionary<IResource, Methods[]>(rights ?? AccessRights.Root),
+                    CurrentAccessScope = new Dictionary<IResource, Method[]>(rights ?? AccessRights.Root),
                     EntityResources = entityResources.ToArray(),
                     TerminalResources = terminalResources.ToArray()
                 };
@@ -105,8 +106,8 @@ namespace RESTar
                     case var _ when type.IsNullable(out var baseType):
                         parseType(baseType);
                         break;
-                    case var _ when type.Implements(typeof(IEnumerable<>), out var param):
-                        if (param[0].Implements(typeof(IEnumerable<>)))
+                    case var _ when type.ImplementsGenericInterface(typeof(IEnumerable<>), out var param) && param.Any():
+                        if (param[0].ImplementsGenericInterface(typeof(IEnumerable<>)))
                             break;
                         parseType(param[0]);
                         break;
@@ -139,7 +140,7 @@ namespace RESTar
 
             return new Metadata
             {
-                CurrentAccessScope = new Dictionary<IResource, Methods[]>(rights ?? AccessRights.Root),
+                CurrentAccessScope = new Dictionary<IResource, Method[]>(rights ?? AccessRights.Root),
                 EntityResources = entityResources.ToArray(),
                 TerminalResources = terminalResources.ToArray(),
                 EntityResourceTypes = entityTypes

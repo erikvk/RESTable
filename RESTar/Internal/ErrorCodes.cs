@@ -70,6 +70,8 @@ namespace RESTar.Internal
         InvalidResourceViewDeclaration = 125,
         InvalidTerminalDeclaration = 126,
         InvalidReferencedEnumDeclaration = 127,
+        InvalidBinaryResourceDeclaration = 128,
+        InvalidResourceControllerDeclaration = 129,
 
         // 130-139: Alias errors
         AliasAlreadyInUse = 130,
@@ -80,7 +82,7 @@ namespace RESTar.Internal
         AbortedInsert = 202,
         AbortedUpdate = 203,
         AbortedDelete = 204,
-        AbortedCount = 205,
+        AbortedReport = 205,
         NotSignedIn = 210,
         NotAuthorized = 211,
         NoMatchingHtml = 212,
@@ -88,6 +90,7 @@ namespace RESTar.Internal
         MethodNotAllowed = 214,
         Untraceable = 215,
         MissingUri = 216,
+        ReusedContext = 217,
 
         // 300-400: Database errors
         DatabaseError = 300,
@@ -96,7 +99,7 @@ namespace RESTar.Internal
         // 400-500: Initialization errors
         NotInitialized = 400,
         AddOnError = 401,
-        ResourceProviderError = 402,
+        EntityResourceProviderError = 402,
         ResourceWrapperError = 403,
         InfiniteLoopDetected = 404,
         NotImplemented = 405,
@@ -104,7 +107,14 @@ namespace RESTar.Internal
         InvalidProtocolProvider = 408,
         InvalidContentTypeProvider = 408,
 
-        // 500-600: Protocol errors
-        NotCompliantWithProtocol = 500
+        // 500-600: Other errors
+        NotCompliantWithProtocol = 500,
+        WebSocketNotConnected = 501,
+        InvalidShellHeaderAssignmentSyntax = 502,
+        ShellError = 503,
+        NoResponseFromRemoteService = 504,
+        ExternalServiceNotRESTar = 505,
+        WebSocketMessageTooLarge = 506,
+        UnreadableContentStream = 507
     }
 }

@@ -1,251 +1,183 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Web;
 using RESTar.Internal;
-using RESTar.Linq;
-using RESTar.Logging;
-using RESTar.Results.Error;
-using IResource = RESTar.Internal.IResource;
+using RESTar.Meta;
+using RESTar.Results;
+using RESTar.WebSockets;
+using Starcounter;
+using IResource = RESTar.Meta.IResource;
+using WebSocket = RESTar.WebSockets.WebSocket;
 
 namespace RESTar.Requests
 {
     /// <summary>
-    /// Contains parameters for a RESTar URI
+    /// Requests are run from inside contexts. Contexts guard against infinite recursion 
+    /// and define the root for each ITraceable tree. They also hold WebSocket connections
+    /// and Client access rights.
     /// </summary>
-    public interface IUriParameters
+    public abstract class Context
     {
-        /// <summary>
-        /// Specifies the resource for the request
-        /// </summary>
-        string ResourceSpecifier { get; }
+        internal string InitialTraceId { get; }
+        private const int MaximumStackDepth = 500;
+        private WebSocket webSocket;
+        private int StackDepth;
+        internal bool IsBottomIfStack => StackDepth < 1;
 
-        /// <summary>
-        /// Specifies the view for the request
-        /// </summary>
-        string ViewName { get; }
-
-        /// <summary>
-        /// Specifies the conditions for the request
-        /// </summary>
-        List<UriCondition> Conditions { get; }
-
-        /// <summary>
-        /// Specifies the meta-conditions for the request
-        /// </summary>
-        List<UriCondition> MetaConditions { get; }
-    }
-
-    /// <inheritdoc cref="ILogable" />
-    /// <inheritdoc cref="ITraceable" />
-    /// <summary>
-    /// A RESTar class that defines the arguments that are used when creating a RESTar request to evaluate 
-    /// an incoming call. Arguments is a unified way to talk about the input to request evaluation, 
-    /// regardless of protocol and web technologies.
-    /// </summary>
-    public class Context : ILogable, ITraceable
-    {
-        /// <summary>
-        /// The method to perform
-        /// </summary>
-        public Methods Method { get; }
-
-        private string UnparsedUri { get; }
-
-        /// <summary>
-        /// The URI contained in the arguments
-        /// </summary>
-        public URI Uri { get; }
-
-        private IResource iresource;
-        internal IResource IResource => iresource ?? (iresource = Resource.Find(Uri.ResourceSpecifier));
-
-        /// <inheritdoc />
-        public TCPConnection TcpConnection { get; }
-
-        /// <summary>
-        /// The body as byte array
-        /// </summary>
-        public Body Body { get; }
-
-        /// <inheritdoc />
-        public Headers Headers { get; }
-
-        /// <summary>
-        /// The content type registered in the Content-Type header
-        /// </summary>
-        public ContentType ContentType { get; }
-
-        /// <summary>
-        /// The content type provider to use when deserializing input
-        /// </summary>
-        public IContentTypeProvider InputContentTypeProvider { get; }
-
-        /// <summary>
-        /// The content types registered in the Accept header
-        /// </summary>
-        public ContentType Accept { get; }
-
-        /// <summary>
-        /// The content type provider to use when serializing output
-        /// </summary>
-        public IContentTypeProvider OutputContentTypeProvider { get; }
-
-        internal ResultFinalizer ResultFinalizer { get; }
-        internal Exception Error { get; set; }
-
-        internal CachedProtocolProvider CachedProtocolProvider { get; }
-
-        /// <inheritdoc />
-        public string TraceId { get; }
-
-        /// <inheritdoc />
-        public bool ExcludeHeaders => IResource is IEntityResource e && e.RequiresAuthentication;
-
-        LogEventType ILogable.LogEventType { get; } = LogEventType.HttpInput;
-        string ILogable.LogMessage => $"{Method} {UnparsedUri}{(Body.HasContent ? $" ({Body.Bytes.Length} bytes)" : "")}";
-        private string _contentString;
-
-        string ILogable.LogContent
+        internal void IncreaseDepth()
         {
-            get
+            if (StackDepth == MaximumStackDepth)
+                throw new InfiniteLoop();
+            StackDepth += 1;
+        }
+
+        internal void DecreaseDepth()
+        {
+            StackDepth -= 1;
+        }
+
+        /// <summary>
+        /// The websocket connected with this context
+        /// </summary>
+        internal WebSocket WebSocket
+        {
+            get => webSocket;
+            set
             {
-                if (!Body.HasContent) return null;
-                return _contentString ?? (_contentString = Encoding.UTF8.GetString(Body.Bytes));
+                WebSocketController.Add(value);
+                webSocket = value;
             }
         }
 
-        /// <inheritdoc />
-        public string HeadersStringCache { get; set; }
+        #region Abstract
 
-        internal void ThrowIfError()
+        /// <summary>
+        /// Should return true if and only if the request is a WebSocket upgrade request
+        /// </summary>
+        protected abstract bool IsWebSocketUpgrade { get; }
+
+        /// <summary>
+        /// Gets a WebSocket instance for a given Context
+        /// </summary>
+        protected abstract WebSocket CreateWebSocket();
+
+        #endregion
+
+        /// <summary>
+        /// Does this context have a WebSocket connected?
+        /// </summary>
+        public bool HasWebSocket => WebSocket != null;
+
+        /// <summary>
+        /// The client of the context
+        /// </summary>
+        public Client Client { get; }
+
+        /// <summary>
+        /// Creates a request in this context for a resource type, using the given method and optional protocol id and 
+        /// view name. If the protocol ID is null, the default protocol will be used. T must be a registered resource type.
+        /// </summary>
+        /// <param name="method">The method to perform, for example GET</param>
+        /// <param name="protocolId">An optional protocol ID, defining the protocol to use for the request. If the 
+        /// protocol ID is null, the default protocol will be used.</param>
+        /// <param name="viewName">An optional view name to use when selecting entities from the resource</param>
+        public virtual IRequest<T> CreateRequest<T>(Method method = Method.GET, string protocolId = null, string viewName = null) where T : class
         {
-            if (Error != null) throw Error;
+            var resource = Resource<T>.SafeGet ?? throw new UnknownResource(typeof(T).RESTarTypeName());
+            var parameters = new RequestParameters(this, method, resource, protocolId, viewName);
+            return new Request<T>(resource, parameters);
         }
 
-        private static bool PercentCharsEscaped(IDictionary<string, string> headers)
+        /// <summary>
+        /// Creates a request in this context using the given parameters.
+        /// </summary>
+        /// <param name="uri">The URI of the request</param>
+        /// <param name="method">The method to perform</param>
+        /// <param name="body">The body of the request</param>
+        /// <param name="headers">The headers of the request</param>
+        public virtual IRequest CreateRequest(string uri, Method method = Method.GET, byte[] body = null, Headers headers = null)
         {
-            return headers?.ContainsKey("X-ARR-LOG-ID") == true;
+            if (uri == null) throw new ArgumentNullException(nameof(uri));
+            if (IsWebSocketUpgrade)
+            {
+                WebSocket = CreateWebSocket();
+                WebSocket.Context = this;
+            }
+            var parameters = new RequestParameters(this, method, uri, body, headers);
+            if (!parameters.IsValid) return new InvalidParametersRequest(parameters);
+            return Construct((dynamic) parameters.IResource, parameters);
         }
 
-        private static string UnpackUriKey(string uriKey)
+        /// <summary>
+        /// Validates a request URI and returns true if valid. If invalid, the error is returned in the 
+        /// out parameter.
+        /// </summary>
+        /// <param name="uri">The URI if the request</param>
+        /// <param name="error">A RESTarError describing the error, or null if valid</param>
+        /// <param name="resource">The resource referenced in the URI</param>
+        public bool UriIsValid(string uri, out Results.Error error, out IResource resource)
         {
-            return uriKey != null ? HttpUtility.UrlDecode(uriKey).Substring(1, uriKey.Length - 2) : null;
+            var parameters = new RequestParameters(this, (Method) (-1), uri, null, null);
+            if (parameters.Error != null)
+            {
+                error = parameters.Error.AsError();
+                resource = null;
+                return false;
+            }
+            resource = parameters.IResource;
+            IRequest request = Construct((dynamic) resource, parameters);
+            if (request.IsValid)
+            {
+                error = null;
+                return true;
+            }
+            error = request.Evaluate() as Results.Error;
+            return false;
         }
 
-        internal Context(Methods method, ref string uri, byte[] body, Headers headers, ITraceable trace)
+        private static IRequest Construct<T>(IResource<T> r, RequestParameters p) where T : class => new Request<T>(r, p);
+
+        /// <summary>
+        /// Use this method to check the origin of an incoming OPTIONS request. This will check the contents
+        /// of the Origin header against allowed CORS origins.
+        /// </summary>
+        /// <param name="uri">The URI of the request</param>
+        /// <param name="headers">The headers of the request</param>
+        /// <returns></returns>
+        public ISerializedResult CheckOrigin(string uri, Headers headers)
         {
-            TraceId = trace.TraceId;
-            Method = method;
-            Headers = headers ?? new Headers();
-            Uri = URI.ParseInternal(ref uri, PercentCharsEscaped(headers), trace, out var key, out var cachedProtocolProvider);
-            var hasMacro = Uri?.Macro != null;
-
-            if (hasMacro)
-            {
-                if (Uri.Macro.OverWriteHeaders)
-                    Uri.Macro.HeadersDictionary?.ForEach(pair => Headers[pair.Key] = pair.Value);
-                else
-                {
-                    Uri.Macro.HeadersDictionary?.ForEach(pair =>
-                    {
-                        var currentValue = Headers.SafeGet(pair.Key);
-                        if (string.IsNullOrWhiteSpace(currentValue) || currentValue == "*/*")
-                            Headers[pair.Key] = pair.Value;
-                    });
-                }
-            }
-
-            CachedProtocolProvider = cachedProtocolProvider;
-            if (key != null)
-                Headers["Authorization"] = $"apikey {UnpackUriKey(key)}";
-            UnparsedUri = uri;
-            TcpConnection = trace.TcpConnection;
-            var contentType = ContentType.ParseInput(Headers["Content-Type"]);
-            var accepts = ContentType.ParseManyOutput(Headers["Accept"]);
-
-            if (cachedProtocolProvider != null)
-            {
-                ResultFinalizer = cachedProtocolProvider.ProtocolProvider.FinalizeResult;
-                if (contentType.MimeType == null)
-                {
-                    ContentType = cachedProtocolProvider.DefaultInputProvider.ContentType;
-                    InputContentTypeProvider = cachedProtocolProvider.DefaultInputProvider;
-                }
-                else
-                {
-                    if (!cachedProtocolProvider.InputMimeBindings.TryGetValue(contentType.MimeType, out var provider))
-                        Error = new UnsupportedContent(Headers["Content-Type"]);
-                    else
-                    {
-                        ContentType = contentType;
-                        InputContentTypeProvider = provider;
-                    }
-                }
-
-                if (accepts == null)
-                {
-                    Accept = cachedProtocolProvider.DefaultOutputProvider.ContentType;
-                    OutputContentTypeProvider = cachedProtocolProvider.DefaultOutputProvider;
-                }
-                else
-                {
-                    IContentTypeProvider acceptProvider = null;
-                    var containedWildcard = false;
-                    var accept = accepts.FirstOrDefault(a =>
-                    {
-                        if (a.MimeType == "*/*")
-                        {
-                            containedWildcard = true;
-                            return false;
-                        }
-                        return cachedProtocolProvider.OutputMimeBindings.TryGetValue(a.MimeType, out acceptProvider);
-                    });
-                    if (acceptProvider == null)
-                    {
-                        if (containedWildcard)
-                        {
-                            Accept = cachedProtocolProvider.DefaultOutputProvider.ContentType;
-                            OutputContentTypeProvider = cachedProtocolProvider.DefaultOutputProvider;
-                        }
-                        else Error = new NotAcceptable(Headers["Accept"]);
-                    }
-                    else
-                    {
-                        Accept = accept;
-                        OutputContentTypeProvider = acceptProvider;
-                    }
-                }
-            }
-
-            if (hasMacro)
-            {
-                if (Uri.Macro.OverWriteBody)
-                {
-                    if (Uri.Macro.HasBody)
-                        Body = Uri.Macro.GetBody();
-                }
-                else
-                {
-                    if (!(body?.Length > 0) && Uri.Macro.HasBody)
-                        Body = Uri.Macro.GetBody();
-                    else Body = new Body(body, ContentType, InputContentTypeProvider);
-                }
-            }
-            else Body = new Body(body, ContentType, InputContentTypeProvider);
-
-            try
-            {
-                cachedProtocolProvider?.ProtocolProvider.CheckCompliance(this);
-            }
-            catch (NotImplementedException) { }
-            catch (Exception e)
-            {
-                Error = e;
-            }
-            if (Error == null && Uri.HasError)
-                Error = Uri.Error;
+            if (uri == null) throw new ArgumentNullException(nameof(uri));
+            var parameters = new RequestParameters(this, uri, headers);
+            var origin = parameters.Headers.Origin;
+            if (!parameters.IsValid || !Uri.TryCreate(origin, UriKind.Absolute, out var originUri))
+                return new InvalidOrigin();
+            if (RESTarConfig.AllowAllOrigins || RESTarConfig.AllowedOrigins.Contains(originUri))
+                return new AcceptOrigin(origin, parameters);
+            return new InvalidOrigin();
         }
+
+        /// <summary>
+        /// Creates a new context for a client.
+        /// </summary>
+        /// <param name="client">The client of the context</param>
+        protected Context(Client client)
+        {
+            Client = client ?? throw new ArgumentNullException(nameof(client));
+            InitialTraceId = NextId;
+            StackDepth = 0;
+        }
+
+        /// <summary>
+        /// The context of internal root-level access requests
+        /// </summary>
+        public static Context Root => new InternalContext();
+
+        /// <summary>
+        /// The context of a remote request to some external RESTar service
+        /// </summary>
+        /// <param name="serviceRoot">The URI of the remote RESTar service, for example https://my-service.com:8282/rest</param>
+        /// <param name="apiKey">The API key to use in remote request to this service</param>
+        public static Context Remote(string serviceRoot, string apiKey = null) => new RemoteContext(serviceRoot, apiKey);
+
+        private static ulong IdNr;
+        private static string NextId => DbHelper.Base64EncodeObjectNo(IdNr += 1);
     }
 }

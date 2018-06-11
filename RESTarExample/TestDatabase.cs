@@ -1,7 +1,7 @@
-﻿using RESTar;
+﻿using RESTar.Resources;
 using RESTarExample.TestDb;
 using Starcounter;
-using static RESTar.Methods;
+using static RESTar.Method;
 
 #pragma warning disable 1591
 

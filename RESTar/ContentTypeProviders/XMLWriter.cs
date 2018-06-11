@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using Newtonsoft.Json;
+using RESTar.Requests;
 
 namespace RESTar.ContentTypeProviders
 {
@@ -21,7 +22,7 @@ namespace RESTar.ContentTypeProviders
         public string Name => "XML";
 
         /// <inheritdoc />
-        public ContentType ContentType { get; } = new ContentType("application/xml; charset=utf-8");
+        public ContentType ContentType { get; } = "application/xml; charset=utf-8";
 
         /// <inheritdoc />
         public string[] MatchStrings { get; set; } = {XMLMimeType, RESTarSpecific, Brief};
@@ -35,27 +36,22 @@ namespace RESTar.ContentTypeProviders
         /// <inheritdoc />
         public string ContentDispositionFileExtension => ".xml";
 
-        private static readonly JsonContentProvider JsonProvider;
+        private static readonly JsonProvider JsonProvider;
         private static readonly byte[] XMLHeader;
 
         static XMLWriter()
         {
-            JsonProvider = new JsonContentProvider();
+            JsonProvider = new JsonProvider();
             XMLHeader = Encoding.UTF8.GetBytes("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n");
         }
 
         /// <inheritdoc />
-        public void SerializeEntity<T>(T entity, Stream stream, IRequest request, out ulong entityCount) where T : class
+        public ulong SerializeCollection<T>(IEnumerable<T> entities, Stream stream, IRequest request = null) where T : class
         {
-            JsonProvider.SerializeEntity(entity, stream, request, out entityCount);
+            var count = JsonProvider.SerializeCollection(entities, stream, request);
+            stream.Seek(0, SeekOrigin.Begin);
             XmlSerializeJsonStream(stream);
-        }
-
-        /// <inheritdoc />
-        public void SerializeCollection<T>(IEnumerable<T> entities, Stream stream, IRequest request, out ulong entityCount) where T : class
-        {
-            JsonProvider.SerializeCollection(entities, stream, request, out entityCount);
-            XmlSerializeJsonStream(stream);
+            return count;
         }
 
         private static void XmlSerializeJsonStream(Stream stream)
@@ -67,15 +63,11 @@ namespace RESTar.ContentTypeProviders
                 stream.Seek(0, SeekOrigin.Begin);
                 stream.Write(XMLHeader, 0, XMLHeader.Length);
                 xml.Save(stream);
-                stream.Seek(0, SeekOrigin.Begin);
             }
         }
 
         /// <inheritdoc />
-        public T DeserializeEntity<T>(byte[] body) where T : class => throw new NotImplementedException();
-
-        /// <inheritdoc />
-        public List<T> DeserializeCollection<T>(byte[] body) where T : class => throw new NotImplementedException();
+        public IEnumerable<T> DeserializeCollection<T>(Stream body) where T : class => throw new NotImplementedException();
 
         /// <inheritdoc />
         public IEnumerable<T> Populate<T>(IEnumerable<T> entities, byte[] body) where T : class =>

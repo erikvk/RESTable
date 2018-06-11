@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.Serialization;
-using RESTar.Results.Error.BadRequest;
+using RESTar.Resources;
+using RESTar.Results;
 using Starcounter;
-using static RESTar.Methods;
-using IResource = RESTar.Internal.IResource;
+using static RESTar.Method;
+using IResource = RESTar.Meta.IResource;
 
 namespace RESTar.Admin
 {
@@ -60,7 +60,7 @@ namespace RESTar.Admin
                 catch (KeyNotFoundException)
                 {
                     this.Delete();
-                    throw new UnknownResourceForAlias(value, RESTar.Resource.Find(value));
+                    throw new UnknownResourceForAlias(value, Meta.Resource.Find(value));
                 }
                 catch
                 {
@@ -73,7 +73,7 @@ namespace RESTar.Admin
         /// <summary>
         /// Gets the resource denoted by this alias
         /// </summary>
-        [IgnoreDataMember] public IResource IResource => RESTarConfig.ResourceByName[Resource];
+        [RESTarMember(ignore: true)] public IResource IResource => RESTarConfig.ResourceByName[Resource];
 
         /// <summary>
         /// Gets a ResourceAlias by its alias (case insensitive)

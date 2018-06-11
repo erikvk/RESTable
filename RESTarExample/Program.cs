@@ -1,13 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Text;
 using Dynamit;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using RESTar;
 using RESTar.Linq;
+using RESTar.Requests;
 using RESTar.Resources;
-using RESTar.ResourceTemplates;
+using RESTar.Resources.Operations;
+using RESTar.Resources.Templates;
 using Starcounter;
 
 #pragma warning disable 1591
@@ -24,13 +28,113 @@ namespace RESTarExample
                 uri: "/rest",
                 requireApiKey: true,
                 allowAllOrigins: false,
-                configFilePath: @"C:\Mopedo\mopedo\Mopedo.config",
-                lineEndings: LineEndings.Linux
+                configFilePath: @"C:\Mopedo\mopedo\Mopedo.config"
             );
         }
     }
 
-    [RESTar(Methods.GET)]
+    public class Resource1
+    {
+        public sbyte Sbyte;
+        public byte Byte;
+        public short Short;
+        public ushort Ushort;
+        public int Int;
+        public uint Uint;
+        public long Long;
+        public ulong Ulong;
+        public float Float;
+        public double Double;
+        public decimal Decimal;
+        public string String;
+        public bool Bool;
+        public DateTime DateTime;
+        public JObject MyDict;
+    }
+
+    [Database, RESTar]
+    public class R1
+    {
+        public int I;
+    }
+
+    [Database, RESTar]
+    public class R2 : R1
+    {
+        public string STR;
+    }
+
+
+    [RESTar]
+    public class MyBinaryResource : IBinaryResource<MyBinaryResource>
+    {
+        public (Stream stream, ContentType contentType) Select(IRequest<MyBinaryResource> request)
+        {
+            var stream = new MemoryStream();
+            using (var swr = new StreamWriter(stream, Encoding.UTF8, 1024, true))
+            {
+                swr.Write("This is my important binary data! I repeat: This is my important binary data! I repeat: " +
+                          "This is my important binary data! I repeat: This is my important binary data! I repeat: " +
+                          "This is my important binary data! I repeat: This is my important binary data! I repeat: " +
+                          "This is my important binary data! I repeat: This is my important binary data! I repeat: " +
+                          "This is my important binary data! I repeat: This is my important binary data! I repeat: " +
+                          "This is my important binary data! I repeat: This is my important binary data! I repeat: " +
+                          "This is my important binary data! I repeat: This is my important binary data! I repeat: " +
+                          "This is my important binary data! I repeat: This is my important binary data! I repeat: " +
+                          "This is my important binary data! I repeat: This is my important binary data! I repeat: " +
+                          "This is my important binary data! I repeat: This is my important binary data! I repeat: " +
+                          "This is my important binary data! I repeat: This is my important binary data!");
+            }
+            return (stream, "text/plain");
+        }
+    }
+
+    [Database]
+    public class DbClass
+    {
+        public string MyString;
+        public int MyInt;
+    }
+
+    [RESTar]
+    public class DbClassWrapper : ResourceWrapper<DbClass>
+    {
+        [RESTarView]
+        public class MyView : ISelector<DbClass>
+        {
+            public IEnumerable<DbClass> Select(IRequest<DbClass> request)
+            {
+                return StarcounterOperations<DbClass>.Select(request);
+            }
+        }
+    }
+
+    [RESTar(Method.POST)]
+    public class OtherClass : IInserter<OtherClass>
+    {
+        public string MyString { get; set; }
+        public int MyInt { get; set; }
+
+        public int Insert(IRequest<OtherClass> request)
+        {
+            var k = 0;
+            Db.TransactAsync(() =>
+            {
+                foreach (var i in request.GetInputEntities())
+                {
+                    new DbClass
+                    {
+                        MyInt = i.MyInt,
+                        MyString = i.MyString
+                    };
+                    k += 1;
+                }
+            });
+            return k;
+        }
+    }
+
+    [RESTar(Method.GET)]
     public class Thing : ISelector<Thing>
     {
         public IEnumerable<Thing> Select(IRequest<Thing> request)
@@ -104,19 +208,19 @@ namespace RESTarExample
             .Where(request.Conditions);
 
         public int Insert(IRequest<MyEntityResource> request) => Db.Transact(() => request
-            .GetEntities()
+            .GetInputEntities()
             .Select(ToDbObject)
             .Count());
 
         public int Update(IRequest<MyEntityResource> request) => Db.Transact(() => request
-            .GetEntities()
+            .GetInputEntities()
             .Select(ToDbObject)
             .Count());
 
         public int Delete(IRequest<MyEntityResource> request) => Db.Transact(() =>
         {
             var i = 0;
-            foreach (var item in request.GetEntities())
+            foreach (var item in request.GetInputEntities())
             {
                 item.Delete();
                 i += 1;
@@ -241,7 +345,7 @@ namespace RESTarExample
         public string Foo { get; set; }
     }
 
-    [RESTar(Methods.GET)]
+    [RESTar(Method.GET)]
     public class SemiDynamic : JObject, ISelector<SemiDynamic>
     {
         public string InputStr { get; set; } = "Goo";
@@ -273,7 +377,7 @@ namespace RESTarExample
         }
     }
 
-    [RESTar(Methods.GET)]
+    [RESTar(Method.GET)]
     public class SemiDynamic2 : Dictionary<string, object>, ISelector<SemiDynamic2>
     {
         public IEnumerable<SemiDynamic2> Select(IRequest<SemiDynamic2> request)
@@ -296,7 +400,7 @@ namespace RESTarExample
         }
     }
 
-    [RESTar(Methods.GET, AllowDynamicConditions = true)]
+    [RESTar(Method.GET, AllowDynamicConditions = true)]
     public class AllDynamic : JObject, ISelector<AllDynamic>
     {
         public string Str { get; set; }
@@ -319,6 +423,18 @@ namespace RESTarExample
     {
         public string Str { get; set; }
         public int Int { get; set; }
+        public Static AStatic => Db.SQL<Static>($"SELECT t FROM {typeof(Static)} t").FirstOrDefault();
+
+        protected override object GetDeclaredMemberValue(string key)
+        {
+            switch (key)
+            {
+                case nameof(AStatic): return AStatic;
+                case nameof(Str): return Str;
+                case nameof(Int): return Int;
+                default: return null;
+            }
+        }
 
         public DDictKeyValuePair NewKeyPair(DDictThing dict, string key, object value = null)
         {
@@ -344,7 +460,7 @@ namespace RESTarExample
         public DateTime DT2;
     }
 
-    [RESTar(Methods.GET, Singleton = true)]
+    [RESTar(Method.GET, Singleton = true)]
     public class MyTestResource : Dictionary<string, dynamic>, ISelector<MyTestResource>
     {
         public IEnumerable<MyTestResource> Select(IRequest<MyTestResource> request)
@@ -389,7 +505,7 @@ namespace RESTarExample
         public string MyMember;
         public string SomeMember;
 
-        [RESTar(Methods.GET, Description = "Returns a fine object")]
+        [RESTar(Method.GET, Description = "Returns a fine object")]
         public class Get : JObject, ISelector<Get>
         {
             public IEnumerable<Get> Select(IRequest<Get> request) => new[] {new Get {["Soo"] = 123}};
@@ -431,7 +547,7 @@ namespace RESTarExample
 
         public int Insert(IRequest<R> request)
         {
-            var entities = request.GetEntities();
+            var entities = request.GetInputEntities();
             return entities.Count();
         }
 
@@ -442,13 +558,13 @@ namespace RESTarExample
 
         public int Update(IRequest<R> request)
         {
-            var entities = request.GetEntities();
+            var entities = request.GetInputEntities();
             return entities.Count();
         }
 
         public int Delete(IRequest<R> request)
         {
-            var entities = request.GetEntities();
+            var entities = request.GetInputEntities();
             return entities.Count();
         }
     }
@@ -480,7 +596,7 @@ namespace RESTarExample
         public MyElement(DList list, int index, object value = null) : base(list, index, value) { }
     }
 
-    [RESTar(Methods.GET)]
+    [RESTar(Method.GET)]
     public class MyDynamicTable : DDictionary, IDDictionary<MyDynamicTable, MyDynamicTableKvp>
     {
         public MyDynamicTableKvp NewKeyPair(MyDynamicTable dict, string key, object value = null) =>
