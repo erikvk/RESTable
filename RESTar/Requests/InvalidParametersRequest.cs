@@ -88,6 +88,9 @@ namespace RESTar.Requests
             Cookies = null;
         }
 
-        public void Dispose() => GetBody().Dispose();
+        public void Dispose()
+        {
+            GetBody().Dispose();
+        }
     }
 }

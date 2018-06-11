@@ -320,7 +320,9 @@ namespace RESTar.Requests
                                 if (!(result is IEntities)) throw new InvalidExternalSource(source.URI, result.LogMessage);
                                 var serialized = result.Serialize();
                                 if (serialized is NoContent) throw new InvalidExternalSource(source.URI, "Response was empty");
-                                body = new Body(stream: new RESTarStream(serialized.Body), contentType: serialized.Headers.ContentType ?? CachedProtocolProvider.DefaultInputProvider.ContentType, protocolProvider: CachedProtocolProvider);
+                                body = new Body(stream: new RESTarStream(serialized.Body),
+                                    contentType: serialized.Headers.ContentType ?? CachedProtocolProvider.DefaultInputProvider.ContentType,
+                                    protocolProvider: CachedProtocolProvider);
                             }
                             else
                             {
@@ -328,8 +330,10 @@ namespace RESTar.Requests
                                 var request = new HttpRequest(this, source, null);
                                 var response = request.GetResponseAsync().Result ?? throw new InvalidExternalSource(source.URI, "No response");
                                 if (response.StatusCode >= HttpStatusCode.BadRequest) throw new InvalidExternalSource(source.URI, response.LogMessage);
-                                if (response.Body.CanSeek && response.Body.Length == 0) throw new InvalidExternalSource(source.URI, "Response was empty");
-                                body = new Body(stream: new RESTarStream(response.Body), contentType: response.Headers.ContentType ?? defaultContentType, protocolProvider: CachedProtocolProvider);
+                                if (response.Body.CanSeek && response.Body.Length == 0)
+                                    throw new InvalidExternalSource(source.URI, "Response was empty");
+                                body = new Body(stream: new RESTarStream(response.Body),
+                                    contentType: response.Headers.ContentType ?? defaultContentType, protocolProvider: CachedProtocolProvider);
                             }
                             return body;
                         }
@@ -337,6 +341,11 @@ namespace RESTar.Requests
                         {
                             BodyFunc = null;
                             throw new InvalidSyntax(InvalidSource, $"{re.Message} in the Source header");
+                        }
+                        catch
+                        {
+                            BodyFunc = null;
+                            throw;
                         }
                     }
 
@@ -349,6 +358,10 @@ namespace RESTar.Requests
             }
         }
 
-        public void Dispose() => GetBody().Dispose();
+        public void Dispose()
+        {
+            BodyFunc = null;
+            GetBody().Dispose();
+        }
     }
 }
