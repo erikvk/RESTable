@@ -104,7 +104,7 @@ namespace RESTar.Requests
                 if (response.Content != null)
                 {
                     var streamController = new RESTarStream();
-                    await response.Content.CopyToAsync(streamController);
+                    await response.Content.CopyToAsync(streamController);   
                     stream = streamController.Rewind();
                 }
 
