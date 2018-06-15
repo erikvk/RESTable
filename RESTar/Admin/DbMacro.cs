@@ -74,7 +74,7 @@ namespace RESTar.Admin
         /// </summary>
         public Binary BodyBinary { get; set; }
 
-        internal string BodyUTF8 => Encoding.UTF8.GetString(BodyBinary.ToArray());
+        internal string BodyUTF8 => !HasBody ? "" : Encoding.UTF8.GetString(BodyBinary.ToArray());
 
         /// <summary>
         /// The headers of the macro
@@ -84,12 +84,12 @@ namespace RESTar.Admin
         /// <summary>
         /// Should the macro overwrite matching headers in the calling request?
         /// </summary>
-        public bool OverWriteHeaders { get; set; }
+        public bool OverwriteHeaders { get; set; }
 
         /// <summary>
         /// Should the macro overwrite the body of the calling request?
         /// </summary>
-        public bool OverWriteBody { get; set; }
+        public bool OverwriteBody { get; set; }
 
         /// <summary />
         [Obsolete] public string Uri { get; set; }
@@ -110,8 +110,8 @@ namespace RESTar.Admin
 
         internal IEnumerable<UriCondition> UriConditions => UriConditionsString?.Split('&').Select(c => new UriCondition(c));
         internal IEnumerable<UriCondition> UriMetaConditions => UriMetaConditionsString?.Split('&').Select(c => new UriCondition(c));
-        internal bool HasBody => BodyBinary.Length > 0;
-        internal byte[] GetBody() => BodyBinary.ToArray();
+        internal bool HasBody => !BodyBinary.IsNull && BodyBinary.Length > 0;
+        internal byte[] GetBody() => HasBody ? BodyBinary.ToArray() : new byte[0];
 
         internal static IEnumerable<DbMacro> GetAll() => Db.SQL<DbMacro>(All);
         internal static DbMacro Get(string macroName) => Db.SQL<DbMacro>(ByName, macroName).FirstOrDefault();
@@ -151,14 +151,14 @@ namespace RESTar.Admin
         [RESTarMember(replaceOnUpdate: true)] public Headers Headers { get; set; }
 
         /// <summary>
-        /// Should the macro overwrite matching headers in the calling request?
-        /// </summary>
-        public bool OverWriteHeaders { get; set; }
-
-        /// <summary>
         /// Should the macro overwrite the body of the calling request?
         /// </summary>
-        public bool OverWriteBody { get; set; }
+        public bool OverwriteBody { get; set; }
+
+        /// <summary>
+        /// Should the macro overwrite matching headers in the calling request?
+        /// </summary>
+        public bool OverwriteHeaders { get; set; }
 
         /// <inheritdoc />
         /// <summary>
@@ -222,10 +222,10 @@ namespace RESTar.Admin
             {
                 Name = m.Name,
                 Uri = m.UriString,
-                Body = m.BodyBinary.Length > 0 ? JToken.Parse(m.BodyUTF8) : null,
+                Body = m.HasBody ? JToken.Parse(m.BodyUTF8) : null,
                 Headers = m.Headers != null ? m.HeadersDictionary : null,
-                OverWriteBody = m.OverWriteBody,
-                OverWriteHeaders = m.OverWriteHeaders
+                OverwriteBody = m.OverwriteBody,
+                OverwriteHeaders = m.OverwriteHeaders
             })
             .Where(request.Conditions);
 
@@ -243,8 +243,8 @@ namespace RESTar.Admin
                     Name = entity.Name,
                     ResourceSpecifier = args.ResourceSpecifier,
                     ViewName = args.ViewName,
-                    OverWriteBody = entity.OverWriteBody,
-                    OverWriteHeaders = entity.OverWriteHeaders,
+                    OverwriteBody = entity.OverwriteBody,
+                    OverwriteHeaders = entity.OverwriteHeaders,
                     UriConditionsString = args.Conditions.Any() ? string.Join("&", args.Conditions) : null,
                     UriMetaConditionsString = args.MetaConditions.Any() ? string.Join("&", args.MetaConditions) : null,
                     BodyBinary = entity.Body != null ? new Binary(Encoding.UTF8.GetBytes(entity.Body?.ToString())) : default,
@@ -269,8 +269,8 @@ namespace RESTar.Admin
                 {
                     dbEntity.ResourceSpecifier = args.ResourceSpecifier;
                     dbEntity.ViewName = args.ViewName;
-                    dbEntity.OverWriteBody = entity.OverWriteBody;
-                    dbEntity.OverWriteHeaders = entity.OverWriteHeaders;
+                    dbEntity.OverwriteBody = entity.OverwriteBody;
+                    dbEntity.OverwriteHeaders = entity.OverwriteHeaders;
                     dbEntity.UriConditionsString = args.Conditions.Any() ? string.Join("&", args.Conditions) : null;
                     dbEntity.UriMetaConditionsString = args.MetaConditions.Any() ? string.Join("&", args.MetaConditions) : null;
                     dbEntity.BodyBinary = entity.Body != null ? new Binary(Encoding.UTF8.GetBytes(entity.Body?.ToString())) : default;

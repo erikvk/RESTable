@@ -120,7 +120,7 @@ namespace RESTar.Requests
             var hasMacro = Uri?.Macro != null;
             if (hasMacro)
             {
-                if (Uri.Macro.OverWriteHeaders)
+                if (Uri.Macro.OverwriteHeaders)
                     Uri.Macro.HeadersDictionary?.ForEach(pair => Headers[pair.Key] = pair.Value);
                 else
                 {
@@ -150,7 +150,7 @@ namespace RESTar.Requests
 
             if (hasMacro)
             {
-                if (Uri.Macro.OverWriteBody)
+                if (Uri.Macro.OverwriteBody)
                 {
                     if (Uri.Macro.HasBody)
                     {
@@ -184,7 +184,7 @@ namespace RESTar.Requests
             var hasMacro = Uri?.Macro != null;
             if (hasMacro)
             {
-                if (Uri.Macro.OverWriteHeaders)
+                if (Uri.Macro.OverwriteHeaders)
                     Uri.Macro.HeadersDictionary?.ForEach(pair => Headers[pair.Key] = pair.Value);
                 else
                 {
