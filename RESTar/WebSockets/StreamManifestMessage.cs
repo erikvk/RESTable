@@ -4,6 +4,6 @@
     {
         public long StartIndex;
         public long Length;
-        public bool Sent;
+        public bool IsSent;
     }
 }

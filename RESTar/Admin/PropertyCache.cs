@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using RESTar.Linq;
 using RESTar.Meta;
@@ -12,13 +13,16 @@ namespace RESTar.Admin
     /// <summary>
     /// Gets the properties discovered by this RESTar instance
     /// </summary>
-    [RESTar(Method.GET)]
+    [RESTar(Method.GET, Description = description)]
     public class PropertyCache : ISelector<PropertyCache>
     {
+        private const string description = "Contains the types and properties discovered by RESTar when " +
+                                           "working with the resources of the current RESTar application";
+
         /// <summary>
         /// The type containing the properties
         /// </summary>
-        public string Type { get; private set; }
+        public Type Type { get; private set; }
 
         /// <summary>
         /// The discovered properties
@@ -30,7 +34,7 @@ namespace RESTar.Admin
             .DeclaredPropertyCache
             .Select(item => new PropertyCache
             {
-                Type = item.Key.RESTarTypeName(),
+                Type = item.Key,
                 Properties = item.Value.Values
             })
             .Where(request.Conditions);

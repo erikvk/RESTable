@@ -134,6 +134,15 @@ namespace RESTarExample
         }
     }
 
+    [RESTar]
+    public class MyBinary : IBinaryResource<MyBinary>
+    {
+        public (Stream stream, ContentType contentType) Select(IRequest<MyBinary> request)
+        {
+            return (new MemoryStream(Encoding.UTF8.GetBytes("Omg this is aweseom!!!")), "text/plain");
+        }
+    }
+
     [RESTar(Method.GET)]
     public class Thing : ISelector<Thing>
     {
@@ -228,7 +237,6 @@ namespace RESTarExample
             return i;
         });
     }
-
 
     #region Stuff
 

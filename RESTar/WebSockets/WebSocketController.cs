@@ -29,12 +29,20 @@ namespace RESTar.WebSockets
                 var (command, tail) = textInput.Trim().TSplit(' ');
                 switch (command.ToUpperInvariant())
                 {
-                    case "#SHELL":
-                    case "#HOME":
-                        webSocket.DirectToShell();
+                    case "#TERMINAL" when tail is string json:
+                        try
+                        {
+                            Providers.Json.Populate(json, webSocket.Terminal);
+                            webSocket.SendText("Terminal updated");
+                            webSocket.SendJson(webSocket.Terminal);
+                        }
+                        catch (Exception e)
+                        {
+                            webSocket.SendException(e);
+                        }
                         break;
-                    case "#DISCONNECT":
-                        webSocket.Disconnect();
+                    case "#TERMINAL":
+                        webSocket.SendJson(webSocket.Terminal);
                         break;
                     case "#INFO" when tail is string json:
                         try
@@ -52,20 +60,12 @@ namespace RESTar.WebSockets
                     case "#INFO":
                         webSocket.SendJson(webSocket.GetConnectionProfile());
                         break;
-                    case "#TERMINAL" when tail is string json:
-                        try
-                        {
-                            Providers.Json.Populate(json, webSocket.Terminal);
-                            webSocket.SendText("Terminal updated");
-                            webSocket.SendJson(webSocket.Terminal);
-                        }
-                        catch (Exception e)
-                        {
-                            webSocket.SendException(e);
-                        }
+                    case "#SHELL":
+                    case "#HOME":
+                        webSocket.DirectToShell();
                         break;
-                    case "#TERMINAL":
-                        webSocket.SendJson(webSocket.Terminal);
+                    case "#DISCONNECT":
+                        webSocket.Disconnect();
                         break;
                     default:
                         webSocket.SendText($"Unknown global command '{command}'");

@@ -654,8 +654,7 @@ namespace RESTar
         }
 
         private void SendHelp() => WebSocket.SendText(
-            "Shell documentation is available at https://github.com/Mopedo/Home/" +
-            "blob/master/RESTar/Built-in%20resources/RESTar/Shell.md");
+            "Shell documentation is available at https://github.com/Mopedo/Home/tree/master/RESTar/Built-in%20resources/RESTar/Shell");
 
         private void SendCredits()
         {

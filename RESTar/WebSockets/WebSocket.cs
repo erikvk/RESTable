@@ -399,30 +399,27 @@ namespace RESTar.WebSockets
 
         private async Task StreamMessage(int nr)
         {
-            if (nr == -1)
-                nr = StreamManifest.MessagesRemaining;
             try
             {
-                var startIndex = StreamManifest.CurrentMessageIndex;
-                var endIndex = startIndex + nr;
-                if (endIndex > StreamManifest.NrOfMessages - 1)
-                    endIndex = StreamManifest.NrOfMessages - 1;
+                if (nr == -1) nr = StreamManifest.MessagesRemaining;
+                var endIndex = StreamManifest.CurrentMessageIndex + nr;
+                if (endIndex > StreamManifest.NrOfMessages)
+                    endIndex = StreamManifest.NrOfMessages;
                 buffer = buffer ?? new byte[StreamManifest.BufferSize];
-                for (var i = startIndex; i <= endIndex; i += 1)
+                while (StreamManifest.CurrentMessageIndex < endIndex)
                 {
                     var read = StreamManifest.Content.Body.ReadAsync(buffer, 0, buffer.Length);
-                    StreamManifest.CurrentMessageIndex = i;
-                    var message = StreamManifest.Messages[i];
+                    var message = StreamManifest.Messages[StreamManifest.CurrentMessageIndex];
                     await read;
                     SendBinary(buffer, 0, (int) message.Length);
-                    message.Sent = true;
+                    message.IsSent = true;
                     StreamManifest.MessagesStreamed += 1;
                     StreamManifest.MessagesRemaining -= 1;
                     StreamManifest.BytesStreamed += message.Length;
                     StreamManifest.BytesRemaining -= message.Length;
+                    StreamManifest.CurrentMessageIndex += 1;
                 }
-
-                if (endIndex == StreamManifest.NrOfMessages - 1)
+                if (StreamManifest.Messages[StreamManifest.LastIndex].IsSent)
                 {
                     SendText($"200: OK. {StreamManifest.NrOfMessages} messages sucessfully streamed.");
                     StopStreaming();

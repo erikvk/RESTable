@@ -9,19 +9,17 @@ namespace RESTar.WebSockets
 {
     internal class StreamManifest : IDisposable
     {
-        internal readonly Content Content;
-        internal int CurrentMessageIndex;
-        internal int BufferSize;
-
-        public long TotalLength;
-        public long BytesRemaining;
-        public long BytesStreamed;
-
-        public int NrOfMessages;
-        public int MessagesRemaining;
-        public int MessagesStreamed;
-
-        public readonly string ContentType;
+        internal Content Content { get; }
+        internal int CurrentMessageIndex { get; set; }
+        internal int BufferSize { get; }
+        internal int LastIndex { get; }
+        public long TotalLength { get; }
+        public long BytesRemaining { get; internal set; }
+        public long BytesStreamed { get; internal set; }
+        public int NrOfMessages { get; }
+        public int MessagesRemaining { get; internal set; }
+        public int MessagesStreamed { get; internal set; }
+        public string ContentType { get; }
 
         [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
         public readonly string EntityType;
@@ -29,7 +27,7 @@ namespace RESTar.WebSockets
         [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
         public readonly ulong EntityCount;
 
-        public StreamManifestMessage[] Messages;
+        public StreamManifestMessage[] Messages { get; }
         public readonly StreamCommand[] Commands = _Commands;
 
         private static readonly StreamCommand[] _Commands =
@@ -57,7 +55,7 @@ namespace RESTar.WebSockets
             new StreamCommand
             {
                 Command = "CLOSE",
-                Description = "Closes the stream and returns to the shell"
+                Description = "Closes the stream and returns to the previous terminal resource"
             }
         };
 
@@ -92,6 +90,7 @@ namespace RESTar.WebSockets
             messages.Last().Length = last;
             NrOfMessages = (int) nrOfMessages;
             MessagesRemaining = (int) nrOfMessages;
+            LastIndex = NrOfMessages - 1;
             Messages = messages;
         }
 
