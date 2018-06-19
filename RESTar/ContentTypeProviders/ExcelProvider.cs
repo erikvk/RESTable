@@ -48,7 +48,7 @@ namespace RESTar.ContentTypeProviders
                 using (var package = new ExcelPackage(stream))
                 {
                     var currentRow = 1;
-                    var worksheet = package.Workbook.Worksheets.Add(request?.Resource.Name ?? "Sheetasd1");
+                    var worksheet = package.Workbook.Worksheets.Add(request?.Resource.Name ?? "Sheet1");
 
                     void writeEntities(IEnumerable<object> entities)
                     {
@@ -92,7 +92,6 @@ namespace RESTar.ContentTypeProviders
                                     }
                                 }
                                 break;
-
                             case ICollection<object> objs:
                                 writeEntities(objs.Select(o => o is JObject jo ? jo : JObject.FromObject(o, JsonProvider.Serializer)));
                                 break;

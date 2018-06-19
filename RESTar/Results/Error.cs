@@ -124,17 +124,12 @@ namespace RESTar.Results
             IsSerializing = true;
             var stopwatch = Stopwatch.StartNew();
             ISerializedResult result = this;
+            var cachedProvider = RequestInternal.CachedProtocolProvider ?? ProtocolController.DefaultProtocolProvider;
+            var acceptProvider = RequestInternal.SafeGet(request => ContentTypeController.ResolveOutputContentTypeProvider(request, contentType))
+                                 ?? cachedProvider.DefaultOutputProvider;
             try
             {
-                var protocolProvider = RequestInternal.CachedProtocolProvider.ProtocolProvider
-                                       ?? ProtocolController.DefaultProtocolProvider.ProtocolProvider;
-                var acceptProvider = ContentTypeController.ResolveOutputContentTypeProvider(RequestInternal, contentType);
-                return protocolProvider.Serialize(this, acceptProvider).Finalize(acceptProvider);
-            }
-            catch (NotAcceptable na)
-            {
-                result.Body?.Dispose();
-                return na;
+                return cachedProvider.ProtocolProvider.Serialize(this, acceptProvider).Finalize(acceptProvider);
             }
             catch (Exception exception)
             {
