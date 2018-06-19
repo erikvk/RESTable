@@ -131,6 +131,11 @@ namespace RESTar.Results
                 var acceptProvider = ContentTypeController.ResolveOutputContentTypeProvider(RequestInternal, contentType);
                 return protocolProvider.Serialize(this, acceptProvider).Finalize(acceptProvider);
             }
+            catch (NotAcceptable na)
+            {
+                result.Body?.Dispose();
+                return na;
+            }
             catch (Exception exception)
             {
                 result.Body?.Dispose();

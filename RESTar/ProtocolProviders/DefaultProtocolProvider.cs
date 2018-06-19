@@ -127,7 +127,7 @@ namespace RESTar.ProtocolProviders
 
                     ISerializedResult SerializeEntities()
                     {
-                        var entityCount = contentTypeProvider.SerializeCollection(entities, entities.Body, entities.Request);
+                        var entityCount = contentTypeProvider.SerializeCollection((dynamic) entities, entities.Body, entities.Request);
                         if (entityCount == 0) return new NoContent(entities.Request);
                         entities.Body.Seek(0, SeekOrigin.Begin);
                         entities.Headers.EntityCount = entityCount.ToString();
