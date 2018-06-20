@@ -16,9 +16,11 @@ namespace RESTar.Admin
     /// <summary>
     /// An entity resource containing all the currently open WebSockets
     /// </summary>
-    [RESTar(GET, DELETE)]
+    [RESTar(GET, DELETE, Description = description)]
     public class WebSocket : ISelector<WebSocket>, IDeleter<WebSocket>
     {
+        private const string description = "Lists all connected WebSockets";
+
         /// <summary>
         /// The unique WebSocket ID
         /// </summary>

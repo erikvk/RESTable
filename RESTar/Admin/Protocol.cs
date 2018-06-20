@@ -43,7 +43,7 @@ namespace RESTar.Admin
     /// <summary>
     /// Contains all the available protocols and content types for the current RESTar instance
     /// </summary>
-    [RESTar(Method.GET)]
+    [RESTar(Method.GET, Description = description)]
     public class Protocol : ISelector<Protocol>
     {
         private const string description = "Contains all the available protocols and content types for the current RESTar instance";
