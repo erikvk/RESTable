@@ -113,9 +113,11 @@ namespace RESTar.Requests
         /// <param name="uri">The URI if the request</param>
         /// <param name="error">A RESTarError describing the error, or null if valid</param>
         /// <param name="resource">The resource referenced in the URI</param>
-        public bool UriIsValid(string uri, out Results.Error error, out IResource resource)
+        /// <param name="formattedUri">A properly formatted version of the uri, if valid. Otherwise null.</param>
+        public bool UriIsValid(string uri, out Results.Error error, out IResource resource, out string formattedUri)
         {
             var parameters = new RequestParameters(this, (Method) (-1), uri, null, null);
+            formattedUri = null;
             if (parameters.Error != null)
             {
                 error = parameters.Error.AsError();
@@ -126,6 +128,7 @@ namespace RESTar.Requests
             IRequest request = Construct((dynamic) resource, parameters);
             if (request.IsValid)
             {
+                formattedUri = request.UriComponents.ToString();
                 error = null;
                 return true;
             }

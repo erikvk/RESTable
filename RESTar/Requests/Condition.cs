@@ -62,9 +62,7 @@ namespace RESTar.Requests
         /// </summary>
         public bool Skip { get; set; }
 
-        string IUriCondition.ValueLiteral => Value is DateTime
-            ? $"{Key}{InternalOperator.Common}{Value:O}"
-            : $"{Key}{InternalOperator.Common}{Value}";
+        string IUriCondition.ValueLiteral => Value is DateTime dt ? dt.ToString("O") : Value.ToString();
 
         internal Operator InternalOperator => Operator;
 
@@ -78,16 +76,13 @@ namespace RESTar.Requests
 
         /// <inheritdoc />
         [Pure]
-        public Condition<T1> Redirect<T1>(string newKey = null) where T1 : class
-        {
-            return new Condition<T1>
-            (
-                term: EntityResource<T1>.SafeGet?.MakeConditionTerm(newKey ?? Key)
-                      ?? typeof(T1).MakeOrGetCachedTerm(newKey ?? Key, TermBindingRule.DeclaredWithDynamicFallback),
-                op: Operator,
-                value: Value
-            );
-        }
+        public Condition<T1> Redirect<T1>(string newKey = null) where T1 : class => new Condition<T1>
+        (
+            term: EntityResource<T1>.SafeGet?.MakeConditionTerm(newKey ?? Key)
+                  ?? typeof(T1).MakeOrGetCachedTerm(newKey ?? Key, TermBindingRule.DeclaredWithDynamicFallback),
+            op: Operator,
+            value: Value
+        );
 
         /// <summary>
         /// Creates a new condition for the resource type T using a key, operator and value

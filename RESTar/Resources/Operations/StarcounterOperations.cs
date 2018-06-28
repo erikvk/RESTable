@@ -55,7 +55,7 @@ namespace RESTar.Resources.Operations
                                 }
                                 catch
                                 {
-                                    throw new Exception("Invalid ObjectNo format. Should be positive integer");
+                                    throw new Exception("Invalid ObjectID format. Should encode a positive integer");
                                 }
                             }
                             break;

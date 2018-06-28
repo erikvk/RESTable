@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Text;
 using System.Text.RegularExpressions;
 using RESTar.Admin;
 using RESTar.ContentTypeProviders;
@@ -93,7 +94,18 @@ namespace RESTar.ProtocolProviders
         private static string ToUriString(IUriComponents components)
         {
             var view = components.ViewName != null ? $"-{components.ViewName}" : null;
-            return $"/{components.ResourceSpecifier}{view}/{ToUriString(components.Conditions)}/{ToUriString(components.MetaConditions)}";
+            var str = new StringBuilder($"/{components.ResourceSpecifier}{view}");
+            var conditions = components.Conditions.ToList();
+            var metaconditions = components.MetaConditions.ToList();
+            if (conditions.Count > 0)
+            {
+                str.Append($"/{ToUriString(components.Conditions)}");
+                if (metaconditions.Count > 0)
+                    str.Append($"/{ToUriString(components.MetaConditions)}");
+            }
+            else if (metaconditions.Count > 0)
+                str.Append($"/_/{ToUriString(components.MetaConditions)}");
+            return str.ToString();
         }
 
         private static string ToUriString(IEnumerable<IUriCondition> conditions)
