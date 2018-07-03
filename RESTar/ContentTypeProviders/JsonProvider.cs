@@ -31,6 +31,12 @@ namespace RESTar.ContentTypeProviders
         /// </summary>
         internal static JsonSerializer Serializer { get; }
 
+        /// <summary>
+        /// Creates a new JSON.net JsonSerializer with the current RESTar serialization settings
+        /// </summary>
+        /// <returns></returns>
+        public static JsonSerializer GetSerializer() => JsonSerializer.Create(Settings);
+
         private static JsonSerializer SerializerIgnoreNulls { get; }
 
         private const string JsonMimeType = "application/json";
