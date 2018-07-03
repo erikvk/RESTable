@@ -133,6 +133,11 @@ namespace RESTar
             }
         }
 
+        /// <summary>
+        /// Should queries be reformatted after input?
+        /// </summary>
+        public bool ReformatQueries { get; set; }
+
         /// <inheritdoc />
         public Shell()
         {
@@ -153,6 +158,7 @@ namespace RESTar
             WriteHeaders = false;
             AutoOptions = false;
             AutoGet = false;
+            ReformatQueries = true;
         }
 
         /// <inheritdoc />
@@ -197,13 +203,7 @@ namespace RESTar
         private void Navigate(string input = null)
         {
             if (input != null)
-            {
-                if (input.Length == 1)
-                    input = "/restar.availableresource";
-                if (input.StartsWith("//"))
-                    input = $"/restar.availableresource/{input.Substring(2)}";
                 Query = input;
-            }
             if (!QueryIsValid(out var resource)) return;
             if (AutoOptions) SendOptions(resource);
             else if (AutoGet) SafeOperation(GET);
@@ -495,12 +495,14 @@ namespace RESTar
         private bool QueryIsValid(out IResource resource)
         {
             var localQuery = Query;
-            if (!WebSocket.Context.UriIsValid(localQuery, out var error, out resource, out localQuery))
+            if (!WebSocket.Context.UriIsValid(localQuery, out var error, out resource, out var formatted))
             {
                 query = previousQuery;
                 SendResult(error);
                 return false;
             }
+            if (ReformatQueries)
+                localQuery = formatted;
             query = localQuery;
             queryChangedPreEval = false;
             return true;

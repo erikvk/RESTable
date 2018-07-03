@@ -42,10 +42,10 @@ namespace RESTar.Meta.Internal
 
         internal View(Type viewType)
         {
-            Type = viewType;
-            Name = viewType.Name;
-            ViewSelector = DelegateMaker.GetDelegate<ViewSelector<TResource>>(viewType);
             var viewAttribute = viewType.GetCustomAttribute<RESTarViewAttribute>();
+            Type = viewType;
+            Name = viewAttribute.CustomName ?? viewType.Name;
+            ViewSelector = DelegateMaker.GetDelegate<ViewSelector<TResource>>(viewType);
             Members = viewType.GetDeclaredProperties();
             Description = viewAttribute.Description;
             ConditionBindingRule = viewAttribute.AllowDynamicConditions

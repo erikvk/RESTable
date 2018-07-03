@@ -10,6 +10,11 @@ namespace RESTar.Resources
     public class RESTarViewAttribute : Attribute
     {
         /// <summary>
+        /// A custom name for the view
+        /// </summary>
+        public string CustomName { get; }
+
+        /// <summary>
         /// If true, unknown conditions encountered when handling incoming requests
         /// will be passed through as dynamic. This allows for a dynamic handling of
         /// members, both for condition matching and for entities returned from the 
@@ -21,5 +26,11 @@ namespace RESTar.Resources
         /// View descriptions are visible in the AvailableResource resource
         /// </summary>
         public string Description { get; set; }
+
+        /// <inheritdoc />
+        public RESTarViewAttribute(string customName = null)
+        {
+            CustomName = customName;
+        }
     }
 }

@@ -116,6 +116,10 @@ namespace RESTar.Admin
         /// </summary>
         private static void Register<T>(string indexName, params ColumnInfo[] columns) where T : class
         {
+            if (!RESTarConfig.Initialized)
+                throw new NotInitializedException(
+                    $"Invalid call to DatabaseIndex.Register() with index name '{indexName}' for type '{typeof(T)}'. " +
+                    "Cannot register database indexes before RESTarConfig.Init() has been called.");
             SelectionCondition.Value = indexName;
             SelectionRequest.Selector = () => new[]
             {

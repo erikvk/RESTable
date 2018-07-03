@@ -161,6 +161,8 @@ namespace RESTar.Meta.Internal
             ViewDictionaryInternal = new Dictionary<string, ITarget<T>>(StringComparer.OrdinalIgnoreCase);
             views?.ForEach(view =>
             {
+                if (ViewDictionaryInternal.ContainsKey(view.Name))
+                    throw new InvalidResourceViewDeclarationException(view.Type, $"Found multiple views with name '{view.Name}'.");
                 ViewDictionaryInternal[view.Name] = view;
                 view.SetEntityResource(this);
             });

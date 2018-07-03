@@ -87,7 +87,7 @@ namespace RESTar.Meta.Internal
                 throw new InvalidResourceDeclarationException("Types used by RESTar must have unique case insensitive names. Found " +
                                                               $"multiple types with case insensitive name '{dupe}'.");
 
-            void ValidateViewTypes(IEnumerable<Type> _viewTypes)
+            void ValidateViewTypes(ICollection<Type> _viewTypes)
             {
                 foreach (var viewType in _viewTypes)
                 {

@@ -40,7 +40,7 @@ namespace RESTarExample
         [RESTarMember(ignore: true)] public string PersonName { get; set; }
         
         [RESTarView]
-        public class PersonView : ISelector<Person>
+        public class MyView : ISelector<Person>
         {
             public IEnumerable<Person> Select(IRequest<Person> request)
             {
