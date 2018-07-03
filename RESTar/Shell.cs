@@ -22,7 +22,7 @@ namespace RESTar
     /// from a connected WebSocket. 
     /// </summary>
     [RESTar(Description = description, GETAvailableToAll = true)]
-    public class Shell : ITerminal
+    public sealed class Shell : ITerminal
     {
         private const string description =
             "The RESTar WebSocket shell lets the client navigate around the resources of the " +

@@ -87,33 +87,31 @@ namespace RESTar.Meta.Internal
                 throw new InvalidResourceDeclarationException("Types used by RESTar must have unique case insensitive names. Found " +
                                                               $"multiple types with case insensitive name '{dupe}'.");
 
-            void ValidateViewTypes(IEnumerable<Type> types)
+            void ValidateViewTypes(IEnumerable<Type> _viewTypes)
             {
-                foreach (var type in types)
+                foreach (var viewType in _viewTypes)
                 {
-                    var resource = type.DeclaringType;
-                    if (!type.IsClass || !type.IsNestedPublic || resource == null)
-                        throw new InvalidResourceViewDeclarationException(type,
+                    var resource = viewType.DeclaringType;
+                    if (!viewType.IsClass || !viewType.IsNestedPublic || resource == null)
+                        throw new InvalidResourceViewDeclarationException(viewType,
                             "Resource view types must be declared as public classes nested within the the " +
                             "resource type they are views for");
-                    if (type.IsSubclassOf(type))
-                        throw new InvalidResourceViewDeclarationException(type, "Views cannot inherit from their resource types");
-
+                    if (viewType.IsSubclassOf(resource))
+                        throw new InvalidResourceViewDeclarationException(viewType, "Views cannot inherit from their resource types");
                     if (typeof(IResourceWrapper).IsAssignableFrom(resource))
                     {
                         var wrapped = resource.GetWrappedType();
-                        if (!type.ImplementsGenericInterface(typeof(ISelector<>), out var param) || param[0] != wrapped)
-                            throw new InvalidResourceViewDeclarationException(type,
+                        if (!viewType.ImplementsGenericInterface(typeof(ISelector<>), out var param) || param[0] != wrapped)
+                            throw new InvalidResourceViewDeclarationException(viewType,
                                 $"Expected view type to implement ISelector<{wrapped.RESTarTypeName()}>");
                     }
-                    else if (!type.ImplementsGenericInterface(typeof(ISelector<>), out var param) || param[0] != resource)
-                        throw new InvalidResourceViewDeclarationException(type,
+                    else if (!viewType.ImplementsGenericInterface(typeof(ISelector<>), out var param) || param[0] != resource)
+                        throw new InvalidResourceViewDeclarationException(viewType,
                             $"Expected view type to implement ISelector<{resource.RESTarTypeName()}>");
-                    var propertyUnion = resource.GetProperties(Public | Instance)
-                        .Union(type.GetProperties(Public | Instance));
-                    if (propertyUnion.ContainsDuplicates(p => p.RESTarMemberName(), StringComparer.OrdinalIgnoreCase, out var propDupe))
-                        throw new InvalidResourceViewDeclarationException(type,
-                            $"Invalid property '{propDupe.Name}'. Resource view types must not contain any public instance " +
+                    var resourceProperties = resource.GetDeclaredProperties();
+                    foreach (var property in viewType.FindAndParseDeclaredProperties().Where(prop => resourceProperties.ContainsKey(prop.Name)))
+                        throw new InvalidResourceViewDeclarationException(viewType,
+                            $"Invalid property '{property.Name}'. Resource view types must not contain any public instance " +
                             "properties with the same name (case insensitive) as a property of the corresponding resource. " +
                             "All properties in the resource are automatically inherited for use in conditions with the view.");
                 }

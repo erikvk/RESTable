@@ -65,7 +65,11 @@ namespace RESTar.Meta
 
         internal static readonly ConcurrentDictionary<Type, IReadOnlyDictionary<string, DeclaredProperty>> DeclaredPropertyCache;
 
-        private static IEnumerable<DeclaredProperty> ParseDeclaredProperties(this IEnumerable<PropertyInfo> props, bool flag) => props
+        internal static IEnumerable<DeclaredProperty> FindAndParseDeclaredProperties(this Type type, bool flag = false) => type
+            .GetProperties(BindingFlags.Public | BindingFlags.Instance)
+            .ParseDeclaredProperties(flag);
+
+        internal static IEnumerable<DeclaredProperty> ParseDeclaredProperties(this IEnumerable<PropertyInfo> props, bool flag) => props
             .Where(p => !p.RESTarIgnored())
             .Where(p => !p.GetIndexParameters().Any())
             .Select(p => new DeclaredProperty(p, flag))
@@ -134,25 +138,18 @@ namespace RESTar.Meta
                             return p;
                         }).If(_type.HasAttribute<DatabaseAttribute>(), ps => ps.Union(SpecialProperty.GetObjectNoAndObjectID(false)));
                     case var _ when typeof(ITerminal).IsAssignableFrom(_type):
-                        return _type.GetProperties(BindingFlags.Instance | BindingFlags.Public)
-                            .ParseDeclaredProperties(flag: false)
-                            .Except(make(typeof(ITerminal)), DeclaredProperty.NameComparer);
+                        return _type.FindAndParseDeclaredProperties().Except(make(typeof(ITerminal)), DeclaredProperty.NameComparer);
                     case var _ when _type.IsNullable(out var underlying):
                         return underlying.GetDeclaredProperties().Values;
                     case var _ when _type.HasAttribute<RESTarViewAttribute>():
-                        return _type.GetProperties(BindingFlags.Instance | BindingFlags.Public)
-                            .ParseDeclaredProperties(false)
-                            .Union(make(_type.DeclaringType));
+                        return _type.FindAndParseDeclaredProperties().Union(make(_type.DeclaringType));
                     case var _ when _type.IsDDictionary():
-                        return _type.GetProperties(BindingFlags.Instance | BindingFlags.Public)
-                            .ParseDeclaredProperties(flag: true)
-                            .Union(SpecialProperty.GetObjectNoAndObjectID(flag: true));
+                        return _type.FindAndParseDeclaredProperties(true).Union(SpecialProperty.GetObjectNoAndObjectID(flag: true));
                     case var _ when Resource.SafeGet(_type) is IEntityResource e && e.DeclaredPropertiesFlagged:
-                        return _type.GetProperties(BindingFlags.Instance | BindingFlags.Public)
-                            .ParseDeclaredProperties(flag: true);
+                        return _type.FindAndParseDeclaredProperties(true);
                     default:
-                        return _type.GetProperties(BindingFlags.Instance | BindingFlags.Public)
-                            .ParseDeclaredProperties(false)
+                        return _type
+                            .FindAndParseDeclaredProperties()
                             .If(_type.HasAttribute<DatabaseAttribute>(), ps => ps.Union(SpecialProperty.GetObjectNoAndObjectID(false)));
                 }
             }

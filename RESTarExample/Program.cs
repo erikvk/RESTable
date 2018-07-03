@@ -33,6 +33,22 @@ namespace RESTarExample
         }
     }
 
+    [Database, RESTar]
+    public class Person
+    {
+        [RESTarMember(name: "PersonName")] public string Name { get; set; }
+        [RESTarMember(ignore: true)] public string PersonName { get; set; }
+        
+        [RESTarView]
+        public class PersonView : ISelector<Person>
+        {
+            public IEnumerable<Person> Select(IRequest<Person> request)
+            {
+                return null;
+            }
+        }
+    }
+
     public class Resource1
     {
         public sbyte Sbyte;

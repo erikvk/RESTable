@@ -207,14 +207,10 @@ namespace RESTar.Meta.Internal
 
                 #region Check for properties with duplicate case insensitive names
 
-                if (type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
-                    .Where(p => !p.RESTarIgnored())
-                    .Where(p => !(p.DeclaringType.ImplementsGenericInterface(typeof(IDictionary<,>)) && p.Name == "Item"))
-                    .Select(p => p.RESTarMemberName().ToLower())
-                    .ContainsDuplicates(out var duplicate))
+                if (type.FindAndParseDeclaredProperties().ContainsDuplicates(DeclaredProperty.NameComparer, out var duplicate))
                     throw new InvalidResourceMemberException(
-                        $"Invalid properties for resource '{type.RESTarTypeName()}'. Names of public instance properties declared " +
-                        $"for a virtual resource must be unique (case insensitive). Two or more property names evaluated to {duplicate}."
+                        $"Invalid properties for resource '{type.RESTarTypeName()}'. Names of public instance properties must " +
+                        $"be unique (case insensitive). Two or more property names were equivalent to '{duplicate.Name}'."
                     );
 
                 #endregion
