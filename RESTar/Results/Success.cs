@@ -59,6 +59,12 @@ namespace RESTar.Results
         public string HeadersStringCache { get; set; }
 
         /// <inheritdoc />
+        public bool IsSuccess { get; }
+
+        /// <inheritdoc />
+        public bool IsError => !IsSuccess;
+
+        /// <inheritdoc />
         public bool ExcludeHeaders { get; }
 
         /// <inheritdoc />
@@ -80,6 +86,7 @@ namespace RESTar.Results
             IsSerialized = false;
             LogTime = DateTime.Now;
             Body = null;
+            IsSuccess = true;
         }
 
         /// <inheritdoc />

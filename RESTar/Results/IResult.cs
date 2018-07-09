@@ -51,6 +51,22 @@ namespace RESTar.Results
         ICollection<string> Cookies { get; }
 
         /// <summary>
+        /// Is this a successful result?
+        /// </summary>
+        bool IsSuccess { get; }
+
+        /// <summary>
+        /// Is this an error result?
+        /// </summary>
+        bool IsError { get; }
+
+        /// <summary>
+        /// If the result is non-successful, invoking this method will throw an 
+        /// exception containing the erroneous result.
+        /// </summary>
+        void ThrowIfError();
+
+        /// <summary>
         /// Serializes the result and prepares output streams and content types.
         /// Optionally, provide a content type to serialize the result with.
         /// If null, the content type specified in the request will be used.
@@ -58,12 +74,6 @@ namespace RESTar.Results
         /// type for the protocol is used.
         /// </summary>
         ISerializedResult Serialize(ContentType? contentType = null);
-
-        /// <summary>
-        /// If the result is non-successful, invoking this method will throw an 
-        /// exception containing the erroneous result.
-        /// </summary>
-        void ThrowIfError();
 
         /// <summary>
         /// Tries to convert the result to an IEnumerable instance, or throws an 

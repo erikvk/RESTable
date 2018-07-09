@@ -38,6 +38,12 @@ namespace RESTar.Results
         }
 
         /// <inheritdoc />
+        public bool IsSuccess => Result.IsSuccess;
+
+        /// <inheritdoc />
+        public bool IsError => Result.IsError;
+
+        /// <inheritdoc />
         public bool ExcludeHeaders => Result.ExcludeHeaders;
 
         /// <inheritdoc />

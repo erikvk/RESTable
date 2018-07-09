@@ -30,6 +30,12 @@ namespace RESTar.Results
         /// <inheritdoc />
         public ICollection<string> Cookies { get; } = new List<string>();
 
+        /// <inheritdoc />
+        public bool IsSuccess { get; }
+
+        /// <inheritdoc />
+        public bool IsError => !IsSuccess;
+
         #region ITraceable, ILogable
 
         internal void SetTrace(ITraceable request)
@@ -81,6 +87,7 @@ namespace RESTar.Results
         {
             ExcludeHeaders = false;
             Headers.Info = Message;
+            IsSuccess = false;
         }
 
         internal Error(ErrorCodes code, string message, Exception ie) : base(code, message, ie)
@@ -89,6 +96,7 @@ namespace RESTar.Results
             if (message == null)
                 Headers.Info = ie?.Message;
             else Headers.Info = message;
+            IsSuccess = false;
         }
 
         /// <inheritdoc />
