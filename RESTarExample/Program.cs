@@ -38,7 +38,8 @@ namespace RESTarExample
     {
         [RESTarMember(name: "PersonName")] public string Name { get; set; }
         [RESTarMember(ignore: true)] public string PersonName { get; set; }
-        
+        [RESTarMember(hide: true)] public string Thing { get; set; }
+
         [RESTarView]
         public class MyView : ISelector<Person>
         {

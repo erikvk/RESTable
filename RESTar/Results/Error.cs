@@ -16,7 +16,7 @@ namespace RESTar.Results
     /// <summary>
     /// A super class for all custom RESTar exceptions
     /// </summary>
-    public abstract class Error : RESTarException, ITraceable, ISerializedResult
+    public abstract class Error : RESTarException, IResult, ISerializedResult, ITraceable
     {
         /// <inheritdoc />
         public HttpStatusCode StatusCode { get; protected set; }

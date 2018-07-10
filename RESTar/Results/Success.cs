@@ -8,9 +8,9 @@ using RESTar.Requests;
 
 namespace RESTar.Results
 {
-    /// <inheritdoc cref="ISerializedResult"/>
     /// <inheritdoc cref="IResult"/>
-    public abstract class Success : ISerializedResult, IResult
+    /// <inheritdoc cref="ISerializedResult"/>
+    public abstract class Success : IResult, ISerializedResult
     {
         /// <inheritdoc />
         public string TraceId { get; }
