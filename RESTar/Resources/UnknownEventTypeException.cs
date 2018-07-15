@@ -10,7 +10,7 @@ namespace RESTar.Resources
     /// </summary>
     public class UnknownEventTypeException : RESTarException
     {
-        internal UnknownEventTypeException(IEventInternal @event) : base(ErrorCodes.UnknownEventType,
+        internal UnknownEventTypeException(IEvent @event) : base(ErrorCodes.UnknownEventType,
             $"Unknown event of type '{@event.GetType().RESTarTypeName()}' encountered. This type was not identified at " +
             "the time when RESTarConfig.Init() was called.") { }
     }

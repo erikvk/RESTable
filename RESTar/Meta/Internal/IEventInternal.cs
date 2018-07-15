@@ -8,10 +8,10 @@ namespace RESTar.Meta.Internal
     /// </summary>
     public interface IEvent { }
 
-    internal interface IEventInternal : IEvent, IDisposable
+    internal interface IEventInternal<out T> : IEvent, IDisposable where T : class
     {
         string Name { get; }
-        object Payload { get; }
+        T Payload { get; }
         ContentType? NativeContentType { get; }
         bool HasBinaryPayload { get; }
     }

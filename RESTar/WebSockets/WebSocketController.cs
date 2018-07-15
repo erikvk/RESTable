@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using RESTar.ContentTypeProviders;
+using RESTar.Linq;
 
 namespace RESTar.WebSockets
 {
@@ -13,10 +14,16 @@ namespace RESTar.WebSockets
         static WebSocketController() => AllSockets = new ConcurrentDictionary<string, WebSocket>();
         internal static void Add(WebSocket webSocket) => AllSockets[webSocket.TraceId] = webSocket;
 
+        internal static void RevokeAllWithKey(string key) => AllSockets.Values
+            .Where(webSocket => webSocket.Client.AccessRights.ApiKey == key)
+            .ForEach(webSocket => webSocket.Disconnect($"The access rights of this WebSocket ({webSocket.TraceId}) " +
+                                                       "have been revoked. Disconnecting..."));
+
         internal static async Task HandleTextInput(string wsId, string textInput)
         {
             if (!AllSockets.TryGetValue(wsId, out var webSocket))
-                throw new UnknownWebSocketIdException($"This WebSocket ({wsId}) is not connected");
+                throw new UnknownWebSocketIdException($"This WebSocket ({wsId}) is not recognized by the current " +
+                                                      "application. Disconnecting...");
 
             if (webSocket.IsStreaming)
             {

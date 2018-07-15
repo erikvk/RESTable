@@ -2,77 +2,23 @@
 using System.IO;
 using System.Linq;
 using System.Net.Http;
-using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using RESTar.Internal;
+using RESTar.ContentTypeProviders.NativeJsonProtocol;
 using RESTar.Meta.Internal;
 using RESTar.Requests;
 using RESTar.Resources;
+using RESTar.Resources.Operations;
 using RESTar.Results;
 using Starcounter;
-using Binary = Starcounter.Binary;
 
 namespace RESTar.Admin
 {
     /// <summary>
-    /// Holds a log of webhook activity
-    /// </summary>
-    [RESTar(Method.GET, Method.DELETE), Database]
-    public class WebhookLog
-    {
-        /// <summary>
-        /// The webhook that did the request
-        /// </summary>
-        public Webhook Webhook { get; }
-
-        /// <summary>
-        /// The destination URL of the request
-        /// </summary>
-        public string Destination { get; }
-
-        /// <summary>
-        /// The number of bytes contained in the request body
-        /// </summary>
-        public long ByteCount { get; }
-
-        /// <summary>
-        /// The log message
-        /// </summary>
-        public string Message { get; }
-
-        /// <summary>
-        /// Does this log entry encode an error?
-        /// </summary>
-        public bool IsError { get; }
-
-        /// <summary>
-        /// The date and time when the request was sent
-        /// </summary>
-        public DateTime Time { get; }
-
-        internal WebhookLog(Webhook webhook, long byteCount, string message, bool isError)
-        {
-            Webhook = webhook;
-            Destination = webhook.Destination;
-            ByteCount = byteCount;
-            Message = message;
-            IsError = isError;
-            Time = DateTime.UtcNow;
-        }
-
-        internal static async Task Log(Webhook hook, bool isError, string message, long byteCount = 0)
-        {
-            await Scheduling.RunTask(() => Db.TransactAsync(() => new WebhookLog(hook, byteCount, message, isError)));
-        }
-    }
-
-    /// <summary>
     /// Webhooks are used to generate POST request callbacks to external URIs when events are triggered.
     /// </summary>
     [RESTar, Database]
-    public class Webhook
+    public class Webhook : IInserter<Webhook>, IUpdater<Webhook>
     {
         internal const string All = "SELECT t FROM RESTar.Admin.Webhook t";
         internal const string ByEventName = All + " WHERE t.EventName =?";
@@ -105,12 +51,17 @@ namespace RESTar.Admin
                 switch (value)
                 {
                     case "":
-                    case null: break;
+                    case null:
+                        DestinationURL = null;
+                        DestinationIsLocal = false;
+                        break;
                     case var external when Uri.TryCreate(external, UriKind.Absolute, out var uri):
                         DestinationURL = uri.ToString();
+                        DestinationIsLocal = false;
                         break;
-                    case var local when Context.Root.UriIsValid(local, out var error, out _, out var formatted) is var valid:
-                        DestinationURL = valid ? formatted : local;
+                    case var other when Context.Root.UriIsValid(other, out var error, out _, out var formatted) is var valid:
+                        DestinationURL = valid ? formatted : other;
+                        DestinationIsLocal = valid;
                         DestinationError = error?.LogContent;
                         break;
                 }
@@ -118,23 +69,28 @@ namespace RESTar.Admin
         }
 
         /// <summary>
-        /// The underlying storage for content type
+        /// Does the destination URL refer to a local resource?
         /// </summary>
-        [RESTarMember(ignore: true)] public string ContentTypeString { get; set; }
+        public bool DestinationIsLocal { get; private set; }
 
         /// <summary>
-        /// The content type to use in the POST request, for example 'application/json'
+        /// The underlying storage for headers of this WebHook request
         /// </summary>
-        public ContentType ContentType
-        {
-            get => ContentTypeString ?? ContentType.DefaultOutput;
-            set
-            {
-                ContentTypeIsValid = value.AnyType || ContentTypeController.OutputContentTypeProviders.TryGetValue(value.MediaType ?? "", out _);
-                ContentTypeString = value.ToString();
-            }
-        }
+        [RESTarMember(ignore: true)] public string HeadersString { get; private set; }
 
+        /// <summary>
+        /// Custom headers included in the POST request
+        /// </summary>
+        [RESTarMember(replaceOnUpdate: true), JsonConverter(typeof(HeadersConverter), "*")]
+        public Headers Headers
+        {
+            get
+            {
+                if (HeadersString == null) return null;
+                return JsonConvert.DeserializeObject<Headers>(HeadersString);
+            }
+            set => HeadersString = JsonConvert.SerializeObject(value);
+        }
 
         /// <summary>
         /// The underlying storage for event names
@@ -170,7 +126,7 @@ namespace RESTar.Admin
         /// <summary>
         /// Is this webhook currently valid?
         /// </summary>
-        public bool IsValid => DestinationIsValid && ContentTypeIsValid && EventIsValid && CustomRequestIsValid;
+        public bool IsValid => DestinationIsValid && EventIsValid && CustomRequestIsValid;
 
         /// <summary>
         /// Is this webhook currently active?
@@ -186,9 +142,6 @@ namespace RESTar.Admin
             {
                 if (!DestinationIsValid)
                     return DestinationError;
-                if (!ContentTypeIsValid)
-                    return $"Could not find a content type provider for content type '{ContentType}'. " +
-                           "To list available content types, use the RESTar.Admin.Protocol resource";
                 if (!EventIsValid)
                     return $"Unknown event '{Event}'. To list available events, use the RESTar.Event resource";
                 if (!CustomRequestIsValid)
@@ -206,11 +159,6 @@ namespace RESTar.Admin
         /// The error (if any) of the destination
         /// </summary>
         [RESTarMember(ignore: true)] public string DestinationError { get; private set; }
-
-        /// <summary>
-        /// Is the content type valid?
-        /// </summary>
-        [RESTarMember(ignore: true)] public bool ContentTypeIsValid { get; private set; }
 
         /// <summary>
         /// Is the event valid?
@@ -242,6 +190,16 @@ namespace RESTar.Admin
             }
         }
 
+        public int Insert(IRequest<Webhook> request)
+        {
+            throw new NotImplementedException();
+        }
+
+        public int Update(IRequest<Webhook> request)
+        {
+            throw new NotImplementedException();
+        }
+
         private HttpRequestMessage GetRequestMessage(Stream body, ContentType? contentType, string customRequestInfo = null)
         {
             var message = new HttpRequestMessage(HttpMethod.Post, DestinationURL);
@@ -257,148 +215,64 @@ namespace RESTar.Admin
             return message;
         }
 
-        internal async Task Post(IEventInternal @event)
+        internal async Task Post<T>(IEventInternal<T> @event) where T : class
         {
             if (!IsActive) return;
-            await Scheduling.RunTask(async () =>
-            {
-                HttpRequestMessage requestMessage;
 
-                if (CustomRequest == null)
+            Stream body;
+            var info = default(string);
+            var contentType = Headers.ContentType ?? ContentType.JSON;
+
+            if (CustomRequest == null)
+                (body, contentType) = @event.Payload.ToBodyStream(@event.NativeContentType ?? contentType);
+            else
+            {
+                using (var request = CustomRequest.CreateRequest(Client.Webhook))
                 {
-                    var (_body, _contentType) = @event.Payload.ToBodyStream(@event.NativeContentType);
-                    requestMessage = GetRequestMessage(_body, _contentType);
+                    var result = request.Evaluate().Serialize(contentType);
+                    switch (result)
+                    {
+                        case Results.Error _:
+                            await WebhookLog.Log(this, true, ForCustomRequest(result.LogMessage));
+                            if (CustomRequest.BreakOnError)
+                            {
+                                result.Dispose();
+                                return;
+                            }
+                            break;
+                        case NoContent _:
+                            result.Dispose();
+                            if (customRequest.BreakOnNoContent) return;
+                            break;
+                    }
+                    (body, contentType, info) = (result.Body, result.Headers.ContentType ?? contentType, result.LogMessage);
                 }
+            }
+
+            try
+            {
+                if (DestinationIsLocal) { }
                 else
                 {
-                    string ForCustomRequest(string message) => $"Error when evaluating custom request: {message}";
-                    var client = Client.Webhook;
-                    if (!client.TryAuthenticate(CustomRequest.ApiKeyHash, out var error))
+                    using (var requestMessage = GetRequestMessage(body, contentType, info))
                     {
-                        await WebhookLog.Log(this, true, ForCustomRequest(error.LogMessage));
-                        return;
-                    }
-                    using (var request = CustomRequest.CreateRequest(client))
-                    {
-                        var result = request.Evaluate().Serialize(ContentType);
-                        switch (result)
+                        if (Headers is Headers _headers)
+                            foreach (var header in _headers)
+                                requestMessage.Headers.TryAddWithoutValidation(header.Key, header.Value);
+                        using (var response = await HttpClient.SendAsync(requestMessage))
                         {
-                            case Results.Error _:
-                                await WebhookLog.Log(this, true, ForCustomRequest(result.LogMessage));
-                                if (CustomRequest.BreakOnError)
-                                {
-                                    result.Dispose();
-                                    return;
-                                }
-                                break;
-                            case NoContent _:
-                                result.Dispose();
-                                if (customRequest.BreakOnNoContent) return;
-                                break;
+                            var status = $"{response.StatusCode}: {response.ReasonPhrase}";
+                            await WebhookLog.Log(this, false, status, 0);
                         }
-                        requestMessage = GetRequestMessage(result.Body, result.Headers.ContentType, result.LogMessage);
                     }
                 }
-                var byteCount = requestMessage.Content?.Headers.ContentLength ?? 0;
-                try
-                {
-                    using (requestMessage)
-                    using (var response = await HttpClient.SendAsync(requestMessage))
-                    {
-                        var status = $"{response.StatusCode}: {response.ReasonPhrase}";
-                        await WebhookLog.Log(this, false, status, byteCount);
-                    }
-                }
-                catch (Exception e)
-                {
-                    await WebhookLog.Log(this, true, e.ToString(), byteCount);
-                }
-            });
-        }
-    }
-
-    /// <summary>
-    /// A request used for getting data to post in a WebHook
-    /// </summary>
-    [Database]
-    public class WebhookRequest
-    {
-        /// <summary>
-        /// The method of the WebHook request. Always GET
-        /// </summary>
-        public Method Method => Method.GET;
-
-        /// <summary>
-        /// The URI of the WebHook request. Must point to a local resource.
-        /// </summary>
-        public string URI { get; set; }
-
-        /// <summary>
-        /// A stored API key hash
-        /// </summary>
-        [RESTarMember(ignore: true)] public string ApiKeyHash { get; private set; }
-
-        /// <summary>
-        /// The API key to use in the WebHook request
-        /// </summary>
-        public string APIKey
-        {
-            get => ApiKeyHash == null ? null : "*******";
-            set => ApiKeyHash = string.IsNullOrWhiteSpace(value) ? null : value.SHA256();
-        }
-
-        /// <summary>
-        /// The underlying storage for headers of this WebHook request
-        /// </summary>
-        [RESTarMember(ignore: true)] public string HeadersString { get; private set; }
-
-        /// <summary>
-        /// The headers for this WebHook request
-        /// </summary>
-        [RESTarMember(replaceOnUpdate: true)] public Headers Headers
-        {
-            get
-            {
-                if (HeadersString == null) return null;
-                return JsonConvert.DeserializeObject<Headers>(HeadersString);
             }
-            set => HeadersString = JsonConvert.SerializeObject(value);
+            catch (Exception e)
+            {
+                await WebhookLog.Log(this, true, e.ToString(), 0);
+            }
         }
 
-        /// <summary>
-        /// The underlying storage for the body of this WebHook request
-        /// </summary>
-        [RESTarMember(ignore: true)] public Binary BodyBinary { get; set; }
-
-        /// <summary>
-        /// The body of this WebHook request
-        /// </summary>
-        public JToken Body
-        {
-            get => HasBody ? JToken.Parse(BodyUTF8) : null;
-            set => BodyBinary = value != null ? new Binary(Encoding.UTF8.GetBytes(value.ToString())) : default;
-        }
-
-        /// <summary>
-        /// Should the POST request be aborted if the custom request returns an error?
-        /// </summary>
-        public bool BreakOnError { get; set; }
-
-        /// <summary>
-        /// Should the POST request be aborted if the custom request returns 404: No content?
-        /// </summary>
-        public bool BreakOnNoContent { get; set; }
-
-        internal IRequest CreateRequest(Client client) => Context.Webhook(client).CreateRequest
-        (
-            uri: URI,
-            method: Method,
-            body: GetBody(),
-            headers: Headers
-        );
-
-        private byte[] GetBody() => HasBody ? BodyBinary.ToArray() : new byte[0];
-        private bool HasBody => !BodyBinary.IsNull && BodyBinary.Length > 0;
-        private string BodyUTF8 => !HasBody ? "" : Encoding.UTF8.GetString(BodyBinary.ToArray());
+        private static string ForCustomRequest(string message) => $"Error when evaluating custom request: {message}";
     }
 }

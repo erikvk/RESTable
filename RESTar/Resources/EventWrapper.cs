@@ -7,13 +7,12 @@ using RESTar.Requests;
 namespace RESTar.Resources
 {
     /// <inheritdoc cref="EventArgs" />
-    /// <inheritdoc cref="IEventInternal" />
-    public abstract class EventWrapper<T> : EventArgs, IEventInternal where T : class
+    /// <inheritdoc cref="IEventInternal{T}" />
+    public abstract class Event<T> : EventArgs, IEventInternal<T> where T : class
     {
-        object IEventInternal.Payload => Payload;
-        string IEventInternal.Name => GetType().RESTarTypeName();
-        ContentType? IEventInternal.NativeContentType => ContentType;
-        bool IEventInternal.HasBinaryPayload => HasBinaryPayload;
+        string IEventInternal<T>.Name => GetType().RESTarTypeName();
+        ContentType? IEventInternal<T>.NativeContentType => ContentType;
+        bool IEventInternal<T>.HasBinaryPayload => HasBinaryPayload;
         private bool HasBinaryPayload { get; }
 
         /// <summary>
@@ -36,7 +35,7 @@ namespace RESTar.Resources
         /// the payload is binary data (byte array or stream), this content type is needed
         /// for interpreting the payload.
         /// </param>
-        protected EventWrapper(T payload, ContentType? contentType = null)
+        protected Event(T payload, ContentType? contentType = null)
         {
             switch (payload)
             {
@@ -69,5 +68,12 @@ namespace RESTar.Resources
             if (Payload is IDisposable disposable)
                 disposable.Dispose();
         }
+
+        internal static void Raise(object sender, T @event) => OnRaised?.Invoke(sender, @event);
+
+        /// <summary>
+        /// The event handler for this event type
+        /// </summary>
+        public static event EventHandler<T> OnRaised;
     }
 }

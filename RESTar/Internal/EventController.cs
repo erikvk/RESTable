@@ -22,7 +22,7 @@ namespace RESTar.Internal
             ));
         });
 
-        internal static async Task Raise(IEventInternal @event)
+        internal static async Task Raise<T>(IEventInternal<T> @event) where T : class
         {
             if (!RESTarConfig.Initialized) return;
             if (!(Db.SQL<Event>(Event.ByName, @event.Name).FirstOrDefault() is Event eventType))
@@ -34,7 +34,7 @@ namespace RESTar.Internal
 
         private static void RaiseEventHandlers<T>(object sender, T @event) where T : EventArgs, IEvent
         {
-            Event<T>.OnRaise(sender, @event);
+            Event<T>.Raise(sender, @event);
         }
     }
 }

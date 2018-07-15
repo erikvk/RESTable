@@ -10,14 +10,23 @@ namespace RESTar.ContentTypeProviders.NativeJsonProtocol
 {
     internal class HeadersConverter : JsonConverter<Headers>
     {
+        private HashSet<string> WhitelistedNonCustomHeaders { get; }
+
+        public HeadersConverter(params string[] whitelisted)
+        {
+            WhitelistedNonCustomHeaders = new HashSet<string>(whitelisted, StringComparer.OrdinalIgnoreCase);
+            if (WhitelistedNonCustomHeaders.Contains("*"))
+                WhitelistedNonCustomHeaders.UnionWith(Headers.NonCustomHeaders);
+        }
+
         /// <inheritdoc />
         /// <summary>
         /// Writes only custom headers to JSON
         /// </summary>
-        public override void WriteJson(JsonWriter writer, Headers headers, JsonSerializer serializer)
+        public override void WriteJson(JsonWriter writer, Headers headers, JsonSerializer s)
         {
             var jobj = new JObject();
-            headers?.CustomHeaders.ForEach(pair => jobj[pair.Key] = pair.Value);
+            headers?.GetCustom(WhitelistedNonCustomHeaders).ForEach(pair => jobj[pair.Key] = pair.Value);
             jobj.WriteTo(writer);
         }
 
@@ -25,11 +34,12 @@ namespace RESTar.ContentTypeProviders.NativeJsonProtocol
         /// <summary>
         /// Reads only custom headers from JSON
         /// </summary>
-        public override Headers ReadJson(JsonReader reader, Type objectType, Headers headers, bool hasExistingValue, JsonSerializer serializer)
+        public override Headers ReadJson(JsonReader reader, Type o, Headers headers, bool h, JsonSerializer s)
         {
             IEnumerable<KeyValuePair<string, JToken>> values = JObject.Load(reader);
             headers = headers ?? new Headers();
-            values.Where(pair => Headers.IsCustom(pair.Key)).ForEach(pair => headers[pair.Key] = pair.Value.ToObject<string>());
+            values.Where(pair => WhitelistedNonCustomHeaders.Contains(pair.Key) || Headers.IsCustom(pair.Key))
+                .ForEach(pair => headers[pair.Key] = pair.Value.ToObject<string>());
             return headers;
         }
     }

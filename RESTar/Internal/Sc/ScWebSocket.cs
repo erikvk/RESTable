@@ -1,6 +1,7 @@
 ﻿using System;
 using RESTar.Requests;
 using Starcounter;
+using static Starcounter.Response.ConnectionFlags;
 using WebSocket = RESTar.WebSockets.WebSocket;
 
 namespace RESTar.Internal.Sc
@@ -33,7 +34,10 @@ namespace RESTar.Internal.Sc
         }
 
         protected override bool IsConnected => WebSocket?.IsDead() == false;
-        protected override void DisconnectWebSocket(string message = null) => Scheduling.RunTask(() => WebSocket.Disconnect(message)).Wait();
+
+        protected override void DisconnectWebSocket(string message = null) =>
+            Scheduling.RunTask(() => WebSocket.Send(message, connFlags: DisconnectAfterSend)).Wait();
+
         protected override void SendUpgrade() => WebSocket = UpgradeRequest.SendUpgrade(GroupName);
 
         internal ScWebSocket(string groupName, Request upgradeRequest, Client client) : base(GetRESTarWsId(upgradeRequest), client)

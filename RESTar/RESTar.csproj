@@ -91,9 +91,16 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Admin\ColumnInfo.cs" />
+    <Compile Include="Admin\ContentTypeInfo.cs" />
+    <Compile Include="Admin\Macro.cs" />
+    <Compile Include="Admin\OutputFormat.cs" />
     <Compile Include="Admin\Protocol.cs" />
     <Compile Include="Admin\PropertyCache.cs" />
+    <Compile Include="Admin\ResourceSize.cs" />
     <Compile Include="Admin\Webhook.cs" />
+    <Compile Include="Admin\WebhookLog.cs" />
+    <Compile Include="Admin\WebhookRequest.cs" />
     <Compile Include="Admin\WebSocket.cs" />
     <Compile Include="Admin\Utilities.cs" />
     <Compile Include="Admin\Console.cs" />
@@ -107,7 +114,6 @@
     <Compile Include="Dynamic\Resource.cs" />
     <Compile Include="Meta\IDynamicMemberValueProvider.cs" />
     <Compile Include="Admin\Event.cs" />
-    <Compile Include="Resources\Event.cs" />
     <Compile Include="Resources\EventWrapper.cs" />
     <Compile Include="Meta\Internal\IEventInternal.cs" />
     <Compile Include="Resources\InvalidEventDeclarationException.cs" />

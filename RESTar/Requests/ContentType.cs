@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json;
+using System.Net.Http.Headers;
 
 namespace RESTar.Requests
 {
@@ -11,12 +12,11 @@ namespace RESTar.Requests
 
         public override ContentTypes ReadJson(JsonReader reader, Type o, ContentTypes e, bool h, JsonSerializer s)
         {
-            var @string = reader.ReadAsString();
-            if (string.IsNullOrWhiteSpace(@string)) return default;
-            return ContentType.ParseMany(@string);
+            var contentTypeString = reader.Value as string;
+            if (string.IsNullOrWhiteSpace(contentTypeString)) return default;
+            return ContentType.ParseMany(contentTypeString);
         }
     }
-
 
     /// <inheritdoc />
     /// <summary>
@@ -64,9 +64,9 @@ namespace RESTar.Requests
 
         public override ContentType ReadJson(JsonReader reader, Type o, ContentType e, bool h, JsonSerializer s)
         {
-            var @string = reader.ReadAsString();
-            if (string.IsNullOrWhiteSpace(@string)) return default;
-            return ContentType.ParseMany(@string).FirstOrDefault();
+            var contentTypeString = reader.Value as string;
+            if (string.IsNullOrWhiteSpace(contentTypeString)) return default;
+            return ContentType.ParseMany(contentTypeString).FirstOrDefault();
         }
     }
 
@@ -210,19 +210,20 @@ namespace RESTar.Requests
         /// <summary>
         /// Converts a header value string to a ContenType
         /// </summary>
-        public static implicit operator ContentType(System.Net.Mime.ContentType mimeType) => new ContentType(mimeType.ToString());
+        public static implicit operator ContentType(System.Net.Mime.ContentType contentType) => new ContentType(contentType.ToString());
 
         /// <summary>
         /// Converts a header value string to a ContenType
         /// </summary>
-        public static implicit operator System.Net.Mime.ContentType(ContentType mimeType) => new System.Net.Mime.ContentType(mimeType.ToString());
+        public static implicit operator System.Net.Mime.ContentType(ContentType contentType) => new System.Net.Mime.ContentType(contentType.ToString());
 
         /// <summary>
         /// Converts a header value string to a ContenType
         /// </summary>
-        public static implicit operator System.Net.Http.Headers.MediaTypeHeaderValue(ContentType mimeType) =>
-            new System.Net.Http.Headers.MediaTypeHeaderValue(mimeType.ToString());
-
+        public static implicit operator MediaTypeHeaderValue(ContentType contentType)
+        {
+            return MediaTypeHeaderValue.Parse(contentType.ToString());
+        }
 
         /// <summary>
         /// Compares two content types for equality

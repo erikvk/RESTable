@@ -148,7 +148,7 @@ namespace RESTar.Admin
             {
                 builder.Append(headers);
                 if (logable.HeadersStringCache == null)
-                    logable.HeadersStringCache = string.Join(", ", logable.Headers.CustomHeaders.Select(p => $"{p.Key}: {p.Value}"));
+                    logable.HeadersStringCache = string.Join(", ", logable.Headers.GetCustom().Select(p => $"{p.Key}: {p.Value}"));
                 builder.Append(logable.HeadersStringCache);
             }
             if (IncludeContent)
@@ -174,14 +174,14 @@ namespace RESTar.Admin
                 {
                     builder1.Append(headers);
                     if (logable1.HeadersStringCache == null)
-                        logable1.HeadersStringCache = string.Join(", ", logable1.Headers.CustomHeaders.Select(p => $"{p.Key}: {p.Value}"));
+                        logable1.HeadersStringCache = string.Join(", ", logable1.Headers.GetCustom().Select(p => $"{p.Key}: {p.Value}"));
                     builder1.Append(logable1.HeadersStringCache);
                 }
                 if (!logable2.ExcludeHeaders)
                 {
                     builder2.Append(headers);
                     if (logable2.HeadersStringCache == null)
-                        logable2.HeadersStringCache = string.Join(", ", logable2.Headers.CustomHeaders.Select(p => $"{p.Key}: {p.Value}"));
+                        logable2.HeadersStringCache = string.Join(", ", logable2.Headers.GetCustom().Select(p => $"{p.Key}: {p.Value}"));
                     builder2.Append(logable2.HeadersStringCache);
                 }
             }

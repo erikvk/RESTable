@@ -80,7 +80,7 @@ namespace RESTar.WebSockets
             TerminalConnection = new WebSocketConnection(this, terminal, resource);
         }
 
-        internal void ReleaseTerminal()
+        private void ReleaseTerminal()
         {
             TerminalConnection?.Dispose();
             TerminalConnection = null;
@@ -107,10 +107,16 @@ namespace RESTar.WebSockets
             }
         }
 
+        private string DisconnectMessage { get; set; }
+
         /// <summary>
         /// Disposes the WebSocket. Same as Dispose()
         /// </summary>
-        public void Disconnect() => Dispose();
+        public void Disconnect(string message = null)
+        {
+            DisconnectMessage = message;
+            Dispose();
+        }
 
         private bool disposed;
 
@@ -127,7 +133,7 @@ namespace RESTar.WebSockets
             var terminalName = TerminalConnection?.Resource?.Name;
             ReleaseTerminal();
             if (IsConnected)
-                DisconnectWebSocket();
+                DisconnectWebSocket(DisconnectMessage);
             Status = WebSocketStatus.Closed;
             Closed = DateTime.Now;
             if (terminalName != Console.TypeName)

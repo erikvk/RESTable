@@ -30,33 +30,23 @@ namespace RESTarExample
                 allowAllOrigins: false,
                 configFilePath: @"C:\Mopedo\mopedo\Mopedo.config"
             );
+
+            Event<NotificationEvent>.OnRaised += (s, o) =>
+            {
+                var payload = JsonConvert.SerializeObject(o.Payload);
+
+                var a = 123;
+            };
         }
     }
 
-    public class Notification : Event
-    {
-        public string Title { get; }
-        public string Message { get; }
-
-        public Notification(string title, string message)
-        {
-            Title = title;
-            Message = message;
-        }
-    }
-
-    public class Notification2 : Event
-    {
-        public string Title { get; }
-        public string Message { get; }
-    }
-
-    [Database]
+    [RESTar, Database]
     public class MyNotification
     {
         public string Title { get; }
         public string Message { get; }
 
+        [JsonConstructor]
         public MyNotification(string title, string message)
         {
             Title = title;
@@ -65,17 +55,10 @@ namespace RESTarExample
         }
     }
 
-    public class MyRandomTrigger : Event
+    [RESTarEvent("Notification!")]
+    public class NotificationEvent : Event<MyNotification>
     {
-        public MyRandomTrigger() => Raise();
-    }
-
-    public class NotificationEvent : EventWrapper<MyNotification>
-    {
-        public NotificationEvent(MyNotification payload) : base(payload)
-        {
-            Raise();
-        }
+        public NotificationEvent(MyNotification payload) : base(payload) => Raise();
     }
 
     [Database, RESTar]

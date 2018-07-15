@@ -1,12 +1,13 @@
 ﻿using RESTar.Resources;
 using Starcounter;
+using static RESTar.Method;
 
 namespace RESTar.Admin
 {
     /// <summary>
     /// Holds all events that are registered for this RESTar instance
     /// </summary>
-    [Database, RESTar(Description = description)]
+    [Database, RESTar(GET, Description = description)]
     public sealed class Event
     {
         internal const string All = "SELECT t FROM RESTar.Admin.Event t";

@@ -20,6 +20,7 @@ using RESTar.Meta;
 using RESTar.Meta.Internal;
 using RESTar.ProtocolProviders;
 using RESTar.Resources;
+using RESTar.WebSockets;
 using Starcounter;
 using static RESTar.Method;
 using Event = RESTar.Admin.Event;
@@ -227,8 +228,8 @@ namespace RESTar
 
         private static void RegisterStaticIndexes()
         {
-            DatabaseIndex.Register<Webhook>("RESTar.Admin.Webhook_EventName", nameof(Webhook.EventName));
-            DatabaseIndex.Register<Event>("RESTar.Admin.Event_Name", nameof(Event.Name));
+            DatabaseIndex.Register<Webhook>("RESTar_Admin_Webhook__EventName", nameof(Webhook.EventName));
+            DatabaseIndex.Register<Event>("RESTar_Admin_Event__Name", nameof(Event.Name));
         }
 
         private static void ReadConfig()
@@ -273,7 +274,7 @@ namespace RESTar
 
         private static void ReadApiKeys(JToken apiKeyToken)
         {
-            var keys = new List<string>();
+            var currentKeys = new List<string>();
 
             void recursor(JToken token)
             {
@@ -286,7 +287,7 @@ namespace RESTar
                                 "An API key contained invalid characters. Must be a non-empty string, not containing whitespace or parentheses, " +
                                 "and only containing ASCII characters from 33 to 126");
                         var key = keyString.SHA256();
-                        keys.Add(key);
+                        currentKeys.Add(key);
                         var accessRightList = new List<AccessRight>();
 
                         void recurseAllowAccess(JToken allowAccessToken)
@@ -333,7 +334,8 @@ namespace RESTar
                         }
 
                         recurseAllowAccess(token["AllowAccess"]);
-                        var accessRights = AccessRights.ToAccessRights(accessRightList);
+
+                        var accessRights = AccessRights.ToAccessRights(accessRightList, key);
                         foreach (var resource in Resources.Where(r => r.GETAvailableToAll))
                         {
                             if (!accessRights.TryGetValue(resource, out var methods))
@@ -345,7 +347,10 @@ namespace RESTar
                                     .ToArray();
                         }
                         if (Authenticator.ApiKeys.TryGetValue(key, out var existing))
+                        {
+                            existing.Clear();
                             accessRights.ForEach(existing.Put);
+                        }
                         else Authenticator.ApiKeys[key] = accessRights;
                         break;
                     case JArray apiKeys:
@@ -358,7 +363,15 @@ namespace RESTar
             }
 
             recursor(apiKeyToken);
-            Authenticator.ApiKeys.Keys.Except(keys).ToList().ForEach(key => Authenticator.ApiKeys.Remove(key));
+            Authenticator.ApiKeys.Keys.Except(currentKeys).ToList().ForEach(key =>
+            {
+                if (Authenticator.ApiKeys.TryGetValue(key, out var accessRights))
+                {
+                    WebSocketController.RevokeAllWithKey(key);
+                    accessRights.Clear();
+                }
+                Authenticator.ApiKeys.Remove(key);
+            });
         }
     }
 }

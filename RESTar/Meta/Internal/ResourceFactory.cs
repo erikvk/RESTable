@@ -84,7 +84,10 @@ namespace RESTar.Meta.Internal
             var allTypes = typeof(object).GetSubclasses().ToList();
             var resourceTypes = allTypes.Where(t => t.HasAttribute<RESTarAttribute>(out var a) && !(a is RESTarProceduralAttribute)).ToArray();
             var viewTypes = allTypes.Where(t => t.HasAttribute<RESTarViewAttribute>()).ToArray();
-            var eventTypes = allTypes.Where(t => t.HasAttribute<RESTarEventAttribute>() || typeof(IEventInternal).IsAssignableFrom(t)).ToArray();
+            var eventTypes = allTypes
+                .Where(t => !t.IsAbstract)
+                .Where(t => t.HasAttribute<RESTarEventAttribute>() || typeof(IEvent).IsAssignableFrom(t))
+                .ToArray();
             if (resourceTypes.Union(viewTypes).Union(eventTypes).ContainsDuplicates(t => t.RESTarTypeName()?.ToLower() ?? "unknown", out var dupe))
                 throw new InvalidResourceDeclarationException("Types used by RESTar must have unique case insensitive names. Found " +
                                                               $"multiple types with case insensitive name '{dupe}'.");
@@ -123,7 +126,7 @@ namespace RESTar.Meta.Internal
             {
                 foreach (var eventType in _eventTypes)
                 {
-                    if (!typeof(IEventInternal).IsAssignableFrom(eventType))
+                    if (!typeof(IEvent).IsAssignableFrom(eventType))
                         throw new InvalidEventDeclarationException(eventType,
                             "Event types must inherit from either 'RESTar.Resources.Event' or 'RESTar.Resources.EventWrapper<T>'");
                     if (!eventType.HasAttribute<RESTarEventAttribute>(out var attribute))

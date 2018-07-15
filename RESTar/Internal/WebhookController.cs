@@ -9,7 +9,14 @@ namespace RESTar.Internal
 {
     internal static class WebhookController
     {
-        private static IEnumerable<Webhook> GetHooks(IEventInternal @event) => Db.SQL<Webhook>(Webhook.ByEventName, @event.Name);
-        internal static async Task Post(IEventInternal @event) => await Task.WhenAll(GetHooks(@event).Select(hook => hook.Post(@event)));
+        private static IEnumerable<Webhook> GetHooks<T>(IEventInternal<T> @event) where T : class
+        {
+            return Db.SQL<Webhook>(Webhook.ByEventName, @event.Name);
+        }
+
+        internal static async Task Post<T>(IEventInternal<T> @event) where T : class
+        {
+            await Task.WhenAll(GetHooks(@event).Select(hook => hook.Post(@event)));
+        }
     }
 }

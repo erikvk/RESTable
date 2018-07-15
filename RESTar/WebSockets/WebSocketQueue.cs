@@ -6,7 +6,8 @@ using RESTar.Requests;
 using RESTar.Resources;
 using RESTar.Results;
 
-namespace RESTar.WebSockets {
+namespace RESTar.WebSockets
+{
     /// <inheritdoc cref="IWebSocket" />
     /// <inheritdoc cref="IWebSocketInternal" />
     /// /// <inheritdoc cref="IDisposable" />
@@ -53,7 +54,7 @@ namespace RESTar.WebSockets {
         public void DirectTo<T>(ITerminalResource<T> t, IEnumerable<Condition<T>> a = null) where T : class, ITerminal =>
             ActionQueue.Enqueue(() => ToQueueFor.DirectTo(t, a));
 
-        public void Disconnect() => ActionQueue.Enqueue(() => ToQueueFor.Disconnect());
+        public void Disconnect(string message) => ActionQueue.Enqueue(() => ToQueueFor.Disconnect(message));
 
         public void Dispose() => ActionQueue.Enqueue(() =>
         {

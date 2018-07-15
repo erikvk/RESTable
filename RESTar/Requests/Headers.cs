@@ -35,7 +35,8 @@ namespace RESTar.Requests
                     Current = new KeyValuePair<string, string>(nameof(Headers.Destination), Headers.Destination);
                     break;
                 case HeadersMembers.Authorization:
-                    Current = new KeyValuePair<string, string>(nameof(Headers.Authorization), Headers.Authorization);
+                    var value = Headers.Authorization == null ? null : "*******";
+                    Current = new KeyValuePair<string, string>(nameof(Headers.Authorization), value);
                     break;
                 case HeadersMembers.Origin:
                     Current = new KeyValuePair<string, string>(nameof(Headers.Origin), Headers.Origin);
@@ -74,6 +75,14 @@ namespace RESTar.Requests
     [JsonConverter(typeof(HeadersConverter))]
     public class Headers : IDictionary<string, string>, IReadOnlyDictionary<string, string>
     {
+        internal static HashSet<string> NonCustomHeaders { get; }
+
+        static Headers() => NonCustomHeaders = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "host", "authorization", "connection", "upgrade", "restar-metadata", "sec-websocket-version", "sec-websocket-key",
+            "sec-websocket-extensions"
+        };
+
         internal string Info
         {
             get => this["RESTar-info"];
@@ -204,23 +213,12 @@ namespace RESTar.Requests
         private void Put(KeyValuePair<string, string> kvp) => this[kvp.Key] = kvp.Value;
         private void Put(string key, string value) => this[key] = value;
 
-        internal IEnumerable<KeyValuePair<string, string>> CustomHeaders => this.Where(pair => IsCustom(pair.Key));
-
-        internal static bool IsCustom(string key)
+        internal IEnumerable<KeyValuePair<string, string>> GetCustom(HashSet<string> whitelist = null)
         {
-            switch (key)
-            {
-                case var _ when key.EqualsNoCase("host"):
-                case var _ when key.EqualsNoCase("authorization"):
-                case var _ when key.EqualsNoCase("connection"):
-                case var _ when key.EqualsNoCase("upgrade"):
-                case var _ when key.EqualsNoCase("restar-metadata"):
-                case var _ when key.EqualsNoCase("sec-websocket-version"):
-                case var _ when key.EqualsNoCase("sec-websocket-key"):
-                case var _ when key.EqualsNoCase("sec-websocket-extensions"): return false;
-                default: return true;
-            }
+            return this.Where(pair => whitelist?.Contains(pair.Key) == true || IsCustom(pair.Key));
         }
+
+        internal static bool IsCustom(string key) => !NonCustomHeaders.Contains(key);
 
         IEnumerable<string> IReadOnlyDictionary<string, string>.Keys => Keys;
         IEnumerable<string> IReadOnlyDictionary<string, string>.Values => Values;

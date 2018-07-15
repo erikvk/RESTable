@@ -116,6 +116,7 @@ namespace RESTar.Requests
         /// <param name="formattedUri">A properly formatted version of the uri, if valid. Otherwise null.</param>
         public bool UriIsValid(string uri, out Results.Error error, out IResource resource, out string formattedUri)
         {
+            if (uri == null) throw new ArgumentNullException(nameof(uri));
             var parameters = new RequestParameters(this, (Method) (-1), uri, null, null);
             formattedUri = null;
             if (parameters.Error != null)
