@@ -145,7 +145,7 @@ namespace RESTar.Meta
             {
                 throw new Exception($"Invalid or unknown excel reduce function '{methodName}' for property '{p.Name}' in type '" +
                                     $"{p.DeclaringType.RESTarTypeName()}'. Must be public instance method with signature 'public " +
-                                    $"string <insert-name-here>()'");
+                                    "string <insert-name-here>()'");
             }
         }
 

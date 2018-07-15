@@ -133,6 +133,12 @@ namespace RESTar.Meta.Internal
                     if (string.IsNullOrWhiteSpace(attribute.Description))
                         throw new InvalidEventDeclarationException(eventType,
                             "Invalid description provided in the 'RESTarEventAttribute' constructor. Cannot be null, empty or whitespace.");
+                    if (eventType.HasAttribute<RESTarAttribute>())
+                        throw new InvalidEventDeclarationException(eventType,
+                            "Event types must not be decorated with the 'RESTar.Resources.RESTarAttribute'");
+                    if (eventType.HasAttribute<RESTarViewAttribute>())
+                        throw new InvalidEventDeclarationException(eventType,
+                            "Event types must not be decorated with the 'RESTar.Resources.RESTarViewAttribute'");
                 }
                 EventController.Add(_eventTypes);
             }

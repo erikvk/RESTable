@@ -6,8 +6,8 @@ namespace RESTar.Admin
     /// <summary>
     /// Holds all events that are registered for this RESTar instance
     /// </summary>
-    [Database, RESTar(Method.GET, Description = description)]
-    public class Event
+    [Database, RESTar(Description = description)]
+    public sealed class Event
     {
         internal const string All = "SELECT t FROM RESTar.Admin.Event t";
         internal const string ByName = All + " WHERE t.Name =?";

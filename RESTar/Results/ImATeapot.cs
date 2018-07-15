@@ -5,8 +5,7 @@ namespace RESTar.Results
 {
     /// <inheritdoc />
     /// <summary>
-    /// Returned when RESTar encounters a situation when it was asked to brew coffee while in 
-    /// teapot mode.
+    /// Returned when RESTar encounters a situation when it was asked to brew coffee while in teapot mode.
     /// </summary>
     internal class ImATeapot : RequestSuccess
     {
@@ -15,7 +14,7 @@ namespace RESTar.Results
             StatusCode = (HttpStatusCode) 418;
             StatusDescription = "I'm a teapot";
             Headers.Info = "Look at what you did... You tried something real hacky, and now RESTar " +
-                           "thinks it's in some kind of... teapot mode? I hope you're very proud of " +
+                           "thinks it's in some kind of... teapot mode? Hope you're very proud of " +
                            "yourself...";
         }
     }

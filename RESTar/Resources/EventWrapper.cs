@@ -6,8 +6,9 @@ using RESTar.Requests;
 
 namespace RESTar.Resources
 {
-    /// <inheritdoc />
-    public abstract class EventWrapper<T> : IEventInternal where T : class
+    /// <inheritdoc cref="EventArgs" />
+    /// <inheritdoc cref="IEventInternal" />
+    public abstract class EventWrapper<T> : EventArgs, IEventInternal where T : class
     {
         object IEventInternal.Payload => Payload;
         string IEventInternal.Name => GetType().RESTarTypeName();
@@ -25,6 +26,7 @@ namespace RESTar.Resources
         /// </summary>
         public ContentType? ContentType { get; }
 
+        /// <inheritdoc />
         /// <summary>
         /// Creates a new wrapped event, with a given object as payload
         /// </summary>

@@ -22,6 +22,7 @@ using RESTar.ProtocolProviders;
 using RESTar.Resources;
 using Starcounter;
 using static RESTar.Method;
+using Event = RESTar.Admin.Event;
 using IResource = RESTar.Meta.IResource;
 using Resource = RESTar.Meta.Resource;
 
@@ -227,6 +228,7 @@ namespace RESTar
         private static void RegisterStaticIndexes()
         {
             DatabaseIndex.Register<Webhook>("RESTar.Admin.Webhook_EventName", nameof(Webhook.EventName));
+            DatabaseIndex.Register<Event>("RESTar.Admin.Event_Name", nameof(Event.Name));
         }
 
         private static void ReadConfig()

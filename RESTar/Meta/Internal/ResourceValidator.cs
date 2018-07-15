@@ -77,6 +77,14 @@ namespace RESTar.Meta.Internal
                     throw new InvalidResourceDeclarationException($"Invalid resource '{type.RESTarTypeName()}'. " +
                                                                   "Inner resources cannot have their own inner resources");
 
+                if (typeof(IEvent).IsAssignableFrom(type))
+                    throw new InvalidResourceDeclarationException(
+                        $"Invalid resource type '{type.RESTarTypeName()}'. Found 'RESTar.Resource.IEvent' implementation. Resource types " +
+                        "cannot be used as events. To create events with resource types as payload, use the 'RESTar.Resources.EventWrapper' class");
+                if (type.HasAttribute<RESTarEventAttribute>())
+                    throw new InvalidResourceDeclarationException(
+                        $"Invalid resource type '{type.RESTarTypeName()}'. Resource types cannot be decorated with the " +
+                        "'RESTarEventAttribute'. To create events with resource types as payload, use the 'RESTar.Resources.EventWrapper' class");
                 if (type.HasAttribute<RESTarViewAttribute>())
                     throw new InvalidResourceDeclarationException(
                         $"Invalid resource type '{type.RESTarTypeName()}'. Resource types cannot be " +

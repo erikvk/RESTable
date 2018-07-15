@@ -179,22 +179,15 @@ namespace RESTar.Resources.Operations
                 case Method.GET:
                     return request =>
                     {
-                        // INFO: This code was used to add a limit of 1000 to all requests that were not explicitly marked 
-                        // as unsafe. During an evaluation period, this functionality is removed.
-                        // if (!request.MetaConditions.Unsafe && request.MetaConditions.Limit == -1)
-                        //     request.MetaConditions.Limit = (Limit) 1000;
                         var entities = TrySelectFilterProcess(request);
                         if (entities == null)
                             return MakeEntities(request, default(IEnumerable<T>));
                         return MakeEntities(request, (dynamic) entities);
                     };
                 case Method.POST:
-                    return request =>
-                    {
-                        if (request.MetaConditions.SafePost != null)
-                            return SafePOST(request);
-                        return new InsertedEntities(request, Insert(request));
-                    };
+                    return request => request.MetaConditions.SafePost == null
+                        ? new InsertedEntities(request, Insert(request))
+                        : SafePOST(request);
                 case Method.PUT:
                     return request =>
                     {
@@ -226,7 +219,7 @@ namespace RESTar.Resources.Operations
 
         #region SafePost
 
-        private static RequestSuccess SafePOST(IRequest<T> request)
+        private static RequestSuccess SafePOST(IEntityRequest<T> request)
         {
             var (innerRequest, toInsert, toUpdate) = GetSafePostTasks(request);
             var (updatedCount, insertedCount) = (0, 0);
@@ -240,7 +233,8 @@ namespace RESTar.Resources.Operations
             return new SafePostedEntities(request, updatedCount, insertedCount);
         }
 
-        private static (IEntityRequest<T> InnerRequest, JArray ToInsert, IList<(JObject json, T source)> ToUpdate) GetSafePostTasks(IRequest<T> request)
+        private static (IEntityRequest<T> InnerRequest, JArray ToInsert, IList<(JObject json, T source)> ToUpdate) GetSafePostTasks(
+            IEntityRequest<T> request)
         {
             var innerRequest = (IEntityRequest<T>) request.Context.CreateRequest<T>();
             var toInsert = new JArray();
@@ -264,7 +258,9 @@ namespace RESTar.Resources.Operations
                         case 1:
                             toUpdate.Add((entity, results[0]));
                             break;
-                        default: throw new AmbiguousMatch();
+                        case var multiple:
+                            throw new SafePostAmbiguousMatch(multiple,
+                                request.CachedProtocolProvider.ProtocolProvider.MakeRelativeUri(innerRequest.UriComponents));
                     }
                 }
                 return (innerRequest, toInsert, toUpdate);

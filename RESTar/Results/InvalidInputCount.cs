@@ -9,7 +9,7 @@ namespace RESTar.Results
     internal class InvalidInputCount : BadRequest
     {
         internal InvalidInputCount() : base(ErrorCodes.DataSourceFormat,
-            $"Invalid input entity count. Expected a single entity as input for this operation, " +
+            "Invalid input entity count. Expected a single entity as input for this operation, " +
             "but found additional.") { }
     }
 }

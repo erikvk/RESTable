@@ -25,12 +25,16 @@ namespace RESTar.Internal
         internal static async Task Raise(IEventInternal @event)
         {
             if (!RESTarConfig.Initialized) return;
-            if (Db.SQL<Event>(Event.ByName, @event.Name).FirstOrDefault() == null)
+            if (!(Db.SQL<Event>(Event.ByName, @event.Name).FirstOrDefault() is Event eventType))
                 throw new UnknownEventTypeException(@event);
-
             var hookTask = WebhookController.Post(@event);
-            Resources.Event.RaiseHandlers((dynamic) @event);
+            RaiseEventHandlers(eventType, (dynamic) @event);
             await hookTask;
+        }
+
+        private static void RaiseEventHandlers<T>(object sender, T @event) where T : EventArgs, IEvent
+        {
+            Event<T>.OnRaise(sender, @event);
         }
     }
 }

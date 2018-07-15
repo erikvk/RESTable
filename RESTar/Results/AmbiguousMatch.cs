@@ -8,14 +8,10 @@ namespace RESTar.Results
     /// </summary>
     internal class SafePostAmbiguousMatch : BadRequest
     {
-        internal SafePostAmbiguousMatch(string condition) : base(ErrorCodes.AmbiguousMatch,
-            $"As part of the SafePost operation, RESTar ran select with '{condition}', expecting either no " +
-            $"or a single entity as result. Found multiple. SafePost can only be used with a unique key" +
-            "" +
-            "for this operation, but found multiple. " +
-            "Manipulating multiple entities is either unsupported or unsafe. Specify additional " +
-            "conditions or use the 'unsafe' meta-condition")
-        { }
+        internal SafePostAmbiguousMatch(int count, string uri) : base(ErrorCodes.AmbiguousMatch,
+            $"As part of the SafePost operation, RESTar tried to select entities using '{uri}', expecting either no " +
+            $"or a single entity as result. Found {count} entities matching this URI. SafePost, like PUT, can only be " +
+            "used on entity resources where zero or exacly one entity is selected by the input conditions.") { }
     }
 
     /// <inheritdoc />

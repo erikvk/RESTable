@@ -450,7 +450,7 @@ namespace RESTar.Resources
                 throw new InvalidExternalResourceProviderException("Provided AttributeType is not an attribute type");
             if (!AttributeType.IsSubclassOf(typeof(EntityResourceProviderAttribute)))
                 throw new InvalidExternalResourceProviderException($"Provided AttributeType '{AttributeType.RESTarTypeName()}' " +
-                                                                   $"does not inherit from RESTar.ResourceProviderAttribute");
+                                                                   "does not inherit from RESTar.ResourceProviderAttribute");
         }
 
         private static View<TResource>[] GetViews<TResource>() where TResource : class, TBase => typeof(TResource)
