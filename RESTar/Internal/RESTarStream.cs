@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Threading.Tasks;
+using RESTar.Requests;
 
 namespace RESTar.Internal
 {
@@ -15,6 +16,8 @@ namespace RESTar.Internal
         private bool Swapped;
 
         private Stream Stream { get; set; }
+
+        internal ContentType ContentType { get; set; }
 
         internal bool CanClose { private get; set; }
 
@@ -50,13 +53,18 @@ namespace RESTar.Internal
             }
         }
 
-        internal RESTarStream(byte[] buffer)
+        internal RESTarStream(ContentType contentType, byte[] buffer)
         {
             if (buffer == null) throw new ArgumentNullException(nameof(buffer));
+            ContentType = contentType;
             Stream = new MemoryStream(buffer, true);
         }
 
-        internal RESTarStream(Stream existing = null) => ResolveStream(existing);
+        internal RESTarStream(ContentType contentType, Stream stream = null)
+        {
+            ContentType = contentType;
+            ResolveStream(stream);
+        }
 
         private void ResolveStream(Stream existing)
         {
@@ -136,6 +144,12 @@ namespace RESTar.Internal
         {
             get => Stream.Position;
             set => Stream.Position = value;
+        }
+
+        public void Deconstruct(out RESTarStream stream, out ContentType contentType)
+        {
+            stream = this;
+            contentType = ContentType;
         }
 
         /// <inheritdoc />

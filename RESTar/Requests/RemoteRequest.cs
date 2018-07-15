@@ -43,8 +43,7 @@ namespace RESTar.Requests
 
         public void SetBody(object content, ContentType? contentType = null) => SetBody(new Body
         (
-            stream: this.GetBodyStream(content, contentType),
-            contentType: Headers.ContentType ?? CachedProtocolProvider.DefaultInputProvider.ContentType,
+            stream: content.ToBodyStream(contentType, this),
             protocolProvider: CachedProtocolProvider
         ));
 
@@ -103,9 +102,11 @@ namespace RESTar.Requests
                 var stream = default(RESTarStream);
                 if (response.Content != null)
                 {
-                    var streamController = new RESTarStream();
-                    await response.Content.CopyToAsync(streamController);   
-                    stream = streamController.Rewind();
+                    if (!(responseHeaders.ContentType is ContentType contentType))
+                        return new ExternalServiceNotRESTar(URI).AsResultOf(this);
+                    var _stream = new RESTarStream(contentType);
+                    await response.Content.CopyToAsync(_stream);
+                    stream = _stream.Rewind();
                 }
 
                 IResult getResult()

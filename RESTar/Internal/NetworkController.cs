@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Linq;
+﻿using System.Linq;
 using RESTar.Linq;
 using RESTar.NetworkProviders;
 using static RESTar.Admin.Settings;
@@ -12,7 +11,7 @@ namespace RESTar.Internal
         private static INetworkProvider[] Providers { get; set; }
         internal static void RemoveNetworkBindings() => Providers?.ForEach(provider => provider?.RemoveBindings(Methods, _Uri, _Port));
 
-        internal static void AddNetworkBindings(IEnumerable<INetworkProvider> providers)
+        internal static void AddNetworkBindings(params INetworkProvider[] providers)
         {
             Providers = providers.ToArray();
             Providers.ForEach(provider => provider.AddBindings(Methods, _Uri, _Port));

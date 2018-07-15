@@ -1,13 +1,28 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Newtonsoft.Json;
 
 namespace RESTar.Requests
 {
+    internal class ContentTypesConverter : JsonConverter<ContentTypes>
+    {
+        public override void WriteJson(JsonWriter writer, ContentTypes value, JsonSerializer s) => writer.WriteValue(value.ToString());
+
+        public override ContentTypes ReadJson(JsonReader reader, Type o, ContentTypes e, bool h, JsonSerializer s)
+        {
+            var @string = reader.ReadAsString();
+            if (string.IsNullOrWhiteSpace(@string)) return default;
+            return ContentType.ParseMany(@string);
+        }
+    }
+
+
     /// <inheritdoc />
     /// <summary>
     /// A collection of ContentType instances
     /// </summary>
+    [JsonConverter(typeof(ContentTypesConverter))]
     public class ContentTypes : List<ContentType>
     {
         /// <inheritdoc />
@@ -43,9 +58,22 @@ namespace RESTar.Requests
         public static implicit operator ContentTypes(string headerValue) => ContentType.ParseMany(headerValue);
     }
 
+    internal class ContentTypeConverter : JsonConverter<ContentType>
+    {
+        public override void WriteJson(JsonWriter writer, ContentType value, JsonSerializer s) => writer.WriteValue(value.ToString());
+
+        public override ContentType ReadJson(JsonReader reader, Type o, ContentType e, bool h, JsonSerializer s)
+        {
+            var @string = reader.ReadAsString();
+            if (string.IsNullOrWhiteSpace(@string)) return default;
+            return ContentType.ParseMany(@string).FirstOrDefault();
+        }
+    }
+
     /// <summary>
     /// Describes a content type
     /// </summary>
+    [JsonConverter(typeof(ContentTypeConverter))]
     public struct ContentType
     {
         /// <summary>
@@ -72,6 +100,8 @@ namespace RESTar.Requests
         /// Is this content type defined as */* ?
         /// </summary>
         public bool AnyType => MediaType == "*/*";
+
+        internal bool IsDefault => this == default;
 
         /// <summary>
         /// application/json
@@ -186,6 +216,13 @@ namespace RESTar.Requests
         /// Converts a header value string to a ContenType
         /// </summary>
         public static implicit operator System.Net.Mime.ContentType(ContentType mimeType) => new System.Net.Mime.ContentType(mimeType.ToString());
+
+        /// <summary>
+        /// Converts a header value string to a ContenType
+        /// </summary>
+        public static implicit operator System.Net.Http.Headers.MediaTypeHeaderValue(ContentType mimeType) =>
+            new System.Net.Http.Headers.MediaTypeHeaderValue(mimeType.ToString());
+
 
         /// <summary>
         /// Compares two content types for equality

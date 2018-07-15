@@ -535,7 +535,11 @@ namespace RESTar
                     }
                     if (!content.Body.CanSeek)
                     {
-                        content.Body = new RESTarStream(content.Body);
+                        content.Body = new RESTarStream
+                        (
+                            contentType: content.Headers.ContentType.GetValueOrDefault(),
+                            stream: content.Body
+                        );
                         break;
                     }
                     if (content.Body.Length > 16_000_000)

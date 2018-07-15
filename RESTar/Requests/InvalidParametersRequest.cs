@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using RESTar.ContentTypeProviders;
 using RESTar.Internal;
 using RESTar.Internal.Logging;
 using RESTar.Meta;
@@ -53,14 +52,8 @@ namespace RESTar.Requests
 
         public Method Method { get; set; }
         public MetaConditions MetaConditions { get; }
-
         private readonly Body body;
-
-        public Body GetBody()
-        {
-            return body;
-        }
-
+        public Body GetBody() => body;
         public Headers ResponseHeaders { get; }
         public ICollection<string> Cookies { get; }
 
@@ -75,13 +68,17 @@ namespace RESTar.Requests
             Resource = parameters.iresource;
             MetaConditions = null;
             Method = parameters.Method;
+            var contentType = Headers.ContentType
+                              ?? CachedProtocolProvider?.DefaultInputProvider.ContentType
+                              ?? ContentType.JSON;
             if (parameters.BodyBytes?.Any() == true)
                 body = new Body
                 (
-                    stream: new RESTarStream(parameters.BodyBytes),
-                    contentType: Headers.ContentType
-                                 ?? CachedProtocolProvider?.DefaultInputProvider.ContentType
-                                 ?? Providers.Json.ContentType,
+                    stream: new RESTarStream
+                    (
+                        contentType: contentType,
+                        buffer: parameters.BodyBytes
+                    ),
                     protocolProvider: parameters.CachedProtocolProvider
                 );
             ResponseHeaders = null;

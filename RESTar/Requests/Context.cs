@@ -174,6 +174,11 @@ namespace RESTar.Requests
         public static Context Root => new InternalContext();
 
         /// <summary>
+        /// The context of internal webhook requests
+        /// </summary>
+        internal static Context Webhook(Client client) => new InternalContext(client);
+
+        /// <summary>
         /// The context of a remote request to some external RESTar service
         /// </summary>
         /// <param name="serviceRoot">The URI of the remote RESTar service, for example https://my-service.com:8282/rest</param>

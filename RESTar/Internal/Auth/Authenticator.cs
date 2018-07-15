@@ -26,6 +26,8 @@ namespace RESTar.Internal.Auth
             else throw new FailedResourceAuthentication(authResults.Reason);
         }
 
+        internal static AccessRights GetAccessRights(string apiKeyHash) => ApiKeys.TryGetValue(apiKeyHash, out var rights) ? rights : null;
+
         internal static AccessRights GetAccessRights(ref string uri, Headers headers)
         {
             string authorizationHeader;

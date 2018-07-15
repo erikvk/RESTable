@@ -93,6 +93,7 @@
   <ItemGroup>
     <Compile Include="Admin\Protocol.cs" />
     <Compile Include="Admin\PropertyCache.cs" />
+    <Compile Include="Admin\Webhook.cs" />
     <Compile Include="Admin\WebSocket.cs" />
     <Compile Include="Admin\Utilities.cs" />
     <Compile Include="Admin\Console.cs" />
@@ -105,8 +106,14 @@
     <Compile Include="ContentTypeProviders\XMLWriter.cs" />
     <Compile Include="Dynamic\Resource.cs" />
     <Compile Include="Meta\IDynamicMemberValueProvider.cs" />
+    <Compile Include="Admin\Event.cs" />
+    <Compile Include="Resources\Event.cs" />
+    <Compile Include="Resources\EventWrapper.cs" />
+    <Compile Include="Meta\Internal\IEventInternal.cs" />
+    <Compile Include="Resources\InvalidEventDeclarationException.cs" />
     <Compile Include="Resources\InvalidResourceControllerException.cs" />
     <Compile Include="Resources\IProceduralEntityResourceProvider.cs" />
+    <Compile Include="Internal\EventController.cs" />
     <Compile Include="Resources\MethodNotImplementedAttribute.cs" />
     <Compile Include="NotInitializedException.cs" />
     <Compile Include="Resources\ResourceController.cs" />
@@ -119,6 +126,9 @@
     <Compile Include="Resources\IDynamicTerminal.cs" />
     <Compile Include="Resources\InvalidBinaryDeclarationException.cs" />
     <Compile Include="Resources\IProceduralEntityResource.cs" />
+    <Compile Include="Internal\WebhookController.cs" />
+    <Compile Include="Resources\RESTarEventAttribute.cs" />
+    <Compile Include="Resources\UnknownEventTypeException.cs" />
     <Compile Include="Results\BadGateway.cs" />
     <Compile Include="Results\Change.cs" />
     <Compile Include="Results\IResult.cs" />

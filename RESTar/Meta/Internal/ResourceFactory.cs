@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using RESTar.Internal;
 using RESTar.Internal.Sc;
 using RESTar.Linq;
 using RESTar.Resources;
@@ -83,7 +84,8 @@ namespace RESTar.Meta.Internal
             var allTypes = typeof(object).GetSubclasses().ToList();
             var resourceTypes = allTypes.Where(t => t.HasAttribute<RESTarAttribute>(out var a) && !(a is RESTarProceduralAttribute)).ToArray();
             var viewTypes = allTypes.Where(t => t.HasAttribute<RESTarViewAttribute>()).ToArray();
-            if (resourceTypes.Union(viewTypes).ContainsDuplicates(t => t.RESTarTypeName()?.ToLower() ?? "unknown", out var dupe))
+            var eventTypes = allTypes.Where(t => t.HasAttribute<RESTarEventAttribute>() || typeof(IEventInternal).IsAssignableFrom(t)).ToArray();
+            if (resourceTypes.Union(viewTypes).Union(eventTypes).ContainsDuplicates(t => t.RESTarTypeName()?.ToLower() ?? "unknown", out var dupe))
                 throw new InvalidResourceDeclarationException("Types used by RESTar must have unique case insensitive names. Found " +
                                                               $"multiple types with case insensitive name '{dupe}'.");
 
@@ -117,8 +119,27 @@ namespace RESTar.Meta.Internal
                 }
             }
 
+            void ValidateEventTypes(ICollection<Type> _eventTypes)
+            {
+                foreach (var eventType in _eventTypes)
+                {
+                    if (!typeof(IEventInternal).IsAssignableFrom(eventType))
+                        throw new InvalidEventDeclarationException(eventType,
+                            "Event types must inherit from either 'RESTar.Resources.Event' or 'RESTar.Resources.EventWrapper<T>'");
+                    if (!eventType.HasAttribute<RESTarEventAttribute>(out var attribute))
+                        throw new InvalidEventDeclarationException(eventType,
+                            "Event type declarations must be decorated with the 'RESTar.Resources.RESTarEventAttribute' and " +
+                            "be provided with an event description.");
+                    if (string.IsNullOrWhiteSpace(attribute.Description))
+                        throw new InvalidEventDeclarationException(eventType,
+                            "Invalid description provided in the 'RESTarEventAttribute' constructor. Cannot be null, empty or whitespace.");
+                }
+                EventController.Add(_eventTypes);
+            }
+
             (regularTypes, wrapperTypes, terminalTypes, binaryTypes) = ResourceValidator.Validate(resourceTypes);
             ValidateViewTypes(viewTypes);
+            ValidateEventTypes(eventTypes);
         }
 
         private static void ValidateInnerResources() => RESTarConfig.Resources

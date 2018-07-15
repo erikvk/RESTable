@@ -11,8 +11,8 @@ namespace RESTar.Internal
 {
     internal static class ContentTypeController
     {
-        internal static IDictionary<string, IContentTypeProvider> InputContentTypeProviders { get; set; }
-        internal static IDictionary<string, IContentTypeProvider> OutputContentTypeProviders { get; set; }
+        internal static IDictionary<string, IContentTypeProvider> InputContentTypeProviders { get; private set; }
+        internal static IDictionary<string, IContentTypeProvider> OutputContentTypeProviders { get; private set; }
 
         private static void ValidateContentTypeProvider(IContentTypeProvider provider)
         {
@@ -22,23 +22,42 @@ namespace RESTar.Internal
                 throw new InvalidContentTypeProviderException($"Provider '{provider.GetType().RESTarTypeName()}' cannot read or write");
         }
 
-        internal static IContentTypeProvider ResolveInputContentTypeProvider(IRequestInternal request, ContentType? providedContentType)
+        internal static ContentType ResolveInputContentType(IRequestInternal request = null, ContentType? contentType = null)
         {
-            providedContentType = providedContentType ?? request.Headers.ContentType ?? request.CachedProtocolProvider.DefaultInputProvider.ContentType;
-            if (!request.CachedProtocolProvider.InputMimeBindings.TryGetValue(providedContentType.Value.MediaType, out var contentTypeProvider))
-                throw new UnsupportedContent(providedContentType.ToString());
+            IContentTypeProvider provider;
+            if (request != null)
+            {
+                provider = ResolveInputContentTypeProvider(request, contentType);
+                request.Headers.ContentType = provider.ContentType;
+                return provider.ContentType;
+            }
+            if (contentType.HasValue)
+            {
+                if (InputContentTypeProviders.TryGetValue(contentType.Value.ToString(), out provider))
+                    return provider.ContentType;
+                throw new UnsupportedContent(contentType.ToString(), false);
+            }
+            return default;
+        }
+
+        internal static IContentTypeProvider ResolveInputContentTypeProvider(IRequestInternal request, ContentType? contentTypeOverride)
+        {
+            var contentType = contentTypeOverride ?? request.Headers.ContentType ?? request.CachedProtocolProvider.DefaultInputProvider.ContentType;
+            if (!request.CachedProtocolProvider.InputMimeBindings.TryGetValue(contentType.MediaType, out var contentTypeProvider))
+                throw new UnsupportedContent(contentType.ToString());
             return contentTypeProvider;
         }
 
-        internal static IContentTypeProvider ResolveOutputContentTypeProvider(IRequestInternal request, ContentType? providedContentType)
+        internal static IContentTypeProvider ResolveOutputContentTypeProvider(IRequestInternal request, ContentType? contentTypeOverride)
         {
             var protocolProvider = request.CachedProtocolProvider;
-            if (providedContentType.HasValue)
-                providedContentType = providedContentType.Value;
+            var contentType = contentTypeOverride;
+            if (contentType.HasValue)
+                contentType = contentType.Value;
             else if (!(request.Headers.Accept?.Count > 0))
-                providedContentType = protocolProvider.DefaultOutputProvider.ContentType;
+                contentType = protocolProvider.DefaultOutputProvider.ContentType;
             IContentTypeProvider acceptProvider = null;
-            if (!providedContentType.HasValue)
+            if (!contentType.HasValue)
             {
                 var containedWildcard = false;
                 var foundProvider = request.Headers.Accept.Any(a =>
@@ -54,8 +73,8 @@ namespace RESTar.Internal
                     else
                         throw new NotAcceptable(request.Headers.Accept.ToString());
             }
-            else if (!protocolProvider.OutputMimeBindings.TryGetValue(providedContentType.Value.MediaType, out acceptProvider))
-                throw new NotAcceptable(providedContentType.Value.ToString());
+            else if (!protocolProvider.OutputMimeBindings.TryGetValue(contentType.Value.MediaType, out acceptProvider))
+                throw new NotAcceptable(contentType.Value.ToString());
             return acceptProvider;
         }
 

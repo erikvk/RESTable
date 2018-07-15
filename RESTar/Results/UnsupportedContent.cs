@@ -17,8 +17,8 @@ namespace RESTar.Results
         }
 
         /// <inheritdoc />
-        internal UnsupportedContent(string headerValue) : base(ErrorCodes.UnsupportedContent,
-            $"An unsupported media type, '{headerValue}', was specified in the Content-Type header.")
+        internal UnsupportedContent(string headerValue, bool fromHeader = true) : base(ErrorCodes.UnsupportedContent,
+            $"An unsupported media type, '{headerValue}', was specified {(fromHeader ? "in the Content-Type request header" : "for this operation")}.")
         {
             StatusCode = HttpStatusCode.UnsupportedMediaType;
             StatusDescription = "Unsupported media type";

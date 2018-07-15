@@ -65,7 +65,7 @@ namespace RESTar.Internal
         VirtualResourceMissingInterfaceImplementation = 120,
         InvalidResourceMember = 121,
         NoAvalailableDynamicTable = 122,
-        InvalidVirtualResourceDeclaration = 123,
+        InvalidEventDeclaration = 123,
         InvalidResourceDeclaration = 124,
         InvalidResourceViewDeclaration = 125,
         InvalidTerminalDeclaration = 126,
@@ -115,6 +115,7 @@ namespace RESTar.Internal
         NoResponseFromRemoteService = 504,
         ExternalServiceNotRESTar = 505,
         WebSocketMessageTooLarge = 506,
-        UnreadableContentStream = 507
+        UnreadableContentStream = 507,
+        UnknownEventType = 508
     }
 }

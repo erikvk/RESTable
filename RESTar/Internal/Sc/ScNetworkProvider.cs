@@ -112,12 +112,14 @@ namespace RESTar.Internal.Sc
                 else
                 {
                     var stream = new MemoryStream();
-                    result.Body.CopyTo(stream);
+                    using (result.Body)
+                        result.Body.CopyTo(stream);
                     if (stream.Position > 0)
                     {
                         stream.Seek(0, SeekOrigin.Begin);
                         response.StreamedBody = stream;
                     }
+                    else stream.Dispose();
                 }
             }
             result.Headers.ForEach(header => response.Headers[header.Key] = header.Value);

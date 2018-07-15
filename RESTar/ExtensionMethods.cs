@@ -32,6 +32,7 @@ using Starcounter;
 using static System.Globalization.DateTimeStyles;
 using static System.Reflection.BindingFlags;
 using static System.StringComparison;
+using static RESTar.Internal.ContentTypeController;
 using static RESTar.Internal.ErrorCodes;
 using static RESTar.Requests.Operators;
 using static Starcounter.DbHelper;
@@ -664,26 +665,29 @@ namespace RESTar
         [Pure]
         internal static ISerializedResult Finalize(this ISerializedResult result, IContentTypeProvider acceptProvider)
         {
-            if (result.Body?.CanRead == true)
-            {
-                if (result.Body.CanSeek)
-                {
-                    if (result.Body.Length == 0)
-                    {
-                        result.Body.Dispose();
-                        result.Body = null;
-                    }
-                    else result.Body.Seek(0, SeekOrigin.Begin);
-                }
-            }
-            else
-            {
-                result.Body?.Dispose();
-                result.Body = null;
-            }
+            result.Body = result.Body.Finalize();
             if (result.Body != null && result.Headers.ContentType == null)
                 result.Headers.ContentType = acceptProvider.ContentType;
+            if (result.Body is RESTarStream rs && rs.ContentType.IsDefault)
+                rs.ContentType = acceptProvider.ContentType;
             return result;
+        }
+
+        [Pure]
+        internal static Stream Finalize(this Stream stream)
+        {
+            switch (stream?.CanRead)
+            {
+                case true when !stream.CanSeek: return stream;
+                case null:
+                case false:
+                case true when stream.Length == 0:
+                    stream?.Dispose();
+                    return null;
+                default:
+                    stream.Seek(0, SeekOrigin.Begin);
+                    return stream;
+            }
         }
 
         internal static IUriComponents MakeNextPageLink<T>(this IEntities<T> entities, int count) where T : class
@@ -794,32 +798,62 @@ namespace RESTar
 
         #region Conversion
 
-        internal static RESTarStream GetBodyStream<T>(this IRequestInternal request, T content, ContentType? contentType = null) where T : class
+        /// <summary>
+        /// Generates a content stream from a CLR object. If no content type is provided, uses the content type of the
+        /// request. If neither content type nor request are present, JSON is used if serialization is needed. If no
+        /// content type is provided with binary data (byte array or stream) an exception is thrown.
+        /// </summary>
+        internal static RESTarStream ToBodyStream<T>(this T content, ContentType? contentType = null, IRequestInternal request = null)
+            where T : class
         {
+            ContentType _contentType;
             switch (content)
             {
-                case Stream _stream: return new RESTarStream(_stream);
-                case byte[] bytes: return new RESTarStream(bytes);
-                case string str: return new RESTarStream(str.ToBytes());
+                case Stream _stream:
+                    _contentType = ResolveInputContentType(request, contentType);
+                    if (_contentType.IsDefault) throw new ArgumentException("Missing content type for binary data", nameof(contentType));
+                    return new RESTarStream(_contentType, _stream);
+                case byte[] bytes:
+                    _contentType = ResolveInputContentType(request, contentType);
+                    if (_contentType.IsDefault) throw new ArgumentException("Missing content type for binary data", nameof(contentType));
+                    return new RESTarStream(_contentType, bytes);
+                case string str:
+                    _contentType = ResolveInputContentType(request, contentType);
+                    if (_contentType.IsDefault) _contentType = "text/plain";
+                    return new RESTarStream(_contentType, str.ToBytes());
                 case null: throw new ArgumentNullException(nameof(content));
             }
-            var contentTypeProvider = ContentTypeController.ResolveInputContentTypeProvider(request, contentType);
-            request.Headers.ContentType = contentTypeProvider.ContentType;
-            var stream = new RESTarStream();
+
+            IContentTypeProvider provider;
+            switch (request)
+            {
+                case null when contentType.HasValue && InputContentTypeProviders.TryGetValue(contentType.ToString(), out provider):
+                    break;
+                case null:
+                    provider = Providers.Json;
+                    break;
+                case var _request:
+                    provider = ResolveInputContentTypeProvider(_request, contentType);
+                    _request.Headers.ContentType = provider.ContentType;
+                    break;
+            }
+            _contentType = provider.ContentType;
+
+            var stream = new RESTarStream(_contentType);
             switch (content)
             {
                 case IDictionary<string, object> _:
                 case JObject _:
-                    contentTypeProvider.SerializeCollection(new[] {content}, stream);
+                    provider.SerializeCollection(new[] {content}, stream);
                     break;
                 case IEnumerable<object> ie:
-                    contentTypeProvider.SerializeCollection(ie, stream);
+                    provider.SerializeCollection(ie, stream);
                     break;
                 case IEnumerable ie:
-                    contentTypeProvider.SerializeCollection(ie.Cast<object>(), stream);
+                    provider.SerializeCollection(ie.Cast<object>(), stream);
                     break;
                 default:
-                    contentTypeProvider.SerializeCollection(new[] {content}, stream);
+                    provider.SerializeCollection(new[] {content}, stream);
                     break;
             }
             return stream.Rewind();

@@ -18,7 +18,6 @@ using RESTar.Internal.Sc;
 using RESTar.Linq;
 using RESTar.Meta;
 using RESTar.Meta.Internal;
-using RESTar.NetworkProviders;
 using RESTar.ProtocolProviders;
 using RESTar.Resources;
 using Starcounter;
@@ -104,14 +103,14 @@ namespace RESTar
                 RequireApiKey = requireApiKey;
                 AllowAllOrigins = allowAllOrigins;
                 ConfigFilePath = configFilePath;
-                var networkProviders = new INetworkProvider[] {new ScNetworkProvider()};
-                NetworkController.AddNetworkBindings(networkProviders);
+                NetworkController.AddNetworkBindings(new ScNetworkProvider());
                 Initialized = true;
                 UpdateConfiguration();
                 DatabaseIndex.Init();
                 DbOutputFormat.Init();
                 ResourceFactory.BindControllers();
                 ResourceFactory.FinalCheck();
+                RegisterStaticIndexes();
             }
             catch
             {
@@ -223,6 +222,11 @@ namespace RESTar
                 throw new ArgumentException($"URI must differ from application name ({appName})", nameof(appName));
             if (uri[0] != '/') uri = $"/{uri}";
             uri = uri.TrimEnd('/');
+        }
+
+        private static void RegisterStaticIndexes()
+        {
+            DatabaseIndex.Register<Webhook>("RESTar.Admin.Webhook_EventName", nameof(Webhook.EventName));
         }
 
         private static void ReadConfig()

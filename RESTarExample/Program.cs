@@ -33,6 +33,51 @@ namespace RESTarExample
         }
     }
 
+    public class Notification : Event
+    {
+        public string Title { get; }
+        public string Message { get; }
+
+        public Notification(string title, string message)
+        {
+            Title = title;
+            Message = message;
+        }
+    }
+
+    public class Notification2 : Event
+    {
+        public string Title { get; }
+        public string Message { get; }
+    }
+
+    [Database]
+    public class MyNotification
+    {
+        public string Title { get; }
+        public string Message { get; }
+
+        public MyNotification(string title, string message)
+        {
+            Title = title;
+            Message = message;
+            new NotificationEvent(this);
+        }
+    }
+
+    public class MyRandomTrigger : Event
+    {
+        public MyRandomTrigger() => Raise();
+    }
+
+    public class NotificationEvent : EventWrapper<MyNotification>
+    {
+        public NotificationEvent(MyNotification payload) : base(payload)
+        {
+            Raise();
+        }
+    }
+
     [Database, RESTar]
     public class Person
     {

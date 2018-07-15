@@ -27,7 +27,7 @@ namespace RESTar.Results
         /// <inheritdoc />
         public override Stream Body
         {
-            get => _body ?? (IsSerializing ? _body = new RESTarStream() : null);
+            get => _body ?? (IsSerializing ? _body = new RESTarStream(default) : null);
             set
             {
                 if (ReferenceEquals(_body, value)) return;

@@ -113,7 +113,7 @@ namespace RESTar.Results
         /// <inheritdoc />
         public Stream Body
         {
-            get => _body ?? (IsSerializing ? _body = new RESTarStream() : null);
+            get => _body ?? (IsSerializing ? _body = new RESTarStream(default) : null);
             set
             {
                 if (_body is RESTarStream rsc)

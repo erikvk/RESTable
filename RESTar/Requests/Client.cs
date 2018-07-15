@@ -88,11 +88,35 @@ namespace RESTar.Requests
         /// <summary>
         /// The internal location, has root access to all resources
         /// </summary>
-        public static Client Internal => new Client(OriginType.Internal, $"localhost:{Admin.Settings._Port}",
-            new IPAddress(new byte[] {127, 0, 0, 1}), null, null, false) {AccessRights = AccessRights.Root};
+        public static Client Internal => new Client
+        (
+            origin: OriginType.Internal,
+            host: $"localhost:{Admin.Settings._Port}",
+            clientIP: new IPAddress(new byte[] {127, 0, 0, 1}),
+            proxyIP: null,
+            userAgent: null,
+            https: false
+        ) {AccessRights = AccessRights.Root};
 
-        internal static Client Remote => new Client((OriginType) (-1), $"localhost:{Admin.Settings._Port}",
-            new IPAddress(new byte[] {127, 0, 0, 1}), null, null, false);
+        internal static Client Remote => new Client
+        (
+            origin: (OriginType) (-1),
+            host: $"localhost:{Admin.Settings._Port}",
+            clientIP: new IPAddress(new byte[] {127, 0, 0, 1}),
+            proxyIP: null,
+            userAgent: null,
+            https: false
+        );
+
+        internal static Client Webhook => new Client
+        (
+            origin: OriginType.Internal,
+            host: $"localhost:{Admin.Settings._Port}",
+            clientIP: new IPAddress(new byte[] {127, 0, 0, 1}),
+            proxyIP: null,
+            userAgent: null,
+            https: false
+        );
 
         /// <summary>
         /// Returns true if and only if this client is considered authenticated. This is a necessary precondition for 
@@ -114,6 +138,19 @@ namespace RESTar.Requests
                 error = new NotAuthorized();
                 if (headers.Metadata == "full")
                     error.Headers.Metadata = error.Metadata;
+                return false;
+            }
+            return true;
+        }
+
+        internal bool TryAuthenticate(string apiKeyHash, out Forbidden error)
+        {
+            error = null;
+            AccessRights = Authenticator.GetAccessRights(apiKeyHash);
+            if (!RESTarConfig.RequireApiKey) AccessRights = AccessRights.Root;
+            if (AccessRights == null)
+            {
+                error = new NotAuthorized();
                 return false;
             }
             return true;
