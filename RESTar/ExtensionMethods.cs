@@ -665,11 +665,15 @@ namespace RESTar
         [Pure]
         internal static ISerializedResult Finalize(this ISerializedResult result, IContentTypeProvider acceptProvider)
         {
-            result.Body = result.Body.Finalize();
-            if (result.Body != null && result.Headers.ContentType == null)
+            switch (result.Body = result.Body.Finalize())
+            {
+                case null: return result;
+                case RESTarStream rs when rs.ContentType.IsDefault:
+                    rs.ContentType = acceptProvider.ContentType;
+                    break;
+            }
+            if (!result.Headers.ContentType.HasValue)
                 result.Headers.ContentType = acceptProvider.ContentType;
-            if (result.Body is RESTarStream rs && rs.ContentType.IsDefault)
-                rs.ContentType = acceptProvider.ContentType;
             return result;
         }
 

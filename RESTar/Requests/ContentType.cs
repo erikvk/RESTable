@@ -175,7 +175,7 @@ namespace RESTar.Requests
             var mimeTypePart = parts[0].Trim();
             MediaType = mimeTypePart;
             var data = default(Dictionary<string, string>);
-            foreach (var pair in parts.Skip(1).Select(i => i.TSplit('=')))
+            foreach (var pair in parts.Skip(1).Select(i => i.TSplit('=', true)))
             {
                 data = data ?? new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
                 data.TPut(pair);

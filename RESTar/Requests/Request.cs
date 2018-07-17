@@ -2,7 +2,6 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
 using System.Net;
 using System.Threading;
 using RESTar.Admin;
@@ -151,35 +150,25 @@ namespace RESTar.Requests
         public IResult Evaluate()
         {
             if (!IsValid) return Error.AsResultOf(this);
-            if (!MethodCheck(out var _failedAuth))
-                return new MethodNotAllowed(Method, Resource, _failedAuth).AsResultOf(this);
+            if (!Context.MethodIsAllowed(Method, Resource, out var error)) return error.AsResultOf(this);
             if (IsWebSocketUpgrade)
+            {
                 try
                 {
                     if (!CachedProtocolProvider.ProtocolProvider.IsCompliant(this, out var reason))
                         return new NotCompliantWithProtocol(CachedProtocolProvider.ProtocolProvider, reason).AsResultOf(this);
                 }
                 catch (NotImplementedException) { }
+            }
             if (IsEvaluating) throw new InfiniteLoop();
             var result = RunEvaluation();
             result.Headers.Elapsed = TimeElapsed.TotalMilliseconds.ToString(CultureInfo.InvariantCulture);
             if (Headers.Metadata == "full" && result.Metadata is string metadata)
                 result.Headers.Metadata = metadata;
             result.Headers.Version = RESTarConfig.Version;
-            if (result is InfiniteLoop loop && !Context.IsBottomIfStack)
+            if (result is InfiniteLoop loop && !Context.IsBottomOfStack)
                 throw loop;
             return result;
-        }
-
-        private bool MethodCheck(out bool failedAuth)
-        {
-            if (Method < GET || Method > HEAD)
-                throw new ArgumentException($"Invalid method value {Method} for request");
-            failedAuth = false;
-            if (Resource?.AvailableMethods.Contains(Method) != true) return false;
-            if (Context.Client.AccessRights[Resource]?.Contains(Method) == true) return true;
-            failedAuth = true;
-            return false;
         }
 
         private IResult RunEvaluation()
@@ -207,10 +196,8 @@ namespace RESTar.Requests
                             this.RunResourceAuthentication(entity);
                         if (MetaConditions.SafePost != null)
                         {
-                            if (!entity.CanSelect)
-                                throw new SafePostNotSupported("(no selector implemented)");
-                            if (!entity.CanUpdate)
-                                throw new SafePostNotSupported("(no updater implemented)");
+                            if (!entity.CanSelect) throw new SafePostNotSupported("(no selector implemented)");
+                            if (!entity.CanUpdate) throw new SafePostNotSupported("(no updater implemented)");
                         }
                         var result = EntityOperations<T>.GetEvaluator(Method).Invoke(this);
                         result.Cookies = Cookies;

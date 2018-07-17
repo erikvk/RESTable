@@ -338,13 +338,12 @@ namespace RESTar
                         var accessRights = AccessRights.ToAccessRights(accessRightList, key);
                         foreach (var resource in Resources.Where(r => r.GETAvailableToAll))
                         {
-                            if (!accessRights.TryGetValue(resource, out var methods))
-                                accessRights.Add(resource, new[] {GET, REPORT, HEAD});
-                            else
+                            if (accessRights.TryGetValue(resource, out var methods))
                                 accessRights[resource] = methods
                                     .Union(new[] {GET, REPORT, HEAD})
                                     .OrderBy(i => i, MethodComparer.Instance)
                                     .ToArray();
+                            else accessRights[resource] = new[] {GET, REPORT, HEAD};
                         }
                         if (Authenticator.ApiKeys.TryGetValue(key, out var existing))
                         {

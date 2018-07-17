@@ -175,7 +175,7 @@ namespace RESTar.ContentTypeProviders
                 {
                     case JsonToken.StartObject:
                         yield return Serializer.Deserialize<T>(jsonReader);
-                        yield break;
+                        break;
                     case JsonToken.StartArray:
                         jsonReader.Read();
                         while (jsonReader.TokenType != JsonToken.EndArray)
@@ -183,7 +183,7 @@ namespace RESTar.ContentTypeProviders
                             yield return Serializer.Deserialize<T>(jsonReader);
                             jsonReader.Read();
                         }
-                        yield break;
+                        break;
                     case var other: throw new JsonReaderException($"Invalid JSON data. Expected array or object. Found {other}");
                 }
             }

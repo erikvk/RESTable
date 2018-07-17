@@ -5,12 +5,14 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using RESTar.ContentTypeProviders.NativeJsonProtocol;
+using RESTar.Internal.Auth;
+using RESTar.Linq;
 using RESTar.Meta.Internal;
 using RESTar.Requests;
 using RESTar.Resources;
-using RESTar.Resources.Operations;
 using RESTar.Results;
 using Starcounter;
+using static RESTar.Method;
 
 namespace RESTar.Admin
 {
@@ -18,7 +20,7 @@ namespace RESTar.Admin
     /// Webhooks are used to generate POST request callbacks to external URIs when events are triggered.
     /// </summary>
     [RESTar, Database]
-    public class Webhook : IInserter<Webhook>, IUpdater<Webhook>
+    public class Webhook
     {
         internal const string All = "SELECT t FROM RESTar.Admin.Webhook t";
         internal const string ByEventName = All + " WHERE t.EventName =?";
@@ -74,6 +76,11 @@ namespace RESTar.Admin
         public bool DestinationIsLocal { get; private set; }
 
         /// <summary>
+        /// The API key to use in requests to local destination resources
+        /// </summary>
+        [RESTarMember(ignore: true)] public string LocalDestinationAPIKey { get; private set; }
+
+        /// <summary>
         /// The underlying storage for headers of this WebHook request
         /// </summary>
         [RESTarMember(ignore: true)] public string HeadersString { get; private set; }
@@ -84,12 +91,22 @@ namespace RESTar.Admin
         [RESTarMember(replaceOnUpdate: true), JsonConverter(typeof(HeadersConverter), "*")]
         public Headers Headers
         {
-            get
+            get => HeadersString == null ? null : JsonConvert.DeserializeObject<Headers>(HeadersString);
+            set
             {
-                if (HeadersString == null) return null;
-                return JsonConvert.DeserializeObject<Headers>(HeadersString);
+                switch (value.Authorization)
+                {
+                    case null:
+                        value.Authorization = LocalDestinationAPIKey = null;
+                        break;
+                    case Authenticator.AuthHeaderMask: break;
+                    case var localAuthHeader when DestinationIsLocal:
+                        LocalDestinationAPIKey = Authenticator.GetAccessRights(localAuthHeader)?.ApiKey;
+                        value.Authorization = Authenticator.AuthHeaderMask;
+                        break;
+                }
+                HeadersString = JsonConvert.SerializeObject(value);
             }
-            set => HeadersString = JsonConvert.SerializeObject(value);
         }
 
         /// <summary>
@@ -146,6 +163,8 @@ namespace RESTar.Admin
                     return $"Unknown event '{Event}'. To list available events, use the RESTar.Event resource";
                 if (!CustomRequestIsValid)
                     return CustomRequestError;
+                if (!IsAuthorized)
+                    return AuthorizationError;
                 return null;
             }
         }
@@ -164,6 +183,16 @@ namespace RESTar.Admin
         /// Is the event valid?
         /// </summary>
         [RESTarMember(ignore: true)] public bool EventIsValid { get; private set; }
+
+        /// <summary>
+        /// Is this webhook properly authorized (as far as we can know)?
+        /// </summary>
+        [RESTarMember(ignore: true)] public bool IsAuthorized => AuthorizationError == null;
+
+        /// <summary>
+        /// The error (if any) regarding this webhook's authorization
+        /// </summary>
+        [RESTarMember(ignore: true)] public string AuthorizationError { get; private set; }
 
         /// <summary>
         /// Is the custom request valid?
@@ -190,14 +219,23 @@ namespace RESTar.Admin
             }
         }
 
-        public int Insert(IRequest<Webhook> request)
+        private IRequest GetLocalPostRequest(out Results.Error error)
         {
-            throw new NotImplementedException();
-        }
-
-        public int Update(IRequest<Webhook> request)
-        {
-            throw new NotImplementedException();
+            var client = Client.Webhook;
+            if (!client.TryAuthenticate(Headers.Authorization, out var forbidden))
+            {
+                error = forbidden;
+                return null;
+            }
+            var context = Context.Webhook(client);
+            if (!context.UriIsValid(DestinationURL, out error, out var resource, out _))
+                return null;
+            if (!context.MethodIsAllowed(POST, resource, out var methodNotAllowed))
+            {
+                error = methodNotAllowed;
+                return null;
+            }
+            return Context.Webhook(client).CreateRequest(DestinationURL, POST, headers: Headers);
         }
 
         private HttpRequestMessage GetRequestMessage(Stream body, ContentType? contentType, string customRequestInfo = null)
@@ -215,6 +253,17 @@ namespace RESTar.Admin
             return message;
         }
 
+        private static int Check(IRequest<Webhook> request)
+        {
+            var count = 0;
+            Db.TransactAsync(() => request.GetInputEntities().ForEach(webhook =>
+            {
+                if (webhook.DestinationIsLocal)
+                    count += 1;
+            }));
+            return count;
+        }
+
         internal async Task Post<T>(IEventInternal<T> @event) where T : class
         {
             if (!IsActive) return;
@@ -227,8 +276,13 @@ namespace RESTar.Admin
                 (body, contentType) = @event.Payload.ToBodyStream(@event.NativeContentType ?? contentType);
             else
             {
-                using (var request = CustomRequest.CreateRequest(Client.Webhook))
+                using (var request = CustomRequest.CreateRequest(out var error))
                 {
+                    if (error != null)
+                    {
+                        await WebhookLog.Log(this, true, ForCustomRequest(error.LogMessage));
+                        return;
+                    }
                     var result = request.Evaluate().Serialize(contentType);
                     switch (result)
                     {

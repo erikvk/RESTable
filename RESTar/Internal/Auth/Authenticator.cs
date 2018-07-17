@@ -14,7 +14,7 @@ namespace RESTar.Internal.Auth
     {
         internal static IDictionary<string, AccessRights> ApiKeys { get; private set; }
         internal static void NewState() => ApiKeys = new Dictionary<string, AccessRights>();
-        private const string AuthHeaderMask = "*******";
+        internal const string AuthHeaderMask = "*******";
 
         internal static void RunResourceAuthentication<T>(this IRequest<T> request, IEntityResource<T> resource) where T : class
         {
@@ -26,12 +26,21 @@ namespace RESTar.Internal.Auth
             else throw new FailedResourceAuthentication(authResults.Reason);
         }
 
-        internal static AccessRights GetAccessRights(string apiKeyHash) => ApiKeys.TryGetValue(apiKeyHash, out var rights) ? rights : null;
+        internal static AccessRights GetAccessRights(string apiKeyHash)
+        {
+            return apiKeyHash != null && ApiKeys.TryGetValue(apiKeyHash, out var rights) ? rights : null;
+        }
+
+        internal static AccessRights GetAccessRights(Headers headers)
+        {
+            string s = null;
+            return GetAccessRights(ref s, headers);
+        }
 
         internal static AccessRights GetAccessRights(ref string uri, Headers headers)
         {
             string authorizationHeader;
-            if (Regex.Match(uri, RegEx.UriKey) is Match keyMatch && keyMatch.Success)
+            if (uri != null && Regex.Match(uri, RegEx.UriKey) is Match keyMatch && keyMatch.Success)
             {
                 var keyGroup = keyMatch.Groups["key"];
                 uri = uri.Remove(keyGroup.Index, keyGroup.Length);

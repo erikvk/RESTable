@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json.Linq;
@@ -10,11 +11,22 @@ using RESTar.Results;
 
 namespace RESTar.Resources.Operations
 {
+    internal static class EntityOperationExtensions
+    {
+        internal static IEnumerable<T> Validate<T>(this IEnumerable<T> e) where T : class => e?.Select(entity =>
+        {
+            (entity as IValidatable)?.Validate();
+            return entity;
+        });
+
+        internal static IEnumerable<T> InvokePostInsert<T>(this IEnumerable<T> e) where T : class => Event<T>.OnPostInsert(e);
+        internal static IEnumerable<T> InvokePostUpdate<T>(this IEnumerable<T> e) where T : class => Event<T>.OnPostUpdate(e);
+        internal static IEnumerable<T> InvokePreDelete<T>(this IEnumerable<T> e) where T : class => Event<T>.OnPreDelete(e);
+    }
+
     internal static class EntityOperations<T> where T : class
     {
-        #region Select
-
-        internal static IEnumerable<T> SelectFilter(IRequest<T> request) => request.Target
+        private static IEnumerable<T> SelectFilter(IRequest<T> request) => request.Target
             .Select(request)?
             .Filter(request.MetaConditions.Distinct)
             .Filter(request.MetaConditions.Search)
@@ -22,7 +34,7 @@ namespace RESTar.Resources.Operations
             .Filter(request.MetaConditions.Offset)
             .Filter(request.MetaConditions.Limit);
 
-        internal static IEnumerable<object> SelectFilterProcess(IRequest<T> request) => request.Target
+        private static IEnumerable<object> SelectFilterProcess(IRequest<T> request) => request.Target
             .Select(request)?
             .Process(request.MetaConditions.Processors)
             .Filter(request.MetaConditions.Distinct)
@@ -99,23 +111,15 @@ namespace RESTar.Resources.Operations
             }
         }
 
-        #endregion
-
         private static int Insert(IEntityRequest<T> request, bool limit = false)
         {
             try
             {
-                var inserter = request.GetSelector() ?? (() => request.GetBody().Deserialize<T>());
-                if (limit)
-                {
-                    var _inserter = inserter;
-                    inserter = () => _inserter().InputLimit();
-                }
-                request.EntitiesProducer = () => inserter()?.Select(entity =>
-                {
-                    (entity as IValidatable)?.Validate();
-                    return entity;
-                }) ?? throw new MissingDataSource(request);
+                request.EntitiesProducer = () =>
+                    (request.GetSelector() ?? (() => request.GetBody().Deserialize<T>()))()?
+                    .InputLimit(limit)?
+                    .Validate()?
+                    .InvokePostInsert() ?? throw new MissingDataSource(request);
                 return request.EntityResource.Insert(request);
             }
             catch (Exception e)
@@ -128,18 +132,35 @@ namespace RESTar.Resources.Operations
         {
             try
             {
-                var sourceSelector = request.GetSelector() ?? (() => TrySelectFilter(request) ?? new List<T>());
-                if (!request.MetaConditions.Unsafe)
-                {
-                    var selector = sourceSelector;
-                    sourceSelector = () => selector()?.UnsafeLimit();
-                }
-                var updater = request.GetUpdater() ?? (_source => request.GetBody().PopulateTo(_source));
-                request.EntitiesProducer = () => updater(sourceSelector())?.Select(entity =>
-                {
-                    (entity as IValidatable)?.Validate();
-                    return entity;
-                }) ?? throw new MissingDataSource(request);
+                request.EntitiesProducer = () =>
+                    (request.GetUpdater() ?? (e => request.GetBody().PopulateTo(e)))(
+                        (request.GetSelector() ?? (() => TrySelectFilter(request) ?? new T[0]))
+                        .Invoke()?
+                        .UnsafeLimit(!request.MetaConditions.Unsafe))?
+                    .Validate()?
+                    .InvokePostUpdate() ?? throw new MissingDataSource(request);
+                return request.EntityResource.Update(request);
+            }
+            catch (Exception e)
+            {
+                throw new AbortedOperation(request, ErrorCodes.AbortedUpdate, e);
+            }
+        }
+
+        private static int SafePostUpdate(IEntityRequest<T> request, ICollection<(JObject json, T source)> items)
+        {
+            try
+            {
+                request.EntitiesProducer = () => items.Select(item =>
+                    {
+                        if (item.json == null || item.source == null)
+                            return item.source;
+                        using (var sr = item.json.CreateReader())
+                            JsonProvider.Serializer.Populate(sr, item.source);
+                        return item.source;
+                    })
+                    .Validate()
+                    .InvokePostUpdate();
                 return request.EntityResource.Update(request);
             }
             catch (Exception e)
@@ -152,13 +173,9 @@ namespace RESTar.Resources.Operations
         {
             try
             {
-                var sourceSelector = request.GetSelector() ?? (() => TrySelectFilter(request) ?? new List<T>());
-                if (!request.MetaConditions.Unsafe)
-                {
-                    var selector = sourceSelector;
-                    sourceSelector = () => selector()?.UnsafeLimit();
-                }
-                request.EntitiesProducer = () => sourceSelector() ?? new T[0];
+                request.EntitiesProducer = () => (request.GetSelector() ?? (() => TrySelectFilter(request) ?? new T[0]))()?
+                                                 .UnsafeLimit(!request.MetaConditions.Unsafe)?
+                                                 .InvokePreDelete() ?? new T[0];
                 return request.EntityResource.Delete(request);
             }
             catch (Exception e)
@@ -167,10 +184,7 @@ namespace RESTar.Resources.Operations
             }
         }
 
-        private static Entities<TEntityType> MakeEntities<TEntityType>(IRequest request, IEnumerable<TEntityType> content) where TEntityType : class
-        {
-            return new Entities<TEntityType>(request, content);
-        }
+        #region Operation resolvers
 
         internal static Func<IEntityRequest<T>, RequestSuccess> GetEvaluator(Method method)
         {
@@ -217,27 +231,42 @@ namespace RESTar.Resources.Operations
             }
         }
 
+        /// <summary>
+        /// Needed since some <see cref="Entities{T}"/> instances are created using dynamic binding, which requires
+        /// a separate static method in a non-generic class.
+        /// </summary>
+        private static Entities<T1> MakeEntities<T1>(IRequest r, IEnumerable<T1> e) where T1 : class => new Entities<T1>(r, e);
+
+        #endregion
+
         #region SafePost
 
         private static RequestSuccess SafePOST(IEntityRequest<T> request)
         {
-            var (innerRequest, toInsert, toUpdate) = GetSafePostTasks(request);
-            var (updatedCount, insertedCount) = (0, 0);
-            if (toUpdate.Any())
-                updatedCount = UpdateSafePost(innerRequest, toUpdate);
-            if (toInsert.Any())
+            try
             {
-                innerRequest.Selector = () => toInsert.Select(item => item.ToObject<T>());
-                insertedCount = Insert(innerRequest);
+                var innerRequest = (IEntityRequest<T>) request.Context.CreateRequest<T>();
+                var (toInsert, toUpdate) = GetSafePostTasks(request, innerRequest);
+                var (updatedCount, insertedCount) = (0, 0);
+                if (toUpdate.Any())
+                    updatedCount = SafePostUpdate(innerRequest, toUpdate);
+                if (toInsert.Any())
+                {
+                    innerRequest.Selector = () => toInsert.Select(item => item.ToObject<T>(JsonProvider.Serializer));
+                    insertedCount = Insert(innerRequest);
+                }
+                return new SafePostedEntities(request, updatedCount, insertedCount);
             }
-            return new SafePostedEntities(request, updatedCount, insertedCount);
+            catch (Exception e)
+            {
+                throw new AbortedOperation(request, ErrorCodes.AbortedInsert, e, e.Message);
+            }
         }
 
-        private static (IEntityRequest<T> InnerRequest, JArray ToInsert, IList<(JObject json, T source)> ToUpdate) GetSafePostTasks(
-            IEntityRequest<T> request)
+        private static (List<JObject> ToInsert, IList<(JObject json, T source)> ToUpdate) GetSafePostTasks(IEntityRequest<T> request,
+            IEntityRequest<T> innerRequest)
         {
-            var innerRequest = (IEntityRequest<T>) request.Context.CreateRequest<T>();
-            var toInsert = new JArray();
+            var toInsert = new List<JObject>();
             var toUpdate = new List<(JObject json, T source)>();
             try
             {
@@ -259,35 +288,18 @@ namespace RESTar.Resources.Operations
                             toUpdate.Add((entity, results[0]));
                             break;
                         case var multiple:
-                            throw new SafePostAmbiguousMatch(multiple,
-                                request.CachedProtocolProvider.ProtocolProvider.MakeRelativeUri(innerRequest.UriComponents));
+                            throw new SafePostAmbiguousMatch
+                            (
+                                count: multiple,
+                                uri: request.CachedProtocolProvider.ProtocolProvider.MakeRelativeUri(innerRequest.UriComponents)
+                            );
                     }
                 }
-                return (innerRequest, toInsert, toUpdate);
+                return (toInsert, toUpdate);
             }
             catch (Exception e)
             {
                 throw new AbortedOperation(request, ErrorCodes.AbortedInsert, e, e.Message);
-            }
-        }
-
-        private static int UpdateSafePost(IEntityRequest<T> request, ICollection<(JObject json, T source)> items)
-        {
-            try
-            {
-                request.EntitiesProducer = () => items.Select(item =>
-                {
-                    if (item.json != null && item.source != null)
-                        using (var sr = item.json.CreateReader())
-                            JsonProvider.Serializer.Populate(sr, item.source);
-                    (item.source as IValidatable)?.Validate();
-                    return item.source;
-                });
-                return request.EntityResource.Update(request);
-            }
-            catch (Exception e)
-            {
-                throw new AbortedOperation(request, ErrorCodes.AbortedUpdate, e);
             }
         }
 

@@ -232,8 +232,9 @@ namespace RESTar.Linq
             return (trues, falses);
         }
 
-        internal static IEnumerable<T> UnsafeLimit<T>(this IEnumerable<T> source)
+        internal static IEnumerable<T> UnsafeLimit<T>(this IEnumerable<T> source, bool limit = true)
         {
+            if (!limit) return source;
             if (source == null) return null;
 
             IEnumerable<T> apply()
@@ -250,8 +251,9 @@ namespace RESTar.Linq
             return apply();
         }
 
-        internal static IEnumerable<T> InputLimit<T>(this IEnumerable<T> source)
+        internal static IEnumerable<T> InputLimit<T>(this IEnumerable<T> source, bool limit = true)
         {
+            if (!limit) return source;
             if (source == null) return null;
 
             IEnumerable<T> apply()

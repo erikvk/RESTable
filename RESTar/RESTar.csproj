@@ -114,7 +114,7 @@
     <Compile Include="Dynamic\Resource.cs" />
     <Compile Include="Meta\IDynamicMemberValueProvider.cs" />
     <Compile Include="Admin\Event.cs" />
-    <Compile Include="Resources\EventWrapper.cs" />
+    <Compile Include="Resources\Event.cs" />
     <Compile Include="Meta\Internal\IEventInternal.cs" />
     <Compile Include="Resources\InvalidEventDeclarationException.cs" />
     <Compile Include="Resources\InvalidResourceControllerException.cs" />

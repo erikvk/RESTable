@@ -1,21 +1,18 @@
 ﻿using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using RESTar.Linq;
 using RESTar.Meta;
 
 namespace RESTar.Internal.Auth
 {
-    internal class AccessRights : Dictionary<IResource, Method[]>
+    internal class AccessRights : ReadOnlyDictionary<IResource, Method[]>
     {
         static AccessRights() => Root = new AccessRights(null);
         internal static AccessRights Root { get; }
         internal static void ReloadRoot() => RESTarConfig.Resources.ForEach(r => Root[r] = RESTarConfig.Methods);
         internal string ApiKey { get; }
-
-        private AccessRights(string apiKey)
-        {
-            ApiKey = apiKey;
-        }
+        private AccessRights(string apiKey) : base(new Dictionary<IResource, Method[]>()) => ApiKey = apiKey;
 
         internal static AccessRights ToAccessRights(IEnumerable<AccessRight> accessRights, string apiKeyHash)
         {
@@ -31,7 +28,9 @@ namespace RESTar.Internal.Auth
         internal new Method[] this[IResource resource]
         {
             get => TryGetValue(resource, out var r) ? r : null;
-            set => base[resource] = value;
+            set => Dictionary[resource] = value;
         }
+
+        internal void Clear() => Dictionary.Clear();
     }
 }

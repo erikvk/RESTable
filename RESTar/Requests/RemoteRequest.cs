@@ -92,6 +92,7 @@ namespace RESTar.Requests
                 }
                 var responseHeaders = new Headers();
                 response.Headers.ForEach(header => responseHeaders[header.Key] = header.Value.FirstOrDefault());
+                response.Content.Headers.ForEach(header => responseHeaders[header.Key] = header.Value.FirstOrDefault());
                 var metadata = responseHeaders.Metadata?.Split(';');
                 if (metadata?.Length != 3)
                     return new ExternalServiceNotRESTar(URI).AsResultOf(this);

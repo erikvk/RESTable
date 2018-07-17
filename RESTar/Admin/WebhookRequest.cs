@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Text;
+﻿using System.Text;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using RESTar.ContentTypeProviders.NativeJsonProtocol;
@@ -24,6 +23,11 @@ namespace RESTar.Admin
         /// The URI of the WebHook request. Must point to a local resource.
         /// </summary>
         public string URI { get; set; }
+
+        /// <summary>
+        /// The API key to use in the request
+        /// </summary>
+        [RESTarMember(ignore: true)] public string APIKey { get; internal set; }
 
         /// <summary>
         /// The underlying storage for headers of this WebHook request
@@ -68,13 +72,24 @@ namespace RESTar.Admin
         /// </summary>
         public bool BreakOnNoContent { get; set; }
 
-        internal IRequest CreateRequest(Client client) => Context.Webhook(client).CreateRequest
-        (
-            uri: URI,
-            method: Method,
-            body: GetBody(),
-            headers: Headers
-        );
+        internal IRequest CreateRequest(out Results.Error error)
+        {
+            var client = Client.Webhook;
+            if (!client.TryAuthenticate(APIKey, out var forbidden))
+            {
+                error = forbidden;
+                return null;
+            }
+            var context = Context.Webhook(client);
+            if (!context.UriIsValid(URI, out error, out var resource, out _))
+                return null;
+            if (!context.MethodIsAllowed(Method, resource, out var methodNotAllowed))
+            {
+                error = methodNotAllowed;
+                return null;
+            }
+            return Context.Webhook(client).CreateRequest(URI, Method, GetBody(), Headers);
+        }
 
         private byte[] GetBody() => HasBody ? BodyBinary.ToArray() : new byte[0];
         private bool HasBody => !BodyBinary.IsNull && BodyBinary.Length > 0;

@@ -1,9 +1,11 @@
 ﻿using System;
+using System.Linq;
 using RESTar.Internal;
 using RESTar.Meta;
 using RESTar.Results;
 using RESTar.WebSockets;
 using Starcounter;
+using static RESTar.Method;
 using IResource = RESTar.Meta.IResource;
 using WebSocket = RESTar.WebSockets.WebSocket;
 
@@ -20,7 +22,7 @@ namespace RESTar.Requests
         private const int MaximumStackDepth = 500;
         private WebSocket webSocket;
         private int StackDepth;
-        internal bool IsBottomIfStack => StackDepth < 1;
+        internal bool IsBottomOfStack => StackDepth < 1;
 
         internal void IncreaseDepth()
         {
@@ -79,7 +81,7 @@ namespace RESTar.Requests
         /// <param name="protocolId">An optional protocol ID, defining the protocol to use for the request. If the 
         /// protocol ID is null, the default protocol will be used.</param>
         /// <param name="viewName">An optional view name to use when selecting entities from the resource</param>
-        public virtual IRequest<T> CreateRequest<T>(Method method = Method.GET, string protocolId = null, string viewName = null) where T : class
+        public virtual IRequest<T> CreateRequest<T>(Method method = GET, string protocolId = null, string viewName = null) where T : class
         {
             var resource = Resource<T>.SafeGet ?? throw new UnknownResource(typeof(T).RESTarTypeName());
             var parameters = new RequestParameters(this, method, resource, protocolId, viewName);
@@ -93,7 +95,7 @@ namespace RESTar.Requests
         /// <param name="method">The method to perform</param>
         /// <param name="body">The body of the request</param>
         /// <param name="headers">The headers of the request</param>
-        public virtual IRequest CreateRequest(string uri, Method method = Method.GET, byte[] body = null, Headers headers = null)
+        public virtual IRequest CreateRequest(string uri, Method method = GET, byte[] body = null, Headers headers = null)
         {
             if (uri == null) throw new ArgumentNullException(nameof(uri));
             if (IsWebSocketUpgrade)
@@ -134,6 +136,32 @@ namespace RESTar.Requests
                 return true;
             }
             error = request.Evaluate() as Results.Error;
+            return false;
+        }
+
+        /// <summary>
+        /// Returns true if and only if the current context can be used to make a request with the given method,
+        /// to the given resource.
+        /// </summary>
+        /// <param name="method">The method the check access for</param>
+        /// <param name="resource">The resource to check access to</param>
+        /// <param name="error">An object describing the error, if the method is not allowed</param>
+        /// <returns></returns>
+        public bool MethodIsAllowed(Method method, IResource resource, out MethodNotAllowed error)
+        {
+            if (method < GET || method > HEAD)
+                throw new ArgumentException($"Invalid method value {method} for request");
+            if (resource?.AvailableMethods.Contains(method) != true)
+            {
+                error = new MethodNotAllowed(method, resource, false);
+                return false;
+            }
+            if (Client.AccessRights[resource]?.Contains(method) == true)
+            {
+                error = null;
+                return true;
+            }
+            error = new MethodNotAllowed(method, resource, true);
             return false;
         }
 

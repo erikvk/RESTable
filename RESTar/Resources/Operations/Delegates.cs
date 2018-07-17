@@ -126,4 +126,10 @@ namespace RESTar.Resources.Operations
     /// Selects a stream and content type for a binary resource
     /// </summary>
     internal delegate (Stream stream, ContentType contentType) BinarySelector<T>(IRequest<T> request) where T : class;
+
+    /// <summary>
+    /// Defines an operation that processes an <see cref="IEnumerable{T}"/> and returns a new
+    /// updated enumeration.
+    /// </summary>
+    public delegate IEnumerable<T> EntityProcessor<T>(IEnumerable<T> entities);
 }
