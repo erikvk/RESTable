@@ -15,13 +15,7 @@ namespace RESTar.Requests
     [JsonConverter(typeof(HeadersConverter<Headers>))]
     public class Headers : IHeaders, IHeadersInternal
     {
-        internal static HashSet<string> NonCustomHeaders { get; }
-
-        static Headers() => NonCustomHeaders = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-        {
-            "host", "authorization", "connection", "upgrade", "restar-metadata", "sec-websocket-version", "sec-websocket-key",
-            "sec-websocket-extensions"
-        };
+        #region Response headers
 
         internal string Info
         {
@@ -65,6 +59,8 @@ namespace RESTar.Requests
             set => this["RESTar-version"] = value;
         }
 
+        #endregion
+
         /// <inheritdoc />
         public ContentTypes Accept { get; set; }
 
@@ -100,69 +96,42 @@ namespace RESTar.Requests
         /// </summary>
         public string this[string key]
         {
-            get
-            {
-                switch (key)
-                {
-                    case var _ when key.EqualsNoCase(nameof(Accept)): return Accept?.ToString();
-                    case var _ when key.EqualsNoCase("Content-Type"): return ContentType?.ToString();
-                    case var _ when key.EqualsNoCase(nameof(Source)): return Source;
-                    case var _ when key.EqualsNoCase(nameof(Destination)): return Destination;
-                    case var _ when key.EqualsNoCase(nameof(Authorization)): return Authorization;
-                    case var _ when key.EqualsNoCase(nameof(Origin)): return Origin;
-                    case var _ when _dict.TryGetValue(key, out var value): return value;
-                    default: return default;
-                }
-            }
-            set
-            {
-                switch (key)
-                {
-                    case var _ when key.EqualsNoCase(nameof(Accept)):
-                        if (!string.IsNullOrWhiteSpace(value))
-                            Accept = Requests.ContentType.ParseMany(value);
-                        break;
-                    case var _ when key.EqualsNoCase("Content-Type"):
-                        if (!string.IsNullOrWhiteSpace(value))
-                            ContentType = Requests.ContentType.Parse(value);
-                        break;
-                    case var _ when key.EqualsNoCase(nameof(Source)):
-                        Source = value;
-                        break;
-                    case var _ when key.EqualsNoCase(nameof(Destination)):
-                        Destination = value;
-                        break;
-                    case var _ when key.EqualsNoCase(nameof(Authorization)):
-                        Authorization = value;
-                        break;
-                    case var _ when key.EqualsNoCase(nameof(Origin)):
-                        Origin = value;
-                        break;
-                    default:
-                        _dict[key] = value;
-                        break;
-                }
-            }
+            get => this._Get(key);
+            set => this._Set(key, value);
         }
 
-        private Dictionary<string, string> _dict { get; }
-        private void Put(KeyValuePair<string, string> kvp) => this[kvp.Key] = kvp.Value;
-        private void Put(string key, string value) => this[key] = value;
-
-        IEnumerable<KeyValuePair<string, string>> IHeadersInternal.GetCustom(HashSet<string> whitelist) => GetCustom(whitelist);
-
-        internal IEnumerable<KeyValuePair<string, string>> GetCustom(HashSet<string> whitelist = null)
-        {
-            return this.Where(pair => whitelist?.Contains(pair.Key) == true || IsCustom(pair.Key));
-        }
-
-        internal static bool IsCustom(string key) => !NonCustomHeaders.Contains(key);
+        private IDictionary<string, string> _dict { get; }
 
         /// <inheritdoc />
         public Headers() => _dict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
         /// <inheritdoc />
-        public Headers(Dictionary<string, string> dictToUse) : this() => dictToUse?.ForEach(Put);
+        public Headers(Dictionary<string, string> dictToUse) : this() => dictToUse?.ForEach(pair => this[pair.Key] = pair.Value);
+
+        /// <inheritdoc />
+        internal Headers(IHeadersInternal other) : this()
+        {
+            Accept = other.Accept;
+            ContentType = other.ContentType;
+            Source = other.Source;
+            Destination = other.Destination;
+            Authorization = other.Authorization;
+            Origin = other.Origin;
+            other.GetCustomHeaders().ForEach(pair => SetCustomHeader(pair.Key, pair.Value));
+        }
+
+        #region IHeadersInternal
+
+        private void SetCustomHeader(string key, string value) => _dict[key] = value;
+        bool IHeadersInternal.TryGetCustomHeader(string key, out string value) => _dict.TryGetValue(key, out value);
+        void IHeadersInternal.SetCustomHeader(string key, string value) => SetCustomHeader(key, value);
+        bool IHeadersInternal.ContainsCustomHeader(KeyValuePair<string, string> item) => _dict.Contains(item);
+        bool IHeadersInternal.ContainsCustomHeaderName(string name) => _dict.ContainsKey(name);
+        bool IHeadersInternal.RemoveCustomHeader(string name) => _dict.Remove(name);
+        bool IHeadersInternal.RemoveCustomHeader(KeyValuePair<string, string> header) => _dict.Remove(header);
+        IEnumerable<KeyValuePair<string, string>> IHeadersInternal.GetCustomHeaders() => _dict;
+
+        #endregion
 
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
@@ -170,7 +139,7 @@ namespace RESTar.Requests
         public IEnumerator<KeyValuePair<string, string>> GetEnumerator() => new HeadersEnumerator(this, _dict.GetEnumerator());
 
         /// <inheritdoc />
-        void ICollection<KeyValuePair<string, string>>.Add(KeyValuePair<string, string> item) => Put(item);
+        void ICollection<KeyValuePair<string, string>>.Add(KeyValuePair<string, string> pair) => this._Set(pair.Key, pair.Value);
 
         /// <inheritdoc />
         public void Clear()
@@ -185,25 +154,13 @@ namespace RESTar.Requests
         }
 
         /// <inheritdoc />
-        public bool Contains(KeyValuePair<string, string> item)
-        {
-            switch (item.Key)
-            {
-                case var _ when item.Key.EqualsNoCase(nameof(Accept)): return Accept?.ToString().EqualsNoCase(item.Value) == true;
-                case var _ when item.Key.EqualsNoCase("Content-Type"): return ContentType?.ToString().EqualsNoCase(item.Value) == true;
-                case var _ when item.Key.EqualsNoCase(nameof(Source)): return Source.EqualsNoCase(item.Value);
-                case var _ when item.Key.EqualsNoCase(nameof(Destination)): return Destination.EqualsNoCase(item.Value);
-                case var _ when item.Key.EqualsNoCase(nameof(Authorization)): return Authorization.EqualsNoCase(item.Value);
-                case var _ when item.Key.EqualsNoCase(nameof(Origin)): return Origin.EqualsNoCase(item.Value);
-                default: return _dict.Contains(item);
-            }
-        }
+        public bool Contains(KeyValuePair<string, string> item) => this._Contains(item);
 
         /// <inheritdoc />
-        public void CopyTo(KeyValuePair<string, string>[] array, int arrayIndex) => ((IDictionary<string, string>) _dict).CopyTo(array, arrayIndex);
+        public void CopyTo(KeyValuePair<string, string>[] array, int arrayIndex) => this._CopyTo(array, arrayIndex);
 
         /// <inheritdoc />
-        public bool Remove(KeyValuePair<string, string> item) => Remove(item.Key);
+        public bool Remove(KeyValuePair<string, string> item) => this._Remove(item);
 
         /// <inheritdoc cref="IDictionary{TKey,TValue}" />
         // ReSharper disable once UseCollectionCountProperty
@@ -214,81 +171,21 @@ namespace RESTar.Requests
         public bool IsReadOnly => false;
 
         /// <inheritdoc cref="IDictionary{TKey,TValue}" />
-        public bool ContainsKey(string key)
-        {
-            switch (key)
-            {
-                case var _ when key.EqualsNoCase(nameof(Accept)): return Accept != null;
-                case var _ when key.EqualsNoCase("Content-Type"): return ContentType != null;
-                case var _ when key.EqualsNoCase(nameof(Source)): return Source != null;
-                case var _ when key.EqualsNoCase(nameof(Destination)): return Destination != null;
-                case var _ when key.EqualsNoCase(nameof(Authorization)): return Authorization != null;
-                case var _ when key.EqualsNoCase(nameof(Origin)): return Origin != null;
-                default: return _dict.ContainsKey(key);
-            }
-        }
+        public bool ContainsKey(string key) => this._ContainsKey(key);
 
         /// <inheritdoc />
-        public void Add(string key, string value) => Put(key, value);
+        public void Add(string key, string value) => this._Set(key, value);
 
         /// <inheritdoc />
-        public bool Remove(string key)
-        {
-            switch (key)
-            {
-                case var _ when key.EqualsNoCase(nameof(Accept)):
-                    Accept = null;
-                    return true;
-                case var _ when key.EqualsNoCase("Content-Type"):
-                    ContentType = null;
-                    return true;
-                case var _ when key.EqualsNoCase(nameof(Source)):
-                    Source = null;
-                    return true;
-                case var _ when key.EqualsNoCase(nameof(Destination)):
-                    Destination = null;
-                    return true;
-                case var _ when key.EqualsNoCase(nameof(Authorization)):
-                    Authorization = null;
-                    return true;
-                case var _ when key.EqualsNoCase(nameof(Origin)):
-                    Origin = null;
-                    return true;
-                default: return _dict.Remove(key);
-            }
-        }
+        public bool Remove(string key) => this._Remove(key);
 
         /// <inheritdoc cref="IDictionary{TKey,TValue}" />
-        public bool TryGetValue(string key, out string value)
-        {
-            switch (key)
-            {
-                case var _ when key.EqualsNoCase(nameof(Accept)):
-                    value = Accept?.ToString();
-                    return value != null;
-                case var _ when key.EqualsNoCase("Content-Type"):
-                    value = ContentType?.ToString();
-                    return value != null;
-                case var _ when key.EqualsNoCase(nameof(Source)):
-                    value = Source;
-                    return value != null;
-                case var _ when key.EqualsNoCase(nameof(Destination)):
-                    value = Destination;
-                    return value != null;
-                case var _ when key.EqualsNoCase(nameof(Authorization)):
-                    value = Authorization;
-                    return value != null;
-                case var _ when key.EqualsNoCase(nameof(Origin)):
-                    value = Origin;
-                    return value != null;
-                default: return _dict.TryGetValue(key, out value);
-            }
-        }
+        public bool TryGetValue(string key, out string value) => this._TryGetValue(key, out value);
 
         /// <inheritdoc />
-        public ICollection<string> Keys => this.Select(kvp => kvp.Key).ToList();
+        public ICollection<string> Keys => this._Keys();
 
         /// <inheritdoc />
-        public ICollection<string> Values => this.Select(kvp => kvp.Value).ToList();
+        public ICollection<string> Values => this._Keys();
     }
 }

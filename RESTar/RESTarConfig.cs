@@ -20,6 +20,7 @@ using RESTar.Meta;
 using RESTar.Meta.Internal;
 using RESTar.ProtocolProviders;
 using RESTar.Resources;
+using RESTar.Resources.Operations;
 using RESTar.WebSockets;
 using Starcounter;
 using static RESTar.Method;
@@ -113,6 +114,7 @@ namespace RESTar
                 ResourceFactory.BindControllers();
                 ResourceFactory.FinalCheck();
                 RegisterStaticIndexes();
+                RunCustomMigrationLogic();
             }
             catch
             {
@@ -230,6 +232,26 @@ namespace RESTar
         {
             DatabaseIndex.Register<Webhook>("RESTar_Admin_Webhook__EventName", nameof(Webhook.EventName));
             DatabaseIndex.Register<Event>("RESTar_Admin_Event__Name", nameof(Event.Name));
+            DatabaseIndex.Register<Macro>("RESTar_Admin_Macro__Name", nameof(Macro.Name));
+        }
+
+        private static void RunCustomMigrationLogic()
+        {
+#pragma warning disable 612
+            Db.TransactAsync(() => Db.SQL<DbMacro>(DbMacro.All).ForEach(macro =>
+            {
+                var newMacro = new Macro(macro.Name)
+                {
+                    Uri = macro.UriString,
+                    Body = macro.HasBody ? JToken.Parse(macro.BodyUTF8) : null,
+                    OverwriteBody = macro.OverwriteBody,
+                    OverwriteHeaders = macro.OverwriteHeaders
+                };
+                macro.HeadersDictionary?.ForEach(header => newMacro.Headers.Add(header));
+                var ivalidatable = (IValidatable) newMacro;
+                ivalidatable.IsValid(out _);
+            }));
+#pragma warning restore 612
         }
 
         private static void ReadConfig()

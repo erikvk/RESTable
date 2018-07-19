@@ -307,7 +307,7 @@ namespace RESTar
                                 SendHeaders();
                                 break;
                             }
-                            if (Headers.IsCustom(key))
+                            if (key.IsCustomHeaderName())
                             {
                                 if (value == "null")
                                 {

@@ -16,7 +16,7 @@ namespace RESTar.ContentTypeProviders.NativeJsonProtocol
         {
             WhitelistedNonCustomHeaders = new HashSet<string>(whitelisted, StringComparer.OrdinalIgnoreCase);
             if (WhitelistedNonCustomHeaders.Contains("*"))
-                WhitelistedNonCustomHeaders.UnionWith(Headers.NonCustomHeaders);
+                WhitelistedNonCustomHeaders.UnionWith(HeadersExtensions.NonCustomHeaders);
         }
 
         /// <inheritdoc />
@@ -39,7 +39,7 @@ namespace RESTar.ContentTypeProviders.NativeJsonProtocol
         {
             IEnumerable<KeyValuePair<string, JToken>> values = JObject.Load(reader);
             headers = headers ?? new T();
-            values.Where(pair => WhitelistedNonCustomHeaders.Contains(pair.Key) || Headers.IsCustom(pair.Key))
+            values.Where(pair => WhitelistedNonCustomHeaders.Contains(pair.Key) || pair.Key.IsCustomHeaderName())
                 .ForEach(pair => headers[pair.Key] = pair.Value.ToObject<string>());
             return headers;
         }

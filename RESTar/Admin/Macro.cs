@@ -27,7 +27,7 @@ namespace RESTar.Admin
         internal const string ByName = All + " WHERE t.Name =?";
 
         /// <inheritdoc />
-        public string Name { get; set; }
+        public string Name { get; }
 
         /// <summary>
         /// The URI of the macro
@@ -75,6 +75,7 @@ namespace RESTar.Admin
                 throw new ArgumentException("Missing or invalid macro name");
             if (!Db.SQL<Macro>(ByName, name).All(macro => macro.Equals(this)))
                 throw new ArgumentException($"Invalid macro name. '{name}' is already used by another macro");
+            Name = name;
             Headers = new DbHeaders();
         }
 
@@ -94,36 +95,17 @@ namespace RESTar.Admin
                 invalidReason = "Macro URIs cannot contain self-references";
                 return IsValid = false;
             }
-            if (MakeUriComponents(out var error) is IUriComponents components && error != null) { }
-
-            try
+            if (MakeUriComponents(out var error) == null)
             {
-                if (URI.Parse(Uri).MetaConditions.Any(c => c.Key.EqualsNoCase("key")))
-                {
-                    invalidReason = "Macro URIs cannot contain the 'Key' meta-condition. If API keys are " +
-                                    "required, they are expected in each call to the macro.";
-                    return IsValid = false;
-                }
-            }
-            catch (Exception e)
-            {
-                invalidReason = $"Invalid format for URI '{Uri}'. " + e.Message;
+                invalidReason = error.LogMessage;
                 return IsValid = false;
             }
-
-            if (Headers != null)
+            if (Headers.Authorization != null)
             {
-                foreach (var prop in Headers)
-                {
-                    if (prop.Key.ToLower() == "authorization")
-                    {
-                        invalidReason = "Macro headers cannot contain the Authorization header. If API keys are " +
-                                        "required, they are expected in each call to the macro.";
-                        return IsValid = false;
-                    }
-                }
+                invalidReason = "Macro headers cannot contain the 'Authorization' header. If API keys are " +
+                                "required, they are expected in each request invoking the macro.";
+                return IsValid = false;
             }
-
             invalidReason = null;
             return IsValid = true;
         }
@@ -164,82 +146,5 @@ namespace RESTar.Admin
         IHeaders IMacro.Headers => Headers;
 
         #endregion
-
-        ///// <inheritdoc />
-        //public IEnumerable<Macro> Select(IRequest<Macro> request) => DbMacro.GetAll()
-        //    .Select(m => new Macro
-        //    {
-        //        Name = m.Name,
-        //        Uri = m.UriString,
-        //        Body = m.HasBody ? JToken.Parse(m.BodyUTF8) : null,
-        //        Headers = m.Headers != null ? m.HeadersDictionary : null,
-        //        OverwriteBody = m.OverwriteBody,
-        //        OverwriteHeaders = m.OverwriteHeaders
-        //    })
-        //    .Where(request.Conditions);
-
-        ///// <inheritdoc />
-        //public int Insert(IRequest<Macro> request)
-        //{
-        //    var count = 0;
-        //    foreach (var entity in request.GetInputEntities())
-        //    {
-        //        if (DbMacro.Get(entity.Name) != null)
-        //            throw new Exception($"Invalid name. '{entity.Name}' is already in use.");
-        //        var args = URI.Parse(entity.Uri);
-        //        Db.TransactAsync(() => new DbMacro
-        //        {
-        //            Name = entity.Name,
-        //            ResourceSpecifier = args.ResourceSpecifier,
-        //            ViewName = args.ViewName,
-        //            OverwriteBody = entity.OverwriteBody,
-        //            OverwriteHeaders = entity.OverwriteHeaders,
-        //            UriConditionsString = args.Conditions.Any() ? string.Join("&", args.Conditions) : null,
-        //            UriMetaConditionsString = args.MetaConditions.Any() ? string.Join("&", args.MetaConditions) : null,
-        //            BodyBinary = entity.Body != null ? new Binary(Encoding.UTF8.GetBytes(entity.Body?.ToString())) : default,
-        //            Headers = entity.Headers != null ? JsonConvert.SerializeObject(entity.Headers) : null
-        //        });
-        //        count += 1;
-        //    }
-
-        //    return count;
-        //}
-
-        ///// <inheritdoc />
-        //public int Update(IRequest<Macro> request)
-        //{
-        //    var count = 0;
-        //    request.GetInputEntities().ForEach(entity =>
-        //    {
-        //        var dbEntity = DbMacro.Get(entity.Name);
-        //        if (dbEntity == null) return;
-        //        var args = URI.Parse(entity.Uri);
-        //        Db.TransactAsync(() =>
-        //        {
-        //            dbEntity.ResourceSpecifier = args.ResourceSpecifier;
-        //            dbEntity.ViewName = args.ViewName;
-        //            dbEntity.OverwriteBody = entity.OverwriteBody;
-        //            dbEntity.OverwriteHeaders = entity.OverwriteHeaders;
-        //            dbEntity.UriConditionsString = args.Conditions.Any() ? string.Join("&", args.Conditions) : null;
-        //            dbEntity.UriMetaConditionsString = args.MetaConditions.Any() ? string.Join("&", args.MetaConditions) : null;
-        //            dbEntity.BodyBinary = entity.Body != null ? new Binary(Encoding.UTF8.GetBytes(entity.Body?.ToString())) : default;
-        //            dbEntity.Headers = entity.Headers != null ? JsonConvert.SerializeObject(entity.Headers) : null;
-        //            count += 1;
-        //        });
-        //    });
-        //    return count;
-        //}
-
-        ///// <inheritdoc />
-        //public int Delete(IRequest<Macro> request)
-        //{
-        //    var count = 0;
-        //    request.GetInputEntities().ForEach(entity =>
-        //    {
-        //        Db.TransactAsync(DbMacro.Get(entity.Name).Delete);
-        //        count += 1;
-        //    });
-        //    return count;
-        //}
     }
 }

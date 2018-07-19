@@ -34,49 +34,81 @@ namespace RESTar.Requests
         /// <inheritdoc />
         public string Origin { get; set; }
 
-        #region Explicit implementations
+        internal Headers ToTransient() => new Headers(this);
 
-        IEnumerable<KeyValuePair<string, string>> IHeadersInternal.GetCustom(HashSet<string> whitelist) => KeyValuePairs
-            .Where(pair => whitelist?.Contains(pair.Key) == true || !Headers.NonCustomHeaders.Contains(pair.Key))
-            .Select(pair => new KeyValuePair<string, string>(pair.Key, pair.ValueString));
+        #region IHeadersInternal
 
-        void ICollection<KeyValuePair<string, string>>.Add(KeyValuePair<string, string> item) => Add(item.Key, item.Value);
-        void IDictionary<string, string>.Add(string key, string value) => Add(key, value);
-        ICollection<string> IDictionary<string, string>.Values => Values.Select(value => value.ToString()).ToList();
-
-        DbHeadersKvp IDDictionary<DbHeaders, DbHeadersKvp>.NewKeyPair(DbHeaders dict, string key, object value) =>
-            new DbHeadersKvp(dict, key, value?.ToString());
-
-        IEnumerator<KeyValuePair<string, string>> IEnumerable<KeyValuePair<string, string>>.GetEnumerator() =>
-            KeyValuePairs.Select(p => new KeyValuePair<string, string>(p.Key, p.Value?.ToString())).GetEnumerator();
-
-        bool ICollection<KeyValuePair<string, string>>.Contains(KeyValuePair<string, string> item) =>
-            Contains(new KeyValuePair<string, object>(item.Key, item.Value));
-
-        bool ICollection<KeyValuePair<string, string>>.Remove(KeyValuePair<string, string> item) =>
-            Remove(new KeyValuePair<string, object>(item.Key, item.Value));
-
-        void ICollection<KeyValuePair<string, string>>.CopyTo(KeyValuePair<string, string>[] array, int arrayIndex) =>
-            CopyTo(array
-                .Select(pair => new KeyValuePair<string, object>(pair.Key, pair.Value))
-                .ToArray(), arrayIndex);
-
-        bool IDictionary<string, string>.TryGetValue(string key, out string value)
+        bool IHeadersInternal.TryGetCustomHeader(string key, out string value)
         {
-            if (TryGetValue(key, out var _value))
+            if (base.TryGetValue(key, out var _value))
             {
-                value = _value?.ToString();
+                value = _value.ToString();
                 return true;
             }
             value = null;
             return false;
         }
 
-        string IDictionary<string, string>.this[string key]
+        void IHeadersInternal.SetCustomHeader(string key, string value) => base[key] = value;
+
+        bool IHeadersInternal.ContainsCustomHeader(KeyValuePair<string, string> item) =>
+            Contains(new KeyValuePair<string, object>(item.Key, item.Value));
+
+        bool IHeadersInternal.ContainsCustomHeaderName(string name) => ContainsKey(name);
+        bool IHeadersInternal.RemoveCustomHeader(string name) => Remove(name);
+
+        bool IHeadersInternal.RemoveCustomHeader(KeyValuePair<string, string> header) =>
+            Remove(new KeyValuePair<string, object>(header.Key, header.Value));
+
+        IEnumerable<KeyValuePair<string, string>> IHeadersInternal.GetCustomHeaders() => _GetCustomHeaders();
+
+        private IEnumerable<KeyValuePair<string, string>> _GetCustomHeaders() => KeyValuePairs
+            .Select(p => new KeyValuePair<string, string>(p.Key, p.Value?.ToString()));
+
+        #endregion
+
+        #region Overriding operations
+
+        /// <inheritdoc />
+        public void Add(KeyValuePair<string, string> item) => Add(item.Key, item.Value);
+
+        /// <inheritdoc />
+        public void Add(string key, string value) => this._Set(key, value);
+
+        /// <inheritdoc />
+        public new ICollection<string> Keys => this._Keys();
+
+        /// <inheritdoc />
+        public new ICollection<string> Values => this._Values();
+
+        /// <inheritdoc />
+        public new IEnumerator<KeyValuePair<string, string>> GetEnumerator() => new HeadersEnumerator(this, _GetCustomHeaders().GetEnumerator());
+
+        /// <inheritdoc />
+        public bool Contains(KeyValuePair<string, string> item) => this._Contains(item);
+
+        /// <inheritdoc />
+        public bool Remove(KeyValuePair<string, string> item) => this._Remove(item);
+
+        /// <inheritdoc />
+        public void CopyTo(KeyValuePair<string, string>[] array, int arrayIndex) => this._CopyTo(array, arrayIndex);
+
+        /// <inheritdoc />
+        public bool TryGetValue(string key, out string value) => this._TryGetValue(key, out value);
+
+        /// <inheritdoc />
+        public new string this[string key]
         {
-            get => this[key]?.ToString();
-            set => this[key] = value;
+            get => this._Get(key);
+            set => this._Set(key, value);
         }
+
+        #endregion
+
+        #region Explicit implementations
+
+        DbHeadersKvp IDDictionary<DbHeaders, DbHeadersKvp>.NewKeyPair(DbHeaders dict, string key, object value) =>
+            new DbHeadersKvp(dict, key, value?.ToString());
 
         #endregion
     }

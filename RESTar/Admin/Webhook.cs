@@ -108,35 +108,37 @@ namespace RESTar.Admin
         /// <summary>
         /// Custom headers included in the POST request
         /// </summary>
-        [RESTarMember(replaceOnUpdate: true), JsonConverter(typeof(HeadersConverter<Headers>), "*")]
-        public Headers Headers
+        [JsonConverter(typeof(HeadersConverter<Headers>), "*")]
+        public DbHeaders Headers
         {
-            get => HeadersString == null ? new Headers() : JsonConvert.DeserializeObject<Headers>(HeadersString);
-            set
-            {
-                switch (value.Authorization)
-                {
-                    // No header present. If was removed, make sure api key is null
-                    case null:
-                        LocalDestinationAPIKey = null;
-                        break;
+            get;
 
-                    // Has been set to authheadermask manually. Set header to null.
-                    case Authenticator.AuthHeaderMask when LocalDestinationAPIKey == null:
-                        value.Authorization = null;
-                        break;
+            //get => HeadersString == null ? new Headers() : JsonConvert.DeserializeObject<Headers>(HeadersString);
+            //set
+            //{
+            //    switch (value.Authorization)
+            //    {
+            //        // No header present. If was removed, make sure api key is null
+            //        case null:
+            //            LocalDestinationAPIKey = null;
+            //            break;
 
-                    // No change
-                    case Authenticator.AuthHeaderMask: break;
+            //        // Has been set to authheadermask manually. Set header to null.
+            //        case Authenticator.AuthHeaderMask when LocalDestinationAPIKey == null:
+            //            value.Authorization = null;
+            //            break;
 
-                    // Has value, and request destination is local
-                    case var localAuthHeader when DestinationIsLocal:
-                        LocalDestinationAPIKey = Authenticator.GetAccessRights(localAuthHeader)?.ApiKey;
-                        value.Authorization = Authenticator.AuthHeaderMask;
-                        break;
-                }
-                HeadersString = JsonConvert.SerializeObject(value);
-            }
+            //        // No change
+            //        case Authenticator.AuthHeaderMask: break;
+
+            //        // Has value, and request destination is local
+            //        case var localAuthHeader when DestinationIsLocal:
+            //            LocalDestinationAPIKey = Authenticator.GetAccessRights(localAuthHeader)?.ApiKey;
+            //            value.Authorization = Authenticator.AuthHeaderMask;
+            //            break;
+            //    }
+            //    HeadersString = JsonConvert.SerializeObject(value);
+            //}
         }
 
         /// <summary>
@@ -249,6 +251,9 @@ namespace RESTar.Admin
             }
         }
 
+        /// <inheritdoc />
+        public Webhook() => Headers = new DbHeaders();
+
         private static IEnumerable<Webhook> Check(IEnumerable<Webhook> entities) => RESTarConfig.RequireApiKey
             ? entities.Select(webhook =>
             {
@@ -313,7 +318,7 @@ namespace RESTar.Admin
                 error = methodNotAllowed;
                 return null;
             }
-            return Context.Webhook(client).CreateRequest(DestinationURL, POST, headers: Headers);
+            return Context.Webhook(client).CreateRequest(DestinationURL, POST, headers: Headers.ToTransient());
         }
 
         private HttpRequestMessage GetRequestMessage(Stream body, ContentType? contentType, string customRequestInfo = null)
@@ -377,7 +382,7 @@ namespace RESTar.Admin
                 {
                     using (var requestMessage = GetRequestMessage(body, contentType, info))
                     {
-                        if (Headers is Headers _headers)
+                        if (Headers is DbHeaders _headers)
                             foreach (var header in _headers)
                                 requestMessage.Headers.TryAddWithoutValidation(header.Key, header.Value);
                         using (var response = await HttpClient.SendAsync(requestMessage))
