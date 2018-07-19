@@ -1,10 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using RESTar.ProtocolProviders;
 
 namespace RESTar.Requests
 {
     /// <summary>
-    /// Contains parameters for a RESTar URI
+    /// Describes the components of a RESTar URI
     /// </summary>
     public interface IUriComponents
     {
@@ -21,18 +21,69 @@ namespace RESTar.Requests
         /// <summary>
         /// Specifies the conditions for the request
         /// </summary>
-        IEnumerable<IUriCondition> Conditions { get; }
+        IReadOnlyCollection<IUriCondition> Conditions { get; }
 
         /// <summary>
         /// Specifies the meta-conditions for the request
         /// </summary>
-        IEnumerable<IUriCondition> MetaConditions { get; }
+        IReadOnlyCollection<IUriCondition> MetaConditions { get; }
 
         /// <summary>
-        /// A function that generates a string representation of the URI components,
-        /// according to some pre-defined protocol (for example, the protocol of a 
-        /// request).
+        /// The macro, if any, belonging to these uri components
         /// </summary>
-        Func<IUriComponents, string> StringMaker { get; }
+        IMacro Macro { get; }
+
+        /// <summary>
+        /// The protocol provider specified in the uri string
+        /// </summary>
+        IProtocolProvider ProtocolProvider { get; }
+
+        /// <summary>
+        /// Creates a formatted string representation of the URI components,
+        /// a valid URI string according to the assigned protocol.
+        /// </summary>
+        string ToUriString();
+    }
+
+    /// <inheritdoc />
+    /// <summary>
+    /// Defines the operations of a RESTar macro
+    /// </summary>
+    public interface IMacro : IUriComponents
+    {
+        /// <summary>
+        /// The name of the macro
+        /// </summary>
+        string Name { get; }
+
+        /// <summary>
+        /// Does this macro contain a body?
+        /// </summary>
+        bool HasBody { get; }
+
+        /// <summary>
+        /// The body of the macro, as byte array
+        /// </summary>
+        byte[] Body { get; }
+
+        /// <summary>
+        /// The content type of the body of the macro
+        /// </summary>
+        ContentType ContentType { get; }
+
+        /// <summary>
+        /// The headers of the macro
+        /// </summary>
+        IHeaders Headers { get; }
+
+        /// <summary>
+        /// Should the macro overwrite the body of the calling request?
+        /// </summary>
+        bool OverwriteBody { get; }
+
+        /// <summary>
+        /// Should the macro overwrite matching headers in the calling request?
+        /// </summary>
+        bool OverwriteHeaders { get; }
     }
 }

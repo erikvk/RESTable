@@ -129,7 +129,7 @@ namespace RESTar.Requests
         private static string AllMetaConditions =>
             $"{string.Join(", ", Enum.GetNames(typeof(RESTarMetaConditions)).Except(new[] {"New", "Delete"}))}";
 
-        internal static MetaConditions Parse(List<UriCondition> uriMetaConditions, IEntityResource resource)
+        internal static MetaConditions Parse(IEnumerable<IUriCondition> uriMetaConditions, IEntityResource resource)
         {
             if (!uriMetaConditions.Any()) return null;
             var renames = uriMetaConditions.Where(c => c.Key.EqualsNoCase("rename"));
@@ -137,10 +137,10 @@ namespace RESTar.Requests
             var mc = new MetaConditions {Empty = false};
             ICollection<string> dynamicDomain = default;
 
-            void make(IEnumerable<UriCondition> conds) => conds.ForEach(cond =>
+            void make(IEnumerable<IUriCondition> conds) => conds.ForEach(cond =>
             {
                 var (key, op, valueLiteral) = (cond.Key, cond.Operator, cond.ValueLiteral);
-                if (op.OpCode != EQUALS)
+                if (op != EQUALS)
                     throw new InvalidSyntax(InvalidMetaConditionOperator,
                         "Invalid operator for meta-condition. One and only one '=' is allowed");
                 if (!Enum.TryParse(key, true, out RESTarMetaConditions metaCondition))

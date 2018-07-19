@@ -495,14 +495,14 @@ namespace RESTar
         private bool QueryIsValid(out IResource resource)
         {
             var localQuery = Query;
-            if (!WebSocket.Context.UriIsValid(localQuery, out var error, out resource, out var formatted))
+            if (!WebSocket.Context.UriIsValid(localQuery, out var error, out resource, out var components))
             {
                 query = previousQuery;
                 SendResult(error);
                 return false;
             }
             if (ReformatQueries)
-                localQuery = formatted;
+                localQuery = components.ToString();
             query = localQuery;
             queryChangedPreEval = false;
             return true;

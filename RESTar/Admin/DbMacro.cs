@@ -12,7 +12,7 @@ namespace RESTar.Admin
     /// <summary>
     /// The underlying storage for macros
     /// </summary>
-    [Database]
+    [Database, Obsolete]
     public class DbMacro
     {
         internal const string All = "SELECT t FROM RESTar.Admin.DbMacro t";
@@ -52,14 +52,16 @@ namespace RESTar.Admin
         {
             get
             {
+                var uriConditions = UriConditions;
+                var uriMetaConditions = UriMetaConditions;
                 using (var writer = new StringWriter())
                 {
                     writer.Write('/');
                     writer.Write(ResourceSpecifier);
                     writer.Write('/');
-                    writer.Write(UriConditions != null ? string.Join("&", UriConditions) : null);
+                    writer.Write(uriConditions != null ? string.Join("&", uriConditions) : null);
                     writer.Write('/');
-                    writer.Write(UriMetaConditions != null ? string.Join("&", UriMetaConditions) : null);
+                    writer.Write(uriMetaConditions != null ? string.Join("&", uriMetaConditions) : null);
                     return writer.ToString().TrimEnd('/');
                 }
             }
@@ -104,8 +106,8 @@ namespace RESTar.Admin
 
         #endregion
 
-        internal IEnumerable<UriCondition> UriConditions => UriConditionsString?.Split('&').Select(c => new UriCondition(c));
-        internal IEnumerable<UriCondition> UriMetaConditions => UriMetaConditionsString?.Split('&').Select(c => new UriCondition(c));
+        internal UriCondition[] UriConditions => UriConditionsString?.Split('&').Select(c => new UriCondition(c)).ToArray();
+        internal UriCondition[] UriMetaConditions => UriMetaConditionsString?.Split('&').Select(c => new UriCondition(c)).ToArray();
         internal bool HasBody => !BodyBinary.IsNull && BodyBinary.Length > 0;
         internal byte[] GetBody() => HasBody ? BodyBinary.ToArray() : new byte[0];
 

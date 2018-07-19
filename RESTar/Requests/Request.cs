@@ -262,16 +262,16 @@ namespace RESTar.Requests
                     throw new ResourceIsInternal(resource);
                 if (Resource is IEntityResource<T> entityResource)
                 {
-                    MetaConditions = MetaConditions.Parse(parameters.Uri.MetaConditions, entityResource);
-                    if (parameters.Uri.ViewName != null)
+                    MetaConditions = MetaConditions.Parse(parameters.UriComponents.MetaConditions, entityResource);
+                    if (parameters.UriComponents.ViewName != null)
                     {
-                        if (!entityResource.ViewDictionary.TryGetValue(parameters.Uri.ViewName, out var view))
-                            throw new UnknownView(parameters.Uri.ViewName, entityResource);
+                        if (!entityResource.ViewDictionary.TryGetValue(parameters.UriComponents.ViewName, out var view))
+                            throw new UnknownView(parameters.UriComponents.ViewName, entityResource);
                         Target = view;
                     }
                 }
-                if (parameters.Uri.Conditions.Count > 0)
-                    Conditions = Condition<T>.Parse(parameters.Uri.Conditions, Target);
+                if (parameters.UriComponents.Conditions.Count > 0)
+                    Conditions = Condition<T>.Parse(parameters.UriComponents.Conditions, Target);
                 if (parameters.Headers.UnsafeOverride)
                 {
                     MetaConditions.Unsafe = true;

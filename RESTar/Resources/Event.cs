@@ -64,114 +64,141 @@ namespace RESTar.Resources
         /// <summary>
         /// Raises the event
         /// </summary>
-        protected async void RaiseEvent() => await EventController.Raise(this);
+        protected async void InvokeRaise() => await EventController.Raise(this);
 
         /// <inheritdoc />
         public virtual void Dispose() => (Payload as IDisposable)?.Dispose();
 
-        internal static void RaiseEvent(object sender, T @event) => Raise?.Invoke(sender, @event);
-
         /// <summary>
         /// The event handler for custom RESTar events of type T, subclasses of <see cref="Event{T}"/>.
-        /// Use this to add listneres for RESTar custom events.
+        /// Use this to add listeners for RESTar custom events.
         /// </summary>
-        public static event EventHandler<T> Raise;
-
-        internal static IEnumerable<T> OnPostInsert(IEnumerable<T> entities)
-        {
-            if (entities == null) return null;
-            if (_PostInsert == null) return entities;
-            return _PostInsert?.GetInvocationList()
-                .OfType<EntityProcessor<T>>()
-                .Aggregate(entities, (e, processor) => processor(e));
-        }
-
-        internal static IEnumerable<T> OnPostUpdate(IEnumerable<T> entities)
-        {
-            if (entities == null) return null;
-            if (_PostUpdate == null) return entities;
-            return _PostUpdate?.GetInvocationList()
-                .OfType<EntityProcessor<T>>()
-                .Aggregate(entities, (e, processor) => processor(e));
-        }
-
-        internal static IEnumerable<T> OnPreDelete(IEnumerable<T> entities)
-        {
-            if (entities == null) return null;
-            if (_PreDelete == null) return entities;
-            return _PreDelete?.GetInvocationList()
-                .OfType<EntityProcessor<T>>()
-                .Aggregate(entities, (e, processor) => processor(e));
-        }
-
-        private static event EntityProcessor<T> _PostInsert;
-        private static event EntityProcessor<T> _PostUpdate;
-        private static event EntityProcessor<T> _PreDelete;
-
-        /// <summary>
-        /// Entity processors added to this event are invoked, in the order they are added, when the entity resource's
-        /// Inserter calls GetInputEntities(), just before control is returned to the Inserter. The first delegate added to this
-        /// event gets the output from GetInputEntities() as argument. Any subsequent delegates get the output from
-        /// the previous delegate as input.
-        /// </summary>
-        public static event EntityProcessor<T> PreInsert
+        public static event EventHandler<T> Raise
         {
             add
             {
-                if (!(Resource<T>.SafeGet is IEntityResource))
-                    throw new InvalidOperationException($"Cannot add event handler for type '{typeof(T)}'. Not an entity resource.");
-                _PostInsert += value;
+                if (!typeof(IEvent).IsAssignableFrom(typeof(T)))
+                    throw new InvalidOperationException($"Cannot add RESTar event handler for type '{typeof(T).RESTarTypeName()}'. Not a " +
+                                                        "RESTar event type.");
+                _Raise += value;
             }
             remove
             {
-                if (!(Resource<T>.SafeGet is IEntityResource))
-                    throw new InvalidOperationException($"Cannot remove event handler for type '{typeof(T)}'. Not an entity resource.");
-                _PostInsert -= value;
+                if (!typeof(IEvent).IsAssignableFrom(typeof(T)))
+                    throw new InvalidOperationException($"Cannot remove RESTar event handler for type '{typeof(T).RESTarTypeName()}'. Not a " +
+                                                        "RESTar event type.");
+                _Raise += value;
             }
         }
 
         /// <summary>
         /// Entity processors added to this event are invoked, in the order they are added, when the given entity resource's
-        /// Updater calls GetInputEntities(), after the update operation is performed, just before the control is returned to the Updater.
-        /// The first delegate added to this event gets the output from GetInputEntities(), i.e. the just updated entities, as argument.
-        /// Any subsequent delegates get the output from the previous delegate as input.
+        /// Inserter calls GetInputEntities() for the request, just before control is returned to the Inserter. The first
+        /// delegate added to this event gets the output from GetInputEntities() as argument. Any subsequent delegates get
+        /// the output from the previous delegate as input.
         /// </summary>
-        public static event EntityProcessor<T> PostUpdate
+        public static event EntityProcessor<T> OnInsert
         {
             add
             {
                 if (!(Resource<T>.SafeGet is IEntityResource))
-                    throw new InvalidOperationException($"Cannot add event handler for type '{typeof(T)}'. Not an entity resource.");
-                _PostUpdate += value;
+                    throw new InvalidOperationException($"Cannot add event handler for type '{typeof(T).RESTarTypeName()}'. Not an entity resource.");
+                _OnInsert += value;
             }
             remove
             {
                 if (!(Resource<T>.SafeGet is IEntityResource))
-                    throw new InvalidOperationException($"Cannot remove event handler for type '{typeof(T)}'. Not an entity resource.");
-                _PostUpdate -= value;
+                    throw new InvalidOperationException(
+                        $"Cannot remove event handler for type '{typeof(T).RESTarTypeName()}'. Not an entity resource.");
+                _OnInsert -= value;
             }
         }
 
         /// <summary>
         /// Entity processors added to this event are invoked, in the order they are added, when the given entity resource's
-        /// Deleter calls GetInputEntities(), just before the control is returned to the Deleter. The first delegate added to this
-        /// event gets the output from GetInputEntities() as argument. Any subsequent delegates get the output from
-        /// the previous delegate as input.
+        /// Updater calls GetInputEntities() for the request, after the update operation is performed, just before the control
+        /// is returned to the Updater. The first delegate added to this event gets the output from GetInputEntities(), i.e. the
+        /// just updated entities, as argument. Any subsequent delegates get the output from the previous delegate as input.
         /// </summary>
-        public static event EntityProcessor<T> PreDelete
+        public static event EntityProcessor<T> OnUpdate
         {
             add
             {
                 if (!(Resource<T>.SafeGet is IEntityResource))
-                    throw new InvalidOperationException($"Cannot add event handler for type '{typeof(T)}'. Not an entity resource.");
-                _PreDelete += value;
+                    throw new InvalidOperationException($"Cannot add event handler for type '{typeof(T).RESTarTypeName()}'. Not an entity resource.");
+                _OnUpdate += value;
             }
             remove
             {
                 if (!(Resource<T>.SafeGet is IEntityResource))
-                    throw new InvalidOperationException($"Cannot remove event handler for type '{typeof(T)}'. Not an entity resource.");
-                _PreDelete -= value;
+                    throw new InvalidOperationException(
+                        $"Cannot remove event handler for type '{typeof(T).RESTarTypeName()}'. Not an entity resource.");
+                _OnUpdate -= value;
             }
         }
+
+        /// <summary>
+        /// Entity processors added to this event are invoked, in the order they are added, when the given entity resource's
+        /// Deleter calls GetInputEntities() for the request, just before the control is returned to the Deleter. The first
+        /// delegate added to this event gets the output from GetInputEntities() as argument. Any subsequent delegates get the
+        /// output from the previous delegate as input.
+        /// </summary>
+        public static event EntityProcessor<T> OnDelete
+        {
+            add
+            {
+                if (!(Resource<T>.SafeGet is IEntityResource))
+                    throw new InvalidOperationException($"Cannot add event handler for type '{typeof(T).RESTarTypeName()}'. Not an entity resource.");
+                _OnDelete += value;
+            }
+            remove
+            {
+                if (!(Resource<T>.SafeGet is IEntityResource))
+                    throw new InvalidOperationException(
+                        $"Cannot remove event handler for type '{typeof(T).RESTarTypeName()}'. Not an entity resource.");
+                _OnDelete -= value;
+            }
+        }
+
+        #region Internal
+
+        private static event EventHandler<T> _Raise;
+        private static event EntityProcessor<T> _OnInsert;
+        private static event EntityProcessor<T> _OnUpdate;
+        private static event EntityProcessor<T> _OnDelete;
+
+        internal static void InvokeRaise(object sender, T @event)
+        {
+            _Raise?.Invoke(sender, @event);
+        }
+
+        internal static IEnumerable<T> InvokeOnInsert(IEnumerable<T> entities)
+        {
+            if (entities == null) return null;
+            if (_OnInsert == null) return entities;
+            return _OnInsert?.GetInvocationList()
+                .OfType<EntityProcessor<T>>()
+                .Aggregate(entities, (e, processor) => processor(e));
+        }
+
+        internal static IEnumerable<T> InvokeOnUpdate(IEnumerable<T> entities)
+        {
+            if (entities == null) return null;
+            if (_OnUpdate == null) return entities;
+            return _OnUpdate?.GetInvocationList()
+                .OfType<EntityProcessor<T>>()
+                .Aggregate(entities, (e, processor) => processor(e));
+        }
+
+        internal static IEnumerable<T> InvokeOnDelete(IEnumerable<T> entities)
+        {
+            if (entities == null) return null;
+            if (_OnDelete == null) return entities;
+            return _OnDelete?.GetInvocationList()
+                .OfType<EntityProcessor<T>>()
+                .Aggregate(entities, (e, processor) => processor(e));
+        }
+
+        #endregion
     }
 }

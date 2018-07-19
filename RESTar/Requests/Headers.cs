@@ -8,72 +8,12 @@ using RESTar.Linq;
 
 namespace RESTar.Requests
 {
-    internal class HeadersEnumerator : IEnumerator<KeyValuePair<string, string>>
-    {
-        private HeadersMembers CurrentMember;
-        private readonly Headers Headers;
-        private readonly IEnumerator<KeyValuePair<string, string>> DictEnumerator;
-        public void Dispose() => Reset();
-        public void Reset() => CurrentMember = HeadersMembers.nil;
-        object IEnumerator.Current => Current;
-        public KeyValuePair<string, string> Current { get; private set; }
-
-        public bool MoveNext()
-        {
-            switch (CurrentMember += 1)
-            {
-                case HeadersMembers.Accept:
-                    Current = new KeyValuePair<string, string>(nameof(Headers.Accept), Headers.Accept?.ToString());
-                    break;
-                case HeadersMembers.ContentType:
-                    Current = new KeyValuePair<string, string>("Content-Type", Headers.ContentType?.ToString());
-                    break;
-                case HeadersMembers.Source:
-                    Current = new KeyValuePair<string, string>(nameof(Headers.Source), Headers.Source);
-                    break;
-                case HeadersMembers.Destination:
-                    Current = new KeyValuePair<string, string>(nameof(Headers.Destination), Headers.Destination);
-                    break;
-                case HeadersMembers.Authorization:
-                    var value = Headers.Authorization == null ? null : "*******";
-                    Current = new KeyValuePair<string, string>(nameof(Headers.Authorization), value);
-                    break;
-                case HeadersMembers.Origin:
-                    Current = new KeyValuePair<string, string>(nameof(Headers.Origin), Headers.Origin);
-                    break;
-                default:
-                    if (!DictEnumerator.MoveNext())
-                        return false;
-                    Current = DictEnumerator.Current;
-                    return true;
-            }
-            return Current.Value != null || MoveNext();
-        }
-
-        public HeadersEnumerator(Headers headers, IEnumerator<KeyValuePair<string, string>> dictEnumerator)
-        {
-            Headers = headers;
-            DictEnumerator = dictEnumerator;
-        }
-
-        private enum HeadersMembers
-        {
-            nil = 0,
-            Accept,
-            ContentType,
-            Source,
-            Destination,
-            Authorization,
-            Origin
-        }
-    }
-
     /// <inheritdoc cref="IDictionary{TKey,TValue}" />
     /// <summary>
     /// A collection of request headers. Key comparison is case insensitive.
     /// </summary>
-    [JsonConverter(typeof(HeadersConverter))]
-    public class Headers : IDictionary<string, string>, IReadOnlyDictionary<string, string>
+    [JsonConverter(typeof(HeadersConverter<Headers>))]
+    public class Headers : IHeaders, IHeadersInternal
     {
         internal static HashSet<string> NonCustomHeaders { get; }
 
@@ -125,24 +65,16 @@ namespace RESTar.Requests
             set => this["RESTar-version"] = value;
         }
 
-        /// <summary>
-        /// The Accept header
-        /// </summary>
+        /// <inheritdoc />
         public ContentTypes Accept { get; set; }
 
-        /// <summary>
-        /// The Content-Type header
-        /// </summary>
+        /// <inheritdoc />
         public ContentType? ContentType { get; set; }
 
-        /// <summary>
-        /// The Source header
-        /// </summary>
+        /// <inheritdoc />
         public string Source { get; set; }
 
-        /// <summary>
-        /// The Destination header
-        /// </summary>
+        /// <inheritdoc />
         public string Destination { get; set; }
 
         /// <summary>
@@ -150,9 +82,13 @@ namespace RESTar.Requests
         /// </summary>
         public string Authorization { internal get; set; }
 
-        /// <summary>
-        /// The Origin header
-        /// </summary>
+        string IHeaders.Authorization
+        {
+            get => Authorization;
+            set => Authorization = value;
+        }
+
+        /// <inheritdoc />
         public string Origin { get; set; }
 
         internal bool UnsafeOverride { get; set; }
@@ -213,15 +149,14 @@ namespace RESTar.Requests
         private void Put(KeyValuePair<string, string> kvp) => this[kvp.Key] = kvp.Value;
         private void Put(string key, string value) => this[key] = value;
 
+        IEnumerable<KeyValuePair<string, string>> IHeadersInternal.GetCustom(HashSet<string> whitelist) => GetCustom(whitelist);
+
         internal IEnumerable<KeyValuePair<string, string>> GetCustom(HashSet<string> whitelist = null)
         {
             return this.Where(pair => whitelist?.Contains(pair.Key) == true || IsCustom(pair.Key));
         }
 
         internal static bool IsCustom(string key) => !NonCustomHeaders.Contains(key);
-
-        IEnumerable<string> IReadOnlyDictionary<string, string>.Keys => Keys;
-        IEnumerable<string> IReadOnlyDictionary<string, string>.Values => Values;
 
         /// <inheritdoc />
         public Headers() => _dict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);

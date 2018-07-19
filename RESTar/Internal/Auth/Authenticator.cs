@@ -31,13 +31,13 @@ namespace RESTar.Internal.Auth
             return apiKeyHash != null && ApiKeys.TryGetValue(apiKeyHash, out var rights) ? rights : null;
         }
 
-        internal static AccessRights GetAccessRights(Headers headers)
+        internal static AccessRights GetAccessRights(IHeaders headers)
         {
             string s = null;
             return GetAccessRights(ref s, headers);
         }
 
-        internal static AccessRights GetAccessRights(ref string uri, Headers headers)
+        internal static AccessRights GetAccessRights(ref string uri, IHeaders headers)
         {
             string authorizationHeader;
             if (uri != null && Regex.Match(uri, RegEx.UriKey) is Match keyMatch && keyMatch.Success)

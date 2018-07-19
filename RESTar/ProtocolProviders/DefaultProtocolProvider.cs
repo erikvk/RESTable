@@ -11,9 +11,30 @@ using RESTar.Meta;
 using RESTar.Requests;
 using RESTar.Results;
 using RESTar.WebSockets;
+using Starcounter;
 
 namespace RESTar.ProtocolProviders
 {
+    internal class DefaultProtocolUriComponents : IUriComponents
+    {
+        public string ResourceSpecifier { get; internal set; }
+        public string ViewName { get; internal set; }
+        public IMacro Macro { get; internal set; }
+        IReadOnlyCollection<IUriCondition> IUriComponents.Conditions => Conditions;
+        IReadOnlyCollection<IUriCondition> IUriComponents.MetaConditions => MetaConditions;
+        public List<IUriCondition> Conditions { get; }
+        public List<IUriCondition> MetaConditions { get; }
+        public IProtocolProvider ProtocolProvider { get; }
+        public string ToUriString() => ProtocolProvider.MakeRelativeUri(this);
+
+        public DefaultProtocolUriComponents(IProtocolProvider protocolProvider)
+        {
+            ProtocolProvider = protocolProvider;
+            Conditions = new List<IUriCondition>();
+            MetaConditions = new List<IUriCondition>();
+        }
+    }
+
     /// <inheritdoc />
     /// <summary>
     /// Contains the logic for the default RESTar protocol. This protocol is used if no 
@@ -28,8 +49,9 @@ namespace RESTar.ProtocolProviders
         public string ProtocolIdentifier { get; } = "restar";
 
         /// <inheritdoc />
-        public void PopulateURI(string uriString, URI uri, Context context)
+        public IUriComponents GetUriComponents(string uriString, Context context)
         {
+            var uri = new DefaultProtocolUriComponents(this);
             var match = Regex.Match(uriString, RegEx.RESTarRequestUri);
             if (!match.Success) throw new InvalidSyntax(ErrorCodes.InvalidUriSyntax, "Check URI syntax");
             var resourceOrMacro = match.Groups["res"].Value.TrimStart('/');
@@ -42,7 +64,7 @@ namespace RESTar.ProtocolProviders
                 case var _ when conditions.Length == 0:
                 case var _ when conditions == "_": break;
                 default:
-                    uri.Conditions.AddRange(UriCondition.ParseMany(conditions, true));
+                    UriCondition.ParseMany(conditions, true).ForEach(uri.Conditions.Add);
                     break;
             }
 
@@ -51,7 +73,7 @@ namespace RESTar.ProtocolProviders
                 case var _ when metaConditions.Length == 0:
                 case var _ when metaConditions == "_": break;
                 default:
-                    uri.MetaConditions.AddRange(UriCondition.ParseMany(metaConditions, true));
+                    UriCondition.ParseMany(metaConditions, true).ForEach(uri.MetaConditions.Add);
                     break;
             }
 
@@ -69,19 +91,20 @@ namespace RESTar.ProtocolProviders
                 case var resource when resourceOrMacro[0] != '$':
                     uri.ResourceSpecifier = resource;
                     break;
-                case var macro:
-                    var macroName = macro.Substring(1);
-                    uri.Macro = DbMacro.Get(macroName) ?? throw new UnknownMacro(macroName);
+                case var _macro when _macro.Substring(1) is string macroName:
+                    uri.Macro = Db.SQL<Macro>(Macro.ByName, macroName).FirstOrDefault() ?? throw new UnknownMacro(macroName);
                     uri.ResourceSpecifier = uri.Macro.ResourceSpecifier;
                     uri.ViewName = uri.ViewName ?? uri.Macro.ViewName;
-                    var macroConditions = uri.Macro.UriConditions;
+                    var macroConditions = uri.Macro.Conditions;
                     if (macroConditions != null)
                         uri.Conditions.AddRange(macroConditions);
-                    var macroMetaConditions = uri.Macro.UriMetaConditions;
+                    var macroMetaConditions = uri.Macro.MetaConditions;
                     if (macroMetaConditions != null)
                         uri.MetaConditions.AddRange(macroMetaConditions);
                     break;
             }
+
+            return uri;
         }
 
         public ExternalContentTypeProviderSettings ExternalContentTypeProviderSettings { get; } = ExternalContentTypeProviderSettings.AllowAll;

@@ -42,7 +42,7 @@ namespace RESTar.Requests
         public string TraceId => Parameters.TraceId;
         public Context Context => Parameters.Context;
         public CachedProtocolProvider CachedProtocolProvider => Parameters.CachedProtocolProvider;
-        public IUriComponents UriComponents => Parameters.Uri;
+        public IUriComponents UriComponents => Parameters.UriComponents;
         public Headers Headers => Parameters.Headers;
         public IResource Resource { get; }
         public bool IsWebSocketUpgrade => Parameters.IsWebSocketUpgrade;

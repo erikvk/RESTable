@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json.Linq;
@@ -19,9 +18,9 @@ namespace RESTar.Resources.Operations
             return entity;
         });
 
-        internal static IEnumerable<T> InvokePostInsert<T>(this IEnumerable<T> e) where T : class => Event<T>.OnPostInsert(e);
-        internal static IEnumerable<T> InvokePostUpdate<T>(this IEnumerable<T> e) where T : class => Event<T>.OnPostUpdate(e);
-        internal static IEnumerable<T> InvokePreDelete<T>(this IEnumerable<T> e) where T : class => Event<T>.OnPreDelete(e);
+        internal static IEnumerable<T> InvokePostInsert<T>(this IEnumerable<T> e) where T : class => Event<T>.InvokeOnInsert(e);
+        internal static IEnumerable<T> InvokePostUpdate<T>(this IEnumerable<T> e) where T : class => Event<T>.InvokeOnUpdate(e);
+        internal static IEnumerable<T> InvokePreDelete<T>(this IEnumerable<T> e) where T : class => Event<T>.InvokeOnDelete(e);
     }
 
     internal static class EntityOperations<T> where T : class

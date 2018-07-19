@@ -37,7 +37,7 @@ namespace RESTar.Admin
         /// <summary>
         /// The headers for this WebHook request
         /// </summary>
-        [RESTarMember(replaceOnUpdate: true), JsonConverter(typeof(HeadersConverter))]
+        [RESTarMember(replaceOnUpdate: true), JsonConverter(typeof(HeadersConverter<DbHeaders>))]
         public Headers Headers
         {
             get

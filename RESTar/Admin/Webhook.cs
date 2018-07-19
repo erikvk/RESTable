@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
@@ -6,7 +7,6 @@ using System.Threading.Tasks;
 using Newtonsoft.Json;
 using RESTar.ContentTypeProviders.NativeJsonProtocol;
 using RESTar.Internal.Auth;
-using RESTar.Linq;
 using RESTar.Meta.Internal;
 using RESTar.Requests;
 using RESTar.Resources;
@@ -25,7 +25,13 @@ namespace RESTar.Admin
         internal const string All = "SELECT t FROM RESTar.Admin.Webhook t";
         internal const string ByEventName = All + " WHERE t.EventName =?";
         private static HttpClient HttpClient { get; }
-        static Webhook() => HttpClient = new HttpClient();
+
+        static Webhook()
+        {
+            HttpClient = new HttpClient();
+            Event<Webhook>.OnInsert += Check;
+            Event<Webhook>.OnUpdate += Check;
+        }
 
         /// <summary>
         /// A unique ID for this Webhook
@@ -56,15 +62,29 @@ namespace RESTar.Admin
                     case null:
                         DestinationURL = null;
                         DestinationIsLocal = false;
+                        Headers.Authorization = null;
                         break;
                     case var external when Uri.TryCreate(external, UriKind.Absolute, out var uri):
                         DestinationURL = uri.ToString();
+                        if (DestinationIsLocal)
+                            Headers.Authorization = null;
                         DestinationIsLocal = false;
+                        DestinationError = null;
                         break;
-                    case var other when Context.Root.UriIsValid(other, out var error, out _, out var formatted) is var valid:
-                        DestinationURL = valid ? formatted : other;
-                        DestinationIsLocal = valid;
-                        DestinationError = error?.LogContent;
+                    case var local when Context.Root.UriIsValid(local, out var error, out _, out var components) is var isValid:
+                        if (isValid)
+                        {
+                            DestinationURL = components.ToUriString();
+                            if (!DestinationIsLocal)
+                                Headers.Authorization = null;
+                            DestinationIsLocal = true;
+                            DestinationError = null;
+                        }
+                        else
+                        {
+                            DestinationError = local;
+                            DestinationError = error.LogMessage;
+                        }
                         break;
                 }
             }
@@ -88,18 +108,28 @@ namespace RESTar.Admin
         /// <summary>
         /// Custom headers included in the POST request
         /// </summary>
-        [RESTarMember(replaceOnUpdate: true), JsonConverter(typeof(HeadersConverter), "*")]
+        [RESTarMember(replaceOnUpdate: true), JsonConverter(typeof(HeadersConverter<Headers>), "*")]
         public Headers Headers
         {
-            get => HeadersString == null ? null : JsonConvert.DeserializeObject<Headers>(HeadersString);
+            get => HeadersString == null ? new Headers() : JsonConvert.DeserializeObject<Headers>(HeadersString);
             set
             {
                 switch (value.Authorization)
                 {
+                    // No header present. If was removed, make sure api key is null
                     case null:
-                        value.Authorization = LocalDestinationAPIKey = null;
+                        LocalDestinationAPIKey = null;
                         break;
+
+                    // Has been set to authheadermask manually. Set header to null.
+                    case Authenticator.AuthHeaderMask when LocalDestinationAPIKey == null:
+                        value.Authorization = null;
+                        break;
+
+                    // No change
                     case Authenticator.AuthHeaderMask: break;
+
+                    // Has value, and request destination is local
                     case var localAuthHeader when DestinationIsLocal:
                         LocalDestinationAPIKey = Authenticator.GetAccessRights(localAuthHeader)?.ApiKey;
                         value.Authorization = Authenticator.AuthHeaderMask;
@@ -219,6 +249,54 @@ namespace RESTar.Admin
             }
         }
 
+        private static IEnumerable<Webhook> Check(IEnumerable<Webhook> entities) => RESTarConfig.RequireApiKey
+            ? entities.Select(webhook =>
+            {
+                var headers = webhook.Headers;
+                // Check destination auth
+                if (webhook.DestinationIsLocal && webhook.DestinationIsValid)
+                {
+                    var accessRights = default(AccessRights);
+
+                    if (webhook.LocalDestinationAPIKey == null)
+                    {
+                        accessRights = Authenticator.GetAccessRights(webhook.Headers);
+                        webhook.LocalDestinationAPIKey = accessRights?.ApiKey;
+                        if (accessRights == null)
+                        {
+                            webhook.Headers.Authorization = null;
+                            webhook.AuthorizationError = "The destination is a local resource, but no valid  'Authorization' header ";
+                        }
+
+                        if (webhook.Headers.Authorization is string header && header != Authenticator.AuthHeaderMask)
+                        {
+                            webhook.Headers.Authorization = Authenticator.AuthHeaderMask;
+                        }
+                        else { }
+                    }
+                    else
+                    {
+                        accessRights = Authenticator.ApiKeys.SafeGet(webhook.LocalDestinationAPIKey);
+
+                        //switch (Authenticator.GetAccessRights())
+                        //{
+                        //    case null:
+                        //        webhook.AuthorizationError = "The destination is a local resource, but no valid API key was " +
+                        //                                     "found in the 'Authorization' header of the webhook.";
+                        //        break;
+                        //    case var ar when
+                        //}
+
+                        // check access
+                    }
+                }
+
+                // Check custom request auth
+                if (webhook.CustomRequest != null) { }
+                return webhook;
+            })
+            : entities;
+
         private IRequest GetLocalPostRequest(out Results.Error error)
         {
             var client = Client.Webhook;
@@ -251,17 +329,6 @@ namespace RESTar.Admin
                 message.Headers.Add("RESTar-webhook-custom-request-info", customRequestInfo);
             message.Headers.Add("RESTar-webhook-id", Id);
             return message;
-        }
-
-        private static int Check(IRequest<Webhook> request)
-        {
-            var count = 0;
-            Db.TransactAsync(() => request.GetInputEntities().ForEach(webhook =>
-            {
-                if (webhook.DestinationIsLocal)
-                    count += 1;
-            }));
-            return count;
         }
 
         internal async Task Post<T>(IEventInternal<T> @event) where T : class

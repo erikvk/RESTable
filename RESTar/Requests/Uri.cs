@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
-using RESTar.Admin;
 using RESTar.Internal;
 using RESTar.ProtocolProviders;
 using RESTar.Results;
@@ -15,10 +14,11 @@ namespace RESTar.Requests
         public string ViewName { get; }
         public List<IUriCondition> Conditions { get; }
         public List<IUriCondition> MetaConditions { get; }
-        public Func<IUriComponents, string> StringMaker { get; }
+        public IProtocolProvider ProtocolProvider { get; }
+        public IMacro Macro { get; }
 
-        IEnumerable<IUriCondition> IUriComponents.Conditions => Conditions;
-        IEnumerable<IUriCondition> IUriComponents.MetaConditions => MetaConditions;
+        IReadOnlyCollection<IUriCondition> IUriComponents.Conditions => Conditions;
+        IReadOnlyCollection<IUriCondition> IUriComponents.MetaConditions => MetaConditions;
 
         public UriComponents(string resourceSpecifier, string viewName, IEnumerable<IUriCondition> conditions,
             IEnumerable<IUriCondition> metaConditions, IProtocolProvider protocolProvider)
@@ -27,7 +27,8 @@ namespace RESTar.Requests
             ViewName = viewName;
             Conditions = conditions.ToList();
             MetaConditions = metaConditions.ToList();
-            StringMaker = protocolProvider.MakeRelativeUri;
+            ProtocolProvider = protocolProvider;
+            Macro = null;
         }
 
         public UriComponents(IUriComponents existing)
@@ -36,17 +37,19 @@ namespace RESTar.Requests
             ViewName = existing.ViewName;
             Conditions = existing.Conditions.ToList();
             MetaConditions = existing.MetaConditions.ToList();
-            StringMaker = existing.StringMaker;
+            ProtocolProvider = existing.ProtocolProvider;
+            Macro = existing.Macro;
         }
 
-        public override string ToString() => StringMaker(this);
+        public string ToUriString() => ToString();
+        public override string ToString() => ProtocolProvider.MakeRelativeUri(this);
     }
 
     /// <inheritdoc />
     /// <summary>
     /// Encodes a URI that is used in a request
     /// </summary>
-    public class URI : IUriComponents
+    internal class URI : IUriComponents
     {
         /// <inheritdoc />
         public string ResourceSpecifier { get; set; }
@@ -54,23 +57,19 @@ namespace RESTar.Requests
         /// <inheritdoc />
         public string ViewName { get; set; }
 
-        IEnumerable<IUriCondition> IUriComponents.Conditions => Conditions.Cast<IUriCondition>();
-        IEnumerable<IUriCondition> IUriComponents.MetaConditions => MetaConditions.Cast<IUriCondition>();
+        /// <inheritdoc />
+        public IReadOnlyCollection<IUriCondition> Conditions { get; private set; }
 
-        /// <summary>
-        /// The conditions contained in the URI
-        /// </summary>
-        public List<UriCondition> Conditions { get; }
+        /// <inheritdoc />
+        public IReadOnlyCollection<IUriCondition> MetaConditions { get; private set; }
 
-        /// <summary>
-        /// The MetaConditions contained in the URI
-        /// </summary>
-        public List<UriCondition> MetaConditions { get; }
+        public IMacro Macro { get; private set; }
 
-        internal DbMacro Macro { get; set; }
         internal Exception Error { get; private set; }
         internal bool HasError => Error != null;
-        private IProtocolProvider ProtocolProvider { get; set; }
+
+        /// <inheritdoc />
+        public IProtocolProvider ProtocolProvider { get; private set; }
 
         internal static URI ParseInternal(string uriString, bool percentCharsEscaped, Context context,
             out CachedProtocolProvider cachedProtocolProvider)
@@ -88,13 +87,22 @@ namespace RESTar.Requests
             uri.ProtocolProvider = cachedProtocolProvider.ProtocolProvider;
             try
             {
-                cachedProtocolProvider.ProtocolProvider.PopulateURI(tail, uri, context);
+                uri.Populate(cachedProtocolProvider.ProtocolProvider.GetUriComponents(tail, context));
             }
             catch (Exception e)
             {
                 uri.Error = e;
             }
             return uri;
+        }
+
+        private void Populate(IUriComponents components)
+        {
+            ResourceSpecifier = components.ResourceSpecifier;
+            ViewName = components.ViewName;
+            Conditions = components.Conditions;
+            MetaConditions = components.MetaConditions;
+            Macro = components.Macro;
         }
 
         internal static URI Parse(string uriString)
@@ -107,19 +115,15 @@ namespace RESTar.Requests
 
         internal URI()
         {
-            Conditions = new List<UriCondition>();
-            MetaConditions = new List<UriCondition>();
-            StringMaker = c =>
-            {
-                var provider = ProtocolProvider ?? ProtocolController.DefaultProtocolProvider.ProtocolProvider;
-                return provider.MakeRelativeUri(c);
-            };
+            Conditions = new List<IUriCondition>();
+            MetaConditions = new List<IUriCondition>();
+            ProtocolProvider = ProtocolController.DefaultProtocolProvider.ProtocolProvider;
         }
 
         /// <inheritdoc />
-        public Func<IUriComponents, string> StringMaker { get; }
+        public string ToUriString() => ToString();
 
         /// <inheritdoc />
-        public override string ToString() => StringMaker(this);
+        public override string ToString() => ProtocolProvider.MakeRelativeUri(this);
     }
 }

@@ -19,8 +19,8 @@ namespace RESTar.Requests
     /// </summary>
     public class Condition<T> : ICondition, IUriCondition where T : class
     {
-        private static readonly IDictionary<UriCondition, Condition<T>> ConditionCache;
-        static Condition() => ConditionCache = new ConcurrentDictionary<UriCondition, Condition<T>>(UriCondition.EqualityComparer);
+        private static readonly IDictionary<IUriCondition, Condition<T>> ConditionCache;
+        static Condition() => ConditionCache = new ConcurrentDictionary<IUriCondition, Condition<T>>(UriCondition.EqualityComparer);
 
         /// <inheritdoc cref="ICondition" />
         /// <inheritdoc cref="IUriCondition" />
@@ -155,7 +155,7 @@ namespace RESTar.Requests
         /// <summary>
         /// Parses and checks the semantics of Conditions object from a conditions of a REST request URI
         /// </summary>
-        public static List<Condition<T>> Parse(ICollection<UriCondition> uriConditions, ITarget<T> target)
+        public static List<Condition<T>> Parse(IReadOnlyCollection<IUriCondition> uriConditions, ITarget<T> target)
         {
             var list = new List<Condition<T>>(uriConditions.Count);
             list.AddRange(uriConditions.Select(c =>
@@ -164,12 +164,12 @@ namespace RESTar.Requests
                     return cond;
                 var term = target.MakeConditionTerm(c.Key);
                 var last = term.Last;
-                if (!last.AllowedConditionOperators.HasFlag(c.Operator.OpCode))
+                if (!last.AllowedConditionOperators.HasFlag(c.Operator))
                     throw new BadConditionOperator(c.Key, target, c.Operator, term, last.AllowedConditionOperators.ToOperators());
                 return ConditionCache[c] = new Condition<T>
                 (
                     term: term,
-                    op: c.Operator.OpCode,
+                    op: c.Operator,
                     value: c.ValueLiteral.ParseConditionValue(last as DeclaredProperty)
                 );
             }));

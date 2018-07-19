@@ -30,9 +30,9 @@ namespace RESTar.Requests
         /// <inheritdoc />
         public string ValueLiteral { get; }
 
-        internal static List<UriCondition> ParseMany(string conditionsString, bool check = false) => conditionsString
+        internal static List<IUriCondition> ParseMany(string conditionsString, bool check = false) => conditionsString
             .Split('&')
-            .Select(s => new UriCondition(s, check))
+            .Select(s => (IUriCondition) new UriCondition(s, check))
             .ToList();
 
         /// <summary>
@@ -92,21 +92,26 @@ namespace RESTar.Requests
         /// <summary>
         /// EqualityComparer for UriCondition objects
         /// </summary>
-        public static readonly IEqualityComparer<UriCondition> EqualityComparer = new _EqualityComparer();
+        public static readonly IEqualityComparer<IUriCondition> EqualityComparer = new _EqualityComparer();
 
-        private class _EqualityComparer : IEqualityComparer<UriCondition>
+        private class _EqualityComparer : IEqualityComparer<IUriCondition>
         {
-            public bool Equals(UriCondition x, UriCondition y) => string.Equals(x.Key, y.Key, OrdinalIgnoreCase)
-                                                                  && x.Operator == y.Operator
-                                                                  && x.ValueLiteral == y.ValueLiteral;
+            public bool Equals(IUriCondition x, IUriCondition y)
+            {
+                if (x == null && y == null) return true;
+                if (x == null || y == null) return false;
+                return string.Equals(x.Key, y.Key, OrdinalIgnoreCase)
+                       && x.Operator == y.Operator
+                       && x.ValueLiteral == y.ValueLiteral;
+            }
 
-            public int GetHashCode(UriCondition obj)
+            public int GetHashCode(IUriCondition obj)
             {
                 unchecked
                 {
                     var hash = 17;
                     hash = hash * 23 + StringComparer.OrdinalIgnoreCase.GetHashCode(obj.Key);
-                    hash = hash * 23 + obj.Operator.OpCode.GetHashCode();
+                    hash = hash * 23 + obj.Operator.GetHashCode();
                     hash = hash * 23 + obj.ValueLiteral.GetHashCode();
                     return hash;
                 }

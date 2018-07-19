@@ -114,6 +114,9 @@
     <Compile Include="Dynamic\Resource.cs" />
     <Compile Include="Meta\IDynamicMemberValueProvider.cs" />
     <Compile Include="Admin\Event.cs" />
+    <Compile Include="Requests\DbHeaders.cs" />
+    <Compile Include="Requests\HeadersEnumerator.cs" />
+    <Compile Include="Requests\IHeaders.cs" />
     <Compile Include="Resources\Event.cs" />
     <Compile Include="Meta\Internal\IEventInternal.cs" />
     <Compile Include="Resources\InvalidEventDeclarationException.cs" />

@@ -31,10 +31,12 @@ namespace RESTar.Requests
         /// </summary>
         public Method Method { get; }
 
+        private URI Uri { get; }
+
         /// <summary>
-        /// The URI contained in the arguments
+        /// The uri components contained in the arguments
         /// </summary>
-        public URI Uri { get; }
+        public IUriComponents UriComponents => Uri;
 
         /// <summary>
         /// Did the request contain a body?
@@ -121,10 +123,10 @@ namespace RESTar.Requests
             if (hasMacro)
             {
                 if (Uri.Macro.OverwriteHeaders)
-                    Uri.Macro.HeadersDictionary?.ForEach(pair => Headers[pair.Key] = pair.Value);
+                    Uri.Macro.Headers?.ForEach(pair => Headers[pair.Key] = pair.Value);
                 else
                 {
-                    Uri.Macro.HeadersDictionary?.ForEach(pair =>
+                    Uri.Macro.Headers?.ForEach(pair =>
                     {
                         var currentValue = Headers.SafeGet(pair.Key);
                         if (string.IsNullOrWhiteSpace(currentValue) || currentValue == "*/*")
@@ -154,7 +156,7 @@ namespace RESTar.Requests
                 {
                     if (Uri.Macro.HasBody)
                     {
-                        BodyBytes = Uri.Macro.GetBody();
+                        BodyBytes = Uri.Macro.Body;
                         Headers.ContentType = Providers.Json.ContentType;
                     }
                 }
@@ -162,7 +164,7 @@ namespace RESTar.Requests
                 {
                     if (!(body?.Length > 0) && Uri.Macro.HasBody)
                     {
-                        BodyBytes = Uri.Macro.GetBody();
+                        BodyBytes = Uri.Macro.Body;
                         Headers.ContentType = Providers.Json.ContentType;
                     }
                     else BodyBytes = body;
@@ -185,10 +187,10 @@ namespace RESTar.Requests
             if (hasMacro)
             {
                 if (Uri.Macro.OverwriteHeaders)
-                    Uri.Macro.HeadersDictionary?.ForEach(pair => Headers[pair.Key] = pair.Value);
+                    Uri.Macro.Headers?.ForEach(pair => Headers[pair.Key] = pair.Value);
                 else
                 {
-                    Uri.Macro.HeadersDictionary?.ForEach(pair =>
+                    Uri.Macro.Headers?.ForEach(pair =>
                     {
                         var currentValue = Headers.SafeGet(pair.Key);
                         if (string.IsNullOrWhiteSpace(currentValue) || currentValue == "*/*")

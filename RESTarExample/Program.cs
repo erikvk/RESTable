@@ -58,7 +58,7 @@ namespace RESTarExample
     [RESTarEvent("Notification!")]
     public class NotificationEvent : Event<MyNotification>
     {
-        public NotificationEvent(MyNotification payload) : base(payload) => RaiseEvent();
+        public NotificationEvent(MyNotification payload) : base(payload) => InvokeRaise();
     }
 
     [Database, RESTar]

@@ -34,7 +34,7 @@ namespace RESTar.Internal
 
         private static void RaiseEventHandlers<T>(object sender, T @event) where T : EventArgs, IEvent
         {
-            Event<T>.RaiseEvent(sender, @event);
+            Event<T>.InvokeRaise(sender, @event);
         }
     }
 }
