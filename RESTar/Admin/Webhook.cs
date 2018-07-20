@@ -1,37 +1,34 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using RESTar.ContentTypeProviders.NativeJsonProtocol;
 using RESTar.Internal.Auth;
+using RESTar.Meta;
 using RESTar.Meta.Internal;
 using RESTar.Requests;
 using RESTar.Resources;
+using RESTar.Resources.Operations;
 using RESTar.Results;
 using Starcounter;
 using static RESTar.Method;
 
 namespace RESTar.Admin
 {
+    /// <inheritdoc />
     /// <summary>
     /// Webhooks are used to generate POST request callbacks to external URIs when events are triggered.
     /// </summary>
     [RESTar, Database]
-    public class Webhook
+    public class Webhook : IValidatable
     {
         internal const string All = "SELECT t FROM RESTar.Admin.Webhook t";
         internal const string ByEventName = All + " WHERE t.EventName =?";
         private static HttpClient HttpClient { get; }
-
-        static Webhook()
-        {
-            HttpClient = new HttpClient();
-            Event<Webhook>.OnInsert += Check;
-            Event<Webhook>.OnUpdate += Check;
-        }
+        static Webhook() => HttpClient = new HttpClient();
 
         /// <summary>
         /// A unique ID for this Webhook
@@ -43,57 +40,27 @@ namespace RESTar.Admin
         /// </summary>
         public string Label { get; set; }
 
-        /// <summary>
-        /// The underlying storage for destination URLs
-        /// </summary>
-        [RESTarMember(ignore: true)] public string DestinationURL { get; set; }
+        [Transient] private bool DestinationHasChanged { get; set; }
+
+        private string destination;
 
         /// <summary>
         /// The destination URL for this webhook
         /// </summary>
         public string Destination
         {
-            get => DestinationURL;
+            get => destination;
             set
             {
-                switch (value)
-                {
-                    case "":
-                    case null:
-                        DestinationURL = null;
-                        DestinationIsLocal = false;
-                        Headers.Authorization = null;
-                        break;
-                    case var external when Uri.TryCreate(external, UriKind.Absolute, out var uri):
-                        DestinationURL = uri.ToString();
-                        if (DestinationIsLocal)
-                            Headers.Authorization = null;
-                        DestinationIsLocal = false;
-                        DestinationError = null;
-                        break;
-                    case var local when Context.Root.UriIsValid(local, out var error, out _, out var components) is var isValid:
-                        if (isValid)
-                        {
-                            DestinationURL = components.ToUriString();
-                            if (!DestinationIsLocal)
-                                Headers.Authorization = null;
-                            DestinationIsLocal = true;
-                            DestinationError = null;
-                        }
-                        else
-                        {
-                            DestinationError = local;
-                            DestinationError = error.LogMessage;
-                        }
-                        break;
-                }
+                DestinationHasChanged = DestinationHasChanged || destination != value;
+                destination = value;
             }
         }
 
         /// <summary>
-        /// Does the destination URL refer to a local resource?
+        /// Does the destination refer to a local resource?
         /// </summary>
-        public bool DestinationIsLocal { get; private set; }
+        [RESTarMember(ignore: true)] public bool DestinationIsLocal { get; private set; }
 
         /// <summary>
         /// The API key to use in requests to local destination resources
@@ -101,69 +68,25 @@ namespace RESTar.Admin
         [RESTarMember(ignore: true)] public string LocalDestinationAPIKey { get; private set; }
 
         /// <summary>
-        /// The underlying storage for headers of this WebHook request
-        /// </summary>
-        [RESTarMember(ignore: true)] public string HeadersString { get; private set; }
-
-        /// <summary>
         /// Custom headers included in the POST request
         /// </summary>
         [JsonConverter(typeof(HeadersConverter<Headers>), "*")]
-        public DbHeaders Headers
-        {
-            get;
+        public DbHeaders Headers { get; }
 
-            //get => HeadersString == null ? new Headers() : JsonConvert.DeserializeObject<Headers>(HeadersString);
-            //set
-            //{
-            //    switch (value.Authorization)
-            //    {
-            //        // No header present. If was removed, make sure api key is null
-            //        case null:
-            //            LocalDestinationAPIKey = null;
-            //            break;
+        [Transient] private bool EventHasChanged { get; set; }
 
-            //        // Has been set to authheadermask manually. Set header to null.
-            //        case Authenticator.AuthHeaderMask when LocalDestinationAPIKey == null:
-            //            value.Authorization = null;
-            //            break;
-
-            //        // No change
-            //        case Authenticator.AuthHeaderMask: break;
-
-            //        // Has value, and request destination is local
-            //        case var localAuthHeader when DestinationIsLocal:
-            //            LocalDestinationAPIKey = Authenticator.GetAccessRights(localAuthHeader)?.ApiKey;
-            //            value.Authorization = Authenticator.AuthHeaderMask;
-            //            break;
-            //    }
-            //    HeadersString = JsonConvert.SerializeObject(value);
-            //}
-        }
-
-        /// <summary>
-        /// The underlying storage for event names
-        /// </summary>
-        [RESTarMember(ignore: true)] public string EventName { get; private set; }
+        private string _event;
 
         /// <summary>
         /// The event used to trigger this webhook
         /// </summary>
         public string Event
         {
-            get => EventName;
+            get => _event;
             set
             {
-                if (!string.IsNullOrWhiteSpace(value) && Db.SQL<Event>(Admin.Event.ByName, value).FirstOrDefault() is Event @event)
-                {
-                    EventName = @event.Name;
-                    EventIsValid = true;
-                }
-                else
-                {
-                    EventName = value;
-                    EventIsValid = false;
-                }
+                EventHasChanged = EventHasChanged || _event != value;
+                _event = value;
             }
         }
 
@@ -173,68 +96,9 @@ namespace RESTar.Admin
         public bool IsPaused { get; set; }
 
         /// <summary>
-        /// Is this webhook currently valid?
+        /// The error message, if any, of this webhook
         /// </summary>
-        public bool IsValid => DestinationIsValid && EventIsValid && CustomRequestIsValid;
-
-        /// <summary>
-        /// Is this webhook currently active?
-        /// </summary>
-        public bool IsActive => IsValid && !IsPaused;
-
-        /// <summary>
-        /// The error (if any) for this webhook
-        /// </summary>
-        public string Error
-        {
-            get
-            {
-                if (!DestinationIsValid)
-                    return DestinationError;
-                if (!EventIsValid)
-                    return $"Unknown event '{Event}'. To list available events, use the RESTar.Event resource";
-                if (!CustomRequestIsValid)
-                    return CustomRequestError;
-                if (!IsAuthorized)
-                    return AuthorizationError;
-                return null;
-            }
-        }
-
-        /// <summary>
-        /// Is the destination URL valid?
-        /// </summary>
-        [RESTarMember(ignore: true)] public bool DestinationIsValid => DestinationError == null;
-
-        /// <summary>
-        /// The error (if any) of the destination
-        /// </summary>
-        [RESTarMember(ignore: true)] public string DestinationError { get; private set; }
-
-        /// <summary>
-        /// Is the event valid?
-        /// </summary>
-        [RESTarMember(ignore: true)] public bool EventIsValid { get; private set; }
-
-        /// <summary>
-        /// Is this webhook properly authorized (as far as we can know)?
-        /// </summary>
-        [RESTarMember(ignore: true)] public bool IsAuthorized => AuthorizationError == null;
-
-        /// <summary>
-        /// The error (if any) regarding this webhook's authorization
-        /// </summary>
-        [RESTarMember(ignore: true)] public string AuthorizationError { get; private set; }
-
-        /// <summary>
-        /// Is the custom request valid?
-        /// </summary>
-        [RESTarMember(ignore: true)] public bool CustomRequestIsValid => CustomRequestError == null;
-
-        /// <summary>
-        /// The error (if any) of the custom request
-        /// </summary>
-        [RESTarMember(ignore: true)] public string CustomRequestError { get; private set; }
+        [RESTarMember(hideIfNull: true)] public string ErrorMessage { get; private set; }
 
         private WebhookRequest customRequest;
 
@@ -254,76 +118,131 @@ namespace RESTar.Admin
         /// <inheritdoc />
         public Webhook() => Headers = new DbHeaders();
 
-        private static IEnumerable<Webhook> Check(IEnumerable<Webhook> entities) => RESTarConfig.RequireApiKey
-            ? entities.Select(webhook =>
+        /// <inheritdoc />
+        public bool IsValid(out string invalidReason)
+        {
+            #region Destination
+
+            if (string.IsNullOrWhiteSpace(Destination))
             {
-                // Check destination auth
-                if (webhook.DestinationIsLocal && webhook.DestinationIsValid)
+                invalidReason = "Invalid or missing Destination in webhook";
+                return false;
+            }
+            if (Uri.TryCreate(Destination, UriKind.Absolute, out var _uri))
+            {
+                Destination = _uri.ToString();
+                DestinationIsLocal = false;
+            }
+            else
+            {
+                if (!Context.Root.UriIsValid(Destination, out var error, out var resource, out var components))
                 {
-                    AccessRights accessRights;
-
-                    if (webhook.LocalDestinationAPIKey == null)
+                    if (!DestinationHasChanged)
                     {
-                        accessRights = Authenticator.GetAccessRights(webhook.Headers);
-                        webhook.LocalDestinationAPIKey = accessRights?.ApiKey;
-                        if (accessRights == null)
-                        {
-                            webhook.Headers.Authorization = null;
-                            webhook.AuthorizationError = "The destination is a local resource, but found no valid " +
-                                                         "'Authorization' header in the webhook headers";
-                        }
-
-                        if (webhook.Headers.Authorization is string header && header != Authenticator.AuthHeaderMask)
-                        {
-                            webhook.Headers.Authorization = Authenticator.AuthHeaderMask;
-                        }
-                        else { }
+                        ErrorMessage = $"The Destination URL of webhook '{Label ?? Id}' is no longer valid, and has been changed to " +
+                                       "protect against unsafe behavior. Please change the destination to a valid local URI " +
+                                       "to repair the webhook. Previous Destination: " + Destination;
+                        Destination = $"/{Resource<Echo>.ResourceSpecifier}/Info={WebUtility.UrlEncode(ErrorMessage)}";
+                        IsPaused = true;
+                        invalidReason = null;
+                        return true;
                     }
-                    else
+                    ErrorMessage = null;
+                    invalidReason = "Invalid Destination URI syntax. Was not an absolute URI, and failed validation " +
+                                    "as a local URI. " + error.Headers.Info;
+                    return false;
+                }
+                Destination = components.ToUriString();
+                DestinationIsLocal = true;
+                if (RESTarConfig.RequireApiKey)
+                {
+                    switch (Headers.Authorization)
                     {
-                        accessRights = Authenticator.ApiKeys.SafeGet(webhook.LocalDestinationAPIKey);
+                        case Authenticator.AuthHeaderMask: break;
+                        case string _:
+                            LocalDestinationAPIKey = Authenticator.GetAccessRights(Headers)?.ApiKey;
+                            break;
+                        default:
+                            LocalDestinationAPIKey = null;
+                            break;
+                    }
+                    var context = Context.Webhook(LocalDestinationAPIKey, out var authError);
+                    if (authError != null)
+                    {
+                        Headers.Authorization = null;
+                        LocalDestinationAPIKey = null;
+                        invalidReason = "Missing or invalid 'Authorization' header. Webhooks with local destinations require a " +
+                                        "valid API key to be included in the 'Authorization' header.";
+                        return false;
+                    }
 
-                        //switch (Authenticator.GetAccessRights())
-                        //{
-                        //    case null:
-                        //        webhook.AuthorizationError = "The destination is a local resource, but no valid API key was " +
-                        //                                     "found in the 'Authorization' header of the webhook.";
-                        //        break;
-                        //    case var ar when
-                        //}
-
-                        // check access
+                    if (!context.MethodIsAllowed(POST, resource, out var methodError))
+                    {
+                        invalidReason = $"Authorization error: {methodError.Headers.Info}";
+                        return false;
                     }
                 }
+            }
 
-                // Check custom request auth
-                if (webhook.CustomRequest != null) { }
-                return webhook;
-            })
-            : entities;
+            #endregion
+
+            #region Event
+
+            if (string.IsNullOrWhiteSpace(Event))
+            {
+                invalidReason = "Invalid or missing Event in webhook";
+                return false;
+            }
+            if (Db.SQL<Event>(Admin.Event.ByName, Event).FirstOrDefault() is Event @event)
+                Event = @event.Name;
+            else
+            {
+                if (!EventHasChanged)
+                {
+                    ErrorMessage = $"The Event '{Event}' of webhook '{Label ?? Id}' is no longer available. Please change the 'Event' " +
+                                   "property to a valid event to repair the webhook. To list available events, use the 'RESTar.Event' resource.";
+                    IsPaused = true;
+                    invalidReason = null;
+                    return true;
+                }
+                invalidReason = $"Unknown event '{Event}'. To list available events, use the RESTar.Event resource";
+                return false;
+            }
+
+            #endregion
+
+            #region Custom request
+
+            if (CustomRequest != null)
+            {
+                if (!CustomRequest.IsValid(this, out var _invalidReason, out var errorMessage))
+                {
+                    invalidReason = _invalidReason;
+                    return false;
+                }
+                if (errorMessage != null)
+                {
+                    ErrorMessage = errorMessage;
+                    invalidReason = null;
+                    return true;
+                }
+            }
+
+            #endregion
+
+            invalidReason = null;
+            return true;
+        }
 
         private IRequest GetLocalPostRequest(out Results.Error error)
         {
-            var client = Client.Webhook;
-            if (!client.TryAuthenticate(Headers.Authorization, out var forbidden))
-            {
-                error = forbidden;
-                return null;
-            }
-            var context = Context.Webhook(client);
-            if (!context.UriIsValid(DestinationURL, out error, out var resource, out _))
-                return null;
-            if (!context.MethodIsAllowed(POST, resource, out var methodNotAllowed))
-            {
-                error = methodNotAllowed;
-                return null;
-            }
-            return Context.Webhook(client).CreateRequest(DestinationURL, POST, headers: Headers.ToTransient());
+            var context = Context.Webhook(LocalDestinationAPIKey, out error);
+            return error != null ? null : context.CreateRequest(Destination, POST, headers: Headers.ToTransient());
         }
 
         private HttpRequestMessage GetRequestMessage(Stream body, ContentType? contentType, string customRequestInfo = null)
         {
-            var message = new HttpRequestMessage(HttpMethod.Post, DestinationURL);
+            var message = new HttpRequestMessage(HttpMethod.Post, Destination);
             if (body != null)
             {
                 var content = new StreamContent(body);
@@ -338,7 +257,7 @@ namespace RESTar.Admin
 
         internal async Task Post<T>(IEventInternal<T> @event) where T : class
         {
-            if (!IsActive) return;
+            if (IsPaused) return;
 
             Stream body;
             var info = default(string);

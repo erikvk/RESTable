@@ -3,7 +3,6 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Net;
-using System.Threading;
 using RESTar.Admin;
 using RESTar.Internal;
 using RESTar.Internal.Auth;

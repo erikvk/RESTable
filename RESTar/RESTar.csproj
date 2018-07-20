@@ -112,6 +112,7 @@
     <Compile Include="ContentTypeProviders\TypeConverter.cs" />
     <Compile Include="ContentTypeProviders\XMLWriter.cs" />
     <Compile Include="Dynamic\Resource.cs" />
+    <Compile Include="Internal\WebhookContext.cs" />
     <Compile Include="Meta\IDynamicMemberValueProvider.cs" />
     <Compile Include="Admin\Event.cs" />
     <Compile Include="Requests\DbHeaders.cs" />

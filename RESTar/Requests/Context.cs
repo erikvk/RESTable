@@ -205,7 +205,11 @@ namespace RESTar.Requests
         /// <summary>
         /// The context of internal webhook requests
         /// </summary>
-        internal static Context Webhook(Client client) => new InternalContext(client);
+        internal static Context Webhook(string apiKey, out Results.Error error)
+        {
+            WebhookContext.TryCreate(apiKey, out var context, out error);
+            return context;
+        }
 
         /// <summary>
         /// The context of a remote request to some external RESTar service

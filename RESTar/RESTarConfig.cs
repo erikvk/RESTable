@@ -230,7 +230,7 @@ namespace RESTar
 
         private static void RegisterStaticIndexes()
         {
-            DatabaseIndex.Register<Webhook>("RESTar_Admin_Webhook__EventName", nameof(Webhook.EventName));
+            DatabaseIndex.Register<Webhook>("RESTar_Admin_Webhook__Event", nameof(Webhook.Event));
             DatabaseIndex.Register<Event>("RESTar_Admin_Event__Name", nameof(Event.Name));
             DatabaseIndex.Register<Macro>("RESTar_Admin_Macro__Name", nameof(Macro.Name));
         }
