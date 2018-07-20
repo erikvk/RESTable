@@ -22,22 +22,18 @@ namespace RESTar
         private const string description = "The Echo resource is a test and utility resource that " +
                                            "returns the request conditions as an object.";
 
-        private Echo()
-        {
-        }
+        private Echo() { }
 
-        private Echo(object thing) : base(thing)
-        {
-        }
+        private Echo(object thing) : base(thing) { }
 
         /// <inheritdoc />
         public IEnumerable<Echo> Select(IRequest<Echo> request)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
-            var echo = new[]
-            {
-                new Echo(request.Conditions.Select(c => new JProperty(c.Key, c.Value)))
-            };
+            var members = request.Conditions.Select(c => new JProperty(c.Key, c.Value));
+            var body = request.GetBody().Deserialize<JObject>();
+            if (body != null) members = members.Union<JProperty>(body.SelectMany(item => item.Properties()), EqualityComparer);
+            var echo = new[] {new Echo(members)};
             TypeCache.ClearTermsFor<Echo>();
             return echo;
         }

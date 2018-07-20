@@ -9,6 +9,6 @@ namespace RESTar.Results
     internal class UnknownMacro : NotFound
     {
         internal UnknownMacro(string searchString) : base(ErrorCodes.UnknownMacro,
-            $"RESTar could not locate any macro by '{searchString}'.") { }
+            $"RESTar could not locate any valid macro by '{searchString}'. To list macros, use the 'RESTar.Admin.Macro' resource") { }
     }
 }

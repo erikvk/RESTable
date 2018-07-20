@@ -21,14 +21,14 @@ namespace RESTar.Requests
         IReadOnlyCollection<IUriCondition> IUriComponents.MetaConditions => MetaConditions;
 
         public UriComponents(string resourceSpecifier, string viewName, IEnumerable<IUriCondition> conditions,
-            IEnumerable<IUriCondition> metaConditions, IProtocolProvider protocolProvider)
+            IEnumerable<IUriCondition> metaConditions, IProtocolProvider protocolProvider, IMacro macro)
         {
             ResourceSpecifier = resourceSpecifier;
             ViewName = viewName;
             Conditions = conditions.ToList();
             MetaConditions = metaConditions.ToList();
             ProtocolProvider = protocolProvider;
-            Macro = null;
+            Macro = macro;
         }
 
         public UriComponents(IUriComponents existing)

@@ -257,11 +257,10 @@ namespace RESTar.Admin
         private static IEnumerable<Webhook> Check(IEnumerable<Webhook> entities) => RESTarConfig.RequireApiKey
             ? entities.Select(webhook =>
             {
-                var headers = webhook.Headers;
                 // Check destination auth
                 if (webhook.DestinationIsLocal && webhook.DestinationIsValid)
                 {
-                    var accessRights = default(AccessRights);
+                    AccessRights accessRights;
 
                     if (webhook.LocalDestinationAPIKey == null)
                     {
@@ -270,7 +269,8 @@ namespace RESTar.Admin
                         if (accessRights == null)
                         {
                             webhook.Headers.Authorization = null;
-                            webhook.AuthorizationError = "The destination is a local resource, but no valid  'Authorization' header ";
+                            webhook.AuthorizationError = "The destination is a local resource, but found no valid " +
+                                                         "'Authorization' header in the webhook headers";
                         }
 
                         if (webhook.Headers.Authorization is string header && header != Authenticator.AuthHeaderMask)

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -117,7 +118,10 @@ namespace RESTar.ProtocolProviders
         private static string ToUriString(IUriComponents components)
         {
             var view = components.ViewName != null ? $"-{components.ViewName}" : null;
-            var str = new StringBuilder($"/{components.ResourceSpecifier}{view}");
+            var str = new StringBuilder();
+            if (components.Macro == null)
+                str.Append($"/{components.ResourceSpecifier}{view}");
+            else str.Append($"/${components.Macro.Name}");
             var conditions = components.Conditions.ToList();
             var metaconditions = components.MetaConditions.ToList();
             if (conditions.Count > 0)
@@ -142,7 +146,23 @@ namespace RESTar.ProtocolProviders
         private static string ToUriString(IUriCondition condition)
         {
             if (condition == null) return "";
-            return $"{WebUtility.UrlEncode(condition.Key)}{((Operator) condition.Operator).Common}{WebUtility.UrlEncode(condition.ValueLiteral)}";
+            var valueLiteral = WebUtility.UrlEncode(condition.ValueLiteral);
+            if (condition.ValueTypeCode == TypeCode.String)
+            {
+                switch (valueLiteral)
+                {
+                    case "false":
+                    case "False":
+                    case "FALSE":
+                    case "true":
+                    case "True":
+                    case "TRUE":
+                    case var _ when valueLiteral?.All(char.IsDigit) == true:
+                        valueLiteral = $"'{valueLiteral}'";
+                        break;
+                }
+            }
+            return $"{WebUtility.UrlEncode(condition.Key)}{((Operator) condition.Operator).Common}{valueLiteral}";
         }
 
         /// <inheritdoc />

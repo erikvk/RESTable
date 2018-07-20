@@ -30,6 +30,9 @@ namespace RESTar.Requests
         /// <inheritdoc />
         public string ValueLiteral { get; }
 
+        /// <inheritdoc />
+        public TypeCode ValueTypeCode { get; }
+
         internal static List<IUriCondition> ParseMany(string conditionsString, bool check = false) => conditionsString
             .Split('&')
             .Select(s => (IUriCondition) new UriCondition(s, check))
@@ -43,6 +46,7 @@ namespace RESTar.Requests
             Key = key;
             Operator = op;
             ValueLiteral = valueLiteral;
+            ValueTypeCode = TypeCode.Empty;
         }
 
         /// <summary>
@@ -68,6 +72,7 @@ namespace RESTar.Requests
                 throw new InvalidOperator(conditionString);
             Operator = op;
             ValueLiteral = WebUtility.UrlDecode(valueLiteral);
+            ValueTypeCode = TypeCode.Empty;
         }
 
         /// <inheritdoc />
@@ -102,7 +107,8 @@ namespace RESTar.Requests
                 if (x == null || y == null) return false;
                 return string.Equals(x.Key, y.Key, OrdinalIgnoreCase)
                        && x.Operator == y.Operator
-                       && x.ValueLiteral == y.ValueLiteral;
+                       && x.ValueLiteral == y.ValueLiteral
+                       && x.ValueTypeCode == y.ValueTypeCode;
             }
 
             public int GetHashCode(IUriCondition obj)
@@ -113,6 +119,7 @@ namespace RESTar.Requests
                     hash = hash * 23 + StringComparer.OrdinalIgnoreCase.GetHashCode(obj.Key);
                     hash = hash * 23 + obj.Operator.GetHashCode();
                     hash = hash * 23 + obj.ValueLiteral.GetHashCode();
+                    hash = hash * 23 + obj.ValueTypeCode.GetHashCode();
                     return hash;
                 }
             }

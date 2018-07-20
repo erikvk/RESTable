@@ -1,4 +1,6 @@
-﻿namespace RESTar.Requests
+﻿using System;
+
+namespace RESTar.Requests
 {
     /// <summary>
     /// A common interface for URI conditions in RESTar
@@ -19,5 +21,10 @@
         /// A string describing the value encoded in the condition
         /// </summary>
         string ValueLiteral { get; }
+
+        /// <summary>
+        /// A TypeCode describing the type of the condition value (if known)
+        /// </summary>
+        TypeCode ValueTypeCode { get; }
     }
 }

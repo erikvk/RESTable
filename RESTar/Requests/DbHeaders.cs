@@ -3,6 +3,7 @@ using System.Linq;
 using Dynamit;
 using Newtonsoft.Json;
 using RESTar.ContentTypeProviders.NativeJsonProtocol;
+using RESTar.Resources;
 using Starcounter;
 
 namespace RESTar.Requests
@@ -16,11 +17,29 @@ namespace RESTar.Requests
     [Database, JsonConverter(typeof(HeadersConverter<DbHeaders>))]
     public class DbHeaders : DDictionary, IDDictionary<DbHeaders, DbHeadersKvp>, IHeaders, IHeadersInternal
     {
-        /// <inheritdoc />
-        public ContentTypes Accept { get; set; }
+        /// <summary>
+        /// The underlying storage for Accept
+        /// </summary>
+        [RESTarMember(ignore: true)] public string AcceptString { get; private set; }
+
+        /// <summary>
+        /// The underlying storage for ContentType
+        /// </summary>
+        [RESTarMember(ignore: true)] public string ContentTypeString { get; private set; }
 
         /// <inheritdoc />
-        public ContentType? ContentType { get; set; }
+        public ContentTypes Accept
+        {
+            get => AcceptString == null ? null : Requests.ContentType.ParseMany(AcceptString);
+            set => AcceptString = value?.ToString();
+        }
+
+        /// <inheritdoc />
+        public ContentType? ContentType
+        {
+            get => ContentTypeString == null ? default(ContentType?) : Requests.ContentType.Parse(ContentTypeString);
+            set => ContentTypeString = value?.ToString();
+        }
 
         /// <inheritdoc />
         public string Source { get; set; }
@@ -35,6 +54,12 @@ namespace RESTar.Requests
         public string Origin { get; set; }
 
         internal Headers ToTransient() => new Headers(this);
+
+        /// <inheritdoc />
+        public DbHeadersKvp NewKeyPair(DbHeaders dict, string key, object value) => new DbHeadersKvp(dict, key, value?.ToString());
+
+        /// <inheritdoc />
+        public DbHeaders() { }
 
         #region IHeadersInternal
 
@@ -76,10 +101,10 @@ namespace RESTar.Requests
         public void Add(string key, string value) => this._Set(key, value);
 
         /// <inheritdoc />
-        public new ICollection<string> Keys => this._Keys();
+        ICollection<string> IDictionary<string, string>.Keys => this._Keys();
 
         /// <inheritdoc />
-        public new ICollection<string> Values => this._Values();
+        ICollection<string> IDictionary<string, string>.Values => this._Values();
 
         /// <inheritdoc />
         public new IEnumerator<KeyValuePair<string, string>> GetEnumerator() => new HeadersEnumerator(this, _GetCustomHeaders().GetEnumerator());
@@ -97,18 +122,11 @@ namespace RESTar.Requests
         public bool TryGetValue(string key, out string value) => this._TryGetValue(key, out value);
 
         /// <inheritdoc />
-        public new string this[string key]
+        string IDictionary<string, string>.this[string key]
         {
             get => this._Get(key);
             set => this._Set(key, value);
         }
-
-        #endregion
-
-        #region Explicit implementations
-
-        DbHeadersKvp IDDictionary<DbHeaders, DbHeadersKvp>.NewKeyPair(DbHeaders dict, string key, object value) =>
-            new DbHeadersKvp(dict, key, value?.ToString());
 
         #endregion
     }

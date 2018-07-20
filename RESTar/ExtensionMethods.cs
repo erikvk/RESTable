@@ -732,12 +732,16 @@ namespace RESTar
                 }
             }
             var (first, length) = (valueLiteral[0], valueLiteral.Length);
+            var escapedString = false;
             switch (first)
             {
                 case '\'':
                 case '\"':
                     if (length > 1 && valueLiteral[length - 1] == first)
+                    {
                         valueLiteral = valueLiteral.Substring(1, length - 2);
+                        escapedString = true;
+                    }
                     break;
             }
             if (property != null)
@@ -751,6 +755,7 @@ namespace RESTar
                     throw new InvalidConditionValueType(valueLiteral, property);
                 }
             }
+            if (escapedString) return valueLiteral;
             switch (valueLiteral)
             {
                 case "false":

@@ -48,11 +48,32 @@ namespace RESTar.Requests
             }
         }
 
+        private object _value;
+
         /// <summary>
         /// The second operand for the operation defined by the operator. Defines
         /// the object for comparison.
         /// </summary>
-        public dynamic Value { get; set; }
+        public dynamic Value
+        {
+            get => _value;
+            set
+            {
+                switch (_value = value)
+                {
+                    case DateTime dt:
+                        ValueLiteral = dt.ToString("O");
+                        break;
+                    case string str:
+                        ValueLiteral = str;
+                        break;
+                    case var other:
+                        ValueLiteral = other?.ToString();
+                        break;
+                }
+                ValueTypeCode = Type.GetTypeCode(_value?.GetType());
+            }
+        }
 
         /// <inheritdoc />
         public Term Term { get; }
@@ -62,7 +83,11 @@ namespace RESTar.Requests
         /// </summary>
         public bool Skip { get; set; }
 
-        string IUriCondition.ValueLiteral => Value is DateTime dt ? dt.ToString("O") : Value.ToString();
+        /// <inheritdoc />
+        public string ValueLiteral { get; private set; }
+
+        /// <inheritdoc />
+        public TypeCode ValueTypeCode { get; private set; }
 
         internal Operator InternalOperator => Operator;
 

@@ -35,8 +35,12 @@ namespace RESTar.Internal.Sc
 
         protected override bool IsConnected => WebSocket?.IsDead() == false;
 
-        protected override void DisconnectWebSocket(string message = null) =>
-            Scheduling.RunTask(() => WebSocket.Send(message, connFlags: DisconnectAfterSend)).Wait();
+        protected override async void DisconnectWebSocket(string message = null) => await Scheduling.RunTask(() =>
+        {
+            if (message == null)
+                WebSocket.Disconnect();
+            else WebSocket.Send(message, connFlags: DisconnectAfterSend);
+        });
 
         protected override void SendUpgrade() => WebSocket = UpgradeRequest.SendUpgrade(GroupName);
 

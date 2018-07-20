@@ -5,7 +5,9 @@ using System.Text;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using RESTar.ContentTypeProviders;
+using RESTar.ContentTypeProviders.NativeJsonProtocol;
 using RESTar.Internal;
+using RESTar.Meta;
 using RESTar.ProtocolProviders;
 using RESTar.Requests;
 using RESTar.Resources;
@@ -29,10 +31,22 @@ namespace RESTar.Admin
         /// <inheritdoc />
         public string Name { get; }
 
+        [Transient] private bool UriChanged { get; set; }
+
+        private string uri;
+
         /// <summary>
         /// The URI of the macro
         /// </summary>
-        public string Uri { get; set; }
+        public string Uri
+        {
+            get => uri;
+            set
+            {
+                UriChanged = UriChanged || uri != value;
+                uri = value;
+            }
+        }
 
         /// <summary>
         /// The body of the macro
@@ -46,6 +60,7 @@ namespace RESTar.Admin
         /// <summary>
         /// The headers of the macro
         /// </summary>
+        [JsonConverter(typeof(HeadersConverter<DbHeaders>))]
         public DbHeaders Headers { get; }
 
         /// <inheritdoc />
@@ -53,11 +68,6 @@ namespace RESTar.Admin
 
         /// <inheritdoc />
         public bool OverwriteHeaders { get; set; }
-
-        /// <summary>
-        /// Is this macro currently valid?
-        /// </summary>
-        public bool IsValid { get; private set; }
 
         /// <summary>
         /// The underlying storage for Body
@@ -87,27 +97,42 @@ namespace RESTar.Admin
         {
             if (string.IsNullOrWhiteSpace(Uri))
             {
-                invalidReason = "Invalid or missing URI";
-                return IsValid = false;
+                invalidReason = "Invalid or missing Uri in macro";
+                return false;
             }
             if (Uri.IndexOf($"${Name}", OrdinalIgnoreCase) >= 0)
             {
-                invalidReason = "Macro URIs cannot contain self-references";
-                return IsValid = false;
-            }
-            if (MakeUriComponents(out var error) == null)
-            {
-                invalidReason = error.LogMessage;
-                return IsValid = false;
+                invalidReason = "Invalid macro Uri: Cannot contain self-references";
+                return false;
             }
             if (Headers.Authorization != null)
             {
                 invalidReason = "Macro headers cannot contain the 'Authorization' header. If API keys are " +
                                 "required, they are expected in each request invoking the macro.";
-                return IsValid = false;
+                return false;
+            }
+            if (MakeUriComponents(out var error) == null)
+            {
+                if (!UriChanged)
+                {
+                    var body = new
+                    {
+                        Info = $"Oops. The URI of RESTar macro '{Name}' is no longer valid, and has been replaced to protect " +
+                               $"against unsafe behavior. Please update the '{nameof(Uri)}' property to a valid RESTar URI to " +
+                               "repair the macro, or contact the application administrator if this is all very strange to you.",
+                        InvalidUri = Uri,
+                        InvalidReason = error.Headers.Info
+                    };
+                    Body = JObject.FromObject(body);
+                    Uri = $"/{Resource<Echo>.ResourceSpecifier}";
+                    invalidReason = null;
+                    return true;
+                }
+                invalidReason = "Invalid macro Uri: " + error.Headers.Info;
+                return false;
             }
             invalidReason = null;
-            return IsValid = true;
+            return true;
         }
 
         #region IUriComponents
@@ -118,7 +143,7 @@ namespace RESTar.Admin
         {
             if (Context.Root.UriIsValid(Uri, out error, out _, out var components))
             {
-                Uri = components.ToUriString();
+                Db.TransactAsync(() => Uri = components.ToUriString());
                 return components;
             }
             return null;
@@ -127,7 +152,7 @@ namespace RESTar.Admin
         /// <summary>
         /// If asked for through IUriComponents API, require IsValid for non null value
         /// </summary>
-        private IUriComponents UriComponents => IsValid ? uriComponents ?? (uriComponents = MakeUriComponents(out _)) : null;
+        private IUriComponents UriComponents => uriComponents ?? (uriComponents = MakeUriComponents(out _));
 
         string IUriComponents.ToUriString() => UriComponents?.ToUriString();
         IProtocolProvider IUriComponents.ProtocolProvider => ProtocolController.DefaultProtocolProvider.ProtocolProvider;

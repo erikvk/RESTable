@@ -22,7 +22,6 @@ namespace RESTar.Requests
 {
     internal class Request<T> : IRequest, IRequest<T>, IEntityRequest<T>, ITraceable where T : class
     {
-        private static CancellationTokenSource CancellationSource { get; } = new CancellationTokenSource();
         private bool IsEvaluating { get; set; }
         public ITarget<T> Target { get; }
         public Type TargetType { get; }
@@ -106,7 +105,8 @@ namespace RESTar.Requests
             viewName: Target is IView ? Target.Name : null,
             conditions: Conditions,
             metaConditions: MetaConditions.AsConditionList(),
-            protocolProvider: CachedProtocolProvider.ProtocolProvider
+            protocolProvider: CachedProtocolProvider.ProtocolProvider,
+            macro: Parameters.UriComponents.Macro
         );
 
         #region Parameter bindings

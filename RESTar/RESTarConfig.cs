@@ -250,6 +250,7 @@ namespace RESTar
                 macro.HeadersDictionary?.ForEach(header => newMacro.Headers.Add(header));
                 var ivalidatable = (IValidatable) newMacro;
                 ivalidatable.IsValid(out _);
+                macro.Delete();
             }));
 #pragma warning restore 612
         }
@@ -370,7 +371,7 @@ namespace RESTar
                         if (Authenticator.ApiKeys.TryGetValue(key, out var existing))
                         {
                             existing.Clear();
-                            accessRights.ForEach(existing.Put);
+                            accessRights.ForEach(pair => existing[pair.Key] = pair.Value);
                         }
                         else Authenticator.ApiKeys[key] = accessRights;
                         break;

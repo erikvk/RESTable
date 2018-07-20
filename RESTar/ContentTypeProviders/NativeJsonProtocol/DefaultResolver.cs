@@ -37,6 +37,9 @@ namespace RESTar.ContentTypeProviders.NativeJsonProtocol
             var contract = base.CreateContract(objectType);
             switch (objectType)
             {
+                case var _ when objectType.HasAttribute<JsonConverterAttribute>(out var attribute):
+                    contract.Converter = (JsonConverter) Activator.CreateInstance(attribute.ConverterType, attribute.ConverterParameters);
+                    break;
                 case var _ when typeof(DDictionary).IsAssignableFrom(objectType) && contract is JsonDictionaryContract jc:
                     jc.Converter = DDictionaryConverter;
                     jc.ItemIsReference = true;

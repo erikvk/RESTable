@@ -12,17 +12,24 @@ namespace RESTar.ContentTypeProviders.NativeJsonProtocol
     {
         private HashSet<string> WhitelistedNonCustomHeaders { get; }
 
-        public HeadersConverter(params string[] whitelisted)
+        public HeadersConverter() : this(null) { }
+
+        public HeadersConverter(IEnumerable<object> args)
         {
-            WhitelistedNonCustomHeaders = new HashSet<string>(whitelisted, StringComparer.OrdinalIgnoreCase);
-            if (WhitelistedNonCustomHeaders.Contains("*"))
-                WhitelistedNonCustomHeaders.UnionWith(HeadersExtensions.NonCustomHeaders);
+            if (args == null)
+                WhitelistedNonCustomHeaders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            else
+            {
+                WhitelistedNonCustomHeaders = new HashSet<string>(args.Cast<string>(), StringComparer.OrdinalIgnoreCase);
+                if (WhitelistedNonCustomHeaders.Contains("*"))
+                    WhitelistedNonCustomHeaders.UnionWith(HeadersExtensions.NonCustomHeaders);
+            }
         }
 
         /// <inheritdoc />
         /// <summary>
         /// Writes only custom headers to JSON
-        /// </summary>
+        /// </summary>s
         public override void WriteJson(JsonWriter writer, T headers, JsonSerializer s)
         {
             var jobj = new JObject();
