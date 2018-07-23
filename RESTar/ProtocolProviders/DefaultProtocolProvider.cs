@@ -238,5 +238,10 @@ namespace RESTar.ProtocolProviders
             invalidReason = null;
             return true;
         }
+
+        public void OnInit()
+        {
+            Macro.Check();
+        }
     }
 }

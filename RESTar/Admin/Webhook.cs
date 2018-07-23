@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Newtonsoft.Json;
 using RESTar.ContentTypeProviders.NativeJsonProtocol;
 using RESTar.Internal.Auth;
+using RESTar.Linq;
 using RESTar.Meta;
 using RESTar.Meta.Internal;
 using RESTar.Requests;
@@ -70,23 +71,26 @@ namespace RESTar.Admin
         /// <summary>
         /// Custom headers included in the POST request
         /// </summary>
-        [JsonConverter(typeof(HeadersConverter<Headers>), "*")]
+        [JsonConverter(typeof(HeadersConverter<DbHeaders>), true)]
         public DbHeaders Headers { get; }
 
         [Transient] private bool EventHasChanged { get; set; }
 
-        private string _event;
+        /// <summary>
+        /// The underlying storage for Event
+        /// </summary>
+        [RESTarMember(ignore: true)] public string EventName { get; private set; }
 
         /// <summary>
         /// The event used to trigger this webhook
         /// </summary>
         public string Event
         {
-            get => _event;
+            get => EventName;
             set
             {
-                EventHasChanged = EventHasChanged || _event != value;
-                _event = value;
+                EventHasChanged = EventHasChanged || EventName != value;
+                EventName = value;
             }
         }
 
@@ -117,6 +121,8 @@ namespace RESTar.Admin
 
         /// <inheritdoc />
         public Webhook() => Headers = new DbHeaders();
+
+        private bool CheckIfValid() => IsValid(out _);
 
         /// <inheritdoc />
         public bool IsValid(out string invalidReason)
@@ -240,7 +246,7 @@ namespace RESTar.Admin
             return error != null ? null : context.CreateRequest(Destination, POST, headers: Headers.ToTransient());
         }
 
-        private HttpRequestMessage GetRequestMessage(Stream body, ContentType? contentType, string customRequestInfo = null)
+        private HttpRequestMessage GetRequestMessage(Stream body, ContentType? contentType)
         {
             var message = new HttpRequestMessage(HttpMethod.Post, Destination);
             if (body != null)
@@ -249,8 +255,7 @@ namespace RESTar.Admin
                 content.Headers.ContentType = contentType.GetValueOrDefault();
                 message.Content = content;
             }
-            if (customRequestInfo != null)
-                message.Headers.Add("RESTar-webhook-custom-request-info", customRequestInfo);
+            foreach (var header in Headers) message.Headers.TryAddWithoutValidation(header.Key, header.Value);
             message.Headers.Add("RESTar-webhook-id", Id);
             return message;
         }
@@ -260,7 +265,6 @@ namespace RESTar.Admin
             if (IsPaused) return;
 
             Stream body;
-            var info = default(string);
             var contentType = Headers.ContentType ?? ContentType.JSON;
 
             if (CustomRequest == null)
@@ -279,6 +283,7 @@ namespace RESTar.Admin
                     {
                         case Results.Error _:
                             await WebhookLog.Log(this, true, ForCustomRequest(result.LogMessage));
+                            CheckIfValid();
                             if (CustomRequest.BreakOnError)
                             {
                                 result.Dispose();
@@ -290,34 +295,57 @@ namespace RESTar.Admin
                             if (customRequest.BreakOnNoContent) return;
                             break;
                     }
-                    (body, contentType, info) = (result.Body, result.Headers.ContentType ?? contentType, result.LogMessage);
+                    (body, contentType) = (result.Body, result.Headers.ContentType.GetValueOrDefault());
                 }
             }
 
             try
             {
-                if (DestinationIsLocal) { }
-                else
+                if (DestinationIsLocal)
                 {
-                    using (var requestMessage = GetRequestMessage(body, contentType, info))
+                    using (var request = GetLocalPostRequest(out var requestError))
                     {
-                        if (Headers is DbHeaders _headers)
-                            foreach (var header in _headers)
-                                requestMessage.Headers.TryAddWithoutValidation(header.Key, header.Value);
-                        using (var response = await HttpClient.SendAsync(requestMessage))
+                        request.SetBody(body, contentType);
+                        if (requestError != null)
                         {
-                            var status = $"{response.StatusCode}: {response.ReasonPhrase}";
-                            await WebhookLog.Log(this, false, status, 0);
+                            await WebhookLog.Log(this, true, requestError.LogMessage);
+                            return;
+                        }
+                        using (var result = request.Evaluate())
+                        {
+                            switch (result)
+                            {
+                                case Results.Error error:
+                                    await WebhookLog.Log(this, true, error.LogMessage);
+                                    CheckIfValid();
+                                    error.Dispose();
+                                    break;
+                                default:
+                                    await WebhookLog.Log(this, false, result.LogMessage, request.GetBody().ContentLength.GetValueOrDefault());
+                                    break;
+                            }
                         }
                     }
+                }
+                else
+                {
+                    using (var requestMessage = GetRequestMessage(body, contentType))
+                    using (var response = await HttpClient.SendAsync(requestMessage))
+                        await WebhookLog.Log(this, false, $"{response.StatusCode}: {response.ReasonPhrase}",
+                            requestMessage.Content?.Headers.ContentLength ?? 0);
                 }
             }
             catch (Exception e)
             {
-                await WebhookLog.Log(this, true, e.ToString(), 0);
+                await WebhookLog.Log(this, true, e.ToString());
             }
         }
 
         private static string ForCustomRequest(string message) => $"Error when evaluating custom request: {message}";
+
+        internal static void Check() => Db.TransactAsync(() => Db
+            .SQL<Webhook>(All)
+            .ForEach(wh => wh.CheckIfValid())
+        );
     }
 }

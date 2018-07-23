@@ -118,6 +118,7 @@ namespace RESTar.Requests
         public Headers Headers => Parameters.Headers;
         public bool IsWebSocketUpgrade => Parameters.IsWebSocketUpgrade;
         public TimeSpan TimeElapsed => Parameters.Stopwatch.Elapsed;
+        public IMacro Macro => Parameters.UriComponents.Macro;
 
         #endregion
 

@@ -24,21 +24,10 @@ namespace RESTar.Requests
         public Context Context { get; }
         public Headers Headers { get; }
         public Method Method { get; set; }
-
         private Body body;
-
-        public Body GetBody()
-        {
-            return body;
-        }
-
-        private void SetBody(Body value)
-        {
-            body = value;
-        }
-
+        public Body GetBody() => body;
+        private void SetBody(Body value) => body = value;
         private RemoteResource RemoteResource { get; set; }
-
         private static string ErrorMessage(string propertyName) => $"Cannot get {propertyName} for a remote request";
 
         public void SetBody(object content, ContentType? contentType = null) => SetBody(new Body

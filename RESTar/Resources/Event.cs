@@ -64,7 +64,7 @@ namespace RESTar.Resources
         /// <summary>
         /// Raises the event
         /// </summary>
-        protected async void InvokeRaise() => await EventController.Raise(this);
+        protected async void Raise() => await EventController.Raise(this);
 
         /// <inheritdoc />
         public virtual void Dispose() => (Payload as IDisposable)?.Dispose();
@@ -73,7 +73,7 @@ namespace RESTar.Resources
         /// The event handler for custom RESTar events of type T, subclasses of <see cref="Event{T}"/>.
         /// Use this to add listeners for RESTar custom events.
         /// </summary>
-        public static event EventHandler<T> Raise
+        public static event EventHandler<T> OnRaise
         {
             add
             {

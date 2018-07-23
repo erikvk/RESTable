@@ -12,18 +12,13 @@ namespace RESTar.ContentTypeProviders.NativeJsonProtocol
     {
         private HashSet<string> WhitelistedNonCustomHeaders { get; }
 
-        public HeadersConverter() : this(null) { }
+        public HeadersConverter() : this(false) { }
 
-        public HeadersConverter(IEnumerable<object> args)
+        public HeadersConverter(bool allowAuth)
         {
-            if (args == null)
-                WhitelistedNonCustomHeaders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            else
-            {
-                WhitelistedNonCustomHeaders = new HashSet<string>(args.Cast<string>(), StringComparer.OrdinalIgnoreCase);
-                if (WhitelistedNonCustomHeaders.Contains("*"))
-                    WhitelistedNonCustomHeaders.UnionWith(HeadersExtensions.NonCustomHeaders);
-            }
+            WhitelistedNonCustomHeaders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (allowAuth)
+                WhitelistedNonCustomHeaders.Add(nameof(Headers.Authorization));
         }
 
         /// <inheritdoc />

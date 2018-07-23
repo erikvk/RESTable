@@ -13,7 +13,12 @@ namespace RESTar.Requests
         CachedProtocolProvider CachedProtocolProvider { get; }
     }
 
-    internal interface IEntityRequest<T> : IRequestInternal, IRequest<T> where T : class
+    internal interface IEntityRequest : IRequestInternal
+    {
+        IMacro Macro { get; }
+    }
+
+    internal interface IEntityRequest<T> : IEntityRequest, IRequestInternal, IRequest<T> where T : class
     {
         IEntityResource<T> EntityResource { get; }
         Func<IEnumerable<T>> EntitiesProducer { get; set; }

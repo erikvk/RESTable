@@ -49,7 +49,7 @@ namespace RESTar.Admin
         /// <summary>
         /// The headers for this WebHook request
         /// </summary>
-        [JsonConverter(typeof(HeadersConverter<DbHeaders>), "*")]
+        [JsonConverter(typeof(HeadersConverter<DbHeaders>), true)]
         public DbHeaders Headers { get; }
 
         /// <summary>

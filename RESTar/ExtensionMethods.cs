@@ -635,10 +635,15 @@ namespace RESTar
             error.SetTrace(request);
             error.RequestInternal = request;
             string errorId = null;
+            if (request is IEntityRequest entityRequest && entityRequest.Macro is IMacro macro)
+                Db.TransactAsync(() => macro.IsValid(out _));
             if (!(error is Forbidden) && !(request is RemoteRequest) && request.Method >= 0)
             {
-                Admin.Error.ClearOld();
-                Db.TransactAsync(() => errorId = Admin.Error.Create(error, request).Id);
+                Db.TransactAsync(() =>
+                {
+                    Admin.Error.ClearOld();
+                    errorId = Admin.Error.Create(error, request).Id;
+                });
             }
             if (request.IsWebSocketUpgrade)
             {

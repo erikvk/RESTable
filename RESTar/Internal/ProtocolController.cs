@@ -32,14 +32,18 @@ namespace RESTar.Internal
             switch (provider.ExternalContentTypeProviderSettings)
             {
                 case ExternalContentTypeProviderSettings.AllowAll:
-                    ContentTypeController.InputContentTypeProviders.Where(p => !cProvider.InputMimeBindings.ContainsKey(p.Key)).ForEach(cProvider.InputMimeBindings.Add);
-                    ContentTypeController.OutputContentTypeProviders.Where(p => !cProvider.OutputMimeBindings.ContainsKey(p.Key)).ForEach(cProvider.OutputMimeBindings.Add);
+                    ContentTypeController.InputContentTypeProviders.Where(p => !cProvider.InputMimeBindings.ContainsKey(p.Key))
+                        .ForEach(cProvider.InputMimeBindings.Add);
+                    ContentTypeController.OutputContentTypeProviders.Where(p => !cProvider.OutputMimeBindings.ContainsKey(p.Key))
+                        .ForEach(cProvider.OutputMimeBindings.Add);
                     break;
                 case ExternalContentTypeProviderSettings.AllowInput:
-                    ContentTypeController.InputContentTypeProviders.Where(p => !cProvider.InputMimeBindings.ContainsKey(p.Key)).ForEach(cProvider.InputMimeBindings.Add);
+                    ContentTypeController.InputContentTypeProviders.Where(p => !cProvider.InputMimeBindings.ContainsKey(p.Key))
+                        .ForEach(cProvider.InputMimeBindings.Add);
                     break;
                 case ExternalContentTypeProviderSettings.AllowOutput:
-                    ContentTypeController.OutputContentTypeProviders.Where(p => !cProvider.OutputMimeBindings.ContainsKey(p.Key)).ForEach(cProvider.OutputMimeBindings.Add);
+                    ContentTypeController.OutputContentTypeProviders.Where(p => !cProvider.OutputMimeBindings.ContainsKey(p.Key))
+                        .ForEach(cProvider.OutputMimeBindings.Add);
                     break;
             }
             return cProvider;
@@ -51,21 +55,21 @@ namespace RESTar.Internal
                 throw new InvalidProtocolProviderException("External protocol provider cannot be null");
             if (string.IsNullOrWhiteSpace(provider.ProtocolIdentifier))
                 throw new InvalidProtocolProviderException($"Invalid protocol provider '{provider.GetType().RESTarTypeName()}'. " +
-                                                  "ProtocolIdentifier cannot be null or whitespace");
+                                                           "ProtocolIdentifier cannot be null or whitespace");
             if (!Regex.IsMatch(provider.ProtocolIdentifier, "^[a-zA-Z]+$"))
                 throw new InvalidProtocolProviderException($"Invalid protocol provider '{provider.GetType().RESTarTypeName()}'. " +
-                                                  "ProtocolIdentifier can only contain letters a-z and A-Z");
+                                                           "ProtocolIdentifier can only contain letters a-z and A-Z");
             if (provider.ExternalContentTypeProviderSettings == ExternalContentTypeProviderSettings.DontAllow)
             {
                 var contentProviders = provider.GetContentTypeProviders()?.ToList();
                 if (contentProviders?.Any() != true)
                     throw new InvalidProtocolProviderException($"Invalid protocol provider '{provider.GetType().RESTarTypeName()}'. " +
-                                                      "The protocol provider allows no external content type providers " +
-                                                      "and does not provide any content type providers of its own.");
+                                                               "The protocol provider allows no external content type providers " +
+                                                               "and does not provide any content type providers of its own.");
                 if (contentProviders.All(p => !p.CanRead) && contentProviders.All(p => !p.CanWrite))
                     throw new InvalidProtocolProviderException($"Invalid protocol provider '{provider.GetType().RESTarTypeName()}'. " +
-                                                      "The protocol provider allows no external content type providers " +
-                                                      "and none of the provided content type providers can read or write.");
+                                                               "The protocol provider allows no external content type providers " +
+                                                               "and none of the provided content type providers can read or write.");
             }
         }
 
@@ -95,5 +99,7 @@ namespace RESTar.Internal
                 ProtocolProviders[protocolId] = cachedProvider;
             });
         }
+
+        internal static void OnInit() => ProtocolProviders.Values.ForEach(c => c.ProtocolProvider.OnInit());
     }
 }

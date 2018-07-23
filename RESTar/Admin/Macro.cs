@@ -7,6 +7,7 @@ using Newtonsoft.Json.Linq;
 using RESTar.ContentTypeProviders;
 using RESTar.ContentTypeProviders.NativeJsonProtocol;
 using RESTar.Internal;
+using RESTar.Linq;
 using RESTar.Meta;
 using RESTar.ProtocolProviders;
 using RESTar.Requests;
@@ -89,11 +90,13 @@ namespace RESTar.Admin
             Headers = new DbHeaders();
         }
 
+        private bool CheckIfValid() => IsValid(out _);
+
         /// <inheritdoc />
         /// <summary>
         /// Validates the macro
         /// </summary>
-        bool IValidatable.IsValid(out string invalidReason)
+        public bool IsValid(out string invalidReason)
         {
             if (string.IsNullOrWhiteSpace(Uri))
             {
@@ -171,5 +174,7 @@ namespace RESTar.Admin
         IHeaders IMacro.Headers => Headers;
 
         #endregion
+
+        internal static void Check() => Db.TransactAsync(() => Db.SQL<Macro>(All).ForEach(m => m.CheckIfValid()));
     }
 }

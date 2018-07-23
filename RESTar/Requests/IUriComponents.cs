@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using RESTar.ProtocolProviders;
+using RESTar.Resources.Operations;
 
 namespace RESTar.Requests
 {
@@ -45,11 +46,12 @@ namespace RESTar.Requests
         string ToUriString();
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc cref="IUriComponents" />
+    /// <inheritdoc cref="IValidatable"/>
     /// <summary>
     /// Defines the operations of a RESTar macro
     /// </summary>
-    public interface IMacro : IUriComponents
+    public interface IMacro : IUriComponents, IValidatable
     {
         /// <summary>
         /// The name of the macro

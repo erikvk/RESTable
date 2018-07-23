@@ -31,11 +31,13 @@ namespace RESTarExample
                 configFilePath: @"C:\Mopedo\mopedo\Mopedo.config"
             );
 
-            Event<NotificationEvent>.Raise += (s, o) =>
+            Event<NotificationEvent>.OnRaise += (s, o) =>
             {
                 var payload = JsonConvert.SerializeObject(o.Payload);
 
+#pragma warning disable 219
                 var a = 123;
+#pragma warning restore 219
             };
         }
     }
@@ -58,7 +60,7 @@ namespace RESTarExample
     [RESTarEvent("Notification!")]
     public class NotificationEvent : Event<MyNotification>
     {
-        public NotificationEvent(MyNotification payload) : base(payload) => InvokeRaise();
+        public NotificationEvent(MyNotification payload) : base(payload) => Raise();
     }
 
     [Database, RESTar]

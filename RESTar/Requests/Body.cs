@@ -66,13 +66,19 @@ namespace RESTar.Requests
         /// </summary>
         public bool HasContent { get; }
 
-        internal string LengthLogString => !HasContent ? "" : $" ({Stream.Length} bytes)";
+        /// <summary>
+        /// The length of the body content
+        /// </summary>
+        public long? ContentLength { get; }
+
+        internal string LengthLogString => !HasContent ? "" : $" ({ContentLength} bytes)";
 
         internal Body(RESTarStream stream, CachedProtocolProvider protocolProvider)
         {
             ContentType = (stream?.ContentType).GetValueOrDefault();
             Stream = stream;
-            HasContent = stream?.Length > 0;
+            ContentLength = stream?.Length;
+            HasContent = ContentLength > 0;
             ProtocolProvider = protocolProvider;
         }
 

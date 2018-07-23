@@ -116,7 +116,7 @@ namespace RESTar.Admin
         {
             if (Checked >= DateTime.UtcNow.Date) return;
             var matches = Db.SQL<Error>(ByTimeLessThan, DateTime.UtcNow.AddDays(0 - _DaysToSaveErrors));
-            matches.ForEach(match => Db.TransactAsync(match.Delete));
+            matches.ForEach(Db.Delete);
             Checked = DateTime.UtcNow.Date;
         }
 

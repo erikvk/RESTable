@@ -88,5 +88,10 @@ namespace RESTar.ProtocolProviders
         /// to a network component and streamed over a TCP connection.
         /// </summary>
         ISerializedResult Serialize(IResult result, IContentTypeProvider contentTypeProvider);
+
+        /// <summary>
+        /// This method is called when RESTarConfig.Init() is done initializing the RESTar instance.
+        /// </summary>
+        void OnInit();
     }
 }
