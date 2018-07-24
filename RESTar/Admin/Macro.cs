@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Text;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -118,16 +119,13 @@ namespace RESTar.Admin
             {
                 if (!UriChanged)
                 {
-                    var body = new
-                    {
-                        Info = $"Oops. The URI of RESTar macro '{Name}' is no longer valid, and has been replaced to protect " +
-                               $"against unsafe behavior. Please update the '{nameof(Uri)}' property to a valid RESTar URI to " +
-                               "repair the macro, or contact the application administrator if this is all very strange to you.",
-                        InvalidUri = Uri,
-                        InvalidReason = error.Headers.Info
-                    };
-                    Body = JObject.FromObject(body);
-                    Uri = $"/{Resource<Echo>.ResourceSpecifier}";
+                    var info = $"The URI of RESTar macro '{Name}' is no longer valid, and has been replaced to protect " +
+                               $"against unsafe behavior. Please update the '{nameof(Uri)}' property to a valid RESTar " +
+                               "URI to repair the macro.";
+                    Uri = $"/{Resource<Echo>.ResourceSpecifier}/" +
+                          $"Info={WebUtility.UrlEncode(info)}&" +
+                          $"InvalidUri={WebUtility.UrlEncode(Uri)}&" +
+                          $"InvalidReason={WebUtility.UrlEncode(error.Headers.Info)}";
                     invalidReason = null;
                     return true;
                 }

@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using RESTar.ContentTypeProviders.NativeJsonProtocol;
@@ -15,7 +16,6 @@ using RESTar.Resources;
 using RESTar.Resources.Operations;
 using RESTar.Results;
 using Starcounter;
-using static RESTar.Method;
 
 namespace RESTar.Admin
 {
@@ -28,6 +28,7 @@ namespace RESTar.Admin
     {
         internal const string All = "SELECT t FROM RESTar.Admin.Webhook t";
         internal const string ByEventName = All + " WHERE t.EventName =?";
+        internal const string IdHeader = "RESTar-webhook-id";
         private static HttpClient HttpClient { get; }
         static Webhook() => HttpClient = new HttpClient();
 
@@ -42,6 +43,11 @@ namespace RESTar.Admin
         public string Label { get; set; }
 
         [Transient] private bool DestinationHasChanged { get; set; }
+
+        /// <summary>
+        /// The method to use in the webhook request
+        /// </summary>
+        public Method Method { get; set; }
 
         private string destination;
 
@@ -114,13 +120,18 @@ namespace RESTar.Admin
             get => customRequest;
             set
             {
-                customRequest?.Delete();
+                if (value == null || !value.Equals(customRequest))
+                    customRequest?.Delete();
                 customRequest = value;
             }
         }
 
         /// <inheritdoc />
-        public Webhook() => Headers = new DbHeaders();
+        public Webhook()
+        {
+            Method = Method.POST;
+            Headers = new DbHeaders();
+        }
 
         private bool CheckIfValid() => IsValid(out _);
 
@@ -137,6 +148,8 @@ namespace RESTar.Admin
             if (Uri.TryCreate(Destination, UriKind.Absolute, out var _uri))
             {
                 Destination = _uri.ToString();
+                if (DestinationIsLocal)
+                    Headers.Authorization = null;
                 DestinationIsLocal = false;
             }
             else
@@ -182,7 +195,7 @@ namespace RESTar.Admin
                         return false;
                     }
 
-                    if (!context.MethodIsAllowed(POST, resource, out var methodError))
+                    if (!context.MethodIsAllowed(Method, resource, out var methodError))
                     {
                         invalidReason = $"Authorization error: {methodError.Headers.Info}";
                         return false;
@@ -236,27 +249,34 @@ namespace RESTar.Admin
 
             #endregion
 
+            ErrorMessage = null;
             invalidReason = null;
             return true;
         }
 
-        private IRequest GetLocalPostRequest(out Results.Error error)
+        private IRequest GetLocalRequest(Stream body, ContentType contentType)
         {
-            var context = Context.Webhook(LocalDestinationAPIKey, out error);
-            return error != null ? null : context.CreateRequest(Destination, POST, headers: Headers.ToTransient());
+            var context = Context.Webhook(LocalDestinationAPIKey, out var error);
+            if (error != null) throw error;
+            var request = context.CreateRequest(Destination, Method, headers: Headers.ToTransient());
+            request.SetBody(body, contentType);
+            return request;
         }
 
-        private HttpRequestMessage GetRequestMessage(Stream body, ContentType? contentType)
+        private HttpRequestMessage GetGlobalRequest(Stream body, ContentType? contentType)
         {
-            var message = new HttpRequestMessage(HttpMethod.Post, Destination);
+            var message = new HttpRequestMessage(new HttpMethod(Method.ToString()), Destination);
             if (body != null)
             {
                 var content = new StreamContent(body);
                 content.Headers.ContentType = contentType.GetValueOrDefault();
                 message.Content = content;
             }
-            foreach (var header in Headers) message.Headers.TryAddWithoutValidation(header.Key, header.Value);
-            message.Headers.Add("RESTar-webhook-id", Id);
+            foreach (var header in Headers)
+                message.Headers.TryAddWithoutValidation(header.Key, header.Value);
+            if (Headers.Authorization != null)
+                message.Headers.Authorization = AuthenticationHeaderValue.Parse(Headers.Authorization);
+            message.Headers.Add(IdHeader, Id);
             return message;
         }
 
@@ -303,40 +323,24 @@ namespace RESTar.Admin
             {
                 if (DestinationIsLocal)
                 {
-                    using (var request = GetLocalPostRequest(out var requestError))
+                    using (var request = GetLocalRequest(body, contentType))
+                    using (var response = request.Evaluate())
                     {
-                        request.SetBody(body, contentType);
-                        if (requestError != null)
-                        {
-                            await WebhookLog.Log(this, true, requestError.LogMessage);
-                            return;
-                        }
-                        using (var result = request.Evaluate())
-                        {
-                            switch (result)
-                            {
-                                case Results.Error error:
-                                    await WebhookLog.Log(this, true, error.LogMessage);
-                                    CheckIfValid();
-                                    error.Dispose();
-                                    break;
-                                default:
-                                    await WebhookLog.Log(this, false, result.LogMessage, request.GetBody().ContentLength.GetValueOrDefault());
-                                    break;
-                            }
-                        }
+                        response.ThrowIfError();
+                        await WebhookLog.Log(this, false, response.LogMessage, request.GetBody().ContentLength.GetValueOrDefault());
                     }
                 }
                 else
                 {
-                    using (var requestMessage = GetRequestMessage(body, contentType))
-                    using (var response = await HttpClient.SendAsync(requestMessage))
+                    using (var request = GetGlobalRequest(body, contentType))
+                    using (var response = await HttpClient.SendAsync(request))
                         await WebhookLog.Log(this, false, $"{response.StatusCode}: {response.ReasonPhrase}",
-                            requestMessage.Content?.Headers.ContentLength ?? 0);
+                            request.Content?.Headers.ContentLength ?? 0);
                 }
             }
             catch (Exception e)
             {
+                CheckIfValid();
                 await WebhookLog.Log(this, true, e.ToString());
             }
         }

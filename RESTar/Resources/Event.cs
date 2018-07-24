@@ -1,28 +1,31 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
+using System.Threading.Tasks;
 using RESTar.Internal;
-using RESTar.Meta;
 using RESTar.Meta.Internal;
 using RESTar.Requests;
-using RESTar.Resources.Operations;
 
 namespace RESTar.Resources
 {
+    /// <summary>
+    /// The generic base type for RESTar event types.
+    /// </summary>
     /// <inheritdoc cref="EventArgs" />
     /// <inheritdoc cref="IEventInternal{T}" />
-    public abstract class Event<T> : EventArgs, IEventInternal<T> where T : class
+    /// <typeparam name="TPayload">The payload type, for custom RESTar events, or the entity resource
+    /// type when working with the static events</typeparam>
+    public abstract class Event<TPayload> : EventArgs, IEventInternal<TPayload> where TPayload : class
     {
-        string IEventInternal<T>.Name => GetType().RESTarTypeName();
-        ContentType? IEventInternal<T>.NativeContentType => ContentType;
-        bool IEventInternal<T>.HasBinaryPayload => HasBinaryPayload;
+        string IEventInternal<TPayload>.Name => GetType().RESTarTypeName();
+        ContentType? IEventInternal<TPayload>.NativeContentType => ContentType;
+        bool IEventInternal<TPayload>.HasBinaryPayload => HasBinaryPayload;
+
         private bool HasBinaryPayload { get; }
 
         /// <summary>
         /// The payload of the event
         /// </summary>
-        public T Payload { get; }
+        public TPayload Payload { get; }
 
         /// <summary>
         /// The content type of the payload
@@ -31,15 +34,15 @@ namespace RESTar.Resources
 
         /// <inheritdoc />
         /// <summary>
-        /// Creates a new wrapped event, with a given object as payload
+        /// Creates a new event, with a given object as payload
         /// </summary>
-        /// <param name="payload"></param>
+        /// <param name="payload">The payload to use </param>
         /// <param name="contentType">
         /// Optionally, define a content type that is included together with the payload. If
         /// the payload is binary data (byte array or stream), this content type is needed
         /// for interpreting the payload.
         /// </param>
-        protected Event(T payload, ContentType? contentType = null)
+        protected Event(TPayload payload, ContentType? contentType = null)
         {
             switch (payload)
             {
@@ -64,141 +67,14 @@ namespace RESTar.Resources
         /// <summary>
         /// Raises the event
         /// </summary>
-        protected async void Raise() => await EventController.Raise(this);
+        protected async void Raise() => await Raiser(this);
+
+        private static async Task Raiser<TEvent>(TEvent e) where TEvent : class, IEventInternal<TPayload>
+        {
+            await EventController.Raise<TEvent, TPayload>(e);
+        }
 
         /// <inheritdoc />
         public virtual void Dispose() => (Payload as IDisposable)?.Dispose();
-
-        /// <summary>
-        /// The event handler for custom RESTar events of type T, subclasses of <see cref="Event{T}"/>.
-        /// Use this to add listeners for RESTar custom events.
-        /// </summary>
-        public static event EventHandler<T> OnRaise
-        {
-            add
-            {
-                if (!typeof(IEvent).IsAssignableFrom(typeof(T)))
-                    throw new InvalidOperationException($"Cannot add RESTar event handler for type '{typeof(T).RESTarTypeName()}'. Not a " +
-                                                        "RESTar event type.");
-                _Raise += value;
-            }
-            remove
-            {
-                if (!typeof(IEvent).IsAssignableFrom(typeof(T)))
-                    throw new InvalidOperationException($"Cannot remove RESTar event handler for type '{typeof(T).RESTarTypeName()}'. Not a " +
-                                                        "RESTar event type.");
-                _Raise += value;
-            }
-        }
-
-        /// <summary>
-        /// Entity processors added to this event are invoked, in the order they are added, when the given entity resource's
-        /// Inserter calls GetInputEntities() for the request, just before control is returned to the Inserter. The first
-        /// delegate added to this event gets the output from GetInputEntities() as argument. Any subsequent delegates get
-        /// the output from the previous delegate as input.
-        /// </summary>
-        public static event EntityProcessor<T> OnInsert
-        {
-            add
-            {
-                if (!(Resource<T>.SafeGet is IEntityResource))
-                    throw new InvalidOperationException($"Cannot add event handler for type '{typeof(T).RESTarTypeName()}'. Not an entity resource.");
-                _OnInsert += value;
-            }
-            remove
-            {
-                if (!(Resource<T>.SafeGet is IEntityResource))
-                    throw new InvalidOperationException(
-                        $"Cannot remove event handler for type '{typeof(T).RESTarTypeName()}'. Not an entity resource.");
-                _OnInsert -= value;
-            }
-        }
-
-        /// <summary>
-        /// Entity processors added to this event are invoked, in the order they are added, when the given entity resource's
-        /// Updater calls GetInputEntities() for the request, after the update operation is performed, just before the control
-        /// is returned to the Updater. The first delegate added to this event gets the output from GetInputEntities(), i.e. the
-        /// just updated entities, as argument. Any subsequent delegates get the output from the previous delegate as input.
-        /// </summary>
-        public static event EntityProcessor<T> OnUpdate
-        {
-            add
-            {
-                if (!(Resource<T>.SafeGet is IEntityResource))
-                    throw new InvalidOperationException($"Cannot add event handler for type '{typeof(T).RESTarTypeName()}'. Not an entity resource.");
-                _OnUpdate += value;
-            }
-            remove
-            {
-                if (!(Resource<T>.SafeGet is IEntityResource))
-                    throw new InvalidOperationException(
-                        $"Cannot remove event handler for type '{typeof(T).RESTarTypeName()}'. Not an entity resource.");
-                _OnUpdate -= value;
-            }
-        }
-
-        /// <summary>
-        /// Entity processors added to this event are invoked, in the order they are added, when the given entity resource's
-        /// Deleter calls GetInputEntities() for the request, just before the control is returned to the Deleter. The first
-        /// delegate added to this event gets the output from GetInputEntities() as argument. Any subsequent delegates get the
-        /// output from the previous delegate as input.
-        /// </summary>
-        public static event EntityProcessor<T> OnDelete
-        {
-            add
-            {
-                if (!(Resource<T>.SafeGet is IEntityResource))
-                    throw new InvalidOperationException($"Cannot add event handler for type '{typeof(T).RESTarTypeName()}'. Not an entity resource.");
-                _OnDelete += value;
-            }
-            remove
-            {
-                if (!(Resource<T>.SafeGet is IEntityResource))
-                    throw new InvalidOperationException(
-                        $"Cannot remove event handler for type '{typeof(T).RESTarTypeName()}'. Not an entity resource.");
-                _OnDelete -= value;
-            }
-        }
-
-        #region Internal
-
-        private static event EventHandler<T> _Raise;
-        private static event EntityProcessor<T> _OnInsert;
-        private static event EntityProcessor<T> _OnUpdate;
-        private static event EntityProcessor<T> _OnDelete;
-
-        internal static void InvokeRaise(object sender, T @event)
-        {
-            _Raise?.Invoke(sender, @event);
-        }
-
-        internal static IEnumerable<T> InvokeOnInsert(IEnumerable<T> entities)
-        {
-            if (entities == null) return null;
-            if (_OnInsert == null) return entities;
-            return _OnInsert?.GetInvocationList()
-                .OfType<EntityProcessor<T>>()
-                .Aggregate(entities, (e, processor) => processor(e));
-        }
-
-        internal static IEnumerable<T> InvokeOnUpdate(IEnumerable<T> entities)
-        {
-            if (entities == null) return null;
-            if (_OnUpdate == null) return entities;
-            return _OnUpdate?.GetInvocationList()
-                .OfType<EntityProcessor<T>>()
-                .Aggregate(entities, (e, processor) => processor(e));
-        }
-
-        internal static IEnumerable<T> InvokeOnDelete(IEnumerable<T> entities)
-        {
-            if (entities == null) return null;
-            if (_OnDelete == null) return entities;
-            return _OnDelete?.GetInvocationList()
-                .OfType<EntityProcessor<T>>()
-                .Aggregate(entities, (e, processor) => processor(e));
-        }
-
-        #endregion
     }
 }

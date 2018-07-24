@@ -22,19 +22,15 @@ namespace RESTar.Internal
             ));
         });
 
-        internal static async Task Raise<T>(IEventInternal<T> @event) where T : class
+        internal static async Task Raise<TEvent, TPayload>(TEvent @event)
+            where TEvent : class, IEventInternal<TPayload> where TPayload : class
         {
             if (!RESTarConfig.Initialized) return;
-            if (!(Db.SQL<Event>(Event.ByName, @event.Name).FirstOrDefault() is Event eventType))
+            if (Db.SQL<Event>(Event.ByName, @event.Name).FirstOrDefault() == null)
                 throw new UnknownEventTypeException(@event);
             var hookTask = WebhookController.Post(@event);
-            RaiseEventHandlers(eventType, (dynamic) @event);
+            Events.Custom<TEvent>.OnRaise(@event);
             await hookTask;
-        }
-
-        private static void RaiseEventHandlers<T>(object sender, T @event) where T : EventArgs, IEvent
-        {
-            Event<T>.InvokeRaise(sender, @event);
         }
     }
 }

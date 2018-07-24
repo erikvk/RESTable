@@ -15,6 +15,7 @@ using Newtonsoft.Json.Linq;
 using RESTar;
 using RESTar.Admin;
 using RESTar.Linq;
+using RESTar.Meta.Internal;
 using RESTar.Requests;
 using RESTar.Resources;
 using RESTar.Resources.Operations;
@@ -664,6 +665,34 @@ namespace RESTarTester
 
             #endregion
 
+            #region Events
+
+
+
+
+            var notifications = Db.Transact(() => new[]
+            {
+                new Notification {Message = "Some message 1"},
+                new Notification {Message = "Some message 2"},
+                new Notification {Message = "Some message 3"},
+                new Notification {Message = "Some message 4"},
+                new Notification {Message = "Some message 5"}
+            });
+
+            var events = notifications
+                .Select(item => new ENotification(item))
+                .Union(new IEvent[]
+                {
+                    new EMail("This is the very important message!"),
+                    new EImage(new byte[] {4, 5, 1, 2, 3, 2, 3, 1, 5, 5, 1, 5, 1, 2, 3, 1, 2, 3, 1, 2, 1, 21, 5}),
+                    new EExcelFile(new MemoryStream(new byte[] {4, 5, 1, 6, 7, 1, 8, 6, 8, 5, 8, 5, 8, 6, 8, 5})),
+                });
+
+            foreach (dynamic e in events)
+                e.Invoke();
+            
+            #endregion
+
             var done = true;
         }
     }
@@ -675,8 +704,42 @@ namespace RESTarTester
         c
     }
 
+    [Database]
+    public class Notification : Base
+    {
+        public string Message { get; set; }
+    }
+
+    [RESTarEvent(nameof(ENotification))]
+    public class ENotification : Event<Notification>
+    {
+        public ENotification(Notification payload) : base(payload, null) { }
+        public void Invoke() => Raise();
+    }
+
+    [RESTarEvent(nameof(EImage))]
+    public class EMail : Event<string>
+    {
+        public EMail(string payload) : base(payload, "text/plain") { }
+        public void Invoke() => Raise();
+    }
+
+    [RESTarEvent(nameof(EImage))]
+    public class EImage : Event<byte[]>
+    {
+        public EImage(byte[] payload) : base(payload, "image/png") { }
+        public void Invoke() => Raise();
+    }
+
+    [RESTarEvent(nameof(EExcelFile))]
+    public class EExcelFile : Event<Stream>
+    {
+        public EExcelFile(Stream payload) : base(payload, RESTar.Requests.ContentType.Excel) { }
+        public void Invoke() => Raise();
+    }
+
     [Database, RESTar]
-    public class MyTestClass
+    public class MyTestClass : Base
     {
         [RESTarMember(
             order: 5

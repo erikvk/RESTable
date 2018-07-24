@@ -30,15 +30,6 @@ namespace RESTarExample
                 allowAllOrigins: false,
                 configFilePath: @"C:\Mopedo\mopedo\Mopedo.config"
             );
-
-            Event<NotificationEvent>.OnRaise += (s, o) =>
-            {
-                var payload = JsonConvert.SerializeObject(o.Payload);
-
-#pragma warning disable 219
-                var a = 123;
-#pragma warning restore 219
-            };
         }
     }
 
