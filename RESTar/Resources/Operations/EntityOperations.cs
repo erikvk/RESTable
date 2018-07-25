@@ -33,7 +33,7 @@ namespace RESTar.Resources.Operations
             .Filter(request.MetaConditions.Offset)
             .Filter(request.MetaConditions.Limit);
 
-        private static IEnumerable<object> SelectFilterProcess(IRequest<T> request) => request.Target
+        private static IEnumerable<object> SelectProcessFilter(IRequest<T> request) => request.Target
             .Select(request)?
             .Process(request.MetaConditions.Processors)
             .Filter(request.MetaConditions.Distinct)
@@ -64,7 +64,7 @@ namespace RESTar.Resources.Operations
             }
         }
 
-        private static IEnumerable<object> TrySelectFilterProcess(IEntityRequest<T> request)
+        private static IEnumerable<object> TrySelectProcessFilter(IEntityRequest<T> request)
         {
             var producer = request.EntitiesProducer;
             try
@@ -72,7 +72,7 @@ namespace RESTar.Resources.Operations
                 request.EntitiesProducer = () => new T[0];
                 if (!request.MetaConditions.HasProcessors)
                     return SelectFilter(request);
-                return SelectFilterProcess(request);
+                return SelectProcessFilter(request);
             }
             catch (InfiniteLoop)
             {
@@ -98,7 +98,7 @@ namespace RESTar.Resources.Operations
                     return request.EntityResource.Count(request);
                 if (!request.MetaConditions.HasProcessors)
                     return SelectFilter(request)?.Count() ?? 0L;
-                return SelectFilterProcess(request)?.Count() ?? 0L;
+                return SelectProcessFilter(request)?.Count() ?? 0L;
             }
             catch (InfiniteLoop)
             {
@@ -192,7 +192,7 @@ namespace RESTar.Resources.Operations
                 case Method.GET:
                     return request =>
                     {
-                        var entities = TrySelectFilterProcess(request);
+                        var entities = TrySelectProcessFilter(request);
                         if (entities == null)
                             return MakeEntities(request, default(IEnumerable<T>));
                         return MakeEntities(request, (dynamic) entities);

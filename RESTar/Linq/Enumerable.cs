@@ -185,16 +185,6 @@ namespace RESTar.Linq
         }
 
         /// <summary>
-        /// Evaluates the predicate. If the predicate evaluates to true, returns the result of the 'then'
-        /// function applied to the source IEnumerable. Else, returns the source IEnumerable.
-        /// </summary>
-        public static IEnumerable<T> If<T>(this IEnumerable<T> source, Predicate<IEnumerable<T>> @if,
-            Func<IEnumerable<T>, IEnumerable<T>> then)
-        {
-            return @if(source) ? then(source) : source;
-        }
-
-        /// <summary>
         /// Performs an action for each element in an IEnumerable.
         /// </summary>
         public static void ForEach<T>(this IEnumerable<T> source, Action<T> action)

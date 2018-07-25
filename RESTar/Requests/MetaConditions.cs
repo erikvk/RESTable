@@ -129,7 +129,7 @@ namespace RESTar.Requests
         private static string AllMetaConditions =>
             $"{string.Join(", ", Enum.GetNames(typeof(RESTarMetaConditions)).Except(new[] {"New", "Delete"}))}";
 
-        internal static MetaConditions Parse(IEnumerable<IUriCondition> uriMetaConditions, IEntityResource resource)
+        internal static MetaConditions Parse(IReadOnlyCollection<IUriCondition> uriMetaConditions, IEntityResource resource)
         {
             if (!uriMetaConditions.Any()) return null;
             var renames = uriMetaConditions.Where(c => c.Key.EqualsNoCase("rename"));
