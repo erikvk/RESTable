@@ -101,7 +101,7 @@
     <Compile Include="Admin\Webhook.cs" />
     <Compile Include="Admin\WebhookLog.cs" />
     <Compile Include="Admin\WebhookLogSettings.cs" />
-    <Compile Include="Admin\WebhookRequest.cs" />
+    <Compile Include="Admin\CustomWebhookRequest.cs" />
     <Compile Include="Admin\WebSocket.cs" />
     <Compile Include="Admin\Utilities.cs" />
     <Compile Include="Admin\Console.cs" />

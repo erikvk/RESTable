@@ -21,6 +21,8 @@ namespace RESTar.Internal
         {
             var _context = new WebhookContext(apiKey);
             var accessRights = Authenticator.GetAccessRights(apiKey);
+            if (!RESTarConfig.RequireApiKey)
+                accessRights = AccessRights.Root;
             if (accessRights == null)
             {
                 context = null;

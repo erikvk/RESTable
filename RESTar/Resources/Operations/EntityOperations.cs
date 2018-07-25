@@ -18,9 +18,9 @@ namespace RESTar.Resources.Operations
             return entity;
         });
 
-        internal static IEnumerable<T> InvokePostInsert<T>(this IEnumerable<T> e) where T : class => Events.EntityResource<T>.OnInsert(e);
-        internal static IEnumerable<T> InvokePostUpdate<T>(this IEnumerable<T> e) where T : class => Events.EntityResource<T>.OnUpdate(e);
-        internal static IEnumerable<T> InvokePreDelete<T>(this IEnumerable<T> e) where T : class => Events.EntityResource<T>.OnDelete(e);
+        internal static IEnumerable<T> InvokePostInsert<T>(this IEnumerable<T> e) where T : class => Events.EntityResource<T>.OnPostInsert(e);
+        internal static IEnumerable<T> InvokePostUpdate<T>(this IEnumerable<T> e) where T : class => Events.EntityResource<T>.OnPostUpdate(e);
+        internal static IEnumerable<T> InvokePreDelete<T>(this IEnumerable<T> e) where T : class => Events.EntityResource<T>.OnPreDelete(e);
     }
 
     internal static class EntityOperations<T> where T : class

@@ -65,6 +65,27 @@ namespace RESTarTester
 
         public static void Main()
         {
+            Db.SQL<RESTar.Dynamic.DynamicResource>("SELECT t FROM RESTar.Dynamic.DynamicResource t").ForEach(b => Db.TransactAsync(b.Delete));
+            Db.SQL<Webhook>("SELECT t FROM RESTar.Admin.Webhook t").ForEach(b => Db.TransactAsync(b.Delete));
+
+            Handle.POST("/wrStream", (Request __r) =>
+            {
+                Debug.Assert(__r.BodyBytes.Length == 16);
+                return HttpStatusCode.OK;
+            });
+
+            Handle.POST("/wrBytes", (Request __r) =>
+            {
+                Debug.Assert(__r.BodyBytes.Length == 23);
+                return HttpStatusCode.OK;
+            });
+
+            Handle.POST("/wrString", (Request __r) =>
+            {
+                Debug.Assert(__r.Body == "This is the very important message!");
+                return HttpStatusCode.OK;
+            });
+
             RESTarConfig.Init
             (
                 port: 9000,
@@ -74,6 +95,72 @@ namespace RESTarTester
                 configFilePath: @"C:\Mopedo\mopedo\Mopedo.config"
             );
 
+            #region Create resources and hooks
+
+            using (var dynamicResourceRequest = Context.Root.CreateRequest<RESTar.Dynamic.Resource>(POST))
+            {
+                dynamicResourceRequest.Selector = () => new[]
+                {
+                    new RESTar.Dynamic.Resource {Name = "wr1"},
+                    new RESTar.Dynamic.Resource {Name = "wr2"},
+                    new RESTar.Dynamic.Resource {Name = "wr3"},
+                    new RESTar.Dynamic.Resource {Name = "wrResource1"}
+                };
+                using (var drResult = dynamicResourceRequest.Evaluate())
+                {
+                    Debug.Assert(drResult is Change);
+                }
+            }
+
+            using (var webhookRequest = Context.Root.CreateRequest<Webhook>(POST))
+            {
+                webhookRequest.Selector = () => new[]
+                {
+                    new Webhook
+                    {
+                        Destination = "/wr1",
+                        Event = typeof(ENotification).FullName
+                    },
+                    new Webhook
+                    {
+                        Destination = "/wr2",
+                        Event = typeof(ENotification).FullName
+                    },
+                    new Webhook
+                    {
+                        Destination = "http://localhost:8080/wrStream",
+                        Event = typeof(EStream).FullName
+                    },
+                    new Webhook
+                    {
+                        Destination = "http://localhost:8080/wrBytes",
+                        Event = typeof(EBytes).FullName
+                    },
+                    new Webhook
+                    {
+                        Destination = "http://localhost:8080/wrString",
+                        Event = typeof(EString).FullName
+                    },
+                    new Webhook
+                    {
+                        Destination = "/wrResource1",
+                        Event = typeof(EString).FullName,
+                        CustomRequest = new CustomWebhookRequest
+                        {
+                            URI = "/resource1//select=Sbyte,Byte,Short,Ushort,Int,Uint,Long,Ulong",
+                            Body = "not useful",
+                            Headers = {Accept = ContentType.JSON}
+                        }
+                    }
+                };
+                using (var whresult = webhookRequest.Evaluate())
+                {
+                    Debug.Assert(whresult is Change);
+                }
+            }
+
+            #endregion
+
             Db.SQL<Base>("SELECT t FROM RESTarTester.Base t").ForEach(b => Db.TransactAsync(b.Delete));
             Db.SQL<MyDict>("SELECT t FROM RESTarTester.MyDict t").ForEach(b => Db.TransactAsync(b.Delete));
             Db.SQL<MyDict2>("SELECT t FROM RESTarTester.MyDict2 t").ForEach(b => Db.TransactAsync(b.Delete));
@@ -82,6 +169,19 @@ namespace RESTarTester
             string twosJson = null;
             string threesJson = null;
             string foursJson = null;
+
+            IEnumerable<Resource1> process(IEnumerable<Resource1> inp)
+            {
+                foreach (var item in inp)
+                {
+                    Debug.Assert(item != null);
+                    yield return item;
+                }
+            }
+
+            Events.EntityResource<Resource1>.PostInsert += process;
+            Events.EntityResource<Resource1>.PostUpdate += process;
+            Events.EntityResource<Resource1>.PreDelete += process;
 
             #region JSON generation
 
@@ -655,20 +755,23 @@ namespace RESTarTester
 
             #region Error triggers
 
-            Debug.Assert(Http.Request("GET", "http://localhost:9000/rest/x9").StatusCode == HttpStatusCode.NotFound);
-            Debug.Assert(Http.Request("GET", "http://localhost:9000/rest/resource1/bfa=1").StatusCode == HttpStatusCode.NotFound);
-            Debug.Assert(Http.Request("GET", "http://localhost:9000/rest/resource1//limit=foo").StatusCode == HttpStatusCode.BadRequest);
-            Debug.Assert(Http.Request("POST", "http://localhost:9000/rest/resource1/bfa=1").StatusCode == HttpStatusCode.NotFound);
-            Debug.Assert(Http.Request("POST", "http://localhost:9000/rest/resource1").StatusCode == HttpStatusCode.BadRequest);
-            Debug.Assert(Http.Request("PATCH", "http://localhost:9000/rest/resource1").StatusCode == HttpStatusCode.BadRequest);
-            Debug.Assert(Http.Request("POST", "http://localhost:9000/rest/myres", new byte[] {1, 2, 3}).StatusCode == HttpStatusCode.MethodNotAllowed);
+//            Debug.Assert(Http.Request("GET", "http://localhost:9000/rest/x9").StatusCode == HttpStatusCode.NotFound);
+//            Debug.Assert(Http.Request("GET", "http://localhost:9000/rest/resource1/bfa=1").StatusCode == HttpStatusCode.NotFound);
+//            Debug.Assert(Http.Request("GET", "http://localhost:9000/rest/resource1//limit=foo").StatusCode == HttpStatusCode.BadRequest);
+//            Debug.Assert(Http.Request("POST", "http://localhost:9000/rest/resource1/bfa=1").StatusCode == HttpStatusCode.NotFound);
+//            Debug.Assert(Http.Request("POST", "http://localhost:9000/rest/resource1").StatusCode == HttpStatusCode.BadRequest);
+//            Debug.Assert(Http.Request("PATCH", "http://localhost:9000/rest/resource1").StatusCode == HttpStatusCode.BadRequest);
+//            Debug.Assert(Http.Request("POST", "http://localhost:9000/rest/myres", new byte[] {1, 2, 3}).StatusCode == HttpStatusCode.MethodNotAllowed);
 
             #endregion
 
             #region Events
 
-
-
+            Events.Custom<ENotification>.Raise += (s, o) =>
+            {
+                Debug.Assert(s == null);
+                Debug.Assert(o.Payload.Message?.Length == "Some message 1".Length);
+            };
 
             var notifications = Db.Transact(() => new[]
             {
@@ -683,14 +786,16 @@ namespace RESTarTester
                 .Select(item => new ENotification(item))
                 .Union(new IEvent[]
                 {
-                    new EMail("This is the very important message!"),
-                    new EImage(new byte[] {4, 5, 1, 2, 3, 2, 3, 1, 5, 5, 1, 5, 1, 2, 3, 1, 2, 3, 1, 2, 1, 21, 5}),
-                    new EExcelFile(new MemoryStream(new byte[] {4, 5, 1, 6, 7, 1, 8, 6, 8, 5, 8, 5, 8, 6, 8, 5})),
-                });
+                    new EString("This is the very important message!"),
+                    new EBytes(new byte[] {4, 5, 1, 2, 3, 2, 3, 1, 5, 5, 1, 5, 1, 2, 3, 1, 2, 3, 1, 2, 1, 21, 5}),
+                    new EStream(new MemoryStream(new byte[] {4, 5, 1, 6, 7, 1, 8, 6, 8, 5, 8, 5, 8, 6, 8, 5}))
+                })
+                .ToList();
 
+            // Raises all events
             foreach (dynamic e in events)
                 e.Invoke();
-            
+
             #endregion
 
             var done = true;
@@ -717,24 +822,24 @@ namespace RESTarTester
         public void Invoke() => Raise();
     }
 
-    [RESTarEvent(nameof(EImage))]
-    public class EMail : Event<string>
+    [RESTarEvent(nameof(EString))]
+    public class EString : Event<string>
     {
-        public EMail(string payload) : base(payload, "text/plain") { }
+        public EString(string payload) : base(payload, "text/plain") { }
         public void Invoke() => Raise();
     }
 
-    [RESTarEvent(nameof(EImage))]
-    public class EImage : Event<byte[]>
+    [RESTarEvent(nameof(EBytes))]
+    public class EBytes : Event<byte[]>
     {
-        public EImage(byte[] payload) : base(payload, "image/png") { }
+        public EBytes(byte[] payload) : base(payload, "image/png") { }
         public void Invoke() => Raise();
     }
 
-    [RESTarEvent(nameof(EExcelFile))]
-    public class EExcelFile : Event<Stream>
+    [RESTarEvent(nameof(EStream))]
+    public class EStream : Event<Stream>
     {
-        public EExcelFile(Stream payload) : base(payload, RESTar.Requests.ContentType.Excel) { }
+        public EStream(Stream payload) : base(payload, RESTar.Requests.ContentType.Excel) { }
         public void Invoke() => Raise();
     }
 

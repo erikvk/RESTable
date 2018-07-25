@@ -19,12 +19,13 @@ using Starcounter;
 
 namespace RESTar.Admin
 {
-    /// <inheritdoc />
+    /// <inheritdoc cref="IValidatable" />
+    /// <inheritdoc cref="IEntity" />
     /// <summary>
     /// Webhooks are used to generate POST request callbacks to external URIs when events are triggered.
     /// </summary>
     [RESTar, Database]
-    public class Webhook : IValidatable
+    public class Webhook : IValidatable, IEntity
     {
         internal const string All = "SELECT t FROM RESTar.Admin.Webhook t";
         internal const string ByEventName = All + " WHERE t.EventName =?";
@@ -41,8 +42,6 @@ namespace RESTar.Admin
         /// A descriptive label for this webhook
         /// </summary>
         public string Label { get; set; }
-
-        [Transient] private bool DestinationHasChanged { get; set; }
 
         /// <summary>
         /// The method to use in the webhook request
@@ -65,27 +64,10 @@ namespace RESTar.Admin
         }
 
         /// <summary>
-        /// Does the destination refer to a local resource?
-        /// </summary>
-        [RESTarMember(ignore: true)] public bool DestinationIsLocal { get; private set; }
-
-        /// <summary>
-        /// The API key to use in requests to local destination resources
-        /// </summary>
-        [RESTarMember(ignore: true)] public string LocalDestinationAPIKey { get; private set; }
-
-        /// <summary>
         /// Custom headers included in the POST request
         /// </summary>
         [JsonConverter(typeof(HeadersConverter<DbHeaders>), true)]
         public DbHeaders Headers { get; }
-
-        [Transient] private bool EventHasChanged { get; set; }
-
-        /// <summary>
-        /// The underlying storage for Event
-        /// </summary>
-        [RESTarMember(ignore: true)] public string EventName { get; private set; }
 
         /// <summary>
         /// The event used to trigger this webhook
@@ -106,16 +88,9 @@ namespace RESTar.Admin
         public bool IsPaused { get; set; }
 
         /// <summary>
-        /// The error message, if any, of this webhook
-        /// </summary>
-        [RESTarMember(hideIfNull: true)] public string ErrorMessage { get; private set; }
-
-        private WebhookRequest customRequest;
-
-        /// <summary>
         /// A custom request to use to generate the body of the webhook's POST requests
         /// </summary>
-        [RESTarMember(replaceOnUpdate: true)] public WebhookRequest CustomRequest
+        [RESTarMember(replaceOnUpdate: true)] public CustomWebhookRequest CustomRequest
         {
             get => customRequest;
             set
@@ -126,11 +101,48 @@ namespace RESTar.Admin
             }
         }
 
+        #region Internal
+
+        private CustomWebhookRequest customRequest;
+
+        [Transient] private bool DestinationHasChanged { get; set; }
+
+        /// <summary>
+        /// Does the destination refer to a local resource?
+        /// </summary>
+        [RESTarMember(ignore: true)] public bool DestinationIsLocal { get; private set; }
+
+        /// <summary>
+        /// The API key to use in requests to local destination resources
+        /// </summary>
+        [RESTarMember(ignore: true)] public string LocalDestinationAPIKey { get; private set; }
+
+        [Transient] private bool EventHasChanged { get; set; }
+
+        /// <summary>
+        /// The underlying storage for Event
+        /// </summary>
+        [RESTarMember(ignore: true)] public string EventName { get; private set; }
+
+        /// <summary>
+        /// The error message, if any, of this webhook
+        /// </summary>
+        [RESTarMember(hideIfNull: true)] public string ErrorMessage { get; private set; }
+
+        #endregion
+
         /// <inheritdoc />
         public Webhook()
         {
             Method = Method.POST;
             Headers = new DbHeaders();
+        }
+
+        /// <inheritdoc />
+        public void OnDelete()
+        {
+            Headers.Delete();
+            CustomRequest?.Delete();
         }
 
         private bool CheckIfValid() => IsValid(out _);

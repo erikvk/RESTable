@@ -67,7 +67,7 @@ namespace RESTar.Resources
         /// <summary>
         /// Raises the event
         /// </summary>
-        protected async void Raise() => await Raiser(this);
+        protected async void Raise() => await Raiser((dynamic) this);
 
         private static async Task Raiser<TEvent>(TEvent e) where TEvent : class, IEventInternal<TPayload>
         {

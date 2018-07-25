@@ -13,20 +13,17 @@ using Binary = Starcounter.Binary;
 
 namespace RESTar.Admin
 {
+    /// <inheritdoc cref="IEntity" />
     /// <summary>
     /// A request used for getting data from a local resource, to post in a WebHook
     /// </summary>
     [Database]
-    public class WebhookRequest
+    public class CustomWebhookRequest : IEntity
     {
         /// <summary>
         /// The method of the WebHook request. Always GET
         /// </summary>
         public Method Method => Method.GET;
-
-        [Transient] private bool URIHasChanged { get; set; }
-
-        private string uri;
 
         /// <summary>
         /// The URI of the WebHook request. Must point to a local resource.
@@ -42,20 +39,10 @@ namespace RESTar.Admin
         }
 
         /// <summary>
-        /// The API key to use in requests
-        /// </summary>
-        [RESTarMember(ignore: true)] public string APIKey { get; private set; }
-
-        /// <summary>
         /// The headers for this WebHook request
         /// </summary>
         [JsonConverter(typeof(HeadersConverter<DbHeaders>), true)]
         public DbHeaders Headers { get; }
-
-        /// <summary>
-        /// The underlying storage for the body of this WebHook request
-        /// </summary>
-        [RESTarMember(ignore: true)] public Binary BodyBinary { get; set; }
 
         /// <summary>
         /// The body of this WebHook request
@@ -84,10 +71,31 @@ namespace RESTar.Admin
         /// </summary>
         public bool BreakOnNoContent { get; set; }
 
+        #region Internal
+
+        [Transient] private bool URIHasChanged { get; set; }
+
+        private string uri;
+
+        /// <summary>
+        /// The API key to use in requests
+        /// </summary>
+        [RESTarMember(ignore: true)] public string APIKey { get; private set; }
+
+        /// <summary>
+        /// The underlying storage for the body of this WebHook request
+        /// </summary>
+        [RESTarMember(ignore: true)] public Binary BodyBinary { get; set; }
+
+        #endregion
+
         /// <inheritdoc />
-        public WebhookRequest()
+        public CustomWebhookRequest() => Headers = new DbHeaders();
+
+        /// <inheritdoc />
+        public void OnDelete()
         {
-            Headers = new DbHeaders();
+            Headers.Delete();
         }
 
         internal bool IsValid(Webhook webhook, out string invalidReason, out string errorMessage)

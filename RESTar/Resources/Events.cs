@@ -18,26 +18,29 @@ namespace RESTar.Resources
         /// <typeparam name="T"></typeparam>
         public static class EntityResource<T> where T : class
         {
-            internal static IEnumerable<T> OnInsert(IEnumerable<T> entities)
+            internal static IEnumerable<T> OnPostInsert(IEnumerable<T> entities)
             {
                 if (entities == null || PostInsert == null) return entities;
-                return PostInsert?.GetInvocationList()
+                return PostInsert
+                    .GetInvocationList()
                     .OfType<EntityProcessor<T>>()
                     .Aggregate(entities, (e, processor) => processor(e));
             }
 
-            internal static IEnumerable<T> OnUpdate(IEnumerable<T> entities)
+            internal static IEnumerable<T> OnPostUpdate(IEnumerable<T> entities)
             {
-                if (entities == null || PostInsert == null) return entities;
-                return PostUpdate?.GetInvocationList()
+                if (entities == null || PostUpdate == null) return entities;
+                return PostUpdate
+                    .GetInvocationList()
                     .OfType<EntityProcessor<T>>()
                     .Aggregate(entities, (e, processor) => processor(e));
             }
 
-            internal static IEnumerable<T> OnDelete(IEnumerable<T> entities)
+            internal static IEnumerable<T> OnPreDelete(IEnumerable<T> entities)
             {
-                if (entities == null || PostInsert == null) return entities;
-                return PreDelete?.GetInvocationList()
+                if (entities == null || PreDelete == null) return entities;
+                return PreDelete
+                    .GetInvocationList()
                     .OfType<EntityProcessor<T>>()
                     .Aggregate(entities, (e, processor) => processor(e));
             }
@@ -74,8 +77,8 @@ namespace RESTar.Resources
         public static class Custom<T> where T : class, IEvent
         {
             /// <summary>
-            /// The event handler for custom RESTar events of type T, subclasses of <see cref="Event{T}"/>.
-            /// Use this to add listeners for RESTar custom events.
+            /// The .NET event for custom RESTar events of type T, subclasses of <see cref="Event{T}"/>. Use this to add event
+            /// handlers for RESTar custom events.
             /// </summary>
             public static event EventHandler<T> Raise;
 

@@ -13,7 +13,12 @@ using Starcounter;
 
 namespace RESTar.Internal.Sc
 {
-    internal class DynamitResourceProvider : EntityResourceProvider<DDictionary>, IProceduralEntityResourceProvider
+    /// <inheritdoc cref="EntityResourceProvider" />
+    /// <inheritdoc cref="IProceduralEntityResourceProvider" />
+    /// <summary>
+    /// The resource provider for Dynamit dynamic entity resource types
+    /// </summary>
+    public class DynamitResourceProvider : EntityResourceProvider<DDictionary>, IProceduralEntityResourceProvider
     {
         internal override bool Include(Type type)
         {
@@ -25,22 +30,36 @@ namespace RESTar.Internal.Sc
         internal override void Validate() { }
 
         // ReSharper disable once UnassignedGetOnlyAutoProperty
+        /// <inheritdoc />
         protected override Type AttributeType { get; }
 
+        /// <inheritdoc />
         protected override IEnumerable<T> DefaultSelect<T>(IRequest<T> request) => DDictionaryOperations<T>.Select(request);
+
+        /// <inheritdoc />
         protected override int DefaultInsert<T>(IRequest<T> request) => DDictionaryOperations<T>.Insert(request);
+
+        /// <inheritdoc />
         protected override int DefaultUpdate<T>(IRequest<T> request) => DDictionaryOperations<T>.Update(request);
+
+        /// <inheritdoc />
         protected override int DefaultDelete<T>(IRequest<T> request) => DDictionaryOperations<T>.Delete(request);
+
+        /// <inheritdoc />
         protected override ResourceProfile DefaultProfile<T>(IEntityResource<T> resource) => DDictionaryOperations<T>.Profile(resource);
+
+        /// <inheritdoc />
         protected override IDatabaseIndexer DatabaseIndexer { get; }
 
         internal DynamitResourceProvider(IDatabaseIndexer databaseIndexer) => DatabaseIndexer = databaseIndexer;
 
+        /// <inheritdoc />
         protected override bool IsValid(IEntityResource resource, out string reason) =>
             StarcounterOperations<object>.IsValid(resource, out reason);
 
         private static bool Exists(Type type) => Db.SQL<DynamicResource>(DynamicResource.ByTableName, type.RESTarTypeName()).FirstOrDefault() != null;
 
+        /// <inheritdoc />
         protected override IEnumerable<IProceduralEntityResource> SelectProceduralResources() => Db
             .SQL<DynamicResource>(DynamicResource.All)
             .Where(resource =>
@@ -55,6 +74,7 @@ namespace RESTar.Internal.Sc
             })
             .ToList();
 
+        /// <inheritdoc />
         protected override IProceduralEntityResource InsertProceduralResource(string name, string description, Method[] methods, dynamic data)
         {
             DynamicResource proceduralResource = null;
@@ -66,6 +86,7 @@ namespace RESTar.Internal.Sc
             return proceduralResource;
         }
 
+        /// <inheritdoc />
         protected override void SetProceduralResourceMethods(IProceduralEntityResource resource, Method[] methods) =>
             Db.TransactAsync(() =>
             {
@@ -73,6 +94,7 @@ namespace RESTar.Internal.Sc
                 _resource.Methods = methods;
             });
 
+        /// <inheritdoc />
         protected override void SetProceduralResourceDescription(IProceduralEntityResource resource, string newDescription) =>
             Db.TransactAsync(() =>
             {
@@ -80,6 +102,7 @@ namespace RESTar.Internal.Sc
                 _resource.Description = newDescription;
             });
 
+        /// <inheritdoc />
         protected override bool DeleteProceduralResource(IProceduralEntityResource resource)
         {
             var _resource = (DynamicResource) resource;

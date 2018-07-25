@@ -824,15 +824,15 @@ namespace RESTar
             switch (content)
             {
                 case Stream _stream:
-                    _contentType = ResolveInputContentType(request, contentType);
+                    _contentType = contentType ?? ResolveInputContentType(request);
                     if (_contentType.IsDefault) throw new ArgumentException("Missing content type for binary data", nameof(contentType));
                     return new RESTarStream(_contentType, _stream);
                 case byte[] bytes:
-                    _contentType = ResolveInputContentType(request, contentType);
+                    _contentType = contentType ?? ResolveInputContentType(request);
                     if (_contentType.IsDefault) throw new ArgumentException("Missing content type for binary data", nameof(contentType));
                     return new RESTarStream(_contentType, bytes);
                 case string str:
-                    _contentType = ResolveInputContentType(request, contentType);
+                    _contentType = contentType ?? ResolveInputContentType(request);
                     if (_contentType.IsDefault) _contentType = "text/plain";
                     return new RESTarStream(_contentType, str.ToBytes());
                 case null: throw new ArgumentNullException(nameof(content));

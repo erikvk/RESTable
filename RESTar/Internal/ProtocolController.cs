@@ -87,7 +87,7 @@ namespace RESTar.Internal
                     DefaultProtocolProvider = cachedProvider;
                     ProtocolProviders[""] = cachedProvider;
                 }
-                var protocolId = "-" + provider.ProtocolIdentifier;
+                var protocolId = provider.ProtocolIdentifier;
                 if (ProtocolProviders.TryGetValue(protocolId, out var existing))
                 {
                     if (existing.GetType() == provider.GetType())

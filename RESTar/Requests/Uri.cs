@@ -78,6 +78,8 @@ namespace RESTar.Requests
             if (percentCharsEscaped) uriString = uriString.Replace("%25", "%");
             var groups = Regex.Match(uriString, RegEx.Protocol).Groups;
             var protocolString = groups["proto"].Value;
+            if (protocolString.StartsWith("-"))
+                protocolString = protocolString.Substring(1);
             var tail = groups["tail"].Value;
             if (!ProtocolController.ProtocolProviders.TryGetValue(protocolString, out cachedProtocolProvider))
             {
@@ -103,14 +105,6 @@ namespace RESTar.Requests
             Conditions = components.Conditions;
             MetaConditions = components.MetaConditions;
             Macro = components.Macro;
-        }
-
-        internal static URI Parse(string uriString)
-        {
-            var context = new InternalContext();
-            var uri = ParseInternal(uriString, false, context, out _);
-            if (uri.HasError) throw uri.Error;
-            return uri;
         }
 
         internal URI()
