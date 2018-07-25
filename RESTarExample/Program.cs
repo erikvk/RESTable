@@ -94,13 +94,22 @@ namespace RESTarExample
     public class R1
     {
         public int I;
+
+        [JsonConstructor]
+        private R1(int i)
+        {
+            I = i;
+        }
     }
 
-    [Database, RESTar]
-    public class R2 : R1
-    {
-        public string STR;
-    }
+    //[Database, RESTar]
+    //public class R2 : R1
+    //{
+    //    public string STR;
+
+    //    internal R2(int i) : base(i) { }
+    //}
+
 
 
     [RESTar]

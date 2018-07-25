@@ -337,7 +337,11 @@ namespace RESTar
 
         #region Resource helpers
 
-        internal static void Validate(this IValidatable ivalidatable)
+        /// <summary>
+        /// Validates a validatable entity resource entity. If not valid, throws a BadRequest.
+        /// </summary>
+        /// <param name="ivalidatable">The validatable entity</param>
+        public static void Validate(this IValidatable ivalidatable)
         {
             if (!ivalidatable.IsValid(out var reason))
                 throw new FailedValidation(reason);
