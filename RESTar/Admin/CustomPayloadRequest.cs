@@ -18,7 +18,7 @@ namespace RESTar.Admin
     /// A request used for getting data from a local resource, to post in a WebHook
     /// </summary>
     [Database]
-    public class CustomWebhookRequest : IEntity
+    public class CustomPayloadRequest : IEntity
     {
         /// <summary>
         /// The method of the WebHook request. Always GET
@@ -39,7 +39,7 @@ namespace RESTar.Admin
         }
 
         /// <summary>
-        /// The headers for this WebHook request
+        /// The headers for this payload request
         /// </summary>
         [JsonConverter(typeof(HeadersConverter<DbHeaders>), true)]
         public DbHeaders Headers { get; }
@@ -90,13 +90,10 @@ namespace RESTar.Admin
         #endregion
 
         /// <inheritdoc />
-        public CustomWebhookRequest() => Headers = new DbHeaders();
+        public CustomPayloadRequest() => Headers = new DbHeaders();
 
         /// <inheritdoc />
-        public void OnDelete()
-        {
-            Headers.Delete();
-        }
+        public void OnDelete() => Headers.Delete();
 
         internal bool IsValid(Webhook webhook, out string invalidReason, out string errorMessage)
         {

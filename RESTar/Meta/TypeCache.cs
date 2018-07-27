@@ -90,7 +90,7 @@ namespace RESTar.Meta
                             .Concat(_type.GetInterfaces())
                             .SelectMany(i => i.GetProperties(BindingFlags.Instance | BindingFlags.Public))
                             .ParseDeclaredProperties(false);
-                    case var _ when _type.HasAttribute<RESTarAttribute>(out var attr) && attr.Interface is Type t:
+                    case var _ when _type.HasAttribute<RESTarAttribute>(out _) && _type.GetRESTarInterfaceType() is Type t:
                         var interfaceName = t.RESTarTypeName();
                         var targetsByProp = _type
                             .GetInterfaceMap(t)

@@ -145,7 +145,7 @@ namespace RESTarTester
                     {
                         Destination = "/wrResource1",
                         Event = typeof(EString).FullName,
-                        CustomRequest = new CustomWebhookRequest
+                        CustomPayloadRequest = new CustomPayloadRequest
                         {
                             URI = "/resource1//select=Sbyte,Byte,Short,Ushort,Int,Uint,Long,Ulong",
                             Body = "not useful",

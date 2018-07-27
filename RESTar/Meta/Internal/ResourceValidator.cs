@@ -101,7 +101,7 @@ namespace RESTar.Meta.Internal
                     throw new InvalidResourceDeclarationException(
                         $"Invalid type '{type.RESTarTypeName()}'. Resource types must be public classes");
 
-                if (type.HasAttribute<RESTarAttribute>(out var a) && a.Interface is Type interfaceType)
+                if (type.GetRESTarInterfaceType() is Type interfaceType)
                 {
                     if (!interfaceType.IsInterface)
                         throw new InvalidResourceDeclarationException(

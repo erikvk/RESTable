@@ -64,12 +64,6 @@ namespace RESTar.Admin
         }
 
         /// <summary>
-        /// Custom headers included in the POST request
-        /// </summary>
-        [JsonConverter(typeof(HeadersConverter<DbHeaders>), true)]
-        public DbHeaders Headers { get; }
-
-        /// <summary>
         /// The event used to trigger this webhook
         /// </summary>
         public string Event
@@ -83,6 +77,12 @@ namespace RESTar.Admin
         }
 
         /// <summary>
+        /// Custom headers included in the POST request
+        /// </summary>
+        [JsonConverter(typeof(HeadersConverter<DbHeaders>), true)]
+        public DbHeaders Headers { get; }
+
+        /// <summary>
         /// Is this webhook currently paused?
         /// </summary>
         public bool IsPaused { get; set; }
@@ -90,20 +90,20 @@ namespace RESTar.Admin
         /// <summary>
         /// A custom request to use to generate the body of the webhook's POST requests
         /// </summary>
-        [RESTarMember(replaceOnUpdate: true)] public CustomWebhookRequest CustomRequest
+        [RESTarMember(replaceOnUpdate: true)] public CustomPayloadRequest CustomPayloadRequest
         {
-            get => customRequest;
+            get => customPayloadRequest;
             set
             {
-                if (value == null || !value.Equals(customRequest))
-                    customRequest?.Delete();
-                customRequest = value;
+                if (value == null || !value.Equals(customPayloadRequest))
+                    customPayloadRequest?.Delete();
+                customPayloadRequest = value;
             }
         }
 
         #region Internal
 
-        private CustomWebhookRequest customRequest;
+        private CustomPayloadRequest customPayloadRequest;
 
         [Transient] private bool DestinationHasChanged { get; set; }
 
@@ -142,7 +142,7 @@ namespace RESTar.Admin
         public void OnDelete()
         {
             Headers.Delete();
-            CustomRequest?.Delete();
+            CustomPayloadRequest?.Delete();
         }
 
         private bool CheckIfValid() => IsValid(out _);
@@ -244,9 +244,9 @@ namespace RESTar.Admin
 
             #region Custom request
 
-            if (CustomRequest != null)
+            if (CustomPayloadRequest != null)
             {
-                if (!CustomRequest.IsValid(this, out var _invalidReason, out var errorMessage))
+                if (!CustomPayloadRequest.IsValid(this, out var _invalidReason, out var errorMessage))
                 {
                     invalidReason = _invalidReason;
                     return false;
@@ -299,11 +299,11 @@ namespace RESTar.Admin
             Stream body;
             var contentType = Headers.ContentType ?? ContentType.JSON;
 
-            if (CustomRequest == null)
+            if (CustomPayloadRequest == null)
                 (body, contentType) = @event.Payload.ToBodyStream(@event.NativeContentType ?? contentType);
             else
             {
-                using (var request = CustomRequest.CreateRequest(out var error))
+                using (var request = CustomPayloadRequest.CreateRequest(out var error))
                 {
                     if (error != null)
                     {
@@ -316,7 +316,7 @@ namespace RESTar.Admin
                         case Results.Error _:
                             await WebhookLog.Log(this, true, ForCustomRequest(result.LogMessage));
                             CheckIfValid();
-                            if (CustomRequest.BreakOnError)
+                            if (CustomPayloadRequest.BreakOnError)
                             {
                                 result.Dispose();
                                 return;
@@ -324,7 +324,7 @@ namespace RESTar.Admin
                             break;
                         case NoContent _:
                             result.Dispose();
-                            if (customRequest.BreakOnNoContent) return;
+                            if (customPayloadRequest.BreakOnNoContent) return;
                             break;
                     }
                     (body, contentType) = (result.Body, result.Headers.ContentType.GetValueOrDefault());

@@ -337,6 +337,10 @@ namespace RESTar
 
         #region Resource helpers
 
+        internal static Type GetRESTarInterfaceType(this Type resourceType) => resourceType
+            .GetInterfaces()
+            .FirstOrDefault(i => typeof(IEntityResourceInterface).IsAssignableFrom(i));
+
         /// <summary>
         /// Validates a validatable entity resource entity. If not valid, throws a BadRequest.
         /// </summary>

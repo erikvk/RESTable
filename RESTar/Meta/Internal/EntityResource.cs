@@ -132,7 +132,7 @@ namespace RESTar.Meta.Internal
             AvailableMethods = attribute.AvailableMethods;
             IsSingleton = attribute.Singleton;
             IsInternal = attribute is RESTarInternalAttribute;
-            InterfaceType = attribute.Interface;
+            InterfaceType = typeof(T).GetRESTarInterfaceType();
             DynamicConditionsAllowed = typeof(T).IsDDictionary() || typeof(IDynamicMemberValueProvider).IsAssignableFrom(typeof(T)) ||
                                        attribute.AllowDynamicConditions;
             DeclaredPropertiesFlagged = typeof(T).IsDDictionary() || attribute.FlagStaticMembers;

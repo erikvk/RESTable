@@ -111,7 +111,6 @@ namespace RESTarExample
     //}
 
 
-
     [RESTar]
     public class MyBinaryResource : IBinaryResource<MyBinaryResource>
     {
@@ -324,8 +323,8 @@ namespace RESTarExample
 
     #region Solution 2
 
-    [Database, RESTar(Interface = typeof(IVersion1))]
-    public class MyStatic2 : MyStatic2.IVersion1
+    [Database, RESTar]
+    public class MyStatic2 : MyStatic2.IVersion1, MyStatic2.IVersion2
     {
         public string MyString { get; set; }
         public int MyInt { get; set; }
@@ -335,7 +334,7 @@ namespace RESTarExample
 
         #region Version1 interface
 
-        public interface IVersion1
+        public interface IVersion1 : IEntityResourceInterface
         {
             string _ICanCallThisWhateverString { get; }
             int __ThisIsMyINt { get; set; }
@@ -364,7 +363,37 @@ namespace RESTarExample
             set => MyDateTime = value;
         }
 
+        public interface IVersion2 : IEntityResourceInterface
+        {
+            string _ICanCadsallThisWhateverString { get; }
+            int __ThiasdasdsIsMyINt { get; set; }
+            DateTime AndTadadheDateTime_ffs { get; set; }
+            bool Obasdjectbo { get; }
+        }
+
+        string IVersion2._ICanCadsallThisWhateverString
+        {
+            get => MyString;
+        }
+
+        int IVersion2.__ThiasdasdsIsMyINt
+        {
+            get => MyInt;
+            set
+            {
+                MyDateTime = DateTime.MaxValue;
+                MyInt = value;
+            }
+        }
+
+        DateTime IVersion2.AndTadadheDateTime_ffs
+        {
+            get => MyDateTime;
+            set => MyDateTime = value;
+        }
+
         public bool Objectbo => !objo;
+        public bool Obasdjectbo => !objo;
 
         #endregion
     }

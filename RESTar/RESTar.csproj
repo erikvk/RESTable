@@ -101,7 +101,7 @@
     <Compile Include="Admin\Webhook.cs" />
     <Compile Include="Admin\WebhookLog.cs" />
     <Compile Include="Admin\WebhookLogSettings.cs" />
-    <Compile Include="Admin\CustomWebhookRequest.cs" />
+    <Compile Include="Admin\CustomPayloadRequest.cs" />
     <Compile Include="Admin\WebSocket.cs" />
     <Compile Include="Admin\Utilities.cs" />
     <Compile Include="Admin\Console.cs" />
@@ -122,6 +122,7 @@
     <Compile Include="Resources\Event.cs" />
     <Compile Include="Meta\Internal\IEventInternal.cs" />
     <Compile Include="Resources\Events.cs" />
+    <Compile Include="Resources\IEntityResourceInterface.cs" />
     <Compile Include="Resources\InvalidEventDeclarationException.cs" />
     <Compile Include="Resources\InvalidResourceControllerException.cs" />
     <Compile Include="Resources\IProceduralEntityResourceProvider.cs" />

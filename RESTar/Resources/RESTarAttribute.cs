@@ -66,12 +66,6 @@ namespace RESTar.Resources
         public bool GETAvailableToAll { get; set; }
 
         /// <summary>
-        /// An interface type to use instead of this type when determing the public instance 
-        /// members of this resource type. The resource type must implement this interface.
-        /// </summary>
-        public Type Interface { get; set; }
-
-        /// <summary>
         /// Does this attribute describe a declared resource type?
         /// </summary>
         internal bool IsDeclared => !(this is RESTarProceduralAttribute);
