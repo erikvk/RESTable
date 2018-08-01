@@ -106,6 +106,7 @@
     <Compile Include="Admin\Utilities.cs" />
     <Compile Include="Admin\Console.cs" />
     <Compile Include="Admin\DbMacro.cs" />
+    <Compile Include="Blank.cs" />
     <Compile Include="ContentTypeProviders\ExcelProvider.cs" />
     <Compile Include="ContentTypeProviders\ExcelFormatException.cs" />
     <Compile Include="ContentTypeProviders\ExcelInputException.cs" />

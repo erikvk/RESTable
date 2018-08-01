@@ -2,7 +2,6 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
-using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text.RegularExpressions;
@@ -204,7 +203,7 @@ namespace RESTar.Admin
                         ErrorMessage = $"The Destination URL of webhook '{Label ?? Id}' is no longer valid, and has been changed to " +
                                        "protect against unsafe behavior. Please change the destination to a valid local URI " +
                                        "to repair the webhook. Previous Destination: " + Destination;
-                        Destination = $"/{Resource<Echo>.ResourceSpecifier}/Info={WebUtility.UrlEncode(ErrorMessage)}";
+                        Destination = $"/{Resource<Blank>.ResourceSpecifier}";
                         IsPaused = true;
                         invalidReason = null;
                         return true;
@@ -325,7 +324,8 @@ namespace RESTar.Admin
             var context = Context.Webhook(LocalDestinationAPIKey, out var error);
             if (error != null) throw error;
             var request = context.CreateRequest(Destination, Method, headers: Headers.ToTransient());
-            request.SetBody(body, contentType);
+            if (request.IsValid)
+                request.SetBody(body, contentType);
             return request;
         }
 
@@ -389,21 +389,38 @@ namespace RESTar.Admin
 
             try
             {
-                if (DestinationIsLocal)
+                var success = false;
+                var attempts = 0;
+                while (!success)
                 {
-                    using (var request = GetLocalRequest(body, contentType))
-                    using (var response = request.Evaluate())
+                    try
                     {
-                        response.ThrowIfError();
-                        await WebhookLog.Log(this, false, response.LogMessage, request.GetBody().ContentLength.GetValueOrDefault());
+                        if (DestinationIsLocal)
+                        {
+                            using (var request = GetLocalRequest(body, contentType))
+                            using (var response = request.Evaluate())
+                            {
+                                response.ThrowIfError();
+                                await WebhookLog.Log(this, false, response.LogMessage, request.GetBody().ContentLength.GetValueOrDefault());
+                            }
+                        }
+                        else
+                        {
+                            using (var request = GetGlobalRequest(body, contentType))
+                            using (var response = await HttpClient.SendAsync(request))
+                            {
+                                response.EnsureSuccessStatusCode();
+                                await WebhookLog.Log(this, false, $"{response.StatusCode}: {response.ReasonPhrase}",
+                                    request.Content?.Headers.ContentLength ?? 0);
+                            }
+                        }
+                        success = true;
                     }
-                }
-                else
-                {
-                    using (var request = GetGlobalRequest(body, contentType))
-                    using (var response = await HttpClient.SendAsync(request))
-                        await WebhookLog.Log(this, false, $"{response.StatusCode}: {response.ReasonPhrase}",
-                            request.Content?.Headers.ContentLength ?? 0);
+                    catch
+                    {
+                        if (attempts >= 3) throw;
+                        attempts += 1;
+                    }
                 }
             }
             catch (Exception e)

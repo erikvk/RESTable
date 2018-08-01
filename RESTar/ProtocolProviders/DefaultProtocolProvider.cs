@@ -145,27 +145,23 @@ namespace RESTar.ProtocolProviders
         private static string ToUriString(IUriComponents components)
         {
             var view = components.ViewName != null ? $"-{components.ViewName}" : null;
-            var str = new StringBuilder();
-            if (components.Macro == null)
-                str.Append($"/{components.ResourceSpecifier}{view}");
-            else str.Append($"/${components.Macro.Name}");
-            var conditions = components.Conditions.ToList();
-            var metaconditions = components.MetaConditions.ToList();
-            if (conditions.Count > 0)
+            var resource = components.Macro == null ? $"/{components.ResourceSpecifier}{view}" : $"/${components.Macro.Name}";
+            var str = new StringBuilder(resource);
+            if (components.Conditions.Count > 0)
             {
                 str.Append($"/{ToUriString(components.Conditions)}");
-                if (metaconditions.Count > 0)
-                    str.Append($"/{ToUriString(components.MetaConditions)}");
+                if (components.MetaConditions.Count > 0)
+                    str.Append($"/{UnescapeMetaconditions(ToUriString(components.MetaConditions))}");
             }
-            else if (metaconditions.Count > 0)
+            else if (components.MetaConditions.Count > 0)
                 str.Append($"/_/{UnescapeMetaconditions(ToUriString(components.MetaConditions))}");
             return str.ToString();
         }
 
-        private static string UnescapeMetaconditions(string metaconditionsString)
-        {
-            return metaconditionsString.Replace("%2C", ",").Replace("%3E", ">");
-        }
+        private static string UnescapeMetaconditions(string metaconditionsString) => metaconditionsString
+            .Replace("%2C", ",")
+            .Replace("%3E", ">")
+            .Replace("%24", "$");
 
         internal static string ToUriString(IEnumerable<IUriCondition> conditions)
         {
