@@ -13,6 +13,6 @@
         /// <summary>
         /// Removes HTTP request bindings for the given methods on the given port and root URI
         /// </summary>
-        void RemoveBindings(Method[] methods, string rootUri, ushort port);
+        void RemoveBindings(Method[] methods, string uri, ushort port);
     }
 }

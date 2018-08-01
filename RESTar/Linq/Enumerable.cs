@@ -185,6 +185,40 @@ namespace RESTar.Linq
         }
 
         /// <summary>
+        /// Performs an action for each element in an IEnumerable, disregarding any exception thrown
+        /// during evaluation of the action.
+        /// </summary>
+        public static void SafeForEach<T>(this IEnumerable<T> source, Action<T> action)
+        {
+            foreach (var e in source)
+            {
+                try
+                {
+                    action(e);
+                }
+                catch { }
+            }
+        }
+
+        /// <summary>
+        /// Performs an action for each element in an IEnumerable, disregarding any exception thrown
+        /// during evaluation of the action. Exposes the element index.
+        /// </summary>
+        public static void SafeForEach<T>(this IEnumerable<T> source, Action<T, int> action)
+        {
+            var i = 0;
+            foreach (var e in source)
+            {
+                try
+                {
+                    action(e, i);
+                }
+                catch { }
+                i += 1;
+            }
+        }
+
+        /// <summary>
         /// Performs an action for each element in an IEnumerable.
         /// </summary>
         public static void ForEach<T>(this IEnumerable<T> source, Action<T> action)

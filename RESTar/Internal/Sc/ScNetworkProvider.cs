@@ -6,12 +6,9 @@ using System.Net;
 using RESTar.Linq;
 using RESTar.NetworkProviders;
 using RESTar.Requests;
-using RESTar.Resources.Operations;
 using RESTar.Results;
 using RESTar.WebSockets;
 using Starcounter;
-using Console = RESTar.Admin.Console;
-using ScRequest = Starcounter.Request;
 
 namespace RESTar.Internal.Sc
 {
@@ -25,7 +22,7 @@ namespace RESTar.Internal.Sc
             (
                 port: port,
                 methodSpaceUri: $"{method} {rootUri}{{?}}",
-                handler: (ScRequest scRequest, string uri) =>
+                handler: (Request scRequest, string uri) =>
                 {
                     var headers = new Headers(scRequest.HeadersDictionary);
                     var client = GetClient(scRequest);
@@ -38,7 +35,7 @@ namespace RESTar.Internal.Sc
                         {
                             case WebSocketUpgradeSuccessful _: return HandlerStatus.Handled;
                             case var result:
-                                Console.Log(request, result);
+                                Admin.Console.Log(request, result);
                                 return ToResponse(result);
                         }
                     }
@@ -49,7 +46,7 @@ namespace RESTar.Internal.Sc
             (
                 port: port,
                 uriTemplate: $"{rootUri}{{?}}",
-                handler: (ScRequest scRequest, string query) =>
+                handler: (Request scRequest, string query) =>
                 {
                     var context = new ScContext(GetClient(scRequest), scRequest);
                     var headers = new Headers(scRequest.HeadersDictionary);
@@ -93,8 +90,15 @@ namespace RESTar.Internal.Sc
             });
         }
 
-        public void RemoveBindings(Method[] methods, string rootUri, ushort port) => methods
-            .ForEach(method => Do.Try(() => Handle.UnregisterHttpHandler(port, $"{method}", $"{rootUri}{{?}}")));
+        public void RemoveBindings(Method[] methods, string uri, ushort port)
+        {
+            methods.SafeForEach(method => Handle.UnregisterHttpHandler
+            (
+                port: port,
+                method: method.ToString(),
+                uri: $"{uri}{{?}}"
+            ));
+        }
 
         private static Response ToResponse(ISerializedResult result)
         {
@@ -127,7 +131,7 @@ namespace RESTar.Internal.Sc
             return response;
         }
 
-        private static Client GetClient(ScRequest request)
+        private static Client GetClient(Request request)
         {
             var clientIP = request.ClientIpAddress;
             var proxyIP = default(IPAddress);
