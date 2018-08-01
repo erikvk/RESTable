@@ -68,21 +68,28 @@ namespace RESTarTester
             Db.SQL<RESTar.Dynamic.DynamicResource>("SELECT t FROM RESTar.Dynamic.DynamicResource t").ForEach(b => Db.TransactAsync(b.Delete));
             Db.SQL<Webhook>("SELECT t FROM RESTar.Admin.Webhook t").ForEach(b => Db.TransactAsync(b.Delete));
 
+            bool wrstreamcalled = false;
+            bool wrbytescalled = false;
+            bool wrstringcalled = false;
+
             Handle.POST("/wrStream", (Request __r) =>
             {
                 Debug.Assert(__r.BodyBytes.Length == 16);
+                wrstreamcalled = true;
                 return HttpStatusCode.OK;
             });
 
             Handle.POST("/wrBytes", (Request __r) =>
             {
                 Debug.Assert(__r.BodyBytes.Length == 23);
+                wrbytescalled = true;
                 return HttpStatusCode.OK;
             });
 
             Handle.POST("/wrString", (Request __r) =>
             {
                 Debug.Assert(__r.Body == "This is the very important message!");
+                wrstringcalled = true;
                 return HttpStatusCode.OK;
             });
 
@@ -119,32 +126,32 @@ namespace RESTarTester
                     new Webhook
                     {
                         Destination = "/wr1",
-                        EventSelector = typeof(ENotification).FullName
+                        EventSelector = $"/{typeof(ENotification).FullName}"
                     },
                     new Webhook
                     {
                         Destination = "/wr2",
-                        EventSelector = typeof(ENotification).FullName
+                        EventSelector = $"/{typeof(ENotification).FullName}"
                     },
                     new Webhook
                     {
                         Destination = "http://localhost:8080/wrStream",
-                        EventSelector = typeof(EStream).FullName
+                        EventSelector = $"/{typeof(EStream).FullName}"
                     },
                     new Webhook
                     {
                         Destination = "http://localhost:8080/wrBytes",
-                        EventSelector = typeof(EBytes).FullName
+                        EventSelector = $"/{typeof(EBytes).FullName}"
                     },
                     new Webhook
                     {
                         Destination = "http://localhost:8080/wrString",
-                        EventSelector = typeof(EString).FullName
+                        EventSelector = $"/{typeof(EString).FullName}"
                     },
                     new Webhook
                     {
                         Destination = "/wrResource1",
-                        EventSelector = typeof(EString).FullName,
+                        EventSelector = $"/{typeof(EString).FullName}",
                         CustomPayloadRequest = new CustomPayloadRequest
                         {
                             URI = "/resource1//select=Sbyte,Byte,Short,Ushort,Int,Uint,Long,Ulong",
@@ -767,10 +774,13 @@ namespace RESTarTester
 
             #region Events
 
+            bool customraised = false;
+
             Events.Custom<ENotification>.Raise += (s, o) =>
             {
                 Debug.Assert(s == null);
                 Debug.Assert(o.Payload.Message?.Length == "Some message 1".Length);
+                customraised = true;
             };
 
             var notifications = Db.Transact(() => new[]
@@ -796,6 +806,14 @@ namespace RESTarTester
             foreach (dynamic e in events)
                 e.Invoke();
 
+            Task.Delay(5000).ContinueWith(_ =>
+            {
+                Debug.Assert(wrstreamcalled);
+                Debug.Assert(wrbytescalled);
+                Debug.Assert(wrstringcalled);
+                Debug.Assert(customraised);
+            }).Wait();
+            
             #endregion
 
             var done = true;
