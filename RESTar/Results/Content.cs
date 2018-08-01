@@ -10,6 +10,12 @@ namespace RESTar.Results
     public abstract class Content : OK
     {
         /// <summary>
+        /// Us this content locked, for example due to it being tied to a certain
+        /// Websocket streaming operation?
+        /// </summary>
+        internal bool IsLocked { get; set; }
+
+        /// <summary>
         /// Sets the ContentDisposition header to a unique file name of a given extension
         /// </summary>
         public void SetContentDisposition(string extension) => Headers["Content-Disposition"] =

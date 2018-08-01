@@ -48,7 +48,7 @@ namespace RESTarExample
         }
     }
 
-    [RESTarEvent("Notification!")]
+    [RESTar(Description = "Notification!")]
     public class NotificationEvent : Event<MyNotification>
     {
         public NotificationEvent(MyNotification payload) : base(payload) => Raise();
@@ -112,7 +112,7 @@ namespace RESTarExample
 
 
     [RESTar]
-    public class MyBinaryResource : IBinaryResource<MyBinaryResource>
+    public class MyBinaryResource : IBinary<MyBinaryResource>
     {
         public (Stream stream, ContentType contentType) Select(IRequest<MyBinaryResource> request)
         {
@@ -181,7 +181,7 @@ namespace RESTarExample
     }
 
     [RESTar]
-    public class MyBinary : IBinaryResource<MyBinary>
+    public class MyBinary : IBinary<MyBinary>
     {
         public (Stream stream, ContentType contentType) Select(IRequest<MyBinary> request)
         {

@@ -1,20 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using RESTar.Internal;
 
 namespace RESTar.Resources
 {
-    /// <inheritdoc />
-    /// <summary>
-    /// A RESTar attribute type used for procedurally created resources
-    /// </summary>
-    internal class RESTarProceduralAttribute : RESTarAttribute
-    {
-        /// <inheritdoc />
-        internal RESTarProceduralAttribute(IEnumerable<Method> methods) : base(methods.ToArray()) { }
-    }
-
     /// <inheritdoc />
     /// <summary>
     /// Registers a new RESTar resource and provides permissions. If no methods are 
@@ -76,21 +64,5 @@ namespace RESTar.Resources
         /// provided in the constructor, all methods are made available for this resource.
         /// </summary>
         public RESTarAttribute(params Method[] methodRestrictions) => AvailableMethods = methodRestrictions.ResolveMethodsCollection();
-    }
-
-    internal static class MethodsExtensions
-    {
-        internal static IReadOnlyList<Method> ResolveMethodsCollection(this IEnumerable<Method> methods)
-        {
-            var methodRestrictions = methods.Distinct().ToArray();
-            if (!methodRestrictions.Any())
-                methodRestrictions = RESTarConfig.Methods;
-            var restrictions = methodRestrictions.OrderBy(i => i, MethodComparer.Instance).ToList();
-            if (restrictions.Contains(Method.GET) && !restrictions.Contains(Method.REPORT))
-                restrictions.Add(Method.REPORT);
-            if (restrictions.Contains(Method.GET) && !restrictions.Contains(Method.HEAD))
-                restrictions.Add(Method.HEAD);
-            return restrictions.ToList().AsReadOnly();
-        }
     }
 }

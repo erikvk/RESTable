@@ -38,12 +38,6 @@ namespace RESTar.Requests
         /// The protocol provider specified in the uri string
         /// </summary>
         IProtocolProvider ProtocolProvider { get; }
-
-        /// <summary>
-        /// Creates a formatted string representation of the URI components,
-        /// a valid URI string according to the assigned protocol.
-        /// </summary>
-        string ToUriString();
     }
 
     /// <inheritdoc cref="IUriComponents" />

@@ -1,16 +1,21 @@
 ﻿using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using RESTar.ContentTypeProviders.NativeJsonProtocol;
+using RESTar.Internal;
 using RESTar.Internal.Auth;
+using RESTar.Internal.Logging;
 using RESTar.Linq;
 using RESTar.Meta;
 using RESTar.Meta.Internal;
+using RESTar.ProtocolProviders;
 using RESTar.Requests;
 using RESTar.Resources;
 using RESTar.Resources.Operations;
@@ -30,8 +35,14 @@ namespace RESTar.Admin
         internal const string All = "SELECT t FROM RESTar.Admin.Webhook t";
         internal const string ByEventName = All + " WHERE t.EventName =?";
         internal const string IdHeader = "RESTar-webhook-id";
+        private static IDictionary<ulong, object> ConditionCache { get; }
         private static HttpClient HttpClient { get; }
-        static Webhook() => HttpClient = new HttpClient();
+
+        static Webhook()
+        {
+            HttpClient = new HttpClient();
+            ConditionCache = new ConcurrentDictionary<ulong, object>();
+        }
 
         /// <summary>
         /// A unique ID for this Webhook
@@ -64,17 +75,29 @@ namespace RESTar.Admin
         }
 
         /// <summary>
-        /// The event used to trigger this webhook
+        /// Underlying storage for EventSelector
         /// </summary>
-        public string Event
+        [RESTarMember(ignore: true)] public string _EventSelector { get; private set; }
+
+        /// <summary>
+        /// The event selector used to define the events that trigger this webhook
+        /// </summary>
+        public string EventSelector
         {
-            get => EventName;
+            get => _EventSelector;
             set
             {
-                EventHasChanged = EventHasChanged || EventName != value;
-                EventName = value;
+                EventHasChanged = EventHasChanged || _EventSelector != value;
+                if (EventHasChanged)
+                    EventName = null;
+                _EventSelector = value;
             }
         }
+
+        /// <summary>
+        /// The event name of this webhook
+        /// </summary>
+        [RESTarMember(ignore: true)] public string EventName { get; private set; }
 
         /// <summary>
         /// Custom headers included in the POST request
@@ -120,11 +143,6 @@ namespace RESTar.Admin
         [Transient] private bool EventHasChanged { get; set; }
 
         /// <summary>
-        /// The underlying storage for Event
-        /// </summary>
-        [RESTarMember(ignore: true)] public string EventName { get; private set; }
-
-        /// <summary>
         /// The error message, if any, of this webhook
         /// </summary>
         [RESTarMember(hideIfNull: true)] public string ErrorMessage { get; private set; }
@@ -146,6 +164,19 @@ namespace RESTar.Admin
         }
 
         private bool CheckIfValid() => IsValid(out _);
+
+        private bool TryParseConditions<TEvent, TPayload>(IEventResource<TEvent, TPayload> resource, string conds, out string formatted,
+            out Results.Error error) where TEvent : Event<TPayload> where TPayload : class
+        {
+            if (!Condition<TPayload>.TryParse(DefaultProtocolProvider.ParseUriConditions(conds), resource.PayloadTarget, out var parsed, out error))
+            {
+                formatted = null;
+                return false;
+            }
+            formatted = DefaultProtocolProvider.ToUriString(parsed);
+            ConditionCache[this.GetObjectNo()] = parsed;
+            return true;
+        }
 
         /// <inheritdoc />
         public bool IsValid(out string invalidReason)
@@ -219,24 +250,47 @@ namespace RESTar.Admin
 
             #region Event
 
-            if (string.IsNullOrWhiteSpace(Event))
+            if (string.IsNullOrWhiteSpace(EventSelector))
             {
                 invalidReason = "Invalid or missing Event in webhook";
                 return false;
             }
-            if (Db.SQL<Event>(Admin.Event.ByName, Event).FirstOrDefault() is Event @event)
-                Event = @event.Name;
+
+            bool EventSelectorIsValid(string eventSelector, out string _formatted, out IEventResource _event, out Results.Error _error)
+            {
+                (_formatted, _event, _error) = (null, null, null);
+                var match = Regex.Match(eventSelector, RegEx.EventSelector);
+                if (!match.Success)
+                {
+                    _error = new InvalidSyntax(ErrorCodes.InvalidEventSelector, "Invalid event selector syntax");
+                    return false;
+                }
+                if (!Meta.Resource.TryFind(match.Groups["event"].Value, out _event, out _error))
+                    return false;
+                var conds = match.Groups["cond"].Value;
+                var formattedConds = default(string);
+                if (conds != "" && !TryParseConditions((dynamic) _event, conds.Substring(1), out formattedConds, out _error))
+                    return false;
+                _formatted = formattedConds != null ? $"/{_event.Name}/{formattedConds}" : $"/{_event.Name}";
+                return true;
+            }
+
+            if (EventSelectorIsValid(EventSelector, out var formatted, out var @event, out var eventError))
+            {
+                EventSelector = formatted;
+                EventName = @event.Name;
+            }
             else
             {
                 if (!EventHasChanged)
                 {
-                    ErrorMessage = $"The Event '{Event}' of webhook '{Label ?? Id}' is no longer available. Please change the 'Event' " +
+                    ErrorMessage = $"The Event selector '{EventSelector}' of webhook '{Label ?? Id}' is no longer valid. Please change the 'Event' " +
                                    "property to a valid event to repair the webhook. To list available events, use the 'RESTar.Event' resource.";
                     IsPaused = true;
                     invalidReason = null;
                     return true;
                 }
-                invalidReason = $"Unknown event '{Event}'. To list available events, use the RESTar.Event resource";
+                invalidReason = eventError.Headers.Info;
                 return false;
             }
 
@@ -292,9 +346,11 @@ namespace RESTar.Admin
             return message;
         }
 
-        internal async Task Post<T>(IEventInternal<T> @event) where T : class
+        internal async Task Post<TPayload>(IEventInternal<TPayload> @event) where TPayload : class
         {
-            if (IsPaused) return;
+            var @break = IsPaused || ConditionCache.TryGetValue(this.GetObjectNo(), out var c) && c is List<Condition<TPayload>> conds &&
+                         !conds.AllHoldFor(@event.Payload);
+            if (@break) return;
 
             Stream body;
             var contentType = Headers.ContentType ?? ContentType.JSON;
@@ -353,7 +409,14 @@ namespace RESTar.Admin
             catch (Exception e)
             {
                 CheckIfValid();
-                await WebhookLog.Log(this, true, e.ToString());
+                try
+                {
+                    await WebhookLog.Log(this, true, e.ToString());
+                }
+                catch (Exception _e)
+                {
+                    Log.Error($"Could not log webhook error: {e}. Exception: {_e}");
+                }
             }
         }
 

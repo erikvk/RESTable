@@ -21,6 +21,11 @@
         internal const string RESTarRequestUri = @"^\??((?<res>/[^/-]*)|((?<res>/[^/-]*)(?<view>-\w*)))?(?<cond>/[^/]*)?(?<meta>/[^/]*)?/?$";
 
         /// <summary>
+        /// The main URI regex, used when parsing requests
+        /// </summary>
+        internal const string EventSelector = @"^/(?<event>[^/]*)(?<cond>/[^/]*)?/?$";
+
+        /// <summary>
         /// Used when parsing header request parameters like Source and Destination
         /// </summary>
         internal const string HeaderRequestParameters = @"^(?<method>\w+) (?<uri>\S+)\s?(?<headers>\[[^\]]+\])*$";

@@ -40,8 +40,9 @@ namespace RESTar.Meta
         /// is found, throws an UnknownResource exception. If more than one resource is found, throws
         /// an AmbiguousResource exception.
         /// <param name="searchString">The case insensitive string to use for the search</param>
+        /// <param name="kind">The resource kind to filter results against</param>
         /// </summary>
-        public static IResource Find(string searchString)
+        public static IResource Find(string searchString, ResourceKind kind = ResourceKind.All)
         {
             if (searchString == null) throw new UnknownResource("null");
             var resource = Admin.ResourceAlias.GetByAlias(searchString)?.IResource;
@@ -50,24 +51,70 @@ namespace RESTar.Meta
                 throw new UnknownResource(searchString);
             if (resource == null)
                 throw new AmbiguousResource(searchString);
+            if (!kind.HasFlag(resource.ResourceKind))
+                throw new WrongResourceKind(searchString, kind, resource.ResourceKind);
             return resource;
         }
 
         /// <summary>
-        /// Finds a resource by a search string. The string can be a partial resource name. If no resource 
-        /// is found, returns null. If more than one resource is found, throws an AmbiguousResource exception.
+        /// Finds a resource by a search string. The string can be a partial resource name.
         /// <param name="searchString">The case insensitive string to use for the search</param>
+        /// <param name="resource">The found resource (if any)</param>
+        /// <param name="error">Describes the error that occured when locating the resource (if any)</param>
+        /// <param name="kind">The resource kind to filter results against</param>
         /// </summary>
-        public static IResource SafeFind(string searchString)
+        public static bool TryFind(string searchString, out IResource resource, out Error error, ResourceKind kind = ResourceKind.All)
         {
             searchString = searchString.ToLower();
-            var resource = Admin.ResourceAlias.GetByAlias(searchString)?.IResource;
-            if (resource != null) return resource;
+            error = null;
+            resource = Admin.ResourceAlias.GetByAlias(searchString)?.IResource;
+            if (resource != null)
+                return true;
             if (!RESTarConfig.ResourceFinder.TryGetValue(searchString, out resource))
-                return null;
+            {
+                error = new UnknownResource(searchString);
+                return false;
+            }
             if (resource == null)
-                throw new AmbiguousResource(searchString);
-            return resource;
+            {
+                error = new AmbiguousResource(searchString);
+                return false;
+            }
+            if (!kind.HasFlag(resource.ResourceKind))
+            {
+                error = new WrongResourceKind(searchString, kind, resource.ResourceKind);
+                return false;
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// Finds a resource by a search string. The string can be a partial resource name. If no resource 
+        /// is found, throws an UnknownResource exception. If more than one resource is found, throws
+        /// an AmbiguousResource exception.
+        /// <param name="searchString">The case insensitive string to use for the search</param>
+        /// </summary>
+        public static T Find<T>(string searchString) where T : IResource
+        {
+            return (T) Find(searchString, typeof(T).GetResourceKind());
+        }
+
+        /// <summary>
+        /// Finds a resource by a search string. The string can be a partial resource name.
+        /// <param name="searchString">The case insensitive string to use for the search</param>
+        /// <param name="resource">The found resource (if any)</param>
+        /// <param name="error">Describes the error that occured when locating the resource (if any)</param>
+        /// </summary>
+        public static bool TryFind<T>(string searchString, out T resource, out Error error) where T : IResource
+        {
+            var kind = typeof(T).GetResourceKind();
+            if (!TryFind(searchString, out var _resource, out error, kind))
+            {
+                resource = default;
+                return false;
+            }
+            resource = (T) _resource;
+            return true;
         }
 
         /// <summary>
@@ -83,9 +130,9 @@ namespace RESTar.Meta
             switch (searchString.Count(i => i == '*'))
             {
                 case 0:
-                    var found = SafeFind(searchString);
-                    if (found == null) return new IResource[0];
-                    return new[] {found};
+                    if (TryFind(searchString, out var resource, out _))
+                        return new[] {resource};
+                    return new IResource[0];
                 case 1 when searchString.Last() != '*':
                     throw new Exception("Invalid resource string syntax. The asterisk must be the last character");
                 case 1:

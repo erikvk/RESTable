@@ -363,7 +363,7 @@ namespace RESTar.Resources
         {
             return new Meta.Internal.EntityResource<TResource>
             (
-                fullName: fullName ?? typeof(TResource).FullName,
+                fullName: fullName ?? typeof(TResource).RESTarTypeName(),
                 attribute: attribute ?? typeof(TResource).GetCustomAttribute<RESTarAttribute>(),
                 selector: selector ?? GetDelegate<Selector<TResource>>(typeof(TResource)) ?? DefaultSelect,
                 inserter: inserter ?? GetDelegate<Inserter<TResource>>(typeof(TResource)) ?? DefaultInsert,
@@ -391,7 +391,7 @@ namespace RESTar.Resources
             where TWrapper : ResourceWrapper<TWrapped>
             where TWrapped : class, TBase => new Meta.Internal.EntityResource<TWrapped>
         (
-            fullName: fullName ?? typeof(TWrapper).FullName,
+            fullName: fullName ?? typeof(TWrapper).RESTarTypeName(),
             attribute: attribute ?? typeof(TWrapper).GetCustomAttribute<RESTarAttribute>(),
             selector: selector ?? GetDelegate<Selector<TWrapped>>(typeof(TWrapper)) ?? DefaultSelect,
             inserter: inserter ?? GetDelegate<Inserter<TWrapped>>(typeof(TWrapper)) ?? DefaultInsert,

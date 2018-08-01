@@ -33,8 +33,7 @@ namespace RESTar.Meta
         /// Condition terms are terms that refer to properties in resources, or  for
         /// use in conditions.
         /// </summary>
-        internal static Term MakeConditionTerm(this ITarget target, string key) =>
-            target.Type.MakeOrGetCachedTerm(key, target.ConditionBindingRule);
+        internal static Term MakeConditionTerm(this ITarget target, string key) => target.Type.MakeOrGetCachedTerm(key, target.ConditionBindingRule);
 
         /// <summary>
         /// Output terms are terms that refer to properties in RESTar output. If they refer to

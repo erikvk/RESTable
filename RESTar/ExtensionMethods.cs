@@ -117,6 +117,22 @@ namespace RESTar
             return attribute != null;
         }
 
+        internal static IEnumerable<Type> GetBaseTypes(this Type type)
+        {
+            var currentBaseType = type.BaseType;
+            while (currentBaseType != null)
+            {
+                yield return currentBaseType;
+                currentBaseType = currentBaseType.BaseType;
+            }
+        }
+
+        internal static Type[] GetGenericTypeParameters(this Type type, Type typeDef = null)
+        {
+            var toMatch = typeDef == null ? type : type?.GetBaseTypes().FirstOrDefault(t => t.GetGenericTypeDefinition() == typeDef);
+            return toMatch?.IsGenericType != true ? null : toMatch.GenericTypeArguments;
+        }
+
         /// <summary>
         /// Returns true if and only if the type implements the generic interface type
         /// </summary>
@@ -196,6 +212,19 @@ namespace RESTar
         #region Other
 
         /// <summary>
+        /// Creates a formatted string representation of the URI components,
+        /// a valid URI string according to the assigned protocol.
+        /// </summary>
+        public static string ToUriString(this IUriComponents uriComponents)
+        {
+            var protocolProvider = uriComponents.ProtocolProvider;
+            var uriString = protocolProvider.MakeRelativeUri(uriComponents);
+            if (ProtocolController.DefaultProtocolProvider.ProtocolProvider.Equals(protocolProvider))
+                return uriString;
+            return $"-{protocolProvider.ProtocolIdentifier}{uriString}";
+        }
+
+        /// <summary>
         /// Gets the object for a Starcounter object number
         /// </summary>
         /// <param name="objectNo">The Starcounter ObjectNo to get the extension for</param>
@@ -259,22 +288,6 @@ namespace RESTar
             return baseType != null;
         }
 
-        /// <summary>
-        /// Tries to get the target T2 by executing the selector method on the T1 object. If the selector 
-        /// executes successfully, returns the target T2. Else return the default for T2.
-        /// </summary>
-        internal static T2 SafeGet<T1, T2>(this T1 obj, Func<T1, T2> selector)
-        {
-            try
-            {
-                return selector(obj);
-            }
-            catch
-            {
-                return default;
-            }
-        }
-
         internal static (T, T) ToTuple<T>(this ICollection<T> collection)
         {
             if (collection.Count > 2) throw new InvalidOperationException("Collection contained more than two elements");
@@ -336,6 +349,26 @@ namespace RESTar
         #endregion
 
         #region Resource helpers
+
+        internal static ResourceKind GetResourceKind(this Type metatype)
+        {
+            switch (metatype)
+            {
+                case var _ when typeof(IEntityResource).IsAssignableFrom(metatype): return ResourceKind.EntityResource;
+                case var _ when typeof(ITerminalResource).IsAssignableFrom(metatype): return ResourceKind.TerminalResource;
+                case var _ when typeof(IBinaryResource).IsAssignableFrom(metatype): return ResourceKind.BinaryResource;
+                case var _ when typeof(IEventResource).IsAssignableFrom(metatype): return ResourceKind.EventResource;
+                default: return ResourceKind.All;
+            }
+        }
+
+        internal static (bool allowDynamic, TermBindingRule bindingRule) GetDynamicConditionHandling(this Type type, RESTarAttribute attribute)
+        {
+            var dynamicConditionsAllowed = type.IsDDictionary() || typeof(IDynamicMemberValueProvider).IsAssignableFrom(type) ||
+                                           attribute?.AllowDynamicConditions == true;
+            var conditionBindingRule = dynamicConditionsAllowed ? TermBindingRule.DeclaredWithDynamicFallback : TermBindingRule.OnlyDeclared;
+            return (dynamicConditionsAllowed, conditionBindingRule);
+        }
 
         internal static Type GetRESTarInterfaceType(this Type resourceType) => resourceType
             .GetInterfaces()
@@ -918,6 +951,8 @@ namespace RESTar
                     using (var ms = new MemoryStream())
                     {
                         stream.CopyTo(ms);
+                        if (stream.CanSeek)
+                            stream.Seek(0, SeekOrigin.Begin);
                         return ms.ToArray();
                     }
             }
@@ -934,6 +969,8 @@ namespace RESTar
                     using (var ms = new MemoryStream())
                     {
                         await stream.CopyToAsync(ms);
+                        if (stream.CanSeek)
+                            stream.Seek(0, SeekOrigin.Begin);
                         return ms.ToArray();
                     }
             }

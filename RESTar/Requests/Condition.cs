@@ -175,7 +175,30 @@ namespace RESTar.Requests
             }
         }
 
-        internal static List<Condition<T>> Parse(string conditionsString, ITarget<T> target) => Parse(UriCondition.ParseMany(conditionsString), target);
+        /// <summary>
+        /// Tries to parse the uri conditions to a list of conditions of the given type.
+        /// </summary>
+        /// <param name="uriConditions">The uri conditions to parse</param>
+        /// <param name="target">The target to which the conditions refer</param>
+        /// <param name="conditions">The parsed conditions (if successful)</param>
+        /// <param name="error">The error encountered (if unsuccessful)</param>
+        /// <returns>True if and only if the uri conditions were sucessfully parsed</returns>
+        public static bool TryParse(IReadOnlyCollection<IUriCondition> uriConditions, ITarget<T> target, out List<Condition<T>> conditions,
+            out Error error)
+        {
+            try
+            {
+                conditions = Parse(uriConditions, target);
+                error = null;
+                return true;
+            }
+            catch (Exception e)
+            {
+                conditions = null;
+                error = e.AsError();
+                return false;
+            }
+        }
 
         /// <summary>
         /// Parses and checks the semantics of Conditions object from a conditions of a REST request URI

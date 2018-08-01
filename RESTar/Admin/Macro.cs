@@ -155,7 +155,6 @@ namespace RESTar.Admin
         /// </summary>
         private IUriComponents UriComponents => uriComponents ?? (uriComponents = MakeUriComponents(out _));
 
-        string IUriComponents.ToUriString() => UriComponents?.ToUriString();
         IProtocolProvider IUriComponents.ProtocolProvider => ProtocolController.DefaultProtocolProvider.ProtocolProvider;
         string IUriComponents.ResourceSpecifier => UriComponents?.ResourceSpecifier;
         string IUriComponents.ViewName => UriComponents?.ViewName;

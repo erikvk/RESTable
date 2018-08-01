@@ -7,7 +7,7 @@ namespace RESTar.Resources
     /// Defines the operations of a binary resource
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public interface IBinaryResource<T> where T : class
+    public interface IBinary<T> where T : class, IBinary<T>
     {
         /// <summary>
         /// Generates a binary stream and content type for a request

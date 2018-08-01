@@ -21,7 +21,7 @@ namespace RESTar.Internal
         InvalidMetaConditionKey = 005,
         InvalidConditionSyntax = 006,
         InvalidConditionOperator = 007,
-        InvalidResourceSpecifier = 008,
+        InvalidEventSelector = 008,
         InvalidConditionValueType = 009,
 
         // 010-019: Data source syntax and format errors
@@ -54,6 +54,7 @@ namespace RESTar.Internal
         ResourceIsInternal = 105,
         UnknownResourceView = 106,
         UnknownMacro = 107,
+        WrongResourceKind = 108,
 
         // 110-119: Property locator errors
         UnknownProperty = 110,

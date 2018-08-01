@@ -62,6 +62,7 @@ namespace RESTar.Resources
         /// </summary>
         protected static IEnumerable<TController> Select() => ResourceProvider
             ._Select()
+            .OrderBy(r => r.Name)
             .Select(resource => Make<TController>(Meta.Resource.SafeGet(resource.Name)));
 
         /// <summary>

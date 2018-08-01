@@ -123,7 +123,8 @@ namespace RESTar.Requests
             uriComponents = null;
             if (parameters.Error != null)
             {
-                error = parameters.Error.AsError();
+                var invalidParametersRequest = new InvalidParametersRequest(parameters);
+                error = (Results.Error) parameters.Error.AsResultOf(invalidParametersRequest);
                 resource = null;
                 return false;
             }

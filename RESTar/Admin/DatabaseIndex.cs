@@ -7,7 +7,6 @@ using RESTar.Meta;
 using RESTar.Requests;
 using RESTar.Resources;
 using RESTar.Resources.Operations;
-using RESTar.Results;
 using static RESTar.Internal.EntityResourceProviderController;
 
 namespace RESTar.Admin
@@ -58,8 +57,9 @@ namespace RESTar.Admin
             get => _resourceName;
             set
             {
-                Resource = Meta.Resource.SafeFind(value) as IEntityResource;
-                if (Resource == null) throw new UnknownResource(value);
+                if (!Meta.Resource.TryFind<IEntityResource>(value, out var resource, out var error))
+                    throw error;
+                Resource = resource;
                 _resourceName = Resource.Name;
                 Provider = Resource.Provider;
             }

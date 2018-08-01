@@ -119,32 +119,32 @@ namespace RESTarTester
                     new Webhook
                     {
                         Destination = "/wr1",
-                        Event = typeof(ENotification).FullName
+                        EventSelector = typeof(ENotification).FullName
                     },
                     new Webhook
                     {
                         Destination = "/wr2",
-                        Event = typeof(ENotification).FullName
+                        EventSelector = typeof(ENotification).FullName
                     },
                     new Webhook
                     {
                         Destination = "http://localhost:8080/wrStream",
-                        Event = typeof(EStream).FullName
+                        EventSelector = typeof(EStream).FullName
                     },
                     new Webhook
                     {
                         Destination = "http://localhost:8080/wrBytes",
-                        Event = typeof(EBytes).FullName
+                        EventSelector = typeof(EBytes).FullName
                     },
                     new Webhook
                     {
                         Destination = "http://localhost:8080/wrString",
-                        Event = typeof(EString).FullName
+                        EventSelector = typeof(EString).FullName
                     },
                     new Webhook
                     {
                         Destination = "/wrResource1",
-                        Event = typeof(EString).FullName,
+                        EventSelector = typeof(EString).FullName,
                         CustomPayloadRequest = new CustomPayloadRequest
                         {
                             URI = "/resource1//select=Sbyte,Byte,Short,Ushort,Int,Uint,Long,Ulong",
@@ -815,28 +815,28 @@ namespace RESTarTester
         public string Message { get; set; }
     }
 
-    [RESTarEvent(nameof(ENotification))]
+    [RESTar(Description = nameof(ENotification))]
     public class ENotification : Event<Notification>
     {
         public ENotification(Notification payload) : base(payload, null) { }
         public void Invoke() => Raise();
     }
 
-    [RESTarEvent(nameof(EString))]
+    [RESTar(Description = nameof(EString))]
     public class EString : Event<string>
     {
         public EString(string payload) : base(payload, "text/plain") { }
         public void Invoke() => Raise();
     }
 
-    [RESTarEvent(nameof(EBytes))]
+    [RESTar(Description = nameof(EBytes))]
     public class EBytes : Event<byte[]>
     {
         public EBytes(byte[] payload) : base(payload, "image/png") { }
         public void Invoke() => Raise();
     }
 
-    [RESTarEvent(nameof(EStream))]
+    [RESTar(Description = nameof(EStream))]
     public class EStream : Event<Stream>
     {
         public EStream(Stream payload) : base(payload, RESTar.Requests.ContentType.Excel) { }

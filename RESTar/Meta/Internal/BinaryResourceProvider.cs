@@ -22,7 +22,7 @@ namespace RESTar.Meta.Internal
 
         private readonly MethodInfo BuildBinaryMethod;
 
-        private IResource MakeBinaryResource<T>() where T : class, Resources.IBinaryResource<T>
+        private IResource MakeBinaryResource<T>() where T : class, Resources.IBinary<T>
         {
             var binarySelector = DelegateMaker.GetDelegate<BinarySelector<T>>(typeof(T));
             return new BinaryResource<T>(binarySelector);

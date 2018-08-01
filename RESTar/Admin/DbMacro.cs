@@ -6,6 +6,7 @@ using System.Text;
 using Newtonsoft.Json;
 using RESTar.Requests;
 using Starcounter;
+using static RESTar.ProtocolProviders.DefaultProtocolProvider;
 
 namespace RESTar.Admin
 {
@@ -106,11 +107,10 @@ namespace RESTar.Admin
 
         #endregion
 
-        internal UriCondition[] UriConditions => UriConditionsString?.Split('&').Select(c => new UriCondition(c)).ToArray();
-        internal UriCondition[] UriMetaConditions => UriMetaConditionsString?.Split('&').Select(c => new UriCondition(c)).ToArray();
+        private IEnumerable<IUriCondition> UriConditions => UriConditionsString?.Split('&').Select(c => ParseUriCondition(c));
+        private IEnumerable<IUriCondition> UriMetaConditions => UriMetaConditionsString?.Split('&').Select(c => ParseUriCondition(c));
         internal bool HasBody => !BodyBinary.IsNull && BodyBinary.Length > 0;
         internal byte[] GetBody() => HasBody ? BodyBinary.ToArray() : new byte[0];
-
         internal static IEnumerable<DbMacro> GetAll() => Db.SQL<DbMacro>(All);
         internal static DbMacro Get(string macroName) => Db.SQL<DbMacro>(ByName, macroName).FirstOrDefault();
     }

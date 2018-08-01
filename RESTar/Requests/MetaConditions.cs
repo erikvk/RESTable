@@ -148,6 +148,25 @@ namespace RESTar.Requests
                         $"Invalid meta-condition '{key}'. Available meta-conditions: {AllMetaConditions}");
 
                 var expectedType = metaCondition.GetExpectedType();
+
+                switch (valueLiteral)
+                {
+                    case null:
+                    case "null":
+                    case "": return;
+                }
+
+                var (first, length) = (valueLiteral.FirstOrDefault(), valueLiteral.Length);
+
+                switch (first)
+                {
+                    case '\'':
+                    case '\"':
+                        if (length > 1 && valueLiteral[length - 1] == first)
+                            valueLiteral = valueLiteral.Substring(1, length - 2);
+                        break;
+                }
+
                 dynamic value;
                 try
                 {

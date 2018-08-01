@@ -275,7 +275,7 @@ namespace RESTar.Resources.Operations
                     .ToList();
                 foreach (var entity in request.GetBody().Deserialize<JObject>())
                 {
-                    conditions.ForEach(cond => cond.Value = entity.SafeGet(cond.Term.Evaluate));
+                    conditions.ForEach(cond => cond.Value = entity.SafeSelect(cond.Term.Evaluate));
                     innerRequest.Conditions = conditions;
                     var results = innerRequest.Evaluate().ToEntities<T>().ToList();
                     switch (results.Count)
@@ -290,7 +290,7 @@ namespace RESTar.Resources.Operations
                             throw new SafePostAmbiguousMatch
                             (
                                 count: multiple,
-                                uri: request.CachedProtocolProvider.ProtocolProvider.MakeRelativeUri(innerRequest.UriComponents)
+                                uri: innerRequest.UriComponents.ToUriString()
                             );
                     }
                 }

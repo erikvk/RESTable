@@ -68,7 +68,7 @@ namespace RESTar.WebSockets
             BytesRemaining = content.Body.Length;
             if (content is IEntities entities)
             {
-                EntityType = entities.EntityType.FullName;
+                EntityType = entities.EntityType.RESTarTypeName();
                 EntityCount = entities.EntityCount;
             }
             var dataLength = content.Body.Length;

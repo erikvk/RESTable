@@ -6,6 +6,7 @@ using System.IO;
 using System.Net;
 using RESTar.Internal;
 using RESTar.Internal.Logging;
+using RESTar.Linq;
 using RESTar.Requests;
 
 namespace RESTar.Results
@@ -129,11 +130,17 @@ namespace RESTar.Results
         /// <inheritdoc />
         public ISerializedResult Serialize(ContentType? contentType = null)
         {
+            if (RequestInternal == null)
+            {
+                IsSerialized = true;
+                Headers.Elapsed = TimeElapsed.TotalMilliseconds.ToString(CultureInfo.InvariantCulture);
+                return this;
+            }
             IsSerializing = true;
             var stopwatch = Stopwatch.StartNew();
             ISerializedResult result = this;
             var cachedProvider = RequestInternal.CachedProtocolProvider ?? ProtocolController.DefaultProtocolProvider;
-            var acceptProvider = RequestInternal.SafeGet(request => ContentTypeController.ResolveOutputContentTypeProvider(request, contentType))
+            var acceptProvider = RequestInternal.SafeSelect(request => ContentTypeController.ResolveOutputContentTypeProvider(request, contentType))
                                  ?? cachedProvider.DefaultOutputProvider;
             try
             {

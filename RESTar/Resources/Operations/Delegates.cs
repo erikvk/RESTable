@@ -23,7 +23,7 @@ namespace RESTar.Resources.Operations
                 case var d when d == typeof(Counter<>).MakeGenericType(t): return typeof(ICounter<>).MakeGenericType(t);
                 case var d when d == typeof(Profiler<>).MakeGenericType(t): return typeof(IProfiler<>).MakeGenericType(t);
                 case var d when d == typeof(Authenticator<>).MakeGenericType(t): return typeof(IAuthenticatable<>).MakeGenericType(t);
-                case var d when d == typeof(BinarySelector<>).MakeGenericType(t): return typeof(IBinaryResource<>).MakeGenericType(t);
+                case var d when d == typeof(BinarySelector<>).MakeGenericType(t): return typeof(IBinary<>).MakeGenericType(t);
                 case var d when d == typeof(ViewSelector<>).MakeGenericType(t): return typeof(ISelector<>).MakeGenericType(t);
 
                 default: throw new ArgumentOutOfRangeException();

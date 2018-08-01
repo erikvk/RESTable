@@ -24,13 +24,13 @@ namespace RESTar.Meta.Internal
                     throw new InvalidResourceDeclarationException($"Cannot add resource '{fullName}'. A resource name cannot start with 'RESTar'");
                 name = fullName;
             }
-            else name = type.FullName;
+            else name = type.RESTarTypeName();
             if (name == null)
                 throw new InvalidResourceDeclarationException(
                     "Encountered an unknown type. No further information is available.");
             if (RESTarConfig.ResourceByType.ContainsKey(type))
                 throw new InvalidResourceDeclarationException(
-                    $"Cannot add resource '{name}'. A resource with the same type ('{type.FullName}') has already been added to RESTar");
+                    $"Cannot add resource '{name}'. A resource with the same type ('{type.RESTarTypeName()}') has already been added to RESTar");
             if (RESTarConfig.ResourceByName.ContainsKey(name))
                 throw new InvalidResourceDeclarationException(
                     $"Cannot add resource '{name}'. A resource with the same name has already been added to RESTar");
@@ -42,11 +42,13 @@ namespace RESTar.Meta.Internal
             Validate(type);
         }
 
-        internal static (List<Type> regularTypes, List<Type> wrapperTypes, List<Type> terminalTypes, List<Type> binaryTypes)
+        internal static (List<Type> regular, List<Type> wrappers, List<Type> terminals, List<Type> binaries, List<Type> events)
             Validate(params Type[] types)
         {
             var entityTypes = types
-                .Where(t => !typeof(ITerminal).IsAssignableFrom(t) && !t.ImplementsGenericInterface(typeof(Resources.IBinaryResource<>)))
+                .Where(t => !typeof(ITerminal).IsAssignableFrom(t) &&
+                            !typeof(IEvent).IsAssignableFrom(t) &&
+                            !t.ImplementsGenericInterface(typeof(IBinary<>)))
                 .ToList();
             var regularTypes = entityTypes
                 .Where(t => !typeof(IResourceWrapper).IsAssignableFrom(t))
@@ -58,7 +60,10 @@ namespace RESTar.Meta.Internal
                 .Where(t => typeof(ITerminal).IsAssignableFrom(t))
                 .ToList();
             var binaryTypes = types
-                .Where(t => t.ImplementsGenericInterface(typeof(Resources.IBinaryResource<>)))
+                .Where(t => t.ImplementsGenericInterface(typeof(IBinary<>)))
+                .ToList();
+            var eventTypes = types
+                .Where(t => !t.IsAbstract && typeof(IEvent).IsAssignableFrom(t))
                 .ToList();
 
             void ValidateCommon(Type type)
@@ -71,24 +76,17 @@ namespace RESTar.Meta.Internal
 
                 if (type.IsGenericTypeDefinition)
                     throw new InvalidResourceDeclarationException(
-                        $"Found a generic resource type '{type.FullName}'. RESTar resource types must be non-generic");
+                        $"Found a generic resource type '{type.RESTarTypeName()}'. RESTar resource types must be non-generic");
 
                 if (type.FullName.Count(c => c == '+') >= 2)
                     throw new InvalidResourceDeclarationException($"Invalid resource '{type.RESTarTypeName()}'. " +
                                                                   "Inner resources cannot have their own inner resources");
 
-                if (typeof(IEvent).IsAssignableFrom(type))
-                    throw new InvalidResourceDeclarationException(
-                        $"Invalid resource type '{type.RESTarTypeName()}'. Found 'RESTar.Resource.IEvent' implementation. Resource types " +
-                        "cannot be used as events. To create events with resource types as payload, use the 'RESTar.Resources.EventWrapper' class");
-                if (type.HasAttribute<RESTarEventAttribute>())
-                    throw new InvalidResourceDeclarationException(
-                        $"Invalid resource type '{type.RESTarTypeName()}'. Resource types cannot be decorated with the " +
-                        "'RESTarEventAttribute'. To create events with resource types as payload, use the 'RESTar.Resources.EventWrapper' class");
                 if (type.HasAttribute<RESTarViewAttribute>())
                     throw new InvalidResourceDeclarationException(
                         $"Invalid resource type '{type.RESTarTypeName()}'. Resource types cannot be " +
                         "decorated with the 'RESTarViewAttribute'");
+
                 if (type.Namespace == null)
                     throw new InvalidResourceDeclarationException($"Invalid type '{type.RESTarTypeName()}'. Unknown namespace");
 
@@ -132,7 +130,7 @@ namespace RESTar.Meta.Internal
 
                         if (propertyType == null)
                             throw new InvalidResourceDeclarationException(
-                                $"Invalid implementation of interface '{interfaceType.RESTarTypeName()}' assigned to resource '{type.FullName}'. " +
+                                $"Invalid implementation of interface '{interfaceType.RESTarTypeName()}' assigned to resource '{type.RESTarTypeName()}'. " +
                                 $"Unable to determine the type for interface property '{interfaceProperty.Name}'");
 
                         PropertyInfo calledProperty;
@@ -232,43 +230,29 @@ namespace RESTar.Meta.Internal
 
             void ValidateWrapperDeclaration(List<Type> wrappers)
             {
-                if (wrappers.Select(w => w.GetWrappedType()).ContainsDuplicates(out var wrapperDupe))
-                    throw new InvalidResourceWrapperException("RESTar found multiple RESTar.ResourceWrapper declarations for " +
-                                                              $"type '{wrapperDupe.RESTarTypeName()}'. A type can only be wrapped once.");
+                if (wrappers.Select(type => (type, wrapped: type.GetWrappedType())).ContainsDuplicates(pair => pair.wrapped, out var dupe))
+                    throw new InvalidResourceWrapperException(dupe, "must wrap unique types. Found multiple wrapper declarations for " +
+                                                                    $"wrapped type '{dupe.wrapped.RESTarTypeName()}'.");
+
                 foreach (var wrapper in wrappers)
                 {
+                    var wrapped = wrapper.GetWrappedType();
+                    var _types = (wrapper, wrapped);
                     var members = wrapper.GetMembers(BindingFlags.Public | BindingFlags.Instance);
                     if (members.OfType<PropertyInfo>().Any() || members.OfType<FieldInfo>().Any())
-                        throw new InvalidResourceWrapperException(
-                            $"Invalid RESTar.ResourceWrapper '{wrapper.RESTarTypeName()}'. ResourceWrapper " +
-                            "classes cannot contain public instance properties or fields");
+                        throw new InvalidResourceWrapperException(_types, "cannot contain public instance properties or fields");
                     ValidateCommon(wrapper);
-                    var wrapped = wrapper.GetWrappedType();
-                    if (wrapped.HasResourceProviderAttribute())
-                        throw new InvalidResourceWrapperException(
-                            $"Invalid RESTar.ResourceWrapper '{wrapper.RESTarTypeName()}' for wrapped " +
-                            $"type '{wrapped.RESTarTypeName()}'. Type decorated with a resource provider's " +
-                            "attribute cannot be wrapped. Resource provider attributes should be " +
-                            "placed on the wrapper type.");
                     if (wrapper.GetInterfaces()
                         .Where(i => typeof(IOperationsInterface).IsAssignableFrom(i))
                         .Any(i => i.IsGenericType && i.GenericTypeArguments[0] != wrapped))
-                        throw new InvalidResourceWrapperException(
-                            $"Invalid RESTar.ResourceWrapper '{wrapper.RESTarTypeName()}'. This wrapper " +
-                            "cannot implement operations interfaces for types other than " +
-                            $"'{wrapped.RESTarTypeName()}'.");
+                        throw new InvalidResourceWrapperException(_types, "cannot implement operations interfaces for types other than " +
+                                                                          $"'{wrapped.RESTarTypeName()}'.");
                     if (wrapped.FullName?.Contains("+") == true)
-                        throw new InvalidResourceWrapperException($"Invalid RESTar.ResourceWrapper '{wrapper.RESTarTypeName()}'. Cannot " +
-                                                                  "wrap types that are declared within the scope of some other class.");
+                        throw new InvalidResourceWrapperException(_types, "cannot wrap types that are declared within the scope of some other class.");
                     if (wrapped.HasAttribute<RESTarAttribute>())
-                        throw new InvalidResourceWrapperException("RESTar found a RESTar.ResourceWrapper declaration for type " +
-                                                                  $"'{wrapped.RESTarTypeName()}', a type that is already a RESTar " +
-                                                                  "resource type. Only non-resource types can be wrapped.");
-                    if (wrapper.Namespace == null)
-                        throw new InvalidResourceDeclarationException($"Invalid type '{wrapper.RESTarTypeName()}'. Unknown namespace");
+                        throw new InvalidResourceWrapperException(_types, "cannot wrap types already decorated with the 'RESTarAttribute' attribute");
                     if (wrapper.Assembly == typeof(RESTarConfig).Assembly)
-                        throw new InvalidResourceWrapperException("RESTar found an invalid RESTar.ResourceWrapper declaration for " +
-                                                                  $"type '{wrapped.RESTarTypeName()}'. RESTar types cannot be wrapped.");
+                        throw new InvalidResourceWrapperException(_types, "cannot wrap RESTar types");
                 }
             }
 
@@ -302,10 +286,27 @@ namespace RESTar.Meta.Internal
                     if (binary.HasResourceProviderAttribute())
                         throw new InvalidBinaryDeclarationException(binary, "must not be decorated with a resource provider attribute");
                     if (binary.HasAttribute<DatabaseAttribute>())
-                        throw new InvalidBinaryDeclarationException(binary,
-                            "must not be decorated with the Starcounter.DatabaseAttribute attribute");
+                        throw new InvalidBinaryDeclarationException(binary, "must not be decorated with the 'Starcounter.DatabaseAttribute' attribute");
                     if (typeof(IOperationsInterface).IsAssignableFrom(binary))
                         throw new InvalidBinaryDeclarationException(binary, "must not implement any other RESTar operations interfaces");
+                }
+            }
+
+            void ValidateEventDeclarations(List<Type> events)
+            {
+                foreach (var @event in events)
+                {
+                    ValidateCommon(@event);
+                    if (!typeof(IEvent).IsAssignableFrom(@event))
+                        throw new InvalidEventDeclarationException(@event, "must inherit from 'RESTar.Resources.Event<T>'");
+                    if (@event.ImplementsGenericInterface(typeof(IEnumerable<>)))
+                        throw new InvalidEventDeclarationException(@event, "must not be collections");
+                    if (@event.HasResourceProviderAttribute())
+                        throw new InvalidEventDeclarationException(@event, "must not be decorated with a resource provider attribute");
+                    if (@event.HasAttribute<DatabaseAttribute>())
+                        throw new InvalidEventDeclarationException(@event, "must not be decorated with the 'Starcounter.DatabaseAttribute' attribute");
+                    if (typeof(IOperationsInterface).IsAssignableFrom(@event))
+                        throw new InvalidEventDeclarationException(@event, "must not implement any RESTar operations interfaces");
                 }
             }
 
@@ -313,8 +314,9 @@ namespace RESTar.Meta.Internal
             ValidateWrapperDeclaration(wrapperTypes);
             ValidateTerminalDeclarations(terminalTypes);
             ValidateBinaryDeclarations(binaryTypes);
+            ValidateEventDeclarations(eventTypes);
 
-            return (regularTypes, wrapperTypes, terminalTypes, binaryTypes);
+            return (regularTypes, wrapperTypes, terminalTypes, binaryTypes, eventTypes);
         }
     }
 }

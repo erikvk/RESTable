@@ -43,7 +43,7 @@ namespace RESTar.WebSockets
         public void SendJson(object i, bool a = false, bool? p = null, bool ig = false) => ActionQueue.Enqueue(() => ToQueueFor.SendJson(i, a, p, ig));
         public void SendException(Exception exception) => ActionQueue.Enqueue(() => ToQueueFor.SendException(exception));
 
-        public void SendResult(ISerializedResult r, TimeSpan? t = null, bool w = false, bool d = true) =>
+        public void SendResult(IResult r, TimeSpan? t = null, bool w = false, bool d = true) =>
             ActionQueue.Enqueue(() => ToQueueFor.SendResult(r, t, w, d));
 
         public void StreamResult(ISerializedResult r, int m, TimeSpan? t = null, bool w = false, bool d = true) =>

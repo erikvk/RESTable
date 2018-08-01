@@ -39,14 +39,14 @@ namespace RESTar.WebSockets
         /// Sends a result synchronously over a WebSocket, with the body contained in a single binary message. If the result body is larger than
         /// 16 megabytes, a <see cref="WebSocketMessageTooLargeException"/> will be thrown. In these cases, use <see cref="StreamResult"/> instead.
         /// </summary>
-        /// <param name="result">The result to send. The body of the result will be sent as binary over the websocket.
+        /// <param name="result">The result to send. The body of the result (if any) will be sent as binary over the websocket.
         /// Additional inforation can be included in separate text messages (see other parameters).</param>
         /// <param name="timeElapsed">The elapsed time to include, or null if no time should be included. If not null, timeElapsed 
         /// will be included in the status text message (see writeStatus)</param>
         /// <param name="writeHeaders">Should headers be included as a text message? If true, headers are printed after the status
         /// (if any) and before the content is sent.</param>
         /// <param name="disposeResult">Should the result be disposed after it is sent to the WebSocket?</param>
-        void SendResult(ISerializedResult result, TimeSpan? timeElapsed = null, bool writeHeaders = false, bool disposeResult = true);
+        void SendResult(IResult result, TimeSpan? timeElapsed = null, bool writeHeaders = false, bool disposeResult = true);
 
         /// <summary>
         /// Sends an arbitrarily large result over a WebSocket, with the body split over multiple binary messages. Before sending

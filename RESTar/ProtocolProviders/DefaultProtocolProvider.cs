@@ -26,7 +26,6 @@ namespace RESTar.ProtocolProviders
         public List<IUriCondition> Conditions { get; }
         public List<IUriCondition> MetaConditions { get; }
         public IProtocolProvider ProtocolProvider { get; }
-        public string ToUriString() => ProtocolProvider.MakeRelativeUri(this);
 
         public DefaultProtocolUriComponents(IProtocolProvider protocolProvider)
         {
@@ -65,7 +64,7 @@ namespace RESTar.ProtocolProviders
                 case var _ when conditions.Length == 0:
                 case var _ when conditions == "_": break;
                 default:
-                    UriCondition.ParseMany(conditions, true).ForEach(uri.Conditions.Add);
+                    ParseUriConditions(conditions, true).ForEach(uri.Conditions.Add);
                     break;
             }
 
@@ -74,7 +73,7 @@ namespace RESTar.ProtocolProviders
                 case var _ when metaConditions.Length == 0:
                 case var _ when metaConditions == "_": break;
                 default:
-                    UriCondition.ParseMany(metaConditions, true).ForEach(uri.MetaConditions.Add);
+                    ParseUriConditions(metaConditions, true).ForEach(uri.MetaConditions.Add);
                     break;
             }
 
@@ -108,6 +107,34 @@ namespace RESTar.ProtocolProviders
             return uri;
         }
 
+        internal static List<IUriCondition> ParseUriConditions(string conditionsString, bool check = false) => conditionsString
+            .Split('&')
+            .Select(s => ParseUriCondition(s, check))
+            .ToList();
+
+        internal static IUriCondition ParseUriCondition(string conditionString, bool check = false)
+        {
+            if (check)
+            {
+                if (string.IsNullOrEmpty(conditionString))
+                    throw new InvalidSyntax(ErrorCodes.InvalidConditionSyntax, "Invalid condition syntax");
+                conditionString = conditionString.ReplaceFirst("%3E=", ">=", out var replaced);
+                if (!replaced) conditionString = conditionString.ReplaceFirst("%3C=", "<=", out replaced);
+                if (!replaced) conditionString = conditionString.ReplaceFirst("%3E", ">", out replaced);
+                if (!replaced) conditionString = conditionString.ReplaceFirst("%3C", "<", out replaced);
+            }
+            var match = Regex.Match(conditionString, RegEx.UriCondition);
+            if (!match.Success) throw new InvalidSyntax(ErrorCodes.InvalidConditionSyntax, $"Invalid condition syntax at '{conditionString}'");
+            var (key, opString, valueLiteral) = (match.Groups["key"].Value, match.Groups["op"].Value, match.Groups["val"].Value);
+            if (!Operator.TryParse(opString, out var @operator)) throw new InvalidOperator(conditionString);
+            return new UriCondition
+            (
+                key: WebUtility.UrlDecode(key),
+                op: @operator.OpCode,
+                valueLiteral: WebUtility.UrlDecode(valueLiteral)
+            );
+        }
+
         public ExternalContentTypeProviderSettings ExternalContentTypeProviderSettings { get; } = ExternalContentTypeProviderSettings.AllowAll;
 
         public IEnumerable<IContentTypeProvider> GetContentTypeProviders() => null;
@@ -131,11 +158,16 @@ namespace RESTar.ProtocolProviders
                     str.Append($"/{ToUriString(components.MetaConditions)}");
             }
             else if (metaconditions.Count > 0)
-                str.Append($"/_/{ToUriString(components.MetaConditions)}");
+                str.Append($"/_/{UnescapeMetaconditions(ToUriString(components.MetaConditions))}");
             return str.ToString();
         }
 
-        private static string ToUriString(IEnumerable<IUriCondition> conditions)
+        private static string UnescapeMetaconditions(string metaconditionsString)
+        {
+            return metaconditionsString.Replace("%2C", ",").Replace("%3E", ">");
+        }
+
+        internal static string ToUriString(IEnumerable<IUriCondition> conditions)
         {
             if (conditions == null) return "_";
             var uriString = string.Join("&", conditions.Select(ToUriString));
@@ -190,7 +222,7 @@ namespace RESTar.ProtocolProviders
                         if (entities.IsPaged)
                         {
                             var pager = entities.GetNextPageLink();
-                            entities.Headers.Pager = MakeRelativeUri(pager);
+                            entities.Headers.Pager = pager.ToUriString();
                         }
                         entities.SetContentDisposition(contentTypeProvider.ContentDispositionFileExtension);
                         return entities;

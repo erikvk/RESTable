@@ -69,9 +69,14 @@ namespace RESTar.Resources
         /// </summary>
         protected async void Raise() => await Raiser((dynamic) this);
 
-        private static async Task Raiser<TEvent>(TEvent e) where TEvent : class, IEventInternal<TPayload>
+        private static async Task Raiser<TEvent>(TEvent @event) where TEvent : Event<TPayload>
         {
-            await EventController.Raise<TEvent, TPayload>(e);
+            if (!RESTarConfig.Initialized) return;
+            if (Meta.EventResource<TEvent, TPayload>.SafeGet == null)
+                throw new UnknownEventTypeException(@event);
+            var hookTask = WebhookController.Post(@event);
+            Events.Custom<TEvent>.OnRaise(@event);
+            await hookTask;
         }
 
         /// <inheritdoc />

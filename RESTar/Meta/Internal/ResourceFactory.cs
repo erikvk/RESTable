@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using RESTar.Internal;
 using RESTar.Internal.Sc;
 using RESTar.Linq;
 using RESTar.Resources;
@@ -18,6 +17,7 @@ namespace RESTar.Meta.Internal
         private static VirtualResourceProvider VrProvider { get; }
         private static TerminalResourceProvider TerminalProvider { get; }
         private static BinaryResourceProvider BinaryProvider { get; }
+        private static EventResourceProvider EventProvider { get; }
 
         static ResourceFactory()
         {
@@ -29,6 +29,7 @@ namespace RESTar.Meta.Internal
             EntityResourceProviders.Add(VrProvider.GetProviderId(), VrProvider);
             TerminalProvider = new TerminalResourceProvider();
             BinaryProvider = new BinaryResourceProvider();
+            EventProvider = new EventResourceProvider();
         }
 
         private static void ValidateEntityResourceProviders(ICollection<EntityResourceProvider> externalProviders)
@@ -79,16 +80,12 @@ namespace RESTar.Meta.Internal
         /// </summary>
         /// <returns></returns>
         private static void ValidateAndBuildTypeLists(out List<Type> regularTypes, out List<Type> wrapperTypes, out List<Type> terminalTypes,
-            out List<Type> binaryTypes)
+            out List<Type> binaryTypes, out List<Type> eventTypes)
         {
             var allTypes = typeof(object).GetSubclasses().ToList();
             var resourceTypes = allTypes.Where(t => t.HasAttribute<RESTarAttribute>(out var a) && !(a is RESTarProceduralAttribute)).ToArray();
             var viewTypes = allTypes.Where(t => t.HasAttribute<RESTarViewAttribute>()).ToArray();
-            var eventTypes = allTypes
-                .Where(t => !t.IsAbstract)
-                .Where(t => t.HasAttribute<RESTarEventAttribute>() || typeof(IEvent).IsAssignableFrom(t))
-                .ToArray();
-            if (resourceTypes.Union(viewTypes).Union(eventTypes).ContainsDuplicates(t => t.RESTarTypeName()?.ToLower() ?? "unknown", out var dupe))
+            if (resourceTypes.Union(viewTypes).ContainsDuplicates(t => t.RESTarTypeName()?.ToLower() ?? "unknown", out var dupe))
                 throw new InvalidResourceDeclarationException("Types used by RESTar must have unique case insensitive names. Found " +
                                                               $"multiple types with case insensitive name '{dupe}'.");
 
@@ -122,33 +119,8 @@ namespace RESTar.Meta.Internal
                 }
             }
 
-            void ValidateEventTypes(ICollection<Type> _eventTypes)
-            {
-                foreach (var eventType in _eventTypes)
-                {
-                    if (!typeof(IEvent).IsAssignableFrom(eventType))
-                        throw new InvalidEventDeclarationException(eventType,
-                            "Event types must inherit from either 'RESTar.Resources.Event' or 'RESTar.Resources.EventWrapper<T>'");
-                    if (!eventType.HasAttribute<RESTarEventAttribute>(out var attribute))
-                        throw new InvalidEventDeclarationException(eventType,
-                            "Event type declarations must be decorated with the 'RESTar.Resources.RESTarEventAttribute' and " +
-                            "be provided with an event description.");
-                    if (string.IsNullOrWhiteSpace(attribute.Description))
-                        throw new InvalidEventDeclarationException(eventType,
-                            "Invalid description provided in the 'RESTarEventAttribute' constructor. Cannot be null, empty or whitespace.");
-                    if (eventType.HasAttribute<RESTarAttribute>())
-                        throw new InvalidEventDeclarationException(eventType,
-                            "Event types must not be decorated with the 'RESTar.Resources.RESTarAttribute'");
-                    if (eventType.HasAttribute<RESTarViewAttribute>())
-                        throw new InvalidEventDeclarationException(eventType,
-                            "Event types must not be decorated with the 'RESTar.Resources.RESTarViewAttribute'");
-                }
-                EventController.Add(_eventTypes);
-            }
-
-            (regularTypes, wrapperTypes, terminalTypes, binaryTypes) = ResourceValidator.Validate(resourceTypes);
+            (regularTypes, wrapperTypes, terminalTypes, binaryTypes, eventTypes) = ResourceValidator.Validate(resourceTypes);
             ValidateViewTypes(viewTypes);
-            ValidateEventTypes(eventTypes);
         }
 
         private static void ValidateInnerResources() => RESTarConfig.Resources
@@ -168,7 +140,15 @@ namespace RESTar.Meta.Internal
         internal static void MakeResources(EntityResourceProvider[] externalProviders)
         {
             ValidateEntityResourceProviders(externalProviders);
-            ValidateAndBuildTypeLists(out var regularTypes, out var wrapperTypes, out var terminalTypes, out var binaryTypes);
+
+            ValidateAndBuildTypeLists
+            (
+                out var regularTypes,
+                out var wrapperTypes,
+                out var terminalTypes,
+                out var binaryTypes,
+                out var eventTypes
+            );
 
             foreach (var provider in EntityResourceProviders.Values)
             {
@@ -193,17 +173,8 @@ namespace RESTar.Meta.Internal
 
             TerminalProvider.RegisterTerminalTypes(terminalTypes);
             BinaryProvider.RegisterBinaryTypes(binaryTypes);
+            EventProvider.RegisterEventTypes(eventTypes);
             ValidateInnerResources();
-        }
-
-        internal static IEnumerable<Type> GetBaseTypes(Type type)
-        {
-            var currentBaseType = type.BaseType;
-            while (currentBaseType != null)
-            {
-                yield return currentBaseType;
-                currentBaseType = currentBaseType.BaseType;
-            }
         }
 
         internal static void BindControllers()
@@ -212,7 +183,7 @@ namespace RESTar.Meta.Internal
                 .GetConcreteSubclasses()
                 .Select(@class =>
                 {
-                    foreach (var baseType in GetBaseTypes(@class))
+                    foreach (var baseType in @class.GetBaseTypes())
                     {
                         if (baseType.IsGenericType
                             && baseType.GetGenericTypeDefinition() == typeof(ResourceController<,>)

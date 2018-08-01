@@ -1,4 +1,5 @@
-﻿using RESTar.Internal;
+﻿using System;
+using RESTar.Internal;
 
 namespace RESTar.Resources
 {
@@ -8,6 +9,7 @@ namespace RESTar.Resources
     /// </summary>
     public class InvalidResourceWrapperException : RESTarException
     {
-        internal InvalidResourceWrapperException(string info) : base(ErrorCodes.ResourceWrapperError, info) { }
+        internal InvalidResourceWrapperException((Type wrapper, Type wrapped) types, string message) : base(ErrorCodes.ResourceWrapperError,
+            $"Invalid resource wrapper declaration '{types.wrapper.RESTarTypeName()}' for wrapped type '{types.wrapped.RESTarTypeName()}'. Resource wrappers {message}") { }
     }
 }

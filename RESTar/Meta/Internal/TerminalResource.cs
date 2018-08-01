@@ -59,7 +59,7 @@ namespace RESTar.Meta.Internal
 
         internal TerminalResource()
         {
-            Name = typeof(T).FullName ?? throw new Exception();
+            Name = typeof(T).RESTarTypeName() ?? throw new Exception();
             Type = typeof(T);
             AvailableMethods = new[] {Method.GET};
             IsInternal = false;
@@ -75,12 +75,13 @@ namespace RESTar.Meta.Internal
             Members = typeof(T).GetDeclaredProperties();
             Constructor = typeof(T).MakeStaticConstructor<ITerminal>();
             GETAvailableToAll = attribute?.GETAvailableToAll == true;
-            if (Name.Contains('+'))
+            var typeName = typeof(T).FullName;
+            if (typeName?.Contains('+') == true)
             {
                 IsInnerResource = true;
-                var location = Name.LastIndexOf('+');
-                ParentResourceName = Name.Substring(0, location).Replace('+', '.');
-                Name = Name.Replace('+', '.');
+                var location = typeName.LastIndexOf('+');
+                ParentResourceName = typeName.Substring(0, location).Replace('+', '.');
+                Name = typeName.Replace('+', '.');
             }
         }
     }

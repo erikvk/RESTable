@@ -1,10 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Net;
-using System.Text.RegularExpressions;
 using RESTar.Internal;
-using RESTar.Results;
 using static System.StringComparison;
 
 namespace RESTar.Requests
@@ -33,46 +29,15 @@ namespace RESTar.Requests
         /// <inheritdoc />
         public TypeCode ValueTypeCode { get; }
 
-        internal static List<IUriCondition> ParseMany(string conditionsString, bool check = false) => conditionsString
-            .Split('&')
-            .Select(s => (IUriCondition) new UriCondition(s, check))
-            .ToList();
-
         /// <summary>
         /// Creates a new custom UriCondition
         /// </summary>
-        public UriCondition(string key, Operators op, string valueLiteral)
+        public UriCondition(string key, Operators op, string valueLiteral, TypeCode valueTypeCode = TypeCode.Empty)
         {
             Key = key;
             Operator = op;
             ValueLiteral = valueLiteral;
-            ValueTypeCode = TypeCode.Empty;
-        }
-
-        /// <summary>
-        /// Creates a new UriCondition from a RESTar condition string
-        /// </summary>
-        public UriCondition(string conditionString, bool check = false)
-        {
-            if (check)
-            {
-                if (string.IsNullOrEmpty(conditionString))
-                    throw new InvalidSyntax(ErrorCodes.InvalidConditionSyntax, "Invalid condition syntax");
-                conditionString = conditionString.ReplaceFirst("%3E=", ">=", out var replaced);
-                if (!replaced) conditionString = conditionString.ReplaceFirst("%3C=", "<=", out replaced);
-                if (!replaced) conditionString = conditionString.ReplaceFirst("%3E", ">", out replaced);
-                if (!replaced) conditionString = conditionString.ReplaceFirst("%3C", "<", out replaced);
-            }
-            var match = Regex.Match(conditionString, RegEx.UriCondition);
-            if (!match.Success)
-                throw new InvalidSyntax(ErrorCodes.InvalidConditionSyntax, $"Invalid condition syntax at '{conditionString}'");
-            var (key, opString, valueLiteral) = (match.Groups["key"].Value, match.Groups["op"].Value, match.Groups["val"].Value);
-            Key = WebUtility.UrlDecode(key);
-            if (!Operator.TryParse(opString, out var op))
-                throw new InvalidOperator(conditionString);
-            Operator = op;
-            ValueLiteral = WebUtility.UrlDecode(valueLiteral);
-            ValueTypeCode = TypeCode.Empty;
+            ValueTypeCode = valueTypeCode;
         }
 
         /// <inheritdoc />

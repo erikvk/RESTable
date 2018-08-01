@@ -41,8 +41,7 @@ namespace RESTar.Requests
             Macro = existing.Macro;
         }
 
-        public string ToUriString() => ToString();
-        public override string ToString() => ProtocolProvider.MakeRelativeUri(this);
+        public override string ToString() => this.ToUriString();
     }
 
     /// <inheritdoc />
@@ -115,9 +114,6 @@ namespace RESTar.Requests
         }
 
         /// <inheritdoc />
-        public string ToUriString() => ToString();
-
-        /// <inheritdoc />
-        public override string ToString() => ProtocolProvider.MakeRelativeUri(this);
+        public override string ToString() => this.ToUriString();
     }
 }

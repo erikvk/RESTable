@@ -31,7 +31,7 @@ namespace RESTar.Meta.Internal
         public IReadOnlyCollection<Method> AvailableMethods { get; set; }
         public string Alias { get; private set; }
         public bool IsInternal { get; }
-        public bool IsGlobal { get; }
+        public bool IsGlobal => !IsInternal;
         public bool IsInnerResource { get; }
         public string ParentResourceName { get; }
         public bool GETAvailableToAll { get; }
@@ -51,27 +51,25 @@ namespace RESTar.Meta.Internal
 
         internal BinaryResource(BinarySelector<T> binarySelectorSelector)
         {
-            Name = typeof(T).FullName ?? throw new Exception();
+            Name = typeof(T).RESTarTypeName() ?? throw new Exception();
             Type = typeof(T);
             AvailableMethods = new[] {Method.GET};
-            IsInternal = false;
-            IsGlobal = true;
             var attribute = typeof(T).GetCustomAttribute<RESTarAttribute>();
+            IsInternal = attribute is RESTarInternalAttribute;
             InterfaceType = typeof(T).GetRESTarInterfaceType();
             ResourceKind = ResourceKind.BinaryResource;
-            ConditionBindingRule = attribute.AllowDynamicConditions
-                ? TermBindingRule.DeclaredWithDynamicFallback
-                : TermBindingRule.OnlyDeclared;
+            (_, ConditionBindingRule) = typeof(T).GetDynamicConditionHandling(attribute);
             Description = attribute.Description;
             BinarySelector = binarySelectorSelector;
             Members = typeof(T).GetDeclaredProperties();
             GETAvailableToAll = attribute.GETAvailableToAll;
-            if (Name.Contains('+'))
+            var typeName = typeof(T).FullName;
+            if (typeName?.Contains('+') == true)
             {
                 IsInnerResource = true;
-                var location = Name.LastIndexOf('+');
-                ParentResourceName = Name.Substring(0, location).Replace('+', '.');
-                Name = Name.Replace('+', '.');
+                var location = typeName.LastIndexOf('+');
+                ParentResourceName = typeName.Substring(0, location).Replace('+', '.');
+                Name = typeName.Replace('+', '.');
             }
         }
     }

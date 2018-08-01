@@ -117,12 +117,13 @@ namespace RESTar.Meta.Internal
             Updater<T> updater, Deleter<T> deleter, Counter<T> counter, Profiler<T> profiler, Authenticator<T> authenticator,
             EntityResourceProvider provider, View<T>[] views)
         {
-            if (fullName.Contains('+'))
+            var typeName = typeof(T).FullName;
+            if (typeName?.Contains('+') == true)
             {
                 IsInnerResource = true;
-                var location = fullName.LastIndexOf('+');
-                ParentResourceName = fullName.Substring(0, location).Replace('+', '.');
-                Name = fullName.Replace('+', '.');
+                var location = typeName.LastIndexOf('+');
+                ParentResourceName = typeName.Substring(0, location).Replace('+', '.');
+                Name = typeName.Replace('+', '.');
             }
             else Name = fullName;
 
@@ -133,12 +134,10 @@ namespace RESTar.Meta.Internal
             IsSingleton = attribute.Singleton;
             IsInternal = attribute is RESTarInternalAttribute;
             InterfaceType = typeof(T).GetRESTarInterfaceType();
-            DynamicConditionsAllowed = typeof(T).IsDDictionary() || typeof(IDynamicMemberValueProvider).IsAssignableFrom(typeof(T)) ||
-                                       attribute.AllowDynamicConditions;
+            (DynamicConditionsAllowed, ConditionBindingRule) = typeof(T).GetDynamicConditionHandling(attribute);
             DeclaredPropertiesFlagged = typeof(T).IsDDictionary() || attribute.FlagStaticMembers;
             GETAvailableToAll = attribute.GETAvailableToAll;
             ResourceKind = ResourceKind.EntityResource;
-            ConditionBindingRule = DynamicConditionsAllowed ? TermBindingRule.DeclaredWithDynamicFallback : TermBindingRule.OnlyDeclared;
             if (DeclaredPropertiesFlagged)
                 OutputBindingRule = TermBindingRule.DeclaredWithDynamicFallback;
             else if (typeof(T).IsDynamic() && !DeclaredPropertiesFlagged)

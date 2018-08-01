@@ -81,7 +81,7 @@ namespace RESTar.Admin
 
         internal static Error Create(Results.Error error, IRequest request)
         {
-            var resource = request.SafeGet(a => a.Resource);
+            var resource = request.SafeSelect(a => a.Resource);
             var uri = request.UriComponents.ToString();
             var stackTrace = $"{error.StackTrace} §§§ INNER: {error.InnerException?.StackTrace}";
             var totalMessage = error.TotalMessage();

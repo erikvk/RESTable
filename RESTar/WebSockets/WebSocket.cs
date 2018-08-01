@@ -20,6 +20,9 @@ namespace RESTar.WebSockets
     /// </summary>
     public abstract class WebSocket : IWebSocket, IWebSocketInternal, ITraceable, IDisposable
     {
+        static WebSocket() => BinaryCache = new BinaryCache();
+        private static BinaryCache BinaryCache { get; }
+
         /// <summary>
         /// The ID of the WebSocket
         /// </summary>
@@ -264,7 +267,7 @@ namespace RESTar.WebSockets
         }
 
         /// <inheritdoc />
-        public void SendResult(ISerializedResult result, TimeSpan? timeElapsed = null, bool writeHeaders = false, bool disposeResult = true)
+        public void SendResult(IResult result, TimeSpan? timeElapsed = null, bool writeHeaders = false, bool disposeResult = true)
         {
             try
             {
@@ -274,29 +277,38 @@ namespace RESTar.WebSockets
                     case var other: throw new InvalidOperationException($"Unable to send results to a WebSocket with status '{other}'");
                 }
                 if (result is WebSocketUpgradeSuccessful) return;
+                var serialized = result.IsSerialized ? (ISerializedResult) result : result.Serialize();
 
-                void sendStatus()
-                {
-                    var info = result.Headers.Info;
-                    var errorInfo = result.Headers.Error;
-                    var timeInfo = "";
-                    if (timeElapsed != null)
-                        timeInfo = $" ({timeElapsed.Value.TotalMilliseconds} ms)";
-                    var tail = "";
-                    if (info != null)
-                        tail += $". {info}";
-                    if (errorInfo != null)
-                        tail += $" (see {errorInfo})";
-                    _SendText($"{result.StatusCode.ToCode()}: {result.StatusDescription}{timeInfo}{tail}");
-                }
+                if (serialized is Content content && content.IsLocked)
+                    throw new InvalidOperationException("Unable to send a result that is already assigned to a Websocket streaming " +
+                                                        "job. Streaming results are locked, and can only be streamed once.");
 
-                sendStatus();
+                var foundCached = BinaryCache.TryGet(serialized, out var body);
+                if (!foundCached && serialized.Body?.CanRead == false)
+                    throw new InvalidOperationException($"Unable to send a disposed result over Websocket '{Id}'. To send the " +
+                                                        "same result multiple times, set 'disposeResult' to false in the call to " +
+                                                        "'SendResult()'.");
+
+                var info = result.Headers.Info;
+                var errorInfo = result.Headers.Error;
+                var timeInfo = "";
+                if (timeElapsed != null)
+                    timeInfo = $" ({timeElapsed.Value.TotalMilliseconds} ms)";
+                var tail = "";
+                if (info != null)
+                    tail += $". {info}";
+                if (errorInfo != null)
+                    tail += $" (see {errorInfo})";
+                _SendText($"{result.StatusCode.ToCode()}: {result.StatusDescription}{timeInfo}{tail}");
                 if (writeHeaders)
                     SendJson(result.Headers, true);
-                if (result.Body != null && (!result.Body.CanSeek || result.Body.Length > 0))
+                if (body == null && serialized.Body != null && (!serialized.Body.CanSeek || serialized.Body.Length > 0))
+                    body = serialized.Body.ToByteArray();
+                if (body != null)
                 {
-                    var array = result.Body.ToByteArray();
-                    SendBinary(array, 0, array.Length);
+                    if (!foundCached)
+                        BinaryCache.Cache(serialized, body);
+                    SendBinary(body, 0, body.Length);
                 }
             }
             finally
@@ -317,13 +329,18 @@ namespace RESTar.WebSockets
         /// <inheritdoc />
         public void SendJson(object item, bool asText = false, bool? prettyPrint = null, bool ignoreNulls = false)
         {
-            Formatting _prettyPrint;
-            if (prettyPrint == null)
-                _prettyPrint = Admin.Settings._PrettyPrint ? Formatting.Indented : Formatting.None;
-            else _prettyPrint = prettyPrint.Value ? Formatting.Indented : Formatting.None;
-            var stream = Providers.Json.SerializeStream(item, _prettyPrint, ignoreNulls);
-            var array = stream.ToArray();
-            _SendBinary(array, asText, 0, array.Length);
+            if (item == null) throw new ArgumentNullException(nameof(item));
+            if (!BinaryCache.TryGet(item, out var body))
+            {
+                Formatting _prettyPrint;
+                if (prettyPrint == null)
+                    _prettyPrint = Admin.Settings._PrettyPrint ? Formatting.Indented : Formatting.None;
+                else _prettyPrint = prettyPrint.Value ? Formatting.Indented : Formatting.None;
+                var stream = Providers.Json.SerializeStream(item, _prettyPrint, ignoreNulls);
+                body = stream.ToArray();
+                BinaryCache.Cache(item, body);
+            }
+            _SendBinary(body, asText, 0, body.Length);
         }
 
         #endregion
@@ -372,6 +389,10 @@ namespace RESTar.WebSockets
                 SendResult(result, result.TimeElapsed, writeHeaders, disposeResult);
                 return;
             }
+            if (content.IsLocked)
+                throw new InvalidOperationException("Unable to stream a result that is already assigned to a different streaming " +
+                                                    "job. A result can only be streamed once.");
+            content.IsLocked = true;
             TerminalConnection?.Suspend();
             if (messageSize < MinStreamBufferSize)
                 messageSize = MinStreamBufferSize;
@@ -387,9 +408,8 @@ namespace RESTar.WebSockets
 
         private void CloseStream()
         {
-            SendText(
-                $"499: Client closed request. Streamed {StreamManifest.CurrentMessageIndex} " +
-                $"of {StreamManifest.NrOfMessages} messages.");
+            SendText($"499: Client closed request. Streamed {StreamManifest.CurrentMessageIndex} " +
+                     $"of {StreamManifest.NrOfMessages} messages.");
             StopStreaming();
         }
 

@@ -79,7 +79,8 @@ namespace RESTar.ProtocolProviders
 
         /// <summary>
         /// The protocol needs to be able to generate a relative URI string from an IUriParameters instance. 
-        /// Note that only components added to a URI in PopulateURI can be present in the IUriParameters instance.
+        /// Note that only components created by a call to <see cref="GetUriComponents"/> for this protocol
+        /// provider can occur here.
         /// </summary>
         string MakeRelativeUri(IUriComponents components);
 

@@ -9,7 +9,7 @@ namespace RESTar.Resources
     /// </summary>
     public class InvalidTerminalDeclarationException : RESTarException
     {
-        internal InvalidTerminalDeclarationException(Type terminal, string info) : base(ErrorCodes.InvalidTerminalDeclaration,
-            $"Invalid terminal declaration '{terminal.RESTarTypeName()}'. Terminal types " + info) { }
+        internal InvalidTerminalDeclarationException(Type terminal, string message) : base(ErrorCodes.InvalidTerminalDeclaration,
+            $"Invalid terminal declaration '{terminal.RESTarTypeName()}'. Terminal types {message}") { }
     }
 }
