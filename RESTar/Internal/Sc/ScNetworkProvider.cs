@@ -54,40 +54,55 @@ namespace RESTar.Internal.Sc
                 }
             );
 
-            Handle.WebSocket(port, WsGroupName, async (text, ws) =>
-            {
-                try
+            Handle.WebSocket
+            (
+                port: port,
+                groupName: WsGroupName,
+                handler: async (textInput, webSocket) =>
                 {
-                    await WebSocketController.HandleTextInput(ScWebSocket.GetRESTarWsId(ws), text);
+                    try
+                    {
+                        await WebSocketController.HandleTextInput(ScWebSocket.GetRESTarWsId(webSocket), textInput);
+                    }
+                    catch (Exception e)
+                    {
+                        webSocket.Send(e.Message);
+                        webSocket.Disconnect();
+                    }
                 }
-                catch (Exception e)
-                {
-                    ws.Send(e.Message);
-                    ws.Disconnect();
-                }
-            });
+            );
 
-            Handle.WebSocket(port, WsGroupName, (binary, ws) =>
-            {
-                try
+            Handle.WebSocket
+            (
+                port: port,
+                groupName: WsGroupName,
+                handler: (binaryInput, webSocket) =>
                 {
-                    WebSocketController.HandleBinaryInput(ScWebSocket.GetRESTarWsId(ws), binary);
+                    try
+                    {
+                        WebSocketController.HandleBinaryInput(ScWebSocket.GetRESTarWsId(webSocket), binaryInput);
+                    }
+                    catch (Exception e)
+                    {
+                        webSocket.Send(e.Message);
+                        webSocket.Disconnect();
+                    }
                 }
-                catch (Exception e)
-                {
-                    ws.Send(e.Message);
-                    ws.Disconnect();
-                }
-            });
+            );
 
-            Handle.WebSocketDisconnect(port, WsGroupName, ws =>
-            {
-                try
+            Handle.WebSocketDisconnect
+            (
+                port: port,
+                groupName: WsGroupName,
+                handler: webSocket =>
                 {
-                    WebSocketController.HandleDisconnect(ScWebSocket.GetRESTarWsId(ws));
+                    try
+                    {
+                        WebSocketController.HandleDisconnect(ScWebSocket.GetRESTarWsId(webSocket));
+                    }
+                    catch { }
                 }
-                catch { }
-            });
+            );
         }
 
         public void RemoveBindings(Method[] methods, string uri, ushort port)
