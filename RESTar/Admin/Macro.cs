@@ -19,12 +19,12 @@ using static System.StringComparison;
 
 namespace RESTar.Admin
 {
-    /// <inheritdoc cref="IValidatable" />
+    /// <inheritdoc cref="IValidator{T}" />
     /// <summary>
     /// A resource for all macros available for this RESTar instance
     /// </summary>
     [Database, RESTar(Description = description)]
-    public class Macro : IMacro, IValidatable, IUriComponents
+    public class Macro : IMacro, IValidator<Macro>, IUriComponents
     {
         private const string description = "Contains all available macros for this RESTar instance";
         internal const string All = "SELECT t FROM RESTar.Admin.Macro t";
@@ -91,41 +91,41 @@ namespace RESTar.Admin
             Headers = new DbHeaders();
         }
 
-        private bool CheckIfValid() => IsValid(out _);
+        internal bool CheckIfValid() => IsValid(this, out _);
 
         /// <inheritdoc />
         /// <summary>
         /// Validates the macro
         /// </summary>
-        public bool IsValid(out string invalidReason)
+        public bool IsValid(Macro macro, out string invalidReason)
         {
-            if (string.IsNullOrWhiteSpace(Uri))
+            if (string.IsNullOrWhiteSpace(macro.Uri))
             {
                 invalidReason = "Invalid or missing Uri in macro";
                 return false;
             }
-            if (Uri.IndexOf($"${Name}", OrdinalIgnoreCase) >= 0)
+            if (macro.Uri.IndexOf($"${macro.Name}", OrdinalIgnoreCase) >= 0)
             {
                 invalidReason = "Invalid macro Uri: Cannot contain self-references";
                 return false;
             }
-            if (Headers.Authorization != null)
+            if (macro.Headers.Authorization != null)
             {
                 invalidReason = "Macro headers cannot contain the 'Authorization' header. If API keys are " +
                                 "required, they are expected in each request invoking the macro.";
                 return false;
             }
-            if (MakeUriComponents(out var error) == null)
+            if (macro.MakeUriComponents(out var error) == null)
             {
-                if (!UriChanged)
+                if (!macro.UriChanged)
                 {
-                    var info = $"The URI of RESTar macro '{Name}' is no longer valid, and has been replaced to protect " +
-                               $"against unsafe behavior. Please update the '{nameof(Uri)}' property to a valid RESTar " +
-                               "URI to repair the macro.";
-                    Uri = $"/{Resource<Echo>.ResourceSpecifier}/" +
-                          $"Info={WebUtility.UrlEncode(info)}&" +
-                          $"InvalidUri={WebUtility.UrlEncode(Uri)}&" +
-                          $"InvalidReason={WebUtility.UrlEncode(error.Headers.Info)}";
+                    var info = $"The URI of RESTar macro '{macro.Name}' is no longer valid, and has been replaced to protect " +
+                               $"against unsafe behavior. Please update the '{nameof(Uri)}' property to a valid RESTar URI to " +
+                               "repair the macro.";
+                    macro.Uri = $"/{Resource<Echo>.ResourceSpecifier}/" +
+                                $"Info={WebUtility.UrlEncode(info)}&" +
+                                $"InvalidUri={WebUtility.UrlEncode(macro.Uri)}&" +
+                                $"InvalidReason={WebUtility.UrlEncode(error.Headers.Info)}";
                     invalidReason = null;
                     return true;
                 }

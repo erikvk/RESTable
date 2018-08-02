@@ -15,13 +15,13 @@ namespace RESTar.Admin
     /// <inheritdoc cref="IInserter{T}" />
     /// <inheritdoc cref="IUpdater{T}" />
     /// <inheritdoc cref="IDeleter{T}" />
-    /// <inheritdoc cref="IValidatable" />
+    /// <inheritdoc cref="IValidator{T}" />
     /// <summary>
     /// The DatabaseIndex resource lets an administrator set indexes for RESTar database resources.
     /// </summary>
     [RESTar(Description = description)]
     public class DatabaseIndex : ISelector<DatabaseIndex>, IInserter<DatabaseIndex>, IUpdater<DatabaseIndex>,
-        IDeleter<DatabaseIndex>, IValidatable
+        IDeleter<DatabaseIndex>, IValidator<DatabaseIndex>
     {
         private const string description = "The DatabaseIndex resource lets an administrator set " +
                                            "indexes for Starcounter database resources.";
@@ -148,19 +148,19 @@ namespace RESTar.Admin
         }
 
         /// <inheritdoc />
-        public bool IsValid(out string invalidReason)
+        public bool IsValid(DatabaseIndex entity, out string invalidReason)
         {
-            if (string.IsNullOrWhiteSpace(ResourceName))
+            if (string.IsNullOrWhiteSpace(entity.ResourceName))
             {
                 invalidReason = "Index resource name cannot be null or whitespace";
                 return false;
             }
-            if (string.IsNullOrWhiteSpace(Name))
+            if (string.IsNullOrWhiteSpace(entity.Name))
             {
                 invalidReason = "Index name cannot be null or whitespace";
                 return false;
             }
-            if (Columns?.Any() != true)
+            if (entity.Columns?.Any() != true)
             {
                 invalidReason = "No columns specified for index";
                 return false;

@@ -10,6 +10,7 @@ using RESTar.Linq;
 using RESTar.Requests;
 using RESTar.Resources;
 using RESTar.Resources.Operations;
+using RESTar.Results;
 using Starcounter;
 
 namespace RESTar.Meta.Internal
@@ -72,6 +73,16 @@ namespace RESTar.Meta.Internal
         public ResourceProfile Profile(IRequest<T> request) => Profiler(this);
         public long Count(IRequest<T> request) => Counter(request);
 
+        public IEnumerable<T> Validate(IEnumerable<T> entities)
+        {
+            if (Validator == null) return entities;
+            return entities?.Apply(e =>
+            {
+                if (!Validator(e, out var invalidReason))
+                    throw new FailedValidation(invalidReason);
+            });
+        }
+
         private Selector<T> Selector { get; }
         private Inserter<T> Inserter { get; }
         private Updater<T> Updater { get; }
@@ -79,6 +90,7 @@ namespace RESTar.Meta.Internal
         private Authenticator<T> Authenticator { get; }
         private Profiler<T> Profiler { get; }
         private Counter<T> Counter { get; }
+        private Validator<T> Validator { get; }
 
         public string Alias
         {
@@ -115,7 +127,7 @@ namespace RESTar.Meta.Internal
         /// </summary>
         internal EntityResource(string fullName, RESTarAttribute attribute, Selector<T> selector, Inserter<T> inserter,
             Updater<T> updater, Deleter<T> deleter, Counter<T> counter, Profiler<T> profiler, Authenticator<T> authenticator,
-            EntityResourceProvider provider, View<T>[] views)
+            Validator<T> validator, EntityResourceProvider provider, View<T>[] views)
         {
             var typeName = typeof(T).FullName;
             if (typeName?.Contains('+') == true)
@@ -143,7 +155,7 @@ namespace RESTar.Meta.Internal
             else if (typeof(T).IsDynamic() && !DeclaredPropertiesFlagged)
                 OutputBindingRule = TermBindingRule.DynamicWithDeclaredFallback;
             else OutputBindingRule = TermBindingRule.OnlyDeclared;
-            RequiresValidation = typeof(IValidatable).IsAssignableFrom(typeof(T));
+            RequiresValidation = typeof(IValidator<>).IsAssignableFrom(typeof(T));
             IsDDictionary = typeof(T).IsDDictionary();
             IsDynamic = IsDDictionary || typeof(T).IsSubclassOf(typeof(JObject)) || typeof(IDictionary).IsAssignableFrom(typeof(T));
             Provider = provider.GetProviderId();
@@ -156,6 +168,7 @@ namespace RESTar.Meta.Internal
             Counter = counter.AsImplemented();
             Profiler = profiler.AsImplemented();
             Authenticator = authenticator.AsImplemented();
+            Validator = validator.AsImplemented();
 
             ViewDictionaryInternal = new Dictionary<string, ITarget<T>>(StringComparer.OrdinalIgnoreCase);
             views?.ForEach(view =>

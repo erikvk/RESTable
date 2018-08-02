@@ -987,7 +987,7 @@ namespace RESTarTester
 
     [RESTar(GET, POST, DELETE)]
     public class AuthResource : ISelector<AuthResource>, IInserter<AuthResource>, IDeleter<AuthResource>,
-        IAuthenticatable<AuthResource>, IValidatable
+        IAuthenticatable<AuthResource>, IValidator<AuthResource>
     {
         #region Schema
 
@@ -1021,9 +1021,9 @@ namespace RESTarTester
             return (password == "the password", "Invalid password!");
         }
 
-        public bool IsValid(out string invalidReason)
+        public bool IsValid(AuthResource entity, out string invalidReason)
         {
-            if (Items.Any(c => c.Id == Id))
+            if (Items.Any(c => c.Id == entity.Id))
             {
                 invalidReason = "No no";
                 return false;

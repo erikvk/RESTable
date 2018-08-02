@@ -5,6 +5,7 @@ using Newtonsoft.Json.Linq;
 using RESTar.ContentTypeProviders;
 using RESTar.Internal;
 using RESTar.Linq;
+using RESTar.Meta;
 using RESTar.Requests;
 using RESTar.Results;
 
@@ -12,12 +13,7 @@ namespace RESTar.Resources.Operations
 {
     internal static class EntityOperationExtensions
     {
-        internal static IEnumerable<T> Validate<T>(this IEnumerable<T> e) where T : class => e?.Select(entity =>
-        {
-            (entity as IValidatable)?.Validate();
-            return entity;
-        });
-
+        internal static IEnumerable<T> Validate<T>(this IEnumerable<T> e, IEntityResource<T> resource) where T : class => resource.Validate(e);
         internal static IEnumerable<T> InvokePostInsert<T>(this IEnumerable<T> e) where T : class => Events.EntityResource<T>.OnPostInsert(e);
         internal static IEnumerable<T> InvokePostUpdate<T>(this IEnumerable<T> e) where T : class => Events.EntityResource<T>.OnPostUpdate(e);
         internal static IEnumerable<T> InvokePreDelete<T>(this IEnumerable<T> e) where T : class => Events.EntityResource<T>.OnPreDelete(e);
@@ -117,7 +113,7 @@ namespace RESTar.Resources.Operations
                 request.EntitiesProducer = () =>
                     (request.GetSelector() ?? (() => request.GetBody().Deserialize<T>()))()?
                     .InputLimit(limit)?
-                    .Validate()?
+                    .Validate(request.EntityResource)?
                     .InvokePostInsert() ?? throw new MissingDataSource(request);
                 return request.EntityResource.Insert(request);
             }
@@ -136,7 +132,7 @@ namespace RESTar.Resources.Operations
                         (request.GetSelector() ?? (() => TrySelectFilter(request) ?? new T[0]))
                         .Invoke()?
                         .UnsafeLimit(!request.MetaConditions.Unsafe))?
-                    .Validate()?
+                    .Validate(request.EntityResource)?
                     .InvokePostUpdate() ?? throw new MissingDataSource(request);
                 return request.EntityResource.Update(request);
             }
@@ -158,7 +154,7 @@ namespace RESTar.Resources.Operations
                             JsonProvider.Serializer.Populate(sr, item.source);
                         return item.source;
                     })
-                    .Validate()
+                    .Validate(request.EntityResource)?
                     .InvokePostUpdate();
                 return request.EntityResource.Update(request);
             }

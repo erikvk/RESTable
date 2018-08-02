@@ -20,7 +20,6 @@ using RESTar.Meta;
 using RESTar.Meta.Internal;
 using RESTar.ProtocolProviders;
 using RESTar.Resources;
-using RESTar.Resources.Operations;
 using RESTar.WebSockets;
 using Starcounter;
 using static RESTar.Method;
@@ -249,8 +248,7 @@ namespace RESTar
                     OverwriteHeaders = macro.OverwriteHeaders
                 };
                 macro.HeadersDictionary?.ForEach(header => newMacro.Headers.Add(header));
-                var ivalidatable = (IValidatable) newMacro;
-                ivalidatable.IsValid(out _);
+                newMacro.CheckIfValid();
                 macro.Delete();
             }));
 #pragma warning restore 612

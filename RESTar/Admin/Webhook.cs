@@ -23,13 +23,13 @@ using Starcounter;
 
 namespace RESTar.Admin
 {
-    /// <inheritdoc cref="IValidatable" />
+    /// <inheritdoc cref="IValidator{T}" />
     /// <inheritdoc cref="IEntity" />
     /// <summary>
     /// Webhooks are used to generate POST request callbacks to external URIs when events are triggered.
     /// </summary>
     [RESTar, Database]
-    public class Webhook : IValidatable, IEntity
+    public class Webhook : IValidator<Webhook>, IEntity
     {
         internal const string All = "SELECT t FROM RESTar.Admin.Webhook t";
         internal const string ByEventName = All + " WHERE t.EventName =?";
@@ -162,7 +162,7 @@ namespace RESTar.Admin
             CustomPayloadRequest?.Delete();
         }
 
-        private bool CheckIfValid() => IsValid(out _);
+        private bool CheckIfValid() => IsValid(this, out _);
 
         private bool TryParseConditions<TEvent, TPayload>(IEventResource<TEvent, TPayload> resource, string conds, out string formatted,
             out Results.Error error) where TEvent : Event<TPayload> where TPayload : class
@@ -178,66 +178,67 @@ namespace RESTar.Admin
         }
 
         /// <inheritdoc />
-        public bool IsValid(out string invalidReason)
+        public bool IsValid(Webhook entity, out string invalidReason)
         {
             #region Destination
 
-            if (string.IsNullOrWhiteSpace(Destination))
+            if (string.IsNullOrWhiteSpace(entity.Destination))
             {
                 invalidReason = "Invalid or missing Destination in webhook";
                 return false;
             }
-            if (Uri.TryCreate(Destination, UriKind.Absolute, out var _uri))
+            if (Uri.TryCreate(entity.Destination, UriKind.Absolute, out var _uri))
             {
-                Destination = _uri.ToString();
-                if (DestinationIsLocal)
-                    Headers.Authorization = null;
-                DestinationIsLocal = false;
+                entity.Destination = _uri.ToString();
+                if (entity.DestinationIsLocal)
+                    entity.Headers.Authorization = null;
+                entity.DestinationIsLocal = false;
             }
             else
             {
-                if (!Context.Root.UriIsValid(Destination, out var error, out var resource, out var components))
+                if (!Context.Root.UriIsValid(entity.Destination, out var error, out var resource, out var components))
                 {
-                    if (!DestinationHasChanged)
+                    if (!entity.DestinationHasChanged)
                     {
-                        ErrorMessage = $"The Destination URL of webhook '{Label ?? Id}' is no longer valid, and has been changed to " +
-                                       "protect against unsafe behavior. Please change the destination to a valid local URI " +
-                                       "to repair the webhook. Previous Destination: " + Destination;
-                        Destination = $"/{Resource<Blank>.ResourceSpecifier}";
-                        IsPaused = true;
+                        entity.ErrorMessage =
+                            $"The Destination URL of webhook '{entity.Label ?? entity.Id}' is no longer valid, and has been changed to " +
+                            "protect against unsafe behavior. Please change the destination to a valid local URI " +
+                            "to repair the webhook. Previous Destination: " + entity.Destination;
+                        entity.Destination = $"/{Resource<Blank>.ResourceSpecifier}";
+                        entity.IsPaused = true;
                         invalidReason = null;
                         return true;
                     }
-                    ErrorMessage = null;
+                    entity.ErrorMessage = null;
                     invalidReason = "Invalid Destination URI syntax. Was not an absolute URI, and failed validation " +
                                     "as a local URI. " + error.Headers.Info;
                     return false;
                 }
-                Destination = components.ToUriString();
-                DestinationIsLocal = true;
+                entity.Destination = components.ToUriString();
+                entity.DestinationIsLocal = true;
                 if (RESTarConfig.RequireApiKey)
                 {
-                    switch (Headers.Authorization)
+                    switch (entity.Headers.Authorization)
                     {
                         case Authenticator.AuthHeaderMask: break;
                         case string _:
-                            LocalDestinationAPIKey = Authenticator.GetAccessRights(Headers)?.ApiKey;
+                            entity.LocalDestinationAPIKey = Authenticator.GetAccessRights(entity.Headers)?.ApiKey;
                             break;
                         default:
-                            LocalDestinationAPIKey = null;
+                            entity.LocalDestinationAPIKey = null;
                             break;
                     }
-                    var context = Context.Webhook(LocalDestinationAPIKey, out var authError);
+                    var context = Context.Webhook(entity.LocalDestinationAPIKey, out var authError);
                     if (authError != null)
                     {
-                        Headers.Authorization = null;
-                        LocalDestinationAPIKey = null;
+                        entity.Headers.Authorization = null;
+                        entity.LocalDestinationAPIKey = null;
                         invalidReason = "Missing or invalid 'Authorization' header. Webhooks with local destinations require a " +
                                         "valid API key to be included in the 'Authorization' header.";
                         return false;
                     }
 
-                    if (!context.MethodIsAllowed(Method, resource, out var methodError))
+                    if (!context.MethodIsAllowed(entity.Method, resource, out var methodError))
                     {
                         invalidReason = $"Authorization error: {methodError.Headers.Info}";
                         return false;
@@ -249,7 +250,7 @@ namespace RESTar.Admin
 
             #region Event
 
-            if (string.IsNullOrWhiteSpace(EventSelector))
+            if (string.IsNullOrWhiteSpace(entity.EventSelector))
             {
                 invalidReason = "Invalid or missing Event in webhook";
                 return false;
@@ -268,24 +269,25 @@ namespace RESTar.Admin
                     return false;
                 var conds = match.Groups["cond"].Value;
                 var formattedConds = default(string);
-                if (conds != "" && !TryParseConditions((dynamic) _event, conds.Substring(1), out formattedConds, out _error))
+                if (conds != "" && !entity.TryParseConditions((dynamic) _event, conds.Substring(1), out formattedConds, out _error))
                     return false;
                 _formatted = formattedConds != null ? $"/{_event.Name}/{formattedConds}" : $"/{_event.Name}";
                 return true;
             }
 
-            if (EventSelectorIsValid(EventSelector, out var formatted, out var @event, out var eventError))
+            if (EventSelectorIsValid(entity.EventSelector, out var formatted, out var @event, out var eventError))
             {
-                EventSelector = formatted;
-                EventName = @event.Name;
+                entity.EventSelector = formatted;
+                entity.EventName = @event.Name;
             }
             else
             {
-                if (!EventHasChanged)
+                if (!entity.EventHasChanged)
                 {
-                    ErrorMessage = $"The Event selector '{EventSelector}' of webhook '{Label ?? Id}' is no longer valid. Please change the 'Event' " +
-                                   "property to a valid event to repair the webhook. To list available events, use the 'RESTar.Event' resource.";
-                    IsPaused = true;
+                    entity.ErrorMessage =
+                        $"The Event selector '{entity.EventSelector}' of webhook '{entity.Label ?? entity.Id}' is no longer valid. Please change the 'Event' " +
+                        "property to a valid event to repair the webhook. To list available events, use the 'RESTar.Event' resource.";
+                    entity.IsPaused = true;
                     invalidReason = null;
                     return true;
                 }
@@ -297,16 +299,16 @@ namespace RESTar.Admin
 
             #region Custom request
 
-            if (CustomPayloadRequest != null)
+            if (entity.CustomPayloadRequest != null)
             {
-                if (!CustomPayloadRequest.IsValid(this, out var _invalidReason, out var errorMessage))
+                if (!entity.CustomPayloadRequest.IsValid(entity, out var _invalidReason, out var errorMessage))
                 {
                     invalidReason = _invalidReason;
                     return false;
                 }
                 if (errorMessage != null)
                 {
-                    ErrorMessage = errorMessage;
+                    entity.ErrorMessage = errorMessage;
                     invalidReason = null;
                     return true;
                 }
@@ -314,7 +316,7 @@ namespace RESTar.Admin
 
             #endregion
 
-            ErrorMessage = null;
+            entity.ErrorMessage = null;
             invalidReason = null;
             return true;
         }

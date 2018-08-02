@@ -319,7 +319,7 @@
     <Compile Include="Meta\DynamicProperty.cs" />
     <Compile Include="Internal\Sc\ScNetworkProvider.cs" />
     <Compile Include="Internal\HttpRequest.cs" />
-    <Compile Include="Resources\Operations\IValidatable.cs" />
+    <Compile Include="Resources\Operations\IValidator.cs" />
     <Compile Include="Requests\Filters\Limit.cs" />
     <Compile Include="Requests\MetaConditions.cs" />
     <Compile Include="Requests\ContentType.cs" />

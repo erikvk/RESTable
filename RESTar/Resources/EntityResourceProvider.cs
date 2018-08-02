@@ -301,17 +301,19 @@ namespace RESTar.Resources
         /// <param name="deleter">The deleter to use. If null, the default deleter is used</param>
         /// <param name="counter">The counter to use. If null, the default counter is used</param>
         /// <param name="profiler">The profiler to use. If null, the default profiler is used</param>
+        /// <param name="validator">The validator to use. If null, no validator is used.</param>
         /// <param name="authenticator">The authenticator to use. If null, the default authenticator is used</param>
         /// <typeparam name="TWrapper">The resource wrapper type</typeparam>
         /// <typeparam name="TWrapped">The wrapped resource type</typeparam>
         /// <returns></returns>
         private IEntityResource<TWrapped> InsertWrapperResource<TWrapper, TWrapped>(string fullName = null, RESTarAttribute attribute = null,
             Selector<TWrapped> selector = null, Inserter<TWrapped> inserter = null, Updater<TWrapped> updater = null, Deleter<TWrapped> deleter = null,
-            Counter<TWrapped> counter = null, Profiler<TWrapped> profiler = null, Authenticator<TWrapped> authenticator = null)
+            Counter<TWrapped> counter = null, Profiler<TWrapped> profiler = null, Validator<TWrapped> validator = null,
+            Authenticator<TWrapped> authenticator = null)
             where TWrapper : ResourceWrapper<TWrapped> where TWrapped : class, TBase
         {
             return _InsertWrapperResource<TWrapper, TWrapped>(fullName, attribute, selector, inserter, updater, deleter, counter, profiler,
-                authenticator);
+                authenticator, validator);
         }
 
         /// <summary>
@@ -340,13 +342,13 @@ namespace RESTar.Resources
         private IEntityResource _InsertResource(Type type, string fullName = null, RESTarAttribute attribute = null)
         {
             var method = InsertResourceMethod.MakeGenericMethod(type);
-            return (IEntityResource) method.Invoke(this, new object[] {fullName, attribute, null, null, null, null, null, null, null});
+            return (IEntityResource) method.Invoke(this, new object[] {fullName, attribute, null, null, null, null, null, null, null, null});
         }
 
         private IEntityResource _InsertWrapperResource(Type wrapperType, Type wrappedType, string fullName = null, RESTarAttribute attribute = null)
         {
             var method = InsertResourceWrappedMethod.MakeGenericMethod(wrapperType, wrappedType);
-            return (IEntityResource) method.Invoke(this, new object[] {fullName, attribute, null, null, null, null, null, null, null});
+            return (IEntityResource) method.Invoke(this, new object[] {fullName, attribute, null, null, null, null, null, null, null, null});
         }
 
         private IEntityResource<TResource> _InsertResource<TResource>(
@@ -358,7 +360,8 @@ namespace RESTar.Resources
             Deleter<TResource> deleter = null,
             Counter<TResource> counter = null,
             Profiler<TResource> profiler = null,
-            Authenticator<TResource> authenticator = null
+            Authenticator<TResource> authenticator = null,
+            Validator<TResource> validator = null
         ) where TResource : class, TBase
         {
             return new Meta.Internal.EntityResource<TResource>
@@ -372,6 +375,7 @@ namespace RESTar.Resources
                 counter: counter ?? GetDelegate<Counter<TResource>>(typeof(TResource)) ?? DefaultCount,
                 profiler: profiler ?? DefaultProfile,
                 authenticator: authenticator ?? GetDelegate<Authenticator<TResource>>(typeof(TResource)),
+                validator: validator ?? GetDelegate<Validator<TResource>>(typeof(TResource)),
                 views: GetViews<TResource>(),
                 provider: this
             );
@@ -386,7 +390,8 @@ namespace RESTar.Resources
             Deleter<TWrapped> deleter = null,
             Counter<TWrapped> counter = null,
             Profiler<TWrapped> profiler = null,
-            Authenticator<TWrapped> authenticator = null
+            Authenticator<TWrapped> authenticator = null,
+            Validator<TWrapped> validator = null
         )
             where TWrapper : ResourceWrapper<TWrapped>
             where TWrapped : class, TBase => new Meta.Internal.EntityResource<TWrapped>
@@ -400,6 +405,7 @@ namespace RESTar.Resources
             counter: counter ?? GetDelegate<Counter<TWrapped>>(typeof(TWrapper)) ?? DefaultCount,
             profiler: profiler ?? DefaultProfile,
             authenticator: authenticator ?? GetDelegate<Authenticator<TWrapped>>(typeof(TWrapper)),
+            validator: validator ?? GetDelegate<Validator<TWrapped>>(typeof(TWrapper)),
             views: GetWrappedViews<TWrapper, TWrapped>(),
             provider: this
         );

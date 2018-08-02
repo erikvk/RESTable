@@ -119,6 +119,12 @@ namespace RESTar.Meta
         long Count(IRequest<T> request);
 
         /// <summary>
+        /// Runs resource-specific validation on an <see cref="IEnumerable{T}"/>
+        /// and throws a FailedValidation if any entity failed validation.
+        /// </summary>
+        IEnumerable<T> Validate(IEnumerable<T> entities);
+
+        /// <summary>
         /// The Views registered for this resource
         /// </summary>
         IReadOnlyDictionary<string, ITarget<T>> ViewDictionary { get; }

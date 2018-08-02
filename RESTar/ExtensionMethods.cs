@@ -15,6 +15,7 @@ using Dynamit;
 using Microsoft.CSharp.RuntimeBinder;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using RESTar.Admin;
 using RESTar.ContentTypeProviders;
 using RESTar.Internal;
 using RESTar.Internal.Sc;
@@ -25,7 +26,6 @@ using RESTar.Requests;
 using RESTar.Requests.Filters;
 using RESTar.Requests.Processors;
 using RESTar.Resources;
-using RESTar.Resources.Operations;
 using RESTar.Results;
 using RESTar.WebSockets;
 using Starcounter;
@@ -374,16 +374,6 @@ namespace RESTar
             .GetInterfaces()
             .FirstOrDefault(i => typeof(IEntityResourceInterface).IsAssignableFrom(i));
 
-        /// <summary>
-        /// Validates a validatable entity resource entity. If not valid, throws a BadRequest.
-        /// </summary>
-        /// <param name="ivalidatable">The validatable entity</param>
-        public static void Validate(this IValidatable ivalidatable)
-        {
-            if (!ivalidatable.IsValid(out var reason))
-                throw new FailedValidation(reason);
-        }
-
         internal static IEnumerable<Operator> ToOperators(this Operators operators)
         {
             var opList = new List<Operator>();
@@ -676,8 +666,8 @@ namespace RESTar
             error.SetTrace(request);
             error.RequestInternal = request;
             string errorId = null;
-            if (request is IEntityRequest entityRequest && entityRequest.Macro is IMacro macro)
-                Db.TransactAsync(() => macro.IsValid(out _));
+            if (request is IEntityRequest entityRequest && entityRequest.Macro is Macro macro)
+                Db.TransactAsync(() => macro.CheckIfValid());
             if (!(error is Forbidden) && !(request is RemoteRequest) && request.Method >= 0)
             {
                 Db.TransactAsync(() =>

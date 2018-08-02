@@ -8,18 +8,19 @@ using RESTar.Resources;
 using RESTar.Resources.Operations;
 using Starcounter;
 
-namespace RESTar.Admin {
+namespace RESTar.Admin
+{
     /// <inheritdoc cref="ISelector{T}" />
     /// <inheritdoc cref="IInserter{T}" />
     /// <inheritdoc cref="IUpdater{T}" />
     /// <inheritdoc cref="IDeleter{T}" />
-    /// <inheritdoc cref="IValidatable" />
+    /// <inheritdoc cref="IValidator{T}" />
     /// <summary>
     /// A resource for all available output formats for this RESTar instance.
     /// </summary>
     [RESTar(Description = description)]
     public class OutputFormat : ISelector<OutputFormat>, IInserter<OutputFormat>, IUpdater<OutputFormat>, IDeleter<OutputFormat>,
-        IValidatable
+        IValidator<OutputFormat>
     {
         private const string description = "Contains all available output formats for this RESTar instance";
 
@@ -50,24 +51,24 @@ namespace RESTar.Admin {
         public JToken Example { get; private set; }
 
         /// <inheritdoc />
-        public bool IsValid(out string invalidReason)
+        public bool IsValid(OutputFormat entity, out string invalidReason)
         {
-            if (string.IsNullOrWhiteSpace(Name))
+            if (string.IsNullOrWhiteSpace(entity.Name))
             {
                 invalidReason = "Invalid or missing name";
                 return false;
             }
-            if (string.IsNullOrWhiteSpace(Pattern))
+            if (string.IsNullOrWhiteSpace(entity.Pattern))
             {
                 invalidReason = "Invalid or missing pattern";
                 return false;
             }
-            if (!Pattern.Contains("$data"))
-                throw new Exception($"Invalid pattern string '{Pattern}'. Must contain the '$data' macro.");
-            if (Pattern.IndexOf("$data", StringComparison.Ordinal) != Pattern.LastIndexOf("$data", StringComparison.Ordinal))
-                throw new Exception($"Invalid pattern string '{Pattern}'. Can only contain one instance of the '$data' macro.");
+            if (!entity.Pattern.Contains("$data"))
+                throw new Exception($"Invalid pattern string '{entity.Pattern}'. Must contain the '$data' macro.");
+            if (entity.Pattern.IndexOf("$data", StringComparison.Ordinal) != entity.Pattern.LastIndexOf("$data", StringComparison.Ordinal))
+                throw new Exception($"Invalid pattern string '{entity.Pattern}'. Can only contain one instance of the '$data' macro.");
 
-            var (pre, post) = Pattern.TSplit("$data");
+            var (pre, post) = entity.Pattern.TSplit("$data");
             try
             {
                 JToken.Parse(pre + "[]" + post);

@@ -11,7 +11,7 @@ namespace RESTar.Resources.Operations
 {
     internal static class DelegateMaker
     {
-        private static Type MatchingInterface<TDelegate>()
+        private static Type MatchingInterface<TDelegate>() where TDelegate : Delegate
         {
             var t = typeof(TDelegate).GetGenericArguments().ElementAtOrDefault(0);
             switch (typeof(TDelegate))
@@ -25,7 +25,7 @@ namespace RESTar.Resources.Operations
                 case var d when d == typeof(Authenticator<>).MakeGenericType(t): return typeof(IAuthenticatable<>).MakeGenericType(t);
                 case var d when d == typeof(BinarySelector<>).MakeGenericType(t): return typeof(IBinary<>).MakeGenericType(t);
                 case var d when d == typeof(ViewSelector<>).MakeGenericType(t): return typeof(ISelector<>).MakeGenericType(t);
-
+                case var d when d == typeof(Validator<>).MakeGenericType(t): return typeof(IValidator<>).MakeGenericType(t);
                 default: throw new ArgumentOutOfRangeException();
             }
         }
@@ -132,4 +132,9 @@ namespace RESTar.Resources.Operations
     /// updated enumeration.
     /// </summary>
     public delegate IEnumerable<T> EntityProcessor<T>(IEnumerable<T> entities);
+
+    /// <summary>
+    /// Defines the operation of validating an entity resource entity
+    /// </summary>
+    public delegate bool Validator<in T>(T entity, out string invalidReason) where T : class;
 }

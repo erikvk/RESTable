@@ -37,7 +37,7 @@ namespace RESTar.Resources.Operations
                 return function();
             }
             catch
-            {
+            {   
                 return default;
             }
         }
