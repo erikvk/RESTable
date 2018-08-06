@@ -917,12 +917,14 @@ namespace RESTar
 
         internal static string TotalMessage(this Exception e)
         {
-            var message = new StringBuilder(e.Message);
+            var message = new StringBuilder();
+            if (string.IsNullOrWhiteSpace(e.Message))
+                message.Append(e.Message);
             var ie = e.InnerException;
             while (ie != null)
             {
                 if (!string.IsNullOrWhiteSpace(ie.Message))
-                    message.Append($" {ie.Message}");
+                    message.Append(ie.Message);
                 if (ie.InnerException != null)
                     message.Append(" | ");
                 ie = ie.InnerException;

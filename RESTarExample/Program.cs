@@ -34,6 +34,18 @@ namespace RESTarExample
     }
 
     [RESTar, Database]
+    public class Item : IValidator<Item>
+    {
+        public int I { get; set; }
+
+        public bool IsValid(Item entity, out string invalidReason)
+        {
+            invalidReason = null;
+            return false;
+        }
+    }
+
+    [RESTar, Database]
     public class MyNotification
     {
         public string Title { get; }

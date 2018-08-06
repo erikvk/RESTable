@@ -28,6 +28,11 @@ namespace RESTar
             "The RESTar WebSocket shell lets the client navigate around the resources of the " +
             "RESTar API, perform CRUD operations and enter terminal resources.";
 
+        private const int MaxStreamBufferSize = 16_000_000;
+        private const int MinStreamBufferSize = 512;
+        private const int MaxResultSize = 100;
+        private const int MaxInputSize = 16_000_000;
+
         private string query;
         private string previousQuery;
         private Func<int, IUriComponents> GetNextPageLink;
@@ -114,8 +119,6 @@ namespace RESTar
 
         private int streamBufferSize;
         private IEntities _previousEntities;
-        private const int MaxStreamBufferSize = 16_000_000;
-        private const int MinStreamBufferSize = 512;
 
         /// <summary>
         /// The size of stream messages in bytes
@@ -148,7 +151,7 @@ namespace RESTar
 
         private void Reset()
         {
-            streamBufferSize = 16_000_000;
+            streamBufferSize = MaxStreamBufferSize;
             Unsafe = false;
             OnConfirm = null;
             PreviousEntities = null;
@@ -205,10 +208,10 @@ namespace RESTar
             if (input != null)
                 Query = input;
             if (!QueryIsValid(out var resource)) return;
+            PreviousEntities = null;
             if (AutoOptions) SendOptions(resource);
             else if (AutoGet) SafeOperation(GET);
             else SendQuery();
-            PreviousEntities = null;
         }
 
         /// <inheritdoc />
@@ -237,10 +240,7 @@ namespace RESTar
             }
 
             if (input == " ")
-            {
-                SafeOperation(GET);
-                return;
-            }
+                input = "GET";
 
             switch (input.FirstOrDefault())
             {
@@ -254,7 +254,7 @@ namespace RESTar
                 case '{':
                     SafeOperation(POST, input.ToBytes());
                     break;
-                case var _ when input.Length > 16_000_000:
+                case var _ when input.Length > MaxInputSize:
                     SendBadRequest();
                     break;
                 default:
@@ -542,7 +542,7 @@ namespace RESTar
                         );
                         break;
                     }
-                    if (content.Body.Length > 16_000_000)
+                    if (content.Body.Length > MaxResultSize)
                     {
                         OnConfirm = () => StreamResult(content, sw.Elapsed);
                         SendConfirmationRequest("426: The result body is too large to be sent in a single WebSocket message. " +
