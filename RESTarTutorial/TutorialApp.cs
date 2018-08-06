@@ -28,7 +28,7 @@ namespace RESTarTutorial
                 uri: "/api",
                 requireApiKey: true,
                 configFilePath: projectFolder + "/Config.xml",
-                entityResourceProviders: new[] {new SQLiteProvider(projectFolder, "data")},
+                entityResourceProviders: new[] {new SQLiteProvider($"{projectFolder}\\data.sqlite")},
                 protocolProviders: new[] {new ODataProtocolProvider()}
             );
 
