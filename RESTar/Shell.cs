@@ -30,7 +30,7 @@ namespace RESTar
 
         private const int MaxStreamBufferSize = 16_000_000;
         private const int MinStreamBufferSize = 512;
-        private const int MaxResultSize = 100;
+        private const int ResultStreamThreshold = 16_000_000;
         private const int MaxInputSize = 16_000_000;
 
         private string query;
@@ -542,7 +542,7 @@ namespace RESTar
                         );
                         break;
                     }
-                    if (content.Body.Length > MaxResultSize)
+                    if (content.Body.Length > ResultStreamThreshold)
                     {
                         OnConfirm = () => StreamResult(content, sw.Elapsed);
                         SendConfirmationRequest("426: The result body is too large to be sent in a single WebSocket message. " +

@@ -362,24 +362,21 @@ namespace RESTar.Resources
             Profiler<TResource> profiler = null,
             Authenticator<TResource> authenticator = null,
             Validator<TResource> validator = null
-        ) where TResource : class, TBase
-        {
-            return new Meta.Internal.EntityResource<TResource>
-            (
-                fullName: fullName ?? typeof(TResource).RESTarTypeName(),
-                attribute: attribute ?? typeof(TResource).GetCustomAttribute<RESTarAttribute>(),
-                selector: selector ?? GetDelegate<Selector<TResource>>(typeof(TResource)) ?? DefaultSelect,
-                inserter: inserter ?? GetDelegate<Inserter<TResource>>(typeof(TResource)) ?? DefaultInsert,
-                updater: updater ?? GetDelegate<Updater<TResource>>(typeof(TResource)) ?? DefaultUpdate,
-                deleter: deleter ?? GetDelegate<Deleter<TResource>>(typeof(TResource)) ?? DefaultDelete,
-                counter: counter ?? GetDelegate<Counter<TResource>>(typeof(TResource)) ?? DefaultCount,
-                profiler: profiler ?? DefaultProfile,
-                authenticator: authenticator ?? GetDelegate<Authenticator<TResource>>(typeof(TResource)),
-                validator: validator ?? GetDelegate<Validator<TResource>>(typeof(TResource)),
-                views: GetViews<TResource>(),
-                provider: this
-            );
-        }
+        ) where TResource : class, TBase => new Meta.Internal.EntityResource<TResource>
+        (
+            fullName: fullName ?? typeof(TResource).RESTarTypeName(),
+            attribute: attribute ?? typeof(TResource).GetCustomAttribute<RESTarAttribute>(),
+            selector: selector ?? GetDelegate<Selector<TResource>>(typeof(TResource)) ?? DefaultSelect,
+            inserter: inserter ?? GetDelegate<Inserter<TResource>>(typeof(TResource)) ?? DefaultInsert,
+            updater: updater ?? GetDelegate<Updater<TResource>>(typeof(TResource)) ?? DefaultUpdate,
+            deleter: deleter ?? GetDelegate<Deleter<TResource>>(typeof(TResource)) ?? DefaultDelete,
+            counter: counter ?? GetDelegate<Counter<TResource>>(typeof(TResource)) ?? DefaultCount,
+            profiler: profiler ?? DefaultProfile,
+            authenticator: authenticator ?? GetDelegate<Authenticator<TResource>>(typeof(TResource)),
+            validator: validator ?? GetDelegate<Validator<TResource>>(typeof(TResource)),
+            views: GetViews<TResource>(),
+            provider: this
+        );
 
         private IEntityResource<TWrapped> _InsertWrapperResource<TWrapper, TWrapped>(
             string fullName = null,
