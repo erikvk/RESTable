@@ -82,8 +82,11 @@ namespace RESTar.Requests
         bool IHeadersInternal.ContainsCustomHeaderName(string name) => ContainsKey(name);
         bool IHeadersInternal.RemoveCustomHeader(string name) => Remove(name);
 
-        bool IHeadersInternal.RemoveCustomHeader(KeyValuePair<string, string> header) =>
-            Remove(new KeyValuePair<string, object>(header.Key, header.Value));
+        bool IHeadersInternal.RemoveCustomHeader(KeyValuePair<string, string> header)
+        {
+            ICollection<KeyValuePair<string, object>> collection = this;
+            return collection.Remove(new KeyValuePair<string, object>(header.Key, header.Value));
+        }
 
         IEnumerable<KeyValuePair<string, string>> IHeadersInternal.GetCustomHeaders() => _GetCustomHeaders();
 

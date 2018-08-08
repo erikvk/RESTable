@@ -32,14 +32,16 @@ namespace RESTarTutorial
                 protocolProviders: new[] {new ODataProtocolProvider()}
             );
 
-            // The 'port' argument sets the HTTP port on which to register the REST handlers
-            // The 'uri' argument sets the root uri of the REST API
-            // The 'requireApiKey' parameter is set to 'true'. API keys are required in all incoming requests.
-            // The 'configFilePath' points towards the configuration file, which contains API keys. In this case,
-            //   this file is located in the project folder.
-            // The 'resourceProviders' parameter is used for SQLite integration (see the ExampleDatabase class below)
+            IEnumerable<Superhero> CreateEvents(IEnumerable<Superhero> heroes)
+            {
+                foreach (var hero in heroes)
+                {
+                    new SuperheroCreated(hero);
+                    yield return hero;
+                }
+            }
 
-            // ExampleDatabase.Setup();
+            Events.EntityResource<Superhero>.PostInsert += CreateEvents;
         }
     }
 
@@ -84,6 +86,12 @@ namespace RESTarTutorial
                 }
             };
         }
+    }
+
+    [RESTar]
+    public class SuperheroCreated : Event<Superhero>
+    {
+        public SuperheroCreated(Superhero payload) : base(payload) => Raise();
     }
 
     #region Demo database

@@ -39,7 +39,17 @@ namespace RESTar.Requests
         public IResource<T> Resource { get; }
         public IEntityResource<T> EntityResource => Resource as IEntityResource<T>;
         IResource IRequest.Resource => Resource;
-        public Method Method { get; set; }
+        private Method method;
+
+        public Method Method
+        {
+            get => method;
+            set
+            {
+                if (IsEvaluating) return;
+                method = value;
+            }
+        }
 
         public TData GetClientData<TData>(string key)
         {

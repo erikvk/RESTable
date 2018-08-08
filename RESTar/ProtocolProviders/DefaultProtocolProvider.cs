@@ -174,18 +174,20 @@ namespace RESTar.ProtocolProviders
         private static string ToUriString(IUriCondition condition)
         {
             if (condition == null) return "";
-            var valueLiteral = WebUtility.UrlEncode(condition.ValueLiteral);
+            var _valueLiteral = condition.ValueLiteral;
+            var valueLiteral = _valueLiteral == null ? "null" : WebUtility.UrlEncode(_valueLiteral);
             if (condition.ValueTypeCode == TypeCode.String)
             {
                 switch (valueLiteral)
                 {
+                    case null: break;
                     case "false":
                     case "False":
                     case "FALSE":
                     case "true":
                     case "True":
                     case "TRUE":
-                    case var _ when valueLiteral?.All(char.IsDigit) == true:
+                    case var _ when valueLiteral.All(char.IsDigit):
                         valueLiteral = $"'{valueLiteral}'";
                         break;
                 }
