@@ -10,7 +10,7 @@ namespace RESTar.Results
     /// <inheritdoc cref="ISerializedResult" />
     /// <inheritdoc cref="IResult" />
     /// <summary>
-    /// The result of a RESTar request operation
+    /// The successful result of a RESTar request operation
     /// </summary>
     public abstract class RequestSuccess : Success
     {
