@@ -135,17 +135,17 @@ namespace RESTarTester
                     },
                     new Webhook
                     {
-                        Destination = "http://localhost:8080/wrStream",
+                        Destination = "http://localhost:8202/wrStream",
                         EventSelector = $"/{typeof(EStream).FullName}"
                     },
                     new Webhook
                     {
-                        Destination = "http://localhost:8080/wrBytes",
+                        Destination = "http://localhost:8202/wrBytes",
                         EventSelector = $"/{typeof(EBytes).FullName}"
                     },
                     new Webhook
                     {
-                        Destination = "http://localhost:8080/wrString",
+                        Destination = "http://localhost:8202/wrString",
                         EventSelector = $"/{typeof(EString).FullName}"
                     },
                     new Webhook
