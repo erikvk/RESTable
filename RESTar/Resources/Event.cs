@@ -59,6 +59,7 @@ namespace RESTar.Resources
                             "payload was used, but the 'contentType' parameter was null");
                     HasBinaryPayload = true;
                     break;
+                case null: throw new ArgumentNullException(nameof(payload), "Event payload cannot be null");
             }
             Payload = payload;
             ContentType = contentType;

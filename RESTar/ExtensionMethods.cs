@@ -720,7 +720,7 @@ namespace RESTar
             {
                 case true when !stream.CanSeek: return stream;
                 case null:
-                case false:
+                case false: 
                 case true when stream.Length == 0:
                     stream?.Dispose();
                     return null;
