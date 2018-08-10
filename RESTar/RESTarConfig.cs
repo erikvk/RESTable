@@ -242,8 +242,8 @@ namespace RESTar
             {
                 var newMacro = new Macro(macro.Name)
                 {
-                    Uri = macro.UriString,
-                    Body = macro.HasBody ? JToken.Parse(macro.BodyUTF8) : null,
+                    Uri = macro.SafeSelect(m => m.UriString) ?? Macro.GetErrorURI(macro.Name, "not available", "Invalid URI syntax"),
+                    Body = macro.SafeSelect(m => m.HasBody ? JToken.Parse(m.BodyUTF8) : null),
                     OverwriteBody = macro.OverwriteBody,
                     OverwriteHeaders = macro.OverwriteHeaders
                 };

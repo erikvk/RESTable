@@ -93,6 +93,17 @@ namespace RESTar.Admin
 
         internal bool CheckIfValid() => IsValid(this, out _);
 
+        internal static string GetErrorURI(string macroName, string invalidUri, string invalidReason)
+        {
+            var info = $"The URI of RESTar macro '{macroName}' is no longer valid, and has been replaced to protect " +
+                       $"against unsafe behavior. Please update the '{nameof(Uri)}' property to a valid RESTar URI to " +
+                       "repair the macro.";
+            return $"/{Resource<Echo>.ResourceSpecifier}/" +
+                   $"Info={WebUtility.UrlEncode(info)}&" +
+                   $"InvalidUri={WebUtility.UrlEncode(invalidUri)}&" +
+                   $"InvalidReason={WebUtility.UrlEncode(invalidReason)}";
+        }
+
         /// <inheritdoc />
         /// <summary>
         /// Validates the macro
@@ -119,13 +130,7 @@ namespace RESTar.Admin
             {
                 if (!macro.UriChanged)
                 {
-                    var info = $"The URI of RESTar macro '{macro.Name}' is no longer valid, and has been replaced to protect " +
-                               $"against unsafe behavior. Please update the '{nameof(Uri)}' property to a valid RESTar URI to " +
-                               "repair the macro.";
-                    macro.Uri = $"/{Resource<Echo>.ResourceSpecifier}/" +
-                                $"Info={WebUtility.UrlEncode(info)}&" +
-                                $"InvalidUri={WebUtility.UrlEncode(macro.Uri)}&" +
-                                $"InvalidReason={WebUtility.UrlEncode(error.Headers.Info)}";
+                    macro.Uri = GetErrorURI(macro.Name, macro.Uri, error.Headers.Info);
                     invalidReason = null;
                     return true;
                 }
