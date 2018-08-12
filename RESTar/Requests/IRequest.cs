@@ -89,6 +89,11 @@ namespace RESTar.Requests
         /// separate client data set, that is not available from other resuorces.
         /// </summary>
         void SetClientData<TData>(string key, TData value);
+
+        /// <summary>
+        /// Sets the conditions of the request to the given collection of conditions, and returns the request
+        /// </summary>
+        IRequest<T> WithConditions(IEnumerable<Condition<T>> conditions);
     }
 
     /// <inheritdoc cref="ITraceable" />

@@ -2,6 +2,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Net;
 using RESTar.Admin;
 using RESTar.Internal;
@@ -79,6 +80,12 @@ namespace RESTar.Requests
         {
             get => _metaConditions ?? (_metaConditions = new MetaConditions());
             set => _metaConditions = value;
+        }
+
+        public IRequest<T> WithConditions(IEnumerable<Condition<T>> conditions)
+        {
+            Conditions = conditions?.ToList();
+            return this;
         }
 
         private Func<Body> BodyFunc { get; set; }

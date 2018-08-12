@@ -109,6 +109,22 @@ namespace RESTar.Requests
             value: Value
         );
 
+        /// <inheritdoc />
+        [Pure]
+        public bool TryRedirect<T1>(out Condition<T1> condition, string newKey = null) where T1 : class
+        {
+            try
+            {
+                condition = Redirect<T1>(newKey);
+                return true;
+            }
+            catch
+            {
+                condition = null;
+                return false;
+            }
+        }
+
         /// <summary>
         /// Creates a new condition for the resource type T using a key, operator and value
         /// </summary>

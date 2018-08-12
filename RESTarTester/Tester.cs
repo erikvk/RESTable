@@ -728,8 +728,24 @@ namespace RESTarTester
 
 
             var internalRequest9 = Context.Root.CreateRequest<Resource1>();
-            var entities = internalRequest9.EvaluateToEntities();
-            Debug.Assert(entities is IEntities<Resource1> rement1 && rement1.Count() > 1 && entities is IEnumerable<Resource1>);
+            var entities9 = internalRequest9.EvaluateToEntities();
+            Debug.Assert(entities9 is IEntities<Resource1> rement1 && rement1.Count() > 1 && entities9 is IEnumerable<Resource1>);
+
+            var resource2Conditions = new Condition<Resource2>[]
+            {
+                new Condition<Resource2>(nameof(Resource2.Bool), EQUALS, false),
+                new Condition<Resource2>(nameof(Resource2.Enum), EQUALS, MyEnum.D),
+                new Condition<Resource2>(nameof(Resource2.BBool), EQUALS, false),
+                new Condition<Resource2>(nameof(Resource2.Long), NOT_EQUALS, 42123),
+            };
+            var internalRequest10 = Context.Root
+                .CreateRequest<Resource1>()
+                .WithConditions(resource2Conditions.Redirect<Resource1>(
+                    (direct: "BBool", to: "ABool"),
+                    (direct: "Long", to: "Foobooasd")
+                ));
+            var entities10 = internalRequest10.EvaluateToEntities();
+            Debug.Assert(entities9 is IEntities<Resource1> _rement1 && _rement1.Count() > 1 && entities10 is IEnumerable<Resource1>);
 
             #endregion
 
@@ -813,7 +829,7 @@ namespace RESTarTester
                 Debug.Assert(wrstringcalled);
                 Debug.Assert(customraised);
             }).Wait();
-            
+
             #endregion
 
             var done = true;
@@ -1078,6 +1094,7 @@ namespace RESTarTester
         public bool Bool;
         public DateTime DateTime;
         public MyDict MyDict;
+        public bool ABool;
     }
 
     [Database, RESTar]
@@ -1102,6 +1119,7 @@ namespace RESTarTester
         public string String;
         public bool? Bool;
         public DateTime? DateTime;
+        public bool BBool;
     }
 
     [Database, RESTar]

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Linq;
 using RESTar.Meta;
@@ -64,7 +65,7 @@ namespace RESTar.Linq
         /// <param name="value">The value of the new condition</param>
         public static void Add<T>(this List<Condition<T>> conds, string key, Operators op, object value) where T : class
         {
-                conds.Add(new Condition<T>(key, op, value));
+            conds.Add(new Condition<T>(key, op, value));
         }
 
         /// <summary>
@@ -99,12 +100,9 @@ namespace RESTar.Linq
         /// <typeparam name="T">The new type to target</typeparam>
         /// <returns></returns>
         [Pure]
-        public static IEnumerable<Condition<T>> Redirect<T>(this IEnumerable<ICondition> conds, string direct, string to) where T : class
+        public static IEnumerable<Condition<T>> Redirect<T>(this IEnumerable<ICondition> conditions, string direct, string to) where T : class
         {
-            var props = typeof(T).GetDeclaredProperties();
-            return conds
-                .Where(cond => cond.Term.IsDynamic || props.ContainsKey(cond.Term.First.Name))
-                .Select(cond => direct.EqualsNoCase(cond.Key) ? cond.Redirect<T>(to) : cond.Redirect<T>());
+            return Redirect<T>(conditions, (direct, to));
         }
 
         /// <summary>
@@ -113,19 +111,29 @@ namespace RESTar.Linq
         /// <typeparam name="T">The new type to target</typeparam>
         /// <returns></returns>
         [Pure]
-        public static IEnumerable<Condition<T>> Redirect<T>(this IEnumerable<ICondition> conds, params (string direct, string to)[] newKeyAssignments)
+        public static IEnumerable<Condition<T>> Redirect<T>(this IEnumerable<ICondition> conditions, params (string direct, string to)[] newKeyNames)
             where T : class
         {
             var props = typeof(T).GetDeclaredProperties();
-            return conds
-                .Where(cond => cond.Term.IsDynamic || props.ContainsKey(cond.Term.First.Name))
-                .Select(cond =>
+            var newKeyNamesDict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            if (newKeyNames == null)
+                throw new ArgumentNullException(nameof(newKeyNames));
+            foreach (var (direct, to) in newKeyNames)
+                newKeyNamesDict[direct ?? throw new ArgumentNullException()] = to ?? throw new ArgumentNullException();
+            foreach (var condition in conditions)
+            {
+                if (!condition.Term.IsDynamic)
                 {
-                    foreach (var (direct, to) in newKeyAssignments)
-                        if (direct.EqualsNoCase(cond.Key))
-                            return cond.Redirect<T>(to);
-                    return cond.Redirect<T>();
-                });
+                    Condition<T> redirected;
+                    if (newKeyNamesDict.TryGetValue(condition.Key, out var @new))
+                    {
+                        if (condition.TryRedirect(out redirected, @new))
+                            yield return redirected;
+                    }
+                    else if (props.ContainsKey(condition.Term.First.Name) && condition.TryRedirect(out redirected))
+                        yield return redirected;
+                }
+            }
         }
     }
 }
