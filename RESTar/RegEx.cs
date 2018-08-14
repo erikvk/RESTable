@@ -18,7 +18,7 @@
         /// <summary>
         /// The main URI regex, used when parsing requests
         /// </summary>
-        internal const string RESTarRequestUri = @"^\??((?<res>/[^/-]*)|((?<res>/[^/-]*)(?<view>-\w*)))?(?<cond>/[^/]*)?(?<meta>/[^/]*)?/?$";
+        internal const string RESTarRequestUri = @"^(?<ignore>\?[^/]*)?((?<res>/[^/-]*)|((?<res>/[^/-]*)(?<view>-\w*)))?(?<cond>/[^/]*)?(?<meta>/[^/]*)?/?$";
 
         /// <summary>
         /// The main URI regex, used when parsing requests
