@@ -17,7 +17,7 @@ namespace RESTar.ContentTypeProviders.NativeJsonProtocol
     {
         private static readonly JsonConverter DDictionaryConverter;
         private static readonly JsonConverter StringEnumConverter;
-        private static readonly TypeConverter TypeConverter;
+        private static readonly JsonConverter TypeConverter;
 
         static DefaultResolver()
         {
@@ -63,6 +63,13 @@ namespace RESTar.ContentTypeProviders.NativeJsonProtocol
                     if (property == null || property.Hidden)
                         return null;
                     var p = base.CreateProperty(propertyInfo, memberSerialization);
+                    if (property.IsDateTime)
+                    {
+                        var format = property.CustomDateTimeFormat ?? "O";
+                        if (!DateTimeConverter.Converters.TryGetValue(format, out var converter))
+                            converter = DateTimeConverter.Converters[format] = new DateTimeConverter(format);
+                        p.Converter = converter;
+                    }
                     p.Writable = property.Writable;
                     p.NullValueHandling = property.HiddenIfNull ? NullValueHandling.Ignore : NullValueHandling.Include;
                     p.ObjectCreationHandling = property.ReplaceOnUpdate ? ObjectCreationHandling.Replace : ObjectCreationHandling.Auto;

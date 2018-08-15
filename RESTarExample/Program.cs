@@ -122,6 +122,45 @@ namespace RESTarExample
     //    internal R2(int i) : base(i) { }
     //}
 
+    [RESTar(Method.GET, Singleton = true, Description = description)]
+    public class MonthlySpendingReport : ISelector<MonthlySpendingReport>
+    {
+        private const string description = "Provides an aggregated view of the spending for a given month.";
+
+        /// <summary>
+        /// The month for which this report was created
+        /// </summary>
+        [RESTarMember(customDateTimeFormat: "yyyy-MM")]
+        public DateTime Month { get; set; }
+
+        /// <summary>
+        /// The number of wins during the defined month
+        /// </summary>
+        public int NrOfWins { get; set; }
+
+        /// <inheritdoc />
+        public IEnumerable<MonthlySpendingReport> Select(IRequest<MonthlySpendingReport> request)
+        {
+            DateTime date;
+            try
+            {
+                date = request.Conditions.Get("month", Operators.EQUALS)?.Value;
+            }
+            catch
+            {
+                throw new Exception("Invalid input date");
+            }
+            return new[]
+            {
+                new MonthlySpendingReport
+                {
+                    Month = date,
+                    NrOfWins = 123
+                }
+            };
+        }
+    }
+
 
     [RESTar]
     public class MyBinaryResource : IBinary<MyBinaryResource>

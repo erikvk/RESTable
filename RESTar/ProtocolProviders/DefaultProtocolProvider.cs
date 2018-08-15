@@ -131,7 +131,8 @@ namespace RESTar.ProtocolProviders
             (
                 key: WebUtility.UrlDecode(key),
                 op: @operator.OpCode,
-                valueLiteral: WebUtility.UrlDecode(valueLiteral)
+                valueLiteral: WebUtility.UrlDecode(valueLiteral),
+                valueTypeCode: TypeCode.String
             );
         }
 
@@ -171,28 +172,39 @@ namespace RESTar.ProtocolProviders
             return uriString;
         }
 
+        private static string ToUriValueString(IUriCondition condition)
+        {
+            var valueLiteral = condition.ValueLiteral;
+            switch (condition.ValueTypeCode)
+            {
+                case TypeCode.Empty: return "null";
+                case TypeCode.Char:
+                case TypeCode.String:
+                    var encoded = WebUtility.UrlEncode(valueLiteral);
+                    switch (encoded)
+                    {
+                        case null: return "null";
+                        case "false":
+                        case "False":
+                        case "FALSE":
+                        case "true":
+                        case "True":
+                        case "TRUE":
+                        case var _ when encoded.All(char.IsDigit):
+                            return $"'{encoded}'";
+                        default: return encoded;
+                    }
+                default: return valueLiteral;
+            }
+        }
+
         private static string ToUriString(IUriCondition condition)
         {
             if (condition == null) return "";
-            var _valueLiteral = condition.ValueLiteral;
-            var valueLiteral = _valueLiteral == null ? "null" : WebUtility.UrlEncode(_valueLiteral);
-            if (condition.ValueTypeCode == TypeCode.String)
-            {
-                switch (valueLiteral)
-                {
-                    case null: break;
-                    case "false":
-                    case "False":
-                    case "FALSE":
-                    case "true":
-                    case "True":
-                    case "TRUE":
-                    case var _ when valueLiteral.All(char.IsDigit):
-                        valueLiteral = $"'{valueLiteral}'";
-                        break;
-                }
-            }
-            return $"{WebUtility.UrlEncode(condition.Key)}{((Operator) condition.Operator).Common}{valueLiteral}";
+            var key = WebUtility.UrlEncode(condition.Key);
+            var op = ((Operator) condition.Operator).Common;
+            var value = ToUriValueString(condition);
+            return $"{key}{op}{value}";
         }
 
         /// <inheritdoc />

@@ -1,6 +1,4 @@
-﻿using RESTar.Internal;
-
-namespace RESTar.Resources
+﻿namespace RESTar.Resources
 {
     /// <inheritdoc />
     /// <summary>

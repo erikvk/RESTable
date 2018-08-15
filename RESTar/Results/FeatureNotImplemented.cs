@@ -1,5 +1,4 @@
 ﻿using System.Net;
-using RESTar.Internal;
 
 namespace RESTar.Results
 {

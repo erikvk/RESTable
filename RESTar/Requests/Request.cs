@@ -9,7 +9,7 @@ using RESTar.Internal;
 using RESTar.Internal.Auth;
 using RESTar.Internal.Logging;
 using static RESTar.Method;
-using static RESTar.Internal.ErrorCodes;
+using static RESTar.ErrorCodes;
 using RESTar.Linq;
 using RESTar.Meta;
 using RESTar.Meta.Internal;

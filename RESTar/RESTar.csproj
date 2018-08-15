@@ -107,6 +107,7 @@
     <Compile Include="Admin\Console.cs" />
     <Compile Include="Admin\DbMacro.cs" />
     <Compile Include="Blank.cs" />
+    <Compile Include="ContentTypeProviders\DateTimeConverter.cs" />
     <Compile Include="ContentTypeProviders\ExcelProvider.cs" />
     <Compile Include="ContentTypeProviders\ExcelFormatException.cs" />
     <Compile Include="ContentTypeProviders\ExcelInputException.cs" />
@@ -119,9 +120,12 @@
     <Compile Include="Meta\IEventResource.cs" />
     <Compile Include="Meta\Internal\EventResource.cs" />
     <Compile Include="Meta\Internal\EventResourceProvider.cs" />
+    <Compile Include="Meta\IEvent.cs" />
     <Compile Include="Requests\DbHeaders.cs" />
     <Compile Include="Requests\HeadersEnumerator.cs" />
+    <Compile Include="Requests\HeadersExtensions.cs" />
     <Compile Include="Requests\IHeaders.cs" />
+    <Compile Include="Requests\IHeadersInternal.cs" />
     <Compile Include="Resources\Event.cs" />
     <Compile Include="Meta\Internal\IEventInternal.cs" />
     <Compile Include="Resources\Events.cs" />
@@ -168,7 +172,7 @@
     <Compile Include="Internal\InternalContext.cs" />
     <Compile Include="Internal\CachedProtocolProvider.cs" />
     <Compile Include="Internal\ContentTypeController.cs" />
-    <Compile Include="Requests\RemoteResource.cs" />
+    <Compile Include="Meta\Internal\RemoteResource.cs" />
     <Compile Include="Meta\Internal\IBinaryResource.cs" />
     <Compile Include="Meta\ITerminalResource.cs" />
     <Compile Include="Meta\IView.cs" />
@@ -293,7 +297,7 @@
     <Compile Include="Linq\Enumerable.cs" />
     <Compile Include="Requests\Processors\IProcessor.cs" />
     <Compile Include="Requests\RequestParameters.cs" />
-    <Compile Include="Internal\ErrorCodes.cs" />
+    <Compile Include="ErrorCodes.cs" />
     <Compile Include="Requests\Operators.cs" />
     <Compile Include="Requests\Client.cs" />
     <Compile Include="Meta\EntityResource.cs" />

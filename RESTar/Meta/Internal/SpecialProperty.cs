@@ -45,6 +45,7 @@ namespace RESTar.Meta.Internal
             hiddenIfNull: hiddenIfNull,
             isEnum: false,
             allowedConditionOperators: Operators.All,
+            customDateTimeFormat: null,
             getter: getter,
             setter: null
         ) { }

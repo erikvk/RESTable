@@ -15,10 +15,11 @@ namespace RESTar.Requests
     /// <inheritdoc cref="ILogable" />
     /// <inheritdoc cref="ITraceable" />
     /// <summary>
-    /// A class that defines the parameters of a call to a RESTar API. APICall is a unified 
-    /// way to talk about the input to request evaluation, regardless of protocol and web technologies.
+    /// A class that defines the parameters of a call to a RESTar API. A unified 
+    /// way to talk about the input to request evaluation, regardless of protocol
+    /// and web technologies.
     /// </summary>
-    public class RequestParameters : ILogable, ITraceable
+    internal class RequestParameters : ILogable, ITraceable
     {
         /// <inheritdoc />
         public string TraceId { get; }

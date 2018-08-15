@@ -15,7 +15,7 @@ namespace RESTar
         /// <summary>
         /// The URL to the RESTar documentation
         /// </summary>
-        public const string DocumentationUrl = "https://github.com/Mopedo/Home/tree/master/RESTar/Consuming%20a%20RESTar%20API";
+        public const string DocumentationUrl = "https://develop.mopedo.com/RESTar";
 
         /// <summary>
         /// The property holding the documentation URL

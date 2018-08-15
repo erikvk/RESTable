@@ -57,6 +57,16 @@ namespace RESTar.Meta
         public bool ReplaceOnUpdate { get; }
 
         /// <summary>
+        /// Does this declared property represent a datetime?
+        /// </summary>
+        public bool IsDateTime { get; }
+
+        /// <summary>
+        /// The custom datetime format string of this property (if any)
+        /// </summary>
+        public string CustomDateTimeFormat { get; }
+
+        /// <summary>
         /// The attributes that this property has been decorated with
         /// </summary>  
         private ICollection<Attribute> Attributes { get; }
@@ -84,7 +94,7 @@ namespace RESTar.Meta
         /// Used in SpecialProperty
         /// </summary>
         internal DeclaredProperty(int metadataToken, string name, string actualName, Type type, int? order, bool scQueryable,
-            ICollection<Attribute> attributes, bool skipConditions, bool hidden, bool hiddenIfNull, bool isEnum, Operators allowedConditionOperators,
+            ICollection<Attribute> attributes, bool skipConditions, bool hidden, bool hiddenIfNull, bool isEnum, string customDateTimeFormat, Operators allowedConditionOperators,
             Getter getter, Setter setter)
         {
             MetadataToken = metadataToken;
@@ -100,6 +110,8 @@ namespace RESTar.Meta
             IsEnum = isEnum;
             AllowedConditionOperators = allowedConditionOperators;
             Nullable = !type.IsValueType || type.IsNullable(out _) || hidden;
+            CustomDateTimeFormat = customDateTimeFormat;
+            IsDateTime = type == typeof(DateTime) || type == typeof(DateTime?);
             Getter = getter;
             Setter = setter;
         }
@@ -117,6 +129,7 @@ namespace RESTar.Meta
             Attributes = p.GetCustomAttributes().ToList();
             var memberAttribute = GetAttribute<RESTarMemberAttribute>();
             var jsonAttribute = GetAttribute<JsonPropertyAttribute>();
+            CustomDateTimeFormat = memberAttribute?.CustomDateTimeFormat;
             Order = memberAttribute?.Order ?? jsonAttribute?.Order;
             ScQueryable = p.DeclaringType?.HasAttribute<DatabaseAttribute>() == true && p.PropertyType.IsStarcounterCompatible();
             SkipConditions = memberAttribute?.SkipConditions == true || p.DeclaringType.HasAttribute<RESTarViewAttribute>();
@@ -125,6 +138,7 @@ namespace RESTar.Meta
             AllowedConditionOperators = memberAttribute?.AllowedOperators ?? Operators.All;
             Nullable = !p.PropertyType.IsValueType || p.PropertyType.IsNullable(out _) || Hidden;
             IsEnum = p.PropertyType.IsEnum;
+            IsDateTime = p.PropertyType == typeof(DateTime) || p.PropertyType == typeof(DateTime?);
             if (memberAttribute?.ExcelReducerName != null)
                 ExcelReducer = MakeExcelReducer(memberAttribute.ExcelReducerName, p);
             Getter = p.MakeDynamicGetter();

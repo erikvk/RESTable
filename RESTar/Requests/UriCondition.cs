@@ -9,7 +9,7 @@ namespace RESTar.Requests
     /// <summary>
     /// Describes the syntactic components of a RESTar uri condition
     /// </summary>
-    public struct UriCondition : IUriCondition
+    internal struct UriCondition : IUriCondition
     {
         /// <inheritdoc />
         public string Key { get; }
@@ -32,7 +32,7 @@ namespace RESTar.Requests
         /// <summary>
         /// Creates a new custom UriCondition
         /// </summary>
-        public UriCondition(string key, Operators op, string valueLiteral, TypeCode valueTypeCode = TypeCode.Empty)
+        public UriCondition(string key, Operators op, string valueLiteral, TypeCode valueTypeCode)
         {
             Key = key;
             Operator = op;

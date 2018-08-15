@@ -32,8 +32,8 @@ using Starcounter;
 using static System.Globalization.DateTimeStyles;
 using static System.Reflection.BindingFlags;
 using static System.StringComparison;
+using static RESTar.ErrorCodes;
 using static RESTar.Internal.ContentTypeController;
-using static RESTar.Internal.ErrorCodes;
 using static RESTar.Requests.Operators;
 using static Starcounter.DbHelper;
 using Operator = RESTar.Internal.Operator;
@@ -720,7 +720,7 @@ namespace RESTar
             {
                 case true when !stream.CanSeek: return stream;
                 case null:
-                case false: 
+                case false:
                 case true when stream.Length == 0:
                     stream?.Dispose();
                     return null;
@@ -736,11 +736,11 @@ namespace RESTar
             if (count > -1)
             {
                 components.MetaConditions.RemoveAll(c => c.Key.EqualsNoCase("limit"));
-                components.MetaConditions.Add(new UriCondition("limit", EQUALS, count.ToString()));
+                components.MetaConditions.Add(new UriCondition("limit", EQUALS, count.ToString(), TypeCode.Int32));
             }
             components.MetaConditions.RemoveAll(c => c.Key.EqualsNoCase("offset"));
             components.MetaConditions.Add(new UriCondition("offset", EQUALS,
-                (entities.Request.MetaConditions.Offset + (long) entities.EntityCount).ToString()));
+                (entities.Request.MetaConditions.Offset + (long) entities.EntityCount).ToString(), TypeCode.Int32));
             return components;
         }
 
@@ -784,6 +784,12 @@ namespace RESTar
             {
                 try
                 {
+                    if (property.IsDateTime)
+                    {
+                        if (TryParseUniversalDateTime(valueLiteral, out var result))
+                            return result;
+                        throw new Exception();
+                    }
                     return Convert.ChangeType(valueLiteral, property.Type.IsNullable(out var t) ? t : property.Type);
                 }
                 catch
@@ -807,12 +813,24 @@ namespace RESTar
                     return i;
                 if (decimal.TryParse(valueLiteral, out var d))
                     return d;
-                if (DateTime.TryParseExact(valueLiteral, "yyyy-MM-dd", null, AssumeUniversal, out var dat) ||
-                    DateTime.TryParseExact(valueLiteral, "yyyy-MM-ddTHH:mm:ss", null, AssumeUniversal, out dat) ||
-                    DateTime.TryParseExact(valueLiteral, "O", null, AssumeUniversal, out dat))
+                if (TryParseUniversalDateTime(valueLiteral, out var dat))
                     return dat;
             }
             return valueLiteral;
+        }
+
+        private static bool TryParseUniversalDateTime(string valueLiteral, out DateTime result)
+        {
+            if (DateTime.TryParseExact(valueLiteral, "yyyy-MM", null, AssumeUniversal, out var dat) ||
+                DateTime.TryParseExact(valueLiteral, "yyyy-MM-dd", null, AssumeUniversal, out dat) ||
+                DateTime.TryParseExact(valueLiteral, "yyyy-MM-ddTHH:mm:ss", null, AssumeUniversal, out dat) ||
+                DateTime.TryParseExact(valueLiteral, "O", null, AssumeUniversal, out dat))
+            {
+                result = dat.ToUniversalTime();
+                return true;
+            }
+            result = default;
+            return false;
         }
 
         /// <summary>

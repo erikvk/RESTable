@@ -1,6 +1,5 @@
 ﻿using System;
 using Newtonsoft.Json;
-using RESTar.Internal;
 using RESTar.Requests;
 
 namespace RESTar.Results

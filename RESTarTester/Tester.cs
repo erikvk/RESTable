@@ -15,7 +15,7 @@ using Newtonsoft.Json.Linq;
 using RESTar;
 using RESTar.Admin;
 using RESTar.Linq;
-using RESTar.Meta.Internal;
+using RESTar.Meta;
 using RESTar.Requests;
 using RESTar.Resources;
 using RESTar.Resources.Operations;

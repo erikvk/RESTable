@@ -10,6 +10,7 @@ using RESTar.Internal;
 using RESTar.Internal.Logging;
 using RESTar.Linq;
 using RESTar.Meta;
+using RESTar.Meta.Internal;
 using RESTar.Results;
 
 namespace RESTar.Requests

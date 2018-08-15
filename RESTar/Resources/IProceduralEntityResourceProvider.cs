@@ -3,5 +3,8 @@
     /// <summary>
     /// Marks 
     /// </summary>
-    public interface IProceduralEntityResourceProvider { }
+    public interface IProceduralEntityResourceProvider
+    {
+
+    }
 }

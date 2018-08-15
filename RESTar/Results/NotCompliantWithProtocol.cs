@@ -1,5 +1,4 @@
-﻿using RESTar.Internal;
-using RESTar.ProtocolProviders;
+﻿using RESTar.ProtocolProviders;
 
 namespace RESTar.Results
 {

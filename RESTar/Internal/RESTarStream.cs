@@ -137,7 +137,7 @@ namespace RESTar.Internal
         public override bool CanWrite => Stream.CanWrite;
 
         /// <inheritdoc />
-        public override long Length => Stream.Length;
+        public override long Length => Stream.CanSeek ? Stream.Length : -1;
 
         /// <inheritdoc />
         public override long Position
@@ -146,10 +146,11 @@ namespace RESTar.Internal
             set => Stream.Position = value;
         }
 
-        public void Deconstruct(out RESTarStream stream, out ContentType contentType)
+        public void Deconstruct(out RESTarStream stream, out ContentType contentType, out long contentLength)
         {
             stream = this;
             contentType = ContentType;
+            contentLength = CanSeek ? Length : -1;
         }
 
         /// <inheritdoc />

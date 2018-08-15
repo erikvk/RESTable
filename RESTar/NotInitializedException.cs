@@ -1,5 +1,4 @@
 ﻿using System;
-using RESTar.Internal;
 
 namespace RESTar
 {

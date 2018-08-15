@@ -1,11 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using RESTar.Admin;
-using RESTar.Meta;
-using RESTar.Meta.Internal;
 using RESTar.Resources;
 
-namespace RESTar.Requests
+namespace RESTar.Meta.Internal
 {
     internal class RemoteResource : IEntityResource, IResourceInternal
     {

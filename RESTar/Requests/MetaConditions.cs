@@ -7,7 +7,7 @@ using RESTar.Meta;
 using RESTar.Requests.Filters;
 using RESTar.Requests.Processors;
 using RESTar.Results;
-using static RESTar.Internal.ErrorCodes;
+using static RESTar.ErrorCodes;
 using static RESTar.Requests.Operators;
 
 #pragma warning disable 612
@@ -274,30 +274,30 @@ namespace RESTar.Requests
         {
             var list = new List<IUriCondition>();
             if (Unsafe)
-                list.Add(new UriCondition("unsafe", EQUALS, "true"));
+                list.Add(new UriCondition("unsafe", EQUALS, "true", TypeCode.Boolean));
             if (Limit.Number > -1)
-                list.Add(new UriCondition("limit", EQUALS, Limit.Number.ToString()));
+                list.Add(new UriCondition("limit", EQUALS, Limit.Number.ToString(), TypeCode.Int32));
             if (Offset.Number > 0)
-                list.Add(new UriCondition("offset", EQUALS, Offset.Number.ToString()));
+                list.Add(new UriCondition("offset", EQUALS, Offset.Number.ToString(), TypeCode.Int32));
             if (OrderBy != null)
             {
                 var key = OrderBy.Descending ? "order_desc" : "order_asc";
-                list.Add(new UriCondition(key, EQUALS, OrderBy.Term.ToString()));
+                list.Add(new UriCondition(key, EQUALS, OrderBy.Term.ToString(), TypeCode.String));
             }
             if (Select != null)
-                list.Add(new UriCondition("select", EQUALS, string.Join(",", Select)));
+                list.Add(new UriCondition("select", EQUALS, string.Join(",", Select), TypeCode.String));
             if (Add != null)
-                list.Add(new UriCondition("add", EQUALS, string.Join(",", Add)));
+                list.Add(new UriCondition("add", EQUALS, string.Join(",", Add), TypeCode.String));
             if (Rename != null)
-                list.Add(new UriCondition("rename", EQUALS, string.Join(",", Rename.Select(r => $"{r.Key}->{r.Value}"))));
+                list.Add(new UriCondition("rename", EQUALS, string.Join(",", Rename.Select(r => $"{r.Key}->{r.Value}")), TypeCode.String));
             if (Distinct != null)
-                list.Add(new UriCondition("distinct", EQUALS, "true"));
+                list.Add(new UriCondition("distinct", EQUALS, "true", TypeCode.Boolean));
             if (Search != null)
-                list.Add(new UriCondition("search", EQUALS, Search.Pattern));
+                list.Add(new UriCondition("search", EQUALS, Search.Pattern, TypeCode.String));
             if (SafePost != null)
-                list.Add(new UriCondition("safepost", EQUALS, SafePost));
+                list.Add(new UriCondition("safepost", EQUALS, SafePost, TypeCode.String));
             if (Formatter.HasValue)
-                list.Add(new UriCondition("formatter", EQUALS, Formatter.Value.Name));
+                list.Add(new UriCondition("formatter", EQUALS, Formatter.Value.Name, TypeCode.String));
             return list;
         }
     }

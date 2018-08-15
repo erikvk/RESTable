@@ -6,7 +6,7 @@ using RESTar.Admin;
 
 namespace RESTar.ContentTypeProviders.NativeJsonProtocol
 {
-    public class RESTarJsonWriter : JsonTextWriter
+    internal class RESTarJsonWriter : JsonTextWriter
     {
         private readonly string NewLine;
         private int BaseIndentation;

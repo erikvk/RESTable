@@ -13,6 +13,9 @@ namespace RESTar.Internal.Sc
     {
         protected override Type AttributeType { get; } = null;
         protected override IDatabaseIndexer DatabaseIndexer { get; } = new ScIndexer();
+
+        internal IDatabaseIndexer GetDatabaseIndexer() => DatabaseIndexer;
+
         internal override void Validate() { }
 
         internal override bool Include(Type type)

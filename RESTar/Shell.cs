@@ -9,7 +9,7 @@ using RESTar.Requests;
 using RESTar.Resources;
 using RESTar.Results;
 using RESTar.WebSockets;
-using static RESTar.Internal.ErrorCodes;
+using static RESTar.ErrorCodes;
 using static RESTar.Method;
 using Error = RESTar.Results.Error;
 using IResource = RESTar.Meta.IResource;

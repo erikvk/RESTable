@@ -1,6 +1,4 @@
-﻿using RESTar.Internal;
-
-namespace RESTar.Results
+﻿namespace RESTar.Results
 {
     /// <inheritdoc />
     internal class InvalidSyntax : BadRequest

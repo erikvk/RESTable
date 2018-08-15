@@ -6,7 +6,7 @@ using Newtonsoft.Json;
 
 namespace RESTar.ContentTypeProviders.NativeJsonProtocol
 {
-    public class RESTarFromExcelJsonWriter : JsonTextWriter
+    internal class RESTarFromExcelJsonWriter : JsonTextWriter
     {
         public RESTarFromExcelJsonWriter(TextWriter textWriter) : base(textWriter) { }
 

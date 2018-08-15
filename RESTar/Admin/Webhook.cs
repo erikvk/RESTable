@@ -8,7 +8,6 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using RESTar.ContentTypeProviders.NativeJsonProtocol;
-using RESTar.Internal;
 using RESTar.Internal.Auth;
 using RESTar.Internal.Logging;
 using RESTar.Linq;
@@ -355,10 +354,11 @@ namespace RESTar.Admin
             if (@break) return;
 
             Stream body;
+            long contentLength;
             var contentType = Headers.ContentType ?? ContentType.JSON;
 
             if (CustomPayloadRequest == null)
-                (body, contentType) = @event.Payload.ToBodyStream(@event.NativeContentType ?? contentType);
+                (body, contentType, contentLength) = @event.Payload.ToBodyStream(@event.NativeContentType ?? contentType);
             else
             {
                 using (var request = CustomPayloadRequest.CreateRequest(out var error))
@@ -373,7 +373,7 @@ namespace RESTar.Admin
                     {
                         case Results.Error _:
                             await WebhookLog.Log(this, true, ForCustomRequest(result.LogMessage));
-                            CheckIfValid();
+                            await Db.TransactAsync(() => CheckIfValid());
                             if (CustomPayloadRequest.BreakOnError)
                             {
                                 result.Dispose();
@@ -385,52 +385,64 @@ namespace RESTar.Admin
                             if (customPayloadRequest.BreakOnNoContent) return;
                             break;
                     }
-                    (body, contentType) = (result.Body, result.Headers.ContentType.GetValueOrDefault());
+                    (body, contentType, contentLength) = (result.Body, result.Headers.ContentType.GetValueOrDefault(), result.Body.Length);
                 }
             }
 
             try
             {
                 var success = false;
+                var fail = false;
                 var attempts = 0;
                 while (!success)
                 {
+                    var disposableRequest = default(IDisposable);
                     try
                     {
                         if (DestinationIsLocal)
                         {
-                            using (var request = GetLocalRequest(body, contentType))
+                            var request = GetLocalRequest(body, contentType);
+                            disposableRequest = request;
                             using (var response = request.Evaluate())
                             {
                                 response.ThrowIfError();
-                                await WebhookLog.Log(this, false, response.LogMessage, request.GetBody().ContentLength.GetValueOrDefault());
+                                await WebhookLog.Log(this, false, response.LogMessage, contentLength);
                             }
                         }
                         else
                         {
-                            using (var request = GetGlobalRequest(body, contentType))
+                            var request = GetGlobalRequest(body, contentType);
+                            disposableRequest = request;
                             using (var response = await HttpClient.SendAsync(request))
                             {
                                 response.EnsureSuccessStatusCode();
-                                await WebhookLog.Log(this, false, $"{response.StatusCode}: {response.ReasonPhrase}",
-                                    request.Content?.Headers.ContentLength ?? 0);
+                                await WebhookLog.Log(this, false, $"{response.StatusCode}: {response.ReasonPhrase}", contentLength);
                             }
                         }
                         success = true;
                     }
                     catch
                     {
-                        if (attempts >= 3) throw;
+                        if (attempts >= 3)
+                        {
+                            fail = true;
+                            throw;
+                        }
                         attempts += 1;
+                    }
+                    finally
+                    {
+                        if (success || fail)
+                            disposableRequest?.Dispose();
                     }
                 }
             }
             catch (Exception e)
             {
-                CheckIfValid();
+                await Scheduling.RunTask(() => Db.TransactAsync(() => CheckIfValid()));
                 try
                 {
-                    await WebhookLog.Log(this, true, e.ToString());
+                    await WebhookLog.Log(this, true, e.ToString(), contentLength);
                 }
                 catch (Exception _e)
                 {

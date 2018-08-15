@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Net;
-using RESTar.Internal;
 
 namespace RESTar.Results
 {
@@ -8,7 +7,7 @@ namespace RESTar.Results
     public abstract class BadRequest : Error
     {
         /// <inheritdoc />
-        protected BadRequest(ErrorCodes code, string info, Exception ie = null) : base(code, info, ie)
+        internal BadRequest(ErrorCodes code, string info, Exception ie = null) : base(code, info, ie)
         {
             StatusCode = HttpStatusCode.BadRequest;
             StatusDescription = "Bad request";

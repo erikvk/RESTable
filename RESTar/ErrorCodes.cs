@@ -1,5 +1,5 @@
 #pragma warning disable 1591
-namespace RESTar.Internal
+namespace RESTar
 {
     /// <summary>
     /// The error codes used by RESTar

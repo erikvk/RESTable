@@ -1,5 +1,4 @@
-﻿using RESTar.Internal;
-using RESTar.Meta.Internal;
+﻿using RESTar.Meta;
 
 namespace RESTar.Resources
 {

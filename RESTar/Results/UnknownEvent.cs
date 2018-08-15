@@ -1,6 +1,4 @@
-﻿using RESTar.Internal;
-
-namespace RESTar.Results
+﻿namespace RESTar.Results
 {
     internal class UnknownEvent : NotFound
     {

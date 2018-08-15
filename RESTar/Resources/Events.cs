@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using RESTar.Meta.Internal;
+using RESTar.Meta;
 using RESTar.Resources.Operations;
 
 namespace RESTar.Resources
