@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using RESTar.Internal;
-using RESTar.Internal.Logging;
 using RESTar.Requests;
 
 namespace RESTar.Results
@@ -47,7 +46,7 @@ namespace RESTar.Results
         public TimeSpan TimeElapsed { get; protected set; }
 
         /// <inheritdoc />
-        public virtual LogEventType LogEventType => LogEventType.HttpOutput;
+        public virtual MessageType MessageType => MessageType.HttpOutput;
 
         /// <inheritdoc />
         public virtual string LogMessage => $"{StatusCode.ToCode()}: {StatusDescription} ({Body?.Length ?? 0} bytes)";

@@ -6,7 +6,7 @@ namespace RESTar.Internal.Logging
 {
     internal class WebSocketEvent : ILogable
     {
-        public LogEventType LogEventType { get; }
+        public MessageType MessageType { get; }
         public string TraceId { get; }
         public string LogMessage { get; }
         public string LogContent { get; }
@@ -17,25 +17,25 @@ namespace RESTar.Internal.Logging
         public DateTime LogTime { get; }
         public Context Context { get; }
 
-        public WebSocketEvent(LogEventType direction, WebSocket webSocket, string content = null, int length = 0)
+        public WebSocketEvent(MessageType direction, WebSocket webSocket, string content = null, int length = 0)
         {
-            LogEventType = direction;
+            MessageType = direction;
             TraceId = webSocket.TraceId;
             WebSocket = webSocket;
             ExcludeHeaders = false;
             LogTime = DateTime.Now;
             switch (direction)
             {
-                case LogEventType.WebSocketInput:
+                case MessageType.WebSocketInput:
                     LogMessage = $"Received {length} bytes";
                     break;
-                case LogEventType.WebSocketOutput:
+                case MessageType.WebSocketOutput:
                     LogMessage = $"Sent {length} bytes";
                     break;
-                case LogEventType.WebSocketOpen:
+                case MessageType.WebSocketOpen:
                     LogMessage = "WebSocket opened";
                     break;
-                case LogEventType.WebSocketClose:
+                case MessageType.WebSocketClose:
                     LogMessage = "WebSocket closed";
                     break;
             }

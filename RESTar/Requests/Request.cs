@@ -7,7 +7,6 @@ using System.Net;
 using RESTar.Admin;
 using RESTar.Internal;
 using RESTar.Internal.Auth;
-using RESTar.Internal.Logging;
 using static RESTar.Method;
 using static RESTar.ErrorCodes;
 using RESTar.Linq;
@@ -142,7 +141,7 @@ namespace RESTar.Requests
         #region ILogable
 
         private ILogable LogItem => Parameters;
-        LogEventType ILogable.LogEventType => LogItem.LogEventType;
+        MessageType ILogable.MessageType => LogItem.MessageType;
         string ILogable.LogMessage => LogItem.LogMessage;
         string ILogable.LogContent => LogItem.LogContent;
         public DateTime LogTime { get; } = DateTime.Now;

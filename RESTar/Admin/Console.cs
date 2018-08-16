@@ -114,7 +114,7 @@ namespace RESTar.Admin
                         {
                             var item = new LogItem
                             {
-                                Type = logable.LogEventType.ToString(),
+                                Type = logable.MessageType.ToString(),
                                 Id = logable.TraceId,
                                 Message = logable.LogMessage,
                                 Time = logable.LogTime
@@ -199,20 +199,20 @@ namespace RESTar.Admin
         private static string GetLogLineStub(ILogable logable, double? milliseconds = null)
         {
             var builder = new StringBuilder();
-            switch (logable.LogEventType)
+            switch (logable.MessageType)
             {
-                case LogEventType.WebSocketInput:
-                case LogEventType.HttpInput:
+                case MessageType.WebSocketInput:
+                case MessageType.HttpInput:
                     builder.Append("=> ");
                     break;
-                case LogEventType.HttpOutput:
-                case LogEventType.WebSocketOutput:
+                case MessageType.HttpOutput:
+                case MessageType.WebSocketOutput:
                     builder.Append("<= ");
                     break;
-                case LogEventType.WebSocketOpen:
+                case MessageType.WebSocketOpen:
                     builder.Append("++ ");
                     break;
-                case LogEventType.WebSocketClose:
+                case MessageType.WebSocketClose:
                     builder.Append("-- ");
                     break;
             }

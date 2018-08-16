@@ -18,8 +18,15 @@ namespace RESTar.Internal.Sc
     /// <summary>
     /// The resource provider for Dynamit dynamic entity resource types
     /// </summary>
-    public class DynamitResourceProvider : EntityResourceProvider<DDictionary>, IProceduralEntityResourceProvider
+    public sealed class DynamitResourceProvider : EntityResourceProvider<DDictionary>, IProceduralEntityResourceProvider
     {
+        /// <inheritdoc />
+        protected override Type AttributeType { get; }
+
+        /// <inheritdoc />
+        protected override IDatabaseIndexer DatabaseIndexer { get; }
+
+        /// <inheritdoc />
         internal override bool Include(Type type)
         {
             if (type.IsWrapper())
@@ -27,11 +34,8 @@ namespace RESTar.Internal.Sc
             return type.IsSubclassOf(typeof(DDictionary)) && !type.HasResourceProviderAttribute();
         }
 
-        internal override void Validate() { }
-
-        // ReSharper disable once UnassignedGetOnlyAutoProperty
         /// <inheritdoc />
-        protected override Type AttributeType { get; }
+        internal override void Validate() { }
 
         /// <inheritdoc />
         protected override IEnumerable<T> DefaultSelect<T>(IRequest<T> request) => DDictionaryOperations<T>.Select(request);
@@ -48,10 +52,11 @@ namespace RESTar.Internal.Sc
         /// <inheritdoc />
         protected override ResourceProfile DefaultProfile<T>(IEntityResource<T> resource) => DDictionaryOperations<T>.Profile(resource);
 
-        /// <inheritdoc />
-        protected override IDatabaseIndexer DatabaseIndexer { get; }
-
-        internal DynamitResourceProvider(IDatabaseIndexer databaseIndexer) => DatabaseIndexer = databaseIndexer;
+        internal DynamitResourceProvider(IDatabaseIndexer databaseIndexer)
+        {
+            AttributeType = null;
+            DatabaseIndexer = databaseIndexer;
+        }
 
         /// <inheritdoc />
         protected override bool IsValid(IEntityResource resource, out string reason) =>

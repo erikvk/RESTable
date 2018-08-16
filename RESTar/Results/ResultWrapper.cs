@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Net;
-using RESTar.Internal.Logging;
 using RESTar.Requests;
 
 namespace RESTar.Results
@@ -19,7 +18,7 @@ namespace RESTar.Results
         public Context Context => Result.Context;
 
         /// <inheritdoc />
-        public LogEventType LogEventType => Result.LogEventType;
+        public MessageType MessageType => Result.MessageType;
 
         /// <inheritdoc />
         public string LogMessage => Result.LogMessage;

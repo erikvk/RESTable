@@ -1,9 +1,9 @@
-﻿namespace RESTar.Internal.Logging
+﻿namespace RESTar
 {
     /// <summary>
-    /// The log event types used when logging
+    /// Message types used in RESTar
     /// </summary>
-    public enum LogEventType
+    public enum MessageType
     {
         /// <summary>
         /// Input in the form of a regular HTTP request

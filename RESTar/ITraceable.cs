@@ -1,7 +1,9 @@
-﻿namespace RESTar.Requests
+﻿using RESTar.Requests;
+
+namespace RESTar
 {
     /// <summary>
-    /// Defines something that can be traced from a TCP connection
+    /// Defines something that can be traced back to an initial message
     /// </summary>
     public interface ITraceable
     {

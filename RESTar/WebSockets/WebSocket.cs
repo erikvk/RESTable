@@ -104,7 +104,7 @@ namespace RESTar.WebSockets
                     Status = WebSocketStatus.Open;
                     Opened = DateTime.Now;
                     if (TerminalConnection?.Resource.Name != Console.TypeName)
-                        Console.Log(new WebSocketEvent(LogEventType.WebSocketOpen, this));
+                        Console.Log(new WebSocketEvent(MessageType.WebSocketOpen, this));
                     break;
                 default: throw new InvalidOperationException($"Unable to open WebSocket with status '{Status}'");
             }
@@ -140,7 +140,7 @@ namespace RESTar.WebSockets
             Status = WebSocketStatus.Closed;
             Closed = DateTime.Now;
             if (terminalName != Console.TypeName)
-                Console.Log(new WebSocketEvent(LogEventType.WebSocketClose, this));
+                Console.Log(new WebSocketEvent(MessageType.WebSocketClose, this));
             disposed = true;
         }
 
@@ -198,7 +198,7 @@ namespace RESTar.WebSockets
                 return;
             }
             if (TerminalConnection.Resource?.Name != Console.TypeName)
-                Console.Log(new WebSocketEvent(LogEventType.WebSocketInput, this, textData, Encoding.UTF8.GetByteCount(textData)));
+                Console.Log(new WebSocketEvent(MessageType.WebSocketInput, this, textData, Encoding.UTF8.GetByteCount(textData)));
             TerminalConnection.Terminal.HandleTextInput(textData);
             BytesReceived += (ulong) Encoding.UTF8.GetByteCount(textData);
         }
@@ -212,7 +212,7 @@ namespace RESTar.WebSockets
                 return;
             }
             if (TerminalConnection.Resource?.Name != Console.TypeName)
-                Console.Log(new WebSocketEvent(LogEventType.WebSocketInput, this, Encoding.UTF8.GetString(binaryData), binaryData.Length));
+                Console.Log(new WebSocketEvent(MessageType.WebSocketInput, this, Encoding.UTF8.GetString(binaryData), binaryData.Length));
             TerminalConnection.Terminal.HandleBinaryInput(binaryData);
             BytesSent += (ulong) binaryData.Length;
         }
@@ -230,7 +230,7 @@ namespace RESTar.WebSockets
                     Send(textData);
                     BytesSent += (ulong) Encoding.UTF8.GetByteCount(textData);
                     if (TerminalConnection?.Resource.Name != Console.TypeName)
-                        Console.Log(new WebSocketEvent(LogEventType.WebSocketOutput, this, textData, Encoding.UTF8.GetByteCount(textData)));
+                        Console.Log(new WebSocketEvent(MessageType.WebSocketOutput, this, textData, Encoding.UTF8.GetByteCount(textData)));
                     break;
             }
         }
@@ -244,7 +244,7 @@ namespace RESTar.WebSockets
                     Send(binaryData, isText, offset, length);
                     BytesSent += (ulong) length;
                     if (TerminalConnection?.Resource.Name != Console.TypeName)
-                        Console.Log(new WebSocketEvent(LogEventType.WebSocketOutput, this, Encoding.UTF8.GetString(binaryData), binaryData.Length));
+                        Console.Log(new WebSocketEvent(MessageType.WebSocketOutput, this, Encoding.UTF8.GetString(binaryData), binaryData.Length));
                     break;
             }
         }

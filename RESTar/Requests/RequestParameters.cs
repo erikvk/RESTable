@@ -4,7 +4,6 @@ using System.Diagnostics;
 using System.Text;
 using RESTar.ContentTypeProviders;
 using RESTar.Internal;
-using RESTar.Internal.Logging;
 using RESTar.Linq;
 using RESTar.Meta;
 using RESTar.WebSockets;
@@ -73,7 +72,7 @@ namespace RESTar.Requests
         internal Exception Error { get; }
         private static bool PercentCharsEscaped(IDictionary<string, string> headers) => headers?.ContainsKey("X-ARR-LOG-ID") == true;
         bool ILogable.ExcludeHeaders => IResource is IEntityResource e && e.RequiresAuthentication;
-        LogEventType ILogable.LogEventType { get; } = LogEventType.HttpInput;
+        MessageType ILogable.MessageType { get; } = MessageType.HttpInput;
         string ILogable.LogMessage => $"{Method} {UnparsedUri}{(HasBody ? $" ({BodyBytes.Length} bytes)" : "")}";
         DateTime ILogable.LogTime { get; } = DateTime.Now;
         string ILogable.HeadersStringCache { get; set; }

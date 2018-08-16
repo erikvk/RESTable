@@ -7,7 +7,6 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
 using RESTar.Internal;
-using RESTar.Internal.Logging;
 using RESTar.Linq;
 using RESTar.Meta;
 using RESTar.Meta.Internal;
@@ -153,7 +152,7 @@ namespace RESTar.Requests
         public bool IsWebSocketUpgrade { get; }
         public CachedProtocolProvider CachedProtocolProvider { get; }
 
-        public LogEventType LogEventType { get; }
+        public MessageType MessageType { get; }
         public string LogMessage => $"{Method} {URI}{GetBody().LengthLogString}";
         public string LogContent => GetBody().ToString();
         public string HeadersStringCache { get; set; }
@@ -168,7 +167,7 @@ namespace RESTar.Requests
             if (context.HasApiKey)
                 Headers.Authorization = $"apikey {context.ApiKey}";
             Method = method;
-            LogEventType = LogEventType.HttpInput;
+            MessageType = MessageType.HttpInput;
             IsValid = true;
             IsWebSocketUpgrade = false;
             URI = new Uri(context.ServiceRoot + uri);

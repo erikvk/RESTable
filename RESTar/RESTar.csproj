@@ -181,13 +181,13 @@
     <Compile Include="ProtocolProviders\IProtocolProvider.cs" />
     <Compile Include="ContentTypeProviders\JsonProvider.cs" />
     <Compile Include="Internal\Logging\ConsoleFormat.cs" />
-    <Compile Include="Internal\Logging\ILogable.cs" />
-    <Compile Include="Internal\Logging\LogEventType.cs" />
+    <Compile Include="ILogable.cs" />
+    <Compile Include="MessageType.cs" />
     <Compile Include="Internal\Logging\LogItem.cs" />
     <Compile Include="Internal\Logging\WebSocketEvent.cs" />
     <Compile Include="Requests\Filters\Search.cs" />
     <Compile Include="Requests\Body.cs" />
-    <Compile Include="Requests\ITraceable.cs" />
+    <Compile Include="ITraceable.cs" />
     <Compile Include="Requests\IUriComponents.cs" />
     <Compile Include="Requests\IUriCondition.cs" />
     <Compile Include="Internal\NetworkController.cs" />

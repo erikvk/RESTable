@@ -5,7 +5,6 @@ using System.Globalization;
 using System.IO;
 using System.Net;
 using RESTar.Internal;
-using RESTar.Internal.Logging;
 using RESTar.Linq;
 using RESTar.Requests;
 
@@ -52,7 +51,7 @@ namespace RESTar.Results
         public Context Context { get; private set; }
 
         /// <inheritdoc />
-        public LogEventType LogEventType => LogEventType.HttpOutput;
+        public MessageType MessageType => MessageType.HttpOutput;
 
         /// <inheritdoc />
         public string LogMessage

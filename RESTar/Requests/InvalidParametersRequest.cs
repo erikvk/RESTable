@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using RESTar.Internal;
-using RESTar.Internal.Logging;
 using RESTar.Meta;
 using RESTar.Results;
 
@@ -19,7 +18,7 @@ namespace RESTar.Requests
         #region Logable
 
         private ILogable LogItem => Parameters;
-        LogEventType ILogable.LogEventType => LogItem.LogEventType;
+        MessageType ILogable.MessageType => LogItem.MessageType;
         string ILogable.LogMessage => LogItem.LogMessage;
         string ILogable.LogContent => LogItem.LogContent;
 

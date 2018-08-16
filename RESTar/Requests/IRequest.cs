@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using RESTar.Internal;
-using RESTar.Internal.Logging;
 using RESTar.Meta;
 using RESTar.Results;
 

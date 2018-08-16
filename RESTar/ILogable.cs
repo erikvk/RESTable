@@ -1,7 +1,7 @@
 ﻿using System;
 using RESTar.Requests;
 
-namespace RESTar.Internal.Logging
+namespace RESTar
 {
     /// <inheritdoc />
     /// <summary>
@@ -12,7 +12,7 @@ namespace RESTar.Internal.Logging
         /// <summary>
         /// The log event type
         /// </summary>
-        LogEventType LogEventType { get; }
+        MessageType MessageType { get; }
 
         /// <summary>
         /// The message to log
