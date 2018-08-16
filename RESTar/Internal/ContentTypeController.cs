@@ -48,15 +48,25 @@ namespace RESTar.Internal
             return contentTypeProvider;
         }
 
-        internal static IContentTypeProvider ResolveOutputContentTypeProvider(IRequestInternal request, ContentType? contentTypeOverride)
+        internal static IContentTypeProvider ResolveOutputContentTypeProvider(IRequestInternal request = null, ContentType? contentTypeOverride = null)
         {
+            IContentTypeProvider acceptProvider = null;
+
+            if (request == null)
+            {
+                if (!contentTypeOverride.HasValue)
+                    return Providers.Json;
+                if (!ProtocolController.DefaultProtocolProvider.OutputMimeBindings.TryGetValue(contentTypeOverride.Value.MediaType, out acceptProvider))
+                    throw new NotAcceptable(contentTypeOverride.ToString());
+                return acceptProvider;
+            }
+
             var protocolProvider = request.CachedProtocolProvider;
             var contentType = contentTypeOverride;
             if (contentType.HasValue)
                 contentType = contentType.Value;
             else if (!(request.Headers.Accept?.Count > 0))
                 contentType = protocolProvider.DefaultOutputProvider.ContentType;
-            IContentTypeProvider acceptProvider = null;
             if (!contentType.HasValue)
             {
                 var containedWildcard = false;

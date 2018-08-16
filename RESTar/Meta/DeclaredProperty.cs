@@ -62,7 +62,7 @@ namespace RESTar.Meta
         public bool IsDateTime { get; }
 
         /// <summary>
-        /// The custom datetime format string of this property (if any)
+        /// A custom datetime format string of this property (if any)
         /// </summary>
         public string CustomDateTimeFormat { get; }
 
@@ -94,7 +94,8 @@ namespace RESTar.Meta
         /// Used in SpecialProperty
         /// </summary>
         internal DeclaredProperty(int metadataToken, string name, string actualName, Type type, int? order, bool scQueryable,
-            ICollection<Attribute> attributes, bool skipConditions, bool hidden, bool hiddenIfNull, bool isEnum, string customDateTimeFormat, Operators allowedConditionOperators,
+            ICollection<Attribute> attributes, bool skipConditions, bool hidden, bool hiddenIfNull, bool isEnum, string customDateTimeFormat,
+            Operators allowedConditionOperators,
             Getter getter, Setter setter)
         {
             MetadataToken = metadataToken;
@@ -129,7 +130,7 @@ namespace RESTar.Meta
             Attributes = p.GetCustomAttributes().ToList();
             var memberAttribute = GetAttribute<RESTarMemberAttribute>();
             var jsonAttribute = GetAttribute<JsonPropertyAttribute>();
-            CustomDateTimeFormat = memberAttribute?.CustomDateTimeFormat;
+            CustomDateTimeFormat = memberAttribute?.DateTimeFormat;
             Order = memberAttribute?.Order ?? jsonAttribute?.Order;
             ScQueryable = p.DeclaringType?.HasAttribute<DatabaseAttribute>() == true && p.PropertyType.IsStarcounterCompatible();
             SkipConditions = memberAttribute?.SkipConditions == true || p.DeclaringType.HasAttribute<RESTarViewAttribute>();

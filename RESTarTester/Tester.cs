@@ -65,8 +65,17 @@ namespace RESTarTester
 
         public static void Main()
         {
+            #region Cleanup
+
             Db.SQL<RESTar.Dynamic.DynamicResource>("SELECT t FROM RESTar.Dynamic.DynamicResource t").ForEach(b => Db.TransactAsync(b.Delete));
             Db.SQL<Webhook>("SELECT t FROM RESTar.Admin.Webhook t").ForEach(b => Db.TransactAsync(b.Delete));
+            Db.SQL<Base>("SELECT t FROM RESTarTester.Base t").ForEach(b => Db.TransactAsync(b.Delete));
+            Db.SQL<MyDict>("SELECT t FROM RESTarTester.MyDict t").ForEach(b => Db.TransactAsync(b.Delete));
+            Db.SQL<MyDict2>("SELECT t FROM RESTarTester.MyDict2 t").ForEach(b => Db.TransactAsync(b.Delete));
+
+            #endregion
+
+            #region Handles and Init()
 
             bool wrstreamcalled = false;
             bool wrbytescalled = false;
@@ -101,6 +110,8 @@ namespace RESTarTester
                 allowAllOrigins: false,
                 configFilePath: @"C:\Mopedo\mopedo\Mopedo.config"
             );
+
+            #endregion
 
             #region Create resources and hooks
 
@@ -168,9 +179,7 @@ namespace RESTarTester
 
             #endregion
 
-            Db.SQL<Base>("SELECT t FROM RESTarTester.Base t").ForEach(b => Db.TransactAsync(b.Delete));
-            Db.SQL<MyDict>("SELECT t FROM RESTarTester.MyDict t").ForEach(b => Db.TransactAsync(b.Delete));
-            Db.SQL<MyDict2>("SELECT t FROM RESTarTester.MyDict2 t").ForEach(b => Db.TransactAsync(b.Delete));
+            #region Custom event handler
 
             string onesJson = null;
             string twosJson = null;
@@ -189,6 +198,8 @@ namespace RESTarTester
             Events.EntityResource<Resource1>.PostInsert += process;
             Events.EntityResource<Resource1>.PostUpdate += process;
             Events.EntityResource<Resource1>.PreDelete += process;
+
+            #endregion
 
             #region JSON generation
 
@@ -763,9 +774,18 @@ namespace RESTarTester
             var optionsResponse1 = Http.Request("OPTIONS", "http://localhost:9000/rest/resource1", null,
                 headers: new Dictionary<string, string> {["Origin"] = "https://fooboo.com/thingy"});
             Debug.Assert(optionsResponse1?.IsSuccessStatusCode == true);
+            Debug.Assert(optionsResponse1.Headers.TryGetValues("Access-Control-Allow-Origin", out var _vals) &&
+                         _vals.First() == "https://fooboo.com/thingy");
+            Debug.Assert(optionsResponse1.Headers.TryGetValues("Vary", out var vvals) && vvals.First() == "Origin");
+            Debug.Assert(optionsResponse1?.Content.ReadAsStringAsync().Result.Length > 15);
+
             var optionsResponse2 = Http.Request("OPTIONS", "http://localhost:9000/rest/resource1", null,
                 headers: new Dictionary<string, string> {["Origin"] = "https://fooboo.com/invalid"});
-            Debug.Assert(optionsResponse2?.IsSuccessStatusCode == false);
+            Debug.Assert(optionsResponse2?.Headers.TryGetValues("Access-Control-Allow-Origin", out var vals) == false);
+
+            var optionsResponse3 = Http.Request("OPTIONS", "http://localhost:9000/rest/resource1", null);
+            Debug.Assert(optionsResponse3?.IsSuccessStatusCode == true);
+            Debug.Assert(optionsResponse3?.Content.ReadAsStringAsync().Result.Length > 15);
 
             #endregion
 

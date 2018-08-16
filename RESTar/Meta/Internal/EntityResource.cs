@@ -46,7 +46,7 @@ namespace RESTar.Meta.Internal
         public string Provider { get; }
         public IReadOnlyList<IResource> InnerResources { get; set; }
         public ResourceProfile ResourceProfile => Profiler?.Invoke(this);
-        public bool ClaimedBy<T1>() where T1 : EntityResourceProvider => Provider == typeof(T1).GetProviderId();
+        public bool ClaimedBy<T1>() where T1 : IEntityResourceProvider => Provider == typeof(T1).GetEntityResourceProviderId();
         public ResourceKind ResourceKind { get; }
         public bool IsDeclared { get; }
         public bool CanSelect => Selector != null;
@@ -127,7 +127,7 @@ namespace RESTar.Meta.Internal
         /// </summary>
         internal EntityResource(string fullName, RESTarAttribute attribute, Selector<T> selector, Inserter<T> inserter,
             Updater<T> updater, Deleter<T> deleter, Counter<T> counter, Profiler<T> profiler, Authenticator<T> authenticator,
-            Validator<T> validator, EntityResourceProvider provider, View<T>[] views)
+            Validator<T> validator, IEntityResourceProviderInternal provider, View<T>[] views)
         {
             var typeName = typeof(T).FullName;
             if (typeName?.Contains('+') == true)
@@ -139,7 +139,7 @@ namespace RESTar.Meta.Internal
             }
             else Name = fullName;
 
-            provider._ModifyResourceAttribute(typeof(T), attribute);
+            provider.ModifyResourceAttribute(typeof(T), attribute);
             IsDeclared = attribute.IsDeclared;
             Description = attribute.Description;
             AvailableMethods = attribute.AvailableMethods;
@@ -158,7 +158,7 @@ namespace RESTar.Meta.Internal
             RequiresValidation = typeof(IValidator<>).IsAssignableFrom(typeof(T));
             IsDDictionary = typeof(T).IsDDictionary();
             IsDynamic = IsDDictionary || typeof(T).IsSubclassOf(typeof(JObject)) || typeof(IDictionary).IsAssignableFrom(typeof(T));
-            Provider = provider.GetProviderId();
+            Provider = provider.Id;
             Members = typeof(T).GetDeclaredProperties();
 
             Selector = selector.AsImplemented();

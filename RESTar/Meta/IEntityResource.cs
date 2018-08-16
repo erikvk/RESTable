@@ -21,7 +21,7 @@ namespace RESTar.Meta
         /// Returns true if and only if this resource was claimed by the given 
         /// ResourceProvider type
         /// </summary>
-        bool ClaimedBy<T>() where T : EntityResourceProvider;
+        bool ClaimedBy<T>() where T : IEntityResourceProvider;
 
         /// <summary>
         /// Is this a DDictionary resource?

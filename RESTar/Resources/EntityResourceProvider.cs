@@ -8,7 +8,6 @@ using RESTar.Meta;
 using RESTar.Meta.Internal;
 using RESTar.Requests;
 using RESTar.Resources.Operations;
-using Starcounter;
 using static System.Reflection.BindingFlags;
 using static RESTar.Resources.Operations.DelegateMaker;
 using IResource = RESTar.Meta.IResource;
@@ -17,54 +16,253 @@ using Resource = RESTar.Meta.Resource;
 namespace RESTar.Resources
 {
     /// <summary>
+    /// A common interface for all entity resource providers
+    /// </summary>
+    public interface IEntityResourceProvider
+    {
+        /// <summary>
+        /// The ID of the entity resource provider
+        /// </summary>
+        string Id { get; }
+    }
+
+    /// <inheritdoc />
+    /// <summary>
     /// A common abstract class for generic EntityResourceProvider instances
     /// </summary>
-    public abstract class EntityResourceProvider
+    internal interface IEntityResourceProviderInternal : IEntityResourceProvider
     {
-        internal abstract bool Include(Type type);
-        internal abstract void MakeClaimRegular(IEnumerable<Type> types);
-        internal abstract void MakeClaimWrapped(IEnumerable<Type> types);
-        internal abstract void MakeClaimProcedural();
-        internal abstract void InsertProcedural(IProceduralEntityResource resource);
-        internal abstract void Validate();
-        internal EntityResourceProvider() { }
-        internal ICollection<Type> GetClaim(IEnumerable<Type> types) => types.Where(Include).ToList();
+        /// <summary>
+        /// IDatabaseIndexers are plugins for the DatabaseIndex resource, that allow resources 
+        /// created by this provider to have database indexes managed by that resource.
+        /// </summary>
+        IDatabaseIndexer DatabaseIndexer { get; }
 
-        internal IEnumerable<IProceduralEntityResource> _Select() => SelectProceduralResources();
+        /// <summary>
+        /// Should the given type be included in the claim of this entity resource provider?
+        /// </summary>
+        bool Include(Type type);
 
-        internal void _Insert(string name, string description, Method[] methods, dynamic data)
+        /// <summary>
+        /// Marks a collection of regular entity resource types as claimed by this entity resource provider
+        /// </summary>
+        void MakeClaimRegular(IEnumerable<Type> types);
+
+        /// <summary>
+        /// Marks a collection of wrapped entity resource types as claimed by this entity resource provider
+        /// </summary>
+        void MakeClaimWrapped(IEnumerable<Type> types);
+
+        /// <summary>
+        /// Triggers the collection of all procedural resources belonging to this entity resource provider
+        /// </summary>
+        void MakeClaimProcedural();
+
+        /// <summary>
+        /// Inserts the given resource as a new resource claimed by this entity resource provider
+        /// </summary>
+        void InsertProcedural(IProceduralEntityResource resource);
+
+        /// <summary>
+        /// Validates the entity resource provider
+        /// </summary>
+        void Validate();
+
+        /// <summary>
+        /// Returns all procedural entity resources from the provider. Used by RESTar internally. Don't call this method.
+        /// </summary>
+        IEnumerable<IProceduralEntityResource> SelectProceduralResources();
+
+        /// <summary>
+        /// Creates a new dynamic entity resource object with the given name, description and methods. Used by RESTar internally. Don't call this method.
+        /// </summary>
+        IProceduralEntityResource InsertProceduralResource(string name, string description, Method[] methods, dynamic data);
+
+        /// <summary>
+        /// Runs a given update operation. Used by RESTar internally. Don't call this method.
+        /// </summary>
+        void SetProceduralResourceMethods(IProceduralEntityResource resource, Method[] methods);
+
+        /// <summary>
+        /// Runs a given update operation. Used by RESTar internally. Don't call this method.
+        /// </summary>
+        void SetProceduralResourceDescription(IProceduralEntityResource resource, string newDescription);
+
+        /// <summary>
+        /// Deletes a dynamic entity resource entity. Used by RESTar internally. Don't call this method.
+        /// </summary>
+        bool DeleteProceduralResource(IProceduralEntityResource resource);
+
+        /// <summary>
+        /// The ReceiveClaimed method is called by RESTar once one or more resources provided
+        /// by this ResourceProvider have been added. Override this to provide additional 
+        /// logic once resources have been validated and set up.
+        /// </summary>
+        void ReceiveClaimed(ICollection<IEntityResource> claimedResources);
+
+        /// <summary>
+        /// An optional method for modifying the RESTar resource attribute of a type before the resource is generated
+        /// </summary>
+        void ModifyResourceAttribute(Type type, RESTarAttribute attribute);
+
+        /// <summary>
+        /// Removes the procedural resource belonging to the given type
+        /// </summary>
+        bool RemoveProceduralResource(Type type);
+    }
+
+    /// <inheritdoc />
+    /// <summary>
+    /// An EntityResourceProvider gives default implementations for the operations of a group of entity resources, 
+    /// and defines an attribute that can be used to decorate entity resource types in the application domain. By 
+    /// including the ResourceProvider in the call to RESTarConfig.Init(), RESTar can claim entity resource 
+    /// types decorated with the attribute and bind the defined resource operations to them.
+    /// </summary>
+    /// <typeparam name="TBase">The base type for all resources claimed by this ResourceProvider. 
+    /// Can be <see cref="object"/> if no such base type exists.</typeparam>
+    public abstract class EntityResourceProvider<TBase> : IEntityResourceProviderInternal where TBase : class
+    {
+        /// <inheritdoc />
+        public string Id => GetType().GetEntityResourceProviderId();
+
+        #region IEntityResourceProviderInternal
+
+        #region Helpers
+
+        private void InsertProcedural(IProceduralEntityResource resource)
         {
-            var inserted = InsertProceduralResource(name, description, methods, data);
-            if (inserted == null) return;
-            InsertProcedural(inserted);
+            var attribute = new RESTarProceduralAttribute(resource.Methods) {Description = resource.Description};
+            var type = resource.Type;
+            ResourceValidator.ValidateRuntimeInsertion(type, resource.Name, attribute);
+            ResourceValidator.Validate(type);
+            var inserted = _InsertResource(type, resource.Name, attribute);
+            ReceiveClaimed(new[] {inserted});
         }
 
-        internal void _SetMethods(IProceduralEntityResource procedural, IResourceInternal resource, IReadOnlyList<Method> methods)
+        private bool RemoveProceduralResource(Type resourceType)
         {
-            SetProceduralResourceMethods(procedural, methods.ToArray());
-            resource.AvailableMethods = methods;
+            var iresource = Resource.SafeGet(resourceType);
+            if (iresource == null) return true;
+            return RemoveResource(iresource);
         }
 
-        internal void _SetDescription(IProceduralEntityResource procedural, IResourceInternal resource, string description)
+        private bool RemoveResource(IResource resource)
         {
-            SetProceduralResourceDescription(procedural, description);
-            resource.Description = description;
+            if (resource is IEntityResource er && er.Provider == Id)
+            {
+                RESTarConfig.RemoveResource(resource);
+                return true;
+            }
+            return false;
         }
 
-        internal void _Delete(IProceduralEntityResource procedural)
+        #endregion
+
+        IEnumerable<IProceduralEntityResource> IEntityResourceProviderInternal.SelectProceduralResources() => SelectProceduralResources();
+        bool IEntityResourceProviderInternal.DeleteProceduralResource(IProceduralEntityResource resource) => DeleteProceduralResource(resource);
+        IDatabaseIndexer IEntityResourceProviderInternal.DatabaseIndexer => DatabaseIndexer;
+        void IEntityResourceProviderInternal.ReceiveClaimed(ICollection<IEntityResource> claimedResources) => ReceiveClaimed(claimedResources);
+        void IEntityResourceProviderInternal.ModifyResourceAttribute(Type type, RESTarAttribute attribute) => ModifyResourceAttribute(type, attribute);
+        bool IEntityResourceProviderInternal.RemoveProceduralResource(Type resourceType) => RemoveProceduralResource(resourceType);
+        void IEntityResourceProviderInternal.InsertProcedural(IProceduralEntityResource resource) => InsertProcedural(resource);
+        bool IEntityResourceProviderInternal.Include(Type type) => Include(type);
+        void IEntityResourceProviderInternal.MakeClaimProcedural() => SelectProceduralResources().ForEach(InsertProcedural);
+        void IEntityResourceProviderInternal.Validate() => Validate();
+
+        IProceduralEntityResource IEntityResourceProviderInternal.InsertProceduralResource(string n, string d, Method[] m, dynamic data)
         {
-            if (procedural == null) return;
-            var type = procedural.Type;
-            Db.TransactAsync(() => ResourceAlias.GetByResource(procedural.Name)?.Delete());
-            if (DeleteProceduralResource(procedural))
-                RemoveProceduralResource(type);
+            return InsertProceduralResource(n, d, m, data);
         }
+
+        void IEntityResourceProviderInternal.SetProceduralResourceMethods(IProceduralEntityResource resource, Method[] methods)
+        {
+            SetProceduralResourceMethods(resource, methods);
+        }
+
+        void IEntityResourceProviderInternal.SetProceduralResourceDescription(IProceduralEntityResource resource, string newDescription)
+        {
+            SetProceduralResourceDescription(resource, newDescription);
+        }
+
+        void IEntityResourceProviderInternal.MakeClaimRegular(IEnumerable<Type> types) => types.ForEach(type =>
+        {
+            var resource = _InsertResource(type);
+            if (!IsValid(resource, out var reason))
+                throw new InvalidResourceDeclarationException("An error was found in the declaration for resource " +
+                                                              $"type '{type.RESTarTypeName()}': " + reason);
+        });
+
+        void IEntityResourceProviderInternal.MakeClaimWrapped(IEnumerable<Type> types) => types.ForEach(type =>
+        {
+            var resource = _InsertWrapperResource(type, type.GetWrappedType());
+            if (!IsValid(resource, out var reason))
+                throw new InvalidResourceDeclarationException("An error was found in the declaration for wrapper resource " +
+                                                              $"type '{type.RESTarTypeName()}': " + reason);
+        });
+
+        #endregion
+
+        #region Internal virtual 
+
+        internal virtual bool Include(Type type)
+        {
+            if (!typeof(TBase).IsAssignableFrom(type))
+                throw new InvalidResourceDeclarationException(
+                    $"Invalid resource declaration for type '{type.RESTarTypeName()}'. Expected type to " +
+                    $"inherit from base type '{typeof(TBase).RESTarTypeName()}' as required by resource " +
+                    $"provider of type '{GetType().RESTarTypeName()}'.");
+            return type.HasAttribute(AttributeType);
+        }
+
+        internal virtual void Validate()
+        {
+            if (AttributeType == null)
+                throw new InvalidEntityResourceProviderException(GetType(), "AttributeType cannot be null");
+            if (!AttributeType.IsSubclassOf(typeof(Attribute)))
+                throw new InvalidEntityResourceProviderException(GetType(), "Provided AttributeType is not an attribute type");
+            if (!AttributeType.IsSubclassOf(typeof(EntityResourceProviderAttribute)))
+                throw new InvalidEntityResourceProviderException(GetType(), $"Provided AttributeType '{AttributeType.RESTarTypeName()}' " +
+                                                                            "does not inherit from RESTar.ResourceProviderAttribute");
+        }
+
+        #endregion
+
+        #region Protected
 
         /// <summary>
         /// The attribute type associated with this ResourceProvider. Used to decorate 
         /// resource types that should be claimed by this ResourceProvider.
         /// </summary>
         protected abstract Type AttributeType { get; }
+
+        /// <summary>
+        /// IDatabaseIndexers are plugins for the DatabaseIndex resource, that allow resources 
+        /// created by this provider to have database indexes managed by that resource.
+        /// </summary>
+        protected virtual IDatabaseIndexer DatabaseIndexer { get; } = null;
+
+        /// <summary>
+        /// The ReceiveClaimed method is called by RESTar once one or more resources provided
+        /// by this ResourceProvider have been added. Override this to provide additional 
+        /// logic once resources have been validated and set up.
+        /// </summary>
+        protected virtual void ReceiveClaimed(ICollection<IEntityResource> claimedResources) { }
+
+        /// <summary>
+        /// An optional method for modifying the RESTar resource attribute of a type before the resource is generated
+        /// </summary>
+        protected virtual void ModifyResourceAttribute(Type type, RESTarAttribute attribute) { }
+
+        /// <summary>
+        /// Override this method to add a validation step to the resource claim process. 
+        /// </summary>
+        /// <param name="resource">The resource to check validity for</param>
+        /// <param name="reason">Return the reason for this Type not being valid</param>
+        protected virtual bool IsValid(IEntityResource resource, out string reason)
+        {
+            reason = null;
+            return true;
+        }
 
         /// <summary>
         /// Returns all procedural entity resources from the provider. Used by RESTar internally. Don't call this method.
@@ -75,7 +273,7 @@ namespace RESTar.Resources
         }
 
         /// <summary>
-        /// Creates a new dynamic entity resource object with the given name, description and methods. Used by RESTar internally. Don't call this method.
+        /// Creates a new procedural entity resource object with the given name, description and methods. Used by RESTar internally. Don't call this method.
         /// </summary>
         protected virtual IProceduralEntityResource InsertProceduralResource(string name, string description, Method[] methods, dynamic data)
         {
@@ -105,76 +303,6 @@ namespace RESTar.Resources
         {
             throw new NotImplementedException();
         }
-
-        internal IDatabaseIndexer _DatabaseIndexer => DatabaseIndexer;
-
-        /// <summary>
-        /// IDatabaseIndexers are plugins for the DatabaseIndex resource, that allow resources 
-        /// created by this provider to have database indexes managed by that resource.
-        /// </summary>
-        protected virtual IDatabaseIndexer DatabaseIndexer { get; } = null;
-
-        internal virtual void _ReceiveClaimed(ICollection<IEntityResource> claimedResources) => ReceiveClaimed(claimedResources);
-
-        /// <summary>
-        /// The ReceiveClaimed method is called by RESTar once one or more resources provided
-        /// by this ResourceProvider have been added. Override this to provide additional 
-        /// logic once resources have been validated and set up.
-        /// </summary>
-        protected virtual void ReceiveClaimed(ICollection<IEntityResource> claimedResources) { }
-
-        internal void _ModifyResourceAttribute(Type type, RESTarAttribute attribute) => ModifyResourceAttribute(type, attribute);
-
-        /// <summary>
-        /// An optional method for modifying the RESTar resource attribute of a type before the resource is generated
-        /// </summary>
-        protected virtual void ModifyResourceAttribute(Type type, RESTarAttribute attribute) { }
-
-        /// <summary>
-        /// Override this method to add a validation step to the resource claim process. 
-        /// </summary>
-        /// <param name="resource">The resource to check validity for</param>
-        /// <param name="reason">Return the reason for this Type not being valid</param>
-        protected virtual bool IsValid(IEntityResource resource, out string reason)
-        {
-            reason = null;
-            return true;
-        }
-
-        internal bool RemoveProceduralResource(Type resourceType)
-        {
-            var iresource = Resource.SafeGet(resourceType);
-            if (iresource == null) return true;
-            return RemoveResource(iresource);
-        }
-
-        /// <summary>
-        /// Removes the given resource from the RESTar instance
-        /// </summary>
-        /// <returns>True if and only if a resource was successfully removed</returns>
-        protected bool RemoveResource(IResource resource)
-        {
-            if (resource is IEntityResource er && er.Provider == this.GetProviderId())
-            {
-                RESTarConfig.RemoveResource(resource);
-                return true;
-            }
-            return false;
-        }
-    }
-
-    /// <inheritdoc />
-    /// <summary>
-    /// An EntityResourceProvider gives default implementations for the operations of a group of entity resources, 
-    /// and defines an attribute that can be used to decorate entity resource types in the application domain. By 
-    /// including the ResourceProvider in the call to RESTarConfig.Init(), RESTar can claim entity resource 
-    /// types decorated with the attribute and bind the defined resource operations to them.
-    /// </summary>
-    /// <typeparam name="TBase">The base type for all resources claimed by this ResourceProvider. 
-    /// Can be <see cref="object"/> if no such base type exists.</typeparam>
-    public abstract class EntityResourceProvider<TBase> : EntityResourceProvider where TBase : class
-    {
-        #region Public members
 
         /// <summary>
         /// The default Selector to use for resources claimed by this ResourceProvider
@@ -235,6 +363,8 @@ namespace RESTar.Resources
         {
             throw new NotImplementedException();
         }
+
+        #endregion
 
         #region Add resource API
 
@@ -324,8 +454,6 @@ namespace RESTar.Resources
 
         #endregion
 
-        #endregion
-
         #region Internals
 
         private static readonly MethodInfo InsertResourceMethod;
@@ -337,7 +465,6 @@ namespace RESTar.Resources
             InsertResourceMethod = methods.First(m => m.Name == nameof(_InsertResource) && m.IsGenericMethod);
             InsertResourceWrappedMethod = methods.First(m => m.Name == nameof(_InsertWrapperResource) && m.IsGenericMethod);
         }
-
 
         private IEntityResource _InsertResource(Type type, string fullName = null, RESTarAttribute attribute = null)
         {
@@ -407,54 +534,6 @@ namespace RESTar.Resources
             provider: this
         );
 
-        internal override void InsertProcedural(IProceduralEntityResource resource)
-        {
-            var attribute = new RESTarProceduralAttribute(resource.Methods) {Description = resource.Description};
-            var type = resource.Type;
-            ResourceValidator.ValidateRuntimeInsertion(type, resource.Name, attribute);
-            ResourceValidator.Validate(type);
-            var inserted = _InsertResource(type, resource.Name, attribute);
-            ReceiveClaimed(new[] {inserted});
-        }
-
-        internal override bool Include(Type type)
-        {
-            if (!typeof(TBase).IsAssignableFrom(type))
-                throw new InvalidResourceDeclarationException(
-                    $"Invalid resource declaration for type '{type.RESTarTypeName()}'. Expected type to " +
-                    $"inherit from base type '{typeof(TBase).RESTarTypeName()}' as required by resource " +
-                    $"provider of type '{GetType().RESTarTypeName()}'.");
-            return type.HasAttribute(AttributeType);
-        }
-
-        internal override void MakeClaimProcedural() => SelectProceduralResources().ForEach(InsertProcedural);
-
-        internal override void MakeClaimRegular(IEnumerable<Type> types) => types.ForEach(type =>
-        {
-            var resource = _InsertResource(type);
-            if (!IsValid(resource, out var reason))
-                throw new InvalidResourceDeclarationException("An error was found in the declaration for resource " +
-                                                              $"type '{type.RESTarTypeName()}': " + reason);
-        });
-
-        internal override void MakeClaimWrapped(IEnumerable<Type> types) => types.ForEach(type =>
-        {
-            var resource = _InsertWrapperResource(type, type.GetWrappedType());
-            if (!IsValid(resource, out var reason))
-                throw new InvalidResourceDeclarationException("An error was found in the declaration for wrapper resource " +
-                                                              $"type '{type.RESTarTypeName()}': " + reason);
-        });
-
-        internal override void Validate()
-        {
-            if (AttributeType == null)
-                throw new InvalidExternalResourceProviderException("AttributeType cannot be null");
-            if (!AttributeType.IsSubclassOf(typeof(Attribute)))
-                throw new InvalidExternalResourceProviderException("Provided AttributeType is not an attribute type");
-            if (!AttributeType.IsSubclassOf(typeof(EntityResourceProviderAttribute)))
-                throw new InvalidExternalResourceProviderException($"Provided AttributeType '{AttributeType.RESTarTypeName()}' " +
-                                                                   "does not inherit from RESTar.ResourceProviderAttribute");
-        }
 
         private static View<TResource>[] GetViews<TResource>() where TResource : class, TBase => typeof(TResource)
             .GetNestedTypes()

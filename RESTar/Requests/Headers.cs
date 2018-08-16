@@ -17,46 +17,100 @@ namespace RESTar.Requests
     {
         #region Response headers
 
+        #region Header names
+
+        private const string _Info = "RESTar-info";
+        private const string _Error = "RESTar-error";
+        private const string _Elapsed = "RESTar-elapsed-ms";
+        private const string _EntityCount = "RESTar-count";
+        private const string _Pager = "RESTar-pager";
+        private const string _Metadata = "RESTar-metadata";
+        private const string _Version = "RESTar-version";
+        private const string _Vary = "Vary";
+        private const string _AccessControlAllowOrigin = "Access-Control-Allow-Origin";
+        private const string _AccessControlAllowMethods = "Access-Control-Allow-Methods";
+        private const string _AccessControlMaxAge = "Access-Control-Max-Age";
+        private const string _AccessControlAllowCredentials = "Access-Control-Allow-Credentials";
+        private const string _AccessControlAllowHeaders = "Access-Control-Allow-Headers";
+
+        #endregion
+
         internal string Info
         {
-            get => this["RESTar-info"];
-            set => this["RESTar-info"] = value;
+            get => this[_Info];
+            set => this[_Info] = value;
         }
 
         internal string Error
         {
-            get => this["RESTar-error"];
-            set => this["RESTar-error"] = value;
+            get => this[_Error];
+            set => this[_Error] = value;
         }
 
         internal string Elapsed
         {
-            get => this["RESTar-elapsed-ms"];
-            set => this["RESTar-elapsed-ms"] = value;
+            get => this[_Elapsed];
+            set => this[_Elapsed] = value;
         }
 
         internal string EntityCount
         {
-            get => this["RESTar-count"];
-            set => this["RESTar-count"] = value;
+            get => this[_EntityCount];
+            set => this[_EntityCount] = value;
         }
 
         internal string Pager
         {
-            get => this["RESTar-pager"];
-            set => this["RESTar-pager"] = value;
+            get => this[_Pager];
+            set => this[_Pager] = value;
         }
 
         internal string Metadata
         {
-            get => this["RESTar-metadata"];
-            set => this["RESTar-metadata"] = value;
+            get => this[_Metadata];
+            set => this[_Metadata] = value;
         }
 
         internal string Version
         {
-            get => this["RESTar-version"];
-            set => this["RESTar-version"] = value;
+            get => this[_Version];
+            set => this[_Version] = value;
+        }
+
+        internal string Vary
+        {
+            get => this[_Vary];
+            set => this[_Vary] = value;
+        }
+
+        internal string AccessControlAllowOrigin
+        {
+            get => this[_AccessControlAllowOrigin];
+            set => this[_AccessControlAllowOrigin] = value;
+        }
+
+        internal string AccessControlAllowMethods
+        {
+            get => this[_AccessControlAllowMethods];
+            set => this[_AccessControlAllowMethods] = value;
+        }
+
+        internal string AccessControlMaxAge
+        {
+            get => this[_AccessControlMaxAge];
+            set => this[_AccessControlMaxAge] = value;
+        }
+
+        internal string AccessControlAllowCredentials
+        {
+            get => this[_AccessControlAllowCredentials];
+            set => this[_AccessControlAllowCredentials] = value;
+        }
+
+        internal string AccessControlAllowHeaders
+        {
+            get => this[_AccessControlAllowHeaders];
+            set => this[_AccessControlAllowHeaders] = value;
         }
 
         #endregion
@@ -97,7 +151,11 @@ namespace RESTar.Requests
         public string this[string key]
         {
             get => this._Get(key);
-            set => this._Set(key, value);
+            set
+            {
+                if (value == null) Remove(key);
+                this._Set(key, value);
+            }
         }
 
         private IDictionary<string, string> _dict { get; }

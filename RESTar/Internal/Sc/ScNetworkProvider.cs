@@ -50,7 +50,7 @@ namespace RESTar.Internal.Sc
                 {
                     var context = new ScContext(GetClient(scRequest), scRequest);
                     var headers = new Headers(scRequest.HeadersDictionary);
-                    return ToResponse(context.CheckOrigin(query, headers));
+                    return ToResponse(context.GetOptions(query, headers));
                 }
             );
 

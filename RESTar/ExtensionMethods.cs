@@ -418,7 +418,7 @@ namespace RESTar
             return jobj;
         }
 
-        internal static string GetProviderId(this Type providerType)
+        internal static string GetEntityResourceProviderId(this Type providerType)
         {
             var typeName = providerType.Name;
             if (typeName == null) throw new ArgumentNullException();
@@ -428,8 +428,6 @@ namespace RESTar
                 typeName = typeName.Substring(0, typeName.Length - 8);
             return typeName;
         }
-
-        internal static string GetProviderId(this EntityResourceProvider provider) => GetProviderId(provider.GetType());
 
         internal static Type GetWrappedType(this Type wrapperType) => wrapperType.BaseType?.GetGenericArguments()[0];
 
@@ -698,7 +696,6 @@ namespace RESTar
             return error;
         }
 
-        [Pure]
         internal static ISerializedResult Finalize(this ISerializedResult result, IContentTypeProvider acceptProvider)
         {
             switch (result.Body = result.Body.Finalize())
@@ -866,7 +863,7 @@ namespace RESTar
         /// request. If neither content type nor request are present, JSON is used if serialization is needed. If no
         /// content type is provided with binary data (byte array or stream) an exception is thrown.
         /// </summary>
-        internal static RESTarStream ToBodyStream<T>(this T content, ContentType? contentType = null, IRequestInternal request = null)
+        internal static RESTarStream ToStream<T>(this T content, ContentType? contentType = null, IRequestInternal request = null)
             where T : class
         {
             ContentType _contentType;

@@ -2,10 +2,12 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
+using RESTar.Admin;
 using RESTar.Linq;
 using RESTar.Meta.Internal;
 using RESTar.Requests;
 using RESTar.Resources.Operations;
+using Starcounter;
 
 namespace RESTar.Resources
 {
@@ -20,13 +22,14 @@ namespace RESTar.Resources
     /// </summary>
     /// <typeparam name="TProvider"></typeparam>
     /// <typeparam name="TController"></typeparam>
-    public abstract class ResourceController<TController, TProvider> : Admin.Resource, ISelector<TController>, IInserter<TController>,
+    public abstract class ResourceController<TController, TProvider> : Resource, ISelector<TController>, IInserter<TController>,
         IUpdater<TController>, IDeleter<TController>
         where TController : ResourceController<TController, TProvider>, new()
-        where TProvider : EntityResourceProvider, IProceduralEntityResourceProvider
+        where TProvider : IEntityResourceProvider, IProceduralEntityResourceProvider
     {
         internal static string BaseNamespace { private get; set; }
         internal static TProvider ResourceProvider { private get; set; }
+        private static IEntityResourceProviderInternal ResourceProviderInternal => (IEntityResourceProviderInternal) ResourceProvider;
 
         private static void ResolveDynamicResourceName(ref string name)
         {
@@ -60,13 +63,13 @@ namespace RESTar.Resources
         /// <summary>
         /// Selects the instances that have been inserted by this controller
         /// </summary>
-        protected static IEnumerable<TController> Select() => ResourceProvider
-            ._Select()
+        protected static IEnumerable<TController> Select() => ResourceProviderInternal
+            .SelectProceduralResources()
             .OrderBy(r => r.Name)
-            .Select(resource => Make<TController>(Meta.Resource.SafeGet(resource.Name)));
+            .Select(r => Make<TController>(Meta.Resource.SafeGet(r.Name)));
 
         /// <summary>
-        /// Inserts the current instance as a new dynamic procedural
+        /// Inserts the current instance as a new procedural resource
         /// </summary>
         protected void Insert()
         {
@@ -79,7 +82,11 @@ namespace RESTar.Resources
             if (methods?.Any() != true)
                 methods = RESTarConfig.Methods;
             var methodsArray = methods.ResolveMethodsCollection().ToArray();
-            ResourceProvider._Insert(name, description, methodsArray, Data);
+
+            var inserted = ResourceProviderInternal.InsertProceduralResource(name, description, methodsArray, (object) Data);
+            if (inserted != null)
+                ResourceProviderInternal.InsertProcedural(inserted);
+
             var resource = (IResourceInternal) Meta.Resource.SafeGet(name);
             resource.SetAlias(Alias);
         }
@@ -89,13 +96,16 @@ namespace RESTar.Resources
         /// </summary>
         protected void Update()
         {
-            var procedural = ResourceProvider._Select()?.FirstOrDefault(item => item.Name == Name) ??
+            var procedural = ResourceProviderInternal.SelectProceduralResources()?.FirstOrDefault(item => item.Name == Name) ??
                              throw new InvalidOperationException($"Cannot update resource '{Name}'. Resource has not been inserted.");
             var resource = (IResourceInternal) Meta.Resource.SafeGet(procedural.Type) ??
                            throw new InvalidOperationException($"Cannot update resource '{Name}'. Resource has not been inserted.");
             resource.SetAlias(Alias);
-            ResourceProvider._SetDescription(procedural, resource, Description);
-            ResourceProvider._SetMethods(procedural, resource, (EnabledMethods ?? RESTarConfig.Methods).ResolveMethodsCollection());
+            ResourceProviderInternal.SetProceduralResourceDescription(procedural, Description);
+            resource.Description = Description;
+            var methods = (EnabledMethods ?? RESTarConfig.Methods).ResolveMethodsCollection().ToArray();
+            ResourceProviderInternal.SetProceduralResourceMethods(procedural, methods);
+            resource.AvailableMethods = methods;
         }
 
         /// <summary>
@@ -103,8 +113,12 @@ namespace RESTar.Resources
         /// </summary>
         protected void Delete()
         {
-            var procedural = ResourceProvider._Select()?.FirstOrDefault(item => item.Name == Name);
-            ResourceProvider._Delete(procedural);
+            var procedural = ResourceProviderInternal.SelectProceduralResources()?.FirstOrDefault(item => item.Name == Name);
+            if (procedural == null) return;
+            var type = procedural.Type;
+            Db.TransactAsync(() => ResourceAlias.GetByResource(procedural.Name)?.Delete());
+            if (ResourceProviderInternal.DeleteProceduralResource(procedural))
+                ResourceProviderInternal.RemoveProceduralResource(type);
         }
 
         #region RESTar

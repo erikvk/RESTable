@@ -170,21 +170,17 @@ namespace RESTar.Requests
 
         /// <summary>
         /// Use this method to check the origin of an incoming OPTIONS request. This will check the contents
-        /// of the Origin header against allowed CORS origins.
+        /// of the Origin header against allowed CORS origins. If the URI is valid, a body is included with the
+        /// response, describing the selected resource.
         /// </summary>
         /// <param name="uri">The URI of the request</param>
         /// <param name="headers">The headers of the request</param>
         /// <returns></returns>
-        public ISerializedResult CheckOrigin(string uri, Headers headers)
+        public ISerializedResult GetOptions(string uri, Headers headers)
         {
             if (uri == null) throw new ArgumentNullException(nameof(uri));
             var parameters = new RequestParameters(this, uri, headers);
-            var origin = parameters.Headers.Origin;
-            if (!parameters.IsValid || !Uri.TryCreate(origin, UriKind.Absolute, out var originUri))
-                return new InvalidOrigin();
-            if (RESTarConfig.AllowAllOrigins || RESTarConfig.AllowedOrigins.Contains(originUri))
-                return new AcceptOrigin(origin, parameters);
-            return new InvalidOrigin();
+            return Options.Create(parameters).Serialize();
         }
 
         /// <summary>

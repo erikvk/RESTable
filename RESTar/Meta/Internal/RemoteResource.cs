@@ -40,7 +40,7 @@ namespace RESTar.Meta.Internal
         public int GetHashCode(IResource obj) => throw new InvalidOperationException(ErrorMessage(nameof(GetHashCode)));
         public int CompareTo(IResource other) => throw new InvalidOperationException(ErrorMessage(nameof(CompareTo)));
         public string Provider => throw new InvalidOperationException(ErrorMessage(nameof(Provider)));
-        public bool ClaimedBy<T>() where T : EntityResourceProvider => false;
+        public bool ClaimedBy<T>() where T : IEntityResourceProvider => false;
         public bool IsDDictionary => throw new InvalidOperationException(ErrorMessage(nameof(IsDDictionary)));
         public bool IsDynamic => throw new InvalidOperationException(ErrorMessage(nameof(IsDynamic)));
         public bool IsDeclared => throw new InvalidOperationException(ErrorMessage(nameof(IsDeclared)));

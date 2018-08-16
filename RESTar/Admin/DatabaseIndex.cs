@@ -173,7 +173,7 @@ namespace RESTar.Admin
         /// <inheritdoc />
         public IEnumerable<DatabaseIndex> Select(IRequest<DatabaseIndex> request) => EntityResourceProviders
             .Values
-            .Select(p => p._DatabaseIndexer)
+            .Select(p => p.DatabaseIndexer)
             .Where(indexer => indexer != null)
             .Distinct()
             .SelectMany(indexer => indexer.Select(request));
@@ -183,7 +183,7 @@ namespace RESTar.Admin
             .GroupBy(index => index.Resource.Provider)
             .Sum(group =>
             {
-                if (!EntityResourceProviders.TryGetValue(group.Key, out var provider) || !(provider._DatabaseIndexer is IDatabaseIndexer indexer))
+                if (!EntityResourceProviders.TryGetValue(group.Key, out var provider) || !(provider.DatabaseIndexer is IDatabaseIndexer indexer))
                     throw new Exception($"Unable to register index. Resource '{group.First().Resource.Name}' is not a database resource.");
                 request.Selector = () => group;
                 return indexer.Insert(request);
@@ -195,7 +195,7 @@ namespace RESTar.Admin
             .Sum(group =>
             {
                 request.Updater = _ => group;
-                return EntityResourceProviders[group.Key]._DatabaseIndexer.Update(request);
+                return EntityResourceProviders[group.Key].DatabaseIndexer.Update(request);
             });
 
         /// <inheritdoc />
@@ -204,7 +204,7 @@ namespace RESTar.Admin
             .Sum(group =>
             {
                 request.Selector = () => group;
-                return EntityResourceProviders[group.Key]._DatabaseIndexer.Delete(request);
+                return EntityResourceProviders[group.Key].DatabaseIndexer.Delete(request);
             });
     }
 }

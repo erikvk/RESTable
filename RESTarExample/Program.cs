@@ -122,6 +122,19 @@ namespace RESTarExample
     //    internal R2(int i) : base(i) { }
     //}
 
+    [Database, RESTar]
+    public class DateTimeTest
+    {
+        [RESTarMember(dateTimeFormat: "d")] public DateTime Short { get; set; }
+        [RESTarMember(dateTimeFormat: "O")] public DateTime Iso { get; set; }
+        [RESTarMember(dateTimeFormat: "D")] public DateTime Long { get; set; }
+        [RESTarMember(dateTimeFormat: "R")] public DateTime RFC { get; set; }
+        [RESTarMember(dateTimeFormat: "yyyy-MM")] public DateTime? Nullable { get; set; }
+
+        [RESTarMember(dateTimeFormat: "yy-MM-dd-afooboo:HH->mm")]
+        public DateTime Special { get; set; }
+    }
+
     [RESTar(Method.GET, Singleton = true, Description = description)]
     public class MonthlySpendingReport : ISelector<MonthlySpendingReport>
     {
@@ -130,7 +143,7 @@ namespace RESTarExample
         /// <summary>
         /// The month for which this report was created
         /// </summary>
-        [RESTarMember(customDateTimeFormat: "yyyy-MM")]
+        [RESTarMember(dateTimeFormat: "yyyy-MM")]
         public DateTime Month { get; set; }
 
         /// <summary>

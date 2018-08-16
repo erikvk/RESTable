@@ -513,12 +513,8 @@ namespace RESTar
         private void SendOptions(IResource resource)
         {
             var availableResource = AvailableResource.Make(resource, WebSocket);
-            WebSocket.SendJson(new
-            {
-                Resource = availableResource.Name,
-                ResourceKind = availableResource.Kind,
-                availableResource.Methods
-            }, true);
+            var options = new OptionsBody(availableResource.Name, availableResource.Kind, availableResource.Methods);
+            WebSocket.SendJson(options, true);
             SendQuery();
         }
 

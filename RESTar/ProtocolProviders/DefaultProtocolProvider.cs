@@ -172,6 +172,15 @@ namespace RESTar.ProtocolProviders
             return uriString;
         }
 
+        private static string ToUriString(IUriCondition condition)
+        {
+            if (condition == null) return "";
+            var key = WebUtility.UrlEncode(condition.Key);
+            var op = ((Operator) condition.Operator).Common;
+            var value = ToUriValueString(condition);
+            return $"{key}{op}{value}";
+        }
+
         private static string ToUriValueString(IUriCondition condition)
         {
             var valueLiteral = condition.ValueLiteral;
@@ -190,21 +199,11 @@ namespace RESTar.ProtocolProviders
                         case "true":
                         case "True":
                         case "TRUE":
-                        case var _ when encoded.All(char.IsDigit):
-                            return $"'{encoded}'";
+                        case var _ when encoded.All(char.IsDigit): return $"'{encoded}'";
                         default: return encoded;
                     }
                 default: return valueLiteral;
             }
-        }
-
-        private static string ToUriString(IUriCondition condition)
-        {
-            if (condition == null) return "";
-            var key = WebUtility.UrlEncode(condition.Key);
-            var op = ((Operator) condition.Operator).Common;
-            var value = ToUriValueString(condition);
-            return $"{key}{op}{value}";
         }
 
         /// <inheritdoc />

@@ -12,9 +12,9 @@ namespace RESTar.Meta.Internal
 {
     internal static class ResourceFactory
     {
-        private static DynamitResourceProvider DynamitProvider { get; }
-        private static StarcounterDeclaredResourceProvider StarcounterDeclaredProvider { get; }
-        private static VirtualResourceProvider VrProvider { get; }
+        private static IEntityResourceProviderInternal DynamitProvider { get; }
+        private static IEntityResourceProviderInternal StarcounterDeclaredProvider { get; }
+        private static IEntityResourceProviderInternal VrProvider { get; }
         private static TerminalResourceProvider TerminalProvider { get; }
         private static BinaryResourceProvider BinaryProvider { get; }
         private static EventResourceProvider EventProvider { get; }
@@ -22,33 +22,39 @@ namespace RESTar.Meta.Internal
         static ResourceFactory()
         {
             StarcounterDeclaredProvider = new StarcounterDeclaredResourceProvider();
-            DynamitProvider = new DynamitResourceProvider(StarcounterDeclaredProvider._DatabaseIndexer);
+            DynamitProvider = new DynamitResourceProvider(StarcounterDeclaredProvider.DatabaseIndexer);
             VrProvider = new VirtualResourceProvider();
-            EntityResourceProviders.Add(DynamitProvider.GetProviderId(), DynamitProvider);
-            EntityResourceProviders.Add(StarcounterDeclaredProvider.GetProviderId(), StarcounterDeclaredProvider);
-            EntityResourceProviders.Add(VrProvider.GetProviderId(), VrProvider);
+            EntityResourceProviders.Add(DynamitProvider.Id, DynamitProvider);
+            EntityResourceProviders.Add(StarcounterDeclaredProvider.Id, StarcounterDeclaredProvider);
+            EntityResourceProviders.Add(VrProvider.Id, VrProvider);
             TerminalProvider = new TerminalResourceProvider();
             BinaryProvider = new BinaryResourceProvider();
             EventProvider = new EventResourceProvider();
         }
 
-        private static void ValidateEntityResourceProviders(ICollection<EntityResourceProvider> externalProviders)
+        private static void ValidateEntityResourceProviders(ICollection<IEntityResourceProvider> _entityResourceProviders)
         {
-            if (externalProviders == null) return;
-            externalProviders.ForEach(p =>
+            if (_entityResourceProviders == null) return;
+            var entityResourceProviders = _entityResourceProviders
+                .Select(p => p as IEntityResourceProviderInternal ??
+                             throw new InvalidEntityResourceProviderException(p.GetType(),
+                                 "Must be a subclass of 'RESTar.Resources.EntityResourceProvider'"))
+                .ToArray();
+            entityResourceProviders.ForEach(p =>
             {
-                if (p == null) throw new InvalidExternalResourceProviderException("Found null value in 'resourceProviders' array");
+                if (p == null)
+                    throw new ArgumentNullException(nameof(entityResourceProviders), "Found null value in entity resource providers collection");
                 p.Validate();
             });
-            if (externalProviders.ContainsDuplicates(p => p.GetType().RESTarTypeName(), out var typeDupe))
-                throw new InvalidExternalResourceProviderException(
+            if (entityResourceProviders.ContainsDuplicates(p => p.GetType().RESTarTypeName(), out var typeDupe))
+                throw new InvalidEntityResourceProviderException(typeDupe.GetType(),
                     $"Two or more external ResourceProviders with the same type '{typeDupe.GetType().RESTarTypeName()}' was found. Include " +
                     "only one in the call to RESTarConfig.Init()");
-            if (externalProviders.Select(p => p.GetProviderId().ToLower()).ContainsDuplicates(out var idDupe))
-                throw new InvalidExternalResourceProviderException(
+            if (entityResourceProviders.Select(p => p.Id.ToLower()).ContainsDuplicates(out var idDupe))
+                throw new InvalidEntityResourceProviderException(idDupe.GetType(),
                     "Two or more external ResourceProviders had simliar type names, which could lead to confusion. Only one provider " +
                     $"should be associated with '{idDupe}'");
-            foreach (var provider in externalProviders.Where(provider => provider is IProceduralEntityResourceProvider))
+            foreach (var provider in entityResourceProviders.Where(provider => provider is IProceduralEntityResourceProvider))
             {
                 var methods = provider.GetType().GetMethods(DeclaredOnly | Instance | NonPublic);
                 if (methods.All(method => method.Name != "SelectProceduralResources"
@@ -56,14 +62,14 @@ namespace RESTar.Meta.Internal
                                           && method.Name != "SetProceduralResourceMethods"
                                           && method.Name != "SetProceduralResourceDescription"
                                           && method.Name != "DeleteProceduralResource"))
-                    throw new InvalidExternalResourceProviderException(
+                    throw new InvalidEntityResourceProviderException(provider.GetType(),
                         $"Resource provider '{provider.GetType()}' was declared to support procedural resources, but did not override methods " +
                         "'SelectProceduralResources()', 'InsertProceduralResource()', 'SetProceduralResourceMethods', 'SetProceduralResourceDescription' " +
                         "and 'DeleteProceduralResource' from 'EntityResourceProvider'."
                     );
             }
-            foreach (var provider in externalProviders)
-                EntityResourceProviders.Add(provider.GetProviderId(), provider);
+            foreach (var provider in entityResourceProviders)
+                EntityResourceProviders.Add(provider.Id, provider);
         }
 
         /// <summary>
@@ -137,7 +143,7 @@ namespace RESTar.Meta.Internal
                 parentResource.InnerResources = group.ToList();
             });
 
-        internal static void MakeResources(EntityResourceProvider[] externalProviders)
+        internal static void MakeResources(IEntityResourceProvider[] externalProviders)
         {
             ValidateEntityResourceProviders(externalProviders);
 
@@ -152,21 +158,21 @@ namespace RESTar.Meta.Internal
 
             foreach (var provider in EntityResourceProviders.Values)
             {
-                var claim = provider.GetClaim(regularTypes);
+                var claim = regularTypes.Where(provider.Include).ToList();
                 regularTypes = regularTypes.Except(claim).ToList();
                 provider.MakeClaimRegular(claim);
             }
 
             foreach (var provider in EntityResourceProviders.Values)
             {
-                var claim = provider.GetClaim(wrapperTypes);
+                var claim = wrapperTypes.Where(provider.Include).ToList();
                 wrapperTypes = wrapperTypes.Except(claim).ToList();
                 provider.MakeClaimWrapped(claim);
             }
 
             foreach (var provider in EntityResourceProviders.Values)
             {
-                provider._ReceiveClaimed(Resource.ClaimedBy(provider));
+                provider.ReceiveClaimed(Resource.ClaimedBy(provider));
                 if (provider is IProceduralEntityResourceProvider)
                     provider.MakeClaimProcedural();
             }

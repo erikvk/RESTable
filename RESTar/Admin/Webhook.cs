@@ -358,7 +358,7 @@ namespace RESTar.Admin
             var contentType = Headers.ContentType ?? ContentType.JSON;
 
             if (CustomPayloadRequest == null)
-                (body, contentType, contentLength) = @event.Payload.ToBodyStream(@event.NativeContentType ?? contentType);
+                (body, contentType, contentLength) = @event.Payload.ToStream(@event.NativeContentType ?? contentType);
             else
             {
                 using (var request = CustomPayloadRequest.CreateRequest(out var error))

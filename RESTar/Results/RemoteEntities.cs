@@ -46,7 +46,7 @@ namespace RESTar.Results
             EntityType = typeof(JObject);
             EntityCount = entityCount;
             IsSerialized = true;
-            ContentTypeProvider = ContentTypeController.ResolveOutputContentTypeProvider(RequestInternal, null);
+            ContentTypeProvider = ContentTypeController.ResolveOutputContentTypeProvider(RequestInternal);
         }
     }
 

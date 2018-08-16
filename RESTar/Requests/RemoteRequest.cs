@@ -33,7 +33,7 @@ namespace RESTar.Requests
 
         public void SetBody(object content, ContentType? contentType = null) => SetBody(new Body
         (
-            stream: content.ToBodyStream(contentType, this),
+            stream: content.ToStream(contentType, this),
             protocolProvider: CachedProtocolProvider
         ));
 

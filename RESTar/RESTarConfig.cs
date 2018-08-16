@@ -87,7 +87,7 @@ namespace RESTar
             bool prettyPrint = true,
             ushort daysToSaveErrors = 30,
             LineEndings lineEndings = LineEndings.Windows,
-            IEnumerable<EntityResourceProvider> entityResourceProviders = null,
+            IEnumerable<IEntityResourceProvider> entityResourceProviders = null,
             IEnumerable<IProtocolProvider> protocolProviders = null,
             IEnumerable<IContentTypeProvider> contentTypeProviders = null
         )

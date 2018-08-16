@@ -88,7 +88,7 @@ namespace RESTar.Admin
         [RESTarMember(hideIfNull: true)] public IEnumerable<Resource> InnerResources { get; private set; }
 
         private bool IsProcedural(out IProceduralEntityResource proceduralResource, out IEntityResource entityResource,
-            out EntityResourceProvider provider)
+            out IEntityResourceProviderInternal provider)
         {
             proceduralResource = null;
             entityResource = null;
@@ -100,7 +100,7 @@ namespace RESTar.Admin
             if (!EntityResourceProviders.TryGetValue(entityResource.Provider, out provider) || !(provider is IProceduralEntityResourceProvider))
                 return false;
             var resource = entityResource;
-            if (provider._Select().FirstOrDefault(r => r.Name == resource.Name) is IProceduralEntityResource _dynamicResource)
+            if (provider.SelectProceduralResources().FirstOrDefault(r => r.Name == resource.Name) is IProceduralEntityResource _dynamicResource)
                 proceduralResource = _dynamicResource;
             else return false;
             return true;

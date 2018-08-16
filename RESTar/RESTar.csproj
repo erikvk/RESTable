@@ -359,7 +359,7 @@
     <Compile Include="Results\UnsupportedWebSocketInput.cs" />
     <Compile Include="Results\UpgradeRequired.cs" />
     <Compile Include="Results\AmbiguousResource.cs" />
-    <Compile Include="Resources\InvalidExternalResourceProviderException.cs" />
+    <Compile Include="Resources\InvalidEntityResourceProviderException.cs" />
     <Compile Include="Results\FeatureNotImplemented.cs" />
     <Compile Include="Results\Forbidden.cs" />
     <Compile Include="Results\BadConditionOperator.cs" />
@@ -368,7 +368,6 @@
     <Compile Include="Results\InvalidExternalDestination.cs" />
     <Compile Include="Results\InvalidExternalSource.cs" />
     <Compile Include="Results\InvalidInputCount.cs" />
-    <Compile Include="Results\InvalidOrigin.cs" />
     <Compile Include="Results\InvalidSyntax.cs" />
     <Compile Include="Internal\MissingConfigurationFile.cs" />
     <Compile Include="Results\NoAvailableDynamicTable.cs" />
@@ -396,7 +395,7 @@
     <Compile Include="Results\Unknown.cs" />
     <Compile Include="Results\UnsupportedContent.cs" />
     <Compile Include="Results\FailedValidation.cs" />
-    <Compile Include="Results\AcceptOrigin.cs" />
+    <Compile Include="Results\Options.cs" />
     <Compile Include="Results\DeletedEntities.cs" />
     <Compile Include="Results\Entities.cs" />
     <Compile Include="Results\InsertedEntities.cs" />

@@ -22,7 +22,7 @@ namespace RESTar.Meta
         /// Gets all registered RESTar resources that were claimed by the given 
         /// ResourceProvider type.
         /// </summary>
-        public static IEnumerable<IEntityResource> ClaimedBy<T>() where T : EntityResourceProvider => All
+        public static IEnumerable<IEntityResource> ClaimedBy<T>() where T : IEntityResourceProvider => All
             .OfType<IEntityResource>()
             .Where(r => r.ClaimedBy<T>());
 
@@ -30,9 +30,9 @@ namespace RESTar.Meta
         /// Gets all registered RESTar resources that were claimed by the given 
         /// ResourceProvider type.
         /// </summary>
-        public static ICollection<IEntityResource> ClaimedBy(EntityResourceProvider provider) => All
+        public static ICollection<IEntityResource> ClaimedBy(IEntityResourceProvider provider) => All
             .OfType<IEntityResource>()
-            .Where(r => r.Provider == provider.GetProviderId())
+            .Where(r => r.Provider == provider.Id)
             .ToList();
 
         /// <summary>

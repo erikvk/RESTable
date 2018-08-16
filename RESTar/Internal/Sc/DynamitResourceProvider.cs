@@ -13,7 +13,7 @@ using Starcounter;
 
 namespace RESTar.Internal.Sc
 {
-    /// <inheritdoc cref="EntityResourceProvider" />
+    /// <inheritdoc cref="EntityResourceProvider{TBase}" />
     /// <inheritdoc cref="IProceduralEntityResourceProvider" />
     /// <summary>
     /// The resource provider for Dynamit dynamic entity resource types

@@ -65,7 +65,7 @@ namespace RESTar.Resources
         /// <summary>
         /// The custom datetime format string of this property (if any)
         /// </summary>
-        public string CustomDateTimeFormat { get; }
+        public string DateTimeFormat { get; }
 
         /// <inheritdoc />
         /// <summary>
@@ -81,10 +81,10 @@ namespace RESTar.Resources
         /// <param name="allowedOperators">These operators will be allowed in conditions targeting this property.</param>
         /// <param name="excelReducer">The name of an optional public ToString-like method, declared in the same scope as the property, that reduces the property to an excel-compatible string.</param>
         /// <param name="replaceOnUpdate">Should this object be replaced with a new instance on update, or reused? Applicable for types such as Dictionaries and Lists.</param>
-        /// <param name="customDateTimeFormat">A custom datetime format string to use when writing and reading this property</param>
+        /// <param name="dateTimeFormat">A custom datetime format string to use when writing and reading this property</param>
         public RESTarMemberAttribute(bool ignore = false, string name = null, int order = int.MinValue, bool hide = false,
             bool hideIfNull = false, bool readOnly = false, bool skipConditions = false, Operators allowedOperators = Operators.All,
-            string excelReducer = null, bool replaceOnUpdate = false, string customDateTimeFormat = null) 
+            string excelReducer = null, bool replaceOnUpdate = false, string dateTimeFormat = null) 
         {
             Ignored = ignore;
             Name = name;
@@ -97,7 +97,7 @@ namespace RESTar.Resources
             AllowedOperators = allowedOperators;
             ExcelReducerName = excelReducer;
             ReplaceOnUpdate = replaceOnUpdate;
-            CustomDateTimeFormat = customDateTimeFormat;
+            DateTimeFormat = dateTimeFormat;
         }
     }
 }
