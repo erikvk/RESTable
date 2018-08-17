@@ -733,11 +733,11 @@ namespace RESTar
             if (count > -1)
             {
                 components.MetaConditions.RemoveAll(c => c.Key.EqualsNoCase("limit"));
-                components.MetaConditions.Add(new UriCondition("limit", EQUALS, count.ToString(), TypeCode.Int32));
+                components.MetaConditions.Add(new UriCondition(RESTarMetaCondition.Limit, count.ToString()));
             }
             components.MetaConditions.RemoveAll(c => c.Key.EqualsNoCase("offset"));
-            components.MetaConditions.Add(new UriCondition("offset", EQUALS,
-                (entities.Request.MetaConditions.Offset + (long) entities.EntityCount).ToString(), TypeCode.Int32));
+            components.MetaConditions.Add(new UriCondition(RESTarMetaCondition.Offset,
+                (entities.Request.MetaConditions.Offset + (long) entities.EntityCount).ToString()));
             return components;
         }
 

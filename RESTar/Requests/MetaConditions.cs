@@ -14,44 +14,66 @@ using static RESTar.Requests.Operators;
 
 namespace RESTar.Requests
 {
-    internal enum RESTarMetaConditions
+    /// <summary>
+    /// The meta-conditions available in RESTar
+    /// </summary>
+    public enum RESTarMetaCondition
     {
+        /// <summary />
         Unsafe,
+
+        /// <summary />
         Limit,
+
+        /// <summary />
         Offset,
+
+        /// <summary />
         Order_asc,
+
+        /// <summary />
         Order_desc,
+
+        /// <summary />
         Select,
+
+        /// <summary />
         Add,
+
+        /// <summary />
         Rename,
+
+        /// <summary />
         Distinct,
+
+        /// <summary />
         Search,
+
+        /// <summary />
         Safepost,
-        Format,
-        New,
-        Delete
+
+        /// <summary />
+        Format
     }
 
     internal static class MetaConditionsExtensions
     {
-        internal static Type GetExpectedType(this RESTarMetaConditions condition)
+        internal static Type GetExpectedType(this RESTarMetaCondition condition)
         {
             switch (condition)
             {
-                case RESTarMetaConditions.Unsafe: return typeof(bool);
-                case RESTarMetaConditions.Limit: return typeof(int);
-                case RESTarMetaConditions.Offset: return typeof(int);
-                case RESTarMetaConditions.Order_asc: return typeof(string);
-                case RESTarMetaConditions.Order_desc: return typeof(string);
-                case RESTarMetaConditions.Select: return typeof(string);
-                case RESTarMetaConditions.Add: return typeof(string);
-                case RESTarMetaConditions.Rename: return typeof(string);
-                case RESTarMetaConditions.Distinct: return typeof(bool);
-                case RESTarMetaConditions.Search: return typeof(string);
-                case RESTarMetaConditions.Safepost: return typeof(string);
-                case RESTarMetaConditions.Format: return typeof(string);
-                case RESTarMetaConditions.New: return typeof(bool);
-                case RESTarMetaConditions.Delete: return typeof(bool);
+                case RESTarMetaCondition.Unsafe: return typeof(bool);
+                case RESTarMetaCondition.Limit: return typeof(int);
+                case RESTarMetaCondition.Offset: return typeof(int);
+                case RESTarMetaCondition.Order_asc: return typeof(string);
+                case RESTarMetaCondition.Order_desc: return typeof(string);
+                case RESTarMetaCondition.Select: return typeof(string);
+                case RESTarMetaCondition.Add: return typeof(string);
+                case RESTarMetaCondition.Rename: return typeof(string);
+                case RESTarMetaCondition.Distinct: return typeof(bool);
+                case RESTarMetaCondition.Search: return typeof(string);
+                case RESTarMetaCondition.Safepost: return typeof(string);
+                case RESTarMetaCondition.Format: return typeof(string);
                 default: throw new ArgumentOutOfRangeException(nameof(condition), condition, null);
             }
         }
@@ -118,16 +140,14 @@ namespace RESTar.Requests
         /// </summary>
         internal Formatter? Formatter { get; set; }
 
-        internal bool New { get; set; }
         internal bool Empty = true;
-        internal bool Delete { get; set; }
 
         internal IProcessor[] Processors { get; private set; }
         internal bool HasProcessors { get; private set; }
         internal bool CanUseExternalCounter { get; private set; } = true;
 
         private static string AllMetaConditions =>
-            $"{string.Join(", ", Enum.GetNames(typeof(RESTarMetaConditions)).Except(new[] {"New", "Delete"}))}";
+            $"{string.Join(", ", Enum.GetNames(typeof(RESTarMetaCondition)).Except(new[] {"New", "Delete"}))}";
 
         internal static MetaConditions Parse(IReadOnlyCollection<IUriCondition> uriMetaConditions, IEntityResource resource)
         {
@@ -143,7 +163,7 @@ namespace RESTar.Requests
                 if (op != EQUALS)
                     throw new InvalidSyntax(InvalidMetaConditionOperator,
                         "Invalid operator for meta-condition. One and only one '=' is allowed");
-                if (!Enum.TryParse(key, true, out RESTarMetaConditions metaCondition))
+                if (!Enum.TryParse(key, true, out RESTarMetaCondition metaCondition))
                     throw new InvalidSyntax(InvalidMetaConditionKey,
                         $"Invalid meta-condition '{key}'. Available meta-conditions: {AllMetaConditions}");
 
@@ -179,52 +199,46 @@ namespace RESTar.Requests
                 }
                 switch (metaCondition)
                 {
-                    case RESTarMetaConditions.Unsafe:
+                    case RESTarMetaCondition.Unsafe:
                         mc.Unsafe = value;
                         break;
-                    case RESTarMetaConditions.Limit:
+                    case RESTarMetaCondition.Limit:
                         mc.Limit = (Limit) (int) value;
                         break;
-                    case RESTarMetaConditions.Offset:
+                    case RESTarMetaCondition.Offset:
                         mc.Offset = (Offset) (int) value;
                         break;
-                    case RESTarMetaConditions.Order_asc:
+                    case RESTarMetaCondition.Order_asc:
                         mc.OrderBy = new OrderBy(resource, false, (string) value, dynamicDomain);
                         break;
-                    case RESTarMetaConditions.Order_desc:
+                    case RESTarMetaCondition.Order_desc:
                         mc.OrderBy = new OrderBy(resource, true, (string) value, dynamicDomain);
                         break;
-                    case RESTarMetaConditions.Select:
+                    case RESTarMetaCondition.Select:
                         mc.Select = new Select(resource, (string) value, dynamicDomain);
                         break;
-                    case RESTarMetaConditions.Add:
+                    case RESTarMetaCondition.Add:
                         mc.Add = new Add(resource, (string) value, dynamicDomain);
                         break;
-                    case RESTarMetaConditions.Rename:
+                    case RESTarMetaCondition.Rename:
                         mc.Rename = new Rename(resource, (string) value, out dynamicDomain);
                         break;
-                    case RESTarMetaConditions.Distinct:
+                    case RESTarMetaCondition.Distinct:
                         if ((bool) value)
                             mc.Distinct = new Distinct();
                         break;
-                    case RESTarMetaConditions.Search:
+                    case RESTarMetaCondition.Search:
                         mc.Search = new Search((string) value);
                         break;
-                    case RESTarMetaConditions.Safepost:
+                    case RESTarMetaCondition.Safepost:
                         mc.SafePost = value;
                         break;
-                    case RESTarMetaConditions.Format:
+                    case RESTarMetaCondition.Format:
                         var formatName = (string) value;
                         var format = DbOutputFormat.GetByName(formatName) ?? throw new InvalidSyntax(UnknownFormatter,
                                          $"Could not find any output format by '{formatName}'. See RESTar.Admin.OutputFormat " +
                                          "for available output formats");
                         mc.Formatter = format.Format;
-                        break;
-                    case RESTarMetaConditions.New:
-                        mc.New = value;
-                        break;
-                    case RESTarMetaConditions.Delete:
-                        mc.Delete = value;
                         break;
                     default: throw new ArgumentOutOfRangeException();
                 }
@@ -274,30 +288,30 @@ namespace RESTar.Requests
         {
             var list = new List<IUriCondition>();
             if (Unsafe)
-                list.Add(new UriCondition("unsafe", EQUALS, "true", TypeCode.Boolean));
+                list.Add(new UriCondition(RESTarMetaCondition.Unsafe, "true"));
             if (Limit.Number > -1)
-                list.Add(new UriCondition("limit", EQUALS, Limit.Number.ToString(), TypeCode.Int32));
+                list.Add(new UriCondition(RESTarMetaCondition.Limit, Limit.Number.ToString()));
             if (Offset.Number > 0)
-                list.Add(new UriCondition("offset", EQUALS, Offset.Number.ToString(), TypeCode.Int32));
+                list.Add(new UriCondition(RESTarMetaCondition.Offset, Offset.Number.ToString()));
             if (OrderBy != null)
             {
-                var key = OrderBy.Descending ? "order_desc" : "order_asc";
-                list.Add(new UriCondition(key, EQUALS, OrderBy.Term.ToString(), TypeCode.String));
+                var key = OrderBy.Descending ? RESTarMetaCondition.Order_desc : RESTarMetaCondition.Order_asc;
+                list.Add(new UriCondition(key, OrderBy.Term.ToString()));
             }
             if (Select != null)
-                list.Add(new UriCondition("select", EQUALS, string.Join(",", Select), TypeCode.String));
+                list.Add(new UriCondition(RESTarMetaCondition.Select, string.Join(",", Select)));
             if (Add != null)
-                list.Add(new UriCondition("add", EQUALS, string.Join(",", Add), TypeCode.String));
+                list.Add(new UriCondition(RESTarMetaCondition.Add, string.Join(",", Add)));
             if (Rename != null)
-                list.Add(new UriCondition("rename", EQUALS, string.Join(",", Rename.Select(r => $"{r.Key}->{r.Value}")), TypeCode.String));
+                list.Add(new UriCondition(RESTarMetaCondition.Rename, string.Join(",", Rename.Select(r => $"{r.Key}->{r.Value}"))));
             if (Distinct != null)
-                list.Add(new UriCondition("distinct", EQUALS, "true", TypeCode.Boolean));
+                list.Add(new UriCondition(RESTarMetaCondition.Distinct, "true"));
             if (Search != null)
-                list.Add(new UriCondition("search", EQUALS, Search.Pattern, TypeCode.String));
+                list.Add(new UriCondition(RESTarMetaCondition.Search, Search.Pattern));
             if (SafePost != null)
-                list.Add(new UriCondition("safepost", EQUALS, SafePost, TypeCode.String));
+                list.Add(new UriCondition(RESTarMetaCondition.Safepost, SafePost));
             if (Formatter.HasValue)
-                list.Add(new UriCondition("formatter", EQUALS, Formatter.Value.Name, TypeCode.String));
+                list.Add(new UriCondition(RESTarMetaCondition.Format, Formatter.Value.Name));
             return list;
         }
     }

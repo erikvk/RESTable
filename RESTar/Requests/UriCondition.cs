@@ -9,7 +9,7 @@ namespace RESTar.Requests
     /// <summary>
     /// Describes the syntactic components of a RESTar uri condition
     /// </summary>
-    internal struct UriCondition : IUriCondition
+    public struct UriCondition : IUriCondition
     {
         /// <inheritdoc />
         public string Key { get; }
@@ -38,6 +38,19 @@ namespace RESTar.Requests
             Operator = op;
             ValueLiteral = valueLiteral;
             ValueTypeCode = valueTypeCode;
+        }
+
+        /// <summary>
+        /// Creates a new custom UriCondition encoding a meta-condition
+        /// </summary>
+        public UriCondition(RESTarMetaCondition metaCondition, string valueLiteral)
+        {
+            if (metaCondition < RESTarMetaCondition.Unsafe || metaCondition > RESTarMetaCondition.Format)
+                throw new ArgumentOutOfRangeException(nameof(metaCondition));
+            Key = metaCondition.ToString().ToLower();
+            Operator = Operator.EQUALS;
+            ValueLiteral = valueLiteral;
+            ValueTypeCode = Type.GetTypeCode(metaCondition.GetExpectedType());
         }
 
         /// <inheritdoc />
