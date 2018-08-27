@@ -222,7 +222,7 @@ namespace RESTar.Meta.Internal
         internal static void FinalCheck()
         {
             var metadata = Metadata.Get(MetadataLevel.Full);
-            foreach (var (enumType, _) in metadata.PeripheralTypes.Where(t => t.Type.IsEnum))
+            foreach (var enumType in metadata.PeripheralTypes.Keys.Where(t => t.IsEnum))
             {
                 if (Enum.GetNames(enumType).Select(name => name.ToLower()).ContainsDuplicates(out var dupe))
                     throw new InvalidReferencedEnumDeclarationException("A reference was made in some resource type to an enum type with name " +

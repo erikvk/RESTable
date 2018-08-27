@@ -24,7 +24,7 @@ namespace RESTar.Admin
         internal static bool _PrettyPrint => Instance.PrettyPrint;
         internal static int _DaysToSaveErrors => Instance.DaysToSaveErrors;
         internal static string _ResourcesPath => Instance.ResourcesPath;
-        internal static string _HelpResourcePath => Instance.HelpResourcePath;
+        internal static string _HelpResourcePath => Instance.DocumentationURL;
         internal static bool _DontUseLRT => Instance.DontUseLRT;
         internal static LineEndings _LineEndings => Instance.LineEndings;
                
@@ -66,12 +66,17 @@ namespace RESTar.Admin
         /// <summary>
         /// The path where help resources are available
         /// </summary>
-        public string HelpResourcePath => ResourcesPath + "/RESTar.help";
+        public string DocumentationURL => "https://develop.mopedo.com";
 
         /// <summary>
         /// The number of days to store errors in the RESTar.Error resource
         /// </summary>
         public int DaysToSaveErrors { get; private set; }
+
+        /// <summary>
+        /// The RESTar version of the current application
+        /// </summary>
+        public string RESTarVersion { get; private set; }
 
         /// <summary>
         /// The path where temporary files are created
@@ -90,7 +95,8 @@ namespace RESTar.Admin
                 PrettyPrint = prettyPrint,
                 DaysToSaveErrors = daysToSaveErrors,
                 LineEndings = lineEndings,
-                TempFilePath = Path.GetTempPath()
+                TempFilePath = Path.GetTempPath(),
+                RESTarVersion = RESTarConfig.Version
             };
         });
 

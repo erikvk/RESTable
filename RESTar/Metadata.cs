@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Reflection;
 using RESTar.Internal.Auth;
@@ -54,13 +55,13 @@ namespace RESTar
         /// <summary>
         /// The type list containing all entity resource types
         /// </summary>
-        public (Type Type, Member[] Members)[] EntityResourceTypes { get; private set; }
+        public IReadOnlyDictionary<Type, Member[]> EntityResourceTypes { get; private set; }
 
         /// <summary>
         /// The type list containing all peripheral types, types that are 
         /// referenced by some entity resource type or peripheral type.
         /// </summary>
-        public (Type Type, Member[] Members)[] PeripheralTypes { get; private set; }
+        public IReadOnlyDictionary<Type, Member[]> PeripheralTypes { get; private set; }
 
         /// <inheritdoc />
         public IEnumerable<Metadata> Select(IRequest<Metadata> request)
@@ -73,7 +74,7 @@ namespace RESTar
         /// Generates metadata according to a given metadata level
         /// </summary>
         public static Metadata Get(MetadataLevel level) => Make(level, null);
-        
+
         internal static Metadata Make(MetadataLevel level, AccessRights rights)
         {
             var domain = rights?.Keys ?? RESTarConfig.Resources;
@@ -132,7 +133,6 @@ namespace RESTar
 
             var entityTypes = entityResources.Select(r => r.Type).ToList();
             var terminalTypes = terminalResources.Select(r => r.Type).ToList();
-
             entityTypes.ForEach(parseType);
             checkedTypes.ExceptWith(entityTypes);
             terminalTypes.ForEach(parseType);
@@ -143,22 +143,20 @@ namespace RESTar
                 CurrentAccessScope = new Dictionary<IResource, Method[]>(rights ?? AccessRights.Root),
                 EntityResources = entityResources.ToArray(),
                 TerminalResources = terminalResources.ToArray(),
-                EntityResourceTypes = entityTypes
-                    .Select(type => (type, type.GetDeclaredProperties().Values
-                        .Cast<Member>()
-                        .ToArray()))
-                    .ToArray(),
-                PeripheralTypes = checkedTypes
-                    .Select(type =>
-                    {
-                        var props = type.GetDeclaredProperties().Values;
-                        var fields = type.GetFields(BindingFlags.Public | BindingFlags.Instance)
-                            .Where(p => !p.RESTarIgnored())
-                            .Select(f => new Field(f));
-                        return (type, props.Union<Member>(fields).ToArray());
-                    }).ToArray()
+                EntityResourceTypes = new ReadOnlyDictionary<Type, Member[]>(entityTypes.ToDictionary(t => t, type =>
+                    type.GetDeclaredProperties().Values.Cast<Member>().ToArray())),
+                PeripheralTypes = new ReadOnlyDictionary<Type, Member[]>(checkedTypes.ToDictionary(t => t, type =>
+                {
+                    var props = type.GetDeclaredProperties().Values;
+                    var fields = type.GetFields(BindingFlags.Public | BindingFlags.Instance)
+                        .Where(p => !p.RESTarIgnored())
+                        .Select(f => new Field(f));
+                    return props.Union<Member>(fields).ToArray();
+                }))
             };
         }
+
+        private Metadata() { }
 
         private static bool IsPrimitive(Type type)
         {

@@ -212,19 +212,6 @@ namespace RESTar
         #region Other
 
         /// <summary>
-        /// Creates a formatted string representation of the URI components,
-        /// a valid URI string according to the assigned protocol.
-        /// </summary>
-        public static string ToUriString(this IUriComponents uriComponents)
-        {
-            var protocolProvider = uriComponents.ProtocolProvider;
-            var uriString = protocolProvider.MakeRelativeUri(uriComponents);
-            if (ProtocolController.DefaultProtocolProvider.ProtocolProvider.Equals(protocolProvider))
-                return uriString;
-            return $"-{protocolProvider.ProtocolIdentifier}{uriString}";
-        }
-
-        /// <summary>
         /// Gets the object for a Starcounter object number
         /// </summary>
         /// <param name="objectNo">The Starcounter ObjectNo to get the extension for</param>
@@ -241,28 +228,42 @@ namespace RESTar
         internal static bool EqualsNoCase(this string s1, string s2) => string.Equals(s1, s2, OrdinalIgnoreCase);
         internal static string ToMethodsString(this IEnumerable<Method> ie) => string.Join(", ", ie);
 
-        internal static string ReplaceFirst(this string text, string search, string replace, out bool replaced)
+        internal static JToken Exemplify<T>() where T : class => Exemplify(typeof(T));
+
+        internal static JToken Exemplify(this Type type)
         {
-            var pos = text.IndexOf(search, Ordinal);
-            if (pos < 0)
+            switch (Type.GetTypeCode(type))
             {
-                replaced = false;
-                return text;
+                case TypeCode.DBNull: return null;
+                case TypeCode.Boolean: return false;
+                case TypeCode.Char: return 'a';
+                case TypeCode.SByte: return 8;
+                case TypeCode.Byte: return -8;
+                case TypeCode.Int16: return -16;
+                case TypeCode.UInt16: return 16;
+                case TypeCode.Int32: return -32;
+                case TypeCode.UInt32: return 32;
+                case TypeCode.Int64: return -64;
+                case TypeCode.UInt64: return 64;
+                case TypeCode.Decimal: return 10.0M;
+                case TypeCode.Single: return 10.1;
+                case TypeCode.Double: return 10.01;
+                case TypeCode.DateTime: return DateTime.UtcNow;
+                case TypeCode.String: return "a string";
+                case TypeCode.Object:
+                    switch (type)
+                    {
+                        case var _ when type.IsNullable(out var _base): return _base.Exemplify();
+                        case var _ when type.ImplementsGenericInterface(typeof(IDictionary<,>), out _): return new JObject();
+                        case var _ when type.ImplementsGenericInterface(typeof(IEnumerable<>), out var param): return new JArray {param[0].Exemplify()};
+                        default:
+                            var jobject = new JObject();
+                            foreach (var property in type.GetDeclaredProperties().Values)
+                                jobject[property.Name] = property.Type.Exemplify();
+                            return jobject;
+                    }
+                default: return null;
             }
-
-            replaced = true;
-            return $"{text.Substring(0, pos)}{replace}{text.Substring(pos + search.Length)}";
-        }
-
-        internal static Method[] ToMethodsArray(this string methodsString)
-        {
-            if (methodsString == null) return null;
-            if (methodsString.Trim() == "*")
-                return RESTarConfig.Methods;
-            return methodsString.Split(',')
-                .Where(s => s != "")
-                .Select(s => (Method) Enum.Parse(typeof(Method), s))
-                .ToArray();
         }
 
         internal static object GetDefault(this Type type)
@@ -1015,6 +1016,43 @@ namespace RESTar
         /// Converts an HTTP status code to the underlying numeric code
         /// </summary>
         internal static ushort? ToCode(this HttpStatusCode statusCode) => (ushort) statusCode;
+
+        /// <summary>
+        /// Creates a formatted string representation of the URI components,
+        /// a valid URI string according to the assigned protocol.
+        /// </summary>
+        public static string ToUriString(this IUriComponents uriComponents)
+        {
+            var protocolProvider = uriComponents.ProtocolProvider;
+            var uriString = protocolProvider.MakeRelativeUri(uriComponents);
+            if (ProtocolController.DefaultProtocolProvider.ProtocolProvider.Equals(protocolProvider))
+                return uriString;
+            return $"-{protocolProvider.ProtocolIdentifier}{uriString}";
+        }
+
+        internal static string ReplaceFirst(this string text, string search, string replace, out bool replaced)
+        {
+            var pos = text.IndexOf(search, Ordinal);
+            if (pos < 0)
+            {
+                replaced = false;
+                return text;
+            }
+
+            replaced = true;
+            return $"{text.Substring(0, pos)}{replace}{text.Substring(pos + search.Length)}";
+        }
+
+        internal static Method[] ToMethodsArray(this string methodsString)
+        {
+            if (methodsString == null) return null;
+            if (methodsString.Trim() == "*")
+                return RESTarConfig.Methods;
+            return methodsString.Split(',')
+                .Where(s => s != "")
+                .Select(s => (Method) Enum.Parse(typeof(Method), s))
+                .ToArray();
+        }
 
         #endregion
     }
