@@ -784,8 +784,8 @@ namespace RESTar
                 {
                     if (property.IsDateTime)
                     {
-                        if (TryParseUniversalDateTime(valueLiteral, out var result))
-                            return result;
+                        if (DateTime.TryParse(valueLiteral, null, AssumeUniversal, out var dateTime))
+                            return dateTime.ToUniversalTime();
                         throw new Exception();
                     }
                     return Convert.ChangeType(valueLiteral, property.Type.IsNullable(out var t) ? t : property.Type);
@@ -811,24 +811,10 @@ namespace RESTar
                     return i;
                 if (decimal.TryParse(valueLiteral, out var d))
                     return d;
-                if (TryParseUniversalDateTime(valueLiteral, out var dat))
-                    return dat;
+                if (DateTime.TryParse(valueLiteral, null, AssumeUniversal, out var dateTime))
+                    return dateTime.ToUniversalTime();
             }
             return valueLiteral;
-        }
-
-        private static bool TryParseUniversalDateTime(string valueLiteral, out DateTime result)
-        {
-            if (DateTime.TryParseExact(valueLiteral, "yyyy-MM", null, AssumeUniversal, out var dat) ||
-                DateTime.TryParseExact(valueLiteral, "yyyy-MM-dd", null, AssumeUniversal, out dat) ||
-                DateTime.TryParseExact(valueLiteral, "yyyy-MM-ddTHH:mm:ss", null, AssumeUniversal, out dat) ||
-                DateTime.TryParseExact(valueLiteral, "O", null, AssumeUniversal, out dat))
-            {
-                result = dat.ToUniversalTime();
-                return true;
-            }
-            result = default;
-            return false;
         }
 
         /// <summary>
