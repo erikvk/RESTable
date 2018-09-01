@@ -22,15 +22,15 @@ namespace RESTar.Meta.Internal
         {
             PropertyType = Type,
             PropertyName = Name,
-            Readable = Readable,
-            Writable = Writable,
+            Readable = IsReadable,
+            Writable = IsWritable,
             ValueProvider = new DefaultValueProvider(this),
             ObjectCreationHandling = ReplaceOnUpdate ? ObjectCreationHandling.Replace : ObjectCreationHandling.Reuse,
             NullValueHandling = HiddenIfNull ? NullValueHandling.Ignore : NullValueHandling.Include,
             Order = Order
         };
 
-        private SpecialProperty(int metadataToken, string name, string actualName, Type type, int? order, bool scQueryable,
+        private SpecialProperty(int metadataToken, string name, string actualName, Type type, int? order, bool isScQueryable,
             bool hidden, bool hiddenIfNull, Getter getter) : base
         (
             metadataToken: metadataToken,
@@ -38,7 +38,7 @@ namespace RESTar.Meta.Internal
             actualName: actualName,
             type: type,
             order: order,
-            scQueryable: scQueryable,
+            isScQueryable: isScQueryable,
             attributes: new[] {new KeyAttribute()},
             skipConditions: false,
             hidden: hidden,
@@ -73,7 +73,7 @@ namespace RESTar.Meta.Internal
             actualName: "ObjectNo",
             type: typeof(ulong),
             order: int.MaxValue - 1,
-            scQueryable: true,
+            isScQueryable: true,
             hidden: false,
             hiddenIfNull: false,
             getter: t => Do.TryAndThrow(t.GetObjectNo, "Could not get ObjectNo from non-Starcounter resource.")
@@ -89,7 +89,7 @@ namespace RESTar.Meta.Internal
             actualName: "ObjectNo",
             type: typeof(ulong),
             order: int.MaxValue - 1,
-            scQueryable: true,
+            isScQueryable: true,
             hidden: false,
             hiddenIfNull: false,
             getter: t => Do.TryAndThrow(t.GetObjectNo, "Could not get ObjectNo from non-Starcounter resource.")
@@ -105,7 +105,7 @@ namespace RESTar.Meta.Internal
             actualName: "ObjectID",
             type: typeof(string),
             order: int.MaxValue,
-            scQueryable: true,
+            isScQueryable: true,
             hidden: true,
             hiddenIfNull: false,
             getter: t => Do.TryAndThrow(t.GetObjectID, "Could not get ObjectID from non-Starcounter resource.")
@@ -121,7 +121,7 @@ namespace RESTar.Meta.Internal
             actualName: "ObjectID",
             type: typeof(string),
             order: int.MaxValue,
-            scQueryable: true,
+            isScQueryable: true,
             hidden: true,
             hiddenIfNull: false,
             getter: t => Do.TryAndThrow(t.GetObjectID, "Could not get ObjectID from non-Starcounter resource.")

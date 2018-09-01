@@ -75,7 +75,7 @@ namespace RESTar.WebSockets
 
         private WebSocketConnection TerminalConnection { get; set; }
 
-        internal ConnectionProfile GetConnectionProfile() => new ConnectionProfile(this);
+        internal AppProfile GetAppProfile() => new AppProfile(this);
 
         internal void ConnectTo(ITerminal terminal, ITerminalResource resource)
         {

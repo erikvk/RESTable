@@ -25,7 +25,7 @@ namespace RESTar.ContentTypeProviders.NativeJsonProtocol
                     p.PropertyName = property.Name;
                     p.ObjectCreationHandling = property.ReplaceOnUpdate ? ObjectCreationHandling.Replace : ObjectCreationHandling.Auto;
                     p.Order = property.Order;
-                    if (property.Writable)
+                    if (property.IsWritable)
                     {
                         p.PropertyName += "$";
                         p.Writable = true;

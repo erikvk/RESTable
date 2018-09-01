@@ -112,9 +112,9 @@ namespace RESTar.Meta
                             ));
                         return make(t).Select(p =>
                         {
-                            p.ScQueryable = _type.HasAttribute<DatabaseAttribute>() && p.Type.IsStarcounterCompatible();
+                            p.IsScQueryable = _type.HasAttribute<DatabaseAttribute>() && p.Type.IsStarcounterCompatible();
                             var (getter, setter) = targetsByProp.SafeGet(p.Name);
-                            if (p.Readable)
+                            if (p.IsReadable)
                             {
                                 p.ActualName = getter.GetInstructions()
                                     .Select(i => i.OpCode == OpCodes.Call && i.Operand is MethodInfo calledMethod && getter.IsSpecialName
@@ -124,7 +124,7 @@ namespace RESTar.Meta
                                     .LastOrDefault(prop => prop != null)?
                                     .Name;
                             }
-                            else if (p.Writable)
+                            else if (p.IsWritable)
                             {
                                 p.ActualName = setter.GetInstructions()
                                     .Select(i => i.OpCode == OpCodes.Call && i.Operand is MethodInfo calledMethod && setter.IsSpecialName

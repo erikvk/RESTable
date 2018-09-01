@@ -54,10 +54,10 @@ namespace RESTar.WebSockets
                     case "#INFO" when tail is string json:
                         try
                         {
-                            var profile = webSocket.GetConnectionProfile();
+                            var profile = webSocket.GetAppProfile();
                             Providers.Json.Populate(json, profile);
                             webSocket.SendText("Profile updated");
-                            webSocket.SendJson(webSocket.GetConnectionProfile());
+                            webSocket.SendJson(webSocket.GetAppProfile());
                         }
                         catch (Exception e)
                         {
@@ -65,7 +65,7 @@ namespace RESTar.WebSockets
                         }
                         break;
                     case "#INFO":
-                        webSocket.SendJson(webSocket.GetConnectionProfile());
+                        webSocket.SendJson(webSocket.GetAppProfile());
                         break;
                     case "#SHELL":
                     case "#HOME":

@@ -152,7 +152,7 @@ namespace RESTar.Meta
             }
 
             key.Split('.').ForEach(s => term.Store.Add(propertyMaker(s)));
-            term.ScQueryable = term.Store.All(p => p.ScQueryable);
+            term.ScQueryable = term.Store.All(p => p.IsScQueryable);
             term.IsDeclared = term.Store.All(p => p is DeclaredProperty);
             term.ConditionSkip = term.Store.Any(p => p is DeclaredProperty s && s.SkipConditions);
             term.Key = string.Join(".", term.Store.Select(p => p.Name));

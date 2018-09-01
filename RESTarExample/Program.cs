@@ -83,6 +83,29 @@ namespace RESTarExample
         }
     }
 
+    [Database, RESTar]
+    public class Thing2
+    {
+        private int _inte;
+
+        public int Inte
+        {
+            get => _inte;
+            set => _inte = value;
+        }
+
+        public int Inte2
+        {
+            get => _inte;
+            set => _inte = value;
+        }
+
+        public int Int { get; set; }
+        public int Int2 => Int;
+        public bool T { get; set; }
+        public string S { get; set; }
+    }
+
     public class Resource1
     {
         public sbyte Sbyte;
@@ -129,7 +152,9 @@ namespace RESTarExample
         [RESTarMember(dateTimeFormat: "O")] public DateTime Iso { get; set; }
         [RESTarMember(dateTimeFormat: "D")] public DateTime Long { get; set; }
         [RESTarMember(dateTimeFormat: "R")] public DateTime RFC { get; set; }
-        [RESTarMember(dateTimeFormat: "yyyy-MM")] public DateTime? Nullable { get; set; }
+
+        [RESTarMember(dateTimeFormat: "yyyy-MM")]
+        public DateTime? Nullable { get; set; }
 
         [RESTarMember(dateTimeFormat: "yy-MM-dd-afooboo:HH->mm")]
         public DateTime Special { get; set; }
@@ -163,14 +188,7 @@ namespace RESTarExample
             {
                 throw new Exception("Invalid input date");
             }
-            return new[]
-            {
-                new MonthlySpendingReport
-                {
-                    Month = date,
-                    NrOfWins = 123
-                }
-            };
+            return new[] {new MonthlySpendingReport {Month = date, NrOfWins = 123}};
         }
     }
 
@@ -232,11 +250,7 @@ namespace RESTarExample
             {
                 foreach (var i in request.GetInputEntities())
                 {
-                    new DbClass
-                    {
-                        MyInt = i.MyInt,
-                        MyString = i.MyString
-                    };
+                    new DbClass {MyInt = i.MyInt, MyString = i.MyString};
                     k += 1;
                 }
             });
@@ -503,24 +517,8 @@ namespace RESTarExample
         {
             return new[]
             {
-                new SemiDynamic
-                {
-                    ["Str"] = "123",
-                    ["Int"] = 0,
-                    ["Count"] = -1230
-                },
-                new SemiDynamic
-                {
-                    ["Str"] = "ad123",
-                    ["Int"] = 14
-                },
-                new SemiDynamic
-                    {["Str"] = "123"},
-                new SemiDynamic
-                {
-                    ["Str"] = "1ds23",
-                    ["Int"] = 200
-                }
+                new SemiDynamic {["Str"] = "123", ["Int"] = 0, ["Count"] = -1230}, new SemiDynamic {["Str"] = "ad123", ["Int"] = 14},
+                new SemiDynamic {["Str"] = "123"}, new SemiDynamic {["Str"] = "1ds23", ["Int"] = 200}
             };
         }
     }
@@ -532,18 +530,8 @@ namespace RESTarExample
         {
             return new[]
             {
-                new SemiDynamic2
-                {
-                    ["Str"] = "ad123",
-                    ["Int"] = 14
-                },
-                new SemiDynamic2
-                    {["Str"] = "123"},
-                new SemiDynamic2
-                {
-                    ["Str"] = "1ds23",
-                    ["Int"] = 200
-                }
+                new SemiDynamic2 {["Str"] = "ad123", ["Int"] = 14}, new SemiDynamic2 {["Str"] = "123"},
+                new SemiDynamic2 {["Str"] = "1ds23", ["Int"] = 200}
             };
         }
     }
@@ -558,10 +546,8 @@ namespace RESTarExample
         {
             return new[]
             {
-                new AllDynamic {["Str"] = "123", ["Int"] = 120},
-                new AllDynamic {["Str"] = 232, ["Int"] = 13},
-                new AllDynamic {["Str"] = 232, ["Int"] = -123},
-                new AllDynamic {["AStr"] = "ASD", ["Int"] = 5}
+                new AllDynamic {["Str"] = "123", ["Int"] = 120}, new AllDynamic {["Str"] = 232, ["Int"] = 13},
+                new AllDynamic {["Str"] = 232, ["Int"] = -123}, new AllDynamic {["AStr"] = "ASD", ["Int"] = 5}
             };
         }
     }
@@ -615,24 +601,8 @@ namespace RESTarExample
         {
             return new[]
             {
-                new MyTestResource
-                {
-                    ["T"] = 1,
-                    ["G"] = "asd",
-                    ["Goo"] = 10
-                },
-                new MyTestResource
-                {
-                    ["T"] = 5,
-                    ["G"] = "asd"
-                },
-                new MyTestResource
-                {
-                    ["T"] = -1,
-                    ["G"] = "asd",
-                    ["Boo"] = -10,
-                    ["ASD"] = 123312
-                },
+                new MyTestResource {["T"] = 1, ["G"] = "asd", ["Goo"] = 10}, new MyTestResource {["T"] = 5, ["G"] = "asd"},
+                new MyTestResource {["T"] = -1, ["G"] = "asd", ["Boo"] = -10, ["ASD"] = 123312},
                 new MyTestResource
                 {
                     ["T"] = 10,

@@ -1,4 +1,5 @@
 ﻿using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Starcounter.Internal;
 
@@ -34,6 +35,8 @@ using Starcounter.Internal;
 // [assembly: AssemblyVersion("1.0.*")]
 [assembly: AssemblyVersion("0.4.100")]
 [assembly: AssemblyFileVersion("0.4.100")]
+[assembly: InternalsVisibleTo("RESTarExample")]
+
 
 // Assures the current assembly has a reference to the Starcounter
 // assembly. A reference to Starcounter is currently required for

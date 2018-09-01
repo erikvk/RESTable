@@ -421,7 +421,7 @@
     <Compile Include="Resources\ITerminal.cs" />
     <Compile Include="WebSockets\WebSocketQueue.cs" />
     <Compile Include="WebSockets\WebSocketStatus.cs" />
-    <Compile Include="WebSockets\ConnectionProfile.cs" />
+    <Compile Include="WebSockets\AppProfile.cs" />
     <Compile Include="Shell.cs" />
     <Compile Include="WebSockets\UnknownWebSocketIdException.cs" />
     <Compile Include="WebSockets\WebSocketComparer.cs" />

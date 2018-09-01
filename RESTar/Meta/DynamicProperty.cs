@@ -15,7 +15,7 @@ namespace RESTar.Meta
     public class DynamicProperty : Property
     {
         /// <inheritdoc />
-        public override bool Dynamic => true;
+        public override bool IsDynamic => true;
 
         /// <summary>
         /// Should the evaluation fall back to a declared property if no dynamic property 
@@ -39,7 +39,7 @@ namespace RESTar.Meta
         private DynamicProperty(string name, bool declaredFallback)
         {
             Name = ActualName = name;
-            ScQueryable = false;
+            IsScQueryable = false;
             DeclaredFallback = declaredFallback;
             Type = typeof(object);
 

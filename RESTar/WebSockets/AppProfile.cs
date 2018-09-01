@@ -1,8 +1,9 @@
-﻿using RESTar.Requests;
+﻿using RESTar.Admin;
+using RESTar.Requests;
 
 namespace RESTar.WebSockets
 {
-    internal class ConnectionProfile
+    internal class AppProfile
     {
         public string Host { get; }
         public string WebSocketId { get; }
@@ -11,8 +12,10 @@ namespace RESTar.WebSockets
         public string ConnectedAt { get; }
         public string CurrentTerminal { get; }
         public Headers CustomHeaders { get; }
+        public string ApplicationName { get; }
+        public string DatabaseName { get; }
 
-        internal ConnectionProfile(WebSocket webSocket)
+        internal AppProfile(WebSocket webSocket)
         {
             WebSocketId = webSocket.TraceId;
             Host = webSocket.Context.Client.Host;
@@ -21,6 +24,9 @@ namespace RESTar.WebSockets
             ConnectedAt = webSocket.Opened.ToString("yyyy-MM-dd HH:mm:ss");
             CurrentTerminal = webSocket.TerminalResource?.Name ?? "none";
             CustomHeaders = webSocket.Headers;
+            var starcounterInfo = StarcounterInfo.Create();
+            ApplicationName = starcounterInfo.ApplicationName;
+            DatabaseName = starcounterInfo.DatabaseName;
         }
     }
 }

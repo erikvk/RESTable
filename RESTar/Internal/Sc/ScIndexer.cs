@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using RESTar.Admin;
 using RESTar.Linq;
+using RESTar.Meta;
 using RESTar.Requests;
 using RESTar.Resources;
 using Starcounter;
@@ -27,12 +28,24 @@ namespace RESTar.Internal.Sc
                 .Where(index => !index.Name.StartsWith("DYNAMIT_GENERATED_INDEX"))
                 .Select(index => (resource: Resource.ByTypeName(index.Table.FullName), index))
                 .Where(pair => pair.resource != null)
-                .Select(pair => new DatabaseIndex(pair.resource.Name)
+                .Select(pair =>
                 {
-                    Name = pair.index.Name,
-                    Columns = Db.SQL<IndexedColumn>(ColumnByIndex, pair.index)
-                        .Select(c => new ColumnInfo(c.Column.Name, c.Ascending == 0))
-                        .ToArray()
+                    var properties = pair.resource.Type
+                        .GetDeclaredProperties()
+                        .Values
+                        .Where(p => p.StarcounterColumnNameGuess != null)
+                        .ToLookup(p => p.StarcounterColumnNameGuess);
+                    return new DatabaseIndex(pair.resource.Name)
+                    {
+                        Name = pair.index.Name,
+                        Columns = Db.SQL<IndexedColumn>(ColumnByIndex, pair.index)
+                            .Select(c =>
+                            {
+                                var name = properties[c.Column.Name].FirstOrDefault()?.Name ?? c.Column.Name;
+                                return new ColumnInfo(name, c.Ascending == 0);
+                            })
+                            .ToArray()
+                    };
                 })
                 .Where(request.Conditions);
         }
@@ -48,8 +61,7 @@ namespace RESTar.Internal.Sc
                     throw new Exception("Found no resource to register index on");
                 try
                 {
-                    Db.SQL($"CREATE INDEX {index.Name.Fnuttify()} ON {index.Resource.Type.RESTarTypeName().Fnuttify()} " +
-                           $"({string.Join(", ", index.Columns.Select(c => $"{c.Name.Fnuttify()}{(c.Descending ? " DESC" : "")}"))})");
+                    CreateIndex(index);
                     count += 1;
                 }
                 catch (SqlException e)
@@ -69,11 +81,10 @@ namespace RESTar.Internal.Sc
             var count = 0;
             foreach (var index in request.GetInputEntities())
             {
-                Db.SQL($"DROP INDEX {index.Name.Fnuttify()} ON {index.Resource.Type.RESTarTypeName().Fnuttify()}");
                 try
                 {
-                    Db.SQL($"CREATE INDEX {index.Name.Fnuttify()} ON {index.Resource.Type.RESTarTypeName().Fnuttify()} " +
-                           $"({string.Join(", ", index.Columns.Select(c => $"{c.Name.Fnuttify()} {(c.Descending ? "DESC" : "")}"))})");
+                    DropIndex(index);
+                    CreateIndex(index);
                     count += 1;
                 }
                 catch (SqlException e)
@@ -93,10 +104,29 @@ namespace RESTar.Internal.Sc
             var count = 0;
             foreach (var index in request.GetInputEntities())
             {
-                Db.SQL($"DROP INDEX {index.Name.Fnuttify()} ON {index.Resource.Type.RESTarTypeName().Fnuttify()}");
+                DropIndex(index);
                 count += 1;
             }
             return count;
+        }
+
+        private static void CreateIndex(DatabaseIndex index)
+        {
+            var properties = index.Resource.Type.GetDeclaredProperties();
+            var spec = index.Columns.Select(c =>
+            {
+                if (!properties.TryGetValue(c.Name, out var property))
+                    throw new Exception($"Unknown property '{c.Name}' of resource '{index.ResourceName}'");
+                var name = property.StarcounterColumnNameGuess ?? c.Name;
+                return $"{name.Fnuttify()}{(c.Descending ? " DESC" : "")}";
+            });
+            Db.SQL($"CREATE INDEX {index.Name.Fnuttify()} ON {index.Resource.Type.RESTarTypeName().Fnuttify()} " +
+                   $"({string.Join(", ", spec)})");
+        }
+
+        private static void DropIndex(DatabaseIndex index)
+        {
+            Db.SQL($"DROP INDEX {index.Name.Fnuttify()} ON {index.Resource.Type.RESTarTypeName().Fnuttify()}");
         }
     }
 }

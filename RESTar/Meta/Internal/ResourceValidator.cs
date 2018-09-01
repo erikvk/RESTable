@@ -133,10 +133,10 @@ namespace RESTar.Meta.Internal
                                 $"Invalid implementation of interface '{interfaceType.RESTarTypeName()}' assigned to resource '{type.RESTarTypeName()}'. " +
                                 $"Unable to determine the type for interface property '{interfaceProperty.Name}'");
 
-                        PropertyInfo calledProperty;
+                        PropertyInfo projectedProperty;
                         if (method.Name.StartsWith($"{interfaceName}.get_"))
                         {
-                            calledProperty = method.GetInstructions()
+                            projectedProperty = method.GetInstructions()
                                 .Select(i => i.OpCode == OpCodes.Call && i.Operand is MethodInfo calledMethod && method.IsSpecialName
                                     ? type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
                                         .FirstOrDefault(p => p.GetGetMethod() == calledMethod)
@@ -145,7 +145,7 @@ namespace RESTar.Meta.Internal
                         }
                         else if (method.Name.StartsWith($"{interfaceName}.set_"))
                         {
-                            calledProperty = method.GetInstructions()
+                            projectedProperty = method.GetInstructions()
                                 .Select(i => i.OpCode == OpCodes.Call && i.Operand is MethodInfo calledMethod && method.IsSpecialName
                                     ? type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
                                         .FirstOrDefault(p => p.GetSetMethod() == calledMethod)
@@ -154,7 +154,7 @@ namespace RESTar.Meta.Internal
                         }
                         else return;
 
-                        if (calledProperty == null)
+                        if (projectedProperty == null)
                             throw new InvalidResourceDeclarationException(
                                 $"Invalid implementation of interface '{interfaceType.RESTarTypeName()}' assigned to resource '{type.RESTarTypeName()}'. " +
                                 $"RESTar was unable to determine which property of '{type.RESTarTypeName()}' that is exposed by interface " +
@@ -162,12 +162,12 @@ namespace RESTar.Meta.Internal
                                 "in the method body that fetches a property value from the resource type. For setters, RESTar will look " +
                                 "for the last IL instruction in the method body that sets a property value in the resource type.");
 
-                        if (calledProperty.PropertyType != propertyType)
+                        if (projectedProperty.PropertyType != propertyType)
                             throw new InvalidResourceDeclarationException(
                                 $"Invalid implementation of interface '{interfaceType.RESTarTypeName()}' assigned to resource '{type.RESTarTypeName()}'. " +
-                                $"RESTar matched interface property '{interfaceProperty.Name}' with resource property '{calledProperty.Name}' " +
+                                $"RESTar matched interface property '{interfaceProperty.Name}' with resource property '{projectedProperty.Name}' " +
                                 "using the interface property matching rules, but these properties have a type mismatch. Expected " +
-                                $"'{calledProperty.PropertyType.RESTarTypeName()}' but found '{propertyType.RESTarTypeName()}' in interface");
+                                $"'{projectedProperty.PropertyType.RESTarTypeName()}' but found '{propertyType.RESTarTypeName()}' in interface");
                     });
                 }
 

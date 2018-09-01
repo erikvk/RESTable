@@ -9,20 +9,20 @@ namespace RESTar.Meta
     public class Field : Member
     {
         /// <inheritdoc />
-        public override bool Readable { get; }
+        public override bool IsReadable { get; }
 
         /// <inheritdoc />
-        public override bool Writable { get; }
+        public override bool IsWritable { get; }
 
         internal Field(FieldInfo fieldInfo)
         {
             Name = fieldInfo.RESTarMemberName();
             ActualName = fieldInfo.Name;
-            Readable = Writable = true;
+            IsReadable = IsWritable = true;
             if (fieldInfo.IsInitOnly)
-                Writable = false;
+                IsWritable = false;
             Type = fieldInfo.FieldType;
-            Nullable = !fieldInfo.FieldType.IsValueType || fieldInfo.FieldType.IsNullable(out _);
+            IsNullable = !fieldInfo.FieldType.IsValueType || fieldInfo.FieldType.IsNullable(out _);
             IsEnum = fieldInfo.FieldType.IsEnum;
         }
     }

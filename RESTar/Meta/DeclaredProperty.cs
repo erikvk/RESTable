@@ -2,8 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
 using System.Text;
 using Newtonsoft.Json;
+using RESTar.Meta.IL;
 using RESTar.Requests;
 using RESTar.Resources;
 using RESTar.Results;
@@ -23,7 +26,7 @@ namespace RESTar.Meta
         private int MetadataToken { get; }
 
         /// <inheritdoc />
-        public override bool Dynamic => false;
+        public override bool IsDynamic => false;
 
         /// <summary>
         /// The order at which this property appears when all properties are enumerated
@@ -67,6 +70,11 @@ namespace RESTar.Meta
         public string CustomDateTimeFormat { get; }
 
         /// <summary>
+        /// The name of the database column corresponding to this property (if any)
+        /// </summary>
+        public string StarcounterColumnNameGuess { get; }
+
+        /// <summary>
         /// The attributes that this property has been decorated with
         /// </summary>  
         private ICollection<Attribute> Attributes { get; }
@@ -87,34 +95,33 @@ namespace RESTar.Meta
         /// Returns true if and only if this resource property has been decorated with the given 
         /// attribute type.
         /// </summary>
-        public bool HasAttribute<TAttribute>(out TAttribute attribute) where TAttribute : Attribute =>
-            (attribute = GetAttribute<TAttribute>()) != null;
+        public bool HasAttribute<TAttribute>(out TAttribute attribute) where TAttribute : Attribute => (attribute = GetAttribute<TAttribute>()) != null;
 
         /// <summary>
         /// Used in SpecialProperty
         /// </summary>
-        internal DeclaredProperty(int metadataToken, string name, string actualName, Type type, int? order, bool scQueryable,
+        internal DeclaredProperty(int metadataToken, string name, string actualName, Type type, int? order, bool isScQueryable,
             ICollection<Attribute> attributes, bool skipConditions, bool hidden, bool hiddenIfNull, bool isEnum, string customDateTimeFormat,
-            Operators allowedConditionOperators,
-            Getter getter, Setter setter)
+            Operators allowedConditionOperators, Getter getter, Setter setter)
         {
             MetadataToken = metadataToken;
             Name = name;
             Type = type;
             ActualName = actualName;
             Order = order;
-            ScQueryable = scQueryable;
+            IsScQueryable = isScQueryable;
             Attributes = attributes;
             SkipConditions = skipConditions;
             Hidden = hidden;
             HiddenIfNull = hiddenIfNull;
             IsEnum = isEnum;
             AllowedConditionOperators = allowedConditionOperators;
-            Nullable = !type.IsValueType || type.IsNullable(out _) || hidden;
+            IsNullable = !type.IsValueType || type.IsNullable(out _) || hidden;
             CustomDateTimeFormat = customDateTimeFormat;
             IsDateTime = type == typeof(DateTime) || type == typeof(DateTime?);
             Getter = getter;
             Setter = setter;
+            StarcounterColumnNameGuess = name;
         }
 
         /// <summary>
@@ -132,12 +139,12 @@ namespace RESTar.Meta
             var jsonAttribute = GetAttribute<JsonPropertyAttribute>();
             CustomDateTimeFormat = memberAttribute?.DateTimeFormat;
             Order = memberAttribute?.Order ?? jsonAttribute?.Order;
-            ScQueryable = p.DeclaringType?.HasAttribute<DatabaseAttribute>() == true && p.PropertyType.IsStarcounterCompatible();
+            IsScQueryable = p.DeclaringType?.HasAttribute<DatabaseAttribute>() == true && p.PropertyType.IsStarcounterCompatible();
             SkipConditions = memberAttribute?.SkipConditions == true || p.DeclaringType.HasAttribute<RESTarViewAttribute>();
             Hidden = memberAttribute?.Hidden == true;
             HiddenIfNull = memberAttribute?.HiddenIfNull == true || jsonAttribute?.NullValueHandling == NullValueHandling.Ignore;
             AllowedConditionOperators = memberAttribute?.AllowedOperators ?? Operators.All;
-            Nullable = !p.PropertyType.IsValueType || p.PropertyType.IsNullable(out _) || Hidden;
+            IsNullable = !p.PropertyType.IsValueType || p.PropertyType.IsNullable(out _) || Hidden;
             IsEnum = p.PropertyType.IsEnum;
             IsDateTime = p.PropertyType == typeof(DateTime) || p.PropertyType == typeof(DateTime?);
             if (memberAttribute?.ExcelReducerName != null)
@@ -146,6 +153,29 @@ namespace RESTar.Meta
             if (memberAttribute?.ReadOnly != true)
                 Setter = p.MakeDynamicSetter();
             ReplaceOnUpdate = memberAttribute?.ReplaceOnUpdate == true;
+            if (p.DeclaringType.HasAttribute<DatabaseAttribute>() && !p.HasAttribute<TransientAttribute>())
+            {
+                var method = p.GetGetMethod();
+                if (method.HasAttribute<CompilerGeneratedAttribute>()) // Is auto-property
+                    StarcounterColumnNameGuess = p.Name;
+                else
+                {
+                    StarcounterColumnNameGuess = method
+                        .GetInstructions()
+                        .Select(i =>
+                        {
+                            if (i.OpCode == OpCodes.Call
+                                && i.Operand is MethodInfo m
+                                && m.DeclaringType == p.DeclaringType
+                                && !m.IsStatic
+                                && !m.HasAttribute<CompilerGeneratedAttribute>()
+                                && m.Name.StartsWith("get_"))
+                                return m.Name.Substring(4);
+                            return null;
+                        })
+                        .LastOrDefault(name => name != null);
+                }
+            }
         }
 
         private static dynamic MakeExcelReducer(string methodName, PropertyInfo p)

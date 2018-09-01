@@ -70,7 +70,7 @@ namespace RESTar.ContentTypeProviders.NativeJsonProtocol
                             converter = DateTimeConverter.Converters[format] = new DateTimeConverter(format);
                         p.Converter = converter;
                     }
-                    p.Writable = property.Writable;
+                    p.Writable = property.IsWritable;
                     p.NullValueHandling = property.HiddenIfNull ? NullValueHandling.Ignore : NullValueHandling.Include;
                     p.ObjectCreationHandling = property.ReplaceOnUpdate ? ObjectCreationHandling.Replace : ObjectCreationHandling.Auto;
                     p.PropertyName = property.Name;

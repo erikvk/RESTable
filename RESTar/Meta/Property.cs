@@ -12,12 +12,12 @@ namespace RESTar.Meta
         /// <summary>
         /// Is this property a dynamic member?
         /// </summary>
-        public abstract bool Dynamic { get; }
+        public abstract bool IsDynamic { get; }
 
         /// <summary>
         /// Is this property a declared member?
         /// </summary>
-        public bool Declared => !Dynamic;
+        public bool IsDeclared => !IsDynamic;
 
         /// <summary>
         /// The allowed condition operators for this property
@@ -27,7 +27,7 @@ namespace RESTar.Meta
         /// <summary>
         /// Can this property be referred to in a Starcounter SQL query?
         /// </summary>
-        public bool ScQueryable { get; internal set; }
+        public bool IsScQueryable { get; internal set; }
 
         /// <summary>
         /// Gets the value of this property, for a given target object
@@ -48,10 +48,10 @@ namespace RESTar.Meta
         internal Getter Getter { get; set; }
 
         /// <inheritdoc />
-        public override bool Readable => Getter != null;
+        public override bool IsReadable => Getter != null;
 
         /// <inheritdoc />
-        public override bool Writable => Setter != null;
+        public override bool IsWritable => Setter != null;
 
         /// <summary>
         /// Parses an input property name string and returns a Property describing the 

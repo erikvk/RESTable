@@ -1,4 +1,5 @@
 using System;
+using RESTar.Resources;
 
 namespace RESTar.Meta
 {
@@ -10,17 +11,12 @@ namespace RESTar.Meta
         /// <summary>
         /// The name of the property
         /// </summary>
-        public string Name { get; internal set; }
+        [RESTarMember(order: -5)] public string Name { get; internal set; }
 
         /// <summary>
         /// The name of the property, as defined in the type declaration
         /// </summary>
         public string ActualName { get; internal set; }
-
-        /// <summary>
-        /// The name to use in Starcounter view models
-        /// </summary>
-        public string ViewModelName => Writable ? Name + "$" : Name;
 
         /// <summary>
         /// The type of this member
@@ -30,7 +26,7 @@ namespace RESTar.Meta
         /// <summary>
         /// Is this property nullable?
         /// </summary>
-        public bool Nullable { get; protected set; }
+        public bool IsNullable { get; protected set; }
 
         /// <summary>
         /// Is the type an enum type?
@@ -40,21 +36,21 @@ namespace RESTar.Meta
         /// <summary>
         /// Is this member readable?
         /// </summary>
-        public abstract bool Readable { get; }
+        public abstract bool IsReadable { get; }
 
         /// <summary>
         /// Is this member writable?
         /// </summary>
-        public abstract bool Writable { get; }
+        public abstract bool IsWritable { get; }
 
         /// <summary>
         /// Is this member read-only?
         /// </summary>
-        public bool ReadOnly => Readable && !Writable;
+        public bool IsReadOnly => IsReadable && !IsWritable;
 
         /// <summary>
         /// Is this member write-only?
         /// </summary>
-        public bool WriteOnly => Writable && !Readable;
+        public bool IsWriteOnly => IsWritable && !IsReadable;
     }
 }
