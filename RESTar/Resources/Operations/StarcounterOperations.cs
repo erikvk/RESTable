@@ -5,6 +5,7 @@ using RESTar.Admin;
 using RESTar.Linq;
 using RESTar.Meta;
 using RESTar.Requests;
+using RESTar.Requests.Filters;
 using Starcounter;
 using Starcounter.Metadata;
 
@@ -16,54 +17,77 @@ namespace RESTar.Resources.Operations
     public static class StarcounterOperations<T> where T : class
     {
         private const string ColumnByTable = "SELECT t FROM Starcounter.Metadata.Column t WHERE t.Table.Fullname =?";
-        private static readonly string SELECT = $"SELECT t FROM {typeof(T).RESTarTypeName().Fnuttify()} t ";
+        private static readonly string IndexedColumnByColumn = "SELECT t FROM Starcounter.Metadata.IndexedColumn t WHERE t.\"Column\" =?";
+        private static readonly string TableName = typeof(T).RESTarTypeName();
+        private static readonly string SELECT = $"SELECT t FROM {TableName.Fnuttify()} t ";
 
         /// <summary>
         /// Selects entities from a Starcounter table
         /// </summary>
         public static IEnumerable<T> Select(IRequest<T> request)
         {
-            switch (request)
+            string sql;
+            switch (request.Conditions.Count)
             {
-                case var external:
-                    switch (external.Conditions.Count)
+                case 0:
+                    sql = $"{SELECT}{GetOrderbyString(request)}";
+                    QueryConsole.Publish("SC SQL", sql);
+                    return Db.SQL<T>(sql);
+                case 1 when request.Conditions[0] is var only && only.Operator == Operators.EQUALS:
+                    if (string.Equals("objectno", only.Key, StringComparison.OrdinalIgnoreCase))
                     {
-                        case 0: return Db.SQL<T>($"{SELECT}");
-                        case 1 when external.Conditions[0] is var only && only.Operator == Operators.EQUALS:
-                            if (string.Equals("objectno", only.Key, StringComparison.OrdinalIgnoreCase))
-                            {
-                                try
-                                {
-                                    var objectNo = (ulong?) only.Value;
-                                    if (!objectNo.HasValue) return null;
-                                    var result = Db.FromId<T>(objectNo.Value);
-                                    return result == null ? null : new[] {result};
-                                }
-                                catch
-                                {
-                                    throw new Exception("Invalid ObjectNo format. Should be positive integer");
-                                }
-                            }
-                            if (string.Equals("objectid", only.Key, StringComparison.OrdinalIgnoreCase))
-                            {
-                                try
-                                {
-                                    var objectID = (string) only.Value;
-                                    if (objectID == null) return null;
-                                    var result = Db.FromId<T>(objectID);
-                                    return result == null ? null : new[] {result};
-                                }
-                                catch
-                                {
-                                    throw new Exception("Invalid ObjectID format. Should encode a positive integer");
-                                }
-                            }
-                            break;
+                        try
+                        {
+                            var objectNo = (ulong?) only.Value;
+                            sql = $"FROMID {objectNo}";
+                            QueryConsole.Publish("SC SQL", sql);
+                            if (!objectNo.HasValue) return null;
+                            var result = Db.FromId<T>(objectNo.Value);
+                            return result == null ? null : new[] {result};
+                        }
+                        catch
+                        {
+                            throw new Exception("Invalid ObjectNo format. Should be positive integer");
+                        }
                     }
-                    var (whereString, values) = external.Conditions.GetSQL().MakeWhereClause();
-                    var r2 = Db.SQL<T>($"{SELECT}{whereString}", values);
-                    return !external.Conditions.HasPost(out var post) ? r2 : r2.Where(post);
+                    if (string.Equals("objectid", only.Key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        try
+                        {
+                            var objectID = (string) only.Value;
+                            sql = $"FROMID {objectID}";
+                            QueryConsole.Publish("SC SQL", sql);
+                            if (objectID == null) return null;
+                            var result = Db.FromId<T>(objectID);
+                            return result == null ? null : new[] {result};
+                        }
+                        catch
+                        {
+                            throw new Exception("Invalid ObjectID format. Should be a Base64 string " +
+                                                "encoding a positive integer");
+                        }
+                    }
+                    break;
             }
+            var (whereString, values) = request.Conditions.GetSQL().MakeWhereClause();
+            sql = $"{SELECT}{whereString}{GetOrderbyString(request)}";
+            QueryConsole.Publish("SC SQL", sql);
+            var r2 = Db.SQL<T>(sql, values);
+            return !request.Conditions.HasPost(out var post) ? r2 : r2.Where(post);
+        }
+
+        private static string GetOrderbyString(IRequest request)
+        {
+            if (request.MetaConditions.OrderBy is OrderBy orderBy
+                && orderBy.Term.Count == 1
+                && orderBy.Term.First is DeclaredProperty prop
+                && prop.ScIndexableColumn is Column column
+                && Db.SQL<IndexedColumn>(IndexedColumnByColumn, column).Any())
+            {
+                if (prop.Type != typeof(string)) orderBy.Skip = true;
+                return orderBy.Ascending ? $"ORDER BY t.\"{prop.ActualName}\" ASC" : $"ORDER BY t.\"{prop.ActualName}\" DESC";
+            }
+            return null;
         }
 
         /// <summary>

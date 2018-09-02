@@ -33,21 +33,22 @@ namespace RESTar.Internal.Sc
                     var properties = pair.resource.Type
                         .GetDeclaredProperties()
                         .Values
-                        .Where(p => p.StarcounterColumnNameGuess != null)
-                        .ToLookup(p => p.StarcounterColumnNameGuess);
+                        .Where(p => p.ScIndexableColumn != null)
+                        .ToLookup(p => p.ScIndexableColumn);
                     return new DatabaseIndex(pair.resource.Name)
                     {
                         Name = pair.index.Name,
                         Columns = Db.SQL<IndexedColumn>(ColumnByIndex, pair.index)
                             .Select(c =>
                             {
-                                var name = properties[c.Column.Name].FirstOrDefault()?.Name ?? c.Column.Name;
+                                var name = properties[c.Column].FirstOrDefault()?.Name ?? c.Column.Name;
                                 return new ColumnInfo(name, c.Ascending == 0);
                             })
                             .ToArray()
                     };
                 })
-                .Where(request.Conditions);
+                .Where(request.Conditions)
+                .ToList();
         }
 
         /// <inheritdoc />
@@ -117,7 +118,7 @@ namespace RESTar.Internal.Sc
             {
                 if (!properties.TryGetValue(c.Name, out var property))
                     throw new Exception($"Unknown property '{c.Name}' of resource '{index.ResourceName}'");
-                var name = property.StarcounterColumnNameGuess ?? c.Name;
+                var name = property.ScIndexableColumnName ?? c.Name;
                 return $"{name.Fnuttify()}{(c.Descending ? " DESC" : "")}";
             });
             Db.SQL($"CREATE INDEX {index.Name.Fnuttify()} ON {index.Resource.Type.RESTarTypeName().Fnuttify()} " +

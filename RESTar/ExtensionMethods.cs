@@ -509,7 +509,7 @@ namespace RESTar
                 literals.Add(c.Value);
                 return $"t.{key} {c.InternalOperator.SQL} ? ";
             }));
-            return clause.Length > 0 ? ($"WHERE {clause}", literals.ToArray()) : (null, null);
+            return clause.Length > 0 ? ($"WHERE {clause} ", literals.ToArray()) : (null, null);
         }
 
         #endregion

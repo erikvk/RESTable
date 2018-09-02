@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using RESTar.Meta;
-using RESTar.Resources.Operations;
 
 namespace RESTar.Requests.Filters
 {
@@ -10,11 +9,13 @@ namespace RESTar.Requests.Filters
     /// </summary>
     public class OrderBy : IFilter
     {
+        internal Term Term { get; }
         internal string Key => Term.Key;
         internal bool Descending { get; }
         internal bool Ascending => !Descending;
         internal IEntityResource Resource { get; }
-        internal readonly Term Term;
+        internal bool Skip { get; set; }
+
         internal OrderBy(IEntityResource resource) => Resource = resource;
 
         internal OrderBy(IEntityResource resource, bool descending, string key, ICollection<string> dynamicMembers)
@@ -29,7 +30,20 @@ namespace RESTar.Requests.Filters
         /// </summary>
         public IEnumerable<T> Apply<T>(IEnumerable<T> entities)
         {
-            dynamic selector(T i) => Do.Try(() => Term.Evaluate(i), default(object));
+            if (Skip) return entities;
+
+            dynamic selector(T i)
+            {
+                try
+                {
+                    return Term.Evaluate(i);
+                }
+                catch
+                {
+                    return default;
+                }
+            }
+
             return Ascending ? entities.OrderBy(selector) : entities.OrderByDescending(selector);
         }
     }

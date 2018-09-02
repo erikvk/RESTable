@@ -93,6 +93,7 @@
   <ItemGroup>
     <Compile Include="Admin\ColumnInfo.cs" />
     <Compile Include="Admin\ContentTypeInfo.cs" />
+    <Compile Include="Admin\QueryConsole.cs" />
     <Compile Include="Admin\StarcounterInfo.cs" />
     <Compile Include="Admin\Macro.cs" />
     <Compile Include="Admin\OutputFormat.cs" />

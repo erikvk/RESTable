@@ -11,6 +11,7 @@ using RESTar.Requests;
 using RESTar.Resources;
 using RESTar.Results;
 using Starcounter;
+using Starcounter.Metadata;
 
 namespace RESTar.Meta
 {
@@ -70,9 +71,14 @@ namespace RESTar.Meta
         public string CustomDateTimeFormat { get; }
 
         /// <summary>
-        /// The name of the database column corresponding to this property (if any)
+        /// The starcounter indexable column for this property (if any)
         /// </summary>
-        public string StarcounterColumnNameGuess { get; }
+        [RESTarMember(ignore: true)] public Column ScIndexableColumn { get; }
+
+        /// <summary>
+        /// The name of the starcounter indexable column for this property (if any)
+        /// </summary>
+        public string ScIndexableColumnName => ScIndexableColumn?.Name;
 
         /// <summary>
         /// The attributes that this property has been decorated with
@@ -121,7 +127,7 @@ namespace RESTar.Meta
             IsDateTime = type == typeof(DateTime) || type == typeof(DateTime?);
             Getter = getter;
             Setter = setter;
-            StarcounterColumnNameGuess = name;
+            ScIndexableColumn = null;
         }
 
         /// <summary>
@@ -155,26 +161,30 @@ namespace RESTar.Meta
             ReplaceOnUpdate = memberAttribute?.ReplaceOnUpdate == true;
             if (p.DeclaringType.HasAttribute<DatabaseAttribute>() && !p.HasAttribute<TransientAttribute>())
             {
+                const string columnSQL = "SELECT t FROM Starcounter.Metadata.\"Column\" t WHERE t.\"Table\".FullName =? AND t.Name =?";
                 var method = p.GetGetMethod();
-                if (method.HasAttribute<CompilerGeneratedAttribute>()) // Is auto-property
-                    StarcounterColumnNameGuess = p.Name;
+                string columnNameGuess;
+                if (method.HasAttribute<CompilerGeneratedAttribute>())
+                    columnNameGuess = p.Name;
                 else
                 {
-                    StarcounterColumnNameGuess = method
+                    columnNameGuess = method
                         .GetInstructions()
                         .Select(i =>
                         {
                             if (i.OpCode == OpCodes.Call
-                                && i.Operand is MethodInfo m
-                                && m.DeclaringType == p.DeclaringType
-                                && !m.IsStatic
-                                && !m.HasAttribute<CompilerGeneratedAttribute>()
-                                && m.Name.StartsWith("get_"))
-                                return m.Name.Substring(4);
+                                && i.Operand is MethodInfo calledMethod
+                                && calledMethod.DeclaringType == p.DeclaringType
+                                && !calledMethod.IsStatic
+                                && !calledMethod.HasAttribute<CompilerGeneratedAttribute>()
+                                && calledMethod.Name.StartsWith("get_"))
+                                return calledMethod.Name.Substring(4);
                             return null;
                         })
-                        .LastOrDefault(name => name != null);
+                        .LastOrDefault(n => n != null);
                 }
+                if (columnNameGuess != null)
+                    ScIndexableColumn = Db.SQL<Column>(columnSQL, p.DeclaringType.RESTarTypeName(), columnNameGuess).FirstOrDefault();
             }
         }
 
