@@ -84,7 +84,7 @@ namespace RESTar.Resources
         /// <param name="dateTimeFormat">A custom datetime format string to use when writing and reading this property</param>
         public RESTarMemberAttribute(bool ignore = false, string name = null, int order = int.MinValue, bool hide = false,
             bool hideIfNull = false, bool readOnly = false, bool skipConditions = false, Operators allowedOperators = Operators.All,
-            string excelReducer = null, bool replaceOnUpdate = false, string dateTimeFormat = null) 
+            string excelReducer = null, bool replaceOnUpdate = false, string dateTimeFormat = null)
         {
             Ignored = ignore;
             Name = name;

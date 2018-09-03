@@ -6,6 +6,7 @@ using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Text;
 using Newtonsoft.Json;
+using RESTar.Linq;
 using RESTar.Meta.IL;
 using RESTar.Requests;
 using RESTar.Resources;
@@ -79,6 +80,19 @@ namespace RESTar.Meta
         /// The name of the starcounter indexable column for this property (if any)
         /// </summary>
         public string ScIndexableColumnName => ScIndexableColumn?.Name;
+
+        /// <summary>
+        /// The names of the indexes registered for this property
+        /// </summary>
+        public IEnumerable<string> ScIndexWhereFirstNames => ScIndexesWhereFirst?.Select(i => i.Name);
+
+        /// <summary>
+        /// The index belonging to this property (if any) 
+        /// </summary>
+        [RESTarMember(ignore: true)] public IEnumerable<Index> ScIndexesWhereFirst => ScIndexableColumn is Column column
+            ? Db.SQL<Index>("SELECT t.\"Index\" FROM Starcounter.Metadata.IndexedColumn t " +
+                            "WHERE t.\"Column\" =? AND t.\"Position\" =?", column, 0)
+            : null;
 
         /// <summary>
         /// The attributes that this property has been decorated with
@@ -169,18 +183,19 @@ namespace RESTar.Meta
                 else
                 {
                     columnNameGuess = method
-                        .GetInstructions()
-                        .Select(i =>
-                        {
-                            if (i.OpCode == OpCodes.Call
-                                && i.Operand is MethodInfo calledMethod
-                                && calledMethod.DeclaringType == p.DeclaringType
-                                && !calledMethod.IsStatic
-                                && !calledMethod.HasAttribute<CompilerGeneratedAttribute>()
-                                && calledMethod.Name.StartsWith("get_"))
-                                return calledMethod.Name.Substring(4);
-                            return null;
-                        })
+                        .SafeSelect(m => m
+                            .GetInstructions()
+                            .Select(i =>
+                            {
+                                if (i.OpCode == OpCodes.Call
+                                    && i.Operand is MethodInfo calledMethod
+                                    && calledMethod.DeclaringType == p.DeclaringType
+                                    && !calledMethod.IsStatic
+                                    && !calledMethod.HasAttribute<CompilerGeneratedAttribute>()
+                                    && calledMethod.Name.StartsWith("get_"))
+                                    return calledMethod.Name.Substring(4);
+                                return null;
+                            }))?
                         .LastOrDefault(n => n != null);
                 }
                 if (columnNameGuess != null)

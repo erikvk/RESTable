@@ -231,8 +231,10 @@ namespace RESTar
 
         private static void RegisterStaticIndexes()
         {
-            DatabaseIndex.Register<Webhook>("RESTar_Admin_Webhook__EventName", nameof(Webhook.EventName));
-            DatabaseIndex.Register<Macro>("RESTar_Admin_Macro__Name", nameof(Macro.Name));
+            if (Db.SQL("SELECT i FROM Starcounter.Metadata.\"Index\" i WHERE Name = ?", "RESTar_Admin_Webhook__EventName").FirstOrDefault() == null)
+                Db.SQL($"CREATE INDEX RESTar_Admin_Webhook__EventName ON {typeof(Webhook).FullName.Fnuttify()} (EventName)");
+            if (Db.SQL("SELECT i FROM Starcounter.Metadata.\"Index\" i WHERE Name = ?", "RESTar_Admin_Macro__Name").FirstOrDefault() == null)
+                Db.SQL($"CREATE INDEX RESTar_Admin_Macro__Name ON {typeof(Macro).FullName.Fnuttify()} (Name)");
         }
 
         private static void RunCustomMigrationLogic()

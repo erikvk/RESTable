@@ -2,6 +2,7 @@
 using RESTar.Linq;
 using RESTar.Resources;
 using RESTar.Resources.Templates;
+using Starcounter;
 
 namespace RESTar.Admin
 {
@@ -16,7 +17,11 @@ namespace RESTar.Admin
         static QueryConsole() => Consoles = new TerminalSet<QueryConsole>();
 
         /// <inheritdoc />
-        public override void Open() => Consoles.Add(this);
+        public override void Open()
+        {
+            base.Open();
+            Consoles.Add(this);
+        }
 
         /// <inheritdoc />
         public override void Dispose() => Consoles.Remove(this);
@@ -24,7 +29,7 @@ namespace RESTar.Admin
         internal static void Publish(string kind, string query)
         {
             if (Consoles.Count == 0) return;
-            Consoles.ForEach(c => c.WebSocket.SendText($"{DateTime.UtcNow:O}: {kind} : {query}"));
+            Scheduling.RunTask(() => Consoles.ForEach(c => c.WebSocket.SendText($"{DateTime.UtcNow:O}: {kind} : {query}")));
         }
     }
 }

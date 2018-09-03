@@ -17,7 +17,6 @@ namespace RESTar.Resources.Operations
     public static class StarcounterOperations<T> where T : class
     {
         private const string ColumnByTable = "SELECT t FROM Starcounter.Metadata.Column t WHERE t.Table.Fullname =?";
-        private static readonly string IndexedColumnByColumn = "SELECT t FROM Starcounter.Metadata.IndexedColumn t WHERE t.\"Column\" =?";
         private static readonly string TableName = typeof(T).RESTarTypeName();
         private static readonly string SELECT = $"SELECT t FROM {TableName.Fnuttify()} t ";
 
@@ -81,8 +80,7 @@ namespace RESTar.Resources.Operations
             if (request.MetaConditions.OrderBy is OrderBy orderBy
                 && orderBy.Term.Count == 1
                 && orderBy.Term.First is DeclaredProperty prop
-                && prop.ScIndexableColumn is Column column
-                && Db.SQL<IndexedColumn>(IndexedColumnByColumn, column).Any())
+                && prop.ScIndexesWhereFirst.Any())
             {
                 if (prop.Type != typeof(string)) orderBy.Skip = true;
                 return orderBy.Ascending ? $"ORDER BY t.\"{prop.ActualName}\" ASC" : $"ORDER BY t.\"{prop.ActualName}\" DESC";

@@ -25,6 +25,7 @@ namespace RESTar.Internal.Sc
             if (request == null) throw new ArgumentNullException(nameof(request));
             return Db.SQL<Index>(AllIndexes)
                 .Where(index => !index.Table.FullName.StartsWith("Starcounter."))
+                .Where(index => !index.Table.FullName.StartsWith("RESTar.Admin."))
                 .Where(index => !index.Name.StartsWith("DYNAMIT_GENERATED_INDEX"))
                 .Select(index => (resource: Resource.ByTypeName(index.Table.FullName), index))
                 .Where(pair => pair.resource != null)
