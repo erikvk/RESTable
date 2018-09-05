@@ -16,10 +16,15 @@ namespace RESTar.Internal.Sc
 
         private static string MakeRESTarWsId(ulong id) => DbHelper.Base64EncodeObjectNo(id);
 
-        protected override void Send(string text) => Scheduling.RunTask(() => WebSocket.Send(text)).Wait();
+        protected override void Send(string text)
+        {
+            if (text.Length == 0) return;
+            Scheduling.RunTask(() => WebSocket.Send(text)).Wait();
+        }
 
         protected override void Send(byte[] data, bool isText, int offset, int length)
         {
+            if (length == 0) return;
             if (offset == 0)
                 Scheduling.RunTask(() => WebSocket.Send(data, length, isText)).Wait();
             else

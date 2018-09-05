@@ -460,6 +460,8 @@ namespace RESTarTester
 
             #endregion
 
+            var a = "";
+
             #region External source/destination inserts
 
             var resource1Url = "https://storage.googleapis.com/mopedo-web/resource1.json";
@@ -756,7 +758,11 @@ namespace RESTarTester
                     (direct: "Long", to: "Foobooasd")
                 ));
             var entities10 = internalRequest10.EvaluateToEntities();
-            Debug.Assert(entities9 is IEntities<Resource1> _rement1 && _rement1.Count() > 1 && entities10 is IEnumerable<Resource1>);
+            Debug.Assert(entities10 is IEntities<Resource1> _rement1 && _rement1.Count() > 1 && entities10 is IEnumerable<Resource1>);
+
+            var c = entities10.Count();
+            var c2 = entities10.Count();
+
 
             #endregion
 

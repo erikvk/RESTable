@@ -449,12 +449,12 @@ namespace RESTar
             return processors.Aggregate(default(IEnumerable<JObject>), (e, p) => e != null ? p.Apply(e) : p.Apply(entities));
         }
 
-        internal static (string WhereString, object[] Values) MakeWhereClause<T>(this IEnumerable<Condition<T>> conds,
-            out Dictionary<int, int> valuesAssignments)
-            where T : class
+        internal static (string WhereString, object[] Values) MakeWhereClause<T>(this IEnumerable<Condition<T>> conds, string orderByIndexName,
+            out Dictionary<int, int> valuesAssignments, out bool useOrderBy) where T : class
         {
             var _valuesAssignments = new Dictionary<int, int>();
             var literals = new List<object>();
+            var hasOtherIndex = true;
             var clause = string.Join(" AND ", conds.Where(c => !c.Skip).Select((c, index) =>
             {
                 var (key, op, value) = (c.Term.DbKey.Fnuttify(), c.InternalOperator.SQL, (object) c.Value);
@@ -473,9 +473,15 @@ namespace RESTar
                     return $"t.{key} {op}";
                 }
                 literals.Add(c.Value);
+                hasOtherIndex = hasOtherIndex
+                                || c.Term.Count == 1
+                                && c.Term.First is DeclaredProperty p
+                                && p.ScIndexWhereFirstNames?.FirstOrDefault() is string indexName
+                                && indexName != orderByIndexName;
                 _valuesAssignments[index] = literals.Count - 1;
                 return $"t.{key} {c.InternalOperator.SQL} ? ";
             }));
+            useOrderBy = !hasOtherIndex;
             if (clause.Length == 0)
             {
                 valuesAssignments = null;
@@ -485,10 +491,11 @@ namespace RESTar
             return ($"WHERE {clause}", literals.ToArray());
         }
 
-        internal static (string WhereString, object[] Values) MakeWhereClause<T>(this IEnumerable<Condition<T>> conds)
-            where T : class
+        internal static (string WhereString, object[] Values) MakeWhereClause<T>(this IEnumerable<Condition<T>> conds, string orderByIndexName,
+            out bool useOrderBy) where T : class
         {
             var literals = new List<object>();
+            var hasOtherIndex = false;
             var clause = string.Join(" AND ", conds.Where(c => !c.Skip).Select(c =>
             {
                 var (key, op, value) = (c.Term.DbKey.Fnuttify(), c.InternalOperator.SQL, (object) c.Value);
@@ -507,8 +514,14 @@ namespace RESTar
                     return $"t.{key} {op}";
                 }
                 literals.Add(c.Value);
+                hasOtherIndex = hasOtherIndex
+                                || c.Term.Count == 1
+                                && c.Term.First is DeclaredProperty p
+                                && p.ScIndexWhereFirstNames?.FirstOrDefault() is string index
+                                && index != orderByIndexName;
                 return $"t.{key} {c.InternalOperator.SQL} ? ";
             }));
+            useOrderBy = !hasOtherIndex;
             return clause.Length > 0 ? ($"WHERE {clause} ", literals.ToArray()) : (null, null);
         }
 

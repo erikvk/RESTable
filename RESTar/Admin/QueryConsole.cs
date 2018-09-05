@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using RESTar.Linq;
 using RESTar.Resources;
 using RESTar.Resources.Templates;
@@ -26,10 +27,17 @@ namespace RESTar.Admin
         /// <inheritdoc />
         public override void Dispose() => Consoles.Remove(this);
 
-        internal static void Publish(string kind, string query)
+        internal static void Publish<T>(string query, object[] args, IEnumerable<T> enumerable)
         {
             if (Consoles.Count == 0) return;
-            Scheduling.RunTask(() => Consoles.ForEach(c => c.WebSocket.SendText($"{DateTime.UtcNow:O}: {kind} : {query}")));
+            var argsString = args == null ? null : "\r\nArgs: " + string.Join(", ", args);
+            string queryPlan;
+            if (enumerable != null)
+                using (var enumerator = enumerable.GetEnumerator())
+                    queryPlan = enumerator.ToString();
+            else queryPlan = "No query plan available";
+            var message = $"{DateTime.UtcNow:O}: {query}{argsString}\r\n{queryPlan.Replace("\t", "  ")}";
+            Scheduling.RunTask(() => Consoles.ForEach(c => c.WebSocket.SendText(message)));
         }
     }
 }

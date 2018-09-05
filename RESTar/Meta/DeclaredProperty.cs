@@ -190,6 +190,7 @@ namespace RESTar.Meta
                                 if (i.OpCode == OpCodes.Call
                                     && i.Operand is MethodInfo calledMethod
                                     && calledMethod.DeclaringType == p.DeclaringType
+                                    && calledMethod.ReturnType == p.PropertyType
                                     && !calledMethod.IsStatic
                                     && !calledMethod.HasAttribute<CompilerGeneratedAttribute>()
                                     && calledMethod.Name.StartsWith("get_"))

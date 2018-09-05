@@ -18,7 +18,7 @@ namespace RESTar.Resources.Operations
     {
         private const string ColumnByTable = "SELECT t FROM Starcounter.Metadata.Column t WHERE t.Table.Fullname =?";
         private static readonly string TableName = typeof(T).RESTarTypeName();
-        private static readonly string SELECT = $"SELECT t FROM {TableName.Fnuttify()} t ";
+        private static readonly string select = $"SELECT t FROM {TableName.Fnuttify()} t ";
 
         /// <summary>
         /// Selects entities from a Starcounter table
@@ -26,12 +26,15 @@ namespace RESTar.Resources.Operations
         public static IEnumerable<T> Select(IRequest<T> request)
         {
             string sql;
+            IEnumerable<T> result;
+
             switch (request.Conditions.Count)
             {
                 case 0:
-                    sql = $"{SELECT}{GetOrderbyString(request)}";
-                    QueryConsole.Publish("SC SQL", sql);
-                    return Db.SQL<T>(sql);
+                    sql = $"{select}{GetOrderbyString(request, out _)}";
+                    result = Db.SQL<T>(sql);
+                    QueryConsole.Publish(sql, null, result);
+                    return result;
                 case 1 when request.Conditions[0] is var only && only.Operator == Operators.EQUALS:
                     if (string.Equals("objectno", only.Key, StringComparison.OrdinalIgnoreCase))
                     {
@@ -39,10 +42,10 @@ namespace RESTar.Resources.Operations
                         {
                             var objectNo = (ulong?) only.Value;
                             sql = $"FROMID {objectNo}";
-                            QueryConsole.Publish("SC SQL", sql);
+                            QueryConsole.Publish(sql, null, default(IEnumerable<T>));
                             if (!objectNo.HasValue) return null;
-                            var result = Db.FromId<T>(objectNo.Value);
-                            return result == null ? null : new[] {result};
+                            var obj = Db.FromId<T>(objectNo.Value);
+                            return obj == null ? null : new[] {obj};
                         }
                         catch
                         {
@@ -55,10 +58,10 @@ namespace RESTar.Resources.Operations
                         {
                             var objectID = (string) only.Value;
                             sql = $"FROMID {objectID}";
-                            QueryConsole.Publish("SC SQL", sql);
+                            QueryConsole.Publish(sql, null, default(IEnumerable<T>));
                             if (objectID == null) return null;
-                            var result = Db.FromId<T>(objectID);
-                            return result == null ? null : new[] {result};
+                            var obj = Db.FromId<T>(objectID);
+                            return obj == null ? null : new[] {obj};
                         }
                         catch
                         {
@@ -68,23 +71,26 @@ namespace RESTar.Resources.Operations
                     }
                     break;
             }
-            var (whereString, values) = request.Conditions.GetSQL().MakeWhereClause();
-            sql = $"{SELECT}{whereString}{GetOrderbyString(request)}";
-            QueryConsole.Publish("SC SQL", sql);
-            var r2 = Db.SQL<T>(sql, values);
-            return !request.Conditions.HasPost(out var post) ? r2 : r2.Where(post);
+            var orderBy = GetOrderbyString(request, out var orderByIndexName);
+            var (where, values) = request.Conditions.GetSQL().MakeWhereClause(orderByIndexName, out var useOrderBy);
+            sql = useOrderBy ? $"{select}{where}{orderBy}" : $"{select}{where}";
+            result = Db.SQL<T>(sql, values);
+            QueryConsole.Publish(sql, values, result);
+            return !request.Conditions.HasPost(out var post) ? result : result.Where(post);
         }
 
-        private static string GetOrderbyString(IRequest request)
+        private static string GetOrderbyString(IRequest request, out string indexedName)
         {
             if (request.MetaConditions.OrderBy is OrderBy orderBy
                 && orderBy.Term.Count == 1
                 && orderBy.Term.First is DeclaredProperty prop
-                && prop.ScIndexesWhereFirst.Any())
+                && prop.ScIndexesWhereFirst.FirstOrDefault()?.Name is string _indexName)
             {
+                indexedName = _indexName;
                 if (prop.Type != typeof(string)) orderBy.Skip = true;
                 return orderBy.Ascending ? $"ORDER BY t.\"{prop.ActualName}\" ASC" : $"ORDER BY t.\"{prop.ActualName}\" DESC";
             }
+            indexedName = null;
             return null;
         }
 

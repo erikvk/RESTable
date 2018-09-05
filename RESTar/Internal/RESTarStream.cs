@@ -29,7 +29,7 @@ namespace RESTar.Internal
 
         internal byte[] GetBytes()
         {
-            Rewind();
+            if (!Stream.CanRead) return new byte[0];
             try
             {
                 return Stream.ToByteArray();
@@ -42,6 +42,7 @@ namespace RESTar.Internal
 
         internal async Task<byte[]> GetBytesAsync()
         {
+            if (!Stream.CanRead) return new byte[0];
             Rewind();
             try
             {
