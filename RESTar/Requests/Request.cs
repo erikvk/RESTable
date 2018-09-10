@@ -87,6 +87,12 @@ namespace RESTar.Requests
             return this;
         }
 
+        public IRequest<T> WithConditions(params Condition<T>[] conditions)
+        {
+            Conditions = conditions?.ToList();
+            return this;
+        }
+
         private Func<Body> BodyFunc { get; set; }
         private Body _body;
 

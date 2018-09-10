@@ -658,6 +658,29 @@ namespace RESTar
 
         private static readonly CultureInfo en_US = new CultureInfo("en-US");
 
+        internal static string GetFriendlyTypeName(this Type type)
+        {
+            switch (Type.GetTypeCode(type))
+            {
+                case TypeCode.Boolean: return "a boolean (true or false)";
+                case TypeCode.Char: return "a single character";
+                case TypeCode.SByte: return $"an integer ({sbyte.MinValue} to {sbyte.MaxValue})";
+                case TypeCode.Byte: return $"a positive integer ({byte.MinValue} to {byte.MaxValue})";
+                case TypeCode.Int16: return $"an integer ({short.MinValue} to {short.MaxValue})";
+                case TypeCode.UInt16: return $"a positive integer ({ushort.MinValue} to {ushort.MaxValue})";
+                case TypeCode.Int32: return "an integer (32-bit)";
+                case TypeCode.Int64: return "an integer (64-bit)";
+                case TypeCode.UInt32: return "a positive integer (32-bit)";
+                case TypeCode.UInt64: return "a positive integer (64-bit)";
+                case TypeCode.Single: return "a floating point number (single)";
+                case TypeCode.Double: return "a floating point number (double)";
+                case TypeCode.Decimal: return "a floating point number";
+                case TypeCode.String: return "a string";
+                case TypeCode.DateTime: return "a date time";
+                default: return type.Name;
+            }
+        }
+
         internal static Results.Error AsError(this Exception exception)
         {
             switch (exception)

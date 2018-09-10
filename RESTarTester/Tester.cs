@@ -119,10 +119,8 @@ namespace RESTarTester
             {
                 dynamicResourceRequest.Selector = () => new[]
                 {
-                    new RESTar.Dynamic.Resource {Name = "wr1"},
-                    new RESTar.Dynamic.Resource {Name = "wr2"},
-                    new RESTar.Dynamic.Resource {Name = "wr3"},
-                    new RESTar.Dynamic.Resource {Name = "wrResource1"}
+                    new RESTar.Dynamic.Resource {Name = "wr1"}, new RESTar.Dynamic.Resource {Name = "wr2"},
+                    new RESTar.Dynamic.Resource {Name = "wr3"}, new RESTar.Dynamic.Resource {Name = "wrResource1"}
                 };
                 using (var drResult = dynamicResourceRequest.Evaluate())
                 {
@@ -134,31 +132,11 @@ namespace RESTarTester
             {
                 webhookRequest.Selector = () => new[]
                 {
-                    new Webhook
-                    {
-                        Destination = "/wr1",
-                        EventSelector = $"/{typeof(ENotification).FullName}"
-                    },
-                    new Webhook
-                    {
-                        Destination = "/wr2",
-                        EventSelector = $"/{typeof(ENotification).FullName}"
-                    },
-                    new Webhook
-                    {
-                        Destination = "http://localhost:8202/wrStream",
-                        EventSelector = $"/{typeof(EStream).FullName}"
-                    },
-                    new Webhook
-                    {
-                        Destination = "http://localhost:8202/wrBytes",
-                        EventSelector = $"/{typeof(EBytes).FullName}"
-                    },
-                    new Webhook
-                    {
-                        Destination = "http://localhost:8202/wrString",
-                        EventSelector = $"/{typeof(EString).FullName}"
-                    },
+                    new Webhook {Destination = "/wr1", EventSelector = $"/{typeof(ENotification).FullName}"},
+                    new Webhook {Destination = "/wr2", EventSelector = $"/{typeof(ENotification).FullName}"},
+                    new Webhook {Destination = "http://localhost:8202/wrStream", EventSelector = $"/{typeof(EStream).FullName}"},
+                    new Webhook {Destination = "http://localhost:8202/wrBytes", EventSelector = $"/{typeof(EBytes).FullName}"},
+                    new Webhook {Destination = "http://localhost:8202/wrString", EventSelector = $"/{typeof(EString).FullName}"},
                     new Webhook
                     {
                         Destination = "/wrResource1",
@@ -655,23 +633,13 @@ namespace RESTarTester
             Debug.Assert(result5 is InsertedEntities ie5 && ie5.InsertedCount == 3);
 
             var g3 = context.CreateRequest<MyDict>(POST);
-            var d3 = new
-            {
-                Hej = "123",
-                Foo = 3213M,
-                Goo = true
-            };
+            var d3 = new {Hej = "123", Foo = 3213M, Goo = true};
             g3.SetBody(d3);
             var result3 = g3.Evaluate();
             Debug.Assert(result3 is InsertedEntities ie3 && ie3.InsertedCount == 1);
 
             var g4 = context.CreateRequest<MyDict>(POST);
-            var d4 = JsonConvert.SerializeObject(new
-            {
-                Hej = "123",
-                Foo = 3213M,
-                Goo = true
-            });
+            var d4 = JsonConvert.SerializeObject(new {Hej = "123", Foo = 3213M, Goo = true});
             g4.SetBody(d4);
             var result4 = g4.Evaluate();
             Debug.Assert(result4 is InsertedEntities ie4 && ie4.InsertedCount == 1);
@@ -685,11 +653,7 @@ namespace RESTarTester
             var r3 = context.CreateRequest<Resource3>(GET);
             var r4 = context.CreateRequest<Resource4>(GET);
             var r6 = context.CreateRequest<Aggregator>(GET);
-            r6.SetBody(new
-            {
-                A = "REPORT /admin.resource",
-                B = new[] {"REPORT /admin.resource", "REPORT /admin.resource"}
-            });
+            r6.SetBody(new {A = "REPORT /admin.resource", B = new[] {"REPORT /admin.resource", "REPORT /admin.resource"}});
             var r5 = context.CreateRequest<Resource1>(GET);
             var cond = new Condition<Resource1>("SByte", GREATER_THAN, 2);
             r5.Conditions.Add(cond);
@@ -707,12 +671,7 @@ namespace RESTarTester
 
             Db.TransactAsync(() =>
             {
-                var x = new MyDict
-                {
-                    ["Hej"] = "123",
-                    ["Foo"] = 3213M,
-                    ["Goo"] = false
-                };
+                var x = new MyDict {["Hej"] = "123", ["Foo"] = 3213M, ["Goo"] = false};
                 foreach (Resource1 asd in Db.SQL<Resource1>("SELECT t FROM RESTarTester.Resource1 t"))
                 {
                     asd.MyDict = x;
@@ -723,18 +682,7 @@ namespace RESTarTester
 
             DatabaseIndex.Register<MyDict2>("MyFineIdex", "R");
 
-            Db.TransactAsync(() =>
-            {
-                new MyDict2
-                {
-                    ["Snoo"] = 123,
-                    R = new Resource1
-                    {
-                        Byte = 123,
-                        String = "Googfoo"
-                    }
-                };
-            });
+            Db.TransactAsync(() => { new MyDict2 {["Snoo"] = 123, R = new Resource1 {Byte = 123, String = "Googfoo"}}; });
 
             var byInternalSource = Http.Request("POST", "http://localhost:9000/rest/resource3", null,
                 headers: new Dictionary<string, string> {["Source"] = "GET /resource3"});
@@ -746,8 +694,7 @@ namespace RESTarTester
 
             var resource2Conditions = new Condition<Resource2>[]
             {
-                new Condition<Resource2>(nameof(Resource2.Bool), EQUALS, false),
-                new Condition<Resource2>(nameof(Resource2.Enum), EQUALS, MyEnum.D),
+                new Condition<Resource2>(nameof(Resource2.Bool), EQUALS, false), new Condition<Resource2>(nameof(Resource2.Enum), EQUALS, MyEnum.D),
                 new Condition<Resource2>(nameof(Resource2.BBool), EQUALS, false),
                 new Condition<Resource2>(nameof(Resource2.Long), NOT_EQUALS, 42123),
             };
@@ -763,6 +710,30 @@ namespace RESTarTester
             var c = entities10.Count();
             var c2 = entities10.Count();
 
+            var objectNo = entities10.FirstOrDefault().GetObjectNo();
+            var objectId = entities10.Skip(1).FirstOrDefault().GetObjectID();
+
+            var byObjectNo = Context.Root
+                .CreateRequest<Resource1>()
+                .WithConditions(new Condition<Resource1>("ObjectNo", EQUALS, objectNo))
+                .EvaluateToEntities()
+                .FirstOrDefault();
+
+            var byObjectID = Context.Root
+                .CreateRequest<Resource1>()
+                .WithConditions(new Condition<Resource1>("ObjectID", EQUALS, objectId))
+                .EvaluateToEntities()
+                .FirstOrDefault();
+
+            var byObjectIDThatDoesntExist = Context.Root
+                .CreateRequest<Resource1>()
+                .WithConditions(new Condition<Resource1>("ObjectID", EQUALS, new Stopwatch()))
+                .EvaluateToEntities()
+                .FirstOrDefault();
+
+            Debug.Assert(byObjectNo is Resource1);
+            Debug.Assert(byObjectID is Resource1);
+            Debug.Assert(byObjectIDThatDoesntExist == null);
 
             #endregion
 
@@ -827,10 +798,8 @@ namespace RESTarTester
 
             var notifications = Db.Transact(() => new[]
             {
-                new Notification {Message = "Some message 1"},
-                new Notification {Message = "Some message 2"},
-                new Notification {Message = "Some message 3"},
-                new Notification {Message = "Some message 4"},
+                new Notification {Message = "Some message 1"}, new Notification {Message = "Some message 2"},
+                new Notification {Message = "Some message 3"}, new Notification {Message = "Some message 4"},
                 new Notification {Message = "Some message 5"}
             });
 

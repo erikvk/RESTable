@@ -93,6 +93,11 @@ namespace RESTar.Requests
         /// Sets the conditions of the request to the given collection of conditions, and returns the request
         /// </summary>
         IRequest<T> WithConditions(IEnumerable<Condition<T>> conditions);
+
+        /// <summary>
+        /// Sets the conditions of the request to the given collection of conditions, and returns the request
+        /// </summary>
+        IRequest<T> WithConditions(params Condition<T>[] conditions);
     }
 
     /// <inheritdoc cref="ITraceable" />

@@ -11,6 +11,6 @@ namespace RESTar.Results
     {
         internal InvalidConditionValueType(string valueLiteral, Member property)
             : base(ErrorCodes.InvalidConditionValueType,
-                $"Invalid type for condition value '{valueLiteral}'. Expected {property.Type.Name.ToLower()}") { }
+                $"Invalid type for condition value '{valueLiteral}'. Expected {property.Type.GetFriendlyTypeName()}") { }
     }
 }

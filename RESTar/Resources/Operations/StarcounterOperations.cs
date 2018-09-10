@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using RESTar.Admin;
 using RESTar.Linq;
@@ -8,6 +7,7 @@ using RESTar.Requests;
 using RESTar.Requests.Filters;
 using Starcounter;
 using Starcounter.Metadata;
+using static System.StringComparison;
 
 namespace RESTar.Resources.Operations
 {
@@ -19,64 +19,42 @@ namespace RESTar.Resources.Operations
         private const string ColumnByTable = "SELECT t FROM Starcounter.Metadata.Column t WHERE t.Table.Fullname =?";
         private static readonly string TableName = typeof(T).RESTarTypeName();
         private static readonly string select = $"SELECT t FROM {TableName.Fnuttify()} t ";
+        private const string ObjectNo = nameof(ObjectNo);
+        private const string ObjectID = nameof(ObjectID);
 
         /// <summary>
         /// Selects entities from a Starcounter table
         /// </summary>
         public static IEnumerable<T> Select(IRequest<T> request)
         {
-            string sql;
-            IEnumerable<T> result;
-
             switch (request.Conditions.Count)
             {
                 case 0:
-                    sql = $"{select}{GetOrderbyString(request, out _)}";
-                    result = Db.SQL<T>(sql);
+                    var sql = $"{select}{GetOrderbyString(request, out _)}";
+                    var result = Db.SQL<T>(sql);
                     QueryConsole.Publish(sql, null, result);
                     return result;
                 case 1 when request.Conditions[0] is var only && only.Operator == Operators.EQUALS:
-                    if (string.Equals("objectno", only.Key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        try
-                        {
-                            var objectNo = (ulong?) only.Value;
-                            sql = $"FROMID {objectNo}";
-                            QueryConsole.Publish(sql, null, default(IEnumerable<T>));
-                            if (!objectNo.HasValue) return null;
-                            var obj = Db.FromId<T>(objectNo.Value);
-                            return obj == null ? null : new[] {obj};
-                        }
-                        catch
-                        {
-                            throw new Exception("Invalid ObjectNo format. Should be positive integer");
-                        }
-                    }
-                    if (string.Equals("objectid", only.Key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        try
-                        {
-                            var objectID = (string) only.Value;
-                            sql = $"FROMID {objectID}";
-                            QueryConsole.Publish(sql, null, default(IEnumerable<T>));
-                            if (objectID == null) return null;
-                            var obj = Db.FromId<T>(objectID);
-                            return obj == null ? null : new[] {obj};
-                        }
-                        catch
-                        {
-                            throw new Exception("Invalid ObjectID format. Should be a Base64 string " +
-                                                "encoding a positive integer");
-                        }
-                    }
-                    break;
+                    if (string.Equals(ObjectNo, only.Key, OrdinalIgnoreCase))
+                        return GetFromObjectNo(only.SafeSelect(o => (ulong) only.Value));
+                    if (string.Equals(ObjectID, only.Key, OrdinalIgnoreCase))
+                        return GetFromObjectNo(only.SafeSelect(o => DbHelper.Base64DecodeObjectID((string) only.Value)));
+                    else goto case default;
+                default:
+                    var orderBy = GetOrderbyString(request, out var orderByIndexName);
+                    var (where, values) = request.Conditions.GetSQL().MakeWhereClause(orderByIndexName, out var useOrderBy);
+                    sql = useOrderBy ? $"{select}{where}{orderBy}" : $"{select}{where}";
+                    result = Db.SQL<T>(sql, values);
+                    QueryConsole.Publish(sql, values, result);
+                    return !request.Conditions.HasPost(out var post) ? result : result.Where(post);
             }
-            var orderBy = GetOrderbyString(request, out var orderByIndexName);
-            var (where, values) = request.Conditions.GetSQL().MakeWhereClause(orderByIndexName, out var useOrderBy);
-            sql = useOrderBy ? $"{select}{where}{orderBy}" : $"{select}{where}";
-            result = Db.SQL<T>(sql, values);
-            QueryConsole.Publish(sql, values, result);
-            return !request.Conditions.HasPost(out var post) ? result : result.Where(post);
+        }
+
+        private static IEnumerable<T> GetFromObjectNo(ulong objectNo)
+        {
+            QueryConsole.Publish($"FROMID {objectNo}", null, default(IEnumerable<T>));
+            if (objectNo == 0) return null;
+            return Db.FromId(objectNo) is T t ? new[] {t} : null;
         }
 
         private static string GetOrderbyString(IRequest request, out string indexedName)
@@ -84,7 +62,7 @@ namespace RESTar.Resources.Operations
             if (request.MetaConditions.OrderBy is OrderBy orderBy
                 && orderBy.Term.Count == 1
                 && orderBy.Term.First is DeclaredProperty prop
-                && prop.ScIndexesWhereFirst.FirstOrDefault()?.Name is string _indexName)
+                && prop.ScIndexesWhereFirst?.FirstOrDefault()?.Name is string _indexName)
             {
                 indexedName = _indexName;
                 if (prop.Type != typeof(string)) orderBy.Skip = true;
