@@ -39,7 +39,7 @@ namespace RESTar.Resources.Operations
                         return GetFromObjectNo(only.SafeSelect(o => (ulong) only.Value));
                     if (string.Equals(ObjectID, only.Key, OrdinalIgnoreCase))
                         return GetFromObjectNo(only.SafeSelect(o => DbHelper.Base64DecodeObjectID((string) only.Value)));
-                    else goto case default;
+                    else goto default;
                 default:
                     var orderBy = GetOrderbyString(request, out var orderByIndexName);
                     var (where, values) = request.Conditions.GetSQL().MakeWhereClause(orderByIndexName, out var useOrderBy);
