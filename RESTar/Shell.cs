@@ -35,7 +35,6 @@ namespace RESTar
 
         private string query;
         private string previousQuery;
-        private Func<int, IUriComponents> GetNextPageLink;
         private Action OnConfirm;
 
         private IEntities PreviousEntities
@@ -155,7 +154,6 @@ namespace RESTar
             Unsafe = false;
             OnConfirm = null;
             PreviousEntities = null;
-            GetNextPageLink = null;
             query = "";
             previousQuery = "";
             WriteHeaders = false;
@@ -370,18 +368,20 @@ namespace RESTar
                             }
                             WebSocket.SendText($"{(Query.Any() ? Query : "< empty >")}");
                             break;
+                        case "FIRST":
+                            if (tail == null || !int.TryParse(tail, out var count)) count = 1;
+                            Permute(p => p.GetFirstLink(count));
+                            break;
+                        case "LAST":
+                            if (tail == null || !int.TryParse(tail, out count)) count = 1;
+                            Permute(p => p.GetLastLink(count));
+                            break;
+                        case "ALL":
+                            Permute(p => p.GetAllLink());
+                            break;
                         case "NEXT":
-                            var stopwatch = Stopwatch.StartNew();
-                            if (tail == null || !int.TryParse(tail, out var count))
-                                count = -1;
-                            var link = GetNextPageLink?.Invoke(count)?.ToString();
-                            if (link == null)
-                                SendResult(new ShellNoContent(WebSocket, stopwatch.Elapsed));
-                            else
-                            {
-                                Query = link;
-                                SafeOperation(GET);
-                            }
+                            if (tail == null || !int.TryParse(tail, out count)) count = -1;
+                            Permute(p => p.GetNextPageLink(count));
                             break;
 
                         #region Nonsense
@@ -462,6 +462,51 @@ namespace RESTar
 
         private void SendHeaders() => WebSocket.SendJson(new {WebSocket.Headers});
 
+        private void Permute(Func<IEntities, IUriComponents> permuter)
+        {
+            var stopwatch = Stopwatch.StartNew();
+            if (PreviousEntities == null)
+            {
+                WsGetPreliminary().Dispose();
+                if (PreviousEntities == null)
+                {
+                    SendResult(new ShellNoContent(WebSocket, stopwatch.Elapsed));
+                    return;
+                }
+            }
+            var link = permuter(PreviousEntities);
+            Navigate(link.ToString());
+        }
+
+        private IResult WsGetPreliminary()
+        {
+            if (Query.Length == 0) return new ShellNoQuery(WebSocket);
+            var local = Query;
+            using (var request = WebSocket.Context.CreateRequest(local, GET, null, WebSocket.Headers))
+            {
+                var result = request.Evaluate();
+                switch (result)
+                {
+                    case Error _ when queryChangedPreEval:
+                        query = previousQuery;
+                        break;
+                    case IEntities entities:
+                        query = local;
+                        PreviousEntities = entities;
+                        break;
+                    case Change _:
+                        query = local;
+                        PreviousEntities = null;
+                        break;
+                    default:
+                        query = local;
+                        break;
+                }
+                queryChangedPreEval = false;
+                return result;
+            }
+        }
+
         private ISerializedResult WsEvaluate(Method method, byte[] body)
         {
             if (Query.Length == 0) return new ShellNoQuery(WebSocket);
@@ -477,7 +522,6 @@ namespace RESTar
                     case IEntities entities:
                         query = local;
                         PreviousEntities = entities;
-                        GetNextPageLink = entities.GetNextPageLink;
                         break;
                     case Change _:
                         query = local;

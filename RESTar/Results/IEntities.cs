@@ -25,16 +25,6 @@ namespace RESTar.Results
         bool IsPaged { get; }
 
         /// <summary>
-        /// Gets a link to the next set of entities, with a given number of entities to include
-        /// </summary>
-        IUriComponents GetNextPageLink(int count);
-
-        /// <summary>
-        /// Gets a link to the next set of entities, with the same amount of entities as in the last one
-        /// </summary>
-        IUriComponents GetNextPageLink();
-
-        /// <summary>
         /// Helper method for setting the Content-Disposition headers of the result to an appropriate file
         /// attachment. 
         /// </summary>

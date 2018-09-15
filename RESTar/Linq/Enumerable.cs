@@ -318,5 +318,22 @@ namespace RESTar.Linq
         {
             return source.Select(s => s.SafeSelect(selector));
         }
+
+        /// <summary>
+        /// Returns the last items in the IEnumerable (with just one pass over the IEnumerable)
+        /// </summary>
+        public static IEnumerable<T> TakeLast<T>(this IEnumerable<T> source, int count)
+        {
+            if (source == null)
+                throw new ArgumentNullException(nameof(source));
+            var queue = new Queue<T>(count);
+            foreach (var element in source)
+            {
+                queue.Enqueue(element);
+                if (queue.Count > count)
+                    queue.Dequeue();
+            }
+            return queue;
+        }
     }
 }

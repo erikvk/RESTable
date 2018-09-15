@@ -29,12 +29,6 @@ namespace RESTar.Results
             return this;
         }
 
-        /// <inheritdoc />
-        public IUriComponents GetNextPageLink() => this.MakeNextPageLink(-1);
-
-        /// <inheritdoc />
-        public IUriComponents GetNextPageLink(int count) => this.MakeNextPageLink(count);
-
         public override IEntities<T1> ToEntities<T1>() => new DeserializedTypeEnumerable<T1>(RequestInternal, Body, this, ContentTypeProvider);
 
         public IEnumerator<JObject> GetEnumerator() => new StreamEnumerator<JObject>(Body, ContentTypeProvider);
@@ -69,8 +63,6 @@ namespace RESTar.Results
         #region Entities bindings
 
         public bool IsPaged => Entities.IsPaged;
-        public IUriComponents GetNextPageLink(int count) => Entities.GetNextPageLink(count);
-        public IUriComponents GetNextPageLink() => Entities.GetNextPageLink();
         public Type EntityType => Entities.EntityType;
 
         public ulong EntityCount

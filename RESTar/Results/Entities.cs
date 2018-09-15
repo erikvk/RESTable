@@ -35,12 +35,6 @@ namespace RESTar.Results
         internal Entities(IRequest request, IEnumerable<T> enumerable) : base(request) => Content = enumerable ?? new T[0];
 
         /// <inheritdoc />
-        public IUriComponents GetNextPageLink() => this.MakeNextPageLink(-1);
-
-        /// <inheritdoc />
-        public IUriComponents GetNextPageLink(int count) => this.MakeNextPageLink(count);
-
-        /// <inheritdoc />
         public override string Metadata => $"{nameof(Entities<T>)};{Request.Resource};{EntityType}";
     }
 }

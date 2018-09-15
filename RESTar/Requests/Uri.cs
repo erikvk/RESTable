@@ -8,18 +8,41 @@ using RESTar.Results;
 
 namespace RESTar.Requests
 {
-    internal class UriComponents : IUriComponents
+    /// <inheritdoc />
+    /// <summary>
+    /// Encodes read and writable URI components
+    /// </summary>
+    public class UriComponents : IUriComponents
     {
+        /// <inheritdoc />
         public string ResourceSpecifier { get; }
+
+        /// <inheritdoc />
         public string ViewName { get; }
+
+        /// <summary>
+        /// The read and writable conditions list
+        /// </summary>
         public List<IUriCondition> Conditions { get; }
+
+        /// <summary>
+        /// The read and writable meta-conditions list
+        /// </summary>
         public List<IUriCondition> MetaConditions { get; }
+
+        /// <inheritdoc />
         public IProtocolProvider ProtocolProvider { get; }
+
+        /// <inheritdoc />
         public IMacro Macro { get; }
 
+        /// <inheritdoc />
         IReadOnlyCollection<IUriCondition> IUriComponents.Conditions => Conditions;
+
+        /// <inheritdoc />
         IReadOnlyCollection<IUriCondition> IUriComponents.MetaConditions => MetaConditions;
 
+        /// <inheritdoc />
         public UriComponents(string resourceSpecifier, string viewName, IEnumerable<IUriCondition> conditions,
             IEnumerable<IUriCondition> metaConditions, IProtocolProvider protocolProvider, IMacro macro)
         {
@@ -31,7 +54,7 @@ namespace RESTar.Requests
             Macro = macro;
         }
 
-        public UriComponents(IUriComponents existing)
+        internal UriComponents(IUriComponents existing)
         {
             ResourceSpecifier = existing.ResourceSpecifier;
             ViewName = existing.ViewName;
@@ -41,6 +64,7 @@ namespace RESTar.Requests
             Macro = existing.Macro;
         }
 
+        /// <inheritdoc />
         public override string ToString() => this.ToUriString();
     }
 

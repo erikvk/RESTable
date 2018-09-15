@@ -291,7 +291,7 @@ namespace RESTar.Requests
                 list.Add(new UriCondition(RESTarMetaCondition.Unsafe, "true"));
             if (Limit.Number > -1)
                 list.Add(new UriCondition(RESTarMetaCondition.Limit, Limit.Number.ToString()));
-            if (Offset.Number > 0)
+            if (Offset.Number != 0)
                 list.Add(new UriCondition(RESTarMetaCondition.Offset, Offset.Number.ToString()));
             if (OrderBy != null)
             {

@@ -764,17 +764,63 @@ namespace RESTar
             }
         }
 
-        internal static IUriComponents MakeNextPageLink<T>(this IEntities<T> entities, int count) where T : class
+        /// <summary>
+        /// Creates a new writeable UriComponents instance from a possibly read-only IUriComponents instance
+        /// </summary>
+        public static UriComponents ToWritable(this IUriComponents components)
         {
-            var components = new UriComponents(entities.Request.UriComponents);
+            return components as UriComponents ?? new UriComponents(components);
+        }
+
+        /// <summary>
+        /// Generates new UriComponents that encode a request for the next page of entities, calculated from an IEntities entity collection.
+        /// The count parameter controls the size of the next page. If omitted, the size is the same as the previous page.
+        /// </summary>
+        public static IUriComponents GetNextPageLink(this IEntities entities, int count = -1)
+        {
+            var components = entities.Request.UriComponents.ToWritable();
             if (count > -1)
             {
-                components.MetaConditions.RemoveAll(c => c.Key.EqualsNoCase("limit"));
+                components.MetaConditions.RemoveAll(c => c.Key.EqualsNoCase(nameof(Limit)));
                 components.MetaConditions.Add(new UriCondition(RESTarMetaCondition.Limit, count.ToString()));
             }
-            components.MetaConditions.RemoveAll(c => c.Key.EqualsNoCase("offset"));
+            components.MetaConditions.RemoveAll(c => c.Key.EqualsNoCase(nameof(Offset)));
             components.MetaConditions.Add(new UriCondition(RESTarMetaCondition.Offset,
                 (entities.Request.MetaConditions.Offset + (long) entities.EntityCount).ToString()));
+            return components;
+        }
+
+        /// <summary>
+        /// Generates new UriComponents that encode a request for the first number of entities, calculated from an IEntities entity collection.
+        /// The count parameter controls how many entities are selected. If omitted, one entity is selected.
+        /// </summary>
+        public static IUriComponents GetFirstLink(this IEntities entities, int count = 1)
+        {
+            var components = entities.Request.UriComponents.ToWritable();
+            components.MetaConditions.RemoveAll(m => m.Key.EqualsNoCase(nameof(Offset)) || m.Key.EqualsNoCase(nameof(Limit)));
+            components.MetaConditions.Add(new UriCondition(RESTarMetaCondition.Limit, count.ToString()));
+            return components;
+        }
+
+        /// <summary>
+        /// Generates new UriComponents that encode a request for the last number of entities, calculated from an IEntities entity collection.
+        /// The count parameter controls how many entities are selected. If omitted, one entity is selected.
+        /// </summary>
+        public static IUriComponents GetLastLink(this IEntities entities, int count = 1)
+        {
+            var components = entities.Request.UriComponents.ToWritable();
+            components.MetaConditions.RemoveAll(m => m.Key.EqualsNoCase(nameof(Offset)) || m.Key.EqualsNoCase(nameof(Limit)));
+            components.MetaConditions.Add(new UriCondition(RESTarMetaCondition.Offset, (-count).ToString()));
+            return components;
+        }
+
+        /// <summary>
+        /// Generates new UriComponents that encode a request for all entities in a resource, calculated from an IEntities entity collection.
+        /// </summary>
+        public static IUriComponents GetAllLink(this IEntities entities)
+        {
+            var components = entities.Request.UriComponents.ToWritable();
+            components.MetaConditions.RemoveAll(m => m.Key.EqualsNoCase(nameof(Offset)) || m.Key.EqualsNoCase(nameof(Limit)));
             return components;
         }
 

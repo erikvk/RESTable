@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using RESTar.Linq;
 
 #pragma warning disable 1591
 
@@ -63,6 +64,14 @@ namespace RESTar.Requests.Filters
         /// <summary>
         /// Applies the offset to an IEnumerable of entities
         /// </summary>
-        public IEnumerable<T> Apply<T>(IEnumerable<T> entities) => Number > 0 ? entities.Skip((int) Number) : entities;
+        public IEnumerable<T> Apply<T>(IEnumerable<T> entities)
+        {
+            switch ((int) Number)
+            {
+                case 0: return entities;
+                case var positive when positive > 0: return entities.Skip(positive);
+                case var negative: return entities.TakeLast(-negative);
+            }
+        }
     }
 }
