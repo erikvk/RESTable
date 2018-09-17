@@ -37,8 +37,16 @@ namespace RESTarExample
     public class EnumTest
     {
         public Method Method { get; set; }
+        public Method? Method2 { get; set; }
+        public int? Int { get; set; }
     }
 
+    [RESTar(AllowDynamicConditions = true), Database]
+    public class EnumTest2
+    {
+        public Method Method { get; set; }
+        public Method? Method2 { get; set; }
+    }
 
     [RESTar, Database]
     public class Item : IValidator<Item>
@@ -195,7 +203,14 @@ namespace RESTarExample
             {
                 throw new Exception("Invalid input date");
             }
-            return new[] {new MonthlySpendingReport {Month = date, NrOfWins = 123}};
+            return new[]
+            {
+                new MonthlySpendingReport
+                {
+                    Month = date,
+                    NrOfWins = 123
+                }
+            };
         }
     }
 
@@ -257,7 +272,11 @@ namespace RESTarExample
             {
                 foreach (var i in request.GetInputEntities())
                 {
-                    new DbClass {MyInt = i.MyInt, MyString = i.MyString};
+                    new DbClass
+                    {
+                        MyInt = i.MyInt,
+                        MyString = i.MyString
+                    };
                     k += 1;
                 }
             });
@@ -524,8 +543,22 @@ namespace RESTarExample
         {
             return new[]
             {
-                new SemiDynamic {["Str"] = "123", ["Int"] = 0, ["Count"] = -1230}, new SemiDynamic {["Str"] = "ad123", ["Int"] = 14},
-                new SemiDynamic {["Str"] = "123"}, new SemiDynamic {["Str"] = "1ds23", ["Int"] = 200}
+                new SemiDynamic
+                {
+                    ["Str"] = "123",
+                    ["Int"] = 0,
+                    ["Count"] = -1230
+                },
+                new SemiDynamic
+                {
+                    ["Str"] = "ad123",
+                    ["Int"] = 14
+                },
+                new SemiDynamic {["Str"] = "123"}, new SemiDynamic
+                {
+                    ["Str"] = "1ds23",
+                    ["Int"] = 200
+                }
             };
         }
     }
@@ -537,8 +570,16 @@ namespace RESTarExample
         {
             return new[]
             {
-                new SemiDynamic2 {["Str"] = "ad123", ["Int"] = 14}, new SemiDynamic2 {["Str"] = "123"},
-                new SemiDynamic2 {["Str"] = "1ds23", ["Int"] = 200}
+                new SemiDynamic2
+                {
+                    ["Str"] = "ad123",
+                    ["Int"] = 14
+                },
+                new SemiDynamic2 {["Str"] = "123"}, new SemiDynamic2
+                {
+                    ["Str"] = "1ds23",
+                    ["Int"] = 200
+                }
             };
         }
     }
@@ -553,8 +594,26 @@ namespace RESTarExample
         {
             return new[]
             {
-                new AllDynamic {["Str"] = "123", ["Int"] = 120}, new AllDynamic {["Str"] = 232, ["Int"] = 13},
-                new AllDynamic {["Str"] = 232, ["Int"] = -123}, new AllDynamic {["AStr"] = "ASD", ["Int"] = 5}
+                new AllDynamic
+                {
+                    ["Str"] = "123",
+                    ["Int"] = 120
+                },
+                new AllDynamic
+                {
+                    ["Str"] = 232,
+                    ["Int"] = 13
+                },
+                new AllDynamic
+                {
+                    ["Str"] = 232,
+                    ["Int"] = -123
+                },
+                new AllDynamic
+                {
+                    ["AStr"] = "ASD",
+                    ["Int"] = 5
+                }
             };
         }
     }
@@ -608,8 +667,24 @@ namespace RESTarExample
         {
             return new[]
             {
-                new MyTestResource {["T"] = 1, ["G"] = "asd", ["Goo"] = 10}, new MyTestResource {["T"] = 5, ["G"] = "asd"},
-                new MyTestResource {["T"] = -1, ["G"] = "asd", ["Boo"] = -10, ["ASD"] = 123312},
+                new MyTestResource
+                {
+                    ["T"] = 1,
+                    ["G"] = "asd",
+                    ["Goo"] = 10
+                },
+                new MyTestResource
+                {
+                    ["T"] = 5,
+                    ["G"] = "asd"
+                },
+                new MyTestResource
+                {
+                    ["T"] = -1,
+                    ["G"] = "asd",
+                    ["Boo"] = -10,
+                    ["ASD"] = 123312
+                },
                 new MyTestResource
                 {
                     ["T"] = 10,
@@ -678,7 +753,14 @@ namespace RESTarExample
 
         public IEnumerable<R> Select(IRequest<R> request)
         {
-            return new[] {new R {S = "Swoo", Ss = new[] {"S", "Sd"}}};
+            return new[]
+            {
+                new R
+                {
+                    S = "Swoo",
+                    Ss = new[] {"S", "Sd"}
+                }
+            };
         }
 
         public int Update(IRequest<R> request)

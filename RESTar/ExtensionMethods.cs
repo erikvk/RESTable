@@ -662,6 +662,7 @@ namespace RESTar
         {
             switch (Type.GetTypeCode(type))
             {
+                case var _ when type.IsNullable(out var @base): return @base.GetFriendlyTypeName();
                 case TypeCode.Boolean: return "a boolean (true or false)";
                 case TypeCode.Char: return "a single character";
                 case TypeCode.SByte: return $"an integer ({sbyte.MinValue} to {sbyte.MaxValue})";
@@ -677,7 +678,7 @@ namespace RESTar
                 case TypeCode.Decimal: return "a floating point number";
                 case TypeCode.String: return "a string";
                 case TypeCode.DateTime: return "a date time";
-                default: return type.Name;
+                default: return type.FullName;
             }
         }
 
@@ -836,10 +837,15 @@ namespace RESTar
                 case "": return "";
             }
 
-            if (property?.IsEnum == true)
+            if (property is DeclaredProperty prop && prop.IsEnum)
             {
                 try
                 {
+                    if (prop.IsNullable)
+                    {
+                        var type = Nullable.GetUnderlyingType(prop.Type) ?? prop.Type;
+                        return Enum.Parse(type, valueLiteral, true);
+                    }
                     return Enum.Parse(property.Type, valueLiteral, true);
                 }
                 catch

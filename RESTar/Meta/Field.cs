@@ -23,7 +23,7 @@ namespace RESTar.Meta
                 IsWritable = false;
             Type = fieldInfo.FieldType;
             IsNullable = !fieldInfo.FieldType.IsValueType || fieldInfo.FieldType.IsNullable(out _);
-            IsEnum = fieldInfo.FieldType.IsEnum;
+            IsEnum = fieldInfo.FieldType.IsEnum || fieldInfo.FieldType.IsNullable(out var @base) && @base.IsEnum;
         }
     }
 }

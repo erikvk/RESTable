@@ -165,7 +165,7 @@ namespace RESTar.Meta
             HiddenIfNull = memberAttribute?.HiddenIfNull == true || jsonAttribute?.NullValueHandling == NullValueHandling.Ignore;
             AllowedConditionOperators = memberAttribute?.AllowedOperators ?? Operators.All;
             IsNullable = !p.PropertyType.IsValueType || p.PropertyType.IsNullable(out _) || Hidden;
-            IsEnum = p.PropertyType.IsEnum;
+            IsEnum = p.PropertyType.IsEnum || p.PropertyType.IsNullable(out var @base) && @base.IsEnum;
             IsDateTime = p.PropertyType == typeof(DateTime) || p.PropertyType == typeof(DateTime?);
             if (memberAttribute?.ExcelReducerName != null)
                 ExcelReducer = MakeExcelReducer(memberAttribute.ExcelReducerName, p);
