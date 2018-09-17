@@ -34,6 +34,13 @@ namespace RESTarExample
     }
 
     [RESTar, Database]
+    public class EnumTest
+    {
+        public Method Method { get; set; }
+    }
+
+
+    [RESTar, Database]
     public class Item : IValidator<Item>
     {
         public int I { get; set; }
