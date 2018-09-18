@@ -18,6 +18,7 @@ namespace RESTar
     internal class AggregatorTemplateConverter : CustomCreationConverter<Aggregator>
     {
         public override Aggregator Create(Type objectType) => new Aggregator();
+
         public override bool CanConvert(Type objectType) => objectType == typeof(object) || base.CanConvert(objectType);
 
         public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
