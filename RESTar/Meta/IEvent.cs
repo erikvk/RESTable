@@ -1,4 +1,5 @@
-﻿namespace RESTar.Meta {
+﻿namespace RESTar.Meta
+{
     /// <summary>
     /// A common interface for event types
     /// </summary>

@@ -2,7 +2,8 @@
 using System.Linq;
 using RESTar.Internal;
 
-namespace RESTar.Resources {
+namespace RESTar.Resources
+{
     internal static class MethodsExtensions
     {
         internal static IReadOnlyList<Method> ResolveMethodsCollection(this IEnumerable<Method> methods)

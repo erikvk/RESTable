@@ -1,4 +1,5 @@
-﻿namespace RESTar.Admin {
+﻿namespace RESTar.Admin
+{
     /// <summary>
     /// Contains information about a column on which an index is registered.
     /// </summary>

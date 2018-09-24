@@ -33,8 +33,13 @@ namespace RESTarExample
         }
     }
 
+    internal interface I
+    {
+        Method Method { get; }
+    }
+
     [RESTar, Database]
-    public class EnumTest
+    public class EnumTest : I
     {
         public Method Method { get; set; }
         public Method? Method2 { get; set; }
@@ -47,6 +52,20 @@ namespace RESTarExample
         public Method Method { get; set; }
         public Method? Method2 { get; set; }
     }
+
+    [RESTar(Method.GET)]
+    public class Test : ISelector<Test>
+    {
+        public int Value { get; }
+        public Test(int value) => Value = value;
+
+        public IEnumerable<Test> Select(IRequest<Test> request)
+        {
+            for (var i = 1; i <= 10; i += 1)
+                yield return new Test(i);
+        }
+    }
+
 
     [RESTar, Database]
     public class Item : IValidator<Item>

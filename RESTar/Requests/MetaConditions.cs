@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using RESTar.Admin;
@@ -174,6 +174,12 @@ namespace RESTar.Requests
                     case null:
                     case "null":
                     case "": return;
+                    case "∞":
+                        valueLiteral = int.MaxValue.ToString();
+                        break;
+                    case "-∞":
+                        valueLiteral = int.MinValue.ToString();
+                        break;
                 }
 
                 var (first, length) = (valueLiteral.FirstOrDefault(), valueLiteral.Length);
@@ -291,7 +297,11 @@ namespace RESTar.Requests
                 list.Add(new UriCondition(RESTarMetaCondition.Unsafe, "true"));
             if (Limit.Number > -1)
                 list.Add(new UriCondition(RESTarMetaCondition.Limit, Limit.Number.ToString()));
-            if (Offset.Number != 0)
+            if (Offset.Number == int.MinValue)
+                list.Add(new UriCondition(RESTarMetaCondition.Offset, "-∞"));
+            else if (Offset.Number == int.MaxValue)
+                list.Add(new UriCondition(RESTarMetaCondition.Offset, "∞"));
+            else if (Offset.Number != 0)
                 list.Add(new UriCondition(RESTarMetaCondition.Offset, Offset.Number.ToString()));
             if (OrderBy != null)
             {

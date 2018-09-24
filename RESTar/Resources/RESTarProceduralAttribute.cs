@@ -1,7 +1,8 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 
-namespace RESTar.Resources {
+namespace RESTar.Resources
+{
     /// <inheritdoc />
     /// <summary>
     /// A RESTar attribute type used for procedurally created resources

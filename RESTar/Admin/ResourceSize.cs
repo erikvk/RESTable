@@ -1,4 +1,5 @@
-﻿namespace RESTar.Admin {
+﻿namespace RESTar.Admin
+{
     /// <summary>
     /// Contains a description of a resource size in memory
     /// </summary>

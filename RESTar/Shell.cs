@@ -369,19 +369,20 @@ namespace RESTar
                             WebSocket.SendText($"{(Query.Any() ? Query : "< empty >")}");
                             break;
                         case "FIRST":
-                            if (tail == null || !int.TryParse(tail, out var count)) count = 1;
-                            Permute(p => p.GetFirstLink(count));
+                            Permute(p => p.GetFirstLink(tail.ToNumber() ?? 1));
                             break;
                         case "LAST":
-                            if (tail == null || !int.TryParse(tail, out count)) count = 1;
-                            Permute(p => p.GetLastLink(count));
+                            Permute(p => p.GetLastLink(tail.ToNumber() ?? 1));
                             break;
                         case "ALL":
                             Permute(p => p.GetAllLink());
                             break;
                         case "NEXT":
-                            if (tail == null || !int.TryParse(tail, out count)) count = -1;
-                            Permute(p => p.GetNextPageLink(count));
+                            Permute(p => p.GetNextPageLink(tail.ToNumber() ?? -1));
+                            break;
+                        case "PREV":
+                        case "PREVIOUS":
+                            Permute(p => p.GetPreviousPageLink(tail.ToNumber() ?? -1));
                             break;
 
                         #region Nonsense
@@ -704,6 +705,16 @@ namespace RESTar
         private void SendCredits()
         {
             WebSocket.SendText($"RESTar is designed and developed by Erik von Krusenstierna, © Mopedo AB {DateTime.Now.Year}");
+        }
+    }
+
+    internal static class ShellExtensions
+    {
+        internal static int? ToNumber(this string tail)
+        {
+            if (tail == null || !int.TryParse(tail, out var nr))
+                return null;
+            return nr;
         }
     }
 }

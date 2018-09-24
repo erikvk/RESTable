@@ -57,7 +57,6 @@ namespace RESTar.Requests.Filters
         public static bool operator >(Offset o, long i) => o.Number > i;
         public static bool operator <=(Offset o, long i) => o.Number <= i;
         public static bool operator >=(Offset o, long i) => o.Number >= i;
-        public static Offset operator +(Offset o, long i) => new Offset(o.Number + i);
 
         private Offset(long nr) => Number = nr;
 
@@ -68,6 +67,8 @@ namespace RESTar.Requests.Filters
         {
             switch ((int) Number)
             {
+                case int.MaxValue:
+                case int.MinValue: return new T[0];
                 case 0: return entities;
                 case var positive when positive > 0: return entities.Skip(positive);
                 case var negative: return entities.TakeLast(-negative);

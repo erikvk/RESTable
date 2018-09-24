@@ -775,7 +775,7 @@ namespace RESTar
 
         /// <summary>
         /// Generates new UriComponents that encode a request for the next page of entities, calculated from an IEntities entity collection.
-        /// The count parameter controls the size of the next page. If omitted, the size is the same as the previous page.
+        /// The count parameter controls the size of the next page. If omitted, the size is the same as the current page.
         /// </summary>
         public static IUriComponents GetNextPageLink(this IEntities entities, int count = -1)
         {
@@ -786,8 +786,49 @@ namespace RESTar
                 components.MetaConditions.Add(new UriCondition(RESTarMetaCondition.Limit, count.ToString()));
             }
             components.MetaConditions.RemoveAll(c => c.Key.EqualsNoCase(nameof(Offset)));
-            components.MetaConditions.Add(new UriCondition(RESTarMetaCondition.Offset,
-                (entities.Request.MetaConditions.Offset + (long) entities.EntityCount).ToString()));
+            var previousOffset = entities.Request.MetaConditions.Offset;
+            var offsetNr = (long) entities.EntityCount + previousOffset.Number;
+            UriCondition offset;
+            if (previousOffset == -1)
+                offset = new UriCondition(RESTarMetaCondition.Offset, "∞");
+            else if (previousOffset < -1 && offsetNr >= -1)
+                offset = new UriCondition(RESTarMetaCondition.Offset, (-1).ToString());
+            else offset = new UriCondition(RESTarMetaCondition.Offset, offsetNr.ToString());
+            components.MetaConditions.Add(offset);
+            return components;
+        }
+
+        /// <summary>
+        /// Generates new UriComponents that encode a request for the previous page of entities, calculated from an IEntities entity collection.
+        /// The count parameter controls the size of the next page. If omitted, the size is the same as the current page.
+        /// </summary>
+        public static IUriComponents GetPreviousPageLink(this IEntities entities, int count = -1)
+        {
+            var components = entities.Request.UriComponents.ToWritable();
+            var previousOffset = entities.Request.MetaConditions.Offset;
+            var decrementor = (long) entities.EntityCount;
+            if (count > -1)
+            {
+                components.MetaConditions.RemoveAll(c => c.Key.EqualsNoCase(nameof(Limit)));
+                components.MetaConditions.Add(new UriCondition(RESTarMetaCondition.Limit, count.ToString()));
+                decrementor = count;
+            }
+            var offsetNr = previousOffset.Number - decrementor;
+            components.MetaConditions.RemoveAll(c => c.Key.EqualsNoCase(nameof(Offset)));
+            UriCondition offset;
+            if (previousOffset == 0)
+                offset = new UriCondition(RESTarMetaCondition.Offset, "-∞");
+            else if (previousOffset > 0 && offsetNr <= 0)
+            {
+                if (long.TryParse(components.MetaConditions.FirstOrDefault(c => c.Key.EqualsNoCase(nameof(Limit)))?.ValueLiteral, out var limit))
+                {
+                    components.MetaConditions.RemoveAll(c => c.Key.EqualsNoCase(nameof(Limit)));
+                    components.MetaConditions.Add(new UriCondition(RESTarMetaCondition.Limit, (limit + offsetNr).ToString()));
+                }
+                offset = new UriCondition(RESTarMetaCondition.Offset, 0.ToString());
+            }
+            else offset = new UriCondition(RESTarMetaCondition.Offset, offsetNr.ToString());
+            components.MetaConditions.Add(offset);
             return components;
         }
 
@@ -812,6 +853,7 @@ namespace RESTar
             var components = entities.Request.UriComponents.ToWritable();
             components.MetaConditions.RemoveAll(m => m.Key.EqualsNoCase(nameof(Offset)) || m.Key.EqualsNoCase(nameof(Limit)));
             components.MetaConditions.Add(new UriCondition(RESTarMetaCondition.Offset, (-count).ToString()));
+            components.MetaConditions.Add(new UriCondition(RESTarMetaCondition.Limit, count.ToString()));
             return components;
         }
 
