@@ -273,7 +273,8 @@ namespace RESTar.Requests
                                         !mc.Rename.Any(p => p.Value.EqualsNoCase(pc.Key))))
                     throw new InvalidSyntax(InvalidMetaConditionSyntax,
                         "A 'Select' meta-condition cannot refer to a property x that is " +
-                        "to be renamed unless some other property is renamed to x");
+                        "to be renamed unless some other property is renamed to x. Use the " +
+                        "new property name instead.");
             }
 
             return mc;

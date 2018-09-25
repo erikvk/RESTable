@@ -806,14 +806,14 @@ namespace RESTar
         {
             var components = entities.Request.UriComponents.ToWritable();
             var previousOffset = entities.Request.MetaConditions.Offset;
-            var decrementor = (long) entities.EntityCount;
+            var pageSize = (long) entities.EntityCount;
             if (count > -1)
             {
                 components.MetaConditions.RemoveAll(c => c.Key.EqualsNoCase(nameof(Limit)));
                 components.MetaConditions.Add(new UriCondition(RESTarMetaCondition.Limit, count.ToString()));
-                decrementor = count;
+                pageSize = count;
             }
-            var offsetNr = previousOffset.Number - decrementor;
+            var offsetNr = previousOffset.Number - pageSize;
             components.MetaConditions.RemoveAll(c => c.Key.EqualsNoCase(nameof(Offset)));
             UriCondition offset;
             if (previousOffset == 0)

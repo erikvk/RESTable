@@ -1,6 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
-using RESTar.Linq;
 
 #pragma warning disable 1591
 
@@ -71,8 +71,25 @@ namespace RESTar.Requests.Filters
                 case int.MinValue: return new T[0];
                 case 0: return entities;
                 case var positive when positive > 0: return entities.Skip(positive);
-                case var negative: return entities.TakeLast(-negative);
+                case var negative: return NegativeSkip(entities, -negative);
             }
+        }
+
+        /// <summary>
+        /// Returns the last items in the IEnumerable (with just one pass over the IEnumerable)
+        /// </summary>
+        private static IEnumerable<T> NegativeSkip<T>(IEnumerable<T> source, int count)
+        {
+            if (source == null)
+                throw new ArgumentNullException(nameof(source));
+            var queue = new Queue<T>(count);
+            foreach (var element in source)
+            {
+                queue.Enqueue(element);
+                if (queue.Count > count)
+                    queue.Dequeue();
+            }
+            return queue;
         }
     }
 }
