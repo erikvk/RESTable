@@ -38,7 +38,7 @@ namespace RESTar
         internal static IDictionary<string, IResource> ResourceByName { get; private set; }
         internal static IDictionary<Type, IResource> ResourceByType { get; private set; }
         internal static ICollection<IResource> Resources => ResourceByName.Values;
-        internal static List<Uri> AllowedOrigins { get; private set; }
+        internal static HashSet<Uri> AllowedOrigins { get; private set; }
         internal static string[] ReservedNamespaces { get; private set; }
         internal static bool RequireApiKey { get; private set; }
         internal static bool AllowAllOrigins { get; private set; }
@@ -135,7 +135,7 @@ namespace RESTar
             ResourceByType = new Dictionary<Type, IResource>();
             ResourceByName = new Dictionary<string, IResource>(StringComparer.OrdinalIgnoreCase);
             ResourceFinder = new ConcurrentDictionary<string, IResource>(StringComparer.OrdinalIgnoreCase);
-            AllowedOrigins = new List<Uri>();
+            AllowedOrigins = new HashSet<Uri>();
             ReservedNamespaces = typeof(RESTarConfig).Assembly
                 .GetTypes()
                 .Select(type => type.Namespace?.ToLower())

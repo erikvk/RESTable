@@ -22,15 +22,16 @@ namespace RESTar.Results
         internal static Options Create(RequestParameters parameters)
         {
             var options = new Options(parameters);
-            if (!parameters.IsValid || !Uri.TryCreate(parameters.Headers.Origin, UriKind.Absolute, out var originUri))
+            if (!parameters.IsValid)
                 return options;
             if (RESTarConfig.AllowAllOrigins)
                 options.Headers.AccessControlAllowOrigin = "*";
-            else if (RESTarConfig.AllowedOrigins.Contains(originUri))
+            else if (Uri.TryCreate(parameters.Headers.Origin, UriKind.Absolute, out var origin) && RESTarConfig.AllowedOrigins.Contains(origin))
             {
-                options.Headers.AccessControlAllowOrigin = originUri.ToString();
+                options.Headers.AccessControlAllowOrigin = origin.ToString();
                 options.Headers.Vary = "Origin";
             }
+            else return options;
             if (options.HasResource)
                 options.Headers.AccessControlAllowMethods = string.Join(", ", options.Resource.AvailableMethods);
             options.Headers.AccessControlMaxAge = "120";

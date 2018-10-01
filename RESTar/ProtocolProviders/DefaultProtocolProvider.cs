@@ -258,8 +258,8 @@ namespace RESTar.ProtocolProviders
                         if (response.StatusCode >= HttpStatusCode.BadRequest)
                             throw new InvalidExternalDestination(externalRequest,
                                 $"Received {response.StatusCode.ToCode()} - {response.StatusDescription}. {response.Headers.Info}");
-                        if (serialized.Headers.FirstOrDefault(pair => pair.Key.EqualsNoCase("Access-Control-Allow-Origin")).Value is string h)
-                            response.Headers["Access-Control-Allow-Origin"] = h;
+                        if (serialized.Headers.AccessControlAllowOrigin is string h)
+                            response.Headers.AccessControlAllowOrigin = h;
                         return new ExternalDestinationResult(entities.Request, response);
                     }
                     catch (HttpRequestException re)

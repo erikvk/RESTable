@@ -225,7 +225,7 @@ namespace RESTar.Requests
                         result.Cookies = Cookies;
                         ResponseHeaders.ForEach(h => result.Headers[h.Key.StartsWith("X-") ? h.Key : "X-" + h.Key] = h.Value);
                         if ((RESTarConfig.AllowAllOrigins ? "*" : Headers.Origin) is string origin)
-                            result.Headers["Access-Control-Allow-Origin"] = origin;
+                            result.Headers.AccessControlAllowOrigin = origin;
                         if (!IsWebSocketUpgrade) return result;
                         var serialized = result.Serialize();
                         Context.WebSocket.SendResult(serialized);
