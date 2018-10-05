@@ -86,7 +86,7 @@ namespace RESTar
         /// </summary>
         public string Query
         {
-            get => _protocol == "" ? query : $"-{_protocol}{query}";
+            get => query;
             set
             {
                 switch (value)
@@ -98,7 +98,9 @@ namespace RESTar
                 }
                 previousQuery = query;
                 queryChangedPreEval = true;
-                query = value;
+                if (_protocol != "" && value.FirstOrDefault() != '-')
+                    query = $"-{_protocol}{value}";
+                else query = value;
             }
         }
 
