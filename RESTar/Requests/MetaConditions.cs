@@ -50,6 +50,9 @@ namespace RESTar.Requests
         Search,
 
         /// <summary />
+        Search_regex,
+
+        /// <summary />
         Safepost,
 
         /// <summary />
@@ -72,6 +75,7 @@ namespace RESTar.Requests
                 case RESTarMetaCondition.Rename: return typeof(string);
                 case RESTarMetaCondition.Distinct: return typeof(bool);
                 case RESTarMetaCondition.Search: return typeof(string);
+                case RESTarMetaCondition.Search_regex: return typeof(string);
                 case RESTarMetaCondition.Safepost: return typeof(string);
                 case RESTarMetaCondition.Format: return typeof(string);
                 default: throw new ArgumentOutOfRangeException(nameof(condition), condition, null);
@@ -215,10 +219,10 @@ namespace RESTar.Requests
                         mc.Offset = (Offset) (int) value;
                         break;
                     case RESTarMetaCondition.Order_asc:
-                        mc.OrderBy = new OrderBy(resource, false, (string) value, dynamicDomain);
+                        mc.OrderBy = new OrderByAscending(resource, (string) value, dynamicDomain);
                         break;
                     case RESTarMetaCondition.Order_desc:
-                        mc.OrderBy = new OrderBy(resource, true, (string) value, dynamicDomain);
+                        mc.OrderBy = new OrderByDescending(resource, (string) value, dynamicDomain);
                         break;
                     case RESTarMetaCondition.Select:
                         mc.Select = new Select(resource, (string) value, dynamicDomain);
@@ -235,6 +239,9 @@ namespace RESTar.Requests
                         break;
                     case RESTarMetaCondition.Search:
                         mc.Search = new Search((string) value);
+                        break;
+                    case RESTarMetaCondition.Search_regex:
+                        mc.Search = new RegexSearch((string) value);
                         break;
                     case RESTarMetaCondition.Safepost:
                         mc.SafePost = value;
@@ -262,7 +269,7 @@ namespace RESTar.Requests
                 if (mc.Rename?.Any(p => p.Key.Key.EqualsNoCase(mc.OrderBy.Key)) == true
                     && !mc.Rename.Any(p => p.Value.EqualsNoCase(mc.OrderBy.Key)))
                     throw new InvalidSyntax(InvalidMetaConditionSyntax,
-                        $"The {(mc.OrderBy.Ascending ? "'Order_asc'" : "'Order_desc'")} " +
+                        $"The {(mc.OrderBy is OrderByAscending ? RESTarMetaCondition.Order_asc : RESTarMetaCondition.Order_desc)} " +
                         "meta-condition cannot refer to a property x that is to be renamed " +
                         "unless some other property is renamed to x");
             }
@@ -304,11 +311,10 @@ namespace RESTar.Requests
                 list.Add(new UriCondition(RESTarMetaCondition.Offset, "∞"));
             else if (Offset.Number != 0)
                 list.Add(new UriCondition(RESTarMetaCondition.Offset, Offset.Number.ToString()));
-            if (OrderBy != null)
-            {
-                var key = OrderBy.Descending ? RESTarMetaCondition.Order_desc : RESTarMetaCondition.Order_asc;
-                list.Add(new UriCondition(key, OrderBy.Term.ToString()));
-            }
+            if (OrderBy is OrderByDescending)
+                list.Add(new UriCondition(RESTarMetaCondition.Order_desc, OrderBy.Term.ToString()));
+            else if (OrderBy != null)
+                list.Add(new UriCondition(RESTarMetaCondition.Order_asc, OrderBy.Term.ToString()));
             if (Select != null)
                 list.Add(new UriCondition(RESTarMetaCondition.Select, string.Join(",", Select)));
             if (Add != null)
@@ -317,7 +323,9 @@ namespace RESTar.Requests
                 list.Add(new UriCondition(RESTarMetaCondition.Rename, string.Join(",", Rename.Select(r => $"{r.Key}->{r.Value}"))));
             if (Distinct != null)
                 list.Add(new UriCondition(RESTarMetaCondition.Distinct, "true"));
-            if (Search != null)
+            if (Search is RegexSearch)
+                list.Add(new UriCondition(RESTarMetaCondition.Search_regex, Search.Pattern));
+            else if (Search != null)
                 list.Add(new UriCondition(RESTarMetaCondition.Search, Search.Pattern));
             if (SafePost != null)
                 list.Add(new UriCondition(RESTarMetaCondition.Safepost, SafePost));

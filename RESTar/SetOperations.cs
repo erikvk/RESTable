@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
-using System.Web;
 using Newtonsoft.Json.Linq;
 using RESTar.ContentTypeProviders;
 using RESTar.Linq;
@@ -152,7 +151,7 @@ namespace RESTar
                             break;
                         default: return;
                     }
-                    valueBuffer[i] = HttpUtility.UrlEncode(value);
+                    valueBuffer[i] = value.UriEncode();
                 }
                 localMapper = string.Format(localMapper, valueBuffer);
                 switch (request.Context.CreateRequest(localMapper).Evaluate())

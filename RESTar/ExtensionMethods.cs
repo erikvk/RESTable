@@ -10,7 +10,6 @@ using System.Reflection;
 using System.Runtime.Serialization;
 using System.Text;
 using System.Threading.Tasks;
-using System.Web;
 using Dynamit;
 using Microsoft.CSharp.RuntimeBinder;
 using Newtonsoft.Json;
@@ -210,6 +209,9 @@ namespace RESTar
         #endregion
 
         #region Other
+
+        internal static string UriEncode(this string str) => Uri.EscapeDataString(str);
+        internal static string UriDecode(this string str) => Uri.UnescapeDataString(str);
 
         /// <summary>
         /// Gets the object for a Starcounter object number
@@ -729,7 +731,7 @@ namespace RESTar
                 error.Headers.Metadata = error.Metadata;
             error.Headers.Version = RESTarConfig.Version;
             if (errorId != null)
-                error.Headers.Error = $"/restar.admin.error/id={HttpUtility.UrlEncode(errorId)}";
+                error.Headers.Error = $"/restar.admin.error/id={errorId.UriEncode()}";
             error.TimeElapsed = request.TimeElapsed;
             return error;
         }

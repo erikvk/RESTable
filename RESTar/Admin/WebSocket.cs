@@ -32,6 +32,11 @@ namespace RESTar.Admin
         public string TerminalType { get; private set; }
 
         /// <summary>
+        /// Does this WebSocket instance represent the currently connected client websocket?
+        /// </summary>
+        public bool IsThis { get; private set; }
+
+        /// <summary>
         /// An object describing the terminal
         /// </summary>
         public JObject Terminal { get; private set; }
@@ -50,6 +55,7 @@ namespace RESTar.Admin
             .Select(socket => new WebSocket
             {
                 Id = socket.TraceId,
+                IsThis = socket.TraceId == request.Context.WebSocket?.TraceId,
                 TerminalType = socket.TerminalResource?.Name,
                 Client = JObject.Parse(Providers.Json.Serialize(socket.GetAppProfile())),
                 Terminal = JObject.Parse(Providers.Json.Serialize(socket.Terminal)),

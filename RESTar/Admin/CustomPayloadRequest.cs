@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Net;
 using System.Text;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -115,7 +114,7 @@ namespace RESTar.Admin
                     errorMessage = $"The URI of the custom request of webhook '{webhook.Label ?? webhook.Id}' is no longer " +
                                    "valid, and has been changed to protect against unsafe behavior. Please change the URI " +
                                    "to a valid local URI to repair the webhook. Previous URI: " + URI;
-                    URI = $"/{Resource<Echo>.ResourceSpecifier}/Info={WebUtility.UrlEncode(errorMessage)}";
+                    URI = $"/{Resource<Echo>.ResourceSpecifier}/Info={errorMessage.UriEncode()}";
                     invalidReason = null;
                     return true;
                 }

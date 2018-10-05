@@ -24,6 +24,8 @@ namespace RESTar
     [RESTar(Description = description, GETAvailableToAll = true)]
     public sealed class Shell : ITerminal
     {
+        #region Private
+
         private const string description =
             "The RESTar WebSocket shell lets the client navigate around the resources of the " +
             "RESTar API, perform CRUD operations and enter terminal resources.";
@@ -36,6 +38,11 @@ namespace RESTar
         private string query;
         private string previousQuery;
         private Action OnConfirm;
+        private bool _autoGet;
+        private int streamBufferSize;
+        private IEntities _previousEntities;
+        private bool _autoOptions;
+        private string _protocol;
 
         private IEntities PreviousEntities
         {
@@ -55,12 +62,31 @@ namespace RESTar
 
         internal static ITerminalResource<Shell> TerminalResource { get; set; }
 
+        private void Reset()
+        {
+            streamBufferSize = MaxStreamBufferSize;
+            Unsafe = false;
+            OnConfirm = null;
+            PreviousEntities = null;
+            query = "";
+            previousQuery = "";
+            WriteHeaders = false;
+            AutoOptions = false;
+            AutoGet = false;
+            ReformatQueries = true;
+            _protocol = "";
+        }
+
+        #endregion
+
+        #region Terminal properties
+
         /// <summary>
         /// The query to perform in the shell
         /// </summary>
         public string Query
         {
-            get => query;
+            get => _protocol == "" ? query : $"-{_protocol}{query}";
             set
             {
                 switch (value)
@@ -86,8 +112,6 @@ namespace RESTar
         /// </summary>
         public bool WriteHeaders { get; set; }
 
-        private bool _autoOptions;
-
         /// <summary>
         /// Should the shell write options after a succesful navigation?
         /// </summary>
@@ -101,8 +125,6 @@ namespace RESTar
             }
         }
 
-        private bool _autoGet;
-
         /// <summary>
         /// Should the shell automatically run a GET operation after a successful navigation?
         /// </summary>
@@ -115,9 +137,6 @@ namespace RESTar
                 _autoGet = value;
             }
         }
-
-        private int streamBufferSize;
-        private IEntities _previousEntities;
 
         /// <summary>
         /// The size of stream messages in bytes
@@ -140,26 +159,27 @@ namespace RESTar
         /// </summary>
         public bool ReformatQueries { get; set; }
 
+        /// <summary>
+        /// The protocol to use in queries
+        /// </summary>
+        public string Protocol
+        {
+            get => _protocol == "" ? "restar" : _protocol;
+            set
+            {
+                var p = ProtocolController.ResolveProtocolProvider(value).ProtocolProvider;
+                _protocol = p.ProtocolIdentifier;
+            }
+        }
+
+        #endregion
+
         /// <inheritdoc />
         public Shell()
         {
             SupportsTextInput = true;
             SupportsBinaryInput = true;
             Reset();
-        }
-
-        private void Reset()
-        {
-            streamBufferSize = MaxStreamBufferSize;
-            Unsafe = false;
-            OnConfirm = null;
-            PreviousEntities = null;
-            query = "";
-            previousQuery = "";
-            WriteHeaders = false;
-            AutoOptions = false;
-            AutoGet = false;
-            ReformatQueries = true;
         }
 
         /// <inheritdoc />

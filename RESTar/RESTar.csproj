@@ -124,6 +124,7 @@
     <Compile Include="Meta\Internal\EventResourceProvider.cs" />
     <Compile Include="Meta\IEvent.cs" />
     <Compile Include="Requests\DbHeaders.cs" />
+    <Compile Include="Requests\Filters\RegexSearch.cs" />
     <Compile Include="Requests\HeadersEnumerator.cs" />
     <Compile Include="Requests\HeadersExtensions.cs" />
     <Compile Include="Requests\IHeaders.cs" />

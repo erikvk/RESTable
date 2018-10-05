@@ -129,9 +129,9 @@ namespace RESTar.ProtocolProviders
             if (!Operator.TryParse(opString, out var @operator)) throw new InvalidOperator(conditionString);
             return new UriCondition
             (
-                key: WebUtility.UrlDecode(key),
+                key: key.UriDecode(),
                 op: @operator.OpCode,
-                valueLiteral: WebUtility.UrlDecode(valueLiteral),
+                valueLiteral: valueLiteral.UriDecode(),
                 valueTypeCode: TypeCode.String
             );
         }
@@ -175,10 +175,9 @@ namespace RESTar.ProtocolProviders
         private static string ToUriString(IUriCondition condition)
         {
             if (condition == null) return "";
-            var key = WebUtility.UrlEncode(condition.Key);
             var op = ((Operator) condition.Operator).Common;
             var value = ToUriValueString(condition);
-            return $"{key}{op}{value}";
+            return $"{condition.Key.UriEncode()}{op}{value}";
         }
 
         private static string ToUriValueString(IUriCondition condition)
@@ -189,7 +188,7 @@ namespace RESTar.ProtocolProviders
                 case TypeCode.Empty: return "null";
                 case TypeCode.Char:
                 case TypeCode.String:
-                    var encoded = WebUtility.UrlEncode(valueLiteral);
+                    var encoded = valueLiteral.UriEncode();
                     switch (encoded)
                     {
                         case null: return "null";

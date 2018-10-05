@@ -66,7 +66,9 @@ namespace RESTar.Resources.Operations
             {
                 indexedName = _indexName;
                 if (prop.Type != typeof(string)) orderBy.Skip = true;
-                return orderBy.Ascending ? $"ORDER BY t.\"{prop.ActualName}\" ASC" : $"ORDER BY t.\"{prop.ActualName}\" DESC";
+                return orderBy is OrderByAscending
+                    ? $"ORDER BY t.\"{prop.ActualName}\" ASC"
+                    : $"ORDER BY t.\"{prop.ActualName}\" DESC";
             }
             indexedName = null;
             return null;

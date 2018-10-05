@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
 using System.Text;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -99,9 +98,9 @@ namespace RESTar.Admin
                        $"against unsafe behavior. Please update the '{nameof(Uri)}' property to a valid RESTar URI to " +
                        "repair the macro.";
             return $"/{Resource<Echo>.ResourceSpecifier}/" +
-                   $"Info={WebUtility.UrlEncode(info)}&" +
-                   $"InvalidUri={WebUtility.UrlEncode(invalidUri)}&" +
-                   $"InvalidReason={WebUtility.UrlEncode(invalidReason)}";
+                   $"Info={info.UriEncode()}&" +
+                   $"InvalidUri={invalidUri.UriEncode()}&" +
+                   $"InvalidReason={invalidReason.UriEncode()}";
         }
 
         /// <inheritdoc />
