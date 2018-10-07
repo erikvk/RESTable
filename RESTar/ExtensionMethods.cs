@@ -291,7 +291,7 @@ namespace RESTar
             return baseType != null;
         }
 
-        internal static (T, T) ToTuple<T>(this ICollection<T> collection)
+        internal static (T, T) Deconstruct<T>(this ICollection<T> collection)
         {
             if (collection.Count > 2) throw new InvalidOperationException("Collection contained more than two elements");
             return (collection.ElementAtOrDefault(0), collection.ElementAtOrDefault(1));
@@ -445,7 +445,7 @@ namespace RESTar
             return filter?.Apply(entities) ?? entities;
         }
 
-        internal static IEnumerable<JObject> Process<T>(this IEnumerable<T> entities, IProcessor[] processors)
+        internal static IEnumerable<JObject> Process<T>(this IEnumerable<T> entities, params IProcessor[] processors)
             where T : class
         {
             return processors.Aggregate(default(IEnumerable<JObject>), (e, p) => e != null ? p.Apply(e) : p.Apply(entities));

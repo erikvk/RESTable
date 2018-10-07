@@ -324,9 +324,9 @@ namespace RESTar.Requests
             if (Distinct != null)
                 list.Add(new UriCondition(RESTarMetaCondition.Distinct, "true"));
             if (Search is RegexSearch)
-                list.Add(new UriCondition(RESTarMetaCondition.Search_regex, Search.Pattern));
+                list.Add(new UriCondition(RESTarMetaCondition.Search_regex, Search.GetValueLiteral()));
             else if (Search != null)
-                list.Add(new UriCondition(RESTarMetaCondition.Search, Search.Pattern));
+                list.Add(new UriCondition(RESTarMetaCondition.Search, Search.GetValueLiteral()));
             if (SafePost != null)
                 list.Add(new UriCondition(RESTarMetaCondition.Safepost, SafePost));
             if (Formatter.HasValue)

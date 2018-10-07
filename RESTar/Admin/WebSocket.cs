@@ -32,11 +32,6 @@ namespace RESTar.Admin
         public string TerminalType { get; private set; }
 
         /// <summary>
-        /// Does this WebSocket instance represent the currently connected client websocket?
-        /// </summary>
-        public bool IsThis { get; private set; }
-
-        /// <summary>
         /// An object describing the terminal
         /// </summary>
         public JObject Terminal { get; private set; }
@@ -45,6 +40,11 @@ namespace RESTar.Admin
         /// An object describing the client
         /// </summary>
         public JObject Client { get; private set; }
+
+        /// <summary>
+        /// Does this WebSocket instance represent the currently connected client websocket?
+        /// </summary>
+        public bool IsThis { get; private set; }
 
         private WebSockets.WebSocket _WebSocket { get; set; }
 

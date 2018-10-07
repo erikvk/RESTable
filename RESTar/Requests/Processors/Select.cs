@@ -20,10 +20,7 @@ namespace RESTar.Requests.Processors
             .Select(key => resource.MakeOutputTerm(key, dynDomain))
             .ForEach(Add);
 
-        /// <summary>
-        /// Selects a set of properties from an IEnumerable of entities
-        /// </summary>
-        public IEnumerable<JObject> Apply<T>(IEnumerable<T> entities) => entities?.Select(entity =>
+        internal JObject Apply<T>(T entity)
         {
             var jobj = new JObject();
             ForEach(term =>
@@ -33,6 +30,11 @@ namespace RESTar.Requests.Processors
                 jobj[actualKey] = val == null ? null : JToken.FromObject(val, JsonProvider.Serializer);
             });
             return jobj;
-        });
+        }
+
+        /// <summary>
+        /// Selects a set of properties from an IEnumerable of entities
+        /// </summary>
+        public IEnumerable<JObject> Apply<T>(IEnumerable<T> entities) => entities?.Select(Apply);
     }
 }

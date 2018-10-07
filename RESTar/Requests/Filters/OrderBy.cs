@@ -23,7 +23,7 @@ namespace RESTar.Requests.Filters
         /// <summary>
         /// Applies the order by operation on an IEnumerable of entities
         /// </summary>
-        public abstract IEnumerable<T> Apply<T>(IEnumerable<T> entities);
+        public abstract IEnumerable<T> Apply<T>(IEnumerable<T> entities) where T : class;
     }
 
     /// <inheritdoc />

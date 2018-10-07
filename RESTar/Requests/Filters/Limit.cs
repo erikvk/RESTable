@@ -34,7 +34,7 @@ namespace RESTar.Requests.Filters
         /// <summary>
         /// Applies the limiting to an IEnumerable of entities
         /// </summary>
-        public IEnumerable<T> Apply<T>(IEnumerable<T> entities) => Number > -1 ? entities.Take((int) Number) : entities;
+        public IEnumerable<T> Apply<T>(IEnumerable<T> entities) where T: class => Number > -1 ? entities.Take((int) Number) : entities;
     }
 
     /// <inheritdoc cref="IFilter" />
@@ -63,7 +63,7 @@ namespace RESTar.Requests.Filters
         /// <summary>
         /// Applies the offset to an IEnumerable of entities
         /// </summary>
-        public IEnumerable<T> Apply<T>(IEnumerable<T> entities)
+        public IEnumerable<T> Apply<T>(IEnumerable<T> entities) where T : class
         {
             switch ((int) Number)
             {

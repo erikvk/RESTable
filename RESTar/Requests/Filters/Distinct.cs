@@ -11,7 +11,7 @@ namespace RESTar.Requests.Filters
         /// <summary>
         /// Applies the distinct filtering
         /// </summary>
-        public IEnumerable<T> Apply<T>(IEnumerable<T> entities)
+        public IEnumerable<T> Apply<T>(IEnumerable<T> entities) where T : class
         {
             if (entities == null) return null;
             return DistinctIterator(entities);
