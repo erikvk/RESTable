@@ -41,12 +41,12 @@ namespace RESTar.Requests.Filters
             if (Selector == "") Selector = null;
             switch (parts.ElementAtOrDefault(2))
             {
+                case "":
+                case null:
                 case "CI":
                 case "ci":
                     IgnoreCase = true;
                     break;
-                case "":
-                case null:
                 case "CS":
                 case "cs":
                     IgnoreCase = false;
