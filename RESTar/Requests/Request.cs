@@ -224,10 +224,13 @@ namespace RESTar.Requests
                         var result = EntityOperations<T>.GetEvaluator(Method).Invoke(this);
                         result.Cookies = Cookies;
                         ResponseHeaders.ForEach(h => result.Headers[h.Key.StartsWith("X-") ? h.Key : "X-" + h.Key] = h.Value);
-                        if ((RESTarConfig.AllowAllOrigins ? "*" : Headers.Origin) is string origin)
+                        if (RESTarConfig.AllowAllOrigins)
+                            result.Headers.AccessControlAllowOrigin = "*";
+                        else if (Headers.Origin is string origin)
                             result.Headers.AccessControlAllowOrigin = origin;
                         if (!IsWebSocketUpgrade) return result;
                         var serialized = result.Serialize();
+                        Context.WebSocket.Open();
                         Context.WebSocket.SendResult(serialized);
                         Context.WebSocket.Disconnect();
                         return new WebSocketUpgradeSuccessful(this);
