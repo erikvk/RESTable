@@ -107,7 +107,7 @@ namespace RESTar.Admin
             : new Formatter(Name, RegularPre, RegularPost, StartIndent);
 
         internal static Formatter Default => Db.SQL<DbOutputFormat>(ByDefault, true).FirstOrDefault()?.Format ?? default;
-        internal static Formatter Raw => default;
+        internal static Formatter Raw => Db.SQL<DbOutputFormat>(ByName, nameof(Raw)).FirstOrDefault()?.Format ?? default;
         internal static IEnumerable<DbOutputFormat> GetAll() => Db.SQL<DbOutputFormat>(All);
         internal static DbOutputFormat GetByName(string formatName) => Db.SQL<DbOutputFormat>(ByName, formatName).FirstOrDefault();
 
