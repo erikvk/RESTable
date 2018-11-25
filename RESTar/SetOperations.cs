@@ -37,9 +37,10 @@ namespace RESTar
         public IEnumerable<SetOperations> Select(IRequest<SetOperations> request)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
-            if (!request.GetBody().HasContent)
+            var body = request.GetBody();
+            if (!body.HasContent)
                 throw new Exception("Missing data source for SetOperations request");
-            var jobject = request.GetBody().Deserialize<JObject>().FirstOrDefault();
+            var jobject = body.Deserialize<JObject>().FirstOrDefault();
 
             JTokens recursor(JToken token)
             {
@@ -102,7 +103,7 @@ namespace RESTar
             {
                 switch (token)
                 {
-                    case JValue value: return new SetOperations(new JObject(new JProperty("Value", value)));
+                    case JValue value: return new SetOperations(new JObject(new JProperty("NumericValue", value)));
                     case JObject @object: return new SetOperations(@object);
                     default: throw new Exception("Invalid entity type in set operation");
                 }
