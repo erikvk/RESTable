@@ -126,11 +126,11 @@ namespace RESTar.Requests
         }
 
         /// <summary>
-        /// Creates a new condition for the resource type T using a key, operator and numericValue
+        /// Creates a new condition for the resource type T using a key, operator and value
         /// </summary>
         /// <param name="key">The key of the property of T to target, e.g. "Name", "Name.Length"</param>
         /// <param name="op">The operator denoting the operation to evaluate for the property</param>
-        /// <param name="value">The numericValue to compare the property referenced by the key with</param>
+        /// <param name="value">The value to compare the property referenced by the key with</param>
         public Condition(string key, Operators op, object value) : this
         (
             term: EntityResource<T>.SafeGet?.MakeConditionTerm(key)

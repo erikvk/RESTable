@@ -16,9 +16,9 @@ namespace RESTar.Meta
         public readonly string Name;
 
         /// <summary>
-        /// The integer numericValue of the enumeration
+        /// The numeric value of the enumeration
         /// </summary>
-        public readonly int Value;
+        public readonly int NumericValue;
 
         /// <summary>
         /// The attributes of the enumeration member
@@ -27,10 +27,10 @@ namespace RESTar.Meta
 
         /// <summary>
         ///  </summary>
-        internal EnumMember(string name, int value, IEnumerable<Attribute> attributes)
+        internal EnumMember(string name, int numericValue, IEnumerable<Attribute> attributes)
         {
             Name = name;
-            Value = value;
+            NumericValue = numericValue;
             Attributes = attributes;
         }
 
@@ -45,7 +45,7 @@ namespace RESTar.Meta
                     .Select(t => new EnumMember
                     (
                         name: t.Name,
-                        value: (int) (Convert.ChangeType(t.GetValue(null), TypeCode.Int32) ?? -1),
+                        numericValue: (int) (Convert.ChangeType(t.GetValue(null), TypeCode.Int32) ?? -1),
                         attributes: t.GetCustomAttributes<Attribute>()
                     ))
                     .ToArray()

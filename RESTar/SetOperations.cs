@@ -103,7 +103,7 @@ namespace RESTar
             {
                 switch (token)
                 {
-                    case JValue value: return new SetOperations(new JObject(new JProperty("NumericValue", value)));
+                    case JValue value: return new SetOperations(new JObject(new JProperty("Value", value)));
                     case JObject @object: return new SetOperations(@object);
                     default: throw new Exception("Invalid entity type in set operation");
                 }
