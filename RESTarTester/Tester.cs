@@ -680,7 +680,7 @@ namespace RESTarTester
 
             Do.Schedule(() => Db.TransactAsync(() => new MyDict() {["Aaa"] = "Wook"}), TimeSpan.FromSeconds(10)).Wait();
 
-            DatabaseIndex.Register<MyDict2>("MyFineIdex", "R");
+            DatabaseIndex.Register<MyDict2>("MyFineIdex", "$R");
 
             Db.TransactAsync(() => { new MyDict2 {["Snoo"] = 123, R = new Resource1 {Byte = 123, String = "Googfoo"}}; });
 
@@ -957,7 +957,7 @@ namespace RESTarTester
     [RESTar]
     public class MyDict2 : DDictionary, IDDictionary<MyDict2, MyDict2Kvp>
     {
-        public Resource1 R;
+        public Resource1 R { get; set; }
 
         public MyDict2Kvp NewKeyPair(MyDict2 dict, string key, object value = null)
         {

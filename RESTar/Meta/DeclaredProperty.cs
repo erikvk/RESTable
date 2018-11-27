@@ -178,6 +178,7 @@ namespace RESTar.Meta
             {
                 const string columnSQL = "SELECT t FROM Starcounter.Metadata.\"Column\" t WHERE t.\"Table\".FullName =? AND t.Name =?";
                 var method = p.GetGetMethod();
+
                 string columnNameGuess;
                 if (method.HasAttribute<CompilerGeneratedAttribute>())
                     columnNameGuess = p.Name;
