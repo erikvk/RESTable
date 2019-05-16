@@ -59,12 +59,13 @@ namespace RESTar
                             switch (key)
                             {
                                 case "$add" when IsNumberArray(value, out var terms): return terms.Sum();
-                                case "$add": throw GetArithmeticException(key);
                                 case "$sub" when IsNumberArray(value, out var terms): return terms.Aggregate((x, y) => x - y);
-                                case "$sub": throw GetArithmeticException(key);
                                 case "$mul" when IsNumberArray(value, out var terms): return terms.Aggregate((x, y) => x * y);
-                                case "$mul": throw GetArithmeticException(key);
                                 case "$mod" when IsNumberArray(value, out var terms, 2): return terms[0] % terms[1];
+
+                                case "$add": throw GetArithmeticException(key);
+                                case "$sub": throw GetArithmeticException(key);
+                                case "$mul": throw GetArithmeticException(key);
                                 case "$mod": throw GetArithmeticException(key, "For $mod, the integer list must have a length of exacly 2");
                             }
                             aggregator[pair.Key] = value;
@@ -111,15 +112,16 @@ namespace RESTar
                 }
             }
 
-            var body = request.GetBody();
-            if (!body.HasContent)
-                throw new Exception("Missing data source for Aggregator request");
-            var template = body.Deserialize<Aggregator>().FirstOrDefault();
-            switch (populator(template))
+            var template = request.GetBody().Deserialize<Aggregator>().FirstOrDefault()
+                           ?? throw new Exception("Missing data source for Aggregator request");
+            var populatedTemplate = populator(template);
+            switch (populatedTemplate)
             {
                 case Aggregator aggregator: return new[] {aggregator}.Where(request.Conditions);
-                case long integer: return new[] {new Aggregator {["Result"] = integer}};
-                default: throw new InvalidOperationException("An error occured when reading the request template");
+                case long integer: return new[] {new Aggregator {["Result"] = integer}}.Where(request.Conditions);
+                case var other:
+                    throw new InvalidOperationException("An error occured when reading the request template, " +
+                                                        $"the root object was resolved to {other?.GetType().FullName ?? "null"}");
             }
         }
 
