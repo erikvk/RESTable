@@ -1,5 +1,7 @@
 ﻿using System;
 
+// ReSharper disable once ShiftExpressionRealShiftCountIsZero
+
 namespace RESTar.Meta
 {
     /// <summary>

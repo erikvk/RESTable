@@ -132,3 +132,4 @@ UpgradeLog*.XML
 
 ## Emacs backup/tilde file
 *~
+/%STAR_NUGET%

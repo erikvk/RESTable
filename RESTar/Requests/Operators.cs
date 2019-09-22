@@ -1,5 +1,6 @@
 using System;
 
+// ReSharper disable once ShiftExpressionRealShiftCountIsZero
 #pragma warning disable 1591
 
 namespace RESTar.Requests
