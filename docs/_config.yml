@@ -11,8 +11,17 @@
 # https://mmistakes.github.io/minimal-mistakes/docs/quick-start-guide/#installing-the-theme
 
 # theme                  : "minimal-mistakes-jekyll"
-remote_theme             : "mmistakes/minimal-mistakes"
-minimal_mistakes_skin    : "contrast" # "default"  "air", "aqua", "contrast", "dark", "dirt", "neon", "mint", "plum", "sunrise"
+# remote_theme             : "mmistakes/minimal-mistakes"
+# minimal_mistakes_skin    : "contrast" # "default"  "air", "aqua", "contrast", "dark", "dirt", "neon", "mint", "plum", "sunrise"
+
+remote_theme             : "riggraz/no-style-please"
+theme_config:
+  appearance: "auto" # can be "light", "dark" or "auto"
+  back_home_text: ".." # customize text for homepage link in post layout
+  date_format: "%Y-%m-%d" # customize how date is formatted
+  show_description: false # show blog description in home page
+
+
 
 # Site Settings
 locale                   : "en-US"
@@ -211,6 +220,7 @@ plugins:
   - jekyll-feed
   - jemoji
   - jekyll-titles-from-headings
+  - jekyll-seo-tag
 
 # mimic GitHub Pages with --safe
 whitelist:
