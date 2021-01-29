@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+    <PropertyGroup>
+        <TargetFramework>net5.0</TargetFramework>
+        <AspNetCoreHostingModel>InProcess</AspNetCoreHostingModel>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\src\RESTable.AspNetCore\RESTable.AspNetCore.csproj" />
+        <ProjectReference Include="..\..\src\RESTable.Excel\RESTable.Excel.csproj" />
+        <ProjectReference Include="..\..\src\RESTable.OData\RESTable.OData.csproj" />
+        <ProjectReference Include="..\..\src\RESTable.SQLite\RESTable.SQLite.csproj" />
+        <ProjectReference Include="..\..\src\RESTable\RESTable.csproj" />
+    </ItemGroup>
+
+</Project>

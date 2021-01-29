@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+    <PropertyGroup>
+        <TargetFramework>net5.0</TargetFramework>
+        <AspNetCoreHostingModel>InProcess</AspNetCoreHostingModel>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\src\RESTable.Starcounter3x\RESTable.Starcounter3x.csproj" />
+        <ProjectReference Include="..\..\src\RESTable.AspNetCore\RESTable.AspNetCore.csproj" />
+        <ProjectReference Include="..\..\src\RESTable.Excel\RESTable.Excel.csproj" />
+        <ProjectReference Include="..\..\src\RESTable\RESTable.csproj" />
+        <PackageReference Include="Starcounter.Database.Hosting" Version="3.0.0-*" />
+        <PackageReference Include="Starcounter.Database.Abstractions" Version="3.0.0-*" />
+        <PackageReference Include="Starcounter.Database.Data" Version="3.0.0-*" />
+    </ItemGroup>
+
+</Project>
