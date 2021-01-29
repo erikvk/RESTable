@@ -268,7 +268,7 @@ defaults:
   # _pages
 
   - scope:
-      path: ""
+      path: "/docs"
       type: "pages"
     values:
       layout: single
