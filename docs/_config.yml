@@ -16,13 +16,13 @@ minimal_mistakes_skin    : "contrast" # "default"  "air", "aqua", "contrast", "d
 
 # Site Settings
 locale                   : "en-US"
-title                    : "Mopedo.io"
+title                    : "RESTable"
 title_separator          : "-"
-name                     : "Mopedo"
-description              : "Documentation for Mopedo APIs"
-url                      : https://develop.mopedo.com # the base hostname & protocol for your site e.g. "https://mmistakes.github.io"
+name                     : "RESTable"
+description              : "Documentation for RESTable APIs"
+url                      : https://erikvk.github.io # the base hostname & protocol for your site e.g. "https://mmistakes.github.io"
 baseurl                  : "" # the subpath of your site, e.g. "/blog"
-repository               : mopedo/Home # GitHub username/repo-name e.g. "mmistakes/minimal-mistakes"
+repository               : erikvk/RESTable # GitHub username/repo-name e.g. "mmistakes/minimal-mistakes"
 teaser                   : "image.png"  # path of fallback teaser image, e.g. "image.png"
 breadcrumbs              : false # true, false (default)
 words_per_minute         : 200
@@ -100,9 +100,9 @@ analytics:
 author:
   name             : "Erik von Krusenstierna"
   avatar           : # path of avatar image, e.g. "/assets/images/bio-photo.jpg"
-  bio              : "CTO of Mopedo"
+  bio              : ""
   location         : "Stockholm, Sweden"
-  email            : "erik.von.krusenstierna@mopedo.com"
+  email            : "erik.von.krusenstierna@gmail.com"
   uri              :
   home             : # null (default), "absolute or relative url to link to author home"
   bitbucket        :
@@ -135,8 +135,7 @@ include:
   - .htaccess
   - _pages
   - Contact information
-  - Mopedo DSP
-  - RESTar
+  - RESTable
 exclude:
   - "*.sublime-project"
   - "*.sublime-workspace"
@@ -280,24 +279,13 @@ defaults:
       related: true
 
   - scope:
-      path: "RESTar"
+      path: "RESTable"
     values:
       sidebar:
-        nav: "restar"
-  - scope:
-      path: "Mopedo DSP"
-    values:
-      sidebar:
-        nav: "dsp"
+        nav: "restable"
 
   - scope:
-      path: "Mopedo DSP/Developer guides/API reference"
-    values:
-      sidebar:
-        nav: "dsp-api"
-
-  - scope:
-      path: "RESTar/Built-in resources"
+      path: "RESTable/docs/Built-in resources"
     values:
       sidebar:
         nav: "restar-api"
