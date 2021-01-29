@@ -308,7 +308,7 @@ Closes the terminal, and the associated WebSocket.
 
 Use these command shorthands when you see fit:
 
-- Since all valid queries begin with either `-` or `/`, and no text commands begin with these characters, we can omitt the `GO` command name when navigating, and simply write the new query as a text command. Commands `GO /superhero` and `/superhero` are therefore equivalent.
+- Since all valid queries begin with either `-` or `/`, and no text commands begin with these characters, we can omit the `GO` command name when navigating, and simply write the new query as a text command. Commands `GO /superhero` and `/superhero` are therefore equivalent.
 - The `POST` command can be inferred when JSON objects or arrays are used as text commands, since no text comands begin with the same characters. Commands `POST {"Name": "Batman"}` and `{"Name": "Batman"}` are therefore equivalent.
 - Single space character commands are interpreted as `GET` commands.
 
