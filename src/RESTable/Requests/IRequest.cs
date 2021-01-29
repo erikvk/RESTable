@@ -210,23 +210,22 @@ namespace RESTable.Requests
         }
 
         /// <summary>
-        /// Sets the given body to the request, and returns the request
-        /// </summary>
-        public static IRequest WithBody(this IRequest request, object content, ContentType? contentType = null)
-        {
-            if (request == null) return null;
-            request.SetBody(content, contentType);
-            return request;
-        }
-
-
-        /// <summary>
         /// Sets the given method to the request, and returns the request
         /// </summary>
         public static IRequest<T> WithMethod<T>(this IRequest<T> request, Method method) where T : class
         {
             if (request == null) return null;
             request.Method = method;
+            return request;
+        }
+
+        /// <summary>
+        /// Sets the given body to the request, and returns the request
+        /// </summary>
+        public static IRequest WithBody(this IRequest request, object content, ContentType? contentType = null)
+        {
+            if (request == null) return null;
+            request.SetBody(content, contentType);
             return request;
         }
 
@@ -272,11 +271,42 @@ namespace RESTable.Requests
         /// <summary>
         /// Sets the given selector to the request, and returns the request
         /// </summary>
+        public static IRequest<T> WithEntities<T>(this IRequest<T> request, IEnumerable<T> entities) where T : class
+        {
+            if (request == null) return null;
+            request.Selector = () => entities;
+            return request;
+        }
+
+        /// <summary>
+        /// Sets the given selector to the request, and returns the request
+        /// </summary>
+        public static IRequest<T> WithEntities<T>(this IRequest<T> request, params T[] entities) where T : class
+        {
+            if (request == null) return null;
+            request.Selector = () => entities;
+            return request;
+        }
+
+        /// <summary>
+        /// Sets the given selector to the request, and returns the request
+        /// </summary>
         public static IRequest<T> WithUpdater<T>(this IRequest<T> request, Func<IEnumerable<T>, IEnumerable<T>> updater) where T : class
         {
             if (request == null) return null;
             request.Updater = updater;
             return request;
         }
+        
+        /// <summary>
+        /// Sets the given conditions to the request, and returns the request
+        /// </summary>
+        public static IRequest<T> WithMetaConditions<T>(this IRequest<T> request, Action<MetaConditions> editMetaconditions) where T : class
+        {
+            if (request == null) return null;
+            editMetaconditions(request.MetaConditions);
+            return request;
+        }
+
     }
 }

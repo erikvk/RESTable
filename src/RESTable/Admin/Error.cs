@@ -1,33 +1,36 @@
 ﻿using System;
 using System.Linq;
-using RESTar.Linq;
-using RESTar.Meta;
-using RESTar.Requests;
-using RESTar.Resources;
-using Starcounter;
-using static RESTar.Admin.Settings;
-using static RESTar.Method;
+using RESTable.Linq;
+using RESTable.Meta;
+using RESTable.Requests;
+using RESTable.Resources;
+using static RESTable.Method;
 
-namespace RESTar.Admin
+namespace RESTable.Admin
 {
     /// <summary>
     /// The Error resource records instances where an error was encountered while
     /// handling a request. You can control how long entities remain in the resource
     /// by setting the daysToSaveErrors parameter in the call to RESTarConfig.Init().
     /// </summary>
-    [Database, RESTar(GET, DELETE, Description = description)]
+    [InMemory, RESTable(GET, DELETE, Description = description)]
     public class Error
     {
         private const string description = "The Error resource records instances where an " +
                                            "error was encountered while handling a request.";
 
-        internal const string All = "SELECT t FROM RESTar.Admin.Error t";
-        internal const string ByTimeLessThan = All + " WHERE t.\"Time\" <?";
+        private const int MaxStringLength = 10000;
+
+        private static IRequest<Error> PostErrorRequest = RESTableContext.Root.CreateRequest<Error>(POST);
+        private static Condition<Error> GetIdCondition = new Condition<Error>(nameof(Id), Operators.GREATER_THAN, 0);
+        private static IRequest<Error> DeleteRequest = RESTableContext.Root.CreateRequest<Error>(DELETE).WithConditions(GetIdCondition);
+
+        private static long Counter { get; set; }
 
         /// <summary>
         /// A unique ID for this error instance
         /// </summary>
-        public string Id => this.GetObjectID();
+        public long Id { get; }
 
         /// <summary>
         /// The date and time when this error was created
@@ -74,23 +77,29 @@ namespace RESTar.Admin
         /// </summary>
         public string Body;
 
-        private Error() { }
+        private Error()
+        {
+            Counter += 1;
+            Id = Counter;
+            if (Counter >= 10000 && Counter % 1000 == 0)
+            {
+                GetIdCondition.Value = Counter - 9000; 
+                DeleteRequest.Evaluate();
+            }
+        }
 
-        private const int MaxStringLength = 10000;
-
-        internal static Error Create(Results.Error error, IRequest request)
+        internal static Error Create(Results.Error errorResult, IRequest request)
         {
             var resource = request.SafeSelect(a => a.Resource);
             var uri = request.UriComponents.ToString();
-            var stackTrace = $"{error.StackTrace} §§§ INNER: {error.InnerException?.StackTrace}";
-            var totalMessage = error.TotalMessage();
-            return new Error
+            var stackTrace = $"{errorResult.StackTrace} §§§ INNER: {errorResult.InnerException?.StackTrace}";
+            var totalMessage = errorResult.TotalMessage();
+            var error = new Error
             {
                 Time = DateTime.UtcNow,
-                ResourceName = (resource?.Name ?? "<unknown>") +
-                               (resource?.Alias != null ? $" ({resource.Alias})" : ""),
+                ResourceName = resource?.Name ?? "<unknown>",
                 Method = request.Method,
-                ErrorCode = error.ErrorCode,
+                ErrorCode = errorResult.ErrorCode,
                 Body = request.GetBody().ToString(),
                 StackTrace = stackTrace.Length > MaxStringLength ? stackTrace.Substring(0, MaxStringLength) : stackTrace,
                 Message = totalMessage.Length > MaxStringLength ? totalMessage.Substring(0, MaxStringLength) : totalMessage,
@@ -107,22 +116,8 @@ namespace RESTar.Admin
                         }
                     }))
             };
+            PostErrorRequest.WithEntities(error).Evaluate().ThrowIfError();
+            return error;
         }
-
-        private static DateTime Checked;
-
-        internal static void ClearOld()
-        {
-            if (Checked >= DateTime.UtcNow.Date) return;
-            var matches = Db.SQL<Error>(ByTimeLessThan, DateTime.UtcNow.AddDays(0 - _DaysToSaveErrors));
-            matches.ForEach(Db.Delete);
-            Checked = DateTime.UtcNow.Date;
-        }
-
-        /// <summary/>
-        [RESTarMember(ignore: true), Obsolete] public long Action { get; set; }
-
-        /// <summary/>
-        [RESTarMember(ignore: true), Obsolete] public long HandlerAction { get; set; }
     }
 }

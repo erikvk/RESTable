@@ -14,12 +14,14 @@ namespace RESTable.Meta.Internal
         private static IEntityResourceProviderInternal VrProvider { get; }
         private static TerminalResourceProvider TerminalProvider { get; }
         private static BinaryResourceProvider BinaryProvider { get; }
+        private static IEntityResourceProviderInternal InMemoryProvider { get; }
 
         static ResourceFactory()
         {
             VrProvider = new VirtualResourceProvider();
             TerminalProvider = new TerminalResourceProvider();
             BinaryProvider = new BinaryResourceProvider();
+            InMemoryProvider = new InMemoryEntityResourceProvider();
         }
 
         private static void ValidateEntityResourceProviders(ICollection<IEntityResourceProvider> _entityResourceProviders)
@@ -60,6 +62,7 @@ namespace RESTable.Meta.Internal
             }
             foreach (var provider in entityResourceProviders)
                 EntityResourceProviders.Add(provider.Id, provider);
+            EntityResourceProviders.Add(InMemoryProvider.Id, InMemoryProvider);
             EntityResourceProviders.Add(VrProvider.Id, VrProvider);
         }
 

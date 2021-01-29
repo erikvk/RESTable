@@ -523,7 +523,7 @@ namespace RESTable
                 var result = request.Evaluate();
                 switch (result)
                 {
-                    case Error _ when queryChangedPreEval:
+                    case Results.Error _ when queryChangedPreEval:
                         query = previousQuery;
                         break;
                     case IEntities entities:
@@ -552,7 +552,7 @@ namespace RESTable
                 var result = request.Evaluate().Serialize();
                 switch (result)
                 {
-                    case Error _ when queryChangedPreEval:
+                    case Results.Error _ when queryChangedPreEval:
                         query = previousQuery;
                         break;
                     case IEntities entities:

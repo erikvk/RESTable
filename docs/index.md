@@ -1,21 +1,96 @@
-# What is RESTable?
+---
+layout: default
+title: Home
+nav_order: 1
+description: "Just the Docs is a responsive Jekyll theme with built-in search that is easily customizable and hosted on GitHub Pages."
+permalink: /
+---
 
-RESTable is a .NET REST API framework for Starcounter applications, that is free to use and easy to set up in new or existing applications. Its purpose is to provide a set of high-quality tools for developers to build great REST APIs, without having to deal with the complexities (and sometimes utter boringness) associated with client authentication, request processing, data integrations, performance optimizations, URI conventions and documentation.
+# Focus on writing good documentation
+{: .fs-9 }
 
-> If the term "REST API" is unfamiliar to you, we recommend that you read this [excellent tutorial](http://www.restapitutorial.com), that covers all you need to know.
+Just the Docs gives your documentation a jumpstart with a responsive Jekyll theme that is easily customizable and hosted on GitHub Pages.
+{: .fs-6 .fw-300 }
 
-Using RESTable tools, developers can quickly build powerful REST APIs that, among other things:
+[Get started now](#getting-started){: .btn .btn-primary .fs-5 .mb-4 .mb-md-0 .mr-2 } [View it on GitHub](https://github.com/pmarsceill/just-the-docs){: .btn .fs-5 .mb-4 .mb-md-0 }
 
-1. Authenticate and authorize clients using [role-based access control](Administering%20a%20RESTable%20API/API%20keys) and API keys
-2. [Create web resources](Developing%20a%20RESTable%20API/Registering%20resources) from Starcounter database tables or any other persistent or transient data
-3. Allow external clients to [interact with the resources](Consuming%20a%20RESTable%20API/Introduction) using standard HTTP methods like `GET` and `POST`, and content types like JSON and XML
-4. Allow [advanced queries](Consuming%20a%20RESTable%20API/Request%20overview/#examples) like filtering, renaming, searching and ordering of resource representations before they are returned to the client
-5. Handle and categorize errors during request evaluation for easy [remote debugging](Built-in%20resources/RESTable.Admin/Error)
-6. Allow clients to [set up database indexes](Built-in%20resources/RESTable.Admin/DatabaseIndex) to optimize database queries
-7. Can save any data to an [Excel file](Consuming%20a%20RESTable%20API/Headers#accept)
-8. Allow clients to set up HTTP callbacks using [webhooks](Administering%20a%20RESTable%20API/Webhooks) that listen for [custom events](Resource%20kinds/Event%20resources)
-9. Have a built-in [WebSocket shell](Built-in%20resources/RESTable/Shell) that clients can use to explore and consume the REST API, as well as support for [custom websocket resources](Developing%20a%20RESTable%20API/Terminal%20resources)
+---
 
-## Terminology
+## Getting started
 
-A _RESTable application_ is any Starcounter application that uses the tools of RESTable to establish a REST API. We will refer to the _REST API_ as simply the web services provided by a RESTable application. _RESTable web service_ and _RESTable API_ are also used interchangeably in these articles to refer to the web services of a RESTable application. A _web resource_, or just _resource_, is – in [common terminology](https://en.wikipedia.org/wiki/Representational_state_transfer) – anything that can be named, addressed or interacted with using, for example, a REST API.
+### Dependencies
+
+Just the Docs is built for [Jekyll](https://jekyllrb.com), a static site generator. View the [quick start guide](https://jekyllrb.com/docs/) for more information. Just the Docs requires no special plugins and can run on GitHub Pages' standard Jekyll compiler. The [Jekyll SEO Tag plugin](https://github.com/jekyll/jekyll-seo-tag) is included by default (no need to run any special installation) to inject SEO and open graph metadata on docs pages. For information on how to configure SEO and open graph metadata visit the [Jekyll SEO Tag usage guide](https://jekyll.github.io/jekyll-seo-tag/usage/).
+
+### Quick start: Use as a GitHub Pages remote theme
+
+1. Add Just the Docs to your Jekyll site's `_config.yml` as a [remote theme](https://blog.github.com/2017-11-29-use-any-theme-with-github-pages/)
+```yaml
+remote_theme: pmarsceill/just-the-docs
+```
+<small>You must have GitHub Pages enabled on your repo, one or more Markdown files, and a `_config.yml` file. [See an example repository](https://github.com/pmarsceill/jtd-remote)</small>
+
+### Local installation: Use the gem-based theme
+
+1. Install the Ruby Gem
+```bash
+$ gem install just-the-docs
+```
+```yaml
+# .. or add it to your your Jekyll site’s Gemfile
+gem "just-the-docs"
+```
+2. Add Just the Docs to your Jekyll site’s `_config.yml`
+```yaml
+theme: "just-the-docs"
+```
+3. _Optional:_ Initialize search data (creates `search-data.json`)
+```bash
+$ bundle exec just-the-docs rake search:init
+```
+3. Run you local Jekyll server
+```bash
+$ jekyll serve
+```
+```bash
+# .. or if you're using a Gemfile (bundler)
+$ bundle exec jekyll serve
+```
+4. Point your web browser to [http://localhost:4000](http://localhost:4000)
+
+If you're hosting your site on GitHub Pages, [set up GitHub Pages and Jekyll locally](https://help.github.com/en/articles/setting-up-your-github-pages-site-locally-with-jekyll) so that you can more easily work in your development environment.
+
+### Configure Just the Docs
+
+- [See configuration options]({{ site.baseurl }}{% link docs/configuration.md %})
+
+---
+
+## About the project
+
+Just the Docs is &copy; 2017-{{ "now" | date: "%Y" }} by [Patrick Marsceill](http://patrickmarsceill.com).
+
+### License
+
+Just the Docs is distributed by an [MIT license](https://github.com/pmarsceill/just-the-docs/tree/master/LICENSE.txt).
+
+### Contributing
+
+When contributing to this repository, please first discuss the change you wish to make via issue,
+email, or any other method with the owners of this repository before making a change. Read more about becoming a contributor in [our GitHub repo](https://github.com/pmarsceill/just-the-docs#contributing).
+
+#### Thank you to the contributors of Just the Docs!
+
+<ul class="list-style-none">
+{% for contributor in site.github.contributors %}
+  <li class="d-inline-block mr-1">
+     <a href="{{ contributor.html_url }}"><img src="{{ contributor.avatar_url }}" width="32" height="32" alt="{{ contributor.login }}"/></a>
+  </li>
+{% endfor %}
+</ul>
+
+### Code of Conduct
+
+Just the Docs is committed to fostering a welcoming community.
+
+[View our Code of Conduct](https://github.com/pmarsceill/just-the-docs/tree/master/CODE_OF_CONDUCT.md) on our GitHub repository.

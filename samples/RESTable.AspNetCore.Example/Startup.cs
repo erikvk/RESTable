@@ -26,7 +26,6 @@ namespace RESTable.Example
             services.AddSingleton<IProtocolProvider, ODataProtocolProvider>();
             services.AddSingleton<IEntityResourceProvider>(new SQLiteEntityResourceProvider("./database"));
             services.AddExcelContentProvider();
-            services.AddSingleton<IEntityResourceProvider, InMemoryResourceProvider>();
             services.AddSingleton<IEntityTypeContractResolver, MyStringPropertiesResolver>();
             services.AddMvc(o => o.EnableEndpointRouting = false);
             services.AddHttpContextAccessor();
