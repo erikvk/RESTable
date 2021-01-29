@@ -8,8 +8,6 @@ restable:
          url: /
        - title: "What's new?"
          url: /What%27s%20new/
-       - title: "Tutorial GitHub repository →"
-         url: https://github.com/Mopedo/RESTable.Tutorial
        - title: "Resource kinds"
          url: /Resource%20kinds/
        - title: "Built-in resources →"
