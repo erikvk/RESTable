@@ -279,7 +279,7 @@ defaults:
       related: true
 
   - scope:
-      path: "RESTable"
+      path: ""
     values:
       sidebar:
         nav: "restable"
