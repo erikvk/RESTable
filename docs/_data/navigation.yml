@@ -17,8 +17,6 @@ restable:
      children:
        - title: "Introduction"
          url: /Consuming%20a%20RESTable%20API/Introduction/
-       - title: "Demo service"
-         url: /Consuming%20a%20RESTable%20API/Demo%20service/
        - title: "Request overview"
          url: /Consuming%20a%20RESTable%20API/Request%20overview/
        - title: "Methods"
@@ -44,21 +42,11 @@ restable:
          url: /Administering%20a%20RESTable%20API/API%20keys/
        - title: "CORS"
          url: /Administering%20a%20RESTable%20API/CORS/
-       - title: "HTTPS"
-         url: /Administering%20a%20RESTable%20API/HTTPS/
-       - title: "Macros"
-         url: /Administering%20a%20RESTable%20API/Macros/
-       - title: "JSON output formats"
-         url: /Administering%20a%20RESTable%20API/JSON%20output%20formats/
-       - title: "Webhooks"
-         url: /Administering%20a%20RESTable%20API/Webhooks/
-       - title: "Dynamic resources"
-         url: /Administering%20a%20RESTable%20API/Dynamic%20resources/
 
    - title: Developing a RESTable API
      children:
        - title: "Introduction"
-         url: /Administering%20a%20RESTable%20API/
+         url: /Developing%20a%20RESTable%20API/
 
 restable-api:
 
@@ -94,22 +82,12 @@ restable-api:
          url: /Built-in%20resources/RESTable.Admin/Error/
        - title: "ErrorCode"
          url: /Built-in%20resources/RESTable.Admin/ErrorCode/
-       - title: "Event"
-         url: /Built-in%20resources/RESTable.Admin/Event/
-       - title: "Macro"
-         url: /Built-in%20resources/RESTable.Admin/Macro/
-       - title: "OutputFormat"
-         url: /Built-in%20resources/RESTable.Admin/OutputFormat/
        - title: "PropertyCache"
          url: /Built-in%20resources/RESTable.Admin/PropertyCache/
        - title: "Protocol"
          url: /Built-in%20resources/RESTable.Admin/Protocol/
        - title: "Resource"
          url: /Built-in%20resources/RESTable.Admin/Resource/
-       - title: "ResourceAlias"
-         url: /Built-in%20resources/RESTable.Admin/ResourceAlias/
-       - title: "ResourceProfile"
-         url: /Built-in%20resources/RESTable.Admin/ResourceProfile/
        - title: "Schema"
          url: /Built-in%20resources/RESTable.Admin/Schema/
        - title: "Settings"
@@ -118,16 +96,5 @@ restable-api:
          url: /Built-in%20resources/RESTable.Admin/TermCache/
        - title: "Utilities"
          url: /Built-in%20resources/RESTable.Admin/Utilities/
-       - title: "Webhook"
-         url: /Built-in%20resources/RESTable.Admin/Webhook/
-       - title: "WebhookLog"
-         url: /Built-in%20resources/RESTable.Admin/WebhookLog/
-       - title: "WebhookLogSettings"
-         url: /Built-in%20resources/RESTable.Admin/WebhookLogSettings/
        - title: "WebSocket"
          url: /Built-in%20resources/RESTable.Admin/WebSocket/
-
-  - title: RESTable.Dynamic
-    children:
-       - title: "Resource"
-         url: /Built-in%20resources/RESTable.Dynamic/Resource/
