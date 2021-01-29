@@ -289,3 +289,5 @@ defaults:
     values:
       sidebar:
         nav: "restar-api"
+
+theme: jekyll-theme-cayman
