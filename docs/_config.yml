@@ -285,7 +285,7 @@ defaults:
         nav: "restable"
 
   - scope:
-      path: "RESTable/docs/Built-in resources"
+      path: "Built-in resources"
     values:
       sidebar:
-        nav: "restar-api"
+        nav: "restable-api"
