@@ -1,0 +1,100 @@
+main:
+
+
+restable:
+   - title: General
+     children:
+       - title: "What is RESTable?"
+         url: /
+       - title: "What's new?"
+         url: /What%27s%20new/
+       - title: "Resource kinds"
+         url: /Resource%20kinds/
+       - title: "Built-in resources →"
+         url: /Built-in%20resources/Overview/
+
+   - title: Consuming a RESTable API
+     children:
+       - title: "Introduction"
+         url: /Consuming%20a%20RESTable%20API/Introduction/
+       - title: "Request overview"
+         url: /Consuming%20a%20RESTable%20API/Request%20overview/
+       - title: "Methods"
+         url: /Consuming%20a%20RESTable%20API/Methods/
+       - title: "URI"
+         url: /Consuming%20a%20RESTable%20API/URI/
+       - title: "Headers"
+         url: /Consuming%20a%20RESTable%20API/Headers/
+       - title: "Body and data sources"
+         url: /Consuming%20a%20RESTable%20API/Body%20and%20data%20sources/
+       - title: "Responses"
+         url: /Consuming%20a%20RESTable%20API/Responses/
+       - title: "Consuming terminal resources"
+         url: /Consuming%20a%20RESTable%20API/Consuming%20terminal%20resources/
+
+   - title: Administering a RESTable API
+     children:
+       - title: "Introduction"
+         url: /Administering%20a%20RESTable%20API/Introduction/
+       - title: "Configuration"
+         url: /Administering%20a%20RESTable%20API/Configuration/
+       - title: "API keys"
+         url: /Administering%20a%20RESTable%20API/API%20keys/
+       - title: "CORS"
+         url: /Administering%20a%20RESTable%20API/CORS/
+
+   - title: Developing a RESTable API
+     children:
+       - title: "Introduction"
+         url: /Developing%20a%20RESTable%20API/
+
+restable-api:
+
+  - title: About
+    children:
+       - title: "Overview"
+         url: /Built-in%20resources/Overview/
+       - title: "← Main documentation"
+         url: /
+
+  - title: RESTable
+    children:
+       - title: "Aggregator"
+         url: /Built-in%20resources/RESTable/Aggregator/
+       - title: "AvailableResource"
+         url: /Built-in%20resources/RESTable/AvailableResource/
+       - title: "Echo"
+         url: /Built-in%20resources/RESTable/Echo/
+       - title: "Help"
+         url: /Built-in%20resources/RESTable/Help/
+       - title: "SetOperations"
+         url: /Built-in%20resources/RESTable/SetOperations/
+       - title: "Shell"
+         url: /Built-in%20resources/RESTable/Shell/
+
+  - title: RESTable.Admin
+    children:
+       - title: "Console"
+         url: /Built-in%20resources/RESTable.Admin/Console/
+       - title: "DatabaseIndex"
+         url: /Built-in%20resources/RESTable.Admin/DatabaseIndex/
+       - title: "Error"
+         url: /Built-in%20resources/RESTable.Admin/Error/
+       - title: "ErrorCode"
+         url: /Built-in%20resources/RESTable.Admin/ErrorCode/
+       - title: "PropertyCache"
+         url: /Built-in%20resources/RESTable.Admin/PropertyCache/
+       - title: "Protocol"
+         url: /Built-in%20resources/RESTable.Admin/Protocol/
+       - title: "Resource"
+         url: /Built-in%20resources/RESTable.Admin/Resource/
+       - title: "Schema"
+         url: /Built-in%20resources/RESTable.Admin/Schema/
+       - title: "Settings"
+         url: /Built-in%20resources/RESTable.Admin/Settings/
+       - title: "TermCache"
+         url: /Built-in%20resources/RESTable.Admin/TermCache/
+       - title: "Utilities"
+         url: /Built-in%20resources/RESTable.Admin/Utilities/
+       - title: "WebSocket"
+         url: /Built-in%20resources/RESTable.Admin/WebSocket/
