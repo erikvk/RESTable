@@ -1,5 +1,5 @@
 ---
-permalink: RESTable/Built-in%20resources/RESTable.Dynamic/Resource/
+permalink: /Built-in%20resources/RESTable.Dynamic/Resource/
 ---
 
 # `RESTable.Dynamic.Resource`

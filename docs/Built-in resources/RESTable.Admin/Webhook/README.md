@@ -1,5 +1,5 @@
 ---
-permalink: RESTable/Built-in%20resources/RESTable.Admin/Webhook/
+permalink: /Built-in%20resources/RESTable.Admin/Webhook/
 ---
 
 # `Webhook`

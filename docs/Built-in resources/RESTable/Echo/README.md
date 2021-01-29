@@ -1,5 +1,5 @@
 ---
-permalink: RESTable/Built-in%20resources/RESTable/Echo/
+permalink: /Built-in%20resources/RESTable/Echo/
 ---
 
 # `Echo`

@@ -1,5 +1,5 @@
 ---
-permalink: RESTable/Administering%20a%20RESTable%20API/API%20keys/
+permalink: /Administering%20a%20RESTable%20API/API%20keys/
 ---
 
 # API keys

@@ -1,5 +1,5 @@
 ---
-permalink: RESTable/Consuming%20a%20RESTable%20API/Body%20and%20data%20sources/
+permalink: /Consuming%20a%20RESTable%20API/Body%20and%20data%20sources/
 ---
 
 # Body and data sources

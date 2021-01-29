@@ -1,5 +1,5 @@
 ---
-permalink: RESTable/Built-in%20resources/Overview/
+permalink: /Built-in%20resources/Overview/
 ---
 
 # Built-in resources overview

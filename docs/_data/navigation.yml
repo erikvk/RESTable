@@ -5,131 +5,131 @@ restable:
    - title: General
      children:
        - title: "What is RESTable?"
-         url: /RESTable/
+         url: /
        - title: "What's new?"
-         url: /RESTable/What%27s%20new/
+         url: /What%27s%20new/
        - title: "Tutorial GitHub repository →"
          url: https://github.com/Mopedo/RESTable.Tutorial
        - title: "Resource kinds"
-         url: /RESTable/Resource%20kinds/
+         url: /Resource%20kinds/
        - title: "Built-in resources →"
-         url: /RESTable/Built-in%20resources/Overview/
+         url: /Built-in%20resources/Overview/
 
    - title: Consuming a RESTable API
      children:
        - title: "Introduction"
-         url: /RESTable/Consuming%20a%20RESTable%20API/Introduction/
+         url: /Consuming%20a%20RESTable%20API/Introduction/
        - title: "Demo service"
-         url: /RESTable/Consuming%20a%20RESTable%20API/Demo%20service/
+         url: /Consuming%20a%20RESTable%20API/Demo%20service/
        - title: "Request overview"
-         url: /RESTable/Consuming%20a%20RESTable%20API/Request%20overview/
+         url: /Consuming%20a%20RESTable%20API/Request%20overview/
        - title: "Methods"
-         url: /RESTable/Consuming%20a%20RESTable%20API/Methods/
+         url: /Consuming%20a%20RESTable%20API/Methods/
        - title: "URI"
-         url: /RESTable/Consuming%20a%20RESTable%20API/URI/
+         url: /Consuming%20a%20RESTable%20API/URI/
        - title: "Headers"
-         url: /RESTable/Consuming%20a%20RESTable%20API/Headers/
+         url: /Consuming%20a%20RESTable%20API/Headers/
        - title: "Body and data sources"
-         url: /RESTable/Consuming%20a%20RESTable%20API/Body%20and%20data%20sources/
+         url: /Consuming%20a%20RESTable%20API/Body%20and%20data%20sources/
        - title: "Responses"
-         url: /RESTable/Consuming%20a%20RESTable%20API/Responses/
+         url: /Consuming%20a%20RESTable%20API/Responses/
        - title: "Consuming terminal resources"
-         url: /RESTable/Consuming%20a%20RESTable%20API/Consuming%20terminal%20resources/
+         url: /Consuming%20a%20RESTable%20API/Consuming%20terminal%20resources/
 
    - title: Administering a RESTable API
      children:
        - title: "Introduction"
-         url: /RESTable/Administering%20a%20RESTable%20API/Introduction/
+         url: /Administering%20a%20RESTable%20API/Introduction/
        - title: "Configuration"
-         url: /RESTable/Administering%20a%20RESTable%20API/Configuration/
+         url: /Administering%20a%20RESTable%20API/Configuration/
        - title: "API keys"
-         url: /RESTable/Administering%20a%20RESTable%20API/API%20keys/
+         url: /Administering%20a%20RESTable%20API/API%20keys/
        - title: "CORS"
-         url: /RESTable/Administering%20a%20RESTable%20API/CORS/
+         url: /Administering%20a%20RESTable%20API/CORS/
        - title: "HTTPS"
-         url: /RESTable/Administering%20a%20RESTable%20API/HTTPS/
+         url: /Administering%20a%20RESTable%20API/HTTPS/
        - title: "Macros"
-         url: /RESTable/Administering%20a%20RESTable%20API/Macros/
+         url: /Administering%20a%20RESTable%20API/Macros/
        - title: "JSON output formats"
-         url: /RESTable/Administering%20a%20RESTable%20API/JSON%20output%20formats/
+         url: /Administering%20a%20RESTable%20API/JSON%20output%20formats/
        - title: "Webhooks"
-         url: /RESTable/Administering%20a%20RESTable%20API/Webhooks/
+         url: /Administering%20a%20RESTable%20API/Webhooks/
        - title: "Dynamic resources"
-         url: /RESTable/Administering%20a%20RESTable%20API/Dynamic%20resources/
+         url: /Administering%20a%20RESTable%20API/Dynamic%20resources/
 
    - title: Developing a RESTable API
      children:
        - title: "Introduction"
-         url: /RESTable/Administering%20a%20RESTable%20API/
+         url: /Administering%20a%20RESTable%20API/
 
 restable-api:
 
   - title: About
     children:
        - title: "Overview"
-         url: /RESTable/Built-in%20resources/Overview/
+         url: /Built-in%20resources/Overview/
        - title: "← Main documentation"
-         url: /RESTable/
+         url: /
 
   - title: RESTable
     children:
        - title: "Aggregator"
-         url: /RESTable/Built-in%20resources/RESTable/Aggregator/
+         url: /Built-in%20resources/RESTable/Aggregator/
        - title: "AvailableResource"
-         url: /RESTable/Built-in%20resources/RESTable/AvailableResource/
+         url: /Built-in%20resources/RESTable/AvailableResource/
        - title: "Echo"
-         url: /RESTable/Built-in%20resources/RESTable/Echo/
+         url: /Built-in%20resources/RESTable/Echo/
        - title: "Help"
-         url: /RESTable/Built-in%20resources/RESTable/Help/
+         url: /Built-in%20resources/RESTable/Help/
        - title: "SetOperations"
-         url: /RESTable/Built-in%20resources/RESTable/SetOperations/
+         url: /Built-in%20resources/RESTable/SetOperations/
        - title: "Shell"
-         url: /RESTable/Built-in%20resources/RESTable/Shell/
+         url: /Built-in%20resources/RESTable/Shell/
 
   - title: RESTable.Admin
     children:
        - title: "Console"
-         url: /RESTable/Built-in%20resources/RESTable.Admin/Console/
+         url: /Built-in%20resources/RESTable.Admin/Console/
        - title: "DatabaseIndex"
-         url: /RESTable/Built-in%20resources/RESTable.Admin/DatabaseIndex/
+         url: /Built-in%20resources/RESTable.Admin/DatabaseIndex/
        - title: "Error"
-         url: /RESTable/Built-in%20resources/RESTable.Admin/Error/
+         url: /Built-in%20resources/RESTable.Admin/Error/
        - title: "ErrorCode"
-         url: /RESTable/Built-in%20resources/RESTable.Admin/ErrorCode/
+         url: /Built-in%20resources/RESTable.Admin/ErrorCode/
        - title: "Event"
-         url: /RESTable/Built-in%20resources/RESTable.Admin/Event/
+         url: /Built-in%20resources/RESTable.Admin/Event/
        - title: "Macro"
-         url: /RESTable/Built-in%20resources/RESTable.Admin/Macro/
+         url: /Built-in%20resources/RESTable.Admin/Macro/
        - title: "OutputFormat"
-         url: /RESTable/Built-in%20resources/RESTable.Admin/OutputFormat/
+         url: /Built-in%20resources/RESTable.Admin/OutputFormat/
        - title: "PropertyCache"
-         url: /RESTable/Built-in%20resources/RESTable.Admin/PropertyCache/
+         url: /Built-in%20resources/RESTable.Admin/PropertyCache/
        - title: "Protocol"
-         url: /RESTable/Built-in%20resources/RESTable.Admin/Protocol/
+         url: /Built-in%20resources/RESTable.Admin/Protocol/
        - title: "Resource"
-         url: /RESTable/Built-in%20resources/RESTable.Admin/Resource/
+         url: /Built-in%20resources/RESTable.Admin/Resource/
        - title: "ResourceAlias"
-         url: /RESTable/Built-in%20resources/RESTable.Admin/ResourceAlias/
+         url: /Built-in%20resources/RESTable.Admin/ResourceAlias/
        - title: "ResourceProfile"
-         url: /RESTable/Built-in%20resources/RESTable.Admin/ResourceProfile/
+         url: /Built-in%20resources/RESTable.Admin/ResourceProfile/
        - title: "Schema"
-         url: /RESTable/Built-in%20resources/RESTable.Admin/Schema/
+         url: /Built-in%20resources/RESTable.Admin/Schema/
        - title: "Settings"
-         url: /RESTable/Built-in%20resources/RESTable.Admin/Settings/
+         url: /Built-in%20resources/RESTable.Admin/Settings/
        - title: "TermCache"
-         url: /RESTable/Built-in%20resources/RESTable.Admin/TermCache/
+         url: /Built-in%20resources/RESTable.Admin/TermCache/
        - title: "Utilities"
-         url: /RESTable/Built-in%20resources/RESTable.Admin/Utilities/
+         url: /Built-in%20resources/RESTable.Admin/Utilities/
        - title: "Webhook"
-         url: /RESTable/Built-in%20resources/RESTable.Admin/Webhook/
+         url: /Built-in%20resources/RESTable.Admin/Webhook/
        - title: "WebhookLog"
-         url: /RESTable/Built-in%20resources/RESTable.Admin/WebhookLog/
+         url: /Built-in%20resources/RESTable.Admin/WebhookLog/
        - title: "WebhookLogSettings"
-         url: /RESTable/Built-in%20resources/RESTable.Admin/WebhookLogSettings/
+         url: /Built-in%20resources/RESTable.Admin/WebhookLogSettings/
        - title: "WebSocket"
-         url: /RESTable/Built-in%20resources/RESTable.Admin/WebSocket/
+         url: /Built-in%20resources/RESTable.Admin/WebSocket/
 
   - title: RESTable.Dynamic
     children:
        - title: "Resource"
-         url: /RESTable/Built-in%20resources/RESTable.Dynamic/Resource/
+         url: /Built-in%20resources/RESTable.Dynamic/Resource/

@@ -1,5 +1,5 @@
 ---
-permalink: RESTable/Consuming%20a%20RESTable%20API/Demo%20service/
+permalink: /Consuming%20a%20RESTable%20API/Demo%20service/
 ---
 
 # Demo service

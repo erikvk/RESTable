@@ -1,5 +1,5 @@
 ---
-permalink: RESTable/Administering%20a%20RESTable%20API/Introduction/
+permalink: /Administering%20a%20RESTable%20API/Introduction/
 ---
 
 # Administering a RESTable API

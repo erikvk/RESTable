@@ -1,5 +1,5 @@
 ---
-permalink: RESTable/Built-in%20resources/RESTable/SetOperations/
+permalink: /Built-in%20resources/RESTable/SetOperations/
 ---
 
 # `SetOperations`

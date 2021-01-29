@@ -1,5 +1,5 @@
 ---
-permalink: RESTable/Administering%20a%20RESTable%20API/JSON%20output%20formats/
+permalink: /Administering%20a%20RESTable%20API/JSON%20output%20formats/
 ---
 
 # JSON Output formats
