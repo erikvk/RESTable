@@ -1,0 +1,21 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<config>
+  <ApiKey>
+    <Key>a-secure-admin-key</Key>
+    <AllowAccess>
+      <Resource>RESTable.*</Resource>
+      <Resource>RESTable.Admin.*</Resource>
+      <Resource>RESTable.Dynamic.*</Resource>
+      <Resource>RESTable.Tutorial.*</Resource>
+      <Resource>RESTable.SQLite.*</Resource>
+      <Methods>*</Methods>
+    </AllowAccess>
+  </ApiKey>
+  <ApiKey>
+    <Key>a-secure-user-key</Key>
+    <AllowAccess>
+      <Resource>RESTable.Tutorial.*</Resource>
+      <Methods>GET</Methods>
+    </AllowAccess>
+  </ApiKey>
+</config>
