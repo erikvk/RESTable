@@ -65,7 +65,7 @@ namespace RESTable
         /// allowed origins</param>
         /// <param name="prettyPrint">Should JSON output be pretty print formatted as default?
         ///  (can be changed in settings during runtime)</param>
-        /// <param name="daysToSaveErrors">The number of days to save errors in the Error resource</param>
+        /// <param name="nrOfErrorsToKeep">The number of days to save errors in the Error resource</param>
         /// <param name="requireApiKey">Should the REST API require an API key?</param>
         /// <param name="allowAllOrigins">Should any origin be allowed to make CORS requests?</param>
         /// <param name="lineEndings">The line endings to use when writing JSON</param>
@@ -73,6 +73,7 @@ namespace RESTable
         /// <param name="protocolProviders">External protocol providers for the RESTable instance</param>
         /// <param name="contentTypeProviders">External content type providers for the RESTable instance</param>
         /// <param name="networkProviders">The network providers to register with RESTable</param>
+        /// <param name="entityTypeContractResolvers">The entity type contract resolvers to register with RESTable</param>
         public static void Init
         (
             ushort port = 8282,
@@ -81,7 +82,7 @@ namespace RESTable
             bool allowAllOrigins = true,
             string configFilePath = null,
             bool prettyPrint = true,
-            ushort daysToSaveErrors = 30,
+            ushort nrOfErrorsToKeep = 2000,
             LineEndings lineEndings = LineEndings.Windows,
             IEnumerable<IEntityResourceProvider> entityResourceProviders = null,
             IEnumerable<IProtocolProvider> protocolProviders = null,
@@ -93,7 +94,7 @@ namespace RESTable
             try
             {
                 ProcessUri(ref uri);
-                Settings.Init(port, uri, prettyPrint, daysToSaveErrors, lineEndings);
+                Settings.Init(port, uri, prettyPrint, nrOfErrorsToKeep, lineEndings);
                 EntityTypeResolverController.SetupEntityTypeResolvers(entityTypeContractResolvers?.ToArray());
                 ResourceFactory.MakeResources(entityResourceProviders?.ToArray());
                 ContentTypeController.SetupContentTypeProviders(contentTypeProviders?.ToList());
@@ -241,7 +242,7 @@ namespace RESTable
             }
             catch (Exception jse)
             {
-                throw new Exception($"RESTable init error: Invalid config file syntax: {jse.Message}");
+                throw new Exception($"RESTable init error: Invalid config file: {jse.Message}");
             }
         }
 

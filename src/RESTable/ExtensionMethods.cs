@@ -568,8 +568,13 @@ namespace RESTable
         internal static IResult AsResultOf(this Exception exception, IRequestInternal request)
         {
             var error = exception.AsError();
+            long? errorId = default;
             error.SetTrace(request);
             error.RequestInternal = request;
+            if (!(error is Forbidden) && !(request is RemoteRequest) && request.Method >= 0)
+            {
+                errorId = Admin.Error.Create(error, request).Id;
+            }
             if (request.IsWebSocketUpgrade)
             {
                 if (error is Forbidden)
@@ -586,6 +591,8 @@ namespace RESTable
             if (request.Headers.Metadata.EqualsNoCase("full"))
                 error.Headers.Metadata = error.Metadata;
             error.Headers.Version = RESTableConfig.Version;
+            if (errorId.HasValue)
+                error.Headers.Error = $"/restable.admin.error/id={errorId}";
             error.TimeElapsed = request.TimeElapsed;
             return error;
         }

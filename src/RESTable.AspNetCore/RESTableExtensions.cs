@@ -40,7 +40,7 @@ namespace RESTable.AspNetCore
                 allowAllOrigins: allowAllOrigins,
                 configFilePath: configFilePath,
                 prettyPrint: prettyPrint,
-                daysToSaveErrors: 30,
+                nrOfErrorsToKeep: 30,
                 lineEndings: lineEndings,
                 entityResourceProviders: builder.ApplicationServices.GetServices<IEntityResourceProvider>(),
                 protocolProviders: builder.ApplicationServices.GetServices<IProtocolProvider>(),

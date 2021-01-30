@@ -20,12 +20,20 @@ namespace RESTable.Admin
                                            "error was encountered while handling a request.";
 
         private const int MaxStringLength = 10000;
+        private const int DeleteBatch = 100;
 
-        private static IRequest<Error> PostErrorRequest = RESTableContext.Root.CreateRequest<Error>(POST);
-        private static Condition<Error> GetIdCondition = new Condition<Error>(nameof(Id), Operators.GREATER_THAN, 0);
-        private static IRequest<Error> DeleteRequest = RESTableContext.Root.CreateRequest<Error>(DELETE).WithConditions(GetIdCondition);
+        private static readonly IRequest<Error> PostErrorRequest;
+        private static readonly Condition<Error> GetIdCondition;
+        private static readonly IRequest<Error> DeleteRequest;
 
         private static long Counter { get; set; }
+
+        static Error()
+        {
+            GetIdCondition = new Condition<Error>(nameof(Id), Operators.LESS_THAN_OR_EQUALS, 0);
+            DeleteRequest = RESTableContext.Root.CreateRequest<Error>(DELETE).WithConditions(GetIdCondition);
+            PostErrorRequest = RESTableContext.Root.CreateRequest<Error>(POST);
+        }
 
         /// <summary>
         /// A unique ID for this error instance
@@ -33,59 +41,80 @@ namespace RESTable.Admin
         public long Id { get; }
 
         /// <summary>
-        /// The date and time when this error was created
+        /// The URI of the request that generated the error
         /// </summary>
-        public DateTime Time;
-
-        /// <summary>
-        /// The name of the resource that the request was aimed at
-        /// </summary>
-        public string ResourceName;
+        public string Uri { get; }
 
         /// <summary>
         /// The method used when the error was created
         /// </summary>
-        public Method Method;
-
-        /// <summary>
-        /// The error code of the error
-        /// </summary>
-        public ErrorCodes ErrorCode;
-
-        /// <summary>
-        /// The runtime stack trace for the thrown exception
-        /// </summary>
-        public string StackTrace;
-
-        /// <summary>
-        /// A message describing the error
-        /// </summary>
-        public string Message;
-
-        /// <summary>
-        /// The URI of the request that generated the error
-        /// </summary>
-        public string Uri;
+        public Method Method { get; }
 
         /// <summary>
         /// The headers of the request that generated the error (API keys are not saved here)
         /// </summary>
-        public string Headers;
+        public string Headers { get; }
 
         /// <summary>
         /// The body of the request that generated the error
         /// </summary>
-        public string Body;
+        public string Body { get; }
 
-        private Error()
+        /// <summary>
+        /// The name of the resource that the request was aimed at
+        /// </summary>
+        public string ResourceName { get; }
+
+        /// <summary>
+        /// The date and time when this error was created
+        /// </summary>
+        public DateTime Time { get; }
+
+        /// <summary>
+        /// The error code of the error
+        /// </summary>
+        public ErrorCodes ErrorCode { get; }
+
+        /// <summary>
+        /// The runtime stack trace for the thrown exception
+        /// </summary>
+        public string StackTrace { get; }
+
+        /// <summary>
+        /// A message describing the error
+        /// </summary>
+        public string Message { get; }
+
+        private Error
+        (
+            string uri,
+            Method method,
+            string headers,
+            string body,
+            string resourceName,
+            DateTime time,
+            ErrorCodes errorCode,
+            string stackTrace,
+            string message
+        )
         {
             Counter += 1;
             Id = Counter;
-            if (Counter >= 10000 && Counter % 1000 == 0)
+            var errorsToKeep = Settings._NumberOfErrorsToKeep;
+            if (Counter > errorsToKeep && Counter % DeleteBatch == 0)
             {
-                GetIdCondition.Value = Counter - 9000; 
+                GetIdCondition.Value = Counter - errorsToKeep;
                 DeleteRequest.Evaluate();
             }
+            Uri = uri;
+            Method = method;
+            Headers = headers;
+            Body = body;
+            ResourceName = resourceName;
+            Time = time;
+            ErrorCode = errorCode;
+            StackTrace = stackTrace;
+            Message = message;
         }
 
         internal static Error Create(Results.Error errorResult, IRequest request)
@@ -95,27 +124,24 @@ namespace RESTable.Admin
             var stackTrace = $"{errorResult.StackTrace} §§§ INNER: {errorResult.InnerException?.StackTrace}";
             var totalMessage = errorResult.TotalMessage();
             var error = new Error
-            {
-                Time = DateTime.UtcNow,
-                ResourceName = resource?.Name ?? "<unknown>",
-                Method = request.Method,
-                ErrorCode = errorResult.ErrorCode,
-                Body = request.GetBody().ToString(),
-                StackTrace = stackTrace.Length > MaxStringLength ? stackTrace.Substring(0, MaxStringLength) : stackTrace,
-                Message = totalMessage.Length > MaxStringLength ? totalMessage.Substring(0, MaxStringLength) : totalMessage,
-                Uri = uri,
-                Headers = resource is IEntityResource e && e.RequiresAuthentication
+            (
+                uri: uri,
+                method: request.Method,
+                headers: resource is IEntityResource e && e.RequiresAuthentication
                     ? null
-                    : request.Headers.StringJoin(" | ", dict => dict.Select(header =>
+                    : request.Headers.StringJoin(" | ", dict => dict.Select(header => header.Key.ToLower() switch
                     {
-                        switch (header.Key.ToLower())
-                        {
-                            case "authorization": return "Authorization: apikey *******";
-                            case "x-original-url" when header.Value.Contains("key="): return "*******";
-                            default: return $"{header.Key}: {header.Value}";
-                        }
-                    }))
-            };
+                        "authorization" => "Authorization: apikey *******",
+                        "x-original-url" when header.Value.Contains("key=") => "*******",
+                        _ => $"{header.Key}: {header.Value}"
+                    })),
+                resourceName: resource?.Name ?? "<unknown>",
+                body: request.GetBody().ToString(),
+                time: DateTime.UtcNow,
+                errorCode: errorResult.ErrorCode,
+                stackTrace: stackTrace.Length > MaxStringLength ? stackTrace.Substring(0, MaxStringLength) : stackTrace,
+                message: totalMessage.Length > MaxStringLength ? totalMessage.Substring(0, MaxStringLength) : totalMessage
+            );
             PostErrorRequest.WithEntities(error).Evaluate().ThrowIfError();
             return error;
         }

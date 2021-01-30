@@ -19,8 +19,7 @@ namespace RESTable.Admin
         public static ushort _Port => Instance.Port;
         public static string _Uri => Instance.Uri;
         public static bool _PrettyPrint => Instance.PrettyPrint;
-        public static int _DaysToSaveErrors => Instance.DaysToSaveErrors;
-        public static string _HelpResourcePath => Instance.DocumentationURL;
+        public static int _NumberOfErrorsToKeep => Instance.NumberOfErrorsToKeep;
         public static LineEndings _LineEndings => Instance.LineEndings;
 
         /// <summary>
@@ -49,9 +48,9 @@ namespace RESTable.Admin
         public string DocumentationURL => "https://develop.mopedo.com";
 
         /// <summary>
-        /// The number of days to store errors in the RESTable.Error resource
+        /// The number of errors to store in the RESTable.Error resource
         /// </summary>
-        public int DaysToSaveErrors { get; private set; }
+        public int NumberOfErrorsToKeep { get; private set; }
 
         /// <summary>
         /// The RESTable version of the current application
@@ -75,7 +74,7 @@ namespace RESTable.Admin
             ushort port,
             string uri,
             bool prettyPrint,
-            int daysToSaveErrors,
+            int numberOfErrorsToKeep,
             LineEndings lineEndings
         )
         {
@@ -84,7 +83,7 @@ namespace RESTable.Admin
                 Port = port,
                 Uri = uri,
                 PrettyPrint = prettyPrint,
-                DaysToSaveErrors = daysToSaveErrors,
+                NumberOfErrorsToKeep = numberOfErrorsToKeep,
                 LineEndings = lineEndings,
                 TempFilePath = Path.GetTempPath(),
                 RESTableVersion = RESTableConfig.Version

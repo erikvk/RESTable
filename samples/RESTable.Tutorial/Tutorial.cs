@@ -4,64 +4,96 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using Microsoft.AspNetCore;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json.Linq;
+using RESTable.AspNetCore;
+using RESTable.Excel;
+using RESTable.OData;
+using RESTable.ProtocolProviders;
 using RESTable.Requests;
 using RESTable.Resources;
 using RESTable.Resources.Operations;
+using RESTable.SQLite;
 using RESTable.WebSockets;
 using static System.StringComparison;
 using static RESTable.Method;
+using static RESTable.Tutorial.Gender;
 
-// ReSharper disable InheritdocConsiderUsage
-
-namespace RESTable.SQLite.Example
+namespace RESTable.Tutorial
 {
     #region Tutorial 1
 
     /// <summary>
     /// A simple RESTable application
     /// </summary>
-    public class TutorialApp
+    public class Tutorial
     {
-        public static void Main()
-        {
-            RESTableConfig.Init
+        public static void Main(string[] args) => WebHost
+            .CreateDefaultBuilder(args)
+            .UseStartup<Tutorial>()
+            .Build()
+            .Run();
+
+        public void ConfigureServices(IServiceCollection services) => services
+            .AddSingleton<IProtocolProvider, ODataProtocolProvider>()
+            .AddSingleton<IEntityResourceProvider>(new SQLiteEntityResourceProvider("./database"))
+            .AddExcelContentProvider()
+            .AddHttpContextAccessor()
+            .AddMvc(o => o.EnableEndpointRouting = false);
+
+        public void Configure(IApplicationBuilder app) => app
+            .UseMvcWithDefaultRoute()
+            .UseRESTable
             (
-                port: 8282,
                 uri: "/api",
                 requireApiKey: true,
-                configFilePath: "/Config.xml",
-                entityResourceProviders: new[] {new SQLiteEntityResourceProvider($"./database.sqlite")}
+                configFilePath: "./Config.xml"
             );
-
-            // The 'port' argument sets the HTTP port on which to register the REST handlers
-            // The 'uri' argument sets the root uri of the REST API
-            // The 'requireApiKey' parameter is set to 'true'. API keys are required in all incoming requests.
-            // The 'configFilePath' points towards the configuration file, which contains API keys. In this case,
-            //   this file is located in the project folder.
-            // The 'resourceProviders' parameter is used for SQLite integration (see the ExampleDatabase class below)
-
-            ExampleDatabase.Setup();
-        }
     }
 
-    [Starcounter.Database.Database, RESTable(GET, POST, PUT, PATCH, DELETE)]
-    public class Superhero
+    /// <summary>
+    /// Database is a subset of https://github.com/fivethirtyeight/data/tree/master/comic-characters
+    /// - which is, in turn, taken from Marvel and DC Comics respective sites.
+    /// </summary>
+    [SQLite(CustomTableName = "Heroes"), RESTable]
+    public class Superhero : SQLiteTable
     {
         public string Name { get; set; }
-        public bool HasSecretIdentity { get; set; }
-        public string Gender { get; set; }
-        public int? YearIntroduced { get; set; }
-        public DateTime InsertedAt { get; }
-        public Superhero() => InsertedAt = DateTime.Now;
+
+        public bool HasSecretIdentity => Id == "Secret Identity";
+
+        public Gender Gender => Sex switch
+        {
+            "Male Characters" => Male,
+            "Female Characters" => Female,
+            _ => Other
+        };
+
+        public int? YearIntroduced => Year == 0 ? (int?) null : Year;
+
+        [RESTableMember(hide: true)] public int Year { get; set; }
+        [RESTableMember(hide: true)] public string Id { get; set; }
+        [RESTableMember(hide: true)] public string Sex { get; set; }
+    }
+
+    public enum Gender
+    {
+        Male,
+        Female,
+        Other
     }
 
     [RESTable(GET)]
     public class SuperheroReport : ISelector<SuperheroReport>
     {
-        public long NumberOfSuperheroes { get; private set; }
-        public Superhero FirstSuperheroInserted { get; private set; }
-        public Superhero LastSuperheroInserted { get; private set; }
+        public int NumberOfSuperheroes { get; set; }
+        public int NumberOfFemaleHeroes { get; set; }
+        public int NumberOfMaleHeroes { get; set; }
+        public int NumberOfOtherGenderHeroes { get; set; }
+        public Superhero NewestSuperhero { get; set; }
 
         /// <summary>
         /// This method returns an IEnumerable of the resource type. RESTable will call this
@@ -69,20 +101,29 @@ namespace RESTable.SQLite.Example
         /// </summary>
         public IEnumerable<SuperheroReport> Select(IRequest<SuperheroReport> request)
         {
-//            var superHeroesOrdered = Db
-//                .SQL<Superhero>("SELECT t FROM RESTable.Tutorial.Superhero t")
-//                .OrderBy(h => h.InsertedAt)
-//                .ToList();
-//            return new[]
-//            {
-//                new SuperheroReport
-//                {
-//                    NumberOfSuperheroes = superHeroesOrdered.Count,
-//                    FirstSuperheroInserted = superHeroesOrdered.FirstOrDefault(),
-//                    LastSuperheroInserted = superHeroesOrdered.LastOrDefault()
-//                }
-//            };
-            yield break;
+            var superheroes = request.Context.CreateRequest<Superhero>().EvaluateToEntities();
+            var count = 0;
+            var newest = default(Superhero);
+            var genderCount = new int[3];
+
+            foreach (var superhero in superheroes)
+            {
+                if (count == 0)
+                    newest = superhero;
+                count += 1;
+                genderCount[(int) superhero.Gender] += 1;
+                if (superhero.Year > newest?.Year)
+                    newest = superhero;
+            }
+
+            yield return new SuperheroReport
+            {
+                NumberOfSuperheroes = count,
+                NumberOfFemaleHeroes = genderCount[(int) Female],
+                NumberOfMaleHeroes = genderCount[(int) Male],
+                NumberOfOtherGenderHeroes = genderCount[(int) Other],
+                NewestSuperhero = newest
+            };
         }
     }
 
@@ -294,57 +335,6 @@ namespace RESTable.SQLite.Example
         public bool SupportsTextInput { get; } = true;
         public bool SupportsBinaryInput { get; } = false;
         public void HandleBinaryInput(byte[] input) => throw new NotImplementedException();
-    }
-
-    #endregion
-
-    #region Demo database
-
-    /// <summary>
-    /// Database is a subset of https://github.com/fivethirtyeight/data/tree/master/comic-characters
-    /// - which is, in turn, taken from Marvel and DC Comics respective sites.
-    /// </summary>
-    internal static class ExampleDatabase
-    {
-        internal static void Setup()
-        {
-            // First we delete all Superheroes from the database. Then we get the content from an included SQLite
-            // database and build the Starcounter database from it. For more information on how to integrate SQLite
-            // with RESTable, see the 'RESTable.SQLite' package on NuGet.
-
-            // Db.Transact(() => Db
-            //     .SQL<Superhero>("SELECT t FROM RESTable.Tutorial.Superhero t")
-            //     .ForEach(Db.Delete));
-// 
-            // // The Root context has access to all resources, and can only be used internally
-            // using (var request = Context.Root.CreateRequest<SuperheroSQLite>())
-            // {
-            //     request.Conditions.Add("Year", Operators.NOT_EQUALS, null);
-            //     using (var superheroes = request.EvaluateToEntities())
-            //     {
-            //         foreach (var hero in superheroes)
-            //         {
-            //             // Create a Starcounter Superhero instance from a SQLite row
-            //             Db.TransactAsync(() => new Superhero
-            //             {
-            //                 Name = hero.Name,
-            //                 YearIntroduced = hero.Year != 0 ? hero.Year : default(int?),
-            //                 HasSecretIdentity = hero.Id == "Secret Identity",
-            //                 Gender = hero.Sex == "Male Characters" ? "Male" : hero.Sex == "Female Characters" ? "Female" : "Other",
-            //             });
-            //         }
-            //     }
-            // }
-        }
-    }
-
-    [SQLite(CustomTableName = "Heroes"), RESTableInternal(GET)]
-    public class SuperheroSQLite : SQLiteTable
-    {
-        public string Name { get; set; }
-        public string Id { get; set; }
-        public string Sex { get; set; }
-        public int Year { get; set; }
     }
 
     #endregion
