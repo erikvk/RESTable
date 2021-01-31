@@ -4,6 +4,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -149,7 +150,7 @@ namespace RESTable.Tutorial
         /// This method is called when the WebSocket is opened towards this Chatbot instance. A perfect
         /// time to send a welcome message.
         /// </summary>
-        public void Open() => WebSocket.SendText(
+        public async Task Open() => await WebSocket.SendText(
             "> Hi, I'm a chatbot! Type anything, and I'll try my best to answer. I like to tell jokes... " +
             "(type QUIT to return to the shell)"
         );
@@ -168,7 +169,7 @@ namespace RESTable.Tutorial
         /// This method defines the logic that is run when an incoming text message is received over the
         /// WebSocket that is assigned to this terminal.
         /// </summary>
-        public void HandleTextInput(string input)
+        public async Task HandleTextInput(string input)
         {
             if (string.Equals(input, "quit", OrdinalIgnoreCase))
             {
@@ -176,20 +177,21 @@ namespace RESTable.Tutorial
                 return;
             }
 
-            var response = GetChatbotResponse(input);
-            WebSocket.SendText(response);
+            var response = await GetChatbotResponse(input);
+            await WebSocket.SendText(response);
         }
 
-        internal static string GetChatbotResponse(string input)
+        internal static async Task<string> GetChatbotResponse(string input)
         {
-            return ChatbotAPI.GetResponse(input).result?.fulfillment?.speech ?? "I have no response to that. Sorry...";
+            var response = await ChatbotAPI.GetResponse(input);
+            return response.result?.fulfillment?.speech ?? "I have no response to that. Sorry...";
         }
 
         /// <summary>
         /// We still need to implement this method, but it is never called, since SupportsBinaryInput is
         /// set to false.
         /// </summary>
-        public void HandleBinaryInput(byte[] input) => throw new NotImplementedException();
+        public Task HandleBinaryInput(byte[] input) => throw new NotImplementedException();
 
         #region DialogFlow API
 
@@ -200,21 +202,19 @@ namespace RESTable.Tutorial
         {
             private const string AccessToken = "6d7be132f63e48bab18531ec41364673";
 
-            private static readonly AuthenticationHeaderValue Authorization =
-                new AuthenticationHeaderValue("Bearer", AccessToken);
-
-            private static readonly HttpClient HttpClient = new HttpClient();
+            private static readonly AuthenticationHeaderValue Authorization = new("Bearer", AccessToken);
+            private static readonly HttpClient HttpClient = new();
             private static readonly string SessionId = Guid.NewGuid().ToString();
 
             /// <summary>
             /// Sends the input to the chatbot service API, and returns the text response
             /// </summary>
-            internal static dynamic GetResponse(string input)
+            internal static async Task<dynamic> GetResponse(string input)
             {
                 var uri = $"https://api.dialogflow.com/v1/query?v=20170712&query={WebUtility.UrlEncode(input)}" +
                           $"&lang=en&sessionId={SessionId}&timezone={TimeZoneInfo.Local.DisplayName}";
                 var message = new HttpRequestMessage(HttpMethod.Get, uri) {Headers = {Authorization = Authorization}};
-                var response = HttpClient.SendAsync(message).Result.Content.ReadAsStringAsync().Result;
+                var response = await HttpClient.SendAsync(message).Result.Content.ReadAsStringAsync();
                 return JObject.Parse(response);
             }
         }
@@ -225,7 +225,7 @@ namespace RESTable.Tutorial
         /// If the terminal resource has additional resources tied to an instance, this is were we release
         /// them.
         /// </summary>
-        public void Dispose() { }
+        public ValueTask DisposeAsync() => default;
     }
 
     /// <summary>
@@ -238,7 +238,7 @@ namespace RESTable.Tutorial
         /// <summary>
         /// This collection holds all ChatRoom instances
         /// </summary>
-        private static readonly TerminalSet<ChatRoom> Terminals = new TerminalSet<ChatRoom>();
+        private static readonly TerminalSet<ChatRoom> Terminals = new();
 
         private string _name;
 
@@ -253,7 +253,7 @@ namespace RESTable.Tutorial
             {
                 var name = GetUniqueName(value);
                 if (Initiated)
-                    SendToAll($"# {_name} has changed name to \"{name}\"");
+                    SendToAll($"# {_name} has changed name to \"{name}\"").Wait();
                 _name = name;
             }
         }
@@ -273,12 +273,12 @@ namespace RESTable.Tutorial
         /// </summary>
         private bool Initiated;
 
-        public void Open()
+        public async Task Open()
         {
             Name = GetUniqueName(Name);
-            SendToAll($"# {Name} has joined the chat room.");
+            await SendToAll($"# {Name} has joined the chat room.");
             Terminals.Add(this);
-            WebSocket.SendText(
+            await WebSocket.SendText(
                 $"# Welcome to the chat room! Your name is \"{Name}\" (type QUIT to return to the shell)");
             Initiated = true;
         }
@@ -300,13 +300,13 @@ namespace RESTable.Tutorial
             return tempName;
         }
 
-        public void Dispose()
+        public async ValueTask DisposeAsync()
         {
             Terminals.Remove(this);
-            SendToAll($"# {Name} left the chat room.");
+            await SendToAll($"# {Name} left the chat room.");
         }
 
-        public void HandleTextInput(string input)
+        public async Task HandleTextInput(string input)
         {
             if (string.IsNullOrWhiteSpace(input))
                 return;
@@ -316,25 +316,25 @@ namespace RESTable.Tutorial
                 return;
             }
 
-            SendToAll($"> {Name}: {input}");
+            await SendToAll($"> {Name}: {input}");
             if (input.Length > 5 && input.StartsWith("@bot ", OrdinalIgnoreCase))
             {
                 var message = input.Split("@bot ")[1];
                 var response = Chatbot.GetChatbotResponse(message);
-                SendToAll($"> Chatbot: {response}");
+                await SendToAll($"> Chatbot: {response}");
             }
         }
 
-        private static void SendToAll(string message)
+        private static async Task SendToAll(string message)
         {
-            foreach (var terminal in Terminals)
-                terminal.WebSocket.SendText(message);
+            var tasks = Terminals.Select(terminal => terminal.WebSocket.SendText(message));
+            await Task.WhenAll(tasks);
         }
 
         public IWebSocket WebSocket { private get; set; }
         public bool SupportsTextInput { get; } = true;
         public bool SupportsBinaryInput { get; } = false;
-        public void HandleBinaryInput(byte[] input) => throw new NotImplementedException();
+        public Task HandleBinaryInput(byte[] input) => throw new NotImplementedException();
     }
 
     #endregion

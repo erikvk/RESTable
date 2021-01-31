@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using RESTable.ContentTypeProviders;
 using RESTable.Internal.Logging;
 using RESTable.Requests;
@@ -8,7 +9,6 @@ using RESTable.Resources;
 using RESTable.Resources.Templates;
 using RESTable.Results;
 using RESTable.WebSockets;
-using RESTable.Linq;
 using static Newtonsoft.Json.Formatting;
 
 namespace RESTable.Admin
@@ -38,34 +38,37 @@ namespace RESTable.Admin
         protected override string WelcomeBody { get; } = "Use the console to receive pushed updates when the \n" +
                                                          "REST API receives requests and WebSocket events.";
 
-        public override void Open()
+        public override async Task Open()
         {
-            base.Open();
+            await base.Open();
             Consoles.Add(this);
         }
 
-        public override void Dispose() => Consoles.Remove(this);
+        public override ValueTask DisposeAsync()
+        {
+            Consoles.Remove(this);
+            return default;
+        }
 
         #region Console
 
-        internal static void Log(IRequest request, ISerializedResult result)
+        internal static async Task Log(IRequest request, ISerializedResult result)
         {
             var milliseconds = result.TimeElapsed.TotalMilliseconds;
             if (result is WebSocketUpgradeSuccessful) return;
-            Consoles.AsParallel().Where(c => c.IsOpen).GroupBy(c => c.Format).ForEach(group =>
+            var tasks = Consoles.Where(c => c.IsOpen).GroupBy(c => c.Format).SelectMany(group =>
             {
                 switch (group.Key)
                 {
                     case ConsoleFormat.Line:
                         var requestStub = GetLogLineStub(request);
                         var responseStub = GetLogLineStub(result, milliseconds);
-                        group.AsParallel().ForEach(c => c.PrintLines(
+                        return group.Select(c => c.PrintLines(
                             new StringBuilder(requestStub), request,
                             new StringBuilder(responseStub), result)
                         );
-                        break;
                     case ConsoleFormat.JSON:
-                        group.AsParallel().ForEach(c =>
+                        return group.Select(c =>
                         {
                             var item = new InputOutput
                             {
@@ -89,28 +92,25 @@ namespace RESTable.Admin
                                 item.Out.Content = result.LogContent;
                             }
                             var json = Providers.Json.Serialize(item, Indented, ignoreNulls: true);
-                            c.ActualSocket.SendTextRaw(json);
+                            return c.ActualSocket.SendTextRaw(json);
                         });
-                        break;
                     default: throw new ArgumentOutOfRangeException();
                 }
             });
+            await Task.WhenAll(tasks);
         }
 
-        internal static void Log(ILogable logable) => Consoles
-            .AsParallel()
-            .Where(c => c.IsOpen)
-            .GroupBy(c => c.Format)
-            .ForEach(group =>
+        internal static async Task Log(ILogable logable)
+        {
+            var tasks = Consoles.Where(c => c.IsOpen).GroupBy(c => c.Format).SelectMany(group =>
             {
-                switch (group.Key)
+                switch (@group.Key)
                 {
                     case ConsoleFormat.Line:
                         var requestStub = GetLogLineStub(logable);
-                        group.AsParallel().ForEach(c => c.PrintLine(new StringBuilder(requestStub), logable));
-                        break;
+                        return @group.Select(c => c.PrintLine(new StringBuilder(requestStub), logable));
                     case ConsoleFormat.JSON:
-                        group.AsParallel().ForEach(c =>
+                        return @group.Select(c =>
                         {
                             var item = new LogItem
                             {
@@ -126,18 +126,19 @@ namespace RESTable.Admin
                             if (c.IncludeContent)
                                 item.Content = logable.LogContent;
                             var json = Providers.Json.Serialize(item, Indented, ignoreNulls: true);
-                            c.ActualSocket.SendTextRaw(json);
+                            return c.ActualSocket.SendTextRaw(json);
                         });
-                        break;
+                    default: throw new ArgumentOutOfRangeException();
                 }
             });
-
+            await Task.WhenAll(tasks);
+        }
 
         private const string connection = " | Connection: ";
         private const string headers = " | Custom headers: ";
         private const string content = " | Content: ";
 
-        private void PrintLine(StringBuilder builder, ILogable logable)
+        private async Task PrintLine(StringBuilder builder, ILogable logable)
         {
             if (IncludeClient)
             {
@@ -156,10 +157,10 @@ namespace RESTable.Admin
                 builder.Append(content);
                 builder.Append(logable.LogContent ?? "null");
             }
-            ActualSocket.SendTextRaw(builder.ToString());
+            await ActualSocket.SendTextRaw(builder.ToString());
         }
 
-        private void PrintLines(StringBuilder builder1, ILogable logable1, StringBuilder builder2, ILogable logable2)
+        private async Task PrintLines(StringBuilder builder1, ILogable logable1, StringBuilder builder2, ILogable logable2)
         {
             if (IncludeClient)
             {
@@ -192,8 +193,8 @@ namespace RESTable.Admin
                 builder1.Append(logable1.LogContent ?? "null");
                 builder2.Append(logable2.LogContent ?? "null");
             }
-            ActualSocket.SendTextRaw(builder1.ToString());
-            ActualSocket.SendTextRaw(builder2.ToString());
+            await ActualSocket.SendTextRaw(builder1.ToString());
+            await ActualSocket.SendTextRaw(builder2.ToString());
         }
 
         private static string GetLogLineStub(ILogable logable, double? milliseconds = null)

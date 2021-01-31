@@ -358,7 +358,7 @@ namespace RESTable
             {
                 if (Authenticator.ApiKeys.TryGetValue(key, out var accessRights))
                 {
-                    WebSocketController.RevokeAllWithKey(key);
+                    WebSocketController.RevokeAllWithKey(key).Wait();
                     accessRights.Clear();
                 }
                 Authenticator.ApiKeys.Remove(key);

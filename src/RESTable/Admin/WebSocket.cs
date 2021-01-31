@@ -67,7 +67,7 @@ namespace RESTable.Admin
             var count = 0;
             foreach (var entity in request.GetInputEntities())
             {
-                entity._WebSocket.Disconnect();
+                entity._WebSocket.DisposeAsync().AsTask().Wait();
                 count += 1;
             }
             return count;

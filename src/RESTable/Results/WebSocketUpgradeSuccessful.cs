@@ -1,6 +1,6 @@
 ﻿using System.Net;
-using System.Threading.Tasks;
 using RESTable.Requests;
+using RESTable.WebSockets;
 
 namespace RESTable.Results
 {
@@ -11,13 +11,24 @@ namespace RESTable.Results
     /// </summary>
     public class WebSocketUpgradeSuccessful : Success
     {
-        public Task WebSocketLifeTime { get; }
-        internal WebSocketUpgradeSuccessful(IRequest request, Task lifetimeTask) : base(request)
+        public WebSocket WebSocket { get; }
+
+        internal WebSocketUpgradeSuccessful(IRequest request, WebSocket webSocket) : base(request)
         {
-            WebSocketLifeTime = lifetimeTask;
+            WebSocket = webSocket;
             StatusCode = HttpStatusCode.SwitchingProtocols;
             StatusDescription = "Switching protocols";
             TimeElapsed = request.TimeElapsed;
         }
     }
-}   
+
+    /// <inheritdoc />
+    /// <summary>
+    /// Returned when a WebSocket upgrade was performed successfully, and RESTable has already sent
+    /// the response back and closed the socket.
+    /// </summary>
+    public class WebSocketTransferSuccess : OK
+    {
+        internal WebSocketTransferSuccess(IRequest request) : base(request) { }
+    }
+}

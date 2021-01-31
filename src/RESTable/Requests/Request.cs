@@ -5,7 +5,6 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Net;
-using System.Threading.Tasks;
 using RESTable.Internal;
 using RESTable.Meta;
 using RESTable.Meta.Internal;
@@ -215,12 +214,20 @@ namespace RESTable.Requests
 
                 switch (Resource)
                 {
-                    case ITerminalResource<T> terminal:
+                    case ITerminalResource<T> terminalResource:
                         if (!Context.HasWebSocket)
-                            throw new UpgradeRequired(terminal.Name);
+                            throw new UpgradeRequired(terminalResource.Name);
                         if (IsWebSocketUpgrade)
-                            return MakeWebSocketUpgrade(terminal);
-                        return SwitchTerminal(terminal);
+                        {
+                            var terminalResourceInternal = (Meta.Internal.TerminalResource<T>) terminalResource;
+                            var terminal = terminalResourceInternal.MakeTerminal(Conditions);
+                            Context.WebSocket.SetContext(this);
+                            Context.WebSocket.ConnectTo(terminal, terminalResourceInternal);
+                            Context.WebSocket.Open().Wait();
+                            terminal.Open();
+                            return new WebSocketUpgradeSuccessful(this, Context.WebSocket);
+                        }
+                        return SwitchTerminal(terminalResource);
 
                     case IBinaryResource<T> binary:
                         var (stream, contentType) = binary.SelectBinary(this);
@@ -249,10 +256,10 @@ namespace RESTable.Requests
                             return result;
 
                         var serialized = result.Serialize();
-                        Context.WebSocket.Open();
-                        Context.WebSocket.SendResult(serialized);
-                        Context.WebSocket.Disconnect();
-                        return new WebSocketUpgradeSuccessful(this, Task.CompletedTask);
+                        Context.WebSocket.Open().Wait();
+                        Context.WebSocket.SendResult(serialized).Wait();
+                        Context.WebSocket.DisposeAsync().AsTask().Wait();
+                        return new WebSocketTransferSuccess(this);
 
                     case var other: throw new UnknownResource(other.Name);
                 }
@@ -277,17 +284,6 @@ namespace RESTable.Requests
             Context.WebSocket.ConnectTo(newTerminal, resource);
             newTerminal.Open();
             return new SwitchedTerminal(this);
-        }
-
-        private ISerializedResult MakeWebSocketUpgrade(ITerminalResource<T> resource)
-        {
-            var _resource = (Meta.Internal.TerminalResource<T>) resource;
-            var terminal = _resource.MakeTerminal(Conditions);
-            Context.WebSocket.SetContext(this);
-            Context.WebSocket.ConnectTo(terminal, resource);
-            var wsLifeTime = Context.WebSocket.Open();
-            terminal.Open();
-            return new WebSocketUpgradeSuccessful(this, wsLifeTime);
         }
 
         internal Request(IResource<T> resource, RequestParameters parameters)

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using RESTable.WebSockets;
 
 namespace RESTable.Resources.Templates
@@ -60,13 +61,13 @@ namespace RESTable.Resources.Templates
 
         private IReadOnlyDictionary<string, Option> _options { get; set; }
 
-        void ITerminal.Open()
+        async Task ITerminal.Open()
         {
             _options = GetOptions().SafeToDictionary(o => o.Command, StringComparer.OrdinalIgnoreCase);
-            PrintOptions();
+            await PrintOptions();
         }
 
-        void ITerminal.HandleTextInput(string input)
+        async Task ITerminal.HandleTextInput(string input)
         {
             var (command, args) = input.TSplit(" ");
             switch (command.Trim())
@@ -76,25 +77,25 @@ namespace RESTable.Resources.Templates
                     break;
                 case var _ when _options.TryGetValue(command, out var option):
                     var argsArray = args?.Split(" ", StringSplitOptions.RemoveEmptyEntries) ?? new string[0];
-                    WebSocket.SendText($"> {option.Command}");
+                    await WebSocket.SendText($"> {option.Command}");
                     try
                     {
                         option.Action(argsArray);
-                        WebSocket.SendText("> Done!\n");
+                        await WebSocket.SendText("> Done!\n");
                     }
                     catch (Exception e)
                     {
-                        WebSocket.SendException(e);
+                        await WebSocket.SendException(e);
                     }
-                    PrintOptions();
+                    await PrintOptions();
                     break;
                 case var unknown:
-                    WebSocket.SendText($"Unknown option '{unknown}'.");
+                    await WebSocket.SendText($"Unknown option '{unknown}'.");
                     break;
             }
         }
 
-        private void PrintOptions()
+        private async Task PrintOptions()
         {
             var stringBuilder = new StringBuilder($"### {GetType().GetRESTableTypeName()} ###\n\n");
             if (!_options.Any())
@@ -111,13 +112,13 @@ namespace RESTable.Resources.Templates
                 first = false;
             }
             stringBuilder.Append("\n> Type an option to continue, or 'cancel' to return to the shell\n");
-            WebSocket.SendText(stringBuilder.ToString());
+            await WebSocket.SendText(stringBuilder.ToString());
         }
 
-        void ITerminal.HandleBinaryInput(byte[] input) => throw new NotImplementedException();
+        Task ITerminal.HandleBinaryInput(byte[] input) => throw new NotImplementedException();
         bool ITerminal.SupportsTextInput { get; } = true;
         bool ITerminal.SupportsBinaryInput { get; } = false;
-        void IDisposable.Dispose() { }
+        public ValueTask DisposeAsync() => default;
 
         /// <summary>
         /// Provides the options to make available in this resource

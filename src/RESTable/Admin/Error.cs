@@ -22,18 +22,7 @@ namespace RESTable.Admin
         private const int MaxStringLength = 10000;
         private const int DeleteBatch = 100;
 
-        private static readonly IRequest<Error> PostErrorRequest;
-        private static readonly Condition<Error> GetIdCondition;
-        private static readonly IRequest<Error> DeleteRequest;
-
         private static long Counter { get; set; }
-
-        static Error()
-        {
-            GetIdCondition = new Condition<Error>(nameof(Id), Operators.LESS_THAN_OR_EQUALS, 0);
-            DeleteRequest = RESTableContext.Root.CreateRequest<Error>(DELETE).WithConditions(GetIdCondition);
-            PostErrorRequest = RESTableContext.Root.CreateRequest<Error>(POST);
-        }
 
         /// <summary>
         /// A unique ID for this error instance
@@ -103,8 +92,12 @@ namespace RESTable.Admin
             var errorsToKeep = Settings._NumberOfErrorsToKeep;
             if (Counter > errorsToKeep && Counter % DeleteBatch == 0)
             {
-                GetIdCondition.Value = Counter - errorsToKeep;
-                DeleteRequest.Evaluate();
+                var cutoffId = Counter - errorsToKeep;
+                var entitiesToDelete = InMemoryOperations<Error>
+                    .Select()
+                    .Where(e => e.Id <= cutoffId)
+                    .ToList();
+                InMemoryOperations<Error>.Delete(entitiesToDelete);
             }
             Uri = uri;
             Method = method;
@@ -142,7 +135,7 @@ namespace RESTable.Admin
                 stackTrace: stackTrace.Length > MaxStringLength ? stackTrace.Substring(0, MaxStringLength) : stackTrace,
                 message: totalMessage.Length > MaxStringLength ? totalMessage.Substring(0, MaxStringLength) : totalMessage
             );
-            PostErrorRequest.WithEntities(error).Evaluate().ThrowIfError();
+            InMemoryOperations<Error>.Insert(error);
             return error;
         }
     }

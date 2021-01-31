@@ -577,16 +577,17 @@ namespace RESTable
             }
             if (request.IsWebSocketUpgrade)
             {
+                var webSocket = request.Context.WebSocket;
                 if (error is Forbidden)
                 {
-                    request.Context.WebSocket.Disconnect();
+                    webSocket.DisposeAsync().AsTask().Wait();
                     return new WebSocketUpgradeFailed(error);
                 }
-                if (request.Context.WebSocket?.Status == WebSocketStatus.Waiting)
-                    request.Context.WebSocket?.Open();
-                request.Context.WebSocket?.SendResult(error);
-                request.Context.WebSocket?.Disconnect();
-                return new WebSocketUpgradeSuccessful(request, Task.CompletedTask);
+                if (webSocket.Status == WebSocketStatus.Waiting)
+                    webSocket.Open().Wait();
+                webSocket.SendResult(error).Wait();
+                webSocket.DisposeAsync().AsTask().Wait();
+                return new WebSocketTransferSuccess(request);
             }
             if (request.Headers.Metadata.EqualsNoCase("full"))
                 error.Headers.Metadata = error.Metadata;

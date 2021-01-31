@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using RESTable.ContentTypeProviders;
-using RESTable.Linq;
 
 namespace RESTable.WebSockets
 {
@@ -14,10 +13,13 @@ namespace RESTable.WebSockets
         static WebSocketController() => AllSockets = new ConcurrentDictionary<string, WebSocket>();
         internal static void Add(WebSocket webSocket) => AllSockets[webSocket.TraceId] = webSocket;
 
-        internal static void RevokeAllWithKey(string key) => AllSockets.Values
-            .Where(webSocket => webSocket.Client.AccessRights.ApiKey == key)
-            .ForEach(webSocket => webSocket.Disconnect($"The access rights of this WebSocket ({webSocket.TraceId}) " +
-                                                       "have been revoked. Disconnecting..."));
+        internal static async Task RevokeAllWithKey(string key)
+        {
+            var tasks = AllSockets.Values
+                .Where(webSocket => webSocket.Client.AccessRights.ApiKey == key)
+                .Select(webSocket => webSocket.DisposeAsync().AsTask());
+            await Task.WhenAll(tasks);
+        }
 
         public static async Task HandleTextInput(string wsId, string textInput)
         {
@@ -40,61 +42,55 @@ namespace RESTable.WebSockets
                         try
                         {
                             Providers.Json.Populate(json, webSocket.Terminal);
-                            webSocket.SendText("Terminal updated");
-                            webSocket.SendJson(webSocket.Terminal);
+                            await webSocket.SendText("Terminal updated");
+                            await webSocket.SendJson(webSocket.Terminal);
                         }
                         catch (Exception e)
                         {
-                            webSocket.SendException(e);
+                            await webSocket.SendException(e);
                         }
                         break;
                     case "#TERMINAL":
-                        webSocket.SendJson(webSocket.Terminal);
+                        await webSocket.SendJson(webSocket.Terminal);
                         break;
                     case "#INFO" when tail is string json:
                         try
                         {
                             var profile = webSocket.GetAppProfile();
                             Providers.Json.Populate(json, profile);
-                            webSocket.SendText("Profile updated");
-                            webSocket.SendJson(webSocket.GetAppProfile());
+                            await webSocket.SendText("Profile updated");
+                            await webSocket.SendJson(webSocket.GetAppProfile());
                         }
                         catch (Exception e)
                         {
-                            webSocket.SendException(e);
+                            await webSocket.SendException(e);
                         }
                         break;
                     case "#INFO":
-                        webSocket.SendJson(webSocket.GetAppProfile());
+                        await webSocket.SendJson(webSocket.GetAppProfile());
                         break;
                     case "#SHELL":
                     case "#HOME":
                         webSocket.DirectToShell();
                         break;
                     case "#DISCONNECT":
-                        webSocket.Disconnect();
+                        await webSocket.DisposeAsync();
                         break;
                     default:
-                        webSocket.SendText($"Unknown global command '{command}'");
+                        await webSocket.SendText($"Unknown global command '{command}'");
                         break;
                 }
             }
-            else webSocket.HandleTextInput(textInput);
+            else await webSocket.HandleTextInput(textInput);
         }
 
-        public static void HandleBinaryInput(string wsId, byte[] binaryInput)
+        public static async Task HandleBinaryInput(string wsId, byte[] binaryInput)
         {
             if (!AllSockets.TryGetValue(wsId, out var webSocket))
                 throw new UnknownWebSocketIdException($"Unknown WebSocket ID: {wsId}");
-            webSocket.HandleBinaryInput(binaryInput);
+            await webSocket.HandleBinaryInput(binaryInput);
         }
 
-        public static void HandleDisconnect(string wsId)
-        {
-            if (!AllSockets.TryGetValue(wsId, out var webSocket))
-                throw new UnknownWebSocketIdException($"Unknown WebSocket ID: {wsId}");
-            webSocket.Dispose();
-            AllSockets.Remove(wsId);
-        }
+        public static void RemoveWebSocket(string wsId) => AllSockets.Remove(wsId);
     }
 }

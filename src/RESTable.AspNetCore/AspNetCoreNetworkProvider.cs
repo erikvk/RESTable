@@ -39,7 +39,10 @@ namespace RESTable.AspNetCore
                     using var request = context.CreateRequest(uri, method, body, headers);
                     using var result = request.Evaluate().Serialize();
                     if (result is WebSocketUpgradeSuccessful ws)
-                        await ws.WebSocketLifeTime;
+                    {
+                        await using var webSocket = ws.WebSocket;
+                        await webSocket.LifetimeTask;
+                    }
                     else await WriteResponse(aspNetCoreContext, result);
                 });
             }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using RESTable.WebSockets;
 
 namespace RESTable.Resources
@@ -10,7 +11,7 @@ namespace RESTable.Resources
     /// instantiated, using the Create method, when targeted in a request or from the 
     /// RESTable WebSocket shell.
     /// </summary>
-    public interface ITerminal : IDisposable
+    public interface ITerminal : IAsyncDisposable
     {
         /// <summary>
         /// The WebSocket connected to this terminal. This property is set just before the 
@@ -22,17 +23,17 @@ namespace RESTable.Resources
         /// This method is called when the WebSocket is opened, and when data can be sent
         /// and received by this terminal.
         /// </summary>
-        void Open();
+        Task Open();
 
         /// <summary>
         /// Performs an action on string input
         /// </summary>
-        void HandleTextInput(string input);
+        Task HandleTextInput(string input);
 
         /// <summary>
         /// Performs and action on binary input
         /// </summary>
-        void HandleBinaryInput(byte[] input);
+        Task HandleBinaryInput(byte[] input);
 
         /// <summary>
         /// Does this terminal support text input?

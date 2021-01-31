@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using RESTable.Admin;
 using RESTable.ContentTypeProviders;
 using RESTable.Internal;
@@ -36,7 +37,7 @@ namespace RESTable
 
         private string query;
         private string previousQuery;
-        private Action OnConfirm;
+        private Task OnConfirm;
         private bool _autoGet;
         private int streamBufferSize;
         private IEntities _previousEntities;
@@ -182,23 +183,23 @@ namespace RESTable
             Reset();
         }
 
-        /// <inheritdoc />
-        public void Dispose()
+        public ValueTask DisposeAsync()
         {
             WebSocket.Context.Client.ShellConfig = Providers.Json.Serialize(this);
             Reset();
+            return default;
         }
 
         /// <inheritdoc />
         public IWebSocket WebSocket { private get; set; }
 
         /// <inheritdoc />
-        public void HandleBinaryInput(byte[] input)
+        public async Task HandleBinaryInput(byte[] input)
         {
             if (!(input?.Length > 0)) return;
             if (Query.Length == 0 || OnConfirm != null)
-                WebSocket.SendResult(new InvalidShellStateForBinaryInput());
-            else SafeOperation(POST, input);
+                await WebSocket.SendResult(new InvalidShellStateForBinaryInput());
+            else await SafeOperation(POST, input);
         }
 
         /// <inheritdoc />
@@ -208,32 +209,33 @@ namespace RESTable
         public bool SupportsBinaryInput { get; }
 
         /// <inheritdoc />
-        public void Open()
+        public async Task Open()
         {
             if (WebSocket.Context.Client.ShellConfig is string config)
             {
                 Providers.Json.Populate(config, this);
-                SendShellInit();
-                SendQuery();
+                await SendShellInit();
+                await SendQuery();
             }
             else if (Query != "")
-                Navigate();
-            else SendShellInit();
+                await Navigate();
+            else await SendShellInit();
         }
 
-        private void Navigate(string input = null)
+        private async Task Navigate(string input = null)
         {
             if (input != null)
                 Query = input;
-            if (!QueryIsValid(out var resource)) return;
+            var (valid, resource) = await ValidateQuery();
+            if (!valid) return;
             PreviousEntities = null;
-            if (AutoOptions) SendOptions(resource);
-            else if (AutoGet) SafeOperation(GET);
-            else SendQuery();
+            if (AutoOptions) await SendOptions(resource);
+            else if (AutoGet) await SafeOperation(GET);
+            else await SendQuery();
         }
 
         /// <inheritdoc />
-        public void HandleTextInput(string input)
+        public async Task HandleTextInput(string input)
         {
             if (OnConfirm != null)
             {
@@ -241,17 +243,17 @@ namespace RESTable
                 {
                     case var _ when input.Length > 1:
                     default:
-                        SendConfirmationRequest();
+                        await SendConfirmationRequest();
                         break;
                     case 'Y':
                     case 'y':
-                        OnConfirm();
+                        await OnConfirm;
                         OnConfirm = null;
                         break;
                     case 'N':
                     case 'n':
                         OnConfirm = null;
-                        SendCancel();
+                        await SendCancel();
                         break;
                 }
                 return;
@@ -266,55 +268,57 @@ namespace RESTable
                 case '\n': break;
                 case '-':
                 case '/':
-                    Navigate(input);
+                    await Navigate(input);
                     break;
                 case '[':
                 case '{':
-                    SafeOperation(POST, input.ToBytes());
+                    await SafeOperation(POST, input.ToBytes());
                     break;
                 case var _ when input.Length > MaxInputSize:
-                    SendBadRequest();
+                    await SendBadRequest();
                     break;
                 default:
                     var (command, tail) = input.TSplit(' ');
                     switch (command.ToUpperInvariant())
                     {
                         case "GET":
-                            SafeOperation(GET, tail?.ToBytes());
+                            await SafeOperation(GET, tail?.ToBytes());
                             break;
                         case "POST":
-                            SafeOperation(POST, tail?.ToBytes());
+                            await SafeOperation(POST, tail?.ToBytes());
                             break;
                         case "PATCH":
-                            UnsafeOperation(PATCH, tail?.ToBytes());
+                            await UnsafeOperation(PATCH, tail?.ToBytes());
                             break;
                         case "PUT":
-                            SafeOperation(PUT, tail?.ToBytes());
+                            await SafeOperation(PUT, tail?.ToBytes());
                             break;
                         case "DELETE":
-                            UnsafeOperation(DELETE, tail?.ToBytes());
+                            await UnsafeOperation(DELETE, tail?.ToBytes());
                             break;
                         case "REPORT":
-                            SafeOperation(REPORT, tail?.ToBytes());
+                            await SafeOperation(REPORT, tail?.ToBytes());
                             break;
                         case "HEAD":
-                            SafeOperation(HEAD, tail?.ToBytes());
+                            await SafeOperation(HEAD, tail?.ToBytes());
                             break;
                         case "STREAM":
                             var result = WsEvaluate(GET, null);
                             if (result is Content)
-                                StreamResult(result, result.TimeElapsed);
-                            else SendResult(result);
+                                await StreamResult(result, result.TimeElapsed);
+                            else await SendResult(result);
                             break;
                         case "OPTIONS":
                         {
-                            if (!QueryIsValid(out var resource)) break;
-                            SendOptions(resource);
+                            var (valid, resource) = await ValidateQuery();
+                            if (!valid) break;
+                            await SendOptions(resource);
                             break;
                         }
                         case "SCHEMA":
                         {
-                            if (!QueryIsValid(out var resource)) break;
+                            var (valid, resource) = await ValidateQuery();
+                            if (!valid) break;
                             var resourceCondition = new Condition<Schema>
                             (
                                 key: "resource",
@@ -325,7 +329,7 @@ namespace RESTable
                                 .CreateRequest<Schema>()
                                 .WithConditions(resourceCondition)
                                 .EvaluateToEntities();
-                            SendResult(schema);
+                            await SendResult(schema);
                             break;
                         }
 
@@ -334,13 +338,13 @@ namespace RESTable
                             tail = tail?.Trim();
                             if (string.IsNullOrWhiteSpace(tail))
                             {
-                                SendHeaders();
+                                await SendHeaders();
                                 break;
                             }
                             var (key, value) = tail.TSplit('=', true);
                             if (value == null)
                             {
-                                SendHeaders();
+                                await SendHeaders();
                                 break;
                             }
                             if (key.IsCustomHeaderName())
@@ -348,49 +352,49 @@ namespace RESTable
                                 if (value == "null")
                                 {
                                     WebSocket.Headers.Remove(key);
-                                    SendHeaders();
+                                    await SendHeaders();
                                     break;
                                 }
                                 WebSocket.Headers[key] = value;
-                                SendHeaders();
+                                await SendHeaders();
                             }
-                            else WebSocket.SendText($"400: Bad request. Cannot read or write reserved header '{key}'.");
+                            else await WebSocket.SendText($"400: Bad request. Cannot read or write reserved header '{key}'.");
                             return;
 
                         case "VAR":
                             if (string.IsNullOrWhiteSpace(tail))
                             {
-                                WebSocket.SendJson(this);
+                                await WebSocket.SendJson(this);
                                 break;
                             }
                             var (property, valueString) = tail.TSplit('=', true);
                             if (property == null || valueString == null)
                             {
-                                WebSocket.SendText("Invalid property assignment syntax. Should be: VAR <property> = <value>");
+                                await WebSocket.SendText("Invalid property assignment syntax. Should be: VAR <property> = <value>");
                                 break;
                             }
                             if (valueString.EqualsNoCase("null"))
                                 valueString = null;
                             if (!TerminalResource.Members.TryGetValue(property, out var declaredProperty))
                             {
-                                WebSocket.SendText($"Unknown shell property '{property}'. To list properties, type VAR");
+                                await WebSocket.SendText($"Unknown shell property '{property}'. To list properties, type VAR");
                                 break;
                             }
                             try
                             {
                                 declaredProperty.SetValue(this, valueString.ParseConditionValue(declaredProperty));
-                                WebSocket.SendJson(this);
+                                await WebSocket.SendJson(this);
                             }
                             catch (Exception e)
                             {
-                                WebSocket.SendException(e);
+                                await WebSocket.SendException(e);
                             }
                             break;
                         case "EXIT":
                         case "QUIT":
                         case "DISCONNECT":
                         case "CLOSE":
-                            Close();
+                            await Close();
                             break;
 
                         case "GO":
@@ -398,26 +402,26 @@ namespace RESTable
                         case "?":
                             if (!string.IsNullOrWhiteSpace(tail))
                             {
-                                Navigate(tail);
+                                await Navigate(tail);
                                 break;
                             }
-                            WebSocket.SendText($"{(Query.Any() ? Query : "< empty >")}");
+                            await WebSocket.SendText($"{(Query.Any() ? Query : "< empty >")}");
                             break;
                         case "FIRST":
-                            Permute(p => p.GetFirstLink(tail.ToNumber() ?? 1));
+                            await Permute(p => p.GetFirstLink(tail.ToNumber() ?? 1));
                             break;
                         case "LAST":
-                            Permute(p => p.GetLastLink(tail.ToNumber() ?? 1));
+                            await Permute(p => p.GetLastLink(tail.ToNumber() ?? 1));
                             break;
                         case "ALL":
-                            Permute(p => p.GetAllLink());
+                            await Permute(p => p.GetAllLink());
                             break;
                         case "NEXT":
-                            Permute(p => p.GetNextPageLink(tail.ToNumber() ?? -1));
+                            await Permute(p => p.GetNextPageLink(tail.ToNumber() ?? -1));
                             break;
                         case "PREV":
                         case "PREVIOUS":
-                            Permute(p => p.GetPreviousPageLink(tail.ToNumber() ?? -1));
+                            await Permute(p => p.GetPreviousPageLink(tail.ToNumber() ?? -1));
                             break;
 
                         #region Nonsense
@@ -438,7 +442,7 @@ namespace RESTable
                                 }
                             }
 
-                            WebSocket.SendText(getHelloWorld());
+                            await WebSocket.SendText(getHelloWorld());
                             break;
 
                         case "HI":
@@ -461,7 +465,7 @@ namespace RESTable
                                 }
                             }
 
-                            WebSocket.SendText(getGreeting());
+                            await WebSocket.SendText(getGreeting());
                             break;
                         case "NICE":
                         case "THANKS":
@@ -481,13 +485,13 @@ namespace RESTable
                                 }
                             }
 
-                            WebSocket.SendText(getYoureWelcome());
+                            await WebSocket.SendText(getYoureWelcome());
                             break;
                         case "CREDITS":
-                            SendCredits();
+                            await SendCredits();
                             break;
                         case var unknown:
-                            SendUnknownCommand(unknown);
+                            await SendUnknownCommand(unknown);
                             break;
 
                         #endregion
@@ -496,9 +500,9 @@ namespace RESTable
             }
         }
 
-        private void SendHeaders() => WebSocket.SendJson(new {WebSocket.Headers});
+        private async Task SendHeaders() => await WebSocket.SendJson(new {WebSocket.Headers});
 
-        private void Permute(Func<IEntities, IUriComponents> permuter)
+        private async Task Permute(Func<IEntities, IUriComponents> permuter)
         {
             var stopwatch = Stopwatch.StartNew();
             if (PreviousEntities == null)
@@ -506,12 +510,12 @@ namespace RESTable
                 WsGetPreliminary().Dispose();
                 if (PreviousEntities == null)
                 {
-                    SendResult(new ShellNoContent(WebSocket, stopwatch.Elapsed));
+                    await SendResult(new ShellNoContent(WebSocket, stopwatch.Elapsed));
                     return;
                 }
             }
             var link = permuter(PreviousEntities);
-            Navigate(link.ToString());
+            await Navigate(link.ToString());
         }
 
         private IResult WsGetPreliminary()
@@ -547,66 +551,64 @@ namespace RESTable
         {
             if (Query.Length == 0) return new ShellNoQuery(WebSocket);
             var local = Query;
-            using (var request = WebSocket.Context.CreateRequest(local, method, body, WebSocket.Headers))
+            using var request = WebSocket.Context.CreateRequest(local, method, body, WebSocket.Headers);
+            var result = request.Evaluate().Serialize();
+            switch (result)
             {
-                var result = request.Evaluate().Serialize();
-                switch (result)
-                {
-                    case Results.Error _ when queryChangedPreEval:
-                        query = previousQuery;
-                        break;
-                    case IEntities entities:
-                        query = local;
-                        PreviousEntities = entities;
-                        break;
-                    case Change _:
-                        query = local;
-                        PreviousEntities = null;
-                        break;
-                    default:
-                        query = local;
-                        break;
-                }
-                queryChangedPreEval = false;
-                return result;
+                case Results.Error _ when queryChangedPreEval:
+                    query = previousQuery;
+                    break;
+                case IEntities entities:
+                    query = local;
+                    PreviousEntities = entities;
+                    break;
+                case Change _:
+                    query = local;
+                    PreviousEntities = null;
+                    break;
+                default:
+                    query = local;
+                    break;
             }
+            queryChangedPreEval = false;
+            return result;
         }
 
-        private bool QueryIsValid(out IResource resource)
+        private async Task<(bool isValid, IResource resource)> ValidateQuery()
         {
             var localQuery = Query;
-            if (!WebSocket.Context.UriIsValid(localQuery, out var error, out resource, out var components))
+            if (!WebSocket.Context.UriIsValid(localQuery, out var error, out var resource, out var components))
             {
                 query = previousQuery;
-                SendResult(error);
-                return false;
+                await SendResult(error);
+                return (false, null);
             }
             if (ReformatQueries)
                 localQuery = components.ToString();
             query = localQuery;
             queryChangedPreEval = false;
-            return true;
+            return (true, resource);
         }
 
-        private void SendQuery() => WebSocket.SendText("? " + Query);
+        private async Task SendQuery() => await WebSocket.SendText("? " + Query);
 
-        private void SendOptions(IResource resource)
+        private async Task SendOptions(IResource resource)
         {
             var availableResource = AvailableResource.Make(resource, WebSocket);
             var options = new OptionsBody(availableResource.Name, availableResource.Kind, availableResource.Methods);
-            WebSocket.SendJson(options, true);
-            SendQuery();
+            await WebSocket.SendJson(options, true);
+            await SendQuery();
         }
 
-        private void SafeOperation(Method method, byte[] body = null)
+        private async Task SafeOperation(Method method, byte[] body = null)
         {
             var sw = Stopwatch.StartNew();
             switch (WsEvaluate(method, body))
             {
-                case Content content when content.Body is Stream _:
+                case Content {Body: Stream _} content:
                     if (!content.Body.CanRead)
                     {
-                        SendResult(new UnreadableContentStream(content));
+                        await SendResult(new UnreadableContentStream(content));
                         break;
                     }
                     if (!content.Body.CanSeek)
@@ -620,29 +622,29 @@ namespace RESTable
                     }
                     if (content.Body.Length > ResultStreamThreshold)
                     {
-                        OnConfirm = () => StreamResult(content, sw.Elapsed);
-                        SendConfirmationRequest("426: The result body is too large to be sent in a single WebSocket message. " +
-                                                "Do you want to stream the result instead? ");
+                        OnConfirm = StreamResult(content, sw.Elapsed);
+                        await SendConfirmationRequest("426: The result body is too large to be sent in a single WebSocket message. " +
+                                                      "Do you want to stream the result instead? ");
                         break;
                     }
-                    SendResult(content, sw.Elapsed);
+                    await SendResult(content, sw.Elapsed);
                     break;
                 case OK ok:
-                    SendResult(ok, sw.Elapsed);
+                    await SendResult(ok, sw.Elapsed);
                     break;
                 case var other:
-                    SendResult(other);
+                    await SendResult(other);
                     break;
             }
             sw.Stop();
         }
 
-        private void UnsafeOperation(Method method, byte[] body = null)
+        private async Task UnsafeOperation(Method method, byte[] body = null)
         {
-            void runOperation()
+            async Task runOperation()
             {
                 WebSocket.Headers.UnsafeOverride = true;
-                SafeOperation(method, body);
+                await SafeOperation(method, body);
             }
 
             if (PreviousEntities == null)
@@ -652,7 +654,7 @@ namespace RESTable
                     PreviousEntities = entities;
                 else
                 {
-                    SendResult(result);
+                    await SendResult(result);
                     return;
                 }
             }
@@ -660,74 +662,74 @@ namespace RESTable
             switch (PreviousEntities.EntityCount)
             {
                 case 0:
-                    SendBadRequest($". No entities for to run {method} on");
+                    await SendBadRequest($". No entities for to run {method} on");
                     break;
                 case 1:
-                    runOperation();
+                    await runOperation();
                     break;
                 case var multiple:
                     if (Unsafe)
                     {
-                        runOperation();
+                        await runOperation();
                         break;
                     }
-                    OnConfirm = runOperation;
-                    SendConfirmationRequest($"This will run {method} on {multiple} entities in resource " +
-                                            $"'{PreviousEntities.Request.Resource}'. ");
+                    OnConfirm = runOperation();
+                    await SendConfirmationRequest($"This will run {method} on {multiple} entities in resource " +
+                                                  $"'{PreviousEntities.Request.Resource}'. ");
                     break;
             }
         }
 
-        private void SendResult(ISerializedResult result, TimeSpan? elapsed = null)
+        private async Task SendResult(ISerializedResult result, TimeSpan? elapsed = null)
         {
             if (result is SwitchedTerminal) return;
-            WebSocket.SendResult(result, elapsed, WriteHeaders);
+            await WebSocket.SendResult(result, elapsed, WriteHeaders);
             switch (result)
             {
                 case var _ when Query == "":
                 case ShellNoQuery _:
-                    WebSocket.SendText("? <no query>");
+                    await WebSocket.SendText("? <no query>");
                     break;
                 default:
-                    WebSocket.SendText("? " + Query);
+                    await WebSocket.SendText("? " + Query);
                     break;
             }
         }
 
-        private void StreamResult(ISerializedResult result, TimeSpan? elapsed = null)
+        private async Task StreamResult(ISerializedResult result, TimeSpan? elapsed = null)
         {
             if (result is SwitchedTerminal) return;
-            WebSocket.StreamResult(result, StreamBufferSize, elapsed, WriteHeaders);
+            await WebSocket.StreamResult(result, StreamBufferSize, elapsed, WriteHeaders);
             switch (result)
             {
                 case var _ when Query == "":
                 case ShellNoQuery _:
-                    WebSocket.SendText("? <no query>");
+                    await WebSocket.SendText("? <no query>");
                     break;
                 default:
-                    WebSocket.SendText("? " + Query);
+                    await WebSocket.SendText("? " + Query);
                     break;
             }
         }
 
-        private void SendShellInit()
+        private async Task SendShellInit()
         {
-            WebSocket.SendText("### Entering the RESTable WebSocket shell... ###");
-            WebSocket.SendText("### Type a command to continue...            ###");
+            await WebSocket.SendText("### Entering the RESTable WebSocket shell... ###");
+            await WebSocket.SendText("### Type a command to continue...            ###");
         }
 
-        private void SendConfirmationRequest(string initialInfo = null) => WebSocket.SendText($"{initialInfo}Type 'Y' to continue, 'N' to cancel");
-        private void SendCancel() => WebSocket.SendText("Operation cancelled");
-        private void SendBadRequest(string message = null) => WebSocket.SendText($"400: Bad request{message}");
-        private void SendInvalidCommandArgument(string command, string arg) => WebSocket.SendText($"Invalid argument '{arg}' for command '{command}'");
-        private void SendUnknownCommand(string command) => WebSocket.SendText($"Unknown command '{command}'");
-        private void SendCredits() => WebSocket.SendText($"RESTable is designed and developed by Erik von Krusenstierna, © Mopedo AB {DateTime.Now.Year}");
+        private async Task SendConfirmationRequest(string initialInfo = null) => await WebSocket.SendText($"{initialInfo}Type 'Y' to continue, 'N' to cancel");
+        private async Task SendCancel() => await WebSocket.SendText("Operation cancelled");
+        private async Task SendBadRequest(string message = null) => await WebSocket.SendText($"400: Bad request{message}");
+        private async Task SendInvalidCommandArgument(string command, string arg) => await WebSocket.SendText($"Invalid argument '{arg}' for command '{command}'");
+        private async Task SendUnknownCommand(string command) => await WebSocket.SendText($"Unknown command '{command}'");
+        private async Task SendCredits() => await WebSocket.SendText($"RESTable is designed and developed by Erik von Krusenstierna, © Mopedo AB {DateTime.Now.Year}");
 
-        private void Close()
+        private async Task Close()
         {
-            WebSocket.SendText("### Closing the RESTable WebSocket shell... ###");
+            await WebSocket.SendText("### Closing the RESTable WebSocket shell... ###");
             var connection = (WebSocketConnection) WebSocket;
-            connection.WebSocket.Disconnect();
+            await connection.WebSocket.DisposeAsync();
         }
     }
 

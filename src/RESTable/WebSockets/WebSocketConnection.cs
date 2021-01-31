@@ -1,14 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using RESTable.Meta;
 using RESTable.Requests;
 using RESTable.Resources;
 using RESTable.Results;
-using RESTable.Linq;
 
 namespace RESTable.WebSockets
 {
-    internal class WebSocketConnection : IWebSocket, IDisposable
+    internal class WebSocketConnection : IWebSocket, IAsyncDisposable
     {
         private IWebSocketInternal duringSuspend;
         private IWebSocketInternal _webSocket;
@@ -38,27 +39,30 @@ namespace RESTable.WebSockets
             Terminal.WebSocket = this;
         }
 
-        internal void Suspend()
+        internal async Task Suspend()
         {
             if (IsSuspended) return;
-            duringSuspend?.Dispose();
+            if (duringSuspend != null)
+                await duringSuspend.DisposeAsync();
             duringSuspend = WebSocket;
             WebSocket = new WebSocketQueue(duringSuspend);
             IsSuspended = true;
         }
 
-        internal void Unsuspend()
+        internal async Task Unsuspend()
         {
-            if (!IsSuspended || !(WebSocket is WebSocketQueue queue)) return;
+            if (!IsSuspended || !(WebSocket is WebSocketQueue queue))
+                return;
             IsSuspended = false;
             WebSocket = duringSuspend;
             duringSuspend = null;
-            queue.ActionQueue.ForEach(a => a());
+            var tasks = queue.ActionQueue.Select(a => a());
+            await Task.WhenAll(tasks);
         }
 
-        public void Dispose()
+        public async ValueTask DisposeAsync()
         {
-            Terminal.Dispose();
+            await Terminal.DisposeAsync();
             WebSocket = null;
             Resource = null;
             Terminal = null;
@@ -68,26 +72,29 @@ namespace RESTable.WebSockets
         #region IWebSocket
 
         /// <inheritdoc />
-        public void SendText(string data) => WebSocket.SendText(data);
+        public Task SendText(string data) => WebSocket.SendText(data);
 
         /// <inheritdoc />
-        public void SendText(byte[] data, int offset, int length) => WebSocket.SendText(data, offset, length);
+        public Task SendText(byte[] data, int offset, int length) => WebSocket.SendText(data, offset, length);
 
         /// <inheritdoc />
-        public void SendBinary(byte[] data, int offset, int length) => WebSocket.SendBinary(data, offset, length);
+        public Task SendBinary(byte[] data, int offset, int length) => WebSocket.SendBinary(data, offset, length);
 
         /// <inheritdoc />
-        public void SendJson(object i, bool at = false, bool? p = null, bool ig = false) => WebSocket.SendJson(i, at, p, ig);
+        public Task SendJson(object i, bool at = false, bool? p = null, bool ig = false) => WebSocket.SendJson(i, at, p, ig);
 
         /// <inheritdoc />
-        public void SendResult(IResult r, TimeSpan? t = null, bool w = false, bool d = true) => WebSocket.SendResult(r, t, w, d);
+        public Task SendResult(IResult r, TimeSpan? t = null, bool w = false, bool d = true) => WebSocket.SendResult(r, t, w, d);
 
         /// <inheritdoc />
-        public void StreamResult(ISerializedResult result, int messageSize, TimeSpan? timeElapsed = null, bool writeHeaders = false,
-            bool disposeResult = true) => WebSocket.StreamResult(result, messageSize, timeElapsed, writeHeaders, disposeResult);
+        public Task StreamResult(ISerializedResult result, int messageSize, TimeSpan? timeElapsed = null, bool writeHeaders = false,
+            bool disposeResult = true)
+        {
+            return WebSocket.StreamResult(result, messageSize, timeElapsed, writeHeaders, disposeResult);
+        }
 
         /// <inheritdoc />
-        public void SendException(Exception exception) => WebSocket.SendException(exception);
+        public Task SendException(Exception exception) => WebSocket.SendException(exception);
 
         /// <inheritdoc />
         public Headers Headers => WebSocket.Headers;
@@ -99,8 +106,10 @@ namespace RESTable.WebSockets
         public void DirectToShell(IEnumerable<Condition<Shell>> assignments = null) => WebSocket.DirectToShell(assignments);
 
         /// <inheritdoc />
-        public void DirectTo<T>(ITerminalResource<T> terminalResource, ICollection<Condition<T>> assignments = null) where T : class, ITerminal =>
+        public void DirectTo<T>(ITerminalResource<T> terminalResource, ICollection<Condition<T>> assignments = null) where T : class, ITerminal
+        {
             WebSocket.DirectTo(terminalResource, assignments);
+        }
 
         /// <inheritdoc />
         public WebSocketStatus Status => IsSuspended ? WebSocketStatus.Suspended : WebSocket.Status;

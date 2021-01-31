@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using RESTable.WebSockets;
 
 namespace RESTable.Resources.Templates
@@ -65,20 +66,19 @@ namespace RESTable.Resources.Templates
         }
 
         /// <inheritdoc />
-        public virtual void Open()
+        public virtual async Task Open()
         {
             if (ShowWelcomeText)
-                WebSocket.SendText(GetWelcomeText());
+                await WebSocket.SendText(GetWelcomeText());
         }
 
         /// <inheritdoc />
         public IWebSocket WebSocket { protected get; set; }
 
-        /// <inheritdoc />
-        public abstract void Dispose();
+        public abstract ValueTask DisposeAsync();
 
         /// <inheritdoc />
-        public void HandleBinaryInput(byte[] input) => throw new NotImplementedException();
+        public Task HandleBinaryInput(byte[] input) => throw new NotImplementedException();
 
         /// <inheritdoc />
         public bool SupportsTextInput { get; } = true;
@@ -87,25 +87,25 @@ namespace RESTable.Resources.Templates
         public bool SupportsBinaryInput { get; } = false;
 
         /// <inheritdoc />
-        public void HandleTextInput(string input)
+        public async Task HandleTextInput(string input)
         {
             switch (input.ToUpperInvariant().Trim())
             {
                 case "": break;
                 case "OPEN":
                     Status = FeedStatus.OPEN;
-                    WebSocket.SendText("> Status: OPEN\n");
+                    await WebSocket.SendText("> Status: OPEN\n");
                     break;
                 case "PAUSE":
                     Status = FeedStatus.PAUSED;
-                    WebSocket.SendText("> Status: PAUSED\n");
+                    await WebSocket.SendText("> Status: PAUSED\n");
                     break;
                 case "CLOSE":
-                    WebSocket.SendText("> Status: CLOSED\n");
+                    await WebSocket.SendText("> Status: CLOSED\n");
                     WebSocket.DirectToShell();
                     break;
                 case var unrecognized:
-                    WebSocket.SendText($"> Unknown command '{unrecognized}'");
+                    await WebSocket.SendText($"> Unknown command '{unrecognized}'");
                     break;
             }
         }
